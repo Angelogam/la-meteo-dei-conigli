@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 
 // ============================================================
 // DATI DECOLLI
@@ -83,31 +83,17 @@ const WEATHER_ICONS: Record<number, string> = {
   95: '⛈️', 96: '⛈️', 99: '⛈️',
 };
 
-const WEATHER_DESC: Record<number, string> = {
-  0: 'Sereno', 1: 'Poco nuvoloso', 2: 'Parzialmente nuvoloso', 3: 'Nuvoloso',
-  45: 'Nebbia', 48: 'Nebbia ghiacciata',
-  51: 'Pioviggine', 53: 'Pioviggine', 55: 'Pioviggine',
-  61: 'Pioggia leggera', 63: 'Pioggia moderata', 65: 'Pioggia forte',
-  71: 'Neve leggera', 73: 'Neve moderata', 75: 'Neve forte',
-  80: 'Rovescio', 81: 'Rovescio', 82: 'Rovescio',
-  95: 'Temporale', 96: 'Temporale', 99: 'Temporale',
-};
-
 function getWeatherIcon(code: number, isDay: number): string {
   return WEATHER_ICONS[code] || (isDay ? '☀️' : '🌙');
 }
 
-function getWeatherDesc(code: number): string {
-  return WEATHER_DESC[code] || 'Variabile';
-}
-
 function getWindDir(deg: number): string {
-  if (!deg && deg !== 0) return '--';
+  if (deg === undefined || deg === null) return '--';
   return ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(deg / 45) % 8];
 }
 
 function getWindArrow(deg: number): string {
-  if (!deg && deg !== 0) return '➡️';
+  if (deg === undefined || deg === null) return '➡️';
   return ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'][Math.round(deg / 45) % 8];
 }
 
@@ -212,9 +198,11 @@ function getWindProfile(surfaceWind: number, surfaceDir: number) {
 
 function calcShear(profile: any[]) {
   if (profile.length < 2) return { shear: 0, risk: 'basso', desc: 'Dati insufficienti' };
-  const s = profile[0], h = profile[profile.length - 1];
+  const s = profile[0];
+  const h = profile[profile.length - 1];
   const val = Math.abs(h.speed - s.speed) + Math.abs((h.dir - s.dir) % 360) * 0.5;
-  let risk = 'basso', desc = '✅ Shear basso - Condizioni stabili';
+  let risk = 'basso';
+  let desc = '✅ Shear basso - Condizioni stabili';
   if (val > 30) { risk = 'alto'; desc = '⚠️ SHEAR FORTE - Volo pericoloso!'; }
   else if (val > 20) { risk = 'medio'; desc = '⚡ Shear forte - Richiesta esperienza'; }
   else if (val > 10) { risk = 'medio-basso'; desc = '🌀 Shear moderato - Attenzione'; }
@@ -227,7 +215,8 @@ function calcShear(profile: any[]) {
 function calcThermalProfile(dayData: HourData[], elevation: number) {
   if (!dayData?.length) return null;
   const temps = dayData.map(h => h.temperature);
-  const maxT = Math.max(...temps), minT = Math.min(...temps);
+  const maxT = Math.max(...temps);
+  const minT = Math.min(...temps);
   const delta = Math.round(maxT - minT);
   const avgT = temps.reduce((a, b) => a + b, 0) / temps.length;
   const avgDew = dayData.reduce((s, h) => s + h.dewPoint, 0) / dayData.length;
@@ -268,8 +257,6 @@ function generateAI(dayData: HourData[], site: any, thermal: any, windProfile: a
   else if (shear?.risk === 'medio') riskScore += 1;
   if (riskScore >= 5) risk = 'alto';
   else if (riskScore >= 3) risk = 'medio';
-
-  const genDesc = (s: string) => s;
 
   let general = `📋 PANORAMICA GENERALE\n\n`;
   general += `🌅 La giornata al decollo di ${site.name} si presenta `;
@@ -353,187 +340,185 @@ function generateAI(dayData: HourData[], site: any, thermal: any, windProfile: a
 // ============================================================
 // STILI
 // ============================================================
-const S: Record<string, React.CSSProperties> = {
-  app: {
-    background: 'linear-gradient(135deg,#0a0e27 0%,#1a1a3e 30%,#16213e 60%,#0d1b2a 100%)',
-    color: '#eee', minHeight: '100vh', fontFamily: "'Segoe UI',sans-serif", overflowX: 'hidden'
-  },
-  header: {
-    textAlign: 'center', marginBottom: 20, padding: '15px 0',
-    borderBottom: '1px solid rgba(255,255,255,0.08)'
-  },
-  logoFlex: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
-  },
-  logoRabbit: {
-    fontSize: 'clamp(2rem,6vw,2.8rem)', animation: 'hop 1.2s ease-in-out infinite'
-  },
-  logoPara: {
-    fontSize: 'clamp(1.6rem,5vw,2.2rem)', animation: 'glide 2.5s ease-in-out infinite'
-  },
-  logoText: {
-    fontSize: 'clamp(1.5rem,5vw,2.5rem)', fontWeight: 800,
-    background: 'linear-gradient(135deg,#ff6b6b,#ffd93d)', WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent'
-  },
-  sub: { fontSize: 'clamp(0.7rem,2vw,0.9rem)', color: '#888', marginTop: 6 },
-  grid: {
-    display: 'grid', gridTemplateColumns: 'minmax(260px,300px) 1fr',
-    gap: 'clamp(12px,3vw,20px)', maxWidth: 1400, margin: '0 auto', padding: '0 10px'
-  },
-  leftCol: {
-    background: 'rgba(255,255,255,0.04)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.08)',
-    padding: 12, overflow: 'hidden', backdropFilter: 'blur(10px)',
-    height: 'calc(100vh - 180px)'
-  },
-  leftTitle: { fontSize: 'clamp(0.9rem,2vw,1.1rem)', color: '#ff6b6b', marginBottom: 12, fontWeight: 700 },
-  leftList: { overflowY: 'auto', height: 'calc(100% - 40px)', paddingRight: 4 },
-  siteBtn: (sel: boolean): React.CSSProperties => ({
-    width: '100%', textAlign: 'left', background: sel ? 'rgba(255,107,107,0.12)' : 'rgba(255,255,255,0.03)',
-    border: `1px solid ${sel ? '#ff6b6b' : 'rgba(255,255,255,0.08)'}`,
-    borderRadius: 10, padding: '8px 10px', marginBottom: 6, cursor: 'pointer', transition: 'all 0.2s', color: '#eee'
-  }),
-  siteName: { fontSize: 'clamp(0.8rem,1.8vw,0.95rem)', fontWeight: 700 },
-  siteRow: { display: 'flex', justifyContent: 'space-between', fontSize: 'clamp(0.6rem,1.2vw,0.7rem)', color: '#888', marginTop: 2 },
-  badge: (color: string): React.CSSProperties => ({
-    fontSize: 'clamp(0.5rem,1vw,0.65rem)', padding: '1px 6px', borderRadius: 10, background: color, color: '#fff', fontWeight: 600
-  }),
-  rightCol: {
-    background: 'rgba(255,255,255,0.04)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.08)',
-    padding: 'clamp(10px,2vw,18px)', maxHeight: 'calc(100vh - 180px)', overflowY: 'auto', backdropFilter: 'blur(10px)'
-  },
-  siteHeader: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: 12, flexWrap: 'wrap', gap: 8
-  },
-  siteBigName: { fontSize: 'clamp(1.2rem,3.5vw,1.6rem)', fontWeight: 700, color: '#fff' },
-  siteInfo: { fontSize: 'clamp(0.65rem,1.5vw,0.8rem)', color: '#888' },
-  weatherNow: {
-    display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.08)',
-    padding: '4px 12px', borderRadius: 30
-  },
-  tempBig: { fontSize: 'clamp(1.2rem,3vw,1.5rem)', fontWeight: 700, color: '#ffd93d' },
-  tabs: {
-    display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 4, marginBottom: 14
-  },
-  tab: (active: boolean): React.CSSProperties => ({
-    padding: '6px 4px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)',
-    background: active ? 'rgba(255,107,107,0.15)' : 'transparent',
-    color: active ? '#ff6b6b' : '#aaa', cursor: 'pointer', fontWeight: 600,
-    fontSize: 'clamp(0.55rem,1.3vw,0.8rem)', textAlign: 'center', transition: 'all 0.2s'
-  }),
-  days: {
-    display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6, marginBottom: 12
-  },
-  dayBtn: (sel: boolean): React.CSSProperties => ({
-    background: sel ? 'rgba(255,107,107,0.15)' : 'rgba(255,255,255,0.04)',
-    border: `1px solid ${sel ? '#ff6b6b' : 'rgba(255,255,255,0.08)'}`,
-    borderRadius: 10, padding: '8px 6px', cursor: 'pointer', textAlign: 'center', color: '#eee'
-  }),
-  dayLabel: { fontSize: 'clamp(0.6rem,1.3vw,0.75rem)', fontWeight: 600 },
-  dayIcon: { fontSize: 'clamp(1rem,2.5vw,1.4rem)', margin: '2px 0' },
-  dayTemp: { fontSize: 'clamp(0.7rem,1.5vw,0.85rem)', color: '#ff6b6b', fontWeight: 600 },
-  dayDelta: { fontSize: 'clamp(0.5rem,1vw,0.65rem)', color: '#888' },
-  sliderRow: {
-    display: 'flex', alignItems: 'center', gap:<dyad-write path="src/pages/Index.tsx" description="App meteo parapendio completa - continuazione">
+const S: { [key: string]: React.CSSProperties | ((...args: any[]) => React.CSSProperties) } = {};
 
-  sliderRow: {
-    display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12,
-    padding: '6px 12px', background: 'rgba(255,255,255,0.04)', borderRadius: 10
-  },
-  sliderLabel: { fontSize: 'clamp(0.65rem,1.5vw,0.8rem)', color: '#888' },
-  slider: { flex: 1, accentColor: '#ff6b6b', height: 4, minWidth: 60 },
-  sliderVal: { fontSize: 'clamp(0.7rem,1.8vw,0.85rem)', fontWeight: 700, color: '#fff', minWidth: 40, textAlign: 'center' as const },
-  grid8: {
-    display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(110px,1fr))', gap: 6, marginBottom: 12
-  },
-  card: {
-    background: 'rgba(0,0,0,0.3)', padding: '8px 10px', borderRadius: 10,
-    border: '1px solid rgba(255,255,255,0.05)'
-  },
-  cardLabel: { fontSize: 'clamp(0.55rem,1.2vw,0.7rem)', color: '#888', fontWeight: 500 },
-  cardVal: { fontSize: 'clamp(0.8rem,2vw,1rem)', fontWeight: 700, color: '#fff' },
-  cardSub: { fontSize: 'clamp(0.5rem,1vw,0.65rem)', color: '#666', marginTop: 1 },
-  pressureBox: {
-    marginBottom: 12, padding: '10px 14px', background: 'rgba(0,0,0,0.3)',
-    borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)'
-  },
-  pressureGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 },
-  sectionTitle: { fontSize: 'clamp(0.8rem,2vw,0.95rem)', color: '#4fc3f7', marginBottom: 10, fontWeight: 600 },
-  windGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(90px,1fr))', gap: 6, marginBottom: 12 },
-  windCard: { textAlign: 'center' as const, padding: '8px 6px', background: 'rgba(255,255,255,0.04)', borderRadius: 8 },
-  windLabel: { fontSize: 'clamp(0.55rem,1.2vw,0.7rem)', color: '#888' },
-  windVal: { fontSize: 'clamp(0.75rem,1.8vw,0.9rem)', fontWeight: 700, color: '#fff' },
-  windDir: { fontSize: 'clamp(0.6rem,1.3vw,0.7rem)', color: '#aaa' },
-  windGust: { fontSize: 'clamp(0.5rem,1vw,0.65rem)', color: '#ff6b6b' },
-  profileContainer: {
-    marginBottom: 12, padding: '8px 10px', background: 'rgba(0,0,0,0.3)',
-    borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)', maxHeight: 320, overflowY: 'auto' as const
-  },
-  profileRow: {
-    display: 'grid', gridTemplateColumns: '55px 1fr 40px', gap: 6, alignItems: 'center',
-    padding: '2px 4px', fontSize: 'clamp(0.55rem,1.2vw,0.7rem)'
-  },
-  profileAlt: { color: '#888' },
-  barContainer: { height: 14, background: 'rgba(255,255,255,0.05)', borderRadius: 8, overflow: 'hidden' as const },
-  bar: (w: number, c: string): React.CSSProperties => ({
-    height: '100%', width: `${w}%`, background: c, borderRadius: 8,
-    display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 3, minWidth: 30,
-    transition: 'width 0.3s'
-  }),
-  barText: { fontSize: 'clamp(0.45rem,1vw,0.55rem)', color: '#fff', fontWeight: 700, textShadow: '0 1px 2px rgba(0,0,0,0.5)' },
-  shearBox: (risk: string): React.CSSProperties => ({
-    padding: 8, borderRadius: 8, border: `2px solid ${risk === 'alto' ? '#f44336' : risk === 'medio' ? '#ff9800' : '#4caf50'}`,
-    background: 'rgba(0,0,0,0.2)', marginTop: 8, fontSize: 'clamp(0.6rem,1.3vw,0.75rem)'
-  }),
-  hourlyWindGrid: {
-    display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(38px,1fr))', gap: 2, overflowX: 'auto' as const
-  },
-  hourlyCard: { textAlign: 'center' as const, padding: '4px 2px', background: 'rgba(255,255,255,0.03)', borderRadius: 4, minWidth: 34 },
-  hourlyTime: { fontSize: 'clamp(0.45rem,1vw,0.55rem)', color: '#888' },
-  hourlySpeed: { fontSize: 'clamp(0.6rem,1.5vw,0.75rem)', fontWeight: 700, color: '#fff' },
-  aiBlock: {
-    marginBottom: 10, padding: '8px 12px', background: 'rgba(0,0,0,0.3)',
-    borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)'
-  },
-  aiText: { fontSize: 'clamp(0.65rem,1.5vw,0.8rem)', color: '#e0e0e0', lineHeight: 1.6, whiteSpace: 'pre-wrap' as const },
-  stormAlert: {
-    padding: '8px 12px', borderRadius: 8, background: 'rgba(244,67,54,0.12)',
-    border: '2px solid #f44336', marginBottom: 8
-  },
-  stormSafe: {
-    padding: '8px 12px', borderRadius: 8, background: 'rgba(76,175,80,0.08)',
-    border: '1px solid rgba(76,175,80,0.3)', marginBottom: 8
-  },
-  fullAnalysis: {
-    marginBottom: 14, background: 'rgba(0,0,0,0.35)', borderRadius: 12,
-    border: '1px solid rgba(255,107,107,0.12)', overflow: 'hidden' as const
-  },
-  analysisHeader: {
-    display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
-    background: 'rgba(255,107,107,0.06)', borderBottom: '1px solid rgba(255,107,107,0.08)'
-  },
-  analysisTitle: { fontSize: 'clamp(0.8rem,2vw,1rem)', color: '#ff6b6b', fontWeight: 600, margin: 0 },
-  analysisLoading: { marginLeft: 'auto', fontSize: 'clamp(0.6rem,1.5vw,0.75rem)', color: '#ffd93d' },
-  analysisContent: { padding: '8px 14px', maxHeight: 480, overflowY: 'auto' as const },
-  footer: { textAlign: 'center' as const, marginTop: 20, padding: '14px 0', borderTop: '1px solid rgba(255,255,255,0.06)' },
-  footerText: { fontSize: 'clamp(0.55rem,1.2vw,0.7rem)', color: '#666' },
-  loadingFull: {
-    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-    minHeight: '100vh', background: 'linear-gradient(135deg,#0a0e27,#1a1a3e)', color: '#eee'
-  },
-  spinner: {
-    width: 50, height: 50, border: '4px solid rgba(255,255,255,0.1)',
-    borderTopColor: '#ff6b6b', borderRadius: '50%', animation: 'spin 1s linear infinite'
-  },
-  loadingText: { marginTop: 16, fontSize: 'clamp(1rem,4vw,1.3rem)' },
-  errorFull: {
-    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-    minHeight: '100vh', background: 'linear-gradient(135deg,#0a0e27,#1a1a3e)', color: '#eee'
-  },
-  errorText: { color: '#ff6b6b', fontSize: 'clamp(1rem,4vw,1.2rem)', marginBottom: 16 },
-  retryBtn: { background: '#ff6b6b', color: '#fff', border: 'none', padding: '10px 28px', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 'clamp(0.85rem,2.5vw,1rem)' },
+S.app = {
+  background: 'linear-gradient(135deg,#0a0e27 0%,#1a1a3e 30%,#16213e 60%,#0d1b2a 100%)',
+  color: '#eee', minHeight: '100vh', fontFamily: "'Segoe UI',sans-serif", overflowX: 'hidden'
 };
+S.header = {
+  textAlign: 'center', marginBottom: 20, padding: '15px 0',
+  borderBottom: '1px solid rgba(255,255,255,0.08)'
+};
+S.logoFlex = {
+  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
+};
+S.logoRabbit = {
+  fontSize: 'clamp(2rem,6vw,2.8rem)', animation: 'hop 1.2s ease-in-out infinite'
+};
+S.logoPara = {
+  fontSize: 'clamp(1.6rem,5vw,2.2rem)', animation: 'glide 2.5s ease-in-out infinite'
+};
+S.logoText = {
+  fontSize: 'clamp(1.5rem,5vw,2.5rem)', fontWeight: 800 as const,
+  background: 'linear-gradient(135deg,#ff6b6b,#ffd93d)', WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent'
+};
+S.sub = { fontSize: 'clamp(0.7rem,2vw,0.9rem)', color: '#888', marginTop: 6 };
+S.grid = {
+  display: 'grid', gridTemplateColumns: 'minmax(260px,300px) 1fr',
+  gap: 'clamp(12px,3vw,20px)', maxWidth: 1400, margin: '0 auto', padding: '0 10px'
+};
+S.leftCol = {
+  background: 'rgba(255,255,255,0.04)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.08)',
+  padding: 12, overflow: 'hidden', backdropFilter: 'blur(10px)',
+  height: 'calc(100vh - 180px)'
+};
+S.leftTitle = { fontSize: 'clamp(0.9rem,2vw,1.1rem)', color: '#ff6b6b', marginBottom: 12, fontWeight: 700 as const };
+S.leftList = { overflowY: 'auto', height: 'calc(100% - 40px)', paddingRight: 4 };
+S.siteBtn = (sel: boolean): React.CSSProperties => ({
+  width: '100%', textAlign: 'left' as const, background: sel ? 'rgba(255,107,107,0.12)' : 'rgba(255,255,255,0.03)',
+  border: `1px solid ${sel ? '#ff6b6b' : 'rgba(255,255,255,0.08)'}`,
+  borderRadius: 10, padding: '8px 10px', marginBottom: 6, cursor: 'pointer', transition: 'all 0.2s', color: '#eee'
+});
+S.siteName = { fontSize: 'clamp(0.8rem,1.8vw,0.95rem)', fontWeight: 700 as const };
+S.siteRow = { display: 'flex', justifyContent: 'space-between', fontSize: 'clamp(0.6rem,1.2vw,0.7rem)', color: '#888', marginTop: 2 };
+S.badge = (color: string): React.CSSProperties => ({
+  fontSize: 'clamp(0.5rem,1vw,0.65rem)', padding: '1px 6px', borderRadius: 10, background: color, color: '#fff', fontWeight: 600 as const
+});
+S.rightCol = {
+  background: 'rgba(255,255,255,0.04)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.08)',
+  padding: 'clamp(10px,2vw,18px)', maxHeight: 'calc(100vh - 180px)', overflowY: 'auto', backdropFilter: 'blur(10px)'
+};
+S.siteHeader = {
+  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+  paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: 12, flexWrap: 'wrap', gap: 8
+};
+S.siteBigName = { fontSize: 'clamp(1.2rem,3.5vw,1.6rem)', fontWeight: 700 as const, color: '#fff' };
+S.siteInfo = { fontSize: 'clamp(0.65rem,1.5vw,0.8rem)', color: '#888' };
+S.weatherNow = {
+  display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.08)',
+  padding: '4px 12px', borderRadius: 30
+};
+S.tempBig = { fontSize: 'clamp(1.2rem,3vw,1.5rem)', fontWeight: 700 as const, color: '#ffd93d' };
+S.tabs = {
+  display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 4, marginBottom: 14
+};
+S.tab = (active: boolean): React.CSSProperties => ({
+  padding: '6px 4px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)',
+  background: active ? 'rgba(255,107,107,0.15)' : 'transparent',
+  color: active ? '#ff6b6b' : '#aaa', cursor: 'pointer', fontWeight: 600 as const,
+  fontSize: 'clamp(0.55rem,1.3vw,0.8rem)', textAlign: 'center' as const, transition: 'all 0.2s'
+});
+S.days = {
+  display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6, marginBottom: 12
+};
+S.dayBtn = (sel: boolean): React.CSSProperties => ({
+  background: sel ? 'rgba(255,107,107,0.15)' : 'rgba(255,255,255,0.04)',
+  border: `1px solid ${sel ? '#ff6b6b' : 'rgba(255,255,255,0.08)'}`,
+  borderRadius: 10, padding: '8px 6px', cursor: 'pointer', textAlign: 'center' as const, color: '#eee'
+});
+S.dayLabel = { fontSize: 'clamp(0.6rem,1.3vw,0.75rem)', fontWeight: 600 as const };
+S.dayIcon = { fontSize: 'clamp(1rem,2.5vw,1.4rem)', margin: '2px 0' };
+S.dayTemp = { fontSize: 'clamp(0.7rem,1.5vw,0.85rem)', color: '#ff6b6b', fontWeight: 600 as const };
+S.dayDelta = { fontSize: 'clamp(0.5rem,1vw,0.65rem)', color: '#888' };
+S.sliderRow = {
+  display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12,
+  padding: '6px 12px', background: 'rgba(255,255,255,0.04)', borderRadius: 10
+};
+S.sliderLabel = { fontSize: 'clamp(0.65rem,1.5vw,0.8rem)', color: '#888' };
+S.slider = { flex: 1, accentColor: '#ff6b6b', height: 4, minWidth: 60 } as React.CSSProperties;
+S.sliderVal = { fontSize: 'clamp(0.7rem,1.8vw,0.85rem)', fontWeight: 700 as const, color: '#fff', minWidth: 40, textAlign: 'center' as const };
+S.grid8 = {
+  display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(110px,1fr))', gap: 6, marginBottom: 12
+};
+S.card = {
+  background: 'rgba(0,0,0,0.3)', padding: '8px 10px', borderRadius: 10,
+  border: '1px solid rgba(255,255,255,0.05)'
+};
+S.cardLabel = { fontSize: 'clamp(0.55rem,1.2vw,0.7rem)', color: '#888', fontWeight: 500 as const };
+S.cardVal = { fontSize: 'clamp(0.8rem,2vw,1rem)', fontWeight: 700 as const, color: '#fff' };
+S.cardSub = { fontSize: 'clamp(0.5rem,1vw,0.65rem)', color: '#666', marginTop: 1 };
+S.pressureBox = {
+  marginBottom: 12, padding: '10px 14px', background: 'rgba(0,<dyad-write path="src/pages/Index.tsx" description="App meteo parapendio completa - file unico corretto (continuazione)">
+  marginBottom: 12, padding: '10px 14px', background: 'rgba(0,0,0,0.3)',
+  borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)'
+};
+S.pressureGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 };
+S.sectionTitle = { fontSize: 'clamp(0.8rem,2vw,0.95rem)', color: '#4fc3f7', marginBottom: 10, fontWeight: 600 as const };
+S.windGrid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(90px,1fr))', gap: 6, marginBottom: 12 };
+S.windCard = { textAlign: 'center' as const, padding: '8px 6px', background: 'rgba(255,255,255,0.04)', borderRadius: 8 };
+S.windLabel = { fontSize: 'clamp(0.55rem,1.2vw,0.7rem)', color: '#888' };
+S.windVal = { fontSize: 'clamp(0.75rem,1.8vw,0.9rem)', fontWeight: 700 as const, color: '#fff' };
+S.windDir = { fontSize: 'clamp(0.6rem,1.3vw,0.7rem)', color: '#aaa' };
+S.windGust = { fontSize: 'clamp(0.5rem,1vw,0.65rem)', color: '#ff6b6b' };
+S.profileContainer = {
+  marginBottom: 12, padding: '8px 10px', background: 'rgba(0,0,0,0.3)',
+  borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)', maxHeight: 320, overflowY: 'auto' as const
+};
+S.profileRow = {
+  display: 'grid', gridTemplateColumns: '55px 1fr 40px', gap: 6, alignItems: 'center',
+  padding: '2px 4px', fontSize: 'clamp(0.55rem,1.2vw,0.7rem)'
+};
+S.profileAlt = { color: '#888' };
+S.barContainer = { height: 14, background: 'rgba(255,255,255,0.05)', borderRadius: 8, overflow: 'hidden' as const };
+S.bar = (w: number, c: string): React.CSSProperties => ({
+  height: '100%', width: `${w}%`, background: c, borderRadius: 8,
+  display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 3, minWidth: 30,
+  transition: 'width 0.3s'
+});
+S.barText = { fontSize: 'clamp(0.45rem,1vw,0.55rem)', color: '#fff', fontWeight: 700 as const, textShadow: '0 1px 2px rgba(0,0,0,0.5)' as const };
+S.shearBox = (risk: string): React.CSSProperties => ({
+  padding: 8, borderRadius: 8, border: `2px solid ${risk === 'alto' ? '#f44336' : risk === 'medio' ? '#ff9800' : '#4caf50'}`,
+  background: 'rgba(0,0,0,0.2)', marginTop: 8, fontSize: 'clamp(0.6rem,1.3vw,0.75rem)'
+});
+S.hourlyWindGrid = {
+  display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(38px,1fr))', gap: 2, overflowX: 'auto' as const
+};
+S.hourlyCard = { textAlign: 'center' as const, padding: '4px 2px', background: 'rgba(255,255,255,0.03)', borderRadius: 4, minWidth: 34 };
+S.hourlyTime = { fontSize: 'clamp(0.45rem,1vw,0.55rem)', color: '#888' };
+S.hourlySpeed = { fontSize: 'clamp(0.6rem,1.5vw,0.75rem)', fontWeight: 700 as const, color: '#fff' };
+S.aiBlock = {
+  marginBottom: 10, padding: '8px 12px', background: 'rgba(0,0,0,0.3)',
+  borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)'
+};
+S.aiText = { fontSize: 'clamp(0.65rem,1.5vw,0.8rem)', color: '#e0e0e0', lineHeight: 1.6, whiteSpace: 'pre-wrap' as const };
+S.stormAlert = {
+  padding: '8px 12px', borderRadius: 8, background: 'rgba(244,67,54,0.12)',
+  border: '2px solid #f44336', marginBottom: 8
+};
+S.stormSafe = {
+  padding: '8px 12px', borderRadius: 8, background: 'rgba(76,175,80,0.08)',
+  border: '1px solid rgba(76,175,80,0.3)', marginBottom: 8
+};
+S.fullAnalysis = {
+  marginBottom: 14, background: 'rgba(0,0,0,0.35)', borderRadius: 12,
+  border: '1px solid rgba(255,107,107,0.12)', overflow: 'hidden' as const
+};
+S.analysisHeader = {
+  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
+  background: 'rgba(255,107,107,0.06)', borderBottom: '1px solid rgba(255,107,107,0.08)'
+};
+S.analysisTitle = { fontSize: 'clamp(0.8rem,2vw,1rem)', color: '#ff6b6b', fontWeight: 600 as const, margin: 0 };
+S.analysisLoading = { marginLeft: 'auto', fontSize: 'clamp(0.6rem,1.5vw,0.75rem)', color: '#ffd93d' };
+S.analysisContent = { padding: '8px 14px', maxHeight: 480, overflowY: 'auto' as const };
+S.footer = { textAlign: 'center' as const, marginTop: 20, padding: '14px 0', borderTop: '1px solid rgba(255,255,255,0.06)' };
+S.footerText = { fontSize: 'clamp(0.55rem,1.2vw,0.7rem)', color: '#666' };
+S.loadingFull = {
+  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+  minHeight: '100vh', background: 'linear-gradient(135deg,#0a0e27,#1a1a3e)', color: '#eee'
+};
+S.spinner = {
+  width: 50, height: 50, border: '4px solid rgba(255,255,255,0.1)',
+  borderTopColor: '#ff6b6b', borderRadius: '50%', animation: 'spin 1s linear infinite'
+};
+S.loadingText = { marginTop: 16, fontSize: 'clamp(1rem,4vw,1.3rem)' };
+S.errorFull = {
+  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+  minHeight: '100vh', background: 'linear-gradient(135deg,#0a0e27,#1a1a3e)', color: '#eee'
+};
+S.errorText = { color: '#ff6b6b', fontSize: 'clamp(1rem,4vw,1.2rem)', marginBottom: 16 };
+S.retryBtn = { background: '#ff6b6b', color: '#fff', border: 'none', padding: '10px 28px', borderRadius: 8, cursor: 'pointer', fontWeight: 600 as const, fontSize: 'clamp(0.85rem,2.5vw,1rem)' };
 
 // ============================================================
 // APP PRINCIPALE
@@ -568,8 +553,11 @@ export default function Index() {
 
   const dayData = useMemo(() => {
     if (!meteo) return [];
-    const start = new Date(); start.setDate(start.getDate() + dayIdx); start.setHours(0, 0, 0, 0);
-    const end = new Date(start); end.setDate(end.getDate() + 1);
+    const start = new Date();
+    start.setDate(start.getDate() + dayIdx);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
     return meteo.hourly.filter(h => h.time >= start && h.time < end);
   }, [meteo, dayIdx]);
 
@@ -616,16 +604,16 @@ export default function Index() {
   const hours9to19 = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 
   if (loading) return (
-    <div style={S.loadingFull}>
-      <div style={S.spinner} />
-      <p style={S.loadingText}>🪂 Caricamento previsioni...</p>
+    <div style={S.loadingFull as React.CSSProperties}>
+      <div style={S.spinner as React.CSSProperties} />
+      <p style={S.loadingText as React.CSSProperties}>🪂 Caricamento previsioni...</p>
     </div>
   );
 
   if (error) return (
-    <div style={S.errorFull}>
-      <p style={S.errorText}>❌ {error}</p>
-      <button style={S.retryBtn} onClick={() => window.location.reload()}>🔄 Riprova</button>
+    <div style={S.errorFull as React.CSSProperties}>
+      <p style={S.errorText as React.CSSProperties}>❌ {error}</p>
+      <button style={S.retryBtn as React.CSSProperties} onClick={() => window.location.reload()}>🔄 Riprova</button>
     </div>
   );
 
@@ -641,39 +629,39 @@ export default function Index() {
   };
 
   return (
-    <div style={S.app}>
+    <div style={S.app as React.CSSProperties}>
       {/* HEADER */}
-      <header style={S.header}>
-        <div style={S.logoFlex}>
-          <span style={S.logoRabbit}>🐰</span>
-          <span style={S.logoPara}>🪂</span>
-          <span style={S.logoText}>Meteo dei Conigli</span>
+      <header style={S.header as React.CSSProperties}>
+        <div style={S.logoFlex as React.CSSProperties}>
+          <span style={S.logoRabbit as React.CSSProperties}>🐰</span>
+          <span style={S.logoPara as React.CSSProperties}>🪂</span>
+          <span style={S.logoText as React.CSSProperties}>Meteo dei Conigli</span>
         </div>
-        <p style={S.sub}>Previsioni per volo libero • Open-Meteo • SHV FSVL Style</p>
+        <p style={S.sub as React.CSSProperties}>Previsioni per volo libero • Open-Meteo • SHV FSVL Style</p>
       </header>
 
       {/* GRIGLIA PRINCIPALE */}
-      <div style={S.grid}>
+      <div style={S.grid as React.CSSProperties}>
         {/* COLONNA SINISTRA - LISTA DECOLLI */}
-        <div style={S.leftCol}>
-          <h3 style={S.leftTitle}>📍 Decolli</h3>
-          <div style={S.leftList}>
+        <div style={S.leftCol as React.CSSProperties}>
+          <h3 style={S.leftTitle as React.CSSProperties}>📍 Decolli</h3>
+          <div style={S.leftList as React.CSSProperties}>
             {DECOLLI.map(d => {
               const sel = d.id === selected;
               const cw = sel && current ? getWeatherIcon(current.weatherCode, current.isDay) : '☁️';
               return (
-                <button key={d.id} onClick={() => { setSelected(d.id); setHour(12); setDayIdx(0); }} style={S.siteBtn(sel)}>
+                <button key={d.id} onClick={() => { setSelected(d.id); setHour(12); setDayIdx(0); }} style={(S.siteBtn as Function)(sel)}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={S.siteName}>{d.name}</span>
+                    <span style={S.siteName as React.CSSProperties}>{d.name}</span>
                     <span style={{ fontSize: 'clamp(0.8rem,1.8vw,1.1rem)' }}>{sel ? cw : '☁️'}</span>
                   </div>
-                  <div style={S.siteRow}>
+                  <div style={S.siteRow as React.CSSProperties}>
                     <span>{d.valley}</span>
                     <span>{d.exposure}</span>
                   </div>
-                  <div style={{ ...S.siteRow, marginTop: 3 }}>
-                    <span style={S.badge(diffColor(d.difficulty))}>{diffLabel(d.difficulty)}</span>
-                    <span style={S.badge('#2196f3')}>{d.altitude}m</span>
+                  <div style={{ ...(S.siteRow as React.CSSProperties), marginTop: 3 }}>
+                    <span style={(S.badge as Function)(diffColor(d.difficulty))}>{diffLabel(d.difficulty)}</span>
+                    <span style={(S.badge as Function)('#2196f3')}>{d.altitude}m</span>
                   </div>
                 </button>
               );
@@ -682,25 +670,25 @@ export default function Index() {
         </div>
 
         {/* COLONNA DESTRA - DETTAGLI */}
-        <div style={S.rightCol}>
+        <div style={S.rightCol as React.CSSProperties}>
           {current && site && (
             <>
               {/* HEADER SITO */}
-              <div style={S.siteHeader}>
+              <div style={S.siteHeader as React.CSSProperties}>
                 <div>
-                  <h2 style={S.siteBigName}>{site.name}</h2>
-                  <span style={S.siteInfo}>{site.exposure} • {site.valley} • {site.altitude}m</span>
+                  <h2 style={S.siteBigName as React.CSSProperties}>{site.name}</h2>
+                  <span style={S.siteInfo as React.CSSProperties}>{site.exposure} • {site.valley} • {site.altitude}m</span>
                 </div>
-                <div style={S.weatherNow}>
+                <div style={S.weatherNow as React.CSSProperties}>
                   <span style={{ fontSize: 'clamp(1.4rem,3.5vw,2rem)' }}>{getWeatherIcon(current.weatherCode, current.isDay)}</span>
-                  <span style={S.tempBig}>{Math.round(current.temperature)}°C</span>
+                  <span style={S.tempBig as React.CSSProperties}>{Math.round(current.temperature)}°C</span>
                 </div>
               </div>
 
               {/* TABS */}
-              <div style={S.tabs}>
+              <div style={S.tabs as React.CSSProperties}>
                 {(['meteo', 'venti', 'termiche', 'analisi'] as const).map(t => (
-                  <button key={t} onClick={() => setTab(t)} style={S.tab(tab === t)}>
+                  <button key={t} onClick={() => setTab(t)} style={(S.tab as Function)(tab === t)}>
                     {t === 'meteo' ? '🌤️ Meteo' : t === 'venti' ? '💨 Venti' : t === 'termiche' ? '🔥 Termiche' : '🤖 Analisi'}
                   </button>
                 ))}
@@ -710,80 +698,72 @@ export default function Index() {
               {tab === 'meteo' && (
                 <>
                   {/* SELEZIONE GIORNO */}
-                  <div style={S.days}>
+                  <div style={S.days as React.CSSProperties}>
                     {enrichedDaily.map((d, i) => (
-                      <button key={i} onClick={() => { setDayIdx(i); setHour(12); }} style={S.dayBtn(dayIdx === i)}>
-                        <div style={S.dayLabel}>{dateLabels[i]}</div>
-                        <div style={S.dayIcon}>{getWeatherIcon(d.weatherCode, 1)}</div>
-                        <div style={S.dayTemp}>{Math.round(d.tempMax)}°/{Math.round(d.tempMin)}°</div>
-                        <div style={S.dayDelta}>Δ{d.delta}°C</div>
+                      <button key={i} onClick={() => { setDayIdx(i); setHour(12); }} style={(S.dayBtn as Function)(dayIdx === i)}>
+                        <div style={S.dayLabel as React.CSSProperties}>{dateLabels[i]}</div>
+                        <div style={S.dayIcon as React.CSSProperties}>{getWeatherIcon(d.weatherCode, 1)}</div>
+                        <div style={S.dayTemp as React.CSSProperties}>{Math.round(d.tempMax)}°/{Math.round(d.tempMin)}°</div>
+                        <div style={S.dayDelta as React.CSSProperties}>Δ{d.delta}°C</div>
                       </button>
                     ))}
                   </div>
 
                   {/* SLIDER ORA */}
-                  <div style={S.sliderRow}>
-                    <span style={S.sliderLabel}>⏰ Ora</span>
-                    <input type="range" min={0} max={23} value={hour} onChange={e => setHour(parseInt(e.target.value))} style={S.slider} />
-                    <span style={S.sliderVal}>{String(hour).padStart(2, '0')}:00</span>
+                  <div style={S.sliderRow as React.CSSProperties}>
+                    <span style={S.sliderLabel as React.CSSProperties}>⏰ Ora</span>
+                    <input type="range" min={0} max={23} value={hour} onChange={e => setHour(parseInt(e.target.value))} style={S.slider as React.CSSProperties} />
+                    <span style={S.sliderVal as React.CSSProperties}>{String(hour).padStart(2, '0')}:00</span>
                   </div>
 
                   {/* GRIGLIA 8 PARAMETRI */}
-                  <div style={S.grid8}>
-                    {/* Temp */}
-                    <div style={S.card}>
-                      <div style={S.cardLabel}>🌡️ Temperatura</div>
-                      <div style={S.cardVal}>{Math.round(current.temperature)}°C</div>
-                      <div style={S.cardSub}>Δ {thermal?.delta || 0}°C</div>
+                  <div style={S.grid8 as React.CSSProperties}>
+                    <div style={S.card as React.CSSProperties}>
+                      <div style={S.cardLabel as React.CSSProperties}>🌡️ Temperatura</div>
+                      <div style={S.cardVal as React.CSSProperties}>{Math.round(current.temperature)}°C</div>
+                      <div style={S.cardSub as React.CSSProperties}>Δ {thermal?.delta || 0}°C</div>
                     </div>
-                    {/* Umidità */}
-                    <div style={S.card}>
-                      <div style={S.cardLabel}>💧 Umidità</div>
-                      <div style={S.cardVal}>{Math.round(current.humidity)}%</div>
-                      <div style={S.cardSub}>Rugiada {Math.round(current.dewPoint)}°C</div>
+                    <div style={S.card as React.CSSProperties}>
+                      <div style={S.cardLabel as React.CSSProperties}>💧 Umidità</div>
+                      <div style={S.cardVal as React.CSSProperties}>{Math.round(current.humidity)}%</div>
+                      <div style={S.cardSub as React.CSSProperties}>Rugiada {Math.round(current.dewPoint)}°C</div>
                     </div>
-                    {/* Nuvolosità */}
-                    <div style={S.card}>
-                      <div style={S.cardLabel}>☁️ Nuvolosità</div>
-                      <div style={S.cardVal}>{Math.round(current.cloudCover)}%</div>
-                      <div style={S.cardSub}>{getCloudText(current.cloudCover)}</div>
+                    <div style={S.card as React.CSSProperties}>
+                      <div style={S.cardLabel as React.CSSProperties}>☁️ Nuvolosità</div>
+                      <div style={S.cardVal as React.CSSProperties}>{Math.round(current.cloudCover)}%</div>
+                      <div style={S.cardSub as React.CSSProperties}>{getCloudText(current.cloudCover)}</div>
                     </div>
-                    {/* Precipitazioni */}
-                    <div style={S.card}>
-                      <div style={S.cardLabel}>🌧️ Precipitazioni</div>
-                      <div style={S.cardVal}>{current.precipitation === 0 ? '✅ Assenti' : `${current.precipitation} mm`}</div>
-                      <div style={S.cardSub}>{current.precipitation === 0 ? 'Ideale' : '⚠️ Pioggia'}</div>
+                    <div style={S.card as React.CSSProperties}>
+                      <div style={S.cardLabel as React.CSSProperties}>🌧️ Precipitazioni</div>
+                      <div style={S.cardVal as React.CSSProperties}>{current.precipitation === 0 ? '✅ Assenti' : `${current.precipitation} mm`}</div>
+                      <div style={S.cardSub as React.CSSProperties}>{current.precipitation === 0 ? 'Ideale' : '⚠️ Pioggia'}</div>
                     </div>
-                    {/* Cloud Base */}
-                    <div style={S.card}>
-                      <div style={S.cardLabel}>🏔️ Base Nuvole</div>
-                      <div style={S.cardVal}>{thermal ? `${thermal.cloudBase}m` : '--'}</div>
-                      <div style={S.cardSub}>Cloud Base</div>
+                    <div style={S.card as React.CSSProperties}>
+                      <div style={S.cardLabel as React.CSSProperties}>🏔️ Base Nuvole</div>
+                      <div style={S.cardVal as React.CSSProperties}>{thermal ? `${thermal.cloudBase}m` : '--'}</div>
+                      <div style={S.cardSub as React.CSSProperties}>Cloud Base</div>
                     </div>
-                    {/* Plafond */}
-                    <div style={S.card}>
-                      <div style={S.cardLabel}>📈 Plafond</div>
-                      <div style={S.cardVal}>{thermal ? `${thermal.thermalTop}m` : '--'}</div>
-                      <div style={S.cardSub}>Thermal Top</div>
+                    <div style={S.card as React.CSSProperties}>
+                      <div style={S.cardLabel as React.CSSProperties}>📈 Plafond</div>
+                      <div style={S.cardVal as React.CSSProperties}>{thermal ? `${thermal.thermalTop}m` : '--'}</div>
+                      <div style={S.cardSub as React.CSSProperties}>Thermal Top</div>
                     </div>
-                    {/* Soaring Index */}
-                    <div style={S.card}>
-                      <div style={S.cardLabel}>🪂 Galleggiamento</div>
-                      <div style={S.cardVal}>{thermal ? `${thermal.soarIdx}/10` : '--'}</div>
-                      <div style={S.cardSub}>Soaring Index</div>
+                    <div style={S.card as React.CSSProperties}>
+                      <div style={S.cardLabel as React.CSSProperties}>🪂 Galleggiamento</div>
+                      <div style={S.cardVal as React.CSSProperties}>{thermal ? `${thermal.soarIdx}/10` : '--'}</div>
+                      <div style={S.cardSub as React.CSSProperties}>Soaring Index</div>
                     </div>
-                    {/* Vento */}
-                    <div style={S.card}>
-                      <div style={S.cardLabel}>💨 Vento</div>
-                      <div style={S.cardVal}>{getWindArrow(current.windDir)} {Math.round(current.windSpeed)} km/h</div>
-                      <div style={S.cardSub}>{getWindDir(current.windDir)} • ⚡{Math.round(current.windGust)} km/h</div>
+                    <div style={S.card as React.CSSProperties}>
+                      <div style={S.cardLabel as React.CSSProperties}>💨 Vento</div>
+                      <div style={S.cardVal as React.CSSProperties}>{getWindArrow(current.windDir)} {Math.round(current.windSpeed)} km/h</div>
+                      <div style={S.cardSub as React.CSSProperties}>{getWindDir(current.windDir)} • ⚡{Math.round(current.windGust)} km/h</div>
                     </div>
                   </div>
 
                   {/* PRESSIONE */}
-                  <div style={S.pressureBox}>
-                    <h4 style={S.sectionTitle}>📊 Pressione</h4>
-                    <div style={S.pressureGrid}>
+                  <div style={S.pressureBox as React.CSSProperties}>
+                    <h4 style={S.sectionTitle as React.CSSProperties}>📊 Pressione</h4>
+                    <div style={S.pressureGrid as React.CSSProperties}>
                       <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: 'clamp(0.6rem,1.3vw,0.75rem)', color: '#888' }}>Attuale</div>
                         <div style={{ fontSize: 'clamp(1rem,2.5vw,1.2rem)', fontWeight: 700, color: '#fff' }}>{Math.round(current.pressure)} hPa</div>
@@ -803,8 +783,8 @@ export default function Index() {
 
                   {/* ALLERTA TEMPORALI */}
                   {aiData?.thunderstorm && (
-                    <div style={aiData.thunderstorm.includes('ALLERTA') ? S.stormAlert : S.stormSafe}>
-                      <div style={S.aiText}>{aiData.thunderstorm}</div>
+                    <div style={aiData.thunderstorm.includes('ALLERTA') ? (S.stormAlert as React.CSSProperties) : (S.stormSafe as React.CSSProperties)}>
+                      <div style={S.aiText as React.CSSProperties}>{aiData.thunderstorm}</div>
                     </div>
                   )}
                 </>
@@ -813,45 +793,43 @@ export default function Index() {
               {/* TAB VENTI */}
               {tab === 'venti' && (
                 <>
-                  {/* VENTO A 3 QUOTE */}
-                  <h4 style={S.sectionTitle}>💨 Vento a differenti quote</h4>
-                  <div style={S.windGrid}>
-                    <div style={S.windCard}>
-                      <div style={S.windLabel}>10m</div>
-                      <div style={S.windVal}>{getWindArrow(current.windDir)} {Math.round(current.windSpeed)} km/h</div>
-                      <div style={S.windDir}>{getWindDir(current.windDir)}</div>
-                      <div style={S.windGust}>⚡{Math.round(current.windGust)} km/h</div>
+                  <h4 style={S.sectionTitle as React.CSSProperties}>💨 Vento a differenti quote</h4>
+                  <div style={S.windGrid as React.CSSProperties}>
+                    <div style={S.windCard as React.CSSProperties}>
+                      <div style={S.windLabel as React.CSSProperties}>10m</div>
+                      <div style={S.windVal as React.CSSProperties}>{getWindArrow(current.windDir)} {Math.round(current.windSpeed)} km/h</div>
+                      <div style={S.windDir as React.CSSProperties}>{getWindDir(current.windDir)}</div>
+                      <div style={S.windGust as React.CSSProperties}>⚡{Math.round(current.windGust)} km/h</div>
                     </div>
-                    <div style={S.windCard}>
-                      <div style={S.windLabel}>80m</div>
-                      <div style={S.windVal}>
+                    <div style={S.windCard as React.CSSProperties}>
+                      <div style={S.windLabel as React.CSSProperties}>80m</div>
+                      <div style={S.windVal as React.CSSProperties}>
                         {current.wind80m ? `${getWindArrow(current.windDir80m!)} ${Math.round(current.wind80m)}` : 'N/D'}
                       </div>
-                      <div style={S.windDir}>{current.wind80m ? getWindDir(current.windDir80m!) : '--'}</div>
-                      <div style={S.windGust}>{current.wind80m ? `⚡${Math.round(current.wind80m * 1.3)} km/h` : ''}</div>
+                      <div style={S.windDir as React.CSSProperties}>{current.wind80m ? getWindDir(current.windDir80m!) : '--'}</div>
+                      <div style={S.windGust as React.CSSProperties}>{current.wind80m ? `⚡${Math.round(current.wind80m * 1.3)} km/h` : ''}</div>
                     </div>
-                    <div style={S.windCard}>
-                      <div style={S.windLabel}>120m</div>
-                      <div style={S.windVal}>
+                    <div style={S.windCard as React.CSSProperties}>
+                      <div style={S.windLabel as React.CSSProperties}>120m</div>
+                      <div style={S.windVal as React.CSSProperties}>
                         {current.wind120m ? `${getWindArrow(current.windDir120m!)} ${Math.round(current.wind120m)}` : 'N/D'}
                       </div>
-                      <div style={S.windDir}>{current.wind120m ? getWindDir(current.windDir120m!) : '--'}</div>
-                      <div style={S.windGust}>{current.wind120m ? `⚡${Math.round(current.wind120m * 1.35)} km/h` : ''}</div>
+                      <div style={S.windDir as React.CSSProperties}>{current.wind120m ? getWindDir(current.windDir120m!) : '--'}</div>
+                      <div style={S.windGust as React.CSSProperties}>{current.wind120m ? `⚡${Math.round(current.wind120m * 1.35)} km/h` : ''}</div>
                     </div>
                   </div>
 
-                  {/* PROFILO VENTO 400m-4000m */}
-                  <h4 style={S.sectionTitle}>📊 Profilo Vento (400m - 4000m)</h4>
-                  <div style={S.profileContainer}>
+                  <h4 style={S.sectionTitle as React.CSSProperties}>📊 Profilo Vento (400m - 4000m)</h4>
+                  <div style={S.profileContainer as React.CSSProperties}>
                     {windProfile?.map((p, i) => {
                       const maxSpd = current.windSpeed * 3.5;
                       const bw = Math.min(100, (p.speed / maxSpd) * 100);
                       return (
-                        <div key={i} style={S.profileRow}>
-                          <span style={S.profileAlt}>{p.alt === 10 ? 'Sup' : `${p.alt}m`}</span>
-                          <div style={S.barContainer}>
-                            <div style={S.bar(bw, getWindColor(p.speed, maxSpd))}>
-                              <span style={S.barText}>{p.speed}</span>
+                        <div key={i} style={S.profileRow as React.CSSProperties}>
+                          <span style={S.profileAlt as React.CSSProperties}>{p.alt === 10 ? 'Sup' : `${p.alt}m`}</span>
+                          <div style={S.barContainer as React.CSSProperties}>
+                            <div style={(S.bar as Function)(bw, getWindColor(p.speed, maxSpd))}>
+                              <span style={S.barText as React.CSSProperties}>{p.speed}</span>
                             </div>
                           </div>
                           <span style={{ color: '#aaa', textAlign: 'center' }}>{getWindArrow(p.dir)}</span>
@@ -860,27 +838,26 @@ export default function Index() {
                     })}
                   </div>
 
-                  {/* ANALISI SHEAR */}
+                  {/* SHEAR */}
                   {windProfile && (() => {
                     const shear = calcShear(windProfile);
                     return (
-                      <div style={S.shearBox(shear.risk)}>
+                      <div style={(S.shearBox as Function)(shear.risk)}>
                         <strong>🌪️ Wind Shear: {shear.shear}</strong><br />
                         {shear.desc}
                       </div>
                     );
                   })()}
 
-                  {/* VENTO ORARIO */}
-                  <h4 style={{ ...S.sectionTitle, marginTop: 12 }}>📊 Vento Orario (9:00-19:00)</h4>
-                  <div style={S.hourlyWindGrid}>
+                  <h4 style={{ ...(S.sectionTitle as React.CSSProperties), marginTop: 12 }}>📊 Vento Orario (9:00-19:00)</h4>
+                  <div style={S.hourlyWindGrid as React.CSSProperties}>
                     {hours9to19.map(h => {
                       const hd = dayData.find(x => x.time.getHours() === h);
                       if (!hd) return null;
                       return (
-                        <div key={h} style={S.hourlyCard}>
-                          <div style={S.hourlyTime}>{String(h).padStart(2, '0')}:00</div>
-                          <div style={S.hourlySpeed}>{Math.round(hd.windSpeed)}</div>
+                        <div key={h} style={S.hourlyCard as React.CSSProperties}>
+                          <div style={S.hourlyTime as React.CSSProperties}>{String(h).padStart(2, '0')}:00</div>
+                          <div style={S.hourlySpeed as React.CSSProperties}>{Math.round(hd.windSpeed)}</div>
                           <div style={{ fontSize: 'clamp(0.45rem,1vw,0.55rem)', color: '#666' }}>{getWindDir(hd.windDir)}</div>
                           <div style={{ fontSize: 'clamp(0.5rem,1.2vw,0.65rem)' }}>{getWindArrow(hd.windDir)}</div>
                         </div>
@@ -894,8 +871,8 @@ export default function Index() {
               {tab === 'termiche' && (
                 <>
                   {aiData && ['thermal', 'altitude', 'hourly'].map(key => (
-                    <div key={key} style={S.aiBlock}>
-                      <div style={S.aiText}>{aiData[key]}</div>
+                    <div key={key} style={S.aiBlock as React.CSSProperties}>
+                      <div style={S.aiText as React.CSSProperties}>{aiData[key]}</div>
                     </div>
                   ))}
                 </>
@@ -903,16 +880,16 @@ export default function Index() {
 
               {/* TAB ANALISI */}
               {tab === 'analisi' && (
-                <div style={S.fullAnalysis}>
-                  <div style={S.analysisHeader}>
+                <div style={S.fullAnalysis as React.CSSProperties}>
+                  <div style={S.analysisHeader as React.CSSProperties}>
                     <span style={{ fontSize: 'clamp(1rem,2.5vw,1.3rem)' }}>🤖</span>
-                    <h4 style={S.analysisTitle}>Analisi Completa</h4>
-                    {aiLoading && <span style={S.analysisLoading}>⏳ Analisi...</span>}
+                    <h4 style={S.analysisTitle as React.CSSProperties}>Analisi Completa</h4>
+                    {aiLoading && <span style={S.analysisLoading as React.CSSProperties}>⏳ Analisi...</span>}
                   </div>
-                  <div style={S.analysisContent}>
+                  <div style={S.analysisContent as React.CSSProperties}>
                     {aiData && !aiLoading && ['general', 'advice', 'pressure', 'thunderstorm'].map(key => (
-                      <div key={key} style={S.aiBlock}>
-                        <div style={S.aiText}>{aiData[key]}</div>
+                      <div key={key} style={S.aiBlock as React.CSSProperties}>
+                        <div style={S.aiText as React.CSSProperties}>{aiData[key]}</div>
                       </div>
                     ))}
                   </div>
@@ -924,9 +901,9 @@ export default function Index() {
       </div>
 
       {/* FOOTER */}
-      <footer style={S.footer}>
-        <p style={S.footerText}>Dati da Open-Meteo.com • Ispirato SHV FSVL • Beta v2.0</p>
-        <p style={{ ...S.footerText, marginTop: 4, color: '#444' }}>🐰 Vola sicuro! 🪂</p>
+      <footer style={S.footer as React.CSSProperties}>
+        <p style={S.footerText as React.CSSProperties}>Dati da Open-Meteo.com • Ispirato SHV FSVL • Beta v2.0</p>
+        <p style={{ ...(S.footerText as React.CSSProperties), marginTop: 4, color: '#444' }}>🐰 Vola sicuro! 🪂</p>
       </footer>
 
       {/* STILI DINAMICI */}
@@ -935,9 +912,7 @@ export default function Index() {
         @keyframes hop { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
         @keyframes glide { 0%,100% { transform: rotate(-3deg) translateY(0); } 50% { transform: rotate(3deg) translateY(-6px); } }
         @media (max-width: 768px) {
-          #root > div > div:nth-child(2) { grid-template-columns: 1fr !important; }
-          #root > div > div:nth-child(2) > div:first-child { height: auto !important; max-height: 250px !important; }
-          #root > div > div:nth-child(2) > div:last-child { max-height: none !important; }
+          .meteo-grid { grid-template-columns: 1fr !important; }
         }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 10px; }
