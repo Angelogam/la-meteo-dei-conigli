@@ -4,8 +4,17 @@ import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { DECOLLI, type Decollo } from "@/data/decolli";
 import {
   fetchMeteoCompleta,
-  calculateThermalProfile,
+  getWeatherIcon,
+  getWeatherDescription,
+  getWindDirection,
+  getWindArrow,
+  getCloudCondition,
+  getThermalIndex,
+  getWindAtAltitude,
   getWindProfile,
+  calculateWindShear,
+  getWindColor,
+  calculateThermalProfile,
 } from "@/utils/meteoUtils";
 import { generateAIAnalysis } from "@/utils/meteoAnalisi";
 
@@ -199,6 +208,15 @@ export default function Index() {
     else if (gradient < -3) description = "⬇️ Pressione in diminuzione - peggioramento";
     else description = "➡️ Pressione stabile";
     return { gradient: Math.round(gradient * 10) / 10, description };
+  };
+
+  // Funzione per determinare le ore migliori per volare
+  const getBestHours = () => {
+    if (!dayData || dayData.length === 0) return [];
+    return dayData.filter(h => {
+      const hour = h.time.getHours();
+      return hour >= 10 && hour <= 17 && h.windSpeed < 22 && h.cloudCover < 70 && h.precipitation < 0.5;
+    }).map(h => h.time.getHours());
   };
 
   if (loading) return <LoadingScreen />;
