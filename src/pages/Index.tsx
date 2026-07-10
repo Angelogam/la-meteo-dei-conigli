@@ -281,8 +281,8 @@ export default function Index() {
     <div style={{ background: "linear-gradient(135deg,#0a0e27 0%,#1a1a3e 30%,#16213e 60%,#0d1b2a 100%)", color: "#eee", minHeight: "100vh", fontFamily: "'Segoe UI',sans-serif" }}>
       <header className="text-center mb-5 py-4 border-b border-white/10">
         <div className="flex items-center justify-center gap-2.5">
-          <span className="text-4xl md:text-5xl animate-bounce">🐰</span>
-          <span className="text-3xl md:text-4xl animate-pulse">🪂</span>
+          <span className="text-4xl md:text-5xl animate-bounce">&#x1F430;</span>
+          <span className="text-3xl md:text-4xl animate-pulse">&#x1FA82;</span>
           <span className="text-3xl md:text-5xl font-extrabold bg-gradient-to-r from-red-400 to-yellow-300 bg-clip-text text-transparent">Meteo dei Conigli</span>
         </div>
         <p className="text-sm text-gray-500 mt-1.5">Previsioni per volo libero - Open-Meteo - SHV FSVL Style</p>
@@ -317,7 +317,7 @@ export default function Index() {
                 </div>
                 <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
                   <span className="text-2xl md:text-3xl">{wic(current.weatherCode, current.isDay)}</span>
-                  <span className="text-xl md:text-2xl font-bold text-yellow-300">{Math.round(current.temperature)}°C</span>
+                  <span className="text-xl md:text-2xl font-bold text-yellow-300">{Math.round(current.temperature)}&deg;C</span>
                 </div>
               </div>
               <div className="grid grid-cols-4 gap-1 mb-4">
@@ -331,29 +331,29 @@ export default function Index() {
                 <>
                   <div className="grid grid-cols-3 gap-1.5 mb-3">
                     {enrichedDaily.map((d, i) => (
-                      <button key={i} onClick={() => { set setDayIdx(i); setHour(12); }} className={"rounded-xl p-2 text-center cursor-pointer " + (dayIdx === i ? "bg-red-500/15 border border-red-500" : "bg-black/20 border border-white/10")}>
+                      <button key={i<dyad-write path="src/pages/Index.tsx" file-mode="append">                      <button key={i} onClick={() => { setDayIdx(i); setHour(12); }} className={"rounded-xl p-2 text-center cursor-pointer " + (dayIdx === i ? "bg-red-500/15 border border-red-500" : "bg-black/20 border border-white/10")}>
                         <div className="text-xs font-semibold">{dateLabels[i]}</div>
                         <div className="text-xl my-0.5">{wic(d.weatherCode, 1)}</div>
-                        <div className="text-sm text-red-400 font-semibold">{Math.round(d.tempMax)}°/{Math.round(d.tempMin)}°</div>
-                        <div className="text-xs text-gray-500">Δ{d.delta}°C</div>
+                        <div className="text-sm text-red-400 font-semibold">{Math.round(d.tempMax)}&deg;/{Math.round(d.tempMin)}&deg;</div>
+                        <div className="text-xs text-gray-500">&Delta;{d.delta}&deg;C</div>
                       </button>
                     ))}
                   </div>
                   <div className="flex items-center gap-2.5 mb-3 py-1.5 px-3 bg-white/5 rounded-xl">
-                    <span className="text-xs text-gray-500">⏰ Ora</span>
+                    <span className="text-xs text-gray-500">&#x23F0; Ora</span>
                     <input type="range" min={0} max={23} value={hour} onChange={(e) => setHour(parseInt(e.target.value))} className="flex-1 h-1 accent-red-400 min-w-[60px]" />
                     <span className="text-sm font-bold text-white min-w-[40px] text-center">{String(hour).padStart(2, "0")}:00</span>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-3">
                     {[
-                      ["Temperatura", Math.round(current.temperature) + "°C", "Δ " + (thermal?.delta || 0) + "°C"],
-                      ["Umidità", Math.round(current.humidity) + "%", "Rugiada " + Math.round(current.dewPoint) + "°C"],
-                      ["Nuvolosità", Math.round(current.cloudCover) + "%", ct(current.cloudCover)],
+                      ["Temperatura", Math.round(current.temperature) + "&deg;C", "&Delta; " + (thermal?.delta || 0) + "&deg;C"],
+                      ["Umidit\u00e0", Math.round(current.humidity) + "%", "Rugiada " + Math.round(current.dewPoint) + "&deg;C"],
+                      ["Nuvolosit\u00e0", Math.round(current.cloudCover) + "%", ct(current.cloudCover)],
                       ["Precipitazioni", current.precipitation === 0 ? "Assenti" : current.precipitation + " mm", current.precipitation === 0 ? "Ideale" : "Pioggia"],
                       ["Base Nuvole", thermal ? thermal.cloudBase + "m" : "--", "Cloud Base"],
                       ["Plafond", thermal ? thermal.thermalTop + "m" : "--", "Thermal Top"],
                       ["Galleggiamento", thermal ? thermal.soarIdx + "/10" : "--", "Soaring Index"],
-                      ["Vento", wa(current.windDir) + " " + Math.round(current.windSpeed) + " km/h", wd(current.windDir) + " • ⚡" + Math.round(current.windGust) + " km/h"],
+                      ["Vento", wa(current.windDir) + " " + Math.round(current.windSpeed) + " km/h", wd(current.windDir) + " \u2022 \u26A1" + Math.round(current.windGust) + " km/h"],
                     ].map(([l, v, s]) => (
                       <div key={l as string} className="bg-black/30 p-2 rounded-xl border border-white/5">
                         <div className="text-xs text-gray-500 font-medium">{l}</div>
@@ -372,7 +372,7 @@ export default function Index() {
                       <div className="text-center">
                         <div className="text-xs text-gray-500">Gradiente</div>
                         <div className="text-lg font-bold" style={{color: pressureGrad.grad > 0 ? "#4caf50" : pressureGrad.grad < 0 ? "#f44336" : "#ffd93d"}}>
-                          {pressureGrad.grad > 0 ? "↑" : pressureGrad.grad < 0 ? "↓" : "→"} {Math.abs(pressureGrad.grad)} hPa
+                          {pressureGrad.grad > 0 ? "\u2191" : pressureGrad.grad < 0 ? "\u2193" : "\u2192"} {Math.abs(pressureGrad.grad)} hPa
                         </div>
                         <div className="text-xs text-gray-500">{pressureGrad.desc}</div>
                       </div>
