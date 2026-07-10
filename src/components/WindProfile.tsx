@@ -168,11 +168,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: "bold",
     textShadow: "0 1px 2px rgba(0,0,0,0.5)",
   },
-  windProfileDir: {
-    fontSize: "clamp(0.65rem, 1.5vw, 0.8rem)",
-    color: "#aaa",
-    textAlign: "center",
-  },
   shearAnalysis: {
     marginTop: "8px",
     padding: "8px",
@@ -185,8 +180,6 @@ const styles: Record<string, React.CSSProperties> = {
     border: "2px solid",
     background: "rgba(0,0,0,0.2)",
   },
-  shearTitle: {
-    fontSize: "clamp(0.7rem,<dyad-write path="src/components/WindProfile.tsx" description="Profilo vento 400-4000m">
   shearTitle: {
     fontSize: "clamp(0.7rem, 1.8vw, 0.85rem)",
     fontWeight: "bold",
