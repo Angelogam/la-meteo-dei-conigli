@@ -99,3 +99,45 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Animazioni per l'app meteo */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes hop {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-8px) scale(1.05); }
+}
+
+@keyframes glide {
+  0%, 100% { transform: rotate(-3deg) translateY(0px); }
+  50% { transform: rotate(3deg) translateY(-6px); }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.03);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.12);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.2);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.12) rgba(255,255,255,0.03);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .meteo-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
