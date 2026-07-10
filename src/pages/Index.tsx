@@ -101,6 +101,17 @@ function ctp(dayData: HourData[], el: number) {
   };
 }
 
+function calcTurbulence(dayData: HourData[], h: number, alt: number): number {
+  const hd = dayData.find((x) => x.time.getHours() === h);
+  if (!hd) return 0;
+  const gustFactor = hd.windGust / Math.max(hd.windSpeed, 1);
+  const windFactor = Math.min(hd.windSpeed * 0.12, 2.5);
+  const cloudFactor = hd.cloudCover > 70 ? 1.5 : hd.cloudCover > 40 ? 0.8 : 0.3;
+  const altFactor = (alt - 500) / 3000;
+  const val = Math.min(5, Math.max(1, Math.round(windFactor + cloudFactor + gustFactor * 0.5 + altFactor)));
+  return val;
+}
+
 function genAI(dayData: HourData[], site: any, thermal: any, wp: any[]) {
   if (!dayData?.length) return null;
   const maxW = Math.max(...dayData.map((h) => h.windSpeed));
@@ -181,8 +192,24 @@ export default function Index() {
   const dateLabels = enrichedDaily.map((d) => d.date.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" }));
   const pressureGrad = useMemo(() => { if (dayData.length < 2) return { grad: 0, desc: "Dati insufficienti" }; const g = dayData[dayData.length - 1].pressure - dayData[0].pressure; return { grad: Math.round(g * 10) / 10, desc: g > 3 ? "⬆️ In aumento" : g < -3 ? "⬇️ In diminuzione" : "➡️ Stabile" }; }, [dayData]);
   const hours9to19 = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+  const turbQuotes = [1000, 1500, 2000, 2500, 3000];
   const diffColor = (d: number) => d <= 2 ? "#4caf50" : d <= 3 ? "#ff9800" : "#f44336";
   const diffLabel = (d: number) => d <= 2 ? "🟢 Facile" : d <= 3 ? "🟡 Medio" : "🔴 Difficile";
+
+  const turbColor = (v: number) => {
+    if (v <= 1) return "#4caf50";
+    if (v <= 2) return "#8bc34a";
+    if (v <= 3) return "#ff9800";
+    if (v <= 4) return "#ff5722";
+    return "#f44336";
+  };
+  const turbLabel = (v: number) => {
+    if (v <= 1) return "🟢 Calma";
+    if (v <= 2) return "🟡 Leggera";
+    if (v <= 3) return "🟠 Moderata";
+    if (v <= 4) return "🔴 Forte";
+    return "⛔ Estrema";
+  };
 
   if (loading) return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "linear-gradient(135deg,#0a0e27,#1a1a3e)", color: "#eee" }}>
@@ -212,6 +239,7 @@ export default function Index() {
         <div className="left-panel" style={{ background: "rgba(255,255,255,0.04)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", padding: 12, overflow: "hidden", backdropFilter: "blur(10px)", height: "calc(100vh - 180px)" }}>
           <h3 style={{ fontSize: "clamp(0.9rem,2vw,1.1rem)", color: "#ff6b6b", marginBottom: 12, fontWeight: 700 }}>📍 Decolli</h3>
           <div style={{ overflowY: "auto", height: "calc(100% - 40px)", paddingRight: 4 }}>
+            {```jsx
             {DECOLLI.map((d) => {
               const sel = d.id === selected;
               const cw = sel && current ? wic(current.weatherCode, current.isDay) : "☁️";
@@ -308,7 +336,54 @@ export default function Index() {
               )}
               {tab === "venti" && (
                 <>
-                  <h4 style={{ fontSize: "clamp(0.8rem,2vw,0.95rem)", color: "#4fc3f7", marginBottom: 10, fontWeight: 600 }}>💨 Vento a differenti quote</h4>
+                  <h4 style={{ fontSize: "clamp(0.8rem,2vw,0.95rem)", color: "#4fc3f7", marginBottom: 10, fontWeight: 600 }}>💨 Turbolenza per quota</h4>
+                  <div style={{ overflowX: "auto", marginBottom: 12 }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "clamp(0.55rem,1.2vw,0.7rem)", minWidth: 500 }}>
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: "center", padding: "4px 6px", color: "#888", borderBottom: "1px solid rgba(255,255,255,0.08)", position: "sticky", top: 0, background: "#0d1b2a" }}>Ora</th>
+                          {turbQuotes.map((q) => (
+                            <th key={q} style={{ textAlign: "center", padding: "4px 6px", color: "#4fc3f7", borderBottom: "1px solid rgba(255,255,255,0.08)", position: "sticky", top: 0, background: "#0d1b2a" }}>{q}m</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {hours9to19.map((h) => {
+                          const hd = dayData.find((x) => x.time.getHours() === h);
+                          if (!hd) return null;
+                          return (
+                            <tr key={h}>
+                              <td style={{ textAlign: "center", padding: "3px 4px", color: "#888", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>{String(h).padStart(2, "0")}:00</td>
+                              {turbQuotes.map((q) => {
+                                const tv = calcTurbulence(dayData, h, q);
+                                return (
+                                  <td key={q} style={{ textAlign: "center", padding: "3px 4px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                                    <span style={{ display: "inline-block", width: 24, height: 24, lineHeight: "24px", borderRadius: "50%", background: turbColor(tv), color: "#fff", fontWeight: 700, fontSize: "clamp(0.5rem,1.1vw,0.65rem)" }}>{tv}</span>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12, padding: "8px 12px", background: "rgba(0,0,0,0.3)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <div style={{ fontSize: "clamp(0.55rem,1.2vw,0.65rem)", color: "#888", width: "100%", marginBottom: 4, fontWeight: 600 }}>Legenda Turbolenza:</div>
+                    {[
+                      [1, "🟢 Calma"],
+                      [2, "🟡 Leggera"],
+                      [3, "🟠 Moderata"],
+                      [4, "🔴 Forte"],
+                      [5, "⛔ Estrema"],
+                    ].map(([v, l]) => (
+                      <div key={v} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <span style={{ display: "inline-block", width: 18, height: 18, lineHeight: "18px", borderRadius: "50%", background: turbColor(v as number), color: "#fff", fontWeight: 700, fontSize: "clamp(0.45rem,1vw,0.55rem)", textAlign: "center" }}>{v}</span>
+                        <span style={{ fontSize: "clamp(0.5rem,1.1vw,0.6rem)", color: "#ccc" }}>{l}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <h4 style={{ fontSize: "clamp(0.8rem,2vw,0.95rem)", color: "#4fc3f7", marginBottom: 10, fontWeight: 600 }}>💨 Venti in quota (10m / 80m / 120m)</h4>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(90px,1fr))", gap: 6, marginBottom: 12 }}>
                     {[
                       ["10m", wa(current.windDir) + " " + Math.round(current.windSpeed) + " km/h", wd(current.windDir), "⚡" + Math.round(current.windGust) + " km/h"],
@@ -343,10 +418,210 @@ export default function Index() {
                     })}
                   </div>
                   {windProfile && (() => { const sh = cs(windProfile); return (<div style={{ padding: 8, borderRadius: 8, border: "2px solid " + (sh.risk === "alto" ? "#f44336" : sh.risk === "medio" ? "#ff9800" : "#4caf50"), background: "rgba(0,0,0,0.2)", marginTop: 8, fontSize: "clamp(0.6rem,1.3vw,0.75rem)" }}><strong>🌪️ Wind Shear: {sh.shear}</strong><br />{sh.desc}</div>); })()}
-                  <h4 style={{ fontSize: "clamp(0.8rem,2vw,0.95rem)", color: "#4fc3f7", marginBottom: 10, fontWeight: 600, marginTop: 12 }}>📊 Vento Orario (9:00-19:00)</h4>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(38px,1fr))", gap: 2, overflowX: "auto" }}>
-                    {hours9to19.map((h) => { const hd = dayData.find((x) => x.time.getHours() === h); if (!hd) return null; return (<div key={h} style={{ textAlign: "center", padding: "4px 2px", background: "rgba(255,255,255,0.03)", borderRadius: 4, minWidth: 34 }}><div style={{ fontSize: "clamp(0.45rem,1vw,0.55rem)", color: "#888" }}>{String(h).padStart(2, "0")}:00</div><div style={{ fontSize: "clamp(0.6rem,1.5vw,0.75rem)", fontWeight: 700, color: "#fff" }}>{Math.round(hd.windSpeed)}</div><div style={{ fontSize: "clamp(0.45rem,1vw,0.55rem)", color: "#666" }}>{wd(hd.windDir)}</div><div style={{ fontSize: "clamp(0.5rem,1.2vw,0.65rem)" }}>{wa(hd.windDir)}</div></div>); })}
+                </>
+              )}
+              {tab === "termiche" && (
+                <>{aiData && ["thermal", "altitude", "hourly"].map((key) => (<div key={key} style={{ marginBottom: 10, padding: "8px 12px", background: "rgba(0,0,0,0.3)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" }}><div style={{ fontSize: "clamp(0.65rem,1.5vw,0.8rem)", color: "#e0e0e0", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{aiData[key]}</div></div>))}</>
+              )}
+              {tab === "analisi" && (
+                <div style={{ marginBottom: 14, background: "rgba(0,0,0,0.35)", borderRadius: 12, border: "1px solid rgba(255,107,107,0.12)", overflow: "hidden" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", background: "rgba(255,107,107,0.06)", borderBottom: "1px solid rgba(255,107,107,0.08)" }}>
+                    <span style={{ fontSize: "clamp(1rem,2.5vw,1.3rem)" }}>🤖</span>
+                    <h4 style={{ fontSize: "clamp(0.8rem,2vw,1rem)", color: "#ff6b6b", fontWeight: 600, margin: 0 }}>Analisi Completa</h4>
+                    {aiLoading && <span style={{ marginLeft: "auto", fontSize: "clamp(0.6rem,1.5vw,0.75rem)", color: "#ffd93d" }}>⏳ Analisi...</span>}
                   </div>
+                  <div style={{ padding: "8px 14px", maxHeight: 480, overflowY: "auto" }}>
+                    {aiData && !aiLoading && ["general", "advice", "pressure", "thunderstorm"].map((key) => (
+                      <div key={key} style={{ marginBottom: 10, padding: "8px 12px", background: "rgba(0,0,0,0.3)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" }}>
+                        <div style={{ fontSize: "clamp(0.65rem,1.5vw,0.8rem)", color: "#e0e0e0", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{aiData[key]}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+      <footer style={{ textAlign: "center", marginTop: 20, padding: "14px 0", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <p style={{ fontSize: "clamp(0.55rem,1.2vw,0.7rem)", color: "#666" }}>Dati da Open-Meteo.com • Ispirato SHV FSVL • Beta v2.0</p>
+        <p style={{ fontSize: "clamp(0.55rem,1.2vw,0.7rem)", color: "#444", marginTop: 4 }}>🐰 Vola sicuro! 🪂</p>
+      </footer>
+    </div>
+  );
+}
+```
+
+<dyad-command type="restart"></dyad-command>Ecco la continuazione del file da dove si era interrotto.
+
+<dyad-write path="src/pages/Index.tsx" description="Completamento del file - ultima parte del JSX">
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="right-panel" style={{ background: "rgba(255,255,255,0.04)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", padding: "clamp(10px,2vw,18px)", maxHeight: "calc(100vh - 180px)", overflowY: "auto", backdropFilter: "blur(10px)" }}>
+          {current && site && (
+            <>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 12, borderBottom: "1px solid rgba(255,255,255,0.08)", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+                <div>
+                  <h2 style={{ fontSize: "clamp(1.2rem,3.5vw,1.6rem)", fontWeight: 700, color: "#fff" }}>{site.name}</h2>
+                  <span style={{ fontSize: "clamp(0.65rem,1.5vw,0.8rem)", color: "#888" }}>{site.exposure} • {site.valley} • {site.altitude}m</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.08)", padding: "4px 12px", borderRadius: 30 }}>
+                  <span style={{ fontSize: "clamp(1.4rem,3.5vw,2rem)" }}>{wic(current.weatherCode, current.isDay)}</span>
+                  <span style={{ fontSize: "clamp(1.2rem,3vw,1.5rem)", fontWeight: 700, color: "#ffd93d" }}>{Math.round(current.temperature)}°C</span>
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 4, marginBottom: 14 }}>
+                {(["meteo", "venti", "termiche", "analisi"] as const).map((t) => (
+                  <button key={t} onClick={() => setTab(t)} style={{ padding: "6px 4px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: tab === t ? "rgba(255,107,107,0.15)" : "transparent", color: tab === t ? "#ff6b6b" : "#aaa", cursor: "pointer", fontWeight: 600, fontSize: "clamp(0.55rem,1.3vw,0.8rem)", textAlign: "center", transition: "all 0.2s" }}>
+                    {t === "meteo" ? "🌤️ Meteo" : t === "venti" ? "💨 Venti" : t === "termiche" ? "🔥 Termiche" : "🤖 Analisi"}
+                  </button>
+                ))}
+              </div>
+              {tab === "meteo" && (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, marginBottom: 12 }}>
+                    {enrichedDaily.map((d, i) => (
+                      <button key={i} onClick={() => { setDayIdx(i); setHour(12); }} style={{ background: dayIdx === i ? "rgba(255,107,107,0.15)" : "rgba(255,255,255,0.04)", border: "1px solid " + (dayIdx === i ? "#ff6b6b" : "rgba(255,255,255,0.08)"), borderRadius: 10, padding: "8px 6px", cursor: "pointer", textAlign: "center", color: "#eee" }}>
+                        <div style={{ fontSize: "clamp(0.6rem,1.3vw,0.75rem)", fontWeight: 600 }}>{dateLabels[i]}</div>
+                        <div style={{ fontSize: "clamp(1rem,2.5vw,1.4rem)", margin: "2px 0" }}>{wic(d.weatherCode, 1)}</div>
+                        <div style={{ fontSize: "clamp(0.7rem,1.5vw,0.85rem)", color: "#ff6b6b", fontWeight: 600 }}>{Math.round(d.tempMax)}°/{Math.round(d.tempMin)}°</div>
+                        <div style={{ fontSize: "clamp(0.5rem,1vw,0.65rem)", color: "#888" }}>Δ{d.delta}°C</div>
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, padding: "6px 12px", background: "rgba(255,255,255,0.04)", borderRadius: 10 }}>
+                    <span style={{ fontSize: "clamp(0.65rem,1.5vw,0.8rem)", color: "#888" }}>⏰ Ora</span>
+                    <input type="range" min={0} max={23} value={hour} onChange={(e) => setHour(parseInt(e.target.value))} style={{ flex: 1, accentColor: "#ff6b6b", height: 4, minWidth: 60 }} />
+                    <span style={{ fontSize: "clamp(0.7rem,1.8vw,0.85rem)", fontWeight: 700, color: "#fff", minWidth: 40, textAlign: "center" }}>{String(hour).padStart(2, "0")}:00</span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(110px,1fr))", gap: 6, marginBottom: 12 }}>
+                    {[
+                      ["🌡️ Temperatura", Math.round(current.temperature) + "°C", "Δ " + (thermal?.delta || 0) + "°C"],
+                      ["💧 Umidità", Math.round(current.humidity) + "%", "Rugiada " + Math.round(current.dewPoint) + "°C"],
+                      ["☁️ Nuvolosità", Math.round(current.cloudCover) + "%", ct(current.cloudCover)],
+                      ["🌧️ Precipitazioni", current.precipitation === 0 ? "✅ Assenti" : current.precipitation + " mm", current.precipitation === 0 ? "Ideale" : "⚠️ Pioggia"],
+                      ["🏔️ Base Nuvole", thermal ? thermal.cloudBase + "m" : "--", "Cloud Base"],
+                      ["📈 Plafond", thermal ? thermal.thermalTop + "m" : "--", "Thermal Top"],
+                      ["🪂 Galleggiamento", thermal ? thermal.soarIdx + "/10" : "--", "Soaring Index"],
+                      ["💨 Vento", wa(current.windDir) + " " + Math.round(current.windSpeed) + " km/h", wd(current.windDir) + " • ⚡" + Math.round(current.windGust) + " km/h"],
+                    ].map(([l, v, s]) => (
+                      <div key={l as string} style={{ background: "rgba(0,0,0,0.3)", padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" }}>
+                        <div style={{ fontSize: "clamp(0.55rem,1.2vw,0.7rem)", color: "#888", fontWeight: 500 }}>{l}</div>
+                        <div style={{ fontSize: "clamp(0.8rem,2vw,1rem)", fontWeight: 700, color: "#fff" }}>{v}</div>
+                        <div style={{ fontSize: "clamp(0.5rem,1vw,0.65rem)", color: "#666", marginTop: 1 }}>{s}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginBottom: 12, padding: "10px 14px", background: "rgba(0,0,0,0.3)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <h4 style={{ fontSize: "clamp(0.8rem,2vw,0.95rem)", color: "#4fc3f7", marginBottom: 10, fontWeight: 600 }}>📊 Pressione</h4>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: "clamp(0.6rem,1.3vw,0.75rem)", color: "#888" }}>Attuale</div>
+                        <div style={{ fontSize: "clamp(1rem,2.5vw,1.2rem)", fontWeight: 700, color: "#fff" }}>{Math.round(current.pressure)} hPa</div>
+                      </div>
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: "clamp(0.6rem,1.3vw,0.75rem)", color: "#888" }}>Gradiente</div>
+                        <div style={{ fontSize: "clamp(1rem,2.5vw,1.2rem)", fontWeight: 700, color: pressureGrad.grad > 0 ? "#4caf50" : pressureGrad.grad < 0 ? "#f44336" : "#ffd93d" }}>
+                          {pressureGrad.grad > 0 ? "⬆️" : pressureGrad.grad < 0 ? "⬇️" : "➡️"} {Math.abs(pressureGrad.grad)} hPa
+                        </div>
+                        <div style={{ fontSize: "clamp(0.5rem,1vw,0.65rem)", color: "#888" }}>{pressureGrad.desc}</div>
+                      </div>
+                    </div>
+                  </div>
+                  {aiData?.thunderstorm && (
+                    <div style={{ padding: "8px 12px", borderRadius: 8, background: aiData.thunderstorm.includes("ALLERTA") ? "rgba(244,67,54,0.12)" : "rgba(76,175,80,0.08)", border: aiData.thunderstorm.includes("ALLERTA") ? "2px solid #f44336" : "1px solid rgba(76,175,80,0.3)", marginBottom: 8 }}>
+                      <div style={{ fontSize: "clamp(0.65rem,1.5vw,0.8rem)", color: "#e0e0e0", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{aiData.thunderstorm}</div>
+                    </div>
+                  )}
+                </>
+              )}
+              {tab === "venti" && (
+                <>
+                  <h4 style={{ fontSize: "clamp(0.8rem,2vw,0.95rem)", color: "#4fc3f7", marginBottom: 10, fontWeight: 600 }}>💨 Turbolenza per quota</h4>
+                  <div style={{ overflowX: "auto", marginBottom: 12 }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "clamp(0.55rem,1.2vw,0.7rem)", minWidth: 500 }}>
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: "center", padding: "4px 6px", color: "#888", borderBottom: "1px solid rgba(255,255,255,0.08)", position: "sticky", top: 0, background: "#0d1b2a" }}>Ora</th>
+                          {turbQuotes.map((q) => (
+                            <th key={q} style={{ textAlign: "center", padding: "4px 6px", color: "#4fc3f7", borderBottom: "1px solid rgba(255,255,255,0.08)", position: "sticky", top: 0, background: "#0d1b2a" }}>{q}m</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {hours9to19.map((h) => {
+                          const hd = dayData.find((x) => x.time.getHours() === h);
+                          if (!hd) return null;
+                          return (
+                            <tr key={h}>
+                              <td style={{ textAlign: "center", padding: "3px 4px", color: "#888", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>{String(h).padStart(2, "0")}:00</td>
+                              {turbQuotes.map((q) => {
+                                const tv = calcTurbulence(dayData, h, q);
+                                return (
+                                  <td key={q} style={{ textAlign: "center", padding: "3px 4px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                                    <span style={{ display: "inline-block", width: 24, height: 24, lineHeight: "24px", borderRadius: "50%", background: turbColor(tv), color: "#fff", fontWeight: 700, fontSize: "clamp(0.5rem,1.1vw,0.65rem)" }}>{tv}</span>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12, padding: "8px 12px", background: "rgba(0,0,0,0.3)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <div style={{ fontSize: "clamp(0.55rem,1.2vw,0.65rem)", color: "#888", width: "100%", marginBottom: 4, fontWeight: 600 }}>Legenda Turbolenza:</div>
+                    {[
+                      [1, "🟢 Calma"],
+                      [2, "🟡 Leggera"],
+                      [3, "🟠 Moderata"],
+                      [4, "🔴 Forte"],
+                      [5, "⛔ Estrema"],
+                    ].map(([v, l]) => (
+                      <div key={v} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <span style={{ display: "inline-block", width: 18, height: 18, lineHeight: "18px", borderRadius: "50%", background: turbColor(v as number), color: "#fff", fontWeight: 700, fontSize: "clamp(0.45rem,1vw,0.55rem)", textAlign: "center" }}>{v}</span>
+                        <span style={{ fontSize: "clamp(0.5rem,1.1vw,0.6rem)", color: "#ccc" }}>{l}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <h4 style={{ fontSize: "clamp(0.8rem,2vw,0.95rem)", color: "#4fc3f7", marginBottom: 10, fontWeight: 600 }}>💨 Venti in quota (10m / 80m / 120m)</h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(90px,1fr))", gap: 6, marginBottom: 12 }}>
+                    {[
+                      ["10m", wa(current.windDir) + " " + Math.round(current.windSpeed) + " km/h", wd(current.windDir), "⚡" + Math.round(current.windGust) + " km/h"],
+                      ["80m", current.wind80m ? wa(current.windDir80m!) + " " + Math.round(current.wind80m) : "N/D", current.wind80m ? wd(current.windDir80m!) : "--", current.wind80m ? "⚡" + Math.round(current.wind80m * 1.3) + " km/h" : ""],
+                      ["120m", current.wind120m ? wa(current.windDir120m!) + " " + Math.round(current.wind120m) : "N/D", current.wind120m ? wd(current.windDir120m!) : "--", current.wind120m ? "⚡" + Math.round(current.wind120m * 1.35) + " km/h" : ""],
+                    ].map(([l, v, d, g]) => (
+                      <div key={l as string} style={{ textAlign: "center", padding: "8px 6px", background: "rgba(255,255,255,0.04)", borderRadius: 8 }}>
+                        <div style={{ fontSize: "clamp(0.55rem,1.2vw,0.7rem)", color: "#888" }}>{l}</div>
+                        <div style={{ fontSize: "clamp(0.75rem,1.8vw,0.9rem)", fontWeight: 700, color: "#fff" }}>{v}</div>
+                        <div style={{ fontSize: "clamp(0.6rem,1.3vw,0.7rem)", color: "#aaa" }}>{d}</div>
+                        <div style={{ fontSize: "clamp(0.5rem,1vw,0.65rem)", color: "#ff6b6b" }}>{g}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <h4 style={{ fontSize: "clamp(0.8rem,2vw,0.95rem)", color: "#4fc3f7", marginBottom: 10, fontWeight: 600 }}>📊 Profilo Vento (400m - 4000m)</h4>
+                  <div style={{ marginBottom: 12, padding: "8px 10px", background: "rgba(0,0,0,0.3)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)", maxHeight: 320, overflowY: "auto" }}>
+                    {windProfile?.map((p, i) => {
+                      const maxSpd = current.windSpeed * 3.5;
+                      const bw = Math.min(100, (p.speed / maxSpd) * 100);
+                      const wcC = (s: number, m: number) => { const r = s / m; if (r < 0.3) return "#4caf50"; if (r < 0.5) return "#8bc34a"; if (r < 0.7) return "#ff9800"; if (r < 0.9) return "#ff5722"; return "#f44336"; };
+                      return (
+                        <div key={i} style={{ display: "grid", gridTemplateColumns: "55px 1fr 40px", gap: 6, alignItems: "center", padding: "2px 4px", fontSize: "clamp(0.55rem,1.2vw,0.7rem)" }}>
+                          <span style={{ color: "#888" }}>{p.alt === 10 ? "Sup" : p.alt + "m"}</span>
+                          <div style={{ height: 14, background: "rgba(255,255,255,0.05)", borderRadius: 8, overflow: "hidden" }}>
+                            <div style={{ height: "100%", width: bw + "%", background: wcC(p.speed, maxSpd), borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 3, minWidth: 30, transition: "width 0.3s" }}>
+                              <span style={{ fontSize: "clamp(0.45rem,1vw,0.55rem)", color: "#fff", fontWeight: 700, textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>{p.speed}</span>
+                            </div>
+                          </div>
+                          <span style={{ color: "#aaa", textAlign: "center" }}>{wa(p.dir)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {windProfile && (() => { const sh = cs(windProfile); return (<div style={{ padding: 8, borderRadius: 8, border: "2px solid " + (sh.risk === "alto" ? "#f44336" : sh.risk === "medio" ? "#ff9800" : "#4caf50"), background: "rgba(0,0,0,0.2)", marginTop: 8, fontSize: "clamp(0.6rem,1.3vw,0.75rem)" }}><strong>🌪️ Wind Shear: {sh.shear}</strong><br />{sh.desc}</div>); })()}
                 </>
               )}
               {tab === "termiche" && (
