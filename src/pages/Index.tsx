@@ -1,185 +1,241 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-import { fetchMeteoHourly, fetchMeteoDaily, enrDaily } from "@/utils/meteo";
-import { generateAiAnalysis } from "@/utils/meteoAI";
-import type { HourData, DailyData, ThermalData, PressureGradient, AiAnalysis } from "@/types/meteo";
-import { MeteoTab } from "@/components/MeteoTab";
-import { VentiTab } from "@/components/VentiTab";
-import { TermicheTab } from "@/components/TermicheTab";
-import { AnalisiTab } from "@/components/AnalisiTab";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback, createContext, useContext } from "react";
+import { DECOLLI } from "@/data/decolli";
+import { fetchMeteoHourly } from "@/utils/meteo";
+import { genAI } from "@/utils/analisi";
+import { calcThermal } from "@/utils/meteo";
+import type { HourData, MeteoData, AiAnalysis, ThermalData } from "@/types/meteo";
+import { SiteHeader } from "@/components/SiteHeader";
+import { TabNav } from "@/components/TabNav";
+import { SiteList } from "@/components/SiteList";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { LoadingScreen } from "@/components/LoadingScreen";
+import { ErrorScreen } from "@/components/ErrorScreen";
 
 type Tab = "meteo" | "venti" | "termiche" | "analisi";
 
-export default function Home() {
-  const [lat, setLat] = useState<number | null>(null);
-  const [lon, setLon] = useState<number | null>(null);
+// Contesto per condividere i dati meteo
+export const MeteoContext = createContext<{
+  allHourly: Record<string, HourData[]>;
+  currentMap: Record<string, HourData>;
+  hour: number;
+  setHour: (h: number) => void;
+}>({
+  allHourly: {},
+  currentMap: {},
+  hour: 12,
+  setHour: () => {},
+});
+
+export default function Index() {
+  const [data, setData] = useState<Record<string, MeteoData>>({});
+  const [allHourly, setAllHourly] = useState<Record<string, HourData[]>>({});
+  const [currentMap, setCurrentMap] = useState<Record<string, HourData>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dayIdx, setDayIdx] = useState(0);
-  const [hour, setHour] = useState(12);
-  const [activeTab, setActiveTab] = useState<Tab>("meteo");
-  const [hourlyRaw, setHourlyRaw] = useState<HourData[]>([]);
-  const [dailyRaw, setDailyRaw] = useState<DailyData[]>([]);
+  const [selectedId, setSelectedId] = useState<string>("malanotte");
+  const [hour, setHour] = useState<number>(new Date().getHours());
 
+  // Fetch meteo per tutti i decolli
   useEffect(() => {
-    if (!navigator.geolocation) {
-      setError("Geolocalizzazione non supportata dal browser.");
-      setLoading(false);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLat(pos.coords.latitude);
-        setLon(pos.coords.longitude);
-      },
-      (err) => {
-        setError("Impossibile ottenere la posizione. " + err.message);
-        setLoading(false);
-      }
-    );
-  }, []);
-
-  useEffect(() => {
-    if (lat === null || lon === null) return;
+    let cancelled = false;
     setLoading(true);
     setError(null);
-    Promise.all([fetchMeteoHourly(lat, lon), fetchMeteoDaily(lat, lon)])
-      .then(([h, d]) => {
-        setHourlyRaw(h);
-        setDailyRaw(d);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [lat, lon]);
 
-  const enrichedDaily = useMemo(() => {
-    if (!dailyRaw.length || !hourlyRaw.length) return [];
-    return enrDaily(dailyRaw, hourlyRaw);
-  }, [dailyRaw, hourlyRaw]);
+    Promise.all(
+      DECOLLI.map((d) =>
+        fetchMeteoHourly(d.lat, d.lon)
+          .then((hourly) => ({
+            id: d.id,
+            hourly,
+          }))
+          .catch((e) => ({
+            id: d.id,
+            hourly: [] as HourData[],
+            error: e.message,
+          }))
+      )
+    )
+      .then((results) => {
+        if (cancelled) return;
+        const hourlyMap: Record<string, HourData[]> = {};
+        const errorMsg = results.find((r) => "error" in r && r.error) as { error: string } | undefined;
+        for (const r of results) {
+          hourlyMap[r.id] = (r as any).hourly || [];
+        }
+        setAllHourly(hourlyMap);
+        // Calcola currentMap
+        const cmap: Record<string, HourData> = {};
+        const h = new Date().getHours();
+        for (const r of results) {
+          const hdata = (r as any).hourly as HourData[];
+          cmap[r.id] = hdata.find((x: HourData) => x.time.getHours() === h) || hdata[0];
+        }
+        setCurrentMap(cmap);
+        if (errorMsg) setError(errorMsg.error);
+        setLoading(false);
+      });
 
-  const dateLabels = useMemo(() => {
-    return enrichedDaily.map((d) => {
-      const dt = new Date(d.date);
-      return dt.toLocaleDateString("it-IT", { weekday: "short", day: "numeric" });
-    });
-  }, [enrichedDaily]);
+    return () => { cancelled = true; };
+  }, []);
 
-  const current = useMemo(() => {
-    if (!hourlyRaw.length) return null;
-    return hourlyRaw.find((h) => h.time.getHours() === hour) || hourlyRaw[0];
-  }, [hourlyRaw, hour]);
+  // Aggiorna currentMap quando cambia hour
+  useEffect(() => {
+    if (!Object.keys(allHourly).length) return;
+    const cmap: Record<string, HourData> = {};
+    for (const [id, hdata] of Object.entries(allHourly)) {
+      if (hdata.length) {
+        cmap[id] = hdata.find((x) => x.time.getHours() === hour) || hdata[0];
+      }
+    }
+    setCurrentMap(cmap);
+  }, [hour, allHourly]);
 
-  const thermal = useMemo((): ThermalData | null => {
-    if (!current) return null;
-    const diff = current.temperature - (current.temperature - (100 - current.humidity) / 5);
-    const cloudBase = Math.max(0, Math.round(diff * 125));
-    const thermalTop = cloudBase + 800 + Math.round(Math.random() * 400);
-    const soarIdx = Math.min(10, Math.max(1, Math.round((current.temperature - 10) / 3 + Math.random() * 2)));
-    return { cloudBase, thermalTop, soarIdx };
-  }, [current]);
+  const selected = DECOLLI.find((d) => d.id === selectedId) || DECOLLI[0];
+  const dayData = useMemo(() => allHourly[selectedId] || [], [allHourly, selectedId]);
+  const current = useMemo(() => currentMap[selectedId] || null, [currentMap, selectedId]);
+  const thermal = useMemo(() => (dayData.length ? calcThermal(dayData, selected.altitude) : null), [dayData, selected.altitude]);
+  const aiData = useMemo(() => genAI(dayData, selected, thermal), [dayData, selected, thermal]);
+  const [activeTab, setActiveTab] = useState<Tab>("meteo");
 
-  const pressureGrad = useMemo((): PressureGradient => {
-    if (!hourlyRaw.length) return { grad: 0, desc: "Stabile" };
-    const idxNow = hourlyRaw.findIndex((h) => h.time.getHours() === hour);
-    if (idxNow < 2) return { grad: 0, desc: "Stabile" };
-    const p0 = hourlyRaw[idxNow - 1]?.pressure ?? hourlyRaw[0].pressure;
-    const p1 = hourlyRaw[idxNow]?.pressure ?? p0;
-    const diff = Math.round((p1 - p0) * 10) / 10;
-    return {
-      grad: diff,
-      desc: diff > 2 ? "In aumento (alta pressione)" : diff < -2 ? "In calo (bassa pressione)" : "Stabile",
-    };
-  }, [hourlyRaw, hour]);
-
-  const aiData = useMemo((): AiAnalysis | null => {
-    if (!hourlyRaw.length || !enrichedDaily[dayIdx]) return null;
-    return generateAiAnalysis(hourlyRaw, dayIdx) as unknown as AiAnalysis;
-  }, [hourlyRaw, dayIdx, enrichedDaily]);
-
-  const tabs: { key: Tab; label: string; emoji: string }[] = [
-    { key: "meteo", label: "Meteo", emoji: "🌤️" },
-    { key: "venti", label: "Venti", emoji: "💨" },
-    { key: "termiche", label: "Termiche", emoji: "🌡️" },
-    { key: "analisi", label: "Analisi AI", emoji: "🤖" },
-  ];
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-sky-100 via-white to-sky-50">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-sky-600" />
-          <div className="text-sm font-semibold text-gray-600">Caricamento dati meteo...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-red-50 via-white to-red-50">
-        <div className="bg-white/90 p-6 rounded-2xl border-2 border-red-300 shadow-lg max-w-sm text-center">
-          <AlertTriangle className="w-10 h-10 text-red-500 mx-auto mb-3" />
-          <div className="text-sm font-bold text-red-700 mb-1">Errore</div>
-          <div className="text-sm text-gray-600">{error}</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!current) return null;
+  if (loading) return <LoadingScreen />;
+  if (error && !Object.keys(allHourly).length) return <ErrorScreen message={error} />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-100 via-blue-50 to-sky-50">
-      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
-        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-lg font-extrabold text-gray-900 tracking-tight">✈️ Meteo Volo</h1>
-          <div className="text-xs font-semibold text-gray-500">
-            {lat?.toFixed(2)}, {lon?.toFixed(2)}
+    <MeteoContext.Provider value={{ allHourly, currentMap, hour, setHour }}>
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-sky-100 via-indigo-50 to-sky-50">
+        <div className="flex-1 w-full mx-auto px-2 sm:px-3 py-2 max-w-[1400px]">
+          <Header />
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            {/* Sidebar sinistra: lista decolli */}
+            <div className="md:col-span-1">
+              <SiteList
+                selected={selectedId}
+                current={current}
+                onSelect={setSelectedId}
+                weatherMap={currentMap}
+                allHourlyData={allHourly}
+              />
+            </div>
+
+            {/* Colonna centrale: dettaglio decollo */}
+            <div className="md:col-span-3">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-300/60 p-4 mb-3">
+                {current && <SiteHeader site={selected} current={current} />}
+
+                <TabNav tab={activeTab} onTabChange={setActiveTab} />
+
+                {activeTab === "meteo" && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="bg-white/70 px-4 py-3 rounded-lg border border-gray-200">
+                        <span className="text-gray-500 font-medium">Vento</span>
+                        <div className="text-lg font-bold text-gray-800">
+                          {current ? `${Math.round(current.windSpeed)} km/h` : "--"}
+                        </div>
+                      </div>
+                      <div className="bg-white/70 px-4 py-3 rounded-lg border border-gray-200">
+                        <span className="text-gray-500 font-medium">Pioggia</span>
+                        <div className="text-lg font-bold text-gray-800">
+                          {current ? `${current.precipitation.toFixed(1)} mm` : "--"}
+                        </div>
+                      </div>
+                      <div className="bg-white/70 px-4 py-3 rounded-lg border border-gray-200">
+                        <span className="text-gray-500 font-medium">Umidit&agrave;</span>
+                        <div className="text-lg font-bold text-gray-800">
+                          {current ? `${Math.round(current.humidity)}%` : "--"}
+                        </div>
+                      </div>
+                      <div className="bg-white/70 px-4 py-3 rounded-lg border border-gray-200">
+                        <span className="text-gray-500 font-medium">Pressione</span>
+                        <div className="text-lg font-bold text-gray-800">
+                          {current ? `${Math.round(current.pressure)} hPa` : "--"}
+                        </div>
+                      </div>
+                      <div className="bg-white/70 px-4 py-3 rounded-lg border border-gray-200">
+                        <span className="text-gray-500 font-medium">Zero Termico</span>
+                        <div className="text-lg font-bold text-gray-800">
+                          {current ? `${Math.round(current.temperature / 0.0098)} m` : "--"}
+                        </div>
+                      </div>
+                      <div className="bg-white/70 px-4 py-3 rounded-lg border border-gray-200">
+                        <span className="text-gray-500 font-medium">Base Nuvole</span>
+                        <div className="text-lg font-bold text-gray-800">
+                          {thermal ? `${thermal.cloudBase} m` : "--"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === "venti" && (
+                  <div className="py-2 text-sm text-gray-700 font-medium">
+                    Sezione venti in sviluppo...
+                  </div>
+                )}
+
+                {activeTab === "termiche" && (
+                  <div className="py-2">
+                    {thermal && (
+                      <div className="bg-white/70 px-4 py-3 rounded-lg border border-gray-200 space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500 font-medium">Base termiche</span>
+                          <span className="font-bold text-gray-800">{thermal.cloudBase} m</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500 font-medium">Plafond</span>
+                          <span className="font-bold text-gray-800">{thermal.thermalTop} m</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500 font-medium">Indice termico</span>
+                          <span className="font-bold text-amber-600">{thermal.soarIdx}/10</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === "analisi" && (
+                  <div className="space-y-3 text-sm">
+                    {aiData ? (
+                      <>
+                        <div className="bg-white/70 p-4 rounded-lg border border-gray-200 prose prose-sm max-w-none">
+                          <h4 className="text-red-600 font-bold text-base mb-2">☀️ Situazione Generale</h4>
+                          <div className="whitespace-pre-wrap font-medium text-gray-800">{aiData.general}</div>
+                        </div>
+                        <div className="bg-white/70 p-4 rounded-lg border border-gray-200">
+                          <h4 className="text-orange-600 font-bold text-base mb-2">🔥 Profilo Termico</h4>
+                          <div className="whitespace-pre-wrap font-medium text-gray-800">{aiData.thermal}</div>
+                        </div>
+                        <div className="bg-white/70 p-4 rounded-lg border border-gray-200">
+                          <h4 className="text-sky-600 font-bold text-base mb-2">💨 Vento</h4>
+                          <div className="whitespace-pre-wrap font-medium text-gray-800">{aiData.wind}</div>
+                        </div>
+                        <div className="bg-white/70 p-4 rounded-lg border border-gray-200">
+                          <h4 className="text-indigo-600 font-bold text-base mb-2">🕐 Evoluzione</h4>
+                          <div className="whitespace-pre-wrap font-medium text-gray-800">{aiData.hourly}</div>
+                        </div>
+                        <div className="bg-white/70 p-4 rounded-lg border border-gray-200">
+                          <h4 className="text-purple-600 font-bold text-base mb-2">🔍 Interpretazione</h4>
+                          <div className="whitespace-pre-wrap font-medium text-gray-800">{aiData.advice}</div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500 font-medium">
+                        Dati non disponibili per l&apos;analisi
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
-      </header>
-
-      <main className="max-w-lg mx-auto px-4 py-4">
-        <div className="flex gap-1 mb-4 bg-white/80 rounded-2xl p-1 border-2 border-gray-300 shadow-sm">
-          {tabs.map(({ key, label, emoji }) => (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key)}
-              className={
-                "flex-1 py-2.5 px-1 rounded-xl text-xs font-extrabold transition-all duration-200 " +
-                (activeTab === key
-                  ? "bg-red-500 text-white shadow-md scale-105"
-                  : "text-gray-600 hover:bg-gray-100")
-              }
-            >
-              <span className="block">{emoji}</span>
-              <span className="block mt-0.5">{label}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="transition-all duration-300">
-          {activeTab === "meteo" && (
-            <MeteoTab
-              current={current}
-              dayIdx={dayIdx}
-              hour={hour}
-              enrichedDaily={enrichedDaily}
-              dateLabels={dateLabels}
-              thermal={thermal}
-              pressureGrad={pressureGrad}
-              aiData={aiData}
-              onDaySelect={setDayIdx}
-              onHourChange={setHour}
-            />
-          )}
-          {activeTab === "venti" && <VentiTab dayData={hourlyRaw} />}
-          {activeTab === "termiche" && <TermicheTab aiData={aiData} />}
-          {activeTab === "analisi" && <AnalisiTab aiData={aiData} />}
-        </div>
-      </main>
-    </div>
+        <Footer />
+      </div>
+    </MeteoContext.Provider>
   );
 }
