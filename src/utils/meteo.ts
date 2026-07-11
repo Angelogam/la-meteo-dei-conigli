@@ -1,8 +1,8 @@
 "use client";
 
-import type { HourData, DailyData, MeteoData, ThermalData, AiAnalysis, PressureGradient } from "@/types/meteo";
+import type { HourData, DailyData, MeteoData, ThermalData, PressureGradient } from "@/types/meteo";
 
-export type { HourData, DailyData, MeteoData, ThermalData, AiAnalysis, PressureGradient };
+export type { HourData, DailyData, MeteoData, ThermalData, PressureGradient };
 
 const OPENMETEO_URL = "https://api.open-meteo.com/v1/forecast";
 
@@ -44,26 +44,26 @@ export async function fetchMeteo(lat: number, lon: number): Promise<MeteoData> {
   const resp = await fetch(`${OPENMETEO_URL}?${params}`);
   if (!resp.ok) throw new Error(`Errore HTTP ${resp.status}`);
   const json = await resp.json();
-  const transform = (j: any, i: number): HourData => ({
-    time: new Date(j.hourly.time[i] + "Z"),
-    temperature: j.hourly.temperature_2m[i],
-    feelsLike: j.hourly.apparent_temperature[i],
-    humidity: j.hourly.relative_humidity_2m[i],
-    dewPoint: j.hourly.dew_point_2m[i],
-    precipitation: pr(j.hourly.precipitation[i]),
-    weatherCode: j.hourly.weather_code[i],
-    cloudCover: pr(j.hourly.cloud_cover[i]),
-    pressure: pr(j.hourly.pressure_msl[i]),
-    windSpeed: pr(j.hourly.wind_speed_10m[i]),
-    windDir: pr(j.hourly.wind_direction_10m[i]),
-    windGust: pr(j.hourly.wind_gusts_10m[i]),
-    soilTemp: j.hourly.soil_temperature_0cm?.[i] ?? null,
-    soilMoisture: j.hourly.soil_moisture_0_to_1cm?.[i] ?? null,
-    uvIndex: j.hourly.uv_index?.[i] ?? null,
-    isDay: pr(j.hourly.is_day[i], 1) === 1,
-  });
 
-  const hourly: HourData[] = json.hourly.time.map((_: string, i: number) => transform(json, i));
+  const hourly: HourData[] = json.hourly.time.map((_: string, i: number) => ({
+    time: new Date(json.hourly.time[i] + "Z"),
+    temperature: json.hourly.temperature_2m[i],
+    feelsLike: json.hourly.apparent_temperature[i],
+    humidity: json.hourly.relative_humidity_2m[i],
+    dewPoint: json.hourly.dew_point_2m[i],
+    precipitation: pr(json.hourly.precipitation[i]),
+    weatherCode: json.hourly.weather_code[i],
+    cloudCover: pr(json.hourly.cloud_cover[i]),
+    pressure: pr(json.hourly.pressure_msl[i]),
+    windSpeed: pr(json.hourly.wind_speed_10m[i]),
+    windDir: pr(json.hourly.wind_direction_10m[i]),
+    windGust: pr(json.hourly.wind_gusts_10m[i]),
+    soilTemp: json.hourly.soil_temperature_0cm?.[i] ?? null,
+    soilMoisture: json.hourly.soil_moisture_0_to_1cm?.[i] ?? null,
+    uvIndex: json.hourly.uv_index?.[i] ?? null,
+    isDay: pr(json.hourly.is_day[i], 1) === 1,
+  }));
+
   const daily: DailyData[] = json.daily.time.map((t: string, i: number) => ({
     date: new Date(t + "T12:00:00Z"),
     tempMax: pr(json.daily.temperature_2m_max[i]),
@@ -75,22 +75,19 @@ export async function fetchMeteo(lat: number, lon: number): Promise<MeteoData> {
   return { hourly, daily, lat, lon };
 }
 
-/** fetchMeteoHourly – returns only hourly data array */
 export async function fetchMeteoHourly(lat: number, lon: number): Promise<HourData[]> {
   const data = await fetchMeteo(lat, lon);
   return data.hourly;
 }
 
-/** fetchMeteoDaily – returns only daily data array */
 export async function fetchMeteoDaily(lat: number, lon: number): Promise<DailyData[]> {
   const data = await fetchMeteo(lat, lon);
   return data.daily;
 }
 
-/** Enrich daily with delta and idx */
 export function enrDaily(daily: DailyData[], hourly: HourData[]) {
   return daily.map((d, i) => {
-    const dayHours = hourly.filter(h => {
+    const dayHours = hourly.filter((h) => {
       const hDate = h.time.getDate();
       const dDate = d.date.getDate();
       return hDate === dDate;
@@ -100,13 +97,11 @@ export function enrDaily(daily: DailyData[], hourly: HourData[]) {
   });
 }
 
-/** Calcola lo zero termico basato sul gradiente adiabatico secco (0.98°C per 100m) */
 export function getZeroTermico(temperature: number, altitude: number): number {
   if (temperature <= 0) return altitude;
-  return Math.round(altitude + (temperature / 0.0098));
+  return Math.round(altitude + temperature / 0.0098);
 }
 
-/** Weather icon code */
 export const wic = (code: number, isDay: boolean): string => {
   if (code === 0) return isDay ? "\u2600\uFE0F" : "\uD83C\uDF19";
   if (code <= 3) return isDay ? "\u26C5" : "\uD83C\uDF24\uFE0F";
@@ -128,10 +123,8 @@ export const ct = (c: number): string => {
 
 export const wa = (deg: number): string => {
   const dirs = [
-    "N", "NNE", "NE", "ENE",
-    "E", "ESE", "SE", "SSE",
-    "S", "SSO", "SO", "OSO",
-    "O", "ONO", "NO", "NNO",
+    "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+    "S", "SSO", "SO", "OSO", "O", "ONO", "NO", "NNO",
   ];
   const i = Math.round(deg / 22.5) % 16;
   return dirs[i];
@@ -168,34 +161,24 @@ export function getWindProfile(speed: number, dir: number): WindProfile {
   };
 }
 
-export interface ThermalData {
-  cloudBase: number;
-  thermalTop: number;
-  soarIdx: number;
-}
-
 export function calcThermal(dayData: HourData[], altitude: number): ThermalData {
-  const maxTemp = Math.max(...dayData.map(h => h.temperature).filter(t => t != null));
+  const maxTemp = Math.max(...dayData.map((h) => h.temperature).filter((t) => t != null));
   const humidity = dayData.reduce((s, h) => s + h.humidity, 0) / dayData.length;
   const cloud = dayData.reduce((s, h) => s + h.cloudCover, 0) / dayData.length;
-
-  const dew = maxTemp - ((100 - humidity) / 5);
+  const dew = maxTemp - (100 - humidity) / 5;
   const cloudBase = altitude + Math.round((maxTemp - dew) * 125);
   const delta = maxTemp - dew;
   const soarRaw = Math.min(10, Math.max(0, Math.round((delta - 4) * 1.5)));
   const thermalTop = cloudBase + Math.round(soarRaw * 80);
   const soarIdx = Math.min(10, Math.max(0, soarRaw));
-
   return { cloudBase, thermalTop, soarIdx };
 }
 
-/** Calcola turbolenza per una data ora e quota */
 export function calcTurbulence(dayData: HourData[], hour: number, altitude: number): number {
   const hd = dayData.find((x) => x.time.getHours() === hour);
   if (!hd) return 0;
-  // Formula semplificata: più vento e turbolenza di gradiente
   const ws = hd.windSpeed;
   const gust = hd.windGust;
-  const turb = Math.min(5, Math.max(1, Math.round((ws * 0.15) + (gust * 0.1) + (altitude > 2000 ? 0.5 : 0))));
+  const turb = Math.min(5, Math.max(1, Math.round(ws * 0.15 + gust * 0.1 + (altitude > 2000 ? 0.5 : 0))));
   return turb;
 }

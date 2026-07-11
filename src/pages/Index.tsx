@@ -22,7 +22,6 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("meteo");
   const [hourlyRaw, setHourlyRaw] = useState<HourData[]>([]);
   const [dailyRaw, setDailyRaw] = useState<DailyData[]>([]);
-  const [expanded, setExpanded] = useState(false);
 
   // Ottieni posizione
   useEffect(() => {
@@ -66,7 +65,7 @@ export default function Home() {
   // Labels date
   const dateLabels = useMemo(() => {
     return enrichedDaily.map((d) => {
-      const dt = new Date(d.time);
+      const dt = new Date(d.date);
       return dt.toLocaleDateString("it-IT", { weekday: "short", day: "numeric" });
     });
   }, [enrichedDaily]);
@@ -101,7 +100,7 @@ export default function Home() {
     };
   }, [hourlyRaw, hour]);
 
-  // AI Analysis con il nuovo generatore
+  // AI Analysis
   const aiData = useMemo((): AiAnalysis | null => {
     if (!hourlyRaw.length || !enrichedDaily[dayIdx]) return null;
     return generateAiAnalysis(hourlyRaw, dayIdx) as unknown as AiAnalysis;
@@ -113,15 +112,6 @@ export default function Home() {
     { key: "termiche", label: "Termiche", emoji: "🌡️" },
     { key: "analisi", label: "Analisi AI", emoji: "🤖" },
   ];
-
-  const handleDaySelect = (idx: number) => {
-    setDayIdx(idx);
-    setExpanded(true);
-  };
-
-  const handleHourChange = (newHour: number) => {
-    setHour(newHour);
-  };
 
   if (loading) {
     return (
@@ -150,12 +140,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-100 via-blue-50 to-sky-50">
-      {/* Header */}
       <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-lg font-extrabold text-gray-900 tracking-tight">
-            ✈️ Meteo Volo
-          </h1>
+          <h1 className="text-lg font-extrabold text-gray-900 tracking-tight">✈️ Meteo Volo</h1>
           <div className="text-xs font-semibold text-gray-500">
             {lat?.toFixed(2)}, {lon?.toFixed(2)}
           </div>
@@ -163,7 +150,6 @@ export default function Home() {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-4">
-        {/* Tab navigation */}
         <div className="flex gap-1 mb-4 bg-white/80 rounded-2xl p-1 border-2 border-gray-300 shadow-sm">
           {tabs.map(({ key, label, emoji }) => (
             <button
@@ -182,7 +168,6 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Contenuto */}
         <div className="transition-all duration-300">
           {activeTab === "meteo" && (
             <MeteoTab
@@ -194,19 +179,13 @@ export default function Home() {
               thermal={thermal}
               pressureGrad={pressureGrad}
               aiData={aiData}
-              onDaySelect={handleDaySelect}
-              onHourChange={handleHourChange}
+              onDaySelect={setDayIdx}
+              onHourChange={setHour}
             />
           )}
-          {activeTab === "venti" && (
-            <VentiTab dayData={hourlyRaw} />
-          )}
-          {activeTab === "termiche" && (
-            <TermicheTab aiData={aiData} />
-          )}
-          {activeTab === "analisi" && (
-            <AnalisiTab aiData={aiData} />
-          )}
+          {activeTab === "venti" && <VentiTab dayData={hourlyRaw} />}
+          {activeTab === "termiche" && <TermicheTab aiData={aiData} />}
+          {activeTab === "analisi" && <AnalisiTab aiData={aiData} />}
         </div>
       </main>
     </div>
