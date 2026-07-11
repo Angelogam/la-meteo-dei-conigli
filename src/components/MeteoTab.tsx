@@ -139,7 +139,7 @@ export function MeteoTab({
 
       {/* Thermal summary */}
       {thermal && (
-        <Card className="border border-amber-600/50 bg-amber-900/30 shadow-lg overflow-hidden">
+        <Card className="border border-amber-600/50 bg-slate-800/80 shadow-lg overflow-hidden">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 rounded-lg bg-amber-800/50 border border-amber-600/50 flex items-center justify-center">
