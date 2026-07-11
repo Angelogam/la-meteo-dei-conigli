@@ -69,19 +69,18 @@ export const MeteoTab = ({
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-3">
         {[
-          ["Temperatura", Math.round(current.temperature) + " gradi", "&Delta; " + (thermal?.delta || 0) + "&deg;C"],
-          ["Umidit\u00e0", Math.round(current.humidity) + "%", "Rugiada " + Math.round(current.dewPoint) + " gradi"],
-          ["Nuvolosit\u00e0", Math.round(current.cloudCover) + "%", ct(current.cloudCover)],
-          ["Precipitazioni", current.precipitation === 0 ? "Assenti" : current.precipitation + " mm", current.precipitation === 0 ? "Ideale" : "Pioggia"],
-          ["Base Nuvole", thermal ? thermal.cloudBase + "m" : "--", "Cloud Base"],
-          ["Plafond", thermal ? thermal.thermalTop + "m" : "--", "Thermal Top"],
-          ["Galleggiamento", thermal ? thermal.soarIdx + "/10" : "--", "Soaring Index"],
-          ["Vento", wa(current.windDir) + " " + Math.round(current.windSpeed) + " km/h", wd(current.windDir) + " \u2022 \u26A1" + Math.round(current.windGust) + " km/h"],
-        ].map(([l, v, s]) => (
+          ["Temperatura", Math.round(current.temperature) + " gradi"],
+          ["Umidit\u00e0", Math.round(current.humidity) + "%"],
+          ["Nuvolosit\u00e0", Math.round(current.cloudCover) + "%"],
+          ["Precipitazioni", current.precipitation === 0 ? "Assenti" : current.precipitation + " mm"],
+          ["Base Nuvole", thermal ? thermal.cloudBase + "m" : "--"],
+          ["Plafond", thermal ? thermal.thermalTop + "m" : "--"],
+          ["Galleggiamento", thermal ? thermal.soarIdx + "/10" : "--"],
+          ["Vento", wa(current.windDir) + " " + Math.round(current.windSpeed) + " km/h"],
+        ].map(([l, v]) => (
           <div key={l as string} className="bg-white/60 p-2 rounded-xl border border-gray-200 shadow-sm">
             <div className="text-xs text-gray-500 font-medium">{l}</div>
             <div className="text-sm md:text-base font-bold text-gray-800">{v}</div>
-            <div className="text-xs text-gray-400 mt-0.5">{s}</div>
           </div>
         ))}
       </div>
