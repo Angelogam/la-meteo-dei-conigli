@@ -10,7 +10,7 @@ export function generaAnalisiReale(dayData: HourData[], altitude: number) {
   const tempMin = Math.min(...tempMedie);
   const ventoMedio = dayData.reduce((a, h) => a + h.windSpeed, 0) / dayData.length;
   const ventoMax = Math.max(...dayData.map(h => h.windSpeed));
-  const direzioni = dayData.map(h => h.windDirection);
+  const direzioni = dayData.map(h => h.windDir);
   const dirPrevalente = direzioneMedia(direzioni);
   const pioggiaTot = dayData.reduce((a, h) => a + (h.precipitation || 0), 0);
   const nuvole = dayData.reduce((a, h) => a + h.cloudCover, 0) / dayData.length;
