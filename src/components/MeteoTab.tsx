@@ -91,16 +91,14 @@ export const MeteoTab = ({
         <div className="grid grid-cols-2 gap-2">
           <div className="text-center">
             <div className="text-xs text-gray-400">Attuale</div>
-            <div className="text-lg font-bold text<dyad-write path="src/components/MeteoTab.tsx" description="Continue the MeteoTab component">
-              <div className="text-lg font-bold text-white">{Math.round(current.pressure)} hPa</div>
+            <div className="text-lg font-bold text-white">{Math.round(current.pressure)} hPa</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xs text-gray-400">Gradiente</div>
+            <div className="text-lg font-bold" style={{color: pressureGrad.grad > 0 ? "#4caf50" : pressureGrad.grad < 0 ? "#f44336" : "#ffd93d"}}>
+              {pressureGrad.grad > 0 ? "\u2191" : pressureGrad.grad < 0 ? "\u2193" : "\u2192"} {Math.abs(pressureGrad.grad)} hPa
             </div>
-            <div className="text-center">
-              <div className="text-xs text-gray-400">Gradiente</div>
-              <div className="text-lg font-bold" style={{color: pressureGrad.grad > 0 ? "#4caf50" : pressureGrad.grad < 0 ? "#f44336" : "#ffd93d"}}>
-                {pressureGrad.grad > 0 ? "\u2191" : pressureGrad.grad < 0 ? "\u2193" : "\u2192"} {Math.abs(pressureGrad.grad)} hPa
-              </div>
-              <div className="text-xs text-gray-400">{pressureGrad.desc}</div>
-            </div>
+            <div className="text-xs text-gray-400">{pressureGrad.desc}</div>
           </div>
         </div>
       </div>
