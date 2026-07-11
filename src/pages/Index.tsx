@@ -143,35 +143,23 @@ function Index() {
       {/* Header */}
       <header className="px-4 py-4 border-b border-slate-600 bg-slate-800/70 backdrop-blur-md">
         <div className="max-w-5xl mx-auto">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="text-2xl md:text-3xl">🐰</span>
-              <div>
-                <h1 className="text-lg md:text-xl font-extrabold text-white tracking-tight">
-                  Meteo dei Conigli
-                </h1>
-                <p className="text-[10px] md:text-xs text-blue-300/80 font-medium">
-                  Previsioni per volo libero
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xl md:text-2xl">🪂</span>
-              <button
-                onClick={toggleSidebar}
-                className="md:hidden p-2 rounded-xl bg-slate-600 hover:bg-slate-500 transition-colors border border-slate-500"
-                aria-label="Apri decolli"
-              >
-                <Menu className="w-5 h-5 text-white" />
-              </button>
+          <div className="flex items-center justify-center gap-2.5">
+            <span className="text-2xl md:text-3xl">🐰</span>
+            <div>
+              <h1 className="text-lg md:text-xl font-extrabold text-white tracking-tight text-center">
+                Meteo dei Conigli
+              </h1>
+              <p className="text-[10px] md:text-xs text-blue-300/80 font-medium text-center">
+                Previsioni per volo libero
+              </p>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main content: layout a due colonne su desktop (sidebar a sinistra) */}
-      <div className="max-w-5xl mx-auto px-3 pb-28 mt-3 md:flex md:gap-3 md:items-start">
-        {/* Sidebar decolli - a sinistra su desktop, overlay su mobile */}
+      {/* Main content centrato */}
+      <div className="max-w-5xl mx-auto px-3 pb-28 mt-3 md:flex md:gap-3 md:items-start md:justify-center">
+        {/* Sidebar decolli */}
         <SidebarDecolli
           selected={siteId}
           current={currentHourData}
@@ -181,9 +169,9 @@ function Index() {
           onClose={() => setSidebarOpen(false)}
         />
 
-        {/* Colonna principale (a destra) */}
-        <div className="flex-1 min-w-0">
-          {/* Current site info compatta */}
+        {/* Colonna principale */}
+        <div className="flex-1 min-w-0 max-w-2xl mx-auto">
+          {/* Current site info */}
           {currentSite && currentHourData && (
             <div className="mb-2.5">
               <SiteHeader site={currentSite} current={currentHourData} />
@@ -259,7 +247,7 @@ function Index() {
 
       {/* Footer */}
       <footer className="fixed bottom-0 left-0 right-0 text-center py-2 border-t border-slate-600 bg-slate-800/80 backdrop-blur-sm z-40">
-        <div className="max-w-5xl mx-auto px-3 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-3 flex items-center justify-center gap-8">
           <p className="text-[10px] text-slate-400">
             Basato su dati Open-Meteo
           </p>
