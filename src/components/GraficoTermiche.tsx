@@ -1,4 +1,3 @@
-characters">
 "use client";
 
 import React from "react";
@@ -10,19 +9,18 @@ interface GraficoTermicheProps {
   oraCorrente: number;
 }
 
+const LEGENDA = [
+  { colore: "#ef4444", label: "Termiche forti (>7)" },
+  { colore: "#f97316", label: "Buone termiche (5-7)" },
+  { colore: "#eab308", label: "Moderate (3-5)" },
+  { colore: "#84cc16", label: "Deboli (1-3)" },
+  { colore: "#64748b", label: "Assenti (0)" },
+];
+
 const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
   if (!hourly || hourly.length === 0) return null;
 
-  const maxTop = Math.max(...hourly.map((h) => h.termiche.top), 1);
   const maxForza = Math.max(...hourly.map((h) => h.termiche.forza), 1);
-
-  const LEGENDA = [
-    { colore: "#ef4444", label: "Termiche forti (>7)" },
-    { colore: "#f97316", label: "Buone termiche (5-7)" },
-    { colore: "#eab308", label: "Moderate (3-5)" },
-    { colore: "#84cc16", label: "Deboli (1-3)" },
-    { colore: "#64748b", label: "Assenti (0)" },
-  ];
 
   return (
     <div className="w-full pt-4 pb-2 px-2">
