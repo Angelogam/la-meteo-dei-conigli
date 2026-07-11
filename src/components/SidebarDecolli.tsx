@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { X, Wind, Thermometer } from "lucide-react";
+import { X, Wind, Thermometer, RefreshCw } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 import { DECOLLI } from "@/data/decolli";
 import { wic } from "@/utils/meteo";
@@ -16,7 +16,6 @@ interface SidebarDecolliProps {
   onClose: () => void;
 }
 
-// Difficoltà badge colori
 const diffColors: Record<number, string> = {
   1: "bg-emerald-900/60 text-emerald-300 border-emerald-600",
   2: "bg-blue-900/60 text-blue-300 border-blue-600",
@@ -28,7 +27,6 @@ const diffColors: Record<number, string> = {
 const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClose }: SidebarDecolliProps) => {
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  // Chiude la sidebar cliccando fuori su mobile
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
@@ -41,7 +39,6 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, onClose]);
 
-  // Blocca scroll su mobile quando aperta
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -53,14 +50,14 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
     };
   }, [isOpen]);
 
+  const now = new Date();
+
   return (
     <>
-      {/* Overlay per mobile */}
       {isOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-30 md:hidden" />
       )}
 
-      {/* Sidebar - a sinistra */}
       <div
         ref={sidebarRef}
         className={`
@@ -74,7 +71,7 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
         `}
         style={{ scrollbarWidth: 'thin', scrollbarColor: '#475569 transparent' }}
       >
-        {/* Header sidebar */}
+        {/* Header */}
         <div className="sticky top-0 z-10 bg-slate-800/95 backdrop-blur-md border-b border-slate-600 flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-slate-700 border border-slate-500 flex items-center justify-center">
@@ -84,8 +81,9 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
               <h2 className="text-sm font-bold text-white tracking-tight">
                 Decolli
               </h2>
-              <p className="text-[10px] text-blue-300/60 font-medium">
-                {DECOLLI.length} siti disponibili
+              <p className="text-[10px] text-blue-300/60 font-medium flex items-center gap-1">
+                <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+                {DECOLLI.length} siti · {String(now.getHours()).padStart(2, "0")}:{String(now.getMinutes()).padStart(2, "0")}
               </p>
             </div>
           </div>
@@ -125,7 +123,7 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 mb-0.5">
+                    <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
                       <span className={`text-[12px] font-semibold text-white truncate block leading-snug ${isSelected ? "text-blue-200" : ""}`}>
                         {site.name}
                       </span>
@@ -155,6 +153,7 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                       <span className={`text-xs font-bold ${isSelected ? "text-white" : "text-slate-200"}`}>
                         {Math.round(w.temperature)}°
                       </span>
+                      <span className="text-[8px] text-slate-500">{Math.round(w.windSpeed)} km/h</span>
                     </div>
                   )}
                 </div>
