@@ -19,7 +19,6 @@ import { generateAiAnalysis } from "@/utils/meteoAI";
 import { generaTermicheOrarie } from "@/utils/termiche";
 import { DECOLLI, type Decollo } from "@/data/decolli";
 import type { MeteoData, HourData, AiAnalysis, WindProfile } from "@/types/meteo";
-import { Button } from "@/components/ui/button";
 import { CalendarDays, ChevronRight, CloudSun, MapPin, Menu } from "lucide-react";
 
 interface DecolloMeteo {
@@ -42,11 +41,25 @@ function useRealTimeHour(): number {
 }
 
 interface GiornoPrevisione {
-  giorno: number; // 0 = oggi, 1 = domani, 2 = dopodomani, ecc.
+  giorno: number;
   label: string;
   data: MeteoData | null;
   loading: boolean;
   error: string | null;
+}
+
+const nomiGiorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+
+function generaGiorniPrevisioni(): GiornoPrevisione[] {
+  const giorni: GiornoPrevisione[] = [];
+  for (let g = 1; g <= 5; g++) {
+    const data = new Date();
+    data.setDate(data.getDate() + g);
+    const nomeGiorno = nomiGiorni[data.getDay()];
+    const label = `${nomeGiorno} ${data.getDate()} ${data.toLocaleDateString("it-IT", { month: "short" })}`;
+    giorni.push({ giorno: g, label, data: null, loading: false, error: null });
+  }
+  return giorni;
 }
 
 const Index = () => {
@@ -66,20 +79,7 @@ const Index = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [showDayDetail, setShowDayDetail] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Stato per le previsioni dei prossimi giorni
-  const [giorniPrevisioni, setGiorniPrevisioni] = useState<GiornoPrevisione[]>(() => {
-    const giorni: GiornoPrevisione[] = [];
-    const nomiGiorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
-    for (let g = 1; g <= 5; g++) {
-      const data = new Date();
-      data.setDate(data.getDate() + g);
-      const nomeGiorno = nomiGiorni[data.getDay()];
-      const label = `${nomeGiorno} ${data.getDate()} ${data.toLocaleDateString("it-IT", { month: "short" })}`;
-      giorni.push({ giorno: g, label, data: null, loading: false, error: null });
-    }
-    return giorni;
-  });
+  const [giorniPrevisioni, setGiorniPrevisioni] = useState<GiornoPrevisione[]>(generaGiorniPrevisioni);
 
   const fetchGiorno = useCallback(async (giorno: number) => {
     setGiorniPrevisioni((prev) =>
@@ -244,7 +244,29 @@ const Index = () => {
     return generaTermicheOrarie(dayData, currentSite.altitude);
   }, [dayData, currentSite.altitude]);
 
-  // Funzione per aprire il dettaglio di un giorno dalle previsioni
+  // ---- HOOK PER PREVISIONI GIORNI (SEMPRE CHIAMATI) ----
+  const previsioneSelezionata = giorniPrevisioni.find((g) => g.giorno === dayIdx);
+
+  const previsioneData = previsioneSelezionata?.data;
+  const previsioneDailyArr = previsioneData?.daily || [];
+  const previsioneHourlyRawArr = previsioneData?.hourly || [];
+
+  const previsioneHourly = useMemo(() => filterFlightHours(previsioneHourlyRawArr), [previsioneHourlyRawArr]);
+  const previsioneDayData = useMemo(() => {
+    if (!previsioneHourly.length) return [];
+    const targetDate = previsioneDailyArr[dayIdx]?.date;
+    if (!targetDate) return previsioneHourly;
+    return previsioneHourly.filter((h) => {
+      const hd = h.time;
+      return (
+        hd.getDate() === targetDate.getDate() &&
+        hd.getMonth() === targetDate.getMonth() &&
+        hd.getFullYear() === targetDate.getFullYear()
+      );
+    });
+  }, [previsioneHourly, previsioneDailyArr, dayIdx]);
+  const previsioneEnriched = useMemo(() => enrDaily(previsioneDailyArr, previsioneHourly), [previsioneDailyArr, previsioneHourly]);
+
   const apriPrevisioneGiorno = useCallback((giorno: number) => {
     const previsione = giorniPrevisioni.find((g) => g.giorno === giorno);
     if (!previsione?.data) {
@@ -275,29 +297,9 @@ const Index = () => {
     fetchAllDecolli();
   }, [fetchAllDecolli]);
 
+  // ---- CONDITIONAL RETURN DOPO TUTTI GLI HOOK ----
   if (globalLoading) return <LoadingScreen />;
   if (globalError) return <ErrorScreen message={globalError} onRetry={handleRetry} />;
-
-  // Crea i dati per il popup quando si clicca su un giorno delle previsioni
-  const previsioneSelezionata = giorniPrevisioni.find((g) => g.giorno === dayIdx);
-  const previsioneData = previsioneSelezionata?.data;
-  const previsioneDaily = previsioneData?.daily || [];
-  const previsioneHourlyRaw = previsioneData?.hourly || [];
-  const previsioneHourly = useMemo(() => filterFlightHours(previsioneHourlyRaw), [previsioneHourlyRaw]);
-  const previsioneDayData = useMemo(() => {
-    if (!previsioneHourly.length) return [];
-    const targetDate = previsioneDaily[dayIdx]?.date;
-    if (!targetDate) return previsioneHourly;
-    return previsioneHourly.filter((h) => {
-      const hd = h.time;
-      return (
-        hd.getDate() === targetDate.getDate() &&
-        hd.getMonth() === targetDate.getMonth() &&
-        hd.getFullYear() === targetDate.getFullYear()
-      );
-    });
-  }, [previsioneHourly, previsioneDaily, dayIdx]);
-  const previsioneEnriched = useMemo(() => enrDaily(previsioneDaily, previsioneHourly), [previsioneDaily, previsioneHourly]);
 
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-slate-800 via-slate-700 to-slate-900 text-slate-100">
