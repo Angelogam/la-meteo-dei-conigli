@@ -15,6 +15,7 @@ import { fetchMeteo, fetchWindProfiles, filterFlightHours, enrDaily, calcThermal
 import { DECOLLI } from "@/data/decolli";
 import { genAI } from "@/utils/analisi";
 import { generateAiAnalysis } from "@/utils/meteoAI";
+import { calcThermalReal } from "@/utils/termiche";
 import type { MeteoData, HourData, AiAnalysis, WindProfile } from "@/types/meteo";
 import SidebarDecolli from "@/components/SidebarDecolli";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ function useRealTimeHour(): number {
     const tick = () => setH(new Date().getHours());
     const id = setInterval(tick, 10000);
     return () => clearInterval(id);
-  }, []);
+  }, [h]);
   return h;
 }
 
@@ -195,15 +196,29 @@ function Index() {
     [siteId]
   );
 
-  const thermal = useMemo(() => {
+  const thermalAI = useMemo(() => {
     if (!dayData.length) return null;
     return calcThermal(dayData, currentSite.altitude);
   }, [dayData, currentSite.altitude]);
 
   const aiData = useMemo(() => {
     if (!dayData.length) return null;
-    return genAI(dayData, { altitude: currentSite.altitude }, thermal);
-  }, [dayData, currentSite.altitude, thermal]);
+    return genAI(dayData, { altitude: currentSite.altitude }, thermalAI);
+  }, [dayData, currentSite.altitude, thermalAI]);
+
+  // Calcolo termiche reali da Open-Meteo
+  const thermalReal = useMemo(() => {
+    if (!dayData.length) return null;
+    // Temperatura e dew point medi nelle ore centrali (10-15)
+    const centralHours = dayData.filter(h => {
+      const hh = h.time.getHours();
+      return hh >= 10 && hh <= 15;
+    });
+    if (!centralHours.length) return null;
+    const avgTemp = centralHours.reduce((s, h) => s + h.temp, 0) / centralHours.length;
+    const avgDew = centralHours.reduce((s, h) => s + h.dewPoint, 0) / centralHours.length;
+    return calcThermalReal(dayData, currentSite.altitude, avgTemp, avgDew);
+  }, [dayData, currentSite.altitude]);
 
   const aiMeteoAnalysis = useMemo(() => {
     return generateAiAnalysis(dayData, dayIdx);
@@ -309,7 +324,7 @@ function Index() {
                 hour={hour}
                 enrichedDaily={enrichedDaily}
                 dateLabels={dateLabels}
-                thermal={thermal}
+                thermal={thermalAI}
                 pressureGrad={{ grad: 0, desc: "Non disponibile" }}
                 aiData={aiData}
                 onDaySelect={setDayIdx}
@@ -328,7 +343,7 @@ function Index() {
               />
             )}
 
-            {tab === "termiche" && <TermicheTab aiData={aiMeteoAnalysis as unknown as AiAnalysis} />}
+            {tab === "termiche" && <TermicheTab aiData={thermalReal as unknown as AiAnalysis} />}
 
             {tab === "analisi" && aiMeteoAnalysis && (
               <AnalisiTab aiData={aiMeteoAnalysis as unknown as AiAnalysis} />
