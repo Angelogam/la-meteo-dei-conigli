@@ -63,7 +63,7 @@ export const SiteList = ({ selected, current, onSelect, weatherMap = {} }: SiteL
                 </span>
                 {windSpeed !== null && (
                   <span className="text-sm font-bold text-blue-700">
-                    {windSpeed} km/h
+                    Vento {windSpeed} km/h
                   </span>
                 )}
               </div>
