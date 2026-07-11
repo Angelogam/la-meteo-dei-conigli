@@ -5,7 +5,7 @@ import { DECOLLI } from "@/data/decolli";
 import { fetchMeteoHourly } from "@/utils/meteo";
 import { genAI } from "@/utils/analisi";
 import { calcThermal } from "@/utils/meteo";
-import type { HourData, AiAnalysis, ThermalData } from "@/types/meteo";
+import type { HourData, AiAnalysis, ThermalData, DailyData } from "@/types/meteo";
 import { SiteHeader } from "@/components/SiteHeader";
 import { TabNav } from "@/components/TabNav";
 import { SiteList } from "@/components/SiteList";
@@ -17,8 +17,7 @@ import { MeteoTab } from "@/components/MeteoTab";
 import { VentiTab } from "@/components/VentiTab";
 import { TermicheTab } from "@/components/TermicheTab";
 import { AnalisiTab } from "@/components/AnalisiTab";
-import { enrDaily } from "@/utils/meteo";
-import type { DailyData } from "@/types/meteo";
+import { enrDaily, getZeroTermico } from "@/utils/meteo";
 
 type Tab = "meteo" | "venti" | "termiche" | "analisi";
 
@@ -34,7 +33,6 @@ export default function Index() {
   const [dayIdx, setDayIdx] = useState(0);
   const [activeTab, setActiveTab] = useState<Tab>("meteo");
 
-  // Fetch meteo per tutti i decolli
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -68,7 +66,6 @@ export default function Index() {
     return () => { cancelled = true; };
   }, []);
 
-  // Aggiorna currentMap quando cambia hour
   useEffect(() => {
     if (!Object.keys(allHourly).length) return;
     const cmap: Record<string, HourData> = {};
@@ -84,7 +81,6 @@ export default function Index() {
   const dayData = useMemo(() => allHourly[selectedId] || [], [allHourly, selectedId]);
   const current = useMemo(() => currentMap[selectedId] || null, [currentMap, selectedId]);
 
-  // Calcola dati giornalieri
   const daily = useMemo(() => {
     if (!dayData.length) return [];
     const days: DailyData[] = [];
@@ -128,6 +124,10 @@ export default function Index() {
   const thermal = useMemo(() => (dayData.length ? calcThermal(dayData, selected.altitude) : null), [dayData, selected.altitude]);
   const aiData = useMemo(() => genAI(dayData, selected, thermal), [dayData, selected, thermal]);
 
+  if (error) {
+    return <ErrorScreen message={error} onRetry={() => window.location.reload()} />;
+  }
+
   if (loading) return <LoadingScreen />;
 
   return (
@@ -136,7 +136,6 @@ export default function Index() {
         <Header />
 
         <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-3">
-          {/* Sidebar sinistra: lista decolli */}
           <div className="w-full">
             <SiteList
               selected={selectedId}
@@ -146,7 +145,6 @@ export default function Index() {
             />
           </div>
 
-          {/* Colonna centrale: dettaglio decollo */}
           <div className="w-full">
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-3 sm:p-5 mb-3">
               {current && <SiteHeader site={selected} current={current} />}
@@ -161,7 +159,6 @@ export default function Index() {
                   enrichedDaily={enrichedDaily}
                   dateLabels={dateLabels}
                   thermal={thermal}
-                  pressure<dyad-write path="src/pages/Index.tsx" description="Completamento Index.tsx bianco">
                   pressureGrad={{ grad: 0, desc: "Stabile" }}
                   aiData={aiData}
                   onDaySelect={setDayIdx}
