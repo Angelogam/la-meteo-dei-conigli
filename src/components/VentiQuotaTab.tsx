@@ -160,7 +160,7 @@ const VentiQuotaTab = ({ dayData, selectedHour, altitude, siteName }: VentiQuota
       <div className="flex items-center gap-3 justify-center mt-3 pt-2 border-t border-slate-600/30">
         <div className="flex items-center gap-1">
           <div className="w-2.5 h-2.5 rounded bg-green-400" />
-          <span className="text-[10px] text-slate-400"><10</span>
+          <span className="text-[10px] text-slate-400">{'<'}10</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2.5 h-2.5 rounded bg-yellow-400" />
@@ -172,7 +172,7 @@ const VentiQuotaTab = ({ dayData, selectedHour, altitude, siteName }: VentiQuota
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2.5 h-2.5 rounded bg-red-400" />
-          <span className="text-[10px] text-slate-400">>30</span>
+          <span className="text-[10px] text-slate-400">{'>'}30</span>
         </div>
         <span className="text-[10px] text-slate-500 ml-2">km/h</span>
       </div>
