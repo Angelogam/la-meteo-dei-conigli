@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { X, Wind, Thermometer, RefreshCw } from "lucide-react";
+import { X, Wind, Thermometer, RefreshCw, Droplets, Gauge, Cloud, CloudRain } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 import { DECOLLI } from "@/data/decolli";
-import { wic } from "@/utils/meteo";
+import { wic, wd } from "@/utils/meteo";
 import { getVoloStatus } from "@/utils/volo";
 
 interface SidebarDecolliProps {
@@ -146,19 +146,37 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                   )}
                 </div>
                 {w && (
-                  <div className="flex items-center gap-3 mt-1.5 pt-1.5 border-t border-slate-600/50">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 pt-1.5 border-t border-slate-600/50">
                     <div className="flex items-center gap-1 text-[10px] text-blue-300/70">
                       <Wind className="w-3 h-3 text-blue-400" />
-                      <span className="font-medium">{w.windSpeed} km/h</span>
+                      <span className="font-medium">{Math.round(w.windSpeed)} km/h</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] text-orange-300/70">
+                      <span className="text-orange-400">⬆</span>
+                      <span className="font-medium">{w.windGust ? Math.round(w.windGust) : "--"} km/h</span>
                     </div>
                     <div className="flex items-center gap-1 text-[10px] text-amber-300/70">
                       <Thermometer className="w-3 h-3 text-amber-400" />
                       <span className="font-medium">{Math.round(w.temperature)}°C</span>
                     </div>
                     <div className="flex items-center gap-1 text-[10px] text-emerald-300/70">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      <Droplets className="w-3 h-3 text-emerald-400" />
                       <span className="font-medium">{w.humidity}%</span>
                     </div>
+                    <div className="flex items-center gap-1 text-[10px] text-purple-300/70">
+                      <Gauge className="w-3 h-3 text-purple-400" />
+                      <span className="font-medium">{w.pressure ? Math.round(w.pressure) : "--"} hPa</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] text-slate-300/70">
+                      <Cloud className="w-3 h-3 text-slate-400" />
+                      <span className="font-medium">{w.cloudCover}%</span>
+                    </div>
+                    {w.precipitation && w.precipitation > 0 && (
+                      <div className="flex items-center gap-1 text-[10px] text-blue-300/70">
+                        <CloudRain className="w-3 h-3 text-blue-400" />
+                        <span className="font-medium">{w.precipitation.toFixed(1)} mm</span>
+                      </div>
+                    )}
                   </div>
                 )}
                 {!w && (
