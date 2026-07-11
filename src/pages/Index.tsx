@@ -132,7 +132,7 @@ export default function Index() {
   if (loading) return <LoadingScreen />;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100">
+    <div className="min-h-screen flex flex-col bg-gradient-to-r from-gray-900 via-gray-700 to-gray-500">
       <div className="flex-1 w-full mx-auto px-1 sm:px-3 py-2 max-w-[1600px]">
         <Header />
 
