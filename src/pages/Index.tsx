@@ -12,7 +12,7 @@ import { VentiTab } from "@/components/VentiTab";
 import { TermicheTab } from "@/components/TermicheTab";
 import { AnalisiTab } from "@/components/AnalisiTab";
 import { SiteHeader } from "@/components/SiteHeader";
-import { DayForecastPopup } from "@/components/DayForecastPopup";
+import DayForecastPopup from "@/components/DayForecastPopup";
 import { fetchMeteo, wic, wa, wd, enrDaily, getZeroTermico, calcThermal, getWindProfile, calcTurbulence } from "@/utils/meteo";
 import { DECOLLI } from "@/data/decolli";
 import { genAI } from "@/utils/analisi";
