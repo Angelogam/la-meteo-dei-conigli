@@ -58,8 +58,16 @@ export interface WindProfile {
 }
 
 export interface AiAnalysis {
-  summary: string;
-  score: number;
-  reasoning: string;
-  recommendations: string[];
+  general: string;
+  thermal: string;
+  wind: string;
+  hourly: string;
+  advice: string;
+  thunderstorm: string;
+  altitude?: string;
+  pressure?: string;
+  summary?: string;
+  score?: number;
+  reasoning?: string;
+  recommendations?: string[];
 }
