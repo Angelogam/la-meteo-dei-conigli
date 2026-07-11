@@ -2,7 +2,7 @@
 
 import type { HourData } from "@/types/meteo";
 import type { Decollo } from "@/data/decolli";
-import { calcShear, wic, wa, wd, ct } from "@/utils/meteo";
+import { wic, wa, wd, ct } from "@/utils/meteo";
 
 export function genAI(dayData: HourData[], site: Decollo, thermal: any, wp: any[]) {
   if (!dayData?.length) return null;
@@ -11,13 +11,10 @@ export function genAI(dayData: HourData[], site: Decollo, thermal: any, wp: any[
   const hasRain = dayData.some((h) => h.precipitation > 0.5);
   const hasStorm = dayData.some((h) => h.weatherCode >= 95);
   const soar = thermal?.soarIdx || 0;
-  const shear = wp ? calcShear(wp) : null;
   let rs = 0;
   if (maxW > 25) rs += 2;
   if (hasStorm) rs += 3;
   if (soar < 3) rs += 1;
-  if (shear?.risk === "alto") rs += 2;
-  else if (shear?.risk === "medio") rs += 1;
   let risk = "basso";
   if (rs >= 5) risk = "alto";
   else if (rs >= 3) risk = "medio";
@@ -32,7 +29,6 @@ export function genAI(dayData: HourData[], site: Decollo, thermal: any, wp: any[
   if (risk === "alto") adv += "ALTO - Sconsigliato!\n"; else if (risk === "medio") adv += "MEDIO - Attenzione!\n"; else adv += "BASSO - Favorevole!\n\n";
   if (maxW > 25) adv += "Vento forte (>25 km/h).\n"; else if (maxW > 18) adv += "Vento sostenuto (18-25 km/h).\n"; else if (maxW < 5) adv += "Vento debole (<5 km/h).\n"; else adv += "Vento ideale (5-18 km/h).\n";
   if (soar >= 7) adv += "Termiche forti - Ottime per cross!\n"; else if (soar >= 5) adv += "Termiche medie - Buona attivita.\n"; else adv += "Termiche deboli - Voli locali.\n";
-  if (shear) adv += shear.desc + "\n";
 
   let th = "ANALISI TERMICHE\n\n";
   if (thermal) {
