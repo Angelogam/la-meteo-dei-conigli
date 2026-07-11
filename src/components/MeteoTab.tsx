@@ -2,6 +2,7 @@
 
 import { wic, wa, getZeroTermico } from "@/utils/meteo";
 import type { HourData, DailyData, ThermalData, PressureGradient, AiAnalysis } from "@/types/meteo";
+import { FinestreVolabilita } from "./FinestreVolabilita";
 
 interface MeteoTabProps {
   current: HourData;
@@ -70,23 +71,17 @@ export const MeteoTab = ({
       </div>
 
       {/* Finestre volabilità */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-        {[
-          ["🌡️ Temperatura", `${Math.round(current.temperature)}°C`, "text-orange-600"],
-          ["💧 Umidità", `${Math.round(current.humidity)}%`, "text-blue-600"],
-          ["☁️ Nuvolosità", `${Math.round(current.cloudCover)}%`, "text-gray-700"],
-          ["🌧️ Precipitazioni", current.precipitation === 0 ? "Assenti" : `${current.precipitation} mm`, "text-sky-600"],
-          ["☁️ Base Nuvole", thermal ? `${thermal.cloudBase}m` : "--", "text-gray-700"],
-          ["⬆️ Plafond", thermal ? `${thermal.thermalTop}m` : "--", "text-gray-700"],
-          ["🪁 Galleggiamento", thermal ? `${thermal.soarIdx}/10` : "--", "text-amber-600"],
-          ["💨 Vento", `${wa(current.windDir)} ${Math.round(current.windSpeed)} km/h`, "text-indigo-600"],
-        ].map(([l, v, color]) => (
-          <div key={l as string} className="bg-white p-2.5 rounded-xl border border-gray-200 shadow-sm">
-            <div className="text-xs font-bold text-gray-500 mb-0.5">{l}</div>
-            <div className={`text-base font-extrabold ${color}`}>{v}</div>
-          </div>
-        ))}
-      </div>
+      <FinestreVolabilita
+        temperature={current.temperature}
+        humidity={current.humidity}
+        cloudCover={current.cloudCover}
+        precipitation={current.precipitation}
+        cloudBase={thermal?.cloudBase ?? null}
+        thermalTop={thermal?.thermalTop ?? null}
+        soarIdx={thermal?.soarIdx ?? null}
+        windDir={wa(current.windDir)}
+        windSpeed={current.windSpeed}
+      />
 
       {/* Zero Termico */}
       <div className="mb-4 p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
