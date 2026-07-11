@@ -1,13 +1,9 @@
 "use client";
 
 import React from "react";
+import { MeteoGram } from "@/components/MeteoGram";
 import type { HourData } from "@/types/meteo";
 import { generaAnalisiReale } from "@/utils/analisi";
-
-interface TermicheTabProps {
-  dayData: HourData[];
-  altitude: number;
-}
 
 export const TermicheTab = ({ dayData, altitude }: TermicheTabProps) => {
   const analisi = generaAnalisiReale(dayData, altitude);

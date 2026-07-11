@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from "react";
 import { X, Wind, Thermometer, RefreshCw, Droplets, Gauge, Cloud, CloudRain } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 import { DECOLLI } from "@/data/decolli";
-import { wic } from "@/utils/meteo";
+import { wic, wd } from "@/utils/meteo";
 import { getVoloStatus } from "@/utils/volo";
 
 interface SidebarDecolliProps {
@@ -70,7 +70,9 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
               <span className="text-base">🪂</span>
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white tracking-tight">Decolli</h2>
+              <h2 className="text-sm font-bold text-white tracking-tight">
+                Decolli
+              </h2>
               <p className="text-[10px] text-blue-300/60 font-medium flex items-center gap-1">
                 <RefreshCw className="w-2.5 h-2.5 animate-spin" />
                 {DECOLLI.length} siti · {String(now.getHours()).padStart(2, "0")}:{String(now.getMinutes()).padStart(2, "0")}
