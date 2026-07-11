@@ -77,8 +77,6 @@ export async function fetchMeteo(lat: number, lon: number): Promise<MeteoData> {
 
 /** Calcola lo zero termico basato sul gradiente adiabatico secco (0.98°C per 100m) */
 export function getZeroTermico(temperature: number, altitude: number): number {
-  // Risaliamo dal suolo: ogni 100m la temperatura cala di ~0.98°C
-  // Zero termico = altitudine + (temperatura / 0.0098)
   if (temperature <= 0) return altitude;
   return Math.round(altitude + (temperature / 0.0098));
 }
@@ -164,4 +162,15 @@ export function calcThermal(dayData: HourData[], altitude: number): ThermalData 
   const soarIdx = Math.min(10, Math.max(0, soarRaw));
 
   return { cloudBase, thermalTop, soarIdx };
+}
+
+/** Calcola turbolenza per una data ora e quota */
+export function calcTurbulence(dayData: HourData[], hour: number, altitude: number): number {
+  const hd = dayData.find((x) => x.time.getHours() === hour);
+  if (!hd) return 0;
+  // Formula semplificata: più vento e turbolenza di gradiente
+  const ws = hd.windSpeed;
+  const gust = hd.windGust;
+  const turb = Math.min(5, Math.max(1, Math.round((ws * 0.15) + (gust * 0.1) + (altitude > 2000 ? 0.5 : 0))));
+  return turb;
 }
