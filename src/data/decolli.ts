@@ -20,7 +20,7 @@ export const DECOLLI: Decollo[] = [
     lat: 44.25874571728482,
     lon: 7.794304664370852,
     altitude: 1740,
-    valley: "Valle Infernotto",
+    valley: "Valle Maudagna",
     exposure: "S/SE",
     difficulty: 2,
   },
