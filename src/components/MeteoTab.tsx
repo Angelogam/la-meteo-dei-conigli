@@ -45,7 +45,7 @@ export function MeteoTab({
   }, [startHour, endHour]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 text-slate-700">
       {/* Select day - pillole eleganti */}
       <div className="flex gap-1.5 flex-wrap">
         {enrichedDaily.map((day: any, i: number) => (
@@ -54,8 +54,8 @@ export function MeteoTab({
             onClick={() => onDaySelect(i)}
             className={`px-3.5 py-1.5 text-xs font-semibold rounded-full transition-all duration-200 border ${
               i === dayIdx
-                ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white border-orange-400 shadow-lg shadow-orange-500/20 scale-105"
-                : "bg-white/[0.05] text-blue-200/70 border-white/10 hover:bg-white/[0.1] hover:text-white"
+                ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white border-blue-400 shadow-lg shadow-blue-500/20 scale-105"
+                : "bg-white/80 text-slate-600 border-blue-200 hover:bg-blue-50 hover:text-slate-800"
             }`}
           >
             {dateLabels[i]}
@@ -66,13 +66,13 @@ export function MeteoTab({
       {/* Hour slider 9-19 con etichette eleganti */}
       <div className="pt-3 pb-1 px-1">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-[10px] font-medium text-blue-300/60">{startHour}:00</span>
+          <span className="text-[10px] font-medium text-slate-500">{startHour}:00</span>
           <div className="flex items-center gap-2">
-            <Sun className="w-3.5 h-3.5 text-orange-400/60" />
-            <span className="text-sm font-bold text-white">{String(hour).padStart(2, "0")}:00</span>
-            <Sun className="w-3.5 h-3.5 text-orange-400/60" />
+            <Sun className="w-3.5 h-3.5 text-amber-500" />
+            <span className="text-sm font-bold text-slate-800">{String(hour).padStart(2, "0")}:00</span>
+            <Sun className="w-3.5 h-3.5 text-amber-500" />
           </div>
-          <span className="text-[10px] font-medium text-blue-300/60">{endHour}:00</span>
+          <span className="text-[10px] font-medium text-slate-500">{endHour}:00</span>
         </div>
         <Slider
           value={[hour]}
@@ -80,9 +80,9 @@ export function MeteoTab({
           max={endHour}
           step={1}
           onValueChange={([v]) => onHourChange(v)}
-          className="[&_[role=slider]]:bg-orange-400 [&_[role=slider]]:border-orange-500 [&_[role=slider]]:w-4 [&_[role=slider]]:h-4 [&_[role=slider]]:shadow-lg"
+          className="[&_[role=slider]]:bg-blue-600 [&_[role=slider]]:border-blue-500 [&_[role=slider]]:w-4 [&_[role=slider]]:h-4 [&_[role=slider]]:shadow-lg"
         />
-        <div className="flex justify-between mt-1 text-[8px] text-blue-300/30">
+        <div className="flex justify-between mt-1 text-[8px] text-slate-400">
           {hours.filter((_, i) => i % 2 === 0).map((h) => (
             <span key={h.value}>{h.label}</span>
           ))}
@@ -90,70 +90,70 @@ export function MeteoTab({
       </div>
 
       {/* Current weather card - rinnovata */}
-      <Card className="border border-white/10 bg-gradient-to-br from-white/[0.06] to-white/[0.02] shadow-xl overflow-hidden">
+      <Card className="border border-blue-200 bg-white shadow-sm overflow-hidden">
         <CardContent className="p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500/20 to-amber-500/10 border border-orange-500/20 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-100 to-blue-50 border border-blue-200 flex items-center justify-center">
                 <WeatherIcon code={current.weatherCode} size={36} />
               </div>
               <div>
-                <div className="text-4xl font-black text-white tracking-tight leading-none">
+                <div className="text-4xl font-black text-slate-800 tracking-tight leading-none">
                   {Math.round(current.temperature)}°
                 </div>
-                <div className="text-xs font-medium text-blue-300/70 mt-1">
+                <div className="text-xs font-medium text-slate-500 mt-1">
                   Percepita {Math.round(current.feelsLike)}°
                 </div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-right">
               <div className="flex items-center gap-1.5 justify-end">
-                <Droplets className="w-3 h-3 text-blue-400/60" />
-                <span className="text-[11px] font-medium text-blue-200/80">{current.humidity}%</span>
+                <Droplets className="w-3 h-3 text-blue-500" />
+                <span className="text-[11px] font-medium text-slate-700">{current.humidity}%</span>
               </div>
               <div className="flex items-center gap-1.5 justify-end">
-                <Wind className="w-3 h-3 text-cyan-400/60" />
-                <span className="text-[11px] font-medium text-blue-200/80">{Math.round(current.windSpeed)} km/h</span>
+                <Wind className="w-3 h-3 text-sky-500" />
+                <span className="text-[11px] font-medium text-slate-700">{Math.round(current.windSpeed)} km/h</span>
               </div>
               <div className="flex items-center gap-1.5 justify-end">
-                <Gauge className="w-3 h-3 text-purple-400/60" />
-                <span className="text-[11px] font-medium text-blue-200/80">{Math.round(current.windGust)} km/h</span>
+                <Gauge className="w-3 h-3 text-purple-500" />
+                <span className="text-[11px] font-medium text-slate-700">{Math.round(current.windGust)} km/h</span>
               </div>
               <div className="flex items-center gap-1.5 justify-end">
-                <Cloud className="w-3 h-3 text-gray-400/60" />
-                <span className="text-[11px] font-medium text-blue-200/80">{current.cloudCover}%</span>
+                <Cloud className="w-3 h-3 text-slate-500" />
+                <span className="text-[11px] font-medium text-slate-700">{current.cloudCover}%</span>
               </div>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-[11px]">
-            <span className="text-gray-400">Pressione {Math.round(current.pressure)} hPa</span>
-            <span className="text-gray-400">UV {current.uvIndex ?? "—"}</span>
+          <div className="mt-3 pt-3 border-t border-blue-100 flex items-center justify-between text-[11px]">
+            <span className="text-slate-500">Pressione {Math.round(current.pressure)} hPa</span>
+            <span className="text-slate-500">UV {current.uvIndex ?? "—"}</span>
           </div>
         </CardContent>
       </Card>
 
       {/* Thermal summary - card più raffinata */}
       {thermal && (
-        <Card className="border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-orange-500/5 shadow-lg overflow-hidden">
+        <Card className="border border-amber-200 bg-amber-50/50 shadow-sm overflow-hidden">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
-                <Thermometer className="w-3.5 h-3.5 text-amber-400" />
+              <div className="w-7 h-7 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-center">
+                <Thermometer className="w-3.5 h-3.5 text-amber-600" />
               </div>
-              <span className="text-sm font-bold text-amber-200">Condizioni termiche</span>
+              <span className="text-sm font-bold text-slate-800">Condizioni termiche</span>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl bg-white/5 p-2.5 text-center border border-white/5">
-                <div className="text-[9px] font-medium text-amber-300/70 uppercase tracking-wider">Base</div>
-                <div className="text-sm font-bold text-white mt-0.5">{thermal.cloudBase}m</div>
+              <div className="rounded-xl bg-white p-2.5 text-center border border-amber-200 shadow-sm">
+                <div className="text-[9px] font-medium text-slate-500 uppercase tracking-wider">Base</div>
+                <div className="text-sm font-bold text-slate-800 mt-0.5">{thermal.cloudBase}m</div>
               </div>
-              <div className="rounded-xl bg-white/5 p-2.5 text-center border border-white/5">
-                <div className="text-[9px] font-medium text-amber-300/70 uppercase tracking-wider">Cima</div>
-                <div className="text-sm font-bold text-white mt-0.5">{thermal.thermalTop}m</div>
+              <div className="rounded-xl bg-white p-2.5 text-center border border-amber-200 shadow-sm">
+                <div className="text-[9px] font-medium text-slate-500 uppercase tracking-wider">Cima</div>
+                <div className="text-sm font-bold text-slate-800 mt-0.5">{thermal.thermalTop}m</div>
               </div>
-              <div className="rounded-xl bg-white/5 p-2.5 text-center border border-white/5">
-                <div className="text-[9px] font-medium text-amber-300/70 uppercase tracking-wider">Soaring</div>
-                <div className="text-sm font-bold text-white mt-0.5">{thermal.soarIdx}/10</div>
+              <div className="rounded-xl bg-white p-2.5 text-center border border-amber-200 shadow-sm">
+                <div className="text-[9px] font-medium text-slate-500 uppercase tracking-wider">Soaring</div>
+                <div className="text-sm font-bold text-slate-800 mt-0.5">{thermal.soarIdx}/10</div>
               </div>
             </div>
           </CardContent>
@@ -162,15 +162,15 @@ export function MeteoTab({
 
       {/* AI analysis preview */}
       {aiData && (
-        <Card className="border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-indigo-500/5 shadow-lg overflow-hidden">
+        <Card className="border border-blue-200 bg-blue-50/50 shadow-sm overflow-hidden">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1.5">
-              <div className="w-7 h-7 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg bg-blue-100 border border-blue-200 flex items-center justify-center">
                 <span className="text-xs">📊</span>
               </div>
-              <span className="text-sm font-bold text-blue-200">Analisi meteo</span>
+              <span className="text-sm font-bold text-slate-800">Analisi meteo</span>
             </div>
-            <p className="text-xs text-blue-200/70 leading-relaxed line-clamp-3">{aiData.general}</p>
+            <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">{aiData.general}</p>
           </CardContent>
         </Card>
       )}

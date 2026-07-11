@@ -139,18 +139,18 @@ function Index() {
   if (!meteoData) return <LoadingScreen />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-blue-950 to-gray-950 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100/60 to-gray-100 text-slate-800">
       {/* Header */}
-      <header className="px-4 py-4 border-b border-white/10">
+      <header className="px-4 py-4 border-b border-white/30 bg-white/70 backdrop-blur-md">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <span className="text-2xl md:text-3xl animate-bounce">🐰</span>
               <div>
-                <h1 className="text-lg md:text-xl font-extrabold text-orange-400 tracking-tight">
+                <h1 className="text-lg md:text-xl font-extrabold text-blue-900 tracking-tight">
                   Meteo dei Conigli
                 </h1>
-                <p className="text-[10px] md:text-xs text-blue-300/70 font-medium">
+                <p className="text-[10px] md:text-xs text-blue-600/70 font-medium">
                   Previsioni per volo libero
                 </p>
               </div>
@@ -159,10 +159,10 @@ function Index() {
               <span className="text-xl md:text-2xl animate-pulse">🪂</span>
               <button
                 onClick={toggleSidebar}
-                className="md:hidden p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors border border-white/10"
+                className="md:hidden p-2 rounded-xl bg-blue-100 hover:bg-blue-200 transition-colors border border-blue-200"
                 aria-label="Apri decolli"
               >
-                <Menu className="w-5 h-5 text-orange-400" />
+                <Menu className="w-5 h-5 text-blue-700" />
               </button>
             </div>
           </div>
@@ -194,7 +194,7 @@ function Index() {
           <TabNav tab={tab} onTabChange={setTab} />
 
           {/* Tab content */}
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-3 md:p-4 border border-white/10 mt-2.5">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 md:p-4 border border-white/40 shadow-sm mt-2.5 text-slate-700">
             {tab === "meteo" && currentHourData && (
               <MeteoTab
                 current={currentHourData}
@@ -222,7 +222,7 @@ function Index() {
               <AnalisiTab aiData={aiMeteoAnalysis as unknown as AiAnalysis} />
             )}
             {tab === "analisi" && !aiMeteoAnalysis && (
-              <div className="text-sm text-gray-400 p-4 text-center">
+              <div className="text-sm text-gray-500 p-4 text-center">
                 Nessuna analisi disponibile per questa giornata.
               </div>
             )}
@@ -234,7 +234,7 @@ function Index() {
               variant="outline"
               size="sm"
               onClick={() => setShowPopup(true)}
-              className="text-xs border-white/20 text-blue-300 hover:bg-white/10"
+              className="text-xs border-blue-300 text-blue-700 hover:bg-blue-50 bg-white/80"
             >
               <MapPin className="w-3 h-3 mr-1" />
               Dettaglio orario {currentSite?.name}
@@ -258,12 +258,12 @@ function Index() {
       </div>
 
       {/* Footer */}
-      <footer className="fixed bottom-0 left-0 right-0 text-center py-2 border-t border-white/10 bg-gray-950/90 backdrop-blur-sm z-40">
+      <footer className="fixed bottom-0 left-0 right-0 text-center py-2 border-t border-white/30 bg-white/80 backdrop-blur-sm z-40">
         <div className="max-w-5xl mx-auto px-3 flex items-center justify-between">
-          <p className="text-[10px] text-blue-300/50">
+          <p className="text-[10px] text-blue-500/60">
             Basato su dati Open-Meteo
           </p>
-          <p className="text-[10px] text-blue-300/50">
+          <p className="text-[10px] text-blue-500/60">
             &copy; {new Date().getFullYear()} Meteo dei Conigli
           </p>
         </div>
