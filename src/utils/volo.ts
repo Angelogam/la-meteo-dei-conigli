@@ -1,4 +1,4 @@
-windGust">
+sulla prima riga">
 "use client";
 
 import type { HourData } from "@/types/meteo";
