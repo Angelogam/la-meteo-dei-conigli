@@ -158,7 +158,7 @@ function getThermalIndex(temp: number, cloud: number, humidity: number, delta: n
   if (humidity < 50) score += 1;
   if (delta > 10) score += 2;
   else if (delta > 6) score += 1;
-
+  
   if (score >= 6) return { level: 'Forte', icon: '🔥', color: '#ff1744', desc: 'Ottima attività termica' };
   if (score >= 4) return { level: 'Media', icon: '💪', color: '#ff6d00', desc: 'Buona attività termica' };
   if (score >= 2) return { level: 'Debole', icon: '🫤', color: '#ffd600', desc: 'Termiche deboli' };
@@ -173,19 +173,19 @@ function getWindAtAltitude(surfaceWind: number, surfaceDir: number, altitude: nu
   const heightFactor = 1 + (altitude - surfaceAltitude) * 0.0025;
   let windSpeed = surfaceWind * heightFactor;
   windSpeed = Math.min(windSpeed, surfaceWind * 3.5);
-
+  
   let dirOffset = (altitude - surfaceAltitude) / 1000 * 15;
   dirOffset = Math.min(dirOffset, 45);
-
+  
   let windDir = surfaceDir + dirOffset;
   if (windDir > 360) windDir -= 360;
   if (windDir < 0) windDir += 360;
-
+  
   return {
-    altitude,
+    altitude: altitude,
     speed: Math.round(windSpeed * 10) / 10,
     direction: Math.round(windDir),
-    directionName: getWindDirection(windDir),
+    directionName: getWindDirection(windDir)
   };
 }
 
@@ -198,24 +198,24 @@ function getWindProfile(surfaceWind: number, surfaceDir: number, minAlt = 400, m
     altitude: 10,
     speed: surfaceWind,
     direction: surfaceDir,
-    directionName: getWindDirection(surfaceDir),
+    directionName: getWindDirection(surfaceDir)
   });
   return profile;
 }
 
 function calculateWindShear(profile: ReturnType<typeof getWindAtAltitude>[]) {
-  if (profile.length < 2) return { shear: 0, description: 'Dati insufficienti', risk: 'basso' };
-
+  if (profile.length < 2) return { shear: 0, description: 'Dati insufficienti', risk: 'basso' as string, speedShear: 0, dirShear: 0, surfaceSpeed: 0, highSpeed: 0, surfaceDir: '--', highDir: '--' };
+  
   const surface = profile[0];
   const highAlt = profile[profile.length - 1];
-
+  
   const speedShear = highAlt.speed - surface.speed;
   const dirShear = highAlt.direction - surface.direction;
   let shearValue = Math.abs(speedShear) + Math.abs(dirShear) * 0.5;
-
+  
   let description = '';
   let risk = 'basso';
-
+  
   if (shearValue > 30) {
     description = '⚠️ SHEAR MOLTO FORTE - Turbolenze significative, volo pericoloso!';
     risk = 'alto';
@@ -229,7 +229,7 @@ function calculateWindShear(profile: ReturnType<typeof getWindAtAltitude>[]) {
     description = '✅ Shear basso - Condizioni stabili, volo sicuro';
     risk = 'basso';
   }
-
+  
   return {
     shear: Math.round(shearValue * 10) / 10,
     speedShear: Math.round(speedShear * 10) / 10,
@@ -239,7 +239,7 @@ function calculateWindShear(profile: ReturnType<typeof getWindAtAltitude>[]) {
     surfaceSpeed: surface.speed,
     highSpeed: highAlt.speed,
     surfaceDir: surface.directionName,
-    highDir: highAlt.directionName,
+    highDir: highAlt.directionName
   };
 }
 
@@ -258,10 +258,10 @@ function getWindColor(speed: number, maxSpeed: number) {
 
 function calculateThermalProfile(dayData: any[], siteElevation = 1500) {
   if (!dayData || dayData.length === 0) return null;
-
+  
   const temps = dayData.map((h: any) => h.temperature).filter((t: any) => t !== undefined);
   if (temps.length === 0) return null;
-
+  
   const avgTemp = temps.reduce((a: number, b: number) => a + b, 0) / temps.length;
   const maxTemp = Math.max(...temps);
   const minTemp = Math.min(...temps);
@@ -269,13 +269,13 @@ function calculateThermalProfile(dayData: any[], siteElevation = 1500) {
   const avgDew = dayData.reduce((sum: number, h: any) => sum + h.dewPoint, 0) / dayData.length;
   const avgCloud = dayData.reduce((sum: number, h: any) => sum + h.cloudCover, 0) / dayData.length;
   const avgHumidity = dayData.reduce((sum: number, h: any) => sum + h.humidity, 0) / dayData.length;
-
+  
   const cloudBase = Math.round((avgTemp - avgDew) * 120 + siteElevation);
   const thermalTop = Math.round(siteElevation + (thermalDelta * 100));
   const nbl = Math.round(siteElevation + (thermalDelta * 80));
   const verticalIntensity = Math.round((thermalDelta / 10) * 1.5 * 10) / 10;
   const soarIndex = Math.min(10, Math.round((thermalDelta / 2) + (avgCloud < 40 ? 2 : 0) + (avgHumidity < 50 ? 1 : 0)));
-
+  
   return {
     cloudBase,
     thermalTop,
@@ -313,119 +313,104 @@ function calculateThermalProfile(dayData: any[], siteElevation = 1500) {
    ANALISI AI COMPLETA
    ============================ */
 
-function generateAIAnalysis(meteoData: any, site: any, dayData: any[], thermalProfile: any, windProfileData: any) {
-  if (!meteoData || !dayData || dayData.length === 0) return null;
-
-  return {
-    general: generateGeneralDescription(dayData, site),
-    thermal: generateThermalAnalysis(dayData, thermalProfile, site),
-    wind: generateWindAnalysis(dayData, site, windProfileData),
-    altitude: generateAltitudeAnalysis(dayData, thermalProfile, site),
-    hourly: generateHourlyBreakdown(dayData, thermalProfile),
-    advice: generateFlightAdvice(dayData, site, thermalProfile, windProfileData),
-    pressure: generatePressureAnalysis(dayData),
-    thunderstorm: generateThunderstormAlert(dayData),
-  };
-}
-
 function generateGeneralDescription(dayData: any[], site: any) {
   const temps = dayData.map((h: any) => h.temperature).filter((t: any) => t !== undefined);
   if (temps.length === 0) return "Dati insufficienti per l'analisi.";
-
+  
   const avgTemp = temps.reduce((a: number, b: number) => a + b, 0) / temps.length;
   const maxTemp = Math.max(...temps);
   const minTemp = Math.min(...temps);
   const avgCloud = dayData.reduce((sum: number, h: any) => sum + h.cloudCover, 0) / dayData.length;
   const maxWind = Math.max(...dayData.map((h: any) => h.windSpeed));
   const hasRain = dayData.some((h: any) => h.precipitation > 0.5);
-
+  
   let desc = `📋 PANORAMICA GENERALE\n\n`;
   desc += `🌅 La giornata al decollo di ${site.name} si presenta `;
-
+  
   if (avgCloud < 30) desc += `con cielo prevalentemente sereno e temperature tra ${Math.round(minTemp)}°C e ${Math.round(maxTemp)}°C (media ${Math.round(avgTemp)}°C). `;
   else if (avgCloud < 60) desc += `con cielo parzialmente nuvoloso e temperature tra ${Math.round(minTemp)}°C e ${Math.round(maxTemp)}°C. `;
   else desc += `con cielo nuvoloso e temperature fresche tra ${Math.round(minTemp)}°C e ${Math.round(maxTemp)}°C. `;
-
+  
   if (maxWind > 25) desc += `💨 Attenzione al vento che raggiungerà ${Math.round(maxWind)} km/h. `;
   else if (maxWind > 15) desc += `💨 Vento moderato fino a ${Math.round(maxWind)} km/h. `;
   else desc += `💨 Vento debole fino a ${Math.round(maxWind)} km/h. `;
-
+  
   if (hasRain) desc += `🌧️ Precipitazioni previste, valutare attentamente. `;
   else desc += `✅ Nessuna precipitazione prevista. `;
-
+  
   desc += `📍 Il sito è esposto a ${site.exposure}.`;
   return desc;
 }
 
 function generateThermalAnalysis(dayData: any[], thermalProfile: any, site: any) {
   if (!thermalProfile) return "Dati insufficienti per l'analisi termica.";
-
+  
   const { cloudBase, thermalTop, nbl, verticalIntensity, soarIndex, thermalDelta, avgTemp, avgCloud } = thermalProfile;
-
+  
   let desc = `🔥 ANALISI TERMICHE VERTICALI\n\n`;
   desc += `📊 Dati termici:\n`;
   desc += `   • Temperatura media: ${Math.round(avgTemp)}°C\n`;
   desc += `   • Delta termico: ${thermalDelta}°C\n`;
   desc += `   • Nuvolosità media: ${Math.round(avgCloud)}%\n\n`;
-
+  
   desc += `📈 Profilo verticale delle termiche:\n`;
   desc += `   • Base delle nuvole (Cloud Base): ${cloudBase}m\n`;
   desc += `   • Plafond termico massimo: ${thermalTop}m\n`;
   desc += `   • Livello di galleggiamento (NBL): ${nbl}m\n`;
   desc += `   • Intensità termica verticale: ${verticalIntensity} m/s\n`;
   desc += `   • Indice di galleggiamento (Soaring Index): ${soarIndex}/10\n\n`;
-
+  
   if (soarIndex >= 7) desc += `🪂 **Galleggiamento eccellente!** Condizioni ideali per rimanere in aria a lungo.\n`;
   else if (soarIndex >= 5) desc += `🪂 **Buon galleggiamento.** Condizioni favorevoli per voli di media durata.\n`;
   else if (soarIndex >= 3) desc += `🪂 **Galleggiamento limitato.** Voli più brevi, termiche deboli.\n`;
   else desc += `🪂 **Galleggiamento scarso.** Condizioni difficili per rimanere in quota.\n`;
-
+  
   desc += `\n⏰ Sviluppo verticale orario:\n`;
   thermalProfile.hourlyProfile.forEach((h: any) => {
     const icon = h.intensity > 2 ? '🔥' : h.intensity > 1 ? '💪' : '🫤';
     desc += `   • ${String(h.hour).padStart(2, '0')}:00 → ${icon} intensità ${h.intensity}m/s, base nuvole ${h.cloudBase}m\n`;
   });
-
+  
   return desc;
 }
 
 function generateWindAnalysis(dayData: any[], site: any, windProfileData: any) {
   const windData = dayData.filter((h: any) => h.time.getHours() >= 9 && h.time.getHours() <= 19);
   if (windData.length === 0) return "Dati vento non disponibili.";
-
+  
   const avgSpeed = windData.reduce((sum: number, h: any) => sum + h.windSpeed, 0) / windData.length;
   const maxSpeed = Math.max(...windData.map((h: any) => h.windSpeed));
   const maxGust = Math.max(...windData.map((h: any) => h.windGust));
   const avgDir = windData.reduce((sum: number, h: any) => sum + h.windDir, 0) / windData.length;
   const dominantDir = getWindDirection(avgDir);
-
+  
   let desc = `💨 ANALISI DEL VENTO\n\n`;
   desc += `📊 Vento superficiale (10m):\n`;
   desc += `   • Velocità media: ${Math.round(avgSpeed)} km/h\n`;
   desc += `   • Raffica massima: ${Math.round(maxGust)} km/h\n`;
   desc += `   • Direzione dominante: ${dominantDir}\n`;
-
+  
   const expDirs = site.exposure.split('/').map((d: string) => d.trim());
   const isFav = expDirs.some((exp: string) => dominantDir === exp || dominantDir === exp + 'E' || dominantDir === exp + 'W');
   desc += `   • Rispetto al sito: ${isFav ? '✅ Favorevole' : '⚠️ Non favorevole'}\n\n`;
-
+  
   const has80m = windData.some((h: any) => h.wind80m !== null);
   const has120m = windData.some((h: any) => h.wind120m !== null);
-
+  
   if (has80m) {
     const avg80 = windData.filter((h: any) => h.wind80m !== null).reduce((sum: number, h: any) => sum + h.wind80m, 0) / windData.filter((h: any) => h.wind80m !== null).length;
     desc += `📊 Vento a 80m (quota termica):\n`;
     desc += `   • Velocità media: ${Math.round(avg80)} km/h\n`;
     desc += `   • Differenza: ${Math.round(avg80 - avgSpeed)} km/h\n\n`;
   }
-
+  
   if (has120m) {
     const avg120 = windData.filter((h: any) => h.wind120m !== null).reduce((sum: number, h: any) => sum + h.wind120m, 0) / windData.filter((h: any) => h.wind120m !== null).length;
     desc += `📊 Vento a 120m (alta quota):\n`;
     desc += `   • Velocità media: ${Math.round(avg120)} km/h\n`;
     desc += `   • Differenza: ${Math.round(avg120 - avgSpeed)} km/h\n\n`;
   }
-
+  
   if (windProfileData) {
     desc += `📊 Profilo vento completo (400m - 4000m):\n`;
     const shear = calculateWindShear(windProfileData);
@@ -434,15 +419,15 @@ function generateWindAnalysis(dayData: any[], site: any, windProfileData: any) {
     desc += `   • Variazione direzione: ${shear.dirShear}°\n`;
     desc += `   • ${shear.description}\n`;
   }
-
+  
   return desc;
 }
 
 function generateAltitudeAnalysis(dayData: any[], thermalProfile: any, site: any) {
   if (!thermalProfile) return "Dati insufficienti per l'analisi delle quote.";
-
+  
   const { cloudBase, thermalTop, nbl, soarIndex, thermalDelta } = thermalProfile;
-
+  
   let desc = `🏔️ ANALISI QUOTE E PLAFOND\n\n`;
   desc += `📊 Quote stimate:\n`;
   desc += `   • Base decollo: ${site.altitude || 1500}m\n`;
@@ -450,165 +435,134 @@ function generateAltitudeAnalysis(dayData: any[], thermalProfile: any, site: any
   desc += `   • Plafond termico massimo: ${thermalTop}m\n`;
   desc += `   • Livello di galleggiamento: ${nbl}m\n`;
   desc += `   • Delta termico: ${thermalDelta}°C\n\n`;
-
-  if (soarIndex >= 7 && thermalTop > 3000) {
-    desc += `✅ **Cross Country:** ⭐ Eccellente! Termiche forti e plafond elevato.\n`;
-  } else if (soarIndex >= 5 && thermalTop > 2500) {
-    desc += `👍 **Cross Country:** Buone condizioni per voli di distanza.\n`;
-  } else if (soarIndex >= 3) {
-    desc += `🫤 **Cross Country:** Condizioni limitate.\n`;
-  } else {
-    desc += `❌ **Cross Country:** Sconsigliato, termiche deboli.\n`;
-  }
-
+  
+  if (soarIndex >= 7 && thermalTop > 3000) desc += `✅ **Cross Country:** ⭐ Eccellente! Termiche forti e plafond elevato.\n`;
+  else if (soarIndex >= 5 && thermalTop > 2500) desc += `👍 **Cross Country:** Buone condizioni per voli di distanza.\n`;
+  else if (soarIndex >= 3) desc += `🫤 **Cross Country:** Condizioni limitate.\n`;
+  else desc += `❌ **Cross Country:** Sconsigliato, termiche deboli.\n`;
+  
   if (soarIndex >= 7) desc += `🪂 **Galleggiamento:** Eccellente! Puoi rimanere in aria a lungo.\n`;
   else if (soarIndex >= 5) desc += `🪂 **Galleggiamento:** Buono, voli di media durata.\n`;
   else desc += `🪂 **Galleggiamento:** Limitato, voli brevi.\n`;
-
+  
   return desc;
 }
 
 function generateFlightAdvice(dayData: any[], site: any, thermalProfile: any, windProfileData: any) {
   if (dayData.length === 0) return "Dati insufficienti per i consigli di volo.";
-
+  
   const maxWind = Math.max(...dayData.map((h: any) => h.windSpeed));
   const maxGust = Math.max(...dayData.map((h: any) => h.windGust));
   const avgCloud = dayData.reduce((sum: number, h: any) => sum + h.cloudCover, 0) / dayData.length;
   const hasRain = dayData.some((h: any) => h.precipitation > 0.5);
   const soarIndex = thermalProfile?.soarIndex || 0;
-
+  
   let desc = `💡 CONSIGLI PER IL VOLO\n\n`;
-
+  
   let riskScore = 0;
   if (maxWind > 25) riskScore += 2;
   if (maxGust > 35) riskScore += 2;
   if (avgCloud > 80) riskScore += 1;
   if (hasRain) riskScore += 2;
   if (soarIndex < 3) riskScore += 1;
-
+  
   if (windProfileData) {
     const shear = calculateWindShear(windProfileData);
     if (shear.risk === 'alto') riskScore += 2;
     else if (shear.risk === 'medio') riskScore += 1;
   }
-
+  
   desc += `📊 Valutazione del rischio: `;
-  if (riskScore >= 5) {
-    desc += `🔴 ALTO - Condizioni pericolose, sconsigliato volare.\n`;
-  } else if (riskScore >= 3) {
-    desc += `🟡 MEDIO - Condizioni impegnative.\n`;
-  } else {
-    desc += `🟢 BASSO - Condizioni favorevoli.\n`;
-  }
+  if (riskScore >= 5) desc += `🔴 ALTO - Condizioni pericolose, sconsigliato volare.\n`;
+  else if (riskScore >= 3) desc += `🟡 MEDIO - Condizioni impegnative.\n`;
+  else desc += `🟢 BASSO - Condizioni favorevoli.\n`;
   desc += `\n`;
-
+  
   desc += `📌 Consigli specifici:\n`;
-
-  if (maxWind > 25) {
-    desc += `   • ⚠️ VENTO FORTE (>25 km/h): Volo sconsigliato.\n`;
-  } else if (maxWind > 18) {
-    desc += `   • ⚠️ Vento sostenuto (18-25 km/h).\n`;
-  } else if (maxWind < 5) {
-    desc += `   • 💨 Vento debole (<5 km/h): Possibili difficoltà di decollo.\n`;
-  } else {
-    desc += `   • ✅ Vento ideale (5-18 km/h).\n`;
-  }
-
+  
+  if (maxWind > 25) desc += `   • ⚠️ VENTO FORTE (>25 km/h): Volo sconsigliato.\n`;
+  else if (maxWind > 18) desc += `   • ⚠️ Vento sostenuto (18-25 km/h).\n`;
+  else if (maxWind < 5) desc += `   • 💨 Vento debole (<5 km/h): Possibili difficoltà di decollo.\n`;
+  else desc += `   • ✅ Vento ideale (5-18 km/h).\n`;
+  
   if (soarIndex >= 7) desc += `   • 🔥 Termiche forti: Ottime per cross.\n`;
-  else if (soarIndex >= 5)Continue from `generateFlightAdvice`:
-
-```typescript
-  else if (soarIndex >= 5) {
-    desc += `   • 💪 Termiche medie: Buona attività.\n`;
-  } else {
-    desc += `   • 🫤 Termiche deboli: Voli locali.\n`;
-  }
-
+  else if (soarIndex >= 5) desc += `   • 💪 Termiche medie: Buona attività.\n`;
+  else desc += `   • 🫤 Termiche deboli: Voli locali.\n`;
+  
   if (windProfileData) {
     const shear = calculateWindShear(windProfileData);
     desc += `   • ${shear.description}\n`;
   }
-
+  
   desc += `\n⏰ Momenti migliori:\n`;
   const goodHours = dayData.filter((h: any) => {
     const hour = h.time.getHours();
-    return hour >= 10 && hour <= 17 && 
-           h.windSpeed < 22 && 
-           h.cloudCover < 70 && 
-           h.precipitation < 0.5;
+    return hour >= 10 && hour <= 17 && h.windSpeed < 22 && h.cloudCover < 70 && h.precipitation < 0.5;
   });
-
+  
   if (goodHours.length > 0) {
+    const hours = goodHours.map```typescript
     const hours = goodHours.map((h: any) => `${String(h.time.getHours()).padStart(2, '0')}:00`).join(', ');
     desc += `   • 🕐 ${hours}\n`;
   } else {
     desc += `   • ⚠️ Nessuna ora ottimale identificata.\n`;
   }
-
+  
   desc += `\n🎯 Consiglio finale: `;
-  if (riskScore < 3 && !hasRain && maxWind < 22) {
-    desc += `Condizioni favorevoli! Divertiti! 🪂\n`;
-  } else if (riskScore < 5) {
-    desc += `Valuta attentamente. ⚠️\n`;
-  } else {
-    desc += `Sconsigliato volare oggi. ❌\n`;
-  }
-
+  if (riskScore < 3 && !hasRain && maxWind < 22) desc += `Condizioni favorevoli! Divertiti! 🪂\n`;
+  else if (riskScore < 5) desc += `Valuta attentamente. ⚠️\n`;
+  else desc += `Sconsigliato volare oggi. ❌\n`;
+  
   return desc;
 }
 
 function generateHourlyBreakdown(dayData: any[], thermalProfile: any) {
   if (dayData.length === 0) return "Dati insufficienti.";
-
+  
   let desc = `⏰ SVOLGIMENTO DELLA GIORNATA (9:00 - 19:00)\n\n`;
-
+  
   for (let hour = 9; hour <= 19; hour++) {
     const data = dayData.find((h: any) => h.time.getHours() === hour);
     if (!data) continue;
-
+    
     const weatherIcon = getWeatherIcon(data.weatherCode || 0, data.isDay);
     const cloud = getCloudCondition(data.cloudCover);
     const windDir = getWindDirection(data.windDir);
     const thermal = getThermalIndex(data.temperature, data.cloudCover, data.humidity, 0);
-
+    
     const profile = thermalProfile?.hourlyProfile?.find((h: any) => h.hour === hour);
     const intensity = profile ? profile.intensity : 0;
     const cloudBase = profile ? profile.cloudBase : '--';
-
+    
     desc += `🕐 ${String(hour).padStart(2, '0')}:00 ${weatherIcon} ${Math.round(data.temperature)}°C\n`;
     desc += `   • Vento: ${getWindArrow(data.windDir)} ${Math.round(data.windSpeed)} km/h (${windDir})\n`;
     desc += `   • Nuvolosità: ${cloud.icon} ${Math.round(data.cloudCover)}%\n`;
     desc += `   • Termiche: ${thermal.icon} ${thermal.level} (intensità ${intensity}m/s, base ${cloudBase}m)\n`;
-    if (data.precipitation > 0.5) {
-      desc += `   • 🌧️ Pioggia: ${Math.round(data.precipitation)} mm/h\n`;
-    }
+    if (data.precipitation > 0.5) desc += `   • 🌧️ Pioggia: ${Math.round(data.precipitation)} mm/h\n`;
     if (hour < 19) desc += `\n`;
   }
-
+  
   return desc;
 }
 
 function generatePressureAnalysis(dayData: any[]) {
   const pressures = dayData.filter((h: any) => h.pressure !== undefined).map((h: any) => h.pressure);
   if (pressures.length === 0) return "Dati pressione non disponibili.";
-
+  
   const avgPressure = pressures.reduce((a: number, b: number) => a + b, 0) / pressures.length;
   const maxPressure = Math.max(...pressures);
   const minPressure = Math.min(...pressures);
   const trend = pressures[pressures.length - 1] - pressures[0];
-
+  
   let desc = `📊 ANALISI PRESSIONE\n\n`;
   desc += `   • Pressione media: ${Math.round(avgPressure)} hPa\n`;
   desc += `   • Minima: ${Math.round(minPressure)} hPa\n`;
   desc += `   • Massima: ${Math.round(maxPressure)} hPa\n`;
   desc += `   • Trend: ${trend > 0 ? '⬆️ In aumento' : trend < 0 ? '⬇️ In diminuzione' : '➡️ Stabile'}\n`;
-
-  if (trend < -3) {
-    desc += `   ⚠️ Pressione in rapida diminuzione - possibile peggioramento meteo!\n`;
-  } else if (trend > 3) {
-    desc += `   ✅ Pressione in aumento - miglioramento meteo in arrivo.\n`;
-  }
-
+  
+  if (trend < -3) desc += `   ⚠️ Pressione in rapida diminuzione - possibile peggioramento meteo!\n`;
+  else if (trend > 3) desc += `   ✅ Pressione in aumento - miglioramento meteo in arrivo.\n`;
+  
   return desc;
 }
 
@@ -616,9 +570,9 @@ function generateThunderstormAlert(dayData: any[]) {
   const hasThunderstorm = dayData.some((h: any) => h.weatherCode >= 95 && h.weatherCode <= 99);
   const hasRain = dayData.some((h: any) => h.precipitation > 0.5);
   const cloudCover = dayData.reduce((sum: number, h: any) => sum + h.cloudCover, 0) / dayData.length;
-
+  
   let desc = `⛈️ ALLERTA TEMPORALI\n\n`;
-
+  
   if (hasThunderstorm) {
     desc += `🔴 **ALLERTA TEMPORALI IN CORSO!**\n`;
     desc += `   • Temporali previsti nella giornata.\n`;
@@ -634,8 +588,23 @@ function generateThunderstormAlert(dayData: any[]) {
     desc += `✅ Nessun temporale previsto.\n`;
     desc += `   • Cielo sereno o poco nuvoloso.\n`;
   }
-
+  
   return desc;
+}
+
+function generateAIAnalysis(meteoData: any, site: any, dayData: any[], thermalProfile: any, windProfileData: any) {
+  if (!meteoData || !dayData || dayData.length === 0) return null;
+  
+  return {
+    general: generateGeneralDescription(dayData, site),
+    thermal: generateThermalAnalysis(dayData, thermalProfile, site),
+    wind: generateWindAnalysis(dayData, site, windProfileData),
+    altitude: generateAltitudeAnalysis(dayData, thermalProfile, site),
+    hourly: generateHourlyBreakdown(dayData, thermalProfile),
+    advice: generateFlightAdvice(dayData, site, thermalProfile, windProfileData),
+    pressure: generatePressureAnalysis(dayData),
+    thunderstorm: generateThunderstormAlert(dayData),
+  };
 }
 
 /* ============================
@@ -652,7 +621,7 @@ export default function App() {
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [activeTab, setActiveTab] = useState('meteo');
-
+  
   const site = DECOLLI.find((x) => x.id === selected);
 
   useEffect(() => {
@@ -684,7 +653,7 @@ export default function App() {
   }, [meteoData, selectedDay]);
 
   const dayData = getDayData();
-
+  
   const currentData = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
     return dayData.find((h: any) => h.time.getHours() === selectedHour) || dayData[0];
@@ -715,7 +684,7 @@ export default function App() {
   const enrichedDailyData = useMemo(() => {
     if (!meteoData || !meteoData.daily) return [];
     return meteoData.daily.map((day: any, index: number) => {
-      const dayHours = meteoData.hourly.filter((h: any) =>
+      const dayHours = meteoData.hourly.filter((h: any) => 
         h.time.getDate() === day.date.getDate() &&
         h.time.getMonth() === day.date.getMonth()
       );
@@ -725,7 +694,7 @@ export default function App() {
     });
   }, [meteoData]);
 
-  const dateLabels = enrichedDailyData.map((d: any) =>
+  const dateLabels = enrichedDailyData.map((d: any) => 
     d.date.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })
   );
 
@@ -810,7 +779,7 @@ export default function App() {
                   }}>
                     {d.difficulty <= 2 ? '🟢 Facile' : d.difficulty <= 3 ? '🟡 Medio' : '🔴 Difficile'}
                   </span>
-                  <span style={{ ...styles.badge, background: '#2196f3' }}>
+                  <span style={{...styles.badge, background: '#2196f3'}}>
                     {d.altitude || 'N/D'}m
                   </span>
                 </div>
@@ -836,26 +805,26 @@ export default function App() {
               </div>
 
               <div style={styles.tabContainer}>
-                <button
-                  style={{ ...styles.tab, background: activeTab === 'meteo' ? 'rgba(255,107,107,0.2)' : 'transparent' }}
+                <button 
+                  style={{...styles.tab, background: activeTab === 'meteo' ? 'rgba(255,107,107,0.2)' : 'transparent'}}
                   onClick={() => setActiveTab('meteo')}
                 >
                   🌤️ Meteo
                 </button>
-                <button
-                  style={{ ...styles.tab, background: activeTab === 'venti' ? 'rgba(255,107,107,0.2)' : 'transparent' }}
+                <button 
+                  style={{...styles.tab, background: activeTab === 'venti' ? 'rgba(255,107,107,0.2)' : 'transparent'}}
                   onClick={() => setActiveTab('venti')}
                 >
                   💨 Venti
                 </button>
-                <button
-                  style={{ ...styles.tab, background: activeTab === 'termiche' ? 'rgba(255,107,107,0.2)' : 'transparent' }}
+                <button 
+                  style={{...styles.tab, background: activeTab === 'termiche' ? 'rgba(255,107,107,0.2)' : 'transparent'}}
                   onClick={() => setActiveTab('termiche')}
                 >
                   🔥 Termiche
                 </button>
-                <button
-                  style={{ ...styles.tab, background: activeTab === 'analisi' ? 'rgba(255,107,107,0.2)' : 'transparent' }}
+                <button 
+                  style={{...styles.tab, background: activeTab === 'analisi' ? 'rgba(255,107,107,0.2)' : 'transparent'}}
                   onClick={() => setActiveTab('analisi')}
                 >
                   🤖 Analisi
@@ -965,7 +934,7 @@ export default function App() {
                       </div>
                       <div style={styles.pressureCard}>
                         <div style={styles.pressureLabel}>Gradiente</div>
-                        <div style={{ ...styles.pressureValue, color: getPressureGradient().gradient > 0 ? '#4caf50' : getPressureGradient().gradient < 0 ? '#f44336' : '#ffd93d' }}>
+                        <div style={{...styles.pressureValue, color: getPressureGradient().gradient > 0 ? '#4caf50' : getPressureGradient().gradient < 0 ? '#f44336' : '#ffd93d'}}>
                           {getPressureGradient().gradient > 0 ? '⬆️' : getPressureGradient().gradient < 0 ? '⬇️' : '➡️'} {Math.abs(getPressureGradient().gradient)} hPa
                         </div>
                         <div style={styles.pressureSub}>{getPressureGradient().description}</div>
@@ -976,8 +945,8 @@ export default function App() {
                   {aiAnalysis?.thunderstorm && (
                     <div style={styles.thunderstormSection}>
                       <div style={aiAnalysis.thunderstorm.includes('ALLERTA') ? styles.thunderstormAlert : styles.thunderstormSafe}>
-                        <div style={styles.aiTextWhite} dangerouslySetInnerHTML={{
-                          __html: aiAnalysis.thunderstorm.replace(/\n/g, '<br/>')
+                        <div style={styles.aiTextWhite} dangerouslySetInnerHTML={{ 
+                          __html: aiAnalysis.thunderstorm.replace(/\n/g, '<br/>') 
                         }} />
                       </div>
                     </div>
@@ -1001,8 +970,8 @@ export default function App() {
                       <div style={styles.windCard}>
                         <div style={styles.windLabel}>80 m (quota termica)</div>
                         <div style={styles.windValue}>
-                          {currentData.wind80m ?
-                            `${getWindArrow(currentData.windDir80m)} ${Math.round(currentData.wind80m)} km/h` :
+                          {currentData.wind80m ? 
+                            `${getWindArrow(currentData.windDir80m)} ${Math.round(currentData.wind80m)} km/h` : 
                             'N/D'
                           }
                         </div>
@@ -1014,8 +983,8 @@ export default function App() {
                       <div style={styles.windCard}>
                         <div style={styles.windLabel}>120 m (alta quota)</div>
                         <div style={styles.windValue}>
-                          {currentData.wind120m ?
-                            `${getWindArrow(currentData.windDir120m)} ${Math.round(currentData.wind120m)} km/h` :
+                          {currentData.wind120m ? 
+                            `${getWindArrow(currentData.windDir120m)} ${Math.round(currentData.wind120m)} km/h` : 
                             'N/D'
                           }
                         </div>
@@ -1029,18 +998,18 @@ export default function App() {
 
                   <div style={styles.windProfileSection}>
                     <h3 style={styles.windTitle}>📊 Profilo Vento (400m - 4000m)</h3>
-
+                    
                     <div style={styles.windProfileContainer}>
                       <div style={styles.windProfileLegend}>
                         <span style={styles.legendItem}>⚡ Velocità (km/h)</span>
                         <span style={styles.legendItem}>🧭 Direzione</span>
                       </div>
-
+                      
                       <div style={styles.windProfile}>
                         {windProfileData && windProfileData.map((level: any, index: number) => {
                           const maxSpeed = currentData.windSpeed * 3.5;
                           const barWidth = Math.min(100, (level.speed / maxSpeed) * 100);
-
+                          
                           return (
                             <div key={index} style={styles.windProfileRow}>
                               <div style={styles.windProfileAlt}>
@@ -1062,13 +1031,13 @@ export default function App() {
                           );
                         })}
                       </div>
-
+                      
                       {windProfileData && (
                         <div style={styles.shearAnalysis}>
                           {(() => {
                             const shear = calculateWindShear(windProfileData);
                             return (
-                              <div style={{ ...styles.shearBox, borderColor: shear.risk === 'alto' ? '#f44336' : shear.risk === 'medio' ? '#ff9800' : '#4caf50' }}>
+                              <div style={{...styles.shearBox, borderColor: shear.risk === 'alto' ? '#f44336' : shear.risk === 'medio' ? '#ff9800' : '#4caf50'}}>
                                 <div style={styles.shearTitle}>🌪️ Analisi Wind Shear</div>
                                 <div style={styles.shearValue}>Shear: {shear.shear}</div>
                                 <div style={styles.shearDesc}>{shear.description}</div>
@@ -1114,8 +1083,8 @@ export default function App() {
                   <div style={styles.thermalSection}>
                     <h3 style={styles.windTitle}>🔥 Analisi Termiche</h3>
                     <div style={styles.aiBlock}>
-                      <div style={styles.aiTextWhite} dangerouslySetInnerHTML={{
-                        __html: aiAnalysis?.thermal?.replace(/\n/g, '<br/>') || 'Dati non disponibili'
+                      <div style={styles.aiTextWhite} dangerouslySetInnerHTML={{ 
+                        __html: aiAnalysis?.thermal?.replace(/\n/g, '<br/>') || 'Dati non disponibili' 
                       }} />
                     </div>
                   </div>
@@ -1123,8 +1092,8 @@ export default function App() {
                   <div style={styles.altitudeSection}>
                     <h3 style={styles.windTitle}>🏔️ Quote e Plafond</h3>
                     <div style={styles.aiBlock}>
-                      <div style={styles.aiTextWhite} dangerouslySetInnerHTML={{
-                        __html: aiAnalysis?.altitude?.replace(/\n/g, '<br/>') || 'Dati non disponibili'
+                      <div style={styles.aiTextWhite} dangerouslySetInnerHTML={{ 
+                        __html: aiAnalysis?.altitude?.replace(/\n/g, '<br/>') || 'Dati non disponibili' 
                       }} />
                     </div>
                   </div>
@@ -1132,8 +1101,8 @@ export default function App() {
                   <div style={styles.hourlySection}>
                     <h3 style={styles.windTitle}>⏰ Sviluppo Orario</h3>
                     <div style={styles.aiBlock}>
-                      <div style={styles.aiTextWhite} dangerouslySetInnerHTML={{
-                        __html: aiAnalysis?.hourly?.replace(/\n/g, '<br/>') || 'Dati non disponibili'
+                      <div style={styles.aiTextWhite} dangerouslySetInnerHTML={{ 
+                        __html: aiAnalysis?.hourly?.replace(/\n/g, '<br/>') || 'Dati non disponibili' 
                       }} />
                     </div>
                   </div>
@@ -1147,28 +1116,28 @@ export default function App() {
                     <h3 style={styles.aiTitle}>Analisi Completa della Giornata</h3>
                     {isAnalyzing && <span style={styles.aiLoading}>⏳ Analisi in corso...</span>}
                   </div>
-
+                  
                   {aiAnalysis && !isAnalyzing && (
                     <div style={styles.aiContent}>
                       <div style={styles.aiBlock}>
-                        <div style={styles.aiTextWhite} dangerouslySetInnerHTML={{
-                          __html: aiAnalysis.general.replace(/\n/g, '<br/>')
+                        <div style={styles.aiTextWhite} dangerouslySetInnerHTML={{ 
+                          __html: aiAnalysis.general.replace(/\n/g, '<br/>') 
                         }} />
                       </div>
                       <div style={styles.aiBlock}>
-                        <div style={styles.aiTextWhite} dangerouslySetInnerHTML={{
-                          __html: aiAnalysis.advice.replace(/\n/g, '<br/>')
+                        <div style={styles.aiTextWhite} dangerouslySetInnerHTML={{ 
+                          __html: aiAnalysis.advice.replace(/\n/g, '<br/>') 
                         }} />
                       </div>
                       <div style={styles.aiBlock}>
-                        <div style={styles.aiTextWhite} dangerouslySetInnerHTML={{
-                          __html: aiAnalysis.pressure.replace(/\n/g, '<br/>')
+                        <div style={styles.aiTextWhite} dangerouslySetInnerHTML={{ 
+                          __html: aiAnalysis.pressure.replace(/\n/g, '<br/>') 
                         }} />
                       </div>
                       {aiAnalysis.thunderstorm && (
                         <div style={styles.aiBlock}>
-                          <div style={styles.aiTextWhite} dangerouslySetInnerHTML={{
-                            __html: aiAnalysis.thunderstorm.replace(/\n/g, '<br/>')
+                          <div style={styles.aiTextWhite} dangerouslySetInnerHTML={{ 
+                            __html: aiAnalysis.thunderstorm.replace(/\n/g, '<br/>') 
                           }} />
                         </div>
                       )}
@@ -1269,639 +1238,642 @@ const styles: Record<string, React.CSSProperties> = {
   },
   logoContainer: {
     display: "flex",
-    alignItems: "center",
-    justifyContent```typescript
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "clamp(8px, 2vw, 12px)",
-    flexWrap: "wrap",
-  },
-  logoRabbit: {
-    fontSize: "clamp(2rem, 6vw, 2.8rem)",
-    animation: "hop 1.2s ease-in-out infinite",
-  },
-  logoParaglider: {
-    fontSize: "clamp(1.6rem, 5vw, 2.2rem)",
-    animation: "glide 2.5s ease-in-out infinite",
-  },
-  logoText: {
-    fontSize: "clamp(1.5rem, 5vw, 2.5rem)",
-    fontWeight: 800,
-    background: "linear-gradient(135deg, #ff6b6b, #ffd93d)",
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent",
-    letterSpacing: "-0.5px",
-  },
-  subtitle: {
-    fontSize: "clamp(0.7rem, 2vw, 1rem)",
-    color: "#888",
-    marginTop: "8px",
-    letterSpacing: "0.3px",
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "minmax(280px, 340px) 1fr",
-    gap: "clamp(15px, 3vw, 20px)",
-    maxWidth: "1440px",
-    margin: "0 auto",
-  },
-  left: {
-    background: "rgba(255,255,255,0.05)",
-    padding: "15px",
-    borderRadius: "16px",
-    border: "1px solid rgba(255,255,255,0.08)",
-    height: "calc(100vh - 200px)",
-    overflow: "hidden",
-    backdropFilter: "blur(10px)",
-  },
-  sectionTitle: {
-    fontSize: "clamp(1rem, 3vw, 1.2rem)",
-    marginBottom: "15px",
-    color: "#ff6b6b",
-    fontWeight: 600,
-  },
-  cardList: {
-    overflowY: "auto",
-    height: "calc(100% - 50px)",
-    paddingRight: "5px",
-  },
-  right: {
-    background: "rgba(255,255,255,0.05)",
-    padding: "clamp(12px, 2vw, 20px)",
-    borderRadius: "16px",
-    border: "1px solid rgba(255,255,255,0.08)",
-    maxHeight: "calc(100vh - 200px)",
-    overflowY: "auto",
-    backdropFilter: "blur(10px)",
-  },
-  tabContainer: {
-    display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
-    gap: "5px",
-    marginBottom: "15px",
-  },
-  tab: {
-    padding: "8px 4px",
-    borderRadius: "8px",
-    border: "1px solid rgba(255,255,255,0.08)",
-    background: "transparent",
-    color: "#fff",
-    cursor: "pointer",
-    fontSize: "clamp(0.6rem, 1.5vw, 0.85rem)",
-    fontWeight: 500,
-    textAlign: "center",
-  },
-  card: {
-    background: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: "12px",
-    padding: "clamp(10px, 1.5vw, 14px)",
-    marginBottom: "10px",
-    cursor: "pointer",
-    textAlign: "left",
-    width: "100%",
-  },
-  cardTop: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "4px",
-  },
-  cardTitle: {
-    fontSize: "clamp(0.85rem, 2vw, 1rem)",
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  cardWeather: {
-    fontSize: "clamp(1rem, 2.5vw, 1.4rem)",
-  },
-  cardWeatherPlaceholder: {
-    fontSize: "clamp(0.8rem, 2vw, 1.2rem)",
-    opacity: 0.3,
-  },
-  cardDetails: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginBottom: "4px",
-    flexWrap: "wrap",
-    gap: "4px",
-  },
-  cardSmall: {
-    fontSize: "clamp(0.65rem, 1.5vw, 0.8rem)",
-    color: "#888",
-  },
-  cardBadges: {
-    display: "flex",
-    gap: "5px",
-    marginTop: "4px",
-    flexWrap: "wrap",
-  },
-  badge: {
-    fontSize: "clamp(0.55rem, 1.2vw, 0.7rem)",
-    padding: "2px 8px",
-    borderRadius: "12px",
-    color: "#fff",
-    fontWeight: 600,
-  },
-  siteHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "15px",
-    paddingBottom: "15px",
-    borderBottom: "1px solid rgba(255,255,255,0.08)",
-    flexWrap: "wrap",
-    gap: "10px",
-  },
-  siteName: {
-    fontSize: "clamp(1.2rem, 4vw, 1.8rem)",
-    marginBottom: "2px",
-    color: "#fff",
-    fontWeight: 700,
-  },
-  siteInfo: {
-    fontSize: "clamp(0.7rem, 2vw, 0.9rem)",
-    color: "#888",
-  },
-  weatherNow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    background: "rgba(255,255,255,0.08)",
-    padding: "6px 14px",
-    borderRadius: "30px",
-  },
-  weatherIcon: {
-    fontSize: "clamp(1.6rem, 4vw, 2.2rem)",
-  },
-  tempNow: {
-    fontSize: "clamp(1.2rem, 3vw, 1.6rem)",
-    fontWeight: "bold",
-  },
-  daySelector: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gap: "8px",
-    marginBottom: "15px",
-  },
-  dayButton: {
-    background: "rgba(255,255,255,0.05)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: "12px",
-    padding: "clamp(8px, 1.5vw, 12px)",
-    cursor: "pointer",
-    textAlign: "center",
-  },
-  dayName: {
-    fontSize: "clamp(0.7rem, 1.8vw, 0.9rem)",
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  dayWeatherIcon: {
-    fontSize: "clamp(1.2rem, 3vw, 1.8rem)",
-    marginTop: "2px",
-  },
-  dayTemp: {
-    fontSize: "clamp(0.9rem, 2vw, 1.1rem)",
-    color: "#ff6b6b",
-    marginTop: "2px",
-    fontWeight: 600,
-  },
-  dayDelta: {
-    fontSize: "clamp(0.6rem, 1.5vw, 0.75rem)",
-    color: "#888",
-    marginTop: "2px",
-  },
-  dayRain: {
-    fontSize: "clamp(0.6rem, 1.5vw, 0.75rem)",
-    color: "#4fc3f7",
-    marginTop: "2px",
-  },
-  hourSelector: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    marginBottom: "15px",
-    padding: "8px 12px",
-    background: "rgba(255,255,255,0.05)",
-    borderRadius: "12px",
-    flexWrap: "wrap",
-  },
-  hourLabel: {
-    fontSize: "clamp(0.7rem, 2vw, 0.9rem)",
-    color: "#888",
-    fontWeight: 500,
-  },
-  hourSlider: {
-    flex: 1,
-    accentColor: "#ff6b6b",
-    height: "4px",
-    minWidth: "80px",
-  },
-  hourValue: {
-    fontSize: "clamp(0.7rem, 2vw, 0.9rem)",
-    fontWeight: "bold",
-    color: "#fff",
-    minWidth: "45px",
-    textAlign: "center",
-  },
-  meteoGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-    gap: "8px",
-    marginBottom: "15px",
-  },
-  meteoCard: {
-    background: "rgba(0,0,0,0.3)",
-    padding: "clamp(8px, 1.5vw, 12px)",
-    borderRadius: "10px",
-    border: "1px solid rgba(255,255,255,0.05)",
-  },
-  meteoLabel: {
-    fontSize: "clamp(0.6rem, 1.5vw, 0.75rem)",
-    color: "#888",
-    marginBottom: "2px",
-    fontWeight: 500,
-  },
-  meteoValue: {
-    fontSize: "clamp(0.9rem, 2.5vw, 1.2rem)",
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  meteoSub: {
-    fontSize: "clamp(0.55rem, 1.2vw, 0.7rem)",
-    color: "#666",
-    marginTop: "2px",
-  },
-  pressureSection: {
-    marginBottom: "15px",
-    padding: "clamp(10px, 2vw, 16px)",
-    background: "rgba(0,0,0,0.3)",
-    borderRadius: "12px",
-    border: "1px solid rgba(255,255,255,0.05)",
-  },
-  pressureGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-    gap: "10px",
-  },
-  pressureCard: {
-    textAlign: "center",
-    padding: "8px",
-    background: "rgba(255,255,255,0.05)",
-    borderRadius: "8px",
-  },
-  pressureLabel: {
-    fontSize: "clamp(0.6rem, 1.5vw, 0.75rem)",
-    color: "#888",
-    marginBottom: "4px",
-  },
-  pressureValue: {
-    fontSize: "clamp(1rem, 2.5vw, 1.3rem)",
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  pressureSub: {
-    fontSize: "clamp(0.55rem, 1.2vw, 0.7rem)",
-    color: "#888",
-    marginTop: "2px",
-  },
-  thunderstormSection: {
-    marginBottom: "15px",
-  },
-  thunderstormAlert: {
-    padding: "12px 16px",
-    borderRadius: "10px",
-    background: "rgba(244,67,54,0.15)",
-    border: "2px solid #f44336",
-  },
-  thunderstormSafe: {
-    padding: "12px 16px",
-    borderRadius: "10px",
-    background: "rgba(76,175,80,0.1)",
-    border: "1px solid rgba(76,175,80,0.3)",
-  },
-  windSection: {
-    marginBottom: "15px",
-    padding: "clamp(10px, 2vw, 16px)",
-    background: "rgba(0,0,0,0.3)",
-    borderRadius: "12px",
-    border: "1px solid rgba(255,255,255,0.05)",
-  },
-  windTitle: {
-    fontSize: "clamp(0.85rem, 2.5vw, 1rem)",
-    color: "#4fc3f7",
-    marginBottom: "12px",
-    fontWeight: 600,
-  },
-  windGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))",
-    gap: "10px",
-  },
-  windCard: {
-    textAlign: "center",
-    padding: "clamp(8px, 1.5vw, 12px)",
-    background: "rgba(255,255,255,0.05)",
-    borderRadius: "10px",
-  },
-  windLabel: {
-    fontSize: "clamp(0.6rem, 1.5vw, 0.75rem)",
-    color: "#888",
-    marginBottom: "4px",
-    fontWeight: 500,
-  },
-  windValue: {
-    fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)",
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  windDir: {
-    fontSize: "clamp(0.7rem, 1.8vw, 0.8rem)",
-    color: "#aaa",
-    marginTop: "2px",
-  },
-  windGustSmall: {
-    fontSize: "clamp(0.6rem, 1.5vw, 0.7rem)",
-    color: "#ff6b6b",
-    marginTop: "2px",
-  },
-  windProfileSection: {
-    marginBottom: "15px",
-    padding: "clamp(10px, 2vw, 16px)",
-    background: "rgba(0,0,0,0.3)",
-    borderRadius: "12px",
-    border: "1px solid rgba(255,255,255,0.05)",
-  },
-  windProfileContainer: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-  },
-  windProfileLegend: {
-    display: "flex",
-    gap: "15px",
-    fontSize: "clamp(0.6rem, 1.5vw, 0.75rem)",
-    color: "#888",
-    padding: "4px 8px",
-    borderBottom: "1px solid rgba(255,255,255,0.05)",
-    flexWrap: "wrap",
-  },
-  legendItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "4px",
-  },
-  windProfile: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "3px",
-    maxHeight: "300px",
-    overflowY: "auto",
-    padding: "4px",
-  },
-  windProfileRow: {
-    display: "grid",
-    gridTemplateColumns: "70px 1fr 50px",
-    gap: "8px",
-    alignItems: "center",
-    padding: "3px 6px",
-    background: "rgba(255,255,255,0.03)",
-    borderRadius: "6px",
-    fontSize: "clamp(0.65rem, 1.5vw, 0.8rem)",
-  },
-  windProfileAlt: {
-    color: "#888",
-    fontSize: "clamp(0.55rem, 1.2vw, 0.7rem)",
-  },
-  windProfileBarContainer: {
-    height: "16px",
-    background: "rgba(255,255,255,0.05)",
-    borderRadius: "10px",
-    overflow: "hidden",
-    position: "relative",
-  },
-  windProfileBar: {
-    height: "100%",
-    borderRadius: "10px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    paddingRight: "4px",
-    minWidth: "30px",
-  },
-  windProfileSpeed: {
-    fontSize: "clamp(0.5rem, 1vw, 0.6rem)",
-    color: "#fff",
-    fontWeight: "bold",
-    textShadow: "0 1px 2px rgba(0,0,0,0.5)",
-  },
-  windProfileDir: {
-    fontSize: "clamp(0.65rem, 1.5vw, 0.8rem)",
-    color: "#aaa",
-    textAlign: "center",
-  },
-  shearAnalysis: {
-    marginTop: "8px",
-    padding: "8px",
-    background: "rgba(255,255,255,0.03)",
-    borderRadius: "8px",
-  },
-  shearBox: {
-    padding: "10px",
-    borderRadius: "8px",
-    border: "2px solid",
-    background: "rgba(0,0,0,0.2)",
-  },
-  shearTitle: {
-    fontSize: "clamp(0.7rem, 1.8vw, 0.85rem)",
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: "2px",
-  },
-  shearValue: {
-    fontSize: "clamp(0.8rem, 2vw, 1rem)",
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  shearDesc: {
-    fontSize: "clamp(0.65rem, 1.5vw, 0.8rem)",
-    color: "#ddd",
-    marginTop: "2px",
-  },
-  shearDetails: {
-    display: "flex",
-    gap: "10px",
-    fontSize: "clamp(0.55rem, 1.2vw, 0.7rem)",
-    color: "#888",
-    marginTop: "4px",
-    flexWrap: "wrap",
-  },
-  hourlyWindSection: {
-    marginBottom: "15px",
-    padding: "clamp(10px, 2vw, 16px)",
-    background: "rgba(0,0,0,0.3)",
-    borderRadius: "12px",
-    border: "1px solid rgba(255,255,255,0.05)",
-  },
-  hourlyWindGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(45px, 1fr))",
-    gap: "3px",
-    overflowX: "auto",
-  },
-  hourlyWindCard: {
-    textAlign: "center",
-    padding: "6px 4px",
-    background: "rgba(255,255,255,0.03)",
-    borderRadius: "6px",
-    minWidth: "40px",
-  },
-  hourlyTime: {
-    fontSize: "clamp(0.5rem, 1.2vw, 0.65rem)",
-    color: "#888",
-    marginBottom: "2px",
-    fontWeight: 500,
-  },
-  hourlyWind: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: "1px",
-  },
-  hourlySpeed: {
-    fontSize: "clamp(0.7rem, 1.8vw, 0.9rem)",
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  hourlyDir: {
-    fontSize: "clamp(0.5rem, 1vw, 0.6rem)",
-    color: "#666",
-  },
-  hourlyWeather: {
-    fontSize: "clamp(0.6rem, 1.5vw, 0.8rem)",
-    marginTop: "1px",
-  },
-  thermalSection: {
-    marginBottom: "15px",
-  },
-  altitudeSection: {
-    marginBottom: "15px",
-  },
-  hourlySection: {
-    marginBottom: "15px",
-  },
-  aiSection: {
-    marginBottom: "20px",
-    background: "rgba(0,0,0,0.4)",
-    borderRadius: "14px",
-    border: "1px solid rgba(255,107,107,0.15)",
-    overflow: "hidden",
-  },
-  aiHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    padding: "clamp(10px, 2vw, 14px) clamp(12px, 2vw, 18px)",
-    background: "rgba(255,107,107,0.08)",
-    borderBottom: "1px solid rgba(255,107,107,0.1)",
-    flexWrap: "wrap",
-  },
-  aiIcon: {
-    fontSize: "clamp(1.2rem, 3vw, 1.6rem)",
-  },
-  aiTitle: {
-    fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)",
-    color: "#ff6b6b",
-    margin: 0,
-    fontWeight: 600,
-  },
-  aiLoading: {
-    marginLeft: "auto",
-    fontSize: "clamp(0.7rem, 2vw, 0.85rem)",
-    color: "#ffd93d",
-  },
-  aiContent: {
-    padding: "clamp(10px, 2vw, 16px)",
-    maxHeight: "500px",
-    overflowY: "auto",
-  },
-  aiBlock: {
-    marginBottom: "10px",
-    padding: "clamp(8px, 1.5vw, 12px) clamp(10px, 2vw, 16px)",
-    background: "rgba(255,255,255,0.03)",
-    borderRadius: "10px",
-    border: "1px solid rgba(255,255,255,0.05)",
-  },
-  aiTextWhite: {
-    fontSize: "clamp(0.75rem, 2vw, 0.9rem)",
-    color: "#e0e0e0",
-    lineHeight: "1.7",
-    whiteSpace: "pre-wrap",
-    fontWeight: 400,
-  },
-  footer: {
-    textAlign: "center",
-    marginTop: "30px",
-    padding: "20px 0",
-    borderTop: "1px solid rgba(255,255,255,0.08)",
-  },
-  footerText: {
-    fontSize: "clamp(0.65rem, 1.5vw, 0.8rem)",
-    color: "#666",
-  },
-  footerSmall: {
-    fontSize: "clamp(0.55rem, 1.2vw, 0.7rem)",
-    color: "#444",
-    marginTop: "5px",
-  },
-};
+<dyad-write path="src/pages/Index.tsx" description="Completa il file con gli stili rimanenti">
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "clamp(8px, 2vw, 12px)",
+      flexWrap: "wrap",
+    },
+    logoRabbit: {
+      fontSize: "clamp(2rem, 6vw, 2.8rem)",
+      animation: "hop 1.2s ease-in-out infinite",
+    },
+    logoParaglider: {
+      fontSize: "clamp(1.6rem, 5vw, 2.2rem)",
+      animation: "glide 2.5s ease-in-out infinite",
+    },
+    logoText: {
+      fontSize: "clamp(1.5rem, 5vw, 2.5rem)",
+      fontWeight: 800,
+      background: "linear-gradient(135deg, #ff6b6b, #ffd93d)",
+      WebkitBackgroundClip: "text",
+      WebkitTextFillColor: "transparent",
+      letterSpacing: "-0.5px",
+    },
+    subtitle: {
+      fontSize: "clamp(0.7rem, 2vw, 1rem)",
+      color: "#888",
+      marginTop: "8px",
+      letterSpacing: "0.3px",
+    },
+    grid: {
+      display: "grid",
+      gridTemplateColumns: "minmax(280px, 340px) 1fr",
+      gap: "clamp(15px, 3vw, 20px)",
+      maxWidth: "1440px",
+      margin: "0 auto",
+    },
+    left: {
+      background: "rgba(255,255,255,0.05)",
+      padding: "15px",
+      borderRadius: "16px",
+      border: "1px solid rgba(255,255,255,0.08)",
+      height: "calc(100vh - 200px)",
+      overflow: "hidden",
+      backdropFilter: "blur(10px)",
+    },
+    sectionTitle: {
+      fontSize: "clamp(1rem, 3vw, 1.2rem)",
+      marginBottom: "15px",
+      color: "#ff6b6b",
+      fontWeight: 600,
+    },
+    cardList: {
+      overflowY: "auto",
+      height: "calc(100% - 50px)",
+      paddingRight: "5px",
+    },
+    right: {
+      background: "rgba(255,255,255,0.05)",
+      padding: "clamp(12px, 2vw, 20px)",
+      borderRadius: "16px",
+      border: "1px solid rgba(255,255,255,0.08)",
+      maxHeight: "calc(100vh - 200px)",
+      overflowY: "auto",
+      backdropFilter: "blur(10px)",
+    },
+    tabContainer: {
+      display: "grid",
+      gridTemplateColumns: "repeat(4, 1fr)",
+      gap: "5px",
+      marginBottom: "15px",
+    },
+    tab: {
+      padding: "8px 4px",
+      borderRadius: "8px",
+      border: "1px solid rgba(255,255,255,0.08)",
+      background: "transparent",
+      color: "#fff",
+      cursor: "pointer",
+      fontSize: "clamp(0.6rem, 1.5vw, 0.85rem)",
+      transition: "all 0.3s ease",
+      fontWeight: 500,
+      textAlign: "center",
+    },
+    card: {
+      background: "rgba(255,255,255,0.03)",
+      border: "1px solid rgba(255,255,255,0.08)",
+      borderRadius: "12px",
+      padding: "clamp(10px, 1.5vw, 14px)",
+      marginBottom: "10px",
+      cursor: "pointer",
+      textAlign: "left",
+      width: "100%",
+      transition: "all 0.3s ease",
+    },
+    cardTop: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: "4px",
+    },
+    cardTitle: {
+      fontSize: "clamp(0.85rem, 2vw, 1rem)",
+      fontWeight: "bold",
+      color: "#fff",
+    },
+    cardWeather: {
+      fontSize: "clamp(1rem, 2.5vw, 1.4rem)",
+    },
+    cardWeatherPlaceholder: {
+      fontSize: "clamp(0.8rem, 2vw, 1.2rem)",
+      opacity: 0.3,
+    },
+    cardDetails: {
+      display: "flex",
+      justifyContent: "space-between",
+      marginBottom: "4px",
+      flexWrap: "wrap",
+      gap: "4px",
+    },
+    cardSmall: {
+      fontSize: "clamp(0.65rem, 1.5vw, 0.8rem)",
+      color: "#888",
+    },
+    cardBadges: {
+      display: "flex",
+      gap: "5px",
+      marginTop: "4px",
+      flexWrap: "wrap",
+    },
+    badge: {
+      fontSize: "clamp(0.55rem, 1.2vw, 0.7rem)",
+      padding: "2px 8px",
+      borderRadius: "12px",
+      color: "#fff",
+      fontWeight: 600,
+    },
+    siteHeader: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: "15px",
+      paddingBottom: "15px",
+      borderBottom: "1px solid rgba(255,255,255,0.08)",
+      flexWrap: "wrap",
+      gap: "10px",
+    },
+    siteName: {
+      fontSize: "clamp(1.2rem, 4vw, 1.8rem)",
+      marginBottom: "2px",
+      color: "#fff",
+      fontWeight: 700,
+    },
+    siteInfo: {
+      fontSize: "clamp(0.7rem, 2vw, 0.9rem)",
+      color: "#888",
+    },
+    weatherNow: {
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+      background: "rgba(255,255,255,0.08)",
+      padding: "6px 14px",
+      borderRadius: "30px",
+    },
+    weatherIcon: {
+      fontSize: "clamp(1.6rem, 4vw, 2.2rem)",
+    },
+    tempNow: {
+      fontSize: "clamp(1.2rem, 3vw, 1.6rem)",
+      fontWeight: "bold",
+    },
+    daySelector: {
+      display: "grid",
+      gridTemplateColumns: "repeat(3, 1fr)",
+      gap: "8px",
+      marginBottom: "15px",
+    },
+    dayButton: {
+      background: "rgba(255,255,255,0.05)",
+      border: "1px solid rgba(255,255,255,0.08)",
+      borderRadius: "12px",
+      padding: "clamp(8px, 1.5vw, 12px)",
+      cursor: "pointer",
+      textAlign: "center",
+      transition: "all 0.3s ease",
+    },
+    dayName: {
+      fontSize: "clamp(0.7rem, 1.8vw, 0.9rem)",
+      fontWeight: "bold",
+      color: "#fff",
+    },
+    dayWeatherIcon: {
+      fontSize: "clamp(1.2rem, 3vw, 1.8rem)",
+      marginTop: "2px",
+    },
+    dayTemp: {
+      fontSize: "clamp(0.9rem, 2vw, 1.1rem)",
+      color: "#ff6b6b",
+      marginTop: "2px",
+      fontWeight: 600,
+    },
+    dayDelta: {
+      fontSize: "clamp(0.6rem, 1.5vw, 0.75rem)",
+      color: "#888",
+      marginTop: "2px",
+    },
+    dayRain: {
+      fontSize: "clamp(0.6rem, 1.5vw, 0.75rem)",
+      color: "#4fc3f7",
+      marginTop: "2px",
+    },
+    hourSelector: {
+      display: "flex",
+      alignItems: "center",
+      gap: "12px",
+      marginBottom: "15px",
+      padding: "8px 12px",
+      background: "rgba(255,255,255,0.05)",
+      borderRadius: "12px",
+      flexWrap: "wrap",
+    },
+    hourLabel: {
+      fontSize: "clamp(0.7rem, 2vw, 0.9rem)",
+      color: "#888",
+      fontWeight: 500,
+    },
+    hourSlider: {
+      flex: 1,
+      accentColor: "#ff6b6b",
+      height: "4px",
+      minWidth: "80px",
+    },
+    hourValue: {
+      fontSize: "clamp(0.7rem, 2vw, 0.9rem)",
+      fontWeight: "bold",
+      color: "#fff",
+      minWidth: "45px",
+      textAlign: "center",
+    },
+    meteoGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+      gap: "8px",
+      marginBottom: "15px",
+    },
+    meteoCard: {
+      background: "rgba(0,0,0,0.3)",
+      padding: "clamp(8px, 1.5vw, 12px)",
+      borderRadius: "10px",
+      border: "1px solid rgba(255,255,255,0.05)",
+    },
+    meteoLabel: {
+      fontSize: "clamp(0.6rem, 1.5vw, 0.75rem)",
+      color: "#888",
+      marginBottom: "2px",
+      fontWeight: 500,
+    },
+    meteoValue: {
+      fontSize: "clamp(0.9rem, 2.5vw, 1.2rem)",
+      fontWeight: "bold",
+      color: "#fff",
+    },
+    meteoSub: {
+      fontSize: "clamp(0.55rem, 1.2vw, 0.7rem)",
+      color: "#666",
+      marginTop: "2px",
+    },
+    pressureSection: {
+      marginBottom: "15px",
+      padding: "clamp(10px, 2vw, 16px)",
+      background: "rgba(0,0,0,0.3)",
+      borderRadius: "12px",
+      border: "1px solid rgba(255,255,255,0.05)",
+    },
+    pressureGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+      gap: "10px",
+    },
+    pressureCard: {
+      textAlign: "center",
+      padding: "8px",
+      background: "rgba(255,255,255,0.05)",
+      borderRadius: "8px",
+    },
+    pressureLabel: {
+      fontSize: "clamp(0.6rem, 1.5vw, 0.75rem)",
+      color: "#888",
+      marginBottom: "4px",
+    },
+    pressureValue: {
+      fontSize: "clamp(1rem, 2.5vw, 1.3rem)",
+      fontWeight: "bold",
+      color: "#fff",
+    },
+    pressureSub: {
+      fontSize: "clamp(0.55rem, 1.2vw, 0.7rem)",
+      color: "#888",
+      marginTop: "2px",
+    },
+    thunderstormSection: {
+      marginBottom: "15px",
+    },
+    thunderstormAlert: {
+      padding: "12px 16px",
+      borderRadius: "10px",
+      background: "rgba(244,67,54,0.15)",
+      border: "2px solid #f44336",
+    },
+    thunderstormSafe: {
+      padding: "12px 16px",
+      borderRadius: "10px",
+      background: "rgba(76,175,80,0.1)",
+      border: "1px solid rgba(76,175,80,0.3)",
+    },
+    windSection: {
+      marginBottom: "15px",
+      padding: "clamp(10px, 2vw, 16px)",
+      background: "rgba(0,0,0,0.3)",
+      borderRadius: "12px",
+      border: "1px solid rgba(255,255,255,0.05)",
+    },
+    windTitle: {
+      fontSize: "clamp(0.85rem, 2.5vw, 1rem)",
+      color: "#4fc3f7",
+      marginBottom: "12px",
+      fontWeight: 600,
+    },
+    windGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))",
+      gap: "10px",
+    },
+    windCard: {
+      textAlign: "center",
+      padding: "clamp(8px, 1.5vw, 12px)",
+      background: "rgba(255,255,255,0.05)",
+      borderRadius: "10px",
+    },
+    windLabel: {
+      fontSize: "clamp(0.6rem, 1.5vw, 0.75rem)",
+      color: "#888",
+      marginBottom: "4px",
+      fontWeight: 500,
+    },
+    windValue: {
+      fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)",
+      fontWeight: "bold",
+      color: "#fff",
+    },
+    windDir: {
+      fontSize: "clamp(0.7rem, 1.8vw, 0.8rem)",
+      color: "#aaa",
+      marginTop: "2px",
+    },
+    windGustSmall: {
+      fontSize: "clamp(0.6rem, 1.5vw, 0.7rem)",
+      color: "#ff6b6b",
+      marginTop: "2px",
+    },
+    windProfileSection: {
+      marginBottom: "15px",
+      padding: "clamp(10px, 2vw, 16px)",
+      background: "rgba(0,0,0,0.3)",
+      borderRadius: "12px",
+      border: "1px solid rgba(255,255,255,0.05)",
+    },
+    windProfileContainer: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "8px",
+    },
+    windProfileLegend: {
+      display: "flex",
+      gap: "15px",
+      fontSize: "clamp(0.6rem, 1.5vw, 0.75rem)",
+      color: "#888",
+      padding: "4px 8px",
+      borderBottom: "1px solid rgba(255,255,255,0.05)",
+      flexWrap: "wrap",
+    },
+    legendItem: {
+      display: "flex",
+      alignItems: "center",
+      gap: "4px",
+    },
+    windProfile: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "3px",
+      maxHeight: "300px",
+      overflowY: "auto",
+      padding: "4px",
+    },
+    windProfileRow: {
+      display: "grid",
+      gridTemplateColumns: "70px 1fr 50px",
+      gap: "8px",
+      alignItems: "center",
+      padding: "3px 6px",
+      background: "rgba(255,255,255,0.03)",
+      borderRadius: "6px",
+      fontSize: "clamp(0.65rem, 1.5vw, 0.8rem)",
+    },
+    windProfileAlt: {
+      color: "#888",
+      fontSize: "clamp(0.55rem, 1.2vw, 0.7rem)",
+    },
+    windProfileBarContainer: {
+      height: "16px",
+      background: "rgba(255,255,255,0.05)",
+      borderRadius: "10px",
+      overflow: "hidden",
+      position: "relative",
+    },
+    windProfileBar: {
+      height: "100%",
+      borderRadius: "10px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "flex-end",
+      paddingRight: "4px",
+      transition: "width 0.5s ease",
+      minWidth: "30px",
+    },
+    windProfileSpeed: {
+      fontSize: "clamp(0.5rem, 1vw, 0.6rem)",
+      color: "#fff",
+      fontWeight: "bold",
+      textShadow: "0 1px 2px rgba(0,0,0,0.5)",
+    },
+    windProfileDir: {
+      fontSize: "clamp(0.65rem, 1.5vw, 0.8rem)",
+      color: "#aaa",
+      textAlign: "center",
+    },
+    shearAnalysis: {
+      marginTop: "8px",
+      padding: "8px",
+      background: "rgba(255,255,255,0.03)",
+      borderRadius: "8px",
+    },
+    shearBox: {
+      padding: "10px",
+      borderRadius: "8px",
+      border: "2px solid",
+      background: "rgba(0,0,0,0.2)",
+    },
+    shearTitle: {
+      fontSize: "clamp(0.7rem, 1.8vw, 0.85rem)",
+      fontWeight: "bold",
+      color: "#fff",
+      marginBottom: "2px",
+    },
+    shearValue: {
+      fontSize: "clamp(0.8rem, 2vw, 1rem)",
+      fontWeight: "bold",
+      color: "#fff",
+    },
+    shearDesc: {
+      fontSize: "clamp(0.65rem, 1.5vw, 0.8rem)",
+      color: "#ddd",
+      marginTop: "2px",
+    },
+    shearDetails: {
+      display: "flex",
+      gap: "10px",
+      fontSize: "clamp(0.55rem, 1.2vw, 0.7rem)",
+      color: "#888",
+      marginTop: "4px",
+      flexWrap: "wrap",
+    },
+    hourlyWindSection: {
+      marginBottom: "15px",
+      padding: "clamp(10px, 2vw, 16px)",
+      background: "rgba(0,0,0,0.3)",
+      borderRadius: "12px",
+      border: "1px solid rgba(255,255,255,0.05)",
+    },
+    hourlyWindGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(45px, 1fr))",
+      gap: "3px",
+      overflowX: "auto",
+    },
+    hourlyWindCard: {
+      textAlign: "center",
+      padding: "6px 4px",
+      background: "rgba(255,255,255,0.03)",
+      borderRadius: "6px",
+      minWidth: "40px",
+    },
+    hourlyTime: {
+      fontSize: "clamp(0.5rem, 1.2vw, 0.65rem)",
+      color: "#888",
+      marginBottom: "2px",
+      fontWeight: 500,
+    },
+    hourlyWind: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: "1px",
+    },
+    hourlySpeed: {
+      fontSize: "clamp(0.7rem, 1.8vw, 0.9rem)",
+      fontWeight: "bold",
+      color: "#fff",
+    },
+    hourlyDir: {
+      fontSize: "clamp(0.5rem, 1vw, 0.6rem)",
+      color: "#666",
+    },
+    hourlyWeather: {
+      fontSize: "clamp(0.6rem, 1.5vw, 0.8rem)",
+      marginTop: "1px",
+    },
+    thermalSection: {
+      marginBottom: "15px",
+    },
+    altitudeSection: {
+      marginBottom: "15px",
+    },
+    hourlySection: {
+      marginBottom: "15px",
+    },
+    aiSection: {
+      marginBottom: "20px",
+      background: "rgba(0,0,0,0.4)",
+      borderRadius: "14px",
+      border: "1px solid rgba(255,107,107,0.15)",
+      overflow: "hidden",
+    },
+    aiHeader: {
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+      padding: "clamp(10px, 2vw, 14px) clamp(12px, 2vw, 18px)",
+      background: "rgba(255,107,107,0.08)",
+      borderBottom: "1px solid rgba(255,107,107,0.1)",
+      flexWrap: "wrap",
+    },
+    aiIcon: {
+      fontSize: "clamp(1.2rem, 3vw, 1.6rem)",
+    },
+    aiTitle: {
+      fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)",
+      color: "#ff6b6b",
+      margin: 0,
+      fontWeight: 600,
+    },
+    aiLoading: {
+      marginLeft: "auto",
+      fontSize: "clamp(0.7rem, 2vw, 0.85rem)",
+      color: "#ffd93d",
+    },
+    aiContent: {
+      padding: "clamp(10px, 2vw, 16px)",
+      maxHeight: "500px",
+      overflowY: "auto",
+    },
+    aiBlock: {
+      marginBottom: "10px",
+      padding: "clamp(8px, 1.5vw, 12px) clamp(10px, 2vw, 16px)",
+      background: "rgba(255,255,255,0.03)",
+      borderRadius: "10px",
+      border: "1px solid rgba(255,255,255,0.05)",
+    },
+    aiTextWhite: {
+      fontSize: "clamp(0.75rem, 2vw, 0.9rem)",
+      color: "#e0e0e0",
+      lineHeight: "1.7",
+      whiteSpace: "pre-wrap",
+      fontWeight: 400,
+    },
+    footer: {
+      textAlign: "center",
+      marginTop: "30px",
+      padding: "20px 0",
+      borderTop: "1px solid rgba(255,255,255,0.08)",
+    },
+    footerText: {
+      fontSize: "clamp(0.65rem, 1.5vw, 0.8rem)",
+      color: "#666",
+    },
+    footerSmall: {
+      fontSize: "clamp(0.55rem, 1.2vw, 0.7rem)",
+      color: "#444",
+      marginTop: "5px",
+    },
+  };
 
-// CSS per animazioni
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement("style");
-  styleSheet.textContent = `
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    @keyframes hop {
-      0%, 100% { transform: translateY(0px) scale(1); }
-      50% { transform: translateY(-8px) scale(1.05); }
-    }
-    @keyframes glide {
-      0%, 100% { transform: rotate(-3deg) translateY(0px); }
-      50% { transform: rotate(3deg) translateY(-6px); }
-    }
-    @media (max-width: 768px) {
-      .grid {
-        grid-template-columns: 1fr !important;
+  // CSS per animazioni
+  if (typeof document !== 'undefined') {
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = `
+      @keyframes spin {
+        to { transform: rotate(360deg); }
       }
-      .left {
-        height: auto !important;
-        max-height: 300px !important;
+      @keyframes hop {
+        0%, 100% { transform: translateY(0px) scale(1); }
+        50% { transform: translateY(-8px) scale(1.05); }
       }
-      .right {
-        max-height: none !important;
+      @keyframes glide {
+        0%, 100% { transform: rotate(-3deg) translateY(0px); }
+        50% { transform: rotate(3deg) translateY(-6px); }
       }
-    }
-    ::-webkit-scrollbar {
-      width: 4px;
-    }
-    ::-webkit-scrollbar-track {
-      background: rgba(255,255,255,0.03);
-      border-radius: 10px;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(255,255,255,0.12);
-      border-radius: 10px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(255,255,255,0.2);
-    }
-    * {
-      scrollbar-width: thin;
-      scrollbar-color: rgba(255,255,255,0.12) rgba(255,255,255,0.03);
-    }
-  `;
-  document.head.appendChild(styleSheet);
-}
+      @media (max-width: 768px) {
+        .grid {
+          grid-template-columns: 1fr !important;
+        }
+        .left {
+          height: auto !important;
+          max-height: 300px !important;
+        }
+        .right {
+          max-height: none !important;
+        }
+      }
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: rgba(255,255,255,0.03);
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.12);
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255,255,255,0.2);
+      }
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255,255,255,0.12) rgba(255,255,255,0.03);
+      }
+    `;
+    document.head.appendChild(styleSheet);
+  }
