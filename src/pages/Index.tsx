@@ -55,11 +55,6 @@ function filterByDate(data: HourData[], targetDate: Date): HourData[] {
   });
 }
 
-/** Confronta due date (ignorando ora) */
-function isSameDay(a: Date, b: Date): boolean {
-  return a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear();
-}
-
 const Index = () => {
   const [decolliMeteo, setDecolliMeteo] = useState<Record<string, DecolloMeteo>>(() => {
     const map: Record<string, DecolloMeteo> = {};
@@ -142,9 +137,10 @@ const Index = () => {
 
   const selectedDecollo = decolliMeteo[siteId];
   const meteoData = selectedDecollo?.data;
-  const hourlyRaw = meteoData?.hourly || [];
+  const hourlyRaw = meteoData?.hourly || []; // <-- ARRAY COMPLETO (tutte le ore di tutti i giorni)
   const daily = meteoData?.daily || [];
 
+  // Hourly FILTRATO per ore 9-19 di tutti i giorni (non solo oggi)
   const hourly = useMemo(() => filterFlightHours(hourlyRaw), [hourlyRaw]);
 
   const weatherMap = useMemo(() => {
@@ -169,7 +165,7 @@ const Index = () => {
   }, [dayIdx]);
 
   // ---- DATI per il giorno selezionato ----
-  // Filtra gli hourly per la data target
+  // Filtra HOURLY (ore 9-19) per la data target
   const dayData = useMemo((): HourData[] => {
     return filterByDate(hourly, targetDate);
   }, [hourly, targetDate]);
