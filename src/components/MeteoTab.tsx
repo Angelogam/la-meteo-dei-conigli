@@ -5,7 +5,7 @@ import { WeatherIcon } from "@/components/WeatherIcon";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { useMemo } from "react";
-import { Sun, Cloud, Wind, Droplets, Gauge, Thermometer, TrendingUp, ArrowUp } from "lucide-react";
+import { Sun, Cloud, Wind, Droplets, Gauge, Thermometer, TrendingUp } from "lucide-react";
 import GraficoTermiche from "@/components/GraficoTermiche";
 
 interface MeteoTabProps {
@@ -141,47 +141,19 @@ export function MeteoTab({
       </Card>
 
       {/* Grafico termiche completo — quote, venti, forza nell'arco della giornata */}
-      {termicheHourly && termicheHourly.length > 0 && (
-        <Card className="border border-amber-600/50 bg-slate-800/80 shadow-lg overflow-hidden">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 rounded-lg bg-amber-800/50 border border-amber-600/50 flex items-center justify-center">
-                <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
-              </div>
-              <span className="text-sm font-bold text-amber-200">Termiche &ndash; quote, venti e forza</span>
+      <Card className="border border-amber-600/50 bg-slate-800/80 shadow-lg overflow-hidden">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-7 h-7 rounded-lg bg-amber-800/50 border border-amber-600/50 flex items-center justify-center">
+              <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
             </div>
-            <GraficoTermiche hourly={termicheHourly} oraCorrente={hour} />
-          </CardContent>
-        </Card>
-      )}
+            <span className="text-sm font-bold text-amber-200">Termiche &ndash; quote, venti e forza</span>
+          </div>
+          <GraficoTermiche hourly={termicheHourly} oraCorrente={hour} />
+        </CardContent>
+      </Card>
 
-      {/* Vecchia card thermal summary (sostituita dal grafico) — la teniamo come fallback */}
-      {!termicheHourly && thermal && (
-        <Card className="border border-amber-600/50 bg-slate-800/80 shadow-lg overflow-hidden">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-amber-800/50 border border-amber-600/50 flex items-center justify-center">
-                <Thermometer className="w-3.5 h-3.5 text-amber-400" />
-              </div>
-              <span className="text-sm font-bold text-amber-200">Condizioni termiche</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl bg-slate-800/80 p-2.5 text-center border border-amber-600/30">
-                <div className="text-[9px] font-medium text-slate-400 uppercase tracking-wider">Base</div>
-                <div className="text-sm font-bold text-white mt-0.5">{thermal.cloudBase}m</div>
-              </div>
-              <div className="rounded-xl bg-slate-800/80 p-2.5 text-center border border-amber-600/30">
-                <div className="text-[9px] font-medium text-slate-400 uppercase tracking-wider">Cima</div>
-                <div className="text-sm font-bold text-white mt-0.5">{thermal.thermalTop}m</div>
-              </div>
-              <div className="rounded-xl bg-slate-800/80 p-2.5 text-center border border-amber-600/30">
-                <div className="text-[9px] font-medium text-slate-400 uppercase tracking-wider">Soaring</div>
-                <div className="text-sm font-bold text-white mt-0.5">{thermal.soarIdx}/10</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Vecchia card thermal summary (sostituita dal grafico) — rimossa, il grafico ora è sempre visibile */}
 
       {/* AI analysis preview */}
       {aiData && (
