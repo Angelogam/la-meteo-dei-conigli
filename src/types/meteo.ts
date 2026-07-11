@@ -9,10 +9,10 @@ export interface HourData {
   precipitation: number;
   weatherCode: number;
   cloudCover: number;
-  pressure: number | null;
+  pressure: number;
   windSpeed: number;
   windDir: number;
-  windGust: number | null;
+  windGust: number;
   soilTemp: number | null;
   soilMoisture: number | null;
   uvIndex: number | null;
@@ -25,12 +25,6 @@ export interface DailyData {
   tempMin: number;
   weatherCode: number;
   precipitationSum: number;
-}
-
-export interface EnrichedDaily extends DailyData {
-  avgWind: number;
-  maxWind: number;
-  avgCloud: number;
 }
 
 export interface MeteoData {
@@ -46,28 +40,18 @@ export interface ThermalData {
   soarIdx: number;
 }
 
-export interface WindLevel {
-  height: number;
-  speed: number | null;
-  dir: number | null;
-}
-
-export interface WindProfile {
-  time: Date;
-  levels: WindLevel[];
+export interface PressureGradient {
+  grad: number;
+  desc: string;
 }
 
 export interface AiAnalysis {
   general: string;
-  thermal: string;
-  wind: string;
-  hourly: string;
   advice: string;
+  thermal: string;
+  altitude: string;
+  hourly: string;
+  wind: string;
+  pressure: string;
   thunderstorm: string;
-  altitude?: string;
-  pressure?: string;
-  summary?: string;
-  score?: number;
-  reasoning?: string;
-  recommendations?: string[];
 }
