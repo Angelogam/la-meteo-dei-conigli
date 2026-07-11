@@ -2,7 +2,7 @@
 
 import type { HourData, DailyData } from "@/types/meteo";
 import { Card, CardContent } from "@/components/ui/card";
-import { X, Sun, Cloud, Wind, Droplets, Gauge, Thermometer, ArrowUpDown, Eye, Umbrella } from "lucide-react";
+import { X, Sun, Cloud, CloudRain, CloudSun, CloudSnow, CloudLightning, CloudFog, Wind, Droplets, Gauge, Thermometer, ArrowUpDown, Eye, Umbrella, Moon, CloudDrizzle } from "lucide-react";
 import { useMemo } from "react";
 
 interface DayDetailPopupProps {
@@ -12,6 +12,45 @@ interface DayDetailPopupProps {
   altitude: number;
   onClose: () => void;
   onHourSelect?: (h: number) => void;
+}
+
+function get3bWeatherIcon(code: number, isDay: boolean, size: number = 16) {
+  const props = { size, className: "shrink-0" };
+  
+  if (code === 0) {
+    return isDay 
+      ? <Sun {...props} className="text-amber-400 shrink-0" /> 
+      : <Moon {...props} className="text-slate-300 shrink-0" />;
+  }
+  if (code <= 2) return <CloudSun {...props} className="text-amber-300 shrink-0" />;
+  if (code === 3) return <Cloud {...props} className="text-slate-300 shrink-0" />;
+  if (code <= 48) return <CloudFog {...props} className="text-slate-400 shrink-0" />;
+  if (code <= 57) return <CloudDrizzle {...props} className="text-blue-300 shrink-0" />;
+  if (code <= 67) return <CloudRain {...props} className="text-blue-400 shrink-0" />;
+  if (code <= 77) return <CloudSnow {...props} className="text-blue-200 shrink-0" />;
+  if (code <= 82) return <CloudRain {...props} className="text-blue-300 shrink-0" />;
+  return <CloudLightning {...props} className="text-purple-300 shrink-0" />;
+}
+
+function get3bWeatherLabel(code: number): string {
+  if (code === 0) return "Sereno";
+  if (code === 1) return "Poco nuvoloso";
+  if (code === 2) return "Parzialmente nuvoloso";
+  if (code === 3) return "Coperto";
+  if (code <= 48) return "Nebbia";
+  if (code <= 57) return "Pioviggine";
+  if (code <= 67) return "Pioggia";
+  if (code <= 77) return "Neve";
+  if (code <= 82) return "Rovesci";
+  return "Temporale";
+}
+
+function getRainBar(precip: number): { width: number; color: string; label: string } {
+  if (precip <= 0) return { width: 0, color: "bg-transparent", label: "" };
+  if (precip < 0.5) return { width: 15, color: "bg-blue-200/50", label: "debole" };
+  if (precip < 1.5) return { width: 35, color: "bg-blue-300", label: "moderata" };
+  if (precip < 4) return { width: 60, color: "bg-blue-500", label: "forte" };
+  return { width: 100, color: "bg-blue-700", label: "molto forte" };
 }
 
 export function DayDetailPopup({ dayData, daily, dayLabel, altitude, onClose, onHourSelect }: DayDetailPopupProps) {
@@ -84,16 +123,12 @@ export function DayDetailPopup({ dayData, daily, dayLabel, altitude, onClose, on
   const soaringRating = useMemo(() => {
     if (!stats) return 0;
     let score = 5;
-    // Vento ideale per volo: 8-20 km/h
     if (stats.windAvg >= 8 && stats.windAvg <= 20) score += 2;
     else if (stats.windAvg > 25) score -= 2;
-    // Poca nuvolosità = termiche migliori
     if (stats.cloudAvg < 30) score += 2;
     else if (stats.cloudAvg > 70) score -= 1;
-    // Escursione termica
     const escursione = stats.tMax - stats.tMin;
     if (escursione > 8) score += 1;
-    // Pioggia
     if (stats.precipTot > 2) score -= 2;
     return Math.max(1, Math.min(10, score));
   }, [stats]);
@@ -165,98 +200,112 @@ export function DayDetailPopup({ dayData, daily, dayLabel, altitude, onClose, on
             </Card>
           </div>
 
-          {/* Dettaglio parametri - griglia 2x3 */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="p-2.5 rounded-xl bg-slate-700/30 border border-slate-600/30">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <Droplets className="w-3 h-3 text-blue-400" />
-                <span className="text-[10px] font-semibold text-slate-400 uppercase">Umidità</span>
+          {/* Previsioni orarie stile 3B Meteo - con nuvole e pioggia */}
+          <div>
+            <h3 className="text-xs font-bold text-slate-300 mb-2 uppercase tracking-wider flex items-center gap-1.5">
+              <Cloud className="w-3.5 h-3.5 text-slate-400" />
+              Previsioni orarie · 3B Meteo style
+            </h3>
+            <div className="space-y-1 max-h-80 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-500 scrollbar-track-slate-700">
+              {/* Intestazione tabella */}
+              <div className="flex items-center gap-1 px-2 py-1 text-[9px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-600/30">
+                <span className="w-10">Ora</span>
+                <span className="w-8 text-center">Temp</span>
+                <span className="w-8 text-center">Icona</span>
+                <span className="flex-1 text-center">Nuvolosità</span>
+                <span className="w-16 text-center">Pioggia</span>
+                <span className="w-8 text-center">Vento</span>
               </div>
-              <span className="text-sm font-bold text-white">{stats.humMin}%–{stats.humMax}%</span>
-              <span className="text-[10px] text-slate-500 ml-1">media {stats.humAvg}%</span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-slate-700/30 border border-slate-600/30">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <Cloud className="w-3 h-3 text-slate-400" />
-                <span className="text-[10px] font-semibold text-slate-400 uppercase">Nuvolosità</span>
-              </div>
-              <span className="text-sm font-bold text-white">{stats.cloudAvg}%</span>
-              <span className="text-[10px] text-slate-500 ml-1">media</span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-slate-700/30 border border-slate-600/30">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <Gauge className="w-3 h-3 text-purple-400" />
-                <span className="text-[10px] font-semibold text-slate-400 uppercase">Pressione</span>
-              </div>
-              <span className="text-sm font-bold text-white">{stats.pressureMin}–{stats.pressureMax}</span>
-              <span className="text-[10px] text-slate-500 ml-1">hPa</span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-slate-700/30 border border-slate-600/30">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <ArrowUpDown className="w-3 h-3 text-amber-400" />
-                <span className="text-[10px] font-semibold text-slate-400 uppercase">Raffiche</span>
-              </div>
-              <span className="text-sm font-bold text-white">{stats.gustMax}</span>
-              <span className="text-[10px] text-slate-500 ml-1">km/h</span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-slate-700/30 border border-slate-600/30">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <Eye className="w-3 h-3 text-green-400" />
-                <span className="text-[10px] font-semibold text-slate-400 uppercase">Visibilità</span>
-              </div>
-              <span className="text-sm font-bold text-white">{visibility}</span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-slate-700/30 border border-slate-600/30">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <Thermometer className="w-3 h-3 text-orange-400" />
-                <span className="text-[10px] font-semibold text-slate-400 uppercase">Punto rugiada</span>
-              </div>
-              <span className="text-sm font-bold text-white">{stats.dewAvg}°</span>
-              <span className="text-[10px] text-slate-500 ml-1">media</span>
-            </div>
-          </div>
 
-          {/* Tabella oraria stile 3B Meteo */}
-          <div className="mt-2">
-            <h3 className="text-xs font-bold text-slate-300 mb-2 uppercase tracking-wider">Previsioni orarie</h3>
-            <div className="space-y-1 max-h-64 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-500 scrollbar-track-slate-700">
               {hours.map((h, i) => {
                 const hh = h.time.getHours();
                 const isNow = hh === new Date().getHours() && 
                   h.time.getDate() === new Date().getDate() &&
                   h.time.getMonth() === new Date().getMonth();
+                const rain = getRainBar(h.precipitation);
+
+                // Icona 3B per ora
+                const weatherIcon = get3bWeatherIcon(h.weatherCode, h.isDay, 14);
+
+                // Barra nuvolosità
+                const cloudBarWidth = Math.min(100, h.cloudCover);
+
                 return (
                   <button
                     key={i}
                     onClick={() => onHourSelect?.(hh)}
-                    className={`w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors ${
+                    className={`w-full flex items-center gap-1 p-1.5 rounded-lg text-left transition-colors text-xs ${
                       isNow
                         ? "bg-blue-600/30 border border-blue-500/40"
                         : "bg-slate-700/30 border border-slate-600/20 hover:bg-slate-700/50"
                     }`}
                   >
-                    <span className="w-10 text-xs font-bold text-slate-300">{String(hh).padStart(2, "0")}:00</span>
-                    <span className="w-8 text-center text-sm font-black text-white">{Math.round(h.temperature)}°</span>
-                    <div className="flex-1 flex items-center gap-1">
-                      <span className="text-[10px] text-slate-400">
-                        <Droplets className="w-2.5 h-2.5 inline mr-0.5 text-blue-400" />
-                        {h.humidity}%
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        <Wind className="w-2.5 h-2.5 inline mr-0.5 text-sky-400" />
-                        {Math.round(h.windSpeed)}
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        <Cloud className="w-2.5 h-2.5 inline mr-0.5 text-slate-400" />
-                        {h.cloudCover}%
-                      </span>
-                    </div>
-                    <span className="text-[10px] text-slate-500 w-8 text-right">
-                      {h.precipitation > 0 ? `${h.precipitation}mm` : "—"}
+                    {/* Ora */}
+                    <span className="w-10 font-bold text-slate-300 tabular-nums">{String(hh).padStart(2, "0")}:00</span>
+
+                    {/* Temperatura */}
+                    <span className="w-8 text-center font-black text-white tabular-nums">{Math.round(h.temperature)}°</span>
+
+                    {/* Icona meteo */}
+                    <span className="w-8 flex justify-center">{weatherIcon}</span>
+
+                    {/* Barra nuvolosità */}
+                    <span className="flex-1 flex items-center gap-0.5">
+                      <div className="h-2.5 bg-slate-600/60 rounded-full overflow-hidden flex-1 max-w-20">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            h.cloudCover >= 80 ? "bg-slate-400" :
+                            h.cloudCover >= 50 ? "bg-slate-300" :
+                            h.cloudCover >= 20 ? "bg-blue-200/40" : "bg-amber-200/30"
+                          }`}
+                          style={{ width: `${cloudBarWidth}%` }}
+                        />
+                      </div>
+                      <span className="text-[9px] text-slate-500 w-6 tabular-nums">{h.cloudCover}%</span>
                     </span>
+
+                    {/* Pioggia */}
+                    <span className="w-16 flex items-center gap-0.5 justify-center">
+                      {h.precipitation > 0 ? (
+                        <>
+                          <div className="h-2 w-12 bg-slate-600/40 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${rain.color}`}
+                              style={{ width: `${rain.width}%` }}
+                            />
+                          </div>
+                          <span className="text-[9px] font-bold text-blue-300 tabular-nums">{h.precipitation.toFixed(1)}</span>
+                        </>
+                      ) : (
+                        <span className="text-[9px] text-slate-600">—</span>
+                      )}
+                    </span>
+
+                    {/* Vento */}
+                    <span className="w-8 text-right text-[10px] font-medium text-sky-300 tabular-nums">{Math.round(h.windSpeed)}</span>
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Legenda pioggia */}
+          <div className="flex items-center gap-4 justify-start text-[9px] text-slate-500">
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-2 rounded bg-blue-200/50" />
+              <span>debole</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-2 rounded bg-blue-300" />
+              <span>moderata</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-2 rounded bg-blue-500" />
+              <span>forte</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-2 rounded bg-blue-700" />
+              <span>molto forte</span>
             </div>
           </div>
 
