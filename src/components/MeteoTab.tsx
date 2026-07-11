@@ -2,7 +2,6 @@
 
 import { wic, wa, getZeroTermico } from "@/utils/meteo";
 import type { HourData, DailyData, ThermalData, PressureGradient, AiAnalysis } from "@/types/meteo";
-import { FinestreVolabilita } from "./FinestreVolabilita";
 
 interface MeteoTabProps {
   current: HourData;
@@ -29,6 +28,17 @@ export const MeteoTab = ({
   onDaySelect,
   onHourChange,
 }: MeteoTabProps) => {
+  const cards = [
+    { label: "🌡️ Temperatura", value: `${Math.round(current.temperature)}°C`, color: "text-orange-600" },
+    { label: "💧 Umidità", value: `${Math.round(current.humidity)}%`, color: "text-blue-600" },
+    { label: "☁️ Nuvolosità", value: `${Math.round(current.cloudCover)}%`, color: "text-gray-700" },
+    { label: "🌧️ Precipitazioni", value: current.precipitation === 0 ? "Assenti" : `${current.precipitation} mm`, color: "text-sky-600" },
+    { label: "☁️ Base Nuvole", value: thermal?.cloudBase ? `${thermal.cloudBase}m` : "--", color: "text-gray-700" },
+    { label: "⬆️ Plafond", value: thermal?.thermalTop ? `${thermal.thermalTop}m` : "--", color: "text-gray-700" },
+    { label: "🪁 Galleggiamento", value: thermal?.soarIdx ? `${thermal.soarIdx}/10` : "--", color: "text-amber-600" },
+    { label: "💨 Vento", value: `${wa(current.windDir)} ${Math.round(current.windSpeed)} km/h`, color: "text-indigo-600" },
+  ];
+
   return (
     <>
       {/* Giorni della settimana */}
@@ -71,17 +81,14 @@ export const MeteoTab = ({
       </div>
 
       {/* Finestre volabilità */}
-      <FinestreVolabilita
-        temperature={current.temperature}
-        humidity={current.humidity}
-        cloudCover={current.cloudCover}
-        precipitation={current.precipitation}
-        cloudBase={thermal?.cloudBase ?? null}
-        thermalTop={thermal?.thermalTop ?? null}
-        soarIdx={thermal?.soarIdx ?? null}
-        windDir={wa(current.windDir)}
-        windSpeed={current.windSpeed}
-      />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+        {cards.map((c) => (
+          <div key={c.label} className="bg-white p-2.5 rounded-xl border border-gray-200 shadow-sm">
+            <div className="text-xs font-bold text-gray-500 mb-0.5">{c.label}</div>
+            <div className={`text-base font-extrabold ${c.color}`}>{c.value}</div>
+          </div>
+        ))}
+      </div>
 
       {/* Zero Termico */}
       <div className="mb-4 p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
