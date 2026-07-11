@@ -20,7 +20,7 @@ import { generaTermicheOrarie } from "@/utils/termiche";
 import { DECOLLI, type Decollo } from "@/data/decolli";
 import type { MeteoData, HourData, AiAnalysis, WindProfile } from "@/types/meteo";
 import { Button } from "@/components/ui/button";
-import { MapPin, CloudSun, ArrowRight, Menu, CalendarDays, ChevronRight, Sun } from "lucide-react";
+import { CalendarDays, ChevronRight, CloudSun, MapPin, Menu } from "lucide-react";
 
 interface DecolloMeteo {
   site: Decollo;
@@ -41,6 +41,14 @@ function useRealTimeHour(): number {
   return h;
 }
 
+interface GiornoPrevisione {
+  giorno: number; // 0 = oggi, 1 = domani, 2 = dopodomani, ecc.
+  label: string;
+  data: MeteoData | null;
+  loading: boolean;
+  error: string | null;
+}
+
 const Index = () => {
   const [decolliMeteo, setDecolliMeteo] = useState<Record<string, DecolloMeteo>>(() => {
     const map: Record<string, DecolloMeteo> = {};
@@ -58,9 +66,40 @@ const Index = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [showDayDetail, setShowDayDetail] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showDomaniDetail, setShowDomaniDetail] = useState(false);
-  const [domaniLoading, setDomaniLoading] = useState(false);
-  const [domaniMeteo, setDomaniMeteo] = useState<MeteoData | null>(null);
+
+  // Stato per le previsioni dei prossimi giorni
+  const [giorniPrevisioni, setGiorniPrevisioni] = useState<GiornoPrevisione[]>(() => {
+    const giorni: GiornoPrevisione[] = [];
+    const nomiGiorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+    for (let g = 1; g <= 5; g++) {
+      const data = new Date();
+      data.setDate(data.getDate() + g);
+      const nomeGiorno = nomiGiorni[data.getDay()];
+      const label = `${nomeGiorno} ${data.getDate()} ${data.toLocaleDateString("it-IT", { month: "short" })}`;
+      giorni.push({ giorno: g, label, data: null, loading: false, error: null });
+    }
+    return giorni;
+  });
+
+  const fetchGiorno = useCallback(async (giorno: number) => {
+    setGiorniPrevisioni((prev) =>
+      prev.map((g) => (g.giorno === giorno ? { ...g, loading: true, error: null } : g))
+    );
+
+    const site = DECOLLI.find((s) => s.id === siteId) || DECOLLI[0];
+    try {
+      const data = await fetchMeteo(site.lat, site.lon);
+      setGiorniPrevisioni((prev) =>
+        prev.map((g) => (g.giorno === giorno ? { ...g, data, loading: false } : g))
+      );
+    } catch (err) {
+      setGiorniPrevisioni((prev) =>
+        prev.map((g) =>
+          g.giorno === giorno ? { ...g, loading: false, error: "Errore caricamento" } : g
+        )
+      );
+    }
+  }, [siteId]);
 
   const fetchAllDecolli = useCallback(async () => {
     const results = await Promise.allSettled(
@@ -200,41 +239,33 @@ const Index = () => {
     return generateAiAnalysis(dayData, dayIdx);
   }, [dayData, dayIdx]);
 
-  // Calcola termicheHourly per la giornata selezionata
   const termicheHourly = useMemo(() => {
     if (!dayData.length) return [];
     return generaTermicheOrarie(dayData, currentSite.altitude);
   }, [dayData, currentSite.altitude]);
 
+  // Funzione per aprire il dettaglio di un giorno dalle previsioni
+  const apriPrevisioneGiorno = useCallback((giorno: number) => {
+    const previsione = giorniPrevisioni.find((g) => g.giorno === giorno);
+    if (!previsione?.data) {
+      fetchGiorno(giorno);
+      return;
+    }
+
+    setDayIdx(giorno);
+    setShowDayDetail(true);
+  }, [giorniPrevisioni, fetchGiorno]);
+
   const handleSiteSelect = useCallback((id: string) => {
     setSiteId(id);
     setDayIdx(0);
     setHour(new Date().getHours());
-    setDomaniMeteo(null);
-    setShowDomaniDetail(false);
   }, []);
 
   const handleDayDetailClick = useCallback((idx: number) => {
     setDayIdx(idx);
     setShowDayDetail(true);
   }, []);
-
-  const handleApriDomani = useCallback(async () => {
-    setDomaniLoading(true);
-    setShowDomaniDetail(true);
-    setDayIdx(1);
-
-    // Se non abbiamo già caricato i dati di domani per questo sito, carichiamoli
-    if (!domaniMeteo) {
-      try {
-        const data = await fetchMeteo(selectedSite.lat, selectedSite.lon);
-        setDomaniMeteo(data);
-      } catch (err) {
-        console.error("Errore caricamento domani:", err);
-      }
-    }
-    setDomaniLoading(false);
-  }, [selectedSite, domaniMeteo]);
 
   const toggleSidebar = useCallback(() => setSidebarOpen((p) => !p), []);
 
@@ -244,16 +275,20 @@ const Index = () => {
     fetchAllDecolli();
   }, [fetchAllDecolli]);
 
-  // Prepara i dati per la finestra di domani
-  const domaniDaily = domaniMeteo?.daily || [];
-  const domaniHourlyRaw = domaniMeteo?.hourly || [];
-  const domaniHourly = useMemo(() => filterFlightHours(domaniHourlyRaw), [domaniHourlyRaw]);
-  const domaniEnriched = useMemo(() => enrDaily(domaniDaily, domaniHourly), [domaniDaily, domaniHourly]);
-  const domaniDayData = useMemo(() => {
-    if (!domaniHourly.length) return [];
-    const targetDate = domaniDaily[1]?.date;
-    if (!targetDate) return domaniHourly;
-    return domaniHourly.filter((h) => {
+  if (globalLoading) return <LoadingScreen />;
+  if (globalError) return <ErrorScreen message={globalError} onRetry={handleRetry} />;
+
+  // Crea i dati per il popup quando si clicca su un giorno delle previsioni
+  const previsioneSelezionata = giorniPrevisioni.find((g) => g.giorno === dayIdx);
+  const previsioneData = previsioneSelezionata?.data;
+  const previsioneDaily = previsioneData?.daily || [];
+  const previsioneHourlyRaw = previsioneData?.hourly || [];
+  const previsioneHourly = useMemo(() => filterFlightHours(previsioneHourlyRaw), [previsioneHourlyRaw]);
+  const previsioneDayData = useMemo(() => {
+    if (!previsioneHourly.length) return [];
+    const targetDate = previsioneDaily[dayIdx]?.date;
+    if (!targetDate) return previsioneHourly;
+    return previsioneHourly.filter((h) => {
       const hd = h.time;
       return (
         hd.getDate() === targetDate.getDate() &&
@@ -261,10 +296,8 @@ const Index = () => {
         hd.getFullYear() === targetDate.getFullYear()
       );
     });
-  }, [domaniHourly, domaniDaily]);
-
-  if (globalLoading) return <LoadingScreen />;
-  if (globalError) return <ErrorScreen message={globalError} onRetry={handleRetry} />;
+  }, [previsioneHourly, previsioneDaily, dayIdx]);
+  const previsioneEnriched = useMemo(() => enrDaily(previsioneDaily, previsioneHourly), [previsioneDaily, previsioneHourly]);
 
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-slate-800 via-slate-700 to-slate-900 text-slate-100">
@@ -340,32 +373,55 @@ const Index = () => {
             </div>
           )}
 
-          {/* Pulsante DOMANI interattivo – clicca per caricare i dati reali */}
-          <div className="mb-3 group">
-            <Button
-              onClick={handleApriDomani}
-              disabled={domaniLoading}
-              className="w-full py-5 md:py-4 text-base md:text-lg font-bold rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white border border-blue-400 shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-[1.02] disabled:opacity-70"
-            >
-              {domaniLoading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Caricamento previsioni domani...
-                </>
-              ) : (
-                <>
-                  <CalendarDays className="w-5 h-5 mr-2" />
-                  <span className="font-bold">
-                    {daily[1] ? dateLabels[1] : "Domani"}
-                  </span>
-                  <span className="mx-1.5 text-blue-200">·</span>
-                  <span className="text-blue-100 font-medium">
-                    Previsioni locali 3B Meteo 8:00–20:00
-                  </span>
-                  <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-0.5 transition-transform" />
-                </>
-              )}
-            </Button>
+          {/* Pulsanti previsioni per i prossimi giorni */}
+          <div className="mb-3 space-y-2">
+            <div className="flex items-center gap-2 px-1 mb-1">
+              <CalendarDays className="w-4 h-4 text-blue-400" />
+              <span className="text-xs font-medium text-blue-300 uppercase tracking-wider">Previsioni giorni</span>
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              {giorniPrevisioni.map((gp) => (
+                <button
+                  key={gp.giorno}
+                  onClick={() => apriPrevisioneGiorno(gp.giorno)}
+                  disabled={gp.loading}
+                  className="group w-full py-3 px-4 text-sm font-bold rounded-xl bg-gradient-to-r from-blue-600/90 to-blue-500/90 hover:from-blue-500 hover:to-blue-400 text-white border border-blue-400/60 shadow-lg shadow-blue-500/20 transition-all duration-300 hover:scale-[1.01] hover:shadow-blue-500/30 disabled:opacity-70 disabled:cursor-wait"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <CloudSun className="w-4 h-4 text-blue-200 flex-shrink-0" />
+                      <div className="text-left">
+                        <span className="font-bold">{gp.label}</span>
+                        {gp.data && (
+                          <span className="ml-2 text-blue-200 text-xs font-normal">
+                            · Caricato
+                          </span>
+                        )}
+                        {gp.error && (
+                          <span className="ml-2 text-red-300 text-xs font-normal">
+                            · Errore
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {gp.loading ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          {gp.data ? (
+                            <span className="text-[10px] text-blue-200 font-medium">Vedi</span>
+                          ) : (
+                            <span className="text-[10px] text-blue-200 font-medium">Carica</span>
+                          )}
+                          <ChevronRight className="w-4 h-4 text-blue-200 group-hover:translate-x-0.5 transition-transform" />
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
 
           <TabNav tab={tab} onTabChange={setTab} />
@@ -414,15 +470,13 @@ const Index = () => {
           </div>
 
           <div className="mt-4 flex justify-center gap-2">
-            <Button
-              variant="outline"
-              size="default"
+            <button
               onClick={() => setShowPopup(true)}
-              className="text-sm border-slate-500/60 text-slate-200 hover:bg-slate-700 bg-slate-800/80 px-5 py-2.5"
+              className="text-sm border border-slate-500/60 text-slate-200 hover:bg-slate-700 bg-slate-800/80 px-5 py-2.5 rounded-xl transition-colors"
             >
-              <MapPin className="w-4 h-4 mr-2" />
+              <MapPin className="w-4 h-4 mr-2 inline" />
               Dettaglio orario {currentSite?.name} (9:00&ndash;19:00)
-            </Button>
+            </button>
           </div>
 
           {showPopup && currentHourData && (
@@ -438,7 +492,7 @@ const Index = () => {
             />
           )}
 
-          {showDayDetail && enrichedDaily[dayIdx] && (
+          {showDayDetail && enrichedDaily[dayIdx] && !previsioneSelezionata?.data && (
             <DayDetailPopup
               dayData={dayData}
               daily={enrichedDaily[dayIdx]}
@@ -452,21 +506,17 @@ const Index = () => {
             />
           )}
 
-          {/* Popup DOMANI con dati reali Open-Meteo */}
-          {showDomaniDetail && domaniEnriched[1] && (
+          {/* Popup per previsioni giorni caricati */}
+          {showDayDetail && previsioneSelezionata?.data && previsioneEnriched[dayIdx] && (
             <DayDetailPopup
-              dayData={domaniDayData}
-              daily={domaniEnriched[1]}
-              dayLabel={domaniDaily[1]?.date?.toLocaleDateString("it-IT", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-              }) || "Domani"}
+              dayData={previsioneDayData}
+              daily={previsioneEnriched[dayIdx]}
+              dayLabel={previsioneSelezionata.label}
               altitude={currentSite.altitude}
-              onClose={() => setShowDomaniDetail(false)}
+              onClose={() => setShowDayDetail(false)}
               onHourSelect={(h) => {
                 setHour(h);
-                setShowDomaniDetail(false);
+                setShowDayDetail(false);
               }}
             />
           )}
