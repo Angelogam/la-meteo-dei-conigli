@@ -1,10 +1,10 @@
 "use client";
 
-import type { HourData, ThermalData, AiAnalysis, DailyData } from "@/types/meteo";
+import type { HourData, ThermalData, AiAnalysis } from "@/types/meteo";
 import { WeatherIcon } from "@/components/WeatherIcon";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 
 interface MeteoTabProps {
   current: HourData;
@@ -91,14 +91,14 @@ export function MeteoTab({
                   {Math.round(current.temperature)}°
                 </div>
                 <div className="text-sm text-gray-500">
-                  Percepita {Math.round(current.apparentTemperature)}°
+                  Percepita {Math.round(current.feelsLike)}°
                 </div>
               </div>
             </div>
             <div className="text-right text-sm text-gray-600 space-y-1">
               <div>Umidità: {current.humidity}%</div>
               <div>Vento: {Math.round(current.windSpeed)} km/h</div>
-              <div>Raffiche: {Math.round(current.gustSpeed)} km/h</div>
+              <div>Raffiche: {Math.round(current.windGust)} km/h</div>
               <div>Pioggia: {current.precipitation} mm</div>
             </div>
           </div>
@@ -111,7 +111,7 @@ export function MeteoTab({
           <CardContent className="p-3">
             <div className="text-sm font-medium text-amber-800">Termica</div>
             <div className="text-xs text-amber-700 mt-1">
-              Base: {thermal.base} m · Cima: {thermal.top} m · {thermal.strength}
+              Base: {thermal.cloudBase} m · Cima: {thermal.thermalTop} m · Soaring Index: {thermal.soarIdx}/10
             </div>
           </CardContent>
         </Card>
@@ -122,7 +122,7 @@ export function MeteoTab({
         <Card className="border border-blue-200 bg-blue-50">
           <CardContent className="p-3">
             <div className="text-sm font-medium text-blue-800">Analisi</div>
-            <div className="text-xs text-blue-700 mt-1 line-clamp-2">{aiData.summary}</div>
+            <div className="text-xs text-blue-700 mt-1 line-clamp-2">{aiData.general}</div>
           </CardContent>
         </Card>
       )}
