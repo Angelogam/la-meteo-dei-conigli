@@ -35,8 +35,8 @@ const generaAvviso = (
   dataOrari: HourData[]
 ): {
   testo: string;
-  colore: string;
-  icona: string;
+  coloreBg: string;
+  coloreTesto: string;
 } | null => {
   if (!dataOrari || dataOrari.length === 0) return null;
 
@@ -99,79 +99,79 @@ const generaAvviso = (
   if (haTemporale) {
     return {
       testo: "🚨 Alto rischio temporali in giornata",
-      colore: "#dc2626",
-      icona: "🚨",
+      coloreBg: "#fee2e2",
+      coloreTesto: "#991b1b",
     };
   }
 
   if (haVentoForte) {
     return {
       testo: "💨 Rischio venti forti",
-      colore: "#dc2626",
-      icona: "💨",
+      coloreBg: "#ffe4e6",
+      coloreTesto: "#9f1239",
     };
   }
 
   if (haTurbolenza && ventoMassimo > 30) {
     return {
       testo: "🌊 Attenzione a turbolenze",
-      colore: "#f97316",
-      icona: "🌊",
+      coloreBg: "#ffedd5",
+      coloreTesto: "#9a3412",
     };
   }
 
   if (haPioggia) {
     return {
       testo: "🌧️ Rischio pioggia in giornata",
-      colore: "#f97316",
-      icona: "🌧️",
+      coloreBg: "#fef3c7",
+      coloreTesto: "#92400e",
     };
   }
 
   if (haNebbia) {
     return {
       testo: "🌫️ Possibile nebbia - Visibilità ridotta",
-      colore: "#f97316",
-      icona: "🌫️",
+      coloreBg: "#e5e7eb",
+      coloreTesto: "#374151",
     };
   }
 
   if (condizioniOttime && ventoOttimo) {
     return {
       testo: "🌟 Ottime condizioni per il volo",
-      colore: "#0ea5e9",
-      icona: "🌟",
+      coloreBg: "#dbeafe",
+      coloreTesto: "#1e40af",
     };
   }
 
   if (condizioniOttime && !ventoOttimo) {
     return {
       testo: "✅ Buone condizioni per il volo",
-      colore: "#10b981",
-      icona: "✅",
+      coloreBg: "#d1fae5",
+      coloreTesto: "#065f46",
     };
   }
 
   if (condizioniMedie) {
     return {
       testo: "🔶 Possibilità medie per il volo",
-      colore: "#f59e0b",
-      icona: "🔶",
+      coloreBg: "#fef3c7",
+      coloreTesto: "#92400e",
     };
   }
 
   if (haVentoDebole) {
     return {
       testo: "🌬️ Vento debole - Volo difficile",
-      colore: "#f97316",
-      icona: "🌬️",
+      coloreBg: "#ffedd5",
+      coloreTesto: "#9a3412",
     };
   }
 
   return {
     testo: "⚠️ Condizioni variabili - Valutare con attenzione",
-    colore: "#f59e0b",
-    icona: "⚠️",
+    coloreBg: "#fef3c7",
+    coloreTesto: "#92400e",
   };
 };
 
@@ -355,8 +355,8 @@ export const SiteList = ({ selected, current, onSelect, weatherMap = {}, allHour
                   {avviso && (
                     <div className="text-center mb-1">
                       <span
-                        className="text-xs font-semibold px-2.5 py-1 rounded-full text-white inline-block"
-                        style={{ background: avviso.colore }}
+                        className="text-xs font-semibold px-2.5 py-1 rounded-full inline-block"
+                        style={{ background: avviso.coloreBg, color: avviso.coloreTesto }}
                       >
                         {avviso.testo}
                       </span>
