@@ -81,9 +81,9 @@ export function genAI(dayData: HourData[], selected: { altitude: number }, therm
   const afternoon = dayData.filter((h) => h.time.getHours() >= 12 && h.time.getHours() < 18);
   const evening = dayData.filter((h) => h.time.getHours() >= 18 && h.time.getHours() < 22);
 
-  const mM = morning.length ? Math.round(morning.reduce((s, h) => s + h.temperature, 0) / morning.length) : "--";
-  const mA = afternoon.length ? Math.round(afternoon.reduce((s, h) => s + h.temperature, 0) / afternoon.length) : "--";
-  const mE = evening.length ? Math.round(evening.reduce((s, h) => s + h.temperature, 0) / evening.length) : "--";
+  const mM = morning.length ? Math.round(morning.reduce((s, h) => s + h.temperature, 0) / morning.length) : 0;
+  const mA = afternoon.length ? Math.round(afternoon.reduce((s, h) => s + h.temperature, 0) / afternoon.length) : 0;
+  const mE = evening.length ? Math.round(evening.reduce((s, h) => s + h.temperature, 0) / evening.length) : 0;
   const pM = morning.length ? Math.round(Math.max(...morning.map((h) => h.precipitation)) * 10) / 10 : 0;
   const pA = afternoon.length ? Math.round(Math.max(...afternoon.map((h) => h.precipitation)) * 10) / 10 : 0;
   const pE = evening.length ? Math.round(Math.max(...evening.map((h) => h.precipitation)) * 10) / 10 : 0;
@@ -122,5 +122,5 @@ export function genAI(dayData: HourData[], selected: { altitude: number }, therm
     thunderstorm = `Nessun rischio temporali e rischi di fulmini trascurabili. Cielo sereno o poco nuvoloso, condizioni sicure per il volo.`;
   }
 
-  return { general, thermal: thermalStr, wind: windStr, hourly: hourlyStr, advice, thunderstorm };
+  return { general, thermal: thermalStr, wind: windStr, hourly: hourlyStr, advice, thunderstorm, altitude: "", pressure: "" } as AiAnalysis;
 }

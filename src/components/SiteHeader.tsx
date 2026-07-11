@@ -1,6 +1,7 @@
 "use client";
 
-import type { Decollo, HourData } from "@/types/meteo";
+import type { HourData } from "@/types/meteo";
+import type { Decollo } from "@/data/decolli";
 import { wic } from "@/utils/meteo";
 
 interface SiteHeaderProps {

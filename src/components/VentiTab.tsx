@@ -27,7 +27,7 @@ export const VentiTab = ({ dayData }: VentiTabProps) => {
             />
           </div>
           <div className="text-sm font-bold text-gray-800 w-14 text-right">{Math.round(h.windSpeed)} km/h</div>
-          <div className="text-xs text-gray-500 w-10 text-right">{h.gusts ? Math.round(h.gusts) : "--"} km/h</div>
+          <div className="text-xs text-gray-500 w-10 text-right">{h.windGust ? Math.round(h.windGust) : "--"} km/h</div>
         </div>
       ))}
     </div>
