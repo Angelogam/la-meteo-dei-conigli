@@ -1,184 +1,204 @@
 "use client";
 
-import type { HourData, DailyData, MeteoData, ThermalData, PressureGradient } from "@/types/meteo";
+import type { HourData, MeteoData, ThermalData, WindProfile } from "@/types/meteo";
 
-export type { HourData, DailyData, MeteoData, ThermalData, PressureGradient };
+const BASE_URL = "https://api.open-meteo.com/v1/forecast";
 
-const OPENMETEO_URL = "https://api.open-meteo.com/v1/forecast";
-
-function pr(v: number | undefined | null, d = 0): number {
-  return v ?? d;
-}
-
-export async function fetchMeteo(lat: number, lon: number): Promise<MeteoData> {
+export const fetchMeteo = async (lat: number, lon: number): Promise<MeteoData> => {
   const params = new URLSearchParams({
     latitude: lat.toString(),
     longitude: lon.toString(),
-    hourly: [
-      "temperature_2m",
-      "relative_humidity_2m",
-      "dew_point_2m",
-      "apparent_temperature",
-      "precipitation",
-      "weather_code",
-      "cloud_cover",
-      "pressure_msl",
-      "wind_speed_10m",
-      "wind_direction_10m",
-      "wind_gusts_10m",
-      "soil_temperature_0cm",
-      "soil_moisture_0_to_1cm",
-      "uv_index",
-      "is_day",
-    ].join(","),
-    daily: [
-      "temperature_2m_max",
-      "temperature_2m_min",
-      "weather_code",
-      "precipitation_sum",
-    ].join(","),
+    hourly: "temperature_2m,apparent_temperature,relative_humidity_2m,dew_point_2m,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,soil_temperature_0_to_7cm,soil_moisture_0_to_7cm,uv_index,is_day",
+    daily: "temperature_2m_max,temperature_2m_min,weather_code,precipitation_sum",
     timezone: "Europe/Rome",
-    forecast_days: "7",
+    forecast_days: "4",
   });
 
-  const resp = await fetch(`${OPENMETEO_URL}?${params}`);
-  if (!resp.ok) throw new Error(`Errore HTTP ${resp.status}`);
-  const json = await resp.json();
+  const res = await fetch(`${BASE_URL}?${params}`);
+  if (!res.ok) throw new Error(`Errore HTTP ${res.status}`);
+  const raw = await res.json();
 
-  const hourly: HourData[] = json.hourly.time.map((_: string, i: number) => ({
-    time: new Date(json.hourly.time[i] + "Z"),
-    temperature: json.hourly.temperature_2m[i],
-    feelsLike: json.hourly.apparent_temperature[i],
-    humidity: json.hourly.relative_humidity_2m[i],
-    dewPoint: json.hourly.dew_point_2m[i],
-    precipitation: pr(json.hourly.precipitation[i]),
-    weatherCode: json.hourly.weather_code[i],
-    cloudCover: pr(json.hourly.cloud_cover[i]),
-    pressure: pr(json.hourly.pressure_msl[i]),
-    windSpeed: pr(json.hourly.wind_speed_10m[i]),
-    windDir: pr(json.hourly.wind_direction_10m[i]),
-    windGust: pr(json.hourly.wind_gusts_10m[i]),
-    soilTemp: json.hourly.soil_temperature_0cm?.[i] ?? null,
-    soilMoisture: json.hourly.soil_moisture_0_to_1cm?.[i] ?? null,
-    uvIndex: json.hourly.uv_index?.[i] ?? null,
-    isDay: pr(json.hourly.is_day[i], 1) === 1,
+  // Parse orari
+  const times: string[] = raw.hourly.time;
+  const hourly: HourData[] = times.map((t: string, i: number) => ({
+    time: new Date(t),
+    temperature: raw.hourly.temperature_2m[i],
+    feelsLike: raw.hourly.apparent_temperature[i],
+    humidity: raw.hourly.relative_humidity_2m[i],
+    dewPoint: raw.hourly.dew_point_2m[i],
+    precipitation: raw.hourly.precipitation[i],
+    weatherCode: raw.hourly.weather_code[i],
+    cloudCover: raw.hourly.cloud_cover[i],
+    pressure: raw.hourly.pressure_msl[i],
+    windSpeed: raw.hourly.wind_speed_10m[i],
+    windDir: raw.hourly.wind_direction_10m[i],
+    windGust: raw.hourly.wind_gusts_10m[i],
+    soilTemp: raw.hourly.soil_temperature_0_to_7cm?.[i] ?? null,
+    soilMoisture: raw.hourly.soil_moisture_0_to_7cm?.[i] ?? null,
+    uvIndex: raw.hourly.uv_index?.[i] ?? null,
+    isDay: raw.hourly.is_day?.[i] === 1,
   }));
 
-  const daily: DailyData[] = json.daily.time.map((t: string, i: number) => ({
-    date: new Date(t + "T12:00:00Z"),
-    tempMax: pr(json.daily.temperature_2m_max[i]),
-    tempMin: pr(json.daily.temperature_2m_min[i]),
-    weatherCode: json.daily.weather_code[i],
-    precipitationSum: pr(json.daily.precipitation_sum[i]),
+  // Parse giornalieri
+  const dTimes: string[] = raw.daily.time;
+  const daily = dTimes.map((t: string, i: number) => ({
+    date: new Date(t),
+    tempMax: raw.daily.temperature_2m_max[i],
+    tempMin: raw.daily.temperature_2m_min[i],
+    weatherCode: raw.daily.weather_code[i],
+    precipitationSum: raw.daily.precipitation_sum[i],
   }));
 
   return { hourly, daily, lat, lon };
-}
-
-export async function fetchMeteoHourly(lat: number, lon: number): Promise<HourData[]> {
-  const data = await fetchMeteo(lat, lon);
-  return data.hourly;
-}
-
-export async function fetchMeteoDaily(lat: number, lon: number): Promise<DailyData[]> {
-  const data = await fetchMeteo(lat, lon);
-  return data.daily;
-}
-
-export function enrDaily(daily: DailyData[], hourly: HourData[]) {
-  return daily.map((d, i) => {
-    const dayHours = hourly.filter((h) => {
-      const hDate = h.time.getDate();
-      const dDate = d.date.getDate();
-      return hDate === dDate;
-    });
-    const delta = Math.round(d.tempMax - d.tempMin);
-    return { ...d, delta, idx: i };
-  });
-}
-
-export function getZeroTermico(temperature: number, altitude: number): number {
-  if (temperature <= 0) return altitude;
-  return Math.round(altitude + temperature / 0.0098);
-}
-
-export const wic = (code: number, isDay: boolean): string => {
-  if (code === 0) return isDay ? "\u2600\uFE0F" : "\uD83C\uDF19";
-  if (code <= 3) return isDay ? "\u26C5" : "\uD83C\uDF24\uFE0F";
-  if (code <= 48) return "\uD83C\uDF2B\uFE0F";
-  if (code <= 57) return "\uD83C\uDF26\uFE0F";
-  if (code <= 67) return "\uD83C\uDF27\uFE0F";
-  if (code <= 77) return "\u2744\uFE0F";
-  if (code <= 82) return "\uD83C\uDF28\uFE0F";
-  return "\u26C8\uFE0F";
 };
 
-export const ct = (c: number): string => {
-  if (c <= 20) return "Sereno";
-  if (c <= 40) return "Poco nuvoloso";
-  if (c <= 60) return "Nuvolosità variabile";
-  if (c <= 80) return "Molto nuvoloso";
-  return "Coperto";
+/** Fetch dei venti in quota a livelli di pressione */
+export const fetchWindProfiles = async (lat: number, lon: number): Promise<WindProfile[]> => {
+  const params = new URLSearchParams({
+    latitude: lat.toString(),
+    longitude: lon.toString(),
+    hourly: "pressure_level,temperature_120m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m,wind_speed_300m,wind_direction_300m,wind_speed_600m,wind_direction_600m,wind_speed_900m,wind_direction_900m,wind_speed_1200m,wind_direction_1200m,wind_speed_1500m,wind_direction_1500m,wind_speed_1800m,wind_direction_1800m,wind_speed_2100m,wind_direction_2100m,wind_speed_2400m,wind_direction_2400m,wind_speed_2800m,wind_direction_2800m,wind_speed_3200m,wind_direction_3200m,wind_speed_3600m,wind_direction_3600m,wind_speed_4000m,wind_direction_4000m",
+    timezone: "Europe/Rome",
+    forecast_days: "4",
+  });
+
+  try {
+    const res = await fetch(`${BASE_URL}?${params}`);
+    if (!res.ok) return [];
+    const raw = await res.json();
+
+    const times: string[] = raw.hourly.time;
+    const profiles: WindProfile[] = [];
+
+    // Livelli con le loro quote in metri
+    const levels = [
+      { height: 120, speedKey: "wind_speed_120m", dirKey: "wind_direction_120m", tempKey: "temperature_120m" },
+      { height: 180, speedKey: "wind_speed_180m", dirKey: "wind_direction_180m", tempKey: null },
+      { height: 300, speedKey: "wind_speed_300m", dirKey: "wind_direction_300m", tempKey: null },
+      { height: 600, speedKey: "wind_speed_600m", dirKey: "wind_direction_600m", tempKey: null },
+      { height: 900, speedKey: "wind_speed_900m", dirKey: "wind_direction_900m", tempKey: null },
+      { height: 1200, speedKey: "wind_speed_1200m", dirKey: "wind_direction_1200m", tempKey: null },
+      { height: 1500, speedKey: "wind_speed_1500m", dirKey: "wind_direction_1500m", tempKey: null },
+      { height: 1800, speedKey: "wind_speed_1800m", dirKey: "wind_direction_1800m", tempKey: null },
+      { height: 2100, speedKey: "wind_speed_2100m", dirKey: "wind_direction_2100m", tempKey: null },
+      { height: 2400, speedKey: "wind_speed_2400m", dirKey: "wind_direction_2400m", tempKey: null },
+      { height: 2800, speedKey: "wind_speed_2800m", dirKey: "wind_direction_2800m", tempKey: null },
+      { height: 3200, speedKey: "wind_speed_3200m", dirKey: "wind_direction_3200m", tempKey: null },
+      { height: 3600, speedKey: "wind_speed_3600m", dirKey: "wind_direction_3600m", tempKey: null },
+      { height: 4000, speedKey: "wind_speed_4000m", dirKey: "wind_direction_4000m", tempKey: null },
+    ];
+
+    for (let t = 0; t < times.length; t++) {
+      const levelsData = levels.map((l) => ({
+        height: l.height,
+        speed: raw.hourly[l.speedKey]?.[t] ?? null,
+        dir: raw.hourly[l.dirKey]?.[t] ?? null,
+      }));
+      profiles.push({
+        time: new Date(times[t]),
+        levels: levelsData,
+      });
+    }
+
+    return profiles;
+  } catch {
+    return [];
+  }
+};
+
+export const fetchMeteoHourly = async (lat: number, lon: number): Promise<HourData[]> => {
+  const data = await fetchMeteo(lat, lon);
+  return data.hourly;
+};
+
+// Icone meteo WMO
+export const wic = (code: number, emoji: boolean = true): string => {
+  if (emoji) {
+    if (code === 0) return "☀️";
+    if (code <= 3) return "🌤️";
+    if (code <= 48) return "🌫️";
+    if (code <= 57) return "🌦️";
+    if (code <= 67) return "🌧️";
+    if (code <= 77) return "🌨️";
+    if (code <= 82) return "🌦️";
+    return "⛈️";
+  }
+  return "";
+};
+
+// Direzione vento
+export const wd = (deg: number): string => {
+  const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+  return dirs[Math.round(deg / 22.5) % 16];
 };
 
 export const wa = (deg: number): string => {
-  const dirs = [
-    "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
-    "S", "SSO", "SO", "OSO", "O", "ONO", "NO", "NNO",
-  ];
-  const i = Math.round(deg / 22.5) % 16;
-  return dirs[i];
+  return wd(deg);
 };
 
-export const wd = (s: number): string => {
-  if (s < 1) return "Calma";
-  if (s < 6) return "Brezza leggera";
-  if (s < 12) return "Brezza";
-  if (s < 20) return "Vento moderato";
-  if (s < 30) return "Vento teso";
-  if (s < 40) return "Vento forte";
-  return "Burrasca";
+// Arricchisci daily con dati aggregati
+export const enrDaily = (daily: MeteoData["daily"], hourly: HourData[]) => {
+  return daily.map((d) => {
+    const dayHours = hourly.filter(
+      (h) =>
+        h.time.getDate() === d.date.getDate() &&
+        h.time.getMonth() === d.date.getMonth() &&
+        h.time.getFullYear() === d.date.getFullYear()
+    );
+    const avgWind = dayHours.length
+      ? dayHours.reduce((s, h) => s + h.windSpeed, 0) / dayHours.length
+      : 0;
+    const maxWind = dayHours.length
+      ? Math.max(...dayHours.map((h) => h.windSpeed))
+      : 0;
+    const avgCloud = dayHours.length
+      ? dayHours.reduce((s, h) => s + h.cloudCover, 0) / dayHours.length
+      : 0;
+    return {
+      ...d,
+      avgWind,
+      maxWind,
+      avgCloud,
+    };
+  });
 };
 
-export interface WindProfile {
-  dir: string;
-  speed: number;
-  speed1200: number;
-  speed1800: number;
-  speed2400: number;
-}
+// Calcolo termiche
+export const calcThermal = (dayData: HourData[], siteAlt: number): ThermalData | null => {
+  if (!dayData.length) return null;
 
-export function getWindProfile(speed: number, dir: number): WindProfile {
-  const beta = 0.143;
-  const base = speed * (1 + beta * Math.log(300 / 10)) / (1 + beta * Math.log(10 / 10));
-  const calcAlt = (alt: number) => Math.round(base * (1 + beta * Math.log(alt / 300)));
-  return {
-    dir: wa(dir),
-    speed: Math.round(speed),
-    speed1200: calcAlt(1200),
-    speed1800: calcAlt(1800),
-    speed2400: calcAlt(2400),
-  };
-}
+  const avgTemp = dayData.reduce((s, h) => s + h.temperature, 0) / dayData.length;
+  const avgDew = dayData.reduce((s, h) => s + h.dewPoint, 0) / dayData.length;
+  const avgHum = dayData.reduce((s, h) => s + h.humidity, 0) / dayData.length;
+  const maxTemp = Math.max(...dayData.map((h) => h.temperature));
+  const minTemp = Math.min(...dayData.map((h) => h.temperature));
+  const tempRange = maxTemp - minTemp;
 
-export function calcThermal(dayData: HourData[], altitude: number): ThermalData {
-  const maxTemp = Math.max(...dayData.map((h) => h.temperature).filter((t) => t != null));
-  const humidity = dayData.reduce((s, h) => s + h.humidity, 0) / dayData.length;
-  const cloud = dayData.reduce((s, h) => s + h.cloudCover, 0) / dayData.length;
-  const dew = maxTemp - (100 - humidity) / 5;
-  const cloudBase = altitude + Math.round((maxTemp - dew) * 125);
-  const delta = maxTemp - dew;
-  const soarRaw = Math.min(10, Math.max(0, Math.round((delta - 4) * 1.5)));
-  const thermalTop = cloudBase + Math.round(soarRaw * 80);
-  const soarIdx = Math.min(10, Math.max(0, soarRaw));
+  // LCL approssimato (base nuvole)
+  const cloudBase = Math.round((avgTemp - avgDew) * 125);
+
+  // CAPE approssimato
+  const cape = Math.round(Math.max(0, (tempRange * 50) + (avgHum > 50 ? 200 : 0)));
+
+  // Cima termica approssimata (base + CAPE factor)
+  const thermalTop = Math.round(cloudBase + (cape / 100) * 300);
+
+  // Soaring index (0-10)
+  const soarIdx = Math.min(10, Math.max(0, Math.round(
+    (tempRange / 15) * 3 + // ampiezza termica
+    (avgHum < 60 ? 2 : 0) + // aria secca
+    (cloudBase > 800 ? 2 : 0) + // base alta
+    (avgTemp > 20 ? 2 : 0) + // temperatura
+    (avgTemp > 25 ? 1 : 0)
+  )));
+
   return { cloudBase, thermalTop, soarIdx };
-}
+};
 
-export function calcTurbulence(dayData: HourData[], hour: number, altitude: number): number {
-  const hd = dayData.find((x) => x.time.getHours() === hour);
-  if (!hd) return 0;
-  const ws = hd.windSpeed;
-  const gust = hd.windGust;
-  const turb = Math.min(5, Math.max(1, Math.round(ws * 0.15 + gust * 0.1 + (altitude > 2000 ? 0.5 : 0))));
-  return turb;
-}
+// Filtra ore volo (9-19)
+export const filterFlightHours = (data: HourData[]): HourData[] => {
+  return data.filter((h) => {
+    const hh = h.time.getHours();
+    return hh >= 9 && hh <= 19;
+  });
+};

@@ -1,70 +1,46 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { MeteoGram } from "@/components/MeteoGram";
 import type { HourData } from "@/types/meteo";
+import { generaAnalisiReale } from "@/utils/analisi";
 
 interface TermicheTabProps {
   dayData: HourData[];
   altitude: number;
 }
 
-function generateMeteoGramData(dayData: HourData[], altitude: number) {
-  if (!dayData.length) return null;
-
-  const hours: string[] = [];
-  const temperatures: number[] = [];
-  const capeValues: number[] = [];
-  const cloudCover: number[] = [];
-  const precipitation: number[] = [];
-  const windSpeed: number[] = [];
-  const windDir: number[] = [];
-  const humidity: number[] = [];
-  const dewPoint: number[] = [];
-
-  dayData.forEach((h) => {
-    if (h.time.getHours() < 6 || h.time.getHours() > 21) return;
-    
-    hours.push(`${String(h.time.getHours()).padStart(2, "0")}:00`);
-    temperatures.push(h.temperature);
-    
-    const deltaT = h.temperature - (h.dewPoint || h.temperature - (100 - h.humidity) / 5);
-    const cape = deltaT > 0 ? Math.round(Math.min(2500, deltaT * 80 + Math.random() * 200)) : 0;
-    capeValues.push(cape);
-    
-    cloudCover.push(h.cloudCover);
-    precipitation.push(h.precipitation || 0);
-    windSpeed.push(h.windSpeed);
-    windDir.push(h.windDir);
-    humidity.push(h.humidity);
-    dewPoint.push(h.dewPoint || h.temperature - (100 - h.humidity) / 5);
-  });
-
-  return {
-    hours,
-    temperatures,
-    capeValues,
-    cloudCover,
-    precipitation,
-    windSpeed,
-    windDir,
-    humidity,
-    dewPoint,
-  };
-}
-
 export const TermicheTab = ({ dayData, altitude }: TermicheTabProps) => {
-  const meteoGramData = useMemo(() => generateMeteoGramData(dayData, altitude), [dayData, altitude]);
+  const analisi = generaAnalisiReale(dayData, altitude);
 
-  if (!meteoGramData) {
-    return <div className="text-sm text-gray-500 p-4 text-center">Nessun dato disponibile per il meteogramma</div>;
+  if (!dayData.length || !analisi) {
+    return <div className="text-sm text-slate-300 p-4 text-center">Nessuna analisi termica disponibile</div>;
   }
 
   return (
-    <MeteoGram
-      data={meteoGramData}
-      siteName={""}
-      siteAltitude={altitude}
-    />
+    <div className="text-sm leading-relaxed text-slate-200 whitespace-pre-wrap space-y-3">
+      <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm">
+        <h4 className="font-extrabold text-orange-400 mb-1">🔥 Situazione Generale</h4>
+        <p className="text-slate-200 whitespace-pre-line">{analisi.general}</p>
+      </div>
+
+      <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm">
+        <h4 className="font-extrabold text-blue-300 mb-1">🌡️ Profilo Termico e Stabilità</h4>
+        <p className="text-slate-200 whitespace-pre-line">{analisi.thermal}</p>
+      </div>
+
+      <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm">
+        <h4 className="font-extrabold text-green-300 mb-1">🌬️ Vento e Dinamica in Quota</h4>
+        <p className="text-slate-200 whitespace-pre-line">{analisi.wind}</p>
+      </div>
+
+      <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm">
+        <h4 className="font-extrabold text-yellow-300 mb-1">🌤️ Previsione per la Giornata</h4>
+        <p className="text-slate-200 whitespace-pre-line">{analisi.hourly}</p>
+      </div>
+
+      <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm">
+        <h4 className="font-extrabold text-cyan-300 mb-1">🪂 Interpretazione per Attività Outdoor / Volo Libero</h4>
+        <p className="text-slate-200 whitespace-pre-line">{analisi.advice}</p>
+      </div>
+    </div>
   );
 };
