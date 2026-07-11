@@ -62,6 +62,25 @@ function generaGiorniPrevisioni(): GiornoPrevisione[] {
   return giorni;
 }
 
+/** Data target per un giorno futuro (offset 1 = domani, 2 = dopodomani, ...) */
+function getFutureDate(offset: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d;
+}
+
+/** Filtra gli HourData per una data specifica */
+function filterByDate(data: HourData[], targetDate: Date): HourData[] {
+  return data.filter((h) => {
+    const hd = h.time;
+    return (
+      hd.getDate() === targetDate.getDate() &&
+      hd.getMonth() === targetDate.getMonth() &&
+      hd.getFullYear() === targetDate.getFullYear()
+    );
+  });
+}
+
 const Index = () => {
   const [decolliMeteo, setDecolliMeteo] = useState<Record<string, DecolloMeteo>>(() => {
     const map: Record<string, DecolloMeteo> = {};
@@ -207,60 +226,46 @@ const Index = () => {
     }));
   }, [giorniPrevisioni]);
 
-  // Ottiene i dati per il giorno corrente (0 = oggi, 1+ = giorni futuri)
-  const getDayData = useCallback(
-    (idx: number): HourData[] => {
-      if (idx === 0) {
-        // Usa i dati correnti
-        if (!hourly.length) return [];
-        const targetDate = daily[0]?.date;
-        if (!targetDate) return [];
-        return hourly.filter((h) => {
-          const hd = h.time;
-          return (
-            hd.getDate() === targetDate.getDate() &&
-            hd.getMonth() === targetDate.getMonth() &&
-            hd.getFullYear() === targetDate.getFullYear()
-          );
-        });
-      } else {
-        // Usa i dati della previsione per il giorno idx
-        const previsione = giorniPrevisioni.find((g) => g.giorno === idx);
-        if (!previsione?.data) return [];
-        const prevHourly = filterFlightHours(previsione.data.hourly || []);
-        const targetDate = previsione.data.daily?.[idx]?.date;
-        if (!targetDate) {
-          // Fallback: calcola la data target
-          const target = new Date();
-          target.setDate(target.getDate() + idx);
-          return prevHourly.filter((h) => {
-            const hd = h.time;
-            return (
-              hd.getDate() === target.getDate() &&
-              hd.getMonth() === target.getMonth() &&
-              hd.getFullYear() === target.getFullYear()
-            );
-          });
-        }
-        return prevHourly.filter((h) => {
-          const hd = h.time;
-          return (
-            hd.getDate() === targetDate.getDate() &&
-            hd.getMonth() === targetDate.getMonth() &&
-            hd.getFullYear() === targetDate.getFullYear()
-          );
-        });
-      }
-    },
-    [hourly, daily, giorniPrevisioni]
-  );
+  // ---- DATI PER IL GIORNO SELEZIONATO (dayIdx) ----
+  // Quando dayIdx === 0: usa i dati correnti
+  // Quando dayIdx > 0: usa i dati precaricati di giorniPrevisioni
 
-  const dayData = useMemo(() => getDayData(dayIdx), [getDayData, dayIdx]);
+  const isFutureDay = dayIdx > 0;
+  const previsioneSelezionata = giorniPrevisioni.find((g) => g.giorno === dayIdx);
 
-  const currentHourData = useMemo(() => {
-    const found = hourly.find((h) => h.time.getHours() === hour);
-    return found || hourly[0];
-  }, [hourly, hour]);
+  // DayData: ore 9-19 per il giorno selezionato
+  const dayData = useMemo((): HourData[] => {
+    if (!isFutureDay) {
+      // Oggi: filtra hourly per la data di oggi (daily[0])
+      const targetDate = daily[0]?.date;
+      if (!targetDate || !hourly.length) return [];
+      return hourly.filter((h) => {
+        const hd = h.time;
+        return (
+          hd.getDate() === targetDate.getDate() &&
+          hd.getMonth() === targetDate.getMonth() &&
+          hd.getFullYear() === targetDate.getFullYear()
+        );
+      });
+    }
+
+    // Giorno futuro
+    if (!previsioneSelezionata?.data) return [];
+    const prevHourly = filterFlightHours(previsioneSelezionata.data.hourly || []);
+    if (!prevHourly.length) return [];
+
+    // Trova la data target
+    const targetDate = getFutureDate(dayIdx);
+    return filterByDate(prevHourly, targetDate);
+  }, [hourly, daily, isFutureDay, previsioneSelezionata, dayIdx]);
+
+  // Current hour data: l'ora selezionata per il giorno selezionato
+  const currentHourData = useMemo((): HourData | null => {
+    if (!dayData.length) return null;
+    // Cerca l'ora esatta selezionata
+    const found = dayData.find((h) => h.time.getHours() === hour);
+    return found || dayData[0];
+  }, [dayData, hour]);
 
   const currentSite = useMemo(
     () => DECOLLI.find((s) => s.id === siteId) || DECOLLI[0],
@@ -281,13 +286,11 @@ const Index = () => {
     return generateAiAnalysis(dayData, dayIdx);
   }, [dayData, dayIdx]);
 
-  // TERMICHE ORARIE: si aggiornano al variare di dayData (quindi al variare di dayIdx)
+  // TERMICHE ORARIE: si aggiornano al variare di dayData
   const termicheHourly = useMemo(() => {
     if (!dayData.length) return [];
     return generaTermicheOrarie(dayData, currentSite.altitude);
   }, [dayData, currentSite.altitude]);
-
-  const previsioneSelezionata = giorniPrevisioni.find((g) => g.giorno === dayIdx);
 
   const previsioneData = previsioneSelezionata?.data;
   const previsioneDailyArr = previsioneData?.daily || [];
@@ -308,6 +311,41 @@ const Index = () => {
     });
   }, [previsioneHourly, previsioneDailyArr, dayIdx]);
   const previsioneEnriched = useMemo(() => enrDaily(previsioneDailyArr, previsioneHourly), [previsioneDailyArr, previsioneHourly]);
+
+  // Calcola un enrichedDaily per il giorno futuro selezionato
+  const futureEnrichedDaily = useMemo(() => {
+    if (!isFutureDay || !dayData.length) return enrichedDaily;
+    // Per i giorni futuri, crea un enrichedDaily fittizio con i dati del giorno
+    const maxTemp = Math.max(...dayData.map(h => h.temperature));
+    const minTemp = Math.min(...dayData.map(h => h.temperature));
+    const avgWind = dayData.length ? dayData.reduce((s, h) => s + h.windSpeed, 0) / dayData.length : 0;
+    const maxWind = dayData.length ? Math.max(...dayData.map(h => h.windSpeed)) : 0;
+    const avgCloud = dayData.length ? dayData.reduce((s, h) => s + h.cloudCover, 0) / dayData.length : 0;
+    const precipitationSum = dayData.reduce((s, h) => s + h.precipitation, 0);
+
+    return [{
+      date: getFutureDate(dayIdx),
+      tempMax: maxTemp,
+      tempMin: minTemp,
+      weatherCode: dayData[0]?.weatherCode ?? 0,
+      precipitationSum,
+      avgWind,
+      maxWind,
+      avgCloud,
+    }];
+  }, [isFutureDay, dayData, enrichedDaily, dayIdx]);
+
+  // Label per il giorno selezionato
+  const selectedDayLabel = useMemo(() => {
+    if (dayIdx === 0) {
+      return new Date().toLocaleDateString("it-IT", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      });
+    }
+    return giorniAvanti.find(g => g.value === dayIdx)?.label || "";
+  }, [dayIdx, giorniAvanti]);
 
   const apriPrevisioneGiorno = useCallback((giorno: number) => {
     const previsione = giorniPrevisioni.find((g) => g.giorno === giorno);
@@ -348,6 +386,10 @@ const Index = () => {
       }
     }
     setDayIdx(idx);
+    // Resetta l'ora a 12 (mezzogiorno) per avere un'ora di riferimento valida per il giorno futuro
+    if (idx > 0) {
+      setHour(12);
+    }
   }, [giorniPrevisioni, fetchGiorno]);
 
   // ---- CONDITIONAL RETURN DOPO TUTTI GLI HOOK ----
@@ -394,14 +436,16 @@ const Index = () => {
         <div className="flex-1 min-w-0 max-w-2xl mx-auto">
           <div className="mb-2.5 flex items-center justify-between">
             <div className="text-sm text-slate-200 font-medium">
-              {new Date().toLocaleDateString("it-IT", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
+              {dayIdx === 0
+                ? new Date().toLocaleDateString("it-IT", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })
+                : selectedDayLabel}
               <span className="ml-2 text-blue-300 font-bold">
-                {String(hour).padStart(2, "0")}:{String(new Date().getMinutes()).padStart(2, "0")}
+                {String(hour).padStart(2, "0")}:00
               </span>
             </div>
             <div className="flex gap-1.5">
@@ -427,15 +471,15 @@ const Index = () => {
               <>
                 {selectedDayLoading && dayIdx > 0 && (
                   <div className="text-center py-4 text-sm text-blue-300 animate-pulse">
-                    Caricamento previsioni per {giorniAvanti.find(g => g.value === dayIdx)?.label || "il giorno selezionato"}...
+                    Caricamento previsioni per {selectedDayLabel}...
                   </div>
                 )}
                 <MeteoTab
                   current={currentHourData}
                   dayIdx={dayIdx}
                   hour={hour}
-                  enrichedDaily={enrichedDaily}
-                  dateLabels={dateLabels}
+                  enrichedDaily={futureEnrichedDaily}
+                  dateLabels={[selectedDayLabel]}
                   thermal={thermalAI}
                   pressureGrad={{ grad: 0, desc: "Non disponibile" }}
                   aiData={aiData as unknown as AiAnalysis | null}
@@ -491,7 +535,7 @@ const Index = () => {
           {showPopup && currentHourData && (
             <DayForecastPopup
               data={dayData}
-              dayLabel={dateLabels[dayIdx] || ""}
+              dayLabel={selectedDayLabel}
               onClose={() => setShowPopup(false)}
               selectedHour={hour}
               onHourSelect={(h) => {
@@ -501,11 +545,11 @@ const Index = () => {
             />
           )}
 
-          {showDayDetail && enrichedDaily[dayIdx] && !previsioneSelezionata?.data && (
+          {showDayDetail && !previsioneSelezionata?.data && (
             <DayDetailPopup
               dayData={dayData}
-              daily={enrichedDaily[dayIdx]}
-              dayLabel={dateLabels[dayIdx] || ""}
+              daily={futureEnrichedDaily[0]}
+              dayLabel={selectedDayLabel}
               altitude={currentSite.altitude}
               onClose={() => setShowDayDetail(false)}
               onHourSelect={(h) => {
