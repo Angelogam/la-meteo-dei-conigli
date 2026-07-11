@@ -1,78 +1,66 @@
 "use client";
 
-import type { ThermalAnalysis } from "@/utils/termiche";
+import type { HourData } from "@/types/meteo";
+import { generaAnalisiReale } from "@/utils/analisi";
 
 interface TermicheTabProps {
-  aiData: ThermalAnalysis | null;
+  dayData: HourData[];
+  altitude: number;
 }
 
-export const TermicheTab = ({ aiData }: TermicheTabProps) => {
-  if (!aiData) {
+export const TermicheTab = ({ dayData, altitude }: TermicheTabProps) => {
+  const analisi = generaAnalisiReale(dayData, altitude);
+
+  if (!dayData.length) {
     return <div className="text-sm text-slate-300 p-4 text-center">Nessuna analisi termica disponibile</div>;
   }
-
-  const strengthColor = () => {
-    switch (aiData.strength) {
-      case "nulla": return "text-slate-400";
-      case "debole": return "text-yellow-400";
-      case "moderata": return "text-orange-400";
-      case "buona": return "text-orange-300";
-      case "forte": return "text-red-400";
-    }
-  };
-
-  const riskColor = () => {
-    switch (aiData.risk) {
-      case "nullo": return "text-green-400";
-      case "basso": return "text-yellow-400";
-      case "medio": return "text-orange-400";
-      case "alto": return "text-red-500";
-    }
-  };
 
   return (
     <div className="text-sm leading-relaxed text-slate-200 whitespace-pre-wrap space-y-3">
       <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm">
-        <h4 className="font-extrabold text-orange-400 mb-1">🔥 Situazione Termica</h4>
-        <p className="text-slate-200">{aiData.description}</p>
+        <h4 className="font-extrabold text-orange-400 mb-1">🔥 Situazione Generale</h4>
+        <p className="text-slate-200 whitespace-pre-line">{analisi.situazioneGenerale}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        {aiData.thermalBase && (
-          <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm text-center">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">Base termiche</div>
-            <div className="text-lg font-extrabold text-orange-300">
-              {aiData.thermalBase >= 1000 ? `${(aiData.thermalBase / 1000).toFixed(1)} km` : `${aiData.thermalBase} m`} slm
-            </div>
-          </div>
-        )}
+      <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm">
+        <h4 className="font-extrabold text-blue-300 mb-1">🌡️ Profilo Termico e Stabilità</h4>
+        <p className="text-slate-200 whitespace-pre-line">{analisi.profiloTermico}</p>
+      </div>
 
-        {aiData.thermalTop && (
-          <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm text-center">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">Sviluppo massimo</div>
-            <div className="text-lg font-extrabold text-blue-300">
-              {aiData.thermalTop >= 1000 ? `${(aiData.thermalTop / 1000).toFixed(1)} km` : `${aiData.thermalTop} m`} slm
-            </div>
-          </div>
-        )}
+      <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm">
+        <h4 className="font-extrabold text-green-300 mb-1">🌬️ Vento e Dinamica in Quota</h4>
+        <p className="text-slate-200 whitespace-pre-line">{analisi.ventoQuota}</p>
+      </div>
 
-        {aiData.avgUpdraft !== null && (
-          <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm text-center">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">Forza media</div>
-            <div className={`text-lg font-extrabold ${strengthColor()}`}>
-              {aiData.avgUpdraft} m/s
-            </div>
-            <div className="text-[10px] text-slate-400 capitalize">{aiData.strength}</div>
+      {analisi.tabellaOraria.length > 0 && (
+        <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm">
+          <h4 className="font-extrabold text-yellow-300 mb-2">🌤️ Previsione per la Giornata</h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left">
+              <thead>
+                <tr className="border-b border-slate-500/40">
+                  <th className="py-1.5 pr-2 font-bold text-slate-300">Fascia oraria</th>
+                  <th className="py-1.5 pr-2 font-bold text-slate-300">Condizioni previste</th>
+                  <th className="py-1.5 font-bold text-slate-300">Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {analisi.tabellaOraria.map((row, i) => (
+                  <tr key={i} className="border-b border-slate-600/20 last:border-0">
+                    <td className="py-1.5 pr-2 font-semibold text-yellow-200/80 whitespace-nowrap">{row.fascia}</td>
+                    <td className="py-1.5 pr-2 text-slate-200">{row.condizioni}</td>
+                    <td className="py-1.5 text-slate-300">{row.note}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
-
-        <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm text-center">
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">Rischio turbolenza</div>
-          <div className={`text-lg font-extrabold ${riskColor()}`}>
-            {aiData.risk === "nullo" ? "✅" : aiData.risk === "basso" ? "⚠️" : aiData.risk === "medio" ? "⚠️⚠️" : "🔴"}
-          </div>
-          <div className={`text-[10px] capitalize ${riskColor()}`}>{aiData.risk}</div>
         </div>
+      )}
+
+      <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm">
+        <h4 className="font-extrabold text-cyan-300 mb-1">🪂 Interpretazione per Attività Outdoor / Volo Libero</h4>
+        <p className="text-slate-200 whitespace-pre-line">{analisi.interpretazione}</p>
       </div>
     </div>
   );

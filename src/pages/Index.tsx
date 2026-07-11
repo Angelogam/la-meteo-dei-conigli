@@ -206,10 +206,8 @@ function Index() {
     return genAI(dayData, { altitude: currentSite.altitude }, thermalAI);
   }, [dayData, currentSite.altitude, thermalAI]);
 
-  // Calcolo termiche reali da Open-Meteo
   const thermalReal = useMemo(() => {
     if (!dayData.length) return null;
-    // Temperatura e dew point medi nelle ore centrali (10-15)
     const centralHours = dayData.filter(h => {
       const hh = h.time.getHours();
       return hh >= 10 && hh <= 15;
@@ -241,6 +239,7 @@ function Index() {
   if (globalLoading) return <LoadingScreen />;
   if (globalError) return <ErrorScreen message={globalError} onRetry={handleRetry} />;
 
+  // ... rest of the render (unchanged)
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-slate-800 via-slate-700 to-slate-900 text-slate-100">
       <div
@@ -343,7 +342,9 @@ function Index() {
               />
             )}
 
-            {tab === "termiche" && <TermicheTab aiData={thermalReal as unknown as AiAnalysis} />}
+            {tab === "termiche" && (
+              <TermicheTab dayData={dayData} altitude={currentSite.altitude} />
+            )}
 
             {tab === "analisi" && aiMeteoAnalysis && (
               <AnalisiTab aiData={aiMeteoAnalysis as unknown as AiAnalysis} />

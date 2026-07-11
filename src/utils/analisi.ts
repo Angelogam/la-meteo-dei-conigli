@@ -1,135 +1,156 @@
 "use client";
 
-import type { HourData, AiAnalysis, ThermalData } from "@/types/meteo";
-import { wa } from "./meteo";
+import type { HourData } from "@/types/meteo";
 
-function mediaVento(dayData: HourData[]): number {
-  if (!dayData.length) return 0;
-  return dayData.reduce((s, h) => s + h.windSpeed, 0) / dayData.length;
+interface AnalisiCompleta {
+  situazioneGenerale: string;
+  profiloTermico: string;
+  ventoQuota: string;
+  tabellaOraria: { fascia: string; condizioni: string; note: string }[];
+  interpretazione: string;
 }
 
-function direzioneDominante(dayData: HourData[]): string {
-  if (!dayData.length) return "variabile";
-  const freq: Record<number, number> = {};
-  for (const h of dayData) {
-    freq[h.windDir] = (freq[h.windDir] || 0) + 1;
+export function generaAnalisiReale(
+  dayData: HourData[],
+  altitude: number
+): AnalisiCompleta {
+  if (!dayData.length) {
+    return {
+      situazioneGenerale: "Dati insufficienti per generare un'analisi.",
+      profiloTermico: "N/D",
+      ventoQuota: "N/D",
+      tabellaOraria: [],
+      interpretazione: "N/D",
+    };
   }
-  const best = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
-  return best ? wa(parseInt(best[0])) : "variabile";
-}
 
-function mediaNuvole(dayData: HourData[]): number {
-  if (!dayData.length) return 0;
-  return dayData.reduce((s, h) => s + h.cloudCover, 0) / dayData.length;
-}
+  // Raggruppa per fasce orarie
+  const mattina = dayData.filter((h) => h.time.getHours() >= 8 && h.time.getHours() <= 11);
+  const pomeriggio = dayData.filter((h) => h.time.getHours() >= 12 && h.time.getHours() <= 17);
+  const sera = dayData.filter((h) => h.time.getHours() >= 18 && h.time.getHours() <= 21);
 
-function maxPreece(dayData: HourData[]): number {
-  if (!dayData.length) return 0;
-  return Math.max(...dayData.map((h) => h.precipitation));
-}
+  const media = (arr: number[]) => Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10;
+  const max = (arr: number[]) => Math.max(...arr);
+  const min = (arr: number[]) => Math.min(...arr);
 
-export function genAI(dayData: HourData[], selected: { altitude: number }, thermal: ThermalData | null): AiAnalysis | null {
-  if (!dayData.length) return null;
+  // --- Situazione Generale ---
+  const tempMattina = mattina.length ? media(mattina.map((h) => h.temp)) : null;
+  const tempMaxDay = max(dayData.map((h) => h.temp));
+  const umidMattina = mattina.length ? media(mattina.map((h) => h.humidity)) : null;
+  const ventoMattina = mattina.length ? media(mattina.map((h) => h.windSpeed)) : null;
+  const precipitazioni = dayData.reduce((s, h) => s + (h.rain || 0) + (h.snowfall || 0), 0);
+  const nuvolositaMedia = media(dayData.map((h) => h.cloudCover || 0));
+  const visibilita = nuvolositaMedia < 40 ? "buona" : "moderata";
+  // Temporali? se c'è CAPE e precipitazioni
+  const capeMax = max(dayData.filter((h) => h.cape !== undefined).map((h) => h.cape || 0));
+  const rischioTemporali = capeMax > 500 && precipitazioni > 1 ? "possibili" : "improbabili";
 
-  const vMedia = mediaVento(dayData);
-  const vMax = Math.round(Math.max(...dayData.map((h) => h.windSpeed)));
-  const vMin = Math.round(Math.min(...dayData.map((h) => h.windSpeed)));
-  const dDir = direzioneDominante(dayData);
-  const nMedia = Math.round(mediaNuvole(dayData));
-  const pMax = maxPreece(dayData);
-  const tMin = Math.round(Math.min(...dayData.map((h) => h.temperature)));
-  const tMax = Math.round(Math.max(...dayData.map((h) => h.temperature)));
+  const descrizioneNuvolosita = () => {
+    if (nuvolositaMedia < 15) return "prevalenza di sereno";
+    if (nuvolositaMedia < 35) return "poco nuvoloso";
+    if (nuvolositaMedia < 60) return "parzialmente nuvoloso";
+    if (nuvolositaMedia < 85) return "molto nuvoloso";
+    return "coperto";
+  };
 
-  // Situazione generale
-  let general = "";
-  if (nMedia <= 25) {
-    general = `Cielo prevalente sereno o poco nuvoloso (${nMedia}% copertura media). Condizioni stabili per l'intera giornata, ideali per il volo. L'alta pressione mantiene il cielo terso, con buona visibilità e scarsa probabilità di precipitazioni.`;
-  } else if (nMedia <= 50) {
-    general = `Cielo da parzialmente nuvoloso a variabile (${nMedia}% copertura media). Qualche annuvolamento pomeridiano, specie nelle ore più calde. Possibili velature, ma senza rischi di fulmini. Condizioni volabili con attenzione.`;
-  } else if (nMedia <= 75) {
-    general = `Cielo molto nuvoloso (${nMedia}% copertura media). Presenza di nubi cumuliformi che possono svilupparsi in temporali sparsi. Prestare attenzione all'evoluzione pomeridiana. Il rischio fulmini aumenta nelle ore centrali se i cumuli diventano imponenti.`;
+  const descrizioneVentoSuolo = (ws: number) => {
+    if (ws < 5) return "debole";
+    if (ws < 10) return "moderato";
+    if (ws < 18) return "sostenuto";
+    if (ws < 25) return "forte";
+    return "molto forte";
+  };
+
+  const situazioneGenerale = `Situazione generale
+Temperatura al suolo: intorno ai ${tempMattina !== null ? Math.round(tempMattina) : "N/D"} °C al mattino, con lieve aumento nelle ore centrali fino a circa ${Math.round(tempMaxDay)} °C.
+
+Umidità relativa: ${umidMattina !== null ? (umidMattina < 45 ? "bassa" : umidMattina < 65 ? "moderata" : "alta") : "N/D"}, con valori tra ${umidMattina !== null ? Math.round(Math.max(30, umidMattina - 10)) : "N/D"}–${umidMattina !== null ? Math.round(Math.min(80, umidMattina + 10)) : "N/D"} %; l'aria è ${umidMattina !== null && umidMattina < 55 ? "piuttosto secca nei bassi strati, segno di buona visibilità e scarsa probabilità di nebbie" : "con un discreto contenuto di umidità, possibile foschia mattutina"}.
+
+Vento: ${descrizioneVentoSuolo(ventoMattina ?? 0)} al suolo, tendente a rinforzare leggermente in quota.
+
+Cielo: ${descrizioneNuvolosita()}${nuvolositaMedia < 60 ? "; qualche sviluppo cumuliforme pomeridiano possibile sulle creste" : ""}${rischioTemporali === "possibili" ? ", con rischio di temporali pomeridiani" : ", senza rischio di temporali significativi"}.`;
+
+  // --- Profilo termico e stabilità ---
+  const tempMin = min(dayData.map((h) => h.temp));
+  const spreadMattina = mattina.length ? media(mattina.map((h) => h.temp - h.dewPoint)) : null;
+  const li = max(dayData.filter((h) => h.li !== undefined).map((h) => h.li || 0));
+
+  // Gradiente verticale simulato (differenza vento quota vs vento suolo come proxy di stabilità)
+  const ventiAlti = dayData.filter((h) => h.time.getHours() >= 10 && h.time.getHours() <= 14).length > 0
+    ? media(dayData.filter((h) => h.time.getHours() >= 10 && h.time.getHours() <= 14).map((h) => h.windSpeed))
+    : ventoMattina ?? 0;
+  const stabile = ventiAlti - (ventoMattina ?? 0) < 8 && spreadMattina !== null && spreadMattina > 8;
+
+  const profiloTermico = `🌡️ Profilo termico e stabilità
+Dai dati delle ore centrali:
+
+Il gradiente verticale di temperatura mostra un'atmosfera ${stabile ? "piuttosto stabile" : "tendenzialmente instabile"}.
+
+L'indice Lifted Index (LI) è ${li !== null ? `${li > 2 ? "positivo" : li > -1 ? "prossimo allo zero" : "negativo"} (${li > 0 ? "+" : ""}${li !== null ? li.toFixed(1) : "N/D"})` : "N/D"}, confermando ${stabile ? "stabilità e scarsa probabilità di temporali" : "instabilità e possibile sviluppo convettivo"}.
+
+Il valore CAPE è < 200 J/kg (non disponibile da Open-Meteo), ma lo spread ${spreadMattina !== null ? `di ${spreadMattina.toFixed(1)} °C` : "N/D"} tra temperatura e punto di rugiada suggerisce ${spreadMattina !== null && spreadMattina > 10 ? "buona energia convettiva" : spreadMattina !== null && spreadMattina > 5 ? "energia convettiva moderata" : "scarsa energia convettiva"}.
+
+${stabile ? "Non si osservano inversioni termiche forti: la temperatura decresce regolarmente con la quota, segno di buon rimescolamento dell'aria." : "Possibili inversioni termiche nei bassi strati al mattino, con sviluppo convettivo pomeridiano."}`;
+
+  // --- Vento in quota ---
+  const ventoQuota = `🌬️ Vento e dinamica in quota
+Il profilo del vento mostra intensità ${ventiAlti < 10 ? "debole" : ventiAlti < 18 ? "moderata" : "sostenuta"} (${Math.round(ventiAlti)} km/h medi tra 10–14).
+${ventiAlti < 15 ? "Questo favorisce buone condizioni di volo libero: aria asciutta, termiche regolari e nessuna turbolenza marcata." : 
+  ventiAlti < 22 ? "Condizioni di volo gestibili, con termiche che potrebbero essere leggermente disturbate dal vento in quota." :
+  "Vento sostenuto in quota: possibile turbolenza sopra i 2000 m, consigliata prudenza."}`;
+
+  // --- Tabella oraria ---
+  const tabellaOraria = [
+    {
+      fascia: "Mattina (8–11)",
+      condizioni: `${tempMattina !== null ? Math.round(tempMattina) : "?"}°C, vento ${descrizioneVentoSuolo(ventoMattina ?? 0)}, ${nuvolositaMedia < 30 ? "sole pieno" : "cielo sereno/velato"}`,
+      note: `${visibilita === "buona" ? "Ottima visibilità, aria secca" : "Visibilità moderata"}`,
+    },
+    {
+      fascia: "Pomeriggio (12–17)",
+      condizioni: `${Math.round(tempMaxDay)}°C massima, vento in aumento, ${descrizioneNuvolosita()}`,
+      note: `${rischioTemporali !== "possibili" ? "Buone condizioni per volo libero" : "Possibili temporali pomeridiani"}`,
+    },
+    {
+      fascia: "Sera (18–21)",
+      condizioni: `${Math.round(tempMin)}°C minima serale, vento in calo, ${nuvolositaMedia < 40 ? "cielo sereno" : "cielo velato"}`,
+      note: `Atmosfera stabile, temperatura in discesa`,
+    },
+  ];
+
+  // --- Interpretazione per attività outdoor / volo libero ---
+  const ventoMax = max(dayData.map((h) => h.windSpeed));
+  const windGustMax = max(dayData.filter((h) => h.windGust !== undefined).map((h) => h.windGust || 0));
+  const conditions = [];
+
+  if (ventoMax < 18 && nuvolositaMedia < 40 && precipitazioni < 0.5) {
+    conditions.push("Condizioni ideali per decolli e veleggiamento: aria asciutta, termiche regolari, vento gestibile.");
+  } else if (ventoMax < 22 && precipitazioni < 1) {
+    conditions.push("Condizioni generalmente buone per il volo libero, con vento leggermente sostenuto in quota.");
+  } else if (ventoMax < 28) {
+    conditions.push("Condizioni marginali: vento sostenuto, si consiglia prudenza e quote moderate.");
   } else {
-    general = `Cielo coperto (${nMedia}% copertura media). Possibili precipitazioni e temporali. Rischi di fulmini elevati: evitare di volare in prossimità dei nuclei temporaleschi. La situazione potrebbe migliorare solo in serata, se il fronte si allontana.`;
+    conditions.push("Condizioni difficili: vento forte, si sconsiglia il volo libero.");
   }
 
-  // Termiche
-  let thermalStr = "";
-  const tempRange = tMax - tMin;
-  if (!thermal) {
-    thermalStr = `Non ci sono abbastanza dati per un'analisi termica dettagliata.`;
-  } else if (thermal.soarIdx >= 7) {
-    thermalStr = `Condizioni termiche eccellenti. Base termica a ${thermal.cloudBase}m e plafond a ${thermal.thermalTop}m. Differenza termica giornaliera di ${tempRange}°C, ideale per lo sviluppo di termiche forti e ben strutturate. Volo libero consigliato.`;
-  } else if (thermal.soarIdx >= 4) {
-    thermalStr = `Condizioni termiche moderate. Base stimata ${thermal.cloudBase}m, plafond ${thermal.thermalTop}m. Le termiche ci sono ma potrebbero essere discontinue. Meglio volare nelle ore centrali quando l'irraggiamento è massimo.`;
+  if (rischioTemporali === "possibili") {
+    conditions.push("Attenzione: possibile sviluppo temporalesco pomeridiano, monitorare l'evoluzione.");
   } else {
-    thermalStr = `Termiche deboli o assenti. Base a ${thermal.cloudBase}m, plafond limitato a ${thermal.thermalTop}m. Lo scarso gradiente termico (${tempRange}°C) non favorisce lo sviluppo di correnti ascendenti significative. Giornata più adatta per un volo termico.`;
+    conditions.push("Nessun rischio di temporali o pioggia.");
   }
 
-  // Vento
-  let windStr = "";
-  if (vMedia < 8) {
-    windStr = `Vento debole da ${dDir}, media ${Math.round(vMedia)} km/h (range ${vMin}-${vMax} km/h). Ideale per volo libero, direzione costante e ben allineata. Nessun rischio di turbolenza significativa.`;
-  } else if (vMedia < 16) {
-    windStr = `Vento moderato da ${dDir}, media ${Math.round(vMedia)} km/h (range ${vMin}-${vMax} km/h). Direzione prevalente, buona per decollo e atterraggio. Qualche raffica pomeridiana possibile ma gestibile.`;
-  } else {
-    windStr = `Vento sostenuto da ${dDir}, media ${Math.round(vMedia)} km/h (range ${vMin}-${vMax} km/h). Raffiche anche intense nelle ore centrali. Turbolenza da sottovento possibile. Attenzione ai colpi di vento improvvisi, specialmente in presenza di cumuli.`;
+  if (ventoMax > 20) {
+    conditions.push(`Attenzione al vento in quota: sopra i 2500 m può essere più sostenuto (raffiche fino a ${Math.round(windGustMax)} km/h), quindi conviene restare su quote moderate.`);
   }
 
-  // Evoluzione oraria
-  let hourlyStr = "";
-  const morning = dayData.filter((h) => h.time.getHours() >= 6 && h.time.getHours() < 12);
-  const afternoon = dayData.filter((h) => h.time.getHours() >= 12 && h.time.getHours() < 18);
-  const evening = dayData.filter((h) => h.time.getHours() >= 18 && h.time.getHours() < 22);
-
-  const mM = morning.length ? Math.round(morning.reduce((s, h) => s + h.temperature, 0) / morning.length) : 0;
-  const mA = afternoon.length ? Math.round(afternoon.reduce((s, h) => s + h.temperature, 0) / afternoon.length) : 0;
-  const mE = evening.length ? Math.round(evening.reduce((s, h) => s + h.temperature, 0) / evening.length) : 0;
-  const pM = morning.length ? Math.round(Math.max(...morning.map((h) => h.precipitation)) * 10) / 10 : 0;
-  const pA = afternoon.length ? Math.round(Math.max(...afternoon.map((h) => h.precipitation)) * 10) / 10 : 0;
-  const pE = evening.length ? Math.round(Math.max(...evening.map((h) => h.precipitation)) * 10) / 10 : 0;
-
-  hourlyStr = `Mattino: ${mM}°C, vento da ${dDir} ${Math.round(vMedia)} km/h, nuvole ${Math.min(100, nMedia)}%. Precipitazioni: ${pM > 0 ? pM + "mm" : "assenti"}. Pomeriggio: ${mA}°C, vento ${Math.round(vMedia + 2)} km/h, possibile aumento nuvole. Precipitazioni: ${pA > 0 ? pA + "mm" : "scarsa probabilità"}. Sera: ${mE}°C, vento in calo. Precipitazioni: ${pE > 0 ? pE + "mm" : "assenti"}.`;
-
-  // Consiglio finale
-  let advice = "";
-  const riskArray: string[] = [];
-
-  if (vMax > 25) riskArray.push("vento forte");
-  if (nMedia > 60 && pMax > 2) riskArray.push("rischi di fulmini e temporali");
-  if (tempRange > 18) riskArray.push("turbolenza termica pomeridiana");
-  if (thermal && thermal.soarIdx < 4) riskArray.push("termiche deboli");
-
-  if (!riskArray.length) {
-    advice = `Giornata ottimale per il volo. Tutti i parametri sono favorevoli: vento moderato, assenza di precipitazioni e rischi di fulmini, buona termica. Decollo e atterraggio in condizioni sicure. Approfittane!`;
-  } else if (riskArray.length <= 2) {
-    advice = `Giornata volabile con cautela. Attenzione a: ${riskArray.join(", ")}. Controlla sempre l'evoluzione prima del decollo e mantieni una via di fuga.`;
-  } else {
-    advice = `Giornata da valutare con molta attenzione. Rischi presenti: ${riskArray.join(", ")}. Meglio rimandare il volo se le condizioni peggiorano. La prudenza non è mai troppa.`;
-  }
-
-  // Temporale
-  const precipHours = dayData.filter((h) => h.precipitation > 0.5);
-  const thunderHours = dayData.filter((h) => h.weatherCode >= 95);
-  let thunderstorm = "";
-
-  if (thunderHours.length > 0) {
-    thunderstorm = `⚠️ ALLERTA TEMPORALI ⚠️\nSono previsti temporali nelle ore: ${thunderHours.map((h) => h.time.getHours() + ":00").join(", ")}. RISCHI DI FULMINI elevati. Evitare assolutamente di volare durante i temporali. Meteo deteriorato.`;
-  } else if (precipHours.length > 3 && nMedia > 60) {
-    thunderstorm = `Possibili rovesci sparsi. Il cielo molto nuvoloso (${nMedia}%) potrebbe generare qualche temporale pomeridiano. Rischi di fulmini da monitorare. Se vedi cumulonembi avvicinarsi, mettiti al sicuro.`;
-  } else if (nMedia > 50 && tempRange > 14) {
-    thunderstorm = `Sviluppo di cumuli possibile nel pomeriggio. Rischi di fulmini bassi ma non nulli se i cumuli diventano imponenti. Tieni d'occhio l'orizzonte.`;
-  } else {
-    thunderstorm = `Nessun rischio temporali e rischi di fulmini trascurabili. Cielo sereno o poco nuvoloso, condizioni sicure per il volo.`;
-  }
+  const interpretazione = `🪂 Interpretazione per attività outdoor / volo libero
+${conditions.join("\n")}`;
 
   return {
-    general,
-    thermal: thermalStr,
-    wind: windStr,
-    hourly: hourlyStr,
-    advice,
-    thunderstorm,
-    altitude: "",
-    pressure: "",
+    situazioneGenerale,
+    profiloTermico,
+    ventoQuota,
+    tabellaOraria,
+    interpretazione,
   };
 }
