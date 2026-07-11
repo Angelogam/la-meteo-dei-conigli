@@ -28,9 +28,11 @@ export default function Index() {
   const [tab, setTab] = useState<TabId>("meteo");
   const [aiData, setAiData] = useState<AiAnalysis | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [weatherMap, setWeatherMap] = useState<Record<string, HourData>>({});
 
   const site = DECOLLI.find((x) => x.id === selected) ?? DECOLLI[0];
 
+  // Carica meteo per decollo selezionato
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -44,6 +46,31 @@ export default function Index() {
       }
     })();
   }, [selected]);
+
+  // Carica meteo per TUTTI i decolli (per icone nella sidebar)
+  useEffect(() => {
+    (async () => {
+      const map: Record<string, HourData> = {};
+      const promises = DECOLLI.map(async (d) => {
+        try {
+          const data = await fetchMeteo(d.lat, d.lon);
+          const now = new Date();
+          const currentHour = data.hourly.find(
+            (h) =>
+              h.time.getHours() === now.getHours() &&
+              h.time.getDate() === now.getDate()
+          );
+          if (currentHour) {
+            map[d.id] = currentHour;
+          }
+        } catch {
+          // ignora errori per singoli decolli
+        }
+      });
+      await Promise.all(promises);
+      setWeatherMap(map);
+    })();
+  }, []);
 
   const dayData = useMemo(() => {
     if (!meteo) return [];
@@ -138,6 +165,7 @@ export default function Index() {
           selected={selected}
           current={current}
           onSelect={handleSiteSelect}
+          weatherMap={weatherMap}
         />
         <div className="bg-gray-100/80 rounded-2xl border border-gray-400/60 p-4 md:max-h-[calc(100vh-180px)] overflow-y-auto backdrop-blur-sm shadow-md">
           {current && site && (
