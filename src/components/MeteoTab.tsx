@@ -5,7 +5,8 @@ import { WeatherIcon } from "@/components/WeatherIcon";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { useMemo } from "react";
-import { Sun, Cloud, Wind, Droplets, Gauge, Thermometer } from "lucide-react";
+import { Sun, Cloud, Wind, Droplets, Gauge, Thermometer, TrendingUp, ArrowUp } from "lucide-react";
+import GraficoTermiche from "@/components/GraficoTermiche";
 
 interface MeteoTabProps {
   current: HourData;
@@ -21,6 +22,7 @@ interface MeteoTabProps {
   onHourChange: (h: number) => void;
   startHour?: number;
   endHour?: number;
+  termicheHourly?: { hour: number; termiche: { base: number; top: number; forza: number; rateo: number; label: string; colore: string } }[];
 }
 
 export function MeteoTab({
@@ -37,6 +39,7 @@ export function MeteoTab({
   onHourChange,
   startHour = 9,
   endHour = 19,
+  termicheHourly,
 }: MeteoTabProps) {
   const hours = useMemo(() => {
     const arr: { value: number; label: string }[] = [];
@@ -137,8 +140,23 @@ export function MeteoTab({
         </CardContent>
       </Card>
 
-      {/* Thermal summary */}
-      {thermal && (
+      {/* Grafico termiche completo — quote, venti, forza nell'arco della giornata */}
+      {termicheHourly && termicheHourly.length > 0 && (
+        <Card className="border border-amber-600/50 bg-slate-800/80 shadow-lg overflow-hidden">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-7 h-7 rounded-lg bg-amber-800/50 border border-amber-600/50 flex items-center justify-center">
+                <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
+              </div>
+              <span className="text-sm font-bold text-amber-200">Termiche &ndash; quote, venti e forza</span>
+            </div>
+            <GraficoTermiche hourly={termicheHourly} oraCorrente={hour} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Vecchia card thermal summary (sostituita dal grafico) — la teniamo come fallback */}
+      {!termicheHourly && thermal && (
         <Card className="border border-amber-600/50 bg-slate-800/80 shadow-lg overflow-hidden">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
