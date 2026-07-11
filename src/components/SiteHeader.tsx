@@ -1,55 +1,51 @@
 "use client";
 
+import React from "react";
+import { MapPin, Wind, Thermometer, Cloud } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 import type { Decollo } from "@/data/decolli";
-import { wic, wa } from "@/utils/meteo";
+import { wic } from "@/utils/meteo";
+import { getVoloStatus } from "@/utils/volo";
 
 interface SiteHeaderProps {
   site: Decollo;
-  current: HourData;
+  current: HourData | null;
 }
 
-export const SiteHeader = ({ site, current }: SiteHeaderProps) => {
+const SiteHeader = ({ site, current }: SiteHeaderProps) => {
+  const volo = getVoloStatus(current);
+
   return (
-    <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-800/90 border border-slate-600 shadow-lg backdrop-blur-sm">
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-600 border border-slate-500 flex items-center justify-center text-2xl shadow-sm">
-          {wic(current.weatherCode, true)}
+    <div className="bg-slate-800/90 backdrop-blur-md rounded-2xl p-3 md:p-3.5 border border-slate-600 shadow-inner flex items-start justify-between gap-3">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+          <h2 className="text-sm md:text-base font-bold text-white truncate">{site.name}</h2>
+          {current && (
+            <span className={`px-2 py-0.5 rounded-md text-[10px] md:text-xs font-bold border ${volo.color}`}>
+              {volo.icon} {volo.label}
+            </span>
+          )}
         </div>
-        <div>
-          <h2 className="text-lg font-bold text-white tracking-tight leading-tight">
-            {site.name}
-          </h2>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[11px] font-medium text-blue-300 px-2 py-0.5 rounded-full bg-slate-700 border border-slate-500">
-              {site.altitude}m
-            </span>
-            <span className="text-[11px] font-medium text-slate-300">
-              {site.exposure}
-            </span>
-            <span className="w-1 h-1 rounded-full bg-slate-500" />
-            <span className="text-[11px] text-slate-300 truncate max-w-[120px]">
-              {site.valley}
-            </span>
-          </div>
-        </div>
+        <p className="text-[11px] text-slate-400 flex items-center gap-1 flex-wrap">
+          <MapPin className="w-3 h-3" />
+          {site.valley} · {site.exposure} · {site.altitude}m · D{site.difficulty}
+        </p>
+        {current && (
+          <p className="text-[10px] text-slate-500 mt-0.5 italic">{volo.description}</p>
+        )}
       </div>
-      <div className="text-right">
-        <div className="text-3xl font-black text-white tracking-tight leading-none">
-          {Math.round(current.temperature)}°
-        </div>
-        <div className="flex items-center justify-end gap-1.5 mt-1">
-          <span className="text-[11px] font-semibold text-blue-300/80">
-            {wa(current.windDir)}
-          </span>
-          <span className="text-[11px] font-semibold text-white/90">
+      {current && (
+        <div className="flex flex-col items-end shrink-0 mt-0.5">
+          <span className="text-2xl leading-none">{wic(current.weatherCode, true)}</span>
+          <span className="text-sm font-bold text-white">{Math.round(current.temperature)}°C</span>
+          <span className="text-[10px] text-blue-300/70 flex items-center gap-0.5">
+            <Wind className="w-2.5 h-2.5" />
             {Math.round(current.windSpeed)} km/h
           </span>
         </div>
-        <div className="text-[10px] text-slate-400 mt-0.5">
-          Umidità {current.humidity}%
-        </div>
-      </div>
+      )}
     </div>
   );
 };
+
+export default SiteHeader;

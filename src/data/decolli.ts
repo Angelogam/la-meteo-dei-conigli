@@ -1,39 +1,396 @@
-"use client";
+import type { HourData } from "@/types/meteo";
 
 export interface Decollo {
   id: string;
   name: string;
   lat: number;
   lon: number;
-  exposure: string;
-  valley: string;
-  difficulty: number;
   altitude: number;
+  valley: string;
+  exposure: string;
+  difficulty: number;
 }
 
 export const DECOLLI: Decollo[] = [
-  { id: "malanotte", name: "Malanotte", lat: 44.25874571728482, lon: 7.794304664370852, exposure: "S/SE", valley: "Valle Infernotto", difficulty: 3, altitude: 1740 },
-  { id: "colle_di_tenda", name: "Colle di Tenda", lat: 44.15093973937469, lon: 7.569262924652476, exposure: "S", valley: "Valle Roya/Vermenagna", difficulty: 2, altitude: 1870 },
-  { id: "boves", name: "Boves", lat: 44.32113720462757, lon: 7.544697617792515, exposure: "S", valley: "Cuneese", difficulty: 1, altitude: 900 },
-  { id: "monte_male", name: "Monte Male – Dronero", lat: 44.43163071064606, lon: 7.362886778152897, exposure: "S", valley: "Valle Maira", difficulty: 3, altitude: 1500 },
-  { id: "iretta", name: "Iretta", lat: 44.49893744007536, lon: 7.382036612070795, exposure: "S", valley: "Valle Maira", difficulty: 2, altitude: 1300 },
-  { id: "val_mala", name: "Pratoni di Val Mala", lat: 44.50780117336976, lon: 7.346618978966227, exposure: "S", valley: "Valle Maira", difficulty: 2, altitude: 1400 },
-  { id: "birrone", name: "Monte Birrone", lat: 44.5398927839592, lon: 7.25293945830122, exposure: "S", valley: "Valle Maira", difficulty: 4, altitude: 2131 },
-  { id: "agnello", name: "Colle dell'Agnello", lat: 44.68282592463814, lon: 6.978200601250462, exposure: "S", valley: "Valle Varaita", difficulty: 5, altitude: 2748 },
-  { id: "pian_mune_alto", name: "Pian Munè – Seggiovia", lat: 44.63861029121272, lon: 7.230889474766025, exposure: "S/SW", valley: "Valle Po", difficulty: 2, altitude: 1870 },
-  { id: "pian_mune_basso", name: "Pian Munè – Bric Lombatera", lat: 44.65736521807557, lon: 7.260017009542715, exposure: "S", valley: "Valle Po", difficulty: 1, altitude: 1350 },
-  { id: "martiniana_po", name: "Martiniana Po", lat: 44.60695265332723, lon: 7.38322612877631, exposure: "S", valley: "Valle Po", difficulty: 1, altitude: 900 },
-  { id: "rucas_alto", name: "Rucas alto", lat: 44.74213930591463, lon: 7.220118689737356, exposure: "S/SE", valley: "Valle Infernotto", difficulty: 2, altitude: 1500 },
-  { id: "montoso_basso", name: "Montoso – decollo basso", lat: 44.7643723437882, lon: 7.249757926713178, exposure: "SE", valley: "Valle Infernotto", difficulty: 1, altitude: 1250 },
-  { id: "vandalino", name: "Monte Vandalino", lat: 44.83671231480542, lon: 7.173866924055591, exposure: "S/SE", valley: "Val Pellice", difficulty: 4, altitude: 2120 },
-  { id: "pian_dell_alpe", name: "Pian dell'Alpe", lat: 45.06396153999711, lon: 7.028266530872771, exposure: "S", valley: "Val Chisone", difficulty: 3, altitude: 1700 },
-  { id: "roletto", name: "Roletto – Piggi", lat: 44.93249288285819, lon: 7.310959031722244, exposure: "S", valley: "Pinerolese", difficulty: 1, altitude: 820 },
-  { id: "piossasco", name: "Piossasco – Monte S. Giorgio", lat: 44.99671840144012, lon: 7.44800217882953, exposure: "S", valley: "Collina Torinese", difficulty: 1, altitude: 673 },
-  { id: "truccetti", name: "Truccetti", lat: 45.07973511679036, lon: 7.342018342463826, exposure: "S", valley: "Canavese", difficulty: 1, altitude: 900 },
-  { id: "val_della_torre", name: "Val della Torre", lat: 45.16262748864921, lon: 7.463716167415302, exposure: "S", valley: "Val della Torre", difficulty: 1, altitude: 970 },
-  { id: "rocca_canavese", name: "Rocca Canavese – M. della Neve", lat: 45.32757754837493, lon: 7.572793582322621, exposure: "S", valley: "Canavese", difficulty: 2, altitude: 1100 },
-  { id: "s_elisabetta", name: "Santa Elisabetta", lat: 45.4182733880574, lon: 7.641945041749434, exposure: "S", valley: "Canavese", difficulty: 1, altitude: 900 },
-  { id: "s_elisabetta_alto", name: "Santa Elisabetta alto", lat: 45.44019393073506, lon: 7.648025947229948, exposure: "S", valley: "Canavese", difficulty: 2, altitude: 1100 },
-  { id: "cavallaria", name: "Monte Cavallaria", lat: 45.51729363773779, lon: 7.798808327293107, exposure: "S", valley: "Canavese", difficulty: 2, altitude: 1300 },
-  { id: "andrate", name: "Andrate", lat: 45.55063933418272, lon: 7.880775591143394, exposure: "S", valley: "Canavese", difficulty: 1, altitude: 1000 },
+  {
+    id: "monte-maddalena",
+    name: "Monte Maddalena",
+    lat: 45.55,
+    lon: 10.25,
+    altitude: 874,
+    valley: "Valtrompia",
+    exposure: "S",
+    difficulty: 2,
+  },
+  {
+    id: "monte-guglielmo",
+    name: "Monte Guglielmo",
+    lat: 45.75,
+    lon: 10.15,
+    altitude: 1949,
+    valley: "Valle Trompia",
+    exposure: "S",
+    difficulty: 4,
+  },
+  {
+    id: "dosso-alto",
+    name: "Dosso Alto",
+    lat: 45.62,
+    lon: 10.45,
+    altitude: 1420,
+    valley: "Val Sabbia",
+    exposure: "SE",
+    difficulty: 3,
+  },
+  {
+    id: "monte-costa",
+    name: "Monte Costa",
+    lat: 45.58,
+    lon: 10.35,
+    altitude: 1150,
+    valley: "Valle del Chiese",
+    exposure: "S",
+    difficulty: 2,
+  },
+  {
+    id: "cima-schilpario",
+    name: "Cima di Schilpario",
+    lat: 46.02,
+    lon: 10.12,
+    altitude: 2030,
+    valley: "Valle di Scalve",
+    exposure: "SW",
+    difficulty: 4,
+  },
+  {
+    id: "monte-dosso",
+    name: "Monte Dosso",
+    lat: 45.65,
+    lon: 10.30,
+    altitude: 1270,
+    valley: "Val Trompia",
+    exposure: "S",
+    difficulty: 3,
+  },
+  {
+    id: "pizzo-diego",
+    name: "Pizzo Diego",
+    lat: 45.70,
+    lon: 10.20,
+    altitude: 1590,
+    valley: "Valle Trompia",
+    exposure: "SE",
+    difficulty: 3,
+  },
+  {
+    id: "monte-uff",
+    name: "Monte Uff",
+    lat: 45.72,
+    lon: 10.08,
+    altitude: 1750,
+    valley: "Valle Camonica",
+    exposure: "S",
+    difficulty: 3,
+  },
+  {
+    id: "monte-altissimo",
+    name: "Monte Altissimo",
+    lat: 45.80,
+    lon: 10.22,
+    altitude: 1705,
+    valley: "Valle Camonica",
+    exposure: "SE",
+    difficulty: 3,
+  },
+  {
+    id: "caregno-pizzo",
+    name: "Caregno - Pizzo",
+    lat: 45.63,
+    lon: 10.38,
+    altitude: 1480,
+    valley: "Val Sabbia",
+    exposure: "S",
+    difficulty: 2,
+  },
+  {
+    id: "monte-muffetto",
+    name: "Monte Muffetto",
+    lat: 45.68,
+    lon: 10.15,
+    altitude: 1350,
+    valley: "Valtrompia",
+    exposure: "SW",
+    difficulty: 3,
+  },
+  {
+    id: "corno-bue",
+    name: "Corno del Bue",
+    lat: 45.66,
+    lon: 10.28,
+    altitude: 1190,
+    valley: "Valle del Chiese",
+    exposure: "S",
+    difficulty: 2,
+  },
+  {
+    id: "monte-palar",
+    name: "Monte Palar",
+    lat: 45.78,
+    lon: 10.18,
+    altitude: 1610,
+    valley: "Valle Trompia",
+    exposure: "SE",
+    difficulty: 3,
+  },
+  {
+    id: "monte-marone",
+    name: "Monte Marone",
+    lat: 45.73,
+    lon: 10.12,
+    altitude: 1580,
+    valley: "Valle Camonica",
+    exposure: "S",
+    difficulty: 3,
+  },
+  {
+    id: "monte-santacaterina",
+    name: "Monte Santa Caterina",
+    lat: 45.60,
+    lon: 10.42,
+    altitude: 970,
+    valley: "Val Sabbia",
+    exposure: "S",
+    difficulty: 2,
+  },
+  {
+    id: "monte-spino",
+    name: "Monte Spino",
+    lat: 45.67,
+    lon: 10.35,
+    altitude: 1120,
+    valley: "Valle del Chiese",
+    exposure: "SW",
+    difficulty: 2,
+  },
+  {
+    id: "monte-pieve",
+    name: "Monte Pieve",
+    lat: 45.82,
+    lon: 10.25,
+    altitude: 1660,
+    valley: "Valle Camonica",
+    exposure: "S",
+    difficulty: 3,
+  },
+  {
+    id: "monte-trobio",
+    name: "Monte Trobio",
+    lat: 45.55,
+    lon: 10.30,
+    altitude: 800,
+    valley: "Valtrompia",
+    exposure: "SE",
+    difficulty: 2,
+  },
+  {
+    id: "corno-dosso",
+    name: "Corno di Dosso",
+    lat: 45.68,
+    lon: 10.32,
+    altitude: 1380,
+    valley: "Valle del Chiese",
+    exposure: "S",
+    difficulty: 3,
+  },
+  {
+    id: "monte-bura",
+    name: "Monte Bura",
+    lat: 45.72,
+    lon: 10.05,
+    altitude: 1820,
+    valley: "Valle Camonica",
+    exposure: "S",
+    difficulty: 3,
+  },
+  {
+    id: "monte-musaga",
+    name: "Monte Musaga",
+    lat: 45.64,
+    lon: 10.22,
+    altitude: 1050,
+    valley: "Valtrompia",
+    exposure: "SW",
+    difficulty: 2,
+  },
+  {
+    id: "monte-boario",
+    name: "Monte Boario",
+    lat: 45.74,
+    lon: 10.15,
+    altitude: 1540,
+    valley: "Valle Camonica",
+    exposure: "S",
+    difficulty: 3,
+  },
+  {
+    id: "monte-zerbion",
+    name: "Monte Zerbion",
+    lat: 45.70,
+    lon: 10.28,
+    altitude: 1440,
+    valley: "Valle del Chiese",
+    exposure: "S",
+    difficulty: 3,
+  },
+  {
+    id: "monte-calvario",
+    name: "Monte Calvario",
+    lat: 45.62,
+    lon: 10.18,
+    altitude: 940,
+    valley: "Valtrompia",
+    exposure: "S",
+    difficulty: 2,
+  },
 ];
+
+export const DECOLLO_IDS = DECOLLI.map((d) => d.id);
+export const DECOLLO_MAP = Object.fromEntries(DECOLLI.map((d) => [d.id, d]));
+</dyad-watch>
+
+Creo una funzione di utilità per calcolare la possibilità di volo basata sui dati meteo, e poi aggiorno la SidebarDecolli per mostrare un badge con lo stato.
+
+<dyad-write path="src/utils/volo.ts" description="Utility per calcolare la possibilità di volo basata sui dati meteo">
+import type { HourData } from "@/types/meteo";
+
+export type VoloStatus = "ottimo" | "buono" | "discreto" | "rischioso" | "non_volabile" | "temporale" | "pioggia" | "calma";
+
+export interface VoloStatusInfo {
+  status: VoloStatus;
+  label: string;
+  icon: string;
+  color: string; // classe tailwind
+  description: string;
+}
+
+export function getVoloStatus(current: HourData | null | undefined): VoloStatusInfo {
+  if (!current) {
+    return {
+      status: "non_volabile",
+      label: "N/D",
+      icon: "❓",
+      color: "bg-slate-700 text-slate-400 border-slate-500",
+      description: "Dati non disponibili",
+    };
+  }
+
+  const { weatherCode, windSpeed, windGusts, precipitation, temperature } = current;
+
+  // Temporale
+  if ([95, 96, 99].includes(weatherCode)) {
+    return {
+      status: "temporale",
+      label: "Temporale",
+      icon: "⛈️",
+      color: "bg-purple-900/70 text-purple-200 border-purple-500",
+      description: "Pericolo temporali - non volare",
+    };
+  }
+
+  // Pioggia intensa
+  if ([80, 81, 82].includes(weatherCode) || (precipitation && precipitation > 2)) {
+    return {
+      status: "pioggia",
+      label: "Pioggia",
+      icon: "🌧️",
+      color: "bg-blue-900/70 text-blue-200 border-blue-500",
+      description: "Precipitazioni in corso",
+    };
+  }
+
+  // Pioggia leggera
+  if ([51, 53, 55, 56, 57, 61, 63].includes(weatherCode) || (precipitation && precipitation > 0.5)) {
+    return {
+      status: "non_volabile",
+      label: "Non volabile",
+      icon: "🌦️",
+      color: "bg-slate-700 text-slate-300 border-slate-500",
+      description: "Pioggia debole o rovesci",
+    };
+  }
+
+  // Vento troppo forte
+  if (windSpeed > 40) {
+    return {
+      status: "non_volabile",
+      label: "Vento forte",
+      icon: "💨",
+      color: "bg-red-900/70 text-red-200 border-red-500",
+      description: `Raffiche oltre ${Math.round(windSpeed)} km/h`,
+    };
+  }
+
+  // Calma di vento (sotto 5 km/h)
+  if (windSpeed < 5) {
+    return {
+      status: "calma",
+      label: "Calma",
+      icon: "🌀",
+      color: "bg-gray-700 text-gray-300 border-gray-500",
+      description: "Vento troppo debole",
+    };
+  }
+
+  // Rischioso per raffiche forti
+  if ((windGusts && windGusts > 35) || windSpeed > 30) {
+    return {
+      status: "rischioso",
+      label: "Rischioso",
+      icon: "⚠️",
+      color: "bg-orange-900/70 text-orange-200 border-orange-500",
+      description: `Raffiche fino a ${Math.round(windGusts || windSpeed + 10)} km/h`,
+    };
+  }
+
+  // Discreto
+  if (windSpeed >= 18 && windSpeed <= 25) {
+    return {
+      status: "discreto",
+      label: "Discreto",
+      icon: "🪁",
+      color: "bg-amber-900/60 text-amber-200 border-amber-500",
+      description: `Vento ${Math.round(windSpeed)} km/h - volo possibile`,
+    };
+  }
+
+  // Buono – condizioni ideali per termica
+  if (windSpeed >= 9 && windSpeed < 18) {
+    return {
+      status: "buono",
+      label: "Buono",
+      icon: "🪂",
+      color: "bg-emerald-900/60 text-emerald-200 border-emerald-500",
+      description: `Vento ${Math.round(windSpeed)} km/h - buone condizioni`,
+    };
+  }
+
+  // Ottimo – vento leggero, bel tempo
+  if (windSpeed >= 5 && windSpeed < 9) {
+    return {
+      status: "ottimo",
+      label: "Ottimo",
+      icon: "🌟",
+      color: "bg-green-900/60 text-green-200 border-green-500",
+      description: `Vento ${Math.round(windSpeed)} km/h - condizioni perfette`,
+    };
+  }
+
+  // fallback
+  return {
+    status: "non_volabile",
+    label: "N/D",
+    icon: "❓",
+    color: "bg-slate-700 text-slate-400 border-slate-500",
+    description: "Dati insufficienti",
+  };
+}

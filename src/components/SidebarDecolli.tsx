@@ -5,6 +5,7 @@ import { X, Wind, Thermometer } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 import { DECOLLI } from "@/data/decolli";
 import { wic } from "@/utils/meteo";
+import { getVoloStatus } from "@/utils/volo";
 
 interface SidebarDecolliProps {
   selected: string;
@@ -103,6 +104,7 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
             const w = weatherMap[site.id];
             const isSelected = site.id === selected;
             const diffClass = diffColors[site.difficulty] || "bg-slate-700 text-slate-300 border-slate-500";
+            const volo = getVoloStatus(w);
             return (
               <button
                 key={site.id}
@@ -130,6 +132,11 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                       <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold border ${diffClass}`}>
                         D{site.difficulty}
                       </span>
+                      {w && (
+                        <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold border ${volo.color}`}>
+                          {volo.icon} {volo.label}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 text-[10px] text-slate-400">
                       <span className="flex items-center gap-0.5">

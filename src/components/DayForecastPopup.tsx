@@ -1,7 +1,10 @@
 "use client";
 
+import React from "react";
+import { X, Wind, Thermometer, CloudRain, Droplets, Gauge } from "lucide-react";
 import type { HourData } from "@/types/meteo";
-import { wa } from "@/utils/meteo";
+import { wic, wd } from "@/utils/meteo";
+import { getVoloStatus } from "@/utils/volo";
 
 interface DayForecastPopupProps {
   data: HourData[];
@@ -11,42 +14,89 @@ interface DayForecastPopupProps {
   onHourSelect: (hour: number) => void;
 }
 
-export const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour, onHourSelect }: DayForecastPopupProps) => {
+const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour, onHourSelect }: DayForecastPopupProps) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div
-        className="bg-gradient-to-r from-gray-800 to-gray-700 rounded-2xl border border-gray-500 shadow-2xl p-4 sm:p-6 w-[90vw] max-w-md max-h-[80vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-extrabold text-white">{dayLabel}</h3>
-          <button onClick={onClose} className="text-gray-300 hover:text-white text-2xl leading-none">&times;</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-3">
+      <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl border border-slate-600 shadow-2xl w-full max-w-xl max-h-[85vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-600">
+          <h3 className="text-sm font-bold text-white">
+            Dettaglio orario · {dayLabel}
+          </h3>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-700 border border-slate-500">
+            <X className="w-4 h-4 text-slate-300" />
+          </button>
         </div>
 
-        <div className="space-y-1">
-          {data.map((h, i) => (
-            <button
-              key={i}
-              onClick={() => onHourSelect(h.time.getHours())}
-              className={
-                "w-full flex items-center gap-2 py-1.5 px-2 rounded-lg transition-colors " +
-                (selectedHour === h.time.getHours()
-                  ? "bg-orange-500/30 border border-orange-400"
-                  : "hover:bg-white/10 border border-transparent")
-              }
-            >
-              <div className="text-xs font-bold text-gray-300 w-10">
-                {String(h.time.getHours()).padStart(2, "0")}:00
-              </div>
-              <div className="text-sm text-gray-200 w-10">{Math.round(h.temperature)}°C</div>
-              <div className="text-xs text-gray-300 w-16">{wa(h.windDir)}</div>
-              <div className="text-xs font-bold text-white w-10 text-right">{Math.round(h.windSpeed)} km/h</div>
-              <div className="text-xs text-gray-300 w-8 text-right">{Math.round(h.humidity)}%</div>
-              <div className="text-xs text-gray-300 w-8 text-right">{Math.round(h.cloudCover)}%</div>
-            </button>
-          ))}
+        {/* Griglia ore */}
+        <div className="overflow-y-auto p-3 space-y-1.5">
+          {data.map((h) => {
+            const volo = getVoloStatus(h);
+            const isSelected = h.time.getHours() === selectedHour;
+            return (
+              <button
+                key={h.time.getHours()}
+                onClick={() => onHourSelect(h.time.getHours())}
+                className={`
+                  w-full flex items-center gap-2 rounded-xl px-3 py-2.5 transition-all duration-150 border text-left
+                  ${
+                    isSelected
+                      ? "bg-slate-700 border-slate-400 shadow-md"
+                      : "bg-slate-800/60 border-slate-600/50 hover:bg-slate-700 hover:border-slate-500"
+                  }
+                `}
+              >
+                {/* Ora */}
+                <div className="w-10 shrink-0 text-center">
+                  <span className="block text-xs font-bold text-white">
+                    {h.time.getHours().toString().padStart(2, "0")}:00
+                  </span>
+                </div>
+
+                {/* Icona meteo */}
+                <span className="text-lg shrink-0">{wic(h.weatherCode, true)}</span>
+
+                {/* Dati principali */}
+                <div className="flex items-center gap-2 text-[11px] text-slate-300 flex-1 min-w-0">
+                  <span className="flex items-center gap-0.5">
+                    <Thermometer className="w-3 h-3 text-amber-400" />
+                    {Math.round(h.temperature)}°
+                  </span>
+                  <span className="text-slate-500">|</span>
+                  <span className="flex items-center gap-0.5">
+                    <Wind className="w-3 h-3 text-blue-400" />
+                    {Math.round(h.windSpeed)}
+                    {h.windGusts && (
+                      <span className="text-slate-500">/{Math.round(h.windGusts)}</span>
+                    )}
+                  </span>
+                  <span className="text-slate-500">|</span>
+                  <span className="flex items-center gap-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                    {h.humidity}%
+                  </span>
+                  {h.precipitation && h.precipitation > 0 && (
+                    <>
+                      <span className="text-slate-500">|</span>
+                      <span className="flex items-center gap-0.5 text-blue-300">
+                        <CloudRain className="w-3 h-3" />
+                        {h.precipitation}mm
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                {/* Badge voloStatus */}
+                <span className={`shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-bold border ${volo.color}`}>
+                  {volo.icon} {volo.label}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
   );
 };
+
+export default DayForecastPopup;
