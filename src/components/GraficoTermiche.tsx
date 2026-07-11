@@ -1,19 +1,8 @@
 "use client";
 
-import React, { useMemo } from "react";
-import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, CartesianGrid,
-} from "recharts";
-import { Thermometer, ArrowUp, Wind, Droplets, Sun, Cloud, Info, TrendingUp } from "lucide-react";
-
-interface TermicheData {
-  base: number;
-  top: number;
-  forza: number;
-  rateo: number;
-  label: string;
-  colore: string;
-}
+import React from "react";
+import { Thermometer, ArrowUp, Wind, Droplets, Gauge, Sun, Cloud, TrendingUp, Info } from "lucide-react";
+import type { TermicheData } from "@/utils/termiche";
 
 interface GraficoTermicheProps {
   hourly: { hour: number; termiche: TermicheData }[];
@@ -31,267 +20,124 @@ const LEGENDA: { colore: string; label: string }[] = [
 const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
   if (!hourly || hourly.length === 0) return null;
 
-  // Prepara dati per Recharts
-  const chartData = hourly.map((h) => ({
-    ora: String(h.hour).padStart(2, "0") + ":00",
-    hour: h.hour,
-    forza: Math.round(h.termiche.forza * 10) / 10,
-    rateo: h.termiche.rateo,
-    base: h.termiche.base,
-    top: h.termiche.top,
-    metriSalita: h.termiche.top - h.termiche.base,
-    colore: h.termiche.colore,
-    label: h.termiche.label,
-    isCurrent: h.hour === oraCorrente,
-  }));
-
-  // Migliori ore per volo
-  const migliori = useMemo(() => {
-    return [...chartData]
-      .filter((d) => d.forza >= 4)
-      .sort((a, b) => b.forza - a.forza)
-      .slice(0, 3);
-  }, [chartData]);
-
-  const maxForza = Math.max(...chartData.map((d) => d.forza), 1);
+  const maxForza = Math.max(...hourly.map((h) => h.termiche.forza), 1);
 
   return (
-    <div className="w-full py-4 px-2 space-y-5 text-slate-200">
+    <div className="w-full py-4 px-2">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 mb-4">
         <div className="w-9 h-9 rounded-xl bg-amber-800/50 border border-amber-500/50 flex items-center justify-center">
           <TrendingUp className="w-5 h-5 text-amber-400" />
         </div>
         <div>
-          <h3 className="text-sm font-bold text-amber-200">Analisi termiche completa</h3>
+          <h3 className="text-sm font-bold text-amber-200">Forza termiche & metri a salire</h3>
           <p className="text-[10px] text-slate-400">
-            Forza, rateo di salita e quota per ogni ora del giorno
+            Elaborazione in tempo reale basata su vento, sole e umidit&agrave;
           </p>
         </div>
       </div>
 
-      {/* Migliori ore */}
-      {migliori.length > 0 && (
-        <div className="bg-green-900/30 border border-green-500/40 rounded-xl p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-lg">🏆</span>
-            <span className="text-xs font-bold text-green-300">Migliori ore per il volo</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {migliori.map((m) => (
-              <div
-                key={m.hour}
-                className="px-3 py-1.5 rounded-lg bg-green-800/50 border border-green-500/30 text-xs font-bold text-green-200"
-              >
-                {m.ora} &middot; forza {m.forza}/10 &middot; +{m.metriSalita}m
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Grafico a barre orizzontali */}
+      <div className="space-y-1">
+        {hourly.map((h) => {
+          const t = h.termiche;
+          const isCurrentHour = h.hour === oraCorrente;
+          const forzaPercent = Math.round((t.forza / maxForza) * 100);
+          const metriSalita = t.top - t.base;
 
-      {/* Grafico forza termiche - BarChart */}
-      <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-600/40">
-        <h4 className="text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5">
-          <Thermometer className="w-3.5 h-3.5 text-amber-400" />
-          Forza termiche (0-10)
-        </h4>
-        <ResponsiveContainer width="100%" height={180}>
-          <BarChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: -10 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis
-              dataKey="ora"
-              tick={{ fill: "#94a3b8", fontSize: 9 }}
-              axisLine={{ stroke: "#475569" }}
-              tickLine={false}
-            />
-            <YAxis
-              domain={[0, 10]}
-              tick={{ fill: "#94a3b8", fontSize: 9 }}
-              axisLine={{ stroke: "#475569" }}
-              tickLine={false}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "#1e293b",
-                border: "1px solid #475569",
-                borderRadius: "8px",
-                fontSize: "11px",
-                color: "#e2e8f0",
-              }}
-              formatter={(value: number, name: string) => [
-                value.toFixed(1),
-                name === "forza" ? "Forza" : name,
-              ]}
-              labelFormatter={(label: string) => `Ora: ${label}`}
-            />
-            <Bar
-              dataKey="forza"
-              fill="#f59e0b"
-              radius={[4, 4, 0, 0]}
-              maxBarSize={24}
-              opacity={0.85}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Grafico rateo di salita - AreaChart */}
-      <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-600/40">
-        <h4 className="text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5">
-          <ArrowUp className="w-3.5 h-3.5 text-green-400" />
-          Rateo di salita (m/s)
-        </h4>
-        <ResponsiveContainer width="100%" height={140}>
-          <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: -10 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis dataKey="ora" tick={{ fill: "#94a3b8", fontSize: 9 }} axisLine={{ stroke: "#475569" }} tickLine={false} />
-            <YAxis tick={{ fill: "#94a3b8", fontSize: 9 }} axisLine={{ stroke: "#475569" }} tickLine={false} />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "#1e293b",
-                border: "1px solid #475569",
-                borderRadius: "8px",
-                fontSize: "11px",
-                color: "#e2e8f0",
-              }}
-              formatter={(value: number) => [`${value.toFixed(1)} m/s`, "Rateo"]}
-              labelFormatter={(label: string) => `Ora: ${label}`}
-            />
-            <defs>
-              <linearGradient id="rateoGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#22c55e" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <Area
-              type="monotone"
-              dataKey="rateo"
-              stroke="#22c55e"
-              strokeWidth={2}
-              fill="url(#rateoGrad)"
-              dot={{ r: 3, fill: "#22c55e", strokeWidth: 0 }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Grafico base e top termica - LineChart combinato */}
-      <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-600/40">
-        <h4 className="text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5">
-          <Sun className="w-3.5 h-3.5 text-amber-400" />
-          Quota base e cima termica (m slm)
-        </h4>
-        <ResponsiveContainer width="100%" height={160}>
-          <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: -10 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis dataKey="ora" tick={{ fill: "#94a3b8", fontSize: 9 }} axisLine={{ stroke: "#475569" }} tickLine={false} />
-            <YAxis tick={{ fill: "#94a3b8", fontSize: 9 }} axisLine={{ stroke: "#475569" }} tickLine={false} />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "#1e293b",
-                border: "1px solid #475569",
-                borderRadius: "8px",
-                fontSize: "11px",
-                color: "#e2e8f0",
-              }}
-              formatter={(value: number, name: string) => [
-                `${value} m`,
-                name === "base" ? "Base" : name === "top" ? "Cima" : name === "metriSalita" ? "Salita" : name,
-              ]}
-              labelFormatter={(label: string) => `Ora: ${label}`}
-            />
-            <Line
-              type="monotone"
-              dataKey="base"
-              stroke="#f59e0b"
-              strokeWidth={2}
-              dot={{ r: 3, fill: "#f59e0b", strokeWidth: 0 }}
-              name="base"
-            />
-            <Line
-              type="monotone"
-              dataKey="top"
-              stroke="#ef4444"
-              strokeWidth={2}
-              dot={{ r: 3, fill: "#ef4444", strokeWidth: 0 }}
-              name="top"
-            />
-          </LineChart>
-        </ResponsiveContainer>
-        <div className="flex items-center gap-4 mt-2 text-[9px] text-slate-500">
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-0.5 bg-amber-400 inline-block" /> Base
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-0.5 bg-red-400 inline-block" /> Cima
-          </span>
-        </div>
-      </div>
-
-      {/* Tabella riepilogativa */}
-      <div className="bg-slate-800/60 rounded-xl overflow-hidden border border-slate-600/40">
-        <div className="px-3 py-2 bg-slate-700/50 border-b border-slate-600/40">
-          <h4 className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-            <Info className="w-3.5 h-3.5 text-blue-400" />
-            Dettaglio orario
-          </h4>
-        </div>
-        <div className="divide-y divide-slate-700/50">
-          {chartData.map((d) => (
+          return (
             <div
-              key={d.hour}
-              className={`flex items-center gap-2 px-3 py-2 text-[11px] transition-colors ${
-                d.isCurrent ? "bg-green-900/30 border-l-2 border-green-400" : "hover:bg-slate-700/30"
+              key={h.hour}
+              className={`relative flex items-center gap-2 py-1.5 px-2 rounded-lg transition-all ${
+                isCurrentHour
+                  ? "bg-green-900/30 border-l-2 border-green-400 scale-[1.02]"
+                  : "hover:bg-slate-700/30"
               }`}
             >
-              <div className="w-14 shrink-0 font-mono font-bold text-slate-300">{d.ora}</div>
-              <div className="flex-1 grid grid-cols-4 gap-1">
-                <div className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: d.colore }} />
-                  <span className="font-semibold text-slate-200">{d.forza.toFixed(1)}</span>
+              {/* Ora */}
+              <div className="shrink-0 w-10 text-[11px] font-mono font-bold text-slate-400">
+                {String(h.hour).padStart(2, "0")}:00
+              </div>
+
+              {/* Barra forza */}
+              <div className="flex-1 h-5 bg-slate-700/60 rounded-full overflow-hidden relative">
+                <div
+                  className="h-full rounded-full transition-all duration-500 ease-out"
+                  style={{
+                    width: `${forzaPercent}%`,
+                    backgroundColor: t.colore,
+                    opacity: 0.8,
+                  }}
+                />
+                <div className="absolute inset-0 flex items-center justify-between px-2">
+                  <span className="text-[10px] font-bold text-white drop-shadow-md">
+                    {t.forza.toFixed(1)}/10
+                  </span>
+                  <span className="text-[9px] text-white/70 drop-shadow-md">{t.label.split(" ")[0]}</span>
                 </div>
-                <div className="text-green-300 font-semibold">{d.rateo.toFixed(1)} m/s</div>
-                <div className="text-amber-300 font-semibold">{d.base}m</div>
-                <div className="text-red-300 font-semibold">{d.top}m</div>
               </div>
-              <div className="w-12 text-right text-[9px] text-slate-500">
-                +{d.metriSalita}m
+
+              {/* Metri a salire */}
+              <div className="shrink-0 w-20 text-right">
+                <span className="text-[11px] font-bold text-amber-200 drop-shadow-sm">
+                  &uarr; {metriSalita > 0 ? `${metriSalita}m` : "&mdash;"}
+                </span>
+                <div className="text-[8px] text-slate-500">salita</div>
               </div>
-              {d.isCurrent && <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />}
+
+              {/* Rateo */}
+              <div className="shrink-0 w-12 text-right">
+                <span className="text-[11px] font-bold text-green-300">{t.rateo} m/s</span>
+              </div>
+
+              {isCurrentHour && <div className="shrink-0 w-2 h-2 rounded-full bg-green-400 animate-pulse" />}
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
-      {/* Legenda colori forza */}
-      <div className="flex flex-wrap gap-3 text-[9px] text-slate-400">
-        {LEGENDA.map((item) => (
-          <div key={item.label} className="flex items-center gap-1">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.colore }} />
-            <span>{item.label}</span>
+      {/* Legenda */}
+      <div className="mt-4 pt-3 border-t border-slate-600/50">
+        <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-400">
+          {LEGENDA.map((item) => (
+            <div key={item.label} className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.colore }} />
+              <span>{item.label}</span>
+            </div>
+          ))}
+          <div className="flex items-center gap-1.5">
+            <ArrowUp className="w-3 h-3 text-amber-400" />
+            <span>Metri a salire</span>
           </div>
-        ))}
+        </div>
       </div>
 
       {/* Info calcolo */}
-      <div className="p-2.5 rounded-lg bg-slate-800/40 border border-slate-600/30">
-        <div className="flex items-center gap-1.5 mb-1">
+      <div className="mt-3 p-2 rounded-lg bg-slate-800/60 border border-slate-600/30">
+        <div className="flex items-center gap-1.5 mb-1.5">
           <Info className="w-3 h-3 text-slate-400" />
-          <span className="text-[9px] font-medium text-slate-400">Fattori considerati</span>
+          <span className="text-[10px] font-medium text-slate-400">Fattori considerati</span>
         </div>
-        <div className="flex items-center gap-2 flex-wrap text-[8px] text-slate-500">
-          <span className="flex items-center gap-0.5">
-            <Sun className="w-2 h-2 text-amber-400" /> Gradiente termico
+        <div className="flex items-center gap-3 flex-wrap text-[9px] text-slate-500">
+          <span className="flex items-center gap-1">
+            <Sun className="w-2.5 h-2.5 text-amber-400" />
+            Gradiente termico
           </span>
-          <span className="flex items-center gap-0.5">
-            <Wind className="w-2 h-2 text-blue-400" /> Vento
+          <span className="flex items-center gap-1">
+            <Wind className="w-2.5 h-2.5 text-blue-400" />
+            Vento (5-15 km/h ideale)
           </span>
-          <span className="flex items-center gap-0.5">
-            <Cloud className="w-2 h-2 text-slate-400" /> Nuvole
+          <span className="flex items-center gap-1">
+            <Cloud className="w-2.5 h-2.5 text-slate-400" />
+            Nuvole (10-30% ideale)
           </span>
-          <span className="flex items-center gap-0.5">
-            <Droplets className="w-2 h-2 text-blue-300" /> Umidit&agrave;
+          <span className="flex items-center gap-1">
+            <Droplets className="w-2.5 h-2.5 text-blue-300" />
+            Umidit&agrave; (30-50% ideale)
+          </span>
+          <span className="flex items-center gap-1">
+            <Gauge className="w-2.5 h-2.5 text-purple-400" />
+            Pressione (+1015 hPa ideale)
           </span>
         </div>
       </div>
