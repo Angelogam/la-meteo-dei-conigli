@@ -7,8 +7,16 @@ export const Header = () => {
         <span className="text-4xl md:text-5xl animate-bounce">&#x1F430;</span>
         <span className="text-3xl md:text-4xl animate-pulse">&#x1FA82;</span>
         <span
-          className="text-3xl md:text-5xl font-extrabold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent"
-          style={{ textShadow: "1px 1px 3px rgba(0,0,0,0.6)" }}
+          className="text-3xl md:text-5xl font-extrabold"
+          style={{
+            background: "linear-gradient(to right, #e63946, #f97316)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            textShadow: "none",
+            WebkitTextStroke: "1.5px #000",
+            textStroke: "1.5px #000",
+          }}
         >
           Meteo dei Conigli
         </span>
