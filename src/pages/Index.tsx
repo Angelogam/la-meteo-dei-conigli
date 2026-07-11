@@ -150,7 +150,7 @@ export default function Index() {
 
           {/* Colonna centrale: dettaglio decollo */}
           <div className="w-full">
-            <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-300/70 shadow-lg p-3 sm:p-5 mb-3">
+            <div className="bg-gradient-to-br from-gray-800/95 to-gray-700/95 backdrop-blur-sm rounded-2xl border border-gray-500/60 shadow-xl p-3 sm:p-5 mb-3">
               {current && <SiteHeader site={selected} current={current} />}
 
               <TabNav tab={activeTab} onTabChange={setActiveTab} />
