@@ -10,36 +10,15 @@ interface VentiQuotaTabProps {
   selectedHour: number;
 }
 
-// Quote dal suolo a 4000m con step di 250m
 const QUOTE_STEPS = [
   250, 500, 750, 1000, 1250, 1500, 1750, 2000,
   2250, 2500, 2750, 3000, 3250, 3500, 3750, 4000,
 ];
 
-// Livelli disponibili da Open-Meteo (in metri)
-const AVAILABLE_LEVELS = [
-  { height: 120, label: "120" },
-  { height: 180, label: "180" },
-  { height: 300, label: "300" },
-  { height: 600, label: "600" },
-  { height: 900, label: "900" },
-  { height: 1200, label: "1200" },
-  { height: 1500, label: "1500" },
-  { height: 1800, label: "1800" },
-  { height: 2100, label: "2100" },
-  { height: 2400, label: "2400" },
-  { height: 2800, label: "2800" },
-  { height: 3200, label: "3200" },
-  { height: 3600, label: "3600" },
-  { height: 4000, label: "4000" },
-];
-
-/** Trova il valore interpolato dal profilo disponibile */
 function interpolateAtHeight(levels: WindProfile["levels"], targetHeight: number): { speed: number | null; dir: number | null } {
   const sorted = [...levels].filter(l => l.speed !== null && l.dir !== null).sort((a, b) => a.height - b.height);
   if (!sorted.length) return { speed: null, dir: null };
 
-  // Trova i due livelli più vicini
   let lower = sorted[0];
   let upper = sorted[sorted.length - 1];
 
@@ -63,11 +42,9 @@ function interpolateAtHeight(levels: WindProfile["levels"], targetHeight: number
 }
 
 const VentiQuotaTab = ({ profiles, dayData, selectedHour }: VentiQuotaTabProps) => {
-  // Trova il profilo per l'ora selezionata
   const currentProfile = profiles.find(
     (p) => p.time.getHours() === selectedHour
   );
-  // Trova l'orario in dayData
   const currentHourData = dayData.find(
     (h) => h.time.getHours() === selectedHour
   );
@@ -83,7 +60,6 @@ const VentiQuotaTab = ({ profiles, dayData, selectedHour }: VentiQuotaTabProps) 
 
   return (
     <div className="overflow-x-auto">
-      {/* Tabella venti in quota */}
       <table className="w-full text-xs md:text-sm border-collapse">
         <thead>
           <tr className="bg-slate-700/80 border-b border-slate-500/50">
@@ -99,7 +75,6 @@ const VentiQuotaTab = ({ profiles, dayData, selectedHour }: VentiQuotaTabProps) 
           </tr>
         </thead>
         <tbody>
-          {/* Riga suolo */}
           <tr className="border-b border-slate-600/40 hover:bg-slate-700/40 transition-colors">
             <td className="sticky left-0 bg-slate-800/90 z-10 px-2 py-1.5 font-bold text-green-400 whitespace-nowrap">
               🏔 Suolo <span className="text-[10px] text-slate-400 font-normal">(10m)</span>
@@ -125,7 +100,6 @@ const VentiQuotaTab = ({ profiles, dayData, selectedHour }: VentiQuotaTabProps) 
             </td>
           </tr>
 
-          {/* Righe per ogni quota interpolata */}
           {QUOTE_STEPS.map((q, idx) => {
             const interp = currentProfile
               ? interpolateAtHeight(currentProfile.levels, q)
@@ -134,7 +108,6 @@ const VentiQuotaTab = ({ profiles, dayData, selectedHour }: VentiQuotaTabProps) 
             const speed = interp.speed;
             const dir = interp.dir;
 
-            // Colore barra in base alla velocità
             const barColor = !speed
               ? "bg-slate-600"
               : speed < 10
@@ -180,11 +153,10 @@ const VentiQuotaTab = ({ profiles, dayData, selectedHour }: VentiQuotaTabProps) 
         </tbody>
       </table>
 
-      {/* Legenda */}
       <div className="flex items-center gap-3 justify-center mt-3 pt-2 border-t border-slate-600/30">
         <div className="flex items-center gap-1">
           <div className="w-2.5 h-2.5 rounded bg-green-400" />
-          <span className="text-[10px] text-slate-400"><10</span>
+          <span className="text-[10px] text-slate-400">{'<'}10</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2.5 h-2.5 rounded bg-yellow-400" />
@@ -196,7 +168,7 @@ const VentiQuotaTab = ({ profiles, dayData, selectedHour }: VentiQuotaTabProps) 
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2.5 h-2.5 rounded bg-red-400" />
-          <span className="text-[10px] text-slate-400">>30</span>
+          <span className="text-[10px] text-slate-400">{'>'}30</span>
         </div>
         <span className="text-[10px] text-slate-500 ml-2">km/h</span>
       </div>
