@@ -11,38 +11,38 @@ interface SiteHeaderProps {
 
 export const SiteHeader = ({ site, current }: SiteHeaderProps) => {
   return (
-    <div className="flex items-center justify-between p-4 rounded-2xl bg-white/95 border border-slate-300 shadow-md backdrop-blur-sm">
+    <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-800/90 border border-slate-600 shadow-lg backdrop-blur-sm">
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-200 to-slate-50 border border-slate-300 flex items-center justify-center text-2xl shadow-sm">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-600 border border-slate-500 flex items-center justify-center text-2xl shadow-sm">
           {wic(current.weatherCode, true)}
         </div>
         <div>
-          <h2 className="text-lg font-bold text-slate-800 tracking-tight leading-tight">
+          <h2 className="text-lg font-bold text-white tracking-tight leading-tight">
             {site.name}
           </h2>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[11px] font-medium text-slate-600 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-300">
+            <span className="text-[11px] font-medium text-blue-300 px-2 py-0.5 rounded-full bg-slate-700 border border-slate-500">
               {site.altitude}m
             </span>
-            <span className="text-[11px] font-medium text-slate-500">
+            <span className="text-[11px] font-medium text-slate-300">
               {site.exposure}
             </span>
-            <span className="w-1 h-1 rounded-full bg-slate-300" />
-            <span className="text-[11px] text-slate-500 truncate max-w-[120px]">
+            <span className="w-1 h-1 rounded-full bg-slate-500" />
+            <span className="text-[11px] text-slate-300 truncate max-w-[120px]">
               {site.valley}
             </span>
           </div>
         </div>
       </div>
       <div className="text-right">
-        <div className="text-3xl font-black text-slate-800 tracking-tight leading-none">
+        <div className="text-3xl font-black text-white tracking-tight leading-none">
           {Math.round(current.temperature)}°
         </div>
         <div className="flex items-center justify-end gap-1.5 mt-1">
-          <span className="text-[11px] font-semibold text-slate-600">
+          <span className="text-[11px] font-semibold text-blue-300/80">
             {wa(current.windDir)}
           </span>
-          <span className="text-[11px] font-semibold text-slate-700">
+          <span className="text-[11px] font-semibold text-white/90">
             {Math.round(current.windSpeed)} km/h
           </span>
         </div>

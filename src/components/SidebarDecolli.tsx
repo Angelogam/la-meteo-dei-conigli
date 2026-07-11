@@ -17,11 +17,11 @@ interface SidebarDecolliProps {
 
 // Difficoltà badge colori
 const diffColors: Record<number, string> = {
-  1: "bg-emerald-100 text-emerald-700 border-emerald-300",
-  2: "bg-blue-100 text-blue-700 border-blue-300",
-  3: "bg-amber-100 text-amber-700 border-amber-300",
-  4: "bg-orange-100 text-orange-700 border-orange-300",
-  5: "bg-red-100 text-red-700 border-red-300",
+  1: "bg-emerald-900/60 text-emerald-300 border-emerald-600",
+  2: "bg-blue-900/60 text-blue-300 border-blue-600",
+  3: "bg-amber-900/60 text-amber-300 border-amber-600",
+  4: "bg-orange-900/60 text-orange-300 border-orange-600",
+  5: "bg-red-900/60 text-red-300 border-red-600",
 };
 
 const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClose }: SidebarDecolliProps) => {
@@ -56,7 +56,7 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
     <>
       {/* Overlay per mobile */}
       {isOpen && (
-        <div className="fixed inset-0 bg-slate-800/60 backdrop-blur-sm z-30 md:hidden" />
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-30 md:hidden" />
       )}
 
       {/* Sidebar - a sinistra */}
@@ -64,36 +64,36 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
         ref={sidebarRef}
         className={`
           fixed top-0 left-0 h-full w-80 max-w-[88vw] z-40
-          bg-gradient-to-b from-slate-100 via-white to-slate-100
-          border-r border-slate-300 shadow-xl
+          bg-gradient-to-b from-slate-800 via-slate-800/95 to-slate-900
+          border-r border-slate-600 shadow-2xl
           transition-all duration-350 ease-out
           overflow-y-auto
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0 md:relative md:z-auto md:h-auto md:max-h-[calc(100vh-8rem)] md:w-72 md:rounded-2xl md:border md:border-slate-300 md:mr-4 md:shadow-lg md:sticky md:top-4
+          md:translate-x-0 md:relative md:z-auto md:h-auto md:max-h-[calc(100vh-8rem)] md:w-72 md:rounded-2xl md:border md:border-slate-600 md:mr-4 md:shadow-xl md:sticky md:top-4
         `}
-        style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 transparent' }}
+        style={{ scrollbarWidth: 'thin', scrollbarColor: '#475569 transparent' }}
       >
         {/* Header sidebar */}
-        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-slate-300 flex items-center justify-between px-4 py-3">
+        <div className="sticky top-0 z-10 bg-slate-800/95 backdrop-blur-md border-b border-slate-600 flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-slate-200 border border-slate-300 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-slate-700 border border-slate-500 flex items-center justify-center">
               <span className="text-base">🪂</span>
             </div>
             <div>
-              <h2 className="text-sm font-bold text-slate-800 tracking-tight">
+              <h2 className="text-sm font-bold text-white tracking-tight">
                 Decolli
               </h2>
-              <p className="text-[10px] text-slate-500 font-medium">
+              <p className="text-[10px] text-blue-300/60 font-medium">
                 {DECOLLI.length} siti disponibili
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl hover:bg-slate-200 transition-colors md:hidden border border-slate-300"
+            className="p-1.5 rounded-xl hover:bg-slate-700 transition-colors md:hidden border border-slate-500"
             aria-label="Chiudi sidebar"
           >
-            <X className="w-4 h-4 text-slate-500" />
+            <X className="w-4 h-4 text-slate-300" />
           </button>
         </div>
 
@@ -102,7 +102,7 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
           {DECOLLI.map((site) => {
             const w = weatherMap[site.id];
             const isSelected = site.id === selected;
-            const diffClass = diffColors[site.difficulty] || "bg-slate-200 text-slate-600 border-slate-400";
+            const diffClass = diffColors[site.difficulty] || "bg-slate-700 text-slate-300 border-slate-500";
             return (
               <button
                 key={site.id}
@@ -116,60 +116,60 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                   w-full text-left rounded-xl px-3 py-2.5 transition-all duration-200 border
                   ${
                     isSelected
-                      ? "bg-gradient-to-r from-slate-200 to-slate-50 border-slate-400 shadow-md scale-[1.02]"
-                      : "bg-white/90 border-slate-200 hover:bg-slate-100 hover:border-slate-400 hover:scale-[1.01]"
+                      ? "bg-gradient-to-r from-slate-700 to-slate-600 border-slate-400 shadow-lg scale-[1.02]"
+                      : "bg-slate-800/60 border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 hover:scale-[1.01]"
                   }
                 `}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className={`text-[12px] font-semibold text-slate-800 truncate block leading-snug ${isSelected ? "text-blue-900" : ""}`}>
+                      <span className={`text-[12px] font-semibold text-white truncate block leading-snug ${isSelected ? "text-blue-200" : ""}`}>
                         {site.name}
                       </span>
                       <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold border ${diffClass}`}>
                         D{site.difficulty}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                    <div className="flex items-center gap-2 text-[10px] text-slate-400">
                       <span className="flex items-center gap-0.5">
-                        <span className="text-slate-400">📍</span>
+                        <span className="text-slate-500">📍</span>
                         {site.exposure}
                       </span>
-                      <span className="w-1 h-1 rounded-full bg-slate-300" />
+                      <span className="w-1 h-1 rounded-full bg-slate-500" />
                       <span>{site.altitude}m</span>
-                      <span className="w-1 h-1 rounded-full bg-slate-300" />
+                      <span className="w-1 h-1 rounded-full bg-slate-500" />
                       <span className="truncate">{site.valley}</span>
                     </div>
                   </div>
                   {w && (
                     <div className="flex flex-col items-end gap-0.5 shrink-0">
                       <span className="text-lg leading-none">{wic(w.weatherCode, true)}</span>
-                      <span className={`text-xs font-bold ${isSelected ? "text-blue-800" : "text-slate-700"}`}>
+                      <span className={`text-xs font-bold ${isSelected ? "text-white" : "text-slate-200"}`}>
                         {Math.round(w.temperature)}°
                       </span>
                     </div>
                   )}
                 </div>
                 {w && (
-                  <div className="flex items-center gap-3 mt-1.5 pt-1.5 border-t border-slate-200">
-                    <div className="flex items-center gap-1 text-[10px] text-slate-600">
-                      <Wind className="w-3 h-3 text-slate-500" />
+                  <div className="flex items-center gap-3 mt-1.5 pt-1.5 border-t border-slate-600/50">
+                    <div className="flex items-center gap-1 text-[10px] text-blue-300/70">
+                      <Wind className="w-3 h-3 text-blue-400" />
                       <span className="font-medium">{w.windSpeed} km/h</span>
                     </div>
-                    <div className="flex items-center gap-1 text-[10px] text-amber-700">
-                      <Thermometer className="w-3 h-3 text-amber-600" />
+                    <div className="flex items-center gap-1 text-[10px] text-amber-300/70">
+                      <Thermometer className="w-3 h-3 text-amber-400" />
                       <span className="font-medium">{Math.round(w.temperature)}°C</span>
                     </div>
-                    <div className="flex items-center gap-1 text-[10px] text-emerald-700">
+                    <div className="flex items-center gap-1 text-[10px] text-emerald-300/70">
                       <span className="w-2 h-2 rounded-full bg-emerald-400" />
                       <span className="font-medium">{w.humidity}%</span>
                     </div>
                   </div>
                 )}
                 {!w && (
-                  <div className="text-[10px] text-slate-400 mt-1 italic flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-pulse" />
+                  <div className="text-[10px] text-slate-500 mt-1 italic flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-pulse" />
                     Caricamento...
                   </div>
                 )}
