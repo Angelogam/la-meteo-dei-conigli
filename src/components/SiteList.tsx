@@ -103,7 +103,7 @@ export const SiteList = ({ selected, current, onSelect, weatherMap = {} }: SiteL
                     className="text-base font-bold text-white px-3 py-1 rounded-full"
                     style={{ background: volabilitaColor(vol.percentuale) }}
                   >
-                    {vol.percentuale}%
+                    Volabilità {vol.percentuale}%
                   </span>
                   {temp !== null && (
                     <span className="text-base font-bold text-orange-600">{temp}°C</span>
