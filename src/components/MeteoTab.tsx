@@ -3,7 +3,7 @@
 import React from "react";
 import { Wind, Thermometer, Cloud, Droplets, ArrowUp, Gauge } from "lucide-react";
 import type { HourData, AiAnalysis } from "@/types/meteo";
-import type { ThermalData, RichDay } from "@/utils/meteo";
+import type { ThermalCalcData, RichDay } from "@/utils/meteo";
 import { wic, enrDaily, calcThermal } from "@/utils/meteo";
 import { Progress } from "@/components/ui/progress";
 
@@ -42,7 +42,7 @@ interface MeteoTabProps {
   hour: number;
   enrichedDaily: RichDay[];
   dateLabels: string[];
-  thermal: ThermalData | null;
+  thermal: ThermalCalcData | null;
   pressureGrad: { grad: number; desc: string };
   aiData: AiAnalysis | null;
   onDaySelect: (idx: number) => void;

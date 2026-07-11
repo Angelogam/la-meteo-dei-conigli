@@ -47,56 +47,6 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
   return (
     <>
       {isOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z<dyad-write path="src/components/SidebarDecolli.tsx" description="Correggo import wd">
-"use client";
-
-import React, { useEffect, useRef } from "react";
-import { X, Wind, Thermometer, RefreshCw, Droplets, Gauge, Cloud, CloudRain } from "lucide-react";
-import type { HourData } from "@/types/meteo";
-import { DECOLLI } from "@/data/decolli";
-import { wic } from "@/utils/meteo";
-import { getVoloStatus } from "@/utils/volo";
-
-interface SidebarDecolliProps {
-  selected: string;
-  current: HourData | null;
-  onSelect: (id: string) => void;
-  weatherMap: Record<string, HourData>;
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClose }: SidebarDecolliProps) => {
-  const sidebarRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen, onClose]);
-
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
-
-  const now = new Date();
-
-  return (
-    <>
-      {isOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-30 md:hidden" />
       )}
 
@@ -120,9 +70,7 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
               <span className="text-base">🪂</span>
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white tracking-tight">
-                Decolli
-              </h2>
+              <h2 className="text-sm font-bold text-white tracking-tight">Decolli</h2>
               <p className="text-[10px] text-blue-300/60 font-medium flex items-center gap-1">
                 <RefreshCw className="w-2.5 h-2.5 animate-spin" />
                 {DECOLLI.length} siti · {String(now.getHours()).padStart(2, "0")}:{String(now.getMinutes()).padStart(2, "0")}

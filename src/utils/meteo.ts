@@ -1,6 +1,6 @@
 "use client";
 
-import type { MeteoData, HourData, DailyData, WindProfile, ThermalData } from "@/types/meteo";
+import type { MeteoData, HourData, DailyData, WindProfile } from "@/types/meteo";
 import { Cloud, CloudSun, CloudRain, CloudLightning, CloudSnow, CloudFog, Sun, CloudDrizzle } from "lucide-react";
 import React from "react";
 
@@ -48,8 +48,6 @@ export function wd(deg: number): string {
   return wa(deg);
 }
 
-// --- Thermic data utilities ---
-
 export interface RichDay {
   date: Date;
   tempMax: number;
@@ -61,7 +59,7 @@ export interface RichDay {
   cloudAvg: number;
 }
 
-export interface ThermalData {
+export interface ThermalCalcData {
   base: number;
   top: number;
   salita: number;
@@ -100,7 +98,7 @@ export function enrDaily(daily: DailyData[], hourly: HourData[]): RichDay[] {
   });
 }
 
-export function calcThermal(hourly: HourData[], altitude: number): ThermalData {
+export function calcThermal(hourly: HourData[], altitude: number): ThermalCalcData {
   if (!hourly.length) {
     return { base: 0, top: 0, salita: 0, cape: 0 };
   }
@@ -128,7 +126,6 @@ export function filterFlightHours(hourly: HourData[]): HourData[] {
   });
 }
 
-/** Open-Meteo API call */
 export async function fetchMeteo(lat: number, lon: number): Promise<MeteoData> {
   const params = new URLSearchParams({
     latitude: lat.toString(),
