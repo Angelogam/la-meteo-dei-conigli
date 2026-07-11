@@ -45,7 +45,7 @@ export const MeteoTab = ({
             <div className="text-xs font-semibold text-gray-700">{dateLabels[i]}</div>
             <div className="text-xl my-0.5">{wic(d.weatherCode, 1)}</div>
             <div className="text-sm text-red-600 font-semibold">
-              {Math.round(d.tempMax)}&deg;C/{Math.round(d.tempMin)}&deg;C
+              {Math.round(d.tempMax)}/{Math.round(d.tempMin)} gradi
             </div>
             <div className="text-xs text-gray-500">&Delta;{d.delta}&deg;C</div>
           </button>
@@ -69,8 +69,8 @@ export const MeteoTab = ({
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-3">
         {[
-          ["Temperatura", Math.round(current.temperature) + "&deg;C", "&Delta; " + (thermal?.delta || 0) + "&deg;C"],
-          ["Umidit\u00e0", Math.round(current.humidity) + "%", "Rugiada " + Math.round(current.dewPoint) + "&deg;C"],
+          ["Temperatura", Math.round(current.temperature) + " gradi", "&Delta; " + (thermal?.delta || 0) + "&deg;C"],
+          ["Umidit\u00e0", Math.round(current.humidity) + "%", "Rugiada " + Math.round(current.dewPoint) + " gradi"],
           ["Nuvolosit\u00e0", Math.round(current.cloudCover) + "%", ct(current.cloudCover)],
           ["Precipitazioni", current.precipitation === 0 ? "Assenti" : current.precipitation + " mm", current.precipitation === 0 ? "Ideale" : "Pioggia"],
           ["Base Nuvole", thermal ? thermal.cloudBase + "m" : "--", "Cloud Base"],
