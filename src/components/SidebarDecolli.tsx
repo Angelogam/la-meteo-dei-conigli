@@ -120,6 +120,7 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
             const isSelected = site.id === selected;
             const volo = getVoloStatus(w);
             const wDesc = w ? getWeatherDesc(w.weatherCode, w.precipitation, w.temperature) : null;
+
             return (
               <button
                 key={site.id}
