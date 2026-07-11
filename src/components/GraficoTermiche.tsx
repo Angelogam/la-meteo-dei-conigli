@@ -1,3 +1,4 @@
+characters">
 "use client";
 
 import React from "react";
@@ -24,7 +25,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
         </div>
         <div>
           <h3 className="text-sm font-bold text-amber-200">Forza termiche & metri a salire</h3>
-          <p className="text-[10px] text-slate-400">Elaborazione in tempo reale basata su vento, sole e umidità</p>
+          <p className="text-[10px] text-slate-400">Elaborazione in tempo reale basata su vento, sole e umidit&agrave;</p>
         </div>
       </div>
 
@@ -74,7 +75,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
               {/* Metri a salire */}
               <div className="shrink-0 w-20 text-right">
                 <span className="text-[11px] font-bold text-amber-200" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>
-                  ↑ {metriSalita > 0 ? `${metriSalita}m` : "—"}
+                  &uarr; {metriSalita > 0 ? `${metriSalita}m` : "&mdash;"}
                 </span>
                 <div className="text-[8px] text-slate-500">salita</div>
               </div>
@@ -140,7 +141,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
           </span>
           <span className="flex items-center gap-1">
             <Droplets className="w-2.5 h-2.5 text-blue-300" />
-            Umidità (30-50% ideale)
+            Umidit&agrave; (30-50% ideale)
           </span>
           <span className="flex items-center gap-1">
             <Gauge className="w-2.5 h-2.5 text-purple-400" />

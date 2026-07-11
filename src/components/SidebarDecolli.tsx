@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { X, Wind, Thermometer, RefreshCw, Droplets, Gauge, Cloud, CloudRain, ChevronDown, ChevronUp, Clock, Sun, ArrowUp } from "lucide-react";
+import { X, Wind, Thermometer, RefreshCw, Droplets, Gauge, Cloud, CloudRain, ChevronDown, ChevronUp, Clock } from "lucide-react";
 import AlertVolo from "./AlertVolo";
 import type { HourData } from "@/types/meteo";
 import { DECOLLI } from "@/data/decolli";
-import { wic, wd } from "@/utils/meteo";
+import { wic } from "@/utils/meteo";
 import { getVoloStatus } from "@/utils/volo";
 import { generaTermicheOrarie } from "@/utils/termiche";
 import GraficoTermiche from "@/components/GraficoTermiche";
@@ -17,16 +17,6 @@ interface SidebarDecolliProps {
   weatherMap: Record<string, HourData>;
   isOpen: boolean;
   onClose: () => void;
-}
-
-// Hook per ottenere i dati meteo di un decollo (tutte le ore 9-19)
-function useSiteHourlyData(siteId: string, weatherMap: Record<string, HourData>, allData: Record<string, HourData[]>) {
-  const site = DECOLLI.find(s => s.id === siteId);
-  return {
-    current: weatherMap[siteId] || null,
-    hourly: allData[siteId] || [],
-    site: site || null,
-  };
 }
 
 const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClose }: SidebarDecolliProps) => {
@@ -128,15 +118,15 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
 
       <div
         ref={sidebarRef}
-        className={`
-          fixed top-0 left-0 h-full w-80 max-w-[88vw] z-40
-          bg-gradient-to-b from-slate-800 via-slate-800/95 to-slate-900
-          border-r-2 border-green-500/40 shadow-2xl
-          transition-all duration-350 ease-out
-          overflow-y-auto
-          ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0 md:relative md:z-auto md:h-auto md:max-h-[calc(100vh-8rem)] md:w-80 md:rounded-2xl md:border-2 md:border-green-500/40 md:mr-4 md:shadow-xl md:shadow-green-500/10 md:sticky md:top-4
-        `}
+        className={
+          "fixed top-0 left-0 h-full w-80 max-w-[88vw] z-40 " +
+          "bg-gradient-to-b from-slate-800 via-slate-800/95 to-slate-900 " +
+          "border-r-2 border-green-500/40 shadow-2xl " +
+          "transition-all duration-350 ease-out " +
+          "overflow-y-auto " +
+          (isOpen ? "translate-x-0" : "-translate-x-full ") +
+          "md:translate-x-0 md:relative md:z-auto md:h-auto md:max-h-[calc(100vh-8rem)] md:w-80 md:rounded-2xl md:border-2 md:border-green-500/40 md:mr-4 md:shadow-xl md:shadow-green-500/10 md:sticky md:top-4"
+        }
         style={{ scrollbarWidth: 'thin', scrollbarColor: '#475569 transparent' }}
       >
         {/* Header */}
@@ -151,7 +141,7 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
               </h2>
               <p className="text-[11px] text-blue-300/80 font-medium flex items-center gap-1">
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                {DECOLLI.length} siti · {String(now.getHours()).padStart(2, "0")}:{String(now.getMinutes()).padStart(2, "0")}
+                {DECOLLI.length} siti &middot; {String(now.getHours()).padStart(2, "0")}:{String(now.getMinutes()).padStart(2, "0")}
               </p>
             </div>
           </div>
@@ -183,23 +173,21 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                       onClose();
                     }
                   }}
-                  className={`
-                    w-full text-left rounded-xl px-3 py-3 transition-all duration-200 border-2
-                    ${
-                      isSelected
-                        ? "bg-gradient-to-r from-slate-700 to-slate-600 border-green-400 shadow-lg scale-[1.02] shadow-green-500/20"
-                        : "bg-slate-800/60 border-green-500/25 hover:bg-slate-700 hover:border-green-400/50 hover:scale-[1.01]"
-                    }
-                  `}
+                  className={
+                    "w-full text-left rounded-xl px-3 py-3 transition-all duration-200 border-2 " +
+                    (isSelected
+                      ? "bg-gradient-to-r from-slate-700 to-slate-600 border-green-400 shadow-lg scale-[1.02] shadow-green-500/20"
+                      : "bg-slate-800/60 border-green-500/25 hover:bg-slate-700 hover:border-green-400/50 hover:scale-[1.01]")
+                  }
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                        <span className={`text-sm font-bold text-green-200 truncate block leading-snug ${isSelected ? "text-green-100" : ""}`}>
+                        <span className={"text-sm font-bold text-green-200 truncate block leading-snug " + (isSelected ? "text-green-100" : "")}>
                           {site.name}
                         </span>
                         {w && (
-                          <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border-2 ${volo.color} animate-pulse`}>
+                          <span className={"px-2 py-0.5 rounded-md text-[11px] font-bold border-2 " + volo.color}>
                             {volo.icon} {volo.label}
                           </span>
                         )}
@@ -220,9 +208,9 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                           <span className="text-[11px] text-blue-300/90 font-mono font-semibold">
                             {String(w.time.getHours()).padStart(2, "0")}:00
                           </span>
-                          <span className="text-3xl leading-none drop-shadow-lg animate-pulse">{wic(w.weatherCode, true)}</span>
-                          <span className={`text-base font-extrabold ${isSelected ? "text-white" : "text-slate-100"}`}>
-                            {Math.round(w.temperature)}°
+                          <span className="text-3xl leading-none drop-shadow-lg">{wic(w.weatherCode, true)}</span>
+                          <span className={"text-base font-extrabold " + (isSelected ? "text-white" : "text-slate-100")}>
+                            {Math.round(w.temperature)}&deg;
                           </span>
                           <span className="text-[11px] text-slate-400 font-medium">{Math.round(w.windSpeed)} km/h</span>
                         </div>
@@ -233,32 +221,32 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                     <AlertVolo weather={w} />
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2.5 pt-2.5 border-t-2 border-green-500/20">
                       <div className="flex items-center gap-1.5 text-[12px] text-blue-200/90">
-                        <Wind className="w-4 h-4 text-blue-300 animate-pulse" />
+                        <Wind className="w-4 h-4 text-blue-300" />
                         <span className="font-semibold">{Math.round(w.windSpeed)} km/h</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-[12px] text-orange-200/90">
-                        <span className="text-orange-300 text-base animate-bounce">⬆</span>
+                        <span className="text-orange-300 text-base">&uarr;</span>
                         <span className="font-semibold">{w.windGust ? Math.round(w.windGust) : "--"} km/h</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-[12px] text-amber-200/90">
-                        <Thermometer className="w-4 h-4 text-amber-300 animate-pulse" />
-                        <span className="font-semibold">{Math.round(w.temperature)}°C</span>
+                        <Thermometer className="w-4 h-4 text-amber-300" />
+                        <span className="font-semibold">{Math.round(w.temperature)}&deg;C</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-[12px] text-emerald-200/90">
-                        <Droplets className="w-4 h-4 text-emerald-300 animate-pulse" />
+                        <Droplets className="w-4 h-4 text-emerald-300" />
                         <span className="font-semibold">{w.humidity}%</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-[12px] text-purple-200/90">
-                        <Gauge className="w-4 h-4 text-purple-300 animate-pulse" />
+                        <Gauge className="w-4 h-4 text-purple-300" />
                         <span className="font-semibold">{w.pressure ? Math.round(w.pressure) : "--"} hPa</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-[12px] text-slate-200/90">
-                        <Cloud className="w-4 h-4 text-slate-300 animate-pulse" />
+                        <Cloud className="w-4 h-4 text-slate-300" />
                         <span className="font-semibold">{w.cloudCover}%</span>
                       </div>
                       {w.precipitation && w.precipitation > 0 && (
                         <div className="flex items-center gap-1.5 text-[12px] text-blue-200/90">
-                          <CloudRain className="w-4 h-4 text-blue-300 animate-pulse" />
+                          <CloudRain className="w-4 h-4 text-blue-300" />
                           <span className="font-semibold">{w.precipitation.toFixed(1)} mm</span>
                         </div>
                       )}
@@ -284,61 +272,58 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                   >
                     <span className="flex items-center gap-1.5">
                       <Clock className="w-3 h-3" />
-                      Previsioni orarie 9:00–19:00
+                      Previsioni orarie 9:00&ndash;19:00
                     </span>
                     {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                   </button>
                 )}
 
                 {/* Pannello espanso con previsioni orarie */}
-                {isExpanded && (
-                  <div className="rounded-xl border border-slate-600/50 bg-slate-800/60 backdrop-blur-sm overflow-hidden animate-in slide-in-from-top-2 duration-200">
-                    {hourlyLoading ? (
-                      <div className="p-3 text-center text-[11px] text-slate-400 flex items-center justify-center gap-2">
-                        <RefreshCw className="w-3 h-3 animate-spin" />
-                        Caricamento previsioni...
-                      </div>
-                    ) : hourlyData && hourlyData.length > 0 ? (
-                      <>
-                      <GraficoTermiche hourly={generaTermicheOrarie(hourlyData, site.altitude)} oraCorrente={now.getHours()} />
-                      <div className="divide-y divide-slate-700/50">
-                        {hourlyData.map((h, idx) => {
-                          const hVolo = getVoloStatus(h);
-                          const isCurrentHour = h.time.getHours() === now.getHours();
-                          return (
-                            <div
-                              key={idx}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] transition-colors ${
-                                isCurrentHour ? "bg-green-900/30 border-l-2 border-green-400" : "hover:bg-slate-700/40"
-                              }`}
-                            >
-                              <span className="w-7 font-mono font-bold text-slate-300">
-                                {String(h.time.getHours()).padStart(2, "0")}:00
-                              </span>
-                              <span className="text-base">{wic(h.weatherCode, true)}</span>
-                              <div className="flex-1 flex items-center gap-1 text-slate-300">
-                                <Thermometer className="w-2.5 h-2.5 text-amber-400" />
-                                <span>{Math.round(h.temperature)}°</span>
-                              </div>
-                              <div className="flex items-center gap-1 text-slate-300">
-                                <Wind className="w-2.5 h-2.5 text-blue-400" />
-                                <span>{Math.round(h.windSpeed)}</span>
-                              </div>
-                              {h.precipitation > 0 && (
-                                <span className="text-[9px] text-blue-300">{h.precipitation.toFixed(1)}mm</span>
-                              )}
-                              <span className={`px-1 py-0.5 rounded text-[8px] font-bold ${hVolo.color}`}>
-                                {hVolo.label}
-                              </span>
+                {isExpanded && hourlyData && hourlyData.length > 0 && (
+                  <div className="rounded-xl border border-slate-600/50 bg-slate-800/60 backdrop-blur-sm overflow-hidden">
+                    <GraficoTermiche hourly={generaTermicheOrarie(hourlyData, site.altitude)} oraCorrente={now.getHours()} />
+                    <div className="divide-y divide-slate-700/50">
+                      {hourlyData.map((h, idx) => {
+                        const hVolo = getVoloStatus(h);
+                        const isCurrentHour = h.time.getHours() === now.getHours();
+                        return (
+                          <div
+                            key={idx}
+                            className={"flex items-center gap-1.5 px-3 py-1.5 text-[11px] transition-colors " + (isCurrentHour ? "bg-green-900/30 border-l-2 border-green-400" : "hover:bg-slate-700/40")}
+                          >
+                            <span className="w-7 font-mono font-bold text-slate-300">
+                              {String(h.time.getHours()).padStart(2, "0")}:00
+                            </span>
+                            <span className="text-base">{wic(h.weatherCode, true)}</span>
+                            <div className="flex-1 flex items-center gap-1 text-slate-300">
+                              <Thermometer className="w-2.5 h-2.5 text-amber-400" />
+                              <span>{Math.round(h.temperature)}&deg;</span>
                             </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="p-3 text-center text-[11px] text-slate-400">
-                        Nessuna previsione disponibile
-                      </div>
-                    )}
+                            <div className="flex items-center gap-1 text-slate-300">
+                              <Wind className="w-2.5 h-2.5 text-blue-400" />
+                              <span>{Math.round(h.windSpeed)}</span>
+                            </div>
+                            {h.precipitation > 0 && (
+                              <span className="text-[9px] text-blue-300">{h.precipitation.toFixed(1)}mm</span>
+                            )}
+                            <span className={"px-1 py-0.5 rounded text-[8px] font-bold " + hVolo.color}>
+                              {hVolo.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {isExpanded && hourlyLoading && (
+                  <div className="rounded-xl border border-slate-600/50 bg-slate-800/60 backdrop-blur-sm p-3 text-center text-[11px] text-slate-400 flex items-center justify-center gap-2">
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                    Caricamento previsioni...
+                  </div>
+                )}
+                {isExpanded && !hourlyLoading && (!hourlyData || hourlyData.length === 0) && (
+                  <div className="rounded-xl border border-slate-600/50 bg-slate-800/60 backdrop-blur-sm p-3 text-center text-[11px] text-slate-400">
+                    Nessuna previsione disponibile
                   </div>
                 )}
               </div>
