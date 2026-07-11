@@ -13,7 +13,7 @@ import SiteHeader from "@/components/SiteHeader";
 import DayForecastPopup from "@/components/DayForecastPopup";
 import { fetchMeteo, fetchWindProfiles, filterFlightHours, enrDaily, calcThermal } from "@/utils/meteo";
 import { DECOLLI } from "@/data/decolli";
-import { genAI } from "@/utils/analisi";
+import { generaAnalisiReale } from "@/utils/analisi";
 import { generateAiAnalysis } from "@/utils/meteoAI";
 import { calcThermalReal } from "@/utils/termiche";
 import type { MeteoData, HourData, AiAnalysis, WindProfile } from "@/types/meteo";
@@ -203,8 +203,8 @@ function Index() {
 
   const aiData = useMemo(() => {
     if (!dayData.length) return null;
-    return genAI(dayData, { altitude: currentSite.altitude }, thermalAI);
-  }, [dayData, currentSite.altitude, thermalAI]);
+    return generaAnalisiReale(dayData, currentSite.altitude);
+  }, [dayData, currentSite.altitude]);
 
   const thermalReal = useMemo(() => {
     if (!dayData.length) return null;
@@ -213,7 +213,7 @@ function Index() {
       return hh >= 10 && hh <= 15;
     });
     if (!centralHours.length) return null;
-    const avgTemp = centralHours.reduce((s, h) => s + h.temp, 0) / centralHours.length;
+    const avgTemp = centralHours.reduce((s, h) => s + h.temperature, 0) / centralHours.length;
     const avgDew = centralHours.reduce((s, h) => s + h.dewPoint, 0) / centralHours.length;
     return calcThermalReal(dayData, currentSite.altitude, avgTemp, avgDew);
   }, [dayData, currentSite.altitude]);
@@ -239,7 +239,6 @@ function Index() {
   if (globalLoading) return <LoadingScreen />;
   if (globalError) return <ErrorScreen message={globalError} onRetry={handleRetry} />;
 
-  // ... rest of the render (unchanged)
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-slate-800 via-slate-700 to-slate-900 text-slate-100">
       <div

@@ -29,21 +29,22 @@ export function generaAnalisiReale(
   const pomeriggio = dayData.filter((h) => h.time.getHours() >= 12 && h.time.getHours() <= 17);
   const sera = dayData.filter((h) => h.time.getHours() >= 18 && h.time.getHours() <= 21);
 
-  const media = (arr: number[]) => Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10;
-  const max = (arr: number[]) => Math.max(...arr);
-  const min = (arr: number[]) => Math.min(...arr);
+  const media = (arr: number[]) => arr.length ? Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10 : 0;
+  const max = (arr: number[]) => arr.length ? Math.max(...arr) : 0;
+  const min = (arr: number[]) => arr.length ? Math.min(...arr) : 0;
 
   // --- Situazione Generale ---
-  const tempMattina = mattina.length ? media(mattina.map((h) => h.temp)) : null;
-  const tempMaxDay = max(dayData.map((h) => h.temp));
+  const tempMattina = mattina.length ? media(mattina.map((h) => h.temperature)) : null;
+  const tempMaxDay = max(dayData.map((h) => h.temperature));
   const umidMattina = mattina.length ? media(mattina.map((h) => h.humidity)) : null;
   const ventoMattina = mattina.length ? media(mattina.map((h) => h.windSpeed)) : null;
-  const precipitazioni = dayData.reduce((s, h) => s + (h.rain || 0) + (h.snowfall || 0), 0);
+  const precipitazioni = dayData.reduce((s, h) => s + h.precipitation, 0);
   const nuvolositaMedia = media(dayData.map((h) => h.cloudCover || 0));
   const visibilita = nuvolositaMedia < 40 ? "buona" : "moderata";
-  // Temporali? se c'è CAPE e precipitazioni
-  const capeMax = max(dayData.filter((h) => h.cape !== undefined).map((h) => h.cape || 0));
-  const rischioTemporali = capeMax > 500 && precipitazioni > 1 ? "possibili" : "improbabili";
+
+  // Stima rischio temporali: spread grande + pioggia + nuvolosità
+  const avgSpread = mattina.length ? media(mattina.map((h) => h.temperature - h.dewPoint)) : 0;
+  const rischioTemporali = avgSpread > 10 && precipitazioni > 1 && nuvolositaMedia > 50 ? "possibili" : "improbabili";
 
   const descrizioneNuvolosita = () => {
     if (nuvolositaMedia < 15) return "prevalenza di sereno";
@@ -71,11 +72,10 @@ Vento: ${descrizioneVentoSuolo(ventoMattina ?? 0)} al suolo, tendente a rinforza
 Cielo: ${descrizioneNuvolosita()}${nuvolositaMedia < 60 ? "; qualche sviluppo cumuliforme pomeridiano possibile sulle creste" : ""}${rischioTemporali === "possibili" ? ", con rischio di temporali pomeridiani" : ", senza rischio di temporali significativi"}.`;
 
   // --- Profilo termico e stabilità ---
-  const tempMin = min(dayData.map((h) => h.temp));
-  const spreadMattina = mattina.length ? media(mattina.map((h) => h.temp - h.dewPoint)) : null;
-  const li = max(dayData.filter((h) => h.li !== undefined).map((h) => h.li || 0));
+  const tempMin = min(dayData.map((h) => h.temperature));
+  const spreadMattina = mattina.length ? media(mattina.map((h) => h.temperature - h.dewPoint)) : null;
 
-  // Gradiente verticale simulato (differenza vento quota vs vento suolo come proxy di stabilità)
+  // Stima stabilità: vento omogeneo + spread elevato = stabile
   const ventiAlti = dayData.filter((h) => h.time.getHours() >= 10 && h.time.getHours() <= 14).length > 0
     ? media(dayData.filter((h) => h.time.getHours() >= 10 && h.time.getHours() <= 14).map((h) => h.windSpeed))
     : ventoMattina ?? 0;
@@ -86,9 +86,7 @@ Dai dati delle ore centrali:
 
 Il gradiente verticale di temperatura mostra un'atmosfera ${stabile ? "piuttosto stabile" : "tendenzialmente instabile"}.
 
-L'indice Lifted Index (LI) è ${li !== null ? `${li > 2 ? "positivo" : li > -1 ? "prossimo allo zero" : "negativo"} (${li > 0 ? "+" : ""}${li !== null ? li.toFixed(1) : "N/D"})` : "N/D"}, confermando ${stabile ? "stabilità e scarsa probabilità di temporali" : "instabilità e possibile sviluppo convettivo"}.
-
-Il valore CAPE è < 200 J/kg (non disponibile da Open-Meteo), ma lo spread ${spreadMattina !== null ? `di ${spreadMattina.toFixed(1)} °C` : "N/D"} tra temperatura e punto di rugiada suggerisce ${spreadMattina !== null && spreadMattina > 10 ? "buona energia convettiva" : spreadMattina !== null && spreadMattina > 5 ? "energia convettiva moderata" : "scarsa energia convettiva"}.
+Lo spread tra temperatura e punto di rugiada è ${spreadMattina !== null ? `di ${spreadMattina.toFixed(1)} °C` : "N/D"}, ${spreadMattina !== null && spreadMattina > 10 ? "indicando buona energia convettiva" : spreadMattina !== null && spreadMattina > 5 ? "con energia convettiva moderata" : "con scarsa energia convettiva"}.
 
 ${stabile ? "Non si osservano inversioni termiche forti: la temperatura decresce regolarmente con la quota, segno di buon rimescolamento dell'aria." : "Possibili inversioni termiche nei bassi strati al mattino, con sviluppo convettivo pomeridiano."}`;
 
@@ -120,8 +118,8 @@ ${ventiAlti < 15 ? "Questo favorisce buone condizioni di volo libero: aria asciu
 
   // --- Interpretazione per attività outdoor / volo libero ---
   const ventoMax = max(dayData.map((h) => h.windSpeed));
-  const windGustMax = max(dayData.filter((h) => h.windGust !== undefined).map((h) => h.windGust || 0));
-  const conditions = [];
+  const windGustMax = max(dayData.filter((h) => h.windGust !== null && h.windGust !== undefined).map((h) => h.windGust ?? 0));
+  const conditions: string[] = [];
 
   if (ventoMax < 18 && nuvolositaMedia < 40 && precipitazioni < 0.5) {
     conditions.push("Condizioni ideali per decolli e veleggiamento: aria asciutta, termiche regolari, vento gestibile.");
