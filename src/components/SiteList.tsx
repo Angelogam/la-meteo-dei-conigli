@@ -9,7 +9,6 @@ interface SiteListProps {
   current: HourData | null;
   onSelect: (id: string) => void;
   weatherMap: Record<string, HourData>;
-  allHourlyData: Record<string, HourData[]>;
 }
 
 export const SiteList = ({ selected, current, onSelect, weatherMap }: SiteListProps) => {
@@ -30,10 +29,10 @@ export const SiteList = ({ selected, current, onSelect, weatherMap }: SiteListPr
             }
           >
             <div className="text-sm font-bold text-white">
-              {site.icon} {site.name}
+              {site.name}
             </div>
             <div className="text-xs text-gray-300 mt-0.5">
-              {site.altitude}m s.l.m. &middot; {site.province}
+              {site.altitude}m s.l.m.
             </div>
             {w && (
               <div className="flex items-center gap-1.5 mt-1.5">

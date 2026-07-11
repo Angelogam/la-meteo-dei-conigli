@@ -13,10 +13,10 @@ export const SiteHeader = ({ site, current }: SiteHeaderProps) => {
     <div className="flex items-start justify-between mb-4 pb-4 border-b border-gray-600/70">
       <div>
         <h2 className="text-xl font-extrabold text-white drop-shadow-sm">
-          {site.icon} {site.name}
+          {site.name}
         </h2>
         <p className="text-xs text-gray-300 mt-0.5">
-          {site.altitude}m s.l.m. &middot; {site.province} &middot; {site.description}
+          {site.altitude}m s.l.m.
         </p>
       </div>
       <div className="text-right">

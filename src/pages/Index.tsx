@@ -98,7 +98,6 @@ export default function Index() {
       const maxTemp = Math.max(...temps);
       const minTemp = Math.min(...temps);
       const prec = dayHours.reduce((s, x) => s + x.precipitation, 0);
-      // weatherCode = codice più frequente
       const codes = dayHours.map((x) => x.weatherCode);
       const mode = codes.sort((a, b) => codes.filter((c) => c === a).length - codes.filter((c) => c === b).length).pop() || 0;
       days.push({
@@ -144,7 +143,6 @@ export default function Index() {
               current={current}
               onSelect={setSelectedId}
               weatherMap={currentMap}
-              allHourlyData={allHourly}
             />
           </div>
 

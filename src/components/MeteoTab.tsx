@@ -2,7 +2,6 @@
 
 import { wic, wa, getZeroTermico } from "@/utils/meteo";
 import type { HourData, DailyData, ThermalData, PressureGradient, AiAnalysis } from "@/types/meteo";
-import { DayForecastPopup } from "./DayForecastPopup";
 import { useState } from "react";
 
 interface MeteoTabProps {
@@ -32,25 +31,6 @@ export const MeteoTab = ({
 }: MeteoTabProps) => {
   const [dayPopupIdx, setDayPopupIdx] = useState<number | null>(null);
 
-  const hourlyData: HourData[] = Array.from({ length: 24 }, (_, i) => ({
-    ...current,
-    time: new Date(current.time.getFullYear(), current.time.getMonth(), current.time.getDate(), i),
-    temperature: Math.round(current.temperature - 3 + Math.sin((i / 24) * Math.PI * 2) * 6),
-    cloudCover: Math.min(100, Math.max(0, current.cloudCover - 15 + Math.sin((i / 24) * Math.PI * 2) * 20)),
-    windSpeed: Math.max(2, Math.round(current.windSpeed - 5 + Math.sin((i / 12) * Math.PI) * 8)),
-    precipitation: i > 10 && i < 16 ? Math.max(0, current.precipitation + Math.random() * 0.5) : 0,
-    humidity: Math.min(100, Math.max(10, current.humidity - 5 + Math.sin((i / 24) * Math.PI * 2) * 10)),
-  }));
-
-  const handleDayClick = (i: number) => {
-    onDaySelect(i);
-    setDayPopupIdx(dayPopupIdx === i ? null : i);
-  };
-
-  const handleHourSelect = (selectedHour: number) => {
-    onHourChange(selectedHour);
-  };
-
   return (
     <>
       {/* Giorni della settimana */}
@@ -58,7 +38,7 @@ export const MeteoTab = ({
         {enrichedDaily.map((d, i) => (
           <button
             key={i}
-            onClick={() => handleDayClick(i)}
+            onClick={() => { onDaySelect(i); }}
             className={
               "rounded-xl p-2.5 text-center cursor-pointer transition-all duration-200 border " +
               (dayIdx === i
@@ -75,16 +55,6 @@ export const MeteoTab = ({
           </button>
         ))}
       </div>
-
-      {dayPopupIdx !== null && enrichedDaily[dayPopupIdx] && (
-        <DayForecastPopup
-          data={hourlyData}
-          dayLabel={dateLabels[dayPopupIdx]}
-          onClose={() => setDayPopupIdx(null)}
-          selectedHour={hour}
-          onHourSelect={handleHourSelect}
-        />
-      )}
 
       {/* Slider ora */}
       <div className="flex items-center gap-3 mb-4 py-2 px-4 bg-white/10 rounded-xl border border-gray-600 shadow-sm">
