@@ -170,7 +170,7 @@ export const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour, onHour
   const [visible, setVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const selectedRef = useRef<HTMLButtonElement>(null);
+  const selectedRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -215,7 +215,7 @@ export const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour, onHour
         <div ref={scrollRef} className="overflow-x-auto pb-2 scroll-smooth">
           <div className="flex gap-2.5 min-w-max">
             {data.map((h, i) => (
-              <div key={i} ref={h.time.getHours() === selectedHour ? selectedRef : undefined}>
+              <div key={i} ref={(el) => { if (h.time.getHours() === selectedHour && el) { (selectedRef as React.MutableRefObject<HTMLDivElement>).current = el; } }}>
                 <SingleHourCard
                   h={h}
                   isSelected={h.time.getHours() === selectedHour}

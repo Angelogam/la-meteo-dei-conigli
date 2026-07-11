@@ -52,6 +52,8 @@ export const MeteoTab = ({
     onHourChange(selectedHour);
   };
 
+  const isDay = hour >= 6 && hour <= 20;
+
   return (
     <>
       {/* Selettore giorni */}
@@ -68,7 +70,7 @@ export const MeteoTab = ({
             }
           >
             <div className="text-xs font-bold text-gray-800 mb-1">{dateLabels[i]}</div>
-            <div className="text-2xl my-1 drop-shadow-md">{wic(d.weatherCode, 1)}</div>
+            <div className="text-2xl my-1 drop-shadow-md">{wic(d.weatherCode, dayIdx === 0 ? current.isDay : true)}</div>
             <div className="text-sm font-extrabold text-red-600">
               {Math.round(d.tempMax)}°/{Math.round(d.tempMin)}°
             </div>
