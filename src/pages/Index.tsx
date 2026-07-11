@@ -139,7 +139,7 @@ export default function Index() {
           current={current}
           onSelect={handleSiteSelect}
         />
-        <div className="bg-white/[0.08] rounded-2xl border border-white/20 p-4 md:max-h-[calc(100vh-180px)] overflow-y-auto backdrop-blur">
+        <div className="bg-white/[0.04] rounded-2xl border border-white/[0.06] p-4 md:max-h-[calc(100vh-180px)] overflow-y-auto backdrop-blur-sm">
           {current && site && (
             <>
               <SiteHeader site={site} current={current} />
