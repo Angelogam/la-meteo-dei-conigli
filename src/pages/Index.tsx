@@ -8,6 +8,7 @@ import { MeteoTab } from "@/components/MeteoTab";
 import { VentiTab } from "@/components/VentiTab";
 import VentiQuotaTab from "@/components/VentiQuotaTab";
 import { TermicheTab } from "@/components/TermicheTab";
+import WindgramChart from "@/components/WindgramChart";
 import { AnalisiTab } from "@/components/AnalisiTab";
 import SiteHeader from "@/components/SiteHeader";
 import DayForecastPopup from "@/components/DayForecastPopup";
@@ -113,19 +114,22 @@ function Index() {
     return () => clearInterval(interval);
   }, [fetchAllDecolli]);
 
-  const selectedSite = DECOLLI.find((s) => s.id === siteId) || DECOLLI[0];
+  const selectedSite = useMemo(
+    () => DECOLLI.find((s) => s.id === siteId) || DECOLLI[0],
+    [siteId]
+  );
   useEffect(() => {
     if (selectedSite) {
       fetchWind(selectedSite.lat, selectedSite.lon);
     }
   }, [siteId, selectedSite, fetchWind]);
 
-  const selectedDecollo = decolliMeteo[siteId];
-  const meteoData = selectedDecollo?.data;
-  const windProfiles = selectedDecollo?.windProfiles || [];
+  const selectedDecollo = useMemo(() => decolliMeteo[siteId], [decolliMeteo, siteId]);
+  const meteoData = useMemo(() => selectedDecollo?.data, [selectedDecollo]);
+  const windProfiles = useMemo(() => selectedDecollo?.windProfiles || [], [selectedDecollo]);
 
-  const hourlyRaw = meteoData?.hourly || [];
-  const daily = meteoData?.daily || [];
+  const hourlyRaw = useMemo(() => meteoData?.hourly || [], [meteoData]);
+  const daily = useMemo(() => meteoData?.daily || [], [meteoData]);
 
   const hourly = useMemo(() => filterFlightHours(hourlyRaw), [hourlyRaw]);
 
@@ -341,6 +345,14 @@ function Index() {
 
             {tab === "termiche" && (
               <TermicheTab dayData={dayData} altitude={currentSite.altitude} />
+            )}
+
+            {tab === "windgram" && (
+              <WindgramChart
+                dayData={dayData}
+                altitude={currentSite.altitude}
+                siteName={currentSite.name}
+              />
             )}
 
             {tab === "analisi" && aiMeteoAnalysis && (
