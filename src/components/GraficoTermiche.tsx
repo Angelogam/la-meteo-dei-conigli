@@ -30,7 +30,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
           <TrendingUp className="w-5 h-5 text-amber-400" />
         </div>
         <div>
-          <h3 className="text-sm font-bold text-amber-200">Forza termiche & metri a salire</h3>
+          <h3 className="text-sm font-bold text-amber-200">Forza termiche & quota massima</h3>
           <p className="text-[10px] text-slate-400">
             Elaborazione in tempo reale basata su vento, sole e umidit&agrave;
           </p>
@@ -44,6 +44,8 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
           const isCurrentHour = h.hour === oraCorrente;
           const forzaPercent = Math.round((t.forza / maxForza) * 100);
           const metriSalita = t.top - t.base;
+          // Quota massima raggiungibile = top (base + salita)
+          const quotaMax = t.top;
 
           return (
             <div
@@ -77,12 +79,12 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                 </div>
               </div>
 
-              {/* Metri a salire */}
+              {/* Quota massima raggiungibile */}
               <div className="shrink-0 w-20 text-right">
                 <span className="text-[11px] font-bold text-amber-200 drop-shadow-sm">
-                  &uarr; {metriSalita > 0 ? `${metriSalita}m` : "&mdash;"}
+                  &uarr; {quotaMax > 0 ? `${quotaMax}m` : "&mdash;"}
                 </span>
-                <div className="text-[8px] text-slate-500">salita</div>
+                <div className="text-[8px] text-slate-500">quota max</div>
               </div>
 
               {/* Rateo */}
@@ -107,7 +109,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
           ))}
           <div className="flex items-center gap-1.5">
             <ArrowUp className="w-3 h-3 text-amber-400" />
-            <span>Metri a salire</span>
+            <span>Quota massima</span>
           </div>
         </div>
       </div>
