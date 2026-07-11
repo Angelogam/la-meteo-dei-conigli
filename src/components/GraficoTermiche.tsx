@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Thermometer, ArrowUp, Wind, Droplets, Gauge, Sun, Cloud, TrendingUp, Info } from "lucide-react";
+import { ArrowUp, Wind, Droplets, Gauge, Sun, Cloud, TrendingUp, Info } from "lucide-react";
 import type { TermicheData } from "@/utils/termiche";
 
 interface GraficoTermicheProps {
@@ -43,17 +43,13 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
           const t = h.termiche;
           const isCurrentHour = h.hour === oraCorrente;
           const forzaPercent = Math.round((t.forza / maxForza) * 100);
-          const metriSalita = t.top - t.base;
-          // Quota massima raggiungibile = top (base + salita)
           const quotaMax = t.top;
 
           return (
             <div
               key={h.hour}
-              className={`relative flex items-center gap-2 py-1.5 px-2 rounded-lg transition-all ${
-                isCurrentHour
-                  ? "bg-green-900/30 border-l-2 border-green-400 scale-[1.02]"
-                  : "hover:bg-slate-700/30"
+              className={`flex items-center gap-2 py-1.5 px-2 rounded-lg transition-colors ${
+                isCurrentHour ? "bg-green-900/30 border-l-2 border-green-400" : "hover:bg-slate-700/30"
               }`}
             >
               {/* Ora */}
@@ -62,27 +58,21 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
               </div>
 
               {/* Barra forza */}
-              <div className="flex-1 h-5 bg-slate-700/60 rounded-full overflow-hidden relative">
+              <div className="flex-1 h-5 bg-slate-700/60 rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-500 ease-out"
                   style={{
                     width: `${forzaPercent}%`,
                     backgroundColor: t.colore,
-                    opacity: 0.8,
+                    opacity: 0.85,
                   }}
                 />
-                <div className="absolute inset-0 flex items-center justify-between px-2">
-                  <span className="text-[10px] font-bold text-white drop-shadow-md">
-                    {t.forza.toFixed(1)}/10
-                  </span>
-                  <span className="text-[9px] text-white/70 drop-shadow-md">{t.label.split(" ")[0]}</span>
-                </div>
               </div>
 
               {/* Quota massima raggiungibile */}
               <div className="shrink-0 w-20 text-right">
-                <span className="text-[11px] font-bold text-amber-200 drop-shadow-sm">
-                  &uarr; {quotaMax > 0 ? `${quotaMax}m` : "&mdash;"}
+                <span className="text-[11px] font-bold text-amber-200">
+                  &uarr; {quotaMax > 0 ? `${quotaMax}m` : "—"}
                 </span>
                 <div className="text-[8px] text-slate-500">quota max</div>
               </div>
@@ -103,12 +93,12 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
         <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-400">
           {LEGENDA.map((item) => (
             <div key={item.label} className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.colore }} />
+              <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: item.colore }} />
               <span>{item.label}</span>
             </div>
           ))}
           <div className="flex items-center gap-1.5">
-            <ArrowUp className="w-3 h-3 text-amber-400" />
+            <ArrowUp className="w-3 h-3 text-amber-400 shrink-0" />
             <span>Quota massima</span>
           </div>
         </div>
@@ -117,28 +107,28 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
       {/* Info calcolo */}
       <div className="mt-3 p-2 rounded-lg bg-slate-800/60 border border-slate-600/30">
         <div className="flex items-center gap-1.5 mb-1.5">
-          <Info className="w-3 h-3 text-slate-400" />
+          <Info className="w-3 h-3 text-slate-400 shrink-0" />
           <span className="text-[10px] font-medium text-slate-400">Fattori considerati</span>
         </div>
         <div className="flex items-center gap-3 flex-wrap text-[9px] text-slate-500">
           <span className="flex items-center gap-1">
-            <Sun className="w-2.5 h-2.5 text-amber-400" />
+            <Sun className="w-2.5 h-2.5 text-amber-400 shrink-0" />
             Gradiente termico
           </span>
           <span className="flex items-center gap-1">
-            <Wind className="w-2.5 h-2.5 text-blue-400" />
+            <Wind className="w-2.5 h-2.5 text-blue-400 shrink-0" />
             Vento (5-15 km/h ideale)
           </span>
           <span className="flex items-center gap-1">
-            <Cloud className="w-2.5 h-2.5 text-slate-400" />
+            <Cloud className="w-2.5 h-2.5 text-slate-400 shrink-0" />
             Nuvole (10-30% ideale)
           </span>
           <span className="flex items-center gap-1">
-            <Droplets className="w-2.5 h-2.5 text-blue-300" />
+            <Droplets className="w-2.5 h-2.5 text-blue-300 shrink-0" />
             Umidit&agrave; (30-50% ideale)
           </span>
           <span className="flex items-center gap-1">
-            <Gauge className="w-2.5 h-2.5 text-purple-400" />
+            <Gauge className="w-2.5 h-2.5 text-purple-400 shrink-0" />
             Pressione (+1015 hPa ideale)
           </span>
         </div>
