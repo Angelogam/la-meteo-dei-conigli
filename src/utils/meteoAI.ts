@@ -148,7 +148,7 @@ export const generateAiAnalysis = (
   const dewPoint = avgTemp - (100 - avgHumidity) / 5;
 
   // Calcola base nuvole
-  const cloudBase = Math.round(calcCloudBase(avgTemp, dewPoint));
+  const cloudBase = calcCloudBase(avgTemp, dewPoint);
 
   // Calcola zero termico
   const freezingLevel = calcFreezingLevel(avgTemp);
@@ -170,14 +170,14 @@ export const generateAiAnalysis = (
 
   // Profilo termico
   const thermal = `Analisi termica per la giornata:\n\n` +
-    `• Base termica: ${cloudBase}m slm (calcolata da ${Math.round(avgTemp)}°C e dew point ${Math.round(dewPoint)}°C)\n` +
+    `• Base termica: ${cloudBase}m slm (calcolata da ${avgTemp.toFixed(1)}°C e dew point ${dewPoint.toFixed(1)}°C)\n` +
     `• Cima termica prevista: ${thermalTop}m slm\n` +
     `• Zero termico: ${freezingLevel}m\n` +
     `• CAPE stimato: ${cape} J/kg\n\n` +
     thermicDesc(cape, cloudBase, avgTemp) + `\n\n` +
     `• Temperatura superficie: ${Math.round(minTemp)}°C ÷ ${Math.round(maxTemp)}°C (media ${Math.round(avgTemp)}°C)\n` +
     `• Umidità media: ${Math.round(avgHumidity)}%\n\n` +
-    `• ${cloudText(cloudBase, Math.round(avgCloud), thermalTop)}`;
+    `• ${cloudText(Math.round(cloudBase), Math.round(avgCloud), Math.round(thermalTop))}`;
 
   // Venti in quota
   const altitude = `Venti in quota previsti (gradiente +${Math.round(avgWind * 0.3)} km/h per 1000m con rotazione ${Math.round(30)}° oraria):\n\n` +

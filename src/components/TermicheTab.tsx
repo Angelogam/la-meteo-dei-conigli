@@ -1,7 +1,5 @@
 "use client";
 
-import React from "react";
-import { MeteoGram } from "@/components/MeteoGram";
 import type { HourData } from "@/types/meteo";
 import { generaAnalisiReale } from "@/utils/analisi";
 
