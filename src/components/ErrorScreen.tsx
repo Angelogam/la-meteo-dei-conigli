@@ -15,3 +15,5 @@ export const ErrorScreen = ({ message }: ErrorScreenProps) => {
         Riprova
       </button>
     </div>
+  );
+};
