@@ -2,7 +2,7 @@
 
 import React from "react";
 
-type Tab = "meteo" | "venti" | "quota" | "termiche" | "analisi";
+export type Tab = "meteo" | "venti" | "quota" | "termiche" | "analisi";
 
 interface TabNavProps {
   tab: Tab;
@@ -17,7 +17,7 @@ const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: "analisi", label: "Analisi AI", icon: "🤖" },
 ];
 
-const TabNav = ({ tab, onTabChange }: TabNavProps) => {
+export const TabNav = ({ tab, onTabChange }: TabNavProps) => {
   return (
     <div className="flex gap-1 bg-slate-700/70 rounded-xl p-1 border border-slate-600/40 mb-2 overflow-x-auto">
       {tabs.map((t) => (
