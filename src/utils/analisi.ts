@@ -34,7 +34,9 @@ export function genAI(dayData: HourData[], site: Decollo, thermal: any, wp: any[
   if (thermal) {
     th += "* Base nuvole: " + thermal.cloudBase + "m\n* Plafond: " + thermal.thermalTop + "m\n* Delta: " + thermal.delta + " C\n* Soaring Index: " + thermal.soarIdx + "/10\n";
     if (soar >= 7) th += "\nGalleggiamento eccellente!\n"; else if (soar >= 5) th += "\nBuon galleggiamento.\n"; else th += "\nGalleggiamento scarso.\n";
-    thermal.hourly.forEach((h: any) => { th += "* " + String(h.hour).padStart(2, "0") + ":00 -> " + h.intensity + "m/s\n"; });
+    if (thermal.hourly) {
+      thermal.hourly.forEach((h: any) => { th += "* " + String(h.hour).padStart(2, "0") + ":00 -> " + h.intensity + "m/s\n"; });
+    }
   }
 
   let al = "QUOTE E PLAFOND\n\n";
