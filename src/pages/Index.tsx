@@ -59,26 +59,13 @@ async function fetchMeteoCompleta(lat: number, lon: number) {
 function getWeatherIcon(code: number, isDay: number): string {
   const icons: Record<number, string> = {
     0: isDay ? "☀️" : "🌙",
-    1: "🌤️",
-    2: "⛅",
-    3: "☁️",
-    45: "🌫️",
-    48: "🌫️",
-    51: "🌦️",
-    53: "🌧️",
-    55: "🌧️",
-    61: "🌧️",
-    63: "🌧️",
-    65: "🌧️",
-    71: "❄️",
-    73: "❄️",
-    75: "❄️",
-    80: "🌧️",
-    81: "🌧️",
-    82: "⛈️",
-    95: "⛈️",
-    96: "⛈️",
-    99: "⛈️",
+    1: "🌤️", 2: "⛅", 3: "☁️",
+    45: "🌫️", 48: "🌫️",
+    51: "🌦️", 53: "🌧️", 55: "🌧️",
+    61: "🌧️", 63: "🌧️", 65: "🌧️",
+    71: "❄️", 73: "❄️", 75: "❄️",
+    80: "🌧️", 81: "🌧️", 82: "⛈️",
+    95: "⛈️", 96: "⛈️", 99: "⛈️",
   };
   return icons[code] || (isDay ? "☀️" : "🌙");
 }
@@ -131,10 +118,10 @@ function calculateWindShear(profile: ReturnType<typeof getWindAtAltitude>[]) {
   let shearValue = Math.abs(speedShear) + Math.abs(dirShear) * 0.5;
   let description = "";
   let risk = "basso";
-  if (shearValue > 30) { description = "⚠️ SHEAR MOLTO FORTE - Turbolenze significative, volo pericoloso!"; risk = "alto"; }
-  else if (shearValue > 20) { description = "⚡ Shear forte - Possibili turbolenze, richiesta esperienza"; risk = "medio"; }
-  else if (shearValue > 10) { description = "🌀 Shear moderato - Attenzione alle variazioni di vento"; risk = "medio-basso"; }
-  else { description = "✅ Shear basso - Condizioni stabili, volo sicuro"; risk = "basso"; }
+  if (shearValue > 30) { description = "⚠️ SHEAR MOLTO FORTE"; risk = "alto"; }
+  else if (shearValue > 20) { description = "⚡ Shear forte"; risk = "medio"; }
+  else if (shearValue > 10) { description = "🌀 Shear moderato"; risk = "medio-basso"; }
+  else { description = "✅ Shear basso"; risk = "basso"; }
   return { shear: Math.round(shearValue * 10) / 10, speedShear: Math.round(speedShear * 10) / 10, dirShear: Math.round(dirShear * 10) / 10, description, risk, surfaceSpeed: surface.speed, highSpeed: highAlt.speed, surfaceDir: surface.directionName, highDir: highAlt.directionName };
 }
 
@@ -168,7 +155,7 @@ function calculateThermalProfile(dayData: any[], siteElevation = 1500) {
 
 function generateGeneralDescription(dayData: any[], site: any) {
   const temps = dayData.map((h: any) => h.temperature).filter((t: any) => t !== undefined);
-  if (temps.length === 0) return "Dati insufficienti per l'analisi.";
+  if (temps.length === 0) return "Dati insufficienti.";
   const avgTemp = temps.reduce((a: number, b: number) => a + b, 0) / temps.length;
   const maxTemp = Math.max(...temps);
   const minTemp = Math.min(...temps);
@@ -179,36 +166,30 @@ function generateGeneralDescription(dayData: any[], site: any) {
   desc += `🌅 La giornata al decollo di ${site.name} si presenta `;
   if (avgCloud < 30) desc += `con cielo prevalentemente sereno e temperature tra ${Math.round(minTemp)}°C e ${Math.round(maxTemp)}°C (media ${Math.round(avgTemp)}°C). `;
   else if (avgCloud < 60) desc += `con cielo parzialmente nuvoloso e temperature tra ${Math.round(minTemp)}°C e ${Math.round(maxTemp)}°C. `;
-  else desc += `con cielo nuvoloso e temperature fresche tra ${Math.round(minTemp)}°C e ${Math.round(maxTemp)}°C. `;
-  if (maxWind > 25) desc += `💨 Attenzione al vento che raggiungerà ${Math.round(maxWind)} km/h. `;
+  else desc += `con cielo nuvoloso e temperature tra ${Math.round(minTemp)}°C e ${Math.round(maxTemp)}°C. `;
+  if (maxWind > 25) desc += `💨 Vento forte fino a ${Math.round(maxWind)} km/h. `;
   else if (maxWind > 15) desc += `💨 Vento moderato fino a ${Math.round(maxWind)} km/h. `;
   else desc += `💨 Vento debole fino a ${Math.round(maxWind)} km/h. `;
-  if (hasRain) desc += `🌧️ Precipitazioni previste, valutare attentamente. `;
+  if (hasRain) desc += `🌧️ Precipitazioni previste. `;
   else desc += `✅ Nessuna precipitazione prevista. `;
   desc += `📍 Il sito è esposto a ${site.exposure}.`;
   return desc;
 }
 
 function generateThermalAnalysis(dayData: any[], thermalProfile: any, site: any) {
-  if (!thermalProfile) return "Dati insufficienti per l'analisi termica.";
-  const { cloudBase, thermalTop, nbl, verticalIntensity, soarIndex, thermalDelta, avgTemp, avgCloud } = thermalProfile;
-  let desc = `🔥 ANALISI TERMICHE VERTICALI\n\n`;
-  desc += `📊 Dati termici:\n`;
-  desc += `   • Temperatura media: ${Math.round(avgTemp)}°C\n`;
-  desc += `   • Delta termico: ${thermalDelta}°C\n`;
-  desc += `   • Nuvolosità media: ${Math.round(avgCloud)}%\n\n`;
-  desc += `📈 Profilo verticale delle termiche:\n`;
-  desc += `   • Base delle nuvole (Cloud Base): ${cloudBase}m\n`;
-  desc += `   • Plafond termico massimo: ${thermalTop}m\n`;
-  desc += `   • Livello di galleggiamento (NBL): ${nbl}m\n`;
-  desc += `   • Intensità termica verticale: ${verticalIntensity} m/s\n`;
-  desc += `   • Indice di galleggiamento (Soaring Index): ${soarIndex}/10\n\n`;
-  if (soarIndex >= 7) desc += `🪂 **Galleggiamento eccellente!** Condizioni ideali per rimanere in aria a lungo.\n`;
-  else if (soarIndex >= 5) desc += `🪂 **Buon galleggiamento.** Condizioni favorevoli per voli di media durata.\n`;
-  else if (soarIndex >= 3) desc += `🪂 **Galleggiamento limitato.** Voli più brevi, termiche deboli.\n`;
-  else desc += `🪂 **Galleggiamento scarso.** Condizioni difficili per rimanere in quota.\n`;
-  desc += `\n⏰ Sviluppo verticale orario:\n`;
-  thermalProfile.hourlyProfile.forEach((h: any) => { const icon = h.intensity > 2 ? "🔥" : h.intensity > 1 ? "💪" : "🫤"; desc += `   • ${String(h.hour).padStart(2, "0")}:00 → ${icon} intensità ${h.intensity}m/s, base nuvole ${h.cloudBase}m\n`; });
+  if (!thermalProfile) return "Dati insufficienti.";
+  const { cloudBase, thermalTop, nbl, soarIndex, thermalDelta, avgTemp, avgCloud } = thermalProfile;
+  let desc = `🔥 ANALISI TERMICHE\n\n`;
+  desc += `• Temperatura media: ${Math.round(avgTemp)}°C\n`;
+  desc += `• Delta termico: ${thermalDelta}°C\n`;
+  desc += `• Nuvolosità media: ${Math.round(avgCloud)}%\n`;
+  desc += `• Cloud Base: ${cloudBase}m\n`;
+  desc += `• Plafond: ${thermalTop}m\n`;
+  desc += `• NBL: ${nbl}m\n`;
+  desc += `• Soaring Index: ${soarIndex}/10\n\n`;
+  if (soarIndex >= 7) desc += `🪂 Galleggiamento eccellente!\n`;
+  else if (soarIndex >= 5) desc += `🪂 Buon galleggiamento.\n`;
+  else desc += `🪂 Galleggiamento limitato.\n`;
   return desc;
 }
 
@@ -221,116 +202,96 @@ function generateWindAnalysis(dayData: any[], site: any, windProfileData: any) {
   const avgDir = windData.reduce((sum: number, h: any) => sum + h.windDir, 0) / windData.length;
   const dominantDir = getWindDirection(avgDir);
   let desc = `💨 ANALISI DEL VENTO\n\n`;
-  desc += `📊 Vento superficiale (10m):\n`;
-  desc += `   • Velocità media: ${Math.round(avgSpeed)} km/h\n`;
-  desc += `   • Raffica massima: ${Math.round(maxGust)} km/h\n`;
-  desc += `   • Direzione dominante: ${dominantDir}\n`;
+  desc += `• Velocità media: ${Math.round(avgSpeed)} km/h\n`;
+  desc += `• Raffica max: ${Math.round(maxGust)} km/h\n`;
+  desc += `• Direzione: ${dominantDir}\n`;
   const expDirs = site.exposure.split("/").map((d: string) => d.trim());
-  const isFav = expDirs.some((exp: string) => dominantDir === exp || dominantDir === exp + "E" || dominantDir === exp + "W");
-  desc += `   • Rispetto al sito: ${isFav ? "✅ Favorevole" : "⚠️ Non favorevole"}\n\n`;
-  if (windProfileData) { const shear = calculateWindShear(windProfileData); desc += `📊 Profilo vento completo (400m - 4000m):\n`; desc += `   • Shear calcolato: ${shear.shear}\n`; desc += `   • Variazione velocità: ${shear.speedShear} km/h\n`; desc += `   • Variazione direzione: ${shear.dirShear}°\n`; desc += `   • ${shear.description}\n`; }
+  const isFav = expDirs.some((exp: string) => dominantDir === exp || dominantDir.startsWith(exp));
+  desc += `• Favorevole: ${isFav ? "✅" : "⚠️"}\n`;
+  if (windProfileData) { const shear = calculateWindShear(windProfileData); desc += `• Shear: ${shear.description}\n`; }
   return desc;
 }
 
 function generateAltitudeAnalysis(dayData: any[], thermalProfile: any, site: any) {
-  if (!thermalProfile) return "Dati insufficienti per l'analisi delle quote.";
-  const { cloudBase, thermalTop, nbl, soarIndex, thermalDelta } = thermalProfile;
-  let desc = `🏔️ ANALISI QUOTE E PLAFOND\n\n`;
-  desc += `📊 Quote stimate:\n`;
-  desc += `   • Base decollo: ${site.altitude || 1500}m\n`;
-  desc += `   • Base delle nuvole: ${cloudBase}m\n`;
-  desc += `   • Plafond termico massimo: ${thermalTop}m\n`;
-  desc += `   • Livello di galleggiamento: ${nbl}m\n`;
-  desc += `   • Delta termico: ${thermalDelta}°C\n\n`;
-  if (soarIndex >= 7 && thermalTop > 3000) desc += `✅ **Cross Country:** ⭐ Eccellente! Termiche forti e plafond elevato.\n`;
-  else if (soarIndex >= 5 && thermalTop > 2500) desc += `👍 **Cross Country:** Buone condizioni per voli di distanza.\n`;
-  else if (soarIndex >= 3) desc += `🫤 **Cross Country:** Condizioni limitate.\n`;
-  else desc += `❌ **Cross Country:** Sconsigliato, termiche deboli.\n`;
+  if (!thermalProfile) return "Dati insufficienti.";
+  const { cloudBase, thermalTop, soarIndex } = thermalProfile;
+  let desc = `🏔️ QUOTE\n\n`;
+  desc += `• Base decollo: ${site.altitude || 1500}m\n`;
+  desc += `• Cloud Base: ${cloudBase}m\n`;
+  desc += `• Plafond: ${thermalTop}m\n`;
+  if (soarIndex >= 5 && thermalTop > 2500) desc += `✅ Buono per cross.\n`;
+  else desc += `❌ Cross limitato.\n`;
   return desc;
 }
 
 function generateFlightAdvice(dayData: any[], site: any, thermalProfile: any, windProfileData: any) {
-  if (dayData.length === 0) return "Dati insufficienti per i consigli di volo.";
+  if (dayData.length === 0) return "Dati insufficienti.";
   const maxWind = Math.max(...dayData.map((h: any) => h.windSpeed));
   const maxGust = Math.max(...dayData.map((h: any) => h.windGust));
-  const avgCloud = dayData.reduce((sum: number, h: any) => sum + h.cloudCover, 0) / dayData.length;
   const hasRain = dayData.some((h: any) => h.precipitation > 0.5);
   const soarIndex = thermalProfile?.soarIndex || 0;
   let riskScore = 0;
   if (maxWind > 25) riskScore += 2;
   if (maxGust > 35) riskScore += 2;
-  if (avgCloud > 80) riskScore += 1;
   if (hasRain) riskScore += 2;
   if (soarIndex < 3) riskScore += 1;
-  if (windProfileData) { const shear = calculateWindShear(windProfileData); if (shear.risk === "alto") riskScore += 2; else if (shear.risk === "medio") riskScore += 1; }
-  let desc = `💡 CONSIGLI PER IL VOLO\n\n`;
-  desc += `📊 Valutazione del rischio: `;
-  if (riskScore >= 5) desc += `🔴 ALTO - Condizioni pericolose, sconsigliato volare.\n`;
-  else if (riskScore >= 3) desc += `🟡 MEDIO - Condizioni impegnative.\n`;
+  if (windProfileData) { const shear = calculateWindShear(windProfileData); if (shear.risk === "alto") riskScore += 2; else if (shear.risk !== "basso") riskScore += 1; }
+  let desc = `💡 CONSIGLI\n\n`;
+  if (riskScore >= 5) desc += `🔴 ALTO - Volo sconsigliato.\n`;
+  else if (riskScore >= 3) desc += `🟡 MEDIO - Valutare.\n`;
   else desc += `🟢 BASSO - Condizioni favorevoli.\n`;
-  desc += `\n📌 Consigli specifici:\n`;
-  if (maxWind > 25) desc += `   • ⚠️ VENTO FORTE (>25 km/h): Volo sconsigliato.\n`;
-  else if (maxWind > 18) desc += `   • ⚠️ Vento sostenuto (18-25 km/h).\n`;
-  else if (maxWind < 5) desc += `   • 💨 Vento debole (<5 km/h): Possibili difficoltà di decollo.\n`;
-  else desc += `   • ✅ Vento ideale (5-18 km/h).\n`;
-  if (soarIndex >= 7) desc += `   • 🔥 Termiche forti: Ottime per cross.\n`;
-  else if (soarIndex >= 5) desc += `   • 💪 Termiche medie: Buona attività.\n`;
-  else desc += `   • 🫤 Termiche deboli: Voli locali.\n`;
-  desc += `\n🎯 Consiglio finale: `;
-  if (riskScore < 3 && !hasRain && maxWind < 22) desc += `Condizioni favorevoli! Divertiti! 🪂\n`;
-  else if (riskScore < 5) desc += `Valuta attentamente. ⚠️\n`;
-  else desc += `Sconsigliato volare oggi. ❌\n`;
+  if (maxWind > 25) desc += `• ⚠️ Vento troppo forte.\n`;
+  else if (maxWind < 5) desc += `• 💨 Vento debole.\n`;
+  else desc += `• ✅ Vento ideale.\n`;
+  if (soarIndex >= 7) desc += `• 🔥 Termiche forti.\n`;
+  else if (soarIndex >= 5) desc += `• 💪 Termiche medie.\n`;
+  else desc += `• 🫤 Termiche deboli.\n`;
+  if (riskScore < 3 && !hasRain && maxWind < 22) desc += `🎯 Divertiti! 🪂\n`;
+  else if (riskScore >= 5) desc += `🎯 Sconsigliato oggi. ❌\n`;
+  else desc += `🎯 Valuta attentamente. ⚠️\n`;
   return desc;
 }
 
 function generateHourlyBreakdown(dayData: any[], thermalProfile: any) {
   if (dayData.length === 0) return "Dati insufficienti.";
-  let desc = `⏰ SVOLGIMENTO DELLA GIORNATA (9:00 - 19:00)\n\n`;
+  let desc = `⏰ SVOLGIMENTO ORARIO\n\n`;
   for (let hour = 9; hour <= 19; hour++) {
     const data = dayData.find((h: any) => h.time.getHours() === hour);
     if (!data) continue;
-    const weatherIcon = getWeatherIcon(data.weatherCode || 0, data.isDay);
+    const wi = getWeatherIcon(data.weatherCode || 0, data.isDay);
     const cloud = getCloudCondition(data.cloudCover);
-    const windDir = getWindDirection(data.windDir);
+    const wd = getWindDirection(data.windDir);
     const profile = thermalProfile?.hourlyProfile?.find((h: any) => h.hour === hour);
     const intensity = profile ? profile.intensity : 0;
-    const cloudBase = profile ? profile.cloudBase : "--";
-    desc += `🕐 ${String(hour).padStart(2, "0")}:00 ${weatherIcon} ${Math.round(data.temperature)}°C\n`;
-    desc += `   • Vento: ${getWindArrow(data.windDir)} ${Math.round(data.windSpeed)} km/h (${windDir})\n`;
-    desc += `   • Nuvolosità: ${cloud.icon} ${Math.round(data.cloudCover)}%\n`;
-    desc += `   • Termiche: 🔥 intensità ${intensity}m/s, base ${cloudBase}m\n`;
-    if (data.precipitation > 0.5) desc += `   • 🌧️ Pioggia: ${Math.round(data.precipitation)} mm/h\n`;
-    if (hour < 19) desc += `\n`;
+    const cb = profile ? profile.cloudBase : "--";
+    desc += `${String(hour).padStart(2, "0")}:00 ${wi} ${Math.round(data.temperature)}°C\n`;
+    desc += `   Vento: ${getWindArrow(data.windDir)} ${Math.round(data.windSpeed)} km/h ${wd}\n`;
+    desc += `   Nuvole: ${cloud.icon} ${Math.round(data.cloudCover)}%\n`;
+    desc += `   Termiche: intensità ${intensity}m/s, base ${cb}m\n`;
+    if (data.precipitation > 0.5) desc += `   🌧️ ${Math.round(data.precipitation)} mm/h\n`;
   }
   return desc;
 }
 
 function generatePressureAnalysis(dayData: any[]) {
   const pressures = dayData.filter((h: any) => h.pressure !== undefined).map((h: any) => h.pressure);
-  if (pressures.length === 0) return "Dati pressione non disponibili.";
-  const avgPressure = pressures.reduce((a: number, b: number) => a + b, 0) / pressures.length;
-  const maxPressure = Math.max(...pressures);
-  const minPressure = Math.min(...pressures);
+  if (pressures.length === 0) return "Dati non disponibili.";
+  const avgP = pressures.reduce((a: number, b: number) => a + b, 0) / pressures.length;
   const trend = pressures[pressures.length - 1] - pressures[0];
-  let desc = `📊 ANALISI PRESSIONE\n\n`;
-  desc += `   • Pressione media: ${Math.round(avgPressure)} hPa\n`;
-  desc += `   • Minima: ${Math.round(minPressure)} hPa\n`;
-  desc += `   • Massima: ${Math.round(maxPressure)} hPa\n`;
-  desc += `   • Trend: ${trend > 0 ? "⬆️ In aumento" : trend < 0 ? "⬇️ In diminuzione" : "➡️ Stabile"}\n`;
-  if (trend < -3) desc += `   ⚠️ Pressione in rapida diminuzione - possibile peggioramento meteo!\n`;
-  else if (trend > 3) desc += `   ✅ Pressione in aumento - miglioramento meteo in arrivo.\n`;
+  let desc = `📊 PRESSIONE\n\n`;
+  desc += `• Media: ${Math.round(avgP)} hPa\n`;
+  desc += `• Trend: ${trend > 0 ? "⬆️" : trend < 0 ? "⬇️" : "➡️"}\n`;
   return desc;
 }
 
 function generateThunderstormAlert(dayData: any[]) {
-  const hasThunderstorm = dayData.some((h: any) => h.weatherCode >= 95 && h.weatherCode <= 99);
+  const hasThunderstorm = dayData.some((h: any) => h.weatherCode >= 95);
   const hasRain = dayData.some((h: any) => h.precipitation > 0.5);
   const cloudCover = dayData.reduce((sum: number, h: any) => sum + h.cloudCover, 0) / dayData.length;
-  let desc = `⛈️ ALLERTA TEMPORALI\n\n`;
-  if (hasThunderstorm) { desc += `🔴 **ALLERTA TEMPORALI IN CORSO!**\n`; desc += `   • Temporali previsti nella giornata.\n`; desc += `   • VOLO SCONSIGLIATO - Pericolo di fulmini e turbolenze!\n`; }
-  else if (hasRain && cloudCover > 70) { desc += `🟡 ATTENZIONE: Possibili temporali nelle ore centrali.\n`; desc += `   • Monitorare l'evoluzione delle nuvole.\n`; desc += `   • Prepararsi ad un eventuale rientro anticipato.\n`; }
-  else if (cloudCover > 60) { desc += `🟢 Nessun temporale previsto.\n`; desc += `   • Nuvolosità significativa ma senza temporali.\n`; }
-  else { desc += `✅ Nessun temporale previsto.\n`; desc += `   • Cielo sereno o poco nuvoloso.\n`; }
+  let desc = `⛈️ TEMPORALI\n\n`;
+  if (hasThunderstorm) desc += `🔴 ALLERTA! Temporali in corso. Volo sconsigliato!\n`;
+  else if (hasRain && cloudCover > 70) desc += `🟡 Possibili temporali pomeridiani.\n`;
+  else desc += `✅ Nessun rischio.\n`;
   return desc;
 }
 
@@ -348,9 +309,9 @@ function generateAIAnalysis(dayData: any[], site: any, thermalProfile: any, wind
   };
 }
 
-/* ============================
-   STILI
-   ============================ */
+// ============================================================
+// STILI
+// ============================================================
 
 const s = {
   app: {
@@ -384,7 +345,7 @@ const s = {
   loadingSub: { marginTop: "10px", fontSize: "clamp(0.8rem, 3vw, 1rem)" as any, color: "#888", textAlign: "center" as const },
   errorFull: { display: "flex", flexDirection: "column" as const, alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "linear-gradient(135deg, #0a0e27, #1a1a3e)", color: "#eee", padding: "20px" },
   errorText: { color: "#ff6b6b", fontSize: "clamp(1rem, 4vw, 1.2rem)" as any, marginBottom: "20px", textAlign: "center" as const },
-  retryButton: { background: "#ff6b6b", color: "#fff", border: "none", padding: "12px 30px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "clamp(0.9rem, 3vw, 1rem)" as any, transition: "all 0.3s ease" },
+  retryButton: { background: "#ff6b6b", color: "#fff", border: "none", padding: "12px 30px", borderRadius: "8px", cursor: "pointer", fontWeight: 600, fontSize: "clamp(0.9rem, 3vw, 1rem)" as any },
   header: { textAlign: "center" as const, marginBottom: "clamp(15px, 3vw, 30px)" as any, padding: "clamp(10px, 2vw, 20px) 0" as any, borderBottom: "1px solid rgba(255, 255, 255, 0.08)" },
   logoContainer: { display: "flex", alignItems: "center", justifyContent: "center", gap: "clamp(8px, 2vw, 12px)" as any, flexWrap: "wrap" as const },
   logoRabbit: { fontSize: "clamp(2rem, 6vw, 2.8rem)" as any },
@@ -396,31 +357,9 @@ const s = {
   sectionTitle: { fontSize: "clamp(1rem, 3vw, 1.2rem)" as any, marginBottom: "15px", color: "#ff6b6b", fontWeight: 600 },
   cardList: { overflowY: "auto" as const, height: "calc(100% - 50px)", paddingRight: "5px" },
   right: { background: "rgba(255, 255, 255, 0.05)", padding: "clamp(12px, 2vw, 20px)" as any, borderRadius: "16px", border: "1px solid rgba(255, 255, 255, 0.08)", maxHeight: "calc(100vh - 200px)", overflowY: "auto" as const },
-  tabContainer: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "5px", marginBottom: "<dyad-write path="src/pages/Index.tsx" description="Completamento del file Index.tsx con stili e componente App">
-
-  tab: {
-    padding: "8px 4px",
-    borderRadius: "8px",
-    border: "1px solid rgba(255, 255, 255, 0.08)",
-    background: "transparent",
-    color: "#fff",
-    cursor: "pointer",
-    fontSize: "clamp(0.6rem, 1.5vw, 0.85rem)" as any,
-    transition: "all 0.3s ease",
-    fontWeight: 500,
-    textAlign: "center" as const,
-  },
-  card: {
-    background: "rgba(255, 255, 255, 0.03)",
-    border: "1px solid rgba(255, 255, 255, 0.08)",
-    borderRadius: "12px",
-    padding: "clamp(10px, 1.5vw, 14px)" as any,
-    marginBottom: "10px",
-    cursor: "pointer",
-    textAlign: "left" as const,
-    width: "100%",
-    transition: "all 0.3s ease",
-  },
+  tabContainer: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "5px", marginBottom: "15px" },
+  tab: { padding: "8px 4px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.08)", background: "transparent", color: "#fff", cursor: "pointer", fontSize: "clamp(0.6rem, 1.5vw, 0.85rem)" as any, transition: "all 0.3s ease", fontWeight: 500, textAlign: "center" as const },
+  card: { background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "12px", padding: "clamp(10px, 1.5vw, 14px)" as any, marginBottom: "10px", cursor: "pointer", textAlign: "left" as const, width: "100%", transition: "all 0.3s ease" },
   cardTop: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" },
   cardTitle: { fontSize: "clamp(0.85rem, 2vw, 1rem)" as any, fontWeight: "bold", color: "#fff" },
   cardWeather: { fontSize: "clamp(1rem, 2.5vw, 1.4rem)" as any },
@@ -436,7 +375,7 @@ const s = {
   weatherIconNow: { fontSize: "clamp(1.6rem, 4vw, 2.2rem)" as any },
   tempNow: { fontSize: "clamp(1.2rem, 3vw, 1.6rem)" as any, fontWeight: "bold" },
   daySelector: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "15px" },
-  dayButton: { background: "rgba(255, 255, 255, 0.05)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "12px", padding: "clamp(8px, 1.5vw, 12px)" as any, cursor: "pointer", textAlign: "center" as const, transition: "all 0.3s ease" },
+  dayButton: { background: "rgba(255, 255, 255, 0.05)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "12px", padding: "clamp(8px, 1.5vw, 12px)" as any, cursor: "pointer", textAlign: "center" as const },
   dayName: { fontSize: "clamp(0.7rem, 1.8vw, 0.9rem)" as any, fontWeight: "bold", color: "#fff" },
   dayWeatherIcon: { fontSize: "clamp(1.2rem, 3vw, 1.8rem)" as any, marginTop: "2px" },
   dayTemp: { fontSize: "clamp(0.9rem, 2vw, 1.1rem)" as any, color: "#ff6b6b", marginTop: "2px", fontWeight: 600 },
@@ -446,6 +385,7 @@ const s = {
   hourLabel: { fontSize: "clamp(0.7rem, 2vw, 0.9rem)" as any, color: "#888", fontWeight: 500 },
   hourSlider: { flex: 1, accentColor: "#ff6b6b", height: "4px", minWidth: "80px" },
   hourValue: { fontSize: "clamp(0.7rem, 2vw, 0.9rem)" as any, fontWeight: "bold", color: "#fff", minWidth: "45px", textAlign: "center" as const },
+  meteoGrid: { display: "grid",<dyad-write path="src/pages/Index.tsx" description="Continuazione del file Index.tsx dal punto in cui era stato interrotto">
   meteoGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "8px", marginBottom: "15px" },
   meteoCard: { background: "rgba(0, 0, 0, 0.3)", padding: "clamp(8px, 1.5vw, 12px)" as any, borderRadius: "10px", border: "1px solid rgba(255, 255, 255, 0.05)" },
   meteoLabel: { fontSize: "clamp(0.6rem, 1.5vw, 0.75rem)" as any, color: "#888", marginBottom: "2px", fontWeight: 500 },
@@ -531,7 +471,6 @@ export default function App() {
         setMeteoData(data);
       } catch (err: any) {
         setError("Errore nel caricamento dei dati meteo");
-        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -582,14 +521,18 @@ export default function App() {
   const enrichedDailyData = useMemo(() => {
     if (!meteoData || !meteoData.daily) return [];
     return meteoData.daily.map((day: any, index: number) => {
-      const dayHours = meteoData.hourly.filter((h: any) => h.time.getDate() === day.date.getDate() && h.time.getMonth() === day.date.getMonth());
+      const dayHours = meteoData.hourly.filter(
+        (h: any) => h.time.getDate() === day.date.getDate() && h.time.getMonth() === day.date.getMonth()
+      );
       const temps = dayHours.map((h: any) => h.temperature).filter((t: any) => t !== undefined && t !== null);
       const delta = temps.length > 0 ? Math.round(Math.max(...temps) - Math.min(...temps)) : 0;
       return { ...day, thermalDelta: delta, dayIndex: index };
     });
   }, [meteoData]);
 
-  const dateLabels = enrichedDailyData.map((d: any) => d.date.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" }));
+  const dateLabels = enrichedDailyData.map((d: any) =>
+    d.date.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" })
+  );
   const hoursRange = Array.from({ length: 11 }, (_, i) => i + 9);
 
   const getPressureGradient = () => {
@@ -598,8 +541,8 @@ export default function App() {
     const last = dayData[dayData.length - 1].pressure;
     const gradient = last - first;
     let description = "";
-    if (gradient > 3) description = "⬆️ Pressione in aumento - miglioramento";
-    else if (gradient < -3) description = "⬇️ Pressione in diminuzione - peggioramento";
+    if (gradient > 3) description = "⬆️ Pressione in aumento";
+    else if (gradient < -3) description = "⬇️ Pressione in diminuzione";
     else description = "➡️ Pressione stabile";
     return { gradient: Math.round(gradient * 10) / 10, description };
   };
@@ -639,17 +582,36 @@ export default function App() {
           <h2 style={s.sectionTitle}>📍 Decolli</h2>
           <div style={s.cardList}>
             {DECOLLI.map((d) => (
-              <button key={d.id} onClick={() => setSelected(d.id)} style={{ ...s.card, borderColor: d.id === selected ? "#ff6b6b" : "rgba(255,255,255,0.08)", background: d.id === selected ? "rgba(255,107,107,0.15)" : "rgba(255,255,255,0.03)" }}>
+              <button
+                key={d.id}
+                onClick={() => setSelected(d.id)}
+                style={{
+                  ...s.card,
+                  borderColor: d.id === selected ? "#ff6b6b" : "rgba(255,255,255,0.08)",
+                  background: d.id === selected ? "rgba(255,107,107,0.15)" : "rgba(255,255,255,0.03)",
+                }}
+              >
                 <div style={s.cardTop}>
                   <div style={s.cardTitle}>{d.name}</div>
-                  <div style={s.cardWeather}>{currentData && d.id === selected ? getWeatherIcon(currentData.weatherCode || 0, currentData.isDay) : <span style={s.cardWeatherPlaceholder}>☁️</span>}</div>
+                  <div style={s.cardWeather}>
+                    {currentData && d.id === selected
+                      ? getWeatherIcon(currentData.weatherCode || 0, currentData.isDay)
+                      : <span style={s.cardWeatherPlaceholder}>☁️</span>}
+                  </div>
                 </div>
                 <div style={s.cardDetails}>
                   <span style={s.cardSmall}>{d.valley}</span>
                   <span style={s.cardSmall}>{d.exposure}</span>
                 </div>
                 <div style={s.cardBadges}>
-                  <span style={{ ...s.badge, background: d.difficulty <= 2 ? "#4caf50" : d.difficulty <= 3 ? "#ff9800" : "#f44336" }}>{d.difficulty <= 2 ? "🟢 Facile" : d.difficulty <= 3 ? "🟡 Medio" : "🔴 Difficile"}</span>
+                  <span
+                    style={{
+                      ...s.badge,
+                      background: d.difficulty <= 2 ? "#4caf50" : d.difficulty <= 3 ? "#ff9800" : "#f44336",
+                    }}
+                  >
+                    {d.difficulty <= 2 ? "🟢 Facile" : d.difficulty <= 3 ? "🟡 Medio" : "🔴 Difficile"}
+                  </span>
                   <span style={{ ...s.badge, background: "#2196f3" }}>{d.altitude || "N/D"}m</span>
                 </div>
               </button>
@@ -663,18 +625,35 @@ export default function App() {
               <div style={s.siteHeader}>
                 <div>
                   <h2 style={s.siteName}>{site.name}</h2>
-                  <span style={s.siteInfo}>{site.exposure} • {site.valley} • {site.altitude || "N/D"}m</span>
+                  <span style={s.siteInfo}>
+                    {site.exposure} • {site.valley} • {site.altitude || "N/D"}m
+                  </span>
                 </div>
                 <div style={s.weatherNow}>
-                  <span style={s.weatherIconNow}>{getWeatherIcon(currentData.weatherCode || 0, currentData.isDay)}</span>
+                  <span style={s.weatherIconNow}>
+                    {getWeatherIcon(currentData.weatherCode || 0, currentData.isDay)}
+                  </span>
                   <span style={s.tempNow}>{Math.round(currentData.temperature)}°C</span>
                 </div>
               </div>
 
               <div style={s.tabContainer}>
-                {(["meteo","venti","termiche","analisi"] as const).map((tabKey) => (
-                  <button key={tabKey} style={{ ...s.tab, background: activeTab === tabKey ? "rgba(255,107,107,0.2)" : "transparent" }} onClick={() => setActiveTab(tabKey)}>
-                    {tabKey === "meteo" ? "🌤️ Meteo" : tabKey === "venti" ? "💨 Venti" : tabKey === "termiche" ? "🔥 Termiche" : "🤖 Analisi"}
+                {(["meteo", "venti", "termiche", "analisi"] as const).map((tabKey) => (
+                  <button
+                    key={tabKey}
+                    style={{
+                      ...s.tab,
+                      background: activeTab === tabKey ? "rgba(255,107,107,0.2)" : "transparent",
+                    }}
+                    onClick={() => setActiveTab(tabKey)}
+                  >
+                    {tabKey === "meteo"
+                      ? "🌤️ Meteo"
+                      : tabKey === "venti"
+                      ? "💨 Venti"
+                      : tabKey === "termiche"
+                      ? "🔥 Termiche"
+                      : "🤖 Analisi"}
                   </button>
                 ))}
               </div>
@@ -683,51 +662,183 @@ export default function App() {
                 <>
                   <div style={s.daySelector}>
                     {enrichedDailyData.map((day: any, index: number) => (
-                      <button key={index} onClick={() => { setSelectedDay(index); setSelectedHour(12); }} style={{ ...s.dayButton, background: selectedDay === index ? "rgba(255,107,107,0.2)" : "rgba(255,255,255,0.05)", borderColor: selectedDay === index ? "#ff6b6b" : "rgba(255,255,255,0.1)" }}>
+                      <button
+                        key={index}
+                        onClick={() => {
+                          setSelectedDay(index);
+                          setSelectedHour(12);
+                        }}
+                        style={{
+                          ...s.dayButton,
+                          background:
+                            selectedDay === index ? "rgba(255,107,107,0.2)" : "rgba(255,255,255,0.05)",
+                          borderColor:
+                            selectedDay === index ? "#ff6b6b" : "rgba(255,255,255,0.1)",
+                        }}
+                      >
                         <div style={s.dayName}>{dateLabels[index]}</div>
-                        <div style={s.dayWeatherIcon}>{getWeatherIcon(day.weatherCode, true)}</div>
-                        <div style={s.dayTemp}>{Math.round(day.tempMax)}°/{Math.round(day.tempMin)}°</div>
+                        <div style={s.dayWeatherIcon}>
+                          {getWeatherIcon(day.weatherCode, 1)}
+                        </div>
+                        <div style={s.dayTemp}>
+                          {Math.round(day.tempMax)}°/{Math.round(day.tempMin)}°
+                        </div>
                         <div style={s.dayDelta}>Δ{day.thermalDelta}°C</div>
-                        <div style={s.dayRain}>{day.precipitationSum > 0 ? `🌧️ ${Math.round(day.precipitationSum)}mm` : "☀️"}</div>
+                        <div style={s.dayRain}>
+                          {day.precipitationSum > 0
+                            ? `🌧️ ${Math.round(day.precipitationSum)}mm`
+                            : "☀️"}
+                        </div>
                       </button>
                     ))}
                   </div>
 
                   <div style={s.hourSelector}>
                     <label style={s.hourLabel}>⏰ Ora:</label>
-                    <input type="range" min="9" max="19" value={selectedHour} onChange={(e) => setSelectedHour(parseInt(e.target.value))} style={s.hourSlider} />
-                    <span style={s.hourValue}>{String(selectedHour).padStart(2, "0")}:00</span>
+                    <input
+                      type="range"
+                      min="9"
+                      max="19"
+                      value={selectedHour}
+                      onChange={(e) => setSelectedHour(parseInt(e.target.value))}
+                      style={s.hourSlider}
+                    />
+                    <span style={s.hourValue}>
+                      {String(selectedHour).padStart(2, "0")}:00
+                    </span>
                   </div>
 
                   <div style={s.meteoGrid}>
-                    <div style={s.meteoCard}><div style={s.meteoLabel}>🌡️ Temperatura</div><div style={s.meteoValue}>{Math.round(currentData.temperature)}°C</div><div style={s.meteoSub}>Δ {thermalProfile?.thermalDelta || 0}°C</div></div>
-                    <div style={s.meteoCard}><div style={s.meteoLabel}>💧 Umidità</div><div style={s.meteoValue}>{Math.round(currentData.humidity)}%</div><div style={s.meteoSub}>Rugiada {Math.round(currentData.dewPoint)}°C</div></div>
-                    <div style={s.meteoCard}><div style={s.meteoLabel}>☁️ Nuvolosità</div><div style={s.meteoValue}>{Math.round(currentData.cloudCover)}%</div><div style={s.meteoSub}>{getCloudCondition(currentData.cloudCover).icon} {getCloudCondition(currentData.cloudCover).text}</div></div>
-                    <div style={s.meteoCard}><div style={s.meteoLabel}>🌧️ Precipitazioni</div><div style={s.meteoValue}>{currentData.precipitation === 0 ? "✅ Assenti" : `${currentData.precipitation} mm`}</div><div style={s.meteoSub}>{currentData.precipitation === 0 ? "Ideale" : "⚠️ Pioggia"}</div></div>
-                    <div style={s.meteoCard}><div style={s.meteoLabel}>🏔️ Base Nuvole</div><div style={s.meteoValue}>{thermalProfile?.cloudBase ? `${thermalProfile.cloudBase}m` : "--"}</div><div style={s.meteoSub}>Cloud Base</div></div>
-                    <div style={s.meteoCard}><div style={s.meteoLabel}>📈 Plafond</div><div style={s.meteoValue}>{thermalProfile?.thermalTop ? `${thermalProfile.thermalTop}m` : "--"}</div><div style={s.meteoSub}>Thermal Top</div></div>
-                    <div style={s.meteoCard}><div style={s.meteoLabel}>🪂 Galleggiamento</div><div style={s.meteoValue}>{thermalProfile?.soarIndex ? `${thermalProfile.soarIndex}/10` : "--"}</div><div style={s.meteoSub}>Soaring Index</div></div>
-                    <div style={s.meteoCard}><div style={s.meteoLabel}>💨 Vento</div><div style={s.meteoValue}>{getWindArrow(currentData.windDir)} {Math.round(currentData.windSpeed)} km/h</div><div style={s.meteoSub}>{getWindDirection(currentData.windDir)} • ⚡{Math.round(currentData.windGust)} km/h</div></div>
+                    <div style={s.meteoCard}>
+                      <div style={s.meteoLabel}>🌡️ Temperatura</div>
+                      <div style={s.meteoValue}>
+                        {Math.round(currentData.temperature)}°C
+                      </div>
+                      <div style={s.meteoSub}>
+                        Δ {thermalProfile?.thermalDelta || 0}°C
+                      </div>
+                    </div>
+                    <div style={s.meteoCard}>
+                      <div style={s.meteoLabel}>💧 Umidità</div>
+                      <div style={s.meteoValue}>
+                        {Math.round(currentData.humidity)}%
+                      </div>
+                      <div style={s.meteoSub}>
+                        Rugiada {Math.round(currentData.dewPoint)}°C
+                      </div>
+                    </div>
+                    <div style={s.meteoCard}>
+                      <div style={s.meteoLabel}>☁️ Nuvolosità</div>
+                      <div style={s.meteoValue}>
+                        {Math.round(currentData.cloudCover)}%
+                      </div>
+                      <div style={s.meteoSub}>
+                        {getCloudCondition(currentData.cloudCover).icon}{" "}
+                        {getCloudCondition(currentData.cloudCover).text}
+                      </div>
+                    </div>
+                    <div style={s.meteoCard}>
+                      <div style={s.meteoLabel}>🌧️ Precipitazioni</div>
+                      <div style={s.meteoValue}>
+                        {currentData.precipitation === 0
+                          ? "✅ Assenti"
+                          : `${currentData.precipitation} mm`}
+                      </div>
+                      <div style={s.meteoSub}>
+                        {currentData.precipitation === 0 ? "Ideale" : "⚠️ Pioggia"}
+                      </div>
+                    </div>
+                    <div style={s.meteoCard}>
+                      <div style={s.meteoLabel}>🏔️ Base Nuvole</div>
+                      <div style={s.meteoValue}>
+                        {thermalProfile?.cloudBase
+                          ? `${thermalProfile.cloudBase}m`
+                          : "--"}
+                      </div>
+                      <div style={s.meteoSub}>Cloud Base</div>
+                    </div>
+                    <div style={s.meteoCard}>
+                      <div style={s.meteoLabel}>📈 Plafond</div>
+                      <div style={s.meteoValue}>
+                        {thermalProfile?.thermalTop
+                          ? `${thermalProfile.thermalTop}m`
+                          : "--"}
+                      </div>
+                      <div style={s.meteoSub}>Thermal Top</div>
+                    </div>
+                    <div style={s.meteoCard}>
+                      <div style={s.meteoLabel}>🪂 Galleggiamento</div>
+                      <div style={s.meteoValue}>
+                        {thermalProfile?.soarIndex
+                          ? `${thermalProfile.soarIndex}/10`
+                          : "--"}
+                      </div>
+                      <div style={s.meteoSub}>Soaring Index</div>
+                    </div>
+                    <div style={s.meteoCard}>
+                      <div style={s.meteoLabel}>💨 Vento</div>
+                      <div style={s.meteoValue}>
+                        {getWindArrow(currentData.windDir)}{" "}
+                        {Math.round(currentData.windSpeed)} km/h
+                      </div>
+                      <div style={s.meteoSub}>
+                        {getWindDirection(currentData.windDir)} • ⚡
+                        {Math.round(currentData.windGust)} km/h
+                      </div>
+                    </div>
                   </div>
 
                   <div style={s.pressureSection}>
                     <h3 style={s.windTitle}>📊 Pressione e Gradiente</h3>
                     <div style={s.pressureGrid}>
-                      <div style={s.pressureCard}><div style={s.pressureLabel}>Pressione attuale</div><div style={s.pressureValue}>{Math.round(currentData.pressure)} hPa</div></div>
+                      <div style={s.pressureCard}>
+                        <div style={s.pressureLabel}>Pressione attuale</div>
+                        <div style={s.pressureValue}>
+                          {Math.round(currentData.pressure)} hPa
+                        </div>
+                      </div>
                       <div style={s.pressureCard}>
                         <div style={s.pressureLabel}>Gradiente</div>
-                        <div style={{ ...s.pressureValue, color: getPressureGradient().gradient > 0 ? "#4caf50" : getPressureGradient().gradient < 0 ? "#f44336" : "#ffd93d" }}>
-                          {getPressureGradient().gradient > 0 ? "⬆️" : getPressureGradient().gradient < 0 ? "⬇️" : "➡️"} {Math.abs(getPressureGradient().gradient)} hPa
+                        <div
+                          style={{
+                            ...s.pressureValue,
+                            color:
+                              getPressureGradient().gradient > 0
+                                ? "#4caf50"
+                                : getPressureGradient().gradient < 0
+                                ? "#f44336"
+                                : "#ffd93d",
+                          }}
+                        >
+                          {getPressureGradient().gradient > 0
+                            ? "⬆️"
+                            : getPressureGradient().gradient < 0
+                            ? "⬇️"
+                            : "➡️"}{" "}
+                          {Math.abs(getPressureGradient().gradient)} hPa
                         </div>
-                        <div style={s.pressureSub}>{getPressureGradient().description}</div>
+                        <div style={s.pressureSub}>
+                          {getPressureGradient().description}
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {aiAnalysis?.thunderstorm && (
                     <div style={s.thunderstormSection}>
-                      <div style={aiAnalysis.thunderstorm.includes("ALLERTA") ? s.thunderstormAlert : s.thunderstormSafe}>
-                        <div style={s.aiTextWhite} dangerouslySetInnerHTML={{ __html: aiAnalysis.thunderstorm.replace(/\n/g, "<br/>") }} />
+                      <div
+                        style={
+                          aiAnalysis.thunderstorm.includes("ALLERTA")
+                            ? s.thunderstormAlert
+                            : s.thunderstormSafe
+                        }
+                      >
+                        <div
+                          style={s.aiTextWhite}
+                          dangerouslySetInnerHTML={{
+                            __html: aiAnalysis.thunderstorm.replace(/\n/g, "<br/>"),
+                          }}
+                        />
                       </div>
                     </div>
                   )}
@@ -739,48 +850,151 @@ export default function App() {
                   <div style={s.windSection}>
                     <h3 style={s.windTitle}>💨 Vento a differenti quote</h3>
                     <div style={s.windGrid}>
-                      <div style={s.windCard}><div style={s.windLabel}>10 m (superficie)</div><div style={s.windValue}>{getWindArrow(currentData.windDir)} {Math.round(currentData.windSpeed)} km/h</div><div style={s.windDir}>{getWindDirection(currentData.windDir)}</div><div style={s.windGustSmall}>⚡ {Math.round(currentData.windGust)} km/h</div></div>
-                      <div style={s.windCard}><div style={s.windLabel}>80 m (quota termica)</div><div style={s.windValue}>{currentData.wind80m ? `${getWindArrow(currentData.windDir80m)} ${Math.round(currentData.wind80m)} km/h` : "N/D"<dyad-write path="src/pages/Index.tsx" description="Completamento della scrittura del file Index.tsx — parte finale dopo il troncamento">
+                      <div style={s.windCard}>
+                        <div style={s.windLabel}>10 m (superficie)</div>
+                        <div style={s.windValue}>
+                          {getWindArrow(currentData.windDir)}{" "}
+                          {Math.round(currentData.windSpeed)} km/h
+                        </div>
+                        <div style={s.windDir}>
+                          {getWindDirection(currentData.windDir)}
+                        </div>
+                        <div style={s.windGustSmall}>
+                          ⚡ {Math.round(currentData.windGust)} km/h
+                        </div>
+                      </div>
+                      <div style={s.windCard}>
+                        <div style={s.windLabel}>80 m (quota termica)</div>
+                        <div style={s.windValue}>
+                          {currentData.wind80m
+                            ? `${getWindArrow(currentData.windDir80m)} ${Math.round(
+                                currentData.wind80m
+                              )} km/h`
+                            : "N/D"}
+                        </div>
+                        <div style={s.windDir}>
+                          {currentData.wind80m
+                            ? getWindDirection(currentData.windDir80m)
+                            : "--"}
+                        </div>
+                        <div style={s.windGustSmall}>
+                          ⚡{" "}
+                          {currentData.wind80m
+                            ? Math.round(currentData.wind80m * 1.3)
+                            : "--"}{" "}
+                          km/h
+                        </div>
+                      </div>
+                      <div style={s.windCard}>
+                        <div style={s.windLabel}>120 m (alta quota)</div>
+                        <div style={s.windValue}>
+                          {currentData.wind120m
+                            ? `${getWindArrow(currentData.windDir120m)} ${Math.round(
+                                currentData.wind120m
+                              )} km/h`
+                            : "N/D"}
+                        </div>
+                        <div style={s.windDir}>
+                          {currentData.wind120m
+                            ? getWindDirection(currentData.windDir120m)
+                            : "--"}
+                        </div>
+                        <div style={s.windGustSmall}>
+                          ⚡{" "}
+                          {currentData.wind120m
+                            ? Math.round(currentData.wind120m * 1.35)
+                            : "--"}{" "}
+                          km/h
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   <div style={s.windProfileSection}>
-                    <h3 style={s.windTitle}>📊 Profilo Vento (400m - 4000m)</h3>
+                    <h3 style={s.windTitle}>
+                      📊 Profilo Vento (400m - 4000m)
+                    </h3>
                     <div style={s.windProfileContainer}>
                       <div style={s.windProfileLegend}>
                         <span style={s.legendItem}>⚡ Velocità (km/h)</span>
                         <span style={s.legendItem}>🧭 Direzione</span>
                       </div>
                       <div style={s.windProfile}>
-                        {windProfileData && windProfileData.map((level: any, index: number) => {
-                          const maxSpeed = currentData.windSpeed * 3.5;
-                          const barWidth = Math.min(100, (level.speed / maxSpeed) * 100);
-                          return (
-                            <div key={index} style={s.windProfileRow}>
-                              <div style={s.windProfileAlt}>{level.altitude === 10 ? "Superficie" : `${level.altitude}m`}</div>
-                              <div style={s.windProfileBarContainer}>
-                                <div style={{ ...s.windProfileBar, width: `${barWidth}%`, background: `linear-gradient(to right, ${getWindColor(level.speed, maxSpeed)}, ${getWindColor(level.speed, maxSpeed)})` }}>
-                                  <span style={s.windProfileSpeed}>{level.speed} km/h</span>
+                        {windProfileData &&
+                          windProfileData.map((level: any, index: number) => {
+                            const maxSpeed = currentData.windSpeed * 3.5;
+                            const barWidth = Math.min(
+                              100,
+                              (level.speed / maxSpeed) * 100
+                            );
+                            return (
+                              <div key={index} style={s.windProfileRow}>
+                                <div style={s.windProfileAlt}>
+                                  {level.altitude === 10
+                                    ? "Superficie"
+                                    : `${level.altitude}m`}
+                                </div>
+                                <div style={s.windProfileBarContainer}>
+                                  <div
+                                    style={{
+                                      ...s.windProfileBar,
+                                      width: `${barWidth}%`,
+                                      background: `linear-gradient(to right, ${getWindColor(
+                                        level.speed,
+                                        maxSpeed
+                                      )}, ${getWindColor(
+                                        level.speed,
+                                        maxSpeed
+                                      )})`,
+                                    }}
+                                  >
+                                    <span style={s.windProfileSpeed}>
+                                      {level.speed} km/h
+                                    </span>
+                                  </div>
+                                </div>
+                                <div style={s.windProfileDir}>
+                                  {getWindArrow(level.direction)}{" "}
+                                  {level.directionName}
                                 </div>
                               </div>
-                              <div style={s.windProfileDir}>{getWindArrow(level.direction)} {level.directionName}</div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
                       </div>
                       {windProfileData && (
                         <div style={s.shearAnalysis}>
                           {(() => {
                             const shear = calculateWindShear(windProfileData);
                             return (
-                              <div style={{ ...s.shearBox, borderColor: shear.risk === "alto" ? "#f44336" : shear.risk === "medio" ? "#ff9800" : "#4caf50" }}>
-                                <div style={s.shearTitle}>🌪️ Analisi Wind Shear</div>
-                                <div style={s.shearValue}>Shear: {shear.shear}</div>
-                                <div style={s.shearDesc}>{shear.description}</div>
+                              <div
+                                style={{
+                                  ...s.shearBox,
+                                  borderColor:
+                                    shear.risk === "alto"
+                                      ? "#f44336"
+                                      : shear.risk === "medio"
+                                      ? "#ff9800"
+                                      : "#4caf50",
+                                }}
+                              >
+                                <div style={s.shearTitle}>
+                                  🌪️ Analisi Wind Shear
+                                </div>
+                                <div style={s.shearValue}>
+                                  Shear: {shear.shear}
+                                </div>
+                                <div style={s.shearDesc}>
+                                  {shear.description}
+                                </div>
                                 <div style={s.shearDetails}>
-                                  <span>Superficie: {shear.surfaceSpeed} km/h ({shear.surfaceDir})</span>
-                                  <span>Alta quota: {shear.highSpeed} km/h ({shear.highDir})</span>
+                                  <span>
+                                    Superficie: {shear.surfaceSpeed} km/h (
+                                    {shear.surfaceDir})
+                                  </span>
+                                  <span>
+                                    Alta quota: {shear.highSpeed} km/h (
+                                    {shear.highDir})
+                                  </span>
                                 </div>
                               </div>
                             );
@@ -791,20 +1005,14 @@ export default function App() {
                   </div>
 
                   <div style={s.hourlyWindSection}>
-                    <h3 style={s.windTitle}>📊 Vento orario (9:00 - 19:00)</h3>
+                    <h3 style={s.windTitle}>
+                      📊 Vento orario (9:00 - 19:00)
+                    </h3>
                     <div style={s.hourlyWindGrid}>
                       {hoursRange.map((hour) => {
-                        const hourData = dayData?.find((h: any) => h.time.getHours() === hour);
-                        if (!hourData) return null;
-                        return (
-                          <div key={hour} style={s.hourlyWindCard}>
-                            <div style={s.hourlyTime}>{String(hour).padStart(2, "0")}:00</div>
-                            <div style={s.hourlyWind}>
-                              {getWindArrow(hourData.windDir)}
-                              <span style={s.hourlySpeed}>{Math.round(hourData.windSpeed)}</span>
-                            </div>
-                            <div style={s.hourlyDir}>{getWindDirection(hourData.windDir)}</div>
-                            <div style={s.hourlyWeather}>{getWeatherIcon(hourData.weatherCode || 0, hourData.isDay)}</div>
+                        const hourData = dayData?.find(
+                          (h: any) => h.time.getHours() === hour
+                       </div>
                           </div>
                         );
                       })}
@@ -818,19 +1026,40 @@ export default function App() {
                   <div style={s.thermalSection}>
                     <h3 style={s.windTitle}>🔥 Analisi Termiche</h3>
                     <div style={s.aiBlock}>
-                      <div style={s.aiTextWhite} dangerouslySetInnerHTML={{ __html: aiAnalysis?.thermal?.replace(/\n/g, "<br/>") || "Dati non disponibili" }} />
+                      <div
+                        style={s.aiTextWhite}
+                        dangerouslySetInnerHTML={{
+                          __html:
+                            aiAnalysis?.thermal?.replace(/\n/g, "<br/>") ||
+                            "Dati non disponibili",
+                        }}
+                      />
                     </div>
                   </div>
                   <div style={s.altitudeSection}>
                     <h3 style={s.windTitle}>🏔️ Quote e Plafond</h3>
                     <div style={s.aiBlock}>
-                      <div style={s.aiTextWhite} dangerouslySetInnerHTML={{ __html: aiAnalysis?.altitude?.replace(/\n/g, "<br/>") || "Dati non disponibili" }} />
+                      <div
+                        style={s.aiTextWhite}
+                        dangerouslySetInnerHTML={{
+                          __html:
+                            aiAnalysis?.altitude?.replace(/\n/g, "<br/>") ||
+                            "Dati non disponibili",
+                        }}
+                      />
                     </div>
                   </div>
                   <div style={s.hourlySection}>
                     <h3 style={s.windTitle}>⏰ Sviluppo Orario</h3>
                     <div style={s.aiBlock}>
-                      <div style={s.aiTextWhite} dangerouslySetInnerHTML={{ __html: aiAnalysis?.hourly?.replace(/\n/g, "<br/>") || "Dati non disponibili" }} />
+                      <div
+                        style={s.aiTextWhite}
+                        dangerouslySetInnerHTML={{
+                          __html:
+                            aiAnalysis?.hourly?.replace(/\n/g, "<br/>") ||
+                            "Dati non disponibili",
+                        }}
+                      />
                     </div>
                   </div>
                 </>
@@ -840,15 +1069,57 @@ export default function App() {
                 <div style={s.aiSection}>
                   <div style={s.aiHeader}>
                     <span style={s.aiIcon}>🤖</span>
-                    <h3 style={s.aiTitle}>Analisi Completa della Giornata</h3>
-                    {isAnalyzing && <span style={s.aiLoading}>⏳ Analisi in corso...</span>}
+                    <h3 style={s.aiTitle}>
+                      Analisi Completa della Giornata
+                    </h3>
+                    {isAnalyzing && (
+                      <span style={s.aiLoading}>
+                        ⏳ Analisi in corso...
+                      </span>
+                    )}
                   </div>
                   {aiAnalysis && !isAnalyzing && (
                     <div style={s.aiContent}>
-                      <div style={s.aiBlock}><div style={s.aiTextWhite} dangerouslySetInnerHTML={{ __html: aiAnalysis.general.replace(/\n/g, "<br/>") }} /></div>
-                      <div style={s.aiBlock}><div style={s.aiTextWhite} dangerouslySetInnerHTML={{ __html: aiAnalysis.advice.replace(/\n/g, "<br/>") }} /></div>
-                      <div style={s.aiBlock}><div style={s.aiTextWhite} dangerouslySetInnerHTML={{ __html: aiAnalysis.pressure.replace(/\n/g, "<br/>") }} /></div>
-                      {aiAnalysis.thunderstorm && <div style={s.aiBlock}><div style={s.aiTextWhite} dangerouslySetInnerHTML={{ __html: aiAnalysis.thunderstorm.replace(/\n/g, "<br/>") }} /></div>}
+                      <div style={s.aiBlock}>
+                        <div
+                          style={s.aiTextWhite}
+                          dangerouslySetInnerHTML={{
+                            __html: aiAnalysis.general.replace(/\n/g, "<br/>"),
+                          }}
+                        />
+                      </div>
+                      <div style={s.aiBlock}>
+                        <div
+                          style={s.aiTextWhite}
+                          dangerouslySetInnerHTML={{
+                            __html: aiAnalysis.advice.replace(/\n/g, "<br/>"),
+                          }}
+                        />
+                      </div>
+                      <div style={s.aiBlock}>
+                        <div
+                          style={s.aiTextWhite}
+                          dangerouslySetInnerHTML={{
+                            __html: aiAnalysis.pressure.replace(
+                              /\n/g,
+                              "<br/>"
+                            ),
+                          }}
+                        />
+                      </div>
+                      {aiAnalysis.thunderstorm && (
+                        <div style={s.aiBlock}>
+                          <div
+                            style={s.aiTextWhite}
+                            dangerouslySetInnerHTML={{
+                              __html: aiAnalysis.thunderstorm.replace(
+                                /\n/g,
+                                "<br/>"
+                              ),
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -859,8 +1130,13 @@ export default function App() {
       </div>
 
       <footer style={s.footer}>
-        <p style={s.footerText}>🌤️ Dati meteo forniti da Open-Meteo.com • Ispirato a SHV FSVL • Ottimizzato per volo libero</p>
-        <p style={s.footerSmall}>🐰 Vola sicuro e divertiti! 🪂 • Beta v2.0</p>
+        <p style={s.footerText}>
+          🌤️ Dati meteo forniti da Open-Meteo.com • Ispirato a SHV FSVL •
+          Ottimizzato per volo libero
+        </p>
+        <p style={s.footerSmall}>
+          🐰 Vola sicuro e divertiti! 🪂 • Beta v2.0
+        </p>
       </footer>
     </div>
   );
