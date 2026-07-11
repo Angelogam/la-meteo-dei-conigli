@@ -141,16 +141,16 @@ function Index() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-700 via-slate-600 to-slate-700 text-slate-100">
       {/* Header */}
-      <header className="px-4 py-4 border-b border-slate-600 bg-slate-800/70 backdrop-blur-md">
+      <header className="px-4 py-5 border-b border-slate-600 bg-gradient-to-r from-slate-800/90 via-blue-900/40 to-slate-800/90 backdrop-blur-md">
         <div className="max-w-5xl mx-auto">
-          <div className="flex items-center justify-center gap-2.5">
-            <span className="text-2xl md:text-3xl">🐰</span>
-            <div>
-              <h1 className="text-lg md:text-xl font-extrabold text-white tracking-tight text-center">
-                Meteo dei Conigli
+          <div className="flex items-center justify-center gap-3">
+            <span className="text-3xl md:text-4xl drop-shadow-lg">🐰</span>
+            <div className="border-l border-blue-400/30 pl-3">
+              <h1 className="text-xl md:text-2xl font-extrabold text-white tracking-tight text-center drop-shadow-sm">
+                Meteo dei <span className="text-blue-300">Conigli</span>
               </h1>
-              <p className="text-[10px] md:text-xs text-blue-300/80 font-medium text-center">
-                Previsioni per volo libero
+              <p className="text-[11px] md:text-xs text-blue-200/90 font-medium text-center tracking-wide">
+                🪂 Previsioni per volo libero
               </p>
             </div>
           </div>
@@ -158,7 +158,7 @@ function Index() {
       </header>
 
       {/* Main content centrato */}
-      <div className="max-w-5xl mx-auto px-3 pb-28 mt-3 md:flex md:gap-3 md:items-start md:justify-center">
+      <div className="max-w-5xl mx-auto px-3 pb-28 mt-4 md:flex md:gap-3 md:items-start md:justify-center">
         {/* Sidebar decolli */}
         <SidebarDecolli
           selected={siteId}
