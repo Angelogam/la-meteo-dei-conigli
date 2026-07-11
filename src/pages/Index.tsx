@@ -10,12 +10,11 @@ import { TermicheTab } from "@/components/TermicheTab";
 import { AnalisiTab } from "@/components/AnalisiTab";
 import SiteHeader from "@/components/SiteHeader";
 import DayForecastPopup from "@/components/DayForecastPopup";
-import { fetchMeteo, fetchMeteoHourly, enrDaily, calcThermal } from "@/utils/meteo";
+import { fetchMeteo, filterFlightHours, enrDaily, calcThermal } from "@/utils/meteo";
 import { DECOLLI } from "@/data/decolli";
 import { genAI } from "@/utils/analisi";
 import { generateAiAnalysis } from "@/utils/meteoAI";
 import type { MeteoData, HourData, AiAnalysis } from "@/types/meteo";
-import useEmblaCarousel from "embla-carousel-react";
 import SidebarDecolli from "@/components/SidebarDecolli";
 import { Button } from "@/components/ui/button";
 import { MapPin } from "lucide-react";
@@ -104,17 +103,21 @@ function Index() {
   const loading = selectedDecollo?.loading ?? true;
   const error = selectedDecollo?.error;
 
-  const hourly = meteoData?.hourly || [];
+  const hourlyRaw = meteoData?.hourly || [];
   const daily = meteoData?.daily || [];
+
+  // Filtra tutte le ore tra le 9 e le 19
+  const hourly = useMemo(() => filterFlightHours(hourlyRaw), [hourlyRaw]);
 
   const weatherMap = useMemo(() => {
     const map: Record<string, HourData> = {};
     for (const [id, dm] of Object.entries(decolliMeteo)) {
       if (dm?.data?.hourly) {
-        const found = dm.data.hourly.find(
-          (h) => h.time.getHours() === hour
-        );
-        if (found) map[id] = found;
+        const hh = dm.data.hourly.find((h) => {
+          const hhh = h.time.getHours();
+          return hhh >= 9 && hhh <= 19 && hhh === hour;
+        });
+        if (hh) map[id] = hh;
       }
     }
     return map;
@@ -152,7 +155,8 @@ function Index() {
   const dayData = useMemo(() => getDayData(dayIdx), [getDayData, dayIdx]);
 
   const currentHourData = useMemo(() => {
-    return hourly.find((h) => h.time.getHours() === hour) || hourly[0];
+    const found = hourly.find((h) => h.time.getHours() === hour);
+    return found || hourly[0];
   }, [hourly, hour]);
 
   const currentSite = useMemo(
@@ -180,10 +184,7 @@ function Index() {
     setHour(new Date().getHours());
   }, []);
 
-  const toggleSidebar = useCallback(
-    () => setSidebarOpen((p) => !p),
-    []
-  );
+  const toggleSidebar = useCallback(() => setSidebarOpen((p) => !p), []);
 
   const handleRetry = useCallback(() => {
     setGlobalLoading(true);
@@ -197,8 +198,13 @@ function Index() {
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-slate-800 via-slate-700 to-slate-900 text-slate-100">
       {/* Overlay texture pattern */}
-      <div className="pointer-events-none fixed inset-0 opacity-[0.03] bg-repeat" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} />
-      
+      <div
+        className="pointer-events-none fixed inset-0 opacity-[0.03] bg-repeat"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }}
+      />
+
       {/* Soft gradient orbs */}
       <div className="pointer-events-none fixed -top-32 -left-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
       <div className="pointer-events-none fixed -bottom-32 -right-32 w-96 h-96 bg-green-500/8 rounded-full blur-3xl" />
@@ -213,10 +219,15 @@ function Index() {
                 Meteo dei <span className="text-green-300">Conigli</span>
               </h1>
               <p className="text-xs md:text-sm text-green-200/90 font-medium text-center tracking-wide">
-                🪂 Previsioni per volo libero · aggiornato ogni minuto
+                🪂 Previsioni per volo libero · 9:00–19:00 · aggiornato ogni minuto
               </p>
             </div>
-            <span className="text-4xl md:text-5xl drop-shadow-lg md:block hidden animate-bounce" style={{ animationDelay: "150ms" }}>🐰</span>
+            <span
+              className="text-4xl md:text-5xl drop-shadow-lg md:block hidden animate-bounce"
+              style={{ animationDelay: "150ms" }}
+            >
+              🐰
+            </span>
           </div>
         </div>
       </header>
@@ -287,9 +298,7 @@ function Index() {
 
             {tab === "venti" && <VentiTab dayData={dayData} />}
 
-            {tab === "termiche" && (
-              <TermicheTab aiData={aiMeteoAnalysis as unknown as AiAnalysis} />
-            )}
+            {tab === "termiche" && <TermicheTab aiData={aiMeteoAnalysis as unknown as AiAnalysis} />}
 
             {tab === "analisi" && aiMeteoAnalysis && (
               <AnalisiTab aiData={aiMeteoAnalysis as unknown as AiAnalysis} />
@@ -310,7 +319,7 @@ function Index() {
               className="text-xs border-slate-500/60 text-slate-200 hover:bg-slate-700 bg-slate-800/80"
             >
               <MapPin className="w-3 h-3 mr-1" />
-              Dettaglio orario {currentSite?.name}
+              Dettaglio orario {currentSite?.name} (9:00–19:00)
             </Button>
           </div>
 
@@ -334,7 +343,7 @@ function Index() {
       <footer className="relative z-10 fixed bottom-0 left-0 right-0 text-center py-2 border-t border-green-500/30 bg-slate-800/80 backdrop-blur-md shadow-lg">
         <div className="max-w-5xl mx-auto px-3 flex items-center justify-center gap-8">
           <p className="text-[10px] text-slate-400">
-            Basato su dati Open-Meteo · aggiornato ogni minuto
+            Basato su dati Open-Meteo · previsioni 9:00–19:00
           </p>
           <p className="text-[10px] text-slate-400">
             &copy; {new Date().getFullYear()} Meteo dei Conigli
