@@ -48,6 +48,10 @@ export const MeteoTab = ({
     setDayPopupIdx(dayPopupIdx === i ? null : i);
   };
 
+  const handleHourSelect = (selectedHour: number) => {
+    onHourChange(selectedHour);
+  };
+
   return (
     <>
       <div className="grid grid-cols-3 gap-1.5 mb-3">
@@ -79,6 +83,7 @@ export const MeteoTab = ({
           dayLabel={dateLabels[dayPopupIdx]}
           onClose={() => setDayPopupIdx(null)}
           selectedHour={hour}
+          onHourSelect={handleHourSelect}
         />
       )}
 

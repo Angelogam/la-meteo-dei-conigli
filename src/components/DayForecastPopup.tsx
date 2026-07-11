@@ -2,13 +2,14 @@
 
 import { wic } from "@/utils/meteo";
 import type { HourData } from "@/types/meteo";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface DayForecastPopupProps {
   data: HourData[];
   dayLabel: string;
   onClose: () => void;
   selectedHour?: number;
+  onHourSelect?: (hour: number) => void;
 }
 
 const cloudStyle = (cover: number) => {
@@ -30,7 +31,7 @@ const isSnow = (code: number) => code >= 71 && code <= 77;
 const isRain = (code: number) => (code >= 51 && code <= 67) || (code >= 80 && code <= 82);
 const isThunder = (code: number) => code >= 95;
 
-const SingleHourCard = ({ h, isSelected }: { h: HourData; isSelected: boolean }) => {
+const SingleHourCard = ({ h, isSelected, onSelect }: { h: HourData; isSelected: boolean; onSelect?: () => void }) => {
   const c = cloudStyle(h.cloudCover);
   const snowing = isSnow(h.weatherCode);
   const raining = isRain(h.weatherCode) || h.precipitation > 0.3;
@@ -38,12 +39,13 @@ const SingleHourCard = ({ h, isSelected }: { h: HourData; isSelected: boolean })
   const sunny = h.cloudCover <= 35 && !raining && !thunder;
 
   return (
-    <div
+    <button
+      onClick={onSelect}
       className={
-        "flex flex-col items-center gap-1 p-2 rounded-xl border min-w-[64px] transition-all duration-200 " +
+        "flex flex-col items-center gap-1 p-2 rounded-xl border min-w-[64px] transition-all duration-200 cursor-pointer " +
         (isSelected
           ? "bg-white border-red-400 shadow-md scale-105"
-          : "bg-white/40 border-gray-200")
+          : "bg-white/40 border-gray-200 hover:bg-white/60 hover:border-gray-300")
       }
     >
       {/* Ora */}
@@ -123,7 +125,7 @@ const SingleHourCard = ({ h, isSelected }: { h: HourData; isSelected: boolean })
         )}
       </div>
 
-      {/* Temperatura */}
+      {/* Temperatura sotto */}
       <span className={`text-xs font-bold ${isSelected ? "text-red-600" : "text-gray-800"}`}>
         {Math.round(h.temperature)}°
       </span>
@@ -141,13 +143,15 @@ const SingleHourCard = ({ h, isSelected }: { h: HourData; isSelected: boolean })
       <span className="text-[9px] text-gray-500 -mt-0.5">
         {Math.round(h.windSpeed)} km/h
       </span>
-    </div>
+    </button>
   );
 };
 
-export const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour }: DayForecastPopupProps) => {
+export const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour, onHourSelect }: DayForecastPopupProps) => {
   const [visible, setVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const selectedRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -155,12 +159,22 @@ export const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour }: DayF
     return () => clearTimeout(t);
   }, []);
 
+  // Scroll sull'ora selezionata
+  useEffect(() => {
+    if (visible && selectedRef.current && scrollRef.current) {
+      const container = scrollRef.current;
+      const el = selectedRef.current;
+      const offset = el.offsetLeft - container.offsetLeft - container.clientWidth / 2 + el.clientWidth / 2;
+      container.scrollTo({ left: offset, behavior: "smooth" });
+    }
+  }, [visible, selectedHour]);
+
   if (!mounted) return null;
 
   return (
     <div className="transition-all duration-300 ease-in-out overflow-hidden"
       style={{
-        maxHeight: visible ? "520px" : "0px",
+        maxHeight: visible ? "560px" : "0px",
         opacity: visible ? 1 : 0,
       }}
     >
@@ -179,10 +193,16 @@ export const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour }: DayF
         </div>
 
         {/* Scroll orizzontale con ore animate */}
-        <div className="overflow-x-auto pb-2">
+        <div ref={scrollRef} className="overflow-x-auto pb-2 scroll-smooth">
           <div className="flex gap-2 min-w-max">
             {data.map((h, i) => (
-              <SingleHourCard key={i} h={h} isSelected={h.time.getHours() === selectedHour} />
+              <div key={i} ref={h.time.getHours() === selectedHour ? selectedRef : undefined}>
+                <SingleHourCard
+                  h={h}
+                  isSelected={h.time.getHours() === selectedHour}
+                  onSelect={() => onHourSelect?.(h.time.getHours())}
+                />
+              </div>
             ))}
           </div>
         </div>
@@ -211,7 +231,7 @@ export const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour }: DayF
 
         {/* Nota */}
         <div className="mt-2 text-center text-[9px] text-gray-400 italic leading-tight">
-          Le nuvole si muovono, la pioggia e la neve scendono — animazioni continue per simulare l&apos;evoluzione oraria
+          Clicca su un&apos;ora per spostare la barra — le nuvole fluttuano, la pioggia e la neve scendono
         </div>
       </div>
 
