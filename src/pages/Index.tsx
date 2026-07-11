@@ -331,7 +331,8 @@ export default function Index() {
                 <>
                   <div className="grid grid-cols-3 gap-1.5 mb-3">
                     {enrichedDaily.map((d, i) => (
-                      <button key={i<dyad-write path="src/pages/Index.tsx" file-mode="append">                      <button key={i} onClick={() => { setDayIdx(i); setHour(12); }} className={"rounded-xl p-2 text-center cursor-pointer " + (dayIdx === i ? "bg-red-500/15 border border-red-500" : "bg-black/20 border border-white/10")}>
+                      <button key={i} onClick={() => { setDayIdx(i); setHour(12); }} className={"rounded-xl p<dyad-write path="src/pages/Index.tsx" file-mode="append">
+                      <button key={i} onClick={() => { setDayIdx(i); setHour(12); }} className={"rounded-xl p-2 text-center cursor-pointer " + (dayIdx === i ? "bg-red-500/15 border border-red-500" : "bg-black/20 border border-white/10")}>
                         <div className="text-xs font-semibold">{dateLabels[i]}</div>
                         <div className="text-xl my-0.5">{wic(d.weatherCode, 1)}</div>
                         <div className="text-sm text-red-400 font-semibold">{Math.round(d.tempMax)}&deg;/{Math.round(d.tempMin)}&deg;</div>
