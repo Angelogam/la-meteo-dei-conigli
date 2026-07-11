@@ -27,6 +27,7 @@ export const DECOLLI: Decollo[] = [
   { id: "montoso_basso", name: "Montoso – decollo basso", lat: 44.764372, lon: 7.249758, exposure: "E/SE", valley: "Valle Infernotto", difficulty: 1, altitude: 1230 },
   { id: "vandalino", name: "Monte Vandalino", lat: 44.836712, lon: 7.173867, exposure: "S/SE", valley: "Val Pellice", difficulty: 4, altitude: 2120 },
   { id: "pian_dell_alpe", name: "Pian dell'Alpe", lat: 45.063962, lon: 7.028267, exposure: "S/SW", valley: "Val Chisone", difficulty: 3, altitude: 1900 },
+  { id: "roletto",<dyad-write path="src/data/decolli.ts" description="Ripristino esatto di un'ora fa - continuazione">
   { id: "roletto", name: "Roletto – Piggi", lat: 44.932493, lon: 7.310959, exposure: "S/SW", valley: "Pinerolese", difficulty: 1, altitude: 810 },
   { id: "piossasco", name: "Piossasco – Monte S. Giorgio", lat: 44.996718, lon: 7.448002, exposure: "S/SW", valley: "Collina Torinese", difficulty: 1, altitude: 840 },
   { id: "truccetti", name: "Truccetti", lat: 45.079735, lon: 7.342018, exposure: "S/SE", valley: "Val Sangone", difficulty: 1, altitude: 950 },
