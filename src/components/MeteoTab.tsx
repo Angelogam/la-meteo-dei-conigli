@@ -45,7 +45,7 @@ export const MeteoTab = ({
             <div className="text-xs font-semibold text-gray-700">{dateLabels[i]}</div>
             <div className="text-xl my-0.5">{wic(d.weatherCode, 1)}</div>
             <div className="text-sm text-red-600 font-semibold">
-              {Math.round(d.tempMax)}&deg;/{Math.round(d.tempMin)}&deg;
+              {Math.round(d.tempMax)}&deg;C/{Math.round(d.tempMin)}&deg;C
             </div>
             <div className="text-xs text-gray-500">&Delta;{d.delta}&deg;C</div>
           </button>
