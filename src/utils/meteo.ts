@@ -1,6 +1,6 @@
 "use client";
 
-import type { HourData, MeteoData, ThermalData } from "@/types/meteo";
+import type { HourData, MeteoData, ThermalData, WindProfile } from "@/types/meteo";
 
 const BASE_URL = "https://api.open-meteo.com/v1/forecast";
 
@@ -50,6 +50,60 @@ export const fetchMeteo = async (lat: number, lon: number): Promise<MeteoData> =
   }));
 
   return { hourly, daily, lat, lon };
+};
+
+/** Fetch dei venti in quota a livelli di pressione */
+export const fetchWindProfiles = async (lat: number, lon: number): Promise<WindProfile[]> => {
+  const params = new URLSearchParams({
+    latitude: lat.toString(),
+    longitude: lon.toString(),
+    hourly: "pressure_level,temperature_120m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m,wind_speed_300m,wind_direction_300m,wind_speed_600m,wind_direction_600m,wind_speed_900m,wind_direction_900m,wind_speed_1200m,wind_direction_1200m,wind_speed_1500m,wind_direction_1500m,wind_speed_1800m,wind_direction_1800m,wind_speed_2100m,wind_direction_2100m,wind_speed_2400m,wind_direction_2400m,wind_speed_2800m,wind_direction_2800m,wind_speed_3200m,wind_direction_3200m,wind_speed_3600m,wind_direction_3600m,wind_speed_4000m,wind_direction_4000m",
+    timezone: "Europe/Rome",
+    forecast_days: "4",
+  });
+
+  try {
+    const res = await fetch(`${BASE_URL}?${params}`);
+    if (!res.ok) return [];
+    const raw = await res.json();
+
+    const times: string[] = raw.hourly.time;
+    const profiles: WindProfile[] = [];
+
+    // Livelli con le loro quote in metri
+    const levels = [
+      { height: 120, speedKey: "wind_speed_120m", dirKey: "wind_direction_120m", tempKey: "temperature_120m" },
+      { height: 180, speedKey: "wind_speed_180m", dirKey: "wind_direction_180m", tempKey: null },
+      { height: 300, speedKey: "wind_speed_300m", dirKey: "wind_direction_300m", tempKey: null },
+      { height: 600, speedKey: "wind_speed_600m", dirKey: "wind_direction_600m", tempKey: null },
+      { height: 900, speedKey: "wind_speed_900m", dirKey: "wind_direction_900m", tempKey: null },
+      { height: 1200, speedKey: "wind_speed_1200m", dirKey: "wind_direction_1200m", tempKey: null },
+      { height: 1500, speedKey: "wind_speed_1500m", dirKey: "wind_direction_1500m", tempKey: null },
+      { height: 1800, speedKey: "wind_speed_1800m", dirKey: "wind_direction_1800m", tempKey: null },
+      { height: 2100, speedKey: "wind_speed_2100m", dirKey: "wind_direction_2100m", tempKey: null },
+      { height: 2400, speedKey: "wind_speed_2400m", dirKey: "wind_direction_2400m", tempKey: null },
+      { height: 2800, speedKey: "wind_speed_2800m", dirKey: "wind_direction_2800m", tempKey: null },
+      { height: 3200, speedKey: "wind_speed_3200m", dirKey: "wind_direction_3200m", tempKey: null },
+      { height: 3600, speedKey: "wind_speed_3600m", dirKey: "wind_direction_3600m", tempKey: null },
+      { height: 4000, speedKey: "wind_speed_4000m", dirKey: "wind_direction_4000m", tempKey: null },
+    ];
+
+    for (let t = 0; t < times.length; t++) {
+      const levelsData = levels.map((l) => ({
+        height: l.height,
+        speed: raw.hourly[l.speedKey]?.[t] ?? null,
+        dir: raw.hourly[l.dirKey]?.[t] ?? null,
+      }));
+      profiles.push({
+        time: new Date(times[t]),
+        levels: levelsData,
+      });
+    }
+
+    return profiles;
+  } catch {
+    return [];
+  }
 };
 
 export const fetchMeteoHourly = async (lat: number, lon: number): Promise<HourData[]> => {
