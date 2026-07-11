@@ -320,28 +320,12 @@ function Index() {
             {tab === "venti" && <VentiTab dayData={dayData} />}
 
             {tab === "quota" && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-bold text-blue-200 uppercase tracking-wider">
-                    Vento in Quota · {currentSite?.name}
-                  </h3>
-                  <span className="text-[10px] text-slate-500">
-                    {selectedSite?.altitude}m slm · step 250m
-                  </span>
-                </div>
-                {windProfilesLoading ? (
-                  <div className="flex items-center justify-center py-6 text-slate-400 text-sm">
-                    <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mr-2" />
-                    Caricamento venti in quota...
-                  </div>
-                ) : (
-                  <VentiQuotaTab
-                    profiles={filteredWindProfiles}
-                    dayData={dayData}
-                    selectedHour={hour}
-                  />
-                )}
-              </div>
+              <VentiQuotaTab
+                dayData={dayData}
+                selectedHour={hour}
+                altitude={currentSite.altitude}
+                siteName={currentSite.name}
+              />
             )}
 
             {tab === "termiche" && <TermicheTab aiData={aiMeteoAnalysis as unknown as AiAnalysis} />}

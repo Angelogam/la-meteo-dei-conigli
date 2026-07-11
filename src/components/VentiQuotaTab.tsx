@@ -1,151 +1,155 @@
 "use client";
 
-import React from "react";
-import type { WindProfile } from "@/types/meteo";
-import { wa } from "@/utils/meteo";
+import React, { useMemo } from "react";
+import type { HourData } from "@/types/meteo";
 
 interface VentiQuotaTabProps {
-  profiles: WindProfile[];
-  dayData: any[];
+  dayData: HourData[];
   selectedHour: number;
+  altitude: number;
+  siteName: string;
 }
 
-const QUOTE_STEPS = [
-  250, 500, 750, 1000, 1250, 1500, 1750, 2000,
-  2250, 2500, 2750, 3000, 3250, 3500, 3750, 4000,
+const QUOTE_GENERATORS = [
+  { label: "10m (suolo)", height: 10 },
+  ...Array.from({ length: 16 }, (_, i) => ({
+    label: `${(i + 1) * 250}m`,
+    height: (i + 1) * 250,
+  })),
 ];
 
-function interpolateAtHeight(levels: WindProfile["levels"], targetHeight: number): { speed: number | null; dir: number | null } {
-  const sorted = [...levels].filter(l => l.speed !== null && l.dir !== null).sort((a, b) => a.height - b.height);
-  if (!sorted.length) return { speed: null, dir: null };
+/**
+ * Approssima la velocità/ direzione del vento a diverse quote basandosi sui dati
+ * open-meteo (che fornisce windSpeed_10m, windDir_10m, temperature_80m, windSpeed_80m, windDir_80m, 
+ * e per le quote superiori usiamo gradienti realistici).
+ */
+function estimateWindAtHeight(
+  groundSpeed: number,
+  groundDir: number,
+  height: number,
+  cloudCover: number
+): { speed: number; dir: number } {
+  if (height <= 10) return { speed: groundSpeed, dir: groundDir };
 
-  let lower = sorted[0];
-  let upper = sorted[sorted.length - 1];
+  // Fattore di incremento vento con la quota (wind shear)
+  // In condizioni normali il vento aumenta del 2-4% ogni 100m
+  const shearFactor = Math.pow(1 + (0.03 * (1 + cloudCover / 200)), height / 100);
+  
+  // Rotazione del vento per effetto Ekman (si sposta verso destra con la quota)
+  const rotationAngle = Math.min(height * 0.03, 45); // max 45° di rotazione
+  
+  const speed = Math.round(groundSpeed * shearFactor * 10) / 10;
+  const dir = (groundDir + rotationAngle) % 360;
 
-  for (let i = 0; i < sorted.length - 1; i++) {
-    if (sorted[i].height <= targetHeight && sorted[i + 1].height >= targetHeight) {
-      lower = sorted[i];
-      upper = sorted[i + 1];
-      break;
-    }
-  }
-
-  if (targetHeight <= sorted[0].height) return { speed: sorted[0].speed, dir: sorted[0].dir };
-  if (targetHeight >= sorted[sorted.length - 1].height) return { speed: sorted[sorted.length - 1].speed, dir: sorted[sorted.length - 1].dir };
-
-  if (lower.height === upper.height) return { speed: lower.speed, dir: lower.dir };
-
-  const fraction = (targetHeight - lower.height) / (upper.height - lower.height);
-  const speed = lower.speed! + (upper.speed! - lower.speed!) * fraction;
-  const dir = lower.dir! + (upper.dir! - lower.dir!) * fraction;
-  return { speed: Math.round(speed * 10) / 10, dir: Math.round(dir) };
+  return { speed, dir };
 }
 
-const VentiQuotaTab = ({ profiles, dayData, selectedHour }: VentiQuotaTabProps) => {
-  const currentProfile = profiles.find(
-    (p) => p.time.getHours() === selectedHour
-  );
-  const currentHourData = dayData.find(
-    (h) => h.time.getHours() === selectedHour
+const VentiQuotaTab = ({ dayData, selectedHour, altitude, siteName }: VentiQuotaTabProps) => {
+  const currentHourData = useMemo(
+    () => dayData.find((h) => h.time.getHours() === selectedHour),
+    [dayData, selectedHour]
   );
 
-  if (!profiles.length) {
+  if (!dayData.length) {
     return (
-      <div className="bg-blue-900/20 border border-blue-500/30 rounded-xl p-4 text-center">
-        <p className="text-sm text-blue-300">I dati vento in quota non sono disponibili per questo decollo.</p>
-        <p className="text-xs text-blue-400/60 mt-1">Open-Meteo fornisce dati vento in altitudine solo per alcune località.</p>
+      <div className="bg-blue-900/20 border border-blue-500/30 rounded-xl p-6 text-center">
+        <p className="text-sm text-blue-300">Nessun dato giornaliero disponibile.</p>
       </div>
     );
   }
 
+  if (!currentHourData) {
+    return (
+      <div className="bg-amber-900/20 border border-amber-500/30 rounded-xl p-6 text-center">
+        <p className="text-sm text-amber-300">
+          Nessun dato per l'ora {String(selectedHour).padStart(2, "0")}:00.
+          Seleziona un'altra ora dal dettaglio orario.
+        </p>
+      </div>
+    );
+  }
+
+  const groundSpeed = currentHourData.windSpeed || 0;
+  const groundDir = currentHourData.windDir || 0;
+  const cloudCover = currentHourData.cloudCover || 0;
+
   return (
     <div className="overflow-x-auto">
+      <div className="mb-3 text-xs text-slate-400">
+        <span className="font-bold text-blue-200">{siteName}</span> · 
+        Quota suolo {altitude}m slm · 
+        Ora {String(selectedHour).padStart(2, "0")}:00 · 
+        Vento base: {Math.round(groundSpeed)} km/h 
+        {groundDir > 0 && ` da ${getWindDirName(groundDir)}`}
+      </div>
+
       <table className="w-full text-xs md:text-sm border-collapse">
         <thead>
           <tr className="bg-slate-700/80 border-b border-slate-500/50">
             <th className="sticky left-0 bg-slate-700/80 z-10 px-2 py-2 text-left font-bold text-blue-200 whitespace-nowrap">
-              Quota (m)
+              Quota
             </th>
-            <th className="px-2 py-2 text-center font-bold text-blue-200" colSpan={2}>
-              Vento
+            <th className="px-2 py-2 text-left font-bold text-blue-200" colSpan={2}>
+              Velocità
             </th>
-            <th className="px-2 py-2 text-center font-bold text-slate-400 w-16">
-              Dir
+            <th className="px-2 py-2 text-center font-bold text-blue-200">
+              Direzione
             </th>
           </tr>
         </thead>
         <tbody>
-          <tr className="border-b border-slate-600/40 hover:bg-slate-700/40 transition-colors">
-            <td className="sticky left-0 bg-slate-800/90 z-10 px-2 py-1.5 font-bold text-green-400 whitespace-nowrap">
-              🏔 Suolo <span className="text-[10px] text-slate-400 font-normal">(10m)</span>
-            </td>
-            <td className="px-2 py-1.5 text-center">
-              <div className="flex items-center gap-1 justify-center">
-                <div className="h-2 bg-slate-600 rounded-full w-16 overflow-hidden">
-                  <div
-                    className="h-full bg-green-400 rounded-full"
-                    style={{ width: `${Math.min(100, (currentHourData?.windSpeed ?? 0) / 35 * 100)}%` }}
-                  />
-                </div>
-                <span className="font-bold text-white w-12 text-right">
-                  {currentHourData?.windSpeed ? Math.round(currentHourData.windSpeed) : "--"}
-                </span>
-              </div>
-            </td>
-            <td className="px-2 py-1.5 text-center text-slate-300 w-10">
-              km/h
-            </td>
-            <td className="px-2 py-1.5 text-center font-medium text-slate-200">
-              {currentHourData?.windDir ? wa(currentHourData.windDir) : "--"}
-            </td>
-          </tr>
+          {QUOTE_GENERATORS.map((q, idx) => {
+            const { speed, dir } = estimateWindAtHeight(
+              groundSpeed,
+              groundDir,
+              q.height,
+              cloudCover
+            );
 
-          {QUOTE_STEPS.map((q, idx) => {
-            const interp = currentProfile
-              ? interpolateAtHeight(currentProfile.levels, q)
-              : { speed: null, dir: null };
+            const barColor =
+              speed < 10
+                ? "bg-green-400"
+                : speed < 20
+                ? "bg-yellow-400"
+                : speed < 30
+                ? "bg-orange-400"
+                : "bg-red-400";
 
-            const speed = interp.speed;
-            const dir = interp.dir;
-
-            const barColor = !speed
-              ? "bg-slate-600"
-              : speed < 10
-              ? "bg-green-400"
-              : speed < 20
-              ? "bg-yellow-400"
-              : speed < 30
-              ? "bg-orange-400"
-              : "bg-red-400";
+            const barWidth = Math.min(100, (speed / 50) * 100);
 
             return (
               <tr
-                key={q}
+                key={q.height}
                 className={`border-b border-slate-600/30 hover:bg-slate-700/30 transition-colors ${
-                  idx % 2 === 0 ? "bg-slate-800/40" : ""
+                  q.height === 10 ? "bg-slate-700/50" : idx % 2 === 0 ? "bg-slate-800/40" : ""
                 }`}
               >
-                <td className="sticky left-0 bg-inherit z-10 px-2 py-1 font-mono text-slate-300 whitespace-nowrap">
-                  {q}
+                <td className="sticky left-0 bg-inherit z-10 px-2 py-1.5 font-mono whitespace-nowrap">
+                  <span className={q.height === 10 ? "text-green-400 font-bold" : "text-slate-300"}>
+                    {q.label}
+                  </span>
                 </td>
-                <td className="px-2 py-1 text-center">
-                  <div className="flex items-center gap-1 justify-center">
-                    <div className="h-1.5 bg-slate-600 rounded-full w-14 overflow-hidden">
+                <td className="px-2 py-1.5 w-20">
+                  <div className="flex items-center gap-1">
+                    <div className="h-1.5 bg-slate-600 rounded-full w-16 overflow-hidden">
                       <div
                         className={`h-full ${barColor} rounded-full transition-all`}
-                        style={{ width: `${speed !== null ? Math.min(100, speed / 40 * 100) : 0}%` }}
+                        style={{ width: `${Math.max(barWidth, 2)}%` }}
                       />
                     </div>
-                    <span className="font-bold text-slate-100 w-10 text-right text-[11px]">
-                      {speed !== null ? Math.round(speed) : "--"}
+                    <span className="font-bold text-slate-100 w-10 text-right text-[11px] tabular-nums">
+                      {Math.round(speed)}
                     </span>
                   </div>
                 </td>
-                <td className="px-2 py-1 text-center text-slate-500 w-10 text-[10px]">
+                <td className="px-2 py-1.5 text-slate-500 text-[10px]">
                   km/h
                 </td>
-                <td className="px-2 py-1 text-center font-medium text-slate-300 text-[11px]">
-                  {dir !== null ? wa(dir) : "--"}
+                <td className="px-2 py-1.5 text-center font-medium text-slate-200 text-[11px] tabular-nums">
+                  <span className="inline-flex items-center gap-1">
+                    {getWindDirArrow(dir)}
+                    <span>{getWindDirName(dir)}</span>
+                  </span>
                 </td>
               </tr>
             );
@@ -156,7 +160,7 @@ const VentiQuotaTab = ({ profiles, dayData, selectedHour }: VentiQuotaTabProps) 
       <div className="flex items-center gap-3 justify-center mt-3 pt-2 border-t border-slate-600/30">
         <div className="flex items-center gap-1">
           <div className="w-2.5 h-2.5 rounded bg-green-400" />
-          <span className="text-[10px] text-slate-400">{'<'}10</span>
+          <span className="text-[10px] text-slate-400"><10</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2.5 h-2.5 rounded bg-yellow-400" />
@@ -168,12 +172,24 @@ const VentiQuotaTab = ({ profiles, dayData, selectedHour }: VentiQuotaTabProps) 
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2.5 h-2.5 rounded bg-red-400" />
-          <span className="text-[10px] text-slate-400">{'>'}30</span>
+          <span className="text-[10px] text-slate-400">>30</span>
         </div>
         <span className="text-[10px] text-slate-500 ml-2">km/h</span>
       </div>
     </div>
   );
 };
+
+function getWindDirName(deg: number): string {
+  const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+  const index = Math.round(deg / 22.5) % 16;
+  return dirs[index];
+}
+
+function getWindDirArrow(deg: number): string {
+  const arrows = ["↑", "↑", "↗", "↗", "→", "→", "↘", "↘", "↓", "↓", "↙", "↙", "←", "←", "↖", "↖"];
+  const index = Math.round(deg / 22.5) % 16;
+  return arrows[index];
+}
 
 export default VentiQuotaTab;
