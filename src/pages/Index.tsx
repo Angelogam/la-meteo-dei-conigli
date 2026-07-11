@@ -23,7 +23,6 @@ export default function Home() {
   const [hourlyRaw, setHourlyRaw] = useState<HourData[]>([]);
   const [dailyRaw, setDailyRaw] = useState<DailyData[]>([]);
 
-  // Ottieni posizione
   useEffect(() => {
     if (!navigator.geolocation) {
       setError("Geolocalizzazione non supportata dal browser.");
@@ -42,7 +41,6 @@ export default function Home() {
     );
   }, []);
 
-  // Fetch dati meteo
   useEffect(() => {
     if (lat === null || lon === null) return;
     setLoading(true);
@@ -56,13 +54,11 @@ export default function Home() {
       .finally(() => setLoading(false));
   }, [lat, lon]);
 
-  // Dati arricchiti
   const enrichedDaily = useMemo(() => {
     if (!dailyRaw.length || !hourlyRaw.length) return [];
     return enrDaily(dailyRaw, hourlyRaw);
   }, [dailyRaw, hourlyRaw]);
 
-  // Labels date
   const dateLabels = useMemo(() => {
     return enrichedDaily.map((d) => {
       const dt = new Date(d.date);
@@ -70,13 +66,11 @@ export default function Home() {
     });
   }, [enrichedDaily]);
 
-  // Dato corrente
   const current = useMemo(() => {
     if (!hourlyRaw.length) return null;
     return hourlyRaw.find((h) => h.time.getHours() === hour) || hourlyRaw[0];
   }, [hourlyRaw, hour]);
 
-  // Thermal data
   const thermal = useMemo((): ThermalData | null => {
     if (!current) return null;
     const diff = current.temperature - (current.temperature - (100 - current.humidity) / 5);
@@ -86,7 +80,6 @@ export default function Home() {
     return { cloudBase, thermalTop, soarIdx };
   }, [current]);
 
-  // Pressure gradient
   const pressureGrad = useMemo((): PressureGradient => {
     if (!hourlyRaw.length) return { grad: 0, desc: "Stabile" };
     const idxNow = hourlyRaw.findIndex((h) => h.time.getHours() === hour);
@@ -100,7 +93,6 @@ export default function Home() {
     };
   }, [hourlyRaw, hour]);
 
-  // AI Analysis
   const aiData = useMemo((): AiAnalysis | null => {
     if (!hourlyRaw.length || !enrichedDaily[dayIdx]) return null;
     return generateAiAnalysis(hourlyRaw, dayIdx) as unknown as AiAnalysis;
