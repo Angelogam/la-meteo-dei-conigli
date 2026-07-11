@@ -3,24 +3,30 @@
 import { DECOLLI, Decollo } from "@/data/decolli";
 import { wic } from "@/utils/meteo";
 import type { HourData } from "@/types/meteo";
+import { useMemo } from "react";
 
 interface SiteListProps {
   selected: string;
   current: HourData | null;
   onSelect: (id: string) => void;
+  weatherMap?: Record<string, HourData>;
 }
 
 const diffColor = (d: number) => d <= 2 ? "#4caf50" : d <= 3 ? "#ff9800" : "#f44336";
 const diffLabel = (d: number) => d <= 2 ? "Facile" : d <= 3 ? "Medio" : "Difficile";
 
-export const SiteList = ({ selected, current, onSelect }: SiteListProps) => {
+export const SiteList = ({ selected, current, onSelect, weatherMap }: SiteListProps) => {
   return (
     <div className="bg-gray-300/80 rounded-2xl border border-gray-400/60 p-3 backdrop-blur md:h-[calc(100vh-180px)] overflow-hidden">
       <h3 className="text-lg text-red-600 mb-3 font-bold">Decolli</h3>
       <div className="overflow-y-auto h-[calc(100%-40px)] pr-1">
         {DECOLLI.map((d) => {
           const sel = d.id === selected;
-          const cw = sel && current ? wic(current.weatherCode, current.isDay) : "";
+          const cw = weatherMap?.[d.id]
+            ? wic(weatherMap[d.id].weatherCode, weatherMap[d.id].isDay)
+            : sel && current
+            ? wic(current.weatherCode, current.isDay)
+            : "";
           return (
             <button
               key={d.id}
@@ -34,7 +40,7 @@ export const SiteList = ({ selected, current, onSelect }: SiteListProps) => {
             >
               <div className="flex justify-between items-center">
                 <span className="font-bold text-sm text-gray-800">{d.name}</span>
-                <span>{sel ? cw : ""}</span>
+                <span className="text-lg">{cw}</span>
               </div>
               <div className="flex justify-between text-xs text-gray-500 mt-0.5">
                 <span>{d.valley}</span>
