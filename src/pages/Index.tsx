@@ -144,16 +144,16 @@ function Index() {
       <header className="px-4 py-5 border-b border-orange-600 bg-gradient-to-r from-slate-800/90 via-orange-900/40 to-slate-800/90 backdrop-blur-md">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-center gap-3">
-            <span className="text-3xl md:text-4xl drop-shadow-lg">🐰</span>
-            <div className="border-2 border-green-600 rounded-xl px-4 py-2">
-              <h1 className="text-xl md:text-2xl font-extrabold text-orange-400 tracking-tight text-center drop-shadow-sm">
+            <span className="text-4xl md:text-5xl drop-shadow-lg animate-bounce">🐰</span>
+            <div className="border-2 border-green-600 rounded-xl px-5 py-3">
+              <h1 className="text-2xl md:text-3xl font-extrabold text-orange-400 tracking-tight text-center drop-shadow-sm">
                 Meteo dei <span className="text-orange-300">Conigli</span>
               </h1>
-              <p className="text-[11px] md:text-xs text-orange-200/90 font-medium text-center tracking-wide">
+              <p className="text-xs md:text-sm text-orange-200/90 font-medium text-center tracking-wide">
                 🪂 Previsioni per volo libero
               </p>
             </div>
-            <span className="text-3xl md:text-4xl drop-shadow-lg md:block hidden">🐰</span>
+            <span className="text-4xl md:text-5xl drop-shadow-lg md:block hidden animate-bounce" style={{ animationDelay: "150ms" }}>🐰</span>
           </div>
         </div>
       </header>
