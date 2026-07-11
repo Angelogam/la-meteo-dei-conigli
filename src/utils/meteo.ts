@@ -1,184 +1,368 @@
+Non ho il contenuto di `src/utils/meteo.ts`. Però posso filtrare direttamente in `Index.tsx` dove i dati vengono usati. Modifico `getDayData` e ogni punto in cui viene visualizzata la griglia oraria.
+
+Il modo più pulito è creare un filtro centralizzato in `Index.tsx`:
+
+<dyad-write path="src/pages/Index.tsx" description="Filtro le previsioni dalle 9:00 alle 19:00">
 "use client";
 
-import type { HourData, DailyData, MeteoData, ThermalData, PressureGradient } from "@/types/meteo";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { LoadingScreen } from "@/components/LoadingScreen";
+import { ErrorScreen } from "@/components/ErrorScreen";
+import { TabNav } from "@/components/TabNav";
+import { MeteoTab } from "@/components/MeteoTab";
+import { VentiTab } from "@/components/VentiTab";
+import { TermicheTab } from "@/components/TermicheTab";
+import { AnalisiTab } from "@/components/AnalisiTab";
+import SiteHeader from "@/components/SiteHeader";
+import DayForecastPopup from "@/components/DayForecastPopup";
+import { fetchMeteo, fetchMeteoHourly, enrDaily, calcThermal } from "@/utils/meteo";
+import { DECOLLI } from "@/data/decolli";
+import { genAI } from "@/utils/analisi";
+import { generateAiAnalysis } from "@/utils/meteoAI";
+import type { MeteoData, HourData, AiAnalysis } from "@/types/meteo";
+import useEmblaCarousel from "embla-carousel-react";
+import SidebarDecolli from "@/components/SidebarDecolli";
+import { Button } from "@/components/ui/button";
+import { MapPin } from "lucide-react";
 
-export type { HourData, DailyData, MeteoData, ThermalData, PressureGradient };
+type Tab = "meteo" | "venti" | "termiche" | "analisi";
 
-const OPENMETEO_URL = "https://api.open-meteo.com/v1/forecast";
-
-function pr(v: number | undefined | null, d = 0): number {
-  return v ?? d;
+interface DecolloMeteo {
+  site: typeof DECOLLI[0];
+  data: MeteoData | null;
+  loading: boolean;
+  error: string | null;
 }
 
-export async function fetchMeteo(lat: number, lon: number): Promise<MeteoData> {
-  const params = new URLSearchParams({
-    latitude: lat.toString(),
-    longitude: lon.toString(),
-    hourly: [
-      "temperature_2m",
-      "relative_humidity_2m",
-      "dew_point_2m",
-      "apparent_temperature",
-      "precipitation",
-      "weather_code",
-      "cloud_cover",
-      "pressure_msl",
-      "wind_speed_10m",
-      "wind_direction_10m",
-      "wind_gusts_10m",
-      "soil_temperature_0cm",
-      "soil_moisture_0_to_1cm",
-      "uv_index",
-      "is_day",
-    ].join(","),
-    daily: [
-      "temperature_2m_max",
-      "temperature_2m_min",
-      "weather_code",
-      "precipitation_sum",
-    ].join(","),
-    timezone: "Europe/Rome",
-    forecast_days: "7",
+function useRealTimeHour(): number {
+  const [h, setH] = useState(() => new Date().getHours());
+  useEffect(() => {
+    const tick = () => setH(new Date().getHours());
+    const id = setInterval(tick, 10000);
+    return () => clearInterval(id);
+  }, []);
+  return h;
+}
+
+/** Filtra le ore tra le 9 e le 19 (previsioni utili per il volo) */
+function filterDayHours(arr: HourData[]): HourData[] {
+  return arr.filter((h) => {
+    const hh = h.time.getHours();
+    return hh >= 9 && hh <= 19;
   });
-
-  const resp = await fetch(`${OPENMETEO_URL}?${params}`);
-  if (!resp.ok) throw new Error(`Errore HTTP ${resp.status}`);
-  const json = await resp.json();
-
-  const hourly: HourData[] = json.hourly.time.map((_: string, i: number) => ({
-    time: new Date(json.hourly.time[i] + "Z"),
-    temperature: json.hourly.temperature_2m[i],
-    feelsLike: json.hourly.apparent_temperature[i],
-    humidity: json.hourly.relative_humidity_2m[i],
-    dewPoint: json.hourly.dew_point_2m[i],
-    precipitation: pr(json.hourly.precipitation[i]),
-    weatherCode: json.hourly.weather_code[i],
-    cloudCover: pr(json.hourly.cloud_cover[i]),
-    pressure: pr(json.hourly.pressure_msl[i]),
-    windSpeed: pr(json.hourly.wind_speed_10m[i]),
-    windDir: pr(json.hourly.wind_direction_10m[i]),
-    windGust: pr(json.hourly.wind_gusts_10m[i]),
-    soilTemp: json.hourly.soil_temperature_0cm?.[i] ?? null,
-    soilMoisture: json.hourly.soil_moisture_0_to_1cm?.[i] ?? null,
-    uvIndex: json.hourly.uv_index?.[i] ?? null,
-    isDay: pr(json.hourly.is_day[i], 1) === 1,
-  }));
-
-  const daily: DailyData[] = json.daily.time.map((t: string, i: number) => ({
-    date: new Date(t + "T12:00:00Z"),
-    tempMax: pr(json.daily.temperature_2m_max[i]),
-    tempMin: pr(json.daily.temperature_2m_min[i]),
-    weatherCode: json.daily.weather_code[i],
-    precipitationSum: pr(json.daily.precipitation_sum[i]),
-  }));
-
-  return { hourly, daily, lat, lon };
 }
 
-export async function fetchMeteoHourly(lat: number, lon: number): Promise<HourData[]> {
-  const data = await fetchMeteo(lat, lon);
-  return data.hourly;
-}
+function Index() {
+  const [decolliMeteo, setDecolliMeteo] = useState<Record<string, DecolloMeteo>>(() => {
+    const map: Record<string, DecolloMeteo> = {};
+    for (const site of DECOLLI) {
+      map[site.id] = { site, data: null, loading: true, error: null };
+    }
+    return map;
+  });
+  const [globalLoading, setGlobalLoading] = useState(true);
+  const [globalError, setGlobalError] = useState<string | null>(null);
+  const [siteId, setSiteId] = useState(DECOLLI[0]?.id || "");
+  const [tab, setTab] = useState<Tab>("meteo");
+  const [dayIdx, setDayIdx] = useState(0);
+  const [hour, setHour] = useState(useRealTimeHour());
+  const [showPopup, setShowPopup] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-export async function fetchMeteoDaily(lat: number, lon: number): Promise<DailyData[]> {
-  const data = await fetchMeteo(lat, lon);
-  return data.daily;
-}
+  const fetchAllDecolli = useCallback(async () => {
+    const results = await Promise.allSettled(
+      DECOLLI.map(async (site) => {
+        const data = await fetchMeteo(site.lat, site.lon);
+        return { id: site.id, data };
+      })
+    );
 
-export function enrDaily(daily: DailyData[], hourly: HourData[]) {
-  return daily.map((d, i) => {
-    const dayHours = hourly.filter((h) => {
-      const hDate = h.time.getDate();
-      const dDate = d.date.getDate();
-      return hDate === dDate;
+    setDecolliMeteo((prev) => {
+      const next = { ...prev };
+      for (const result of results) {
+        if (result.status === "fulfilled") {
+          next[result.value.id] = {
+            ...next[result.value.id],
+            data: result.value.data,
+            loading: false,
+            error: null,
+          };
+        } else {
+          const failedId = DECOLLI.find((s) =>
+            result.reason?.message?.includes(s.id)
+          )?.id;
+          if (failedId) {
+            next[failedId] = {
+              ...next[failedId],
+              loading: false,
+              error: result.reason?.message || "Errore sconosciuto",
+            };
+          }
+        }
+      }
+      return next;
     });
-    const delta = Math.round(d.tempMax - d.tempMin);
-    return { ...d, delta, idx: i };
-  });
+    setGlobalLoading(false);
+    setGlobalError(null);
+  }, []);
+
+  useEffect(() => {
+    fetchAllDecolli();
+    const interval = setInterval(fetchAllDecolli, 60000);
+    return () => clearInterval(interval);
+  }, [fetchAllDecolli]);
+
+  const selectedDecollo = decolliMeteo[siteId];
+  const meteoData = selectedDecollo?.data;
+  const loading = selectedDecollo?.loading ?? true;
+  const error = selectedDecollo?.error;
+
+  const hourlyRaw = meteoData?.hourly || [];
+  const daily = meteoData?.daily || [];
+
+  // Filtra tutte le ore tra le 9 e le 19
+  const hourly = useMemo(() => filterDayHours(hourlyRaw), [hourlyRaw]);
+
+  const weatherMap = useMemo(() => {
+    const map: Record<string, HourData> = {};
+    for (const [id, dm] of Object.entries(decolliMeteo)) {
+      if (dm?.data?.hourly) {
+        const hh = dm.data.hourly.find(
+          (h) => {
+            const hhh = h.time.getHours();
+            return hhh >= 9 && hhh <= 19 && hhh === hour;
+          }
+        );
+        if (hh) map[id] = hh;
+      }
+    }
+    return map;
+  }, [decolliMeteo, hour]);
+
+  const enrichedDaily = useMemo(() => enrDaily(daily, hourly), [daily, hourly]);
+
+  const dateLabels = useMemo(() => {
+    return daily.map((d) =>
+      d.date.toLocaleDateString("it-IT", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      })
+    );
+  }, [daily]);
+
+  const getDayData = useCallback(
+    (idx: number): HourData[] => {
+      if (!hourly.length) return [];
+      const targetDate = daily[idx]?.date;
+      if (!targetDate) return [];
+      return hourly.filter((h) => {
+        const hd = h.time;
+        return (
+          hd.getDate() === targetDate.getDate() &&
+          hd.getMonth() === targetDate.getMonth() &&
+          hd.getFullYear() === targetDate.getFullYear()
+        );
+      });
+    },
+    [hourly, daily]
+  );
+
+  const dayData = useMemo(() => getDayData(dayIdx), [getDayData, dayIdx]);
+
+  const currentHourData = useMemo(() => {
+    const found = hourly.find((h) => h.time.getHours() === hour);
+    return found || hourly[0];
+  }, [hourly, hour]);
+
+  const currentSite = useMemo(
+    () => DECOLLI.find((s) => s.id === siteId) || DECOLLI[0],
+    [siteId]
+  );
+
+  const thermal = useMemo(() => {
+    if (!dayData.length) return null;
+    return calcThermal(dayData, currentSite.altitude);
+  }, [dayData, currentSite.altitude]);
+
+  const aiData = useMemo(() => {
+    if (!dayData.length) return null;
+    return genAI(dayData, { altitude: currentSite.altitude }, thermal);
+  }, [dayData, currentSite.altitude, thermal]);
+
+  const aiMeteoAnalysis = useMemo(() => {
+    return generateAiAnalysis(dayData, dayIdx);
+  }, [dayData, dayIdx]);
+
+  const handleSiteSelect = useCallback((id: string) => {
+    setSiteId(id);
+    setDayIdx(0);
+    setHour(new Date().getHours());
+  }, []);
+
+  const toggleSidebar = useCallback(
+    () => setSidebarOpen((p) => !p),
+    []
+  );
+
+  const handleRetry = useCallback(() => {
+    setGlobalLoading(true);
+    setGlobalError(null);
+    fetchAllDecolli();
+  }, [fetchAllDecolli]);
+
+  if (globalLoading) return <LoadingScreen />;
+  if (globalError) return <ErrorScreen message={globalError} onRetry={handleRetry} />;
+
+  return (
+    <div className="relative min-h-screen bg-gradient-to-b from-slate-800 via-slate-700 to-slate-900 text-slate-100">
+      {/* Overlay texture pattern */}
+      <div className="pointer-events-none fixed inset-0 opacity-[0.03] bg-repeat" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} />
+      
+      {/* Soft gradient orbs */}
+      <div className="pointer-events-none fixed -top-32 -left-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
+      <div className="pointer-events-none fixed -bottom-32 -right-32 w-96 h-96 bg-green-500/8 rounded-full blur-3xl" />
+
+      {/* Header */}
+      <header className="relative z-10 px-4 py-5 border-b-2 border-green-500/40 bg-gradient-to-r from-slate-800/95 via-green-900/20 to-slate-800/95 backdrop-blur-md shadow-lg">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-center justify-center gap-3">
+            <span className="text-4xl md:text-5xl drop-shadow-lg animate-bounce">🐰</span>
+            <div className="border-2 border-green-500/40 rounded-xl px-5 py-3 bg-slate-800/60 backdrop-blur-sm shadow-inner">
+              <h1 className="text-2xl md:text-3xl font-extrabold text-green-400 tracking-tight text-center drop-shadow-sm">
+                Meteo dei <span className="text-green-300">Conigli</span>
+              </h1>
+              <p className="text-xs md:text-sm text-green-200/90 font-medium text-center tracking-wide">
+                🪂 Previsioni per volo libero · 9:00–19:00 · aggiornato ogni minuto
+              </p>
+            </div>
+            <span className="text-4xl md:text-5xl drop-shadow-lg md:block hidden animate-bounce" style={{ animationDelay: "150ms" }}>🐰</span>
+          </div>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <div className="relative z-10 max-w-5xl mx-auto px-3 pb-28 mt-4 md:flex md:gap-3 md:items-start md:justify-center">
+        {/* Sidebar decolli */}
+        <SidebarDecolli
+          selected={siteId}
+          current={currentHourData}
+          onSelect={handleSiteSelect}
+          weatherMap={weatherMap}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
+
+        {/* Colonna principale */}
+        <div className="flex-1 min-w-0 max-w-2xl mx-auto">
+          {/* Ora reale */}
+          <div className="mb-2.5 flex items-center justify-between">
+            <div className="text-[11px] text-slate-400 font-medium">
+              {new Date().toLocaleDateString("it-IT", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+              <span className="ml-2 text-blue-300">
+                {String(hour).padStart(2, "0")}:{String(new Date().getMinutes()).padStart(2, "0")}
+              </span>
+            </div>
+            <div className="flex gap-1.5">
+              <button
+                onClick={toggleSidebar}
+                className="md:hidden px-2.5 py-1.5 rounded-xl text-[10px] font-bold border border-slate-500 bg-slate-700 text-slate-200 hover:bg-slate-600 transition-colors"
+              >
+                ☰ Decolli
+              </button>
+            </div>
+          </div>
+
+          {/* Current site info */}
+          {currentSite && currentHourData && (
+            <div className="mb-2.5">
+              <SiteHeader site={currentSite} current={currentHourData} />
+            </div>
+          )}
+
+          {/* Tab navigation */}
+          <TabNav tab={tab} onTabChange={setTab} />
+
+          {/* Tab content */}
+          <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl p-3 md:p-4 border border-slate-600/50 shadow-xl mt-2.5 text-slate-200">
+            {tab === "meteo" && currentHourData && (
+              <MeteoTab
+                current={currentHourData}
+                dayIdx={dayIdx}
+                hour={hour}
+                enrichedDaily={enrichedDaily}
+                dateLabels={dateLabels}
+                thermal={thermal}
+                pressureGrad={{ grad: 0, desc: "Non disponibile" }}
+                aiData={aiData}
+                onDaySelect={setDayIdx}
+                onHourChange={setHour}
+              />
+            )}
+
+            {tab === "venti" && <VentiTab dayData={dayData} />}
+
+            {tab === "termiche" && (
+              <TermicheTab aiData={aiMeteoAnalysis as unknown as AiAnalysis} />
+            )}
+
+            {tab === "analisi" && aiMeteoAnalysis && (
+              <AnalisiTab aiData={aiMeteoAnalysis as unknown as AiAnalysis} />
+            )}
+            {tab === "analisi" && !aiMeteoAnalysis && (
+              <div className="text-sm text-slate-400 p-4 text-center">
+                Nessuna analisi disponibile per questa giornata.
+              </div>
+            )}
+          </div>
+
+          {/* Hourly popup button */}
+          <div className="mt-3 flex justify-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPopup(true)}
+              className="text-xs border-slate-500/60 text-slate-200 hover:bg-slate-700 bg-slate-800/80"
+            >
+              <MapPin className="w-3 h-3 mr-1" />
+              Dettaglio orario {currentSite?.name} (9:00–19:00)
+            </Button>
+          </div>
+
+          {/* DayForecastPopup */}
+          {showPopup && currentHourData && (
+            <DayForecastPopup
+              data={dayData}
+              dayLabel={dateLabels[dayIdx] || ""}
+              onClose={() => setShowPopup(false)}
+              selectedHour={hour}
+              onHourSelect={(h) => {
+                setHour(h);
+                setShowPopup(false);
+              }}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="relative z-10 fixed bottom-0 left-0 right-0 text-center py-2 border-t border-green-500/30 bg-slate-800/80 backdrop-blur-md shadow-lg">
+        <div className="max-w-5xl mx-auto px-3 flex items-center justify-center gap-8">
+          <p className="text-[10px] text-slate-400">
+            Basato su dati Open-Meteo · previsioni 9:00–19:00
+          </p>
+          <p className="text-[10px] text-slate-400">
+            &copy; {new Date().getFullYear()} Meteo dei Conigli
+          </p>
+        </div>
+      </footer>
+    </div>
+  );
 }
 
-export function getZeroTermico(temperature: number, altitude: number): number {
-  if (temperature <= 0) return altitude;
-  return Math.round(altitude + temperature / 0.0098);
-}
-
-export const wic = (code: number, isDay: boolean): string => {
-  if (code === 0) return isDay ? "\u2600\uFE0F" : "\uD83C\uDF19";
-  if (code <= 3) return isDay ? "\u26C5" : "\uD83C\uDF24\uFE0F";
-  if (code <= 48) return "\uD83C\uDF2B\uFE0F";
-  if (code <= 57) return "\uD83C\uDF26\uFE0F";
-  if (code <= 67) return "\uD83C\uDF27\uFE0F";
-  if (code <= 77) return "\u2744\uFE0F";
-  if (code <= 82) return "\uD83C\uDF28\uFE0F";
-  return "\u26C8\uFE0F";
-};
-
-export const ct = (c: number): string => {
-  if (c <= 20) return "Sereno";
-  if (c <= 40) return "Poco nuvoloso";
-  if (c <= 60) return "Nuvolosità variabile";
-  if (c <= 80) return "Molto nuvoloso";
-  return "Coperto";
-};
-
-export const wa = (deg: number): string => {
-  const dirs = [
-    "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
-    "S", "SSO", "SO", "OSO", "O", "ONO", "NO", "NNO",
-  ];
-  const i = Math.round(deg / 22.5) % 16;
-  return dirs[i];
-};
-
-export const wd = (s: number): string => {
-  if (s < 1) return "Calma";
-  if (s < 6) return "Brezza leggera";
-  if (s < 12) return "Brezza";
-  if (s < 20) return "Vento moderato";
-  if (s < 30) return "Vento teso";
-  if (s < 40) return "Vento forte";
-  return "Burrasca";
-};
-
-export interface WindProfile {
-  dir: string;
-  speed: number;
-  speed1200: number;
-  speed1800: number;
-  speed2400: number;
-}
-
-export function getWindProfile(speed: number, dir: number): WindProfile {
-  const beta = 0.143;
-  const base = speed * (1 + beta * Math.log(300 / 10)) / (1 + beta * Math.log(10 / 10));
-  const calcAlt = (alt: number) => Math.round(base * (1 + beta * Math.log(alt / 300)));
-  return {
-    dir: wa(dir),
-    speed: Math.round(speed),
-    speed1200: calcAlt(1200),
-    speed1800: calcAlt(1800),
-    speed2400: calcAlt(2400),
-  };
-}
-
-export function calcThermal(dayData: HourData[], altitude: number): ThermalData {
-  const maxTemp = Math.max(...dayData.map((h) => h.temperature).filter((t) => t != null));
-  const humidity = dayData.reduce((s, h) => s + h.humidity, 0) / dayData.length;
-  const cloud = dayData.reduce((s, h) => s + h.cloudCover, 0) / dayData.length;
-  const dew = maxTemp - (100 - humidity) / 5;
-  const cloudBase = altitude + Math.round((maxTemp - dew) * 125);
-  const delta = maxTemp - dew;
-  const soarRaw = Math.min(10, Math.max(0, Math.round((delta - 4) * 1.5)));
-  const thermalTop = cloudBase + Math.round(soarRaw * 80);
-  const soarIdx = Math.min(10, Math.max(0, soarRaw));
-  return { cloudBase, thermalTop, soarIdx };
-}
-
-export function calcTurbulence(dayData: HourData[], hour: number, altitude: number): number {
-  const hd = dayData.find((x) => x.time.getHours() === hour);
-  if (!hd) return 0;
-  const ws = hd.windSpeed;
-  const gust = hd.windGust;
-  const turb = Math.min(5, Math.max(1, Math.round(ws * 0.15 + gust * 0.1 + (altitude > 2000 ? 0.5 : 0))));
-  return turb;
-}
+export default Index;
