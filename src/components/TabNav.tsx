@@ -24,8 +24,8 @@ export const TabNav = ({ tab, onTabChange }: TabNavProps) => {
           className={
             "flex-1 text-center py-2.5 rounded-xl text-sm font-bold transition-all duration-200 border " +
             (tab === t.key
-              ? "bg-orange-500/30 border-orange-400 text-white shadow-lg shadow-orange-500/10"
-              : "bg-gray-800/50 border-gray-600 text-gray-400 hover:bg-gray-700/50 hover:text-gray-200 hover:border-gray-500")
+              ? "bg-orange-500 text-white border-orange-500 shadow-md"
+              : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300")
           }
         >
           {t.icon} {t.label}

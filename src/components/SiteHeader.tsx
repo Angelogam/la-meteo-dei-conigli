@@ -10,19 +10,19 @@ interface SiteHeaderProps {
 
 export const SiteHeader = ({ site, current }: SiteHeaderProps) => {
   return (
-    <div className="flex items-start justify-between mb-4 pb-4 border-b border-gray-600/70">
+    <div className="flex items-start justify-between mb-4 pb-4 border-b border-gray-200">
       <div>
-        <h2 className="text-xl font-extrabold text-white drop-shadow-sm">
+        <h2 className="text-xl font-extrabold text-gray-800">
           {site.name}
         </h2>
-        <p className="text-xs text-gray-300 mt-0.5">
+        <p className="text-xs text-gray-500 mt-0.5">
           {site.altitude}m s.l.m.
         </p>
       </div>
       <div className="text-right">
-        <div className="text-3xl drop-shadow-md">{wic(current.weatherCode, true)}</div>
-        <div className="text-lg font-black text-white drop-shadow-sm">{Math.round(current.temperature)}°C</div>
-        <div className="text-xs text-gray-300">{current.windSpeed} km/h &middot; {current.humidity}%</div>
+        <div className="text-3xl">{wic(current.weatherCode, true)}</div>
+        <div className="text-lg font-black text-gray-800">{Math.round(current.temperature)}°C</div>
+        <div className="text-xs text-gray-500">{current.windSpeed} km/h &middot; {current.humidity}%</div>
       </div>
     </div>
   );

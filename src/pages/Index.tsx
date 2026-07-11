@@ -131,7 +131,7 @@ export default function Index() {
   if (loading) return <LoadingScreen />;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-r from-gray-900 via-gray-700 to-gray-500">
+    <div className="min-h-screen flex flex-col bg-white">
       <div className="flex-1 w-full mx-auto px-1 sm:px-3 py-2 max-w-[1600px]">
         <Header />
 
@@ -148,7 +148,7 @@ export default function Index() {
 
           {/* Colonna centrale: dettaglio decollo */}
           <div className="w-full">
-            <div className="bg-gradient-to-br from-gray-800/95 to-gray-700/95 backdrop-blur-sm rounded-2xl border border-gray-500/60 shadow-xl p-3 sm:p-5 mb-3">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-3 sm:p-5 mb-3">
               {current && <SiteHeader site={selected} current={current} />}
 
               <TabNav tab={activeTab} onTabChange={setActiveTab} />
@@ -161,6 +161,7 @@ export default function Index() {
                   enrichedDaily={enrichedDaily}
                   dateLabels={dateLabels}
                   thermal={thermal}
+                  pressure<dyad-write path="src/pages/Index.tsx" description="Completamento Index.tsx bianco">
                   pressureGrad={{ grad: 0, desc: "Stabile" }}
                   aiData={aiData}
                   onDaySelect={setDayIdx}

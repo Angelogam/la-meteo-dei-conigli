@@ -24,21 +24,21 @@ export const SiteList = ({ selected, current, onSelect, weatherMap }: SiteListPr
             className={
               "w-full text-left rounded-xl p-3 transition-all duration-200 border-2 " +
               (isSelected
-                ? "bg-white/20 border-orange-400 shadow-lg"
-                : "bg-white/10 border-gray-600 hover:bg-white/20 hover:border-gray-400")
+                ? "bg-orange-50 border-orange-400 shadow-md"
+                : "bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300")
             }
           >
-            <div className="text-sm font-bold text-white">
+            <div className="text-sm font-bold text-gray-800">
               {site.name}
             </div>
-            <div className="text-xs text-gray-300 mt-0.5">
+            <div className="text-xs text-gray-500 mt-0.5">
               {site.altitude}m s.l.m.
             </div>
             {w && (
               <div className="flex items-center gap-1.5 mt-1.5">
                 <span className="text-lg">{wic(w.weatherCode, true)}</span>
-                <span className="text-sm font-bold text-white">{Math.round(w.temperature)}°C</span>
-                <span className="text-xs text-gray-300">{w.windSpeed} km/h</span>
+                <span className="text-sm font-bold text-gray-800">{Math.round(w.temperature)}°C</span>
+                <span className="text-xs text-gray-500">{w.windSpeed} km/h</span>
               </div>
             )}
           </button>
