@@ -153,6 +153,7 @@ function Index() {
                 🪂 Previsioni per volo libero
               </p>
             </div>
+            <span className="text-3xl md:text-4xl drop-shadow-lg md:block hidden">🐰</span>
           </div>
         </div>
       </header>
