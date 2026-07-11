@@ -3,7 +3,8 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { ErrorScreen } from "@/components/ErrorScreen";
-import { TabNav, type Tab } from "@/components/TabNav";
+import { TabNav } from "@/components/TabNav";
+import type { Tab } from "@/components/TabNav";
 import { MeteoTab } from "@/components/MeteoTab";
 import { VentiTab } from "@/components/VentiTab";
 import VentiQuotaTab from "@/components/VentiQuotaTab";
@@ -17,116 +18,8 @@ import { fetchMeteo, fetchWindProfiles, filterFlightHours, enrDaily, calcThermal
 import type { ThermalCalcData, RichDay } from "@/utils/meteo";
 import { generaAnalisiReale } from "@/utils/analisi";
 import { generateAiAnalysis } from "@/utils/meteoAI";
-import { DECOLLI, type Decollo } from "@/data/decolli";
-import type { MeteoData, HourData, AiAnalysis, WindProfile } from "@/types/meteo";
-import { Button } from "@/components/ui/button";
-import { MapPin, CloudSun, ArrowRight } from "lucide-react";
-
-interface DecolloMeteo {
-  site: Decollo;
-  data: MeteoData | null;
-  loading: boolean;
-  error: string | null;
-  windProfiles: WindProfile[];
-  windProfilesLoading: boolean;
-}
-
-function useRealTimeHour(): number {
-  const [h, setH] = useState(() => new Date().getHours());
-  useEffect(() => {
-    const tick = () => setH(new Date().getHours());
-    const id = setInterval(tick, 10000);
-    return () => clearInterval(id);
-  }, []);
-  return h;
-}
-
-function Index() {
-  const [decolliMeteo, setDecolliMeteo] = useState<Record<string, DecolloMeteo>>(() => {
-    const map: Record<string, DecolloMeteo> = {};
-    for (const site of DECOLLI) {
-      map[site.id] = { site, data: null, loading: true, error: null, windProfiles: [], windProfilesLoading: false };
-    }
-    return map;
-  });
-  const [globalLoading, setGlobalLoading] = useState(true);
-  const [globalError, setGlobalError] = useState<string | null>(null);
-  const [siteId, setSiteId] = useState(DECOLLI[0]?.id || "");
-  const [tab, setTab] = useState<Tab>("meteo");
-  const [dayIdx, setDayIdx] = useState(0);
-  const [hour, setHour] = useState(useRealTimeHour());
-  const [showPopup, setShowPopup] = useState(false);
-  const [showDayDetail, setShowDayDetail] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const fetchAllDecolli = useCallback(async () => {
-    const results = await Promise.allSettled(
-      DECOLLI.map(async (site) => {
-        const data = await fetchMeteo(site.lat, site.lon);
-        return { id: site.id, data };
-      })
-    );
-
-    setDecolliMeteo((prev) => {
-      const next = { ...prev };
-      for (const result of results) {
-        if (result.status === "fulfilled") {
-          next[result.value.id] = {
-            ...next[result.value.id],
-            data: result.value.data,
-            loading: false,
-            error: null,
-          };
-        } else {
-          const failedId = DECOLLI.find((s) =>
-            result.reason?.message?.includes(s.id)
-          )?.id;
-          if (failedId) {
-            next[failedId] = {
-              ...next[failedId],
-              loading: false,
-              error: result.reason?.message || "Errore sconosciuto",
-            };
-          }
-        }
-      }
-      return next;
-    });
-    setGlobalLoading(false);
-    setGlobalError(null);
-  }, []);
-
-  const fetchWind = useCallback(async (lat: number, lon: number) => {
-    setDecolliMeteo((prev) => ({
-      ...prev,
-      [siteId]: { ...prev[siteId], windProfilesLoading: true },
-    }));
-    const profiles = await fetchWindProfiles(lat, lon);
-    setDecolliMeteo((prev) => ({
-      ...prev,
-      [siteId]: { ...prev[siteId], windProfiles: profiles, windProfilesLoading: false },
-    }));
-<dyad-write path="src/pages/Index.tsx" description="Completo il file Index.tsx con le correzioni">
-"use client";
-
-import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { LoadingScreen } from "@/components/LoadingScreen";
-import { ErrorScreen } from "@/components/ErrorScreen";
-import { TabNav, type Tab } from "@/components/TabNav";
-import { MeteoTab } from "@/components/MeteoTab";
-import { VentiTab } from "@/components/VentiTab";
-import VentiQuotaTab from "@/components/VentiQuotaTab";
-import { TermicheTab } from "@/components/TermicheTab";
-import { AnalisiTab } from "@/components/AnalisiTab";
-import SiteHeader from "@/components/SiteHeader";
-import DayForecastPopup from "@/components/DayForecastPopup";
-import { DayDetailPopup } from "@/components/DayDetailPopup";
-import SidebarDecolli from "@/components/SidebarDecolli";
-import { fetchMeteo, fetchWindProfiles, filterFlightHours, enrDaily, calcThermal } from "@/utils/meteo";
-import type { ThermalCalcData, RichDay } from "@/utils/meteo";
-import { generaAnalisiReale } from "@/utils/analisi";
-import { generateAiAnalysis } from "@/utils/meteoAI";
-import { DECOLLI, type Decollo } from "@/data/decolli";
+import { DECOLLI } from "@/data/decolli";
+import type { Decollo } from "@/data/decolli";
 import type { MeteoData, HourData, AiAnalysis, WindProfile } from "@/types/meteo";
 import { Button } from "@/components/ui/button";
 import { MapPin, CloudSun, ArrowRight } from "lucide-react";
