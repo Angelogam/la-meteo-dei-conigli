@@ -314,7 +314,7 @@ function Index() {
 
           <TabNav tab={tab} onTabChange={setTab} />
 
-          <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl p-3 md:p-4 border border-slate-600/50 shadow-xl mt-2.5 text-slate-100">
+          <div className="bg-slate-700/60 backdrop-blur-sm rounded-2xl p-3 md:p-4 border border-slate-600/50 shadow-xl mt-2.5 text-slate-100">
             {tab === "meteo" && currentHourData && (
               <MeteoTab
                 current={currentHourData}
