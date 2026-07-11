@@ -22,10 +22,10 @@ export const TabNav = ({ tab, onTabChange }: TabNavProps) => {
           key={t.id}
           onClick={() => onTabChange(t.id)}
           className={
-            "py-1.5 px-1 rounded-lg border border-white/20 text-xs font-semibold text-center transition-colors " +
+            "py-1.5 px-1 rounded-lg border text-xs font-semibold text-center transition-colors " +
             (tab === t.id
-              ? "bg-red-500/20 text-red-300 border-red-400/40"
-              : "bg-white/[0.04] text-gray-300 hover:bg-white/[0.08]")
+              ? "bg-red-500 text-white border-red-400 shadow-sm"
+              : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200")
           }
         >
           {t.label}

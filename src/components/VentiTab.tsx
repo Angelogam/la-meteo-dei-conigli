@@ -20,14 +20,14 @@ const turbColor = (v: number) => {
 export const VentiTab = ({ dayData }: VentiTabProps) => {
   return (
     <>
-      <h4 className="text-sm text-blue-300 mb-2.5 font-semibold">Turbolenza per quota</h4>
+      <h4 className="text-sm text-blue-600 mb-2.5 font-semibold">Turbolenza per quota</h4>
       <div className="overflow-x-auto mb-3">
         <table className="w-full border-collapse text-xs min-w-[500px]">
           <thead>
             <tr>
-              <th className="text-center p-1 text-gray-400 border-b border-white/20 sticky top-0" style={{background: "#0d1b2a"}}>Ora</th>
+              <th className="text-center p-1 text-gray-500 border-b border-gray-300 sticky top-0 bg-gray-50">Ora</th>
               {turbQuotes.map((q) => (
-                <th key={q} className="text-center p-1 text-blue-300 border-b border-white/20 sticky top-0" style={{background: "#0d1b2a"}}>{q}m</th>
+                <th key={q} className="text-center p-1 text-blue-600 border-b border-gray-300 sticky top-0 bg-gray-50">{q}m</th>
               ))}
             </tr>
           </thead>
@@ -37,11 +37,11 @@ export const VentiTab = ({ dayData }: VentiTabProps) => {
               if (!hd) return null;
               return (
                 <tr key={h}>
-                  <td className="text-center p-1 text-gray-400 border-b border-white/10">{String(h).padStart(2, "0")}:00</td>
+                  <td className="text-center p-1 text-gray-500 border-b border-gray-200">{String(h).padStart(2, "0")}:00</td>
                   {turbQuotes.map((q) => {
                     const tv = calcTurbulence(dayData, h, q);
                     return (
-                      <td key={q} className="text-center p-1 border-b border-white/10">
+                      <td key={q} className="text-center p-1 border-b border-gray-200">
                         <span className="inline-block w-6 h-6 leading-6 rounded-full text-white font-bold text-xs" style={{background: turbColor(tv)}}>{tv}</span>
                       </td>
                     );
@@ -52,8 +52,8 @@ export const VentiTab = ({ dayData }: VentiTabProps) => {
           </tbody>
         </table>
       </div>
-      <div className="flex flex-wrap gap-1.5 mb-3 p-2 bg-white/[0.07] rounded-xl border border-white/15">
-        <div className="text-xs text-gray-300 w-full mb-1 font-semibold">Legenda Turbolenza:</div>
+      <div className="flex flex-wrap gap-1.5 mb-3 p-2 bg-white/60 rounded-xl border border-gray-200">
+        <div className="text-xs text-gray-500 w-full mb-1 font-semibold">Legenda Turbolenza:</div>
         {[
           [1, "Calma"],
           [2, "Leggera"],
@@ -63,7 +63,7 @@ export const VentiTab = ({ dayData }: VentiTabProps) => {
         ].map(([v, l]) => (
           <div key={v} className="flex items-center gap-1">
             <span className="inline-block w-4 h-4 leading-4 rounded-full text-white font-bold text-xs text-center" style={{background: turbColor(v as number)}}>{v}</span>
-            <span className="text-xs text-gray-400">{l}</span>
+            <span className="text-xs text-gray-500">{l}</span>
           </div>
         ))}
       </div>

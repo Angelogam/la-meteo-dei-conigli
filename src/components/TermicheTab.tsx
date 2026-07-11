@@ -12,8 +12,8 @@ export const TermicheTab = ({ aiData }: TermicheTabProps) => {
   return (
     <>
       {["thermal", "altitude", "hourly"].map((key) => (
-        <div key={key} className="mb-2.5 p-2 bg-white/[0.07] rounded-xl border border-white/15">
-          <div className="text-xs leading-relaxed whitespace-pre-wrap text-gray-200">{aiData[key as keyof AiAnalysis] as string}</div>
+        <div key={key} className="mb-2.5 p-2 bg-white/60 rounded-xl border border-gray-200 shadow-sm">
+          <div className="text-xs leading-relaxed whitespace-pre-wrap text-gray-700">{aiData[key as keyof AiAnalysis] as string}</div>
         </div>
       ))}
     </>

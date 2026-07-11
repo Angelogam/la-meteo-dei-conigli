@@ -15,8 +15,8 @@ const diffLabel = (d: number) => d <= 2 ? "Facile" : d <= 3 ? "Medio" : "Diffici
 
 export const SiteList = ({ selected, current, onSelect }: SiteListProps) => {
   return (
-    <div className="bg-white/[0.07] rounded-2xl border border-white/20 p-3 backdrop-blur md:h-[calc(100vh-180px)] overflow-hidden">
-      <h3 className="text-lg text-red-400 mb-3 font-bold">Decolli</h3>
+    <div className="bg-gray-200/50 rounded-2xl border border-gray-300/70 p-3 backdrop-blur md:h-[calc(100vh-180px)] overflow-hidden">
+      <h3 className="text-lg text-red-600 mb-3 font-bold">Decolli</h3>
       <div className="overflow-y-auto h-[calc(100%-40px)] pr-1">
         {DECOLLI.map((d) => {
           const sel = d.id === selected;
@@ -28,15 +28,15 @@ export const SiteList = ({ selected, current, onSelect }: SiteListProps) => {
               className={
                 "w-full text-left rounded-xl p-2.5 mb-1.5 cursor-pointer transition-colors " +
                 (sel
-                  ? "bg-red-500/20 border border-red-400/60"
-                  : "bg-white/[0.06] border border-white/20 hover:bg-white/[0.1]")
+                  ? "bg-red-100 border border-red-300 shadow-sm"
+                  : "bg-white/60 border border-gray-200 hover:bg-white/80")
               }
             >
               <div className="flex justify-between items-center">
-                <span className="font-bold text-sm text-gray-100">{d.name}</span>
+                <span className="font-bold text-sm text-gray-800">{d.name}</span>
                 <span>{sel ? cw : ""}</span>
               </div>
-              <div className="flex justify-between text-xs text-gray-300 mt-0.5">
+              <div className="flex justify-between text-xs text-gray-500 mt-0.5">
                 <span>{d.valley}</span>
                 <span>{d.exposure}</span>
               </div>
