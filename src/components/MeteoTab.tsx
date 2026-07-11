@@ -1,6 +1,6 @@
 "use client";
 
-import { wic, ct, wa, wd } from "@/utils/meteo";
+import { wic, ct, wa, wd, getZeroTermico } from "@/utils/meteo";
 import type { HourData, DailyData, ThermalData, PressureGradient, AiAnalysis } from "@/types/meteo";
 
 interface MeteoTabProps {
@@ -83,6 +83,19 @@ export const MeteoTab = ({
             <div className="text-sm md:text-base font-bold text-gray-800">{v}</div>
           </div>
         ))}
+      </div>
+
+      {/* Zero termico */}
+      <div className="mb-3 p-2.5 bg-white/60 rounded-xl border border-gray-200 shadow-sm">
+        <h4 className="text-sm text-blue-600 mb-1.5 font-semibold">Zero Termico</h4>
+        <div className="text-center">
+          <div className="text-3xl font-extrabold text-gray-800">
+            {getZeroTermico(current.temperature, 0)} m
+          </div>
+          <div className="text-xs text-gray-500 mt-0.5">
+            Altitudine dove T = 0°C (gradiente 0.98°C/100m)
+          </div>
+        </div>
       </div>
 
       <div className="mb-3 p-2.5 bg-white/60 rounded-xl border border-gray-200 shadow-sm">
