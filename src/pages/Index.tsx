@@ -33,7 +33,7 @@ function useRealTimeHour(): number {
   const [h, setH] = useState(() => new Date().getHours());
   useEffect(() => {
     const tick = () => setH(new Date().getHours());
-    const id = setInterval(tick, 10000); // aggiorna ogni 10s per avere ora precisa
+    const id = setInterval(tick, 10000);
     return () => clearInterval(id);
   }, []);
   return h;
@@ -56,7 +56,6 @@ function Index() {
   const [showPopup, setShowPopup] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Fetch dati per TUTTI i decolli
   const fetchAllDecolli = useCallback(async () => {
     const results = await Promise.allSettled(
       DECOLLI.map(async (site) => {
@@ -94,14 +93,12 @@ function Index() {
     setGlobalError(null);
   }, []);
 
-  // Polling ogni 60 secondi + primo fetch
   useEffect(() => {
     fetchAllDecolli();
     const interval = setInterval(fetchAllDecolli, 60000);
     return () => clearInterval(interval);
   }, [fetchAllDecolli]);
 
-  // Dati del decollo selezionato
   const selectedDecollo = decolliMeteo[siteId];
   const meteoData = selectedDecollo?.data;
   const loading = selectedDecollo?.loading ?? true;
@@ -110,7 +107,6 @@ function Index() {
   const hourly = meteoData?.hourly || [];
   const daily = meteoData?.daily || [];
 
-  // Mappa weather per sidebar (usando dati reali, ora corrente)
   const weatherMap = useMemo(() => {
     const map: Record<string, HourData> = {};
     for (const [id, dm] of Object.entries(decolliMeteo)) {
@@ -180,7 +176,6 @@ function Index() {
 
   const handleSiteSelect = useCallback((id: string) => {
     setSiteId(id);
-    // Reimposta giorno e ora sul nuovo decollo
     setDayIdx(0);
     setHour(new Date().getHours());
   }, []);
@@ -200,13 +195,20 @@ function Index() {
   if (globalError) return <ErrorScreen message={globalError} onRetry={handleRetry} />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-700 via-slate-600 to-slate-700 text-slate-100">
+    <div className="relative min-h-screen bg-gradient-to-b from-slate-800 via-slate-700 to-slate-900 text-slate-100">
+      {/* Overlay texture pattern */}
+      <div className="pointer-events-none fixed inset-0 opacity-[0.03] bg-repeat" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} />
+      
+      {/* Soft gradient orbs */}
+      <div className="pointer-events-none fixed -top-32 -left-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
+      <div className="pointer-events-none fixed -bottom-32 -right-32 w-96 h-96 bg-orange-500/8 rounded-full blur-3xl" />
+
       {/* Header */}
-      <header className="px-4 py-5 border-b border-orange-600 bg-gradient-to-r from-slate-800/90 via-orange-900/40 to-slate-800/90 backdrop-blur-md">
+      <header className="relative z-10 px-4 py-5 border-b border-orange-500/30 bg-gradient-to-r from-slate-800/95 via-orange-800/20 to-slate-800/95 backdrop-blur-md shadow-lg">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-center gap-3">
             <span className="text-4xl md:text-5xl drop-shadow-lg animate-bounce">🐰</span>
-            <div className="border-2 border-green-600 rounded-xl px-5 py-3">
+            <div className="border-2 border-green-500/40 rounded-xl px-5 py-3 bg-slate-800/60 backdrop-blur-sm shadow-inner">
               <h1 className="text-2xl md:text-3xl font-extrabold text-orange-400 tracking-tight text-center drop-shadow-sm">
                 Meteo dei <span className="text-orange-300">Conigli</span>
               </h1>
@@ -220,7 +222,7 @@ function Index() {
       </header>
 
       {/* Main content */}
-      <div className="max-w-5xl mx-auto px-3 pb-28 mt-4 md:flex md:gap-3 md:items-start md:justify-center">
+      <div className="relative z-10 max-w-5xl mx-auto px-3 pb-28 mt-4 md:flex md:gap-3 md:items-start md:justify-center">
         {/* Sidebar decolli */}
         <SidebarDecolli
           selected={siteId}
@@ -267,7 +269,7 @@ function Index() {
           <TabNav tab={tab} onTabChange={setTab} />
 
           {/* Tab content */}
-          <div className="bg-slate-800/95 backdrop-blur-sm rounded-2xl p-3 md:p-4 border border-slate-600 shadow-lg mt-2.5 text-slate-200">
+          <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl p-3 md:p-4 border border-slate-600/50 shadow-xl mt-2.5 text-slate-200">
             {tab === "meteo" && currentHourData && (
               <MeteoTab
                 current={currentHourData}
@@ -305,7 +307,7 @@ function Index() {
               variant="outline"
               size="sm"
               onClick={() => setShowPopup(true)}
-              className="text-xs border-slate-500 text-slate-200 hover:bg-slate-700 bg-slate-800/80"
+              className="text-xs border-slate-500/60 text-slate-200 hover:bg-slate-700 bg-slate-800/80"
             >
               <MapPin className="w-3 h-3 mr-1" />
               Dettaglio orario {currentSite?.name}
@@ -329,7 +331,7 @@ function Index() {
       </div>
 
       {/* Footer */}
-      <footer className="fixed bottom-0 left-0 right-0 text-center py-2 border-t border-slate-600 bg-slate-800/80 backdrop-blur-sm z-40">
+      <footer className="relative z-10 fixed bottom-0 left-0 right-0 text-center py-2 border-t border-slate-600/50 bg-slate-800/80 backdrop-blur-md shadow-lg">
         <div className="max-w-5xl mx-auto px-3 flex items-center justify-center gap-8">
           <p className="text-[10px] text-slate-400">
             Basato su dati Open-Meteo · aggiornato ogni minuto
