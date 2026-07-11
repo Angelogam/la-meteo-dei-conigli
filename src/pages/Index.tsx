@@ -370,35 +370,6 @@ const Index = () => {
           <TabNav tab={tab} onTabChange={setTab} />
 
           <div className="bg-slate-700/70 backdrop-blur-sm rounded-2xl p-4 md:p-5 border border-slate-500/60 shadow-xl mt-2.5 text-slate-100 content-enter">
-            {/* PULSANTI GIORNI - all'inizio della finestra delle previsioni */}
-            <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1 scrollbar-thin">
-              {dateLabels.map((label, i) => {
-                const isPrevisto = giorniPrevisioni.find(g => g.giorno === i);
-                const labelFinale = isPrevisto ? isPrevisto.label : label;
-                return (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      setDayIdx(i);
-                      if (i > 0) {
-                        const gp = giorniPrevisioni.find(g => g.giorno === i);
-                        if (!gp?.data) {
-                          fetchGiorno(i);
-                        }
-                      }
-                    }}
-                    className={`shrink-0 px-3.5 py-2 text-xs font-bold rounded-xl border-2 transition-all duration-200 whitespace-nowrap ${
-                      i === dayIdx
-                        ? "bg-blue-600 text-white border-blue-400 shadow-lg shadow-blue-500/20 scale-105"
-                        : "bg-slate-700/60 text-slate-300 border-slate-500/50 hover:bg-slate-600 hover:text-white hover:border-slate-400"
-                    }`}
-                  >
-                    {i === 0 ? "Oggi" : labelFinale}
-                  </button>
-                );
-              })}
-            </div>
-
             {tab === "meteo" && currentHourData && (
               <MeteoTab
                 current={currentHourData}
@@ -439,6 +410,35 @@ const Index = () => {
                 Nessuna analisi disponibile per questa giornata.
               </div>
             )}
+
+            {/* PULSANTI GIORNI - in fondo al contenitore grigio */}
+            <div className="flex gap-1.5 mt-6 overflow-x-auto pb-1 scrollbar-thin">
+              {dateLabels.map((label, i) => {
+                const isPrevisto = giorniPrevisioni.find(g => g.giorno === i);
+                const labelFinale = isPrevisto ? isPrevisto.label : label;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setDayIdx(i);
+                      if (i > 0) {
+                        const gp = giorniPrevisioni.find(g => g.giorno === i);
+                        if (!gp?.data) {
+                          fetchGiorno(i);
+                        }
+                      }
+                    }}
+                    className={`shrink-0 px-3.5 py-2 text-xs font-bold rounded-xl border-2 transition-all duration-200 whitespace-nowrap ${
+                      i === dayIdx
+                        ? "bg-blue-600 text-white border-blue-400 shadow-lg shadow-blue-500/20 scale-105"
+                        : "bg-slate-700/60 text-slate-300 border-slate-500/50 hover:bg-slate-600 hover:text-white hover:border-slate-400"
+                    }`}
+                  >
+                    {i === 0 ? "Oggi" : labelFinale}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="mt-4 flex justify-center gap-2">
