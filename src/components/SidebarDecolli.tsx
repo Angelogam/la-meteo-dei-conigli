@@ -16,14 +16,6 @@ interface SidebarDecolliProps {
   onClose: () => void;
 }
 
-const diffColors: Record<number, string> = {
-  1: "bg-emerald-900/60 text-emerald-300 border-emerald-600",
-  2: "bg-blue-900/60 text-blue-300 border-blue-600",
-  3: "bg-amber-900/60 text-amber-300 border-amber-600",
-  4: "bg-orange-900/60 text-orange-300 border-orange-600",
-  5: "bg-red-900/60 text-red-300 border-red-600",
-};
-
 const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClose }: SidebarDecolliProps) => {
   const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -101,7 +93,6 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
           {DECOLLI.map((site) => {
             const w = weatherMap[site.id];
             const isSelected = site.id === selected;
-            const diffClass = diffColors[site.difficulty] || "bg-slate-700 text-slate-300 border-slate-500";
             const volo = getVoloStatus(w);
             return (
               <button
@@ -126,9 +117,6 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                     <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
                       <span className={`text-[12px] font-semibold text-white truncate block leading-snug ${isSelected ? "text-blue-200" : ""}`}>
                         {site.name}
-                      </span>
-                      <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold border ${diffClass}`}>
-                        D{site.difficulty}
                       </span>
                       {w && (
                         <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold border ${volo.color}`}>
