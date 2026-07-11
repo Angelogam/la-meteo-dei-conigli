@@ -3,62 +3,46 @@
 export interface HourData {
   time: Date;
   temperature: number;
-  dewPoint: number;
+  feelsLike: number;
   humidity: number;
-  cloudCover: number;
+  dewPoint: number;
   precipitation: number;
-  visibility: number;
-  windSpeed: number;
-  windGust: number;
-  windDir: number;
-  wind80m: number | null;
-  windDir80m: number | null;
-  wind120m: number | null;
-  windDir120m: number | null;
-  uvIndex: number;
-  isDay: number;
   weatherCode: number;
+  cloudCover: number;
   pressure: number;
+  windSpeed: number;
+  windDir: number;
+  windGust: number;
+  soilTemp: number | null;
+  soilMoisture: number | null;
+  uvIndex: number | null;
+  isDay: boolean;
 }
 
 export interface DailyData {
   date: Date;
-  weatherCode: number;
   tempMax: number;
   tempMin: number;
-  sunrise: Date;
-  sunset: Date;
-  uvMax: number;
+  weatherCode: number;
   precipitationSum: number;
-  precipitationHours: number;
-  windMax: number;
-  windDirDominant: number;
 }
 
 export interface MeteoData {
   hourly: HourData[];
   daily: DailyData[];
+  lat: number;
+  lon: number;
 }
 
 export interface ThermalData {
   cloudBase: number;
   thermalTop: number;
-  delta: number;
-  avgT: number;
-  maxT: number;
-  minT: number;
-  avgCloud: number;
-  avgHum: number;
   soarIdx: number;
-  hourly: {
-    hour: number;
-    temp: number;
-    intensity: number;
-    cloudBase: number;
-    wind: number;
-    dir: number;
-    cloud: number;
-  }[];
+}
+
+export interface PressureGradient {
+  grad: number;
+  desc: string;
 }
 
 export interface AiAnalysis {
@@ -67,11 +51,7 @@ export interface AiAnalysis {
   thermal: string;
   altitude: string;
   hourly: string;
+  wind: string;
   pressure: string;
   thunderstorm: string;
-}
-
-export interface PressureGradient {
-  grad: number;
-  desc: string;
 }
