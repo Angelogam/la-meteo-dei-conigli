@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { X, Wind, Thermometer, RefreshCw, Droplets, Gauge, Cloud, CloudRain } from "lucide-react";
+import AlertVolo from "./AlertVolo";
 import type { HourData } from "@/types/meteo";
 import { DECOLLI } from "@/data/decolli";
 import { wic, wd } from "@/utils/meteo";
@@ -149,6 +150,8 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                   )}
                 </div>
                 {w && (
+                  <>
+                  <AlertVolo weather={w} />
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2.5 pt-2.5 border-t-2 border-green-500/20">
                     <div className="flex items-center gap-1.5 text-[12px] text-blue-200/90">
                       <Wind className="w-4 h-4 text-blue-300 animate-pulse" />
@@ -181,6 +184,7 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                       </div>
                     )}
                   </div>
+                  </>
                 )}
                 {!w && (
                   <div className="text-[12px] text-slate-400 mt-1.5 italic flex items-center gap-1">
