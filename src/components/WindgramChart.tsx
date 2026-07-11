@@ -10,8 +10,10 @@ interface WindgramChartProps {
   siteName: string;
 }
 
+const ORE = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+
 const QUOTE = [
-  { label: "GND", offset: 0 },
+  { label: "Suolo", offset: 0 },
   { label: "250", offset: 250 },
   { label: "500", offset: 500 },
   { label: "750", offset: 750 },
@@ -28,21 +30,21 @@ const QUOTE = [
   { label: "4000", offset: 4000 },
 ];
 
-const ORE = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
-
-function getCellBg(speed: number): string {
-  if (speed < 5) return "#0a2e1a";
-  if (speed < 10) return "#0d3d22";
-  if (speed < 15) return "#3a2a00";
-  if (speed < 20) return "#4a3500";
-  if (speed < 25) return "#4a2800";
-  if (speed < 30) return "#5a2000";
-  if (speed < 35) return "#5a1010";
-  if (speed < 40) return "#6a0000";
-  return "#3a0000";
+// Sfondo cella in base alla velocità - come nell'immagine
+function cellBg(speed: number): string {
+  if (speed < 5) return "#1a3a2a";
+  if (speed < 10) return "#1a4a2a";
+  if (speed < 15) return "#4a4a00";
+  if (speed < 20) return "#5a4a00";
+  if (speed < 25) return "#5a3a00";
+  if (speed < 30) return "#6a2a00";
+  if (speed < 35) return "#7a1a1a";
+  if (speed < 40) return "#8a0000";
+  return "#4a0000";
 }
 
-function getCellColor(speed: number): string {
+// Colore del numero velocità - come nell'immagine
+function numColor(speed: number): string {
   if (speed < 5) return "#4ade80";
   if (speed < 10) return "#22c55e";
   if (speed < 15) return "#facc15";
@@ -54,12 +56,14 @@ function getCellColor(speed: number): string {
   return "#dc2626";
 }
 
-function getArrow(deg: number): string {
+// Freccia direzione vento - 8 direzioni
+function dirArrow(deg: number): string {
   const arr = ["↓", "↙", "←", "↖", "↑", "↗", "→", "↘"];
   return arr[Math.round(deg / 45) % 8];
 }
 
-function estimaVento(suoloSpeed: number, suoloDir: number, offset: number, ora: number, cloud: number): { speed: number; dir: number } {
+// Stima vento in quota
+function stimaVento(suoloSpeed: number, suoloDir: number, offset: number, ora: number, cloud: number): { speed: number; dir: number } {
   if (offset === 0) return { speed: Math.round(suoloSpeed), dir: Math.round(suoloDir) };
   const factor = 1 + offset * 0.0025 * (1 + cloud / 300);
   const rot = Math.min(offset * 0.03, 60);
@@ -76,7 +80,7 @@ const WindgramChart = ({ dayData, altitude }: WindgramChartProps) => {
       const h = dayData.find((d) => d.time.getHours() === ora);
       if (!h) return null;
       const cloud = h.cloudCover || 0;
-      const livelli = QUOTE.map((q) => estimaVento(h.windSpeed || 0, h.windDir || 0, q.offset, ora, cloud));
+      const livelli = QUOTE.map((q) => stimaVento(h.windSpeed || 0, h.windDir || 0, q.offset, ora, cloud));
       return {
         ora,
         temp: `${Math.round(h.temperature)}°`,
@@ -88,69 +92,79 @@ const WindgramChart = ({ dayData, altitude }: WindgramChartProps) => {
 
   return (
     <div className="overflow-x-auto -mx-1 pb-2">
-      <table className="w-full border-collapse" style={{ minWidth: "750px", fontSize: "12px" }}>
+      <table className="w-full border-collapse text-xs" style={{ minWidth: "800px" }}>
         <thead>
-          {/* Riga 1: temperature */}
-          <tr className="bg-slate-700">
-            <th className="p-1.5 text-left text-slate-400 font-medium sticky left-0 bg-slate-700 z-10" style={{ width: "75px" }}>
+          {/* RIGA TEMPERATURA */}
+          <tr className="bg-slate-700/80">
+            <th className="px-2 py-1.5 text-left text-slate-400 font-medium whitespace-nowrap sticky left-0 bg-slate-700/80 z-10" style={{ width: "70px" }}>
               Quota
             </th>
             {cols.map((c) => (
-              <th key={c?.ora || 0} className="p-1.5 text-center text-orange-300 font-bold">
+              <th key={c?.ora || 0} className="px-2 py-1.5 text-center font-bold text-orange-300 text-xs">
                 {c?.temp || "—"}
               </th>
             ))}
           </tr>
-          {/* Riga 2: ore e quota suolo */}
+
+          {/* RIGA ORE */}
           <tr className="bg-slate-700 border-b border-slate-600">
-            <th className="p-1.5 text-left text-slate-300 font-bold sticky left-0 bg-slate-700 z-10">
+            <th className="px-2 py-1.5 text-left text-slate-400 font-medium sticky left-0 bg-slate-700 z-10">
               {altitude}m
             </th>
             {cols.map((c) => (
-              <th key={c?.ora || 0} className="p-1.5 text-center text-blue-200 font-bold">
+              <th key={c?.ora || 0} className="px-2 py-1.5 text-center font-bold text-blue-200 text-xs">
                 {c ? `${String(c.ora).padStart(2, "0")}:00` : "—"}
               </th>
             ))}
           </tr>
         </thead>
+
         <tbody>
           {QUOTE.map((q, qi) => (
             <tr
               key={q.offset}
-              className={qi % 2 === 0 ? "bg-slate-800/80" : "bg-slate-800/40"}
+              className={qi % 2 === 0 ? "" : ""}
             >
-              <td className="p-1.5 text-slate-300 font-mono sticky left-0 z-10 bg-slate-800">
-                {q.label === "GND" ? `${altitude}m` : `${altitude + q.offset}m`}
+              {/* ETICHETTA QUOTA */}
+              <td className="px-2 py-1.5 text-slate-300 font-mono text-xs sticky left-0 z-10 bg-slate-800 whitespace-nowrap">
+                {q.label === "Suolo" ? `${altitude}m` : q.offset <= 3000 ? `${q.offset}m` : `${q.offset}m`}
               </td>
+
+              {/* CELLE VENTO */}
               {cols.map((c) => {
-                if (!c) return <td key={qi} className="p-1.5 text-center text-slate-600">—</td>;
+                if (!c) return <td key={Math.random()} className="px-2 py-1.5 text-center text-slate-600">—</td>;
                 const lvl = c.livelli[qi];
-                if (!lvl) return <td key={qi} className="p-1.5 text-center text-slate-600">—</td>;
-                const bg = getCellBg(lvl.speed);
-                const col = getCellColor(lvl.speed);
+                if (!lvl) return <td key={Math.random()} className="px-2 py-1.5 text-center text-slate-600">—</td>;
+                const bg = cellBg(lvl.speed);
+                const col = numColor(lvl.speed);
                 return (
                   <td
-                    key={qi}
-                    className="p-1.5 text-center border-b border-slate-700/30"
+                    key={q.offset + "-" + c.ora}
+                    className="px-2 py-1.5 text-center border-b border-slate-700/20"
                     style={{ backgroundColor: bg }}
                   >
-                    <div className="text-base font-extrabold leading-tight" style={{ color: col }}>
+                    {/* Numero velocità GRANDE */}
+                    <div className="text-sm md:text-base font-extrabold leading-tight" style={{ color: col }}>
                       {lvl.speed}
                     </div>
+                    {/* Freccia + direzione */}
                     <div className="flex items-center justify-center gap-0.5 mt-0.5">
-                      <span className="text-sm">{getArrow(lvl.dir)}</span>
-                      <span className="text-[10px] text-slate-400">{lvl.dir >= 0 ? wd(lvl.dir) : "—"}</span>
+                      <span className="text-sm font-bold text-slate-100">{dirArrow(lvl.dir)}</span>
+                      <span className="text-[9px] text-slate-400 font-medium">{lvl.dir >= 0 ? wd(lvl.dir) : "—"}</span>
                     </div>
                   </td>
                 );
               })}
             </tr>
           ))}
-          {/* Riga pioggia */}
+
+          {/* RIGA PIOGGIA */}
           <tr className="bg-slate-700/60 border-t border-slate-600">
-            <td className="p-1.5 text-slate-300 font-medium sticky left-0 bg-slate-700/60 z-10">🌧️</td>
+            <td className="px-2 py-1.5 text-slate-300 font-medium whitespace-nowrap sticky left-0 bg-slate-700/60 z-10 text-xs">
+              Pioggia
+            </td>
             {cols.map((c) => (
-              <td key={c?.ora || 0} className="p-1.5 text-center">
+              <td key={c?.ora || 0} className="px-2 py-1.5 text-center text-xs">
                 {c ? (
                   c.pioggia > 0.2 ? (
                     <span className="text-blue-300 font-bold">{c.pioggia.toFixed(1)}mm</span>
@@ -166,9 +180,9 @@ const WindgramChart = ({ dayData, altitude }: WindgramChartProps) => {
         </tbody>
       </table>
 
-      {/* Legenda */}
-      <div className="flex flex-wrap items-center gap-2 justify-center mt-3 pt-2 border-t border-slate-600/30">
-        <span className="text-[10px] text-slate-400 font-semibold mr-1">km/h:</span>
+      {/* LEGENDA */}
+      <div className="flex flex-wrap items-center gap-3 justify-center mt-3 pt-2.5 border-t border-slate-600/30">
+        <span className="text-[11px] text-slate-400 font-bold">km/h:</span>
         {[
           { c: "#4ade80", l: "0-5" },
           { c: "#22c55e", l: "5-10" },
@@ -182,7 +196,7 @@ const WindgramChart = ({ dayData, altitude }: WindgramChartProps) => {
         ].map((x) => (
           <div key={x.l} className="flex items-center gap-1">
             <div className="w-3 h-3 rounded-sm" style={{ background: x.c }} />
-            <span className="text-[9px] text-slate-400">{x.l}</span>
+            <span className="text-[10px] text-slate-400">{x.l}</span>
           </div>
         ))}
       </div>
