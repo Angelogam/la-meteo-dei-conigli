@@ -1,7 +1,7 @@
 "use client";
 
 import type { HourData, AiAnalysis, ThermalData } from "@/types/meteo";
-import { wa, wic } from "./meteo";
+import { wa } from "./meteo";
 
 function mediaVento(dayData: HourData[]): number {
   if (!dayData.length) return 0;
@@ -122,5 +122,14 @@ export function genAI(dayData: HourData[], selected: { altitude: number }, therm
     thunderstorm = `Nessun rischio temporali e rischi di fulmini trascurabili. Cielo sereno o poco nuvoloso, condizioni sicure per il volo.`;
   }
 
-  return { general, thermal: thermalStr, wind: windStr, hourly: hourlyStr, advice, thunderstorm, altitude: "", pressure: "" } as AiAnalysis;
+  return {
+    general,
+    thermal: thermalStr,
+    wind: windStr,
+    hourly: hourlyStr,
+    advice,
+    thunderstorm,
+    altitude: "",
+    pressure: "",
+  };
 }
