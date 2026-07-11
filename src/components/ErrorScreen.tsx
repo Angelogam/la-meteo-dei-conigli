@@ -2,15 +2,18 @@
 
 interface ErrorScreenProps {
   message: string;
+  onRetry: () => void;
 }
 
-export const ErrorScreen = ({ message }: ErrorScreenProps) => {
+export const ErrorScreen = ({ message, onRetry }: ErrorScreenProps) => {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 text-gray-700">
-      <p className="text-red-600 text-lg mb-4 font-medium">Errore: {message}</p>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-r from-gray-900 via-gray-700 to-gray-500">
+      <div className="text-6xl mb-4">&#x26A0;&#xFE0F;</div>
+      <div className="text-xl font-bold text-red-400 mb-2">Errore di caricamento</div>
+      <div className="text-sm text-gray-300 mb-4 text-center max-w-md">{message}</div>
       <button
-        className="bg-red-500 text-white px-7 py-2.5 rounded-lg font-semibold cursor-pointer hover:bg-red-600 transition-colors shadow-sm"
-        onClick={() => window.location.reload()}
+        onClick={onRetry}
+        className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-colors"
       >
         Riprova
       </button>

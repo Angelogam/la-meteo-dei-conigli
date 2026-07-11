@@ -1,8 +1,7 @@
 "use client";
 
+import type { Decollo, HourData } from "@/types/meteo";
 import { wic } from "@/utils/meteo";
-import type { HourData } from "@/types/meteo";
-import type { Decollo } from "@/data/decolli";
 
 interface SiteHeaderProps {
   site: Decollo;
@@ -11,14 +10,21 @@ interface SiteHeaderProps {
 
 export const SiteHeader = ({ site, current }: SiteHeaderProps) => {
   return (
-    <div className="flex justify-between items-center pb-3 border-b border-gray-300 mb-3 flex-wrap gap-2">
+    <div className="flex items-start justify-between mb-3 pb-3 border-b border-gray-500">
       <div>
-        <h2 className="text-xl md:text-2xl font-bold text-gray-900">{site.name}</h2>
-        <span className="text-sm text-gray-500">{site.exposure} - {site.valley} - {site.altitude}m</span>
+        <h2 className="text-xl font-extrabold text-white">
+          {site.icon} {site.name}
+        </h2>
+        <p className="text-xs text-gray-300">
+          {site.altitude}m s.l.m. &middot; {site.province} &middot; {site.description}
+        </p>
       </div>
-      <div className="flex items-center gap-2 bg-gray-200/70 px-3 py-1 rounded-full">
-        <span className="text-2xl md:text-3xl">{wic(current.weatherCode, current.isDay)}</span>
-        <span className="text-xl md:text-2xl font-bold text-orange-600">{Math.round(current.temperature)}&deg;C</span>
+      <div className="text-right">
+        <div className="text-3xl">{wic(current.weatherCode, true)}</div>
+        <div className="text-lg font-black text-white">{Math.round(current.temperature)}°C</div>
+        <div className="text-xs text-gray-300">
+          {current.windSpeed} km/h &middot; {current.humidity}%
+        </div>
       </div>
     </div>
   );

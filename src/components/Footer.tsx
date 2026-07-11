@@ -2,11 +2,10 @@
 
 export const Footer = () => {
   return (
-    <footer className="text-center mt-6 py-4 border-t border-gray-200 bg-white/50 rounded-t-xl">
-      <p className="text-sm text-gray-700 font-medium">
-        Meteo dei Conigli since @ A.C.M.E. 2026 - Creato dal gruppo dei Conigli a scopo no-profit
+    <footer className="text-center py-3 border-t border-gray-500 mt-auto">
+      <p className="text-xs text-gray-300">
+        Basato su dati Open-Meteo &copy; {new Date().getFullYear()} - Meteo dei Conigli
       </p>
-      <p className="text-sm text-gray-600 mt-1">Dati da Open-Meteo.com</p>
     </footer>
   );
 };

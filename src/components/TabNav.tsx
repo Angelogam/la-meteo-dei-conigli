@@ -1,34 +1,34 @@
 "use client";
 
-type TabId = "meteo" | "venti" | "termiche" | "analisi";
+type Tab = "meteo" | "venti" | "termiche" | "analisi";
 
 interface TabNavProps {
-  tab: TabId;
-  onTabChange: (tab: TabId) => void;
+  tab: Tab;
+  onTabChange: (tab: Tab) => void;
 }
 
-const tabs: { id: TabId; label: string }[] = [
-  { id: "meteo", label: "Meteo" },
-  { id: "venti", label: "Venti" },
-  { id: "termiche", label: "Termiche" },
-  { id: "analisi", label: "Analisi" },
+const TABS: { key: Tab; label: string; icon: string }[] = [
+  { key: "meteo", label: "Meteo", icon: "🌤️" },
+  { key: "venti", label: "Venti", icon: "💨" },
+  { key: "termiche", label: "Termiche", icon: "🪁" },
+  { key: "analisi", label: "Analisi", icon: "📊" },
 ];
 
 export const TabNav = ({ tab, onTabChange }: TabNavProps) => {
   return (
-    <div className="grid grid-cols-4 gap-1 mb-4">
-      {tabs.map((t) => (
+    <div className="flex gap-1 mb-4">
+      {TABS.map((t) => (
         <button
-          key={t.id}
-          onClick={() => onTabChange(t.id)}
+          key={t.key}
+          onClick={() => onTabChange(t.key)}
           className={
-            "py-1.5 px-1 rounded-lg border text-xs font-semibold text-center transition-colors " +
-            (tab === t.id
-              ? "bg-red-500 text-white border-red-400 shadow-sm"
-              : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200")
+            "flex-1 text-center py-2 rounded-xl text-sm font-bold transition-all duration-200 border-2 " +
+            (tab === t.key
+              ? "bg-orange-500/30 border-orange-400 text-white shadow-md"
+              : "bg-white/10 border-gray-600 text-gray-300 hover:bg-white/20 hover:text-white")
           }
         >
-          {t.label}
+          {t.icon} {t.label}
         </button>
       ))}
     </div>
