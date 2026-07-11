@@ -126,7 +126,7 @@ export default function Index() {
     <div
       style={{
         background:
-          "linear-gradient(135deg,#ececec 0%,#f5f5f5 30%,#e0e0e0 60%,#fafafa 100%)",
+          "linear-gradient(135deg,#a8a8a8 0%,#c8c8c8 30%,#b0b0b0 60%,#d4d4d4 100%)",
         color: "#1a1a1a",
         minHeight: "100vh",
         fontFamily: "'Segoe UI',sans-serif",
@@ -139,7 +139,7 @@ export default function Index() {
           current={current}
           onSelect={handleSiteSelect}
         />
-        <div className="bg-white/60 rounded-2xl border border-gray-300/50 p-4 md:max-h-[calc(100vh-180px)] overflow-y-auto backdrop-blur-sm shadow-sm">
+        <div className="bg-gray-100/80 rounded-2xl border border-gray-400/40 p-4 md:max-h-[calc(100vh-180px)] overflow-y-auto backdrop-blur-sm shadow-md">
           {current && site && (
             <>
               <SiteHeader site={site} current={current} />
