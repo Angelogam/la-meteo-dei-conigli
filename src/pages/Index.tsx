@@ -2,30 +2,30 @@
 import React, { useEffect, useState, useMemo } from "react";
 
 const DECOLLI = [
-  { id: "malanotte", name: "Malanotte", lat: 44.25874571728482, lon: 7.794304664370852, exposure: "S/SE", valley: "Valle Infernotto", difficulty: 3, altitude: 1740 },
-  { id: "colle_di_tenda", name: "Colle di Tenda", lat: 44.15093973937469, lon: 7.569262924652476, exposure: "S", valley: "Valle Roya/Vermenagna", difficulty: 2, altitude: 1870 },
-  { id: "boves", name: "Boves", lat: 44.32113720462757, lon: 7.544697617792515, exposure: "S", valley: "Cuneese", difficulty: 1, altitude: 900 },
-  { id: "monte_male", name: "Monte Male – Dronero", lat: 44.43163071064606, lon: 7.362886778152897, exposure: "S", valley: "Valle Maira", difficulty: 3, altitude: 1500 },
-  { id: "iretta", name: "Iretta", lat: 44.49893744007536, lon: 7.382036612070795, exposure: "S", valley: "Valle Maira", difficulty: 2, altitude: 1300 },
-  { id: "val_mala", name: "Pratoni di Val Mala", lat: 44.50780117336976, lon: 7.346618978966227, exposure: "S", valley: "Valle Maira", difficulty: 2, altitude: 1400 },
-  { id: "birrone", name: "Monte Birrone", lat: 44.5398927839592, lon: 7.25293945830122, exposure: "S", valley: "Valle Maira", difficulty: 4, altitude: 2131 },
-  { id: "agnello", name: "Colle dell'Agnello", lat: 44.68282592463814, lon: 6.978200601250462, exposure: "S", valley: "Valle Varaita", difficulty: 5, altitude: 2748 },
-  { id: "pian_mune_alto", name: "Pian Munè – Seggiovia", lat: 44.63861029121272, lon: 7.230889474766025, exposure: "S/SW", valley: "Valle Po", difficulty: 2, altitude: 1870 },
-  { id: "pian_mune_basso", name: "Pian Munè – Bric Lombatera", lat: 44.65736521807557, lon: 7.260017009542715, exposure: "S", valley: "Valle Po", difficulty: 1, altitude: 1350 },
-  { id: "martiniana_po", name: "Martiniana Po", lat: 44.60695265332723, lon: 7.38322612877631, exposure: "S", valley: "Valle Po", difficulty: 1, altitude: 900 },
-  { id: "rucas_alto", name: "Rucas alto", lat: 44.74213930591463, lon: 7.220118689737356, exposure: "S/SE", valley: "Valle Infernotto", difficulty: 2, altitude: 1500 },
-  { id: "montoso_basso", name: "Montoso – decollo basso", lat: 44.7643723437882, lon: 7.249757926713178, exposure: "SE", valley: "Valle Infernotto", difficulty: 1, altitude: 1250 },
-  { id: "vandalino", name: "Monte Vandalino", lat: 44.83671231480542, lon: 7.173866924055591, exposure: "S/SE", valley: "Val Pellice", difficulty: 4, altitude: 2120 },
-  { id: "pian_dell_alpe", name: "Pian dell'Alpe", lat: 45.06396153999711, lon: 7.028266530872771, exposure: "S", valley: "Val Chisone", difficulty: 3, altitude: 1700 },
-  { id: "roletto", name: "Roletto – Piggi", lat: 44.93249288285819, lon: 7.310959031722244, exposure: "S", valley: "Pinerolese", difficulty: 1, altitude: 820 },
-  { id: "piossasco", name: "Piossasco – Monte S. Giorgio", lat: 44.99671840144012, lon: 7.44800217882953, exposure: "S", valley: "Collina Torinese", difficulty: 1, altitude: 673 },
-  { id: "truccetti", name: "Truccetti", lat: 45.07973511679036, lon: 7.342018342463826, exposure: "S", valley: "Canavese", difficulty: 1, altitude: 900 },
-  { id: "val_della_torre", name: "Val della Torre", lat: 45.16262748864921, lon: 7.463716167415302, exposure: "S", valley: "Val della Torre", difficulty: 1, altitude: 970 },
-  { id: "rocca_canavese", name: "Rocca Canavese – M. della Neve", lat: 45.32757754837493, lon: 7.572793582322621, exposure: "S", valley: "Canavese", difficulty: 2, altitude: 1100 },
-  { id: "s_elisabetta", name: "Santa Elisabetta", lat: 45.4182733880574, lon: 7.641945041749434, exposure: "S", valley: "Canavese", difficulty: 1, altitude: 900 },
-  { id: "s_elisabetta_alto", name: "Santa Elisabetta alto", lat: 45.44019393073506, lon: 7.648025947229948, exposure: "S", valley: "Canavese", difficulty: 2, altitude: 1100 },
-  { id: "cavallaria", name: "Monte Cavallaria", lat: 45.51729363773779, lon: 7.798808327293107, exposure: "S", valley: "Canavese", difficulty: 2, altitude: 1300 },
-  { id: "andrate", name: "Andrate", lat: 45.55063933418272, lon: 7.880775591143394, exposure: "S", valley: "Canavese", difficulty: 1, altitude: 1000 },
+  { id: "malanotte", name: "Malanotte", lat: 44.258745, lon: 7.794304, exposure: "S/SE", valley: "Val Maudagna", difficulty: 3, altitude: 1740 },
+  { id: "colle_di_tenda", name: "Colle di Tenda", lat: 44.150940, lon: 7.569263, exposure: "S/SW", valley: "Val Vermenagna", difficulty: 2, altitude: 1870 },
+  { id: "boves", name: "Boves", lat: 44.321137, lon: 7.544698, exposure: "N/NE", valley: "Cuneese", difficulty: 1, altitude: 900 },
+  { id: "monte_male", name: "Monte Male – Dronero", lat: 44.431631, lon: 7.362887, exposure: "S/SW", valley: "Bassa Val Maira", difficulty: 3, altitude: 1200 },
+  { id: "iretta", name: "Iretta", lat: 44.498937, lon: 7.382037, exposure: "S", valley: "Val Maira", difficulty: 2, altitude: 1100 },
+  { id: "val_mala", name: "Pratoni di Val Mala", lat: 44.507801, lon: 7.346619, exposure: "S", valley: "Val Maira", difficulty: 2, altitude: 1380 },
+  { id: "birrone", name: "Monte Birrone", lat: 44.539893, lon: 7.252939, exposure: "S/SE", valley: "Alta Val Maira", difficulty: 4, altitude: 2130 },
+  { id: "agnello", name: "Colle dell'Agnello", lat: 44.682826, lon: 6.978201, exposure: "S/SW", valley: "Alta Val Varaita", difficulty: 5, altitude: 2740 },
+  { id: "pian_mune_alto", name: "Pian Munè – Seggiovia", lat: 44.638610, lon: 7.230889, exposure: "S/SE", valley: "Val Po", difficulty: 2, altitude: 1870 },
+  { id: "pian_mune_basso", name: "Pian Munè – Bric Lombatera", lat: 44.657365, lon: 7.260017, exposure: "S/SE", valley: "Val Po", difficulty: 1, altitude: 1380 },
+  { id: "martiniana_po", name: "Martiniana Po", lat: 44.606953, lon: 7.383226, exposure: "E/NE", valley: "Val Po", difficulty: 1, altitude: 1400 },
+  { id: "rucas_alto", name: "Rucas alto", lat: 44.742139, lon: 7.220118, exposure: "S/SE", valley: "Valle Infernotto", difficulty: 2, altitude: 1540 },
+  { id: "montoso_basso", name: "Montoso – decollo basso", lat: 44.764372, lon: 7.249758, exposure: "E/SE", valley: "Valle Infernotto", difficulty: 1, altitude: 1230 },
+  { id: "vandalino", name: "Monte Vandalino", lat: 44.836712, lon: 7.173867, exposure: "S/SE", valley: "Val Pellice", difficulty: 4, altitude: 2120 },
+  { id: "pian_dell_alpe", name: "Pian dell'Alpe", lat: 45.063962, lon: 7.028267, exposure: "S/SW", valley: "Val Chisone", difficulty: 3, altitude: 1900 },
+  { id: "roletto", name: "Roletto – Piggi", lat: 44.932493, lon: 7.310959, exposure: "S/SW", valley: "Pinerolese", difficulty: 1, altitude: 810 },
+  { id: "piossasco", name: "Piossasco – Monte S. Giorgio", lat: 44.996718, lon: 7.448002, exposure: "S/SW", valley: "Collina Torinese", difficulty: 1, altitude: 840 },
+  { id: "truccetti", name: "Truccetti", lat: 45.079735, lon: 7.342018, exposure: "S/SE", valley: "Val Sangone", difficulty: 1, altitude: 950 },
+  { id: "val_della_torre", name: "Val della Torre", lat: 45.162627, lon: 7.463716, exposure: "S/SE", valley: "Val della Torre", difficulty: 1, altitude: 1080 },
+  { id: "rocca_canavese", name: "Rocca Canavese – M. della Neve", lat: 45.327578, lon: 7.572794, exposure: "S/SW", valley: "Canavese", difficulty: 2, altitude: 910 },
+  { id: "s_elisabetta", name: "Santa Elisabetta", lat: 45.418273, lon: 7.641945, exposure: "S/SE", valley: "Canavese", difficulty: 1, altitude: 1200 },
+  { id: "s_elisabetta_alto", name: "Santa Elisabetta alto", lat: 45.440194, lon: 7.648026, exposure: "S/SE", valley: "Canavese", difficulty: 2, altitude: 1420 },
+  { id: "cavallaria", name: "Monte Cavallaria", lat: 45.517294, lon: 7.798808, exposure: "S/SE", valley: "Canavese", difficulty: 2, altitude: 1450 },
+  { id: "andrate", name: "Andrate", lat: 45.550639, lon: 7.880776, exposure: "S/SW", valley: "Canavese", difficulty: 1, altitude: 840 },
 ];
 
 interface HourData {
@@ -290,26 +290,26 @@ export default function Index() {
   );
 
   return (
-    <div style={{ background: "linear-gradient(135deg,#0a0e27 0%,#1a1a3e 30%,#16213e 60%,#0d1b2a 100%)", color: "#eee", minHeight: "100vh", fontFamily: "'Segoe UI',sans-serif" }}>
+    <div style={{ background: "linear-gradient(135deg,#0a0e27 0%,#1a1a3e 30%,#16213e 60%,#0d1b2a 100%)", color: "#f0f0f0", minHeight: "100vh", fontFamily: "'Segoe UI',sans-serif" }}>
       <header className="text-center mb-5 py-4 border-b border-white/10">
         <div className="flex items-center justify-center gap-2.5">
           <span className="text-4xl md:text-5xl animate-bounce">&#x1F430;</span>
           <span className="text-3xl md:text-4xl animate-pulse">&#x1FA82;</span>
           <span className="text-3xl md:text-5xl font-extrabold bg-gradient-to-r from-red-400 to-yellow-300 bg-clip-text text-transparent">Meteo dei Conigli</span>
         </div>
-        <p className="text-sm text-gray-500 mt-1.5">Previsioni per volo libero - Open-Meteo - SHV FSVL Style</p>
+        <p className="text-sm text-gray-400 mt-1.5">Previsioni per volo libero - Open-Meteo - SHV FSVL Style</p>
       </header>
       <div className="grid md:grid-cols-[260px_1fr] gap-4 max-w-7xl mx-auto px-2.5">
-        <div className="bg-white/5 rounded-2xl border border-white/10 p-3 backdrop-blur md:h-[calc(100vh-180px)] overflow-hidden">
+        <div className="bg-white/[0.07] rounded-2xl border border-white/20 p-3 backdrop-blur md:h-[calc(100vh-180px)] overflow-hidden">
           <h3 className="text-lg text-red-400 mb-3 font-bold">Decolli</h3>
           <div className="overflow-y-auto h-[calc(100%-40px)] pr-1">
             {DECOLLI.map((d) => {
               const sel = d.id === selected;
               const cw = sel && current ? wic(current.weatherCode, current.isDay) : "";
               return (
-                <button key={d.id} onClick={() => { setSelected(d.id); setHour(12); setDayIdx(0); }} className={"w-full text-left rounded-xl p-2.5 mb-1.5 cursor-pointer transition-colors " + (sel ? "bg-red-500/15 border border-red-500" : "bg-white/5 border border-white/10")}>
-                  <div className="flex justify-between items-center"><span className="font-bold text-sm">{d.name}</span><span>{sel ? cw : ""}</span></div>
-                  <div className="flex justify-between text-xs text-gray-500 mt-0.5"><span>{d.valley}</span><span>{d.exposure}</span></div>
+                <button key={d.id} onClick={() => { setSelected(d.id); setHour(12); setDayIdx(0); }} className={"w-full text-left rounded-xl p-2.5 mb-1.5 cursor-pointer transition-colors " + (sel ? "bg-red-500/20 border border-red-400/60" : "bg-white/[0.06] border border-white/20 hover:bg-white/[0.1]")}>
+                  <div className="flex justify-between items-center"><span className="font-bold text-sm text-gray-100">{d.name}</span><span>{sel ? cw : ""}</span></div>
+                  <div className="flex justify-between text-xs text-gray-300 mt-0.5"><span>{d.valley}</span><span>{d.exposure}</span></div>
                   <div className="flex justify-between text-xs mt-1">
                     <span className="text-xs px-1.5 py-0.5 rounded-full font-semibold text-white" style={{background: diffColor(d.difficulty)}}>{diffLabel(d.difficulty)}</span>
                     <span className="text-xs px-1.5 py-0.5 rounded-full font-semibold text-white" style={{background: "#2196f3"}}>{d.altitude}m</span>
@@ -319,13 +319,13 @@ export default function Index() {
             })}
           </div>
         </div>
-        <div className="bg-white/5 rounded-2xl border border-white/10 p-4 md:max-h-[calc(100vh-180px)] overflow-y-auto backdrop-blur">
+        <div className="bg-white/[0.08] rounded-2xl border border-white/20 p-4 md:max-h-[calc(100vh-180px)] overflow-y-auto backdrop-blur">
           {current && site && (
             <>
-              <div className="flex justify-between items-center pb-3 border-b border-white/10 mb-3 flex-wrap gap-2">
+              <div className="flex justify-between items-center pb-3 border-b border-white/20 mb-3 flex-wrap gap-2">
                 <div>
                   <h2 className="text-xl md:text-2xl font-bold text-white">{site.name}</h2>
-                  <span className="text-xs text-gray-500">{site.exposure} - {site.valley} - {site.altitude}m</span>
+                  <span className="text-sm text-gray-300">{site.exposure} - {site.valley} - {site.altitude}m</span>
                 </div>
                 <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
                   <span className="text-2xl md:text-3xl">{wic(current.weatherCode, current.isDay)}</span>
@@ -334,7 +334,7 @@ export default function Index() {
               </div>
               <div className="grid grid-cols-4 gap-1 mb-4">
                 {(["meteo", "venti", "termiche", "analisi"] as const).map((t) => (
-                  <button key={t} onClick={() => setTab(t)} className={"py-1.5 px-1 rounded-lg border border-white/10 text-xs font-semibold text-center transition-colors " + (tab === t ? "bg-red-500/20 text-red-400" : "bg-transparent text-gray-400")}>
+                  <button key={t} onClick={() => setTab(t)} className={"py-1.5 px-1 rounded-lg border border-white/20 text-xs font-semibold text-center transition-colors " + (tab === t ? "bg-red-500/20 text-red-300 border-red-400/40" : "bg-white/[0.04] text-gray-300 hover:bg-white/[0.08]")}>
                     {t === "meteo" ? "Meteo" : t === "venti" ? "Venti" : t === "termiche" ? "Termiche" : "Analisi"}
                   </button>
                 ))}
@@ -343,16 +343,16 @@ export default function Index() {
                 <>
                   <div className="grid grid-cols-3 gap-1.5 mb-3">
                     {enrichedDaily.map((d, i) => (
-                      <button key={i} onClick={() => { setDayIdx(i); setHour(12); }}className={"rounded-xl p-2 text-center cursor-pointer " + (dayIdx === i ? "bg-red-500/15 border border-red-500" : "bg-black/20 border border-white/10")}>
-                        <div className="text-xs font-semibold">{dateLabels[i]}</div>
+                      <button key={i} onClick={() => { setDayIdx(i); setHour(12); }}className={"rounded-xl p-2 text-center cursor-pointer " + (dayIdx === i ? "bg-red-500/20 border border-red-400/60" : "bg-white/[0.06] borderborder-white/20")}>
+                        <div className="text-xs font-semibold text-gray-200">{dateLabels[i]}</div>
                         <div className="text-xl my-0.5">{wic(d.weatherCode, 1)}</div>
                         <div className="text-sm text-red-400 font-semibold">{Math.round(d.tempMax)}&deg;/{Math.round(d.tempMin)}&deg;</div>
-                        <div className="text-xs text-gray-500">&Delta;{d.delta}&deg;C</div>
+                        <div className="text-xs text-gray-400">&Delta;{d.delta}&deg;C</div>
                       </button>
                     ))}
                   </div>
-                  <div className="flex items-center gap-2.5 mb-3 py-1.5 px-3 bg-white/5 rounded-xl">
-                    <span className="text-xs text-gray-500">&#x23F0; Ora</span>
+                  <div className="flex items-center gap-2.5 mb-3 py-1.5 px-3 bg-white/[0.08] rounded-xl">
+                    <span className="text-xs text-gray-400">&#x23F0; Ora</span>
                     <input type="range" min={0} max={23} value={hour} onChange={(e) => setHour(parseInt(e.target.value))} className="flex-1 h-1 accent-red-400 min-w-[60px]" />
                     <span className="text-sm font-bold text-white min-w-[40px] text-center">{String(hour).padStart(2, "0")}:00</span>
                   </div>
@@ -367,26 +367,26 @@ export default function Index() {
                       ["Galleggiamento", thermal ? thermal.soarIdx + "/10" : "--", "Soaring Index"],
                       ["Vento", wa(current.windDir) + " " + Math.round(current.windSpeed) + " km/h", wd(current.windDir) + " \u2022 \u26A1" + Math.round(current.windGust) + " km/h"],
                     ].map(([l, v, s]) => (
-                      <div key={l as string} className="bg-black/30 p-2 rounded-xl border border-white/5">
-                        <div className="text-xs text-gray-500 font-medium">{l}</div>
+                      <div key={l as string} className="bg-white/[0.07] p-2 rounded-xl border border-white/15">
+                        <div className="text-xs text-gray-300 font-medium">{l}</div>
                         <div className="text-sm md:text-base font-bold text-white">{v}</div>
-                        <div className="text-xs text-gray-600 mt-0.5">{s}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">{s}</div>
                       </div>
                     ))}
                   </div>
-                  <div className="mb-3 p-2.5 bg-black/30 rounded-xl border border-white/5">
+                  <div className="mb-3 p-2.5 bg-white/[0.07] rounded-xl border border-white/15">
                     <h4 className="text-sm text-blue-300 mb-2.5 font-semibold">Pressione</h4>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="text-center">
-                        <div className="text-xs text-gray-500">Attuale</div>
+                        <div className="text-xs text-gray-400">Attuale</div>
                         <div className="text-lg font-bold text-white">{Math.round(current.pressure)} hPa</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-xs text-gray-500">Gradiente</div>
+                        <div className="text-xs text-gray-400">Gradiente</div>
                         <div className="text-lg font-bold" style={{color: pressureGrad.grad > 0 ? "#4caf50" : pressureGrad.grad < 0 ? "#f44336" : "#ffd93d"}}>
                           {pressureGrad.grad > 0 ? "\u2191" : pressureGrad.grad < 0 ? "\u2193" : "\u2192"} {Math.abs(pressureGrad.grad)} hPa
                         </div>
-                        <div className="text-xs text-gray-500">{pressureGrad.desc}</div>
+                        <div className="text-xs text-gray-400">{pressureGrad.desc}</div>
                       </div>
                     </div>
                   </div>
@@ -404,9 +404,9 @@ export default function Index() {
                     <table className="w-full border-collapse text-xs min-w-[500px]">
                       <thead>
                         <tr>
-                          <th className="text-center p-1 text-gray-500 border-b border-white/10 sticky top-0" style={{background: "#0d1b2a"}}>Ora</th>
+                          <th className="text-center p-1 text-gray-400 border-b border-white/20 sticky top-0" style={{background: "#0d1b2a"}}>Ora</th>
                           {turbQuotes.map((q) => (
-                            <th key={q} className="text-center p-1 text-blue-300 border-b border-white/10 sticky top-0" style={{background: "#0d1b2a"}}>{q}m</th>
+                            <th key={q} className="text-center p-1 text-blue-300 border-b border-white/20 sticky top-0" style={{background: "#0d1b2a"}}>{q}m</th>
                           ))}
                         </tr>
                       </thead>
@@ -416,11 +416,11 @@ export default function Index() {
                           if (!hd) return null;
                           return (
                             <tr key={h}>
-                              <td className="text-center p-1 text-gray-500 border-b border-white/5">{String(h).padStart(2, "0")}:00</td>
+                              <td className="text-center p-1 text-gray-400 border-b border-white/10">{String(h).padStart(2, "0")}:00</td>
                               {turbQuotes.map((q) => {
                                 const tv = calcTurbulence(dayData, h, q);
                                 return (
-                                  <td key={q} className="text-center p-1 border-b border-white/5">
+                                  <td key={q} className="text-center p-1 border-b border-white/10">
                                     <span className="inline-block w-6 h-6 leading-6 rounded-full text-white font-bold text-xs" style={{background: turbColor(tv)}}>{tv}</span>
                                   </td>
                                 );
@@ -431,8 +431,8 @@ export default function Index() {
                       </tbody>
                     </table>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 mb-3 p-2 bg-black/30 rounded-xl border border-white/5">
-                    <div className="text-xs text-gray-500 w-full mb-1 font-semibold">Legenda Turbolenza:</div>
+                  <div className="flex flex-wrap gap-1.5 mb-3 p-2 bg-white/[0.07] rounded-xl border border-white/15">
+                    <div className="text-xs text-gray-300 w-full mb-1 font-semibold">Legenda Turbolenza:</div>
                     {[
                       [1, "Calma"],
                       [2, "Leggera"],
@@ -449,17 +449,17 @@ export default function Index() {
                 </>
               )}
               {tab === "termiche" && (
-                <>{aiData && ["thermal", "altitude", "hourly"].map((key) => (<div key={key} className="mb-2.5 p-2 bg-black/30 rounded-xl border border-white/5"><div className="text-xs leading-relaxed whitespace-pre-wrap text-gray-200">{aiData[key]}</div></div>))}</>
+                <>{aiData && ["thermal", "altitude", "hourly"].map((key) => (<div key={key} className="mb-2.5 p-2 bg-white/[0.07] rounded-xl border border-white/15"><div className="text-xs leading-relaxed whitespace-pre-wrap text-gray-200">{aiData[key]}</div></div>))}</>
               )}
               {tab === "analisi" && (
-                <div className="mb-4 bg-black/40 rounded-xl border border-red-500/20 overflow-hidden">
+                <div className="mb-4 bg-white/[0.07] rounded-xl border border-red-500/20 overflow-hidden">
                   <div className="flex items-center gap-2 p-2 bg-red-500/10 border-b border-red-500/10">
-                    <h4 className="text-sm text-red-400 font-semibold m-0">Analisi Completa</h4>
+                    <h4 className="text-sm text-red-300 font-semibold m-0">Analisi Completa</h4>
                     {aiLoading && <span className="ml-auto text-xs text-yellow-300">Analisi...</span>}
                   </div>
                   <div className="p-2 max-h-[480px] overflow-y-auto">
                     {aiData && !aiLoading && ["general", "advice", "pressure", "thunderstorm"].map((key) => (
-                      <div key={key} className="mb-2.5 p-2 bg-black/30 rounded-xl border border-white/5">
+                      <div key={key} className="mb-2.5 p-2 bg-white/[0.06] rounded-xl border border-white/10">
                         <div className="text-xs leading-relaxed whitespace-pre-wrap text-gray-200">{aiData[key]}</div>
                       </div>
                     ))}
@@ -470,9 +470,141 @@ export default function Index() {
           )}
         </div>
       </div>
-      <footer className="text-center mt-5 py-3 border-t border-white/5">
-        <p className="text-xs text-gray-600">Dati da Open-Meteo.com - Ispirato SHV FSVL - Beta v2.0</p>
-        <p className="text-xs text-gray-500 mt-1">Vola sicuro!</p>
+      <footer className="text-center mt-5 py-3 border-t border-white/10">
+        <p className="text-xs text-gray-400">Dati da Open-Meteo.com - Ispirato SHV FSVL - Beta v2.0</p>
+        <p className="text-xs text-gray-400 mt-1">Vola sicuro!</p>
+      </footer>
+    </div>
+  );
+}
+<dyad-command type="restart"></dyad-command><dyad-write path="src/pages/Index.tsx" description="Completamento del file Index pulito con tutte le altimetrie corrette">
+                      <div className="text-sm text-red-400 font-semibold">{Math.round(d.tempMax)}&deg;/{Math.round(d.tempMin)}&deg;</div>
+                        <div className="text-xs text-gray-400">&Delta;{d.delta}&deg;C</div>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2.5 mb-3 py-1.5 px-3 bg-white/[0.08] rounded-xl">
+                    <span className="text-xs text-gray-400">&#x23F0; Ora</span>
+                    <input type="range" min={0} max={23} value={hour} onChange={(e) => setHour(parseInt(e.target.value))} className="flex-1 h-1 accent-red-400 min-w-[60px]" />
+                    <span className="text-sm font-bold text-white min-w-[40px] text-center">{String(hour).padStart(2, "0")}:00</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-3">
+                    {[
+                      ["Temperatura", Math.round(current.temperature) + "&deg;C", "&Delta; " + (thermal?.delta || 0) + "&deg;C"],
+                      ["Umidit\u00e0", Math.round(current.humidity) + "%", "Rugiada " + Math.round(current.dewPoint) + "&deg;C"],
+                      ["Nuvolosit\u00e0", Math.round(current.cloudCover) + "%", ct(current.cloudCover)],
+                      ["Precipitazioni", current.precipitation === 0 ? "Assenti" : current.precipitation + " mm", current.precipitation === 0 ? "Ideale" : "Pioggia"],
+                      ["Base Nuvole", thermal ? thermal.cloudBase + "m" : "--", "Cloud Base"],
+                      ["Plafond", thermal ? thermal.thermalTop + "m" : "--", "Thermal Top"],
+                      ["Galleggiamento", thermal ? thermal.soarIdx + "/10" : "--", "Soaring Index"],
+                      ["Vento", wa(current.windDir) + " " + Math.round(current.windSpeed) + " km/h", wd(current.windDir) + " \u2022 \u26A1" + Math.round(current.windGust) + " km/h"],
+                    ].map(([l, v, s]) => (
+                      <div key={l as string} className="bg-white/[0.07] p-2 rounded-xl border border-white/15">
+                        <div className="text-xs text-gray-300 font-medium">{l}</div>
+                        <div className="text-sm md:text-base font-bold text-white">{v}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">{s}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mb-3 p-2.5 bg-white/[0.07] rounded-xl border border-white/15">
+                    <h4 className="text-sm text-blue-300 mb-2.5 font-semibold">Pressione</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="text-center">
+                        <div className="text-xs text-gray-400">Attuale</div>
+                        <div className="text-lg font-bold text-white">{Math.round(current.pressure)} hPa</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs text-gray-400">Gradiente</div>
+                        <div className="text-lg font-bold" style={{color: pressureGrad.grad > 0 ? "#4caf50" : pressureGrad.grad < 0 ? "#f44336" : "#ffd93d"}}>
+                          {pressureGrad.grad > 0 ? "\u2191" : pressureGrad.grad < 0 ? "\u2193" : "\u2192"} {Math.abs(pressureGrad.grad)} hPa
+                        </div>
+                        <div className="text-xs text-gray-400">{pressureGrad.desc}</div>
+                      </div>
+                    </div>
+                  </div>
+                  {aiData?.thunderstorm && (
+                    <div className={"p-2 rounded-lg mb-2 " + (aiData.thunderstorm.includes("ALLERTA") ? "bg-red-500/15 border-2 border-red-500" : "bg-green-500/10 border border-green-500/30")}>
+                      <div className="text-xs leading-relaxed whitespace-pre-wrap text-gray-200">{aiData.thunderstorm}</div>
+                    </div>
+                  )}
+                </>
+              )}
+              {tab === "venti" && (
+                <>
+                  <h4 className="text-sm text-blue-300 mb-2.5 font-semibold">Turbolenza per quota</h4>
+                  <div className="overflow-x-auto mb-3">
+                    <table className="w-full border-collapse text-xs min-w-[500px]">
+                      <thead>
+                        <tr>
+                          <th className="text-center p-1 text-gray-400 border-b border-white/20 sticky top-0" style={{background: "#0d1b2a"}}>Ora</th>
+                          {turbQuotes.map((q) => (
+                            <th key={q} className="text-center p-1 text-blue-300 border-b border-white/20 sticky top-0" style={{background: "#0d1b2a"}}>{q}m</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {hours9to19.map((h) => {
+                          const hd = dayData.find((x) => x.time.getHours() === h);
+                          if (!hd) return null;
+                          return (
+                            <tr key={h}>
+                              <td className="text-center p-1 text-gray-400 border-b border-white/10">{String(h).padStart(2, "0")}:00</td>
+                              {turbQuotes.map((q) => {
+                                const tv = calcTurbulence(dayData, h, q);
+                                return (
+                                  <td key={q} className="text-center p-1 border-b border-white/10">
+                                    <span className="inline-block w-6 h-6 leading-6 rounded-full text-white font-bold text-xs" style={{background: turbColor(tv)}}>{tv}</span>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mb-3 p-2 bg-white/[0.07] rounded-xl border border-white/15">
+                    <div className="text-xs text-gray-300 w-full mb-1 font-semibold">Legenda Turbolenza:</div>
+                    {[
+                      [1, "Calma"],
+                      [2, "Leggera"],
+                      [3, "Moderata"],
+                      [4, "Forte"],
+                      [5, "Estrema"],
+                    ].map(([v, l]) => (
+                      <div key={v} className="flex items-center gap-1">
+                        <span className="inline-block w-4 h-4 leading-4 rounded-full text-white font-bold text-xs text-center" style={{background: turbColor(v as number)}}>{v}</span>
+                        <span className="text-xs text-gray-400">{l}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              {tab === "termiche" && (
+                <>{aiData && ["thermal", "altitude", "hourly"].map((key) => (<div key={key} className="mb-2.5 p-2 bg-white/[0.07] rounded-xl border border-white/15"><div className="text-xs leading-relaxed whitespace-pre-wrap text-gray-200">{aiData[key]}</div></div>))}</>
+              )}
+              {tab === "analisi" && (
+                <div className="mb-4 bg-white/[0.07] rounded-xl border border-red-500/20 overflow-hidden">
+                  <div className="flex items-center gap-2 p-2 bg-red-500/10 border-b border-red-500/10">
+                    <h4 className="text-sm text-red-300 font-semibold m-0">Analisi Completa</h4>
+                    {aiLoading && <span className="ml-auto text-xs text-yellow-300">Analisi...</span>}
+                  </div>
+                  <div className="p-2 max-h-[480px] overflow-y-auto">
+                    {aiData && !aiLoading && ["general", "advice", "pressure", "thunderstorm"].map((key) => (
+                      <div key={key} className="mb-2.5 p-2 bg-white/[0.06] rounded-xl border border-white/10">
+                        <div className="text-xs leading-relaxed whitespace-pre-wrap text-gray-200">{aiData[key]}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+      <footer className="text-center mt-5 py-3 border-t border-white/10">
+        <p className="text-xs text-gray-400">Dati da Open-Meteo.com - Ispirato SHV FSVL - Beta v2.0</p>
+        <p className="text-xs text-gray-400 mt-1">Vola sicuro!</p>
       </footer>
     </div>
   );
