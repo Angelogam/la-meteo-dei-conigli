@@ -16,6 +16,7 @@ import SidebarDecolli from "@/components/SidebarDecolli";
 import { fetchMeteo, fetchWindProfiles, filterFlightHours, enrDaily, calcThermal } from "@/utils/meteo";
 import { generaAnalisiReale } from "@/utils/analisi";
 import { generateAiAnalysis } from "@/utils/meteoAI";
+import { generaTermicheOrarie } from "@/utils/termiche";
 import { DECOLLI, type Decollo } from "@/data/decolli";
 import type { MeteoData, HourData, AiAnalysis, WindProfile } from "@/types/meteo";
 import { Button } from "@/components/ui/button";
@@ -196,6 +197,12 @@ const Index = () => {
     return generateAiAnalysis(dayData, dayIdx);
   }, [dayData, dayIdx]);
 
+  // Calcola termicheHourly per la giornata selezionata
+  const termicheHourly = useMemo(() => {
+    if (!dayData.length) return [];
+    return generaTermicheOrarie(dayData, currentSite.altitude);
+  }, [dayData, currentSite.altitude]);
+
   const handleSiteSelect = useCallback((id: string) => {
     setSiteId(id);
     setDayIdx(0);
@@ -324,6 +331,7 @@ const Index = () => {
                 onDaySelect={setDayIdx}
                 onDayDetailClick={handleDayDetailClick}
                 onHourChange={setHour}
+                termicheHourly={termicheHourly}
               />
             )}
 
