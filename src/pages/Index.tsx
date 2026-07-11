@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { ErrorScreen } from "@/components/ErrorScreen";
 import { TabNav, type Tab } from "@/components/TabNav";
@@ -19,7 +19,7 @@ import { generateAiAnalysis } from "@/utils/meteoAI";
 import { DECOLLI, type Decollo } from "@/data/decolli";
 import type { MeteoData, HourData, AiAnalysis, WindProfile } from "@/types/meteo";
 import { Button } from "@/components/ui/button";
-import { MapPin, CloudSun, ArrowRight } from "lucide-react";
+import { MapPin, CloudSun, ArrowRight, RefreshCw, Activity } from "lucide-react";
 
 interface DecolloMeteo {
   site: Decollo;
@@ -34,10 +34,30 @@ function useRealTimeHour(): number {
   const [h, setH] = useState(() => new Date().getHours());
   useEffect(() => {
     const tick = () => setH(new Date().getHours());
-    const id = setInterval(tick, 10000);
+    const id = setInterval(tick, 5000);
     return () => clearInterval(id);
   }, []);
   return h;
+}
+
+function useTimer(intervalMs: number) {
+  const [remaining, setRemaining] = useState(0);
+  const startRef = useRef(Date.now());
+
+  useEffect(() => {
+    startRef.current = Date.now();
+    setRemaining(intervalMs);
+
+    const id = setInterval(() => {
+      const elapsed = Date.now() - startRef.current;
+      const left = Math.max(0, intervalMs - elapsed);
+      setRemaining(left);
+    }, 100);
+
+    return () => clearInterval(id);
+  }, [intervalMs]);
+
+  return remaining;
 }
 
 function Index() {
@@ -57,8 +77,13 @@ function Index() {
   const [showPopup, setShowPopup] = useState(false);
   const [showDayDetail, setShowDayDetail] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const REFRESH_INTERVAL = 30000; // 30 secondi
+  const timerRemaining = useTimer(globalLoading ? 0 : REFRESH_INTERVAL);
 
   const fetchAllDecolli = useCallback(async () => {
+    setIsRefreshing(true);
     const results = await Promise.allSettled(
       DECOLLI.map(async (site) => {
         const data = await fetchMeteo(site.lat, site.lon);
@@ -93,6 +118,7 @@ function Index() {
     });
     setGlobalLoading(false);
     setGlobalError(null);
+    setIsRefreshing(false);
   }, []);
 
   const fetchWind = useCallback(async (lat: number, lon: number) => {
@@ -109,7 +135,7 @@ function Index() {
 
   useEffect(() => {
     fetchAllDecolli();
-    const interval = setInterval(fetchAllDecolli, 60000);
+    const interval = setInterval(fetchAllDecolli, REFRESH_INTERVAL);
     return () => clearInterval(interval);
   }, [fetchAllDecolli]);
 
@@ -222,6 +248,13 @@ function Index() {
     fetchAllDecolli();
   }, [fetchAllDecolli]);
 
+  const handleManualRefresh = useCallback(() => {
+    setIsRefreshing(true);
+    fetchAllDecolli();
+  }, [fetchAllDecolli]);
+
+  const progressPercent = globalLoading ? 0 : (timerRemaining / REFRESH_INTERVAL) * 100;
+
   if (globalLoading) return <LoadingScreen />;
   if (globalError) return <ErrorScreen message={globalError} onRetry={handleRetry} />;
 
@@ -246,7 +279,7 @@ function Index() {
                 Meteo dei <span className="text-green-300">Conigli</span>
               </h1>
               <p className="text-xs md:text-sm text-green-200/90 font-medium text-center tracking-wide">
-                🪂 Previsioni per volo libero · 9:00–19:00 · aggiornato ogni minuto
+                🪂 Previsioni per volo libero · 9:00–19:00 · aggiornato ogni 30s
               </p>
             </div>
             <span
@@ -259,7 +292,42 @@ function Index() {
         </div>
       </header>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-3 pb-28 mt-4 md:flex md:gap-3 md:items-start md:justify-center">
+      {/* Live bar - refresh status */}
+      <div className="relative z-10 max-w-5xl mx-auto px-3 mt-2">
+        <div className="flex items-center justify-between gap-3 bg-slate-700/60 backdrop-blur-sm rounded-xl px-3 py-2 border border-slate-600/40">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+            </span>
+            <span className="text-[11px] font-medium text-green-300">Live</span>
+            <Activity className="w-3 h-3 text-green-400" />
+          </div>
+          
+          <div className="flex items-center gap-3 flex-1 max-w-xs">
+            <div className="flex-1 h-1.5 bg-slate-600 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full transition-all duration-100"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <span className="text-[10px] text-slate-400 tabular-nums w-10 text-right">
+              {Math.ceil(timerRemaining / 1000)}s
+            </span>
+          </div>
+
+          <button
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold border border-green-500/50 bg-green-900/30 text-green-300 hover:bg-green-800/40 hover:border-green-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw className={`w-3 h-3 ${isRefreshing ? "animate-spin" : ""}`} />
+            {isRefreshing ? "Aggiorno..." : "Aggiorna"}
+          </button>
+        </div>
+      </div>
+
+      <div className="relative z-10 max-w-5xl mx-auto px-3 pb-28 mt-3 md:flex md:gap-3 md:items-start md:justify-center">
         <SidebarDecolli
           selected={siteId}
           current={currentHourData}
@@ -397,7 +465,7 @@ function Index() {
       <footer className="relative z-10 fixed bottom-0 left-0 right-0 text-center py-2 border-t border-green-500/30 bg-slate-800/80 backdrop-blur-md shadow-lg">
         <div className="max-w-5xl mx-auto px-3 flex items-center justify-center gap-8">
           <p className="text-[10px] text-slate-300">
-            Basato su dati Open-Meteo · previsioni 9:00–19:00
+            Basato su dati Open-Meteo · aggiornato ogni 30 secondi
           </p>
           <p className="text-[10px] text-slate-300">
             &copy; {new Date().getFullYear()} Meteo dei Conigli

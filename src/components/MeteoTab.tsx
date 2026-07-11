@@ -5,7 +5,7 @@ import { WeatherIcon } from "@/components/WeatherIcon";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { useMemo } from "react";
-import { Sun, Cloud, Wind, Droplets, Gauge, Thermometer } from "lucide-react";
+import { Sun, Cloud, Wind, Droplets, Gauge, Thermometer, CloudRain, CloudLightning, CloudSnow, Clock } from "lucide-react";
 
 interface MeteoTabProps {
   current: HourData;
@@ -21,6 +21,72 @@ interface MeteoTabProps {
   onHourChange: (h: number) => void;
   startHour?: number;
   endHour?: number;
+}
+
+function getWeatherDescription(code: number, precipitation: number, temp: number): { label: string; icon: React.ReactNode; color: string } {
+  // WMO Weather codes: https://open-meteo.com/en/docs
+  // 0 = clear sky, 1-3 = mainly clear/partly cloudy/overcast
+  // 45-48 = fog, 51-57 = drizzle, 61-67 = rain, 71-77 = snow
+  // 80-82 = rain showers, 95-99 = thunderstorms
+
+  if (code >= 95) {
+    return {
+      label: "Temporale ⛈️",
+      icon: <CloudLightning className="w-8 h-8 text-yellow-300" />,
+      color: "from-purple-800/60 to-yellow-900/40",
+    };
+  }
+  if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82) || precipitation > 0.5) {
+    if (precipitation > 5) {
+      return {
+        label: `Pioggia forte (${precipitation.toFixed(1)} mm) 🌧️`,
+        icon: <CloudRain className="w-8 h-8 text-blue-300" />,
+        color: "from-blue-800/60 to-blue-900/40",
+      };
+    }
+    return {
+      label: `Pioggia debole (${precipitation.toFixed(1)} mm) 🌦️`,
+      icon: <CloudRain className="w-8 h-8 text-sky-300" />,
+      color: "from-blue-700/50 to-slate-800/40",
+    };
+  }
+  if (code >= 71 && code <= 77) {
+    return {
+      label: "Neve ❄️",
+      icon: <CloudSnow className="w-8 h-8 text-white" />,
+      color: "from-slate-600/60 to-white/20",
+    };
+  }
+  if (code >= 45 && code <= 48) {
+    return {
+      label: "Nebbia 🌫️",
+      icon: <Cloud className="w-8 h-8 text-slate-300" />,
+      color: "from-slate-600/60 to-slate-700/40",
+    };
+  }
+  if (code >= 51 && code <= 57) {
+    return {
+      label: "Pioviggine 🌧️",
+      icon: <CloudRain className="w-8 h-8 text-blue-200" />,
+      color: "from-blue-700/50 to-slate-800/40",
+    };
+  }
+  if (code <= 3) {
+    const cloudText = code === 0 ? "Sereno" : code === 1 ? "Poco nuvoloso" : code === 2 ? "Parzialmente nuvoloso" : "Nuvoloso";
+    const emoji = code === 0 ? "☀️" : code === 1 ? "🌤️" : code === 2 ? "⛅" : "☁️";
+    return {
+      label: `${cloudText} ${emoji}`,
+      icon: <Sun className="w-8 h-8 text-amber-300" />,
+      color: code === 0
+        ? "from-amber-600/40 to-yellow-600/30"
+        : "from-slate-600/50 to-amber-700/30",
+    };
+  }
+  return {
+    label: "Nuvoloso ☁️",
+    icon: <Cloud className="w-8 h-8 text-slate-300" />,
+    color: "from-slate-600/60 to-slate-700/40",
+  };
 }
 
 export function MeteoTab({
@@ -46,8 +112,53 @@ export function MeteoTab({
     return arr;
   }, [startHour, endHour]);
 
+  const weatherInfo = useMemo(() => {
+    if (!current) return null;
+    return getWeatherDescription(current.weatherCode, current.precipitation, current.temperature);
+  }, [current]);
+
+  const now = new Date();
+  const currentTimeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
   return (
     <div className="space-y-4 text-slate-200">
+      {/* ORA ATTUALE - Card superiore con previsione live */}
+      {current && weatherInfo && (
+        <Card className={`border border-white/10 bg-gradient-to-br ${weatherInfo.color} shadow-xl overflow-hidden transition-all duration-500`}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-inner">
+                  <WeatherIcon code={current.weatherCode} size={34} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-white/70" />
+                    <span className="text-xs font-bold text-white/80 uppercase tracking-widest">
+                      {currentTimeStr}
+                    </span>
+                  </div>
+                  <div className="text-2xl font-black text-white tracking-tight leading-none mt-0.5">
+                    {Math.round(current.temperature)}°C
+                  </div>
+                  <div className="text-xs font-medium text-white/70 mt-0.5">
+                    Percepita {Math.round(current.feelsLike)}°C
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm font-extrabold text-white drop-shadow-sm">
+                  {weatherInfo.label}
+                </div>
+                <div className="text-[10px] text-white/60 mt-0.5">
+                  Umidità {current.humidity}% · Vento {Math.round(current.windSpeed)} km/h
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Select day - pillole eleganti con click per dettaglio */}
       <div className="flex gap-1.5 flex-wrap">
         {enrichedDaily.map((day: any, i: number) => (
@@ -137,26 +248,26 @@ export function MeteoTab({
         </CardContent>
       </Card>
 
-      {/* Thermal summary */}
+      {/* Thermal summary - sfondo grigio-blu invece di amber */}
       {thermal && (
-        <Card className="border border-amber-600/50 bg-amber-900/30 shadow-lg overflow-hidden">
+        <Card className="border border-slate-500/60 bg-slate-700/50 shadow-lg overflow-hidden">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-amber-800/50 border border-amber-600/50 flex items-center justify-center">
-                <Thermometer className="w-3.5 h-3.5 text-amber-400" />
+              <div className="w-7 h-7 rounded-lg bg-slate-600/50 border border-slate-500/50 flex items-center justify-center">
+                <Thermometer className="w-3.5 h-3.5 text-blue-400" />
               </div>
-              <span className="text-sm font-bold text-amber-200">Condizioni termiche</span>
+              <span className="text-sm font-bold text-slate-100">Condizioni termiche</span>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl bg-slate-800/80 p-2.5 text-center border border-amber-600/30">
+              <div className="rounded-xl bg-slate-800/80 p-2.5 text-center border border-slate-600/50">
                 <div className="text-[9px] font-medium text-slate-400 uppercase tracking-wider">Base</div>
                 <div className="text-sm font-bold text-white mt-0.5">{thermal.cloudBase}m</div>
               </div>
-              <div className="rounded-xl bg-slate-800/80 p-2.5 text-center border border-amber-600/30">
+              <div className="rounded-xl bg-slate-800/80 p-2.5 text-center border border-slate-600/50">
                 <div className="text-[9px] font-medium text-slate-400 uppercase tracking-wider">Cima</div>
                 <div className="text-sm font-bold text-white mt-0.5">{thermal.thermalTop}m</div>
               </div>
-              <div className="rounded-xl bg-slate-800/80 p-2.5 text-center border border-amber-600/30">
+              <div className="rounded-xl bg-slate-800/80 p-2.5 text-center border border-slate-600/50">
                 <div className="text-[9px] font-medium text-slate-400 uppercase tracking-wider">Soaring</div>
                 <div className="text-sm font-bold text-white mt-0.5">{thermal.soarIdx}/10</div>
               </div>
