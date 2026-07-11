@@ -20,7 +20,7 @@ import { generaTermicheOrarie } from "@/utils/termiche";
 import { DECOLLI, type Decollo } from "@/data/decolli";
 import type { MeteoData, HourData, AiAnalysis, WindProfile } from "@/types/meteo";
 import { Button } from "@/components/ui/button";
-import { MapPin, CloudSun, ArrowRight } from "lucide-react";
+import { MapPin, CloudSun, ArrowRight, Menu } from "lucide-react";
 
 interface DecolloMeteo {
   site: Decollo;
@@ -246,17 +246,17 @@ const Index = () => {
       <header className="relative z-10 px-4 py-5 border-b-2 border-green-500/40 bg-gradient-to-r from-slate-800/95 via-green-900/20 to-slate-800/95 backdrop-blur-md shadow-lg">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-center gap-3">
-            <span className="text-4xl md:text-5xl drop-shadow-lg animate-bounce">🐰</span>
-            <div className="border-2 border-green-500/40 rounded-xl px-5 py-3 bg-slate-800/60 backdrop-blur-sm shadow-inner">
+            <span className="text-3xl md:text-4xl drop-shadow-lg animate-bounce">🐰</span>
+            <div className="border-2 border-green-500/40 rounded-xl px-4 py-3 bg-slate-800/60 backdrop-blur-sm shadow-inner">
               <h1 className="text-2xl md:text-3xl font-extrabold text-green-400 tracking-tight text-center drop-shadow-sm">
                 Meteo dei <span className="text-green-300">Conigli</span>
               </h1>
-              <p className="text-xs md:text-sm text-green-200/90 font-medium text-center tracking-wide">
+              <p className="text-sm md:text-base text-green-200/90 font-medium text-center tracking-wide mt-0.5">
                 🪂 Previsioni per volo libero &middot; 9:00&ndash;19:00 &middot; aggiornato ogni minuto
               </p>
             </div>
             <span
-              className="text-4xl md:text-5xl drop-shadow-lg md:block hidden animate-bounce"
+              className="text-3xl md:text-4xl drop-shadow-lg md:block hidden animate-bounce"
               style={{ animationDelay: "150ms" }}
             >
               🐰
@@ -265,7 +265,7 @@ const Index = () => {
         </div>
       </header>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-3 pb-28 mt-4 md:flex md:gap-3 md:items-start md:justify-center">
+      <div className="relative z-10 max-w-5xl mx-auto px-4 pb-32 mt-4 md:flex md:gap-4 md:items-start md:justify-center">
         <SidebarDecolli
           selected={siteId}
           current={currentHourData}
@@ -277,23 +277,23 @@ const Index = () => {
 
         <div className="flex-1 min-w-0 max-w-2xl mx-auto">
           <div className="mb-2.5 flex items-center justify-between">
-            <div className="text-[11px] text-slate-300 font-medium">
+            <div className="text-sm text-slate-200 font-medium">
               {new Date().toLocaleDateString("it-IT", {
                 weekday: "long",
                 day: "numeric",
                 month: "long",
                 year: "numeric",
               })}
-              <span className="ml-2 text-blue-300">
+              <span className="ml-2 text-blue-300 font-bold">
                 {String(hour).padStart(2, "0")}:{String(new Date().getMinutes()).padStart(2, "0")}
               </span>
             </div>
             <div className="flex gap-1.5">
               <button
                 onClick={toggleSidebar}
-                className="md:hidden px-2.5 py-1.5 rounded-xl text-[10px] font-bold border border-slate-500 bg-slate-700 text-slate-200 hover:bg-slate-600 transition-colors"
+                className="md:hidden px-3 py-2 rounded-xl text-xs font-bold border border-slate-500 bg-slate-700 text-slate-200 hover:bg-slate-600 transition-colors"
               >
-                &#9776; Decolli
+                <Menu className="w-4 h-4 mr-1 inline" /> Decolli
               </button>
             </div>
           </div>
@@ -307,17 +307,17 @@ const Index = () => {
           <div className="mb-3">
             <Button
               onClick={handleApriDomani}
-              className="w-full py-4 md:py-3 text-sm md:text-base font-bold rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white border border-blue-400 shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-[1.02]"
+              className="w-full py-5 md:py-4 text-base md:text-lg font-bold rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white border border-blue-400 shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-[1.02]"
             >
-              <CloudSun className="w-5 h-5 mr-2" />
+              <CloudSun className="w-6 h-6 mr-2" />
               {daily[1] ? dateLabels[1] : "Domani"} &middot; Previsioni locali 3B Meteo 8:00&ndash;20:00
-              <ArrowRight className="w-4 h-4 ml-2" />
+              <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </div>
 
           <TabNav tab={tab} onTabChange={setTab} />
 
-          <div className="bg-slate-700/60 backdrop-blur-sm rounded-2xl p-3 md:p-4 border border-slate-600/50 shadow-xl mt-2.5 text-slate-100">
+          <div className="bg-slate-700/70 backdrop-blur-sm rounded-2xl p-4 md:p-5 border border-slate-500/60 shadow-xl mt-2.5 text-slate-100">
             {tab === "meteo" && currentHourData && (
               <MeteoTab
                 current={currentHourData}
@@ -360,14 +360,14 @@ const Index = () => {
             )}
           </div>
 
-          <div className="mt-3 flex justify-center">
+          <div className="mt-4 flex justify-center">
             <Button
               variant="outline"
-              size="sm"
+              size="default"
               onClick={() => setShowPopup(true)}
-              className="text-xs border-slate-500/60 text-slate-200 hover:bg-slate-700 bg-slate-800/80"
+              className="text-sm border-slate-500/60 text-slate-200 hover:bg-slate-700 bg-slate-800/80 px-5 py-2.5"
             >
-              <MapPin className="w-3 h-3 mr-1" />
+              <MapPin className="w-4 h-4 mr-2" />
               Dettaglio orario {currentSite?.name} (9:00&ndash;19:00)
             </Button>
           </div>
@@ -401,12 +401,12 @@ const Index = () => {
         </div>
       </div>
 
-      <footer className="relative z-10 fixed bottom-0 left-0 right-0 text-center py-2 border-t border-green-500/30 bg-slate-800/80 backdrop-blur-md shadow-lg">
-        <div className="max-w-5xl mx-auto px-3 flex items-center justify-center gap-8">
-          <p className="text-[10px] text-slate-300">
+      <footer className="relative z-10 fixed bottom-0 left-0 right-0 text-center py-3 border-t border-green-500/30 bg-slate-800/80 backdrop-blur-md shadow-lg">
+        <div className="max-w-5xl mx-auto px-4 flex items-center justify-center gap-8">
+          <p className="text-xs text-slate-300">
             Basato su dati Open-Meteo &middot; previsioni 9:00&ndash;19:00
           </p>
-          <p className="text-[10px] text-slate-300">
+          <p className="text-xs text-slate-300">
             &copy; {new Date().getFullYear()} Meteo dei Conigli
           </p>
         </div>
