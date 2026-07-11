@@ -75,6 +75,31 @@ export async function fetchMeteo(lat: number, lon: number): Promise<MeteoData> {
   return { hourly, daily, lat, lon };
 }
 
+/** fetchMeteoHourly – returns only hourly data array */
+export async function fetchMeteoHourly(lat: number, lon: number): Promise<HourData[]> {
+  const data = await fetchMeteo(lat, lon);
+  return data.hourly;
+}
+
+/** fetchMeteoDaily – returns only daily data array */
+export async function fetchMeteoDaily(lat: number, lon: number): Promise<DailyData[]> {
+  const data = await fetchMeteo(lat, lon);
+  return data.daily;
+}
+
+/** Enrich daily with delta and idx */
+export function enrDaily(daily: DailyData[], hourly: HourData[]) {
+  return daily.map((d, i) => {
+    const dayHours = hourly.filter(h => {
+      const hDate = h.time.getDate();
+      const dDate = d.date.getDate();
+      return hDate === dDate;
+    });
+    const delta = Math.round(d.tempMax - d.tempMin);
+    return { ...d, delta, idx: i };
+  });
+}
+
 /** Calcola lo zero termico basato sul gradiente adiabatico secco (0.98°C per 100m) */
 export function getZeroTermico(temperature: number, altitude: number): number {
   if (temperature <= 0) return altitude;
