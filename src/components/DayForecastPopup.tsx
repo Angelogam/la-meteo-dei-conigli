@@ -1,3 +1,4 @@
+windGust">
 "use client";
 
 import React from "react";
@@ -66,8 +67,8 @@ const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour, onHourSelect 
                   <span className="flex items-center gap-0.5">
                     <Wind className="w-3 h-3 text-blue-400" />
                     {Math.round(h.windSpeed)}
-                    {h.windGusts && (
-                      <span className="text-slate-500">/{Math.round(h.windGusts)}</span>
+                    {h.windGust && (
+                      <span className="text-slate-500">/{Math.round(h.windGust)}</span>
                     )}
                   </span>
                   <span className="text-slate-500">|</span>

@@ -1,3 +1,4 @@
+windGust">
 "use client";
 
 import type { HourData } from "@/types/meteo";
@@ -23,7 +24,7 @@ export function getVoloStatus(current: HourData | null | undefined): VoloStatusI
     };
   }
 
-  const { weatherCode, windSpeed, windGusts, precipitation } = current;
+  const { weatherCode, windSpeed, windGust, precipitation } = current;
 
   // Temporale
   if ([95, 96, 99].includes(weatherCode)) {
@@ -81,13 +82,13 @@ export function getVoloStatus(current: HourData | null | undefined): VoloStatusI
   }
 
   // Rischioso per raffiche forti
-  if ((windGusts && windGusts > 35) || windSpeed > 30) {
+  if ((windGust && windGust > 35) || windSpeed > 30) {
     return {
       status: "rischioso",
       label: "Rischioso",
       icon: "⚠️",
       color: "bg-orange-900/70 text-orange-200 border-orange-500",
-      description: `Raffiche fino a ${Math.round(windGusts || windSpeed + 10)} km/h`,
+      description: `Raffiche fino a ${Math.round(windGust || windSpeed + 10)} km/h`,
     };
   }
 
