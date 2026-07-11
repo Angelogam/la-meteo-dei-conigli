@@ -1,4 +1,3 @@
-character in JSX text on line 130">
 "use client";
 
 import React from "react";
