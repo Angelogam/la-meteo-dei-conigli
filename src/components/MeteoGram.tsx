@@ -243,7 +243,7 @@ export default function MeteoGram({
       x: {
         grid: {
           color: 'rgba(255,255,255,0.05)',
-          drawBorder: true,
+          borderColor: 'rgba(255,255,255,0.05)',
         },
         ticks: {
           color: '#aaa',
@@ -270,7 +270,7 @@ export default function MeteoGram({
         },
         grid: {
           color: 'rgba(255,255,255,0.05)',
-          drawBorder: true,
+          borderColor: 'rgba(255,255,255,0.05)',
         },
         ticks: {
           color: '#aaa',
