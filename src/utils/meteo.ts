@@ -44,6 +44,8 @@ export const fetchMeteo = async (lat: number, lon: number): Promise<MeteoData> =
     windGust: raw.hourly.wind_gusts_10m[i],
     uvIndex: raw.hourly.uv_index[i],
     isDay: raw.hourly.is_day[i] === 1,
+    soilTemp: null,
+    soilMoisture: null,
   }));
 
   // Parse giornalieri
