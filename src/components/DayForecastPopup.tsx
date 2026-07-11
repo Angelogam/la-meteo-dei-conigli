@@ -115,11 +115,6 @@ const SingleHourCard = ({ h }: { h: HourData }) => {
         )}
       </div>
 
-      {/* Temperatura sotto */}
-      <span className="text-xs font-bold text-gray-800">
-        {Math.round(h.temperature)}°
-      </span>
-
       {/* Barra vento */}
       <div className="w-full h-1.5 rounded-full bg-gray-300 overflow-hidden">
         <div
