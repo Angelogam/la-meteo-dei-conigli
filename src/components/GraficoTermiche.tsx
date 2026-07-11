@@ -81,12 +81,11 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
           return (
             <div
               key={h.hour}
-              className={`flex items-center gap-2 py-1.5 px-2 rounded-lg transition-colors ${
-                isCurrentHour ? "bg-green-900/30 border-l-2 border-green-400" : "hover:bg-slate-700/30"
-              }`}
+              className="flex items-center gap-2 py-1.5 px-2 rounded-lg transition-colors hover:bg-slate-700/30"
             >
               {/* Ora */}
-              <div className="shrink-0 w-10 text-[11px] font-mono font-bold text-slate-300">
+              <div className="shrink-0 w-10 text-[11px] font-mono font-bold text-slate-300 flex items-center gap-1.5">
+                {isCurrentHour && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />}
                 {String(h.hour).padStart(2, "0")}:00
               </div>
 
@@ -152,8 +151,6 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                   <span className="text-[8px] text-slate-400 uppercase tracking-wider">conf.</span>
                 </div>
               </div>
-
-              {isCurrentHour && <div className="shrink-0 w-2 h-2 rounded-full bg-green-400 animate-pulse" />}
             </div>
           );
         })}
