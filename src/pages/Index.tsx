@@ -146,8 +146,8 @@ function Index() {
           <div className="flex items-center justify-center gap-3">
             <span className="text-3xl md:text-4xl drop-shadow-lg">🐰</span>
             <div className="border-l border-orange-400/40 pl-3">
-              <h1 className="text-xl md:text-2xl font-extrabold text-white tracking-tight text-center drop-shadow-sm">
-                Meteo dei <span className="text-orange-400">Conigli</span>
+              <h1 className="text-xl md:text-2xl font-extrabold text-orange-400 tracking-tight text-center drop-shadow-sm">
+                Meteo dei <span className="text-orange-300">Conigli</span>
               </h1>
               <p className="text-[11px] md:text-xs text-orange-200/90 font-medium text-center tracking-wide">
                 🪂 Previsioni per volo libero
