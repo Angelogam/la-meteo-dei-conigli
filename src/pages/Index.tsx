@@ -239,12 +239,12 @@ const Index = () => {
     return generateAiAnalysis(dayData, dayIdx);
   }, [dayData, dayIdx]);
 
+  // TERMICHE ORARIE: si aggiornano al variare di dayData (quindi al variare di dayIdx)
   const termicheHourly = useMemo(() => {
     if (!dayData.length) return [];
     return generaTermicheOrarie(dayData, currentSite.altitude);
   }, [dayData, currentSite.altitude]);
 
-  // ---- HOOK PER PREVISIONI GIORNI (SEMPRE CHIAMATI) ----
   const previsioneSelezionata = giorniPrevisioni.find((g) => g.giorno === dayIdx);
 
   const previsioneData = previsioneSelezionata?.data;
