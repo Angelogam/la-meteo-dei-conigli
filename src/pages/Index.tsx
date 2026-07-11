@@ -5,23 +5,23 @@ const DECOLLI = [
   { id: "malanotte", name: "Malanotte", lat: 44.25874571728482, lon: 7.794304664370852, exposure: "S/SE", valley: "Valle Infernotto", difficulty: 3, altitude: 1740 },
   { id: "colle_di_tenda", name: "Colle di Tenda", lat: 44.15093973937469, lon: 7.569262924652476, exposure: "S", valley: "Valle Roya/Vermenagna", difficulty: 2, altitude: 1870 },
   { id: "boves", name: "Boves", lat: 44.32113720462757, lon: 7.544697617792515, exposure: "S", valley: "Cuneese", difficulty: 1, altitude: 900 },
-  { id: "monte_male", name: "Monte Male \u2013 Dronero", lat: 44.43163071064606, lon: 7.362886778152897, exposure: "S", valley: "Valle Maira", difficulty: 3, altitude: 1500 },
+  { id: "monte_male", name: "Monte Male – Dronero", lat: 44.43163071064606, lon: 7.362886778152897, exposure: "S", valley: "Valle Maira", difficulty: 3, altitude: 1500 },
   { id: "iretta", name: "Iretta", lat: 44.49893744007536, lon: 7.382036612070795, exposure: "S", valley: "Valle Maira", difficulty: 2, altitude: 1300 },
   { id: "val_mala", name: "Pratoni di Val Mala", lat: 44.50780117336976, lon: 7.346618978966227, exposure: "S", valley: "Valle Maira", difficulty: 2, altitude: 1400 },
   { id: "birrone", name: "Monte Birrone", lat: 44.5398927839592, lon: 7.25293945830122, exposure: "S", valley: "Valle Maira", difficulty: 4, altitude: 2131 },
   { id: "agnello", name: "Colle dell'Agnello", lat: 44.68282592463814, lon: 6.978200601250462, exposure: "S", valley: "Valle Varaita", difficulty: 5, altitude: 2748 },
-  { id: "pian_mune_alto", name: "Pian Mun\u00e8 \u2013 Seggiovia", lat: 44.63861029121272, lon: 7.230889474766025, exposure: "S/SW", valley: "Valle Po", difficulty: 2, altitude: 1870 },
-  { id: "pian_mune_basso", name: "Pian Mun\u00e8 \u2013 Bric Lombatera", lat: 44.65736521807557, lon: 7.260017009542715, exposure: "S", valley: "Valle Po", difficulty: 1, altitude: 1350 },
+  { id: "pian_mune_alto", name: "Pian Munè – Seggiovia", lat: 44.63861029121272, lon: 7.230889474766025, exposure: "S/SW", valley: "Valle Po", difficulty: 2, altitude: 1870 },
+  { id: "pian_mune_basso", name: "Pian Munè – Bric Lombatera", lat: 44.65736521807557, lon: 7.260017009542715, exposure: "S", valley: "Valle Po", difficulty: 1, altitude: 1350 },
   { id: "martiniana_po", name: "Martiniana Po", lat: 44.60695265332723, lon: 7.38322612877631, exposure: "S", valley: "Valle Po", difficulty: 1, altitude: 900 },
   { id: "rucas_alto", name: "Rucas alto", lat: 44.74213930591463, lon: 7.220118689737356, exposure: "S/SE", valley: "Valle Infernotto", difficulty: 2, altitude: 1500 },
-  { id: "montoso_basso", name: "Montoso \u2013 decollo basso", lat: 44.7643723437882, lon: 7.249757926713178, exposure: "SE", valley: "Valle Infernotto", difficulty: 1, altitude: 1250 },
+  { id: "montoso_basso", name: "Montoso – decollo basso", lat: 44.7643723437882, lon: 7.249757926713178, exposure: "SE", valley: "Valle Infernotto", difficulty: 1, altitude: 1250 },
   { id: "vandalino", name: "Monte Vandalino", lat: 44.83671231480542, lon: 7.173866924055591, exposure: "S/SE", valley: "Val Pellice", difficulty: 4, altitude: 2120 },
   { id: "pian_dell_alpe", name: "Pian dell'Alpe", lat: 45.06396153999711, lon: 7.028266530872771, exposure: "S", valley: "Val Chisone", difficulty: 3, altitude: 1700 },
-  { id: "roletto", name: "Roletto \u2013 Piggi", lat: 44.93249288285819, lon: 7.310959031722244, exposure: "S", valley: "Pinerolese", difficulty: 1, altitude: 820 },
-  { id: "piossasco", name: "Piossasco \u2013 Monte S. Giorgio", lat: 44.99671840144012, lon: 7.44800217882953, exposure: "S", valley: "Collina Torinese", difficulty: 1, altitude: 673 },
+  { id: "roletto", name: "Roletto – Piggi", lat: 44.93249288285819, lon: 7.310959031722244, exposure: "S", valley: "Pinerolese", difficulty: 1, altitude: 820 },
+  { id: "piossasco", name: "Piossasco – Monte S. Giorgio", lat: 44.99671840144012, lon: 7.44800217882953, exposure: "S", valley: "Collina Torinese", difficulty: 1, altitude: 673 },
   { id: "truccetti", name: "Truccetti", lat: 45.07973511679036, lon: 7.342018342463826, exposure: "S", valley: "Canavese", difficulty: 1, altitude: 900 },
   { id: "val_della_torre", name: "Val della Torre", lat: 45.16262748864921, lon: 7.463716167415302, exposure: "S", valley: "Val della Torre", difficulty: 1, altitude: 970 },
-  { id: "rocca_canavese", name: "Rocca Canavese \u2013 M. della Neve", lat: 45.32757754837493, lon: 7.572793582322621, exposure: "S", valley: "Canavese", difficulty: 2, altitude: 1100 },
+  { id: "rocca_canavese", name: "Rocca Canavese – M. della Neve", lat: 45.32757754837493, lon: 7.572793582322621, exposure: "S", valley: "Canavese", difficulty: 2, altitude: 1100 },
   { id: "s_elisabetta", name: "Santa Elisabetta", lat: 45.4182733880574, lon: 7.641945041749434, exposure: "S", valley: "Canavese", difficulty: 1, altitude: 900 },
   { id: "s_elisabetta_alto", name: "Santa Elisabetta alto", lat: 45.44019393073506, lon: 7.648025947229948, exposure: "S", valley: "Canavese", difficulty: 2, altitude: 1100 },
   { id: "cavallaria", name: "Monte Cavallaria", lat: 45.51729363773779, lon: 7.798808327293107, exposure: "S", valley: "Canavese", difficulty: 2, altitude: 1300 },
@@ -51,9 +51,21 @@ const WI: Record<number, string> = {
 };
 
 function wic(code: number, day: number) { return WI[code] || (day ? "\u2600" : "\uD83C\uDF19"); }
-function wd(deg: number) { if (deg === undefined || deg === null) return "--"; return ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][Math.round(deg / 45) % 8]; }
-function wa(deg: number) { if (deg === undefined || deg === null) return "\u27A1"; return ["\u2B06", "\u2197", "\u27A1", "\u2198", "\u2B07", "\u2199", "\u2B05", "\u2196"][Math.round(deg / 45) % 8]; }
-function ct(cc: number) { if (cc < 20) return "Sereno"; if (cc < 40) return "Poco nuvoloso"; if (cc < 60) return "Nuvoloso"; if (cc < 80) return "Molto nuvoloso"; return "Coperto"; }
+function wd(deg: number) {
+  if (deg === undefined || deg === null) return "--";
+  return ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][Math.round(deg / 45) % 8];
+}
+function wa(deg: number) {
+  if (deg === undefined || deg === null) return "\u27A1";
+  return ["\u2B06", "\u2197", "\u27A1", "\u2198", "\u2B07", "\u2199", "\u2B05", "\u2196"][Math.round(deg / 45) % 8];
+}
+function ct(cc: number) {
+  if (cc < 20) return "Sereno";
+  if (cc < 40) return "Poco nuvoloso";
+  if (cc < 60) return "Nuvoloso";
+  if (cc < 80) return "Molto nuvoloso";
+  return "Coperto";
+}
 
 async function fetchMeteo(lat: number, lon: number) {
   const p = new URLSearchParams({
@@ -175,10 +187,10 @@ function genAI(dayData: HourData[], site: any, thermal: any, wp: any[]) {
     if (soar >= 7) th += "\nGalleggiamento eccellente!\n"; else if (soar >= 5) th += "\nBuon galleggiamento.\n"; else th += "\nGalleggiamento scarso.\n";
     thermal.hourly.forEach((h: any) => { th += "* " + String(h.hour).padStart(2, "0") + ":00 -> " + h.intensity + "m/s\n"; });
   }
-  let a = "QUOTE E PLAFOND\n\n";
+  let al = "QUOTE E PLAFOND\n\n";
   if (thermal) {
-    a += "* Base decollo: " + (site.altitude || 1500) + "m\n* Cloud Base: " + thermal.cloudBase + "m\n* Thermal Top: " + thermal.thermalTop + "m\n";
-    if (soar >= 7 && thermal.thermalTop > 3000) a += "\nCross Country eccellente!\n"; else if (soar >= 5 && thermal.thermalTop > 2500) a += "\nBuono per cross.\n"; else a += "\nCross limitato.\n";
+    al += "* Base decollo: " + (site.altitude || 1500) + "m\n* Cloud Base: " + thermal.cloudBase + "m\n* Thermal Top: " + thermal.thermalTop + "m\n";
+    if (soar >= 7 && thermal.thermalTop > 3000) al += "\nCross Country eccellente!\n"; else if (soar >= 5 && thermal.thermalTop > 2500) al += "\nBuono per cross.\n"; else al += "\nCross limitato.\n";
   }
   let hh = "SVOLGIMENTO GIORNATA\n\n";
   for (let h = 9; h <= 19; h++) {
@@ -198,7 +210,7 @@ function genAI(dayData: HourData[], site: any, thermal: any, wp: any[]) {
   }
   let storm = "TEMPORALI\n\n";
   if (hasStorm) storm += "ALLERTA TEMPORALI! Volo sconsigliato!\n"; else if (hasRain && avgC > 70) storm += "Possibili temporali - Monitorare.\n"; else storm += "Nessun temporale.\n";
-  return { general: gen, advice: adv, thermal: th, altitude: a, hourly: hh, pressure: press, thunderstorm: storm };
+  return { general: gen, advice: adv, thermal: th, altitude: al, hourly: hh, pressure: press, thunderstorm: storm };
 }
 
 export default function Index() {
@@ -331,8 +343,7 @@ export default function Index() {
                 <>
                   <div className="grid grid-cols-3 gap-1.5 mb-3">
                     {enrichedDaily.map((d, i) => (
-                      <button key={i} onClick={() => { setDayIdx(i); setHour(12); }} className={"rounded-xl p<dyad-write path="src/pages/Index.tsx" file-mode="append">
-                      <button key={i} onClick={() => { setDayIdx(i); setHour(12); }} className={"rounded-xl p-2 text-center cursor-pointer " + (dayIdx === i ? "bg-red-500/15 border border-red-500" : "bg-black/20 border border-white/10")}>
+                      <button key={i} onClick={() => { setDayIdx(i); setHour(12); }}className={"rounded-xl p-2 text-center cursor-pointer " + (dayIdx === i ? "bg-red-500/15 border border-red-500" : "bg-black/20 border border-white/10")}>
                         <div className="text-xs font-semibold">{dateLabels[i]}</div>
                         <div className="text-xl my-0.5">{wic(d.weatherCode, 1)}</div>
                         <div className="text-sm text-red-400 font-semibold">{Math.round(d.tempMax)}&deg;/{Math.round(d.tempMin)}&deg;</div>
