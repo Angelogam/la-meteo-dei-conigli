@@ -1,7 +1,10 @@
 "use client";
 
 import React from "react";
-import { ArrowUp, Wind, Droplets, Gauge, Sun, Cloud, TrendingUp, Info } from "lucide-react";
+import {
+  ArrowUp, Wind, Droplets, Gauge, Sun, Cloud, TrendingUp, Info,
+  Zap, Thermometer, Shield, Activity
+} from "lucide-react";
 import type { TermicheData } from "@/utils/termiche";
 
 interface GraficoTermicheProps {
@@ -23,6 +26,17 @@ function getColoreTesto(forza: number): string {
   if (forza >= 3) return "text-yellow-900";
   if (forza >= 1) return "text-green-900";
   return "text-slate-400";
+}
+
+function IconaTurbolenza(t: "alta" | "media" | "bassa") {
+  switch (t) {
+    case "alta":
+      return <Zap className="w-3 h-3 text-red-400" />;
+    case "media":
+      return <Activity className="w-3 h-3 text-yellow-400" />;
+    case "bassa":
+      return <Shield className="w-3 h-3 text-green-400" />;
+  }
 }
 
 const LEGENDA: { colore: string; label: string }[] = [
@@ -47,7 +61,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
         </div>
         <div>
           <h3 className="text-sm font-bold text-amber-200">Forza termiche & quota massima</h3>
-          <p className="text-[10px] text-slate-400">
+          <p className="text-[10px] text-slate-300">
             Elaborazione in tempo reale basata su vento, sole e umidit&agrave;
           </p>
         </div>
@@ -113,6 +127,32 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                 <span className="text-[13px] font-bold text-green-300">{t.rateo} m/s</span>
               </div>
 
+              {/* Turbolenza e stabilità */}
+              <div className="shrink-0 flex items-center gap-1.5 pl-1 border-l border-slate-600/40">
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center gap-0.5">
+                    {IconaTurbolenza(t.turbolenza)}
+                  </div>
+                  <span className="text-[8px] text-slate-400 uppercase tracking-wider">
+                    {t.turbolenza === "bassa" ? "dolce" : t.turbolenza}
+                  </span>
+                </div>
+                {/* Indicatore stabilità */}
+                <div className="flex flex-col items-center">
+                  <div
+                    className="w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-bold"
+                    style={{
+                      backgroundColor: t.stabilita > 70 ? "rgba(34,197,94,0.3)" : t.stabilita > 40 ? "rgba(250,204,21,0.3)" : "rgba(239,68,68,0.3)",
+                      color: t.stabilita > 70 ? "#86efac" : t.stabilita > 40 ? "#fde047" : "#fca5a5",
+                      borderColor: t.stabilita > 70 ? "rgba(34,197,94,0.4)" : t.stabilita > 40 ? "rgba(250,204,21,0.4)" : "rgba(239,68,68,0.4)",
+                    }}
+                  >
+                    {t.stabilita > 70 ? "C" : t.stabilita > 40 ? "M" : "T"}
+                  </div>
+                  <span className="text-[8px] text-slate-400 uppercase tracking-wider">conf.</span>
+                </div>
+              </div>
+
               {isCurrentHour && <div className="shrink-0 w-2 h-2 rounded-full bg-green-400 animate-pulse" />}
             </div>
           );
@@ -121,7 +161,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
 
       {/* Legenda */}
       <div className="mt-4 pt-3 border-t border-slate-600/50">
-        <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-400">
+        <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-300">
           {LEGENDA.map((item) => (
             <div key={item.label} className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: item.colore }} />
@@ -132,16 +172,36 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
             <ArrowUp className="w-3 h-3 text-amber-400 shrink-0" />
             <span>Quota massima</span>
           </div>
+          <div className="flex items-center gap-1.5">
+            <Shield className="w-3 h-3 text-green-400 shrink-0" />
+            <span>Dolce / bassa turbolenza</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Zap className="w-3 h-3 text-red-400 shrink-0" />
+            <span>Alta turbolenza</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Activity className="w-3 h-3 text-yellow-400 shrink-0" />
+            <span>Turbolenza media</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full shrink-0 flex items-center justify-center text-[7px] font-bold border" style={{ backgroundColor: "rgba(34,197,94,0.3)", color: "#86efac", borderColor: "rgba(34,197,94,0.4)" }}>C</span>
+            <span>Comfort (stabile)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full shrink-0 flex items-center justify-center text-[7px] font-bold border" style={{ backgroundColor: "rgba(239,68,68,0.3)", color: "#fca5a5", borderColor: "rgba(239,68,68,0.4)" }}>T</span>
+            <span>Turbolento</span>
+          </div>
         </div>
       </div>
 
-      {/* Info calcolo */}
+      {/* Info calcolo ottimizzato */}
       <div className="mt-3 p-2 rounded-lg bg-slate-800/60 border border-slate-600/30">
         <div className="flex items-center gap-1.5 mb-1.5">
-          <Info className="w-3 h-3 text-slate-400 shrink-0" />
-          <span className="text-[10px] font-medium text-slate-400">Fattori considerati</span>
+          <Info className="w-3 h-3 text-slate-300 shrink-0" />
+          <span className="text-[10px] font-medium text-slate-300">Fattori considerati</span>
         </div>
-        <div className="flex items-center gap-3 flex-wrap text-[9px] text-slate-400">
+        <div className="flex items-center gap-3 flex-wrap text-[9px] text-slate-300">
           <span className="flex items-center gap-1">
             <Sun className="w-2.5 h-2.5 text-amber-400 shrink-0" />
             Gradiente termico
@@ -162,6 +222,13 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
             <Gauge className="w-2.5 h-2.5 text-purple-400 shrink-0" />
             Pressione (+1015 hPa ideale)
           </span>
+          <span className="flex items-center gap-1">
+            <Thermometer className="w-2.5 h-2.5 text-orange-400 shrink-0" />
+            Ora del giorno
+          </span>
+        </div>
+        <div className="mt-1.5 text-[9px] text-slate-400">
+          Dopo le 16: se vento moderato (8-18 km/h) le termiche diventano pi&ugrave; dolci e stabili, meno turbolenza &rarr; volo pi&ugrave; confortevole.
         </div>
       </div>
     </div>
