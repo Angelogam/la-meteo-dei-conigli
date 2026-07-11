@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Open-Meteo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 2rem; background: #1e293b; color: #e2e8f0; }
+    pre { background: #0f172a; padding: 1rem; border-radius: 12px; overflow-x: auto; font-size: 13px; border: 1px solid #334155; }
+    button { background: #3b82f6; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    button:hover { background: #2563eb; }
+    .success { color: #4ade80; }
+    .error { color: #f87171; }
+    .status { margin-top: 1rem; padding: 0.8rem; border-radius: 8px; }
+    .loading { opacity: 0.6; }
+  </style>
+</head>
+<body>
+  <h1>🔌 Test Connessione Open-Meteo</h1>
+  <p>Coordinate: Malanotte (44.2587, 7.7943)</p>
+  
+  <button id="testBtn" onclick="testOpenMeteo()">▶️ Esegui test</button>
+  
+  <div id="status" class="status">Premi il pulsante per testare</div>
+  <pre id="output">Nessun dato ancora</pre>
+
+  <script>
+    async function testOpenMeteo() {
+      const btn = document.getElementById('testBtn');
+      const output = document.getElementById('output');
+      const status = document.getElementById('status');
+      
+      btn.disabled = true;
+      btn.textContent = '⏳ Test in corso...';
+      btn.classList.add('loading');
+      status.className = 'status';
+      status.textContent = 'Chiamata in corso a Open-Meteo...';
+      output.textContent = 'Attendo risposta...';
+      
+      try {
+        const url = 'https://api.open-meteo.com/v1/forecast' +
+          '?latitude=44.2587' +
+          '&longitude=7.7943' +
+          '&hourly=temperature_2m,wind_speed_10m,weather_code' +
+          '&daily=temperature_2m_max,temperature_2m_min' +
+          '&timezone=Europe/Rome' +
+          '&forecast_days=1';
+        
+        const startTime = performance.now();
+        const res = await fetch(url);
+        const endTime = performance.now();
+        const elapsed = ((endTime - startTime) / 1000).toFixed(2);
+        
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        
+        const data = await res.json();
+        
+        status.className = 'status success';
+        status.textContent = `✅ Successo! Risposta ricevuta in ${elapsed}s`;
+        
+        output.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        status.className = 'status error';
+        status.textContent = `❌ Errore: ${err.message}`;
+        output.textContent = `ERRORE:\n${err.stack || err}`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '▶️ Esegui test';
+        btn.classList.remove('loading');
+      }
+    }
+    
+    // Esegui automaticamente al caricamento
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(testOpenMeteo, 300);
+    });
+  </script>
+</body>
+</html>
