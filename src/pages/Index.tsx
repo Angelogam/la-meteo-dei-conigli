@@ -23,13 +23,19 @@ type Tab = "meteo" | "venti" | "termiche" | "analisi";
 
 const DAY_NAMES = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
 
+const START_HOUR = 9;
+const END_HOUR = 19;
+
 export default function Index() {
   const [allHourly, setAllHourly] = useState<Record<string, HourData[]>>({});
   const [currentMap, setCurrentMap] = useState<Record<string, HourData>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string>("malanotte");
-  const [hour, setHour] = useState<number>(new Date().getHours());
+  const [hour, setHour] = useState<number>(() => {
+    const h = new Date().getHours();
+    return Math.max(START_HOUR, Math.min(END_HOUR, h));
+  });
   const [dayIdx, setDayIdx] = useState(0);
   const [activeTab, setActiveTab] = useState<Tab>("meteo");
 
@@ -54,9 +60,10 @@ export default function Index() {
       setAllHourly(hourlyMap);
       const cmap: Record<string, HourData> = {};
       const h = new Date().getHours();
+      const clamped = Math.max(START_HOUR, Math.min(END_HOUR, h));
       for (const r of results) {
         const hdata = (r as any).hourly as HourData[];
-        cmap[r.id] = hdata.find((x: HourData) => new Date(x.time).getHours() === h) || hdata[0];
+        cmap[r.id] = hdata.find((x: HourData) => new Date(x.time).getHours() === clamped) || hdata[0];
       }
       setCurrentMap(cmap);
       if (errResult) setError(errResult.error);
@@ -78,7 +85,14 @@ export default function Index() {
   }, [hour, allHourly]);
 
   const selected = DECOLLI.find((d) => d.id === selectedId) || DECOLLI[0];
-  const dayData = useMemo(() => allHourly[selectedId] || [], [allHourly, selectedId]);
+  const dayData = useMemo(() => {
+    const raw = allHourly[selectedId] || [];
+    // filtrato 9-19
+    return raw.filter((x) => {
+      const h = new Date(x.time).getHours();
+      return h >= START_HOUR && h <= END_HOUR;
+    });
+  }, [allHourly, selectedId]);
   const current = useMemo(() => currentMap[selectedId] || null, [currentMap, selectedId]);
 
   const daily = useMemo(() => {
@@ -163,6 +177,8 @@ export default function Index() {
                   aiData={aiData}
                   onDaySelect={setDayIdx}
                   onHourChange={setHour}
+                  startHour={START_HOUR}
+                  endHour={END_HOUR}
                 />
               )}
 
