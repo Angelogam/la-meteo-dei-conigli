@@ -2,6 +2,8 @@
 
 import { wic, ct, wa, wd, getZeroTermico } from "@/utils/meteo";
 import type { HourData, DailyData, ThermalData, PressureGradient, AiAnalysis } from "@/types/meteo";
+import { DayForecastPopup } from "./DayForecastPopup";
+import { useState } from "react";
 
 interface MeteoTabProps {
   current: HourData;
@@ -28,13 +30,31 @@ export const MeteoTab = ({
   onDaySelect,
   onHourChange,
 }: MeteoTabProps) => {
+  const [dayPopupIdx, setDayPopupIdx] = useState<number | null>(null);
+
+  // Per ora usiamo dati fittizi per simulare le ore — nella realtà arrivano da props
+  const dummyHourlyData: HourData[] = Array.from({ length: 24 }, (_, i) => ({
+    ...current,
+    time: new Date(current.time.getFullYear(), current.time.getMonth(), current.time.getDate(), i),
+    temperature: current.temperature - 3 + Math.sin((i / 24) * Math.PI * 2) * 6,
+    cloudCover: Math.min(100, Math.max(0, current.cloudCover - 15 + Math.sin((i / 24) * Math.PI * 2) * 20)),
+    windSpeed: Math.max(2, current.windSpeed - 5 + Math.sin((i / 12) * Math.PI) * 8),
+    precipitation: i > 10 && i < 16 ? Math.max(0, current.precipitation + Math.random() * 0.5) : 0,
+    humidity: current.humidity - 5 + Math.sin((i / 24) * Math.PI * 2) * 10,
+  }));
+
+  const handleDayClick = (i: number) => {
+    onDaySelect(i);
+    setDayPopupIdx(dayPopupIdx === i ? null : i);
+  };
+
   return (
     <>
       <div className="grid grid-cols-3 gap-1.5 mb-3">
         {enrichedDaily.map((d, i) => (
           <button
             key={i}
-            onClick={() => onDaySelect(i)}
+            onClick={() => handleDayClick(i)}
             className={
               "rounded-xl p-2 text-center cursor-pointer " +
               (dayIdx === i
@@ -51,6 +71,15 @@ export const MeteoTab = ({
           </button>
         ))}
       </div>
+
+      {/* POPUP EVOLUZIONE GIORNALIERA */}
+      {dayPopupIdx !== null && enrichedDaily[dayPopupIdx] && (
+        <DayForecastPopup
+          data={dummyHourlyData}
+          dayLabel={dateLabels[dayPopupIdx]}
+          onClose={() => setDayPopupIdx(null)}
+        />
+      )}
 
       <div className="flex items-center gap-2.5 mb-3 py-1.5 px-3 bg-gray-100 rounded-xl">
         <span className="text-xs text-gray-500">&#x23F0; Ora</span>
