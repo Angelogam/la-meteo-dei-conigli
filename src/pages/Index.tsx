@@ -95,7 +95,6 @@ function Index() {
     setGlobalError(null);
   }, []);
 
-  // Fetch dei profili vento in quota per il decollo selezionato
   const fetchWind = useCallback(async (lat: number, lon: number) => {
     setDecolliMeteo((prev) => ({
       ...prev,
@@ -114,7 +113,6 @@ function Index() {
     return () => clearInterval(interval);
   }, [fetchAllDecolli]);
 
-  // Carica venti in quota quando cambia il sito
   const selectedSite = DECOLLI.find((s) => s.id === siteId) || DECOLLI[0];
   useEffect(() => {
     if (selectedSite) {
@@ -132,10 +130,8 @@ function Index() {
   const hourlyRaw = meteoData?.hourly || [];
   const daily = meteoData?.daily || [];
 
-  // Filtra tutte le ore tra le 9 e le 19
   const hourly = useMemo(() => filterFlightHours(hourlyRaw), [hourlyRaw]);
 
-  // Filtra anche i profili vento in quota
   const filteredWindProfiles = useMemo(
     () => windProfiles.filter((p) => {
       const hh = p.time.getHours();
@@ -232,7 +228,6 @@ function Index() {
 
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-slate-800 via-slate-700 to-slate-900 text-slate-100">
-      {/* Overlay texture pattern */}
       <div
         className="pointer-events-none fixed inset-0 opacity-[0.03] bg-repeat"
         style={{
@@ -240,412 +235,9 @@ function Index() {
         }}
       />
 
-      {/* Soft gradient orbs */}
       <div className="pointer-events-none fixed -top-32 -left-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
       <div className="pointer-events-none fixed -bottom-32 -right-32 w-96 h-96 bg-green-500/8 rounded-full blur-3xl" />
 
-      {/* Header */}
-      <header className="relative z-10 px-4 py-5```tsx
-          </div>
-        </div>
-      </header>
-
-      {/* Main content */}
-      <div className="relative z-10 max-w-5xl mx-auto px-3 pb-28 mt-4 md:flex md:gap-3 md:items-start md:justify-center">
-        {/* Sidebar decolli */}
-        <SidebarDecolli
-          selected={siteId}
-          current={currentHourData}
-          onSelect={handleSiteSelect}
-          weatherMap={weatherMap}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
-
-        {/* Colonna principale */}
-        <div className="flex-1 min-w-0 max-w-2xl mx-auto">
-          {/* Ora reale */}
-          <div className="mb-2.5 flex items-center justify-between">
-            <div className="text-[11px] text-slate-400 font-medium">
-              {new Date().toLocaleDateString("it-IT", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-              <span className="ml-2 text-blue-300">
-                {String(hour).padStart(2, "0")}:{String(new Date().getMinutes()).padStart(2, "0")}
-              </span>
-            </div>
-            <div className="flex gap-1.5">
-              <button
-                onClick={toggleSidebar}
-                className="md:hidden px-2.5 py-1.5 rounded-xl text-[10px] font-bold border border-slate-500 bg-slate-700 text-slate-200 hover:bg-slate-600 transition-colors"
-              >
-                ☰ Decolli
-              </button>
-            </div>
-          </div>
-
-          {/* Current site info */}
-          {currentSite && currentHourData && (
-            <div className="mb-2.5">
-              <SiteHeader site={currentSite} current={currentHourData} />
-            </div>
-          )}
-
-          {/* Tab navigation */}
-          <TabNav tab={tab} onTabChange={setTab} />
-
-          {/* Tab content */}
-          <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl p-3 md:p-4 border border-slate-600/50 shadow-xl mt-2.5 text-slate-200">
-            {tab === "meteo" && currentHourData && (
-              <MeteoTab
-                current={currentHourData}
-                dayIdx={dayIdx}
-                hour={hour}
-                enrichedDaily={enrichedDaily}
-                dateLabels={dateLabels}
-                thermal={thermal}
-                pressureGrad={{ grad: 0, desc: "Non disponibile" }}
-                aiData={aiData}
-                onDaySelect={setDayIdx}
-                onHourChange={setHour}
-              />
-            )}
-
-            {tab === "venti" && <VentiTab dayData={dayData} />}
-
-            {tab === "quota" && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-bold text-blue-200 uppercase tracking-wider">
-                    Vento in Quota · {currentSite?.name}
-                  </h3>
-                  <span className="text-[10px] text-slate-500">
-                    {selectedSite?.altitude}m slm · step 250m
-                  </span>
-                </div>
-                {windProfilesLoading ? (
-                  <div className="flex items-center justify-center py-6 text-slate-400 text-sm">
-                    <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mr-2" />
-                    Caricamento venti in quota...
-                  </div>
-                ) : (
-                  <VentiQuotaTab
-                    profiles={filteredWindProfiles}
-                    dayData={dayData}
-                    selectedHour={hour}
-                  />
-                )}
-              </div>
-            )}
-
-            {tab === "termiche" && <TermicheTab aiData={aiMeteoAnalysis as unknown as AiAnalysis} />}
-
-            {tab === "analisi" && aiMeteoAnalysis && (
-              <AnalisiTab aiData={aiMeteoAnalysis as unknown as AiAnalysis} />
-            )}
-            {tab === "analisi" && !aiMeteoAnalysis && (
-              <div className="text-sm text-slate-400 p-4 text-center">
-                Nessuna analisi disponibile per questa giornata.
-              </div>
-            )}
-          </div>
-
-          {/* Hourly popup button */}
-          <div className="mt-3 flex justify-center">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowPopup(true)}
-              className="text-xs border-slate-500/60 text-slate-200 hover:bg-slate-700 bg-slate-800/80"
-            >
-              <MapPin className="w-3 h-3 mr-1" />
-              Dettaglio orario {currentSite?.name} (9:00–19:00)
-            </Button>
-          </div>
-
-          {/* DayForecastPopup */}
-          {showPopup && currentHourData && (
-            <DayForecastPopup
-              data={dayData}
-              dayLabel={dateLabels[dayIdx] || ""}
-              onClose={() => setShowPopup(false)}
-              selectedHour={hour}
-              onHourSelect={(h) => {
-                setHour(h);
-                setShowPopup(false);
-              }}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* Footer */}
-      <footer className="relative z-10 fixed bottom-0 left-0 right-0 text-center py-2 border-t border-green-500/30 bg-slate-800/80 backdrop-blur-md shadow-lg">
-        <div className="max-w-5xl mx-auto px-3 flex items-center justify-center gap-8">
-          <p className="text-[10px] text-slate-400">
-            Basato su dati Open-Meteo · previsioni 9:00–19:00
-          </p>
-          <p className="text-[10px] text-slate-400">
-            &copy; {new Date().getFullYear()} Meteo dei Conigli
-          </p>
-        </div>
-      </footer>
-    </div>
-  );
-}
-
-export default Index;
-```<dyad-write path="src/pages/Index.tsx" description="Integro VentiQuotaTab con fetch dei profili vento - completato">
-"use client";
-
-import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { LoadingScreen } from "@/components/LoadingScreen";
-import { ErrorScreen } from "@/components/ErrorScreen";
-import { TabNav } from "@/components/TabNav";
-import { MeteoTab } from "@/components/MeteoTab";
-import { VentiTab } from "@/components/VentiTab";
-import VentiQuotaTab from "@/components/VentiQuotaTab";
-import { TermicheTab } from "@/components/TermicheTab";
-import { AnalisiTab } from "@/components/AnalisiTab";
-import SiteHeader from "@/components/SiteHeader";
-import DayForecastPopup from "@/components/DayForecastPopup";
-import { fetchMeteo, fetchWindProfiles, filterFlightHours, enrDaily, calcThermal } from "@/utils/meteo";
-import { DECOLLI } from "@/data/decolli";
-import { genAI } from "@/utils/analisi";
-import { generateAiAnalysis } from "@/utils/meteoAI";
-import type { MeteoData, HourData, AiAnalysis, WindProfile } from "@/types/meteo";
-import SidebarDecolli from "@/components/SidebarDecolli";
-import { Button } from "@/components/ui/button";
-import { MapPin } from "lucide-react";
-
-type Tab = "meteo" | "venti" | "quota" | "termiche" | "analisi";
-
-interface DecolloMeteo {
-  site: typeof DECOLLI[0];
-  data: MeteoData | null;
-  loading: boolean;
-  error: string | null;
-  windProfiles: WindProfile[];
-  windProfilesLoading: boolean;
-}
-
-function useRealTimeHour(): number {
-  const [h, setH] = useState(() => new Date().getHours());
-  useEffect(() => {
-    const tick = () => setH(new Date().getHours());
-    const id = setInterval(tick, 10000);
-    return () => clearInterval(id);
-  }, []);
-  return h;
-}
-
-function Index() {
-  const [decolliMeteo, setDecolliMeteo] = useState<Record<string, DecolloMeteo>>(() => {
-    const map: Record<string, DecolloMeteo> = {};
-    for (const site of DECOLLI) {
-      map[site.id] = { site, data: null, loading: true, error: null, windProfiles: [], windProfilesLoading: false };
-    }
-    return map;
-  });
-  const [globalLoading, setGlobalLoading] = useState(true);
-  const [globalError, setGlobalError] = useState<string | null>(null);
-  const [siteId, setSiteId] = useState(DECOLLI[0]?.id || "");
-  const [tab, setTab] = useState<Tab>("meteo");
-  const [dayIdx, setDayIdx] = useState(0);
-  const [hour, setHour] = useState(useRealTimeHour());
-  const [showPopup, setShowPopup] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const fetchAllDecolli = useCallback(async () => {
-    const results = await Promise.allSettled(
-      DECOLLI.map(async (site) => {
-        const data = await fetchMeteo(site.lat, site.lon);
-        return { id: site.id, data };
-      })
-    );
-
-    setDecolliMeteo((prev) => {
-      const next = { ...prev };
-      for (const result of results) {
-        if (result.status === "fulfilled") {
-          next[result.value.id] = {
-            ...next[result.value.id],
-            data: result.value.data,
-            loading: false,
-            error: null,
-          };
-        } else {
-          const failedId = DECOLLI.find((s) =>
-            result.reason?.message?.includes(s.id)
-          )?.id;
-          if (failedId) {
-            next[failedId] = {
-              ...next[failedId],
-              loading: false,
-              error: result.reason?.message || "Errore sconosciuto",
-            };
-          }
-        }
-      }
-      return next;
-    });
-    setGlobalLoading(false);
-    setGlobalError(null);
-  }, []);
-
-  // Fetch dei profili vento in quota per il decollo selezionato
-  const fetchWind = useCallback(async (lat: number, lon: number) => {
-    setDecolliMeteo((prev) => ({
-      ...prev,
-      [siteId]: { ...prev[siteId], windProfilesLoading: true },
-    }));
-    const profiles = await fetchWindProfiles(lat, lon);
-    setDecolliMeteo((prev) => ({
-      ...prev,
-      [siteId]: { ...prev[siteId], windProfiles: profiles, windProfilesLoading: false },
-    }));
-  }, [siteId]);
-
-  useEffect(() => {
-    fetchAllDecolli();
-    const interval = setInterval(fetchAllDecolli, 60000);
-    return () => clearInterval(interval);
-  }, [fetchAllDecolli]);
-
-  // Carica venti in quota quando cambia il sito
-  const selectedSite = DECOLLI.find((s) => s.id === siteId) || DECOLLI[0];
-  useEffect(() => {
-    if (selectedSite) {
-      fetchWind(selectedSite.lat, selectedSite.lon);
-    }
-  }, [siteId, selectedSite, fetchWind]);
-
-  const selectedDecollo = decolliMeteo[siteId];
-  const meteoData = selectedDecollo?.data;
-  const loading = selectedDecollo?.loading ?? true;
-  const error = selectedDecollo?.error;
-  const windProfiles = selectedDecollo?.windProfiles || [];
-  const windProfilesLoading = selectedDecollo?.windProfilesLoading || false;
-
-  const hourlyRaw = meteoData?.hourly || [];
-  const daily = meteoData?.daily || [];
-
-  // Filtra tutte le ore tra le 9 e le 19
-  const hourly = useMemo(() => filterFlightHours(hourlyRaw), [hourlyRaw]);
-
-  // Filtra anche i profili vento in quota
-  const filteredWindProfiles = useMemo(
-    () => windProfiles.filter((p) => {
-      const hh = p.time.getHours();
-      return hh >= 9 && hh <= 19;
-    }),
-    [windProfiles]
-  );
-
-  const weatherMap = useMemo(() => {
-    const map: Record<string, HourData> = {};
-    for (const [id, dm] of Object.entries(decolliMeteo)) {
-      if (dm?.data?.hourly) {
-        const hh = dm.data.hourly.find((h) => {
-          const hhh = h.time.getHours();
-          return hhh >= 9 && hhh <= 19 && hhh === hour;
-        });
-        if (hh) map[id] = hh;
-      }
-    }
-    return map;
-  }, [decolliMeteo, hour]);
-
-  const enrichedDaily = useMemo(() => enrDaily(daily, hourly), [daily, hourly]);
-
-  const dateLabels = useMemo(() => {
-    return daily.map((d) =>
-      d.date.toLocaleDateString("it-IT", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-      })
-    );
-  }, [daily]);
-
-  const getDayData = useCallback(
-    (idx: number): HourData[] => {
-      if (!hourly.length) return [];
-      const targetDate = daily[idx]?.date;
-      if (!targetDate) return [];
-      return hourly.filter((h) => {
-        const hd = h.time;
-        return (
-          hd.getDate() === targetDate.getDate() &&
-          hd.getMonth() === targetDate.getMonth() &&
-          hd.getFullYear() === targetDate.getFullYear()
-        );
-      });
-    },
-    [hourly, daily]
-  );
-
-  const dayData = useMemo(() => getDayData(dayIdx), [getDayData, dayIdx]);
-
-  const currentHourData = useMemo(() => {
-    const found = hourly.find((h) => h.time.getHours() === hour);
-    return found || hourly[0];
-  }, [hourly, hour]);
-
-  const currentSite = useMemo(
-    () => DECOLLI.find((s) => s.id === siteId) || DECOLLI[0],
-    [siteId]
-  );
-
-  const thermal = useMemo(() => {
-    if (!dayData.length) return null;
-    return calcThermal(dayData, currentSite.altitude);
-  }, [dayData, currentSite.altitude]);
-
-  const aiData = useMemo(() => {
-    if (!dayData.length) return null;
-    return genAI(dayData, { altitude: currentSite.altitude }, thermal);
-  }, [dayData, currentSite.altitude, thermal]);
-
-  const aiMeteoAnalysis = useMemo(() => {
-    return generateAiAnalysis(dayData, dayIdx);
-  }, [dayData, dayIdx]);
-
-  const handleSiteSelect = useCallback((id: string) => {
-    setSiteId(id);
-    setDayIdx(0);
-    setHour(new Date().getHours());
-  }, []);
-
-  const toggleSidebar = useCallback(() => setSidebarOpen((p) => !p), []);
-
-  const handleRetry = useCallback(() => {
-    setGlobalLoading(true);
-    setGlobalError(null);
-    fetchAllDecolli();
-  }, [fetchAllDecolli]);
-
-  if (globalLoading) return <LoadingScreen />;
-  if (globalError) return <ErrorScreen message={globalError} onRetry={handleRetry} />;
-
-  return (
-    <div className="relative min-h-screen bg-gradient-to-b from-slate-800 via-slate-700 to-slate-900 text-slate-100">
-      {/* Overlay texture pattern */}
-      <div
-        className="pointer-events-none fixed inset-0 opacity-[0.03] bg-repeat"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-        }}
-      />
-
-      {/* Soft gradient orbs */}
-      <div className="pointer-events-none fixed -top-32 -left-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
-      <div className="pointer-events-none fixed -bottom-32 -right-32 w-96 h-96 bg-green-500/8 rounded-full blur-3xl" />
-
-      {/* Header */}
       <header className="relative z-10 px-4 py-5 border-b-2 border-green-500/40 bg-gradient-to-r from-slate-800/95 via-green-900/20 to-slate-800/95 backdrop-blur-md shadow-lg">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-center gap-3">
@@ -668,9 +260,7 @@ function Index() {
         </div>
       </header>
 
-      {/* Main content */}
       <div className="relative z-10 max-w-5xl mx-auto px-3 pb-28 mt-4 md:flex md:gap-3 md:items-start md:justify-center">
-        {/* Sidebar decolli */}
         <SidebarDecolli
           selected={siteId}
           current={currentHourData}
@@ -680,9 +270,7 @@ function Index() {
           onClose={() => setSidebarOpen(false)}
         />
 
-        {/* Colonna principale */}
         <div className="flex-1 min-w-0 max-w-2xl mx-auto">
-          {/* Ora reale */}
           <div className="mb-2.5 flex items-center justify-between">
             <div className="text-[11px] text-slate-400 font-medium">
               {new Date().toLocaleDateString("it-IT", {
@@ -705,17 +293,14 @@ function Index() {
             </div>
           </div>
 
-          {/* Current site info */}
           {currentSite && currentHourData && (
             <div className="mb-2.5">
               <SiteHeader site={currentSite} current={currentHourData} />
             </div>
           )}
 
-          {/* Tab navigation */}
           <TabNav tab={tab} onTabChange={setTab} />
 
-          {/* Tab content */}
           <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl p-3 md:p-4 border border-slate-600/50 shadow-xl mt-2.5 text-slate-200">
             {tab === "meteo" && currentHourData && (
               <MeteoTab
@@ -771,7 +356,6 @@ function Index() {
             )}
           </div>
 
-          {/* Hourly popup button */}
           <div className="mt-3 flex justify-center">
             <Button
               variant="outline"
@@ -784,7 +368,6 @@ function Index() {
             </Button>
           </div>
 
-          {/* DayForecastPopup */}
           {showPopup && currentHourData && (
             <DayForecastPopup
               data={dayData}
@@ -800,7 +383,6 @@ function Index() {
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="relative z-10 fixed bottom-0 left-0 right-0 text-center py-2 border-t border-green-500/30 bg-slate-800/80 backdrop-blur-md shadow-lg">
         <div className="max-w-5xl mx-auto px-3 flex items-center justify-center gap-8">
           <p className="text-[10px] text-slate-400">
