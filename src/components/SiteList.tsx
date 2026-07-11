@@ -15,7 +15,7 @@ const diffLabel = (d: number) => d <= 2 ? "Facile" : d <= 3 ? "Medio" : "Diffici
 
 export const SiteList = ({ selected, current, onSelect }: SiteListProps) => {
   return (
-    <div className="bg-gray-300/70 rounded-2xl border border-gray-400/50 p-3 backdrop-blur md:h-[calc(100vh-180px)] overflow-hidden">
+    <div className="bg-gray-300/80 rounded-2xl border border-gray-400/60 p-3 backdrop-blur md:h-[calc(100vh-180px)] overflow-hidden">
       <h3 className="text-lg text-red-600 mb-3 font-bold">Decolli</h3>
       <div className="overflow-y-auto h-[calc(100%-40px)] pr-1">
         {DECOLLI.map((d) => {
