@@ -13,9 +13,9 @@ interface SiteListProps {
 }
 
 const volabilitaColor = (p: number) => {
-  if (p >= 70) return "#4caf50";
-  if (p >= 40) return "#ff9800";
-  return "#f44336";
+  if (p >= 70) return "#22c55e";
+  if (p >= 40) return "#f59e0b";
+  return "#ef4444";
 };
 
 /** Verifica se un'ora è sicura per volo */
@@ -52,7 +52,6 @@ const generaAvviso = (
 
   if (finestra.length === 0) return null;
 
-  // Controlla condizioni pericolose in qualsiasi ora della giornata
   let haTemporale = false;
   let haVentoForte = false;
   let haPioggia = false;
@@ -65,7 +64,6 @@ const generaAvviso = (
   let orePericolose = 0;
   let oreTotali = finestra.length;
 
-  // Controlla anche condizioni di turbolenza (venti > 25 km/h con raffiche > 40)
   let rafficheMassime = 0;
   let ventoMassimo = 0;
   let turbolenzaCount = 0;
@@ -79,7 +77,6 @@ const generaAvviso = (
     if (h.windSpeed < 5) haVentoDebole = true;
     if (h.windSpeed >= 14 && h.windSpeed <= 29) ventoOttimo = true;
 
-    // Turbolenza: vento > 25 km/h OPPURE raffiche > 40 km/h
     if ((h.windSpeed > 25 && h.windGust > 40) || h.windGust - h.windSpeed > 20) {
       turbolenzaCount++;
     }
@@ -93,21 +90,16 @@ const generaAvviso = (
     }
   }
 
-  // Se più del 30% delle ore ha turbolenza
   haTurbolenza = turbolenzaCount / oreTotali > 0.3;
 
-  // Se più del 50% delle ore è sicuro ma non tutte
   const oreSicure = finestra.filter((h) => isOraSicura(h)).length;
   condizioniMedie = oreSicure / oreTotali >= 0.5 && oreSicure / oreTotali < 0.9;
-
-  // Se più del 90% delle ore è sicuro
   condizioniOttime = oreSicure / oreTotali >= 0.9;
 
-  // ORDINE DI PRIORITÀ: dal più grave al meno grave
   if (haTemporale) {
     return {
       testo: "🚨 Alto rischio temporali in giornata",
-      colore: "#d32f2f",
+      colore: "#dc2626",
       icona: "🚨",
     };
   }
@@ -115,7 +107,7 @@ const generaAvviso = (
   if (haVentoForte) {
     return {
       testo: "💨 Rischio venti forti",
-      colore: "#d32f2f",
+      colore: "#dc2626",
       icona: "💨",
     };
   }
@@ -123,7 +115,7 @@ const generaAvviso = (
   if (haTurbolenza && ventoMassimo > 30) {
     return {
       testo: "🌊 Attenzione a turbolenze",
-      colore: "#ff9800",
+      colore: "#f97316",
       icona: "🌊",
     };
   }
@@ -131,7 +123,7 @@ const generaAvviso = (
   if (haPioggia) {
     return {
       testo: "🌧️ Rischio pioggia in giornata",
-      colore: "#ff9800",
+      colore: "#f97316",
       icona: "🌧️",
     };
   }
@@ -139,7 +131,7 @@ const generaAvviso = (
   if (haNebbia) {
     return {
       testo: "🌫️ Possibile nebbia - Visibilità ridotta",
-      colore: "#ff9800",
+      colore: "#f97316",
       icona: "🌫️",
     };
   }
@@ -147,7 +139,7 @@ const generaAvviso = (
   if (condizioniOttime && ventoOttimo) {
     return {
       testo: "🌟 Ottime condizioni per il volo",
-      colore: "#4caf50",
+      colore: "#0ea5e9",
       icona: "🌟",
     };
   }
@@ -155,7 +147,7 @@ const generaAvviso = (
   if (condizioniOttime && !ventoOttimo) {
     return {
       testo: "✅ Buone condizioni per il volo",
-      colore: "#4caf50",
+      colore: "#10b981",
       icona: "✅",
     };
   }
@@ -163,7 +155,7 @@ const generaAvviso = (
   if (condizioniMedie) {
     return {
       testo: "🔶 Possibilità medie per il volo",
-      colore: "#ff9800",
+      colore: "#f59e0b",
       icona: "🔶",
     };
   }
@@ -171,14 +163,14 @@ const generaAvviso = (
   if (haVentoDebole) {
     return {
       testo: "🌬️ Vento debole - Volo difficile",
-      colore: "#ff9800",
+      colore: "#f97316",
       icona: "🌬️",
     };
   }
 
   return {
     testo: "⚠️ Condizioni variabili - Valutare con attenzione",
-    colore: "#ff9800",
+    colore: "#f59e0b",
     icona: "⚠️",
   };
 };
@@ -241,45 +233,45 @@ const calcolaVolabilitaReale = (
 
       if (code >= 95) {
         score -= 60;
-        if (allerta !== "Alto") { allerta = "Alto"; coloreAllerta = "#d32f2f"; tipoAllerta = "temporale"; }
+        if (allerta !== "Alto") { allerta = "Alto"; coloreAllerta = "#dc2626"; tipoAllerta = "temporale"; }
       }
       if (pioggia) {
         score -= 45;
         if (allerta !== "Alto") {
           allerta = "Medio";
-          coloreAllerta = "#ff9800";
+          coloreAllerta = "#f59e0b";
           tipoAllerta = "pioggia";
         }
         const diffOre = h.time.getHours() - oraCorrente;
         if (diffOre <= 2 && diffOre >= 0) {
           allerta = "Alto";
-          coloreAllerta = "#d32f2f";
+          coloreAllerta = "#dc2626";
           tipoAllerta = "pioggia_imminente";
         }
       }
       if (code >= 61 && code <= 67) {
         score -= 35;
-        if (allerta === "Nessuna") { allerta = "Medio"; coloreAllerta = "#ff9800"; tipoAllerta = "pioggia"; }
+        if (allerta === "Nessuna") { allerta = "Medio"; coloreAllerta = "#f59e0b"; tipoAllerta = "pioggia"; }
       }
       if (vento > 35) {
         score -= 35;
-        if (allerta === "Nessuna") { allerta = "Medio"; coloreAllerta = "#ff9800"; tipoAllerta = "vento_forte"; }
+        if (allerta === "Nessuna") { allerta = "Medio"; coloreAllerta = "#f97316"; tipoAllerta = "vento_forte"; }
       }
       if (vento > 50) {
         score -= 20;
-        if (allerta !== "Alto") { allerta = "Alto"; coloreAllerta = "#d32f2f"; tipoAllerta = "vento_fortissimo"; }
+        if (allerta !== "Alto") { allerta = "Alto"; coloreAllerta = "#dc2626"; tipoAllerta = "vento_fortissimo"; }
       }
       if (raffica > 50) {
         score -= 20;
-        if (allerta === "Nessuna") { allerta = "Medio"; coloreAllerta = "#ff9800"; tipoAllerta = "raffiche"; }
+        if (allerta === "Nessuna") { allerta = "Medio"; coloreAllerta = "#f97316"; tipoAllerta = "raffiche"; }
       }
       if (vento < 5) {
         score -= 15;
-        if (allerta === "Nessuna") { allerta = "Basso"; coloreAllerta = "#ff9800"; tipoAllerta = "vento_debole"; }
+        if (allerta === "Nessuna") { allerta = "Basso"; coloreAllerta = "#f59e0b"; tipoAllerta = "vento_debole"; }
       }
       if (code === 45 || code === 48) {
         score -= 30;
-        if (allerta === "Nessuna") { allerta = "Medio"; coloreAllerta = "#ff9800"; tipoAllerta = "nebbia"; }
+        if (allerta === "Nessuna") { allerta = "Medio"; coloreAllerta = "#f97316"; tipoAllerta = "nebbia"; }
       }
       if (nuvole > 80 && code >= 51 && code <= 57) score -= 20;
     }
@@ -291,7 +283,7 @@ const calcolaVolabilitaReale = (
   });
   if (pioggiaProssima2h && allerta !== "Alto") {
     allerta = "Alto";
-    coloreAllerta = "#d32f2f";
+    coloreAllerta = "#dc2626";
     tipoAllerta = "pioggia_imminente";
   }
 
@@ -373,7 +365,7 @@ export const SiteList = ({ selected, current, onSelect, weatherMap = {}, allHour
 
                   {vol.allerta === "Nessuna" && vol.finoAOra && (
                     <div className="flex justify-center flex-col items-center mb-1">
-                      <span className="text-sm font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                      <span className="text-sm font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full border border-green-300">
                         ✅ Volo sicuro fino {vol.finoAOra}
                       </span>
                       {vol.oraPericolosa && (
@@ -385,7 +377,7 @@ export const SiteList = ({ selected, current, onSelect, weatherMap = {}, allHour
                   )}
                   {vol.allerta === "Nessuna" && !vol.finoAOra && (
                     <div className="flex justify-center mb-1">
-                      <span className="text-sm font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                      <span className="text-sm font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full border border-green-300">
                         ✅ Volo sicuro
                       </span>
                     </div>
