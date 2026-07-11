@@ -70,16 +70,17 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
               </div>
 
               {/* Quota massima raggiungibile */}
-              <div className="shrink-0 w-20 text-right">
-                <span className="text-[11px] font-bold text-amber-200">
+              <div className="shrink-0 w-24 text-center">
+                <div className="text-[9px] text-slate-500 font-medium uppercase tracking-wider mb-0.5">quota max</div>
+                <span className="text-[13px] font-bold text-amber-200">
                   &uarr; {quotaMax > 0 ? `${quotaMax}m` : "—"}
                 </span>
-                <div className="text-[8px] text-slate-500">quota max</div>
               </div>
 
               {/* Rateo */}
-              <div className="shrink-0 w-12 text-right">
-                <span className="text-[11px] font-bold text-green-300">{t.rateo} m/s</span>
+              <div className="shrink-0 w-14 text-center">
+                <div className="text-[9px] text-slate-500 font-medium uppercase tracking-wider mb-0.5">rateo</div>
+                <span className="text-[13px] font-bold text-green-300">{t.rateo} m/s</span>
               </div>
 
               {isCurrentHour && <div className="shrink-0 w-2 h-2 rounded-full bg-green-400 animate-pulse" />}
