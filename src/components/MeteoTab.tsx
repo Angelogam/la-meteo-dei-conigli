@@ -143,12 +143,6 @@ export function MeteoTab({
       {/* Grafico termiche completo — quote, venti, forza nell'arco della giornata */}
       <Card className="border border-amber-600/50 bg-slate-800/80 shadow-lg overflow-hidden">
         <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 rounded-lg bg-amber-800/50 border border-amber-600/50 flex items-center justify-center">
-              <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
-            </div>
-            <span className="text-sm font-bold text-amber-200">Termiche &ndash; quote, venti e forza</span>
-          </div>
           <GraficoTermiche hourly={termicheHourly} oraCorrente={hour} />
         </CardContent>
       </Card>
