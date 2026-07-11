@@ -19,7 +19,7 @@ import { generateAiAnalysis } from "@/utils/meteoAI";
 import { generaTermicheOrarie } from "@/utils/termiche";
 import { DECOLLI, type Decollo } from "@/data/decolli";
 import type { MeteoData, HourData, AiAnalysis, WindProfile } from "@/types/meteo";
-import { CalendarDays, ChevronRight, CloudSun, MapPin, Menu } from "lucide-react";
+import { MapPin, Menu } from "lucide-react";
 
 interface DecolloMeteo {
   site: Decollo;
@@ -40,38 +40,8 @@ function useRealTimeHour(): number {
   return h;
 }
 
-interface GiornoPrevisione {
-  giorno: number;
-  label: string;
-  data: MeteoData | null;
-  loading: boolean;
-  error: string | null;
-}
-
 const nomiGiorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
-
-function generaGiorniPrevisioni(): GiornoPrevisione[] {
-  const giorni: GiornoPrevisione[] = [];
-  for (let g = 1; g <= 5; g++) {
-    const data = new Date();
-    data.setDate(data.getDate() + g);
-    const nomeGiorno = nomiGiorni[data.getDay()];
-    const label = `${nomeGiorno} ${data.getDate()} ${data.toLocaleDateString("it-IT", { month: "short" })}`;
-    giorni.push({ giorno: g, label, data: null, loading: false, error: null });
-  }
-  return giorni;
-}
-
-/** Trova l'indice del giorno corrispondente a una data specifica nell'array daily */
-function findDayIndex(dailyDates: Date[], targetDate: Date): number {
-  return dailyDates.findIndex((d) => {
-    return (
-      d.getDate() === targetDate.getDate() &&
-      d.getMonth() === targetDate.getMonth() &&
-      d.getFullYear() === targetDate.getFullYear()
-    );
-  });
-}
+const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
 
 /** Filtra gli HourData per una data specifica */
 function filterByDate(data: HourData[], targetDate: Date): HourData[] {
@@ -83,6 +53,11 @@ function filterByDate(data: HourData[], targetDate: Date): HourData[] {
       hd.getFullYear() === targetDate.getFullYear()
     );
   });
+}
+
+/** Confronta due date (ignorando ora) */
+function isSameDay(a: Date, b: Date): boolean {
+  return a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear();
 }
 
 const Index = () => {
@@ -97,35 +72,11 @@ const Index = () => {
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [siteId, setSiteId] = useState(DECOLLI[0]?.id || "");
   const [tab, setTab] = useState<Tab>("meteo");
-  const [dayIdx, setDayIdx] = useState(0);
+  const [dayIdx, setDayIdx] = useState(0); // 0=oggi, 1=domani, 2=dopodomani, ...
   const [hour, setHour] = useState(useRealTimeHour());
   const [showPopup, setShowPopup] = useState(false);
   const [showDayDetail, setShowDayDetail] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [giorniPrevisioni, setGiorniPrevisioni] = useState<GiornoPrevisione[]>(generaGiorniPrevisioni);
-  const [selectedDayLoading, setSelectedDayLoading] = useState(false);
-
-  const fetchGiorno = useCallback(async (giorno: number) => {
-    setSelectedDayLoading(true);
-    setGiorniPrevisioni((prev) =>
-      prev.map((g) => (g.giorno === giorno ? { ...g, loading: true, error: null } : g))
-    );
-
-    const site = DECOLLI.find((s) => s.id === siteId) || DECOLLI[0];
-    try {
-      const data = await fetchMeteo(site.lat, site.lon);
-      setGiorniPrevisioni((prev) =>
-        prev.map((g) => (g.giorno === giorno ? { ...g, data, loading: false } : g))
-      );
-    } catch (err) {
-      setGiorniPrevisioni((prev) =>
-        prev.map((g) =>
-          g.giorno === giorno ? { ...g, loading: false, error: "Errore caricamento" } : g
-        )
-      );
-    }
-    setSelectedDayLoading(false);
-  }, [siteId]);
 
   const fetchAllDecolli = useCallback(async () => {
     const results = await Promise.allSettled(
@@ -210,84 +161,25 @@ const Index = () => {
     return map;
   }, [decolliMeteo, hour]);
 
-  const enrichedDaily = useMemo(() => enrDaily(daily, hourly), [daily, hourly]);
+  // ---- DATA TARGET in base a dayIdx ----
+  const targetDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + dayIdx);
+    return d;
+  }, [dayIdx]);
 
-  const dateLabels = useMemo(() => {
-    return daily.map((d) =>
-      d.date.toLocaleDateString("it-IT", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-      })
-    );
-  }, [daily]);
-
-  // Giorni avanti (da domani in poi) per il MeteoTab
-  const giorniAvanti = useMemo(() => {
-    return giorniPrevisioni.map((g) => ({
-      value: g.giorno,
-      label: g.label,
-    }));
-  }, [giorniPrevisioni]);
-
-  // ---- DATI PER IL GIORNO SELEZIONATO (dayIdx) ----
-  // Quando dayIdx === 0: usa i dati correnti
-  // Quando dayIdx > 0: usa i dati precaricati di giorniPrevisioni
-
-  const isFutureDay = dayIdx > 0;
-  const previsioneSelezionata = giorniPrevisioni.find((g) => g.giorno === dayIdx);
-
-  // Per i giorni futuri, dobbiamo trovare l'indice corretto nell'array daily
-  // Domani (giorno=1) è daily[1] nell'array restituito da Open-Meteo
-  const futureDailyIndex = useMemo(() => {
-    if (!isFutureDay || !previsioneSelezionata?.data?.daily?.length) return -1;
-    const targetDate = new Date();
-    targetDate.setDate(targetDate.getDate() + dayIdx);
-    return findDayIndex(
-      previsioneSelezionata.data.daily.map((d) => d.date),
-      targetDate
-    );
-  }, [isFutureDay, dayIdx, previsioneSelezionata]);
-
-  // DayData: ore 9-19 per il giorno selezionato
+  // ---- DATI per il giorno selezionato ----
+  // Filtra gli hourly per la data target
   const dayData = useMemo((): HourData[] => {
-    if (!isFutureDay) {
-      // Oggi: filtra hourly per la data di oggi (daily[0])
-      const targetDate = daily[0]?.date;
-      if (!targetDate || !hourly.length) return [];
-      return hourly.filter((h) => {
-        const hd = h.time;
-        return (
-          hd.getDate() === targetDate.getDate() &&
-          hd.getMonth() === targetDate.getMonth() &&
-          hd.getFullYear() === targetDate.getFullYear()
-        );
-      });
-    }
+    return filterByDate(hourly, targetDate);
+  }, [hourly, targetDate]);
 
-    // Giorno futuro
-    if (!previsioneSelezionata?.data) return [];
-    const prevHourly = filterFlightHours(previsioneSelezionata.data.hourly || []);
-    if (!prevHourly.length) return [];
-
-    // Trova la data target usando futureDailyIndex
-    if (futureDailyIndex >= 0 && previsioneSelezionata.data.daily[futureDailyIndex]) {
-      const targetDate = previsioneSelezionata.data.daily[futureDailyIndex].date;
-      return filterByDate(prevHourly, targetDate);
-    }
-
-    // Fallback: calcola la data target
-    const targetDate = new Date();
-    targetDate.setDate(targetDate.getDate() + dayIdx);
-    return filterByDate(prevHourly, targetDate);
-  }, [hourly, daily, isFutureDay, previsioneSelezionata, dayIdx, futureDailyIndex]);
-
-  // Current hour data: l'ora selezionata per il giorno selezionato
+  // Current hour: l'ora selezionata all'interno del dayData
   const currentHourData = useMemo((): HourData | null => {
     if (!dayData.length) return null;
     // Cerca l'ora esatta selezionata
     const found = dayData.find((h) => h.time.getHours() === hour);
-    return found || dayData[0];
+    return found || dayData[0] || null;
   }, [dayData, hour]);
 
   const currentSite = useMemo(
@@ -295,6 +187,51 @@ const Index = () => {
     [siteId]
   );
 
+  // ---- Label del giorno selezionato ----
+  const selectedDayLabel = useMemo(() => {
+    const d = targetDate;
+    const nomeGiorno = nomiGiorni[d.getDay()];
+    return `${nomeGiorno} ${d.getDate()} ${mesi[d.getMonth()]}`;
+  }, [targetDate]);
+
+  // ---- EnrichedDaily per il giorno selezionato ----
+  const enrichedForDay = useMemo(() => {
+    if (!dayData.length) return [];
+    const maxTemp = Math.max(...dayData.map(h => h.temperature));
+    const minTemp = Math.min(...dayData.map(h => h.temperature));
+    const avgWind = dayData.reduce((s, h) => s + h.windSpeed, 0) / dayData.length;
+    const maxWind = Math.max(...dayData.map(h => h.windSpeed));
+    const avgCloud = dayData.reduce((s, h) => s + h.cloudCover, 0) / dayData.length;
+    const precipitationSum = dayData.reduce((s, h) => s + h.precipitation, 0);
+
+    return [{
+      date: targetDate,
+      tempMax: maxTemp,
+      tempMin: minTemp,
+      weatherCode: dayData[0]?.weatherCode ?? 0,
+      precipitationSum,
+      avgWind,
+      maxWind,
+      avgCloud,
+    }];
+  }, [dayData, targetDate]);
+
+  // ---- Dati per tutti i giorni (per i pulsanti del MeteoTab) ----
+  const allDaysLabels = useMemo(() => {
+    const labels: { value: number; label: string }[] = [];
+    for (let i = 0; i < 4; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const nomeGiorno = i === 0 ? "Oggi" : nomiGiorni[d.getDay()];
+      labels.push({
+        value: i,
+        label: i === 0 ? "Oggi" : `${nomeGiorno} ${d.getDate()} ${mesi[d.getMonth()]}`,
+      });
+    }
+    return labels;
+  }, []);
+
+  // ---- Calcoli vari ----
   const thermalAI = useMemo(() => {
     if (!dayData.length) return null;
     return calcThermal(dayData, currentSite.altitude);
@@ -309,83 +246,16 @@ const Index = () => {
     return generateAiAnalysis(dayData, dayIdx);
   }, [dayData, dayIdx]);
 
-  // TERMICHE ORARIE: si aggiornano al variare di dayData
+  // TERMICHE ORARIE
   const termicheHourly = useMemo(() => {
     if (!dayData.length) return [];
     return generaTermicheOrarie(dayData, currentSite.altitude);
   }, [dayData, currentSite.altitude]);
 
-  const previsioneData = previsioneSelezionata?.data;
-  const previsioneDailyArr = previsioneData?.daily || [];
-  const previsioneHourlyRawArr = previsioneData?.hourly || [];
-
-  const previsioneHourly = useMemo(() => filterFlightHours(previsioneHourlyRawArr), [previsioneHourlyRawArr]);
-  // Usa futureDailyIndex per ottenere i dati del giorno corretto
-  const previsioneDayData = useMemo(() => {
-    if (!previsioneHourly.length) return [];
-    if (futureDailyIndex >= 0 && previsioneDailyArr[futureDailyIndex]) {
-      const targetDate = previsioneDailyArr[futureDailyIndex].date;
-      return filterByDate(previsioneHourly, targetDate);
-    }
-    return previsioneHourly;
-  }, [previsioneHourly, previsioneDailyArr, futureDailyIndex]);
-  const previsioneEnriched = useMemo(() => enrDaily(previsioneDailyArr, previsioneHourly), [previsioneDailyArr, previsioneHourly]);
-
-  // Calcola un enrichedDaily per il giorno futuro selezionato
-  const futureEnrichedDaily = useMemo(() => {
-    if (!isFutureDay || !dayData.length) return enrichedDaily;
-    // Per i giorni futuri, crea un enrichedDaily fittizio con i dati del giorno
-    const maxTemp = Math.max(...dayData.map(h => h.temperature));
-    const minTemp = Math.min(...dayData.map(h => h.temperature));
-    const avgWind = dayData.length ? dayData.reduce((s, h) => s + h.windSpeed, 0) / dayData.length : 0;
-    const maxWind = dayData.length ? Math.max(...dayData.map(h => h.windSpeed)) : 0;
-    const avgCloud = dayData.length ? dayData.reduce((s, h) => s + h.cloudCover, 0) / dayData.length : 0;
-    const precipitationSum = dayData.reduce((s, h) => s + h.precipitation, 0);
-
-    return [{
-      date: new Date(),
-      tempMax: maxTemp,
-      tempMin: minTemp,
-      weatherCode: dayData[0]?.weatherCode ?? 0,
-      precipitationSum,
-      avgWind,
-      maxWind,
-      avgCloud,
-    }];
-  }, [isFutureDay, dayData, enrichedDaily, dayIdx]);
-
-  // Label per il giorno selezionato
-  const selectedDayLabel = useMemo(() => {
-    if (dayIdx === 0) {
-      return new Date().toLocaleDateString("it-IT", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-      });
-    }
-    return giorniAvanti.find(g => g.value === dayIdx)?.label || "";
-  }, [dayIdx, giorniAvanti]);
-
-  const apriPrevisioneGiorno = useCallback((giorno: number) => {
-    const previsione = giorniPrevisioni.find((g) => g.giorno === giorno);
-    if (!previsione?.data) {
-      fetchGiorno(giorno);
-      return;
-    }
-
-    setDayIdx(giorno);
-    setShowDayDetail(true);
-  }, [giorniPrevisioni, fetchGiorno]);
-
   const handleSiteSelect = useCallback((id: string) => {
     setSiteId(id);
     setDayIdx(0);
     setHour(new Date().getHours());
-  }, []);
-
-  const handleDayDetailClick = useCallback((idx: number) => {
-    setDayIdx(idx);
-    setShowDayDetail(true);
   }, []);
 
   const toggleSidebar = useCallback(() => setSidebarOpen((p) => !p), []);
@@ -396,22 +266,20 @@ const Index = () => {
     fetchAllDecolli();
   }, [fetchAllDecolli]);
 
-  // Gestione selezione giorno futuro dai pulsanti in MeteoTab
-  const handleDaySelectWithFetch = useCallback((idx: number) => {
-    if (idx > 0) {
-      const gp = giorniPrevisioni.find(g => g.giorno === idx);
-      if (!gp?.data) {
-        fetchGiorno(idx);
-      }
-    }
+  const handleDaySelect = useCallback((idx: number) => {
     setDayIdx(idx);
-    // Resetta l'ora a 12 (mezzogiorno) per avere un'ora di riferimento valida per il giorno futuro
     if (idx > 0) {
-      setHour(12);
+      setHour(12); // mezzogiorno per i giorni futuri
+    } else {
+      setHour(new Date().getHours());
     }
-  }, [giorniPrevisioni, fetchGiorno]);
+  }, []);
 
-  // ---- CONDITIONAL RETURN DOPO TUTTI GLI HOOK ----
+  const handleHourChange = useCallback((h: number) => {
+    setHour(h);
+  }, []);
+
+  // ---- CONDITIONAL RETURN ----
   if (globalLoading) return <LoadingScreen />;
   if (globalError) return <ErrorScreen message={globalError} onRetry={handleRetry} />;
 
@@ -455,14 +323,7 @@ const Index = () => {
         <div className="flex-1 min-w-0 max-w-2xl mx-auto">
           <div className="mb-2.5 flex items-center justify-between">
             <div className="text-sm text-slate-200 font-medium">
-              {dayIdx === 0
-                ? new Date().toLocaleDateString("it-IT", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })
-                : selectedDayLabel}
+              {selectedDayLabel}
               <span className="ml-2 text-blue-300 font-bold">
                 {String(hour).padStart(2, "0")}:00
               </span>
@@ -487,29 +348,22 @@ const Index = () => {
 
           <div className="bg-slate-700/70 backdrop-blur-sm rounded-2xl p-4 md:p-5 border border-slate-500/60 shadow-xl mt-2.5 text-slate-100 content-enter">
             {tab === "meteo" && currentHourData && (
-              <>
-                {selectedDayLoading && dayIdx > 0 && (
-                  <div className="text-center py-4 text-sm text-blue-300 animate-pulse">
-                    Caricamento previsioni per {selectedDayLabel}...
-                  </div>
-                )}
-                <MeteoTab
-                  current={currentHourData}
-                  dayIdx={dayIdx}
-                  hour={hour}
-                  enrichedDaily={futureEnrichedDaily}
-                  dateLabels={[selectedDayLabel]}
-                  thermal={thermalAI}
-                  pressureGrad={{ grad: 0, desc: "Non disponibile" }}
-                  aiData={aiData as unknown as AiAnalysis | null}
-                  onDaySelect={handleDaySelectWithFetch}
-                  onDayDetailClick={handleDayDetailClick}
-                  onHourChange={setHour}
-                  termicheHourly={termicheHourly}
-                  giorniAvanti={giorniAvanti}
-                  fetchGiorno={fetchGiorno}
-                />
-              </>
+              <MeteoTab
+                current={currentHourData}
+                dayIdx={dayIdx}
+                hour={hour}
+                enrichedDaily={enrichedForDay}
+                dateLabels={[selectedDayLabel]}
+                thermal={thermalAI}
+                pressureGrad={{ grad: 0, desc: "Non disponibile" }}
+                aiData={aiData as unknown as AiAnalysis | null}
+                onDaySelect={handleDaySelect}
+                onDayDetailClick={(idx) => { setDayIdx(idx); setShowDayDetail(true); }}
+                onHourChange={handleHourChange}
+                termicheHourly={termicheHourly}
+                giorniAvanti={allDaysLabels}
+                fetchGiorno={() => {}}
+              />
             )}
 
             {tab === "venti" && <VentiTab dayData={dayData} selectedHour={hour} />}
@@ -551,7 +405,7 @@ const Index = () => {
             </button>
           </div>
 
-          {showPopup && currentHourData && (
+          {showPopup && (
             <DayForecastPopup
               data={dayData}
               dayLabel={selectedDayLabel}
@@ -564,25 +418,11 @@ const Index = () => {
             />
           )}
 
-          {showDayDetail && !previsioneSelezionata?.data && (
+          {showDayDetail && enrichedForDay[0] && (
             <DayDetailPopup
               dayData={dayData}
-              daily={futureEnrichedDaily[0]}
+              daily={enrichedForDay[0]}
               dayLabel={selectedDayLabel}
-              altitude={currentSite.altitude}
-              onClose={() => setShowDayDetail(false)}
-              onHourSelect={(h) => {
-                setHour(h);
-                setShowDayDetail(false);
-              }}
-            />
-          )}
-
-          {showDayDetail && previsioneSelezionata?.data && previsioneEnriched[futureDailyIndex] && futureDailyIndex >= 0 && (
-            <DayDetailPopup
-              dayData={previsioneDayData}
-              daily={previsioneEnriched[futureDailyIndex]}
-              dayLabel={previsioneSelezionata.label}
               altitude={currentSite.altitude}
               onClose={() => setShowDayDetail(false)}
               onHourSelect={(h) => {
