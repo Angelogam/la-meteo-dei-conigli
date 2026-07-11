@@ -62,11 +62,15 @@ function generaGiorniPrevisioni(): GiornoPrevisione[] {
   return giorni;
 }
 
-/** Data target per un giorno futuro (offset 1 = domani, 2 = dopodomani, ...) */
-function getFutureDate(offset: number): Date {
-  const d = new Date();
-  d.setDate(d.getDate() + offset);
-  return d;
+/** Trova l'indice del giorno corrispondente a una data specifica nell'array daily */
+function findDayIndex(dailyDates: Date[], targetDate: Date): number {
+  return dailyDates.findIndex((d) => {
+    return (
+      d.getDate() === targetDate.getDate() &&
+      d.getMonth() === targetDate.getMonth() &&
+      d.getFullYear() === targetDate.getFullYear()
+    );
+  });
 }
 
 /** Filtra gli HourData per una data specifica */
@@ -233,6 +237,18 @@ const Index = () => {
   const isFutureDay = dayIdx > 0;
   const previsioneSelezionata = giorniPrevisioni.find((g) => g.giorno === dayIdx);
 
+  // Per i giorni futuri, dobbiamo trovare l'indice corretto nell'array daily
+  // Domani (giorno=1) è daily[1] nell'array restituito da Open-Meteo
+  const futureDailyIndex = useMemo(() => {
+    if (!isFutureDay || !previsioneSelezionata?.data?.daily?.length) return -1;
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + dayIdx);
+    return findDayIndex(
+      previsioneSelezionata.data.daily.map((d) => d.date),
+      targetDate
+    );
+  }, [isFutureDay, dayIdx, previsioneSelezionata]);
+
   // DayData: ore 9-19 per il giorno selezionato
   const dayData = useMemo((): HourData[] => {
     if (!isFutureDay) {
@@ -254,10 +270,17 @@ const Index = () => {
     const prevHourly = filterFlightHours(previsioneSelezionata.data.hourly || []);
     if (!prevHourly.length) return [];
 
-    // Trova la data target
-    const targetDate = getFutureDate(dayIdx);
+    // Trova la data target usando futureDailyIndex
+    if (futureDailyIndex >= 0 && previsioneSelezionata.data.daily[futureDailyIndex]) {
+      const targetDate = previsioneSelezionata.data.daily[futureDailyIndex].date;
+      return filterByDate(prevHourly, targetDate);
+    }
+
+    // Fallback: calcola la data target
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + dayIdx);
     return filterByDate(prevHourly, targetDate);
-  }, [hourly, daily, isFutureDay, previsioneSelezionata, dayIdx]);
+  }, [hourly, daily, isFutureDay, previsioneSelezionata, dayIdx, futureDailyIndex]);
 
   // Current hour data: l'ora selezionata per il giorno selezionato
   const currentHourData = useMemo((): HourData | null => {
@@ -297,19 +320,15 @@ const Index = () => {
   const previsioneHourlyRawArr = previsioneData?.hourly || [];
 
   const previsioneHourly = useMemo(() => filterFlightHours(previsioneHourlyRawArr), [previsioneHourlyRawArr]);
+  // Usa futureDailyIndex per ottenere i dati del giorno corretto
   const previsioneDayData = useMemo(() => {
     if (!previsioneHourly.length) return [];
-    const targetDate = previsioneDailyArr[dayIdx]?.date;
-    if (!targetDate) return previsioneHourly;
-    return previsioneHourly.filter((h) => {
-      const hd = h.time;
-      return (
-        hd.getDate() === targetDate.getDate() &&
-        hd.getMonth() === targetDate.getMonth() &&
-        hd.getFullYear() === targetDate.getFullYear()
-      );
-    });
-  }, [previsioneHourly, previsioneDailyArr, dayIdx]);
+    if (futureDailyIndex >= 0 && previsioneDailyArr[futureDailyIndex]) {
+      const targetDate = previsioneDailyArr[futureDailyIndex].date;
+      return filterByDate(previsioneHourly, targetDate);
+    }
+    return previsioneHourly;
+  }, [previsioneHourly, previsioneDailyArr, futureDailyIndex]);
   const previsioneEnriched = useMemo(() => enrDaily(previsioneDailyArr, previsioneHourly), [previsioneDailyArr, previsioneHourly]);
 
   // Calcola un enrichedDaily per il giorno futuro selezionato
@@ -324,7 +343,7 @@ const Index = () => {
     const precipitationSum = dayData.reduce((s, h) => s + h.precipitation, 0);
 
     return [{
-      date: getFutureDate(dayIdx),
+      date: new Date(),
       tempMax: maxTemp,
       tempMin: minTemp,
       weatherCode: dayData[0]?.weatherCode ?? 0,
@@ -559,10 +578,10 @@ const Index = () => {
             />
           )}
 
-          {showDayDetail && previsioneSelezionata?.data && previsioneEnriched[dayIdx] && (
+          {showDayDetail && previsioneSelezionata?.data && previsioneEnriched[futureDailyIndex] && futureDailyIndex >= 0 && (
             <DayDetailPopup
               dayData={previsioneDayData}
-              daily={previsioneEnriched[dayIdx]}
+              daily={previsioneEnriched[futureDailyIndex]}
               dayLabel={previsioneSelezionata.label}
               altitude={currentSite.altitude}
               onClose={() => setShowDayDetail(false)}
