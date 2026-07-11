@@ -137,6 +137,9 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                   </div>
                   {w && (
                     <div className="flex flex-col items-end gap-0.5 shrink-0">
+                      <span className="text-[9px] text-blue-300/70 font-mono">
+                        {String(w.time.getHours()).padStart(2, "0")}:00
+                      </span>
                       <span className="text-lg leading-none">{wic(w.weatherCode, true)}</span>
                       <span className={`text-xs font-bold ${isSelected ? "text-white" : "text-slate-200"}`}>
                         {Math.round(w.temperature)}°
