@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { MapPin, Wind, Thermometer, Cloud } from "lucide-react";
+import { MapPin, Wind, CloudRain } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 import type { Decollo } from "@/data/decolli";
 import { wic } from "@/utils/meteo";

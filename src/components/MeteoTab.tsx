@@ -2,8 +2,8 @@
 
 import React from "react";
 import { Wind, Thermometer, Cloud, Droplets, ArrowUp, Gauge } from "lucide-react";
-import type { HourData, ThermalData, RichDay } from "@/types/meteo";
-import type { AiAnalysis } from "@/types/meteo";
+import type { HourData, AiAnalysis } from "@/types/meteo";
+import type { ThermalData, RichDay } from "@/utils/meteo";
 import { wic, enrDaily, calcThermal } from "@/utils/meteo";
 import { Progress } from "@/components/ui/progress";
 
@@ -33,20 +33,7 @@ function pioggiaColore(prec: number): string {
 }
 
 function wicReact(code: number): React.ReactNode {
-  if (code === 0 || code === 1) return React.createElement("span", { className: "text-yellow-400 animate-pulse drop-shadow-lg" }, "☀️");
-  if (code === 2) return React.createElement("span", { className: "text-yellow-400 drop-shadow-lg" }, "⛅");
-  if (code === 3) return React.createElement("span", { className: "text-slate-200 drop-shadow-lg" }, "☁️");
-  if (code >= 45 && code <= 48) return React.createElement("span", { className: "text-slate-300 animate-pulse drop-shadow-lg" }, "🌫️");
-  if (code >= 51 && code <= 55) return React.createElement("span", { className: "text-blue-300 animate-bounce drop-shadow-lg" }, "🌦️");
-  if (code >= 56 && code <= 57) return React.createElement("span", { className: "text-blue-300 animate-bounce drop-shadow-lg" }, "🌧️");
-  if (code >= 61 && code <= 65) return React.createElement("span", { className: "text-blue-400 animate-bounce drop-shadow-lg" }, "🌧️");
-  if (code >= 66 && code <= 67) return React.createElement("span", { className: "text-blue-400 animate-bounce drop-shadow-lg" }, "🌧️");
-  if (code >= 71 && code <= 75) return React.createElement("span", { className: "text-blue-200 animate-pulse drop-shadow-lg" }, "🌨️");
-  if (code === 77) return React.createElement("span", { className: "text-blue-200 drop-shadow-lg" }, "🌨️");
-  if (code >= 80 && code <= 82) return React.createElement("span", { className: "text-blue-400 animate-bounce drop-shadow-lg" }, "🌦️");
-  if (code >= 85 && code <= 86) return React.createElement("span", { className: "text-blue-200 animate-pulse drop-shadow-lg" }, "🌨️");
-  if (code >= 95 && code <= 99) return React.createElement("span", { className: "text-yellow-400 animate-pulse drop-shadow-lg" }, "⛈️");
-  return React.createElement("span", { className: "text-yellow-400 drop-shadow-lg" }, "☀️");
+  return wic(code, true);
 }
 
 interface MeteoTabProps {
