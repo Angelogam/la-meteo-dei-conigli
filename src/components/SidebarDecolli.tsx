@@ -59,22 +59,22 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
           transition-all duration-350 ease-out
           overflow-y-auto
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0 md:relative md:z-auto md:h-auto md:max-h-[calc(100vh-8rem)] md:w-72 md:rounded-2xl md:border md:border-slate-600 md:mr-4 md:shadow-xl md:sticky md:top-4
+          md:translate-x-0 md:relative md:z-auto md:h-auto md:max-h-[calc(100vh-8rem)] md:w-80 md:rounded-2xl md:border md:border-slate-600 md:mr-4 md:shadow-xl md:sticky md:top-4
         `}
         style={{ scrollbarWidth: 'thin', scrollbarColor: '#475569 transparent' }}
       >
         {/* Header */}
         <div className="sticky top-0 z-10 bg-slate-800/95 backdrop-blur-md border-b border-slate-600 flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-slate-700 border border-slate-500 flex items-center justify-center">
-              <span className="text-base">🪂</span>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-slate-700 border border-slate-500 flex items-center justify-center">
+              <span className="text-lg">🪂</span>
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white tracking-tight">
+              <h2 className="text-base font-bold text-white tracking-tight">
                 Decolli
               </h2>
-              <p className="text-[10px] text-blue-300/60 font-medium flex items-center gap-1">
-                <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+              <p className="text-[11px] text-blue-300/60 font-medium flex items-center gap-1">
+                <RefreshCw className="w-3 h-3 animate-spin" />
                 {DECOLLI.length} siti · {String(now.getHours()).padStart(2, "0")}:{String(now.getMinutes()).padStart(2, "0")}
               </p>
             </div>
@@ -89,7 +89,7 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
         </div>
 
         {/* Lista decolli */}
-        <div className="p-3 space-y-2">
+        <div className="p-3 space-y-2.5">
           {DECOLLI.map((site) => {
             const w = weatherMap[site.id];
             const isSelected = site.id === selected;
@@ -104,7 +104,7 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                   }
                 }}
                 className={`
-                  w-full text-left rounded-xl px-3 py-2.5 transition-all duration-200 border
+                  w-full text-left rounded-xl px-3 py-3 transition-all duration-200 border
                   ${
                     isSelected
                       ? "bg-gradient-to-r from-slate-700 to-slate-600 border-slate-400 shadow-lg scale-[1.02]"
@@ -115,16 +115,16 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                      <span className={`text-[12px] font-semibold text-white truncate block leading-snug ${isSelected ? "text-blue-200" : ""}`}>
+                      <span className={`text-sm font-bold text-white truncate block leading-snug ${isSelected ? "text-blue-200" : ""}`}>
                         {site.name}
                       </span>
                       {w && (
-                        <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold border ${volo.color}`}>
+                        <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold border ${volo.color}`}>
                           {volo.icon} {volo.label}
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                    <div className="flex items-center gap-2 text-[11px] text-slate-400">
                       <span className="flex items-center gap-0.5">
                         <span className="text-slate-500">📍</span>
                         {site.exposure}
@@ -137,53 +137,53 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                   </div>
                   {w && (
                     <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] text-blue-300/70 font-mono">
+                      <span className="text-[10px] text-blue-300/70 font-mono">
                         {String(w.time.getHours()).padStart(2, "0")}:00
                       </span>
-                      <span className="text-lg leading-none">{wic(w.weatherCode, true)}</span>
-                      <span className={`text-xs font-bold ${isSelected ? "text-white" : "text-slate-200"}`}>
+                      <span className="text-2xl leading-none drop-shadow-lg">{wic(w.weatherCode, true)}</span>
+                      <span className={`text-sm font-bold ${isSelected ? "text-white" : "text-slate-200"}`}>
                         {Math.round(w.temperature)}°
                       </span>
-                      <span className="text-[8px] text-slate-500">{Math.round(w.windSpeed)} km/h</span>
+                      <span className="text-[10px] text-slate-500">{Math.round(w.windSpeed)} km/h</span>
                     </div>
                   )}
                 </div>
                 {w && (
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 pt-1.5 border-t border-slate-600/50">
-                    <div className="flex items-center gap-1 text-[10px] text-blue-300/70">
-                      <Wind className="w-3 h-3 text-blue-400" />
-                      <span className="font-medium">{Math.round(w.windSpeed)} km/h</span>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2 pt-2 border-t border-slate-600/50">
+                    <div className="flex items-center gap-1.5 text-[11px] text-blue-300/80">
+                      <Wind className="w-3.5 h-3.5 text-blue-400" />
+                      <span className="font-semibold">{Math.round(w.windSpeed)} km/h</span>
                     </div>
-                    <div className="flex items-center gap-1 text-[10px] text-orange-300/70">
-                      <span className="text-orange-400">⬆</span>
-                      <span className="font-medium">{w.windGust ? Math.round(w.windGust) : "--"} km/h</span>
+                    <div className="flex items-center gap-1.5 text-[11px] text-orange-300/80">
+                      <span className="text-orange-400 text-sm">⬆</span>
+                      <span className="font-semibold">{w.windGust ? Math.round(w.windGust) : "--"} km/h</span>
                     </div>
-                    <div className="flex items-center gap-1 text-[10px] text-amber-300/70">
-                      <Thermometer className="w-3 h-3 text-amber-400" />
-                      <span className="font-medium">{Math.round(w.temperature)}°C</span>
+                    <div className="flex items-center gap-1.5 text-[11px] text-amber-300/80">
+                      <Thermometer className="w-3.5 h-3.5 text-amber-400" />
+                      <span className="font-semibold">{Math.round(w.temperature)}°C</span>
                     </div>
-                    <div className="flex items-center gap-1 text-[10px] text-emerald-300/70">
-                      <Droplets className="w-3 h-3 text-emerald-400" />
-                      <span className="font-medium">{w.humidity}%</span>
+                    <div className="flex items-center gap-1.5 text-[11px] text-emerald-300/80">
+                      <Droplets className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="font-semibold">{w.humidity}%</span>
                     </div>
-                    <div className="flex items-center gap-1 text-[10px] text-purple-300/70">
-                      <Gauge className="w-3 h-3 text-purple-400" />
-                      <span className="font-medium">{w.pressure ? Math.round(w.pressure) : "--"} hPa</span>
+                    <div className="flex items-center gap-1.5 text-[11px] text-purple-300/80">
+                      <Gauge className="w-3.5 h-3.5 text-purple-400" />
+                      <span className="font-semibold">{w.pressure ? Math.round(w.pressure) : "--"} hPa</span>
                     </div>
-                    <div className="flex items-center gap-1 text-[10px] text-slate-300/70">
-                      <Cloud className="w-3 h-3 text-slate-400" />
-                      <span className="font-medium">{w.cloudCover}%</span>
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-300/80">
+                      <Cloud className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="font-semibold">{w.cloudCover}%</span>
                     </div>
                     {w.precipitation && w.precipitation > 0 && (
-                      <div className="flex items-center gap-1 text-[10px] text-blue-300/70">
-                        <CloudRain className="w-3 h-3 text-blue-400" />
-                        <span className="font-medium">{w.precipitation.toFixed(1)} mm</span>
+                      <div className="flex items-center gap-1.5 text-[11px] text-blue-300/80">
+                        <CloudRain className="w-3.5 h-3.5 text-blue-400" />
+                        <span className="font-semibold">{w.precipitation.toFixed(1)} mm</span>
                       </div>
                     )}
                   </div>
                 )}
                 {!w && (
-                  <div className="text-[10px] text-slate-500 mt-1 italic flex items-center gap-1">
+                  <div className="text-[11px] text-slate-500 mt-1.5 italic flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-pulse" />
                     Caricamento...
                   </div>
