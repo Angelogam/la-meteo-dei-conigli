@@ -145,7 +145,7 @@ function Index() {
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-center gap-3">
             <span className="text-3xl md:text-4xl drop-shadow-lg">🐰</span>
-            <div className="border-l border-green-600 pl-3">
+            <div className="border-2 border-green-600 rounded-xl px-4 py-2">
               <h1 className="text-xl md:text-2xl font-extrabold text-orange-400 tracking-tight text-center drop-shadow-sm">
                 Meteo dei <span className="text-orange-300">Conigli</span>
               </h1>
