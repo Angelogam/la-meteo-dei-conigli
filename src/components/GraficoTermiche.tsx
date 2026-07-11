@@ -54,8 +54,8 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
 
   return (
     <div className="w-full py-4 px-2">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
+      {/* Header centrato */}
+      <div className="flex flex-col items-center gap-2 mb-4 text-center">
         <div className="w-9 h-9 rounded-xl bg-amber-800/50 border border-amber-500/50 flex items-center justify-center">
           <TrendingUp className="w-5 h-5 text-amber-400" />
         </div>
