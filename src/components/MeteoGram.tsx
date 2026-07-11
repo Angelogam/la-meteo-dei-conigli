@@ -31,7 +31,6 @@ const CHART_COLORS = {
   precipitation: "rgb(14, 165, 233)",
   wind: "rgb(34, 197, 94)",
   grid: "rgba(148, 163, 184, 0.12)",
-  text: "rgb(203, 213, 225)",
   axisLabel: "rgb(148, 163, 184)",
 };
 
@@ -103,7 +102,6 @@ export function MeteoGram({ data, siteName, siteAltitude, date }: MeteoGramProps
     const windY = (v: number) => top + chartH - (v / windMax) * chartH;
     const xPos = (i: number) => left + i * stepX;
 
-    // Griglia
     ctx.strokeStyle = CHART_COLORS.grid;
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= 5; i++) {
@@ -114,7 +112,6 @@ export function MeteoGram({ data, siteName, siteAltitude, date }: MeteoGramProps
       ctx.stroke();
     }
 
-    // Label asse sinistro (temperature)
     ctx.fillStyle = CHART_COLORS.axisLabel;
     ctx.font = "9px Inter, sans-serif";
     ctx.textAlign = "right";
@@ -123,7 +120,6 @@ export function MeteoGram({ data, siteName, siteAltitude, date }: MeteoGramProps
       ctx.fillText(`${t}°`, left - 5, y + 3);
     }
 
-    // Label asse destro (CAPE)
     ctx.textAlign = "left";
     const capeTicks = [0, Math.round(capeMax * 0.25), Math.round(capeMax * 0.5), Math.round(capeMax * 0.75), Math.round(capeMax)];
     for (const v of capeTicks) {
@@ -131,7 +127,6 @@ export function MeteoGram({ data, siteName, siteAltitude, date }: MeteoGramProps
       ctx.fillText(`${v}`, left + chartW + 5, y + 3);
     }
 
-    // Label ora
     ctx.textAlign = "center";
     ctx.fillStyle = CHART_COLORS.axisLabel;
     ctx.font = "8px Inter, sans-serif";
@@ -140,7 +135,6 @@ export function MeteoGram({ data, siteName, siteAltitude, date }: MeteoGramProps
       ctx.fillText(data.hours[i], xPos(i), top + chartH + 14);
     }
 
-    // Area CAPE con gradiente
     if (Math.max(...data.capeValues) > 0) {
       const gradient = ctx.createLinearGradient(0, top, 0, top + chartH);
       gradient.addColorStop(0, "rgba(239, 68, 68, 0.35)");
@@ -157,7 +151,6 @@ export function MeteoGram({ data, siteName, siteAltitude, date }: MeteoGramProps
       ctx.fill();
     }
 
-    // Linea CAPE
     ctx.strokeStyle = CHART_COLORS.capeLine;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -169,7 +162,6 @@ export function MeteoGram({ data, siteName, siteAltitude, date }: MeteoGramProps
     }
     ctx.stroke();
 
-    // Area Nuvolosità
     ctx.fillStyle = CHART_COLORS.cloudCover;
     ctx.beginPath();
     ctx.moveTo(xPos(0), cloudY(data.cloudCover[0]));
@@ -181,7 +173,6 @@ export function MeteoGram({ data, siteName, siteAltitude, date }: MeteoGramProps
     ctx.closePath();
     ctx.fill();
 
-    // Barre Precipitazioni
     for (let i = 0; i < n; i++) {
       const val = data.precipitation[i];
       if (val > 0) {
@@ -193,7 +184,6 @@ export function MeteoGram({ data, siteName, siteAltitude, date }: MeteoGramProps
       }
     }
 
-    // Linea Temperatura
     ctx.strokeStyle = CHART_COLORS.temperature;
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -205,7 +195,6 @@ export function MeteoGram({ data, siteName, siteAltitude, date }: MeteoGramProps
     }
     ctx.stroke();
 
-    // Punti temperatura
     ctx.fillStyle = CHART_COLORS.temperature;
     for (let i = 0; i < n; i++) {
       ctx.beginPath();
@@ -213,7 +202,6 @@ export function MeteoGram({ data, siteName, siteAltitude, date }: MeteoGramProps
       ctx.fill();
     }
 
-    // Linea Rugiada tratteggiata
     ctx.strokeStyle = CHART_COLORS.dewPoint;
     ctx.lineWidth = 1.5;
     ctx.setLineDash([4, 3]);
@@ -227,7 +215,6 @@ export function MeteoGram({ data, siteName, siteAltitude, date }: MeteoGramProps
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Punti rugiada
     ctx.fillStyle = CHART_COLORS.dewPoint;
     for (let i = 0; i < n; i++) {
       ctx.beginPath();
@@ -235,7 +222,6 @@ export function MeteoGram({ data, siteName, siteAltitude, date }: MeteoGramProps
       ctx.fill();
     }
 
-    // Linea Vento tratteggiata
     ctx.strokeStyle = CHART_COLORS.wind;
     ctx.lineWidth = 1.5;
     ctx.setLineDash([3, 3]);
@@ -249,7 +235,6 @@ export function MeteoGram({ data, siteName, siteAltitude, date }: MeteoGramProps
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Punti vento
     ctx.fillStyle = CHART_COLORS.wind;
     for (let i = 0; i < n; i++) {
       ctx.beginPath();
@@ -257,7 +242,6 @@ export function MeteoGram({ data, siteName, siteAltitude, date }: MeteoGramProps
       ctx.fill();
     }
 
-    // Bordi
     ctx.strokeStyle = CHART_COLORS.grid;
     ctx.lineWidth = 1;
     ctx.strokeRect(left, top, chartW, chartH);
@@ -287,20 +271,14 @@ export function MeteoGram({ data, siteName, siteAltitude, date }: MeteoGramProps
           <span className="px-1.5 py-0.5 rounded-md bg-slate-700 border border-slate-500 text-slate-200">
             CAPE max: {stats.maxCape} J/kg
           </span>
-          <span className={`px-1.5 py-0.5 rounded-md border ${
-            thunderAlert ? "bg-red-900/60 border-red-500 text-red-200" : "bg-green-900/60 border-green-500 text-green-200"
-          }`}>
+          <span className={`px-1.5 py-0.5 rounded-md border ${thunderAlert ? "bg-red-900/60 border-red-500 text-red-200" : "bg-green-900/60 border-green-500 text-green-200"}`}>
             ⚡ {thunderAlert ? "Allerta" : "Sicuro"}
           </span>
         </div>
       </div>
 
       <div className="w-full" style={{ height: 320 }}>
-        <canvas
-          ref={canvasRef}
-          className="w-full h-full rounded-xl"
-          style={{ width: "100%", height: "100%" }}
-        />
+        <canvas ref={canvasRef} className="w-full h-full rounded-xl" style={{ width: "100%", height: "100%" }} />
       </div>
 
       <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2.5 pt-2.5 border-t border-slate-600/40">
@@ -348,9 +326,7 @@ export function MeteoGram({ data, siteName, siteAltitude, date }: MeteoGramProps
         </div>
         <div className="bg-slate-700/60 rounded-xl p-2 border border-slate-600/40">
           <div className="text-[8px] text-slate-400 uppercase tracking-wider">XC Rating</div>
-          <div className={`text-xs font-bold mt-0.5 ${
-            xcRating === "Buona" ? "text-green-400" : xcRating === "Discreta" ? "text-amber-400" : "text-red-400"
-          }`}>
+          <div className={`text-xs font-bold mt-0.5 ${xcRating === "Buona" ? "text-green-400" : xcRating === "Discreta" ? "text-amber-400" : "text-red-400"}`}>
             {xcRating}
           </div>
           <div className="text-[8px] text-slate-500">Gallegg. {stats.buoyancy.toFixed(1)}%</div>
