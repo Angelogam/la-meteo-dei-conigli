@@ -116,8 +116,8 @@ export const MeteoTab = ({
       </div>
 
       {aiData?.thunderstorm && (
-        <div className={"p-2 rounded-lg mb-2 " + (aiData.thunderstorm.includes("ALLERTA") ? "bg-red-100 border-2 border-red-400" : "bg-green-50 border border-green-300")}>
-          <div className="text-xs leading-relaxed whitespace-pre-wrap text-gray-700">{aiData.thunderstorm}</div>
+        <div className={"p-3 rounded-xl mb-2 border " + (aiData.thunderstorm.includes("ALLERTA") ? "bg-white/60 border-red-400" : "bg-white/60 border-gray-200 shadow-sm")}>
+          <div className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700 font-medium">{aiData.thunderstorm}</div>
         </div>
       )}
     </>
