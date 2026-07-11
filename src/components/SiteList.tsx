@@ -40,11 +40,14 @@ export const SiteList = ({ selected, current, onSelect, weatherMap }: SiteListPr
             >
               <div className="flex justify-between items-center">
                 <span className="font-bold text-sm text-gray-800">{d.name}</span>
-                <span className="text-lg">{cw}</span>
+                <span className="text-xs text-gray-500">{d.valley}</span>
+              </div>
+              <div className="flex justify-center my-1">
+                <span className="text-3xl">{cw}</span>
               </div>
               <div className="flex justify-between text-xs text-gray-500 mt-0.5">
-                <span>{d.valley}</span>
                 <span>{d.exposure}</span>
+                <span></span>
               </div>
               <div className="flex justify-between text-xs mt-1">
                 <span
