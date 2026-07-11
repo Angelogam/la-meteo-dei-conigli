@@ -2,7 +2,7 @@
 
 export const Header = () => {
   return (
-    <header className="text-center mb-5 py-4 border-b border-gray-300">
+    <header className="text-center mb-5 py-4 border-b border-gray-400">
       <div className="flex items-center justify-center gap-2.5">
         <span className="text-4xl md:text-5xl animate-bounce">&#x1F430;</span>
         <span className="text-3xl md:text-4xl animate-pulse">&#x1FA82;</span>
@@ -10,7 +10,7 @@ export const Header = () => {
           Meteo dei Conigli
         </span>
       </div>
-      <p className="text-sm text-gray-500 mt-1.5">
+      <p className="text-sm text-gray-100 mt-1.5">
         Previsioni per volo libero - Open-Meteo - SHV FSVL Style
       </p>
     </header>
