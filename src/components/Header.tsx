@@ -14,7 +14,7 @@ export const Header = () => {
         </span>
       </div>
       <p
-        className="text-sm text-gray-500 mt-1.5"
+        className="text-sm mt-1.5 font-semibold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent"
         style={{ WebkitTextStroke: "0.5px #000", textStroke: "0.5px #000" }}
       >
         Previsioni per volo libero - Open-Meteo - SHV FSVL Style
