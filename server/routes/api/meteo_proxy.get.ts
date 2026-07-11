@@ -1,5 +1,7 @@
 // Proxy per l'API Open-Meteo con caching lato server
 // Serve per bypassare il rate limiting basato su IP
+import { defineHandler } from "nitro";
+import { getQuery, setResponseHeader, createError } from "nitro/h3";
 
 // Cache in memoria
 const cache = new Map<string, { data: string; expires: number }>();
@@ -7,7 +9,7 @@ const cache = new Map<string, { data: string; expires: number }>();
 const CACHE_TTL = 60_000; // 1 minuto
 const BASE_URL = "https://api.open-meteo.com/v1/forecast";
 
-export default defineEventHandler(async (event) => {
+export default defineHandler(async (event) => {
   const query = getQuery(event);
   
   // Ricostruisce i params originali
