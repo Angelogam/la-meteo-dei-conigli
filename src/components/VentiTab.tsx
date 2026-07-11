@@ -1,4 +1,3 @@
-windGust">
 "use client";
 
 import type { HourData } from "@/types/meteo";
