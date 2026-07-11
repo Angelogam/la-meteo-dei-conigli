@@ -25,7 +25,8 @@ export const SiteList = ({ selected, current, onSelect, weatherMap = {} }: SiteL
           const wData = weatherMap[d.id];
           const icon = wData ? wic(wData.weatherCode, wData.isDay) : (sel && current ? wic(current.weatherCode, current.isDay) : "");
           const temp = wData ? Math.round(wData.temperature) : (sel && current ? Math.round(current.temperature) : null);
-          
+          const windSpeed = wData ? Math.round(wData.windSpeed) : (sel && current ? Math.round(current.windSpeed) : null);
+
           return (
             <button
               key={d.id}
@@ -53,13 +54,18 @@ export const SiteList = ({ selected, current, onSelect, weatherMap = {} }: SiteL
                 <span>{d.exposure}</span>
                 <span>{d.altitude}m</span>
               </div>
-              <div className="flex justify-between text-xs mt-1.5">
+              <div className="flex justify-between text-xs mt-1.5 items-center">
                 <span
                   className="text-sm px-2 py-0.5 rounded-full font-semibold text-white"
                   style={{ background: diffColor(d.difficulty) }}
                 >
                   {diffLabel(d.difficulty)}
                 </span>
+                {windSpeed !== null && (
+                  <span className="text-sm font-bold text-blue-700">
+                    {windSpeed} km/h
+                  </span>
+                )}
               </div>
             </button>
           );
