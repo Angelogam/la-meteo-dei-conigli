@@ -141,15 +141,15 @@ function Index() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-700 via-slate-600 to-slate-700 text-slate-100">
       {/* Header */}
-      <header className="px-4 py-5 border-b border-slate-600 bg-gradient-to-r from-slate-800/90 via-blue-900/40 to-slate-800/90 backdrop-blur-md">
+      <header className="px-4 py-5 border-b border-orange-600 bg-gradient-to-r from-slate-800/90 via-orange-900/40 to-slate-800/90 backdrop-blur-md">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-center gap-3">
             <span className="text-3xl md:text-4xl drop-shadow-lg">🐰</span>
-            <div className="border-l border-blue-400/30 pl-3">
+            <div className="border-l border-orange-400/40 pl-3">
               <h1 className="text-xl md:text-2xl font-extrabold text-white tracking-tight text-center drop-shadow-sm">
-                Meteo dei <span className="text-blue-300">Conigli</span>
+                Meteo dei <span className="text-orange-400">Conigli</span>
               </h1>
-              <p className="text-[11px] md:text-xs text-blue-200/90 font-medium text-center tracking-wide">
+              <p className="text-[11px] md:text-xs text-orange-200/90 font-medium text-center tracking-wide">
                 🪂 Previsioni per volo libero
               </p>
             </div>
