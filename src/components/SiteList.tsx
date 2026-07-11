@@ -9,7 +9,7 @@ interface SiteListProps {
   current: HourData | null;
   onSelect: (id: string) => void;
   weatherMap: Record<string, HourData>;
-  allHourlyData?: Record<string, HourData[]>; // <-- nuova prop: tutti i dati orari per ogni decollo
+  allHourlyData?: Record<string, HourData[]>;
 }
 
 const diffColor = (d: number) => d <= 2 ? "#4caf50" : d <= 3 ? "#ff9800" : "#f44336";
@@ -20,117 +20,117 @@ const volabilitaColor = (p: number) => {
   return "#f44336";
 };
 
-/** Calcola volabilità e allerta in base ai dati reali */
-const calcolaVolabilitaReale = (dataOrari: HourData[]): { percentuale: number; allerta: string; coloreAllerta: string } => {
-  if (!dataOrari || dataOrari.length === 0) return { percentuale: 50, allerta: "Dati insufficienti", coloreAllerta: "#9e9e9e" };
+/** Verifica se un'ora è sicura per volo */
+const isOraSicura = (h: HourData): boolean => {
+  const code = h.weatherCode;
+  if (code >= 95) return false; // Temporale
+  if (h.precipitation > 0.3) return false; // Pioggia
+  if (h.windSpeed > 35) return false; // Vento forte
+  if (h.windGust > 50) return false; // Raffiche
+  if (code === 45 || code === 48) return false; // Nebbia
+  if (h.windSpeed < 5) return false; // Troppo poco vento
+  return true;
+};
+
+/** Calcola volabilità e fino a che ora si può volare sicuro */
+const calcolaVolabilitaReale = (
+  dataOrari: HourData[]
+): {
+  percentuale: number;
+  allerta: string;
+  coloreAllerta: string;
+  finoAOra: string | null; // <-- nuova info
+  oraPericolosa: string | null; // <-- cosa succede dopo
+} => {
+  const defaultResult = {
+    percentuale: 50,
+    allerta: "Dati insufficienti",
+    coloreAllerta: "#9e9e9e",
+    finoAOra: null as string | null,
+    oraPericolosa: null as string | null,
+  };
+
+  if (!dataOrari || dataOrari.length === 0) return defaultResult;
 
   const now = new Date();
   const oraCorrente = now.getHours();
   const oggi = now.getDate();
 
-  // Prendi i dati delle prossime 4 ore (ora corrente + 3 ore avanti)
-  const finestra = dataOrari.filter(h => {
+  // Prendi i dati della giornata di oggi da ora corrente in poi
+  const finestra = dataOrari.filter((h) => {
     const hh = h.time.getHours();
     const dd = h.time.getDate();
-    return dd === oggi && hh >= oraCorrente && hh <= oraCorrente + 4;
+    return dd === oggi && hh >= oraCorrente && hh <= 23;
   });
 
-  // Se non ci sono dati per oggi, usa l'ora più vicina disponibile
-  const datiDisponibili = finestra.length > 0 ? finestra : dataOrari.slice(0, 5);
-  if (datiDisponibili.length === 0) return { percentuale: 50, allerta: "N/D", coloreAllerta: "#9e9e9e" };
+  if (finestra.length === 0) return defaultResult;
 
+  // Trova la prima ora pericolosa
+  let primaOraPericolosa: HourData | null = null;
   let score = 100;
   let allerta = "Nessuna";
   let coloreAllerta = "#4caf50";
+  let oreSicureConsecutive = 0;
 
-  // Controlla ogni ora nella finestra
-  for (const h of datiDisponibili) {
+  for (const h of finestra) {
+    const sicura = isOraSicura(h);
     const code = h.weatherCode;
     const pioggia = h.precipitation > 0.3;
     const vento = h.windSpeed;
     const raffica = h.windGust;
     const nuvole = h.cloudCover;
 
-    // Temporale imminente (weatherCode >= 95)
-    if (code >= 95) {
-      score -= 60;
-      if (allerta !== "Alto") {
-        allerta = "Alto";
-        coloreAllerta = "#d32f2f";
+    if (sicura) {
+      oreSicureConsecutive++;
+    } else {
+      if (!primaOraPericolosa) {
+        primaOraPericolosa = h;
       }
-    }
 
-    // Pioggia imminente nelle prossime ore
-    if (pioggia) {
-      score -= 45;
-      if (allerta !== "Alto") {
-        allerta = "Medio";
-        coloreAllerta = "#ff9800";
+      // Accumula penalità
+      if (code >= 95) {
+        score -= 60;
+        if (allerta !== "Alto") { allerta = "Alto"; coloreAllerta = "#d32f2f"; }
       }
-      // Se piove nelle prossime 2 ore, allerta più grave
-      const diffOre = h.time.getHours() - oraCorrente;
-      if (diffOre <= 2 && diffOre >= 0) {
-        allerta = "Alto";
-        coloreAllerta = "#d32f2f";
+      if (pioggia) {
+        score -= 45;
+        if (allerta !== "Alto") {
+          allerta = "Medio";
+          coloreAllerta = "#ff9800";
+        }
+        const diffOre = h.time.getHours() - oraCorrente;
+        if (diffOre <= 2 && diffOre >= 0) {
+          allerta = "Alto";
+          coloreAllerta = "#d32f2f";
+        }
       }
-    }
-
-    // Pioggia forte
-    if (code >= 61 && code <= 67) {
-      score -= 35;
-      if (allerta === "Nessuna") {
-        allerta = "Medio";
-        coloreAllerta = "#ff9800";
+      if (code >= 61 && code <= 67) {
+        score -= 35;
+        if (allerta === "Nessuna") { allerta = "Medio"; coloreAllerta = "#ff9800"; }
       }
-    }
-
-    // Vento forte
-    if (vento > 35) {
-      score -= 35;
-      if (allerta === "Nessuna") {
-        allerta = "Medio";
-        coloreAllerta = "#ff9800";
+      if (vento > 35) {
+        score -= 35;
+        if (allerta === "Nessuna") { allerta = "Medio"; coloreAllerta = "#ff9800"; }
       }
-    }
-    if (vento > 50) {
-      score -= 20;
-      if (allerta !== "Alto") {
-        allerta = "Alto";
-        coloreAllerta = "#d32f2f";
+      if (vento > 50) {
+        score -= 20;
+        if (allerta !== "Alto") { allerta = "Alto"; coloreAllerta = "#d32f2f"; }
       }
-    }
-
-    // Raffiche forti
-    if (raffica > 50) {
-      score -= 20;
-      if (allerta === "Nessuna") {
-        allerta = "Medio";
-        coloreAllerta = "#ff9800";
+      if (raffica > 50) {
+        score -= 20;
+        if (allerta === "Nessuna") { allerta = "Medio"; coloreAllerta = "#ff9800"; }
       }
-    }
-
-    // Vento troppo debole per volo
-    if (vento < 5) {
-      score -= 15;
-    }
-
-    // Nebbia
-    if (code === 45 || code === 48) {
-      score -= 30;
-      if (allerta === "Nessuna") {
-        allerta = "Medio";
-        coloreAllerta = "#ff9800";
+      if (vento < 5) score -= 15;
+      if (code === 45 || code === 48) {
+        score -= 30;
+        if (allerta === "Nessuna") { allerta = "Medio"; coloreAllerta = "#ff9800"; }
       }
-    }
-
-    // Cielo coperto + umidità = possibile temporale
-    if (nuvole > 80 && code >= 51 && code <= 57) {
-      score -= 20;
+      if (nuvole > 80 && code >= 51 && code <= 57) score -= 20;
     }
   }
 
-  // Se c'è allerta e pioggia nelle due ore successive, forza allerta alta
-  const pioggiaProssima2h = datiDisponibili.some(h => {
+  // Pioggia nelle prossime 2 ore → allerta alta
+  const pioggiaProssima2h = finestra.some((h) => {
     const diff = h.time.getHours() - oraCorrente;
     return diff >= 0 && diff <= 2 && h.precipitation > 1.0;
   });
@@ -139,10 +139,26 @@ const calcolaVolabilitaReale = (dataOrari: HourData[]): { percentuale: number; a
     coloreAllerta = "#d32f2f";
   }
 
+  // Determina fino a che ora si può volare
+  let finoAOra: string | null = null;
+  let oraPericolosa: string | null = null;
+
+  if (primaOraPericolosa) {
+    const oraSicuraFine = oraCorrente + oreSicureConsecutive - 1;
+    finoAOra = `${oraSicuraFine}:00`;
+    oraPericolosa = `${primaOraPericolosa.time.getHours()}:00`;
+  } else {
+    // Tutte le ore sono sicure
+    finoAOra = "23:00";
+    oraPericolosa = null;
+  }
+
   return {
     percentuale: Math.max(0, Math.min(100, score)),
     allerta,
-    coloreAllerta
+    coloreAllerta,
+    finoAOra,
+    oraPericolosa,
   };
 };
 
@@ -196,7 +212,19 @@ export const SiteList = ({ selected, current, onSelect, weatherMap = {}, allHour
                       </span>
                     </div>
                   )}
-                  {vol.allerta === "Nessuna" && (
+                  {vol.allerta === "Nessuna" && vol.finoAOra && (
+                    <div className="flex justify-center flex-col items-center mb-1">
+                      <span className="text-sm font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                        ✅ Volo sicuro fino {vol.finoAOra}
+                      </span>
+                      {vol.oraPericolosa && (
+                        <span className="text-xs text-red-600 mt-0.5 font-semibold">
+                          ⛈️ Pericolo da {vol.oraPericolosa}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {vol.allerta === "Nessuna" && !vol.finoAOra && (
                     <div className="flex justify-center mb-1">
                       <span className="text-sm font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
                         ✅ Volo sicuro
