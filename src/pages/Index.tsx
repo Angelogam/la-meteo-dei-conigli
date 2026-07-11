@@ -303,14 +303,6 @@ const Index = () => {
 
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-slate-800 via-slate-700 to-slate-900 text-slate-100">
-      <div
-        className="pointer-events-none fixed inset-0 opacity-[0.03] bg-repeat"
-        style={{
-          backgroundImage:
-            'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-        }}
-      />
-
       <div className="pointer-events-none fixed -top-32 -left-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
       <div className="pointer-events-none fixed -bottom-32 -right-32 w-96 h-96 bg-green-500/8 rounded-full blur-3xl" />
 
@@ -374,57 +366,6 @@ const Index = () => {
               <SiteHeader site={currentSite} current={currentHourData} />
             </div>
           )}
-
-          {/* Pulsanti previsioni per i prossimi giorni */}
-          <div className="mb-3 space-y-2">
-            <div className="flex items-center gap-2 px-1 mb-1">
-              <CalendarDays className="w-4 h-4 text-blue-400" />
-              <span className="text-xs font-medium text-blue-300 uppercase tracking-wider">Previsioni giorni</span>
-            </div>
-            <div className="grid grid-cols-1 gap-2">
-              {giorniPrevisioni.map((gp) => (
-                <button
-                  key={gp.giorno}
-                  onClick={() => apriPrevisioneGiorno(gp.giorno)}
-                  disabled={gp.loading}
-                  className="group w-full py-3 px-4 text-sm font-bold rounded-xl bg-gradient-to-r from-blue-600/90 to-blue-500/90 hover:from-blue-500 hover:to-blue-400 text-white border border-blue-400/60 shadow-lg shadow-blue-500/20 transition-all duration-300 hover:scale-[1.01] hover:shadow-blue-500/30 disabled:opacity-70 disabled:cursor-wait"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <CloudSun className="w-4 h-4 text-blue-200 flex-shrink-0" />
-                      <div className="text-left">
-                        <span className="font-bold">{gp.label}</span>
-                        {gp.data && (
-                          <span className="ml-2 text-blue-200 text-xs font-normal">
-                            · Caricato
-                          </span>
-                        )}
-                        {gp.error && (
-                          <span className="ml-2 text-red-300 text-xs font-normal">
-                            · Errore
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {gp.loading ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <>
-                          {gp.data ? (
-                            <span className="text-[10px] text-blue-200 font-medium">Vedi</span>
-                          ) : (
-                            <span className="text-[10px] text-blue-200 font-medium">Carica</span>
-                          )}
-                          <ChevronRight className="w-4 h-4 text-blue-200 group-hover:translate-x-0.5 transition-transform" />
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
 
           <TabNav tab={tab} onTabChange={setTab} />
 
