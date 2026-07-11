@@ -13,9 +13,7 @@ export const Header = () => {
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
-              textShadow: "none",
-              WebkitTextStroke: "1.5px #000",
-              textStroke: "1.5px #000",
+              filter: "drop-shadow(1.5px 1.5px 0 #000) drop-shadow(-1.5px -1.5px 0 #000) drop-shadow(1.5px -1.5px 0 #000) drop-shadow(-1.5px 1.5px 0 #000)",
             }}
           >
             Meteo dei Conigli
