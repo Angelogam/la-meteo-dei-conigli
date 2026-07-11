@@ -13,7 +13,6 @@ interface GraficoTermicheProps {
 const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
   if (!hourly || hourly.length === 0) return null;
 
-  // Trova il massimo delle termiche per scala
   const maxTop = Math.max(...hourly.map((h) => h.termiche.top), 1);
   const maxForza = Math.max(...hourly.map((h) => h.termiche.forza), 1);
 
@@ -29,12 +28,10 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
         </div>
       </div>
 
-      {/* Grafico a barre orizzontale */}
       <div className="space-y-1.5">
         {hourly.map((h) => {
           const t = h.termiche;
           const isCurrentHour = h.hour === oraCorrente;
-          const barHeight = Math.max(4, (t.top / maxTop) * 80);
           const forzaPercent = Math.round((t.forza / maxForza) * 100);
           const metriSalita = t.top - t.base;
 
@@ -47,12 +44,10 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                   : "hover:bg-slate-700/30"
               }`}
             >
-              {/* Ora */}
               <div className="shrink-0 w-10 text-[11px] font-mono font-bold text-slate-400">
                 {String(h.hour).padStart(2, "0")}:00
               </div>
 
-              {/* Barra forza termica */}
               <div className="flex-1 h-5 bg-slate-700/60 rounded-full overflow-hidden relative">
                 <div
                   className="h-full rounded-full transition-all duration-500 ease-out"
@@ -72,7 +67,6 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                 </div>
               </div>
 
-              {/* Metri a salire */}
               <div className="shrink-0 w-20 text-right">
                 <span className="text-[11px] font-bold text-amber-200" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>
                   &uarr; {metriSalita > 0 ? `${metriSalita}m` : "&mdash;"}
@@ -80,14 +74,12 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                 <div className="text-[8px] text-slate-500">salita</div>
               </div>
 
-              {/* Rateo */}
               <div className="shrink-0 w-12 text-right">
                 <span className="text-[11px] font-bold text-green-300">
                   {t.rateo} m/s
                 </span>
               </div>
 
-              {/* Indicatore ora corrente */}
               {isCurrentHour && (
                 <div className="shrink-0 w-2 h-2 rounded-full bg-green-400 animate-pulse" />
               )}
@@ -96,7 +88,6 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
         })}
       </div>
 
-      {/* Legenda */}
       <div className="mt-4 pt-3 border-t border-slate-600/50 grid grid-cols-2 gap-2 text-[10px] text-slate-400">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "#ef4444" }} />
@@ -124,7 +115,6 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
         </div>
       </div>
 
-      {/* Info algoritmo */}
       <div className="mt-3 p-2 rounded-lg bg-slate-800/60 border border-slate-600/30">
         <div className="flex items-center gap-3 flex-wrap text-[9px] text-slate-400">
           <span className="flex items-center gap-1">
