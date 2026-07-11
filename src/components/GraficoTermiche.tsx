@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Thermometer, ArrowUp, Wind, Droplets, Gauge, Sun, Cloud } from "lucide-react";
+import { Thermometer, ArrowUp, Wind, Droplets, Gauge, Sun, Cloud, TrendingUp, Info } from "lucide-react";
 import type { TermicheData } from "@/utils/termiche";
 
 interface GraficoTermicheProps {
@@ -23,18 +23,22 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
   const maxForza = Math.max(...hourly.map((h) => h.termiche.forza), 1);
 
   return (
-    <div className="w-full pt-4 pb-2 px-2">
+    <div className="w-full py-4 px-2">
+      {/* Header */}
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-8 h-8 rounded-xl bg-amber-800/50 border border-amber-500/50 flex items-center justify-center">
-          <Thermometer className="w-4 h-4 text-amber-400" />
+        <div className="w-9 h-9 rounded-xl bg-amber-800/50 border border-amber-500/50 flex items-center justify-center">
+          <TrendingUp className="w-5 h-5 text-amber-400" />
         </div>
         <div>
           <h3 className="text-sm font-bold text-amber-200">Forza termiche & metri a salire</h3>
-          <p className="text-[10px] text-slate-400">Elaborazione in tempo reale basata su vento, sole e umidit&agrave;</p>
+          <p className="text-[10px] text-slate-400">
+            Elaborazione in tempo reale basata su vento, sole e umidit&agrave;
+          </p>
         </div>
       </div>
 
-      <div className="space-y-1.5">
+      {/* Grafico a barre orizzontali */}
+      <div className="space-y-1">
         {hourly.map((h) => {
           const t = h.termiche;
           const isCurrentHour = h.hour === oraCorrente;
@@ -50,10 +54,12 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                   : "hover:bg-slate-700/30"
               }`}
             >
+              {/* Ora */}
               <div className="shrink-0 w-10 text-[11px] font-mono font-bold text-slate-400">
                 {String(h.hour).padStart(2, "0")}:00
               </div>
 
+              {/* Barra forza */}
               <div className="flex-1 h-5 bg-slate-700/60 rounded-full overflow-hidden relative">
                 <div
                   className="h-full rounded-full transition-all duration-500 ease-out"
@@ -67,12 +73,11 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                   <span className="text-[10px] font-bold text-white drop-shadow-md">
                     {t.forza.toFixed(1)}/10
                   </span>
-                  <span className="text-[9px] text-white/70 drop-shadow-md">
-                    {t.label.split(" ")[0]}
-                  </span>
+                  <span className="text-[9px] text-white/70 drop-shadow-md">{t.label.split(" ")[0]}</span>
                 </div>
               </div>
 
+              {/* Metri a salire */}
               <div className="shrink-0 w-20 text-right">
                 <span className="text-[11px] font-bold text-amber-200 drop-shadow-sm">
                   &uarr; {metriSalita > 0 ? `${metriSalita}m` : "&mdash;"}
@@ -80,35 +85,40 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                 <div className="text-[8px] text-slate-500">salita</div>
               </div>
 
+              {/* Rateo */}
               <div className="shrink-0 w-12 text-right">
-                <span className="text-[11px] font-bold text-green-300">
-                  {t.rateo} m/s
-                </span>
+                <span className="text-[11px] font-bold text-green-300">{t.rateo} m/s</span>
               </div>
 
-              {isCurrentHour && (
-                <div className="shrink-0 w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              )}
+              {isCurrentHour && <div className="shrink-0 w-2 h-2 rounded-full bg-green-400 animate-pulse" />}
             </div>
           );
         })}
       </div>
 
-      <div className="mt-4 pt-3 border-t border-slate-600/50 grid grid-cols-2 gap-2 text-[10px] text-slate-400">
-        {LEGENDA.map((item) => (
-          <div key={item.label} className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.colore }} />
-            <span>{item.label}</span>
+      {/* Legenda */}
+      <div className="mt-4 pt-3 border-t border-slate-600/50">
+        <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-400">
+          {LEGENDA.map((item) => (
+            <div key={item.label} className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.colore }} />
+              <span>{item.label}</span>
+            </div>
+          ))}
+          <div className="flex items-center gap-1.5">
+            <ArrowUp className="w-3 h-3 text-amber-400" />
+            <span>Metri a salire</span>
           </div>
-        ))}
-        <div className="flex items-center gap-1.5">
-          <ArrowUp className="w-3 h-3 text-amber-400" />
-          <span>Metri a salire</span>
         </div>
       </div>
 
+      {/* Info calcolo */}
       <div className="mt-3 p-2 rounded-lg bg-slate-800/60 border border-slate-600/30">
-        <div className="flex items-center gap-3 flex-wrap text-[9px] text-slate-400">
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <Info className="w-3 h-3 text-slate-400" />
+          <span className="text-[10px] font-medium text-slate-400">Fattori considerati</span>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap text-[9px] text-slate-500">
           <span className="flex items-center gap-1">
             <Sun className="w-2.5 h-2.5 text-amber-400" />
             Gradiente termico
