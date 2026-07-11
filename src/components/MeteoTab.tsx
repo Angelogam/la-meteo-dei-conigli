@@ -32,8 +32,8 @@ export const MeteoTab = ({
 }: MeteoTabProps) => {
   const [dayPopupIdx, setDayPopupIdx] = useState<number | null>(null);
 
-  // Per ora usiamo dati fittizi per simulare le ore — nella realtà arrivano da props
-  const dummyHourlyData: HourData[] = Array.from({ length: 24 }, (_, i) => ({
+  // Crea dati orari simulati per il giorno selezionato
+  const hourlyData: HourData[] = Array.from({ length: 24 }, (_, i) => ({
     ...current,
     time: new Date(current.time.getFullYear(), current.time.getMonth(), current.time.getDate(), i),
     temperature: current.temperature - 3 + Math.sin((i / 24) * Math.PI * 2) * 6,
@@ -75,9 +75,10 @@ export const MeteoTab = ({
       {/* POPUP EVOLUZIONE GIORNALIERA */}
       {dayPopupIdx !== null && enrichedDaily[dayPopupIdx] && (
         <DayForecastPopup
-          data={dummyHourlyData}
+          data={hourlyData}
           dayLabel={dateLabels[dayPopupIdx]}
           onClose={() => setDayPopupIdx(null)}
+          selectedHour={hour}
         />
       )}
 

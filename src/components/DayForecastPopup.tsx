@@ -8,6 +8,7 @@ interface DayForecastPopupProps {
   data: HourData[];
   dayLabel: string;
   onClose: () => void;
+  selectedHour?: number;
 }
 
 const cloudStyle = (cover: number) => {
@@ -29,7 +30,7 @@ const isSnow = (code: number) => code >= 71 && code <= 77;
 const isRain = (code: number) => (code >= 51 && code <= 67) || (code >= 80 && code <= 82);
 const isThunder = (code: number) => code >= 95;
 
-const SingleHourCard = ({ h }: { h: HourData }) => {
+const SingleHourCard = ({ h, isSelected }: { h: HourData; isSelected: boolean }) => {
   const c = cloudStyle(h.cloudCover);
   const snowing = isSnow(h.weatherCode);
   const raining = isRain(h.weatherCode) || h.precipitation > 0.3;
@@ -37,9 +38,16 @@ const SingleHourCard = ({ h }: { h: HourData }) => {
   const sunny = h.cloudCover <= 35 && !raining && !thunder;
 
   return (
-    <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-white/40 border border-gray-200 min-w-[64px]">
+    <div
+      className={
+        "flex flex-col items-center gap-1 p-2 rounded-xl border min-w-[64px] transition-all duration-200 " +
+        (isSelected
+          ? "bg-white border-red-400 shadow-md scale-105"
+          : "bg-white/40 border-gray-200")
+      }
+    >
       {/* Ora */}
-      <span className="text-xs font-bold text-gray-700">
+      <span className={`text-xs font-bold ${isSelected ? "text-red-600" : "text-gray-700"}`}>
         {String(h.time.getHours()).padStart(2, "0")}:00
       </span>
 
@@ -115,6 +123,11 @@ const SingleHourCard = ({ h }: { h: HourData }) => {
         )}
       </div>
 
+      {/* Temperatura */}
+      <span className={`text-xs font-bold ${isSelected ? "text-red-600" : "text-gray-800"}`}>
+        {Math.round(h.temperature)}°
+      </span>
+
       {/* Barra vento */}
       <div className="w-full h-1.5 rounded-full bg-gray-300 overflow-hidden">
         <div
@@ -132,7 +145,7 @@ const SingleHourCard = ({ h }: { h: HourData }) => {
   );
 };
 
-export const DayForecastPopup = ({ data, dayLabel, onClose }: DayForecastPopupProps) => {
+export const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour }: DayForecastPopupProps) => {
   const [visible, setVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -169,7 +182,7 @@ export const DayForecastPopup = ({ data, dayLabel, onClose }: DayForecastPopupPr
         <div className="overflow-x-auto pb-2">
           <div className="flex gap-2 min-w-max">
             {data.map((h, i) => (
-              <SingleHourCard key={i} h={h} />
+              <SingleHourCard key={i} h={h} isSelected={h.time.getHours() === selectedHour} />
             ))}
           </div>
         </div>
