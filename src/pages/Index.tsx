@@ -9,6 +9,7 @@ import { VentiTab } from "@/components/VentiTab";
 import VentiQuotaTab from "@/components/VentiQuotaTab";
 import { TermicheTab } from "@/components/TermicheTab";
 import WindgramChart from "@/components/WindgramChart";
+import MeteoGram from "@/components/MeteoGram";
 import { AnalisiTab } from "@/components/AnalisiTab";
 import SiteHeader from "@/components/SiteHeader";
 import DayForecastPopup from "@/components/DayForecastPopup";
@@ -226,6 +227,25 @@ function Index() {
     fetchAllDecolli();
   }, [fetchAllDecolli]);
 
+  const getDayDataAllHours = useCallback(
+    (idx: number): HourData[] => {
+      if (!hourlyRaw.length) return [];
+      const targetDate = daily[idx]?.date;
+      if (!targetDate) return [];
+      return hourlyRaw.filter((h) => {
+        const hd = h.time;
+        return (
+          hd.getDate() === targetDate.getDate() &&
+          hd.getMonth() === targetDate.getMonth() &&
+          hd.getFullYear() === targetDate.getFullYear()
+        );
+      });
+    },
+    [hourlyRaw, daily]
+  );
+
+  const dayDataAllHours = useMemo(() => getDayDataAllHours(dayIdx), [getDayDataAllHours, dayIdx]);
+
   if (globalLoading) return <LoadingScreen />;
   if (globalError) return <ErrorScreen message={globalError} onRetry={handleRetry} />;
 
@@ -253,6 +273,8 @@ function Index() {
                 🪂 Previsioni per volo libero · 9:00–19:00 · aggiornato ogni minuto
               </p>
             </div>
+            <span
+              className="text-4xl md:text-5xl drop-shadow-lg<dyad-write path="src/pages/Index.tsx" description="Aggiungo il rendering del MeteoGram come tab (continuazione)">
             <span
               className="text-4xl md:text-5xl drop-shadow-lg md:block hidden animate-bounce"
               style={{ animationDelay: "150ms" }}
@@ -352,6 +374,15 @@ function Index() {
                 dayData={dayData}
                 altitude={currentSite.altitude}
                 siteName={currentSite.name}
+              />
+            )}
+
+            {tab === "meteogram" && (
+              <MeteoGram
+                dayData={dayDataAllHours}
+                siteName={currentSite.name}
+                siteAltitude={currentSite.altitude}
+                date={dateLabels[dayIdx] || undefined}
               />
             )}
 

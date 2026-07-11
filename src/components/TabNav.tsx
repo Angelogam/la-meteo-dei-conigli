@@ -2,7 +2,7 @@
 
 import React from "react";
 
-export type Tab = "meteo" | "venti" | "quota" | "termiche" | "windgram" | "analisi";
+export type Tab = "meteo" | "venti" | "quota" | "termiche" | "windgram" | "analisi" | "meteogram";
 
 interface TabNavProps {
   tab: Tab;
@@ -15,6 +15,7 @@ const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: "quota", label: "Venti quota", icon: "⬆️" },
   { id: "termiche", label: "Termiche", icon: "🔥" },
   { id: "windgram", label: "Windgram", icon: "📊" },
+  { id: "meteogram", label: "Meteogram", icon: "📈" },
   { id: "analisi", label: "Analisi AI", icon: "🤖" },
 ];
 
