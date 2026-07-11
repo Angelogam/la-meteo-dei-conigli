@@ -196,12 +196,13 @@ const Index = () => {
     );
   }, [daily]);
 
-  const dateLabelsObj = useMemo(() => {
-    return daily.map((d, i) => ({
-      value: i,
-      label: dateLabels[i],
+  // Giorni avanti (da domani in poi) per il MeteoTab
+  const giorniAvanti = useMemo(() => {
+    return giorniPrevisioni.map((g) => ({
+      value: g.giorno,
+      label: g.label,
     }));
-  }, [daily, dateLabels]);
+  }, [giorniPrevisioni]);
 
   const getDayData = useCallback(
     (idx: number): HourData[] => {
@@ -391,6 +392,15 @@ const Index = () => {
                 onDayDetailClick={handleDayDetailClick}
                 onHourChange={setHour}
                 termicheHourly={termicheHourly}
+                giorniAvanti={giorniAvanti}
+                fetchGiorno={(giorno) => {
+                  if (giorno > 0) {
+                    const gp = giorniPrevisioni.find(g => g.giorno === giorno);
+                    if (!gp?.data) {
+                      fetchGiorno(giorno);
+                    }
+                  }
+                }}
               />
             )}
 
@@ -410,17 +420,6 @@ const Index = () => {
                 dayData={dayData}
                 altitude={currentSite.altitude}
                 selectedHour={hour}
-                dateLabels={dateLabelsObj}
-                dayIdx={dayIdx}
-                onDaySelect={setDayIdx}
-                fetchGiorno={(giorno) => {
-                  if (giorno > 0) {
-                    const gp = giorniPrevisioni.find(g => g.giorno === giorno);
-                    if (!gp?.data) {
-                      fetchGiorno(giorno);
-                    }
-                  }
-                }}
               />
             )}
 
