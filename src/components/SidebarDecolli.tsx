@@ -50,17 +50,17 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
         <div className="fixed inset-0 bg-black/60 z-30 md:hidden" />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - ora a sinistra */}
       <div
         ref={sidebarRef}
         className={`
-          fixed top-0 right-0 h-full w-72 max-w-[85vw] z-40
+          fixed top-0 left-0 h-full w-72 max-w-[85vw] z-40
           bg-gradient-to-b from-gray-900 via-slate-900 to-gray-900
-          border-l border-white/10 shadow-2xl
+          border-r border-white/10 shadow-2xl
           transition-all duration-300 ease-in-out
           overflow-y-auto
-          ${isOpen ? "translate-x-0" : "translate-x-full"}
-          md:translate-x-0 md:relative md:z-auto md:h-auto md:max-h-[calc(100vh-8rem)] md:w-64 md:rounded-2xl md:border md:border-white/10 md:ml-3 md:shadow-lg md:sticky md:top-4
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}
+          md:translate-x-0 md:relative md:z-auto md:h-auto md:max-h-[calc(100vh-8rem)] md:w-64 md:rounded-2xl md:border md:border-white/10 md:mr-3 md:shadow-lg md:sticky md:top-4
         `}
       >
         {/* Header sidebar */}

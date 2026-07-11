@@ -169,9 +169,19 @@ function Index() {
         </div>
       </header>
 
-      {/* Main content: layout a due colonne su desktop */}
+      {/* Main content: layout a due colonne su desktop (sidebar a sinistra) */}
       <div className="max-w-5xl mx-auto px-3 pb-28 mt-3 md:flex md:gap-3 md:items-start">
-        {/* Colonna principale */}
+        {/* Sidebar decolli - a sinistra su desktop, overlay su mobile */}
+        <SidebarDecolli
+          selected={siteId}
+          current={currentHourData}
+          onSelect={handleSiteSelect}
+          weatherMap={weatherMap}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
+
+        {/* Colonna principale (a destra) */}
         <div className="flex-1 min-w-0">
           {/* Current site info compatta */}
           {currentSite && currentHourData && (
@@ -245,16 +255,6 @@ function Index() {
             />
           )}
         </div>
-
-        {/* Sidebar decolli - visibile sempre su desktop, overlay su mobile */}
-        <SidebarDecolli
-          selected={siteId}
-          current={currentHourData}
-          onSelect={handleSiteSelect}
-          weatherMap={weatherMap}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
       </div>
 
       {/* Footer */}
