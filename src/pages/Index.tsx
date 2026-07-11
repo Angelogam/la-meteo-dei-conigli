@@ -201,18 +201,18 @@ function Index() {
       
       {/* Soft gradient orbs */}
       <div className="pointer-events-none fixed -top-32 -left-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
-      <div className="pointer-events-none fixed -bottom-32 -right-32 w-96 h-96 bg-orange-500/8 rounded-full blur-3xl" />
+      <div className="pointer-events-none fixed -bottom-32 -right-32 w-96 h-96 bg-green-500/8 rounded-full blur-3xl" />
 
       {/* Header */}
-      <header className="relative z-10 px-4 py-5 border-b border-orange-500/30 bg-gradient-to-r from-slate-800/95 via-orange-800/20 to-slate-800/95 backdrop-blur-md shadow-lg">
+      <header className="relative z-10 px-4 py-5 border-b-2 border-green-500/40 bg-gradient-to-r from-slate-800/95 via-green-900/20 to-slate-800/95 backdrop-blur-md shadow-lg">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-center gap-3">
             <span className="text-4xl md:text-5xl drop-shadow-lg animate-bounce">🐰</span>
             <div className="border-2 border-green-500/40 rounded-xl px-5 py-3 bg-slate-800/60 backdrop-blur-sm shadow-inner">
-              <h1 className="text-2xl md:text-3xl font-extrabold text-orange-400 tracking-tight text-center drop-shadow-sm">
-                Meteo dei <span className="text-orange-300">Conigli</span>
+              <h1 className="text-2xl md:text-3xl font-extrabold text-green-400 tracking-tight text-center drop-shadow-sm">
+                Meteo dei <span className="text-green-300">Conigli</span>
               </h1>
-              <p className="text-xs md:text-sm text-orange-200/90 font-medium text-center tracking-wide">
+              <p className="text-xs md:text-sm text-green-200/90 font-medium text-center tracking-wide">
                 🪂 Previsioni per volo libero · aggiornato ogni minuto
               </p>
             </div>
@@ -331,7 +331,7 @@ function Index() {
       </div>
 
       {/* Footer */}
-      <footer className="relative z-10 fixed bottom-0 left-0 right-0 text-center py-2 border-t border-slate-600/50 bg-slate-800/80 backdrop-blur-md shadow-lg">
+      <footer className="relative z-10 fixed bottom-0 left-0 right-0 text-center py-2 border-t border-green-500/30 bg-slate-800/80 backdrop-blur-md shadow-lg">
         <div className="max-w-5xl mx-auto px-3 flex items-center justify-center gap-8">
           <p className="text-[10px] text-slate-400">
             Basato su dati Open-Meteo · aggiornato ogni minuto
