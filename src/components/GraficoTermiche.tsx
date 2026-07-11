@@ -1,4 +1,4 @@
-">
+characters">
 "use client";
 
 import React from "react";
@@ -15,6 +15,14 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
 
   const maxTop = Math.max(...hourly.map((h) => h.termiche.top), 1);
   const maxForza = Math.max(...hourly.map((h) => h.termiche.forza), 1);
+
+  const LEGENDA = [
+    { colore: "#ef4444", label: "Termiche forti (>7)" },
+    { colore: "#f97316", label: "Buone termiche (5-7)" },
+    { colore: "#eab308", label: "Moderate (3-5)" },
+    { colore: "#84cc16", label: "Deboli (1-3)" },
+    { colore: "#64748b", label: "Assenti (0)" },
+  ];
 
   return (
     <div className="w-full pt-4 pb-2 px-2">
@@ -58,7 +66,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                   }}
                 />
                 <div className="absolute inset-0 flex items-center justify-between px-2">
-                  <span className="text-[10px] font-bold text-white drop-shadow-md" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
+                  <span className="text-[10px] font-bold text-white drop-shadow-md">
                     {t.forza.toFixed(1)}/10
                   </span>
                   <span className="text-[9px] text-white/70 drop-shadow-md">
@@ -68,7 +76,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
               </div>
 
               <div className="shrink-0 w-20 text-right">
-                <span className="text-[11px] font-bold text-amber-200" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>
+                <span className="text-[11px] font-bold text-amber-200 drop-shadow-sm">
                   &uarr; {metriSalita > 0 ? `${metriSalita}m` : "&mdash;"}
                 </span>
                 <div className="text-[8px] text-slate-500">salita</div>
@@ -89,26 +97,12 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
       </div>
 
       <div className="mt-4 pt-3 border-t border-slate-600/50 grid grid-cols-2 gap-2 text-[10px] text-slate-400">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "#ef4444" }} />
-          <span>Termiche forti (>7)</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "#f97316" }} />
-          <span>Buone termiche (5-7)</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "#eab308" }} />
-          <span>Moderate (3-5)</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "#84cc16" }} />
-          <span>Deboli (1-3)</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "#64748b" }} />
-          <span>Assenti (0)</span>
-        </div>
+        {LEGENDA.map((item) => (
+          <div key={item.label} className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.colore }} />
+            <span>{item.label}</span>
+          </div>
+        ))}
         <div className="flex items-center gap-1.5">
           <ArrowUp className="w-3 h-3 text-amber-400" />
           <span>Metri a salire</span>
