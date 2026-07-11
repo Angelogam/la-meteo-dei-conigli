@@ -272,7 +272,7 @@ function Index() {
 
         <div className="flex-1 min-w-0 max-w-2xl mx-auto">
           <div className="mb-2.5 flex items-center justify-between">
-            <div className="text-[11px] text-slate-400 font-medium">
+            <div className="text-[11px] text-slate-300 font-medium">
               {new Date().toLocaleDateString("it-IT", {
                 weekday: "long",
                 day: "numeric",
@@ -301,7 +301,7 @@ function Index() {
 
           <TabNav tab={tab} onTabChange={setTab} />
 
-          <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl p-3 md:p-4 border border-slate-600/50 shadow-xl mt-2.5 text-slate-200">
+          <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl p-3 md:p-4 border border-slate-600/50 shadow-xl mt-2.5 text-slate-100">
             {tab === "meteo" && currentHourData && (
               <MeteoTab
                 current={currentHourData}
@@ -334,7 +334,7 @@ function Index() {
               <AnalisiTab aiData={aiMeteoAnalysis as unknown as AiAnalysis} />
             )}
             {tab === "analisi" && !aiMeteoAnalysis && (
-              <div className="text-sm text-slate-400 p-4 text-center">
+              <div className="text-sm text-slate-300 p-4 text-center">
                 Nessuna analisi disponibile per questa giornata.
               </div>
             )}
@@ -369,10 +369,10 @@ function Index() {
 
       <footer className="relative z-10 fixed bottom-0 left-0 right-0 text-center py-2 border-t border-green-500/30 bg-slate-800/80 backdrop-blur-md shadow-lg">
         <div className="max-w-5xl mx-auto px-3 flex items-center justify-center gap-8">
-          <p className="text-[10px] text-slate-400">
+          <p className="text-[10px] text-slate-300">
             Basato su dati Open-Meteo · previsioni 9:00–19:00
           </p>
-          <p className="text-[10px] text-slate-400">
+          <p className="text-[10px] text-slate-300">
             &copy; {new Date().getFullYear()} Meteo dei Conigli
           </p>
         </div>
