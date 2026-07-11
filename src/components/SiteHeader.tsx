@@ -11,9 +11,9 @@ interface SiteHeaderProps {
 
 export const SiteHeader = ({ site, current }: SiteHeaderProps) => {
   return (
-    <div className="flex items-center justify-between p-4 rounded-2xl bg-white/80 border border-white/40 shadow-sm backdrop-blur-sm">
+    <div className="flex items-center justify-between p-4 rounded-2xl bg-white/95 border border-slate-300 shadow-md backdrop-blur-sm">
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-100 to-blue-50 border border-blue-200 flex items-center justify-center text-2xl shadow-sm">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-200 to-slate-50 border border-slate-300 flex items-center justify-center text-2xl shadow-sm">
           {wic(current.weatherCode, true)}
         </div>
         <div>
@@ -21,7 +21,7 @@ export const SiteHeader = ({ site, current }: SiteHeaderProps) => {
             {site.name}
           </h2>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[11px] font-medium text-blue-600/80 px-2 py-0.5 rounded-full bg-blue-100 border border-blue-200">
+            <span className="text-[11px] font-medium text-slate-600 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-300">
               {site.altitude}m
             </span>
             <span className="text-[11px] font-medium text-slate-500">
@@ -39,7 +39,7 @@ export const SiteHeader = ({ site, current }: SiteHeaderProps) => {
           {Math.round(current.temperature)}°
         </div>
         <div className="flex items-center justify-end gap-1.5 mt-1">
-          <span className="text-[11px] font-semibold text-blue-600/80">
+          <span className="text-[11px] font-semibold text-slate-600">
             {wa(current.windDir)}
           </span>
           <span className="text-[11px] font-semibold text-slate-700">

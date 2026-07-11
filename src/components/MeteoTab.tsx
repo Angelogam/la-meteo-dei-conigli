@@ -54,8 +54,8 @@ export function MeteoTab({
             onClick={() => onDaySelect(i)}
             className={`px-3.5 py-1.5 text-xs font-semibold rounded-full transition-all duration-200 border ${
               i === dayIdx
-                ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white border-blue-400 shadow-lg shadow-blue-500/20 scale-105"
-                : "bg-white/80 text-slate-600 border-blue-200 hover:bg-blue-50 hover:text-slate-800"
+                ? "bg-gradient-to-r from-blue-700 to-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/30 scale-105"
+                : "bg-white text-slate-600 border-slate-300 hover:bg-slate-100 hover:text-slate-800"
             }`}
           >
             {dateLabels[i]}
@@ -80,7 +80,7 @@ export function MeteoTab({
           max={endHour}
           step={1}
           onValueChange={([v]) => onHourChange(v)}
-          className="[&_[role=slider]]:bg-blue-600 [&_[role=slider]]:border-blue-500 [&_[role=slider]]:w-4 [&_[role=slider]]:h-4 [&_[role=slider]]:shadow-lg"
+          className="[&_[role=slider]]:bg-blue-700 [&_[role=slider]]:border-blue-500 [&_[role=slider]]:w-4 [&_[role=slider]]:h-4 [&_[role=slider]]:shadow-lg"
         />
         <div className="flex justify-between mt-1 text-[8px] text-slate-400">
           {hours.filter((_, i) => i % 2 === 0).map((h) => (
@@ -90,11 +90,11 @@ export function MeteoTab({
       </div>
 
       {/* Current weather card - rinnovata */}
-      <Card className="border border-blue-200 bg-white shadow-sm overflow-hidden">
+      <Card className="border border-slate-300 bg-white shadow-md overflow-hidden">
         <CardContent className="p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-100 to-blue-50 border border-blue-200 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-200 to-slate-50 border border-slate-300 flex items-center justify-center">
                 <WeatherIcon code={current.weatherCode} size={36} />
               </div>
               <div>
@@ -125,7 +125,7 @@ export function MeteoTab({
               </div>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-blue-100 flex items-center justify-between text-[11px]">
+          <div className="mt-3 pt-3 border-t border-slate-200 flex items-center justify-between text-[11px]">
             <span className="text-slate-500">Pressione {Math.round(current.pressure)} hPa</span>
             <span className="text-slate-500">UV {current.uvIndex ?? "—"}</span>
           </div>
@@ -134,11 +134,11 @@ export function MeteoTab({
 
       {/* Thermal summary - card più raffinata */}
       {thermal && (
-        <Card className="border border-amber-200 bg-amber-50/50 shadow-sm overflow-hidden">
+        <Card className="border border-amber-300 bg-amber-50/80 shadow-sm overflow-hidden">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-center">
-                <Thermometer className="w-3.5 h-3.5 text-amber-600" />
+              <div className="w-7 h-7 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center">
+                <Thermometer className="w-3.5 h-3.5 text-amber-700" />
               </div>
               <span className="text-sm font-bold text-slate-800">Condizioni termiche</span>
             </div>
@@ -162,10 +162,10 @@ export function MeteoTab({
 
       {/* AI analysis preview */}
       {aiData && (
-        <Card className="border border-blue-200 bg-blue-50/50 shadow-sm overflow-hidden">
+        <Card className="border border-slate-300 bg-slate-50/80 shadow-sm overflow-hidden">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1.5">
-              <div className="w-7 h-7 rounded-lg bg-blue-100 border border-blue-200 flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg bg-slate-200 border border-slate-300 flex items-center justify-center">
                 <span className="text-xs">📊</span>
               </div>
               <span className="text-sm font-bold text-slate-800">Analisi meteo</span>
