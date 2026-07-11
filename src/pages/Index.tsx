@@ -328,7 +328,7 @@ function Index() {
               />
             )}
 
-            {tab === "venti" && <VentiTab dayData={dayData} />}
+            {tab === "venti" && <VentiTab dayData={dayData} selectedHour={hour} />}
 
             {tab === "quota" && (
               <VentiQuotaTab
@@ -340,11 +340,11 @@ function Index() {
             )}
 
             {tab === "termiche" && (
-              <TermicheTab dayData={dayData} altitude={currentSite.altitude} />
+              <TermicheTab dayData={dayData} altitude={currentSite.altitude} selectedHour={hour} />
             )}
 
             {tab === "analisi" && aiMeteoAnalysis && (
-              <AnalisiTab aiData={aiMeteoAnalysis as unknown as AiAnalysis} />
+              <AnalisiTab aiData={aiMeteoAnalysis as unknown as AiAnalysis} selectedHour={hour} />
             )}
             {tab === "analisi" && !aiMeteoAnalysis && (
               <div className="text-sm text-slate-300 p-4 text-center">

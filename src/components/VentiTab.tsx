@@ -5,6 +5,7 @@ import { wa } from "@/utils/meteo";
 
 interface VentiTabProps {
   dayData: HourData[];
+  selectedHour?: number;
 }
 
 function windColor(speed: number): string {
@@ -19,13 +20,20 @@ function windColor(speed: number): string {
   return "bg-red-800";
 }
 
-export const VentiTab = ({ dayData }: VentiTabProps) => {
+export const VentiTab = ({ dayData, selectedHour }: VentiTabProps) => {
   if (!dayData.length) {
     return <div className="text-sm text-slate-300 p-4 text-center">Nessun dato vento disponibile</div>;
   }
 
   return (
     <div className="space-y-1">
+      {/* Ora attuale sincronizzata */}
+      {selectedHour !== undefined && (
+        <div className="flex items-center justify-between px-2 py-1.5 mb-1 text-xs text-blue-300 font-medium border-b border-slate-600/30">
+          <span>💨 Venti superficiali · ora selezionata</span>
+          <span className="text-blue-200 font-bold">{String(selectedHour).padStart(2, "0")}:00</span>
+        </div>
+      )}
       {dayData.map((h, i) => {
         const barColor = windColor(h.windSpeed);
         return (

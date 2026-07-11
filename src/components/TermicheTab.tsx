@@ -6,9 +6,10 @@ import { generaAnalisiReale } from "@/utils/analisi";
 interface TermicheTabProps {
   dayData: HourData[];
   altitude: number;
+  selectedHour?: number;
 }
 
-export const TermicheTab = ({ dayData, altitude }: TermicheTabProps) => {
+export const TermicheTab = ({ dayData, altitude, selectedHour }: TermicheTabProps) => {
   const analisi = generaAnalisiReale(dayData, altitude);
 
   if (!dayData.length) {
@@ -17,6 +18,13 @@ export const TermicheTab = ({ dayData, altitude }: TermicheTabProps) => {
 
   return (
     <div className="text-sm leading-relaxed text-slate-200 whitespace-pre-wrap space-y-3">
+      {/* Ora attuale sincronizzata */}
+      {selectedHour !== undefined && (
+        <div className="flex items-center justify-between px-2 py-1.5 mb-1 text-xs text-blue-300 font-medium border-b border-slate-600/30">
+          <span>🔥 Analisi termiche · ora selezionata</span>
+          <span className="text-blue-200 font-bold">{String(selectedHour).padStart(2, "0")}:00</span>
+        </div>
+      )}
       <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm">
         <h4 className="font-extrabold text-orange-400 mb-1">🔥 Situazione Generale</h4>
         <p className="text-slate-200 whitespace-pre-line">{analisi.situazioneGenerale}</p>
