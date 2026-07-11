@@ -312,7 +312,7 @@ const calcolaVolabilitaReale = (
 export const SiteList = ({ selected, current, onSelect, weatherMap = {}, allHourlyData = {} }: SiteListProps) => {
   return (
     <div className="bg-gray-300/80 rounded-2xl border border-gray-400/60 p-3 backdrop-blur md:h-[calc(100vh-180px)] overflow-hidden">
-      <h3 className="text-xl text-red-600 mb-3 font-bold">Decolli</h3>
+      <h3 className="text-xl text-red-600 mb-3 font-bold text-center">Decolli</h3>
       <div className="overflow-y-auto h-[calc(100%-40px)] pr-1">
         {DECOLLI.map((d) => {
           const sel = d.id === selected;
@@ -327,13 +327,13 @@ export const SiteList = ({ selected, current, onSelect, weatherMap = {}, allHour
               key={d.id}
               onClick={() => onSelect(d.id)}
               className={
-                "w-full text-left rounded-xl p-3 mb-2 cursor-pointer transition-colors " +
+                "w-full text-center rounded-xl p-3 mb-2 cursor-pointer transition-all duration-150 " +
                 (sel
                   ? "bg-gray-200 border border-gray-500 shadow-sm"
                   : "bg-white/70 border border-gray-300 hover:bg-white/90")
               }
             >
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mb-1">
                 <span className="font-bold text-base text-gray-800">{d.name}</span>
                 <span className="text-sm text-gray-500">{d.valley}</span>
               </div>
@@ -353,9 +353,9 @@ export const SiteList = ({ selected, current, onSelect, weatherMap = {}, allHour
                   
                   {/* AVVISO GENERALE */}
                   {avviso && (
-                    <div className="flex justify-center mb-1">
+                    <div className="text-center mb-1">
                       <span
-                        className="text-xs font-bold px-2 py-1 rounded-full text-white"
+                        className="text-xs font-semibold px-2.5 py-1 rounded-full text-white inline-block"
                         style={{ background: avviso.colore }}
                       >
                         {avviso.testo}
@@ -364,19 +364,19 @@ export const SiteList = ({ selected, current, onSelect, weatherMap = {}, allHour
                   )}
 
                   {vol.allerta === "Nessuna" && vol.finoAOra && (
-                    <div className="flex justify-center flex-col items-center mb-1">
+                    <div className="text-center mb-1">
                       <span className="text-sm font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full border border-green-300">
                         ✅ Volo sicuro fino {vol.finoAOra}
                       </span>
                       {vol.oraPericolosa && (
-                        <span className="text-xs text-red-600 mt-0.5 font-semibold">
+                        <div className="text-xs text-red-600 mt-0.5 font-semibold">
                           ⛈️ Pericolo da {vol.oraPericolosa}
-                        </span>
+                        </div>
                       )}
                     </div>
                   )}
                   {vol.allerta === "Nessuna" && !vol.finoAOra && (
-                    <div className="flex justify-center mb-1">
+                    <div className="text-center mb-1">
                       <span className="text-sm font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full border border-green-300">
                         ✅ Volo sicuro
                       </span>
@@ -384,11 +384,11 @@ export const SiteList = ({ selected, current, onSelect, weatherMap = {}, allHour
                   )}
                 </>
               )}
-              <div className="flex justify-between text-sm text-gray-600 mt-1 font-medium">
+              <div className="flex justify-center text-sm text-gray-600 mt-1 font-medium gap-3">
                 <span>{d.exposure}</span>
                 <span>{d.altitude}m</span>
               </div>
-              <div className="flex justify-between text-xs mt-1.5 items-center">
+              <div className="text-center text-xs mt-1.5">
                 {ventoOra !== null && (
                   <span className="text-sm font-bold text-blue-700">
                     Vento {ventoOra} km/h
