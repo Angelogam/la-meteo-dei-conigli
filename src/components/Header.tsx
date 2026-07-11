@@ -13,7 +13,10 @@ export const Header = () => {
           Meteo dei Conigli
         </span>
       </div>
-      <p className="text-sm text-gray-100 mt-1.5" style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.5)" }}>
+      <p
+        className="text-sm text-gray-500 mt-1.5"
+        style={{ WebkitTextStroke: "0.5px #000", textStroke: "0.5px #000" }}
+      >
         Previsioni per volo libero - Open-Meteo - SHV FSVL Style
       </p>
     </header>
