@@ -139,11 +139,10 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                 {/* Indicatore stabilità */}
                 <div className="flex flex-col items-center">
                   <div
-                    className="w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-bold"
+                    className="w-3.5 h-3.5 rounded flex items-center justify-center text-[7px] font-bold"
                     style={{
                       backgroundColor: t.stabilita > 70 ? "rgba(34,197,94,0.3)" : t.stabilita > 40 ? "rgba(250,204,21,0.3)" : "rgba(239,68,68,0.3)",
                       color: t.stabilita > 70 ? "#86efac" : t.stabilita > 40 ? "#fde047" : "#fca5a5",
-                      borderColor: t.stabilita > 70 ? "rgba(34,197,94,0.4)" : t.stabilita > 40 ? "rgba(250,204,21,0.4)" : "rgba(239,68,68,0.4)",
                     }}
                   >
                     {t.stabilita > 70 ? "C" : t.stabilita > 40 ? "M" : "T"}
@@ -182,11 +181,11 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
             <span>Turbolenza media</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full shrink-0 flex items-center justify-center text-[7px] font-bold border" style={{ backgroundColor: "rgba(34,197,94,0.3)", color: "#86efac", borderColor: "rgba(34,197,94,0.4)" }}>C</span>
+            <span className="w-3 h-3 rounded shrink-0 flex items-center justify-center text-[7px] font-bold" style={{ backgroundColor: "rgba(34,197,94,0.3)", color: "#86efac" }}>C</span>
             <span>Comfort (stabile)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full shrink-0 flex items-center justify-center text-[7px] font-bold border" style={{ backgroundColor: "rgba(239,68,68,0.3)", color: "#fca5a5", borderColor: "rgba(239,68,68,0.4)" }}>T</span>
+            <span className="w-3 h-3 rounded shrink-0 flex items-center justify-center text-[7px] font-bold" style={{ backgroundColor: "rgba(239,68,68,0.3)", color: "#fca5a5" }}>T</span>
             <span>Turbolento</span>
           </div>
         </div>
