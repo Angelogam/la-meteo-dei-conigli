@@ -32,8 +32,6 @@ export const fetchMeteo = async (lat: number, lon: number): Promise<MeteoData> =
     windSpeed: raw.hourly.wind_speed_10m[i],
     windDir: raw.hourly.wind_direction_10m[i],
     windGust: raw.hourly.wind_gusts_10m[i],
-    soilTemp: null,
-    soilMoisture: null,
     uvIndex: raw.hourly.uv_index?.[i] ?? null,
     isDay: raw.hourly.is_day?.[i] === 1,
   }));

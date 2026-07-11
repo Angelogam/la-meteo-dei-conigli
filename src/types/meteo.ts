@@ -13,8 +13,6 @@ export interface HourData {
   windSpeed: number;
   windDir: number;
   windGust: number | null;
-  soilTemp: number | null;
-  soilMoisture: number | null;
   uvIndex: number | null;
   isDay: boolean;
 }
