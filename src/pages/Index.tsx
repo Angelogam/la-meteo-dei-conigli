@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { DECOLLI, Decollo } from "@/data/decolli";
 import { fetchMeteo, getWindProfile, calcThermal } from "@/utils/meteo";
 import { genAI } from "@/utils/analisi";
@@ -28,8 +28,10 @@ export default function Index() {
   const [tab, setTab] = useState<TabId>("meteo");
   const [aiData, setAiData] = useState<AiAnalysis | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
-  const [allHourlyData, setAllHourlyData] = useState<Record<string, HourData[]>>({}); // <-- tutti i dati orari per ogni decollo
+  const [allHourlyData, setAllHourlyData] = useState<Record<string, HourData[]>>({});
   const [weatherMap, setWeatherMap] = useState<Record<string, HourData>>({});
+  const [refreshTime, setRefreshTime] = useState<Date>(new Date());
+  const loadingRef = useRef(false);
 
   const site = DECOLLI.find((x) => x.id === selected) ?? DECOLLI[0];
 
@@ -48,9 +50,11 @@ export default function Index() {
     })();
   }, [selected]);
 
-  // Carica meteo per TUTTI i decolli (dati orari completi)
-  useEffect(() => {
-    (async () => {
+  // Funzione per caricare i dati di tutti i decolli
+  const caricaTuttiDati = useMemo(() => async () => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    try {
       const hourlyMap: Record<string, HourData[]> = {};
       const currentMap: Record<string, HourData> = {};
       const promises = DECOLLI.map(async (d) => {
@@ -73,37 +77,22 @@ export default function Index() {
       await Promise.all(promises);
       setAllHourlyData(hourlyMap);
       setWeatherMap(currentMap);
-    })();
+      setRefreshTime(new Date());
+    } finally {
+      loadingRef.current = false;
+    }
   }, []);
 
-  // Refresh dati ogni 10 minuti
+  // Carica i dati iniziali
   useEffect(() => {
-    const interval = setInterval(async () => {
-      const hourlyMap: Record<string, HourData[]> = {};
-      const currentMap: Record<string, HourData> = {};
-      const promises = DECOLLI.map(async (d) => {
-        try {
-          const data = await fetchMeteo(d.lat, d.lon);
-          hourlyMap[d.id] = data.hourly;
-          const now = new Date();
-          const currentHour = data.hourly.find(
-            (h) =>
-              h.time.getHours() === now.getHours() &&
-              h.time.getDate() === now.getDate()
-          );
-          if (currentHour) {
-            currentMap[d.id] = currentHour;
-          }
-        } catch {
-          // ignora
-        }
-      });
-      await Promise.all(promises);
-      setAllHourlyData(hourlyMap);
-      setWeatherMap(currentMap);
-    }, 600000); // 10 minuti
+    caricaTuttiDati();
+  }, [caricaTuttiDati]);
+
+  // Refresh automatico ogni 5 minuti
+  useEffect(() => {
+    const interval = setInterval(caricaTuttiDati, 300000); // 5 minuti
     return () => clearInterval(interval);
-  }, []);
+  }, [caricaTuttiDati]);
 
   const dayData = useMemo(() => {
     if (!meteo) return [];
