@@ -137,26 +137,26 @@ export function MeteoTab({
         </CardContent>
       </Card>
 
-      {/* Thermal summary */}
+      {/* Thermal summary - sfondo grigio-blu invece di amber */}
       {thermal && (
-        <Card className="border border-amber-600/50 bg-amber-900/30 shadow-lg overflow-hidden">
+        <Card className="border border-slate-500/60 bg-slate-700/50 shadow-lg overflow-hidden">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-amber-800/50 border border-amber-600/50 flex items-center justify-center">
-                <Thermometer className="w-3.5 h-3.5 text-amber-400" />
+              <div className="w-7 h-7 rounded-lg bg-slate-600/50 border border-slate-500/50 flex items-center justify-center">
+                <Thermometer className="w-3.5 h-3.5 text-blue-400" />
               </div>
-              <span className="text-sm font-bold text-amber-200">Condizioni termiche</span>
+              <span className="text-sm font-bold text-slate-100">Condizioni termiche</span>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl bg-slate-800/80 p-2.5 text-center border border-amber-600/30">
+              <div className="rounded-xl bg-slate-800/80 p-2.5 text-center border border-slate-600/50">
                 <div className="text-[9px] font-medium text-slate-400 uppercase tracking-wider">Base</div>
                 <div className="text-sm font-bold text-white mt-0.5">{thermal.cloudBase}m</div>
               </div>
-              <div className="rounded-xl bg-slate-800/80 p-2.5 text-center border border-amber-600/30">
+              <div className="rounded-xl bg-slate-800/80 p-2.5 text-center border border-slate-600/50">
                 <div className="text-[9px] font-medium text-slate-400 uppercase tracking-wider">Cima</div>
                 <div className="text-sm font-bold text-white mt-0.5">{thermal.thermalTop}m</div>
               </div>
-              <div className="rounded-xl bg-slate-800/80 p-2.5 text-center border border-amber-600/30">
+              <div className="rounded-xl bg-slate-800/80 p-2.5 text-center border border-slate-600/50">
                 <div className="text-[9px] font-medium text-slate-400 uppercase tracking-wider">Soaring</div>
                 <div className="text-sm font-bold text-white mt-0.5">{thermal.soarIdx}/10</div>
               </div>
