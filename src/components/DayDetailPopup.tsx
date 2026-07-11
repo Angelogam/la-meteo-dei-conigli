@@ -19,7 +19,6 @@ export const DayDetailPopup = ({ dayData, daily, dayLabel, altitude, onClose, on
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-3">
       <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl border border-slate-600 shadow-2xl w-full max-w-xl max-h-[85vh] flex flex-col">
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-600">
           <div>
             <h3 className="text-sm font-bold text-white">
@@ -34,7 +33,6 @@ export const DayDetailPopup = ({ dayData, daily, dayLabel, altitude, onClose, on
           </button>
         </div>
 
-        {/* Griglia ore */}
         <div className="overflow-y-auto p-3 space-y-1.5">
           {dayData.map((h) => {
             const volo = getVoloStatus(h);
@@ -49,9 +47,7 @@ export const DayDetailPopup = ({ dayData, daily, dayLabel, altitude, onClose, on
                     {h.time.getHours().toString().padStart(2, "0")}:00
                   </span>
                 </div>
-
                 <span className="text-lg shrink-0">{wic(h.weatherCode, true)}</span>
-
                 <div className="flex items-center gap-2 text-[11px] text-slate-300 flex-1 min-w-0">
                   <span className="flex items-center gap-0.5">
                     <Thermometer className="w-3 h-3 text-amber-400" />
@@ -61,9 +57,7 @@ export const DayDetailPopup = ({ dayData, daily, dayLabel, altitude, onClose, on
                   <span className="flex items-center gap-0.5">
                     <Wind className="w-3 h-3 text-blue-400" />
                     {Math.round(h.windSpeed)}
-                    {h.windGust && (
-                      <span className="text-slate-500">/{Math.round(h.windGust)}</span>
-                    )}
+                    {h.windGust && <span className="text-slate-500">/{Math.round(h.windGust)}</span>}
                   </span>
                   <span className="text-slate-500">|</span>
                   <span className="flex items-center gap-0.5">
@@ -80,7 +74,6 @@ export const DayDetailPopup = ({ dayData, daily, dayLabel, altitude, onClose, on
                     </>
                   )}
                 </div>
-
                 <span className={`shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-bold border ${volo.color}`}>
                   {volo.icon} {volo.label}
                 </span>
