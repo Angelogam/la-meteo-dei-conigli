@@ -9,6 +9,22 @@ interface GraficoTermicheProps {
   oraCorrente: number;
 }
 
+function getEtichettaForza(forza: number): string {
+  if (forza >= 7) return "Forti";
+  if (forza >= 5) return "Buone";
+  if (forza >= 3) return "Moderate";
+  if (forza >= 1) return "Deboli";
+  return "Assenti";
+}
+
+function getColoreTesto(forza: number): string {
+  if (forza >= 7) return "text-white";
+  if (forza >= 5) return "text-white";
+  if (forza >= 3) return "text-yellow-900";
+  if (forza >= 1) return "text-green-900";
+  return "text-slate-400";
+}
+
 const LEGENDA: { colore: string; label: string }[] = [
   { colore: "#ef4444", label: "Termiche forti (+7)" },
   { colore: "#f97316", label: "Buone termiche (5-7)" },
@@ -44,6 +60,9 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
           const isCurrentHour = h.hour === oraCorrente;
           const forzaPercent = Math.round((t.forza / maxForza) * 100);
           const quotaMax = t.top;
+          const etichetta = getEtichettaForza(t.forza);
+          const coloreTesto = getColoreTesto(t.forza);
+          const mostraEtichetta = forzaPercent > 18;
 
           return (
             <div
@@ -53,25 +72,36 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
               }`}
             >
               {/* Ora */}
-              <div className="shrink-0 w-10 text-[11px] font-mono font-bold text-slate-400">
+              <div className="shrink-0 w-10 text-[11px] font-mono font-bold text-slate-300">
                 {String(h.hour).padStart(2, "0")}:00
               </div>
 
               {/* Barra forza */}
-              <div className="flex-1 h-5 bg-slate-700/60 rounded-full overflow-hidden">
+              <div className="flex-1 h-6 bg-slate-700/60 rounded-full overflow-hidden relative">
                 <div
-                  className="h-full rounded-full transition-all duration-500 ease-out"
+                  className="h-full rounded-full transition-all duration-500 ease-out flex items-center justify-center"
                   style={{
                     width: `${forzaPercent}%`,
                     backgroundColor: t.colore,
-                    opacity: 0.85,
+                    opacity: 0.9,
                   }}
-                />
+                >
+                  {mostraEtichetta && (
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${coloreTesto} drop-shadow-sm`}>
+                      {etichetta}
+                    </span>
+                  )}
+                </div>
+                {!mostraEtichetta && (
+                  <span className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold uppercase tracking-wider ${coloreTesto} drop-shadow-sm`}>
+                    {etichetta}
+                  </span>
+                )}
               </div>
 
               {/* Quota massima raggiungibile */}
               <div className="shrink-0 w-24 text-center">
-                <div className="text-[9px] text-slate-500 font-medium uppercase tracking-wider mb-0.5">quota max</div>
+                <div className="text-[9px] text-slate-400 font-medium uppercase tracking-wider mb-0.5">quota max</div>
                 <span className="text-[13px] font-bold text-amber-200">
                   &uarr; {quotaMax > 0 ? `${quotaMax}m` : "—"}
                 </span>
@@ -79,7 +109,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
 
               {/* Rateo */}
               <div className="shrink-0 w-14 text-center">
-                <div className="text-[9px] text-slate-500 font-medium uppercase tracking-wider mb-0.5">rateo</div>
+                <div className="text-[9px] text-slate-400 font-medium uppercase tracking-wider mb-0.5">rateo</div>
                 <span className="text-[13px] font-bold text-green-300">{t.rateo} m/s</span>
               </div>
 
@@ -111,7 +141,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
           <Info className="w-3 h-3 text-slate-400 shrink-0" />
           <span className="text-[10px] font-medium text-slate-400">Fattori considerati</span>
         </div>
-        <div className="flex items-center gap-3 flex-wrap text-[9px] text-slate-500">
+        <div className="flex items-center gap-3 flex-wrap text-[9px] text-slate-400">
           <span className="flex items-center gap-1">
             <Sun className="w-2.5 h-2.5 text-amber-400 shrink-0" />
             Gradiente termico
