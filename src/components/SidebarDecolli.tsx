@@ -7,6 +7,8 @@ import type { HourData } from "@/types/meteo";
 import { DECOLLI } from "@/data/decolli";
 import { wic, wd } from "@/utils/meteo";
 import { getVoloStatus } from "@/utils/volo";
+import { generaTermicheOrarie } from "@/utils/termiche";
+import GraficoTermiche from "@/components/GraficoTermiche";
 
 interface SidebarDecolliProps {
   selected: string;
@@ -297,6 +299,8 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                         Caricamento previsioni...
                       </div>
                     ) : hourlyData && hourlyData.length > 0 ? (
+                      <>
+                      <GraficoTermiche hourly={generaTermicheOrarie(hourlyData, site.altitude)} oraCorrente={now.getHours()} />
                       <div className="divide-y divide-slate-700/50">
                         {hourlyData.map((h, idx) => {
                           const hVolo = getVoloStatus(h);
