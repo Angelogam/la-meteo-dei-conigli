@@ -378,10 +378,10 @@ function Index() {
             />
           )}
 
-          {showDayDetail && daily[dayIdx] && (
+          {showDayDetail && enrichedDaily[dayIdx] && (
             <DayDetailPopup
               dayData={dayData}
-              daily={daily[dayIdx]}
+              daily={enrichedDaily[dayIdx]}
               dayLabel={dateLabels[dayIdx] || ""}
               altitude={currentSite.altitude}
               onClose={() => setShowDayDetail(false)}
