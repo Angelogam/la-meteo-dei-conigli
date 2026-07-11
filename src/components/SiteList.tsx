@@ -18,11 +18,10 @@ const diffLabel = (d: number) => d <= 2 ? "Facile" : d <= 3 ? "Medio" : "Diffici
 export const SiteList = ({ selected, current, onSelect, weatherMap = {} }: SiteListProps) => {
   return (
     <div className="bg-gray-300/80 rounded-2xl border border-gray-400/60 p-3 backdrop-blur md:h-[calc(100vh-180px)] overflow-hidden">
-      <h3 className="text-lg text-red-600 mb-3 font-bold">Decolli</h3>
+      <h3 className="text-xl text-red-600 mb-3 font-bold">Decolli</h3>
       <div className="overflow-y-auto h-[calc(100%-40px)] pr-1">
         {DECOLLI.map((d) => {
           const sel = d.id === selected;
-          // Prendi icona meteo: prima da weatherMap, poi dal decollo selezionato
           const wData = weatherMap[d.id];
           const icon = wData ? wic(wData.weatherCode, wData.isDay) : (sel && current ? wic(current.weatherCode, current.isDay) : "");
           const temp = wData ? Math.round(wData.temperature) : (sel && current ? Math.round(current.temperature) : null);
@@ -32,31 +31,31 @@ export const SiteList = ({ selected, current, onSelect, weatherMap = {} }: SiteL
               key={d.id}
               onClick={() => onSelect(d.id)}
               className={
-                "w-full text-left rounded-xl p-2.5 mb-1.5 cursor-pointer transition-colors " +
+                "w-full text-left rounded-xl p-3 mb-2 cursor-pointer transition-colors " +
                 (sel
                   ? "bg-gray-200 border border-gray-500 shadow-sm"
                   : "bg-white/70 border border-gray-300 hover:bg-white/90")
               }
             >
               <div className="flex justify-between items-center">
-                <span className="font-bold text-sm text-gray-800">{d.name}</span>
-                <span className="text-xs text-gray-500">{d.valley}</span>
+                <span className="font-bold text-base text-gray-800">{d.name}</span>
+                <span className="text-sm text-gray-500">{d.valley}</span>
               </div>
               {icon && (
-                <div className="flex justify-center items-center gap-2 my-1">
-                  <span className="text-3xl">{icon}</span>
+                <div className="flex justify-center items-center gap-2 my-1.5">
+                  <span className="text-4xl">{icon}</span>
                   {temp !== null && (
-                    <span className="text-sm font-bold text-orange-600">{temp}°C</span>
+                    <span className="text-base font-bold text-orange-600">{temp}°C</span>
                   )}
                 </div>
               )}
-              <div className="flex justify-between text-xs text-gray-500 mt-0.5">
+              <div className="flex justify-between text-sm text-gray-600 mt-1 font-medium">
                 <span>{d.exposure}</span>
                 <span>{d.altitude}m</span>
               </div>
-              <div className="flex justify-between text-xs mt-1">
+              <div className="flex justify-between text-xs mt-1.5">
                 <span
-                  className="text-xs px-1.5 py-0.5 rounded-full font-semibold text-white"
+                  className="text-sm px-2 py-0.5 rounded-full font-semibold text-white"
                   style={{ background: diffColor(d.difficulty) }}
                 >
                   {diffLabel(d.difficulty)}
