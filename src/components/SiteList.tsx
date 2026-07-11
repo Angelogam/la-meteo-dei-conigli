@@ -39,8 +39,8 @@ const calcolaVolabilitaReale = (
   percentuale: number;
   allerta: string;
   coloreAllerta: string;
-  finoAOra: string | null; // <-- nuova info
-  oraPericolosa: string | null; // <-- cosa succede dopo
+  finoAOra: string | null;
+  oraPericolosa: string | null;
 } => {
   const defaultResult = {
     percentuale: 50,
@@ -87,7 +87,6 @@ const calcolaVolabilitaReale = (
         primaOraPericolosa = h;
       }
 
-      // Accumula penalità
       if (code >= 95) {
         score -= 60;
         if (allerta !== "Alto") { allerta = "Alto"; coloreAllerta = "#d32f2f"; }
@@ -148,7 +147,6 @@ const calcolaVolabilitaReale = (
     finoAOra = `${oraSicuraFine}:00`;
     oraPericolosa = `${primaOraPericolosa.time.getHours()}:00`;
   } else {
-    // Tutte le ore sono sicure
     finoAOra = "23:00";
     oraPericolosa = null;
   }
@@ -238,12 +236,6 @@ export const SiteList = ({ selected, current, onSelect, weatherMap = {}, allHour
                 <span>{d.altitude}m</span>
               </div>
               <div className="flex justify-between text-xs mt-1.5 items-center">
-                <span
-                  className="text-sm px-2 py-0.5 rounded-full font-semibold text-white"
-                  style={{ background: diffColor(d.difficulty) }}
-                >
-                  {diffLabel(d.difficulty)}
-                </span>
                 {ventoOra !== null && (
                   <span className="text-sm font-bold text-blue-700">
                     Vento {ventoOra} km/h
