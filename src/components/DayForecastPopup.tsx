@@ -90,66 +90,51 @@ const SingleHourCard = ({ h, isSelected, onSelect }: { h: HourData; isSelected: 
     <button
       onClick={onSelect}
       className={
-        "flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 min-w-[72px] transition-all duration-200 cursor-pointer " +
+        "flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 min-w-[72px] transition-all duration-200 " +
         (isSelected
           ? "bg-white border-red-500 shadow-lg scale-105"
           : "bg-white/80 border-gray-300 hover:bg-white hover:border-gray-400 shadow-sm")
       }
     >
-      {/* Ora */}
       <span className={`text-sm font-extrabold ${isSelected ? "text-red-600" : "text-gray-900"}`}>
         {String(h.time.getHours()).padStart(2, "0")}:00
       </span>
 
-      {/* Icona meteo */}
       <div className="relative w-14 h-14 flex items-center justify-center">
-        {/* SOLE */}
         {sunny && (
           <div className="absolute animate-spin-slow drop-shadow-lg">
             <SunIcon />
           </div>
         )}
-
-        {/* LAMPEGGI (tuono) */}
         {thunder && (
           <div className="absolute animate-flash">
             <ThunderIcon />
           </div>
         )}
-
-        {/* NUVOLA */}
         {h.cloudCover > 15 && !thunder && (
           <div className="absolute animate-float" style={{ animationDelay: `${(h.time.getHours() % 6) * 0.3}s` }}>
             <CloudIcon size={c.size} color={c.color} opacity={c.opacity} />
           </div>
         )}
-
-        {/* PIOGGIA */}
         {raining && !snowing && (
           <div className="absolute animate-rain" style={{ animationDelay: `${h.time.getHours() * 0.05}s` }}>
             <RainIcon />
           </div>
         )}
-
-        {/* NEVE */}
         {snowing && (
           <div className="absolute animate-snow" style={{ animationDelay: `${h.time.getHours() * 0.02}s` }}>
             <SnowIcon />
           </div>
         )}
-
-        {/* Temperatura */}
         <span className={`absolute bottom-0 right-0 text-xs font-black drop-shadow-md ${isSelected ? "text-red-600" : "text-gray-900"}`}>
           {Math.round(h.temperature)}°
         </span>
       </div>
 
-      {/* Temperatura */}
       <span className={`text-sm font-black ${isSelected ? "text-red-600" : "text-gray-900"}`}>
         {Math.round(h.temperature)}°
       </span>
 
-      {/* Barra vento */}
       <div className="w-full h-2 rounded-full bg-gray-300 overflow-hidden shadow-inner">
         <div
           className="h-full rounded-full transition-all"
@@ -170,7 +155,6 @@ export const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour, onHour
   const [visible, setVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const selectedRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -178,12 +162,13 @@ export const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour, onHour
     return () => clearTimeout(t);
   }, []);
 
-  // Scroll sull'ora selezionata
+  // Scroll all'ora selezionata
   useEffect(() => {
-    if (visible && selectedRef.current && scrollRef.current) {
-      const container = scrollRef.current;
-      const el = selectedRef.current;
-      const offset = el.offsetLeft - container.offsetLeft - container.clientWidth / 2 + el.clientWidth / 2;
+    if (!visible || !scrollRef.current || selectedHour === undefined) return;
+    const container = scrollRef.current;
+    const selectedEl = container.querySelector(`[data-hour="${selectedHour}"]`);
+    if (selectedEl) {
+      const offset = (selectedEl as HTMLElement).offsetLeft - container.offsetLeft - container.clientWidth / 2 + (selectedEl as HTMLElement).clientWidth / 2;
       container.scrollTo({ left: offset, behavior: "smooth" });
     }
   }, [visible, selectedHour]);
@@ -198,7 +183,6 @@ export const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour, onHour
       }}
     >
       <div className="bg-white/90 rounded-2xl border-2 border-gray-400 shadow-xl p-4 relative">
-        {/* Header */}
         <div className="flex justify-between items-center mb-3">
           <h4 className="text-base font-extrabold text-gray-900 drop-shadow-sm">
             📅 Evoluzione giornata — {dayLabel}
@@ -211,11 +195,10 @@ export const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour, onHour
           </button>
         </div>
 
-        {/* Scroll orizzontale con ore animate */}
         <div ref={scrollRef} className="overflow-x-auto pb-2 scroll-smooth">
           <div className="flex gap-2.5 min-w-max">
-            {data.map((h, i) => (
-              <div key={i} ref={(el) => { if (h.time.getHours() === selectedHour && el) { (selectedRef as React.MutableRefObject<HTMLDivElement>).current = el; } }}>
+            {data.map((h) => (
+              <div key={h.time.getHours()} data-hour={h.time.getHours()}>
                 <SingleHourCard
                   h={h}
                   isSelected={h.time.getHours() === selectedHour}
@@ -226,7 +209,6 @@ export const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour, onHour
           </div>
         </div>
 
-        {/* Legenda colori */}
         <div className="flex flex-wrap gap-3 mt-3 text-xs text-gray-600 justify-center font-semibold">
           <span className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-full bg-amber-400 border border-amber-600 shadow-sm" /> Sole
@@ -248,7 +230,6 @@ export const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour, onHour
           </span>
         </div>
 
-        {/* Nota */}
         <div className="mt-2 text-center text-[10px] text-gray-500 italic leading-tight font-medium">
           Clicca su un&apos;ora per spostare la barra • Le nuvole fluttuano, pioggia e neve scendono
         </div>

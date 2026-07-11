@@ -32,7 +32,6 @@ export const MeteoTab = ({
 }: MeteoTabProps) => {
   const [dayPopupIdx, setDayPopupIdx] = useState<number | null>(null);
 
-  // Crea dati orari simulati per il giorno selezionato
   const hourlyData: HourData[] = Array.from({ length: 24 }, (_, i) => ({
     ...current,
     time: new Date(current.time.getFullYear(), current.time.getMonth(), current.time.getDate(), i),
@@ -52,11 +51,8 @@ export const MeteoTab = ({
     onHourChange(selectedHour);
   };
 
-  const isDay = hour >= 6 && hour <= 20;
-
   return (
     <>
-      {/* Selettore giorni */}
       <div className="grid grid-cols-3 gap-2 mb-4">
         {enrichedDaily.map((d, i) => (
           <button
@@ -70,7 +66,7 @@ export const MeteoTab = ({
             }
           >
             <div className="text-xs font-bold text-gray-800 mb-1">{dateLabels[i]}</div>
-            <div className="text-2xl my-1 drop-shadow-md">{wic(d.weatherCode, dayIdx === 0 ? current.isDay : true)}</div>
+            <div className="text-2xl my-1 drop-shadow-md">{wic(d.weatherCode, true)}</div>
             <div className="text-sm font-extrabold text-red-600">
               {Math.round(d.tempMax)}°/{Math.round(d.tempMin)}°
             </div>
@@ -79,7 +75,6 @@ export const MeteoTab = ({
         ))}
       </div>
 
-      {/* POPUP EVOLUZIONE GIORNALIERA */}
       {dayPopupIdx !== null && enrichedDaily[dayPopupIdx] && (
         <DayForecastPopup
           data={hourlyData}
@@ -90,7 +85,6 @@ export const MeteoTab = ({
         />
       )}
 
-      {/* Slider ora */}
       <div className="flex items-center gap-3 mb-4 py-2 px-4 bg-white/80 rounded-xl border-2 border-gray-300 shadow-sm">
         <span className="text-sm font-bold text-gray-700">🕐 Ora</span>
         <input
@@ -106,7 +100,6 @@ export const MeteoTab = ({
         </span>
       </div>
 
-      {/* Griglia meteo */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
         {[
           ["🌡️ Temperatura", `${Math.round(current.temperature)}°C`, "text-red-600"],
@@ -125,7 +118,6 @@ export const MeteoTab = ({
         ))}
       </div>
 
-      {/* Zero termico */}
       <div className="mb-4 p-3 bg-white/90 rounded-xl border-2 border-gray-300 shadow-sm">
         <h4 className="text-sm font-extrabold text-blue-700 mb-2">🔺 Zero Termico</h4>
         <div className="text-center">
@@ -138,7 +130,6 @@ export const MeteoTab = ({
         </div>
       </div>
 
-      {/* Pressione */}
       <div className="mb-4 p-3 bg-white/90 rounded-xl border-2 border-gray-300 shadow-sm">
         <h4 className="text-sm font-extrabold text-blue-700 mb-2">📊 Pressione</h4>
         <div className="grid grid-cols-2 gap-3">
@@ -156,7 +147,6 @@ export const MeteoTab = ({
         </div>
       </div>
 
-      {/* Allerta temporali */}
       {aiData?.thunderstorm && (
         <div className={`p-3 rounded-xl mb-2 border-2 shadow-sm ${
           aiData.thunderstorm.includes("ALLERTA")
