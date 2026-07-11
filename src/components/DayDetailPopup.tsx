@@ -144,9 +144,10 @@ export function DayDetailPopup({ dayData, daily, dayLabel, altitude, onClose, on
     );
   }
 
+  // Filtro 8:00–20:00
   const hours = dayData.filter(h => {
     const hh = h.time.getHours();
-    return hh >= 7 && hh <= 20;
+    return hh >= 8 && hh <= 20;
   });
 
   return (
@@ -166,6 +167,7 @@ export function DayDetailPopup({ dayData, daily, dayLabel, altitude, onClose, on
             </div>
             <div>
               <h2 className="text-lg font-black text-white">{dayLabel}</h2>
+              <p className="text-xs text-slate-300">Previsioni 8:00–20:00 · 3B Meteo style</p>
               <p className="text-xs text-slate-400">{weatherDesc}</p>
             </div>
           </div>
@@ -204,7 +206,7 @@ export function DayDetailPopup({ dayData, daily, dayLabel, altitude, onClose, on
           <div>
             <h3 className="text-xs font-bold text-slate-300 mb-2 uppercase tracking-wider flex items-center gap-1.5">
               <Cloud className="w-3.5 h-3.5 text-slate-400" />
-              Previsioni orarie · 3B Meteo style
+              Fascia oraria 8:00–20:00 · 3B Meteo
             </h3>
             <div className="space-y-1 max-h-80 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-500 scrollbar-track-slate-700">
               {/* Intestazione tabella */}
@@ -247,6 +249,7 @@ export function DayDetailPopup({ dayData, daily, dayLabel, altitude, onClose, on
                     <span className="w-8 text-center font-black text-white tabular-nums">{Math.round(h.temperature)}°</span>
 
                     {/* Icona meteo */}
+                    <span className="w-8 flex justify-center<dyad-write path="src/components/DayDetailPopup.tsx" description="Continuo il file DayDetailPopup dalla riga interrotta">
                     <span className="w-8 flex justify-center">{weatherIcon}</span>
 
                     {/* Barra nuvolosità */}
@@ -306,48 +309,6 @@ export function DayDetailPopup({ dayData, daily, dayLabel, altitude, onClose, on
             <div className="flex items-center gap-1">
               <div className="w-4 h-2 rounded bg-blue-700" />
               <span>molto forte</span>
-            </div>
-          </div>
-
-          {/* Valutazione volo */}
-          <div className="mt-1 p-3 rounded-xl bg-gradient-to-r from-slate-700/40 to-slate-800/40 border border-amber-500/30">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">🪂 Valutazione Volo</span>
-                <div className="text-xl font-black text-white mt-1">
-                  {soaringRating >= 8 ? "Ottimo" : soaringRating >= 6 ? "Buono" : soaringRating >= 4 ? "Discreto" : "Scarso"}
-                </div>
-              </div>
-              <div className="w-14 h-14 rounded-full border-4 flex items-center justify-center text-lg font-black"
-                style={{
-                  borderColor: soaringRating >= 8 ? "#22c55e" : soaringRating >= 6 ? "#eab308" : soaringRating >= 4 ? "#f97316" : "#ef4444",
-                  color: soaringRating >= 8 ? "#22c55e" : soaringRating >= 6 ? "#eab308" : soaringRating >= 4 ? "#f97316" : "#ef4444",
-                }}
-              >
-                {soaringRating}/10
-              </div>
-            </div>
-            <div className="mt-2 text-xs text-slate-400">
-              {soaringRating >= 8 ? "Condizioni ideali per volo libero: vento moderato, cielo sereno, ottima escursione termica." :
-               soaringRating >= 6 ? "Buone condizioni: termiche regolari, vento gestibile." :
-               soaringRating >= 4 ? "Condizioni discrete: possibile turbolenza o vento sostenuto." :
-               "Condizioni difficili: vento forte o pioggia. Si consiglia prudenza."}
-            </div>
-          </div>
-
-          {/* Dati aggiuntivi */}
-          <div className="grid grid-cols-3 gap-1.5 text-center text-[10px]">
-            <div className="p-2 rounded-lg bg-slate-700/20">
-              <span className="text-slate-400">UV max</span>
-              <div className="text-xs font-bold text-white">{stats.uvMax}</div>
-            </div>
-            <div className="p-2 rounded-lg bg-slate-700/20">
-              <span className="text-slate-400">Altitudine</span>
-              <div className="text-xs font-bold text-white">{altitude}m</div>
-            </div>
-            <div className="p-2 rounded-lg bg-slate-700/20">
-              <span className="text-slate-400">Raffica max</span>
-              <div className="text-xs font-bold text-white">{stats.gustMax} km/h</div>
             </div>
           </div>
         </div>

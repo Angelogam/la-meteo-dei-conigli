@@ -11,6 +11,7 @@ import { TermicheTab } from "@/components/TermicheTab";
 import { AnalisiTab } from "@/components/AnalisiTab";
 import SiteHeader from "@/components/SiteHeader";
 import DayForecastPopup from "@/components/DayForecastPopup";
+import { DayDetailPopup } from "@/components/DayDetailPopup";
 import { fetchMeteo, fetchWindProfiles, filterFlightHours, enrDaily, calcThermal } from "@/utils/meteo";
 import { DECOLLI } from "@/data/decolli";
 import { generaAnalisiReale } from "@/utils/analisi";
@@ -19,7 +20,7 @@ import { calcThermalReal } from "@/utils/termiche";
 import type { MeteoData, HourData, AiAnalysis, WindProfile } from "@/types/meteo";
 import SidebarDecolli from "@/components/SidebarDecolli";
 import { Button } from "@/components/ui/button";
-import { MapPin } from "lucide-react";
+import { MapPin, CloudSun, ArrowRight } from "lucide-react";
 
 type Tab = "meteo" | "venti" | "quota" | "termiche" | "analisi";
 
@@ -38,7 +39,7 @@ function useRealTimeHour(): number {
     const tick = () => setH(new Date().getHours());
     const id = setInterval(tick, 10000);
     return () => clearInterval(id);
-  }, [h]);
+  }, []);
   return h;
 }
 
@@ -57,6 +58,7 @@ function Index() {
   const [dayIdx, setDayIdx] = useState(0);
   const [hour, setHour] = useState(useRealTimeHour());
   const [showPopup, setShowPopup] = useState(false);
+  const [showDayDetail, setShowDayDetail] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const fetchAllDecolli = useCallback(async () => {
@@ -228,6 +230,16 @@ function Index() {
     setHour(new Date().getHours());
   }, []);
 
+  const handleDayDetailClick = useCallback((idx: number) => {
+    setDayIdx(idx);
+    setShowDayDetail(true);
+  }, []);
+
+  const handleApriDomani = useCallback(() => {
+    setDayIdx(1);
+    setShowDayDetail(true);
+  }, []);
+
   const toggleSidebar = useCallback(() => setSidebarOpen((p) => !p), []);
 
   const handleRetry = useCallback(() => {
@@ -312,6 +324,18 @@ function Index() {
             </div>
           )}
 
+          {/* Pulsante grandi dimensioni per PREVISIONI DOMANI */}
+          <div className="mb-3">
+            <Button
+              onClick={handleApriDomani}
+              className="w-full py-4 md:py-3 text-sm md:text-base font-bold rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white border border-blue-400 shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-[1.02]"
+            >
+              <CloudSun className="w-5 h-5 mr-2" />
+              {daily[1] ? dateLabels[1] : "Domani"} · Previsioni locali 3B Meteo 8:00–20:00
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+
           <TabNav tab={tab} onTabChange={setTab} />
 
           <div className="bg-slate-700/60 backdrop-blur-sm rounded-2xl p-3 md:p-4 border border-slate-600/50 shadow-xl mt-2.5 text-slate-100">
@@ -326,6 +350,7 @@ function Index() {
                 pressureGrad={{ grad: 0, desc: "Non disponibile" }}
                 aiData={aiData}
                 onDaySelect={setDayIdx}
+                onDayDetailClick={handleDayDetailClick}
                 onHourChange={setHour}
               />
             )}
@@ -376,6 +401,20 @@ function Index() {
               onHourSelect={(h) => {
                 setHour(h);
                 setShowPopup(false);
+              }}
+            />
+          )}
+
+          {showDayDetail && daily[dayIdx] && (
+            <DayDetailPopup
+              dayData={dayData}
+              daily={daily[dayIdx]}
+              dayLabel={dateLabels[dayIdx] || ""}
+              altitude={currentSite.altitude}
+              onClose={() => setShowDayDetail(false)}
+              onHourSelect={(h) => {
+                setHour(h);
+                setShowDayDetail(false);
               }}
             />
           )}
