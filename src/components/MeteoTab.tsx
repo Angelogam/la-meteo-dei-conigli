@@ -17,6 +17,7 @@ interface MeteoTabProps {
   pressureGrad: { grad: number; desc: string };
   aiData: AiAnalysis | null;
   onDaySelect: (idx: number) => void;
+  onDayDetailClick?: (idx: number) => void;
   onHourChange: (h: number) => void;
   startHour?: number;
   endHour?: number;
@@ -32,6 +33,7 @@ export function MeteoTab({
   pressureGrad,
   aiData,
   onDaySelect,
+  onDayDetailClick,
   onHourChange,
   startHour = 9,
   endHour = 19,
@@ -46,12 +48,15 @@ export function MeteoTab({
 
   return (
     <div className="space-y-4 text-slate-200">
-      {/* Select day - pillole eleganti */}
+      {/* Select day - pillole eleganti con click per dettaglio */}
       <div className="flex gap-1.5 flex-wrap">
         {enrichedDaily.map((day: any, i: number) => (
           <button
             key={i}
-            onClick={() => onDaySelect(i)}
+            onClick={() => {
+              onDaySelect(i);
+              onDayDetailClick?.(i);
+            }}
             className={`px-3.5 py-1.5 text-xs font-semibold rounded-full transition-all duration-200 border ${
               i === dayIdx
                 ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white border-blue-400 shadow-lg shadow-blue-500/20 scale-105"
