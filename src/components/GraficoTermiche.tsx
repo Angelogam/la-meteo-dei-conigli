@@ -1,3 +1,4 @@
+character in JSX">
 "use client";
 
 import React from "react";
@@ -9,8 +10,8 @@ interface GraficoTermicheProps {
   oraCorrente: number;
 }
 
-const LEGENDA = [
-  { colore: "#ef4444", label: "Termiche forti (>7)" },
+const LEGENDA: { colore: string; label: string }[] = [
+  { colore: "#ef4444", label: "Termiche forti (+7)" },
   { colore: "#f97316", label: "Buone termiche (5-7)" },
   { colore: "#eab308", label: "Moderate (3-5)" },
   { colore: "#84cc16", label: "Deboli (1-3)" },
@@ -127,7 +128,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
           </span>
           <span className="flex items-center gap-1">
             <Gauge className="w-2.5 h-2.5 text-purple-400" />
-            Pressione (>1015 hPa ideale)
+            Pressione (+1015 hPa ideale)
           </span>
         </div>
       </div>
