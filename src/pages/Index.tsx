@@ -20,7 +20,7 @@ import { generaTermicheOrarie } from "@/utils/termiche";
 import { DECOLLI, type Decollo } from "@/data/decolli";
 import type { MeteoData, HourData, AiAnalysis, WindProfile } from "@/types/meteo";
 import { Button } from "@/components/ui/button";
-import { MapPin, CloudSun, ArrowRight, Menu } from "lucide-react";
+import { MapPin, CloudSun, ArrowRight, Menu, CalendarDays, ChevronRight, Sun } from "lucide-react";
 
 interface DecolloMeteo {
   site: Decollo;
@@ -58,6 +58,9 @@ const Index = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [showDayDetail, setShowDayDetail] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showDomaniDetail, setShowDomaniDetail] = useState(false);
+  const [domaniLoading, setDomaniLoading] = useState(false);
+  const [domaniMeteo, setDomaniMeteo] = useState<MeteoData | null>(null);
 
   const fetchAllDecolli = useCallback(async () => {
     const results = await Promise.allSettled(
@@ -207,6 +210,8 @@ const Index = () => {
     setSiteId(id);
     setDayIdx(0);
     setHour(new Date().getHours());
+    setDomaniMeteo(null);
+    setShowDomaniDetail(false);
   }, []);
 
   const handleDayDetailClick = useCallback((idx: number) => {
@@ -214,10 +219,22 @@ const Index = () => {
     setShowDayDetail(true);
   }, []);
 
-  const handleApriDomani = useCallback(() => {
+  const handleApriDomani = useCallback(async () => {
+    setDomaniLoading(true);
+    setShowDomaniDetail(true);
     setDayIdx(1);
-    setShowDayDetail(true);
-  }, []);
+
+    // Se non abbiamo già caricato i dati di domani per questo sito, carichiamoli
+    if (!domaniMeteo) {
+      try {
+        const data = await fetchMeteo(selectedSite.lat, selectedSite.lon);
+        setDomaniMeteo(data);
+      } catch (err) {
+        console.error("Errore caricamento domani:", err);
+      }
+    }
+    setDomaniLoading(false);
+  }, [selectedSite, domaniMeteo]);
 
   const toggleSidebar = useCallback(() => setSidebarOpen((p) => !p), []);
 
@@ -226,6 +243,25 @@ const Index = () => {
     setGlobalError(null);
     fetchAllDecolli();
   }, [fetchAllDecolli]);
+
+  // Prepara i dati per la finestra di domani
+  const domaniDaily = domaniMeteo?.daily || [];
+  const domaniHourlyRaw = domaniMeteo?.hourly || [];
+  const domaniHourly = useMemo(() => filterFlightHours(domaniHourlyRaw), [domaniHourlyRaw]);
+  const domaniEnriched = useMemo(() => enrDaily(domaniDaily, domaniHourly), [domaniDaily, domaniHourly]);
+  const domaniDayData = useMemo(() => {
+    if (!domaniHourly.length) return [];
+    const targetDate = domaniDaily[1]?.date;
+    if (!targetDate) return domaniHourly;
+    return domaniHourly.filter((h) => {
+      const hd = h.time;
+      return (
+        hd.getDate() === targetDate.getDate() &&
+        hd.getMonth() === targetDate.getMonth() &&
+        hd.getFullYear() === targetDate.getFullYear()
+      );
+    });
+  }, [domaniHourly, domaniDaily]);
 
   if (globalLoading) return <LoadingScreen />;
   if (globalError) return <ErrorScreen message={globalError} onRetry={handleRetry} />;
@@ -304,20 +340,37 @@ const Index = () => {
             </div>
           )}
 
-          <div className="mb-3">
+          {/* Pulsante DOMANI interattivo – clicca per caricare i dati reali */}
+          <div className="mb-3 group">
             <Button
               onClick={handleApriDomani}
-              className="w-full py-5 md:py-4 text-base md:text-lg font-bold rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white border border-blue-400 shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-[1.02]"
+              disabled={domaniLoading}
+              className="w-full py-5 md:py-4 text-base md:text-lg font-bold rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white border border-blue-400 shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-[1.02] disabled:opacity-70"
             >
-              <CloudSun className="w-6 h-6 mr-2" />
-              {daily[1] ? dateLabels[1] : "Domani"} &middot; Previsioni locali 3B Meteo 8:00&ndash;20:00
-              <ArrowRight className="w-5 h-5 ml-2" />
+              {domaniLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Caricamento previsioni domani...
+                </>
+              ) : (
+                <>
+                  <CalendarDays className="w-5 h-5 mr-2" />
+                  <span className="font-bold">
+                    {daily[1] ? dateLabels[1] : "Domani"}
+                  </span>
+                  <span className="mx-1.5 text-blue-200">·</span>
+                  <span className="text-blue-100 font-medium">
+                    Previsioni locali 3B Meteo 8:00–20:00
+                  </span>
+                  <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-0.5 transition-transform" />
+                </>
+              )}
             </Button>
           </div>
 
           <TabNav tab={tab} onTabChange={setTab} />
 
-          <div className="bg-slate-700/70 backdrop-blur-sm rounded-2xl p-4 md:p-5 border border-slate-500/60 shadow-xl mt-2.5 text-slate-100">
+          <div className="bg-slate-700/70 backdrop-blur-sm rounded-2xl p-4 md:p-5 border border-slate-500/60 shadow-xl mt-2.5 text-slate-100 content-enter">
             {tab === "meteo" && currentHourData && (
               <MeteoTab
                 current={currentHourData}
@@ -360,7 +413,7 @@ const Index = () => {
             )}
           </div>
 
-          <div className="mt-4 flex justify-center">
+          <div className="mt-4 flex justify-center gap-2">
             <Button
               variant="outline"
               size="default"
@@ -395,6 +448,25 @@ const Index = () => {
               onHourSelect={(h) => {
                 setHour(h);
                 setShowDayDetail(false);
+              }}
+            />
+          )}
+
+          {/* Popup DOMANI con dati reali Open-Meteo */}
+          {showDomaniDetail && domaniEnriched[1] && (
+            <DayDetailPopup
+              dayData={domaniDayData}
+              daily={domaniEnriched[1]}
+              dayLabel={domaniDaily[1]?.date?.toLocaleDateString("it-IT", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+              }) || "Domani"}
+              altitude={currentSite.altitude}
+              onClose={() => setShowDomaniDetail(false)}
+              onHourSelect={(h) => {
+                setHour(h);
+                setShowDomaniDetail(false);
               }}
             />
           )}
