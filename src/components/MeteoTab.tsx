@@ -7,6 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { useMemo } from "react";
 import { Sun, Cloud, Wind, Droplets, Gauge, Thermometer, TrendingUp } from "lucide-react";
 import GraficoTermiche from "@/components/GraficoTermiche";
+import type { TermicheData } from "@/utils/termiche";
 
 interface MeteoTabProps {
   current: HourData;
@@ -22,7 +23,7 @@ interface MeteoTabProps {
   onHourChange: (h: number) => void;
   startHour?: number;
   endHour?: number;
-  termicheHourly?: { hour: number; termiche: { base: number; top: number; forza: number; rateo: number; label: string; colore: string } }[];
+  termicheHourly?: { hour: number; termiche: TermicheData }[];
 }
 
 export function MeteoTab({
@@ -141,13 +142,13 @@ export function MeteoTab({
       </Card>
 
       {/* Grafico termiche completo — quote, venti, forza nell'arco della giornata */}
-      <Card className="border border-amber-600/50 bg-slate-800/80 shadow-lg overflow-hidden">
-        <CardContent className="p-4">
-          <GraficoTermiche hourly={termicheHourly} oraCorrente={hour} />
-        </CardContent>
-      </Card>
-
-      {/* Vecchia card thermal summary (sostituita dal grafico) — rimossa, il grafico ora è sempre visibile */}
+      {termicheHourly && termicheHourly.length > 0 && (
+        <Card className="border border-amber-600/50 bg-slate-800/80 shadow-lg overflow-hidden">
+          <CardContent className="p-4">
+            <GraficoTermiche hourly={termicheHourly} oraCorrente={hour} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* AI analysis preview */}
       {aiData && (

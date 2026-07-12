@@ -100,7 +100,7 @@ export function calcolaTermiche(params: {
     return "#64748b";
   })();
 
-  return { base, top: top, forza, rateo, label, colore, turbolenza, stabilita };
+  return { base, top, forza, rateo, label, colore, turbolenza, stabilita };
 }
 
 /** Genera i dati termici orari per le ore 9-19 a partire dai dati meteo orari */
