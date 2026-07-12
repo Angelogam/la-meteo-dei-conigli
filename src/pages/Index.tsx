@@ -74,7 +74,6 @@ function getWindArrow(deg: number): string {
   return arrows[Math.round(deg / 45) % 8];
 }
 
-// Calcola il profilo del vento da 400m a 4000m
 function getWindProfile(surfaceWind: number, surfaceDir: number): Array<{alt: number; speed: number; dir: number; dirName: string}> {
   const profile = [];
   for (let alt = 400; alt <= 4000; alt += 250) {
@@ -108,7 +107,6 @@ export default function Home() {
 
   const site = DECOLLI.find(d => d.id === selectedId)!;
 
-  // Funzione per caricare i dati meteo
   const loadWeather = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -196,7 +194,6 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [loadWeather]);
 
-  // Filtra i dati per il giorno selezionato
   const dayData = useMemo(() => {
     if (!meteoData) return [];
     const today = new Date();
@@ -213,7 +210,6 @@ export default function Home() {
     return dayData[Math.min(selectedHour, dayData.length - 1)];
   }, [dayData, selectedHour]);
 
-  // Calcolo delta termico
   const thermalDelta = useMemo(() => {
     if (!dayData || dayData.length === 0) return 0;
     const temps = dayData.map((h: any) => h.temperature).filter((t: any) => t != null);
@@ -221,7 +217,6 @@ export default function Home() {
     return Math.round(Math.max(...temps) - Math.min(...temps));
   }, [dayData]);
 
-  // Dati giornalieri arricchiti
   const enrichedDaily = useMemo(() => {
     if (!meteoData || !meteoData.daily) return [];
     return meteoData.daily.map((day: any, idx: number) => {
@@ -239,7 +234,6 @@ export default function Home() {
     d.date.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })
   );
 
-  // Calcolo indici di stabilità
   const stabilityIndex = useMemo(() => {
     if (!currentData) return { label: '--', color: '#888' };
     const temp = currentData.temperature;
@@ -267,7 +261,6 @@ export default function Home() {
     return { label: 'Assente ❄️', color: '#4fc3f7' };
   }, [currentData, thermalDelta]);
 
-  // Allerta meteo
   const weatherAlert = useMemo(() => {
     if (!currentData) return { level: 'info', message: 'Caricamento...', icon: 'ℹ️' };
     const alerts: string[] = [];
@@ -288,15 +281,11 @@ export default function Home() {
     return { level: 'warning', message: '⚠️ ' + alerts.join(' • '), icon: '⚡' };
   }, [currentData, thermalDelta]);
 
-  // Profilo vento
   const windProfile = useMemo(() => {
     if (!currentData) return [];
     return getWindProfile(currentData.windSpeed, currentData.windDir);
   }, [currentData]);
 
-  // ----------------------------------------------------------------
-  // RENDER
-  // ----------------------------------------------------------------
   if (loading && !meteoData) {
     return (
       <div style={styles.loadingContainer}>
@@ -318,7 +307,6 @@ export default function Home() {
 
   return (
     <div style={styles.app}>
-      {/* HEADER con coniglio animato */}
       <header style={styles.header}>
         <div style={styles.logoContainer}>
           <span style={styles.rabbitHop}>🐰</span>
@@ -330,7 +318,6 @@ export default function Home() {
       </header>
 
       <div style={styles.mainGrid}>
-        {/* COLONNA SINISTRA: LISTA DECOLLI */}
         <div style={styles.leftPanel}>
           <h2 style={styles.sectionTitle}>📍 Decolli</h2>
           <div style={styles.scrollList}>
@@ -364,9 +351,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* COLONNA DESTRA: DETTAGLI */}
         <div style={styles.rightPanel}>
-          {/* HEADER SITO */}
           <div style={styles.siteHeader}>
             <div>
               <h2 style={styles.siteName}>{site.name}</h2>
@@ -380,7 +365,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* ALLERTA METEO */}
           {currentData && (
             <div style={{
               ...styles.alertBanner,
@@ -395,7 +379,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* TABS */}
           <div style={styles.tabContainer}>
             {(['meteo', 'venti', 'termiche', 'analisi'] as const).map((tab) => (
               <button
@@ -415,7 +398,6 @@ export default function Home() {
             ))}
           </div>
 
-          {/* SELEZIONE GIORNO */}
           <div style={styles.daySelector}>
             {enrichedDaily.map((day: any, idx: number) => (
               <button
@@ -436,7 +418,6 @@ export default function Home() {
             ))}
           </div>
 
-          {/* SELEZIONE ORA */}
           <div style={styles.hourSelector}>
             <span style={styles.hourLabel}>⏰ Ora:</span>
             <input
@@ -450,10 +431,8 @@ export default function Home() {
             <span style={styles.hourValue}>{String(selectedHour).padStart(2, '0')}:00</span>
           </div>
 
-          {/* CONTENUTO TAB */}
           {activeTab === 'meteo' && currentData && (
             <div style={styles.tabContent}>
-              {/* GRIGLIA METEO 4 COLONNE */}
               <div style={styles.meteoGrid}>
                 <div style={styles.meteoCard}>
                   <div style={styles.meteoLabel}>🌡️ Temperatura</div>
@@ -497,7 +476,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* PRESSIONE E GRADIENTE */}
               <div style={styles.pressureSection}>
                 <h4 style={styles.sectionSubtitle}>📊 Pressione e Gradiente</h4>
                 <div style={styles.pressureGrid}>
@@ -524,7 +502,6 @@ export default function Home() {
 
           {activeTab === 'venti' && currentData && (
             <div style={styles.tabContent}>
-              {/* VENTO A 3 QUOTE */}
               <div style={styles.windSection}>
                 <h4 style={styles.sectionSubtitle}>💨 Vento a differenti quote</h4>
                 <div style={styles.windGrid3}>
@@ -553,9 +530,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* PROFILO VENTO 400m-4000m */}
-              <div style={styles```tsx
-                    <div style={styles.windProfileSection}>
+              <div style={styles.windProfileSection}>
                 <h4 style={styles.sectionSubtitle}>📊 Profilo Vento (400m - 4000m)</h4>
                 <div style={styles.windProfileContainer}>
                   {windProfile.map((level, idx) => {
@@ -565,7 +540,7 @@ export default function Home() {
                       <div key={idx} style={styles.windProfileRow}>
                         <span style={styles.windProfileAlt}>{level.alt === 10 ? 'Sup' : `${level.alt}m`}</span>
                         <div style={styles.windProfileBarWrap}>
-                          <div style={{...styles.windProfileBar, width: `${width}%`, background: `linear-gradient(to right, ${width < 30 ? '#4caf50' : width < 50 ? '#8bc34a' : width < 70 ? '#ff9800' : width < 90 ? '#ff5722' : '#f44336'}, ${width < 30 ? '#4caf50' : width < 50 ? '#8bc34a' : width < 70 ? '#ff9800' : width < 90 ? '#ff5722' : '#f44336'})`}}>
+                          <div style={{...styles.windProfileBar, width: `${width}%`, background: `linear-gradient(to right, ${width < 30 ? '#4caf50' : width < 50 ? '#8bc34a' : width < 70 ?<dyad-write path="src/pages/Index.tsx" description="Continuazione del file dal punto esatto in cui si era interrotto">
                             <span style={styles.windProfileSpeed}>{level.speed} km/h</span>
                           </div>
                         </div>
@@ -576,7 +551,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* PREVISIONE ORARIA 9-19 */}
               <div style={styles.hourlyWindSection}>
                 <h4 style={styles.sectionSubtitle}>📊 Vento orario (9:00 - 19:00)</h4>
                 <div style={styles.hourlyWindGrid}>
@@ -642,7 +616,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* SVILUPPO ORARIO TERMICHE */}
               <div style={styles.hourlyThermalSection}>
                 <h4 style={styles.sectionSubtitle}>⏰ Sviluppo orario termiche (10:00 - 18:00)</h4>
                 <div style={styles.hourlyThermalGrid}>
@@ -732,9 +705,6 @@ export default function Home() {
   );
 }
 
-// ----------------------------------------------------------------
-// 5. STILI
-// ----------------------------------------------------------------
 const styles: { [key: string]: React.CSSProperties } = {
   app: {
     background: 'linear-gradient(145deg, #1a2a3a 0%, #0d1b2a 100%)',
@@ -1060,9 +1030,6 @@ const styles: { [key: string]: React.CSSProperties } = {
   footerText: { fontSize: '0.75rem', color: '#667788' },
 };
 
-// ----------------------------------------------------------------
-// 6. ANIMAZIONI GLOBALI
-// ----------------------------------------------------------------
 if (typeof document !== 'undefined') {
   const styleEl = document.createElement('style');
   styleEl.textContent = `
