@@ -246,7 +246,6 @@ const Index = () => {
     return generateAiAnalysis(dayData, dayIdx);
   }, [dayData, dayIdx]);
 
-  // TERMICHE ORARIE: si aggiornano al variare di dayData (quindi al variare di dayIdx)
   const termicheHourly = useMemo(() => {
     if (!dayData.length) return [];
     return generaTermicheOrarie(dayData, currentSite.altitude);
@@ -280,7 +279,6 @@ const Index = () => {
       fetchGiorno(giorno);
       return;
     }
-
     setDayIdx(giorno);
     setShowDayDetail(true);
   }, [giorniPrevisioni, fetchGiorno]);
@@ -304,7 +302,6 @@ const Index = () => {
     fetchAllDecolli();
   }, [fetchAllDecolli]);
 
-  // ---- CONDITIONAL RETURN DOPO TUTTI GLI HOOK ----
   if (globalLoading) return <LoadingScreen />;
   if (globalError) return <ErrorScreen message={globalError} onRetry={handleRetry} />;
 
@@ -354,7 +351,6 @@ const Index = () => {
                 month: "long",
                 year: "numeric",
               })}
-              <span className="ml...span>
               <span className="ml-2 text-blue-300 font-bold">
                 {String(hour).padStart(2, "0")}:{String(new Date().getMinutes()).padStart(2, "0")}
               </span>
