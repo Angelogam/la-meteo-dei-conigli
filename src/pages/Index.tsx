@@ -8,8 +8,6 @@ import SiteHeader from "@/components/SiteHeader";
 import DayForecastPopup from "@/components/DayForecastPopup";
 import { DayDetailPopup } from "@/components/DayDetailPopup";
 import SidebarDecolli from "@/components/SidebarDecolli";
-import { AppHeader } from "@/components/AppHeader";
-import { AppFooter } from "@/components/AppFooter";
 import { TabContent } from "@/components/TabContent";
 import { useMeteoData, useRealTimeHour } from "@/hooks/useMeteoData";
 import { MapPin, Menu } from "lucide-react";
@@ -37,10 +35,7 @@ const Index = () => {
     aiData,
     aiMeteoAnalysis,
     termicheHourly,
-    previsioneSelezionata,
-    previsioneDayData,
-    previsioneEnriched,
-    fetchGiorno,
+    fetchAllDecolli,
   } = useMeteoData(siteId, dayIdx, hour);
 
   const handleSiteSelect = useCallback((id: string) => {
@@ -66,7 +61,24 @@ const Index = () => {
       <div className="pointer-events-none fixed -top-32 -left-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
       <div className="pointer-events-none fixed -bottom-32 -right-32 w-96 h-96 bg-green-500/8 rounded-full blur-3xl" />
 
-      <AppHeader />
+      <header className="relative z-10 px-4 py-5 border-b-2 border-green-500/40 bg-gradient-to-r from-slate-800/95 via-green-900/20 to-slate-800/95 backdrop-blur-md shadow-lg">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-center justify-center gap-3">
+            <span className="text-3xl md:text-4xl drop-shadow-lg animate-bounce">🐰</span>
+            <div className="border-2 border-green-500/40 rounded-xl px-4 py-3 bg-slate-800/60 backdrop-blur-sm shadow-inner">
+              <h1 className="text-2xl md:text-3xl font-extrabold text-green-400 tracking-tight text-center drop-shadow-sm">
+                Meteo dei <span className="text-green-300">Conigli</span>
+              </h1>
+              <p className="text-sm md:text-base text-green-200/90 font-medium text-center tracking-wide mt-0.5">
+                🪂 Previsioni per volo libero · 9:00–19:00 · aggiornato ogni minuto
+              </p>
+            </div>
+            <span className="text-3xl md:text-4xl drop-shadow-lg md:block hidden animate-bounce" style={{ animationDelay: "150ms" }}>
+              🐰
+            </span>
+          </div>
+        </div>
+      </header>
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 pb-32 mt-4 md:flex md:gap-4 md:items-start md:justify-center">
         <SidebarDecolli
@@ -126,7 +138,6 @@ const Index = () => {
             onDaySelect={setDayIdx}
             onDayDetailClick={handleDayDetailClick}
             onHourChange={setHour}
-            fetchGiorno={fetchGiorno}
           />
 
           <div className="mt-4 flex justify-center gap-2">
@@ -152,7 +163,7 @@ const Index = () => {
             />
           )}
 
-          {showDayDetail && enrichedDaily[dayIdx] && !previsioneSelezionata?.data && (
+          {showDayDetail && enrichedDaily[dayIdx] && (
             <DayDetailPopup
               dayData={dayData}
               daily={enrichedDaily[dayIdx]}
@@ -165,24 +176,15 @@ const Index = () => {
               }}
             />
           )}
-
-          {showDayDetail && previsioneSelezionata?.data && previsioneEnriched[dayIdx] && (
-            <DayDetailPopup
-              dayData={previsioneDayData}
-              daily={previsioneEnriched[dayIdx]}
-              dayLabel={previsioneSelezionata.label}
-              altitude={currentSite?.altitude || 0}
-              onClose={() => setShowDayDetail(false)}
-              onHourSelect={(h) => {
-                setHour(h);
-                setShowDayDetail(false);
-              }}
-            />
-          )}
         </div>
       </div>
 
-      <AppFooter />
+      <footer className="relative z-10 fixed bottom-0 left-0 right-0 text-center py-3 border-t border-green-500/30 bg-slate-800/80 backdrop-blur-md shadow-lg">
+        <div className="max-w-5xl mx-auto px-4 flex items-center justify-center gap-8">
+          <p className="text-xs text-slate-300">Basato su dati Open-Meteo · previsioni 9:00–19:00</p>
+          <p className="text-xs text-slate-300">© {new Date().getFullYear()} Meteo dei Conigli</p>
+        </div>
+      </footer>
     </div>
   );
 };

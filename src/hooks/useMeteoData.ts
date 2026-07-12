@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { fetchMeteo, fetchWindProfiles, filterFlightHours, enrDaily, calcThermal } from "@/utils/meteo";
+import { fetchMeteo, filterFlightHours, enrDaily, calcThermal } from "@/utils/meteo";
 import { generaAnalisiReale } from "@/utils/analisi";
 import { generateAiAnalysis } from "@/utils/meteoAI";
 import { generaTermicheOrarie } from "@/utils/termiche";
 import { DECOLLI, type Decollo } from "@/data/decolli";
-import type { MeteoData, HourData, AiAnalysis, WindProfile } from "@/types/meteo";
+import type { MeteoData, HourData, AiAnalysis } from "@/types/meteo";
 import type { TermicheData } from "@/utils/termiche";
 
 interface DecolloMeteo {
@@ -14,30 +14,6 @@ interface DecolloMeteo {
   data: MeteoData | null;
   loading: boolean;
   error: string | null;
-  windProfiles: WindProfile[];
-  windProfilesLoading: boolean;
-}
-
-interface GiornoPrevisione {
-  giorno: number;
-  label: string;
-  data: MeteoData | null;
-  loading: boolean;
-  error: string | null;
-}
-
-const nomiGiorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
-
-function generaGiorniPrevisioni(): GiornoPrevisione[] {
-  const giorni: GiornoPrevisione[] = [];
-  for (let g = 1; g <= 5; g++) {
-    const data = new Date();
-    data.setDate(data.getDate() + g);
-    const nomeGiorno = nomiGiorni[data.getDay()];
-    const label = `${nomeGiorno} ${data.getDate()} ${data.toLocaleDateString("it-IT", { month: "short" })}`;
-    giorni.push({ giorno: g, label, data: null, loading: false, error: null });
-  }
-  return giorni;
 }
 
 export function useRealTimeHour(): number {
@@ -54,33 +30,12 @@ export function useMeteoData(siteId: string, dayIdx: number, hour: number) {
   const [decolliMeteo, setDecolliMeteo] = useState<Record<string, DecolloMeteo>>(() => {
     const map: Record<string, DecolloMeteo> = {};
     for (const site of DECOLLI) {
-      map[site.id] = { site, data: null, loading: true, error: null, windProfiles: [], windProfilesLoading: false };
+      map[site.id] = { site, data: null, loading: true, error: null };
     }
     return map;
   });
   const [globalLoading, setGlobalLoading] = useState(true);
   const [globalError, setGlobalError] = useState<string | null>(null);
-  const [giorniPrevisioni, setGiorniPrevisioni] = useState<GiornoPrevisione[]>(generaGiorniPrevisioni);
-
-  const fetchGiorno = useCallback(async (giorno: number) => {
-    setGiorniPrevisioni((prev) =>
-      prev.map((g) => (g.giorno === giorno ? { ...g, loading: true, error: null } : g))
-    );
-
-    const site = DECOLLI.find((s) => s.id === siteId) || DECOLLI[0];
-    try {
-      const data = await fetchMeteo(site.lat, site.lon);
-      setGiorniPrevisioni((prev) =>
-        prev.map((g) => (g.giorno === giorno ? { ...g, data, loading: false } : g))
-      );
-    } catch {
-      setGiorniPrevisioni((prev) =>
-        prev.map((g) =>
-          g.giorno === giorno ? { ...g, loading: false, error: "Errore caricamento" } : g
-        )
-      );
-    }
-  }, [siteId]);
 
   const fetchAllDecolli = useCallback(async () => {
     const results = await Promise.allSettled(
@@ -213,28 +168,6 @@ export function useMeteoData(siteId: string, dayIdx: number, hour: number) {
     return generaTermicheOrarie(dayData, currentSite.altitude);
   }, [dayData, currentSite.altitude]);
 
-  const previsioneSelezionata = giorniPrevisioni.find((g) => g.giorno === dayIdx);
-  const previsioneData = previsioneSelezionata?.data;
-  const previsioneDailyArr = previsioneData?.daily || [];
-  const previsioneHourlyRawArr = previsioneData?.hourly || [];
-  const previsioneHourly = useMemo(() => filterFlightHours(previsioneHourlyRawArr), [previsioneHourlyRawArr]);
-
-  const previsioneDayData = useMemo(() => {
-    if (!previsioneHourly.length) return [];
-    const targetDate = previsioneDailyArr[dayIdx]?.date;
-    if (!targetDate) return previsioneHourly;
-    return previsioneHourly.filter((h) => {
-      const hd = h.time;
-      return (
-        hd.getDate() === targetDate.getDate() &&
-        hd.getMonth() === targetDate.getMonth() &&
-        hd.getFullYear() === targetDate.getFullYear()
-      );
-    });
-  }, [previsioneHourly, previsioneDailyArr, dayIdx]);
-
-  const previsioneEnriched = useMemo(() => enrDaily(previsioneDailyArr, previsioneHourly), [previsioneDailyArr, previsioneHourly]);
-
   return {
     globalLoading,
     globalError,
@@ -249,10 +182,6 @@ export function useMeteoData(siteId: string, dayIdx: number, hour: number) {
     aiData,
     aiMeteoAnalysis,
     termicheHourly,
-    previsioneSelezionata,
-    previsioneDayData,
-    previsioneEnriched,
-    fetchGiorno,
-    fetchAllDecolli: fetchAllDecolli,
+    fetchAllDecolli,
   };
 }
