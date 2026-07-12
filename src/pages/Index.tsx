@@ -1,6 +1,3 @@
-</dyad-delete>
-
-<dyad-write path="src/pages/Index.tsx" description="Rewrite completo senza residui - app meteo paragliding">
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
@@ -9,23 +6,23 @@ const DECOLLI = [
   { id: "malanotte", name: "Malanotte", lat: 44.2587, lon: 7.7943, exposure: "S/SE", alt: 1740, valley: "Valle Infernotto" },
   { id: "colle_tenda", name: "Colle di Tenda", lat: 44.1509, lon: 7.5693, exposure: "S", alt: 1990, valley: "Valle Roya/Vermenagna" },
   { id: "boves", name: "Boves", lat: 44.3211, lon: 7.5447, exposure: "NE", alt: 900, valley: "Cuneese" },
-  { id: "monte_male", name: "Monte Male – Dronero", lat: 44.4316, lon: 7.3629, exposure: "S", alt: 950, valley: "Valle Maira" },
+  { id: "monte_male", name: "Monte Male - Dronero", lat: 44.4316, lon: 7.3629, exposure: "S", alt: 950, valley: "Valle Maira" },
   { id: "iretta", name: "Iretta", lat: 44.4989, lon: 7.3820, exposure: "SO", alt: 1050, valley: "Valle Maira" },
   { id: "val_mala", name: "Pratoni di Val Mala", lat: 44.5078, lon: 7.3466, exposure: "S", alt: 1400, valley: "Valle Maira" },
   { id: "birrone", name: "Monte Birrone", lat: 44.5399, lon: 7.2529, exposure: "S", alt: 2131, valley: "Valle Maira" },
   { id: "agnello", name: "Colle dell'Agnello", lat: 44.6828, lon: 6.9782, exposure: "S", alt: 2748, valley: "Valle Varaita" },
-  { id: "pian_mune", name: "Pian Munè – Seggiovia", lat: 44.6386, lon: 7.2309, exposure: "S/SW", alt: 1870, valley: "Valle Po" },
-  { id: "pian_mune_basso", name: "Pian Munè – Bric Lombatera", lat: 44.6574, lon: 7.2600, exposure: "S", alt: 1350, valley: "Valle Po" },
+  { id: "pian_mune", name: "Pian Mune - Seggiovia", lat: 44.6386, lon: 7.2309, exposure: "S/SW", alt: 1870, valley: "Valle Po" },
+  { id: "pian_mune_basso", name: "Pian Mune - Bric Lombatera", lat: 44.6574, lon: 7.2600, exposure: "S", alt: 1350, valley: "Valle Po" },
   { id: "martiniana", name: "Martiniana Po", lat: 44.6070, lon: 7.3832, exposure: "NE", alt: 1400, valley: "Valle Po" },
   { id: "rucas", name: "Rucas alto", lat: 44.7421, lon: 7.2201, exposure: "S/SE", alt: 1500, valley: "Valle Infernotto" },
-  { id: "montoso", name: "Montoso – decollo basso", lat: 44.7644, lon: 7.2498, exposure: "SE", alt: 1250, valley: "Valle Infernotto" },
+  { id: "montoso", name: "Montoso - decollo basso", lat: 44.7644, lon: 7.2498, exposure: "SE", alt: 1250, valley: "Valle Infernotto" },
   { id: "vandalino", name: "Monte Vandalino", lat: 44.8367, lon: 7.1739, exposure: "S/SE", alt: 2120, valley: "Val Pellice" },
   { id: "pian_alpe", name: "Pian dell'Alpe", lat: 45.0640, lon: 7.0283, exposure: "S", alt: 1990, valley: "Val Chisone" },
-  { id: "roletto", name: "Roletto – Piggi", lat: 44.9325, lon: 7.3110, exposure: "S", alt: 820, valley: "Pinerolese" },
-  { id: "piossasco", name: "Piossasco – Monte S. Giorgio", lat: 44.9967, lon: 7.4480, exposure: "S", alt: 673, valley: "Collina Torinese" },
+  { id: "roletto", name: "Roletto - Piggi", lat: 44.9325, lon: 7.3110, exposure: "S", alt: 820, valley: "Pinerolese" },
+  { id: "piossasco", name: "Piossasco - Monte S. Giorgio", lat: 44.9967, lon: 7.4480, exposure: "S", alt: 673, valley: "Collina Torinese" },
   { id: "truccetti", name: "Truccetti", lat: 45.0797, lon: 7.3420, exposure: "S", alt: 900, valley: "Canavese" },
   { id: "val_torre", name: "Val della Torre", lat: 45.1626, lon: 7.4637, exposure: "S", alt: 970, valley: "Val della Torre" },
-  { id: "rocca_canavese", name: "Rocca Canavese – M. della Neve", lat: 45.3276, lon: 7.5728, exposure: "S", alt: 1100, valley: "Canavese" },
+  { id: "rocca_canavese", name: "Rocca Canavese - M. della Neve", lat: 45.3276, lon: 7.5728, exposure: "S", alt: 1100, valley: "Canavese" },
   { id: "elisabetta", name: "Santa Elisabetta", lat: 45.4183, lon: 7.6419, exposure: "S", alt: 1000, valley: "Canavese" },
   { id: "elisabetta_alto", name: "Santa Elisabetta alto", lat: 45.4402, lon: 7.6480, exposure: "S", alt: 1400, valley: "Canavese" },
   { id: "cavallaria", name: "Monte Cavallaria", lat: 45.5173, lon: 7.7988, exposure: "S", alt: 1430, valley: "Canavese" },
@@ -34,12 +31,29 @@ const DECOLLI = [
 
 function getWeatherIcon(code: number, isDay: number): string {
   const icons: Record<number, string> = {
-    0: isDay ? "☀️" : "🌙", 1: isDay ? "🌤️" : "🌤️", 2: isDay ? "⛅" : "☁️", 3: "☁️",
-    45: "🌫️", 48: "🌫️", 51: "🌦️", 53: "🌧️", 55: "🌧️",
-    61: "🌧️", 63: "🌧️", 65: "🌧️", 71: "❄️", 73: "❄️", 75: "❄️",
-    80: "🌧️", 81: "🌧️", 82: "⛈️", 95: "⛈️", 96: "⛈️", 99: "⛈️",
+    0: isDay ? "\u2600\uFE0F" : "\uD83C\uDF19",
+    1: "\uD83C\uDF24\uFE0F",
+    2: "\u26C5",
+    3: "\u2601\uFE0F",
+    45: "\uD83C\uDF2B\uFE0F",
+    48: "\uD83C\uDF2B\uFE0F",
+    51: "\uD83C\uDF26\uFE0F",
+    53: "\uD83C\uDF27\uFE0F",
+    55: "\uD83C\uDF27\uFE0F",
+    61: "\uD83C\uDF27\uFE0F",
+    63: "\uD83C\uDF27\uFE0F",
+    65: "\uD83C\uDF27\uFE0F",
+    71: "\u2744\uFE0F",
+    73: "\u2744\uFE0F",
+    75: "\u2744\uFE0F",
+    80: "\uD83C\uDF26\uFE0F",
+    81: "\uD83C\uDF27\uFE0F",
+    82: "\u26C8\uFE0F",
+    95: "\u26C8\uFE0F",
+    96: "\u26C8\uFE0F",
+    99: "\u26C8\uFE0F",
   };
-  return icons[code] || (isDay ? "☀️" : "🌙");
+  return icons[code] || (isDay ? "\u2600\uFE0F" : "\uD83C\uDF19");
 }
 
 function getWindDirection(deg: number): string {
@@ -49,8 +63,8 @@ function getWindDirection(deg: number): string {
 }
 
 function getWindArrow(deg: number): string {
-  if (deg == null) return "➡️";
-  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
+  if (deg == null) return "\u27A1\uFE0F";
+  const arrows = ["\u2191", "\u2197", "\u2192", "\u2198", "\u2193", "\u2199", "\u2190", "\u2196"];
   return arrows[Math.round(deg / 45) % 8];
 }
 
@@ -186,86 +200,83 @@ export default function Home() {
       (cloud < 30 ? 2 : cloud < 50 ? 1 : 0) +
       (humidity < 50 ? 1 : 0) +
       (thermalDelta > 10 ? 2 : thermalDelta > 6 ? 1 : 0);
-    if (score >= 6) return { label: "Forte 🔥", color: "#ff1744" };
-    if (score >= 4) return { label: "Media 💪", color: "#ff6d00" };
-    if (score >= 2) return { label: "Debole 🫤", color: "#ffd600" };
-    return { label: "Assente ❄️", color: "#4fc3f7" };
+    if (score >= 6) return { label: "Forte \uD83D\uDD25", color: "#ff1744" };
+    if (score >= 4) return { label: "Media \uD83D\uDCAA", color: "#ff6d00" };
+    if (score >= 2) return { label: "Debole \uD83E\uDD24", color: "#ffd600" };
+    return { label: "Assente \u2744\uFE0F", color: "#4fc3f7" };
   }, [currentData, thermalDelta]);
 
   const weatherAlert = useMemo(() => {
-    if (!currentData) return { level: "info", message: "Caricamento...", icon: "ℹ️" };
+    if (!currentData) return { level: "info", message: "Caricamento...", icon: "\u2139\uFE0F" };
     const alerts: string[] = [];
-    if (currentData.windSpeed > 25) alerts.push("💨 VENTO FORTE");
-    if (currentData.windGust > 35) alerts.push("💨 RAFFICHE PERICOLOSE");
-    if (currentData.precipitation > 0.5) alerts.push("🌧️ PIOGGIA IN CORSO");
-    if (currentData.cloudCover > 80) alerts.push("☁️ CIELO COPERTISSIMO");
-    if (currentData.weatherCode >= 95) alerts.push("⛈️ TEMPORALE IN CORSO");
-    if (thermalDelta > 12) alerts.push("🔥 FORTI TERMICHE");
-    if (currentData.windSpeed < 5) alerts.push("🍃 VENTO DEBOLE");
+    if (currentData.windSpeed > 25) alerts.push("\uD83D\uDCA8 VENTO FORTE");
+    if (currentData.windGust > 35) alerts.push("\uD83D\uDCA8 RAFFICHE PERICOLOSE");
+    if (currentData.precipitation > 0.5) alerts.push("\uD83C\uDF27\uFE0F PIOGGIA IN CORSO");
+    if (currentData.cloudCover > 80) alerts.push("\u2601\uFE0F CIELO COPERTISSIMO");
+    if (currentData.weatherCode >= 95) alerts.push("\u26C8\uFE0F TEMPORALE IN CORSO");
+    if (thermalDelta > 12) alerts.push("\uD83D\uDD25 FORTI TERMICHE");
+    if (currentData.windSpeed < 5) alerts.push("\uD83C\uDF43 VENTO DEBOLE");
     if (alerts.length === 0)
-      return { level: "success", message: "✅ Condizioni ottimali per volare!", icon: "🪂" };
+      return { level: "success", message: "Condizioni ottimali per volare!", icon: "\uD83E\uDE82" };
     if (alerts.some((a) => a.includes("TEMPORALE") || a.includes("PIOGGIA") || a.includes("VENTO FORTE")))
-      return { level: "danger", message: "⚠️ " + alerts.join(" • "), icon: "🚨" };
-    return { level: "warning", message: "⚠️ " + alerts.join(" • "), icon: "⚡" };
+      return { level: "danger", message: alerts.join(" * "), icon: "\uD83D\uDEA8" };
+    return { level: "warning", message: alerts.join(" * "), icon: "\u26A1" };
   }, [currentData, thermalDelta]);
 
   if (loading && !meteoData) {
     return (
-      <div style={s.loadingContainer}>
-        <div style={s.spinner} />
-        <p style={s.loadingText}>🪂 Caricamento previsioni meteo...</p>
-        <p style={s.loadingSub}>Sto cercando le migliori fonti per te</p>
+      <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: "linear-gradient(145deg, #1a2a3a, #0d1b2a)" }}>
+        <div className="w-12 h-12 border-4 border-green-500/20 border-t-green-500 rounded-full animate-spin" />
+        <p className="mt-4 text-lg text-[#e8f0f8]">Caricamento previsioni meteo...</p>
+        <p className="text-sm text-[#8899aa]">Sto cercando le migliori fonti per te</p>
       </div>
     );
   }
 
   if (error && !meteoData) {
     return (
-      <div style={s.errorContainer}>
-        <p style={s.errorText}>❌ {error}</p>
-        <button style={s.retryButton} onClick={loadWeather}>🔄 Riprova</button>
+      <div className="min-h-screen flex flex-col items-center justify-center p-5" style={{ background: "linear-gradient(145deg, #1a2a3a, #0d1b2a)" }}>
+        <p className="text-red-400 text-lg mb-4 text-center">{error}</p>
+        <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg font-semibold" onClick={loadWeather}>
+          Riprova
+        </button>
       </div>
     );
   }
 
   return (
-    <div style={s.app}>
-      <header style={s.header}>
-        <div style={s.logoContainer}>
-          <span style={s.rabbitHop}>🐰</span>
-          <span style={s.paragliderFloat}>🪂</span>
-          <span style={s.logoText}>Meteo dei Conigli</span>
+    <div className="min-h-screen p-4" style={{ background: "linear-gradient(145deg, #1a2a3a 0%, #0d1b2a 100%)", color: "#e8f0f8", fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+      <header className="text-center pb-4 mb-5" style={{ borderBottom: "2px solid rgba(76, 175, 80, 0.3)" }}>
+        <div className="flex items-center justify-center gap-2.5 flex-wrap">
+          <span className="text-4xl inline-block animate-bounce">Meteo dei Conigli</span>
         </div>
-        <p style={s.subtitle}>Previsioni per volo libero • Dati in tempo reale da Open-Meteo</p>
-        <p style={s.updateInfo}>🔄 Aggiornato: {lastUpdate.toLocaleTimeString("it-IT")}</p>
+        <p className="text-sm text-[#8899aa] mt-1">Previsioni per volo libero - Open-Meteo</p>
+        <p className="text-xs text-[#667788]">Aggiornato: {lastUpdate.toLocaleTimeString("it-IT")}</p>
       </header>
 
-      <div style={s.mainGrid}>
-        <div style={s.leftPanel}>
-          <h2 style={s.sectionTitle}>📍 Decolli</h2>
-          <div style={s.scrollList}>
+      <div className="grid gap-4 max-w-7xl mx-auto" style={{ gridTemplateColumns: "minmax(260px, 320px) 1fr" }}>
+        <div className="rounded-2xl p-3 overflow-hidden backdrop-blur" style={{ background: "rgba(255,255,255,0.04)", border: "2px solid rgba(76, 175, 80, 0.25)", height: "calc(100vh - 200px)" }}>
+          <h2 className="text-green-500 font-semibold mb-3 text-lg">Decolli</h2>
+          <div className="overflow-y-auto pr-1" style={{ height: "calc(100% - 44px)" }}>
             {DECOLLI.map((d) => {
               const isSelected = d.id === selectedId;
-              let weatherIcon = "☁️";
-              if (isSelected && currentData)
-                weatherIcon = getWeatherIcon(currentData.weatherCode || 0, currentData.isDay || 1);
               return (
                 <button
                   key={d.id}
                   onClick={() => setSelectedId(d.id)}
+                  className="w-full text-left rounded-xl p-2.5 mb-2 border-2 transition-all"
                   style={{
-                    ...s.siteCard,
-                    borderColor: isSelected ? "#4caf50" : "rgba(255,255,255,0.1)",
                     background: isSelected ? "rgba(76, 175, 80, 0.15)" : "rgba(255,255,255,0.03)",
+                    borderColor: isSelected ? "#4caf50" : "rgba(255,255,255,0.1)",
+                    color: "#e8f0f8",
                   }}
                 >
-                  <div style={s.siteCardTop}>
-                    <span style={s.siteCardName}>{d.name}</span>
-                    <span style={s.siteCardWeather}>{weatherIcon}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-sm">{d.name}</span>
                   </div>
-                  <div style={s.siteCardDetails}>
+                  <div className="flex justify-between text-xs text-[#8899aa] mt-0.5">
                     <span>{d.valley}</span>
-                    <span>{d.exposure} • {d.alt}m</span>
+                    <span>{d.exposure} - {d.alt}m</span>
                   </div>
                 </button>
               );
@@ -273,249 +284,155 @@ export default function Home() {
           </div>
         </div>
 
-        <div style={s.rightPanel}>
-          <div style={s.siteHeader}>
+        <div className="rounded-2xl p-4 overflow-y-auto backdrop-blur" style={{ background: "rgba(255,255,255,0.04)", border: "2px solid rgba(76, 175, 80, 0.25)", maxHeight: "calc(100vh - 200px)" }}>
+          <div className="flex justify-between items-center flex-wrap mb-3 pb-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
             <div>
-              <h2 style={s.siteName}>{site.name}</h2>
-              <span style={s.siteInfo}>{site.exposure} • {site.valley} • {site.alt}m</span>
+              <h2 className="text-2xl font-bold text-[#e8f0f8]">{site.name}</h2>
+              <span className="text-xs text-[#8899aa]">{site.exposure} - {site.valley} - {site.alt}m</span>
             </div>
-            <div style={s.weatherNow}>
-              <span style={s.weatherIconLarge}>
-                {currentData ? getWeatherIcon(currentData.weatherCode || 0, currentData.isDay || 1) : "☁️"}
-              </span>
-              <span style={s.tempNow}>{currentData ? Math.round(currentData.temperature) : "--"}°C</span>
+            <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full" style={{ background: "rgba(76, 175, 80, 0.12)" }}>
+              <span className="text-2xl">{currentData ? getWeatherIcon(currentData.weatherCode || 0, currentData.isDay || 1) : ""}</span>
+              <span className="text-xl font-bold">{currentData ? Math.round(currentData.temperature) : "--"}</span>
             </div>
           </div>
 
-          {currentData && (
-            <div
-              style={{
-                ...s.alertBanner,
-                background:
-                  weatherAlert.level === "danger"
-                    ? "rgba(255, 23, 68, 0.2)"
-                    : weatherAlert.level === "warning"
-                      ? "rgba(255, 152, 0, 0.2)"
-                      : "rgba(76, 175, 80, 0.15)",
-                borderColor:
-                  weatherAlert.level === "danger"
-                    ? "#ff1744"
-                    : weatherAlert.level === "warning"
-                      ? "#ff9800"
-                      : "#4caf50",
-              }}
-            >
-              <span style={s.alertIcon}>{weatherAlert.icon}</span>
-              <span style={s.alertMessage}>{weatherAlert.message}</span>
-            </div>
-          )}
-
-          <div style={s.tabContainer}>
+          <div className="grid gap-1 mb-3" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
             {["meteo", "venti", "termiche", "analisi"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
+                className="text-xs font-medium rounded-t-lg border-0 cursor-pointer transition-all text-center py-2"
                 style={{
-                  ...s.tabButton,
                   background: activeTab === tab ? "rgba(76, 175, 80, 0.2)" : "transparent",
                   borderBottom: activeTab === tab ? "2px solid #4caf50" : "2px solid transparent",
+                  color: "#e8f0f8",
                 }}
               >
-                {tab === "meteo" && "🌤️ Meteo"}
-                {tab === "venti" && "💨 Venti"}
-                {tab === "termiche" && "🔥 Termiche"}
-                {tab === "analisi" && "🤖 Analisi"}
+                {tab}
               </button>
             ))}
           </div>
 
-          <div style={s.daySelector}>
+          <div className="grid gap-2 mb-3" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
             {enrichedDaily.map((day: any, idx: number) => (
               <button
                 key={idx}
                 onClick={() => { setSelectedDay(idx); setSelectedHour(12); }}
+                className="rounded-xl p-2 text-center cursor-pointer transition-all border-2"
                 style={{
-                  ...s.dayButton,
                   background: selectedDay === idx ? "rgba(76, 175, 80, 0.2)" : "rgba(255,255,255,0.05)",
                   borderColor: selectedDay === idx ? "#4caf50" : "rgba(255,255,255,0.1)",
+                  color: "#e8f0f8",
                 }}
               >
-                <div style={s.dayName}>{dateLabels[idx]}</div>
-                <div style={s.dayWeatherIcon}>{getWeatherIcon(day.weatherCode, 1)}</div>
-                <div style={s.dayTemp}>{Math.round(day.tempMax)}°/{Math.round(day.tempMin)}°</div>
-                <div style={s.dayDelta}>Δ{day.thermalDelta}°C</div>
-                <div style={s.dayRain}>{day.precipitationSum > 0 ? `🌧️${Math.round(day.precipitationSum)}mm` : "☀️"}</div>
+                <div className="font-semibold text-xs">{dateLabels[idx]}</div>
+                <div className="text-xl mt-0.5">{getWeatherIcon(day.weatherCode, 1)}</div>
+                <div className="text-sm text-green-500 font-semibold">{Math.round(day.tempMax)}/{Math.round(day.tempMin)}</div>
+                <div className="text-[10px] text-[#8899aa]">D{day.thermalDelta}</div>
               </button>
             ))}
           </div>
 
-          <div style={s.hourSelector}>
-            <span style={s.hourLabel}>⏰ Ora:</span>
-            <input
-              type="range"
-              min="0"
-              max="23"
-              value={String(selectedHour)}
-              onChange={(e) => setSelectedHour(parseInt(e.target.value))}
-              style={s.hourSlider}
-            />
-            <span style={s.hourValue}>{String(selectedHour).padStart(2, "0")}:00</span>
+          <div className="flex items-center gap-3 p-2 mb-3 rounded-lg text-sm" style={{ background: "rgba(255,255,255,0.04)" }}>
+            <span className="text-[#8899aa]">Ora:</span>
+            <input type="range" min="0" max="23" value={String(selectedHour)} onChange={(e) => setSelectedHour(parseInt(e.target.value))} className="flex-1 accent-green-500" />
+            <span className="font-bold min-w-[44px] text-center">{String(selectedHour).padStart(2, "0")}:00</span>
           </div>
 
           {activeTab === "meteo" && currentData && (
-            <div style={s.tabContent}>
-              <div style={s.meteoGrid}>
-                <div style={s.meteoCard}>
-                  <div style={s.meteoLabel}>🌡️ Temperatura</div>
-                  <div style={s.meteoValue}>{Math.round(currentData.temperature)}°C</div>
-                  <div style={s.meteoSub}>Δ {thermalDelta}°C</div>
-                </div>
-                <div style={s.meteoCard}>
-                  <div style={s.meteoLabel}>💧 Umidità</div>
-                  <div style={s.meteoValue}>{Math.round(currentData.humidity)}%</div>
-                  <div style={s.meteoSub}>Rugiada {Math.round(currentData.dewPoint)}°C</div>
-                </div>
-                <div style={s.meteoCard}>
-                  <div style={s.meteoLabel}>☁️ Nuvolosità</div>
-                  <div style={s.meteoValue}>{Math.round(currentData.cloudCover)}%</div>
-                  <div style={s.meteoSub}>
-                    {currentData.cloudCover < 20 ? "☀️ Sereno" : currentData.cloudCover < 50 ? "🌤️ Poco nuvoloso" : "☁️ Nuvoloso"}
-                  </div>
-                </div>
-                <div style={s.meteoCard}>
-                  <div style={s.meteoLabel}>🌧️ Precipitazioni</div>
-                  <div style={s.meteoValue}>{currentData.precipitation === 0 ? "✅ Assenti" : `${currentData.precipitation} mm`}</div>
-                  <div style={s.meteoSub}>{currentData.precipitation === 0 ? "Ideale" : "⚠️ Pioggia"}</div>
-                </div>
-                <div style={s.meteoCard}>
-                  <div style={s.meteoLabel}>🏔️ Base Nuvole</div>
-                  <div style={s.meteoValue}>{Math.round((currentData.temperature - currentData.dewPoint) * 120 + site.alt)}m</div>
-                  <div style={s.meteoSub}>Cloud Base</div>
-                </div>
-                <div style={s.meteoCard}>
-                  <div style={s.meteoLabel}>📈 Plafond</div>
-                  <div style={s.meteoValue}>{Math.round(site.alt + thermalDelta * 100)}m</div>
-                  <div style={s.meteoSub}>Thermal Top</div>
-                </div>
-                <div style={s.meteoCard}>
-                  <div style={s.meteoLabel}>🪂 Galleggiamento</div>
-                  <div style={s.meteoValue}>
-                    {thermalDelta > 10 ? "Eccellente ⭐" : thermalDelta > 6 ? "Buono 👍" : "Limitato 🫤"}
-                  </div>
-                  <div style={s.meteoSub}>Delta {thermalDelta}°C</div>
-                </div>
-                <div style={s.meteoCard}>
-                  <div style={s.meteoLabel}>💨 Vento</div>
-                  <div style={s.meteoValue}>
-                    {getWindArrow(currentData.windDir)} {Math.round(currentData.windSpeed)} km/h
-                  </div>
-                  <div style={s.meteoSub}>
-                    {getWindDirection(currentData.windDir)} • ⚡{Math.round(currentData.windGust)} km/h
-                  </div>
-                </div>
+            <div className="grid gap-2 mb-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}>
+              <div className="text-center p-2.5 rounded-lg" style={{ background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <div className="text-[10px] text-[#8899aa]">Temperatura</div>
+                <div className="font-bold text-lg">{Math.round(currentData.temperature)}</div>
+                <div className="text-[10px] text-[#667788]">D {thermalDelta}</div>
+              </div>
+              <div className="text-center p-2.5 rounded-lg" style={{ background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <div className="text-[10px] text-[#8899aa]">Umidita</div>
+                <div className="font-bold text-lg">{Math.round(currentData.humidity)}%</div>
+                <div className="text-[10px] text-[#667788]">{Math.round(currentData.dewPoint)}</div>
+              </div>
+              <div className="text-center p-2.5 rounded-lg" style={{ background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <div className="text-[10px] text-[#8899aa]">Nuvolosita</div>
+                <div className="font-bold text-lg">{Math.round(currentData.cloudCover)}%</div>
+              </div>
+              <div className="text-center p-2.5 rounded-lg" style={{ background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <div className="text-[10px] text-[#8899aa]">Precipitazioni</div>
+                <div className="font-bold text-lg">{currentData.precipitation === 0 ? "No" : `${currentData.precipitation} mm`}</div>
+              </div>
+              <div className="text-center p-2.5 rounded-lg" style={{ background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <div className="text-[10px] text-[#8899aa]">Base Nuvole</div>
+                <div className="font-bold text-lg">{Math.round((currentData.temperature - currentData.dewPoint) * 120 + site.alt)}m</div>
+              </div>
+              <div className="text-center p-2.5 rounded-lg" style={{ background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <div className="text-[10px] text-[#8899aa]">Plafond</div>
+                <div className="font-bold text-lg">{Math.round(site.alt + thermalDelta * 100)}m</div>
+              </div>
+              <div className="text-center p-2.5 rounded-lg" style={{ background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <div className="text-[10px] text-[#8899aa]">Vento</div>
+                <div className="font-bold text-lg">{Math.round(currentData.windSpeed)} km/h</div>
+                <div className="text-[10px] text-[#667788]">{getWindDirection(currentData.windDir)}</div>
               </div>
             </div>
           )}
 
           {activeTab === "venti" && currentData && (
-            <div style={s.tabContent}>
-              <div style={s.windSection}>
-                <h4 style={s.sectionSubtitle}>💨 Vento a differenti quote</h4>
-                <div style={s.windGrid3}>
-                  <div style={s.windCard}>
-                    <div style={s.windLabel}>10 m</div>
-                    <div style={s.windValue}>
-                      {getWindArrow(currentData.windDir)} {Math.round(currentData.windSpeed)} km/h
-                    </div>
-                    <div style={s.windDir}>{getWindDirection(currentData.windDir)}</div>
-                    <div style={s.windGust}>⚡ {Math.round(currentData.windGust)} km/h</div>
-                  </div>
-                  <div style={s.windCard}>
-                    <div style={s.windLabel}>80 m</div>
-                    <div style={s.windValue}>
-                      {currentData.wind80m
-                        ? `${getWindArrow(currentData.windDir80m)} ${Math.round(currentData.wind80m)}`
-                        : "N/D"}
-                    </div>
-                    <div style={s.windDir}>{currentData.wind80m ? getWindDirection(currentData.windDir80m) : "--"}</div>
-                  </div>
-                  <div style={s.windCard}>
-                    <div style={s.windLabel}>120 m</div>
-                    <div style={s.windValue}>
-                      {currentData.wind120m
-                        ? `${getWindArrow(currentData.windDir120m)} ${Math.round(currentData.wind120m)}`
-                        : "N/D"}
-                    </div>
-                    <div style={s.windDir}>{currentData.wind120m ? getWindDirection(currentData.windDir120m) : "--"}</div>
-                  </div>
+            <div className="mb-3">
+              <h4 className="text-sm text-green-500 font-semibold mb-2.5">Vento a differenti quote</h4>
+              <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+                <div className="text-center p-2.5 rounded-lg" style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div className="text-[10px] text-[#8899aa]">10 m</div>
+                  <div className="font-bold">{Math.round(currentData.windSpeed)} km/h</div>
+                  <div className="text-[10px] text-[#8899aa]">{getWindDirection(currentData.windDir)}</div>
+                </div>
+                <div className="text-center p-2.5 rounded-lg" style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div className="text-[10px] text-[#8899aa]">80 m</div>
+                  <div className="font-bold">{currentData.wind80m ? `${Math.round(currentData.wind80m)} km/h` : "N/D"}</div>
+                  <div className="text-[10px] text-[#8899aa]">{currentData.wind80m ? getWindDirection(currentData.windDir80m) : "--"}</div>
+                </div>
+                <div className="text-center p-2.5 rounded-lg" style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div className="text-[10px] text-[#8899aa]">120 m</div>
+                  <div className="font-bold">{currentData.wind120m ? `${Math.round(currentData.wind120m)} km/h` : "N/D"}</div>
+                  <div className="text-[10px] text-[#8899aa]">{currentData.wind120m ? getWindDirection(currentData.windDir120m) : "--"}</div>
                 </div>
               </div>
             </div>
           )}
 
           {activeTab === "termiche" && currentData && (
-            <div style={s.tabContent}>
-              <div style={s.thermalSection}>
-                <h4 style={s.sectionSubtitle}>🔥 Analisi Termiche</h4>
-                <div style={s.thermalGrid}>
-                  <div style={s.thermalCard}>
-                    <div style={s.thermalLabel}>Temperatura</div>
-                    <div style={s.thermalValue}>{Math.round(currentData.temperature)}°C</div>
-                  </div>
-                  <div style={s.thermalCard}>
-                    <div style={s.thermalLabel}>Delta termico</div>
-                    <div style={s.thermalValue}>{thermalDelta}°C</div>
-                  </div>
-                  <div style={s.thermalCard}>
-                    <div style={s.thermalLabel}>Nuvolosità</div>
-                    <div style={s.thermalValue}>{Math.round(currentData.cloudCover)}%</div>
-                  </div>
-                  <div style={s.thermalCard}>
-                    <div style={s.thermalLabel}>Umidità</div>
-                    <div style={s.thermalValue}>{Math.round(currentData.humidity)}%</div>
-                  </div>
-                  <div style={s.thermalCard}>
-                    <div style={s.thermalLabel}>Base nuvole</div>
-                    <div style={s.thermalValue}>
-                      {Math.round((currentData.temperature - currentData.dewPoint) * 120 + site.alt)}m
-                    </div>
-                  </div>
-                  <div style={s.thermalCard}>
-                    <div style={s.thermalLabel}>Potentiale termico</div>
-                    <div style={s.thermalValue}>{thermalStrength.label}</div>
-                  </div>
+            <div className="mb-3">
+              <h4 className="text-sm text-green-500 font-semibold mb-2.5">Analisi Termiche</h4>
+              <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}>
+                <div className="text-center p-2.5 rounded-lg" style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div className="text-[10px] text-[#8899aa]">Temp</div>
+                  <div className="font-bold">{Math.round(currentData.temperature)}</div>
+                </div>
+                <div className="text-center p-2.5 rounded-lg" style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div className="text-[10px] text-[#8899aa]">Delta</div>
+                  <div className="font-bold">{thermalDelta}</div>
+                </div>
+                <div className="text-center p-2.5 rounded-lg" style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div className="text-[10px] text-[#8899aa]">Termiche</div>
+                  <div className="font-bold" style={{ color: thermalStrength.color }}>{thermalStrength.label}</div>
                 </div>
               </div>
             </div>
           )}
 
           {activeTab === "analisi" && currentData && (
-            <div style={s.tabContent}>
-              <div style={s.analysisSection}>
-                <h4 style={s.sectionSubtitle}>📋 Panoramica Generale</h4>
-                <p style={s.analysisText}>
-                  🌅 La giornata al decollo di {site.name} si presenta con temperatura di{" "}
-                  {Math.round(currentData.temperature)}°C, umidità al {Math.round(currentData.humidity)}% e nuvolosità al{" "}
-                  {Math.round(currentData.cloudCover)}%.
-                  {currentData.windSpeed > 20
-                    ? ` 💨 Vento sostenuto a ${Math.round(currentData.windSpeed)} km/h.`
-                    : ` 🍃 Vento leggero a ${Math.round(currentData.windSpeed)} km/h.`}
-                  {currentData.precipitation > 0
-                    ? ` 🌧️ Possibili precipitazioni (${currentData.precipitation} mm).`
-                    : " ✅ Nessuna precipitazione prevista."}
+            <div className="mb-3">
+              <div className="p-3 rounded-lg mb-2.5" style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <h4 className="text-sm text-green-500 font-semibold mb-2">Panoramica</h4>
+                <p className="text-xs leading-relaxed text-[#d0d8e0]">
+                  Temperatura {Math.round(currentData.temperature)}, umidita {Math.round(currentData.humidity)}%, nuvole {Math.round(currentData.cloudCover)}%.
+                  Vento {Math.round(currentData.windSpeed)} km/h da {getWindDirection(currentData.windDir)}.
                 </p>
               </div>
-              <div style={s.analysisSection}>
-                <h4 style={s.sectionSubtitle}>💡 Consigli per il Volo</h4>
-                <p style={s.analysisText}>
-                  <strong>Valutazione del rischio:</strong>{" "}
-                  {currentData.windSpeed > 25 || currentData.precipitation > 0.5
-                    ? "🔴 ALTO"
-                    : currentData.windSpeed > 18
-                      ? "🟡 MEDIO"
-                      : "🟢 BASSO"}
-                  <br />
-                  <strong>Termiche:</strong> {thermalStrength.label}
+              <div className="p-3 rounded-lg" style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <h4 className="text-sm text-green-500 font-semibold mb-2">Consigli</h4>
+               <dyad-write path="src/pages/Index.tsx" description="Completamento del file Index.tsx dal punto esatto di interruzione">
+<p className="text-xs leading-relaxed text-[#d0d8e0]">
+                  {currentData.windSpeed > 25 ? "Rischio ALTO - vento forte." : currentData.windSpeed > 18 ? "Rischio MEDIO." : "Rischio BASSO - condizioni favorevoli."}
+                  <br />Termiche: {thermalStrength.label}
                 </p>
               </div>
             </div>
@@ -523,308 +440,9 @@ export default function Home() {
         </div>
       </div>
 
-      <footer style={s.footer}>
-        <p style={s.footerText}>🐰 Vola sicuro e divertiti! 🪂 • Dati da Open-Meteo</p>
+      <footer className="text-center mt-5 pt-3 text-xs text-[#667788]" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <p>Vola sicuro e divertiti! - Dati da Open-Meteo</p>
       </footer>
     </div>
   );
-}
-
-const s: Record<string, React.CSSProperties> = {
-  app: {
-    background: "linear-gradient(145deg, #1a2a3a 0%, #0d1b2a 100%)",
-    color: "#e8f0f8",
-    minHeight: "100vh",
-    padding: "16px",
-    fontFamily: "'Segoe UI', system-ui, sans-serif",
-  },
-  loadingContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: "100vh",
-    background: "linear-gradient(145deg, #1a2a3a, #0d1b2a)",
-  },
-  spinner: {
-    width: "48px",
-    height: "48px",
-    border: "4px solid rgba(76, 175, 80, 0.2)",
-    borderTopColor: "#4caf50",
-    borderRadius: "50%",
-    animationName: "spin",
-    animationDuration: "1s",
-    animationTimingFunction: "linear",
-    animationIterationCount: "infinite",
-  },
-  loadingText: { marginTop: "16px", fontSize: "1.2rem", color: "#e8f0f8" },
-  loadingSub: { fontSize: "0.9rem", color: "#8899aa" },
-  errorContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: "100vh",
-    background: "linear-gradient(145deg, #1a2a3a, #0d1b2a)",
-    padding: "20px",
-  },
-  errorText: { color: "#ff6b6b", fontSize: "1.1rem", marginBottom: "16px", textAlign: "center" },
-  retryButton: {
-    background: "#4caf50",
-    color: "#fff",
-    border: "none",
-    padding: "10px 24px",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontSize: "1rem",
-    fontWeight: 600,
-  },
-  headerEcco il completamento del file esattamente da dove mi ero interrotto.
-
-<dyad-write path="src/pages/Index.tsx" description="Continuazione dal punto esatto di interruzione - completamento del file">
-  header: {
-    textAlign: "center",
-    padding: "16px 0",
-    borderBottom: "2px solid rgba(76, 175, 80, 0.3)",
-    marginBottom: "20px",
-  },
-  logoContainer: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "10px",
-    flexWrap: "wrap",
-  },
-  rabbitHop: {
-    fontSize: "2.8rem",
-    display: "inline-block",
-    animationName: "hop",
-    animationDuration: "1.2s",
-    animationTimingFunction: "ease-in-out",
-    animationIterationCount: "infinite",
-  },
-  paragliderFloat: {
-    fontSize: "2.2rem",
-    display: "inline-block",
-    animationName: "float",
-    animationDuration: "2.5s",
-    animationTimingFunction: "ease-in-out",
-    animationIterationCount: "infinite",
-  },
-  logoText: {
-    fontSize: "2.2rem",
-    fontWeight: 800,
-    background: "linear-gradient(135deg, #4caf50, #8bc34a)",
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent",
-    letterSpacing: "-0.5px",
-  },
-  subtitle: { fontSize: "0.9rem", color: "#8899aa", marginTop: "4px" },
-  updateInfo: { fontSize: "0.75rem", color: "#667788", marginTop: "2px" },
-  mainGrid: {
-    display: "grid",
-    gridTemplateColumns: "minmax(260px, 320px) 1fr",
-    gap: "16px",
-    maxWidth: "1440px",
-    margin: "0 auto",
-  },
-  leftPanel: {
-    background: "rgba(255,255,255,0.04)",
-    borderRadius: "16px",
-    border: "2px solid rgba(76, 175, 80, 0.25)",
-    padding: "12px",
-    height: "calc(100vh - 200px)",
-    overflow: "hidden",
-    backdropFilter: "blur(8px)",
-  },
-  sectionTitle: { fontSize: "1.1rem", color: "#4caf50", marginBottom: "12px", fontWeight: 600 },
-  scrollList: { overflowY: "auto", height: "calc(100% - 44px)", paddingRight: "4px" },
-  siteCard: {
-    background: "rgba(255,255,255,0.03)",
-    border: "2px solid rgba(255,255,255,0.1)",
-    borderRadius: "12px",
-    padding: "10px 12px",
-    marginBottom: "8px",
-    cursor: "pointer",
-    width: "100%",
-    textAlign: "left",
-    transition: "all 0.2s ease",
-  },
-  siteCardTop: { display: "flex", justifyContent: "space-between", alignItems: "center" },
-  siteCardName: { fontSize: "0.95rem", fontWeight: 600, color: "#e8f0f8" },
-  siteCardWeather: { fontSize: "1.3rem" },
-  siteCardDetails: {
-    display: "flex",
-    justifyContent: "space-between",
-    fontSize: "0.75rem",
-    color: "#8899aa",
-    marginTop: "2px",
-  },
-  rightPanel: {
-    background: "rgba(255,255,255,0.04)",
-    borderRadius: "16px",
-    border: "2px solid rgba(76, 175, 80, 0.25)",
-    padding: "16px",
-    maxHeight: "calc(100vh - 200px)",
-    overflowY: "auto",
-    backdropFilter: "blur(8px)",
-  },
-  siteHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    marginBottom: "12px",
-    paddingBottom: "12px",
-    borderBottom: "1px solid rgba(255,255,255,0.06)",
-  },
-  siteName: { fontSize: "1.5rem", fontWeight: 700, color: "#e8f0f8" },
-  siteInfo: { fontSize: "0.8rem", color: "#8899aa" },
-  weatherNow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    background: "rgba(76, 175, 80, 0.12)",
-    padding: "6px 14px",
-    borderRadius: "30px",
-  },
-  weatherIconLarge: { fontSize: "2rem" },
-  tempNow: { fontSize: "1.4rem", fontWeight: "bold" },
-  alertBanner: {
-    padding: "10px 14px",
-    borderRadius: "10px",
-    border: "2px solid",
-    marginBottom: "12px",
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-  },
-  alertIcon: { fontSize: "1.4rem" },
-  alertMessage: { fontSize: "0.9rem", fontWeight: 500 },
-  tabContainer: {
-    display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
-    gap: "4px",
-    marginBottom: "12px",
-  },
-  tabButton: {
-    padding: "8px 4px",
-    borderRadius: "8px 8px 0 0",
-    border: "none",
-    color: "#e8f0f8",
-    cursor: "pointer",
-    fontSize: "0.8rem",
-    fontWeight: 500,
-    transition: "all 0.2s ease",
-    textAlign: "center",
-  },
-  daySelector: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gap: "8px",
-    marginBottom: "12px",
-  },
-  dayButton: {
-    border: "2px solid rgba(255,255,255,0.1)",
-    borderRadius: "12px",
-    padding: "8px",
-    cursor: "pointer",
-    textAlign: "center",
-    transition: "all 0.2s ease",
-    background: "rgba(255,255,255,0.03)",
-  },
-  dayName: { fontSize: "0.8rem", fontWeight: 600, color: "#e8f0f8" },
-  dayWeatherIcon: { fontSize: "1.6rem", marginTop: "2px" },
-  dayTemp: { fontSize: "0.95rem", color: "#4caf50", fontWeight: 600 },
-  dayDelta: { fontSize: "0.7rem", color: "#8899aa" },
-  dayRain: { fontSize: "0.7rem", color: "#4fc3f7" },
-  hourSelector: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    padding: "8px 12px",
-    background: "rgba(255,255,255,0.04)",
-    borderRadius: "10px",
-    marginBottom: "12px",
-  },
-  hourLabel: { fontSize: "0.85rem", color: "#8899aa" },
-  hourSlider: { flex: 1, accentColor: "#4caf50", height: "4px" },
-  hourValue: { fontSize: "0.85rem", fontWeight: "bold", minWidth: "44px", textAlign: "center" },
-  tabContent: { animationName: "fadeIn", animationDuration: "0.3s", animationTimingFunction: "ease" },
-  meteoGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
-    gap: "8px",
-    marginBottom: "12px",
-  },
-  meteoCard: {
-    background: "rgba(0,0,0,0.25)",
-    padding: "10px",
-    borderRadius: "10px",
-    border: "1px solid rgba(255,255,255,0.05)",
-    textAlign: "center",
-  },
-  meteoLabel: { fontSize: "0.7rem", color: "#8899aa", marginBottom: "2px" },
-  meteoValue: { fontSize: "1.1rem", fontWeight: "bold", color: "#e8f0f8" },
-  meteoSub: { fontSize: "0.65rem", color: "#667788", marginTop: "2px" },
-  sectionSubtitle: { fontSize: "0.95rem", color: "#4caf50", marginBottom: "10px", fontWeight: 600 },
-  windSection: { marginBottom: "12px" },
-  windGrid3: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" },
-  windCard: {
-    textAlign: "center",
-    padding: "10px",
-    background: "rgba(0,0,0,0.2)",
-    borderRadius: "10px",
-    border: "1px solid rgba(255,255,255,0.05)",
-  },
-  windLabel: { fontSize: "0.7rem", color: "#8899aa" },
-  windValue: { fontSize: "1rem", fontWeight: "bold", color: "#e8f0f8" },
-  windDir: { fontSize: "0.75rem", color: "#8899aa" },
-  windGust: { fontSize: "0.7rem", color: "#ff6b6b" },
-  thermalSection: { marginBottom: "12px" },
-  thermalGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
-    gap: "8px",
-  },
-  thermalCard: {
-    background: "rgba(0,0,0,0.2)",
-    padding: "10px",
-    borderRadius: "10px",
-    textAlign: "center",
-    border: "1px solid rgba(255,255,255,0.05)",
-  },
-  thermalLabel: { fontSize: "0.7rem", color: "#8899aa" },
-  thermalValue: { fontSize: "1rem", fontWeight: "bold", color: "#e8f0f8" },
-  analysisSection: {
-    background: "rgba(0,0,0,0.2)",
-    padding: "12px 14px",
-    borderRadius: "10px",
-    border: "1px solid rgba(255,255,255,0.05)",
-    marginBottom: "10px",
-  },
-  analysisText: { fontSize: "0.85rem", lineHeight: "1.6", color: "#d0d8e0" },
-  footer: {
-    textAlign: "center",
-    marginTop: "20px",
-    padding: "12px 0",
-    borderTop: "1px solid rgba(255,255,255,0.06)",
-  },
-  footerText: { fontSize: "0.75rem", color: "#667788" },
-};
-
-if (typeof document !== "undefined") {
-  const styleEl = document.createElement("style");
-  styleEl.textContent = `
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes hop { 0%, 100% { transform: translateY(0px) scale(1); } 50% { transform: translateY(-8px) scale(1.05); } }
-    @keyframes float { 0%, 100% { transform: translateY(0px) rotate(-2deg); } 50% { transform: translateY(-6px) rotate(2deg); } }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); border-radius: 4px; }
-    ::-webkit-scrollbar-thumb { background: rgba(76, 175, 80, 0.3); border-radius: 4px; }
-    * { scrollbar-width: thin; scrollbar-color: rgba(76, 175, 80, 0.3) transparent; }
-    @media (max-width: 768px) { .mainGrid { grid-template-columns: 1fr !important; } .leftPanel { height: auto !important; max-height: 260px !important; } .rightPanel { max-height: none !important; } }
-  `;
-  document.head.appendChild(styleEl);
 }
