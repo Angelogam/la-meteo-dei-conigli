@@ -20,7 +20,7 @@ interface TermicheTabProps {
   fetchGiorno?: (giorno: number) => void;
 }
 
-export const TermicheTab: React.FC<TermicheTabProps> = ({
+const TermicheTab: React.FC<TermicheTabProps> = ({
   dayData,
   altitude,
   selectedHour,

@@ -8,11 +8,6 @@ import { useMemo } from "react";
 import { Sun, Cloud, Wind, Droplets, Gauge, Thermometer, TrendingUp } from "lucide-react";
 import GraficoTermiche from "@/components/GraficoTermiche";
 
-interface DayLabel {
-  value: number;
-  label: string;
-}
-
 interface MeteoTabProps {
   current: HourData;
   dayIdx: number;
@@ -28,8 +23,6 @@ interface MeteoTabProps {
   startHour?: number;
   endHour?: number;
   termicheHourly?: { hour: number; termiche: { base: number; top: number; forza: number; rateo: number; label: string; colore: string } }[];
-  giorniAvanti?: DayLabel[];
-  fetchGiorno?: (giorno: number) => void;
 }
 
 export function MeteoTab({
@@ -47,8 +40,6 @@ export function MeteoTab({
   startHour = 9,
   endHour = 19,
   termicheHourly,
-  giorniAvanti = [],
-  fetchGiorno,
 }: MeteoTabProps) {
   const hours = useMemo(() => {
     const arr: { value: number; label: string }[] = [];
@@ -148,30 +139,6 @@ export function MeteoTab({
           </div>
         </CardContent>
       </Card>
-
-      {/* PULSANTI GIORNI DA DOMANI - sopra il grafico termiche */}
-      {giorniAvanti.length > 0 && (
-        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
-          {giorniAvanti.map((dl, i) => (
-            <button
-              key={i}
-              onClick={() => {
-                onDaySelect(dl.value);
-                if (dl.value > 0 && fetchGiorno) {
-                  fetchGiorno(dl.value);
-                }
-              }}
-              className={`shrink-0 px-3.5 py-2 text-xs font-bold rounded-xl border-2 transition-all duration-200 whitespace-nowrap ${
-                dayIdx === dl.value
-                  ? "bg-blue-600 text-white border-blue-400 shadow-lg shadow-blue-500/20 scale-105"
-                  : "bg-slate-700/60 text-slate-300 border-slate-500/50 hover:bg-slate-600 hover:text-white hover:border-slate-400"
-              }`}
-            >
-              {dl.label}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Grafico termiche completo — quote, venti, forza nell'arco della giornata */}
       <Card className="border border-amber-600/50 bg-slate-800/80 shadow-lg overflow-hidden">
