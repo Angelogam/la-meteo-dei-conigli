@@ -5,51 +5,21 @@ import type { HourData, MeteoData, DailyData, ThermalData } from "@/types/meteo"
 const BASE_URL = "https://api.open-meteo.com/v1/forecast";
 
 export async function fetchMeteo(lat: number, lon: number): Promise<MeteoData> {
-  const hourlyParams = [
-    "temperature_2m",
-    "apparent_temperature",
-    "relative_humidity_2m",
-    "dew_point_2m",
-    "precipitation",
-    "weather_code",
-    "cloud_cover",
-    "pressure_msl",
-    "wind_speed_10m",
-    "wind_direction_10m",
-    "wind_gusts_10m",
-    "uv_index",
-    "is_day",
-  ].join(",");
-
-  const dailyParams = [
-    "temperature_2m_max",
-    "temperature_2m_min",
-    "weather_code",
-    "precipitation_sum",
-  ].join(",");
-
   const params = new URLSearchParams({
     latitude: lat.toString(),
     longitude: lon.toString(),
-    hourly: hourlyParams,
-    daily: dailyParams,
+    hourly: "temperature_2m,apparent_temperature,relative_humidity_2m,dew_point_2m,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,uv_index,is_day",
+    daily: "temperature_2m_max,temperature_2m_min,weather_code,precipitation_sum",
     timezone: "Europe/Rome",
     forecast_days: "4",
   });
 
   const url = `${BASE_URL}?${params.toString()}`;
-  console.log("Fetching:", url);
-  
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Errore HTTP ${res.status}`);
   const raw = await res.json();
   
-  console.log("Raw data:", raw);
-
-  // Parse orari – array completo (tutte le ore di tutti i giorni)
   const times: string[] = raw.hourly.time;
-  console.log("Number of hourly entries:", times.length);
-  
   const hourly: HourData[] = times.map((t: string, i: number) => ({
     time: new Date(t),
     temperature: raw.hourly.temperature_2m[i],
@@ -69,7 +39,6 @@ export async function fetchMeteo(lat: number, lon: number): Promise<MeteoData> {
     isDay: raw.hourly.is_day?.[i] === 1,
   }));
 
-  // Parse giornalieri
   const dTimes: string[] = raw.daily.time;
   const daily: DailyData[] = dTimes.map((t: string, i: number) => ({
     date: new Date(t),
@@ -82,7 +51,6 @@ export async function fetchMeteo(lat: number, lon: number): Promise<MeteoData> {
   return { hourly, daily, lat, lon };
 }
 
-/** Filtra solo le ore di volo (9–19) */
 export function filterFlightHours(data: HourData[]): HourData[] {
   return data.filter((h) => {
     const hh = h.time.getHours();
@@ -90,7 +58,6 @@ export function filterFlightHours(data: HourData[]): HourData[] {
   });
 }
 
-/** Arricchisce i dati giornalieri con medie orarie */
 export function enrDaily(daily: DailyData[], hourly: HourData[]) {
   return daily.map((d) => {
     const dayHours = hourly.filter(
@@ -112,7 +79,6 @@ export function enrDaily(daily: DailyData[], hourly: HourData[]) {
   });
 }
 
-/** Calcola dati termici approssimati */
 export function calcThermal(dayData: HourData[], _siteAlt: number): ThermalData | null {
   if (!dayData.length) return null;
   const avgTemp = dayData.reduce((s, h) => s + h.temperature, 0) / dayData.length;
@@ -138,7 +104,6 @@ export function calcThermal(dayData: HourData[], _siteAlt: number): ThermalData 
   return { cloudBase, thermalTop, soarIdx };
 }
 
-/** Icona meteo WMO (emoji) */
 export function wic(code: number, _emoji?: boolean): string {
   if (code === 0) return "☀️";
   if (code <= 3) return "🌤️";
@@ -150,7 +115,6 @@ export function wic(code: number, _emoji?: boolean): string {
   return "⛈️";
 }
 
-/** Direzione vento in testo */
 export function wd(deg: number): string {
   const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
   return dirs[Math.round(deg / 22.5) % 16];

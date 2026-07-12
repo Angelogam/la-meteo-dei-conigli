@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { ErrorScreen } from "@/components/ErrorScreen";
 import { TabNav, type Tab } from "@/components/TabNav";
@@ -17,8 +17,8 @@ import { fetchMeteo, calcThermal } from "@/utils/meteo";
 import { generaAnalisiReale } from "@/utils/analisi";
 import { generateAiAnalysis } from "@/utils/meteoAI";
 import { generaTermicheOrarie } from "@/utils/termiche";
-import { DECOLLI, type Decollo } from "@/data/decolli";
-import type { HourData, AiAnalysis, WindProfile } from "@/types/meteo";
+import { DECOLLI } from "@/data/decolli";
+import type { HourData, AiAnalysis } from "@/types/meteo";
 import { Menu } from "lucide-react";
 
 function useRealTimeHour(): number {
@@ -33,12 +33,12 @@ function useRealTimeHour(): number {
 const nomiGiorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
 const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
 
-interface RawMeteo {
+interface AllData {
   hourly: HourData[];
 }
 
 const Index = () => {
-  const [rawData, setRawData] = useState<Record<string, RawMeteo>>({});
+  const [allData, setAllData] = useState<Record<string, AllData>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [siteId, setSiteId] = useState(DECOLLI[0]?.id || "");
@@ -49,7 +49,6 @@ const Index = () => {
   const [showDayDetail, setShowDayDetail] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Carica TUTTI i decolli una volta sola
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -57,13 +56,13 @@ const Index = () => {
 
     const doFetch = async () => {
       try {
-        const results: Record<string, RawMeteo> = {};
+        const results: Record<string, AllData> = {};
         for (const site of DECOLLI) {
           const data = await fetchMeteo(site.lat, site.lon);
           results[site.id] = { hourly: data.hourly };
         }
         if (active) {
-          setRawData(results);
+          setAllData(results);
           setLoading(false);
         }
       } catch (err: any) {
@@ -79,18 +78,16 @@ const Index = () => {
   }, []);
 
   const selectedSite = DECOLLI.find((s) => s.id === siteId) || DECOLLI[0];
-  const currentRaw = rawData[siteId]?.hourly || [];
+  const hourlyRaw = allData[siteId]?.hourly || [];
 
-  // Target date per il giorno selezionato
   const targetDate = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + dayIdx);
     return d;
   }, [dayIdx]);
 
-  // Filtra i dati per il giorno e le ore 9-19
-  const dayData: HourData[] = useMemo(() => {
-    const filtered = currentRaw.filter((h) => {
+  const dayData = useMemo((): HourData[] => {
+    return hourlyRaw.filter((h) => {
       const hd = h.time;
       const hh = hd.getHours();
       return (
@@ -100,40 +97,33 @@ const Index = () => {
         hh >= 9 && hh <= 19
       );
     });
-    return filtered;
-  }, [currentRaw, targetDate]);
+  }, [hourlyRaw, targetDate]);
 
-  // Ora corrente selezionata
   const currentHourData = useMemo((): HourData | null => {
     return dayData.find((h) => h.time.getHours() === hour) || null;
   }, [dayData, hour]);
 
-  // Weather map per sidebar
   const weatherMap: Record<string, HourData> = useMemo(() => {
     const map: Record<string, HourData> = {};
-    for (const [id, raw] of Object.entries(rawData)) {
-      const found = raw.hourly.find((h) => {
+    for (const [id, data] of Object.entries(allData)) {
+      const found = data.hourly.find((h) => {
         const hh = h.time.getHours();
-        // Cerca l'ora corrente nel giorno corrente
         if (dayIdx === 0) return hh === hour;
-        // Per simplicità, cerca ora 12 per altri giorni
         return hh === 12;
       });
       if (found) map[id] = found;
     }
     return map;
-  }, [rawData, hour, dayIdx]);
+  }, [allData, hour, dayIdx]);
 
-  // Etichette giorni
   const allDaysLabels = useMemo(() => {
     const labels: { value: number; label: string }[] = [];
     for (let i = 0; i < 4; i++) {
       const d = new Date();
       d.setDate(d.getDate() + i);
-      const nomeGiorno = i === 0 ? "Oggi" : nomiGiorni[d.getDay()];
       labels.push({
         value: i,
-        label: i === 0 ? "Oggi" : `${nomeGiorno} ${d.getDate()} ${mesi[d.getMonth()]}`,
+        label: i === 0 ? "Oggi" : `${nomiGiorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`,
       });
     }
     return labels;
@@ -141,11 +131,9 @@ const Index = () => {
 
   const selectedDayLabel = useMemo(() => {
     const d = targetDate;
-    const nomeGiorno = nomiGiorni[d.getDay()];
-    return `${nomeGiorno} ${d.getDate()} ${mesi[d.getMonth()]}`;
+    return `${nomiGiorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
   }, [targetDate]);
 
-  // EnrichedDaily per il giorno selezionato
   const enrichedForDay = useMemo(() => {
     if (!dayData.length) return [];
     const maxTemp = Math.max(...dayData.map(h => h.temperature));
