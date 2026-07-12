@@ -18,7 +18,7 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDecolloList, setShowDecolloList] = useState(false);
-  const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
+  const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
 
   const loadMeteo = useCallback(async (decollo: typeof DECOLLI[0]) => {
     setLoading(true);
@@ -44,7 +44,7 @@ export default function Index() {
   const handleDecolloChange = (decollo: typeof DECOLLI[0]) => {
     setSelectedDecollo(decollo);
     setShowDecolloList(false);
-    setSelectedDayIndex(null);
+    setSelectedDayIndex(0);
   };
 
   const flightHours = meteoData ? filterFlightHours(meteoData.hourly) : [];
@@ -67,6 +67,10 @@ export default function Index() {
       return h.time.getDate() === targetDate.getDate() && h.time.getMonth() === targetDate.getMonth();
     });
   };
+
+  const dayData = getDayHours(selectedDayIndex);
+  const daily = enrichedDaily[selectedDayIndex];
+  const dayThermal = dayData.length > 0 ? calcThermal(dayData, selectedDecollo.altitude) : null;
 
   if (loading) return <LoadingScreen />;
   if (error) return <ErrorScreen message={error} onRetry={() => loadMeteo(selectedDecollo)} />;
@@ -152,106 +156,86 @@ export default function Index() {
           </div>
         </div>
 
-        {/* Day Tabs - Selezionabili */}
+        {/* Day Tabs - Solo decorativi (non cliccabili) */}
         <div className="mb-5">
           <h3 className="text-sm font-semibold mb-3 text-gray-300">Giorni</h3>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {enrichedDaily.slice(0, 7).map((day, i) => (
-              <button
+              <div
                 key={i}
-                onClick={() => setSelectedDayIndex(selectedDayIndex === i ? null : i)}
-                className={`flex-shrink-0 px-3 py-2 rounded-xl text-xs font-medium transition-all border ${
-                  selectedDayIndex === i
-                    ? "bg-green-500/20 border-green-400 text-green-300"
-                    : "bg-[#1a2332] border-white/10 text-gray-400 hover:border-white/30 cursor-pointer"
-                }`}
+                className="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-medium border bg-[#1a2332] border-white/10 text-gray-400"
               >
                 <div>{dayLabels[i]}</div>
                 <div className="mt-1 flex items-center gap-1 justify-center">
                   <WeatherIcon code={day.weatherCode} size={16} />
                   <span>{Math.round(day.tempMax)}°</span>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         </div>
 
-        {/* Day Detail Section - solo se selectedDayIndex non è null */}
-        {selectedDayIndex !== null && (() => {
-          const dayData = getDayHours(selectedDayIndex);
-          const daily = enrichedDaily[selectedDayIndex];
-          const dayThermal = dayData.length > 0 ? calcThermal(dayData, selectedDecollo.altitude) : null;
-          if (!dayData.length || !daily) return null;
+        {/* Sezione Dati Meteo - include dettaglio giorno + termiche */}
+        {dayData.length > 0 && daily && (
+          <div className="mb-5 p-4 rounded-2xl bg-gradient-to-br from-[#1a2332] to-[#0f1923] border border-green-500/20">
+            <h3 className="font-semibold text-sm text-green-300 mb-3">
+              Dettaglio — {dayLabels[selectedDayIndex]}
+            </h3>
 
-          return (
-            <div className="mb-5 p-4 rounded-2xl bg-gradient-to-br from-[#1a2332] to-[#0f1923] border border-green-500/20">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-sm text-green-300">
-                  Dettaglio — {dayLabels[selectedDayIndex]}
-                </h3>
-                <button
-                  onClick={() => setSelectedDayIndex(null)}
-                  className="text-xs text-gray-500 hover:text-white transition-colors"
-                >
-                  Chiudi
-                </button>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <div className="bg-slate-700/50 rounded-xl p-3 text-center">
+                <Thermometer className="w-4 h-4 text-amber-400 mx-auto mb-1" />
+                <div className="text-lg font-bold text-white">{Math.round(daily.tempMax)}°</div>
+                <div className="text-[10px] text-slate-400">Max / {Math.round(daily.tempMin)}° Min</div>
               </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                <div className="bg-slate-700/50 rounded-xl p-3 text-center">
-                  <Thermometer className="w-4 h-4 text-amber-400 mx-auto mb-1" />
-                  <div className="text-lg font-bold text-white">{Math.round(daily.tempMax)}°</div>
-                  <div className="text-[10px] text-slate-400">Max / {Math.round(daily.tempMin)}° Min</div>
+              <div className="bg-slate-700/50 rounded-xl p-3 text-center">
+                <Wind className="w-4 h-4 text-blue-400 mx-auto mb-1" />
+                <div className="text-lg font-bold text-white">
+                  {daily.avgWind !== undefined ? Math.round(daily.avgWind) : "--"} km/h
                 </div>
-                <div className="bg-slate-700/50 rounded-xl p-3 text-center">
-                  <Wind className="w-4 h-4 text-blue-400 mx-auto mb-1" />
-                  <div className="text-lg font-bold text-white">
-                    {daily.avgWind !== undefined ? Math.round(daily.avgWind) : "--"} km/h
-                  </div>
-                  <div className="text-[10px] text-slate-400">
-                    Media {(daily.maxWind !== undefined ? Math.round(daily.maxWind) : "--")} max
-                  </div>
+                <div className="text-[10px] text-slate-400">
+                  Media {(daily.maxWind !== undefined ? Math.round(daily.maxWind) : "--")} max
                 </div>
-                {daily.precipitationSum > 0 && (
-                  <div className="bg-slate-700/50 rounded-xl p-3 text-center">
-                    <CloudRain className="w-4 h-4 text-blue-300 mx-auto mb-1" />
-                    <div className="text-lg font-bold text-white">{daily.precipitationSum} mm</div>
-                    <div className="text-[10px] text-slate-400">Pioggia</div>
-                  </div>
-                )}
-                {dayThermal && (
-                  <div className="bg-slate-700/50 rounded-xl p-3 text-center">
-                    <ArrowUp className="w-4 h-4 text-emerald-400 mx-auto mb-1" />
-                    <div className="text-lg font-bold text-white">{dayThermal.cloudBase} m</div>
-                    <div className="text-[10px] text-slate-400">Base nuvole</div>
-                  </div>
-                )}
               </div>
-
-              <div className="space-y-1.5">
-                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Previsioni orarie</h4>
-                {dayData.map((h) => (
-                  <div
-                    key={h.time.getHours()}
-                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 bg-slate-700/30 border border-slate-600/50 text-left"
-                  >
-                    <div className="w-12 shrink-0 text-center">
-                      <span className="text-xs font-bold text-white">
-                        {h.time.getHours().toString().padStart(2, "0")}:00
-                      </span>
-                    </div>
-                    <span className="text-lg shrink-0">{wic(h.weatherCode, true)}</span>
-                    <div className="flex-1 grid grid-cols-3 gap-2 text-[11px] text-slate-300">
-                      <span>{Math.round(h.temperature)}°C</span>
-                      <span>{Math.round(h.windSpeed)} km/h</span>
-                      <span>{h.humidity}%</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {daily.precipitationSum > 0 && (
+                <div className="bg-slate-700/50 rounded-xl p-3 text-center">
+                  <CloudRain className="w-4 h-4 text-blue-300 mx-auto mb-1" />
+                  <div className="text-lg font-bold text-white">{daily.precipitationSum} mm</div>
+                  <div className="text-[10px] text-slate-400">Pioggia</div>
+                </div>
+              )}
+              {dayThermal && (
+                <div className="bg-slate-700/50 rounded-xl p-3 text-center">
+                  <ArrowUp className="w-4 h-4 text-emerald-400 mx-auto mb-1" />
+                  <div className="text-lg font-bold text-white">{dayThermal.cloudBase} m</div>
+                  <div className="text-[10px] text-slate-400">Base nuvole</div>
+                </div>
+              )}
             </div>
-          );
-        })()}
+
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Previsioni orarie</h4>
+              {dayData.map((h) => (
+                <div
+                  key={h.time.getHours()}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 bg-slate-700/30 border border-slate-600/50 text-left"
+                >
+                  <div className="w-12 shrink-0 text-center">
+                    <span className="text-xs font-bold text-white">
+                      {h.time.getHours().toString().padStart(2, "0")}:00
+                    </span>
+                  </div>
+                  <span className="text-lg shrink-0">{wic(h.weatherCode, true)}</span>
+                  <div className="flex-1 grid grid-cols-3 gap-2 text-[11px] text-slate-300">
+                    <span>{Math.round(h.temperature)}°C</span>
+                    <span>{Math.round(h.windSpeed)} km/h</span>
+                    <span>{h.humidity}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Termiche */}
         {thermal && (
