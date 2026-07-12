@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 
 // ----------------------------------------------------------------
 // 1. CONFIGURAZIONE DECOLLI
@@ -72,24 +72,6 @@ function getWindArrow(deg: number): string {
   if (deg == null) return '➡️';
   const arrows = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'];
   return arrows[Math.round(deg / 45) % 8];
-}
-
-function getWindProfile(surfaceWind: number, surfaceDir: number): Array<{alt: number; speed: number; dir: number; dirName: string}> {
-  const profile = [];
-  for (let alt = 400; alt <= 4000; alt += 250) {
-    const factor = 1 + (alt - 10) * 0.0025;
-    let speed = Math.min(surfaceWind * factor, surfaceWind * 3.5);
-    let dirOffset = (alt - 10) / 1000 * 15;
-    dirOffset = Math.min(dirOffset, 45);
-    let dir = (surfaceDir + dirOffset) % 360;
-    profile.push({
-      alt,
-      speed: Math.round(speed * 10) / 10,
-      dir: Math.round(dir),
-      dirName: getWindDirection(dir)
-    });
-  }
-  return profile;
 }
 
 // ----------------------------------------------------------------
@@ -234,18 +216,6 @@ export default function Home() {
     d.date.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })
   );
 
-  const stabilityIndex = useMemo(() => {
-    if (!currentData) return { label: '--', color: '#888' };
-    const temp = currentData.temperature;
-    const humidity = currentData.humidity;
-    const cloud = currentData.cloudCover;
-    const cape = Math.max(0, (temp - 15) * 50 + (50 - humidity) * 10 - cloud * 2);
-    if (cape > 1500) return { label: 'Instabile ⚠️', color: '#ff1744' };
-    if (cape > 800) return { label: 'Moderato 🟡', color: '#ff9800' };
-    if (cape > 300) return { label: 'Stabile 🟢', color: '#4caf50' };
-    return { label: 'Molto stabile ✅', color: '#4fc3f7' };
-  }, [currentData]);
-
   const thermalStrength = useMemo(() => {
     if (!currentData) return { label: '--', color: '#888' };
     const temp = currentData.temperature;
@@ -280,11 +250,6 @@ export default function Home() {
     }
     return { level: 'warning', message: '⚠️ ' + alerts.join(' • '), icon: '⚡' };
   }, [currentData, thermalDelta]);
-
-  const windProfile = useMemo(() => {
-    if (!currentData) return [];
-    return getWindProfile(currentData.windSpeed, currentData.windDir);
-  }, [currentData]);
 
   if (loading && !meteoData) {
     return (
@@ -531,27 +496,6 @@ export default function Home() {
               </div>
 
               <div style={styles.windProfileSection}>
-                <h4 style={styles.sectionSubtitle}>📊 Profilo Vento (400m - 4000m)</h4>
-                <div style={styles.windProfileContainer}>
-                  {windProfile.map((level, idx) => {
-                    const maxSpeed = currentData.windSpeed * 3.5;
-                    const width = Math.min(100, (level.speed / maxSpeed) * 100);
-                    return (
-                      <div key={idx} style={styles.windProfileRow}>
-                        <span style={styles.windProfileAlt}>{level.alt === 10 ? 'Sup' : `${level.alt}m`}</span>
-                        <div style={styles.windProfileBarWrap}>
-                          <div style={{...styles.windProfileBar, width: `${width}%`, background: `linear-gradient(to right, ${width < 30 ? '#4caf50' : width < 50 ? '#8bc34a' : width < 70 ?<dyad-write path="src/pages/Index.tsx" description="Continuazione del file dal punto esatto in cui si era interrotto">
-                            <span style={styles.windProfileSpeed}>{level.speed} km/h</span>
-                          </div>
-                        </div>
-                        <span style={styles.windProfileDir}>{getWindArrow(level.dir)} {level.dirName}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div style={styles.hourlyWindSection}>
                 <h4 style={styles.sectionSubtitle}>📊 Vento orario (9:00 - 19:00)</h4>
                 <div style={styles.hourlyWindGrid}>
                   {Array.from({ length: 11 }, (_, i) => i + 9).map(hour => {
@@ -601,7 +545,7 @@ export default function Home() {
                   </div>
                   <div style={styles.thermalCard}>
                     <div style={styles.thermalLabel}>Plafond</div>
-                    <div style={styles.thermalValue}>{Math.round(site.alt + (thermalDelta * 100))}m</div>
+                    <div style={styles.<dyad-write path="src/pages/Index.tsx" description="Completamento del file Index.tsx dal punto esatto in cui si era interrotto">
                   </div>
                   <div style={styles.thermalCard}>
                     <div style={styles.thermalLabel}>Galleggiamento</div>
@@ -947,27 +891,6 @@ const styles: { [key: string]: React.CSSProperties } = {
   windDir: { fontSize: '0.75rem', color: '#8899aa' },
   windGust: { fontSize: '0.7rem', color: '#ff6b6b' },
   windProfileSection: { marginBottom: '12px' },
-  windProfileContainer: {
-    background: 'rgba(0,0,0,0.2)',
-    padding: '8px',
-    borderRadius: '10px',
-    maxHeight: '200px',
-    overflowY: 'auto',
-  },
-  windProfileRow: {
-    display: 'grid',
-    gridTemplateColumns: '50px 1fr 50px',
-    gap: '6px',
-    alignItems: 'center',
-    padding: '2px 4px',
-    fontSize: '0.7rem',
-  },
-  windProfileAlt: { color: '#8899aa' },
-  windProfileBarWrap: { height: '16px', background: 'rgba(255,255,255,0.06)', borderRadius: '10px', overflow: 'hidden' },
-  windProfileBar: { height: '100%', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '4px', minWidth: '30px' },
-  windProfileSpeed: { fontSize: '0.55rem', color: '#fff', fontWeight: 'bold', textShadow: '0 1px 2px rgba(0,0,0,0.5)' },
-  windProfileDir: { color: '#8899aa', textAlign: 'center' },
-  hourlyWindSection: { marginBottom: '12px' },
   hourlyWindGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(11, 1fr)',
