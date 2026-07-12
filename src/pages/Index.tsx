@@ -13,7 +13,7 @@ import SiteHeader from "@/components/SiteHeader";
 import DayForecastPopup from "@/components/DayForecastPopup";
 import { DayDetailPopup } from "@/components/DayDetailPopup";
 import SidebarDecolli from "@/components/SidebarDecolli";
-import { fetchMeteo, enrDaily, calcThermal } from "@/utils/meteo";
+import { fetchMeteo, calcThermal } from "@/utils/meteo";
 import { generaAnalisiReale } from "@/utils/analisi";
 import { generateAiAnalysis } from "@/utils/meteoAI";
 import { generaTermicheOrarie } from "@/utils/termiche";
@@ -43,16 +43,14 @@ function useRealTimeHour(): number {
 const nomiGiorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
 const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
 
-/** Filtra gli HourData per una data specifica E ore 9-19 */
-function filterByDateAndHours(data: HourData[], targetDate: Date): HourData[] {
+/** Filtra gli HourData per una data specifica (tutte le ore) */
+function filterByDate(data: HourData[], targetDate: Date): HourData[] {
   return data.filter((h) => {
     const hd = h.time;
-    const hh = hd.getHours();
     return (
       hd.getDate() === targetDate.getDate() &&
       hd.getMonth() === targetDate.getMonth() &&
-      hd.getFullYear() === targetDate.getFullYear() &&
-      hh >= 9 && hh <= 19
+      hd.getFullYear() === targetDate.getFullYear()
     );
   });
 }
@@ -148,8 +146,13 @@ const Index = () => {
   }, [dayIdx]);
 
   // DATI per il giorno selezionato: filtra direttamente da hourlyRaw!
+  // Poi filtra ore 9-19
   const dayData = useMemo((): HourData[] => {
-    return filterByDateAndHours(hourlyRaw, targetDate);
+    const filteredByDate = filterByDate(hourlyRaw, targetDate);
+    return filteredByDate.filter((h) => {
+      const hh = h.time.getHours();
+      return hh >= 9 && hh <= 19;
+    });
   }, [hourlyRaw, targetDate]);
 
   // Current hour: l'ora selezionata all'interno del dayData

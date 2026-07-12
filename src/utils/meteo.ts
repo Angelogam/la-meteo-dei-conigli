@@ -37,12 +37,19 @@ export async function fetchMeteo(lat: number, lon: number): Promise<MeteoData> {
     forecast_days: "4",
   });
 
-  const res = await fetch(`${BASE_URL}?${params}`);
+  const url = `${BASE_URL}?${params.toString()}`;
+  console.log("Fetching:", url);
+  
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`Errore HTTP ${res.status}`);
   const raw = await res.json();
+  
+  console.log("Raw data:", raw);
 
   // Parse orari – array completo (tutte le ore di tutti i giorni)
   const times: string[] = raw.hourly.time;
+  console.log("Number of hourly entries:", times.length);
+  
   const hourly: HourData[] = times.map((t: string, i: number) => ({
     time: new Date(t),
     temperature: raw.hourly.temperature_2m[i],
