@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ArrowUpDown, Thermometer, Droplets, Wind, Sun, CloudSun, Cloud, CloudRain, CloudSnow, CloudLightning, Navigation, MapPin, Search, Gauge, AlertTriangle, Info, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { Thermometer, Wind, CloudSun, Gauge, MapPin, Sun, Navigation, AlertTriangle, Info, ChevronDown } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { ErrorScreen } from "@/components/ErrorScreen";
 import { WeatherIcon } from "@/components/WeatherIcon";
 import { DECOLLI } from "@/data/decolli";
-import { fetchMeteo, fetchWindProfiles, filterFlightHours, enrDaily, calcThermal, wd, wic } from "@/utils/meteo";
-import type { MeteoData, HourData, DailyData, EnrichedDaily, ThermalData, WindProfile, AiAnalysis } from "@/types/meteo";
+import { fetchMeteo, fetchWindProfiles, filterFlightHours, enrDaily, calcThermal, wd } from "@/utils/meteo";
+import type { MeteoData, ThermalData, WindProfile } from "@/types/meteo";
 
 export default function Index() {
   const [selectedDecollo, setSelectedDecollo] = useState(DECOLLI[0]);
@@ -18,7 +18,6 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDecolloList, setShowDecolloList] = useState(false);
-  const [aiAnalysis, setAiAnalysis] = useState<AiAnalysis | null>(null);
 
   const loadMeteo = useCallback(async (decollo: typeof DECOLLI[0]) => {
     setLoading(true);
@@ -49,19 +48,12 @@ export default function Index() {
   const flightHours = meteoData ? filterFlightHours(meteoData.hourly) : [];
   const enrichedDaily = meteoData ? enrDaily(meteoData.daily, meteoData.hourly) : [];
 
-  const getThermal = (): ThermalData | null => {
-    if (!flightHours.length) return null;
-    return calcThermal(flightHours, selectedDecollo.altitude);
-  };
-
-  const thermal = getThermal();
+  const thermal: ThermalData | null = flightHours.length > 0 ? calcThermal(flightHours, selectedDecollo.altitude) : null;
 
   const todayHours = flightHours.filter((h) => {
     const today = new Date();
     return h.time.getDate() === today.getDate() && h.time.getMonth() === today.getMonth();
   });
-
-  const now = new Date();
 
   if (loading) return <LoadingScreen />;
   if (error) return <ErrorScreen message={error} onRetry={() => loadMeteo(selectedDecollo)} />;
@@ -69,7 +61,6 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-[#0d1117] text-white">
       <Header />
-
       <main className="max-w-7xl mx-auto px-3 md:px-6 pb-8">
         {/* Decollo Selector */}
         <div className="relative mb-5">
@@ -119,55 +110,35 @@ export default function Index() {
               <Thermometer size={14} className="text-orange-400" />
               <span className="text-xs text-gray-400">Temp.</span>
             </div>
-            <div className="text-lg font-bold">
-              {todayHours.length > 0 ? `${Math.round(todayHours[0].temperature)}°` : "--"}
-            </div>
-            <div className="text-xs text-gray-400">
-              Max {enrichedDaily.length > 0 ? `${Math.round(enrichedDaily[0].tempMax)}°` : "--"}
-            </div>
+            <div className="text-lg font-bold">{todayHours.length > 0 ? `${Math.round(todayHours[0].temperature)}°` : "--"}</div>
+            <div className="text-xs text-gray-400">Max {enrichedDaily.length > 0 ? `${Math.round(enrichedDaily[0].tempMax)}°` : "--"}</div>
           </div>
-
           <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#1a2332] to-[#0f1923] border border-white/5">
             <div className="flex items-center gap-2 mb-1.5">
               <Wind size={14} className="text-cyan-400" />
               <span className="text-xs text-gray-400">Vento</span>
             </div>
-            <div className="text-lg font-bold">
-              {todayHours.length > 0 ? `${Math.round(todayHours[0].windSpeed)} km/h` : "--"}
-            </div>
-            <div className="text-xs text-gray-400">
-              {todayHours.length > 0 ? wd(todayHours[0].windDir) : "--"}
-            </div>
+            <div className="text-lg font-bold">{todayHours.length > 0 ? `${Math.round(todayHours[0].windSpeed)} km/h` : "--"}</div>
+            <div className="text-xs text-gray-400">{todayHours.length > 0 ? wd(todayHours[0].windDir) : "--"}</div>
           </div>
-
           <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#1a2332] to-[#0f1923] border border-white/5">
             <div className="flex items-center gap-2 mb-1.5">
               <CloudSun size={14} className="text-yellow-400" />
               <span className="text-xs text-gray-400">Nuvole</span>
             </div>
-            <div className="text-lg font-bold">
-              {todayHours.length > 0 ? `${todayHours[0].cloudCover}%` : "--"}
-            </div>
-            <div className="text-xs text-gray-400">
-              {todayHours.length > 0 && todayHours[0].cloudCover < 30 ? "Poco nuvoloso" : todayHours[0].cloudCover < 60 ? "Parzialmente" : "Molto nuvoloso"}
-            </div>
+            <div className="text-lg font-bold">{todayHours.length > 0 ? `${todayHours[0].cloudCover}%` : "--"}</div>
+            <div className="text-xs text-gray-400">{todayHours.length > 0 && todayHours[0].cloudCover < 30 ? "Poco nuvoloso" : todayHours[0].cloudCover < 60 ? "Parzialmente" : "Molto nuvoloso"}</div>
           </div>
-
           <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#1a2332] to-[#0f1923] border border-white/5">
             <div className="flex items-center gap-2 mb-1.5">
               <Gauge size={14} className="text-purple-400" />
               <span className="text-xs text-gray-400">QNH</span>
             </div>
-            <div className="text-lg font-bold">
-              {todayHours.length > 0 && todayHours[0].pressure ? `${Math.round(todayHours[0].pressure)} hPa` : "--"}
-            </div>
-            <div className="text-xs text-gray-400">
-              {todayHours.length > 0 && todayHours[0].pressure && todayHours[0].pressure > 1013 ? "Alta pressione" : "Bassa pressione"}
-            </div>
+            <div className="text-lg font-bold">{todayHours.length > 0 && todayHours[0].pressure ? `${Math.round(todayHours[0].pressure)} hPa` : "--"}</div>
+            <div className="text-xs text-gray-400">{todayHours.length > 0 && todayHours[0].pressure && todayHours[0].pressure > 1013 ? "Alta pressione" : "Bassa pressione"}</div>
           </div>
         </div>
 
-        {/* Termiche */}
         {thermal && (
           <div className="mb-5 p-4 rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/20">
             <div className="flex items-center gap-2 mb-3">
@@ -191,22 +162,14 @@ export default function Index() {
           </div>
         )}
 
-        {/* Previsioni orarie */}
         <div className="mb-5">
           <h3 className="text-sm font-semibold mb-3 text-gray-300">Previsioni orarie (volo)</h3>
           <div className="overflow-x-auto -mx-3 px-3">
             <div className="flex gap-2.5 pb-1" style={{ minWidth: "max-content" }}>
               {todayHours.slice(0, 10).map((h, i) => (
-                <div
-                  key={i}
-                  className="flex-shrink-0 w-20 p-3 rounded-2xl bg-gradient-to-b from-[#1a2332] to-[#0f1923] border border-white/5 text-center"
-                >
-                  <div className="text-xs text-gray-400 mb-1">
-                    {h.time.getHours().toString().padStart(2, "0")}:00
-                  </div>
-                  <div className="mb-1.5">
-                    <WeatherIcon code={h.weatherCode} size={22} />
-                  </div>
+                <div key={i} className="flex-shrink-0 w-20 p-3 rounded-2xl bg-gradient-to-b from-[#1a2332] to-[#0f1923] border border-white/5 text-center">
+                  <div className="text-xs text-gray-400 mb-1">{h.time.getHours().toString().padStart(2, "0")}:00</div>
+                  <div className="mb-1.5"><WeatherIcon code={h.weatherCode} size={22} /></div>
                   <div className="text-sm font-bold">{Math.round(h.temperature)}°</div>
                   <div className="flex items-center justify-center gap-1 mt-1">
                     <Wind size={10} className="text-cyan-400" />
@@ -219,7 +182,6 @@ export default function Index() {
           </div>
         </div>
 
-        {/* Vento in quota */}
         {windProfiles.length > 0 && (
           <div className="mb-5">
             <h3 className="text-sm font-semibold mb-3 text-gray-300">Vento in quota</h3>
@@ -228,19 +190,10 @@ export default function Index() {
                 {windProfiles.slice(0, 8).map((profile, i) => {
                   const surfaceLevel = profile.levels[0];
                   return (
-                    <div
-                      key={i}
-                      className="flex-shrink-0 w-20 p-3 rounded-2xl bg-gradient-to-b from-[#1a2332] to-[#0f1923] border border-white/5 text-center"
-                    >
-                      <div className="text-xs text-gray-400 mb-1">
-                        {profile.time.getHours().toString().padStart(2, "0")}:00
-                      </div>
-                      <div className="text-xs font-medium text-cyan-400">
-                        {surfaceLevel.speed ? `${Math.round(surfaceLevel.speed)} km/h` : "--"}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {surfaceLevel.dir ? wd(surfaceLevel.dir) : "--"}
-                      </div>
+                    <div key={i} className="flex-shrink-0 w-20 p-3 rounded-2xl bg-gradient-to-b from-[#1a2332] to-[#0f1923] border border-white/5 text-center">
+                      <div className="text-xs text-gray-400 mb-1">{profile.time.getHours().toString().padStart(2, "0")}:00</div>
+                      <div className="text-xs font-medium text-cyan-400">{surfaceLevel.speed ? `${Math.round(surfaceLevel.speed)} km/h` : "--"}</div>
+                      <div className="text-xs text-gray-500">{surfaceLevel.dir ? wd(surfaceLevel.dir) : "--"}</div>
                     </div>
                   );
                 })}
@@ -249,7 +202,6 @@ export default function Index() {
           </div>
         )}
 
-        {/* Dati del decollo */}
         <div className="p-4 rounded-2xl bg-gradient-to-br from-[#1a2332] to-[#0f1923] border border-white/5">
           <h3 className="text-sm font-semibold mb-2 text-gray-300">Dati decollo</h3>
           <div className="grid grid-cols-2 gap-2 text-xs">
@@ -272,7 +224,6 @@ export default function Index() {
           </div>
         </div>
       </main>
-
       <Footer />
     </div>
   );
