@@ -29,43 +29,23 @@ const DECOLLI = [
   { id: "andrate", name: "Andrate", lat: 45.5506, lon: 7.8808, exposure: "S", alt: 1000, valley: "Canavese" },
 ];
 
-function getWeatherIcon(code: number, isDay: number): string {
+function getWeatherIcon(code: number): string {
   const icons: Record<number, string> = {
-    0: isDay ? "\u2600\uFE0F" : "\uD83C\uDF19",
-    1: "\uD83C\uDF24\uFE0F",
-    2: "\u26C5",
-    3: "\u2601\uFE0F",
-    45: "\uD83C\uDF2B\uFE0F",
-    48: "\uD83C\uDF2B\uFE0F",
-    51: "\uD83C\uDF26\uFE0F",
-    53: "\uD83C\uDF27\uFE0F",
-    55: "\uD83C\uDF27\uFE0F",
-    61: "\uD83C\uDF27\uFE0F",
-    63: "\uD83C\uDF27\uFE0F",
-    65: "\uD83C\uDF27\uFE0F",
-    71: "\u2744\uFE0F",
-    73: "\u2744\uFE0F",
-    75: "\u2744\uFE0F",
-    80: "\uD83C\uDF26\uFE0F",
-    81: "\uD83C\uDF27\uFE0F",
-    82: "\u26C8\uFE0F",
-    95: "\u26C8\uFE0F",
-    96: "\u26C8\uFE0F",
-    99: "\u26C8\uFE0F",
+    0: "\u2600\uFE0F", 1: "\uD83C\uDF24\uFE0F", 2: "\u26C5", 3: "\u2601\uFE0F",
+    45: "\uD83C\uDF2B\uFE0F", 48: "\uD83C\uDF2B\uFE0F",
+    51: "\uD83C\uDF26\uFE0F", 53: "\uD83C\uDF27\uFE0F", 55: "\uD83C\uDF27\uFE0F",
+    61: "\uD83C\uDF27\uFE0F", 63: "\uD83C\uDF27\uFE0F", 65: "\uD83C\uDF27\uFE0F",
+    71: "\u2744\uFE0F", 73: "\u2744\uFE0F", 75: "\u2744\uFE0F",
+    80: "\uD83C\uDF26\uFE0F", 81: "\uD83C\uDF27\uFE0F", 82: "\u26C8\uFE0F",
+    95: "\u26C8\uFE0F", 96: "\u26C8\uFE0F", 99: "\u26C8\uFE0F",
   };
-  return icons[code] || (isDay ? "\u2600\uFE0F" : "\uD83C\uDF19");
+  return icons[code] || "\u2600\uFE0F";
 }
 
 function getWindDirection(deg: number): string {
   if (deg == null) return "--";
   const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   return dirs[Math.round(deg / 45) % 8];
-}
-
-function getWindArrow(deg: number): string {
-  if (deg == null) return "\u27A1\uFE0F";
-  const arrows = ["\u2191", "\u2197", "\u2192", "\u2198", "\u2193", "\u2199", "\u2190", "\u2196"];
-  return arrows[Math.round(deg / 45) % 8];
 }
 
 export default function Home() {
@@ -87,8 +67,7 @@ export default function Home() {
       const params = new URLSearchParams({
         latitude: site.lat.toString(),
         longitude: site.lon.toString(),
-        hourly:
-          "temperature_2m,dewpoint_2m,relativehumidity_2m,cloudcover,precipitation,wind_speed_10m,wind_gusts_10m,wind_direction_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,uv_index,is_day,weathercode,pressure_msl",
+        hourly: "temperature_2m,dewpoint_2m,relativehumidity_2m,cloudcover,precipitation,wind_speed_10m,wind_gusts_10m,wind_direction_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,uv_index,is_day,weathercode,pressure_msl",
         daily: "weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_sum,precipitation_hours,wind_speed_10m_max,wind_direction_10m_dominant",
         timezone: "Europe/Rome",
         forecast_days: "3",
@@ -200,27 +179,10 @@ export default function Home() {
       (cloud < 30 ? 2 : cloud < 50 ? 1 : 0) +
       (humidity < 50 ? 1 : 0) +
       (thermalDelta > 10 ? 2 : thermalDelta > 6 ? 1 : 0);
-    if (score >= 6) return { label: "Forte \uD83D\uDD25", color: "#ff1744" };
-    if (score >= 4) return { label: "Media \uD83D\uDCAA", color: "#ff6d00" };
-    if (score >= 2) return { label: "Debole \uD83E\uDD24", color: "#ffd600" };
-    return { label: "Assente \u2744\uFE0F", color: "#4fc3f7" };
-  }, [currentData, thermalDelta]);
-
-  const weatherAlert = useMemo(() => {
-    if (!currentData) return { level: "info", message: "Caricamento...", icon: "\u2139\uFE0F" };
-    const alerts: string[] = [];
-    if (currentData.windSpeed > 25) alerts.push("\uD83D\uDCA8 VENTO FORTE");
-    if (currentData.windGust > 35) alerts.push("\uD83D\uDCA8 RAFFICHE PERICOLOSE");
-    if (currentData.precipitation > 0.5) alerts.push("\uD83C\uDF27\uFE0F PIOGGIA IN CORSO");
-    if (currentData.cloudCover > 80) alerts.push("\u2601\uFE0F CIELO COPERTISSIMO");
-    if (currentData.weatherCode >= 95) alerts.push("\u26C8\uFE0F TEMPORALE IN CORSO");
-    if (thermalDelta > 12) alerts.push("\uD83D\uDD25 FORTI TERMICHE");
-    if (currentData.windSpeed < 5) alerts.push("\uD83C\uDF43 VENTO DEBOLE");
-    if (alerts.length === 0)
-      return { level: "success", message: "Condizioni ottimali per volare!", icon: "\uD83E\uDE82" };
-    if (alerts.some((a) => a.includes("TEMPORALE") || a.includes("PIOGGIA") || a.includes("VENTO FORTE")))
-      return { level: "danger", message: alerts.join(" * "), icon: "\uD83D\uDEA8" };
-    return { level: "warning", message: alerts.join(" * "), icon: "\u26A1" };
+    if (score >= 6) return { label: "Forte", color: "#ff1744" };
+    if (score >= 4) return { label: "Media", color: "#ff6d00" };
+    if (score >= 2) return { label: "Debole", color: "#ffd600" };
+    return { label: "Assente", color: "#4fc3f7" };
   }, [currentData, thermalDelta]);
 
   if (loading && !meteoData) {
@@ -237,9 +199,7 @@ export default function Home() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-5" style={{ background: "linear-gradient(145deg, #1a2a3a, #0d1b2a)" }}>
         <p className="text-red-400 text-lg mb-4 text-center">{error}</p>
-        <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg font-semibold" onClick={loadWeather}>
-          Riprova
-        </button>
+        <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg font-semibold" onClick={loadWeather}>Riprova</button>
       </div>
     );
   }
@@ -248,7 +208,7 @@ export default function Home() {
     <div className="min-h-screen p-4" style={{ background: "linear-gradient(145deg, #1a2a3a 0%, #0d1b2a 100%)", color: "#e8f0f8", fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
       <header className="text-center pb-4 mb-5" style={{ borderBottom: "2px solid rgba(76, 175, 80, 0.3)" }}>
         <div className="flex items-center justify-center gap-2.5 flex-wrap">
-          <span className="text-4xl inline-block animate-bounce">Meteo dei Conigli</span>
+          <span className="text-4xl inline-block">Meteo dei Conigli</span>
         </div>
         <p className="text-sm text-[#8899aa] mt-1">Previsioni per volo libero - Open-Meteo</p>
         <p className="text-xs text-[#667788]">Aggiornato: {lastUpdate.toLocaleTimeString("it-IT")}</p>
@@ -291,7 +251,7 @@ export default function Home() {
               <span className="text-xs text-[#8899aa]">{site.exposure} - {site.valley} - {site.alt}m</span>
             </div>
             <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full" style={{ background: "rgba(76, 175, 80, 0.12)" }}>
-              <span className="text-2xl">{currentData ? getWeatherIcon(currentData.weatherCode || 0, currentData.isDay || 1) : ""}</span>
+              <span className="text-2xl">{currentData ? getWeatherIcon(currentData.weatherCode || 0) : ""}</span>
               <span className="text-xl font-bold">{currentData ? Math.round(currentData.temperature) : "--"}</span>
             </div>
           </div>
@@ -326,7 +286,7 @@ export default function Home() {
                 }}
               >
                 <div className="font-semibold text-xs">{dateLabels[idx]}</div>
-                <div className="text-xl mt-0.5">{getWeatherIcon(day.weatherCode, 1)}</div>
+                <div className="text-xl mt-0.5">{getWeatherIcon(day.weatherCode)}</div>
                 <div className="text-sm text-green-500 font-semibold">{Math.round(day.tempMax)}/{Math.round(day.tempMin)}</div>
                 <div className="text-[10px] text-[#8899aa]">D{day.thermalDelta}</div>
               </button>
@@ -429,8 +389,7 @@ export default function Home() {
               </div>
               <div className="p-3 rounded-lg" style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)" }}>
                 <h4 className="text-sm text-green-500 font-semibold mb-2">Consigli</h4>
-               <dyad-write path="src/pages/Index.tsx" description="Completamento del file Index.tsx dal punto esatto di interruzione">
-<p className="text-xs leading-relaxed text-[#d0d8e0]">
+                <p className="text-xs leading-relaxed text-[#d0d8e0]">
                   {currentData.windSpeed > 25 ? "Rischio ALTO - vento forte." : currentData.windSpeed > 18 ? "Rischio MEDIO." : "Rischio BASSO - condizioni favorevoli."}
                   <br />Termiche: {thermalStrength.label}
                 </p>
