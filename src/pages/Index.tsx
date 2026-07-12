@@ -7,7 +7,7 @@ import { TabNav, type Tab } from "@/components/TabNav";
 import { MeteoTab } from "@/components/MeteoTab";
 import { VentiTab } from "@/components/VentiTab";
 import VentiQuotaTab from "@/components/VentiQuotaTab";
-import { TermicheTab } from "@/components/TermicheTab";
+import TermicheTab from "@/components/TermicheTab";
 import { AnalisiTab } from "@/components/AnalisiTab";
 import SiteHeader from "@/components/SiteHeader";
 import DayForecastPopup from "@/components/DayForecastPopup";
