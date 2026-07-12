@@ -398,8 +398,8 @@ export default function Home() {
               <div style={s.hourlyThermalSection}>
                 <h4 style={s.sectionSubtitle}>⏰ Sviluppo orario termiche (10:00 - 18:00)</h4>
                 <div style={s.hourlyThermalGrid}>
-                  {Array.from({ length: 9 }, (_, i) => i + 10<dyad-write path="src/pages/Index.tsx" description="Completamento del file dal punto esatto in cui si era interrotto">
-                  {Array.from({ length: 9 }, (_, i) => i + 10).map(hour => {
+                  {Array.from({ length: 9 }, (_, i) => i +<dyad-write path="src/pages/Index.tsx" description="Completamento del file Index.tsx dal punto esatto di interruzione">
+ 10)).map((hour: number) => {
                     const hData = dayData?.find((h: any) => h.time.getHours() === hour);
                     if (!hData) return <div key={hour} style={s.hourlyThermalCard}>--</div>;
                     const temp = hData.temperature;
