@@ -13,13 +13,13 @@ import SiteHeader from "@/components/SiteHeader";
 import DayForecastPopup from "@/components/DayForecastPopup";
 import { DayDetailPopup } from "@/components/DayDetailPopup";
 import SidebarDecolli from "@/components/SidebarDecolli";
-import { fetchMeteo, fetchWindProfiles, filterFlightHours, enrDaily, calcThermal } from "@/utils/meteo";
+import { fetchMeteo, enrDaily, calcThermal } from "@/utils/meteo";
 import { generaAnalisiReale } from "@/utils/analisi";
 import { generateAiAnalysis } from "@/utils/meteoAI";
 import { generaTermicheOrarie } from "@/utils/termiche";
 import { DECOLLI, type Decollo } from "@/data/decolli";
 import type { MeteoData, HourData, AiAnalysis, WindProfile } from "@/types/meteo";
-import { MapPin, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 
 interface DecolloMeteo {
   site: Decollo;
@@ -43,14 +43,16 @@ function useRealTimeHour(): number {
 const nomiGiorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
 const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
 
-/** Filtra gli HourData per una data specifica */
-function filterByDate(data: HourData[], targetDate: Date): HourData[] {
+/** Filtra gli HourData per una data specifica E ore 9-19 */
+function filterByDateAndHours(data: HourData[], targetDate: Date): HourData[] {
   return data.filter((h) => {
     const hd = h.time;
+    const hh = hd.getHours();
     return (
       hd.getDate() === targetDate.getDate() &&
       hd.getMonth() === targetDate.getMonth() &&
-      hd.getFullYear() === targetDate.getFullYear()
+      hd.getFullYear() === targetDate.getFullYear() &&
+      hh >= 9 && hh <= 19
     );
   });
 }
@@ -67,7 +69,7 @@ const Index = () => {
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [siteId, setSiteId] = useState(DECOLLI[0]?.id || "");
   const [tab, setTab] = useState<Tab>("meteo");
-  const [dayIdx, setDayIdx] = useState(0); // 0=oggi, 1=domani, 2=dopodomani, ...
+  const [dayIdx, setDayIdx] = useState(0);
   const [hour, setHour] = useState(useRealTimeHour());
   const [showPopup, setShowPopup] = useState(false);
   const [showDayDetail, setShowDayDetail] = useState(false);
@@ -110,18 +112,6 @@ const Index = () => {
     setGlobalError(null);
   }, []);
 
-  const fetchWind = useCallback(async (lat: number, lon: number) => {
-    setDecolliMeteo((prev) => ({
-      ...prev,
-      [siteId]: { ...prev[siteId], windProfilesLoading: true },
-    }));
-    const profiles = await fetchWindProfiles(lat, lon);
-    setDecolliMeteo((prev) => ({
-      ...prev,
-      [siteId]: { ...prev[siteId], windProfiles: profiles, windProfilesLoading: false },
-    }));
-  }, [siteId]);
-
   useEffect(() => {
     fetchAllDecolli();
     const interval = setInterval(fetchAllDecolli, 60000);
@@ -129,20 +119,13 @@ const Index = () => {
   }, [fetchAllDecolli]);
 
   const selectedSite = DECOLLI.find((s) => s.id === siteId) || DECOLLI[0];
-  useEffect(() => {
-    if (selectedSite) {
-      fetchWind(selectedSite.lat, selectedSite.lon);
-    }
-  }, [siteId, selectedSite, fetchWind]);
-
   const selectedDecollo = decolliMeteo[siteId];
   const meteoData = selectedDecollo?.data;
-  const hourlyRaw = meteoData?.hourly || []; // <-- ARRAY COMPLETO (tutte le ore di tutti i giorni)
-  const daily = meteoData?.daily || [];
 
-  // Hourly FILTRATO per ore 9-19 di tutti i giorni (non solo oggi)
-  const hourly = useMemo(() => filterFlightHours(hourlyRaw), [hourlyRaw]);
+  // ARRAY COMPLETO di tutte le ore (tutti i giorni, ore 0-23)
+  const hourlyRaw = meteoData?.hourly || [];
 
+  // Mappa meteo per tutti i decolli
   const weatherMap = useMemo(() => {
     const map: Record<string, HourData> = {};
     for (const [id, dm] of Object.entries(decolliMeteo)) {
@@ -157,40 +140,33 @@ const Index = () => {
     return map;
   }, [decolliMeteo, hour]);
 
-  // ---- DATA TARGET in base a dayIdx ----
+  // DATA TARGET in base a dayIdx
   const targetDate = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + dayIdx);
     return d;
   }, [dayIdx]);
 
-  // ---- DATI per il giorno selezionato ----
-  // Filtra HOURLY (ore 9-19) per la data target
+  // DATI per il giorno selezionato: filtra direttamente da hourlyRaw!
   const dayData = useMemo((): HourData[] => {
-    return filterByDate(hourly, targetDate);
-  }, [hourly, targetDate]);
+    return filterByDateAndHours(hourlyRaw, targetDate);
+  }, [hourlyRaw, targetDate]);
 
   // Current hour: l'ora selezionata all'interno del dayData
   const currentHourData = useMemo((): HourData | null => {
     if (!dayData.length) return null;
-    // Cerca l'ora esatta selezionata
     const found = dayData.find((h) => h.time.getHours() === hour);
     return found || dayData[0] || null;
   }, [dayData, hour]);
 
-  const currentSite = useMemo(
-    () => DECOLLI.find((s) => s.id === siteId) || DECOLLI[0],
-    [siteId]
-  );
-
-  // ---- Label del giorno selezionato ----
+  // Label del giorno selezionato
   const selectedDayLabel = useMemo(() => {
     const d = targetDate;
     const nomeGiorno = nomiGiorni[d.getDay()];
     return `${nomeGiorno} ${d.getDate()} ${mesi[d.getMonth()]}`;
   }, [targetDate]);
 
-  // ---- EnrichedDaily per il giorno selezionato ----
+  // EnrichedDaily per il giorno selezionato
   const enrichedForDay = useMemo(() => {
     if (!dayData.length) return [];
     const maxTemp = Math.max(...dayData.map(h => h.temperature));
@@ -212,7 +188,7 @@ const Index = () => {
     }];
   }, [dayData, targetDate]);
 
-  // ---- Dati per tutti i giorni (per i pulsanti del MeteoTab) ----
+  // Etichette per i 4 giorni
   const allDaysLabels = useMemo(() => {
     const labels: { value: number; label: string }[] = [];
     for (let i = 0; i < 4; i++) {
@@ -227,26 +203,25 @@ const Index = () => {
     return labels;
   }, []);
 
-  // ---- Calcoli vari ----
+  // Calcoli vari
   const thermalAI = useMemo(() => {
     if (!dayData.length) return null;
-    return calcThermal(dayData, currentSite.altitude);
-  }, [dayData, currentSite.altitude]);
+    return calcThermal(dayData, selectedSite.altitude);
+  }, [dayData, selectedSite.altitude]);
 
   const aiData = useMemo(() => {
     if (!dayData.length) return null;
-    return generaAnalisiReale(dayData, currentSite.altitude);
-  }, [dayData, currentSite.altitude]);
+    return generaAnalisiReale(dayData, selectedSite.altitude);
+  }, [dayData, selectedSite.altitude]);
 
   const aiMeteoAnalysis = useMemo(() => {
     return generateAiAnalysis(dayData, dayIdx);
   }, [dayData, dayIdx]);
 
-  // TERMICHE ORARIE
   const termicheHourly = useMemo(() => {
     if (!dayData.length) return [];
-    return generaTermicheOrarie(dayData, currentSite.altitude);
-  }, [dayData, currentSite.altitude]);
+    return generaTermicheOrarie(dayData, selectedSite.altitude);
+  }, [dayData, selectedSite.altitude]);
 
   const handleSiteSelect = useCallback((id: string) => {
     setSiteId(id);
@@ -265,7 +240,7 @@ const Index = () => {
   const handleDaySelect = useCallback((idx: number) => {
     setDayIdx(idx);
     if (idx > 0) {
-      setHour(12); // mezzogiorno per i giorni futuri
+      setHour(12);
     } else {
       setHour(new Date().getHours());
     }
@@ -334,9 +309,9 @@ const Index = () => {
             </div>
           </div>
 
-          {currentSite && currentHourData && (
+          {selectedSite && currentHourData && (
             <div className="mb-2.5">
-              <SiteHeader site={currentSite} current={currentHourData} />
+              <SiteHeader site={selectedSite} current={currentHourData} />
             </div>
           )}
 
@@ -368,15 +343,15 @@ const Index = () => {
               <VentiQuotaTab
                 dayData={dayData}
                 selectedHour={hour}
-                altitude={currentSite.altitude}
-                siteName={currentSite.name}
+                altitude={selectedSite.altitude}
+                siteName={selectedSite.name}
               />
             )}
 
             {tab === "termiche" && (
               <TermicheTab
                 dayData={dayData}
-                altitude={currentSite.altitude}
+                altitude={selectedSite.altitude}
                 selectedHour={hour}
               />
             )}
@@ -396,8 +371,7 @@ const Index = () => {
               onClick={() => setShowPopup(true)}
               className="text-sm border border-slate-500/60 text-slate-200 hover:bg-slate-700 bg-slate-800/80 px-5 py-2.5 rounded-xl transition-colors"
             >
-              <MapPin className="w-4 h-4 mr-2 inline" />
-              Dettaglio orario {currentSite?.name} (9:00&ndash;19:00)
+              Dettaglio orario {selectedSite?.name} (9:00&ndash;19:00)
             </button>
           </div>
 
@@ -419,7 +393,7 @@ const Index = () => {
               dayData={dayData}
               daily={enrichedForDay[0]}
               dayLabel={selectedDayLabel}
-              altitude={currentSite.altitude}
+              altitude={selectedSite.altitude}
               onClose={() => setShowDayDetail(false)}
               onHourSelect={(h) => {
                 setHour(h);
