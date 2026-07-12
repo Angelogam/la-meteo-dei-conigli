@@ -1,41 +1,39 @@
-</dyad-delete>
-
-<dyad-write path="src/pages/Index.tsx" description="File completamente pulito senza residui di markdown">
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 
 const DECOLLI = [
-  { id: "malanotte", name: "Malanotte", lat: 44.25874571728482, lon: 7.794304664370852, exposure: "S/SE", alt: 1740, valley: "Valle Infernotto" },
-  { id: "colle_tenda", name: "Colle di Tenda", lat: 44.15093973937469, lon: 7.569262924652476, exposure: "S", alt: 1990, valley: "Valle Roya/Vermenagna" },
-  { id: "boves", name: "Boves", lat: 44.32113720462757, lon: 7.544697617792515, exposure: "NE", alt: 900, valley: "Cuneese" },
-  { id: "monte_male", name: "Monte Male – Dronero", lat: 44.43163071064606, lon: 7.362886778152897, exposure: "S", alt: 950, valley: "Valle Maira" },
-  { id: "iretta", name: "Iretta", lat: 44.49893744007536, lon: 7.382036612070795, exposure: "SO", alt: 1050, valley: "Valle Maira" },
-  { id: "val_mala", name: "Pratoni di Val Mala", lat: 44.50780117336976, lon: 7.346618978966227, exposure: "S", alt: 1400, valley: "Valle Maira" },
-  { id: "birrone", name: "Monte Birrone", lat: 44.5398927839592, lon: 7.25293945830122, exposure: "S", alt: 2131, valley: "Valle Maira" },
-  { id: "agnello", name: "Colle dell'Agnello", lat: 44.68282592463814, lon: 6.978200601250462, exposure: "S", alt: 2748, valley: "Valle Varaita" },
-  { id: "pian_mune", name: "Pian Munè – Seggiovia", lat: 44.63861029121272, lon: 7.230889474766025, exposure: "S/SW", alt: 1870, valley: "Valle Po" },
-  { id: "pian_mune_basso", name: "Pian Munè – Bric Lombatera", lat: 44.65736521807557, lon: 7.260017009542715, exposure: "S", alt: 1350, valley: "Valle Po" },
-  { id: "martiniana", name: "Martiniana Po", lat: 44.60695265332723, lon: 7.38322612877631, exposure: "NE", alt: 1400, valley: "Valle Po" },
-  { id: "rucas", name: "Rucas alto", lat: 44.74213930591463, lon: 7.220118689737356, exposure: "S/SE", alt: 1500, valley: "Valle Infernotto" },
-  { id: "montoso", name: "Montoso – decollo basso", lat: 44.7643723437882, lon: 7.249757926713178, exposure: "SE", alt: 1250, valley: "Valle Infernotto" },
-  { id: "vandalino", name: "Monte Vandalino", lat: 44.83671231480542, lon: 7.173866924055591, exposure: "S/SE", alt: 2120, valley: "Val Pellice" },
-  { id: "pian_alpe", name: "Pian dell'Alpe", lat: 45.06396153999711, lon: 7.028266530872771, exposure: "S", alt: 1990, valley: "Val Chisone" },
-  { id: "roletto", name: "Roletto – Piggi", lat: 44.93249288285819, lon: 7.310959031722244, exposure: "S", alt: 820, valley: "Pinerolese" },
-  { id: "piossasco", name: "Piossasco – Monte S. Giorgio", lat: 44.99671840144012, lon: 7.44800217882953, exposure: "S", alt: 673, valley: "Collina Torinese" },
-  { id: "truccetti", name: "Truccetti", lat: 45.07973511679036, lon: 7.342018342463826, exposure: "S", alt: 900, valley: "Canavese" },
-  { id: "val_torre", name: "Val della Torre", lat: 45.16262748864921, lon: 7.463716167415302, exposure: "S", alt: 970, valley: "Val della Torre" },
-  { id: "rocca_canavese", name: "Rocca Canavese – M. della Neve", lat: 45.32757754837493, lon: 7.572793582322621, exposure: "S", alt: 1100, valley: "Canavese" },
-  { id: "elisabetta", name: "Santa Elisabetta", lat: 45.4182733880574, lon: 7.641945041749434, exposure: "S", alt: 1000, valley: "Canavese" },
-  { id: "elisabetta_alto", name: "Santa Elisabetta alto", lat: 45.44019393073506, lon: 7.648025947229948, exposure: "S", alt: 1400, valley: "Canavese" },
-  { id: "cavallaria", name: "Monte Cavallaria", lat: 45.51729363773779, lon: 7.798808327293107, exposure: "S", alt: 1430, valley: "Canavese" },
-  { id: "andrate", name: "Andrate", lat: 45.55063933418272, lon: 7.880775591143394, exposure: "S", alt: 1000, valley: "Canavese" },
+  { id: "malanotte", name: "Malanotte", lat: 44.2587, lon: 7.7943, exposure: "S/SE", alt: 1740, valley: "Valle Infernotto" },
+  { id: "colle_tenda", name: "Colle di Tenda", lat: 44.1509, lon: 7.5693, exposure: "S", alt: 1990, valley: "Valle Roya/Vermenagna" },
+  { id: "boves", name: "Boves", lat: 44.3211, lon: 7.5447, exposure: "NE", alt: 900, valley: "Cuneese" },
+  { id: "monte_male", name: "Monte Male – Dronero", lat: 44.4316, lon: 7.3629, exposure: "S", alt: 950, valley: "Valle Maira" },
+  { id: "iretta", name: "Iretta", lat: 44.4989, lon: 7.3820, exposure: "SO", alt: 1050, valley: "Valle Maira" },
+  { id: "val_mala", name: "Pratoni di Val Mala", lat: 44.5078, lon: 7.3466, exposure: "S", alt: 1400, valley: "Valle Maira" },
+  { id: "birrone", name: "Monte Birrone", lat: 44.5399, lon: 7.2529, exposure: "S", alt: 2131, valley: "Valle Maira" },
+  { id: "agnello", name: "Colle dell'Agnello", lat: 44.6828, lon: 6.9782, exposure: "S", alt: 2748, valley: "Valle Varaita" },
+  { id: "pian_mune", name: "Pian Munè – Seggiovia", lat: 44.6386, lon: 7.2309, exposure: "S/SW", alt: 1870, valley: "Valle Po" },
+  { id: "pian_mune_basso", name: "Pian Munè – Bric Lombatera", lat: 44.6574, lon: 7.2600, exposure: "S", alt: 1350, valley: "Valle Po" },
+  { id: "martiniana", name: "Martiniana Po", lat: 44.6070, lon: 7.3832, exposure: "NE", alt: 1400, valley: "Valle Po" },
+  { id: "rucas", name: "Rucas alto", lat: 44.7421, lon: 7.2201, exposure: "S/SE", alt: 1500, valley: "Valle Infernotto" },
+  { id: "montoso", name: "Montoso – decollo basso", lat: 44.7644, lon: 7.2498, exposure: "SE", alt: 1250, valley: "Valle Infernotto" },
+  { id: "vandalino", name: "Monte Vandalino", lat: 44.8367, lon: 7.1739, exposure: "S/SE", alt: 2120, valley: "Val Pellice" },
+  { id: "pian_alpe", name: "Pian dell'Alpe", lat: 45.0640, lon: 7.0283, exposure: "S", alt: 1990, valley: "Val Chisone" },
+  { id: "roletto", name: "Roletto – Piggi", lat: 44.9325, lon: 7.3110, exposure: "S", alt: 820, valley: "Pinerolese" },
+  { id: "piossasco", name: "Piossasco – Monte S. Giorgio", lat: 44.9967, lon: 7.4480, exposure: "S", alt: 673, valley: "Collina Torinese" },
+  { id: "truccetti", name: "Truccetti", lat: 45.0797, lon: 7.3420, exposure: "S", alt: 900, valley: "Canavese" },
+  { id: "val_torre", name: "Val della Torre", lat: 45.1626, lon: 7.4637, exposure: "S", alt: 970, valley: "Val della Torre" },
+  { id: "rocca_canavese", name: "Rocca Canavese – M. della Neve", lat: 45.3276, lon: 7.5728, exposure: "S", alt: 1100, valley: "Canavese" },
+  { id: "elisabetta", name: "Santa Elisabetta", lat: 45.4183, lon: 7.6419, exposure: "S", alt: 1000, valley: "Canavese" },
+  { id: "elisabetta_alto", name: "Santa Elisabetta alto", lat: 45.4402, lon: 7.6480, exposure: "S", alt: 1400, valley: "Canavese" },
+  { id: "cavallaria", name: "Monte Cavallaria", lat: 45.5173, lon: 7.7988, exposure: "S", alt: 1430, valley: "Canavese" },
+  { id: "andrate", name: "Andrate", lat: 45.5506, lon: 7.8808, exposure: "S", alt: 1000, valley: "Canavese" },
 ];
 
 function getWeatherIcon(code: number, isDay: number): string {
   const icons: Record<number, string> = {
-    0: isDay ? '☀️' : '🌙', 1: isDay ? '🌤️' : '🌤️', 2: isDay ? '⛅' : '☁️', 3: '☁️', 45: '🌫️', 48: '🌫️',
-    51: '🌦️', 53: '🌧️', 55: '🌧️', 61: '🌧️', 63: '🌧️', 65: '🌧️', 71: '❄️', 73: '❄️', 75: '❄️',
+    0: isDay ? '☀️' : '🌙', 1: isDay ? '🌤️' : '🌤️', 2: isDay ? '⛅' : '☁️', 3: '☁️',
+    45: '🌫️', 48: '🌫️', 51: '🌦️', 53: '🌧️', 55: '🌧️',
+    61: '🌧️', 63: '🌧️', 65: '🌧️', 71: '❄️', 73: '❄️', 75: '❄️',
     80: '🌧️', 81: '🌧️', 82: '⛈️', 95: '⛈️', 96: '⛈️', 99: '⛈️',
   };
   return icons[code] || (isDay ? '☀️' : '🌙');
@@ -54,16 +52,16 @@ function getWindArrow(deg: number): string {
 }
 
 export default function Home() {
-  const [selectedId, setSelectedId] = useState(DECOLLI[0].id);
+  const [selectedId, setSelectedId] = useState<string>(DECOLLI[0].id);
   const [meteoData, setMeteoData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState(0);
   const [selectedHour, setSelectedHour] = useState(12);
-  const [activeTab, setActiveTab] = useState('meteo');
+  const [activeTab, setActiveTab] = useState<string>('meteo');
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
-  const site = DECOLLI.find(d => d.id === selectedId)!;
+  const site = DECOLLI.find(d => d.id === selectedId) || DECOLLI[0];
 
   const loadWeather = useCallback(async () => {
     setLoading(true);
@@ -334,18 +332,6 @@ export default function Home() {
                 <div style={s.meteoCard}><div style={s.meteoLabel}>🪂 Galleggiamento</div><div style={s.meteoValue}>{thermalDelta > 10 ? 'Eccellente ⭐' : thermalDelta > 6 ? 'Buono 👍' : 'Limitato 🫤'}</div><div style={s.meteoSub}>Delta {thermalDelta}°C</div></div>
                 <div style={s.meteoCard}><div style={s.meteoLabel}>💨 Vento</div><div style={s.meteoValue}>{getWindArrow(currentData.windDir)} {Math.round(currentData.windSpeed)} km/h</div><div style={s.meteoSub}>{getWindDirection(currentData.windDir)} • ⚡{Math.round(currentData.windGust)} km/h</div></div>
               </div>
-              <div style={s.pressureSection}>
-                <h4 style={s.sectionSubtitle}>📊 Pressione e Gradiente</h4>
-                <div style={s.pressureGrid}>
-                  <div style={s.pressureCard}><div style={s.pressureLabel}>Pressione attuale</div><div style={s.pressureValue}>{Math.round(currentData.pressure)} hPa</div></div>
-                  <div style={s.pressureCard}>
-                    <div style={s.pressureLabel}>Gradiente</div>
-                    <div style={{ ...s.pressureValue, color: '#4caf50' }}>
-                      {(() => { const first = dayData[0]?.pressure; const last = dayData[dayData.length - 1]?.pressure; if (first == null || last == null) return '--'; const diff = last - first; return diff > 0 ? `⬆️ +${Math.round(diff)} hPa` : diff < 0 ? `⬇️ ${Math.round(diff)} hPa` : '➡️ Stabile'; })()}
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           )}
 
@@ -354,26 +340,9 @@ export default function Home() {
               <div style={s.windSection}>
                 <h4 style={s.sectionSubtitle}>💨 Vento a differenti quote</h4>
                 <div style={s.windGrid3}>
-                  <div style={s.windCard}><div style={s.windLabel}>10 m (superficie)</div><div style={s.windValue}>{getWindArrow(currentData.windDir)} {Math.round(currentData.windSpeed)} km/h</div><div style={s.windDir}>{getWindDirection(currentData.windDir)}</div><div style={s.windGust}>⚡ {Math.round(currentData.windGust)} km/h</div></div>
-                  <div style={s.windCard}><div style={s.windLabel}>80 m (quota termica)</div><div style={s.windValue}>{currentData.wind80m ? `${getWindArrow(currentData.windDir80m)} ${Math.round(currentData.wind80m)} km/h` : 'N/D'}</div><div style={s.windDir}>{currentData.wind80m ? getWindDirection(currentData.windDir80m) : '--'}</div><div style={s.windGust}>⚡ {currentData.wind80m ? Math.round(currentData.wind80m * 1.3) : '--'} km/h</div></div>
-                  <div style={s.windCard}><div style={s.windLabel}>120 m (alta quota)</div><div style={s.windValue}>{currentData.wind120m ? `${getWindArrow(currentData.windDir120m)} ${Math.round(currentData.wind120m)} km/h` : 'N/D'}</div><div style={s.windDir}>{currentData.wind120m ? getWindDirection(currentData.windDir120m) : '--'}</div><div style={s.windGust}>⚡ {currentData.wind120m ? Math.round(currentData.wind120m * 1.35) : '--'} km/h</div></div>
-                </div>
-              </div>
-              <div style={s.windProfileSection}>
-                <h4 style={s.sectionSubtitle}>📊 Vento orario (9:00 - 19:00)</h4>
-                <div style={s.hourlyWindGrid}>
-                  {Array.from({ length: 11 }, (_: number, i: number) => i + 9).map((hour: number) => {
-                    const hData = dayData?.find((h: any) => h.time.getHours() === hour);
-                    if (!hData) return <div key={hour} style={s.hourlyWindCard}>--</div>;
-                    return (
-                      <div key={hour} style={s.hourlyWindCard}>
-                        <div style={s.hourlyTime}>{String(hour).padStart(2, '0')}:00</div>
-                        <div style={s.hourlyWind}>{getWindArrow(hData.windDir)}<span style={s.hourlySpeed}>{Math.round(hData.windSpeed)}</span></div>
-                        <div style={s.hourlyDir}>{getWindDirection(hData.windDir)}</div>
-                        <div style={s.hourlyWeather}>{getWeatherIcon(hData.weatherCode || 0, hData.isDay || 1)}</div>
-                      </div>
-                    );
-                  })}
+                  <div style={s.windCard}><div style={s.windLabel}>10 m</div><div style={s.windValue}>{getWindArrow(currentData.windDir)} {Math.round(currentData.windSpeed)} km/h</div><div style={s.windDir}>{getWindDirection(currentData.windDir)}</div><div style={s.windGust}>⚡ {Math.round(currentData.windGust)} km/h</div></div>
+                  <div style={s.windCard}><div style={s.windLabel}>80 m</div><div style={s.windValue}>{currentData.wind80m ? `${getWindArrow(currentData.windDir80m)} ${Math.round(currentData.wind80m)}` : 'N/D'}</div><div style={s.windDir}>{currentData.wind80m ? getWindDirection(currentData.windDir80m) : '--'}</div></div>
+                  <div style={s.windCard}><div style={s.windLabel}>120 m</div><div style={s.windValue}>{currentData.wind120m ? `${getWindArrow(currentData.windDir120m)} ${Math.round(currentData.wind120m)}` : 'N/D'}</div><div style={s.windDir}>{currentData.wind120m ? getWindDirection(currentData.windDir120m) : '--'}</div></div>
                 </div>
               </div>
             </div>
@@ -384,43 +353,12 @@ export default function Home() {
               <div style={s.thermalSection}>
                 <h4 style={s.sectionSubtitle}>🔥 Analisi Termiche</h4>
                 <div style={s.thermalGrid}>
-                  <div style={s.thermalCard}><div style={s.thermalLabel}>Temperatura media</div><div style={s.thermalValue}>{Math.round(currentData.temperature)}°C</div></div>
+                  <div style={s.thermalCard}><div style={s.thermalLabel}>Temperatura</div><div style={s.thermalValue}>{Math.round(currentData.temperature)}°C</div></div>
                   <div style={s.thermalCard}><div style={s.thermalLabel}>Delta termico</div><div style={s.thermalValue}>{thermalDelta}°C</div></div>
-                  <div style={s.thermalCard}><div style={s.thermalLabel}>Nuvolosità media</div><div style={s.thermalValue}>{Math.round(currentData.cloudCover)}%</div></div>
-                  <div style={s.thermalCard}><div style={s.thermalLabel}>Umidità media</div><div style={s.thermalValue}>{Math.round(currentData.humidity)}%</div></div>
+                  <div style={s.thermalCard}><div style={s.thermalLabel}>Nuvolosità</div><div style={s.thermalValue}>{Math.round(currentData.cloudCover)}%</div></div>
+                  <div style={s.thermalCard}><div style={s.thermalLabel}>Umidità</div><div style={s.thermalValue}>{Math.round(currentData.humidity)}%</div></div>
                   <div style={s.thermalCard}><div style={s.thermalLabel}>Base nuvole</div><div style={s.thermalValue}>{Math.round((currentData.temperature - currentData.dewPoint) * 120 + site.alt)}m</div></div>
-                  <div style={s.thermalCard}><div style={s.thermalLabel}>Plafond</div><div style={s.thermalValue}>{Math.round(site.alt + (thermalDelta * 100))}m</div></div>
-                  <div style={s.thermalCard}><div style={s.thermalLabel}>Galleggiamento</div><div style={s.thermalValue}>{thermalDelta > 10 ? 'Eccellente ⭐' : thermalDelta > 6 ? 'Buono 👍' : 'Limitato 🫤'}</div></div>
-                  <div style={s.thermalCard}>
-                    <div style={s.thermalLabel}>Cross Country</div>
-                    <div style={{ ...s.thermalValue, color: thermalDelta > 10 && currentData.windSpeed < 20 ? '#4caf50' : '#ff9800' }}>
-                      {thermalDelta > 10 && currentData.windSpeed < 20 ? '✅ Favorevole' : '🫤 Valutare'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div style={s.hourlyThermalSection}>
-                <h4 style={s.sectionSubtitle}>⏰ Sviluppo orario termiche (10:00 - 18:00)</h4>
-                <div style={s.hourlyThermalGrid}>
-                  {Array.from({ length: 9 }, (_: number, i: number) => i + 10).map((hour: number) => {
-                    const hData = dayData?.find((h: any) => h.time.getHours() === hour);
-                    if (!hData) return<div key={hour} style={s.hourlyThermalCard}>--</div>;
-                    const temp = hData.temperature;
-                    const cloud = hData.cloudCover;
-                    const hum = hData.humidity;
-                    const score = (temp > 22 ? 2 : temp > 18 ? 1 : 0) +
-                                  (cloud < 30 ? 2 : cloud < 50 ? 1 : 0) +
-                                  (hum < 50 ? 1 : 0);
-                    const label = score >= 5 ? 'Forte 🔥' : score >= 3 ? 'Media 💪' : score >= 1 ? 'Debole 🫤' : 'Assente ❄️';
-                    const color = score >= 5 ? '#ff1744' : score >= 3 ? '#ff6d00' : score >= 1 ? '#ffd600' : '#4fc3f7';
-                    return (
-                      <div key={hour} style={s.hourlyThermalCard}>
-                        <div style={s.hourlyTime}>{String(hour).padStart(2, '0')}:00</div>
-                        <div style={{ ...s.hourlyThermalValue, color }}>{label}</div>
-                        <div style={s.hourlyThermalSub}>{Math.round(temp)}°C • {Math.round(cloud)}%</div>
-                      </div>
-                    );
-                  })}
+                  <div style={s.thermalCard}><div style={s.thermalLabel}>Potentiale termico</div><div style={s.thermalValue}>{thermalStrength.label}</div></div>
                 </div>
               </div>
             </div>
@@ -435,37 +373,15 @@ export default function Home() {
                   umidità al {Math.round(currentData.humidity)}% e nuvolosità al {Math.round(currentData.cloudCover)}%.
                   {currentData.windSpeed > 20 ? ` 💨 Vento sostenuto a ${Math.round(currentData.windSpeed)} km/h.` : ` 🍃 Vento leggero a ${Math.round(currentData.windSpeed)} km/h.`}
                   {currentData.precipitation > 0 ? ` 🌧️ Possibili precipitazioni (${currentData.precipitation} mm).` : ' ✅ Nessuna precipitazione prevista.'}
-                  {thermalDelta > 8 ? ' 🔥 Buon delta termico, condizioni favorevoli per il volo.' : ' 🫤 Delta termico ridotto, volo locale.'}
                 </p>
               </div>
               <div style={s.analysisSection}>
                 <h4 style={s.sectionSubtitle}>💡 Consigli per il Volo</h4>
                 <p style={s.analysisText}>
                   <strong>Valutazione del rischio:</strong>{' '}
-                  {currentData.windSpeed > 25 || currentData.precipitation > 0.5 ? '🔴 ALTO - Condizioni pericolose, sconsigliato volare.' :
-                   currentData.windSpeed > 18 ? '🟡 MEDIO - Condizioni impegnative, richiesta esperienza.' : '🟢 BASSO - Condizioni favorevoli.'}
-                  <br /><strong>Vento:</strong> {currentData.windSpeed < 8 ? '💨 Vento debole, possibili difficoltà di decollo.' :
-                   currentData.windSpeed < 20 ? '✅ Vento ideale (5-18 km/h).' : '⚠️ Vento sostenuto, attenzione.'}
+                  {currentData.windSpeed > 25 || currentData.precipitation > 0.5 ? '🔴 ALTO' :
+                   currentData.windSpeed > 18 ? '🟡 MEDIO' : '🟢 BASSO'}
                   <br /><strong>Termiche:</strong> {thermalStrength.label}
-                  <br /><strong>Momento migliore:</strong> {currentData.windSpeed < 20 && currentData.cloudCover < 60 ? '🕐 Condizioni ottimali per volare ora!' : '⚠️ Valutare le condizioni prima di volare.'}
-                </p>
-              </div>
-              <div style={s.analysisSection}>
-                <h4 style={s.sectionSubtitle}>🏔️ Quote e Plafond</h4>
-                <p style={s.analysisText}>
-                  <strong>Base decollo:</strong> {site.alt}m<br />
-                  <strong>Base delle nuvole:</strong> {Math.round((currentData.temperature - currentData.dewPoint) * 120 + site.alt)}m<br />
-                  <strong>Plafond termico massimo:</strong> {Math.round(site.alt + (thermalDelta * 100))}m<br />
-                  <strong>Delta termico:</strong> {thermalDelta}°C<br />
-                  {thermalDelta > 8 && currentData.windSpeed < 20 ? '✅ Condizioni favorevoli per cross country.' : '🫤 Condizioni limitate per cross country.'}
-                </p>
-              </div>
-              <div style={s.analysisSection}>
-                <h4 style={s.sectionSubtitle}>⛈️ Allerta Temporali</h4>
-                <p style={s.analysisText}>
-                  {currentData.weatherCode >= 95 ? '🔴 ALLERTA TEMPORALI IN CORSO! Volo sconsigliato.' :
-                   currentData.weatherCode >= 80 ? '🟡 ATTENZIONE: Possibili rovesci. Monitorare l\'evoluzione.' :
-                   '✅ Nessun temporale previsto. Cielo sereno o poco nuvoloso.'}
                 </p>
               </div>
             </div>
@@ -474,133 +390,39 @@ export default function Home() {
       </div>
 
       <footer style={s.footer}>
-        <p style={s.footerText}>🐰 Vola sicuro e divertiti! 🪂 • Dati da Open-Meteo • Aggiornamento automatico ogni 30 min</p>
+        <p style={s.footerText}>🐰 Vola sicuro e divertiti! 🪂 • Dati da Open-Meteo</p>
       </footer>
     </div>
   );
 }
 
 const s: Record<string, React.CSSProperties> = {
-  app: {
-    background: 'linear-gradient(145deg, #1a2a3a 0%, #0d1b2a 100%)',
-    color: '#e8f0f8',
-    minHeight: '100vh',
-    padding: '16px',
-    fontFamily: "'Segoe UI', system-ui, -apple-system, sans-serif",
-  },
-  loadingContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-    background: 'linear-gradient(145deg, #1a2a3a, #0d1b2a)',
-  },
-  spinner: {
-    width: '48px',
-    height: '48px',
-    border: '4px solid rgba(76, 175, 80, 0.2)',
-    borderTopColor: '#4caf50',
-    borderRadius: '50%',
-    animation: 'spin 1s linear infinite',
-  },
+  app: { background: 'linear-gradient(145deg, #1a2a3a 0%, #0d1b2a 100%)', color: '#e8f0f8', minHeight: '100vh', padding: '16px', fontFamily: "'Segoe UI', system-ui, sans-serif" },
+  loadingContainer: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'linear-gradient(145deg, #1a2a3a, #0d1b2a)' },
+  spinner: { width: '48px', height: '48px', border: '4px solid rgba(76, 175, 80, 0.2)', borderTopColor: '#4caf50', borderRadius: '50%', animation: 'spin 1s linear infinite' },
   loadingText: { marginTop: '16px', fontSize: '1.2rem', color: '#e8f0f8' },
   loadingSub: { fontSize: '0.9rem', color: '#8899aa' },
-  errorContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-    background: 'linear-gradient(145deg, #1a2a3a, #0d1b2a)',
-    padding: '20px',
-  },
+  errorContainer: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'linear-gradient(145deg, #1a2a3a, #0d1b2a)', padding: '20px' },
   errorText: { color: '#ff6b6b', fontSize: '1.1rem', marginBottom: '16px', textAlign: 'center' },
-  retryButton: {
-    background: '#4caf50',
-    color: '#fff',
-    border: 'none',
-    padding: '10px 24px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    fontWeight: 600,
-  },
-  header: {
-    textAlign: 'center',
-    padding: '16px 0',
-    borderBottom: '2px solid rgba(76, 175, 80, 0.3)',
-    marginBottom: '20px',
-  },
-  logoContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '10px',
-    flexWrap: 'wrap',
-  },
-  rabbitHop: {
-    fontSize: '2.8rem',
-    display: 'inline-block',
-    animation: 'hop 1.2s ease-in-out infinite',
-  },
-  paragliderFloat: {
-    fontSize: '2.2rem',
-    display: 'inline-block',
-    animation: 'float 2.5s ease-in-out infinite',
-  },
-  logoText: {
-    fontSize: '2.2rem',
-    fontWeight: 800,
-    background: 'linear-gradient(135deg, #4caf50, #8bc34a)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    letterSpacing: '-0.5px',
-  },
+  retryButton: { background: '#4caf50', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem', fontWeight: 600 },
+  header: { textAlign: 'center', padding: '16px 0', borderBottom: '2px solid rgba(76, 175, 80, 0.3)', marginBottom: '20px' },
+  logoContainer: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' },
+  rabbitHop: { fontSize: '2.8rem', display: 'inline-block', animation: 'hop 1.2s ease-in-out infinite' },
+  paragliderFloat: { fontSize: '2.2rem', display: 'inline-block', animation: 'float 2.5s ease-in-out infinite' },
+  logoText: { fontSize: '2.2rem', fontWeight: 800, background: 'linear-gradient(135deg, #4caf50, #8bc34a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.5px<dyad-write path="src/pages/Index.tsx" description="Continuazione dal punto esatto di interruzione - completamento del file">
+  logoText: { fontSize: '2.2rem', fontWeight: 800, background: 'linear-gradient(135deg, #4caf50, #8bc34a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.5px' },
   subtitle: { fontSize: '0.9rem', color: '#8899aa', marginTop: '4px' },
   updateInfo: { fontSize: '0.75rem', color: '#667788', marginTop: '2px' },
-  mainGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'minmax(260px, 320px) 1fr',
-    gap: '16px',
-    maxWidth: '1440px',
-    margin: '0 auto',
-  },
-  leftPanel: {
-    background: 'rgba(255,255,255,0.04)',
-    borderRadius: '16px',
-    border: '2px solid rgba(76, 175, 80, 0.25)',
-    padding: '12px',
-    height: 'calc(100vh - 200px)',
-    overflow: 'hidden',
-    backdropFilter: 'blur(8px)',
-  },
+  mainGrid: { display: 'grid', gridTemplateColumns: 'minmax(260px, 320px) 1fr', gap: '16px', maxWidth: '1440px', margin: '0 auto' },
+  leftPanel: { background: 'rgba(255,255,255,0.04)', borderRadius: '16px', border: '2px solid rgba(76, 175, 80, 0.25)', padding: '12px', height: 'calc(100vh - 200px)', overflow: 'hidden', backdropFilter: 'blur(8px)' },
   sectionTitle: { fontSize: '1.1rem', color: '#4caf50', marginBottom: '12px', fontWeight: 600 },
   scrollList: { overflowY: 'auto', height: 'calc(100% - 44px)', paddingRight: '4px' },
-  siteCard: {
-    background: 'rgba(255,255,255,0.03)',
-    border: '2px solid rgba(255,255,255,0.1)',
-    borderRadius: '12px',
-    padding: '10px 12px',
-    marginBottom: '8px',
-    cursor: 'pointer',
-    width: '100%',
-    textAlign: 'left',
-    transition: 'all 0.2s ease',
-  },
+  siteCard: { background: 'rgba(255,255,255,0.03)', border: '2px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '10px 12px', marginBottom: '8px', cursor: 'pointer', width: '100%', textAlign: 'left', transition: 'all 0.2s ease' },
   siteCardTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   siteCardName: { fontSize: '0.95rem', fontWeight: 600, color: '#e8f0f8' },
   siteCardWeather: { fontSize: '1.3rem' },
   siteCardDetails: { display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#8899aa', marginTop: '2px' },
-  rightPanel: {
-    background: 'rgba(255,255,255,0.04)',
-    borderRadius: '16px',
-    border: '2px solid rgba(76, 175, 80, 0.25)',
-    padding: '16px',
-    maxHeight: 'calc(100vh - 200px)',
-    overflowY: 'auto',
-    backdropFilter: 'blur(8px)',
-  },
+  rightPanel: { background: 'rgba(255,255,255,0.04)', borderRadius: '16px', border: '2px solid rgba(76, 175, 80, 0.25)', padding: '16px', maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', backdropFilter: 'blur(8px)' },
   siteHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.06)' },
   siteName: { fontSize: '1.5rem', fontWeight: 700, color: '#e8f0f8' },
   siteInfo: { fontSize: '0.8rem', color: '#8899aa' },
@@ -630,11 +452,6 @@ const s: Record<string, React.CSSProperties> = {
   meteoValue: { fontSize: '1.1rem', fontWeight: 'bold', color: '#e8f0f8' },
   meteoSub: { fontSize: '0.65rem', color: '#667788', marginTop: '2px' },
   sectionSubtitle: { fontSize: '0.95rem', color: '#4caf50', marginBottom: '10px', fontWeight: 600 },
-  pressureSection: { background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' },
-  pressureGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '8px' },
-  pressureCard: { textAlign: 'center', padding: '8px', background: 'rgba(255,255,255,0.04)', borderRadius: '8px' },
-  pressureLabel: { fontSize: '0.7rem', color: '#8899aa' },
-  pressureValue: { fontSize: '1.1rem', fontWeight: 'bold', color: '#e8f0f8' },
   windSection: { marginBottom: '12px' },
   windGrid3: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' },
   windCard: { textAlign: 'center', padding: '10px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' },
@@ -642,24 +459,11 @@ const s: Record<string, React.CSSProperties> = {
   windValue: { fontSize: '1rem', fontWeight: 'bold', color: '#e8f0f8' },
   windDir: { fontSize: '0.75rem', color: '#8899aa' },
   windGust: { fontSize: '0.7rem', color: '#ff6b6b' },
-  windProfileSection: { marginBottom: '12px' },
-  hourlyWindGrid: { display: 'grid', gridTemplateColumns: 'repeat(11, 1fr)', gap: '2px', overflowX: 'auto' },
-  hourlyWindCard: { textAlign: 'center', padding: '6px 2px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', minWidth: '40px' },
-  hourlyTime: { fontSize: '0.55rem', color: '#8899aa' },
-  hourlyWind: { display: 'flex', flexDirection: 'column', alignItems: 'center' },
-  hourlySpeed: { fontSize: '0.75rem', fontWeight: 'bold', color: '#e8f0f8' },
-  hourlyDir: { fontSize: '0.5rem', color: '#667788' },
-  hourlyWeather: { fontSize: '0.7rem' },
   thermalSection: { marginBottom: '12px' },
   thermalGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' },
   thermalCard: { background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '10px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' },
   thermalLabel: { fontSize: '0.7rem', color: '#8899aa' },
   thermalValue: { fontSize: '1rem', fontWeight: 'bold', color: '#e8f0f8' },
-  hourlyThermalSection: { marginBottom: '12px' },
-  hourlyThermalGrid: { display: 'grid', gridTemplateColumns: 'repeat(9, 1fr)', gap: '4px', overflowX: 'auto' },
-  hourlyThermalCard: { textAlign: 'center', padding: '6px 2px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', minWidth: '50px' },
-  hourlyThermalValue: { fontSize: '0.7rem', fontWeight: 'bold' },
-  hourlyThermalSub: { fontSize: '0.55rem', color: '#667788' },
   analysisSection: { background: 'rgba(0,0,0,0.2)', padding: '12px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '10px' },
   analysisText: { fontSize: '0.85rem', lineHeight: '1.6', color: '#d0d8e0' },
   footer: { textAlign: 'center', marginTop: '20px', padding: '12px 0', borderTop: '1px solid rgba(255,255,255,0.06)' },
