@@ -57,7 +57,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState(0);
   const [selectedHour, setSelectedHour] = useState(12);
-  const [activeTab, setActiveTab] = useState<'meteo' | 'venti' | 'termiche' | 'analisi'>('meteo');
+  const [activeTab, setActiveTab] = useState('meteo');
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
   const site = DECOLLI.find(d => d.id === selectedId)!;
@@ -102,7 +102,6 @@ export default function Home() {
           humidity: raw.hourly.relativehumidity_2m[i],
           cloudCover: raw.hourly.cloudcover[i],
           precipitation: raw.hourly.precipitation[i] || 0,
-          visibility: raw.hourly.visibility ? raw.hourly.visibility[i] / 1000 : 40,
           windSpeed: raw.hourly.wind_speed_10m[i],
           windGust: raw.hourly.wind_gusts_10m ? raw.hourly.wind_gusts_10m[i] : raw.hourly.wind_speed_10m[i] + 8,
           windDir: raw.hourly.wind_direction_10m[i],
@@ -291,7 +290,7 @@ export default function Home() {
           )}
 
           <div style={s.tabContainer}>
-            {(['meteo', 'venti', 'termiche', 'analisi'] as const).map((tab) => (
+            {['meteo', 'venti', 'termiche', 'analisi'].map((tab) => (
               <button key={tab} onClick={() => setActiveTab(tab)}
                 style={{...s.tabButton, background: activeTab === tab ? 'rgba(76, 175, 80, 0.2)' : 'transparent', borderBottom: activeTab === tab ? '2px solid #4caf50' : '2px solid transparent'}}>
                 {tab === 'meteo' && '🌤️ Meteo'}{tab === 'venti' && '💨 Venti'}{tab === 'termiche' && '🔥 Termiche'}{tab === 'analisi' && '🤖 Analisi'}
@@ -358,7 +357,7 @@ export default function Home() {
               <div style={s.windProfileSection}>
                 <h4 style={s.sectionSubtitle}>📊 Vento orario (9:00 - 19:00)</h4>
                 <div style={s.hourlyWindGrid}>
-                  {Array.from({ length: 11 }, (_, i) => i + 9).map(hour => {
+                  {Array.from({ length: 11 }, (_, i) => i + 9).map((hour: number) => {
                     const hData = dayData?.find((h: any) => h.time.getHours() === hour);
                     if (!hData) return <div key={hour} style={s.hourlyWindCard}>--</div>;
                     return (
@@ -398,9 +397,9 @@ export default function Home() {
               <div style={s.hourlyThermalSection}>
                 <h4 style={s.sectionSubtitle}>⏰ Sviluppo orario termiche (10:00 - 18:00)</h4>
                 <div style={s.hourlyThermalGrid}>
-                  {Array.from({ length: 9 }, (_, i) => i +<dyad-write path="src/pages/Index.tsx" description="Completamento del file Index.tsx dal punto esatto di interruzione">
- 10)).map((hour: number) => {
+                  {Array.from({ length: 9 }, (_: number, i: number) => i + 10).map((hour: number) => {
                     const hData = dayData?.find((h: any) => h.time.getHours() === hour);
+                    if (!hData) return <div key={hour} style={s.hour<dyad-write path="src/pages/Index.tsx" description="Completamento del file Index.tsx dal punto esatto in cui si era interrotto">
                     if (!hData) return <div key={hour} style={s.hourlyThermalCard}>--</div>;
                     const temp = hData.temperature;
                     const cloud = hData.cloudCover;
