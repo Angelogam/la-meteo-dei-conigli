@@ -52,6 +52,9 @@ export function MeteoTab({
     return arr;
   }, [startHour, endHour]);
 
+  const windGust = current.windGust ?? 0;
+  const pressure = current.pressure ?? 0;
+
   return (
     <div className="space-y-4 text-slate-200">
       {/* Select day - pillole eleganti con click per dettaglio */}
@@ -128,7 +131,7 @@ export function MeteoTab({
               </div>
               <div className="flex items-center gap-1.5 justify-end">
                 <Gauge className="w-3 h-3 text-purple-400" />
-                <span className="text-[11px] font-medium text-slate-200">{Math.round(current.windGust)} km/h</span>
+                <span className="text-[11px] font-medium text-slate-200">{Math.round(windGust)} km/h</span>
               </div>
               <div className="flex items-center gap-1.5 justify-end">
                 <Cloud className="w-3 h-3 text-slate-400" />
@@ -137,7 +140,7 @@ export function MeteoTab({
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-600 flex items-center justify-between text-[11px]">
-            <span className="text-slate-400">Pressione {Math.round(current.pressure)} hPa</span>
+            <span className="text-slate-400">Pressione {Math.round(pressure)} hPa</span>
             <span className="text-slate-400">UV {current.uvIndex ?? "—"}</span>
           </div>
         </CardContent>

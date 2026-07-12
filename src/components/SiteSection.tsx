@@ -10,7 +10,7 @@ interface SiteSectionProps {
   weatherMap?: Record<string, HourData>;
 }
 
-export const SiteSection = ({ selected, current, onSelect, weatherMap }: SiteSectionProps) => {
+export const SiteSection = ({ selected, current, onSelect, weatherMap = {} }: SiteSectionProps) => {
   return (
     <SiteList
       selected={selected}
