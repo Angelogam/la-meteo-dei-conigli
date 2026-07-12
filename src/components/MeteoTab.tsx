@@ -24,6 +24,7 @@ interface MeteoTabProps {
   startHour?: number;
   endHour?: number;
   termicheHourly?: { hour: number; termiche: TermicheData }[];
+  dayData?: HourData[];
 }
 
 export function MeteoTab({
@@ -41,6 +42,7 @@ export function MeteoTab({
   startHour = 9,
   endHour = 19,
   termicheHourly,
+  dayData,
 }: MeteoTabProps) {
   const hours = useMemo(() => {
     const arr: { value: number; label: string }[] = [];
@@ -142,13 +144,20 @@ export function MeteoTab({
       </Card>
 
       {/* Grafico termiche completo — quote, venti, forza nell'arco della giornata */}
-      {termicheHourly && termicheHourly.length > 0 && (
+      {termicheHourly && termicheHourly.length > 0 ? (
         <Card className="border border-amber-600/50 bg-slate-800/80 shadow-lg overflow-hidden">
           <CardContent className="p-4">
             <GraficoTermiche hourly={termicheHourly} oraCorrente={hour} />
           </CardContent>
         </Card>
-      )}
+      ) : dayData && dayData.length > 0 ? (
+        <div className="flex items-center justify-center p-6 rounded-xl bg-slate-700/40 border border-dashed border-slate-500/40">
+          <div className="text-center">
+            <TrendingUp className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+            <p className="text-xs text-slate-400">Calcolo termiche in corso...</p>
+          </div>
+        </div>
+      ) : null}
 
       {/* AI analysis preview */}
       {aiData && (

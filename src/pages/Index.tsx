@@ -354,6 +354,7 @@ const Index = () => {
                 month: "long",
                 year: "numeric",
               })}
+              <span className="ml...span>
               <span className="ml-2 text-blue-300 font-bold">
                 {String(hour).padStart(2, "0")}:{String(new Date().getMinutes()).padStart(2, "0")}
               </span>
@@ -391,6 +392,7 @@ const Index = () => {
                 onDayDetailClick={handleDayDetailClick}
                 onHourChange={setHour}
                 termicheHourly={termicheHourly}
+                dayData={dayData}
               />
             )}
 
