@@ -19,7 +19,7 @@ import { generateAiAnalysis } from "@/utils/meteoAI";
 import { generaTermicheOrarie } from "@/utils/termiche";
 import { DECOLLI, type Decollo } from "@/data/decolli";
 import type { MeteoData, HourData, AiAnalysis, WindProfile } from "@/types/meteo";
-import { CalendarDays, ChevronRight, CloudSun, MapPin, Menu } from "lucide-react";
+import { MapPin, Menu } from "lucide-react";
 
 interface DecolloMeteo {
   site: Decollo;
@@ -319,7 +319,7 @@ const Index = () => {
                 Meteo dei <span className="text-green-300">Conigli</span>
               </h1>
               <p className="text-sm md:text-base text-green-200/90 font-medium text-center tracking-wide mt-0.5">
-                🪂 Previsioni per volo libero &middot; 9:00&ndash;19:00 &middot; aggiornato ogni minuto
+                🪂 Previsioni per volo libero · 9:00–19:00 · aggiornato ogni minuto
               </p>
             </div>
             <span
@@ -438,7 +438,7 @@ const Index = () => {
               className="text-sm border border-slate-500/60 text-slate-200 hover:bg-slate-700 bg-slate-800/80 px-5 py-2.5 rounded-xl transition-colors"
             >
               <MapPin className="w-4 h-4 mr-2 inline" />
-              Dettaglio orario {currentSite?.name} (9:00&ndash;19:00)
+              Dettaglio orario {currentSite?.name} (9:00–19:00)
             </button>
           </div>
 
@@ -488,10 +488,10 @@ const Index = () => {
       <footer className="relative z-10 fixed bottom-0 left-0 right-0 text-center py-3 border-t border-green-500/30 bg-slate-800/80 backdrop-blur-md shadow-lg">
         <div className="max-w-5xl mx-auto px-4 flex items-center justify-center gap-8">
           <p className="text-xs text-slate-300">
-            Basato su dati Open-Meteo &middot; previsioni 9:00&ndash;19:00
+            Basato su dati Open-Meteo · previsioni 9:00–19:00
           </p>
           <p className="text-xs text-slate-300">
-            &copy; {new Date().getFullYear()} Meteo dei Conigli
+            © {new Date().getFullYear()} Meteo dei Conigli
           </p>
         </div>
       </footer>
