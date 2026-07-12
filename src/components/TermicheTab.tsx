@@ -1,9 +1,10 @@
 "use client";
 
 import React from "react";
-import { Sun, Waves, Wind, Thermometer as ThermometerIcon, ArrowUp, Clock } from "lucide-react";
+import { Sun } from "lucide-react";
 import { generaTermicheOrarie } from "@/utils/termiche";
 import type { HourData } from "@/types/meteo";
+import type { TermicheData } from "@/utils/termiche";
 
 interface DayLabel {
   value: number;
@@ -20,6 +21,29 @@ interface TermicheTabProps {
   fetchGiorno?: (giorno: number) => void;
 }
 
+interface TermicheRow {
+  hour: number;
+  termiche: TermicheData;
+}
+
+function getTemp(dayData: HourData[], hour: number): number {
+  const h = dayData.find(d => d.time.getHours() === hour);
+  return h ? h.temperature : 15;
+}
+
+function getWindSpeed(dayData: HourData[], hour: number): number {
+  const h = dayData.find(d => d.time.getHours() === hour);
+  return h ? Math.round(h.windSpeed) : 0;
+}
+
+function getQuality(forza: number): number {
+  if (forza >= 7) return 5;
+  if (forza >= 5) return 4;
+  if (forza >= 3) return 3;
+  if (forza >= 1) return 2;
+  return 1;
+}
+
 const TermicheTab: React.FC<TermicheTabProps> = ({
   dayData,
   altitude,
@@ -29,11 +53,18 @@ const TermicheTab: React.FC<TermicheTabProps> = ({
   onDaySelect,
   fetchGiorno,
 }) => {
-  const termiche = generaTermicheOrarie(dayData, altitude);
+  const rawTermiche = generaTermicheOrarie(dayData, altitude);
 
-  const dataOdierna = dayData[0]?.time || new Date();
+  // Arricchisci con dati flat per visualizzazione
+  const termiche: (TermicheRow & { temp: number; windSpeed: number; quality: number })[] = rawTermiche.map((t) => ({
+    ...t,
+    temp: getTemp(dayData, t.hour),
+    windSpeed: getWindSpeed(dayData, t.hour),
+    quality: getQuality(t.termiche.forza),
+  }));
+
   const maxTemp = Math.max(...termiche.map((t) => t.temp), 15);
-  const maxBase = Math.max(...termiche.map((t) => t.base), 500);
+  const maxBase = Math.max(...termiche.map((t) => t.termiche.base), 500);
   const maxVel = Math.max(...termiche.map((t) => t.windSpeed), 10);
 
   if (!termiche.length) {
@@ -109,7 +140,7 @@ const TermicheTab: React.FC<TermicheTabProps> = ({
                     >
                       <td className="py-2 pr-2 font-mono">{t.hour}:00</td>
                       <td className="text-right py-2 px-2 font-mono">{t.temp}°C</td>
-                      <td className="text-right py-2 px-2 font-mono">{t.base}m</td>
+                      <td className="text-right py-2 px-2 font-mono">{t.termiche.base}m</td>
                       <td className="text-right py-2 px-2 font-mono">{t.windSpeed}km/h</td>
                       <td className={`text-right py-2 pl-2 font-bold ${qualitàClasse}`}>
                         {"★".repeat(t.quality)}
@@ -126,7 +157,7 @@ const TermicheTab: React.FC<TermicheTabProps> = ({
             <div className="space-y-1">
               {termiche.slice(0, 10).map((t, idx) => {
                 const altezzaTemp = Math.round((t.temp / maxTemp) * 100);
-                const altezzaBase = Math.round((t.base / maxBase) * 100);
+                const altezzaBase = Math.round((t.termiche.base / maxBase) * 100);
                 const altezzaVel = Math.round((t.windSpeed / maxVel) * 100);
 
                 return (
@@ -143,7 +174,7 @@ const TermicheTab: React.FC<TermicheTabProps> = ({
                       <div
                         className="h-2.5 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all"
                         style={{ width: `${altezzaBase}%` }}
-                        title={`Base: ${t.base}m`}
+                        title={`Base: ${t.termiche.base}m`}
                       />
                       <div
                         className="h-2.5 rounded-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all"
