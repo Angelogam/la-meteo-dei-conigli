@@ -19,13 +19,15 @@ import AlertBanner from "@/components/AlertBanner";
 import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
 import DebugMeteo from "@/components/DebugMeteo";
+import WeatherDashboard from "@/components/WeatherDashboard";
 import {
   getWeatherAlert,
   getStabilityIndex,
   getWindDirection,
+  getWindProfile,
   WindLevel,
 } from "@/utils/weatherHelpers";
-import { CloudSun, Sparkles, AlertTriangle, Bug } from "lucide-react";
+import { CloudSun, Sparkles, AlertTriangle, Bug, Wind, Flame, BrainCircuit } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 
 const Page = () => {
@@ -57,13 +59,18 @@ const Page = () => {
   const [showDebug, setShowDebug] = useState(false);
 
   const alert = useMemo(() => {
-    if (!currentData) return { level: "info", message: "Caricamento...", icon: "ℹ️" };
+    if (!currentData) return { level: "info" as const, message: "Caricamento...", icon: "ℹ️" };
     return getWeatherAlert(currentData, thermalDelta);
   }, [currentData, thermalDelta]);
 
   const stabilityIndex = useMemo(() => {
     if (!currentData) return { label: "N/D", color: "#64748b" };
     return getStabilityIndex(currentData.temperature, currentData.humidity, currentData.cloudCover);
+  }, [currentData]);
+
+  const windProfile: WindLevel[] = useMemo(() => {
+    if (!currentData) return [];
+    return getWindProfile(currentData.windSpeed, currentData.windDir);
   }, [currentData]);
 
   const windProfileSimple: WindLevel[] = useMemo(() => {
@@ -121,6 +128,13 @@ const Page = () => {
 
   if (loading && !dayData.length) return <LoadingScreen />;
   if (error && !dayData.length) return <ErrorScreen error={error} onRetry={loadWeather} />;
+
+  const tabs = [
+    { id: "meteo" as const, label: "Meteo", icon: <CloudSun className="w-4 h-4" />, gradient: "from-sky-500/30 to-sky-600/20" },
+    { id: "venti" as const, label: "Venti", icon: <Wind className="w-4 h-4" />, gradient: "from-cyan-500/30 to-cyan-600/20" },
+    { id: "termiche" as const, label: "Termiche", icon: <Flame className="w-4 h-4" />, gradient: "from-orange-500/30 to-orange-600/20" },
+    { id: "analisi" as const, label: "Analisi", icon: <BrainCircuit className="w-4 h-4" />, gradient: "from-purple-500/30 to-purple-600/20" },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-white flex flex-col">
@@ -188,34 +202,53 @@ const Page = () => {
               <HourSlider selectedHour={selectedHour} onChange={setSelectedHour} />
             </div>
 
-            <Tabs
-              value={activeTab}
-              onValueChange={(v: any) => setActiveTab(v)}
-              className="w-full"
-            >
-              <TabsList className="grid grid-cols-4 gap-1 bg-slate-800/60 rounded-xl p-1 border border-slate-700/30 text-sm">
-                <TabsTrigger value="meteo">Meteo</TabsTrigger>
-                <TabsTrigger value="venti">Venti</TabsTrigger>
-                <TabsTrigger value="termiche">Termiche</TabsTrigger>
-                <TabsTrigger value="analisi">Analisi</TabsTrigger>
-              </TabsList>
+            <WeatherDashboard
+              dayData={dayData}
+              altitude={site.altitude}
+              selectedHour={selectedHour}
+              onHourSelect={setSelectedHour}
+              windProfile={windProfile}
+              groundSpeed={currentData?.windSpeed}
+              groundDir={currentData?.windDir}
+            />
 
-              <TabsContent value="meteo" className="mt-4">
-                <MeteoTab currentData={currentData} dayData={dayData} site={{ alt: site.altitude }} thermalDelta={thermalDelta} stabilityIndex={stabilityIndex} />
-              </TabsContent>
+            <div className="grid grid-cols-4 gap-1.5 bg-slate-800/60 rounded-xl p-1.5 border border-slate-700/30">
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`
+                      relative flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg text-xs font-bold tracking-wide
+                      transition-all duration-200 overflow-hidden
+                      ${
+                        isActive
+                          ? `bg-gradient-to-br ${tab.gradient} text-white shadow-lg border border-white/10 scale-105`
+                          : "text-slate-400 hover:text-slate-200 hover:bg-slate-700/40 border border-transparent"
+                      }
+                    `}
+                  >
+                    {isActive && <div className="absolute inset-0 animate-shimmer pointer-events-none" />}
+                    <span className={isActive ? "drop-shadow-lg" : ""}>{tab.icon}</span>
+                    <span className="hidden sm:inline">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
 
-              <TabsContent value="venti" className="mt-4">
-                <VentiTab currentData={currentData} dayData={dayData} windProfile={windProfileSimple} />
-              </TabsContent>
-
-              <TabsContent value="termiche" className="mt-4">
-                <TermicheTab currentData={currentData} dayData={dayData} site={{ alt: site.altitude, lat: site.lat, lon: site.lon }} thermalDelta={thermalDelta} thermalStrength={stabilityIndex} hourlyData={hourlyDataForTermiche} selectedHour={selectedHour} selectedDay={selectedDay} />
-              </TabsContent>
-
-              <TabsContent value="analisi" className="mt-4">
-                <AnalisiTab currentData={currentData} site={{ name: site.name, alt: site.altitude }} thermalDelta={thermalDelta} selectedDateLabel={dateLabels[selectedDay]} />
-              </TabsContent>
-            </Tabs>
+            {activeTab === "meteo" && (
+              <MeteoTab currentData={currentData} dayData={dayData} site={{ alt: site.altitude }} thermalDelta={thermalDelta} stabilityIndex={stabilityIndex} />
+            )}
+            {activeTab === "venti" && (
+              <VentiTab currentData={currentData} dayData={dayData} windProfile={windProfileSimple} />
+            )}
+            {activeTab === "termiche" && (
+              <TermicheTab currentData={currentData} dayData={dayData} site={{ alt: site.altitude, lat: site.lat, lon: site.lon }} thermalDelta={thermalDelta} thermalStrength={stabilityIndex} hourlyData={hourlyDataForTermiche} selectedHour={selectedHour} selectedDay={selectedDay} />
+            )}
+            {activeTab === "analisi" && (
+              <AnalisiTab currentData={currentData} site={{ name: site.name, alt: site.altitude }} thermalDelta={thermalDelta} selectedDateLabel={dateLabels[selectedDay]} />
+            )}
           </div>
         </div>
       </main>
