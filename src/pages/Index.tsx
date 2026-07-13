@@ -15,7 +15,7 @@ import VentiTab from "@/components/VentiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiTab from "@/components/AnalisiTab";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
-import { Sparkles, Navigation, CloudSun, RefreshCw, Loader2 } from "lucide-react";
+import { Sparkles, Navigation, CloudSun, RefreshCw, Loader2, Clock, Timer } from "lucide-react";
 
 function formatDate(date: any): string {
   if (!date) return "";
@@ -46,7 +46,6 @@ export function Page() {
 
   const [animRefresh, setAnimRefresh] = useState(false);
 
-  // Animazione quando parte un refresh
   useEffect(() => {
     if (updating) {
       setAnimRefresh(true);
@@ -63,10 +62,8 @@ export function Page() {
   const currentDay = enrichedDaily?.[selectedDay];
   const currentDateStr = currentDay ? formatDate(currentDay.date) : "";
 
-  // Ottieni tutti i dati orari
   const hourlyData = meteoData?.hourly;
 
-  // Prepara site con lat/lon per TermicheTab
   const siteConCoordinate = {
     alt: site.altitude,
     lat: site.lat,
@@ -79,7 +76,6 @@ export function Page() {
     second: "2-digit",
   }) || "--:--";
 
-  // Formatta countdown
   const countdownMin = Math.floor(countdown);
   const countdownSec = Math.round((countdown - Math.floor(countdown)) * 60);
 
@@ -94,7 +90,7 @@ export function Page() {
 
       <header className="relative text-center py-5 md:py-6 border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-md overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-32 bg-gradient-to-b from-orange-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
-        
+
         <div className="flex items-center justify-center gap-3 md:gap-6 relative z-10">
           <div className="hidden sm:flex flex-col items-center animate-float-slow">
             <div className="relative icon-neon">
@@ -146,41 +142,82 @@ export function Page() {
           ))}
         </div>
 
-        {/* INDICATORE REFRESH + COUNTDOWN */}
-        <div className="absolute top-2 right-3 md:top-3 md:right-6 text-[10px] text-slate-500 flex items-center gap-2">
-          {/* Icona refresh animata */}
-          <button
-            onClick={loadWeather}
-            disabled={updating}
-            className={`p-1.5 rounded-full transition-all duration-300 ${
-              updating
-                ? "bg-emerald-500/20 text-emerald-300 cursor-not-allowed"
-                : "hover:bg-slate-700/50 hover:text-slate-200 text-slate-400"
-            }`}
-            title="Aggiorna ora"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${updating ? "animate-spin" : ""} ${animRefresh ? "animate-spin" : ""}`} />
-          </button>
-
-          {/* Pallino verde lampeggiante */}
-          <span className={`w-1.5 h-1.5 rounded-full ${updating ? "bg-yellow-400 animate-pulse" : "bg-emerald-400"}`} />
-
-          {/* Testo ultimo aggiornamento + countdown */}
-          <span className="font-mono tabular-nums hidden sm:inline">
-            {updating
-              ? "Aggiornamento..."
-              : `Agg. ${lastUpdateStr} · prox ${countdownMin}min`
+        {/* INDICATORE REFRESH + COUNTDOWN — GRANDE E VISIBILE */}
+        <div className="absolute top-2 right-3 md:top-4 md:right-6 flex items-center gap-3">
+          <div className={`
+            flex items-center gap-3 px-5 py-2.5 rounded-2xl border-2 backdrop-blur-md shadow-xl
+            transition-all duration-500
+            ${updating
+              ? "bg-emerald-900/40 border-emerald-400/60 shadow-emerald-400/20"
+              : "bg-slate-900/60 border-slate-600/40 hover:border-emerald-500/40 hover:bg-slate-800/60"
             }
-          </span>
-          <span className="font-mono tabular-nums sm:hidden">
-            {updating ? "..." : `${countdownMin}min`}
-          </span>
+          `}>
+            {/* BOTTONE REFRESH */}
+            <button
+              onClick={loadWeather}
+              disabled={updating}
+              className={`
+                p-2 rounded-xl transition-all duration-300
+                ${updating
+                  ? "bg-emerald-500/20 text-emerald-300 cursor-not-allowed"
+                  : "bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-emerald-300 border border-slate-600/30 hover:border-emerald-500/30"
+                }
+              `}
+              title="Aggiorna ora"
+            >
+              <RefreshCw className={`w-5 h-5 md:w-6 md:h-6 ${updating ? "animate-spin" : ""} ${animRefresh ? "animate-spin" : ""}`} />
+            </button>
+
+            {/* PALLINO + STATO */}
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col items-start">
+                <div className="flex items-center gap-2">
+                  <span className={`
+                    w-3 h-3 rounded-full
+                    ${updating ? "bg-yellow-400 animate-pulse ring-2 ring-yellow-400/30" : "bg-emerald-400 ring-2 ring-emerald-400/20"}
+                  `} />
+                  <span className="text-sm md:text-base font-bold text-white tracking-tight">
+                    {updating ? "AGGIORNAMENTO IN CORSO" : "DATI IN TEMPO REALE"}
+                  </span>
+                </div>
+                <span className="text-[11px] md:text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
+                  <Clock className="w-3 h-3" />
+                  Ultimo aggiornamento: {lastUpdateStr}
+                </span>
+              </div>
+
+              {/* DIVISORE */}
+              <div className="w-px h-10 bg-slate-600/40 mx-1" />
+
+              {/* COUNTDOWN GRANDE */}
+              <div className="flex items-center gap-2">
+                <Timer className={`w-5 h-5 ${countdownMin <= 5 ? "text-amber-400 animate-pulse" : "text-slate-400"}`} />
+                <div className="flex flex-col">
+                  {updating ? (
+                    <span className="text-base md:text-lg font-black text-emerald-300 tabular-nums">
+                      Caricamento...
+                    </span>
+                  ) : (
+                    <div className="flex items-baseline gap-1">
+                      <span className={`text-2xl md:text-3xl font-black tabular-nums drop-shadow-lg ${
+                        countdownMin <= 5 ? "text-amber-300" : countdownMin <= 10 ? "text-yellow-300" : "text-emerald-200"
+                      }`}>
+                        {countdownMin}
+                      </span>
+                      <span className="text-sm md:text-base font-bold text-slate-400">min</span>
+                    </div>
+                  )}
+                  <span className="text-[10px] text-slate-500 font-medium">Prossimo aggiornamento</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Barra di progresso refresh */}
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-700/50">
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-700/50">
           <div
-            className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-700 ease-linear"
+            className="h-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-amber-400 transition-all duration-700 ease-linear"
             style={{
               width: updating ? "100%" : `${refreshProgress}%`,
               opacity: updating ? 1 : 0.6,
@@ -205,11 +242,11 @@ export function Page() {
           <div className="flex-1 min-w-0 space-y-4">
             {/* Indicatore updating compatto */}
             {updating && (
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-yellow-900/20 border border-yellow-500/30 text-yellow-300 text-xs animate-pulse">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Aggiornamento previsioni in corso...</span>
-                <span className="ml-auto text-[10px] text-yellow-400/70 font-mono">
-                  {countdownMin}:{String(countdownSec).padStart(2, "0")}
+              <div className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-yellow-900/20 to-amber-900/20 border border-yellow-500/30 text-yellow-300 text-sm animate-pulse">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="font-bold">Aggiornamento previsioni in corso...</span>
+                <span className="ml-auto text-xs text-yellow-400/70 font-mono tabular-nums bg-yellow-900/30 px-3 py-1 rounded-lg">
+                  00:{String(countdownSec).padStart(2, "0")}
                 </span>
               </div>
             )}
