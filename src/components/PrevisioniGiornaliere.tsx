@@ -7,6 +7,7 @@ import {
   ArrowUp, CheckCircle, Gauge, Umbrella, Sparkles
 } from "lucide-react";
 import { degreesToCardinal, windArrow } from "@/utils/windDirections";
+import { calcolaTermiche } from "@/utils/termiche";
 
 interface PrevisioniGiornaliereProps {
   enrichedDaily: any[];
@@ -58,12 +59,10 @@ function getDominantWeatherCode(hourlyCodes: (number | undefined | null)[]): num
 
 function formatDate(date: any): string {
   if (!date) return "";
-
   if (typeof date === 'string' && date.includes('-')) {
     const [y, m, d] = date.split('-');
     return `${d}/${m}/${y}`;
   }
-  
   const d = date instanceof Date ? date : new Date(date);
   if (isNaN(d.getTime())) return String(date);
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
@@ -94,13 +93,11 @@ export default function PrevisioniGiornaliere({
     return getDominantWeatherCode(codici);
   }, [dayData]);
 
-  // Pioggia TOTALE reale
   const precipTotaleReale = useMemo(() => {
     if (!dayData || dayData.length === 0) return 0;
     return Math.round(dayData.reduce((sum: number, h: any) => sum + (h.precipitation || 0), 0) * 10) / 10;
   }, [dayData]);
 
-  // Check se c'è pioggia solo nelle ore serali (18+)
   const hasLatePrecip = useMemo(() => {
     if (!dayData || dayData.length === 0) return false;
     const evening = dayData.filter((h: any) => {
@@ -151,6 +148,7 @@ export default function PrevisioniGiornaliere({
     });
   }, [enrichedDaily, selectedDay, hasLatePrecip]);
 
+  // Fasce orarie usando calcolaTermiche UNIFICATO
   const fasce = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
 
@@ -182,47 +180,17 @@ export default function PrevisioniGiornaliere({
       const precipTot = Math.round(ore.reduce((s: number, h: any) => s + (h.precipitation || 0), 0) * 10) / 10;
       const humMedia = Math.round(media(ore.map((h: any) => h.humidity)));
       const pressMedia = Math.round(media(ore.map((h: any) => h.pressure || 1013)));
-      
-      const dewMedia = media(ore.map((h: any) => h.dewPoint || h.temperature - (100 - h.humidity) / 5));
-      const spread = Math.max(0, tempMedia - dewMedia);
-      const lcl = Math.max(200, Math.min(3000, Math.round(spread * 125)));
 
-      let salita = 0;
-      const ore10_15 = ore.filter((h: any) => { 
-        const hh = new Date(h.time).getHours(); 
-        return hh >= 10 && hh <= 15; 
-      });
-      
-      if (ore10_15.length > 0) {
-        const t80mValues = ore10_15.map((h: any) => h.temp80m).filter((v: any) => v != null);
-        const t120mValues = ore10_15.map((h: any) => h.temp120m).filter((v: any) => v != null);
-        
-        if (t80mValues.length > 0) {
-          const t80mMedia = media(t80mValues);
-          const t2mMedia = media(ore10_15.map((h: any) => h.temperature));
-          const gradienteReale = (t2mMedia - t80mMedia) / 0.78;
-          salita = Math.max(0, Math.min(8, (gradienteReale - 0.5) * 3.5));
-        } else if (t120mValues.length > 0) {
-          const t120mMedia = media(t120mValues);
-          const t2mMedia = media(ore10_15.map((h: any) => h.temperature));
-          const gradienteReale = (t2mMedia - t120mMedia) / 1.18;
-          salita = Math.max(0, Math.min(8, (gradienteReale - 0.5) * 3.5));
-        }
-      }
+      // Calcola termiche usando la funzione UNIFICATA per ogni ora, poi media
+      const termicheOrarie = ore.map((h: any) => calcolaTermiche(h, site.altitude));
+      const salitaMedia = media(termicheOrarie.map(t => t.rateo));
+      const baseMedia = Math.round(media(termicheOrarie.map(t => t.base)));
+      const topMedia = Math.round(media(termicheOrarie.map(t => t.top)));
+      const forzaMedia = media(termicheOrarie.map(t => t.forza));
 
-      if (salita === 0) {
-        const delta = tempMedia - dewMedia;
-        const salitaBase = delta * 0.1;
-        const bonusVento = windMedia >= 5 && windMedia <= 18 ? 1.2 : 0;
-        const malusVento = windMedia > 25 ? -1 : 0;
-        const bonusNuvole = cloudMedia >= 10 && cloudMedia <= 45 ? 0.8 : 0;
-        const malusPioggia = precipTot > 0.5 ? -3 : 0;
-        const bonusOrario = label === "Pomeriggio" ? 0.5 : label === "Mattina" ? 0.3 : 0;
-        salita = Math.max(0, salitaBase + bonusVento + malusVento + bonusNuvole + malusPioggia + bonusOrario);
-      }
-
-      salita = Math.round(salita * 10) / 10;
-      const top = Math.min(5000, lcl + Math.round(salita * 350));
+      const salita = Math.round(salitaMedia * 10) / 10;
+      const lcl = baseMedia;
+      const top = topMedia;
 
       let termicheLabel = "Assenti ❌";
       let termicheColore = "text-slate-400";
@@ -265,7 +233,7 @@ export default function PrevisioniGiornaliere({
       calcola(pomeriggio, "Pomeriggio", <CloudSun className="w-5 h-5 text-yellow-300" />, "border-sky-500/30"),
       calcola(sera, "Sera", <Moon className="w-5 h-5 text-indigo-300" />, "border-indigo-500/30"),
     ].filter(Boolean);
-  }, [dayData]);
+  }, [dayData, site.altitude]);
 
   if (!enrichedDaily || enrichedDaily.length === 0) {
     return <div className="text-center py-6 text-slate-400 text-sm">Caricamento previsioni...</div>;
