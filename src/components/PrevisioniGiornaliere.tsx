@@ -60,55 +60,64 @@ function isThunderstorm(code: number): boolean {
   return (code >= 95 && code <= 99) || code === 13;
 }
 
-/** Codice WMO dominante: sceglie il più frequente tra i codici, ma se ci sono temporali in MENO del 20% delle ore, li ignora */
+/** Codice WMO dominante: raggruppa per categoria e prende la più frequente */
 function getDominantWeatherCode(hourlyCodes: (number | undefined | null)[]): number {
   const valid = hourlyCodes.filter((c): c is number => c != null && !isNaN(c));
   if (valid.length === 0) return 0;
 
-  // Conta frequenze
-  const freq: Record<number, number> = {};
+  // Raggruppa per categoria
+  const categorie: Record<string, number[]> = {
+    sereno: [],
+    nuvole: [],
+    pioggia: [],
+    temporali: [],
+    nebbia: [],
+    altro: [],
+  };
+  
   for (const c of valid) {
-    freq[c] = (freq[c] || 0) + 1;
+    if (isGoodWeather(c)) categorie.sereno.push(c);
+    else if (isCloudy(c)) categorie.nuvole.push(c);
+    else if (isRain(c)) categorie.pioggia.push(c);
+    else if (isThunderstorm(c)) categorie.temporali.push(c);
+    else categorie.altro.push(c);
   }
-
-  // Controlla se ci sono temporali
-  const thunderCodes = valid.filter(c => isThunderstorm(c));
-  const thunderCount = thunderCodes.length;
-  const totalValid = valid.length;
-
-  // Se i temporali sono meno del 30% delle ore, li ignoriamo completamente
-  if (thunderCount > 0 && thunderCount / totalValid < 0.3) {
-    // Filtra via i codici di temporale
-    const nonThunderValid = valid.filter(c => !isThunderstorm(c));
-    if (nonThunderValid.length === 0) return 0;
-    
-    const nonThunderFreq: Record<number, number> = {};
-    for (const c of nonThunderValid) {
-      nonThunderFreq[c] = (nonThunderFreq[c] || 0) + 1;
+  
+  // Trova la categoria più numerosa
+  let maxCategoria = "sereno";
+  let maxCount = 0;
+  for (const [cat, arr] of Object.entries(categorie)) {
+    if (arr.length > maxCount) {
+      maxCount = arr.length;
+      maxCategoria = cat;
     }
-    
-    let maxFreq = 0;
-    let mostFrequent = nonThunderValid[0];
-    for (const [code, count] of Object.entries(nonThunderFreq)) {
-      if (count > maxFreq) {
-        maxFreq = count;
-        mostFrequent = parseInt(code);
+  }
+  
+  // Se la categoria più numerosa è sereno, restituisci 0/1 (sereno)
+  if (maxCategoria === "sereno") return 0;
+  // Se è nuvole, restituisci 2 o 3
+  if (maxCategoria === "nuvole") return 2;
+  // Se è pioggia, restituisci 61
+  if (maxCategoria === "pioggia") return 61;
+  // Se è temporali, controlla se sono davvero tanti
+  if (maxCategoria === "temporali") {
+    // Solo se i temporali sono più del 50% delle ore mostrali
+    if (categorie.temporali.length >= valid.length * 0.5) return 95;
+    // Altrimenti prendi la seconda categoria più frequente
+    let secondCategory = "sereno";
+    let secondCount = 0;
+    for (const [cat, arr] of Object.entries(categorie)) {
+      if (cat !== "temporali" && arr.length > secondCount) {
+        secondCount = arr.length;
+        secondCategory = cat;
       }
     }
-    return mostFrequent;
+    if (secondCategory === "nuvole") return 2;
+    if (secondCategory === "pioggia") return 61;
+    return 0;
   }
-
-  // Prendi il codice più frequente
-  let maxFreq = 0;
-  let mostFrequent = valid[0];
-  for (const [code, count] of Object.entries(freq)) {
-    if (count > maxFreq) {
-      maxFreq = count;
-      mostFrequent = parseInt(code);
-    }
-  }
-
-  return mostFrequent;
+  
+  return 0;
 }
 
 function formatDate(date: any): string {
@@ -135,18 +144,15 @@ export default function PrevisioniGiornaliere({
   selectedDay,
   onSelectDay,
 }: PrevisioniGiornaliereProps) {
-  // DEBUG: stampa i codici WMO delle ore
-  console.log("🔍 dayData weatherCodes:", dayData?.map((h: any) => ({ time: h.time, code: h.weatherCode })));
-  
-  // Calcola il weatherCode dominante dalla media delle ore del giorno
+  // Calcola il weatherCode dominante dalle ore del giorno
   const dominantCode = useMemo(() => {
     if (!dayData || dayData.length === 0) return 0;
     const codici = dayData.map((h: any) => h.weatherCode);
-    console.log("🔍 Codici WMO orari:", codici);
-    const result = getDominantWeatherCode(codici);
-    console.log("🔍 Codice dominante:", result);
-    return result;
+    return getDominantWeatherCode(codici);
   }, [dayData]);
+
+  // Se il codice dominante è 0/1/2 usiamo cloudsun per non mostrare il sole pieno se nuvoloso
+  const finalCode = dominantCode;
 
   // Calcola statistiche per fasce orarie REALI con dati Open-Meteo
   const fasce = useMemo(() => {
@@ -280,8 +286,8 @@ export default function PrevisioniGiornaliere({
           const isActive = idx === selectedDay;
           const dateStr = formatDate(day.date);
           
-          // Usa SEMPRE il codice dominante calcolato dalle ore se siamo sul giorno selezionato
-          const weatherCode = dominantCode;
+          // Usa SEMPRE finalCode (dominantCode) per TUTTI i giorni
+          const weatherCode = finalCode;
           
           const weatherInfo = getWeatherInfo(weatherCode, 36);
           const condizioni = weatherInfo.desc;
