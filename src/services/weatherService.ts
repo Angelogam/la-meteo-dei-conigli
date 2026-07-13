@@ -4,143 +4,45 @@ const BASE_URL = "https://api.open-meteo.com/v1/forecast";
 
 export class WeatherService {
   private buildUrl(lat: number, lon: number): string {
-    const params = new URLSearchParams({
-      latitude: lat.toString(),
-      longitude: lon.toString(),
-      hourly: [
-        "temperature_2m",
-        "relative_humidity_2m",
-        "dew_point_2m",
-        "apparent_temperature",
-        "precipitation_probability",
-        "precipitation",
-        "rain",
-        "showers",
-        "snowfall",
-        "weather_code",
-        "pressure_msl",
-        "surface_pressure",
-        "cloud_cover",
-        "cloud_cover_low",
-        "cloud_cover_mid",
-        "cloud_cover_high",
-        "evapotranspiration",
-        "et0_fao_evapotranspiration",
-        "vapour_pressure_deficit",
-        "wind_speed_10m",
-        "wind_direction_10m",
-        "wind_gusts_10m",
-        "soil_temperature_0cm",
-        "soil_moisture_0_to_1cm",
-        "uv_index",
-        "temperature_80m",
-        "temperature_120m",
-        "shortwave_radiation",
-        "direct_radiation",
-        "diffuse_radiation",
-        "direct_normal_irradiance",
-        "terrestrial_radiation",
-        "sunshine_duration",
-      ].join(","),
-      daily: [
-        "temperature_2m_max",
-        "temperature_2m_min",
-        "apparent_temperature_max",
-        "apparent_temperature_min",
-        "sunrise",
-        "sunset",
-        "daylight_duration",
-        "sunshine_duration",
-<dyad-write path="src/services/weatherService.ts" description="Fix completo del weatherService">
-"use client";
+    const params = new URLSearchParams();
+    params.set("latitude", lat.toString());
+    params.set("longitude", lon.toString());
+    params.set("timezone", "auto");
+    params.set("forecast_days", "7");
+    params.set("models", "best_match");
 
-const BASE_URL = "https://api.open-meteo.com/v1/forecast";
+    const hourlyParams = [
+      "temperature_2m", "relative_humidity_2m", "dew_point_2m",
+      "apparent_temperature", "precipitation_probability", "precipitation",
+      "rain", "showers", "snowfall", "weather_code", "pressure_msl",
+      "surface_pressure", "cloud_cover", "cloud_cover_low", "cloud_cover_mid",
+      "cloud_cover_high", "evapotranspiration", "et0_fao_evapotranspiration",
+      "vapour_pressure_deficit", "wind_speed_10m", "wind_direction_10m",
+      "wind_gusts_10m", "soil_temperature_0cm", "soil_moisture_0_to_1cm",
+      "uv_index", "temperature_80m", "temperature_120m",
+      "shortwave_radiation", "direct_radiation", "diffuse_radiation",
+      "direct_normal_irradiance", "terrestrial_radiation", "sunshine_duration",
+    ];
+    params.set("hourly", hourlyParams.join(","));
 
-export class WeatherService {
-  private buildUrl(lat: number, lon: number): string {
-    const params = new URLSearchParams({
-      latitude: lat.toString(),
-      longitude: lon.toString(),
-      hourly: [
-        "temperature_2m",
-        "relative_humidity_2m",
-        "dew_point_2m",
-        "apparent_temperature",
-        "precipitation_probability",
-        "precipitation",
-        "rain",
-        "showers",
-        "snowfall",
-        "weather_code",
-        "pressure_msl",
-        "surface_pressure",
-        "cloud_cover",
-        "cloud_cover_low",
-        "cloud_cover_mid",
-        "cloud_cover_high",
-        "evapotranspiration",
-        "et0_fao_evapotranspiration",
-        "vapour_pressure_deficit",
-        "wind_speed_10m",
-        "wind_direction_10m",
-        "wind_gusts_10m",
-        "soil_temperature_0cm",
-        "soil_moisture_0_to_1cm",
-        "uv_index",
-        "temperature_80m",
-        "temperature_120m",
-        "shortwave_radiation",
-        "direct_radiation",
-        "diffuse_radiation",
-        "direct_normal_irradiance",
-        "terrestrial_radiation",
-        "sunshine_duration",
-      ].join(","),
-      daily: [
-        "temperature_2m_max",
-        "temperature_2m_min",
-        "apparent_temperature_max",
-        "apparent_temperature_min",
-        "sunrise",
-        "sunset",
-        "daylight_duration",
-        "sunshine_duration",
-        "uv_index_max",
-        "uv_index_clear_sky_max",
-        "precipitation_sum",
-        "rain_sum",
-        "showers_sum",
-        "snowfall_sum",
-        "precipitation_hours",
-        "precipitation_probability_max",
-        "weather_code",
-        "wind_speed_10m_max",
-        "wind_gusts_10m_max",
-        "wind_direction_10m_dominant",
-        "shortwave_radiation_sum",
-        "et0_fao_evapotranspiration",
-      ].join(","),
-      current: [
-        "temperature_2m",
-        "relative_humidity_2m",
-        "apparent_temperature",
-        "is_day",
-        "precipitation",
-        "rain",
-        "showers",
-        "snowfall",
-        "weather_code",
-        "cloud_cover",
-        "pressure_msl",
-        "surface_pressure",
-        "wind_speed_10m",
-        "wind_direction_10m",
-        "wind_gusts_10m",
-      ].join(","),
-      timezone: "auto",
-      forecast_days: "7",
-      models: "best_match",
-    });
+    const dailyParams = [
+      "temperature_2m_max", "temperature_2m_min", "apparent_temperature_max",
+      "apparent_temperature_min", "sunrise", "sunset", "daylight_duration",
+      "sunshine_duration", "uv_index_max", "uv_index_clear_sky_max",
+      "precipitation_sum", "rain_sum", "showers_sum", "snowfall_sum",
+      "precipitation_hours", "precipitation_probability_max", "weather_code",
+      "wind_speed_10m_max", "wind_gusts_10m_max", "wind_direction_10m_dominant",
+      "shortwave_radiation_sum", "et0_fao_evapotranspiration",
+    ];
+    params.set("daily", dailyParams.join(","));
+
+    const currentParams = [
+      "temperature_2m", "relative_humidity_2m", "apparent_temperature",
+      "is_day", "precipitation", "rain", "showers", "snowfall",
+      "weather_code", "cloud_cover", "pressure_msl", "surface_pressure",
+      "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",
+    ];
+    params.set("current", currentParams.join(","));
 
     return `${BASE_URL}?${params.toString()}`;
   }
@@ -213,24 +115,26 @@ export class WeatherService {
       et0Sum: data.daily.et0_fao_evapotranspiration[i],
     }));
 
-    const current = data.current ? {
-      time: new Date(data.current.time),
-      temperature: data.current.temperature_2m,
-      humidity: data.current.relative_humidity_2m,
-      apparentTemp: data.current.apparent_temperature,
-      isDay: data.current.is_day,
-      precipitation: data.current.precipitation,
-      rain: data.current.rain,
-      showers: data.current.showers,
-      snowfall: data.current.snowfall,
-      weatherCode: data.current.weather_code,
-      cloudCover: data.current.cloud_cover,
-      pressure: data.current.pressure_msl,
-      surfacePressure: data.current.surface_pressure,
-      windSpeed: data.current.wind_speed_10m,
-      windDir: data.current.wind_direction_10m,
-      windGusts: data.current.wind_gusts_10m,
-    } : null;
+    const current = data.current
+      ? {
+          time: new Date(data.current.time),
+          temperature: data.current.temperature_2m,
+          humidity: data.current.relative_humidity_2m,
+          apparentTemp: data.current.apparent_temperature,
+          isDay: data.current.is_day,
+          precipitation: data.current.precipitation,
+          rain: data.current.rain,
+          showers: data.current.showers,
+          snowfall: data.current.snowfall,
+          weatherCode: data.current.weather_code,
+          cloudCover: data.current.cloud_cover,
+          pressure: data.current.pressure_msl,
+          surfacePressure: data.current.surface_pressure,
+          windSpeed: data.current.wind_speed_10m,
+          windDir: data.current.wind_direction_10m,
+          windGusts: data.current.wind_gusts_10m,
+        }
+      : null;
 
     return { hourly, daily, current };
   }
@@ -250,14 +154,16 @@ export class WeatherService {
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
-        if (!data?.hourly?.time?.length) throw new Error('Dati non validi');
+        if (!data?.hourly?.time?.length) throw new Error("Dati non validi");
         return this.parseData(data);
       } catch (err) {
-        lastError = err instanceof Error ? err : new Error('Errore sconosciuto');
-        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        lastError = err instanceof Error ? err : new Error("Errore sconosciuto");
+        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
       }
     }
-    throw new Error(`Impossibile ottenere dati: ${lastError?.message || 'nessuna risposta'}`);
+    throw new Error(
+      `Impossibile ottenere dati: ${lastError?.message || "nessuna risposta"}`
+    );
   }
 }
 
