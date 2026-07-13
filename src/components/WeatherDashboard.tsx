@@ -3,7 +3,6 @@
 import React, { useMemo } from "react";
 import type { HourData } from "@/types/meteo";
 import HourlyTable from "@/components/HourlyTable";
-import WindProfileComponent from "@/components/WindProfile";
 import FlightScore from "@/components/FlightScore";
 import { calcolaTermiche } from "@/utils/termiche";
 
@@ -110,15 +109,6 @@ export default function WeatherDashboard({
         selectedHour={selectedHour}
         onHourSelect={onHourSelect}
       />
-
-      {/* Profilo vento verticale */}
-      {windProfile && windProfile.length > 0 && (
-        <WindProfileComponent
-          windProfile={windProfile}
-          groundSpeed={groundSpeed}
-          groundDir={groundDir}
-        />
-      )}
 
       {/* Riepilogo rapido */}
       {flightScore && (
