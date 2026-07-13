@@ -2,90 +2,42 @@
 
 const BASE_URL = "https://api.open-meteo.com/v1/forecast";
 
-interface OpenMeteoHourlyData {
-  time: string;
-  temperature_2m: number;
-  relative_humidity_2m: number;
-  dew_point_2m: number;
-  apparent_temperature: number;
+export interface MeteoHourly {
+  time: Date;
+  temperature: number;
+  humidity: number;
+  dewPoint: number;
+  apparentTemp: number;
   precipitation: number;
-  weather_code: number;
-  cloud_cover: number;
-  wind_speed_10m: number;
-  wind_direction_10m: number;
-  wind_gusts_10m: number;
-  surface_pressure: number;
-  uv_index: number;
-  temperature_80m: number;
-  temperature_120m: number;
+  weatherCode: number;
+  cloudCover: number;
+  windSpeed: number;
+  windDir: number;
+  windGusts: number;
+  pressure: number;
+  uvIndex: number;
+  temp80m: number | null;
+  temp120m: number | null;
 }
 
-interface OpenMeteoDailyData {
-  time: string;
-  weather_code: number;
-  temperature_2m_max: number;
-  temperature_2m_min: number;
-  precipitation_sum: number;
-  precipitation_probability_max: number;
-  wind_speed_10m_max: number;
-  wind_gusts_10m_max: number;
+export interface MeteoDaily {
+  date: Date;
+  weatherCode: number;
+  tempMax: number;
+  tempMin: number;
+  precipSum: number;
+  precipProb: number;
+  windSpeedMax: number;
+  windGustsMax: number;
 }
 
-interface OpenMeteoResponse {
-  hourly: { time: string[] } & Record<string, number[]>;
-  daily: { time: string[] } & Record<string, number[]>;
-}
-
-function convertHourly(raw: OpenMeteoHourlyData[], timezone: string) {
-  if (!raw?.time?.length) return [];
-
-  // Open-Meteo restituisce time in UTC o in timezone specificata.
-  // Con timezone=Europe/Rome, i time sono già in ora locale.
-  return raw.time.map((time, i) => {
-    // Per sicurezza, forziamo il parsing come stringa e poi calcoliamo ora
-    const date = new Date(time);
-    
-    return {
-      time: date,
-      temperature: raw.temperature_2m?.[i] ?? raw.temperature_2m?.[0] ?? 0,
-      humidity: raw.relative_humidity_2m?.[i] ?? raw.relative_humidity_2m?.[0] ?? 50,
-      dewPoint: raw.dew_point_2m?.[i] ?? raw.dew_point_2m?.[0] ?? 0,
-      apparentTemp: raw.apparent_temperature?.[i] ?? raw.apparent_temperature?.[0] ?? 0,
-      precipitation: raw.precipitation?.[i] ?? raw.precipitation?.[0] ?? 0,
-      weatherCode: raw.weather_code?.[i] ?? raw.weather_code?.[0] ?? 0,
-      cloudCover: raw.cloud_cover?.[i] ?? raw.cloud_cover?.[0] ?? 0,
-      windSpeed: raw.wind_speed_10m?.[i] ?? raw.wind_speed_10m?.[0] ?? 0,
-      windDir: raw.wind_direction_10m?.[i] ?? raw.wind_direction_10m?.[0] ?? 0,
-      windGusts: raw.wind_gusts_10m?.[i] ?? raw.wind_gusts_10m?.[0] ?? 0,
-      pressure: raw.surface_pressure?.[i] ?? raw.surface_pressure?.[0] ?? 1013,
-      uvIndex: raw.uv_index?.[i] ?? raw.uv_index?.[0] ?? 0,
-      temp80m: raw.temperature_80m?.[i] ?? null,
-      temp120m: raw.temperature_120m?.[i] ?? null,
-    };
-  });
-}
-
-function convertDaily(raw: OpenMeteoDailyData[]) {
-  if (!raw?.time?.length) return [];
-
-  return raw.time.map((time, i) => {
-    const date = new Date(time);
-    
-    return {
-      date,
-      weatherCode: raw.weather_code?.[i] ?? 0,
-      tempMax: raw.temperature_2m_max?.[i] ?? 0,
-      tempMin: raw.temperature_2m_min?.[i] ?? 0,
-      precipSum: raw.precipitation_sum?.[i] ?? 0,
-      precipProb: raw.precipitation_probability_max?.[i] ?? 0,
-      windSpeedMax: raw.wind_speed_10m_max?.[i] ?? 0,
-      windGustsMax: raw.wind_gusts_10m_max?.[i] ?? 0,
-    };
-  });
+export interface MeteoResult {
+  hourly: MeteoHourly[];
+  daily: MeteoDaily[];
 }
 
 export const weatherService = {
-  async fetchWeather(lat: number, lon: number) {
+  async fetchWeather(lat: number, lon: number): Promise<MeteoResult> {
     const params = new URLSearchParams({
       latitude: lat.toString(),
       longitude: lon.toString(),
@@ -118,21 +70,44 @@ export const weatherService = {
       forecast_days: "3",
     });
 
-    const response = await fetch(`${BASE_URL}?${params.toString()}`);
+    const res = await fetch(`${BASE_URL}?${params.toString()}`);
+    if (!res.ok) throw new Error(`Open-Meteo error: ${res.status}`);
     
-    if (!response.ok) {
-      throw new Error(`Open-Meteo error: ${response.status}`);
-    }
+    const data = await res.json();
 
-    const data: OpenMeteoResponse = await response.json();
+    const hourly: MeteoHourly[] = data.hourly.time.map((t: string, i: number) => ({
+      time: new Date(t),
+      temperature: data.hourly.temperature_2m?.[i] ?? 0,
+      humidity: data.hourly.relative_humidity_2m?.[i] ?? 50,
+      dewPoint: data.hourly.dew_point_2m?.[i] ?? 0,
+      apparentTemp: data.hourly.apparent_temperature?.[i] ?? 0,
+      precipitation: data.hourly.precipitation?.[i] ?? 0,
+      weatherCode: data.hourly.weather_code?.[i] ?? 0,
+      cloudCover: data.hourly.cloud_cover?.[i] ?? 0,
+      windSpeed: data.hourly.wind_speed_10m?.[i] ?? 0,
+      windDir: data.hourly.wind_direction_10m?.[i] ?? 0,
+      windGusts: data.hourly.wind_gusts_10m?.[i] ?? 0,
+      pressure: data.hourly.surface_pressure?.[i] ?? 1013,
+      uvIndex: data.hourly.uv_index?.[i] ?? 0,
+      temp80m: data.hourly.temperature_80m?.[i] ?? null,
+      temp120m: data.hourly.temperature_120m?.[i] ?? null,
+    }));
 
-    return {
-      hourly: convertHourly(data.hourly as any, "Europe/Rome"),
-      daily: convertDaily(data.daily as any),
-    };
+    const daily: MeteoDaily[] = data.daily.time.map((t: string, i: number) => ({
+      date: new Date(t),
+      weatherCode: data.daily.weather_code?.[i] ?? 0,
+      tempMax: data.daily.temperature_2m_max?.[i] ?? 0,
+      tempMin: data.daily.temperature_2m_min?.[i] ?? 0,
+      precipSum: data.daily.precipitation_sum?.[i] ?? 0,
+      precipProb: data.daily.precipitation_probability_max?.[i] ?? 0,
+      windSpeedMax: data.daily.wind_speed_10m_max?.[i] ?? 0,
+      windGustsMax: data.daily.wind_gusts_10m_max?.[i] ?? 0,
+    }));
+
+    return { hourly, daily };
   },
 
-  async fetchWithFallback(lat: number, lon: number) {
+  async fetchWithFallback(lat: number, lon: number): Promise<MeteoResult> {
     try {
       return await this.fetchWeather(lat, lon);
     } catch (error) {
