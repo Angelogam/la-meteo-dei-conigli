@@ -1,7 +1,16 @@
 "use client";
 
 import React from "react";
-import { getWindArrow, getWindDirection, getCloudCondition, getCloudBase, getThermalPlafond } from "@/utils/weatherHelpers";
+import {
+  ThermometerSun,
+  Droplets,
+  Cloud,
+  CloudRain,
+  Mountain,
+  Wind,
+  ArrowUpDown,
+  Gauge,
+} from "lucide-react";
 
 interface MeteoTabProps {
   currentData: any;
@@ -11,66 +20,156 @@ interface MeteoTabProps {
   stabilityIndex: { label: string; color: string };
 }
 
-export default function MeteoTab({ currentData, dayData, site, thermalDelta, stabilityIndex }: MeteoTabProps) {
+export default function MeteoTab({
+  currentData,
+  dayData,
+  site,
+  thermalDelta,
+  stabilityIndex,
+}: MeteoTabProps) {
   if (!currentData) return null;
 
+  const cloudBase = Math.round(
+    (currentData.temperature - currentData.dewPoint) * 120 + site.alt
+  );
+  const thermalPlafond = Math.round(site.alt + thermalDelta * 100);
+
   const cards = [
-    { label: "🌡️ Temperatura", value: `${Math.round(currentData.temperature)}°C`, sub: `Δ ${thermalDelta}°C` },
-    { label: "💧 Umidità", value: `${Math.round(currentData.humidity)}%`, sub: `Rugiada ${Math.round(currentData.dewPoint)}°C` },
-    { label: "☁️ Nuvolosità", value: `${Math.round(currentData.cloudCover)}%`, sub: `${getCloudCondition(currentData.cloudCover).icon} ${getCloudCondition(currentData.cloudCover).text}` },
-    { label: "🌧️ Precipitazioni", value: currentData.precipitation === 0 ? "✅ Assenti" : `${currentData.precipitation} mm`, sub: currentData.precipitation === 0 ? "Ideale" : "⚠️ Pioggia" },
-    { label: "🏔️ Base Nuvole", value: `${getCloudBase(currentData.temperature, currentData.dewPoint, site.alt)}m`, sub: "Cloud Base" },
-    { label: "📈 Plafond", value: `${getThermalPlafond(site.alt, thermalDelta)}m`, sub: "Thermal Top" },
-    { label: "🪂 Galleggiamento", value: thermalDelta > 10 ? "Eccellente ⭐" : thermalDelta > 6 ? "Buono 👍" : "Limitato 🫤", sub: `Delta ${thermalDelta}°C` },
-    { label: "💨 Vento", value: `${getWindArrow(currentData.windDir)} ${Math.round(currentData.windSpeed)} km/h`, sub: `${getWindDirection(currentData.windDir)} • ⚡${Math.round(currentData.windGust)} km/h` },
+    {
+      icon: <ThermometerSun className="w-4 h-4 text-amber-400" />,
+      label: "Temperatura",
+      value: `${Math.round(currentData.temperature)}°C`,
+      sub: `Δ ${thermalDelta}°C`,
+    },
+    {
+      icon: <Droplets className="w-4 h-4 text-sky-400" />,
+      label: "Umidità",
+      value: `${Math.round(currentData.humidity)}%`,
+      sub: `Rugiada ${Math.round(currentData.dewPoint)}°C`,
+    },
+    {
+      icon: <Cloud className="w-4 h-4 text-slate-400" />,
+      label: "Nuvolosità",
+      value: `${Math.round(currentData.cloudCover)}%`,
+      sub: getCloudText(currentData.cloudCover),
+    },
+    {
+      icon: <CloudRain className="w-4 h-4 text-blue-400" />,
+      label: "Precipitazioni",
+      value: currentData.precipitation === 0 ? "Assenti" : `${Math.round(currentData.precipitation * 10) / 10} mm`,
+      sub: currentData.precipitation === 0 ? "Ideale" : "Pioggia",
+    },
+    {
+      icon: <Mountain className="w-4 h-4 text-amber-400" />,
+      label: "Base nuvole",
+      value: `${cloudBase} m`,
+      sub: "Cloud base",
+    },
+    {
+      icon: <ArrowUpDown className="w-4 h-4 text-green-400" />,
+      label: "Plafond termico",
+      value: `${thermalPlafond} m`,
+      sub: "Thermal top",
+    },
+    {
+      icon: <Wind className="w-4 h-4 text-sky-400" />,
+      label: "Vento",
+      value: `${getWindArrow(currentData.windDir)} ${Math.round(currentData.windSpeed)} km/h`,
+      sub: getWindDirName(currentData.windDir),
+    },
+    {
+      icon: <Gauge className="w-4 h-4 text-purple-400" />,
+      label: "Pressione",
+      value: `${Math.round(currentData.pressure)} hPa`,
+      sub: getPressureTrend(dayData),
+    },
   ];
 
-  const first = dayData[0]?.pressure;
-  const last = dayData[dayData.length - 1]?.pressure;
-  let pressureGradient = "--";
-  if (first != null && last != null) {
-    const diff = last - first;
-    pressureGradient = diff > 0 ? `⬆️ +${Math.round(diff)} hPa` : diff < 0 ? `⬇️ ${Math.round(diff)} hPa` : "➡️ Stabile";
-  }
-
   return (
-    <div style={{ animation: "fadeIn 0.3s ease" }}>
-      <div style={{
-        display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
-        gap: "8px", marginBottom: "12px",
-      }}>
+    <div className="animate-fadeIn">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-4">
         {cards.map((card, i) => (
-          <div key={i} style={{
-            background: "rgba(0,0,0,0.25)", padding: "10px", borderRadius: "10px",
-            border: "1px solid rgba(255,255,255,0.05)", textAlign: "center",
-          }}>
-            <div style={{ fontSize: "0.7rem", color: "#8899aa", marginBottom: "2px" }}>{card.label}</div>
-            <div style={{ fontSize: "1.1rem", fontWeight: "bold", color: "#e8f0f8" }}>{card.value}</div>
-            <div style={{ fontSize: "0.65rem", color: "#667788", marginTop: "2px" }}>{card.sub}</div>
+          <div
+            key={i}
+            className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-3 text-center hover:bg-slate-700/40 transition-colors"
+          >
+            <div className="flex justify-center mb-1">{card.icon}</div>
+            <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">
+              {card.label}
+            </div>
+            <div className="text-sm font-bold text-slate-100 tabular-nums">
+              {card.value}
+            </div>
+            <div className="text-[10px] text-slate-400 mt-0.5">{card.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{
-        background: "rgba(0,0,0,0.2)", padding: "12px", borderRadius: "10px",
-        border: "1px solid rgba(255,255,255,0.05)", marginBottom: "12px",
-      }}>
-        <h4 style={{ fontSize: "0.95rem", color: "#4caf50", marginBottom: "10px", fontWeight: 600 }}>📊 Pressione e Gradiente</h4>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "8px" }}>
-          <div style={{ textAlign: "center", padding: "8px", background: "rgba(255,255,255,0.04)", borderRadius: "8px" }}>
-            <div style={{ fontSize: "0.7rem", color: "#8899aa" }}>Pressione attuale</div>
-            <div style={{ fontSize: "1.1rem", fontWeight: "bold", color: "#e8f0f8" }}>{Math.round(currentData.pressure)} hPa</div>
+      <div className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-4">
+        <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-3">
+          Pressione & Stabilità
+        </h4>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="text-center">
+            <div className="text-[10px] text-slate-500 mb-1">Attuale</div>
+            <div className="text-base font-bold text-slate-100 tabular-nums">
+              {Math.round(currentData.pressure)}
+            </div>
+            <div className="text-[10px] text-slate-400">hPa</div>
           </div>
-          <div style={{ textAlign: "center", padding: "8px", background: "rgba(255,255,255,0.04)", borderRadius: "8px" }}>
-            <div style={{ fontSize: "0.7rem", color: "#8899aa" }}>Gradiente</div>
-            <div style={{ fontSize: "1.1rem", fontWeight: "bold", color: "#4caf50" }}>{pressureGradient}</div>
+          <div className="text-center">
+            <div className="text-[10px] text-slate-500 mb-1">Gradiente</div>
+            <div
+              className={`text-base font-bold tabular-nums ${
+                getPressureTrend(dayData).includes("↑")
+                  ? "text-emerald-400"
+                  : getPressureTrend(dayData).includes("↓")
+                  ? "text-red-400"
+                  : "text-slate-100"
+              }`}
+            >
+              {getPressureTrend(dayData)}
+            </div>
           </div>
-          <div style={{ textAlign: "center", padding: "8px", background: "rgba(255,255,255,0.04)", borderRadius: "8px" }}>
-            <div style={{ fontSize: "0.7rem", color: "#8899aa" }}>Stabilità</div>
-            <div style={{ fontSize: "1rem", fontWeight: "bold", color: stabilityIndex.color }}>{stabilityIndex.label}</div>
+          <div className="text-center">
+            <div className="text-[10px] text-slate-500 mb-1">Stabilità</div>
+            <div
+              className="text-sm font-bold tabular-nums"
+              style={{ color: stabilityIndex.color }}
+            >
+              {stabilityIndex.label}
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
+}
+
+function getCloudText(cover: number): string {
+  if (cover < 20) return "Sereno";
+  if (cover < 40) return "Poco nuvoloso";
+  if (cover < 60) return "Nuvoloso";
+  if (cover < 80) return "Molto nuvoloso";
+  return "Coperto";
+}
+
+function getWindArrow(deg: number): string {
+  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
+  return arrows[Math.round(deg / 45) % 8] || "→";
+}
+
+function getWindDirName(deg: number): string {
+  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  return dirs[Math.round(deg / 45) % 8] || "—";
+}
+
+function getPressureTrend(dayData: any[]): string {
+  const first = dayData?.[0]?.pressure;
+  const last = dayData?.[dayData.length - 1]?.pressure;
+  if (first == null || last == null) return "—";
+  const diff = last - first;
+  if (diff > 1) return `↑ +${Math.round(diff)}`;
+  if (diff < -1) return `↓ ${Math.round(diff)}`;
+  return "→ Stabile";
 }

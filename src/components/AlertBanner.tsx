@@ -1,34 +1,54 @@
 "use client";
 
 import React from "react";
+import {
+  CheckCircle2,
+  AlertTriangle,
+  Info,
+  ShieldAlert,
+} from "lucide-react";
 
 interface AlertBannerProps {
   alert: { level: string; message: string; icon: string };
 }
 
 export default function AlertBanner({ alert }: AlertBannerProps) {
-  const bgMap: Record<string, string> = {
-    danger: 'rgba(255, 23, 68, 0.2)',
-    warning: 'rgba(255, 152, 0, 0.2)',
-    success: 'rgba(76, 175, 80, 0.15)',
-    info: 'rgba(33, 150, 243, 0.15)',
-  };
-  const borderMap: Record<string, string> = {
-    danger: '#ff1744',
-    warning: '#ff9800',
-    success: '#4caf50',
-    info: '#2196f3',
+  const styles: Record<
+    string,
+    { bg: string; border: string; icon: React.ReactNode }
+  > = {
+    danger: {
+      bg: "bg-red-900/20",
+      border: "border-red-500/40",
+      icon: <ShieldAlert className="w-5 h-5 text-red-400" />,
+    },
+    warning: {
+      bg: "bg-amber-900/20",
+      border: "border-amber-500/40",
+      icon: <AlertTriangle className="w-5 h-5 text-amber-400" />,
+    },
+    success: {
+      bg: "bg-emerald-900/20",
+      border: "border-emerald-500/40",
+      icon: <CheckCircle2 className="w-5 h-5 text-emerald-400" />,
+    },
+    info: {
+      bg: "bg-sky-900/20",
+      border: "border-sky-500/40",
+      icon: <Info className="w-5 h-5 text-sky-400" />,
+    },
   };
 
+  const s = styles[alert.level] || styles.info;
+
   return (
-    <div style={{
-      padding: '10px 14px', borderRadius: '10px', border: '2px solid',
-      marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px',
-      background: bgMap[alert.level] || bgMap.info,
-      borderColor: borderMap[alert.level] || borderMap.info,
-    }}>
-      <span style={{ fontSize: '1.4rem' }}>{alert.icon}</span>
-      <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{alert.message}</span>
+    <div
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${s.bg} ${s.border} mb-4 animate-slideIn`}
+    >
+      <span className="shrink-0 text-xl">{alert.icon}</span>
+      <span className="text-sm font-medium text-slate-200 leading-snug">
+        {alert.message}
+      </span>
     </div>
   );
 }

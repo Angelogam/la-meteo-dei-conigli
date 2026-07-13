@@ -1,39 +1,47 @@
 "use client";
 
 import React from "react";
+import {
+  CloudSun,
+  Wind,
+  Flame,
+  BrainCircuit,
+} from "lucide-react";
 
-type Tab = 'meteo' | 'venti' | 'termiche' | 'analisi';
+type Tab = "meteo" | "venti" | "termiche" | "analisi";
 
 interface TabNavProps {
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
 }
 
-const tabs: { id: Tab; label: string }[] = [
-  { id: 'meteo', label: '🌤️ Meteo' },
-  { id: 'venti', label: '💨 Venti' },
-  { id: 'termiche', label: '🔥 Termiche' },
-  { id: 'analisi', label: '🤖 Analisi' },
+const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
+  { id: "meteo", label: "Meteo", icon: <CloudSun className="w-4 h-4" /> },
+  { id: "venti", label: "Venti", icon: <Wind className="w-4 h-4" /> },
+  { id: "termiche", label: "Termiche", icon: <Flame className="w-4 h-4" /> },
+  { id: "analisi", label: "Analisi", icon: <BrainCircuit className="w-4 h-4" /> },
 ];
 
 export default function TabNav({ activeTab, onTabChange }: TabNavProps) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '12px' }}>
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          onClick={() => onTabChange(tab.id)}
-          style={{
-            padding: '8px 4px', borderRadius: '8px 8px 0 0',
-            border: 'none', color: '#e8f0f8', cursor: 'pointer',
-            fontSize: '0.8rem', fontWeight: 500, textAlign: 'center',
-            background: activeTab === tab.id ? 'rgba(76, 175, 80, 0.2)' : 'transparent',
-            borderBottom: activeTab === tab.id ? '2px solid #4caf50' : '2px solid transparent',
-          }}
-        >
-          {tab.label}
-        </button>
-      ))}
+    <div className="flex gap-1 mb-5 bg-slate-800/60 rounded-xl p-1 border border-slate-700/30">
+      {tabs.map((tab) => {
+        const isActive = tab.id === activeTab;
+        return (
+          <button
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              isActive
+                ? "bg-emerald-600/20 text-emerald-300 shadow-sm border border-emerald-500/20"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-700/40 border border-transparent"
+            }`}
+          >
+            {tab.icon}
+            <span className="hidden sm:inline">{tab.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
