@@ -79,6 +79,11 @@ export default function MeteoTab({
   const ventoDecollo = windSpeed;
   const raffiche = windGust ?? Math.round(windSpeed * 1.4);
 
+  // ===== ZERO TERMICO =====
+  // Formula: 0°C quota = temperatura / gradiente adiabatico secco (0.98°C/100m)
+  // + altitudine sito + 2 * temperatura per compensazione
+  const zeroTermico = Math.max(0, Math.round(site.alt + (temp / 0.0098) + 200));
+
   const turbolenza =
     raffiche > 30 ? "Forte" :
     raffiche > 22 ? "Moderata" :
@@ -124,6 +129,13 @@ export default function MeteoTab({
            weatherCode <= 3 ? "Nuvoloso" :
            weatherCode >= 95 ? "Temporale" :
            "Coperto"} · Vento {ventoDecollo} km/h da {dirLabel}
+        </div>
+        {/* ===== ZERO TERMICO ===== */}
+        <div className="mt-4 pt-3 border-t border-white/10">
+          <span className="text-slate-400 text-sm">Zero termico</span>
+          <div className="text-2xl font-black text-white tabular-nums mt-0.5">
+            {zeroTermico} <span className="text-base text-slate-400 font-normal">m</span>
+          </div>
         </div>
       </div>
 
