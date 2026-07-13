@@ -53,7 +53,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
 
   if (rows.length === 0) {
     return (
-      <div className="text-center py-8 text-slate-400 text-sm">
+      <div className="text-center py-12 text-slate-400 text-base">
         Nessun dato disponibile per questa giornata.
       </div>
     );
@@ -61,13 +61,13 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
 
   return (
     <div className="overflow-x-auto rounded-2xl border-2 border-slate-700/40 bg-slate-800/30">
-      <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-700/30">
-        <Clock className="w-5 h-5 text-orange-400" />
-        <span className="text-base font-bold text-slate-200 tracking-wide">Previsioni orarie 9:00 – 19:00</span>
-        <span className="text-xs text-slate-500 bg-slate-800/60 px-2.5 py-0.5 rounded-full">{rows.length} ore</span>
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-700/30">
+        <Clock className="w-6 h-6 text-orange-400" />
+        <span className="text-lg font-bold text-slate-200 tracking-wide">Previsioni orarie 9:00 – 19:00</span>
+        <span className="text-sm text-slate-500 bg-slate-800/60 px-3 py-0.5 rounded-full">{rows.length} ore</span>
       </div>
       <div className="p-2">
-        <table className="w-full text-sm">
+        <table className="w-full text-base">
           <thead>
             <tr className="text-slate-400 text-xs uppercase tracking-wider">
               <th className="py-3 px-3 text-left w-16">Ora</th>
@@ -103,31 +103,31 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                   {/* Ora */}
                   <td className="py-4 px-3">
                     <span className={`font-bold tabular-nums ${
-                      isSelected ? "text-green-300 text-base" : r.isCurrent ? "text-emerald-300 text-sm" : "text-slate-200 text-sm"
+                      isSelected ? "text-green-300 text-lg" : r.isCurrent ? "text-emerald-300 text-base" : "text-slate-200 text-base"
                     }`}>
                       {String(r.ora).padStart(2, "0")}
                     </span>
                   </td>
 
                   {/* Icona meteo */}
-                  <td className="py-4 px-3 text-center text-2xl">
+                  <td className="py-4 px-3 text-center text-3xl">
                     {getWeatherIcon(r.codice, 1)}
                   </td>
 
                   {/* Temperatura */}
                   <td className="py-4 px-3 text-center">
-                    <span className="font-bold text-amber-300 tabular-nums text-base">{r.temperatura}°</span>
+                    <span className="font-bold text-amber-300 tabular-nums text-lg">{r.temperatura}°</span>
                   </td>
 
                   {/* Vento */}
                   <td className="py-4 px-3 text-center">
-                    <span className="font-bold text-sky-300 tabular-nums text-base">{r.vento}</span>
+                    <span className="font-bold text-sky-300 tabular-nums text-lg">{r.vento}</span>
                     <span className="text-slate-500 text-xs ml-1">km/h</span>
                   </td>
 
                   {/* Raffica */}
                   <td className="py-4 px-3 text-center">
-                    <span className={`tabular-nums font-medium text-sm ${
+                    <span className={`tabular-nums font-semibold text-base ${
                       r.raffica && r.raffica > 30 ? "text-red-400" : "text-slate-400"
                     }`}>
                       {r.raffica ? r.raffica : "—"}
@@ -136,7 +136,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
 
                   {/* Direzione */}
                   <td className="py-4 px-3 text-center">
-                    <span className="text-slate-300 font-semibold text-sm">{r.direzione}</span>
+                    <span className="text-slate-300 font-semibold text-base">{r.direzione}</span>
                     <span className="text-slate-500 text-xs ml-1">
                       {getDirArrow(r.ventoDir)}
                     </span>
@@ -144,7 +144,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
 
                   {/* Termiche */}
                   <td className="py-4 px-3 text-center">
-                    <span className="font-bold tabular-nums text-base" style={{ color: r.termicheColore }}>
+                    <span className="font-bold tabular-nums text-lg" style={{ color: r.termicheColore }}>
                       {r.termiche.toFixed(1)}
                     </span>
                     <span className="text-slate-500 text-xs ml-1">m/s</span>
@@ -152,31 +152,33 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
 
                   {/* Base */}
                   <td className="py-4 px-3 text-center">
-                    <span className="text-green-300 font-medium tabular-nums text-sm">{r.base}</span>
+                    <span className="text-green-300 font-semibold tabular-nums text-base">{r.base}</span>
                     <span className="text-slate-500 text-xs ml-1">m</span>
                   </td>
 
                   {/* Top */}
                   <td className="py-4 px-3 text-center">
-                    <span className="text-red-300 font-medium tabular-nums text-sm">{r.top}</span>
+                    <span className="text-red-300 font-semibold tabular-nums text-base">{r.top}</span>
                     <span className="text-slate-500 text-xs ml-1">m</span>
                   </td>
 
                   {/* Nuvolosità */}
                   <td className="py-4 px-3 text-center">
-                    <span className="text-slate-300 font-medium text-sm">{getCloudEmoji(r.nuvole)} {r.nuvole}%</span>
+                    <span className="text-slate-300 font-semibold text-base">
+                      <span className="text-2xl">{getCloudEmoji(r.nuvole)}</span> {r.nuvole}%
+                    </span>
                   </td>
 
                   {/* Pioggia */}
                   <td className="py-4 px-3 text-center">
-                    <span className={`font-medium text-sm ${r.pioggia > 0 ? "text-blue-300" : "text-slate-500"}`}>
+                    <span className={`font-semibold text-base ${r.pioggia > 0 ? "text-blue-300" : "text-slate-500"}`}>
                       {r.pioggia > 0 ? `${r.pioggia.toFixed(1)}mm` : "—"}
                     </span>
                   </td>
 
                   {/* Volo */}
                   <td className="py-4 px-3 text-center">
-                    <span className={`px-2 py-1 rounded-md text-xs font-bold border ${r.voloColore}`}>
+                    <span className={`px-3 py-1.5 rounded-md text-sm font-bold border ${r.voloColore}`}>
                       {r.voloIcon} {r.voloLabel}
                     </span>
                   </td>
