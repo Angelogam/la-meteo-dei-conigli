@@ -27,6 +27,7 @@ import {
   WindLevel,
 } from "@/utils/weatherHelpers";
 import { CloudSun, Sparkles, AlertTriangle, Bug } from "lucide-react";
+import type { HourData } from "@/types/meteo";
 
 const Page = () => {
   const {
@@ -66,21 +67,66 @@ const Page = () => {
     return getStabilityIndex(currentData.temperature, currentData.humidity, currentData.cloudCover);
   }, [currentData]);
 
-  const windProfile = useMemo((): WindLevel[] => {
-    if (!currentData) return [];
-    return getWindProfile(currentData.windSpeed, currentData.windDir, currentData.windProfile);
-  }, [currentData]);
+  // windProfile: passiamo undefined perché MeteoHourly non ha windProfile
+  const windProfile: WindLevel[] = useMemo(() => {
+    return [];
+  }, []);
 
   const windProfileSimple: WindLevel[] = useMemo(() => {
     if (!currentData) return [];
-    const ground: WindLevel = {
+    return [{
       alt: 10,
       speed: currentData.windSpeed,
       dir: currentData.windDir,
       dirName: getWindDirection(currentData.windDir),
-    };
-    return [ground, ...windProfile];
-  }, [currentData, windProfile]);
+    }];
+  }, [currentData]);
+
+  // Converti dayData (MeteoHourly[]) in HourData[] per TermicheTab
+  const hourlyDataForTermiche: HourData[] = useMemo(() => {
+    if (!dayData.length) return [];
+    return dayData.map(h => ({
+      time: h.time,
+      temperature: h.temperature,
+      humidity: h.humidity,
+      dewPoint: h.dewPoint,
+      apparentTemp: h.apparentTemp,
+      precipitation: h.precipitation,
+      weatherCode: h.weatherCode,
+      cloudCover: h.cloudCover,
+      windSpeed: h.windSpeed,
+      windDir: h.windDir,
+      windGusts: h.windGusts,
+      pressure: h.pressure,
+      uvIndex: h.uvIndex,
+      temp80m: h.temp80m,
+      temp120m: h.temp120m,
+      // Campi extra richiesti da HourData
+      precipitationProba: 0,
+      rain: h.precipitation > 0 ? h.precipitation : 0,
+      showers: 0,
+      snowfall: 0,
+      surfacePressure: h.pressure,
+      cloudCoverLow: 0,
+      cloudCoverMid: 0,
+      cloudCoverHigh: 0,
+      evapotranspiration: 0,
+      et0: 0,
+      vapourPressureDeficit: 0,
+      soilTemp: 15,
+      soilMoisture: 0.3,
+      shortwaveRadiation: 0,
+      directRadiation: 0,
+      diffuseRadiation: 0,
+      directNormalIrradiance: 0,
+      terrestrialRadiation: 0,
+      sunshineDuration: 0,
+      windProfile: undefined,
+      // Aggiungi soilTemp e soilMoisture mancanti
+      soil_temperature: 15,
+      soil_moisture: 0.3,
+    }));
+  }, [dayData]);
 
   if (loading && !dayData.length) return <LoadingScreen />;
   if (error && !dayData.length) return <ErrorScreen error={error} onRetry={loadWeather} />;
@@ -199,7 +245,7 @@ const Page = () => {
                   site={{ alt: site.altitude, lat: site.lat, lon: site.lon }}
                   thermalDelta={thermalDelta}
                   thermalStrength={stabilityIndex}
-                  hourlyData={dayData}
+                  hourlyData={hourlyDataForTermiche}
                   selectedHour={selectedHour}
                   selectedDay={selectedDay}
                 />

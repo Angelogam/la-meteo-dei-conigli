@@ -214,5 +214,7 @@ export function useWeatherData() {
     loadWeather: loadAllWeather,
     hourlyData,
     dailyData,
+    allDailyData,
+    allHourlyData,
   };
 }
