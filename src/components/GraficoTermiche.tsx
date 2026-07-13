@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback } from "react";
 import { TrendingUp, Info, ArrowUp, Thermometer, MousePointerClick } from "lucide-react";
 import type { TermicheData } from "@/utils/termiche";
 
@@ -9,10 +9,10 @@ interface GraficoTermicheProps {
   oraCorrente: number;
 }
 
-// Solo ogni 2 ore: 8, 10, 12, 14, 16, 18 — colonne più larghe
+// Colonne ogni 2 ore: 8, 10, 12, 14, 16, 18
 const HOURS_VISIBILI = [8, 10, 12, 14, 16, 18];
 
-const QUOTE_LABELS = [4000, 3000, 2000, 1000, 500];
+const QUOTE_LABELS = [4000, 3500, 3000, 2500, 2000, 1500, 1000, 500];
 
 const LEGENDA: { colore: string; label: string }[] = [
   { colore: "#ef4444", label: "Forte" },
@@ -33,7 +33,6 @@ function getColoreDaRateo(rateo: number): string {
 const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
   const [hoveredHour, setHoveredHour] = useState<number | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   if (!hourly || hourly.length === 0) return null;
 
@@ -42,11 +41,11 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
     dataMap.set(h.hour, h.termiche);
   }
 
-  // Per ogni ora visibile, trova il dato; se non esatto, usa l'ora successiva
+  // Costruisce le colonne per le ore visibili (ogni 2 ore)
   const daMostrare = HOURS_VISIBILI.map((h) => {
     const diretto = dataMap.get(h);
     if (diretto) return { hour: h, termiche: diretto };
-    // cerca l'ora successiva (es: se h=10, cerca 10)
+    // Fallback: cerca ora successiva
     for (let i = h; i <= h + 1; i++) {
       const d = dataMap.get(i);
       if (d) return { hour: h, termiche: d };
@@ -54,14 +53,16 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
     return { hour: h, termiche: null as unknown as TermicheData };
   }).filter(Boolean) as { hour: number; termiche: TermicheData }[];
 
+  // Griglia di riferimento
   const MIN_QUOTA = 500;
   const MAX_QUOTA = 4000;
-  const GRAFICO_ALTEZZA = 350;
+  const RANGE = MAX_QUOTA - MIN_QUOTA; // 3500m
+  const GRAFICO_ALTEZZA = 360;
 
+  // Converte quota in percentuale dalla BASE del grafico
   const quotaToPct = (q: number): number => {
-    if (q <= MIN_QUOTA) return 0;
-    if (q >= MAX_QUOTA) return 100;
-    return ((q - MIN_QUOTA) / (MAX_QUOTA - MIN_QUOTA)) * 100;
+    const clipped = Math.max(MIN_QUOTA, Math.min(MAX_QUOTA, q));
+    return ((clipped - MIN_QUOTA) / RANGE) * 100;
   };
 
   const handleHourClick = useCallback((hour: number) => {
@@ -71,7 +72,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
   const selectedData = selectedHour !== null ? dataMap.get(selectedHour) : null;
 
   return (
-    <div className="w-full py-4" ref={containerRef}>
+    <div className="w-full py-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-4 px-1">
         <div className="flex items-center gap-3">
@@ -89,10 +90,10 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
         </div>
       </div>
 
-      {/* Griglia principale — colonne larghe e distanziate */}
+      {/* Griglia con colonne */}
       <div className="flex gap-2 relative">
-        {/* Etichette quote verticali a sinistra */}
-        <div className="flex flex-col justify-between shrink-0 w-16 pr-3" style={{ height: GRAFICO_ALTEZZA + 'px' }}>
+        {/* Etichette quote a sinistra */}
+        <div className="flex flex-col justify-between shrink-0 w-14 pr-3" style={{ height: GRAFICO_ALTEZZA + 'px' }}>
           {QUOTE_LABELS.map((q) => (
             <div key={q} className="text-sm font-mono text-slate-400 text-right leading-none flex items-center justify-end h-0">
               {q}
@@ -100,33 +101,42 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
           ))}
         </div>
 
-        {/* Colonne orarie — UNA OGNI 2 ORE, MOLTO PIÙ LARGHE */}
+        {/* Colonne — una per ogni ora visibile */}
         <div className="flex-1 grid grid-cols-6 gap-3">
           {daMostrare.map(({ hour, termiche: t }) => {
             const isCurrentHour = hour === oraCorrente || (hour <= oraCorrente && hour + 2 > oraCorrente);
             const isSelected = selectedHour === hour;
             const isHovered = hoveredHour === hour;
-            const nonNull = t && t.rateo > 0;
+            const nonNull = t && t.rateo > 0 && t.top > 0;
 
+            // Calcoli per la barra
             let topPct = 0;
+            let basePct = 0;
             let colore = "#64748b";
             let rateoStr = "--";
-            let quotaStr = "--";
-            let baseStr = "--";
+            let quotaTopStr = "--";
+            let quotaBaseStr = "--";
             let labelForza = "N/D";
 
             if (t) {
-              topPct = quotaToPct(t.top);
               colore = getColoreDaRateo(t.rateo);
               rateoStr = t.rateo > 0 ? t.rateo.toFixed(1) : "--";
-              quotaStr = t.top > 0 ? t.top.toString() : "--";
-              baseStr = t.base > 0 ? t.base.toString() : "--";
+              quotaTopStr = t.top > 0 ? t.top.toString() : "--";
+              quotaBaseStr = t.base > 0 ? t.base.toString() : "--";
+
               if (t.rateo >= 3) labelForza = "Forte 🔥";
               else if (t.rateo >= 2) labelForza = "Buona 🪂";
               else if (t.rateo >= 1) labelForza = "Moderata 🌤️";
               else if (t.rateo >= 0.3) labelForza = "Debole 🌥️";
               else labelForza = "Assente ❄️";
             }
+
+            if (nonNull) {
+              topPct = quotaToPct(t.top);
+              basePct = quotaToPct(t.base);
+            }
+
+            const barHeightPct = topPct - basePct; // La barra parte dalla base
 
             return (
               <div
@@ -142,9 +152,9 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                 onMouseEnter={() => setHoveredHour(hour)}
                 onMouseLeave={() => setHoveredHour(null)}
               >
-                {/* Area del grafico */}
+                {/* Grafico */}
                 <div className="relative w-full" style={{ height: GRAFICO_ALTEZZA + 'px' }}>
-                  {/* Linee guida ogni 500m */}
+                  {/* Linee guida orizzontali ogni 500m */}
                   {QUOTE_LABELS.map((q) => (
                     <div
                       key={q}
@@ -153,67 +163,82 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                     />
                   ))}
 
-                  {/* Barra della termica */}
-                  {nonNull && (
-                    <div
-                      className="absolute left-1.5 right-1.5 transition-all duration-500 ease-out rounded-t-lg"
-                      style={{
-                        bottom: 0,
-                        height: `${Math.max(topPct, 2)}%`,
-                        backgroundColor: colore,
-                        opacity: isHovered || isSelected ? 0.95 : 0.75,
-                      }}
-                    >
-                      {/* Quota + m/s dentro la barra */}
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-lg font-extrabold text-white drop-shadow-xl leading-none">
-                          {quotaStr}
-                        </span>
-                        <span className="text-xs font-semibold text-white/90 drop-shadow-md mt-1">
-                          m
-                        </span>
-                        <span className="text-sm font-bold text-white/80 drop-shadow-md mt-1">
-                          {rateoStr} m/s
-                        </span>
+                  {/* Barra termica: PARTE DALLA BASE E ARRIVA AL TOP */}
+                  {nonNull && barHeightPct > 1 && (
+                    <>
+                      {/* Linea orizzontale alla base */}
+                      <div className="absolute left-0 right-0 border-t-2 border-dashed border-white/40 z-10" style={{ bottom: `${basePct}%` }}>
+                        <span className="absolute -top-3 left-1 text-[9px] text-white/40 uppercase tracking-wider font-bold">base</span>
                       </div>
-                    </div>
+
+                      {/* La barra vera e propria */}
+                      <div
+                        className="absolute left-1.5 right-1.5 transition-all duration-500 ease-out rounded-t-md rounded-b-sm"
+                        style={{
+                          bottom: `${basePct}%`,
+                          height: `${Math.max(barHeightPct, 3)}%`,
+                          backgroundColor: colore,
+                          opacity: isHovered || isSelected ? 0.95 : 0.75,
+                        }}
+                      >
+                        {/* Testo dentro la barra */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-base font-extrabold text-white drop-shadow-xl leading-tight">
+                            {quotaTopStr}
+                          </span>
+                          <span className="text-[11px] font-semibold text-white/80 drop-shadow-md mt-0.5">
+                            m slm
+                          </span>
+                          <span className="text-sm font-bold text-white/70 drop-shadow-md mt-1">
+                            {rateoStr} m/s
+                          </span>
+                        </div>
+                      </div>
+                    </>
                   )}
 
                   {/* Nessuna termica */}
-                  {!nonNull && (
+                  {(!nonNull || barHeightPct <= 1) && (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <span className="text-base text-slate-500">—</span>
                     </div>
                   )}
-
-                  {/* Linea base */}
-                  {nonNull && t && t.base > MIN_QUOTA && (
-                    <div className="absolute left-0 right-0 border-t-2 border-dashed border-white/30" style={{ bottom: `${quotaToPct(t.base)}%` }}>
-                      <span className="absolute -top-3.5 left-1 text-[9px] text-white/30 uppercase tracking-widest font-bold">base</span>
-                    </div>
-                  )}
                 </div>
 
-                {/* Dati SOTTO la colonna — ben leggibili */}
+                {/* Dati sotto la colonna — GRANDI E LEGGIBILI */}
                 <div className="bg-slate-900/80 border-t border-slate-700/50 px-2 py-3 text-center space-y-1.5">
-                  <div className={`text-base font-bold ${isSelected ? 'text-amber-300' : isCurrentHour ? 'text-green-400' : 'text-slate-200'}`}>
+                  {/* Ora */}
+                  <div className={`text-lg font-bold ${isSelected ? 'text-amber-300' : isCurrentHour ? 'text-green-400' : 'text-slate-200'}`}>
                     {String(hour).padStart(2, "0")}:00
                   </div>
-                  <div className="text-xs font-semibold text-slate-400">
+
+                  {/* Intensità */}
+                  <div className={`text-xs font-semibold ${isSelected ? 'text-amber-400' : 'text-slate-400'}`}>
                     {labelForza}
                   </div>
-                  <div className="text-sm font-bold text-emerald-300">
-                    Base {baseStr} m
+
+                  {/* Base */}
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span className="text-xs text-green-400 font-bold">⬇</span>
+                    <span className="text-base font-bold text-green-300">{quotaBaseStr} m</span>
                   </div>
-                  <div className="text-sm font-bold text-red-300">
-                    Top {quotaStr} m
+
+                  {/* Top */}
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span className="text-xs text-red-400 font-bold">⬆</span>
+                    <span className="text-base font-bold text-red-300">{quotaTopStr} m</span>
                   </div>
-                  <div className="text-base font-extrabold text-amber-300">
-                    {rateoStr} m/s
+
+                  {/* Rateo */}
+                  <div className="flex items-center justify-center gap-1">
+                    <span className="text-lg font-extrabold text-amber-300">{rateoStr}</span>
+                    <span className="text-xs text-amber-500 font-semibold">m/s</span>
                   </div>
+
+                  {/* Spessore */}
                   {nonNull && t && (
                     <div className="text-xs font-medium text-blue-300">
-                      Δ {(t.top - t.base)}m
+                      Δ {t.top - t.base} m
                     </div>
                   )}
                 </div>
