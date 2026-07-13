@@ -17,7 +17,7 @@ import HourSlider from "@/components/HourSlider";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import AlertBanner from "@/components/AlertBanner";
 import SiteHeader from "@/components/SiteHeader";
-import ThermalDayGraph from "@/components/ThermalDayGraph";
+import UpdateTimer from "@/components/UpdateTimer";
 import {
   getWeatherAlert,
   getStabilityIndex,
@@ -26,7 +26,7 @@ import {
   getWeatherIcon,
   WindLevel,
 } from "@/utils/weatherHelpers";
-import { RefreshCw, Sparkles, CloudSun, AlertTriangle } from "lucide-react";
+import { CloudSun, Sparkles, AlertTriangle } from "lucide-react";
 
 const Page = () => {
   const {
@@ -123,6 +123,14 @@ const Page = () => {
             {/* Alert banner */}
             <AlertBanner alert={alert} />
 
+            {/* UPDATE TIMER — ultimo aggiornamento + countdown */}
+            <UpdateTimer
+              lastUpdate={lastUpdate}
+              countdown={countdown}
+              updating={updating}
+              onRefresh={loadWeather}
+            />
+
             {/* Day selector + Hour slider */}
             <div className="space-y-4">
               <PrevisioniGiornaliere
@@ -148,7 +156,7 @@ const Page = () => {
                   <CloudSun className="w-4 h-4 mr-1" /> Meteo
                 </TabsTrigger>
                 <TabsTrigger value="venti" className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500/30 data-[state=active]:to-cyan-600/20 data-[state=active]:text-white">
-                  <RefreshCw className="w-4 h-4 mr-1" /> Venti
+                  <Sparkles className="w-4 h-4 mr-1" /> Venti
                 </TabsTrigger>
                 <TabsTrigger value="termiche" className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-orange-500/30 data-[state=active]:to-orange-600/20 data-[state=active]:text-white">
                   <Sparkles className="w-4 h-4 mr-1" /> Termiche
@@ -166,17 +174,6 @@ const Page = () => {
                   thermalDelta={thermalDelta}
                   stabilityIndex={stabilityIndex}
                 />
-                {dayData.length > 0 && (
-                  <div className="mt-4">
-                    <ThermalDayGraph
-                      dayData={dayData}
-                      altitude={site.altitude}
-                      selectedHour={selectedHour}
-                      onHourSelect={setSelectedHour}
-                      thermalDelta={thermalDelta}
-                    />
-                  </div>
-                )}
               </TabsContent>
 
               <TabsContent value="venti" className="mt-4">
@@ -209,18 +206,6 @@ const Page = () => {
                 />
               </TabsContent>
             </Tabs>
-
-            {/* Last update indicator */}
-            <div className="flex items-center justify-between text-[10px] text-slate-600 pt-2 border-t border-slate-700/30">
-              <span>Ultimo aggiornamento: {lastUpdate.toLocaleTimeString("it-IT")}</span>
-              <span>Prossimo aggiornamento tra {countdown} min</span>
-              {updating && (
-                <span className="flex items-center gap-1 text-emerald-400">
-                  <RefreshCw className="w-3 h-3 animate-spin" />
-                  Aggiornamento...
-                </span>
-              )}
-            </div>
           </div>
         </div>
       </main>
