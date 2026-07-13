@@ -37,15 +37,10 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
     dataMap.set(h.hour, h.termiche);
   }
 
-  // Quote min/max per il grafico
   const MIN_QUOTA = 500;
   const MAX_QUOTA = 4000;
+  const GRAFICO_ALTEZZA = 220;
 
-  // Altezza totale del grafico in pixel (quota 500m = bottom, 4000m = top)
-  const GRAFICO_ALTEZZA = 220; // px
-
-  // Funzione per convertire una quota in percentuale Y (dal basso)
-  // 500m -> 0%, 4000m -> 100%
   const quotaToPct = (q: number): number => {
     if (q <= MIN_QUOTA) return 0;
     if (q >= MAX_QUOTA) return 100;
@@ -85,13 +80,15 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
           let topPct = 0;
           let colore = "#64748b";
           let rateoStr = "--";
-          let topStr = "--";
+          let quotaStr = "--";
+          let baseStr = "--";
 
           if (t) {
             topPct = quotaToPct(t.top);
             colore = getColoreDaRateo(t.rateo);
             rateoStr = t.rateo.toFixed(1);
-            topStr = t.top.toString();
+            quotaStr = t.top.toString();
+            baseStr = t.base.toString();
           }
 
           return (
@@ -129,16 +126,36 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                       minHeight: '2px',
                     }}
                   >
-                    {/* Etichetta m/s dentro la barra */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-[8px] font-bold text-white drop-shadow-md leading-none px-0.5">
-                        {rateoStr}
+                    {/* Etichetta altitudine e m/s dentro la barra */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-[9px] font-bold text-white drop-shadow-md leading-tight">
+                        {quotaStr}m
+                      </span>
+                      <span className="text-[7px] font-semibold text-white/80 drop-shadow-md leading-tight">
+                        {rateoStr} m/s
                       </span>
                     </div>
                   </div>
                 )}
 
-                {/* Se non ci sono termiche, non mostriamo nulla (barra invisibile) */}
+                {/* Se non ci sono termiche, mostra "--" al centro */}
+                {!nonNull && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-[7px] text-slate-500">--</span>
+                  </div>
+                )}
+
+                {/* Linea tratteggiata della base della termica */}
+                {nonNull && t && t.base > MIN_QUOTA && (
+                  <div
+                    className="absolute w-full border-t border-dashed border-white/20"
+                    style={{ bottom: `${quotaToPct(t.base)}%` }}
+                  >
+                    <span className="absolute -top-2.5 left-0.5 text-[5px] text-white/30">
+                      base
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Etichetta ora sotto */}
@@ -152,7 +169,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
 
               {/* Quota massima sotto */}
               <div className="text-[6px] text-slate-500 leading-none mt-0.5 truncate max-w-full">
-                {topStr}m
+                {quotaStr}m
               </div>
             </div>
           );
@@ -171,6 +188,10 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
           <div className="flex items-center gap-1">
             <ArrowUp className="w-2 h-2 text-amber-400 shrink-0" />
             <span>Quota max termica (m slm)</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-0 border-t border-dashed border-white/30 shrink-0" />
+            <span>Base termica</span>
           </div>
         </div>
       </div>
