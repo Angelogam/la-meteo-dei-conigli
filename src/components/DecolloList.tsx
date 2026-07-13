@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
+  Sparkles,
 } from "lucide-react";
 
 interface DecolloListProps {
@@ -53,30 +54,30 @@ function getFlightRating(
   if (score >= 8)
     return {
       label: "Ottimo",
-      color: "border-emerald-500 bg-emerald-500/10 text-emerald-300",
-      icon: <CheckCircle2 className="w-3.5 h-3.5" />,
+      color: "border-emerald-400 bg-emerald-500/15 text-emerald-300 badge-glow",
+      icon: <CheckCircle2 className="w-3.5 h-3.5 icon-neon-green" />,
     };
   if (score >= 5)
     return {
       label: "Buono",
-      color: "border-lime-500 bg-lime-500/10 text-lime-300",
+      color: "border-lime-400 bg-lime-500/15 text-lime-300 badge-glow",
       icon: <CheckCircle2 className="w-3.5 h-3.5" />,
     };
   if (score >= 2)
     return {
       label: "Medio",
-      color: "border-amber-500 bg-amber-500/10 text-amber-300",
+      color: "border-amber-400 bg-amber-500/15 text-amber-300 badge-glow",
       icon: <AlertTriangle className="w-3.5 h-3.5" />,
     };
   return {
     label: "Scarso",
-    color: "border-red-500 bg-red-500/10 text-red-300",
+    color: "border-red-400 bg-red-500/15 text-red-300 badge-glow",
     icon: <XCircle className="w-3.5 h-3.5" />,
   };
 }
 
 function getWeatherIconComponent(code: number, size: number = 24) {
-  const props = { size, className: "text-sky-300" };
+  const props = { size, className: "text-sky-300 animate-twinkle" };
   if (code === 0) return <Sun {...props} />;
   if (code <= 3) return <Cloud {...props} />;
   if (code >= 45 && code <= 48) return <Cloud {...props} />;
@@ -104,75 +105,83 @@ export default function DecolloList({
     : null;
 
   return (
-    <div className="bg-slate-900/60 backdrop-blur-md rounded-2xl border-2 border-emerald-500/20 p-4 h-[calc(100vh-200px)] overflow-hidden shadow-xl shadow-emerald-500/5">
+    <div className="bg-slate-900/70 backdrop-blur-md rounded-2xl border-2 border-orange-400/20 p-4 h-[calc(100vh-180px)] overflow-hidden shadow-xl shadow-orange-500/5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-bold text-emerald-300 flex items-center gap-2">
-          <Navigation className="w-4 h-4" />
+        <h2 className="text-base font-bold text-orange-300 flex items-center gap-2">
+          <Navigation className="w-4 h-4 icon-neon" />
           Decolli
+          <span className="px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-[10px] font-medium text-slate-400">
+            {decolli.length}
+          </span>
         </h2>
         {rating && (
-          <div
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold ${rating.color}`}
-          >
+          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold ${rating.color}`}>
             {rating.icon}
             <span>{rating.label}</span>
           </div>
         )}
       </div>
-      <div className="overflow-y-auto h-[calc(100%-48px)] space-y-2.5 pr-1">
-        {decolli.map((d) => {
+      <div className="overflow-y-auto h-[calc(100%-44px)] space-y-2.5 pr-1">
+        {decolli.map((d, i) => {
           const isSelected = d.id === selectedId;
           return (
             <button
               key={d.id}
               onClick={() => onSelect(d.id)}
-              className={`w-full text-left rounded-xl px-4 py-3.5 transition-all duration-200 border-2 ${
+              style={{ animationDelay: `${i * 0.05}s` }}
+              className={`w-full text-left rounded-xl px-4 py-3.5 transition-all duration-200 border-2 animate-fade-in-up opacity-0 ${
                 isSelected
-                  ? "bg-emerald-900/30 border-emerald-400 shadow-lg shadow-emerald-500/10 scale-[1.02]"
-                  : "bg-slate-800/40 border-slate-700/50 hover:bg-slate-700/40 hover:border-emerald-500/30"
+                  ? "bg-gradient-to-r from-orange-900/40 to-amber-900/20 border-orange-400/50 shadow-lg shadow-orange-500/15 scale-[1.02] card-hover"
+                  : "bg-slate-800/50 border-slate-700/50 hover:bg-slate-700/40 hover:border-orange-400/30 card-hover"
               }`}
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-bold text-slate-100 truncate">
+                    <span className={`text-sm font-bold truncate ${isSelected ? 'text-orange-100' : 'text-slate-100'}`}>
                       {d.name}
                     </span>
                     {isSelected && currentData && (
-                      <span className="shrink-0 text-xl">
-                        {getWeatherIconComponent(currentData.weatherCode || 0, 20)}
+                      <span className="shrink-0 text-lg animate-twinkle">
+                        {getWeatherIconComponent(currentData.weatherCode || 0, 18)}
                       </span>
                     )}
                   </div>
                   <div className="flex items-center gap-3 text-xs text-slate-400">
                     <span className="flex items-center gap-1">
-                      <MapPin className="w-2.5 h-2.5 text-rose-400" />
+                      <MapPin className="w-2.5 h-2.5 text-rose-400/80" />
                       {d.valley}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Compass className="w-2.5 h-2.5 text-sky-400" />
+                      <Compass className="w-2.5 h-2.5 text-sky-400/80" />
                       {d.exposure}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Mountain className="w-2.5 h-2.5 text-amber-400" />
+                      <Mountain className="w-2.5 h-2.5 text-amber-400/80" />
+                      {<dyad-write path="src/components/DecolloList.tsx" description="Completo la sidebar dei decolli">
                       {d.alt}m
                     </span>
                   </div>
                 </div>
                 {isSelected && currentData && (
-                  <div className="flex flex-col items-end shrink-0">
-                    <span className="text-xl font-bold text-emerald-300 tabular-nums">
+                  <div className="flex flex-col items-end shrink-0 bg-slate-800/80 rounded-xl px-3 py-2 border border-orange-400/20">
+                    <span className="text-xl font-bold text-orange-300 tabular-nums text-glow">
                       {Math.round(currentData.temperature)}°
                     </span>
                     <div className="flex items-center gap-1 text-xs text-slate-400">
-                      <Wind className="w-3 h-3 text-sky-400" />
-                      <span className="tabular-nums">
+                      <Wind className="w-3 h-3 text-sky-400/80" />
+                      <span className="tabular-nums font-medium">
                         {Math.round(currentData.windSpeed)}
                       </span>
+                      <span className="text-[10px] text-slate-500">km/h</span>
                     </div>
                   </div>
                 )}
               </div>
+              {/* Linea decorativa sottile per separare */}
+              {i < decolli.length - 1 && !isSelected && (
+                <div className="mt-2.5 border-b border-slate-700/30" />
+              )}
             </button>
           );
         })}

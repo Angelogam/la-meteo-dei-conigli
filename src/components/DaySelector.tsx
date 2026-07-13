@@ -6,6 +6,7 @@ import {
   ThermometerSun,
   CloudRain,
   Droplets,
+  Sparkles,
 } from "lucide-react";
 
 interface DaySelectorProps {
@@ -31,28 +32,34 @@ export default function DaySelector({
           <button
             key={idx}
             onClick={() => onSelect(idx)}
-            className={`rounded-xl px-3 py-3 transition-all duration-200 border-2 text-left ${
+            className={`rounded-xl px-3 py-3 transition-all duration-200 border-2 text-left animate-fade-in-up opacity-0 ${
               isActive
-                ? "bg-emerald-900/30 border-emerald-400 shadow-lg shadow-emerald-500/10"
-                : "bg-slate-800/40 border-slate-700/50 hover:bg-slate-700/40 hover:border-emerald-500/20"
+                ? "bg-gradient-to-br from-orange-900/30 to-amber-900/15 border-orange-400/50 shadow-lg shadow-orange-500/15 card-hover"
+                : "bg-slate-800/40 border-slate-700/50 hover:bg-slate-700/40 hover:border-orange-400/30 card-hover"
             }`}
+            style={{ animationDelay: `${idx * 0.1}s` }}
           >
-            <div className="text-xs font-semibold text-slate-300 mb-1.5">
-              {dateLabels[idx]}
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="text-xs font-semibold text-slate-300">
+                {dateLabels[idx]}
+              </div>
+              {isActive && (
+                <Sparkles className="w-3 h-3 text-orange-400 animate-twinkle" />
+              )}
             </div>
-            <div className="text-2xl mb-2">
+            <div className="text-2xl mb-2 animate-float-slow" style={{ animationDelay: `${idx * 0.2}s` }}>
               {getEmoji(day.weatherCode || 0)}
             </div>
             <div className="text-sm font-bold text-slate-100 tabular-nums">
               {Math.round(day.tempMax)}° / {Math.round(day.tempMin)}°
             </div>
             <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400">
-              <span className="flex items-center gap-0.5">
+              <span className="flex items-center gap-0.5 bg-slate-800/60 px-1.5 py-0.5 rounded-full border border-slate-700/50">
                 <Droplets className="w-2.5 h-2.5 text-sky-400" />
                 Δ{day.thermalDelta || 0}°
               </span>
               {day.precipitationSum > 0 && (
-                <span className="flex items-center gap-0.5">
+                <span className="flex items-center gap-0.5 bg-slate-800/60 px-1.5 py-0.5 rounded-full border border-slate-700/50">
                   <CloudRain className="w-2.5 h-2.5 text-blue-400" />
                   {Math.round(day.precipitationSum)}mm
                 </span>

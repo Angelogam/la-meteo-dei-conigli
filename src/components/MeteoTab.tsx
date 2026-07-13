@@ -10,6 +10,7 @@ import {
   Wind,
   ArrowUpDown,
   Gauge,
+  Sparkles,
 } from "lucide-react";
 
 interface MeteoTabProps {
@@ -36,13 +37,13 @@ export default function MeteoTab({
 
   const cards = [
     {
-      icon: <ThermometerSun className="w-6 h-6 text-amber-400" />,
+      icon: <ThermometerSun className="w-6 h-6 text-amber-400 icon-neon" />,
       label: "Temperatura",
       value: `${Math.round(currentData.temperature)}°C`,
       sub: `Δ ${thermalDelta}°C`,
     },
     {
-      icon: <Droplets className="w-6 h-6 text-sky-400" />,
+      icon: <Droplets className="w-6 h-6 text-sky-400 icon-neon-blue" />,
       label: "Umidità",
       value: `${Math.round(currentData.humidity)}%`,
       sub: `Rugiada ${Math.round(currentData.dewPoint)}°C`,
@@ -57,7 +58,7 @@ export default function MeteoTab({
       icon: <CloudRain className="w-6 h-6 text-blue-400" />,
       label: "Precipitazioni",
       value: currentData.precipitation === 0 ? "Assenti" : `${Math.round(currentData.precipitation * 10) / 10} mm`,
-      sub: currentData.precipitation === 0 ? "Ideale" : "Pioggia",
+      sub: currentData.precipitation === 0 ? "Ideale ✅" : "Pioggia 🌧️",
     },
     {
       icon: <Mountain className="w-6 h-6 text-amber-400" />,
@@ -66,13 +67,13 @@ export default function MeteoTab({
       sub: "Cloud base",
     },
     {
-      icon: <ArrowUpDown className="w-6 h-6 text-green-400" />,
+      icon: <ArrowUpDown className="w-6 h-6 text-green-400 icon-neon-green" />,
       label: "Plafond termico",
       value: `${thermalPlafond} m`,
       sub: "Thermal top",
     },
     {
-      icon: <Wind className="w-6 h-6 text-sky-400" />,
+      icon: <Wind className="w-6 h-6 text-sky-400 icon-neon-blue" />,
       label: "Vento",
       value: `${getWindArrow(currentData.windDir)} ${Math.round(currentData.windSpeed)} km/h`,
       sub: getWindDirName(currentData.windDir),
@@ -86,18 +87,19 @@ export default function MeteoTab({
   ];
 
   return (
-    <div className="animate-fadeIn">
+    <div className="animate-fade-in">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
         {cards.map((card, i) => (
           <div
             key={i}
-            className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-4 text-center hover:bg-slate-700/40 transition-colors"
+            className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-4 text-center hover:bg-slate-700/40 transition-all duration-200 card-hover animate-fade-in-up opacity-0"
+            style={{ animationDelay: `${i * 0.05}s` }}
           >
             <div className="flex justify-center mb-2">{card.icon}</div>
             <div className="text-sm text-slate-300 uppercase tracking-wider mb-1 font-semibold">
               {card.label}
             </div>
-            <div className="text-lg font-bold text-slate-100 tabular-nums">
+            <div className="text-lg font-bold text-slate-100 tabular-nums text-glow-white">
               {card.value}
             </div>
             <div className="text-sm text-slate-400 mt-1">{card.sub}</div>
@@ -105,19 +107,21 @@ export default function MeteoTab({
         ))}
       </div>
 
-      <div className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-5">
-        <h4 className="text-base font-bold text-emerald-300 uppercase tracking-wider mb-4">
+      <div className="bg-gradient-to-br from-slate-800/50 to-slate-800/30 border border-slate-700/30 rounded-xl p-5 card-hover">
+        <h4 className="text-base font-bold text-orange-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <Gauge className="w-4 h-4 icon-neon" />
           Pressione & Stabilità
+          <Sparkles className="w-3.5 h-3.5 text-orange-400 animate-twinkle" />
         </h4>
         <div className="grid grid-cols-3 gap-4">
-          <div className="text-center">
+          <div className="text-center p-3 rounded-lg bg-slate-800/50 border border-slate-700/30">
             <div className="text-sm text-slate-300 mb-1 font-semibold">Attuale</div>
             <div className="text-xl font-bold text-slate-100 tabular-nums">
               {Math.round(currentData.pressure)}
             </div>
             <div className="text-sm text-slate-400">hPa</div>
           </div>
-          <div className="text-center">
+          <div className="text-center p-3 rounded-lg bg-slate-800/50 border border-slate-700/30">
             <div className="text-sm text-slate-300 mb-1 font-semibold">Gradiente</div>
             <div
               className={`text-xl font-bold tabular-nums ${
@@ -131,7 +135,7 @@ export default function MeteoTab({
               {getPressureTrend(dayData)}
             </div>
           </div>
-          <div className="text-center">
+          <div className="text-center p-3 rounded-lg bg-slate-800/50 border border-slate-700/30">
             <div className="text-sm text-slate-300 mb-1 font-semibold">Stabilità</div>
             <div
               className="text-lg font-bold tabular-nums"
@@ -147,11 +151,11 @@ export default function MeteoTab({
 }
 
 function getCloudText(cover: number): string {
-  if (cover < 20) return "Sereno";
-  if (cover < 40) return "Poco nuvoloso";
-  if (cover < 60) return "Nuvoloso";
-  if (cover < 80) return "Molto nuvoloso";
-  return "Coperto";
+  if (cover < 20) return "Sereno ☀️";
+  if (cover < 40) return "Poco nuvoloso 🌤️";
+  if (cover < 60) return "Nuvoloso ⛅";
+  if (cover < 80) return "Molto nuvoloso ☁️";
+  return "Coperto ☁️";
 }
 
 function getWindArrow(deg: number): string {
