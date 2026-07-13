@@ -145,7 +145,21 @@
 
 @keyframes hop {
   0%, 100% { transform: translateY(0px) scale(1); }
-  50% { transform: translateY(-8px) scale(1.05); }
+  50% { transform: translateY(-8px) scale(1.1); }
+}
+
+@keyframes float-left {
+  0%, 100% { transform: translateX(0px) translateY(0px); }
+  25% { transform: translateX(-3px) translateY(-4px); }
+  50% { transform: translateX(0px) translateY(0px); }
+  75% { transform: translateX(3px) translateY(-2px); }
+}
+
+@keyframes float-right {
+  0%, 100% { transform: translateX(0px) translateY(0px); }
+  25% { transform: translateX(3px) translateY(-4px); }
+  50% { transform: translateX(0px) translateY(0px); }
+  75% { transform: translateX(-3px) translateY(-2px); }
 }
 
 @keyframes glide {
@@ -161,6 +175,18 @@
 @keyframes glow {
   0%, 100% { box-shadow: 0 0 5px rgba(251, 146, 60, 0.3); }
   50% { box-shadow: 0 0 20px rgba(251, 146, 60, 0.6); }
+}
+
+.animate-hop {
+  animation: hop 1.2s ease-in-out infinite;
+}
+
+.animate-float-left {
+  animation: float-left 2s ease-in-out infinite;
+}
+
+.animate-float-right {
+  animation: float-right 2s ease-in-out infinite;
 }
 
 /* Scrollbar styling */
