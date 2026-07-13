@@ -10,7 +10,7 @@ interface ThermalChartProps {
   siteAltitude: number;
 }
 
-const HOURS = Array.from({ length: 14 }, (_, i) => i + 8); // 8:00 – 21:00
+const HOURS_LOCAL = Array.from({ length: 14 }, (_, i) => i + 8); // 8:00 – 21:00 ora locale
 
 function getColorFromLabel(label: string): string {
   if (label.includes("forti") || label.includes("🔥")) return "bg-red-500/70";
@@ -30,29 +30,20 @@ function getTextColor(label: string): string {
   return "text-slate-400";
 }
 
-function getLabel(value: number): string {
-  if (value < 0.3) return "Nulla";
-  if (value < 0.8) return "Debole";
-  if (value < 1.5) return "Leggera";
-  if (value < 2.5) return "Moderata";
-  if (value < 3.5) return "Buona";
-  if (value < 5.0) return "Forte";
-  if (value < 7.0) return "Molto forte";
-  return "Eccezionale";
-}
-
 export default function ThermalChart({ hourlyData, selectedHour, siteAltitude }: ThermalChartProps) {
   const data = useMemo(() => {
-    return HOURS.map((hour) => {
-      // Trova i dati meteo per quest'ora
+    return HOURS_LOCAL.map((localHour) => {
+      // Cerca i dati meteo per quest'ora locale
       const weatherData = hourlyData?.find((d: any) => {
-        const h = new Date(d.time).getHours();
-        return h === hour;
+        const t = new Date(d.time);
+        // Converte in ora locale italiana
+        const localH = t.getHours() + t.getTimezoneOffset() / 60 + 1; // UTC+1 per Italia
+        return localH === localHour;
       });
 
       if (!weatherData) {
         return {
-          hour,
+          hour: localHour,
           value: 0,
           rateo: 0,
           label: "N/D",
@@ -64,7 +55,7 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude }:
       const termiche = calcolaTermiche(weatherData, siteAltitude);
       
       return {
-        hour,
+        hour: localHour,
         value: termiche.forza,    // 0-10
         rateo: termiche.rateo,    // m/s
         label: termiche.label,
@@ -83,18 +74,18 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude }:
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
-          Intensità termica · basata su dati Open-Meteo
+          Intensità termica · ora locale (Europe/Rome)
         </h3>
-        <span className="text-[10px] text-slate-500">indice 0-10</span>
+        <span className="text-[10px] text-slate-500">m/s · indice 0-10</span>
       </div>
 
       {/* Legend */}
       <div className="flex flex-wrap gap-1.5 text-[10px]">
         {[
-          { label: "Forte", color: "bg-red-500/70" },
-          { label: "Buona", color: "bg-orange-400/70" },
-          { label: "Moderata", color: "bg-yellow-400/60" },
-          { label: "Debole", color: "bg-green-400/60" },
+          { label: "Forte (3.5+)", color: "bg-red-500/70" },
+          { label: "Buona (2.5-3.5)", color: "bg-orange-400/70" },
+          { label: "Moderata (1.5-2.5)", color: "bg-yellow-400/60" },
+          { label: "Debole (0.5-1.5)", color: "bg-green-400/60" },
           { label: "Nulla", color: "bg-slate-700/40" },
         ].map((item) => (
           <span key={item.label} className="flex items-center gap-1">
