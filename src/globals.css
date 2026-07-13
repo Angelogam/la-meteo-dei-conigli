@@ -4,37 +4,6 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 200 15% 12%;
-    --card: 0 0% 100%;
-    --card-foreground: 200 15% 12%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 200 15% 12%;
-    --primary: 160 80% 35%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 30 100% 55%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 210 15% 95%;
-    --muted-foreground: 200 10% 45%;
-    --accent: 190 90% 45%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 80% 55%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 160 40% 80%;
-    --input: 160 30% 85%;
-    --ring: 160 80% 40%;
-    --radius: 1rem;
-    --sidebar-background: 200 20% 10%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 160 80% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 30 100% 50%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 200 15% 25%;
-    --sidebar-ring: 160 80% 50%;
-  }
-
-  .dark {
     --background: 200 25% 8%;
     --foreground: 0 0% 95%;
     --card: 200 25% 12%;
@@ -54,494 +23,99 @@
     --border: 160 50% 30%;
     --input: 160 40% 20%;
     --ring: 160 80% 45%;
-    --sidebar-background: 200 25% 8%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 160 80% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 30 100% 50%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 200 15% 22%;
-    --sidebar-ring: 160 80% 50%;
+    --radius: 1rem;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    font-size: 15px;
-    line-height: 1.6;
-    font-weight: 400;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Inter', system-ui, sans-serif;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    line-height: 1.1;
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
   }
-
-  h1 { font-size: 2.2rem; }
-  h2 { font-size: 1.8rem; }
-  h3 { font-size: 1.5rem; }
-  h4 { font-size: 1.25rem; }
-
-  p, span, div, button, a, li, input, textarea, select {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    line-height: 1.5;
+  ::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.5);
   }
-
-  button, .btn {
-    font-weight: 600;
-    letter-spacing: 0.02em;
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #10b981, #059669);
+    border-radius: 3px;
   }
 }
 
-/* Import Inter font */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-
-/* ============================================
-   ANIMAZIONI
-   ============================================ */
-
-@keyframes float-slow {
+/* ===== ANIMAZIONI ===== */
+@keyframes float {
   0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
+  50% { transform: translateY(-10px); }
 }
-
-@keyframes float-medium {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  25% { transform: translateY(-6px) rotate(3deg); }
-  75% { transform: translateY(-3px) rotate(-3deg); }
-}
-
-@keyframes float-fast {
-  0%, 100% { transform: translateY(0px) translateX(0px); }
-  33% { transform: translateY(-4px) translateX(3px); }
-  66% { transform: translateY(-2px) translateX(-3px); }
-}
-
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.3), 0 0 30px rgba(16, 185, 129, 0.15); }
-  50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.5), 0 0 60px rgba(16, 185, 129, 0.25); }
+  0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(16, 185, 129, 0.6); }
 }
-
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
-
-@keyframes fade-in-up {
+@keyframes slide-up {
   0% { opacity: 0; transform: translateY(20px); }
   100% { opacity: 1; transform: translateY(0); }
 }
-
-@keyframes slide-in-right {
-  0% { opacity: 0; transform: translateX(30px); }
-  100% { opacity: 1; transform: translateX(0); }
-}
-
 @keyframes scale-in {
   0% { opacity: 0; transform: scale(0.9); }
   100% { opacity: 1; transform: scale(1); }
 }
-
-@keyframes spin-slow {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 @keyframes twinkle {
   0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.4); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+@keyframes glitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(2px, -2px); }
+  60% { transform: translate(-1px, 1px); }
+  80% { transform: translate(1px, -1px); }
+  100% { transform: translate(0); }
 }
 
-@keyframes bounce-gentle {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
-@keyframes neon-pulse {
-  0%, 100% { border-color: rgba(16, 185, 129, 0.4); box-shadow: 0 0 10px rgba(16, 185, 129, 0.15); }
-  50% { border-color: rgba(16, 185, 129, 0.8); box-shadow: 0 0 25px rgba(16, 185, 129, 0.35); }
-}
-
-.animate-float-slow { animation: float-slow 3s ease-in-out infinite; }
-.animate-float-medium { animation: float-medium 4s ease-in-out infinite; }
-.animate-float-fast { animation: float-fast 2.5s ease-in-out infinite; }
+.animate-float { animation: float 3s ease-in-out infinite; }
 .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
 .animate-shimmer {
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
   background-size: 200% 100%;
   animation: shimmer 3s ease-in-out infinite;
 }
-.animate-fade-in-up { animation: fade-in-up 0.5s ease-out forwards; }
-.animate-slide-in-right { animation: slide-in-right 0.4s ease-out forwards; }
+.animate-slide-up { animation: slide-up 0.5s ease-out forwards; }
 .animate-scale-in { animation: scale-in 0.3s ease-out forwards; }
-.animate-spin-slow { animation: spin-slow 8s linear infinite; }
 .animate-twinkle { animation: twinkle 2s ease-in-out infinite; }
-.animate-bounce-gentle { animation: bounce-gentle 2s ease-in-out infinite; }
-.animate-neon-pulse { animation: neon-pulse 2.5s ease-in-out infinite; }
+.animate-glitch { animation: glitch 0.3s ease-in-out infinite; }
 
-/* Stagger per animazioni figli */
-.stagger-1 > *:nth-child(1) { animation-delay: 0s; }
-.stagger-2 > *:nth-child(1) { animation-delay: 0.08s; }
-.stagger-3 > *:nth-child(1) { animation-delay: 0.16s; }
-.stagger-4 > *:nth-child(1) { animation-delay: 0.24s; }
-
-/* ============================================
-   SCROLLBAR
-   ============================================ */
-
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* ===== NEON ===== */
+.neon-green {
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.5), 0 0 20px rgba(16, 185, 129, 0.3);
 }
-::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.5);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #10b981, #059669);
-  border-radius: 3px;
-  transition: all 0.2s;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #34d399, #10b981);
-}
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #10b981 rgba(15, 23, 42, 0.5);
+.neon-orange {
+  text-shadow: 0 0 10px rgba(249, 115, 22, 0.5), 0 0 20px rgba(249, 115, 22, 0.3);
 }
 
-/* ============================================
-   GLASS / NEON / GLOW
-   ============================================ */
-
+/* ===== GLASS ===== */
 .glass {
-  background: rgba(15, 23, 42, 0.65);
+  background: rgba(15, 23, 42, 0.7);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.glass-light {
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.card-hover {
+/* ===== CARD ===== */
+.card-neon {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.card-hover:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 30px rgba(16, 185, 129, 0.2), 0 4px 10px rgba(0, 0, 0, 0.3);
-}
-
-/* ============================================
-   TESTI GRADIENT
-   ============================================ */
-
-.text-gradient-orange {
-  background: linear-gradient(135deg, #fb923c, #f97316, #ea580c);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.text-gradient-emerald {
-  background: linear-gradient(135deg, #34d399, #10b981, #059669);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.text-gradient-sky {
-  background: linear-gradient(135deg, #38bdf8, #0ea5e9, #0284c7);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.text-gradient-amber {
-  background: linear-gradient(135deg, #fbbf24, #f59e0b, #d97706);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.text-gradient-white {
-  background: linear-gradient(135deg, #ffffff, #e2e8f0, #cbd5e1);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* ============================================
-   NEON ICONS
-   ============================================ */
-
-.icon-neon-emerald {
-  filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.5));
-}
-
-.icon-neon-orange {
-  filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.5));
-}
-
-.icon-neon-sky {
-  filter: drop-shadow(0 0 8px rgba(14, 165, 233, 0.5));
-}
-
-.icon-neon-rose {
-  filter: drop-shadow(0 0 8px rgba(244, 63, 94, 0.5));
-}
-
-.icon-neon-amber {
-  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.5));
-}
-
-.icon-neon-purple {
-  filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.5));
-}
-
-/* ============================================
-   BORDI LUMINOSI / ANIMATI
-   ============================================ */
-
-.border-glow-emerald {
-  position: relative;
-  border: 1px solid transparent;
-  background-clip: padding-box;
-}
-.border-glow-emerald::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  background: linear-gradient(135deg, #10b981, #059669, #10b981);
-  z-index: -1;
-  animation: shimmer 3s ease-in-out infinite;
-  background-size: 200% 100%;
-}
-
-.border-glow-orange {
-  position: relative;
-  border: 1px solid transparent;
-  background-clip: padding-box;
-}
-.border-glow-orange::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  background: linear-gradient(135deg, #f97316, #d97706, #f97316);
-  z-index: -1;
-  animation: shimmer 3s ease-in-out infinite;
-  background-size: 200% 100%;
-}
-
-/* ============================================
-   SFONDI / PARTICELLE
-   ============================================ */
-
-.particle-bg {
-  position: relative;
-  overflow: hidden;
-}
-
-.particle-bg::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background:
-    radial-gradient(2px 2px at 20% 30%, rgba(16, 185, 129, 0.3), transparent),
-    radial-gradient(2px 2px at 40% 70%, rgba(16, 185, 129, 0.2), transparent),
-    radial-gradient(2px 2px at 60% 40%, rgba(16, 185, 129, 0.3), transparent),
-    radial-gradient(2px 2px at 80% 10%, rgba(16, 185, 129, 0.2), transparent),
-    radial-gradient(2px 2px at 10% 80%, rgba(16, 185, 129, 0.25), transparent),
-    radial-gradient(2px 2px at 70% 80%, rgba(16, 185, 129, 0.2), transparent),
-    radial-gradient(2px 2px at 90% 60%, rgba(16, 185, 129, 0.3), transparent),
-    radial-gradient(3px 3px at 50% 50%, rgba(16, 185, 129, 0.15), transparent);
-  animation: twinkle 4s ease-in-out infinite;
-  pointer-events: none;
-}
-
-/* ============================================
-   TEXT GLOW
-   ============================================ */
-
-.text-glow-emerald {
-  text-shadow: 0 0 15px rgba(16, 185, 129, 0.4), 0 0 30px rgba(16, 185, 129, 0.2);
-}
-
-.text-glow-white {
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(255, 255, 255, 0.25);
-}
-
-.text-glow-orange {
-  text-shadow: 0 0 15px rgba(249, 115, 22, 0.4), 0 0 30px rgba(249, 115, 22, 0.2);
-}
-
-/* ============================================
-   BADGE GLOW
-   ============================================ */
-
-.badge-glow {
-  position: relative;
-  overflow: hidden;
-}
-
-.badge-glow::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-  background-size: 200% 100%;
-  animation: shimmer 2s ease-in-out infinite;
-  pointer-events: none;
-}
-
-/* ============================================
-   BUTTON GLOW
-   ============================================ */
-
-.btn-glow {
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-
-.btn-glow:hover {
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), 0 0 40px rgba(16, 185, 129, 0.2);
-}
-
-.btn-glow::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
-  background-size: 200% 100%;
-  animation: shimmer 3s ease-in-out infinite;
-  pointer-events: none;
-}
-
-/* ============================================
-   DIVIDER
-   ============================================ */
-
-.divider-gradient {
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #10b981, #059669, transparent);
-  border: none;
-  margin: 0.5rem 0;
-}
-
-/* ============================================
-   SCORE RING
-   ============================================ */
-
-.score-ring-bg-green {
-  fill: rgba(16, 185, 129, 0.15);
-  stroke: rgba(16, 185, 129, 0.3);
-}
-.score-ring-stroke-green {
-  stroke: #10b981;
-}
-
-.score-ring-bg-yellow {
-  fill: rgba(234, 179, 8, 0.15);
-  stroke: rgba(234, 179, 8, 0.3);
-}
-.score-ring-stroke-yellow {
-  stroke: #eab308;
-}
-
-.score-ring-bg-red {
-  fill: rgba(239, 68, 68, 0.15);
-  stroke: rgba(239, 68, 68, 0.3);
-}
-.score-ring-stroke-red {
-  stroke: #ef4444;
-}
-
-/* ============================================
-   TABELLE
-   ============================================ */
-
-.table-neon thead tr {
-  background: rgba(16, 185, 129, 0.1);
-  border-bottom: 2px solid rgba(16, 185, 129, 0.3);
-}
-
-.table-neon tbody tr {
-  border-bottom: 1px solid rgba(100, 116, 139, 0.2);
-  transition: all 0.2s;
-}
-
-.table-neon tbody tr:hover {
-  background: rgba(16, 185, 129, 0.08);
-}
-
-/* ============================================
-   CARD VOTO
-   ============================================ */
-
-.card-score-green {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.1));
-  border-color: rgba(16, 185, 129, 0.5);
-}
-.card-score-green:hover {
-  border-color: rgba(16, 185, 129, 0.8);
-  box-shadow: 0 0 25px rgba(16, 185, 129, 0.3);
-}
-
-.card-score-yellow {
-  background: linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(217, 119, 6, 0.1));
-  border-color: rgba(234, 179, 8, 0.5);
-}
-.card-score-yellow:hover {
-  border-color: rgba(234, 179, 8, 0.8);
-  box-shadow: 0 0 25px rgba(234, 179, 8, 0.3);
-}
-
-.card-score-red {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(220, 38, 38, 0.1));
-  border-color: rgba(239, 68, 68, 0.5);
-}
-.card-score-red:hover {
-  border-color: rgba(239, 68, 68, 0.8);
-  box-shadow: 0 0 25px rgba(239, 68, 68, 0.3);
-}
-
-/* ============================================
-   UTILITIES
-   ============================================ */
-
-.rotate-180 {
-  transform: rotate(180deg);
-}
-
-.opacity-0 {
-  opacity: 0;
-}
-
-@media (max-width: 768px) {
-  .meteo-grid {
-    grid-template-columns: 1fr !important;
-  }
+.card-neon:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(16, 185, 129, 0.25);
 }

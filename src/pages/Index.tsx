@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -15,7 +15,7 @@ import VentiTab from "@/components/VentiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiTab from "@/components/AnalisiTab";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
-import { Sparkles, Navigation, CloudSun, RefreshCw, Loader2, Clock, Timer } from "lucide-react";
+import { Sparkles, Navigation, CloudSun, RefreshCw, Loader2, Clock, Timer, TrendingUp, Wind, Thermometer, ChevronDown } from "lucide-react";
 
 function formatDate(date: any): string {
   if (!date) return "";
@@ -45,6 +45,7 @@ export function Page() {
   } = useWeatherData();
 
   const [animRefresh, setAnimRefresh] = useState(false);
+  const mainRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (updating) {
@@ -77,154 +78,64 @@ export function Page() {
   }) || "--:--";
 
   const countdownMin = Math.floor(countdown);
-  const countdownSec = Math.round((countdown - Math.floor(countdown)) * 60);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 particle-bg">
-      <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-[0.03]">
-        <svg className="w-full h-full" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
-          <path d="M0,600 L200,400 L400,520 L600,300 L800,450 L1000,250 L1200,380 L1440,200 L1440,900 L0,900 Z" fill="#f97316" opacity="0.8"/>
-          <path d="M0,700 L300,500 L500,650 L700,450 L900,580 L1100,380 L1300,500 L1440,350 L1440,900 L0,900 Z" fill="#d97706" opacity="0.5"/>
-        </svg>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 overflow-x-hidden">
+      {/* Particle background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-[0.04]">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-emerald-500 blur-[100px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-orange-500 blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
-      <header className="relative text-center py-3 md:py-5 border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-md overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-24 bg-gradient-to-b from-orange-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex items-center justify-center gap-2 md:gap-4 relative z-10">
-          <div className="hidden sm:flex flex-col items-center animate-float-slow">
-            <div className="relative icon-neon">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-orange-500/20 to-amber-500/10 border-2 border-orange-400/30 flex items-center justify-center">
-                <span className="text-lg md:text-xl" role="img" aria-label="coniglio">🐰</span>
-              </div>
-              <div className="absolute -top-1.5 -right-1.5 w-4 h-4 md:w-5 md:h-5 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center">
-                <Sparkles className="w-2 h-2 md:w-2.5 md:h-2.5 text-emerald-300 animate-twinkle" />
-              </div>
+      {/* ===== HEADER ===== */}
+      <header className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-emerald-500/20">
+        <div className="max-w-8xl mx-auto px-3 md:px-5 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/30 to-emerald-700/20 border border-emerald-400/40 flex items-center justify-center animate-pulse-glow">
+              <Navigation className="w-5 h-5 text-emerald-300" />
             </div>
-          </div>
-
-          <div className="flex flex-col items-center justify-center gap-0.5">
-            <div className="flex items-center justify-center gap-2">
-              <div className="w-7 h-7 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-orange-500/25 to-amber-500/15 border border-orange-400/30 flex items-center justify-center animate-bounce-gentle">
-                <Navigation className="w-3.5 h-3.5 md:w-5 md:h-5 text-orange-400 icon-neon" />
-              </div>
-              <h1 className="text-lg md:text-2xl font-extrabold text-gradient-orange drop-shadow-lg animate-fade-in-up">
-                Meteo dei Conigli
+            <div>
+              <h1 className="text-lg md:text-xl font-black text-white neon-green tracking-tight">
+                METEO CONIGLI
               </h1>
-              <div className="w-7 h-7 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-orange-500/25 to-amber-500/15 border border-orange-400/30 flex items-center justify-center animate-bounce-gentle" style={{ animationDelay: '0.3s' }}>
-                <CloudSun className="w-3.5 h-3.5 md:w-5 md:h-5 text-orange-400 icon-neon" />
-              </div>
-            </div>
-            <p className="text-[10px] md:text-xs font-medium text-slate-400 flex items-center gap-2">
-              <span className="w-1 h-1 rounded-full bg-orange-400 animate-pulse" />
-              Previsioni per volo libero sui migliori decolli del Piemonte
-              <span className="w-1 h-1 rounded-full bg-orange-400 animate-pulse" />
-            </p>
-          </div>
-
-          <div className="hidden sm:flex flex-col items-center animate-float-slow" style={{ animationDelay: '1.5s' }}>
-            <div className="relative icon-neon">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-orange-500/20 to-amber-500/10 border-2 border-orange-400/30 flex items-center justify-center">
-                <span className="text-lg md:text-xl" role="img" aria-label="coniglio">🐰</span>
-              </div>
-              <div className="absolute -top-1.5 -right-1.5 w-4 h-4 md:w-5 md:h-5 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center">
-                <Sparkles className="w-2 h-2 md:w-2.5 md:h-2.5 text-emerald-300 animate-twinkle" style={{ animationDelay: '1s' }} />
-              </div>
+              <p className="text-[10px] text-slate-400 font-medium tracking-wider uppercase">
+                Volo libero Piemonte
+              </p>
             </div>
           </div>
-        </div>
 
-        <div className="flex sm:hidden items-center justify-center gap-3 mt-2">
-          {[0, 0.2, 0.4].map((delay, i) => (
-            <div key={i} className="animate-bounce-gentle" style={{ animationDelay: `${delay}s` }}>
-              <span className="text-lg" role="img" aria-label="coniglio">🐰</span>
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/60 border border-slate-700/30">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ring-1 ring-emerald-400/30" />
+              <span className="text-[10px] text-slate-300 font-bold tracking-wider uppercase">Live</span>
+              <span className="text-[10px] text-slate-500">·</span>
+              <span className="text-[10px] text-slate-400 tabular-nums">{lastUpdateStr}</span>
             </div>
-          ))}
-        </div>
-
-        {/* INDICATORE REFRESH + COUNTDOWN */}
-        <div className="absolute top-1.5 right-2 md:top-3 md:right-4 flex items-center gap-2">
-          <div className={`
-            flex items-center gap-2 px-3 py-1.5 rounded-xl border backdrop-blur-md shadow-lg
-            transition-all duration-500
-            ${updating
-              ? "bg-emerald-900/40 border-emerald-400/50 shadow-emerald-400/15"
-              : "bg-slate-900/60 border-slate-600/30 hover:border-emerald-500/30 hover:bg-slate-800/60"
-            }
-          `}>
             <button
               onClick={loadWeather}
               disabled={updating}
-              className={`
-                p-1.5 rounded-lg transition-all duration-300
-                ${updating
-                  ? "bg-emerald-500/20 text-emerald-300 cursor-not-allowed"
-                  : "bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-emerald-300 border border-slate-600/20 hover:border-emerald-500/30"
-                }
-              `}
-              title="Aggiorna ora"
+              className="p-2 rounded-xl bg-slate-800/60 border border-slate-700/30 hover:bg-slate-700/60 hover:border-emerald-500/30 transition-all disabled:opacity-50"
             >
-              <RefreshCw className={`w-4 h-4 md:w-5 md:h-5 ${updating ? "animate-spin" : ""} ${animRefresh ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-4 h-4 text-emerald-300 ${updating ? "animate-spin" : ""} ${animRefresh ? "animate-spin" : ""}`} />
             </button>
-
-            <div className="flex items-center gap-2">
-              <div className="flex flex-col items-start">
-                <div className="flex items-center gap-1.5">
-                  <span className={`
-                    w-2 h-2 rounded-full
-                    ${updating ? "bg-yellow-400 animate-pulse ring-1 ring-yellow-400/30" : "bg-emerald-400 ring-1 ring-emerald-400/20"}
-                  `} />
-                  <span className="text-[10px] md:text-xs font-bold text-white tracking-tight">
-                    {updating ? "AGGIORNAMENTO" : "DATI LIVE"}
-                  </span>
-                </div>
-                <span className="text-[9px] text-slate-500 flex items-center gap-1">
-                  <Clock className="w-2.5 h-2.5" />
-                  Agg.: {lastUpdateStr}
-                </span>
-              </div>
-
-              <div className="w-px h-7 bg-slate-600/30 mx-0.5" />
-
-              <div className="flex items-center gap-1.5">
-                <Timer className={`w-3.5 h-3.5 ${countdownMin <= 3 ? "text-amber-400 animate-pulse" : "text-slate-400"}`} />
-                <div className="flex flex-col">
-                  {updating ? (
-                    <span className="text-xs md:text-sm font-black text-emerald-300 tabular-nums">
-                      ...
-                    </span>
-                  ) : (
-                    <div className="flex items-baseline gap-0.5">
-                      <span className={`text-base md:text-lg font-black tabular-nums drop-shadow-sm ${
-                        countdownMin <= 3 ? "text-amber-300" : countdownMin <= 7 ? "text-yellow-300" : "text-emerald-200"
-                      }`}>
-                        {countdownMin}
-                      </span>
-                      <span className="text-[9px] md:text-[10px] font-bold text-slate-400">min</span>
-                    </div>
-                  )}
-                  <span className="text-[8px] text-slate-500 font-medium leading-none">Prossimo</span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-700/50">
+        {/* Progress bar refresh */}
+        <div className="h-0.5 bg-slate-800">
           <div
-            className="h-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-amber-400 transition-all duration-700 ease-linear"
-            style={{
-              width: updating ? "100%" : `${refreshProgress}%`,
-              opacity: updating ? 1 : 0.5,
-            }}
+            className="h-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-amber-400 transition-all duration-700"
+            style={{ width: updating ? "100%" : `${refreshProgress}%`, opacity: updating ? 1 : 0.4 }}
           />
         </div>
       </header>
 
-      <div className="max-w-8xl mx-auto p-3 md:p-5 lg:p-6">
-        <div className="flex flex-col md:flex-row gap-5">
-          {/* Sidebar decolli */}
-          <div className="w-full md:w-80 shrink-0">
+      {/* ===== MAIN CONTENT ===== */}
+      <div className="max-w-8xl mx-auto p-3 md:p-5 lg:p-6" ref={mainRef}>
+        <div className="flex flex-col lg:flex-row gap-5">
+
+          {/* ===== SIDEBAR DECOLLI ===== */}
+          <div className="w-full lg:w-80 shrink-0">
             <DecolloList
               decolli={DECOLLI.map(d => ({ id: d.id, name: d.name, valley: d.valley, exposure: d.exposure, alt: d.altitude }))}
               selectedId={selectedId}
@@ -233,28 +144,34 @@ export function Page() {
             />
           </div>
 
-          {/* Contenuto principale */}
-          <div className="flex-1 min-w-0 space-y-4">
-            {/* Indicatore updating compatto */}
+          {/* ===== CONTENUTO PRINCIPALE ===== */}
+          <div className="flex-1 min-w-0 space-y-5">
+
+            {/* Updating indicator */}
             {updating && (
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-yellow-900/20 to-amber-900/20 border border-yellow-500/30 text-yellow-300 text-xs animate-pulse">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="font-bold">Aggiornamento in corso...</span>
-                <span className="ml-auto text-[10px] text-yellow-400/70 font-mono tabular-nums bg-yellow-900/30 px-2 py-0.5 rounded-lg">
-                  00:{String(countdownSec).padStart(2, "0")}
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-900/30 to-amber-900/20 border border-emerald-500/30 animate-pulse">
+                <Loader2 className="w-4 h-4 text-emerald-300 animate-spin" />
+                <span className="text-sm font-bold text-emerald-200 tracking-wide">Aggiornamento in corso...</span>
+                <span className="ml-auto text-[10px] text-emerald-300/70 font-mono bg-emerald-900/40 px-2 py-0.5 rounded-lg">
+                  {countdownMin}m
                 </span>
               </div>
             )}
 
-            {/* PREVISIONI GIORNALIERE */}
-            <div className="bg-gradient-to-br from-slate-900/70 to-slate-800/40 border-2 border-emerald-500/30 rounded-3xl overflow-hidden shadow-xl shadow-emerald-500/10">
-              <div className="bg-gradient-to-r from-emerald-800/40 to-amber-800/20 px-4 py-2.5 border-b border-emerald-500/20 flex items-center justify-center">
-                <h2 className="text-base md:text-lg font-black text-white tracking-tight flex items-center gap-2">
-                  <CloudSun className="w-4 h-5 text-yellow-300" />
+            {/* ===== PREVISIONI GIORNALIERE ===== */}
+            <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/50 border-2 border-emerald-500/30 rounded-3xl overflow-hidden shadow-2xl shadow-emerald-500/10">
+              <div className="bg-gradient-to-r from-emerald-800/60 to-amber-800/30 px-5 py-3 border-b border-emerald-500/20 flex items-center justify-between">
+                <h2 className="text-sm md:text-base font-black text-white tracking-tight flex items-center gap-2">
+                  <CloudSun className="w-5 h-5 text-yellow-300" />
                   PREVISIONI GIORNALIERE — {dateLabels[selectedDay]?.toUpperCase() || "OGGI"} {currentDateStr}
                 </h2>
+                <div className="flex gap-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-twinkle" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-twinkle" style={{ animationDelay: '0.5s' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-twinkle" style={{ animationDelay: '1s' }} />
+                </div>
               </div>
-              <div className="p-4">
+              <div className="p-4 md:p-5">
                 <PrevisioniGiornaliere
                   enrichedDaily={enrichedDaily}
                   dateLabels={dateLabels}
@@ -267,20 +184,19 @@ export function Page() {
               </div>
             </div>
 
-            {/* Sezione dettaglio con tab */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-black text-white tracking-tight">DETTAGLIO</h2>
+            {/* ===== SEZIONE DETTAGLIO ===== */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 px-2">
+                <TrendingUp className="w-4 h-4 text-sky-400" />
+                <h2 className="text-sm font-black text-white tracking-tight uppercase neon-green">
+                  Dettaglio orario
+                </h2>
+                <div className="flex-1 h-px bg-gradient-to-r from-emerald-500/30 to-transparent" />
               </div>
 
               <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
-              <HourSlider
-                selectedHour={selectedHour}
-                onChange={setSelectedHour}
-              />
-
-              <div className="bg-slate-900/40 border border-slate-700/30 rounded-2xl p-4 md:p-5 animate-scale-in">
+              <div className="bg-slate-900/60 border-2 border-slate-700/40 rounded-2xl p-4 md:p-6 shadow-xl">
                 {activeTab === "meteo" && (
                   <MeteoTab
                     currentData={currentData}
@@ -318,6 +234,16 @@ export function Page() {
                   />
                 )}
               </div>
+
+              {/* Hour slider */}
+              <HourSlider selectedHour={selectedHour} onChange={setSelectedHour} />
+            </div>
+
+            {/* ===== FOOTER ===== */}
+            <div className="text-center py-4 border-t border-slate-700/20">
+              <p className="text-[10px] text-slate-600 tracking-wider uppercase font-medium">
+                Basato su dati Open-Meteo · {new Date().getFullYear()} · Meteo Conigli
+              </p>
             </div>
           </div>
         </div>
@@ -325,3 +251,4 @@ export function Page() {
     </div>
   );
 }
+</dyad-check>
