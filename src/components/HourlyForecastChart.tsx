@@ -16,7 +16,6 @@ import {
   Droplets,
   Clock,
   Sparkles,
-  Gauge,
 } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 import { getVoloStatus } from "@/utils/volo";
@@ -28,6 +27,13 @@ interface HourlyForecastChartProps {
   onHourSelect: (hour: number) => void;
 }
 
+const sunYellow = "#fbbf24";
+const sunOrange = "#f97316";
+const cloudWhite = "#e2e8f0";
+const cloudDark = "#94a3b8";
+const rainBlue = "#38bdf8";
+const lightningPurple = "#a78bfa";
+
 // Animazioni per ogni icona
 const iconAnimations = [
   "animate-float-slow",
@@ -38,31 +44,98 @@ const iconAnimations = [
 ];
 
 function getWeatherIcon(code: number, isDay: boolean, size: number = 32) {
-  const props = { size, className: "drop-shadow-lg" };
   const animClass = iconAnimations[code % iconAnimations.length];
+  const s = Math.round(size * 0.85);
+  const l = Math.round(size * 1.1);
 
   if (code === 0) {
-    return isDay
-      ? <Sun {...props} className={`text-amber-400 drop-shadow-lg ${animClass} icon-neon`} />
-      : <Moon {...props} className={`text-blue-300 drop-shadow-lg ${animClass}`} />;
-  }
-  if (code <= 3) {
+    if (isDay) {
+      return (
+        <div className={`relative flex items-center justify-center ${animClass}`} style={{ width: size, height: size }}>
+          <Sun size={l} color={sunYellow} strokeWidth={1.5} className="drop-shadow-lg" />
+          <div className="absolute w-10 h-10 rounded-full bg-yellow-400/10 blur-md animate-ping" />
+        </div>
+      );
+    }
     return (
-      <div className={`relative ${animClass}`}>
-        <Sun {...props} className="text-amber-400 icon-neon absolute -top-2 -left-2 opacity-50" size={size * 0.7} />
-        <CloudSun {...props} className="text-sky-300 drop-shadow-lg" />
+      <div className={`flex items-center justify-center ${animClass}`} style={{ width: size, height: size }}>
+        <Moon size={l} color="#93c5fd" strokeWidth={1.5} className="drop-shadow-lg" />
       </div>
     );
   }
-  if (code <= 48) return <CloudFog {...props} className={`text-slate-400 ${animClass}`} />;
-  if (code <= 57) return <CloudDrizzle {...props} className={`text-blue-400 drop-shadow-lg ${animClass}`} />;
-  if (code <= 67) return <CloudRain {...props} className={`text-blue-400 drop-shadow-lg ${animClass}`} />;
-  if (code <= 77) return <CloudSnow {...props} className={`text-blue-200 drop-shadow-lg ${animClass}`} />;
-  if (code <= 82) return <CloudRain {...props} className={`text-blue-500 drop-shadow-lg ${animClass}`} />;
-  return <CloudLightning {...props} className={`text-purple-400 drop-shadow-lg ${animClass} animate-pulse`} />;
+
+  if (code <= 2) {
+    return (
+      <div className={`relative flex items-center justify-center ${animClass}`} style={{ width: size, height: size }}>
+        <Sun size={s} color={sunOrange} strokeWidth={1.5} className="drop-shadow-lg absolute top-0 left-0" />
+        <Cloud size={l} color={cloudWhite} strokeWidth={1.5} className="drop-shadow-lg absolute bottom-0 right-0" />
+      </div>
+    );
+  }
+
+  if (code === 3) {
+    return (
+      <div className={`flex items-center justify-center ${animClass}`} style={{ width: size, height: size }}>
+        <Cloud size={l + 2} color={cloudDark} strokeWidth={1.5} className="drop-shadow-lg" />
+        <Cloud size={s} color={cloudWhite} strokeWidth={1.5} className="drop-shadow-lg absolute bottom-1 right-1" />
+      </div>
+    );
+  }
+
+  if (code <= 48) {
+    return (
+      <div className={`flex items-center justify-center ${animClass}`} style={{ width: size, height: size }}>
+        <CloudFog size={l} color={cloudWhite} strokeWidth={1.5} className="drop-shadow-lg" />
+      </div>
+    );
+  }
+
+  if (code <= 57) {
+    return (
+      <div className={`relative flex items-center justify-center ${animClass}`} style={{ width: size, height: size }}>
+        <Cloud size={l} color={cloudWhite} strokeWidth={1.5} className="drop-shadow-lg" />
+        <CloudDrizzle size={s} color={rainBlue} strokeWidth={1.5} className="absolute bottom-0" />
+      </div>
+    );
+  }
+
+  if (code <= 67) {
+    return (
+      <div className={`relative flex items-center justify-center ${animClass}`} style={{ width: size, height: size }}>
+        <Cloud size={l + 2} color={cloudDark} strokeWidth={1.5} className="drop-shadow-lg" />
+        <CloudRain size={s} color={rainBlue} strokeWidth={1.5} className="absolute bottom-0" />
+      </div>
+    );
+  }
+
+  if (code <= 77) {
+    return (
+      <div className={`relative flex items-center justify-center ${animClass}`} style={{ width: size, height: size }}>
+        <Cloud size={l} color={cloudWhite} strokeWidth={1.5} className="drop-shadow-lg" />
+        <CloudSnow size={s} color="#93c5fd" strokeWidth={1.5} className="absolute bottom-0" />
+      </div>
+    );
+  }
+
+  if (code <= 82) {
+    return (
+      <div className={`relative flex items-center justify-center ${animClass}`} style={{ width: size, height: size }}>
+        <Cloud size={l + 2} color={cloudDark} strokeWidth={1.5} className="drop-shadow-lg" />
+        <CloudRain size={s + 2} color="#2563eb" strokeWidth={1.5} className="absolute bottom-0" />
+      </div>
+    );
+  }
+
+  // temporali
+  return (
+    <div className={`relative flex items-center justify-center ${animClass} animate-pulse`} style={{ width: size, height: size }}>
+      <Cloud size={l} color={cloudDark} strokeWidth={1.5} className="drop-shadow-lg" />
+      <CloudLightning size={s} color={lightningPurple} strokeWidth={2} className="absolute bottom-0" />
+      <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-300/40 rounded-full blur-sm animate-ping" />
+    </div>
+  );
 }
 
-// Mappa codici meteo a emoji per compatibilità
 function getEmoji(code: number): string {
   if (code === 0) return "☀️";
   if (code <= 3) return "⛅";
@@ -70,7 +143,7 @@ function getEmoji(code: number): string {
   if (code <= 57) return "🌦️";
   if (code <= 67) return "🌧️";
   if (code <= 77) return "🌨️";
-  if (code <= 82) return "🌦️";
+  if (code <= 82) return "🌧️";
   return "⛈️";
 }
 

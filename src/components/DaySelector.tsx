@@ -2,19 +2,15 @@
 
 import React from "react";
 import {
-  CalendarDays,
-  ThermometerSun,
+  Sparkles,
   CloudRain,
   Droplets,
-  Sparkles,
   Sun,
-  CloudSun,
   Cloud,
   CloudFog,
   CloudDrizzle,
   CloudSnow,
   CloudLightning,
-  CloudMoon,
   Moon,
 } from "lucide-react";
 
@@ -83,103 +79,91 @@ export default function DaySelector({
 }
 
 function getWeatherIcon(code: number): React.ReactNode {
-  const sunClass = "text-amber-300 drop-shadow-lg";
-  const cloudClass = "text-slate-400 drop-shadow-md";
-  const darkCloudClass = "text-slate-500 drop-shadow-lg";
-  const rainClass = "text-blue-400 drop-shadow-md";
-  const snowClass = "text-blue-200 drop-shadow-md";
+  const sunYellow = "#fbbf24";       // giallo sole
+  const sunOrange = "#f97316";       // arancione
+  const cloudWhite = "#e2e8f0";      // bianco nuvola
+  const cloudDark = "#94a3b8";       // grigio scuro
+  const rainBlue = "#38bdf8";        // azzurro pioggia
+  const lightningPurple = "#a78bfa"; // viola fulmine
 
   switch (true) {
-    case code === 0: // sereno
+    case code === 0: // sereno ☀️
       return (
         <div className="relative flex items-center justify-center w-10 h-10">
-          <Sun className={`w-9 h-9 ${sunClass} animate-pulse`} />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-12 h-12 rounded-full bg-amber-300/10 blur-sm animate-ping absolute" />
-          </div>
+          <Sun size={36} color={sunYellow} className="drop-shadow-lg" strokeWidth={1.5} />
+          <div className="absolute w-10 h-10 rounded-full bg-yellow-400/15 blur-md animate-ping" />
         </div>
       );
 
-    case code <= 2: // poco nuvoloso
+    case code <= 2: // poco nuvoloso ⛅
       return (
         <div className="relative flex items-center justify-center w-10 h-10">
-          <Cloud className={`w-8 h-8 ${cloudClass}`} />
-          <Sun className={`w-6 h-6 ${sunClass} absolute -top-1 -right-1`} />
+          <Sun size={28} color={sunOrange} className="drop-shadow-lg absolute top-0 left-0" strokeWidth={1.5} />
+          <Cloud size={32} color={cloudWhite} className="drop-shadow-lg absolute bottom-0 right-0" strokeWidth={1.5} />
         </div>
       );
 
-    case code === 3: // molto nuvoloso
+    case code === 3: // molto nuvoloso ☁️☁️
       return (
         <div className="relative flex items-center justify-center w-10 h-10">
-          <Cloud className={`w-9 h-9 ${darkCloudClass}`} />
-          <Cloud className={`w-6 h-6 ${cloudClass} absolute -bottom-1 -left-1`} />
+          <Cloud size={40} color={cloudDark} className="drop-shadow-lg" strokeWidth={1.5} />
+          <Cloud size={28} color={cloudWhite} className="drop-shadow-lg absolute -bottom-1 right-0" strokeWidth={1.5} />
         </div>
       );
 
-    case code <= 30: // foschia
+    case code <= 30: // foschia 🌫️
       return (
         <div className="relative flex items-center justify-center w-10 h-10">
-          <CloudFog className={`w-9 h-9 text-slate-400 drop-shadow-md`} />
+          <CloudFog size={40} color={cloudWhite} className="drop-shadow-lg" strokeWidth={1.5} />
         </div>
       );
 
-    case code <= 48: // nebbia
+    case code <= 48: // nebbia 🌁
       return (
         <div className="relative flex items-center justify-center w-10 h-10">
-          <CloudFog className={`w-9 h-9 text-slate-500 drop-shadow-lg`} />
-          <CloudFog className={`w-7 h-7 text-slate-400 absolute -bottom-1 opacity-60`} />
+          <CloudFog size={40} color={cloudDark} className="drop-shadow-lg" strokeWidth={1.5} />
+          <CloudFog size={28} color={cloudWhite} className="absolute -bottom-1 opacity-70" strokeWidth={1.5} />
         </div>
       );
 
-    case code <= 57: // pioviggine
+    case code <= 57: // pioviggine 🌦️
       return (
         <div className="relative flex items-center justify-center w-10 h-10">
-          <Cloud className={`w-9 h-9 ${darkCloudClass}`} />
-          <CloudDrizzle className={`w-5 h-5 ${rainClass} absolute bottom-0`} />
+          <Cloud size={36} color={cloudWhite} className="drop-shadow-lg" strokeWidth={1.5} />
+          <CloudDrizzle size={24} color={rainBlue} className="absolute bottom-0" strokeWidth={1.5} />
         </div>
       );
 
-    case code <= 67: // pioggia coperta
+    case code <= 67: // pioggia coperta ☁️🌧️
       return (
         <div className="relative flex items-center justify-center w-10 h-10">
-          <Cloud className={`w-9 h-9 text-slate-600 drop-shadow-xl`} />
-          <CloudRain className={`w-6 h-6 ${rainClass} absolute bottom-0`} />
+          <Cloud size={40} color={cloudDark} className="drop-shadow-lg" strokeWidth={1.5} />
+          <CloudRain size={28} color={rainBlue} className="absolute bottom-0" strokeWidth={1.5} />
         </div>
       );
 
-    case code <= 77: // neve
+    case code <= 77: // neve 🌨️
       return (
         <div className="relative flex items-center justify-center w-10 h-10">
-          <Cloud className={`w-9 h-9 text-slate-600 drop-shadow-xl`} />
-          <CloudSnow className={`w-5 h-5 ${snowClass} absolute bottom-0`} />
+          <Cloud size={40} color={cloudWhite} className="drop-shadow-lg" strokeWidth={1.5} />
+          <CloudSnow size={24} color="#93c5fd" className="absolute bottom-0" strokeWidth={1.5} />
         </div>
       );
 
-    case code <= 82: // pioggia forte
+    case code <= 82: // pioggia forte 🌧️
       return (
         <div className="relative flex items-center justify-center w-10 h-10">
-          <Cloud className={`w-9 h-9 text-slate-700 drop-shadow-xl`} />
-          <CloudRain className={`w-7 h-7 text-blue-500 drop-shadow-md absolute bottom-0`} />
+          <Cloud size={40} color={cloudDark} className="drop-shadow-lg" strokeWidth={1.5} />
+          <CloudRain size={32} color="#2563eb" className="absolute bottom-0" strokeWidth={1.5} />
         </div>
       );
 
-    case code <= 86: // rovesci misti
+    default: // temporali ⛈️
       return (
         <div className="relative flex items-center justify-center w-10 h-10">
-          <Cloud className={`w-9 h-9 text-slate-600 drop-shadow-xl`} />
-          <div className="absolute bottom-0 flex gap-1">
-            <CloudRain className={`w-4 h-4 text-blue-500`} />
-            <CloudSnow className={`w-4 h-4 text-blue-200`} />
-          </div>
-        </div>
-      );
-
-    default: // temporali
-      return (
-        <div className="relative flex items-center justify-center w-10 h-10">
-          <Cloud className={`w-9 h-9 text-slate-700 drop-shadow-xl`} />
-          <CloudLightning className={`w-6 h-6 text-purple-400 drop-shadow-md absolute bottom-0 animate-pulse`} />
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400/40 rounded-full blur-sm animate-ping" />
+          <Cloud size={38} color={cloudDark} className="drop-shadow-lg" strokeWidth={1.5} />
+          <CloudLightning size={24} color={lightningPurple} className="absolute bottom-0 animate-pulse" strokeWidth={2} />
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-300/60 rounded-full blur-sm animate-ping" />
         </div>
       );
   }
