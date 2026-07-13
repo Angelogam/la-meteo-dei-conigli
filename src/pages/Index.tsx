@@ -22,6 +22,7 @@ import AlertBanner from "@/components/AlertBanner";
 import DayInfoPanel from "@/components/DayInfoPanel";
 import { getWeatherAlert, getWindProfile, getStabilityIndex } from "@/utils/weatherHelpers";
 import VentiQuotaTab from "@/components/VentiQuotaTab";
+import ThermalDayGraph from "@/components/ThermalDayGraph";
 
 const Page = () => {
   const {
@@ -163,14 +164,12 @@ const Page = () => {
             {activeTab === "termiche" && (
               <>
                 <HourSlider selectedHour={selectedHour} onChange={setSelectedHour} />
-                <WeatherDashboard
+                <ThermalDayGraph
                   dayData={dayData}
                   altitude={site.altitude}
                   selectedHour={selectedHour}
                   onHourSelect={setSelectedHour}
-                  windProfile={windProfileForWeatherDashboard}
-                  groundSpeed={currentData?.windSpeed}
-                  groundDir={currentData?.windDir}
+                  thermalDelta={thermalDelta}
                 />
                 <VentiQuotaTab
                   dayData={dayData}
