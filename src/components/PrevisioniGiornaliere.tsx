@@ -3,18 +3,30 @@
 import React from "react";
 import {
   Sun,
+  Moon,
+  CloudSun,
   Cloud,
   CloudRain,
+  CloudSnow,
+  CloudLightning,
+  CloudFog,
   Thermometer,
   Wind,
   Droplets,
+  Gauge,
   ArrowUp,
+  ArrowDown,
+  Sunrise,
+  Sunset,
   Clock,
+  CalendarDays,
+  Sparkles,
   TrendingUp,
   AlertTriangle,
   CheckCircle,
   XCircle,
   Navigation,
+  Eye,
 } from "lucide-react";
 
 interface PrevisioniGiornaliereProps {
@@ -27,21 +39,22 @@ interface PrevisioniGiornaliereProps {
   onSelectDay: (day: number) => void;
 }
 
-function getWeatherIcon(code: number): string {
-  if (code === 0) return "☀️";
-  if (code <= 2) return "🌤️";
-  if (code <= 3) return "⛅";
-  if (code <= 48) return "🌫️";
-  if (code <= 57) return "🌦️";
-  if (code <= 67) return "🌧️";
-  if (code <= 77) return "🌨️";
-  if (code <= 82) return "🌦️";
-  return "⛈️";
+// Icone meteo con lucide-react
+function getWeatherIconComponent(code: number, size: number = 32, className: string = "text-white") {
+  if (code === 0) return <Sun size={size} className={`${className} text-amber-300`} />;
+  if (code <= 2) return <CloudSun size={size} className={`${className} text-amber-200`} />;
+  if (code <= 3) return <CloudSun size={size} className={`${className} text-slate-300`} />;
+  if (code <= 48) return <CloudFog size={size} className={`${className} text-slate-400`} />;
+  if (code <= 57) return <CloudRain size={size} className={`${className} text-blue-300`} />;
+  if (code <= 67) return <CloudRain size={size} className={`${className} text-blue-400`} />;
+  if (code <= 77) return <CloudSnow size={size} className={`${className} text-blue-200`} />;
+  if (code <= 82) return <CloudRain size={size} className={`${className} text-blue-300`} />;
+  return <CloudLightning size={size} className={`${className} text-yellow-300`} />;
 }
 
-function getWindArrow(deg: number): string {
-  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
-  return arrows[Math.round(deg / 45) % 8] || "→";
+function getWindArrow(deg: number): React.ReactNode {
+  const rotation = deg || 0;
+  return <ArrowUp size={12} className="inline-block" style={{ transform: `rotate(${rotation}deg)` }} />;
 }
 
 function getDirName(deg: number): string {
@@ -82,7 +95,7 @@ export default function PrevisioniGiornaliere({
     const maxValori = (arr: number[]) => arr.length > 0 ? Math.max(...arr) : 0;
 
     // Helper per calcolare una sezione (mattina / pomeriggio / sera)
-    const calcolaSezione = (ore: any[], label: string, icon: string, oreRange: string) => {
+    const calcolaSezione = (ore: any[], label: string, icon: React.ReactNode, oreRange: string) => {
       if (!ore.length) {
         return {
           label, icon, ore: oreRange,
@@ -135,20 +148,20 @@ export default function PrevisioniGiornaliere({
       // Intensità termiche
       let termicheIntensita: string;
       let termicheColore: string;
-      if (salitaMs >= 3) { termicheIntensita = "FORTI 🔥"; termicheColore = "text-red-300"; }
-      else if (salitaMs >= 2) { termicheIntensita = "BUONE 💪"; termicheColore = "text-orange-300"; }
-      else if (salitaMs >= 1) { termicheIntensita = "MODERATE 👍"; termicheColore = "text-amber-300"; }
-      else if (salitaMs >= 0.3) { termicheIntensita = "DEBOLI 👎"; termicheColore = "text-yellow-300"; }
-      else { termicheIntensita = "ASSENTI ❌"; termicheColore = "text-slate-400"; }
+      if (salitaMs >= 3) { termicheIntensita = "FORTI"; termicheColore = "text-red-300"; }
+      else if (salitaMs >= 2) { termicheIntensita = "BUONE"; termicheColore = "text-orange-300"; }
+      else if (salitaMs >= 1) { termicheIntensita = "MODERATE"; termicheColore = "text-amber-300"; }
+      else if (salitaMs >= 0.3) { termicheIntensita = "DEBOLI"; termicheColore = "text-yellow-300"; }
+      else { termicheIntensita = "ASSENTI"; termicheColore = "text-slate-400"; }
 
-      // Turbolenza da dati reali (vento + gradiente) — SENZA if inline
+      // Turbolenza da dati reali (vento + gradiente)
       let turbolenzaLabel = "DEBOLE";
       let turbolenzaColore = "text-emerald-300";
       
       const tempDeltaScore = tempDelta > 3 ? 1.5 : tempDelta > 2 ? 1 : 0;
       const turbolenzaScore = (ventoMax > 20 ? 2 : ventoMax > 12 ? 1 : 0) + tempDeltaScore + (nuvoleMedia > 70 ? 1.5 : 0);
       
-      if (turbolenzaScore >= 3.5) { turbolenzaLabel = "FORTE ⚠️"; turbolenzaColore = "text-red-400"; }
+      if (turbolenzaScore >= 3.5) { turbolenzaLabel = "FORTE"; turbolenzaColore = "text-red-400"; }
       else if (turbolenzaScore >= 2) { turbolenzaLabel = "MODERATA"; turbolenzaColore = "text-amber-400"; }
       else if (turbolenzaScore >= 1) { turbolenzaLabel = "LEGGERA"; turbolenzaColore = "text-amber-300"; }
 
@@ -171,9 +184,9 @@ export default function PrevisioniGiornaliere({
       let consiglioLabel: string;
       let consiglioColore: string;
       let consiglioIcon: React.ReactNode;
-      if (scoreVolo >= 5) { consiglioLabel = "DECOLLO 👍"; consiglioColore = "text-emerald-300 bg-emerald-500/20 border-emerald-400/30"; consiglioIcon = <CheckCircle className="w-4 h-4 text-emerald-400" />; }
-      else if (scoreVolo >= 2) { consiglioLabel = "ATTENZIONE ⚠️"; consiglioColore = "text-amber-300 bg-amber-500/20 border-amber-400/30"; consiglioIcon = <AlertTriangle className="w-4 h-4 text-amber-400" />; }
-      else { consiglioLabel = "SCONSIGLIATO ❌"; consiglioColore = "text-red-300 bg-red-500/20 border-red-400/30"; consiglioIcon = <XCircle className="w-4 h-4 text-red-400" />; }
+      if (scoreVolo >= 5) { consiglioLabel = "DECOLLO"; consiglioColore = "text-emerald-300 bg-emerald-500/20 border-emerald-400/30"; consiglioIcon = <CheckCircle className="w-4 h-4 text-emerald-400" />; }
+      else if (scoreVolo >= 2) { consiglioLabel = "ATTENZIONE"; consiglioColore = "text-amber-300 bg-amber-500/20 border-amber-400/30"; consiglioIcon = <AlertTriangle className="w-4 h-4 text-amber-400" />; }
+      else { consiglioLabel = "SCONSIGLIATO"; consiglioColore = "text-red-300 bg-red-500/20 border-red-400/30"; consiglioIcon = <XCircle className="w-4 h-4 text-red-400" />; }
 
       // Vento in quota (da windProfile se disponibile, altrimenti stima)
       let vento1000m = ventoMedia * 1.4;
@@ -219,15 +232,15 @@ export default function PrevisioniGiornaliere({
 
     const mattina = calcolaSezione(
       hours.filter((h: any) => { const hh = new Date(h.time).getHours(); return hh >= 6 && hh <= 11; }),
-      "Mattina", "🌅", "6-11"
+      "Mattina", <Sunrise className="w-6 h-6 text-amber-300" />, "6-11"
     );
     const pomeriggio = calcolaSezione(
       hours.filter((h: any) => { const hh = new Date(h.time).getHours(); return hh >= 12 && hh <= 17; }),
-      "Pomeriggio", "☀️", "12-17"
+      "Pomeriggio", <Sun className="w-6 h-6 text-yellow-400" />, "12-17"
     );
     const sera = calcolaSezione(
       hours.filter((h: any) => { const hh = new Date(h.time).getHours(); return hh >= 18 && hh <= 23; }),
-      "Sera", "🌆", "18-23"
+      "Sera", <Moon className="w-6 h-6 text-indigo-300" />, "18-23"
     );
 
     return { day, idx, sezioni: [mattina, pomeriggio, sera] };
@@ -263,7 +276,9 @@ export default function PrevisioniGiornaliere({
                 )}
               </div>
               <div className="flex items-end justify-between mb-3">
-                <span className="text-4xl drop-shadow-xl">{getWeatherIcon(day.weatherCode || 0)}</span>
+                <div className="drop-shadow-xl">
+                  {getWeatherIconComponent(day.weatherCode || 0, 40)}
+                </div>
                 <div className="text-right">
                   <div className="text-2xl font-black text-white tabular-nums">{Math.round(day.tempMax)}°</div>
                   <div className="text-sm font-bold text-slate-400 tabular-nums">{Math.round(day.tempMin)}°</div>
@@ -313,6 +328,9 @@ export default function PrevisioniGiornaliere({
               if (isAfternoon) { bgColor = "bg-gradient-to-br from-sky-900/30 to-slate-800/30"; borderColor = "border-sky-500/30"; }
               if (isEvening) { bgColor = "bg-gradient-to-br from-indigo-900/30 to-slate-800/30"; borderColor = "border-indigo-500/30"; }
 
+              // Icona meteo per la sezione
+              const weatherIcon = getWeatherIconComponent(sezione.weatherCode, 24, "text-slate-200");
+
               return (
                 <div key={idx} className={`rounded-2xl p-4 border-2 ${bgColor} ${borderColor} relative overflow-hidden`}>
                   {/* BADGE CONSIGLIO VOLO */}
@@ -324,13 +342,13 @@ export default function PrevisioniGiornaliere({
                   {/* HEADER */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-xl">{sezione.icon}</span>
+                      {sezione.icon}
                       <div>
                         <div className="text-base font-black text-white">{sezione.label}</div>
                         <div className="text-[10px] text-slate-400 font-medium">{sezione.ore}</div>
                       </div>
                     </div>
-                    <span className="text-2xl">{getWeatherIcon(sezione.weatherCode)}</span>
+                    {weatherIcon}
                   </div>
 
                   {/* TEMPERATURA + UV */}
@@ -339,7 +357,7 @@ export default function PrevisioniGiornaliere({
                     <span className="text-xs text-slate-400">media · UV {sezione.uvMedia}</span>
                   </div>
 
-                  {/* TERMICHE (DATI REALI) */}
+                  {/* TERMICHE */}
                   <div className="bg-slate-900/70 rounded-xl p-3 border border-amber-500/20 mb-3">
                     <div className="flex items-center gap-1.5 mb-2">
                       <ArrowUp className="w-3.5 h-3.5 text-amber-400" />
@@ -359,7 +377,7 @@ export default function PrevisioniGiornaliere({
                     </div>
                   </div>
 
-                  {/* VENTO IN QUOTA (DATI REALI) */}
+                  {/* VENTO IN QUOTA */}
                   <div className="bg-slate-900/70 rounded-xl p-3 border border-sky-500/20 mb-3">
                     <div className="flex items-center gap-1.5 mb-2">
                       <Navigation className="w-3.5 h-3.5 text-sky-400" />
@@ -367,13 +385,13 @@ export default function PrevisioniGiornaliere({
                     </div>
                     <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
                       <div className="text-slate-400">Al decollo:</div>
-                      <div className="font-bold text-sky-200 text-right">{sezione.ventoMedia} km/h {getWindArrow(sezione.ventoDirMedia)} {getDirName(sezione.ventoDirMedia)}</div>
+                      <div className="font-bold text-sky-200 text-right">{sezione.ventoMedia} km/h <ArrowUp size={10} className="inline-block text-sky-300" style={{ transform: `rotate(${sezione.ventoDirMedia}deg)` }} /> {getDirName(sezione.ventoDirMedia)}</div>
                       <div className="text-slate-400">Raffiche:</div>
                       <div className="font-bold text-red-300 text-right">{sezione.ventoMax} km/h</div>
                       <div className="text-slate-400">A 1000m:</div>
-                      <div className="font-bold text-sky-200 text-right">{sezione.vento1000m} km/h {getWindArrow(sezione.ventoDir1000m)} {getDirName(sezione.ventoDir1000m)}</div>
+                      <div className="font-bold text-sky-200 text-right">{sezione.vento1000m} km/h <ArrowUp size={10} className="inline-block text-sky-300" style={{ transform: `rotate(${sezione.ventoDir1000m}deg)` }} /> {getDirName(sezione.ventoDir1000m)}</div>
                       <div className="text-slate-400">A 2000m:</div>
-                      <div className="font-bold text-sky-200 text-right">{sezione.vento2000m} km/h {getWindArrow(sezione.ventoDir2000m)} {getDirName(sezione.ventoDir2000m)}</div>
+                      <div className="font-bold text-sky-200 text-right">{sezione.vento2000m} km/h <ArrowUp size={10} className="inline-block text-sky-300" style={{ transform: `rotate(${sezione.ventoDir2000m}deg)` }} /> {getDirName(sezione.ventoDir2000m)}</div>
                     </div>
                   </div>
 
