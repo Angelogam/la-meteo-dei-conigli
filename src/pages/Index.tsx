@@ -23,7 +23,6 @@ import {
   getStabilityIndex,
   getWindProfile,
   getWindDirection,
-  getWeatherIcon,
   WindLevel,
 } from "@/utils/weatherHelpers";
 import { CloudSun, Sparkles, AlertTriangle } from "lucide-react";
@@ -60,11 +59,7 @@ const Page = () => {
 
   const stabilityIndex = useMemo(() => {
     if (!currentData) return { label: "N/D", color: "#64748b" };
-    return getStabilityIndex(
-      currentData.temperature,
-      currentData.humidity,
-      currentData.cloudCover
-    );
+    return getStabilityIndex(currentData.temperature, currentData.humidity, currentData.cloudCover);
   }, [currentData]);
 
   const windProfile = useMemo((): WindLevel[] => {
@@ -83,23 +78,28 @@ const Page = () => {
     return [ground, ...windProfile];
   }, [currentData, windProfile]);
 
-  // ===== RENDER =====
-  if (loading && !dayData.length) {
-    return <LoadingScreen />;
-  }
-
-  if (error && !dayData.length) {
-    return <ErrorScreen error={error} onRetry={loadWeather} />;
-  }
+  if (loading && !dayData.length) return <LoadingScreen />;
+  if (error && !dayData.length) return <ErrorScreen error={error} onRetry={loadWeather} />;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-white flex flex-col">
       <Header />
 
       <main className="flex-1 container mx-auto px-3 py-4 md:px-6 lg:px-8">
+        {/* Mobile: sidebar con decolli scorrevole */}
+        <div className="lg:hidden mb-4">
+          <DecolloList
+            decolli={DECOLLI}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            currentData={currentData}
+            allWeatherData={allWeatherData}
+          />
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 lg:gap-6">
-          {/* Sidebar */}
-          <aside className="order-2 lg:order-1 space-y-3">
+          {/* Sidebar - visibile solo su desktop */}
+          <aside className="hidden lg:block space-y-3">
             <DecolloList
               decolli={DECOLLI}
               selectedId={selectedId}
@@ -110,8 +110,7 @@ const Page = () => {
           </aside>
 
           {/* Main content */}
-          <div className="order-1 lg:order-2 space-y-5">
-            {/* Site header */}
+          <div className="space-y-5">
             <SiteHeader
               name={site.name}
               exposure={site.exposure}
@@ -120,10 +119,8 @@ const Page = () => {
               currentData={currentData}
             />
 
-            {/* Alert banner */}
             <AlertBanner alert={alert} />
 
-            {/* UPDATE TIMER — ultimo aggiornamento + countdown */}
             <UpdateTimer
               lastUpdate={lastUpdate}
               countdown={countdown}
@@ -131,7 +128,6 @@ const Page = () => {
               onRefresh={loadWeather}
             />
 
-            {/* Day selector + Hour slider */}
             <div className="space-y-4">
               <PrevisioniGiornaliere
                 enrichedDaily={enrichedDaily}
@@ -145,24 +141,23 @@ const Page = () => {
               <HourSlider selectedHour={selectedHour} onChange={setSelectedHour} />
             </div>
 
-            {/* Tabs */}
             <Tabs
               value={activeTab}
               onValueChange={(v: any) => setActiveTab(v)}
               className="w-full"
             >
-              <TabsList className="grid grid-cols-4 gap-1 bg-slate-800/60 rounded-xl p-1 border border-slate-700/30">
-                <TabsTrigger value="meteo" className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-sky-500/30 data-[state=active]:to-sky-600/20 data-[state=active]:text-white">
-                  <CloudSun className="w-4 h-4 mr-1" /> Meteo
+              <TabsList className="grid grid-cols-4 gap-1 bg-slate-800/60 rounded-xl p-1 border border-slate-700/30 text-sm">
+                <TabsTrigger value="meteo" className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-sky-500/30 data-[state=active]:to-sky-600/20 data-[state=active]:text-white whitespace-nowrap">
+                  <CloudSun className="w-4 h-4 mr-1 shrink-0" /> Meteo
                 </TabsTrigger>
-                <TabsTrigger value="venti" className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500/30 data-[state=active]:to-cyan-600/20 data-[state=active]:text-white">
-                  <Sparkles className="w-4 h-4 mr-1" /> Venti
+                <TabsTrigger value="venti" className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500/30 data-[state=active]:to-cyan-600/20 data-[state=active]:text-white whitespace-nowrap">
+                  <Sparkles className="w-4 h-4 mr-1 shrink-0" /> Venti
                 </TabsTrigger>
-                <TabsTrigger value="termiche" className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-orange-500/30 data-[state=active]:to-orange-600/20 data-[state=active]:text-white">
-                  <Sparkles className="w-4 h-4 mr-1" /> Termiche
+                <TabsTrigger value="termiche" className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-orange-500/30 data-[state=active]:to-orange-600/20 data-[state=active]:text-white whitespace-nowrap">
+                  <Sparkles className="w-4 h-4 mr-1 shrink-0" /> Termiche
                 </TabsTrigger>
-                <TabsTrigger value="analisi" className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500/30 data-[state=active]:to-purple-600/20 data-[state=active]:text-white">
-                  <AlertTriangle className="w-4 h-4 mr-1" /> Analisi
+                <TabsTrigger value="analisi" className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500/30 data-[state=active]:to-purple-600/20 data-[state=active]:text-white whitespace-nowrap">
+                  <AlertTriangle className="w-4 h-4 mr-1 shrink-0" /> Analisi
                 </TabsTrigger>
               </TabsList>
 

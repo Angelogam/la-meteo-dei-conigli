@@ -12,120 +12,80 @@
   body {
     @apply bg-slate-950 text-white;
     font-family: 'Inter', sans-serif;
-    font-size: 16px;
+    font-size: 14px;
     line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Tutti i testi minimo 14px */
-  .text-xs {
-    font-size: 13px !important;
+  @media (min-width: 768px) {
+    body {
+      font-size: 16px;
+    }
   }
 
-  .text-sm {
-    font-size: 15px !important;
+  /* Scale font helpers: mobile 14px base, desktop 16px base */
+  .text-xs { font-size: 12px !important; }
+  .text-sm { font-size: 14px !important; }
+  .text-base { font-size: 15px !important; }
+  .text-lg { font-size: 17px !important; }
+  .text-xl { font-size: 19px !important; }
+  .text-2xl { font-size: 22px !important; }
+  .text-3xl { font-size: 26px !important; }
+
+  @media (min-width: 768px) {
+    .text-xs { font-size: 13px !important; }
+    .text-sm { font-size: 15px !important; }
+    .text-base { font-size: 16px !important; }
+    .text-lg { font-size: 18px !important; }
+    .text-xl { font-size: 20px !important; }
+    .text-2xl { font-size: 24px !important; }
+    .text-3xl { font-size: 30px !important; }
   }
 
-  .text-base {
-    font-size: 16px !important;
-  }
+  /* Override per tabella meteo */
+  table, th, td { @apply text-sm !important; }
 
-  .text-lg {
-    font-size: 18px !important;
-  }
+  /* Numeri tabellari ben leggibili */
+  .tabular-nums { @apply text-sm font-bold; }
 
-  .text-xl {
-    font-size: 20px !important;
-  }
+  /* Override per testi minuscoli (10px -> 12px su mobile, 13px su desktop) */
+  .text-\[10px\] { font-size: 12px !important; }
+  .text-\[11px\] { font-size: 12px !important; }
+  .text-\[9px\] { font-size: 11px !important; }
+  .text-\[8px\] { font-size: 11px !important; }
 
-  .text-2xl {
-    font-size: 24px !important;
-  }
-
-  .text-3xl {
-    font-size: 30px !important;
-  }
-
-  /* Override per tabelle e dati meteo */
-  table, th, td {
-    @apply text-sm !important;
-  }
-
-  /* Tabella oraria più grande */
-  .tabular-nums {
-    @apply text-sm font-bold;
-  }
-
-  /* Legenda e descrizioni */
-  .text-\[10px\] {
-    font-size: 12px !important;
-  }
-
-  .text-\[11px\] {
-    font-size: 13px !important;
-  }
-
-  .text-\[12px\] {
-    font-size: 14px !important;
-  }
-
-  .text-\[9px\] {
-    font-size: 11px !important;
-  }
-
-  .text-\[8px\] {
-    font-size: 11px !important;
-  }
-
-  /* Badge e tag */
-  .text-\[9px\] {
-    font-size: 11px !important;
+  @media (min-width: 768px) {
+    .text-\[10px\] { font-size: 13px !important; }
+    .text-\[11px\] { font-size: 13px !important; }
+    .text-\[9px\] { font-size: 12px !important; }
+    .text-\[8px\] { font-size: 12px !important; }
   }
 }
 
-/* Animazioni sincronizzate per il header */
+/* Animazioni */
 @keyframes hop-sync {
   0%, 100% { transform: translateY(0); }
-  25% { transform: translateY(-6px); }
+  25% { transform: translateY(-4px); }
   50% { transform: translateY(0); }
-  75% { transform: translateY(-3px); }
+  75% { transform: translateY(-2px); }
 }
 
 @keyframes float {
   0%, 100% { transform: translateY(0) rotate(0deg); }
-  25% { transform: translateY(-4px) rotate(-2deg); }
+  25% { transform: translateY(-3px) rotate(-1deg); }
   50% { transform: translateY(0) rotate(0deg); }
-  75% { transform: translateY(-2px) rotate(2deg); }
+  75% { transform: translateY(-1px) rotate(1deg); }
 }
 
-.animate-hop-sync {
-  animation: hop-sync 1.5s ease-in-out infinite;
-}
+.animate-hop-sync { animation: hop-sync 1.5s ease-in-out infinite; }
+.animate-float { animation: float 3s ease-in-out infinite; }
 
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-/* Animazioni originali mantenute per retrocompatibilità */
 @keyframes hop {
   0%, 100% { transform: translateY(0); }
-  25% { transform: translateY(-8px); }
+  25% { transform: translateY(-6px); }
   50% { transform: translateY(0); }
-  75% { transform: translateY(-4px); }
-}
-
-@keyframes float-left {
-  0%, 100% { transform: translateY(0) rotate(-2deg); }
-  50% { transform: translateY(-6px) rotate(2deg); }
-}
-
-@keyframes float-right {
-  0%, 100% { transform: translateY(0) rotate(2deg); }
-  50% { transform: translateY(-6px) rotate(-2deg); }
-}
-
-@keyframes pulse-subtle {
-  0%, 100% { opacity: 0.7; }
-  50% { opacity: 1; }
+  75% { transform: translateY(-3px); }
 }
 
 @keyframes slideUp {
@@ -138,89 +98,27 @@
   to { opacity: 1; }
 }
 
-.animate-hop {
-  animation: hop 1.5s ease-in-out infinite;
-}
+.animate-hop { animation: hop 1.5s ease-in-out infinite; }
+.animate-slide-up { animation: slideUp 0.5s ease-out; }
+.animate-fade-in { animation: fadeIn 0.3s ease-out; }
 
-.animate-float-left {
-  animation: float-left 3s ease-in-out infinite;
-}
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #1e293b; border-radius: 8px; }
+::-webkit-scrollbar-thumb { background: #475569; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
-.animate-float-right {
-  animation: float-right 3s ease-in-out infinite;
-}
+/* Selection */
+::selection { background: #f97316; color: white; }
 
-.animate-pulse-subtle {
-  animation: pulse-subtle 2s ease-in-out infinite;
-}
+/* Migliora contrasto */
+.text-slate-400 { color: rgb(180, 188, 200) !important; }
+.text-slate-500 { color: rgb(148, 158, 175) !important; }
+.text-slate-600 { color: rgb(120, 130, 150) !important; }
+.text-slate-300 { color: rgb(220, 225, 235) !important; }
 
-.animate-slide-up {
-  animation: slideUp 0.5s ease-out;
-}
+/* Paragrafi */
+p { @apply text-sm leading-relaxed; }
 
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
-
-/* ===== SCROLLBAR ===== */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: #1e293b;
-  border-radius: 8px;
-}
-::-webkit-scrollbar-thumb {
-  background: #475569;
-  border-radius: 8px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
-}
-
-/* ===== SELECTION ===== */
-::selection {
-  background: #f97316;
-  color: white;
-}
-
-/* Migliora contrasto testi */
-.text-slate-400 {
-  color: rgb(180, 188, 200) !important;
-}
-
-.text-slate-500 {
-  color: rgb(148, 158, 175) !important;
-}
-
-.text-slate-600 {
-  color: rgb(120, 130, 150) !important;
-}
-
-.text-slate-300 {
-  color: rgb(220, 225, 235) !important;
-}
-
-/* Tabella oraria: aumentata */
-.table-auto td, .table-auto th {
-  @apply py-3 px-3 text-sm;
-}
-
-/* Tutti i paragrafi */
-p {
-  @apply text-sm leading-relaxed;
-}
-
-/* Override per testi piccoli nelle card */
-div[class*="text-\\[10px\\]"],
-div[class*="text-\\[11px\\]"],
-div[class*="text-\\[9px\\]"],
-div[class*="text-\\[8px\\]"],
-span[class*="text-\\[10px\\]"],
-span[class*="text-\\[11px\\]"],
-span[class*="text-\\[9px\\]"],
-span[class*="text-\\[8px\\]"] {
-  font-size: 13px !important;
-  line-height: 1.4 !important;
-}
+/* Tabella */
+.table-auto td, .table-auto th { @apply py-3 px-3 text-sm; }

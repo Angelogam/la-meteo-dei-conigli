@@ -32,23 +32,15 @@
 
   body {
     @apply bg-background text-foreground;
-    font-size: 16px;
+    font-size: 14px;
     line-height: 1.6;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
-  /* Font più grande per tutti i testi */
-  p, span, div, button {
-    @apply text-[15px];
-  }
-
-  /* Tabella meteo ancora più grande */
-  table {
-    font-size: 14px !important;
-  }
-
-  td, th {
-    @apply py-2.5 px-3 text-sm;
+  @media (min-width: 768px) {
+    body {
+      font-size: 16px;
+    }
   }
 
   ::-webkit-scrollbar {
