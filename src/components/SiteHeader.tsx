@@ -28,19 +28,19 @@ export default function SiteHeader({
   currentData,
 }: SiteHeaderProps) {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-4 pb-5 mb-4 border-b border-orange-400/20 relative">
+    <div className="flex flex-col items-center justify-center gap-4 pb-5 mb-4 border-b border-orange-400/20 relative">
       <div className="absolute -top-4 -left-4 w-32 h-32 bg-gradient-to-br from-orange-500/5 to-transparent rounded-full blur-2xl pointer-events-none" />
       
       <div className="flex items-center gap-3 relative">
         <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gradient-to-br from-orange-500/30 to-amber-500/15 border border-orange-400/40 flex items-center justify-center card-neon shadow-lg shadow-orange-500/10">
           <Navigation className="w-6 h-6 md:w-7 md:h-7 text-orange-400" />
         </div>
-        <div>
-          <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2 tracking-tight neon-green">
+        <div className="text-center">
+          <h2 className="text-xl md:text-2xl font-black text-white flex items-center justify-center gap-2 tracking-tight neon-green">
             {name}
             <Sparkles className="w-3.5 h-3.5 text-orange-400 animate-twinkle" />
           </h2>
-          <div className="flex items-center gap-2 text-xs md:text-sm text-slate-400 mt-1">
+          <div className="flex items-center justify-center gap-2 text-xs md:text-sm text-slate-400 mt-1">
             <span className="flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded-full border border-slate-700/50">
               <MapPin className="w-3 h-3 text-rose-400" />
               {valley}
