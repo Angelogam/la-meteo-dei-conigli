@@ -60,43 +60,139 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
     if (!site) return;
 
     try {
+      // Campi necessari per calcolaTermiche: temperature, dewpoint, humidity, windSpeed, windDir, cloudCover, pressure, precipitation, uvIndex, soilTemp, temp80m, temp120m, windProfile
+      // Usiamo 2 giorni di forecast per avere tutte le ore 8-19 del giorno corrente e domani
       const params = new URLSearchParams({
         latitude: site.lat.toString(),
         longitude: site.lon.toString(),
-        hourly: "temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,cloud_cover,relative_humidity_2m",
+        hourly: [
+          "temperature_2m",
+          "dewpoint_2m",
+          "relative_humidity_2m",
+          "apparent_temperature",
+          "weathercode",
+          "wind_speed_10m",
+          "wind_direction_10m",
+          "wind_gusts_10m",
+          "precipitation",
+          "cloudcover",
+          "pressure_msl",
+          "uv_index",
+          "soil_temperature_0_to_7cm",
+          "soil_moisture_0_to_7cm",
+          "temperature_80m",
+          "temperature_120m",
+          "wind_speed_80m",
+          "wind_direction_80m",
+          "wind_speed_120m",
+          "wind_direction_120m",
+          "wind_speed_180m",
+          "wind_direction_180m",
+          "wind_speed_1000hPa",
+          "wind_direction_1000hPa",
+          "wind_speed_975hPa",
+          "wind_direction_975hPa",
+          "wind_speed_950hPa",
+          "wind_direction_950hPa",
+          "wind_speed_925hPa",
+          "wind_direction_925hPa",
+          "wind_speed_900hPa",
+          "wind_direction_900hPa",
+          "wind_speed_850hPa",
+          "wind_direction_850hPa",
+          "wind_speed_800hPa",
+          "wind_direction_800hPa",
+          "wind_speed_700hPa",
+          "wind_direction_700hPa",
+          "wind_speed_600hPa",
+          "wind_direction_600hPa",
+          "geopotential_height_1000hPa",
+          "geopotential_height_975hPa",
+          "geopotential_height_950hPa",
+          "geopotential_height_925hPa",
+          "geopotential_height_900hPa",
+          "geopotential_height_850hPa",
+          "geopotential_height_800hPa",
+          "geopotential_height_700hPa",
+          "geopotential_height_600hPa",
+          "is_day",
+        ].join(","),
         timezone: "Europe/Rome",
-        forecast_days: "1",
-        start_hour: new Date().getHours() > 19 ? "09:00" : "09:00",
-        end_hour: "19:00",
+        forecast_days: "2",
       });
 
       const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
-      if (!res.ok) throw new Error("Errore fetch");
+      if (!res.ok) throw new Error(`Errore HTTP ${res.status}`);
       const raw = await res.json();
 
-      const hours: HourData[] = raw.hourly.time.map((t: string, i: number) => ({
-        time: new Date(t),
-        temperature: raw.hourly.temperature_2m[i],
-        humidity: raw.hourly.relative_humidity_2m[i],
-        precipitation: raw.hourly.precipitation[i],
-        weatherCode: raw.hourly.weather_code[i],
-        cloudCover: raw.hourly.cloud_cover[i],
-        windSpeed: raw.hourly.wind_speed_10m[i],
-        windDir: raw.hourly.wind_direction_10m[i],
-        windGust: raw.hourly.wind_gusts_10m[i],
-        feelsLike: raw.hourly.apparent_temperature?.[i] ?? raw.hourly.temperature_2m[i],
-        dewPoint: 0,
-        pressure: null,
-        soilTemp: null,
-        soilMoisture: null,
-        uvIndex: null,
-        isDay: true,
-      }));
+      // Funzione per calcolare quota approssimata da livello di pressione
+      const pressioneAQuota = (hpa: number): number => Math.round(44330 * (1 - Math.pow(hpa / 1013.25, 0.1903)));
+
+      const hours: HourData[] = raw.hourly.time
+        .map((t: string, i: number) => {
+          // Costruisce windProfile dai livelli di pressione
+          const livelliPressione = [
+            { livello: "1000hPa", key: "1000" },
+            { livello: "975hPa", key: "975" },
+            { livello: "950hPa", key: "950" },
+            { livello: "925hPa", key: "925" },
+            { livello: "900hPa", key: "900" },
+            { livello: "850hPa", key: "850" },
+            { livello: "800hPa", key: "800" },
+            { livello: "700hPa", key: "700" },
+            { livello: "600hPa", key: "600" },
+          ] as const;
+
+          const windProfile = livelliPressione.map(({ livello, key }) => {
+            const geo = raw.hourly[`geopotential_height_${key}hPa`]?.[i];
+            const heightAGL = geo != null
+              ? Math.max(0, Math.round(geo - site.altitude))
+              : Math.max(0, Math.round(pressioneAQuota(parseInt(key)) - site.altitude));
+            return {
+              height: heightAGL,
+              speed: raw.hourly[`wind_speed_${key}hPa`]?.[i] ?? null,
+              dir: raw.hourly[`wind_direction_${key}hPa`]?.[i] ?? null,
+            };
+          });
+
+          return {
+            time: new Date(t),
+            temperature: raw.hourly.temperature_2m[i],
+            feelsLike: raw.hourly.apparent_temperature?.[i] ?? raw.hourly.temperature_2m[i],
+            humidity: raw.hourly.relative_humidity_2m[i],
+            dewPoint: raw.hourly.dewpoint_2m[i],
+            precipitation: raw.hourly.precipitation[i] || 0,
+            weatherCode: raw.hourly.weathercode?.[i] ?? 0,
+            cloudCover: raw.hourly.cloudcover[i],
+            pressure: raw.hourly.pressure_msl?.[i] ?? null,
+            windSpeed: raw.hourly.wind_speed_10m[i],
+            windDir: raw.hourly.wind_direction_10m[i],
+            windGust: raw.hourly.wind_gusts_10m?.[i] ?? null,
+            soilTemp: raw.hourly.soil_temperature_0_to_7cm?.[i] ?? null,
+            soilMoisture: raw.hourly.soil_moisture_0_to_7cm?.[i] ?? null,
+            uvIndex: raw.hourly.uv_index?.[i] ?? null,
+            isDay: raw.hourly.is_day?.[i] === 1,
+            windProfile,
+            wind80m: raw.hourly.wind_speed_80m?.[i] ?? null,
+            windDir80m: raw.hourly.wind_direction_80m?.[i] ?? null,
+            wind120m: raw.hourly.wind_speed_120m?.[i] ?? null,
+            windDir120m: raw.hourly.wind_direction_120m?.[i] ?? null,
+            wind180m: raw.hourly.wind_speed_180m?.[i] ?? null,
+            windDir180m: raw.hourly.wind_direction_180m?.[i] ?? null,
+            temp80m: raw.hourly.temperature_80m?.[i] ?? null,
+            temp120m: raw.hourly.temperature_120m?.[i] ?? null,
+            visibility: null,
+          };
+        })
+        // Filtra solo le ore 8-19 del primo giorno (oggi)
+        .filter((h: HourData) => {
+          const hh = h.time.getHours();
+          return hh >= 8 && hh <= 19;
+        });
 
       setSiteHourlyData(prev => ({ ...prev, [siteId]: hours }));
     } catch {
-      // Fallback: usa weatherMap
-      setSiteHourlyData(prev => ({ ...prev, [siteId]: weatherMap[siteId] ? [weatherMap[siteId]] : [] }));
+      setSiteHourlyData(prev => ({ ...prev, [siteId]: [] }));
     }
 
     setLoadingHourly(prev => ({ ...prev, [siteId]: false }));
@@ -272,13 +368,13 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                   >
                     <span className="flex items-center gap-1.5">
                       <Clock className="w-3 h-3" />
-                      Previsioni orarie 9:00&ndash;19:00
+                      Previsioni orarie 8:00&ndash;19:00
                     </span>
                     {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                   </button>
                 )}
 
-                {/* Pannello espanso con previsioni orarie */}
+                {/* Pannello espanso con previsioni orarie — usa l'altitudine del decollo per le termiche */}
                 {isExpanded && hourlyData && hourlyData.length > 0 && (
                   <div className="rounded-xl border border-slate-600/50 bg-slate-800/60 backdrop-blur-sm overflow-hidden">
                     <GraficoTermiche hourly={generaTermicheOrarie(hourlyData, site.altitude)} oraCorrente={now.getHours()} />
