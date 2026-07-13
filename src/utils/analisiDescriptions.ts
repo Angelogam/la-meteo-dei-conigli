@@ -1,12 +1,18 @@
 "use client";
 
+function degreesToCardinal(deg: number): string {
+  if (deg == null) return "—";
+  const directions = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+  return directions[Math.round(deg / 22.5) % 16];
+}
+
 interface CurrentData {
   temp?: number;
   tempFeel?: number;
   humidity?: number;
   windSpeed?: number;
   windGust?: number;
-  windDir?: string;
+  windDir?: number;
   clouds?: number;
   precip?: number;
   thermalStrength?: number;
@@ -71,7 +77,10 @@ export function generateSituazioneGenerale(currentData: CurrentData, dayData?: D
   // Vento
   if (currentData.windSpeed != null) {
     let windText = `Vento: ${currentData.windSpeed} km/h`;
-    if (currentData.windDir) windText += ` da ${currentData.windDir}`;
+    if (currentData.windDir != null) {
+      const cardinal = degreesToCardinal(currentData.windDir);
+      windText += ` da ${cardinal} (${Math.round(currentData.windDir)}°)`;
+    }
     
     const windDesc = getQualitativeDescription(
       currentData.windSpeed,
@@ -137,7 +146,7 @@ export function generateProfiloTermico(currentData: CurrentData, dayData?: DayDa
     else if (li <= 0) liText += ", atmosfera leggermente instabile. Qualche cumulo pomeridiano possibile ma senza rischi particolari.";
     else if (li <= 2) liText += ", atmosfera stabile. Scarsa probabilità di temporali, buone condizioni per il volo.";
     else if (li <= 4) liText += ", atmosfera molto stabile. Cielo generalmente sereno, termiche deboli.";
-    else liText += ", atmosfera estremamente stabile. Termiche molto deboli o assenti, condizioni di volo平静e.";
+    else liText += ", atmosfera estremamente stabile. Termiche molto deboli o assenti, condizioni di volo平靜e.";
     lines.push(liText + ".");
   }
 
@@ -187,8 +196,9 @@ export function generateProfiloTermico(currentData: CurrentData, dayData?: DayDa
 export function generateVentoQuota(currentData: CurrentData): string[] {
   const lines: string[] = [];
 
-  if (currentData.windDir) {
-    let text = `Il profilo del vento mostra direzione prevalente da ${currentData.windDir}`;
+  if (currentData.windDir != null) {
+    const cardinal = degreesToCardinal(currentData.windDir);
+    let text = `Il profilo del vento mostra direzione prevalente da ${cardinal} (${Math.round(currentData.windDir)}°)`;
     
     if (currentData.windSpeed != null) {
       if (currentData.windSpeed < 5) {
