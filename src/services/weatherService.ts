@@ -73,36 +73,44 @@ export const weatherService = {
     const res = await fetch(`${BASE_URL}?${params.toString()}`);
     if (!res.ok) throw new Error(`Open-Meteo error: ${res.status}`);
     
-    const data = await res.json();
+    const raw: any = await res.json();
 
-    const hourly: MeteoHourly[] = data.hourly.time.map((t: string, i: number) => ({
-      time: new Date(t),
-      temperature: data.hourly.temperature_2m?.[i] ?? 0,
-      humidity: data.hourly.relative_humidity_2m?.[i] ?? 50,
-      dewPoint: data.hourly.dew_point_2m?.[i] ?? 0,
-      apparentTemp: data.hourly.apparent_temperature?.[i] ?? 0,
-      precipitation: data.hourly.precipitation?.[i] ?? 0,
-      weatherCode: data.hourly.weather_code?.[i] ?? 0,
-      cloudCover: data.hourly.cloud_cover?.[i] ?? 0,
-      windSpeed: data.hourly.wind_speed_10m?.[i] ?? 0,
-      windDir: data.hourly.wind_direction_10m?.[i] ?? 0,
-      windGusts: data.hourly.wind_gusts_10m?.[i] ?? 0,
-      pressure: data.hourly.surface_pressure?.[i] ?? 1013,
-      uvIndex: data.hourly.uv_index?.[i] ?? 0,
-      temp80m: data.hourly.temperature_80m?.[i] ?? null,
-      temp120m: data.hourly.temperature_120m?.[i] ?? null,
-    }));
+    // --- HOURLY ---
+    const hourly: MeteoHourly[] = (raw.hourly.time as string[]).map((t: string, i: number) => {
+      const date = new Date(t);
+      return {
+        time: date,
+        temperature: raw.hourly.temperature_2m?.[i] ?? 0,
+        humidity: raw.hourly.relative_humidity_2m?.[i] ?? 50,
+        dewPoint: raw.hourly.dew_point_2m?.[i] ?? 0,
+        apparentTemp: raw.hourly.apparent_temperature?.[i] ?? 0,
+        precipitation: raw.hourly.precipitation?.[i] ?? 0,
+        weatherCode: raw.hourly.weather_code?.[i] ?? 0,
+        cloudCover: raw.hourly.cloud_cover?.[i] ?? 0,
+        windSpeed: raw.hourly.wind_speed_10m?.[i] ?? 0,
+        windDir: raw.hourly.wind_direction_10m?.[i] ?? 0,
+        windGusts: raw.hourly.wind_gusts_10m?.[i] ?? 0,
+        pressure: raw.hourly.surface_pressure?.[i] ?? 1013,
+        uvIndex: raw.hourly.uv_index?.[i] ?? 0,
+        temp80m: raw.hourly.temperature_80m?.[i] ?? null,
+        temp120m: raw.hourly.temperature_120m?.[i] ?? null,
+      };
+    });
 
-    const daily: MeteoDaily[] = data.daily.time.map((t: string, i: number) => ({
-      date: new Date(t),
-      weatherCode: data.daily.weather_code?.[i] ?? 0,
-      tempMax: data.daily.temperature_2m_max?.[i] ?? 0,
-      tempMin: data.daily.temperature_2m_min?.[i] ?? 0,
-      precipSum: data.daily.precipitation_sum?.[i] ?? 0,
-      precipProb: data.daily.precipitation_probability_max?.[i] ?? 0,
-      windSpeedMax: data.daily.wind_speed_10m_max?.[i] ?? 0,
-      windGustsMax: data.daily.wind_gusts_10m_max?.[i] ?? 0,
-    }));
+    // --- DAILY ---
+    const daily: MeteoDaily[] = (raw.daily.time as string[]).map((t: string, i: number) => {
+      const date = new Date(t);
+      return {
+        date,
+        weatherCode: raw.daily.weather_code?.[i] ?? 0,
+        tempMax: raw.daily.temperature_2m_max?.[i] ?? 0,
+        tempMin: raw.daily.temperature_2m_min?.[i] ?? 0,
+        precipSum: raw.daily.precipitation_sum?.[i] ?? 0,
+        precipProb: raw.daily.precipitation_probability_max?.[i] ?? 0,
+        windSpeedMax: raw.daily.wind_speed_10m_max?.[i] ?? 0,
+        windGustsMax: raw.daily.wind_gusts_10m_max?.[i] ?? 0,
+      };
+    });
 
     return { hourly, daily };
   },
