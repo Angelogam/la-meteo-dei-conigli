@@ -3,11 +3,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { X, Wind, Thermometer, RefreshCw, Droplets, Gauge, Cloud, CloudRain, ChevronDown, ChevronUp, Clock } from "lucide-react";
 import AlertVolo from "./AlertVolo";
-import PopupTermiche from "./PopupTermiche";
+import GraficoTermiche from "./GraficoTermiche";
 import type { HourData } from "@/types/meteo";
 import { DECOLLI } from "@/data/decolli";
 import { wic } from "@/utils/meteo";
 import { getVoloStatus } from "@/utils/volo";
+import { generaTermicheOrarie } from "@/utils/termiche";
 
 interface SidebarDecolliProps {
   selected: string;
@@ -20,7 +21,7 @@ interface SidebarDecolliProps {
 
 const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClose }: SidebarDecolliProps) => {
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const [popupSite, setPopupSite] = useState<string | null>(null);
+  const [expandedSites, setExpandedSites] = useState<Record<string, boolean>>({});
   const [siteHourlyData, setSiteHourlyData] = useState<Record<string, HourData[]>>({});
   const [loadingHourly, setLoadingHourly] = useState<Record<string, boolean>>({});
 
@@ -49,7 +50,7 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
 
   const now = new Date();
 
-  // Carica dati orari
+  // Carica dati orari per un decollo specifico quando viene espanso
   const loadHourlyData = async (siteId: string) => {
     if (siteHourlyData[siteId] || loadingHourly[siteId]) return;
     
@@ -192,17 +193,13 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
     setLoadingHourly(prev => ({ ...prev, [siteId]: false }));
   };
 
-  const apriPopup = (siteId: string) => {
-    setPopupSite(siteId);
-    loadHourlyData(siteId);
+  const toggleExpand = (siteId: string) => {
+    const newExpanded = !expandedSites[siteId];
+    setExpandedSites(prev => ({ ...prev, [siteId]: newExpanded }));
+    if (newExpanded) {
+      loadHourlyData(siteId);
+    }
   };
-
-  const chiudiPopup = () => {
-    setPopupSite(null);
-  };
-
-  const decolloInPopup = popupSite ? DECOLLI.find(d => d.id === popupSite) : null;
-  const hourlyPopupData = popupSite ? siteHourlyData[popupSite] : null;
 
   return (
     <>
@@ -253,16 +250,16 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
             const w = weatherMap[site.id];
             const isSelected = site.id === selected;
             const volo = getVoloStatus(w);
-            const isSiteLoading = loadingHourly[site.id];
+            const isExpanded = expandedSites[site.id];
+            const hourlyData = siteHourlyData[site.id];
+            const isLoading = loadingHourly[site.id];
 
             return (
               <div key={site.id} className="space-y-1">
                 <button
                   onClick={() => {
                     onSelect(site.id);
-                    if (window.innerWidth < 768) {
-                      onClose();
-                    }
+                    if (window.innerWidth < 768) onClose();
                   }}
                   className={
                     "w-full text-left rounded-xl px-3 py-3 transition-all duration-200 border-2 " +
@@ -301,7 +298,7 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                         </span>
                         <span className="text-3xl leading-none drop-shadow-lg">{wic(w.weatherCode, true)}</span>
                         <span className={"text-base font-extrabold " + (isSelected ? "text-white" : "text-slate-100")}>
-                          {Math.round(w.temperature)}°
+                          {Math.round(w.temperature)}&deg;
                         </span>
                         <span className="text-[11px] text-slate-400 font-medium">{Math.round(w.windSpeed)} km/h</span>
                       </div>
@@ -316,12 +313,12 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                           <span className="font-semibold">{Math.round(w.windSpeed)} km/h</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-[12px] text-orange-200/90">
-                          <span className="text-orange-300 text-base">↑</span>
+                          <span className="text-orange-300 text-base">&uarr;</span>
                           <span className="font-semibold">{w.windGust ? Math.round(w.windGust) : "--"} km/h</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-[12px] text-amber-200/90">
                           <Thermometer className="w-4 h-4 text-amber-300" />
-                          <span className="font-semibold">{Math.round(w.temperature)}°C</span>
+                          <span className="font-semibold">{Math.round(w.temperature)}&deg;C</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-[12px] text-emerald-200/90">
                           <Droplets className="w-4 h-4 text-emerald-300" />
@@ -352,52 +349,42 @@ const SidebarDecolli = ({ selected, current, onSelect, weatherMap, isOpen, onClo
                   )}
                 </button>
 
-                {/* Pulsante per aprire popup previsioni orarie */}
+                {/* Bottone espandi per mostrare il grafico termiche direttamente qui */}
                 {w && (
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      apriPopup(site.id);
-                    }}
-                    disabled={isSiteLoading}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-emerald-700/30 transition-all border border-emerald-500/30 bg-emerald-900/10"
+                    onClick={() => toggleExpand(site.id)}
+                    className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-[10px] font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 transition-all border border-slate-600/30"
                   >
-                    {isSiteLoading ? (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        Caricamento...
-                      </>
-                    ) : (
-                      <>
-                        <Clock className="w-3.5 h-3.5" />
-                        Previsioni orarie 8:00–19:00
-                      </>
-                    )}
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="w-3 h-3" />
+                      Previsioni orarie 8:00&ndash;19:00
+                    </span>
+                    {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                   </button>
+                )}
+
+                {/* Pannello espanso — grafico termiche con quote 0–4000m */}
+                {isExpanded && hourlyData && hourlyData.length > 0 && (
+                  <div className="rounded-xl border border-slate-600/50 bg-slate-800/60 backdrop-blur-sm overflow-hidden">
+                    <GraficoTermiche hourly={generaTermicheOrarie(hourlyData, site.altitude)} oraCorrente={now.getHours()} />
+                  </div>
+                )}
+                {isExpanded && isLoading && (
+                  <div className="rounded-xl border border-slate-600/50 bg-slate-800/60 backdrop-blur-sm p-3 text-center text-[11px] text-slate-400 flex items-center justify-center gap-2">
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                    Caricamento...
+                  </div>
+                )}
+                {isExpanded && !isLoading && (!hourlyData || hourlyData.length === 0) && (
+                  <div className="rounded-xl border border-slate-600/50 bg-slate-800/60 backdrop-blur-sm p-3 text-center text-[11px] text-slate-400">
+                    Nessuna previsione disponibile
+                  </div>
                 )}
               </div>
             );
           })}
         </div>
       </div>
-
-      {/* Popup termiche */}
-      {popupSite && decolloInPopup && hourlyPopupData && (
-        <PopupTermiche
-          siteName={decolloInPopup.name}
-          siteAltitude={decolloInPopup.altitude}
-          hourlyData={hourlyPopupData}
-          onClose={chiudiPopup}
-        />
-      )}
-      {popupSite && loadingHourly[popupSite] && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-md">
-          <div className="flex items-center gap-3 px-6 py-4 rounded-xl bg-slate-800 border border-emerald-500/30 shadow-xl">
-            <RefreshCw className="w-5 h-5 animate-spin text-emerald-400" />
-            <span className="text-sm text-slate-200">Caricamento previsioni orarie...</span>
-          </div>
-        </div>
-      )}
     </>
   );
 };
