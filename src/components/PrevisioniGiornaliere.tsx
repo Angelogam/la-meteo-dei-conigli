@@ -18,6 +18,9 @@ import {
   ArrowDown,
   Sunrise,
   Sunset,
+  Clock,
+  CalendarDays,
+  Sparkles,
 } from "lucide-react";
 
 interface PrevisioniGiornaliereProps {
