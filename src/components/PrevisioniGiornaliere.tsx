@@ -59,7 +59,6 @@ function getDominantWeatherCode(hourlyCodes: (number | undefined | null)[]): num
 function formatDate(date: any): string {
   if (!date) return "";
 
-  // Se è un oggetto con date in formato "2025-04-07"
   if (typeof date === 'string' && date.includes('-')) {
     const [y, m, d] = date.split('-');
     return `${d}/${m}/${y}`;
@@ -89,38 +88,16 @@ export default function PrevisioniGiornaliere({
   onSelectDay,
 }: PrevisioniGiornaliereProps) {
 
-  // DEBUG: stampa i dati ricevuti
-  console.log("=== PREVISIONI GIORNALIERE ===");
-  console.log("enrichedDaily:", enrichedDaily);
-  console.log("dayData:", dayData);
-  if (dayData && dayData.length > 0) {
-    console.log("PRIME 5 ORE dayData:");
-    dayData.slice(0, 5).forEach(h => {
-      console.log({
-        time: new Date(h.time).toLocaleString('it-IT'),
-        weatherCode: h.weatherCode,
-        precip: h.precipitation,
-      });
-    });
-    console.log("TUTTI weatherCode dayData:", dayData.map(h => h.weatherCode));
-    console.log("TUTTE precip dayData:", dayData.map(h => h.precipitation));
-  }
-
   const dominanteCodice = useMemo(() => {
     if (!dayData || dayData.length === 0) return 0;
     const codici = dayData.map((h: any) => h.weatherCode);
-    console.log("dominanteCodice - codici input:", codici);
-    const result = getDominantWeatherCode(codici);
-    console.log("dominanteCodice - risultato:", result);
-    return result;
+    return getDominantWeatherCode(codici);
   }, [dayData]);
 
   // Pioggia TOTALE reale
   const precipTotaleReale = useMemo(() => {
     if (!dayData || dayData.length === 0) return 0;
-    const total = dayData.reduce((sum: number, h: any) => sum + (h.precipitation || 0), 0);
-    console.log("precipTotaleReale:", total);
-    return Math.round(total * 10) / 10;
+    return Math.round(dayData.reduce((sum: number, h: any) => sum + (h.precipitation || 0), 0) * 10) / 10;
   }, [dayData]);
 
   // Check se c'è pioggia solo nelle ore serali (18+)
@@ -136,7 +113,6 @@ export default function PrevisioniGiornaliere({
       return hh >= 6 && hh <= 17;
     });
     const morningPrecip = morning.reduce((s: number, h: any) => s + (h.precipitation || 0), 0);
-    console.log("hasLatePrecip - mattina:", morningPrecip, "sera:", eveningPrecip);
     return eveningPrecip > 0.1 && morningPrecip === 0;
   }, [dayData]);
 
@@ -369,7 +345,7 @@ export default function PrevisioniGiornaliere({
                   <Umbrella className="w-4 h-4 text-blue-400 shrink-0" />
                   <div>
                     <div className="text-xs text-slate-400">Pioggia</div>
-                    <div className={`text-sm font-bold text-amber-400`}>{"Probabile in serata"}</div>
+                    <div className={`text-sm font-bold ${rischio.color}`}>{rischio.label}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 bg-slate-900/60 rounded-xl px-3 py-2">
