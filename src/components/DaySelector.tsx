@@ -73,12 +73,28 @@ export default function DaySelector({
 }
 
 function getEmoji(code: number): string {
-  if (code === 0) return "☀️";
-  if (code <= 3) return "⛅";
-  if (code <= 48) return "🌫️";
-  if (code <= 57) return "🌦️";
-  if (code <= 67) return "🌧️";
-  if (code <= 77) return "🌨️";
-  if (code <= 82) return "🌦️";
-  return "⛈️";
+  switch (true) {
+    case code === 0:
+      return "☀️";
+    case code <= 2:
+      return "⛅";
+    case code === 3:
+      return "☁️☀️";  // molto nuvoloso con squarci di sole
+    case code <= 30:
+      return "🌫️";  // foschia/nebbia leggera
+    case code <= 48:
+      return "🌁";  // nebbia fitta
+    case code <= 57:
+      return "☁️🌦️";  // nuvoloso con pioviggine
+    case code <= 67:
+      return "☁️☁️🌧️";  // coperto con pioggia
+    case code <= 77:
+      return "☁️🌨️";  // coperto con neve
+    case code <= 82:
+      return "🌧️";  // pioggia forte
+    case code <= 86:
+      return "🌧️🌨️";  // rovesci misti
+    default:
+      return "⛈️";  // temporali
+  }
 }
