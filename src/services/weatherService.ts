@@ -75,6 +75,20 @@ export const weatherService = {
     
     const raw: any = await res.json();
 
+    // DEBUG: stampa i raw headers per vedere se riceviamo weather_code
+    console.log("=== WEATHER SERVICE RAW HOURLY KEYS ===");
+    console.log(Object.keys(raw.hourly).join(", "));
+    console.log("=== RAW DAILY KEYS ===");
+    console.log(Object.keys(raw.daily).join(", "));
+    
+    // Se non trova weather_code, prova weathercode (vecchio nome)
+    const hourlyCodes = raw.hourly.weather_code || raw.hourly.weathercode;
+    const dailyCodes = raw.daily.weather_code || raw.daily.weathercode;
+    
+    if (!hourlyCodes) {
+      console.error("❌ CRITICAL: weather_code non trovato in hourly! Keys:", Object.keys(raw.hourly));
+    }
+
     // --- HOURLY ---
     const hourly: MeteoHourly[] = (raw.hourly.time as string[]).map((t: string, i: number) => {
       const date = new Date(t);
@@ -85,7 +99,7 @@ export const weatherService = {
         dewPoint: raw.hourly.dew_point_2m?.[i] ?? 0,
         apparentTemp: raw.hourly.apparent_temperature?.[i] ?? 0,
         precipitation: raw.hourly.precipitation?.[i] ?? 0,
-        weatherCode: raw.hourly.weather_code?.[i] ?? 0,
+        weatherCode: raw.hourly.weather_code?.[i] ?? raw.hourly.weathercode?.[i] ?? 0,
         cloudCover: raw.hourly.cloud_cover?.[i] ?? 0,
         windSpeed: raw.hourly.wind_speed_10m?.[i] ?? 0,
         windDir: raw.hourly.wind_direction_10m?.[i] ?? 0,
@@ -102,7 +116,7 @@ export const weatherService = {
       const date = new Date(t);
       return {
         date,
-        weatherCode: raw.daily.weather_code?.[i] ?? 0,
+        weatherCode: raw.daily.weather_code?.[i] ?? raw.daily.weathercode?.[i] ?? 0,
         tempMax: raw.daily.temperature_2m_max?.[i] ?? 0,
         tempMin: raw.daily.temperature_2m_min?.[i] ?? 0,
         precipSum: raw.daily.precipitation_sum?.[i] ?? 0,
@@ -110,6 +124,14 @@ export const weatherService = {
         windSpeedMax: raw.daily.wind_speed_10m_max?.[i] ?? 0,
         windGustsMax: raw.daily.wind_gusts_10m_max?.[i] ?? 0,
       };
+    });
+
+    console.log("=== WEATHER SERVICE: primo hourly ===");
+    console.log({
+      time: hourly[0].time,
+      temp: hourly[0].temperature,
+      weatherCode: hourly[0].weatherCode,
+      precip: hourly[0].precipitation,
     });
 
     return { hourly, daily };
