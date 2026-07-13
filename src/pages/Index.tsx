@@ -15,7 +15,6 @@ import MeteoTab from "@/components/MeteoTab";
 import VentiTab from "@/components/VentiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiTab from "@/components/AnalisiTab";
-import DayInfoPanel from "@/components/DayInfoPanel";
 
 export function Page() {
   const {
@@ -41,12 +40,14 @@ export function Page() {
   if (loading) return <LoadingScreen />;
   if (error) return <ErrorScreen error={error} onRetry={loadWeather} />;
 
+  // Prendi la label del giorno selezionato
+  const selectedDateLabel = dateLabels?.[selectedDay] || undefined;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950">
-      {/* Header con titolo centrale e parapendio laterali */}
+      {/* Header */}
       <header className="text-center py-4 border-b border-slate-800 relative overflow-hidden">
         <div className="flex items-center justify-center gap-3 md:gap-6">
-          {/* Coniglio sinistro con paracadute colorato piccolo */}
           <div className="hidden sm:flex flex-col items-center animate-float-left">
             <div className="relative">
               <svg className="w-10 h-10 md:w-12 md:h-12" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -61,7 +62,6 @@ export function Page() {
             </div>
           </div>
 
-          {/* Titolo centrale */}
           <div className="flex flex-col items-center justify-center gap-1">
             <div className="flex items-center justify-center gap-2.5">
               <span className="text-2xl md:text-3xl animate-bounce">🪂</span>
@@ -75,7 +75,6 @@ export function Page() {
             </p>
           </div>
 
-          {/* Coniglio destro con paracadute colorato piccolo */}
           <div className="hidden sm:flex flex-col items-center animate-float-right">
             <div className="relative">
               <svg className="w-10 h-10 md:w-12 md:h-12" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -90,8 +89,6 @@ export function Page() {
             </div>
           </div>
         </div>
-
-        {/* Conigli mobili separati per mobile */}
         <div className="flex sm:hidden items-center justify-center gap-3 mt-2">
           <span className="text-xl animate-hop">🐰</span>
           <span className="text-lg text-orange-400 font-bold">🪂</span>
@@ -99,10 +96,8 @@ export function Page() {
         </div>
       </header>
 
-      {/* Main layout */}
       <div className="max-w-7xl mx-auto p-4 md:p-6">
         <div className="flex flex-col md:flex-row gap-6">
-          {/* Sidebar */}
           <div className="w-full md:w-80 shrink-0">
             <DecolloList
               decolli={DECOLLI.map(d => ({ id: d.id, name: d.name, valley: d.valley, exposure: d.exposure, alt: d.altitude }))}
@@ -112,7 +107,6 @@ export function Page() {
             />
           </div>
 
-          {/* Main content */}
           <div className="flex-1 min-w-0">
             <SiteHeader
               name={site.name}
@@ -170,6 +164,7 @@ export function Page() {
                   site={{ name: site.name, alt: site.altitude }}
                   thermalDelta={thermalDelta}
                   thermalStrength={thermalStrength}
+                  selectedDateLabel={selectedDateLabel}
                 />
               )}
             </div>

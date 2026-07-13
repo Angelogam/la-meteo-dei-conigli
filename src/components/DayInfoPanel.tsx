@@ -47,6 +47,7 @@ interface DayInfoPanelProps {
     name: string;
     alt: number;
   };
+  selectedDate?: string;
 }
 
 function getStabilityLabel(index?: number | string): { text: string; color: string; icon: React.ElementType } {
@@ -111,10 +112,10 @@ function getCurrentTime(): string {
   });
 }
 
-export default function DayInfoPanel({ currentData, dayData, site }: DayInfoPanelProps) {
+export default function DayInfoPanel({ currentData, dayData, site, selectedDate }: DayInfoPanelProps) {
   const stability = getStabilityLabel(currentData?.liftingIndex ?? currentData?.stabilityIndex);
   const StabilityIcon = stability.icon;
-  const today = getCurrentDate();
+  const displayDate = selectedDate || getCurrentDate();
   const nowTime = getCurrentTime();
 
   return (
@@ -128,7 +129,7 @@ export default function DayInfoPanel({ currentData, dayData, site }: DayInfoPane
           <div className="flex items-center gap-3 text-[10px] text-slate-500">
             <span className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
-              {today}
+              {displayDate}
             </span>
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
@@ -185,7 +186,7 @@ export default function DayInfoPanel({ currentData, dayData, site }: DayInfoPane
           <div className="flex items-center gap-3 text-[10px] text-slate-500">
             <span className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
-              {today}
+              {displayDate}
             </span>
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
@@ -234,7 +235,7 @@ export default function DayInfoPanel({ currentData, dayData, site }: DayInfoPane
           <div className="flex items-center gap-3 text-[10px] text-slate-500">
             <span className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
-              {today}
+              {displayDate}
             </span>
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
@@ -270,7 +271,7 @@ export default function DayInfoPanel({ currentData, dayData, site }: DayInfoPane
           <div className="flex items-center gap-3 text-[10px] text-slate-500">
             <span className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
-              {today}
+              {displayDate}
             </span>
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
@@ -311,7 +312,7 @@ export default function DayInfoPanel({ currentData, dayData, site }: DayInfoPane
           <div className="flex items-center gap-3 text-[10px] text-slate-500">
             <span className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
-              {today}
+              {displayDate}
             </span>
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />

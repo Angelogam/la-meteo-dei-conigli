@@ -8,10 +8,10 @@ interface AnalisiTabProps {
   site: { name: string; alt: number };
   thermalDelta?: number;
   thermalStrength?: number;
+  selectedDateLabel?: string;
 }
 
-export default function AnalisiTab({ currentData, site, thermalDelta, thermalStrength }: AnalisiTabProps) {
-  // dayData lo ricaviamo dai dati correnti se disponibili
+export default function AnalisiTab({ currentData, site, thermalDelta, thermalStrength, selectedDateLabel }: AnalisiTabProps) {
   const dayData = {
     tempMax: currentData?.tempMax,
     tempMin: currentData?.tempMin,
@@ -28,6 +28,7 @@ export default function AnalisiTab({ currentData, site, thermalDelta, thermalStr
         currentData={currentData}
         dayData={dayData}
         site={site}
+        selectedDate={selectedDateLabel}
       />
     </div>
   );
