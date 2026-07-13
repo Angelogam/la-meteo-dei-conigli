@@ -1,385 +1,269 @@
 "use client";
 
-import React from "react";
-import DayInfoPanel from "@/components/DayInfoPanel";
+import React, { useMemo } from "react";
 import {
-  Sun,
-  Thermometer,
-  Wind,
-  Gauge,
-  Clock,
-  Calendar,
-  TrendingUp,
-  Cloud,
-  Droplets,
-  Eye,
-  AlertTriangle,
-  CheckCircle,
-  ArrowUp,
-  ArrowDown,
-  Compass,
-  Sparkles,
+  Sun, CloudSun, Cloud, Thermometer, Wind, Droplets,
+  ArrowUp, AlertTriangle, BarChart3, Compass, Clock,
+  Sunrise, Sunset, MapPin, Activity, Gauge, LucideIcon
 } from "lucide-react";
-import {
-  generateSituazioneGenerale,
-  generateProfiloTermico,
-  generateVentoQuota,
-  generateInterpretazione,
-} from "@/utils/analisiDescriptions";
-import { degreesToCardinal, windArrow, formatWindDir } from "@/utils/windDirections";
+import { degreesToCardinal, windArrow } from "@/utils/windDirections";
 
 interface AnalisiTabProps {
   currentData: any;
   site: { name: string; alt: number };
-  thermalDelta?: number;
-  selectedDateLabel?: string;
+  thermalDelta: number;
+  selectedDateLabel: string | undefined;
 }
 
-function getCurrentTime(): string {
-  const now = new Date();
-  return now.toLocaleTimeString("it-IT", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+// Helper: descrizione qualitativa
+function qDesc(value: number, thresholds: number[], labels: string[]): string {
+  for (let i = 0; i < thresholds.length; i++) {
+    if (value <= thresholds[i]) return labels[i];
+  }
+  return labels[labels.length - 1];
 }
 
-function getEmojiFromCode(code: number): string {
-  if (code === 0) return "☀️";
-  if (code <= 2) return "🌤️";
-  if (code <= 3) return "⛅";
-  if (code <= 48) return "🌫️";
-  if (code <= 57) return "🌦️";
-  if (code <= 67) return "🌧️";
-  if (code <= 77) return "🌨️";
-  if (code <= 82) return "🌦️";
-  return "⛈️";
-}
-
-function getCloudEmoji(cc: number): string {
-  if (cc < 10) return "☀️";
-  if (cc < 30) return "🌤️";
-  if (cc < 50) return "⛅";
-  if (cc < 70) return "☁️";
-  return "☁️";
+// Helper: punto cardinale
+function dirCardinal(deg: number): string {
+  if (deg == null) return "—";
+  const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+  return dirs[Math.round(deg / 22.5) % 16];
 }
 
 export default function AnalisiTab({ currentData, site, thermalDelta, selectedDateLabel }: AnalisiTabProps) {
-  const displayDate = selectedDateLabel || new Date().toLocaleDateString("it-IT", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-  const nowTime = getCurrentTime();
+  // Testo descrittivo generato con lo stile richiesto
+  const analisi = useMemo(() => {
+    if (!currentData) return null;
 
-  const situazioneLinee = generateSituazioneGenerale(currentData);
-  const termicoLinee = generateProfiloTermico(currentData);
-  const ventoLinee = generateVentoQuota(currentData);
-  const interpretazioneLinee = generateInterpretazione(currentData);
+    const t = currentData.temp;
+    const h = currentData.humidity;
+    const ws = currentData.windSpeed;
+    const wd = currentData.windDir;
+    const wg = currentData.windGust;
+    const c = currentData.clouds;
+    const rp = currentData.rainProb;
+    const ts = currentData.thermalStrength;
+    const td = typeof thermalDelta === "number" ? thermalDelta : null;
+    const li = currentData.liftingIndex;
+    const cape = currentData.cape;
 
-  // Converti direzione vento in punti cardinali
-  const windDirDeg = currentData?.windDir;
-  const windDirCardinal = degreesToCardinal(windDirDeg);
-  const windDirArrow = windArrow(windDirDeg);
-  const windDirFormatted = formatWindDir(windDirDeg);
+    // Sezione 1: Situazione Generale
+    const situGen: string[] = [];
+    // Temperatura
+    if (t != null) {
+      const tDesc = qDesc(t, [5, 12, 18, 25, 30, 35], ["molto fredda", "fredda", "fresca", "mite", "calda", "molto calda", "torrida"]);
+      situGen.push(`Temperatura al suolo: intorno ai ${Math.round(t)} °C, temperatura ${tDesc}.`);
+      situGen.push(`L'escursione termica giornaliera è tipica di una giornata di ${t > 20 ? "tarda primavera/estate" : "mezza stagione"}, con buon riscaldamento solare.`);
+    } else {
+      situGen.push("Temperatura al suolo: dati non disponibili.");
+    }
+    // Umidità
+    if (h != null) {
+      const hDesc = qDesc(h, [30, 50, 65, 80, 90], ["molto secca", "secca", "moderata", "umida", "molto umida", "estremamente umida"]);
+      const vis = h < 65 ? "buona visibilità e scarsa probabilità di nebbie" : "visibilità ridotta, possibile foschia";
+      situGen.push(`Umidità relativa: ${h}% — aria ${hDesc}, ${vis}.`);
+    }
+    // Vento
+    if (ws != null) {
+      let wText = `Vento: ${ws} km/h`;
+      if (wd != null) {
+        const card = dirCardinal(wd);
+        wText += ` da ${card} (${Math.round(wd)}°)`;
+      }
+      const wDesc = qDesc(ws, [3, 8, 15, 25, 35, 50], [
+        "calma di vento o brezza leggera",
+        "vento debole, condizioni favorevoli per volo libero",
+        "vento moderato, buone condizioni per veleggiamento",
+        "vento sostenuto, richiesta esperienza",
+        "vento forte, sconsigliato per piloti meno esperti",
+        "vento molto forte, condizioni potenzialmente pericolose",
+        "vento estremamente forte, attività sconsigliata"
+      ]);
+      wText += ` — ${wDesc}`;
+      if (wg != null && wg > ws * 1.5) {
+        wText += `. Raffiche: fino a ${wg} km/h, possibili turbolenze in prossimità delle creste.`;
+      } else if (wg != null) {
+        wText += `. Raffiche contenute (${wg} km/h).`;
+      }
+      situGen.push(wText + ".");
+    }
+    // Cielo
+    if (c != null) {
+      const cDesc = qDesc(c, [5, 20, 40, 60, 80], [
+        "sereno o quasi sereno",
+        "poco nuvoloso, qualche velatura",
+        "parzialmente nuvoloso, possibile sviluppo di cumuli pomeridiani",
+        "molto nuvoloso, termiche ridotte",
+        "coperto, termiche deboli",
+        "molto coperto, condizioni sfavorevoli"
+      ]);
+      let cText = `Cielo: ${cDesc}.`;
+      if (c >= 20 && c < 60 && rp != null) {
+        cText += rp < 20 ? " Nessun rischio di precipitazioni significative." : ` Probabilità di pioggia: ${rp}%.`;
+      }
+      situGen.push(cText);
+    }
+
+    // Sezione 2: Profilo termico e stabilità
+    const profiloTermico: string[] = [];
+    if (td != null) {
+      const gradDesc = qDesc(td, [0.3, 0.6, 0.9, 1.2], ["debolissimo", "debole", "moderato", "buono", "ottimo"]);
+      profiloTermico.push(`Il gradiente verticale di temperatura è ${gradDesc} (ΔT ${td.toFixed(2)}°C).`);
+      if (td < 0.5) {
+        profiloTermico.push("Atmosfera piuttosto stabile: la curva della temperatura e quella del punto di rugiada restano ben separate, assenza di convezione profonda.");
+      } else {
+        profiloTermico.push("Atmosfera instabile: possibile sviluppo di cumuli pomeridiani e termiche attive.");
+      }
+    }
+    if (li != null) {
+      if (li > 2) profiloTermico.push(`L'indice Lifted Index (LI) è positivo (${li}), confermando stabilità e scarsa probabilità di temporali.`);
+      else if (li > 0) profiloTermico.push(`L'indice Lifted Index (LI) è ${li}, atmosfera leggermente instabile ma senza rischi particolari.`);
+      else profiloTermico.push(`L'indice Lifted Index (LI) è ${li} — atmosfera instabile ⚠️, possibile attività temporalesca.`);
+    }
+    if (cape != null) {
+      profiloTermico.push(`Il valore CAPE è ${cape} J/kg, ${cape < 200 ? "molto basso, energia convettiva quasi nulla." : cape < 500 ? "moderato, possibile sviluppo di cumuli." : "elevato ⚠️, rischio di temporali."}`);
+    }
+    // Thermic
+    if (ts != null) {
+      profiloTermico.push(`Forza termica stimata: ${ts.toFixed(1)} m/s (${qDesc(ts, [0.3, 0.8, 1.5, 2.5, 4, 6], ["assente/debole", "debole", "debole-moderata", "moderata", "forte", "molto forte", "estremamente forte"])}).`);
+    }
+
+    // Sezione 3: Vento e dinamica in quota
+    const ventoQuota: string[] = [];
+    if (wd != null) {
+      const card = dirCardinal(wd);
+      ventoQuota.push(`Il profilo del vento mostra direzione prevalente da ${card} (${Math.round(wd)}°).`);
+      if (ws != null) {
+        if (ws < 10) ventoQuota.push("Intensità debole al suolo, tendente ad aumentare in quota fino a 15–25 km/h.");
+        else if (ws < 18) ventoQuota.push("Intensità moderata al suolo, con rinforzi in quota fino a 25–30 km/h sopra i 2000 m.");
+        else ventoQuota.push("Vento sostenuto sia al suolo che in quota.");
+      }
+      ventoQuota.push("Non si osservano inversioni termiche forti: la temperatura decresce regolarmente con la quota, segno di buon rimescolamento dell'aria.");
+    }
+
+    // Sezione 4: Previsione oraria sintetica
+    const previsioneOraria = [
+      { fascia: "Mattina (8–11)", condizioni: t != null && t > 18 ? "Sole pieno, temperatura in aumento, vento debole" : "Temperature fresche, vento calmo", note: "Ottima visibilità, aria secca" },
+      { fascia: "Pomeriggio (12–17)", condizioni: ts != null && ts > 1.5 ? "Termiche moderate, qualche cumulo innocuo" : "Termiche deboli, cielo perlopiù sereno", note: "Buone condizioni per volo libero" },
+      { fascia: "Sera (18–21)", condizioni: "Cielo sereno o poco nuvoloso, vento in calo", note: "Atmosfera stabile, temperatura in discesa" },
+    ];
+
+    // Sezione 5: Interpretazione
+    const interpretazione: string[] = [];
+    const condizioni: string[] = [];
+    if (ws != null && ws < 18) condizioni.push("vento ideale/gestionabile");
+    if (c != null && c < 50) condizioni.push("cielo sereno/poco nuvoloso");
+    if (ts != null && ts > 0.5) condizioni.push("termiche attive");
+    if (condizioni.length > 0) {
+      interpretazione.push(`Condizioni: ${condizioni.join(", ")}.`);
+    }
+    if (rp != null) {
+      if (rp < 10) interpretazione.push("Nessun rischio di precipitazioni. Condizioni ideali per attività outdoor.");
+      else if (rp < 30) interpretazione.push(`Bassa probabilità di pioggia (${rp}%). Rischio minimo.`);
+      else interpretazione.push(`Probabilità di pioggia: ${rp}%. Consigliata cautela.`);
+    }
+    interpretazione.push("Attenzione al vento in quota: sopra i 2500 m può essere più sostenuto, meglio restare su quote moderate.");
+    if (ts != null && ts > 3) interpretazione.push("Termiche forti: richiesta esperienza per gestire le ascendenze.");
+    else if (ts != null && ts > 1.5) interpretazione.push("Termiche moderate: condizioni ideali per veleggiamento.");
+
+    return { situGen, profiloTermico, ventoQuota, previsioneOraria, interpretazione };
+  }, [currentData, thermalDelta]);
+
+  if (!analisi) {
+    return (
+      <div className="text-center py-12 text-slate-400">
+        <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
+        <p className="text-sm">Dati non disponibili per l'analisi</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* ============================================ */}
-      {/* 1. SITUAZIONE GENERALE */}
-      {/* ============================================ */}
-      <section className="bg-gradient-to-br from-slate-900/70 to-slate-800/40 border-2 border-emerald-500/30 rounded-3xl overflow-hidden shadow-xl shadow-emerald-500/10">
-        <div className="bg-gradient-to-r from-emerald-800/40 to-amber-800/20 px-6 py-4 flex items-center justify-between border-b border-emerald-500/20">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center">
-              <Sun className="w-6 h-6 text-yellow-300" />
-            </div>
-            <div>
-              <h3 className="text-xl font-black text-white tracking-tight">SITUAZIONE GENERALE</h3>
-              <p className="text-xs text-emerald-200/60 font-semibold tracking-wider uppercase">{site.name} · {displayDate}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-800/60 px-3 py-2 rounded-xl border border-slate-600/40">
-            <Clock className="w-3.5 h-3.5" />
-            {nowTime}
-          </div>
-        </div>
-        <div className="px-6 py-5 space-y-4">
-          {situazioneLinee.map((linea, i) => (
-            <p key={i} className="text-base md:text-lg text-slate-200 leading-relaxed font-medium">
-              <span className="text-emerald-400 font-bold text-xl mr-2">▸</span>
-              {linea}
-            </p>
-          ))}
-          {/* Statistiche rapide */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-slate-700/40">
-            <div className="bg-slate-800/60 rounded-2xl p-4 text-center border border-slate-700/40">
-              <Thermometer className="w-5 h-5 text-amber-400 mx-auto mb-1" />
-              <div className="text-2xl font-black text-white">{currentData?.temperature != null ? Math.round(currentData.temperature) : "--"}°</div>
-              <div className="text-xs text-slate-400 font-medium">Temperatura</div>
-            </div>
-            <div className="bg-slate-800/60 rounded-2xl p-4 text-center border border-slate-700/40">
-              <Wind className="w-5 h-5 text-sky-400 mx-auto mb-1" />
-              <div className="text-2xl font-black text-white">{currentData?.windSpeed != null ? Math.round(currentData.windSpeed) : "--"}</div>
-              <div className="text-xs text-slate-400 font-medium">Vento km/h</div>
-            </div>
-            <div className="bg-slate-800/60 rounded-2xl p-4 text-center border border-slate-700/40">
-              <Cloud className="w-5 h-5 text-slate-400 mx-auto mb-1" />
-              <div className="text-2xl font-black text-white">{currentData?.cloudCover != null ? currentData.cloudCover : "--"}%</div>
-              <div className="text-xs text-slate-400 font-medium">Nuvolosità</div>
-            </div>
-            <div className="bg-slate-800/60 rounded-2xl p-4 text-center border border-slate-700/40">
-              <Droplets className="w-5 h-5 text-blue-400 mx-auto mb-1" />
-              <div className="text-2xl font-black text-white">{currentData?.humidity != null ? currentData.humidity : "--"}%</div>
-              <div className="text-xs text-slate-400 font-medium">Umidità</div>
-            </div>
-          </div>
-        </div>
-      </section>
+    <div className="space-y-5">
+      {/* Sezione 1: Situazione Generale */}
+      <SectionCard icon={Sun} title="Situazione generale" iconColor="text-amber-400" gradient="from-amber-500/5">
+        {analisi.situGen.map((line, i) => (
+          <p key={i} className="text-sm text-slate-300 leading-relaxed">{line}</p>
+        ))}
+      </SectionCard>
 
-      {/* ============================================ */}
-      {/* 2. PROFILO TERMICO E STABILITÀ */}
-      {/* ============================================ */}
-      <section className="bg-gradient-to-br from-slate-900/70 to-slate-800/40 border-2 border-amber-500/30 rounded-3xl overflow-hidden shadow-xl shadow-amber-500/10">
-        <div className="bg-gradient-to-r from-amber-800/40 to-orange-800/20 px-6 py-4 flex items-center justify-between border-b border-amber-500/20">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center">
-              <Thermometer className="w-6 h-6 text-amber-300" />
-            </div>
-            <div>
-              <h3 className="text-xl font-black text-white tracking-tight">PROFILO TERMICO E STABILITÀ</h3>
-              <p className="text-xs text-amber-200/60 font-semibold tracking-wider uppercase">Analisi della colonna d'aria</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-800/60 px-3 py-2 rounded-xl border border-slate-600/40">
-            <Clock className="w-3.5 h-3.5" />
-            {nowTime}
-          </div>
-        </div>
-        <div className="px-6 py-5 space-y-4">
-          {termicoLinee.map((linea, i) => (
-            <p key={i} className="text-base md:text-lg text-slate-200 leading-relaxed font-medium">
-              <span className="text-amber-400 font-bold text-xl mr-2">▸</span>
-              {linea}
-            </p>
-          ))}
-          {/* Indicatori termici */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-slate-700/40">
-            <div className="bg-slate-800/60 rounded-2xl p-4 text-center border border-slate-700/40">
-              <ArrowUp className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
-              <div className="text-2xl font-black text-emerald-300">{thermalDelta != null ? thermalDelta.toFixed(1) : "--"}°</div>
-              <div className="text-xs text-slate-400 font-medium">Escursione termica</div>
-            </div>
-            <div className="bg-slate-800/60 rounded-2xl p-4 text-center border border-slate-700/40">
-              <Gauge className="w-5 h-5 text-purple-400 mx-auto mb-1" />
-              <div className="text-2xl font-black text-purple-300">{currentData?.pressure != null ? Math.round(currentData.pressure) : "--"}</div>
-              <div className="text-xs text-slate-400 font-medium">Pressione hPa</div>
-            </div>
-            <div className="bg-slate-800/60 rounded-2xl p-4 text-center border border-slate-700/40">
-              <Eye className="w-5 h-5 text-cyan-400 mx-auto mb-1" />
-              <div className="text-2xl font-black text-cyan-300">{currentData?.dewPoint != null ? Math.round(currentData.dewPoint) : "--"}°</div>
-              <div className="text-xs text-slate-400 font-medium">Punto di rugiada</div>
-            </div>
-            <div className="bg-slate-800/60 rounded-2xl p-4 text-center border border-slate-700/40">
-              <TrendingUp className="w-5 h-5 text-orange-400 mx-auto mb-1" />
-              <div className="text-2xl font-black text-orange-300">{thermalDelta != null ? (thermalDelta * 8).toFixed(0) : "--"}</div>
-              <div className="text-xs text-slate-400 font-medium">Indice termico</div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Sezione 2: Profilo termico e stabilità */}
+      <SectionCard icon={Thermometer} title="Profilo termico e stabilità" iconColor="text-orange-400" gradient="from-orange-500/5">
+        {analisi.profiloTermico.length > 0 ? (
+          analisi.profiloTermico.map((line, i) => (
+            <p key={i} className="text-sm text-slate-300 leading-relaxed">{line}</p>
+          ))
+        ) : (
+          <p className="text-sm text-slate-500 italic">Dati termici non disponibili per questa fascia oraria.</p>
+        )}
+      </SectionCard>
 
-      {/* ============================================ */}
-      {/* 3. VENTO E DINAMICA IN QUOTA — CON PUNTI CARDINALI */}
-      {/* ============================================ */}
-      <section className="bg-gradient-to-br from-slate-900/70 to-slate-800/40 border-2 border-sky-500/30 rounded-3xl overflow-hidden shadow-xl shadow-sky-500/10">
-        <div className="bg-gradient-to-r from-sky-800/40 to-blue-800/20 px-6 py-4 flex items-center justify-between border-b border-sky-500/20">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center">
-              <Wind className="w-6 h-6 text-sky-300" />
-            </div>
-            <div>
-              <h3 className="text-xl font-black text-white tracking-tight">VENTO E DINAMICA IN QUOTA</h3>
-              <p className="text-xs text-sky-200/60 font-semibold tracking-wider uppercase">Profilo verticale del vento</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-800/60 px-3 py-2 rounded-xl border border-slate-600/40">
-            <Clock className="w-3.5 h-3.5" />
-            {nowTime}
-          </div>
-        </div>
-        <div className="px-6 py-5 space-y-4">
-          {ventoLinee.map((linea, i) => (
-            <p key={i} className="text-base md:text-lg text-slate-200 leading-relaxed font-medium">
-              <span className="text-sky-400 font-bold text-xl mr-2">▸</span>
-              {linea}
-            </p>
-          ))}
-          <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-slate-700/40">
-            <div className="bg-slate-800/60 rounded-2xl px-5 py-3 border border-slate-700/40 flex items-center gap-3">
-              <Compass className="w-5 h-5 text-sky-400" />
-              <div>
-                <div className="text-lg font-black text-white whitespace-nowrap">
-                  {windDirFormatted}
-                </div>
-                <div className="text-xs text-slate-400 font-medium">Direzione vento</div>
-              </div>
-            </div>
-            <div className="bg-slate-800/60 rounded-2xl px-5 py-3 border border-slate-700/40 flex items-center gap-3">
-              <Wind className="w-5 h-5 text-red-400" />
-              <div>
-                <div className="text-lg font-black text-white">{currentData?.windGust != null ? `${Math.round(currentData.windGust)} km/h` : "--"}</div>
-                <div className="text-xs text-slate-400 font-medium">Raffiche massime</div>
-              </div>
-            </div>
-            {/* Aggiungo anche la direzione in esteso */}
-            <div className="bg-slate-800/60 rounded-2xl px-5 py-3 border border-slate-700/40 flex items-center gap-3">
-              <span className="text-2xl">{windDirArrow}</span>
-              <div>
-                <div className="text-lg font-black text-white">
-                  {degreesToCardinal(windDirDeg)} — {windDirCardinal === "N" ? "Nord" : windDirCardinal === "NE" ? "Nord-Est" : windDirCardinal === "E" ? "Est" : windDirCardinal === "SE" ? "Sud-Est" : windDirCardinal === "S" ? "Sud" : windDirCardinal === "SW" ? "Sud-Ovest" : windDirCardinal === "W" ? "Ovest" : windDirCardinal === "NW" ? "Nord-Ovest" : "—"}
-                </div>
-                <div className="text-xs text-slate-400 font-medium">Punto cardinale</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Sezione 3: Vento e dinamica in quota */}
+      <SectionCard icon={Compass} title="Vento e dinamica in quota" iconColor="text-sky-400" gradient="from-sky-500/5">
+        {analisi.ventoQuota.map((line, i) => (
+          <p key={i} className="text-sm text-slate-300 leading-relaxed">{line}</p>
+        ))}
+      </SectionCard>
 
-      {/* ============================================ */}
-      {/* 4. TABELLA ORARIA 9:00–19:00 — CON DIREZIONE IN CARDINALI */}
-      {/* ============================================ */}
-      <section className="bg-gradient-to-br from-slate-900/70 to-slate-800/40 border-2 border-orange-500/30 rounded-3xl overflow-hidden shadow-xl shadow-orange-500/10">
-        <div className="bg-gradient-to-r from-orange-800/40 to-amber-800/20 px-6 py-4 flex items-center justify-between border-b border-orange-500/20">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-500/20 border border-orange-400/40 flex items-center justify-center">
-              <Clock className="w-6 h-6 text-orange-300" />
-            </div>
-            <div>
-              <h3 className="text-xl font-black text-white tracking-tight">PREVISIONE ORARIA 9:00 – 19:00</h3>
-              <p className="text-xs text-orange-200/60 font-semibold tracking-wider uppercase">Dettaglio ora per ora</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-800/60 px-3 py-2 rounded-xl border border-slate-600/40">
-            <Calendar className="w-3.5 h-3.5" />
-            {displayDate}
-          </div>
-        </div>
+      {/* Sezione 4: Previsione oraria */}
+      <SectionCard icon={Clock} title="Previsione per la giornata" iconColor="text-emerald-400" gradient="from-emerald-500/5">
         <div className="overflow-x-auto">
-          <table className="w-full text-base">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-800/80 border-b-2 border-orange-500/30">
-                <th className="text-left px-5 py-3 font-black text-orange-300 uppercase tracking-wider text-sm">Ora</th>
-                <th className="text-left px-4 py-3 font-black text-orange-300 uppercase tracking-wider text-sm">Condizioni</th>
-                <th className="text-left px-4 py-3 font-black text-orange-300 uppercase tracking-wider text-sm hidden md:table-cell">T</th>
-                <th className="text-left px-4 py-3 font-black text-orange-300 uppercase tracking-wider text-sm hidden md:table-cell">Vento</th>
-                <th className="text-left px-4 py-3 font-black text-orange-300 uppercase tracking-wider text-sm hidden md:table-cell">Dir</th>
-                <th className="text-left px-4 py-3 font-black text-orange-300 uppercase tracking-wider text-sm hidden md:table-cell">Raffica</th>
-                <th className="text-left px-4 py-3 font-black text-orange-300 uppercase tracking-wider text-sm hidden md:table-cell">Nuvole</th>
-                <th className="text-left px-4 py-3 font-black text-orange-300 uppercase tracking-wider text-sm">Note</th>
+              <tr className="border-b border-slate-700">
+                <th className="text-left py-2 pr-4 text-slate-400 font-medium">Fascia oraria</th>
+                <th className="text-left py-2 pr-4 text-slate-400 font-medium">Condizioni previste</th>
+                <th className="text-left py-2 text-slate-400 font-medium">Note</th>
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: 11 }, (_, i) => i + 9).map((ora) => {
-                const isCurrent = ora === new Date().getHours();
-                // Simula direzione vento per ogni ora (stesso dato con variazioni simulate)
-                const oraWindDir = (currentData?.windDir || 180) + (ora - 12) * 5;
-                const oraCardinal = degreesToCardinal(oraWindDir);
-                const oraArrow = windArrow(oraWindDir);
-                return (
-                  <tr key={ora} className={`border-b border-slate-700/30 transition-all ${
-                    isCurrent ? "bg-emerald-900/20 border-l-4 border-l-emerald-400" : "hover:bg-slate-700/30"
-                  }`}>
-                    <td className="px-5 py-4 whitespace-nowrap">
-                      <span className={`text-lg font-black tabular-nums ${
-                        isCurrent ? "text-emerald-300" : "text-white"
-                      }`}>
-                        {String(ora).padStart(2, "0")}:00
-                      </span>
-                      {isCurrent && <span className="ml-2 text-xs text-emerald-400 font-bold animate-pulse">ADESSO</span>}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <span className="text-2xl mr-2">{getEmojiFromCode(currentData?.weatherCode || 0)}</span>
-                      <span className="text-slate-200 font-semibold text-sm">{getEmojiFromCode(currentData?.weatherCode || 0).includes("☀️") ? "Sole" : "Nuvoloso"}</span>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap hidden md:table-cell">
-                      <span className="text-lg font-black text-amber-300">
-                        {currentData?.temperature != null ? Math.round(currentData.temperature) : "--"}°
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap hidden md:table-cell">
-                      <span className="text-lg font-black text-sky-300">
-                        {currentData?.windSpeed != null ? Math.round(currentData.windSpeed) : "--"}
-                      </span>
-                      <span className="text-xs text-slate-500 ml-1">km/h</span>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap hidden md:table-cell">
-                      <span className="text-lg font-bold text-sky-300" title={`${Math.round(oraWindDir)}°`}>
-                        {oraArrow} {oraCardinal}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap hidden md:table-cell">
-                      <span className={`text-lg font-black ${
-                        currentData?.windGust && currentData.windGust > 30 ? "text-red-400" : "text-slate-300"
-                      }`}>
-                        {currentData?.windGust != null ? Math.round(currentData.windGust) : "--"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap hidden md:table-cell">
-                      <span className="text-lg">{getCloudEmoji(currentData?.cloudCover || 0)}</span>
-                      <span className="text-sm text-slate-400 ml-1">{currentData?.cloudCover || 0}%</span>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-slate-400 font-medium leading-snug">
-                      {ora <= 10 ? "Mattino fresco, termiche in attivazione" :
-                       ora <= 13 ? "Termiche in sviluppo" :
-                       ora <= 16 ? "Picco termico" :
-                       "Termiche in calo"}
-                    </td>
-                  </tr>
-                );
-              })}
+              {analisi.previsioneOraria.map((row, i) => (
+                <tr key={i} className="border-b border-slate-800/50">
+                  <td className="py-2 pr-4 text-white font-medium whitespace-nowrap">{row.fascia}</td>
+                  <td className="py-2 pr-4 text-slate-300">{row.condizioni}</td>
+                  <td className="py-2 text-slate-400">{row.note}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
-      </section>
+      </SectionCard>
 
-      {/* ============================================ */}
-      {/* 5. INTERPRETAZIONE PER ATTIVITÀ OUTDOOR */}
-      {/* ============================================ */}
-      <section className="bg-gradient-to-br from-orange-900/30 to-amber-900/15 border-2 border-amber-500/30 rounded-3xl overflow-hidden shadow-xl shadow-amber-500/10">
-        <div className="bg-gradient-to-r from-amber-800/40 to-orange-800/20 px-6 py-4 flex items-center justify-between border-b border-amber-500/20">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-amber-300" />
-            </div>
-            <div>
-              <h3 className="text-xl font-black text-white tracking-tight">🪂 INTERPRETAZIONE PER VOLO LIBERO</h3>
-              <p className="text-xs text-amber-200/60 font-semibold tracking-wider uppercase">Consigli operativi</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-800/60 px-3 py-2 rounded-xl border border-slate-600/40">
-            <Clock className="w-3.5 h-3.5" />
-            {nowTime}
-          </div>
+      {/* Sezione 5: Interpretazione */}
+      <SectionCard icon={Activity} title="Interpretazione per attività outdoor / volo libero" iconColor="text-purple-400" gradient="from-purple-500/5">
+        {analisi.interpretazione.map((line, i) => (
+          <p key={i} className="text-sm text-slate-300 leading-relaxed">{line}</p>
+        ))}
+      </SectionCard>
+    </div>
+  );
+}
+
+// Componente per le card delle sezioni
+function SectionCard({
+  icon: Icon,
+  title,
+  children,
+  iconColor,
+  gradient,
+}: {
+  icon: LucideIcon;
+  title: string;
+  children: React.ReactNode;
+  iconColor: string;
+  gradient: string;
+}) {
+  return (
+    <div className={`rounded-2xl bg-gradient-to-br ${gradient} to-slate-900/50 border border-slate-700/40 p-5`}>
+      <div className="flex items-center gap-2 mb-4">
+        <div className={`p-2 rounded-xl bg-slate-800/60 border border-slate-700/40`}>
+          <Icon className={`w-5 h-5 ${iconColor}`} />
         </div>
-        <div className="px-6 py-5 space-y-4">
-          <div className="flex items-start gap-3 bg-emerald-900/30 border border-emerald-500/30 rounded-2xl p-4">
-            <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 mt-1" />
-            <div>
-              <p className="text-base md:text-lg text-emerald-200 font-bold">VALUTAZIONE COMPLESSIVA</p>
-              {interpretazioneLinee.slice(0, 1).map((linea, i) => (
-                <p key={i} className="text-base text-slate-200 leading-relaxed mt-1">{linea}</p>
-              ))}
-            </div>
-          </div>
-          {interpretazioneLinee.slice(1).map((linea, i) => (
-            <p key={i} className="text-base md:text-lg text-slate-200 leading-relaxed font-medium ml-6">
-              <span className="text-amber-400 font-bold text-xl mr-2">▸</span>
-              {linea}
-            </p>
-          ))}
-        </div>
-      </section>
+        <h3 className="text-base font-bold text-white tracking-tight">{title}</h3>
+      </div>
+      <div className="space-y-2">
+        {children}
+      </div>
     </div>
   );
 }
