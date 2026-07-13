@@ -11,6 +11,7 @@ interface RawMeteoResponse {
 export function transformHourlyData(raw: RawMeteoResponse["hourly"]): HourData[] {
   const len = raw.time.length;
   const result: HourData[] = [];
+
   for (let i = 0; i < len; i++) {
     result.push({
       time: new Date(raw.time[i]),
@@ -49,6 +50,7 @@ export function transformHourlyData(raw: RawMeteoResponse["hourly"]): HourData[]
       sunshineDuration: (raw.sunshine_duration?.[i] as number) ?? 0,
     });
   }
+
   return result;
 }
 
@@ -76,6 +78,7 @@ export function transformCurrentData(raw: RawMeteoResponse["current"]): CurrentD
 export function transformDailyData(raw: RawMeteoResponse["daily"]): DailyData[] {
   const len = raw.time.length;
   const result: DailyData[] = [];
+
   for (let i = 0; i < len; i++) {
     result.push({
       time: new Date(raw.time[i]),
@@ -103,5 +106,6 @@ export function transformDailyData(raw: RawMeteoResponse["daily"]): DailyData[] 
       et0Sum: raw.et0_fao_evapotranspiration[i] as number,
     });
   }
+
   return result;
 }

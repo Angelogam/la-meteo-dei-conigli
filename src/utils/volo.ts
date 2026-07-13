@@ -25,6 +25,7 @@ export function getVoloStatus(current: HourData | null | undefined): VoloStatusI
 
   const { weatherCode, windSpeed, windGusts, precipitation } = current;
 
+  // Temporale
   if ([95, 96, 99].includes(weatherCode)) {
     return {
       status: "temporale",
@@ -35,6 +36,7 @@ export function getVoloStatus(current: HourData | null | undefined): VoloStatusI
     };
   }
 
+  // Pioggia intensa
   if ([80, 81, 82].includes(weatherCode) || (precipitation && precipitation > 2)) {
     return {
       status: "pioggia",
@@ -45,6 +47,7 @@ export function getVoloStatus(current: HourData | null | undefined): VoloStatusI
     };
   }
 
+  // Pioggia leggera
   if ([51, 53, 55, 56, 57, 61, 63].includes(weatherCode) || (precipitation && precipitation > 0.5)) {
     return {
       status: "non_volabile",
@@ -55,6 +58,7 @@ export function getVoloStatus(current: HourData | null | undefined): VoloStatusI
     };
   }
 
+  // Vento troppo forte
   if (windSpeed > 40) {
     return {
       status: "non_volabile",
@@ -65,6 +69,7 @@ export function getVoloStatus(current: HourData | null | undefined): VoloStatusI
     };
   }
 
+  // Calma di vento (sotto 5 km/h)
   if (windSpeed < 5) {
     return {
       status: "calma",
@@ -75,6 +80,7 @@ export function getVoloStatus(current: HourData | null | undefined): VoloStatusI
     };
   }
 
+  // Rischioso per raffiche forti
   if ((windGusts && windGusts > 35) || windSpeed > 30) {
     return {
       status: "rischioso",
@@ -85,6 +91,7 @@ export function getVoloStatus(current: HourData | null | undefined): VoloStatusI
     };
   }
 
+  // Discreto
   if (windSpeed >= 18 && windSpeed <= 25) {
     return {
       status: "discreto",
@@ -95,6 +102,7 @@ export function getVoloStatus(current: HourData | null | undefined): VoloStatusI
     };
   }
 
+  // Buono – condizioni ideali per termica
   if (windSpeed >= 9 && windSpeed < 18) {
     return {
       status: "buono",
@@ -105,6 +113,7 @@ export function getVoloStatus(current: HourData | null | undefined): VoloStatusI
     };
   }
 
+  // Ottimo – vento leggero, bel tempo
   if (windSpeed >= 5 && windSpeed < 9) {
     return {
       status: "ottimo",
@@ -115,6 +124,7 @@ export function getVoloStatus(current: HourData | null | undefined): VoloStatusI
     };
   }
 
+  // fallback
   return {
     status: "non_volabile",
     label: "N/D",

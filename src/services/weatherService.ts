@@ -7,19 +7,149 @@ export class WeatherService {
     const params = new URLSearchParams({
       latitude: lat.toString(),
       longitude: lon.toString(),
-      hourly: "temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,precipitation_probability,precipitation,rain,showers,snowfall,weather_code,pressure_msl,surface_pressure,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,evapotranspiration,et0_fao_evapotranspiration,vapour_pressure_deficit,wind_speed_10m,wind_direction_10m,wind_gusts_10m,soil_temperature_0cm,soil_moisture_0_to_1cm,uv_index,temperature_80m,temperature_120m,shortwave_radiation,direct_radiation,diffuse_radiation,direct_normal_irradiance,terrestrial_radiation,sunshine_duration",
-      daily: "temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,daylight_duration,sunshine_duration,uv_index_max,uv_index_clear_sky_max,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,weather_code,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,et0_fao_evapotranspiration",
-      current: "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m",
+      hourly: [
+        "temperature_2m",
+        "relative_humidity_2m",
+        "dew_point_2m",
+        "apparent_temperature",
+        "precipitation_probability",
+        "precipitation",
+        "rain",
+        "showers",
+        "snowfall",
+        "weather_code",
+        "pressure_msl",
+        "surface_pressure",
+        "cloud_cover",
+        "cloud_cover_low",
+        "cloud_cover_mid",
+        "cloud_cover_high",
+        "evapotranspiration",
+        "et0_fao_evapotranspiration",
+        "vapour_pressure_deficit",
+        "wind_speed_10m",
+        "wind_direction_10m",
+        "wind_gusts_10m",
+        "soil_temperature_0cm",
+        "soil_moisture_0_to_1cm",
+        "uv_index",
+        "temperature_80m",
+        "temperature_120m",
+        "shortwave_radiation",
+        "direct_radiation",
+        "diffuse_radiation",
+        "direct_normal_irradiance",
+        "terrestrial_radiation",
+        "sunshine_duration",
+      ].join(","),
+      daily: [
+        "temperature_2m_max",
+        "temperature_2m_min",
+        "apparent_temperature_max",
+        "apparent_temperature_min",
+        "sunrise",
+        "sunset",
+        "daylight_duration",
+        "sunshine_duration",
+<dyad-write path="src/services/weatherService.ts" description="Fix completo del weatherService">
+"use client";
+
+const BASE_URL = "https://api.open-meteo.com/v1/forecast";
+
+export class WeatherService {
+  private buildUrl(lat: number, lon: number): string {
+    const params = new URLSearchParams({
+      latitude: lat.toString(),
+      longitude: lon.toString(),
+      hourly: [
+        "temperature_2m",
+        "relative_humidity_2m",
+        "dew_point_2m",
+        "apparent_temperature",
+        "precipitation_probability",
+        "precipitation",
+        "rain",
+        "showers",
+        "snowfall",
+        "weather_code",
+        "pressure_msl",
+        "surface_pressure",
+        "cloud_cover",
+        "cloud_cover_low",
+        "cloud_cover_mid",
+        "cloud_cover_high",
+        "evapotranspiration",
+        "et0_fao_evapotranspiration",
+        "vapour_pressure_deficit",
+        "wind_speed_10m",
+        "wind_direction_10m",
+        "wind_gusts_10m",
+        "soil_temperature_0cm",
+        "soil_moisture_0_to_1cm",
+        "uv_index",
+        "temperature_80m",
+        "temperature_120m",
+        "shortwave_radiation",
+        "direct_radiation",
+        "diffuse_radiation",
+        "direct_normal_irradiance",
+        "terrestrial_radiation",
+        "sunshine_duration",
+      ].join(","),
+      daily: [
+        "temperature_2m_max",
+        "temperature_2m_min",
+        "apparent_temperature_max",
+        "apparent_temperature_min",
+        "sunrise",
+        "sunset",
+        "daylight_duration",
+        "sunshine_duration",
+        "uv_index_max",
+        "uv_index_clear_sky_max",
+        "precipitation_sum",
+        "rain_sum",
+        "showers_sum",
+        "snowfall_sum",
+        "precipitation_hours",
+        "precipitation_probability_max",
+        "weather_code",
+        "wind_speed_10m_max",
+        "wind_gusts_10m_max",
+        "wind_direction_10m_dominant",
+        "shortwave_radiation_sum",
+        "et0_fao_evapotranspiration",
+      ].join(","),
+      current: [
+        "temperature_2m",
+        "relative_humidity_2m",
+        "apparent_temperature",
+        "is_day",
+        "precipitation",
+        "rain",
+        "showers",
+        "snowfall",
+        "weather_code",
+        "cloud_cover",
+        "pressure_msl",
+        "surface_pressure",
+        "wind_speed_10m",
+        "wind_direction_10m",
+        "wind_gusts_10m",
+      ].join(","),
       timezone: "auto",
       forecast_days: "7",
       models: "best_match",
     });
+
     return `${BASE_URL}?${params.toString()}`;
   }
 
   private parseData(data: any): any {
-    if (!data?.hourly?.time?.length) throw new Error("Dati non validi");
-    
+    if (!data?.hourly?.time?.length) {
+      throw new Error("Dati non validi");
+    }
+
     const hourly = data.hourly.time.map((t: string, i: number) => ({
       time: new Date(t),
       temperature: data.hourly.temperature_2m[i],
@@ -113,9 +243,11 @@ export class WeatherService {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
+
         const url = this.buildUrl(lat, lon);
         const response = await fetch(url, { signal: controller.signal });
         clearTimeout(timeoutId);
+
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         if (!data?.hourly?.time?.length) throw new Error('Dati non validi');
