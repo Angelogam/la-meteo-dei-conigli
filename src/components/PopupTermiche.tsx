@@ -5,8 +5,8 @@ import { X, Clock, Thermometer, Wind, Droplets, Cloud, Gauge, CloudRain } from "
 import type { HourData } from "@/types/meteo";
 import { wic } from "@/utils/meteo";
 import { getVoloStatus } from "@/utils/volo";
-import { generaTermicheOrarie } from "@/utils/termiche";
 import GraficoTermiche from "@/components/GraficoTermiche";
+import { calcolaTermiche } from "@/utils/termiche";
 
 interface PopupTermicheProps {
   siteName: string;
@@ -17,8 +17,18 @@ interface PopupTermicheProps {
 
 export default function PopupTermiche({ siteName, siteAltitude, hourlyData, onClose }: PopupTermicheProps) {
   const now = new Date();
-  const termiche = generaTermicheOrarie(hourlyData, siteAltitude);
   const oraCorrente = now.getHours();
+
+  // Calcola termiche per ogni ora
+  const termiche = hourlyData
+    .filter(h => {
+      const hh = h.time.getHours();
+      return hh >= 8 && hh <= 19;
+    })
+    .map(h => ({
+      hour: h.time.getHours(),
+      termiche: calcolaTermiche(h, siteAltitude),
+    }));
 
   if (!hourlyData || hourlyData.length === 0) {
     return null;
