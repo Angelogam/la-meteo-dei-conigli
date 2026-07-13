@@ -9,134 +9,242 @@ export interface TermicheData {
   rateo: number;        // Rateo di salita (m/s)
   label: string;        // Descrizione
   colore: string;       // Colore esadecimale
-  gradienteReale: number; // Gradiente termico reale °C/100m (per debugging/trasparenza)
+  gradienteReale: number; // Gradiente termico reale °C/100m
 }
 
+const GRADIENTE_SECCO = 0.98;
+const QUOTE_WIND: number[] = [0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000];
+
 /**
- * Calcola le termiche usando parametri reali da Open-Meteo:
- * - Gradiente termico verticale reale (se disponibile: diff temp 2m vs 80m/120m)
- * - Vento a diverse quote (10m, 80m, 120m, 180m)
- * - Pressione atmosferica
- * - UV index
- * - Temperatura suolo
- * - Spread temperatura-rugiada per base nuvole
+ * Calcola le termiche usando DATI REALI da Open-Meteo:
+ * - Gradiente termico verticale reale (temp 2m vs 80m/120m)
+ * - Vento a tutte le quote (da windProfile: 0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000m)
+ * - Pressione, UV, temperatura suolo, spread temperatura-rugiada
  */
 export function calcolaTermiche(weather: HourData, altitude: number): TermicheData {
   const {
     temperature, dewPoint, humidity, windSpeed, windDir,
     wind80m, windDir80m,
-    wind120m, windDir120m,
-    wind180m, windDir180m,
     temp80m, temp120m,
     cloudCover, pressure, precipitation, uvIndex,
-    soilTemp, soilMoisture,
+    soilTemp, soilMoisture, windProfile,
   } = weather;
 
   // Se piove, niente termiche
   if (precipitation > 1) {
     return {
       base: 0, top: 0, forza: 0, rateo: 0,
-      label: "Niente termiche (pioggia)",
+      label: "❌ Niente termiche (pioggia)",
       colore: "#475569", gradienteReale: 0,
     };
   }
 
-  // --- 1. Gradiente termico reale (se possibile) ---
-  // Gradiente secco adiabatico: ~0.98°C/100m
-  const GRADIENTE_SECCO = 0.98;
+  // --- 1. Gradiente termico reale ---
   let gradienteReale = GRADIENTE_SECCO; // fallback
 
   if (temp80m != null) {
-    // Gradiente tra 2m e 80m
-    const diffAlt = 80 - 2; // 78m
+    const diffAlt = 78; // 80m - 2m
     const diffTemp = temperature - temp80m;
-    gradienteReale = (diffTemp / diffAlt) * 100; // °C/100m
+    gradienteReale = (diffTemp / diffAlt) * 100;
   } else if (temp120m != null) {
-    const diffAlt = 120 - 2;
+    const diffAlt = 118;
     const diffTemp = temperature - temp120m;
     gradienteReale = (diffTemp / diffAlt) * 100;
   }
 
-  // --- 2. Spread temperatura-rugiada (base nuvole) ---
+  // --- 2. Spread e base nuvole ---
   const spread = temperature - dewPoint;
-  const cloudBase = Math.round(Math.max(100, spread * 125)); // LCL approssimato in metri AGL
+  const cloudBase = Math.round(Math.max(100, spread * 125));
 
-  // --- 3. CAPE stimato realistico ---
-  // Base: spread * 80 + correzione per umidità e gradiente
+  // --- 3. CAPE stimato ---
   let capeBase = spread * 80;
-  if (gradienteReale > GRADIENTE_SECCO) capeBase *= 1.4; // sovra-adiabatico = forte
+  if (gradienteReale > GRADIENTE_SECCO) capeBase *= 1.4;
   else if (gradienteReale > GRADIENTE_SECCO * 0.7) capeBase *= 1.0;
-  else capeBase *= 0.5; // gradiente debole
+  else capeBase *= 0.5;
 
-  // bonus temperatura
   if (temperature > 25) capeBase += 300;
   else if (temperature > 20) capeBase += 200;
   else if (temperature > 15) capeBase += 100;
 
-  // bonus UV
   if (uvIndex != null && uvIndex > 5) capeBase *= 1.3;
   else if (uvIndex != null && uvIndex > 3) capeBase *= 1.1;
 
-  // bonus suolo caldo
   if (soilTemp != null && soilTemp > temperature) capeBase *= 1.2;
   else if (soilTemp != null && soilTemp < temperature - 5) capeBase *= 0.7;
 
-  // bonus pressione alta
   if (pressure != null && pressure > 1020) capeBase *= 1.2;
   else if (pressure != null && pressure < 1005) capeBase *= 0.6;
 
   const cape = Math.max(0, Math.round(capeBase));
 
-  // --- 4. Velocità termica base da CAPE ---
-  // formula: v = sqrt(2 * CAPE / H) dove H è spessore strato convettivo
+  // --- 4. Velocità termica base ---
   const H = Math.max(300, cloudBase + 500);
-  const thermalSpeed = Math.sqrt(Math.max(0.01, (2 * cape) / H)) * 3.6; // in m/s
+  const thermalSpeed = Math.sqrt(Math.max(0.01, (2 * cape) / H)) * 3.6;
 
-  // --- 5. Fattori correttivi basati su vento reale in quota ---
+  // --- 5. Fattori correttivi basati su DATI REALI DI VENTO IN QUOTA ---
 
-  // Vento medio al suolo e shear verticale
+  // Prendi i venti reali dal windProfile (se disponibili)
+  const getWindAtHeight = (height: number): { speed: number; dir: number } | null<dyad-write path="src/utils/termiche.ts" description="Completo calcolaTermiche con dati reali di vento in quota da windProfile">
+"use client";
+
+import type { HourData } from "@/types/meteo";
+
+export interface TermicheData {
+  base: number;         // Quota base termica (m AGL)
+  top: number;          // Quota massima raggiungibile (m AGL)
+  forza: number;        // Forza termica 0-10
+  rateo: number;        // Rateo di salita (m/s)
+  label: string;        // Descrizione
+  colore: string;       // Colore esadecimale
+  gradienteReale: number; // Gradiente termico reale °C/100m
+}
+
+const GRADIENTE_SECCO = 0.98;
+
+/**
+ * Calcola le termiche usando DATI REALI da Open-Meteo:
+ * - Gradiente termico verticale reale (temp 2m vs 80m/120m)
+ * - Vento a tutte le quote (da windProfile: 0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000m)
+ * - Pressione, UV, temperatura suolo, spread temperatura-rugiada
+ */
+export function calcolaTermiche(weather: HourData, altitude: number): TermicheData {
+  const {
+    temperature, dewPoint, humidity, windSpeed, windDir,
+    temp80m, temp120m,
+    cloudCover, pressure, precipitation, uvIndex,
+    soilTemp, soilMoisture, windProfile,
+  } = weather;
+
+  // Se piove, niente termiche
+  if (precipitation > 1) {
+    return {
+      base: 0, top: 0, forza: 0, rateo: 0,
+      label: "❌ Niente termiche (pioggia)",
+      colore: "#475569", gradienteReale: 0,
+    };
+  }
+
+  // --- 1. Gradiente termico reale ---
+  let gradienteReale = GRADIENTE_SECCO;
+
+  if (temp80m != null) {
+    const diffAlt = 78; // 80m - 2m
+    const diffTemp = temperature - temp80m;
+    gradienteReale = (diffTemp / diffAlt) * 100;
+  } else if (temp120m != null) {
+    const diffAlt = 118;
+    const diffTemp = temperature - temp120m;
+    gradienteReale = (diffTemp / diffAlt) * 100;
+  }
+
+  // --- 2. Spread e base nuvole ---
+  const spread = temperature - dewPoint;
+  const cloudBase = Math.round(Math.max(100, spread * 125));
+
+  // --- 3. CAPE stimato ---
+  let capeBase = spread * 80;
+  if (gradienteReale > GRADIENTE_SECCO) capeBase *= 1.4;
+  else if (gradienteReale > GRADIENTE_SECCO * 0.7) capeBase *= 1.0;
+  else capeBase *= 0.5;
+
+  if (temperature > 25) capeBase += 300;
+  else if (temperature > 20) capeBase += 200;
+  else if (temperature > 15) capeBase += 100;
+
+  if (uvIndex != null && uvIndex > 5) capeBase *= 1.3;
+  else if (uvIndex != null && uvIndex > 3) capeBase *= 1.1;
+
+  if (soilTemp != null && soilTemp > temperature) capeBase *= 1.2;
+  else if (soilTemp != null && soilTemp < temperature - 5) capeBase *= 0.7;
+
+  if (pressure != null && pressure > 1020) capeBase *= 1.2;
+  else if (pressure != null && pressure < 1005) capeBase *= 0.6;
+
+  const cape = Math.max(0, Math.round(capeBase));
+
+  // --- 4. Velocità termica base ---
+  const H = Math.max(300, cloudBase + 500);
+  const thermalSpeed = Math.sqrt(Math.max(0.01, (2 * cape) / H)) * 3.6;
+
+  // --- 5. Fattori correttivi basati su DATI REALI DI VENTO IN QUOTA ---
+
+  // Funzione helper per trovare il vento a una data quota dal windProfile
+  const findWindAtHeight = (height: number): { speed: number; dir: number } | null => {
+    if (!windProfile || windProfile.length === 0) return null;
+
+    // Trova il punto più vicino nel profilo
+    let closest = windProfile[0];
+    let minDiff = Math.abs(closest.height - height);
+
+    for (const level of windProfile) {
+      const diff = Math.abs(level.height - height);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = level;
+      }
+    }
+
+    if (closest.speed != null && closest.dir != null) {
+      return { speed: closest.speed, dir: closest.dir };
+    }
+    return null;
+  };
+
+  // Ottieni venti reali a quote significative
+  const wind10m = { speed: windSpeed, dir: windDir };
+  const wind500m = findWindAtHeight(500);
+  const wind1000m = findWindAtHeight(1000);
+  const wind1500m = findWindAtHeight(1500);
+  const wind2000m = findWindAtHeight(2000);
+  const wind3000m = findWindAtHeight(3000);
+
+  // Vento medio al suolo
   const avgWind10m = windSpeed || 0;
-  const avgWind80m = wind80m ?? avgWind10m * 1.3;
-  const avgWind120m = wind120m ?? avgWind80m * 1.15;
-  const avgWind180m = wind180m ?? avgWind120m * 1.1;
 
-  // Shear verticale: differenza di velocità tra 10m e 180m
-  const windShear = Math.abs(avgWind180m - avgWind10m);
+  // Shear verticale reale: differenza tra vento a 10m e vento a 1000m/2000m
+  let windShear = 0;
+  if (wind1000m && wind10m) {
+    windShear = Math.abs(wind1000m.speed - wind10m.speed);
+  } else if (wind2000m && wind10m) {
+    windShear = Math.abs(wind2000m.speed - wind10m.speed) * 0.5;
+  }
 
-  // Vento ideale per termiche organizzate: 8-18 km/h al suolo  
-  // Vento troppo debole (<5) = termiche non si staccano
-  // Vento troppo forte (>25) = termiche disorganizzate, turbolenza
+  // Rotazione del vento con la quota (direzioni reali)
+  let dirShear = 0;
+  if (wind500m && wind10m) {
+    let diff = Math.abs(wind500m.dir - wind10m.dir);
+    if (diff > 180) diff = 360 - diff;
+    dirShear = diff;
+  } else if (wind1000m && wind10m) {
+    let diff = Math.abs(wind1000m.dir - wind10m.dir);
+    if (diff > 180) diff = 360 - diff;
+    dirShear = diff * 0.5; // scaliamo perché 1000m è più lontano
+  }
+
+  // Fattore vento basato su dati reali
   let windFactor: number;
-  if (avgWind10m >= 8 && avgWind10m <= 18) windFactor = 1.3; // perfetto
+  if (avgWind10m >= 8 && avgWind10m <= 18) windFactor = 1.3;
   else if (avgWind10m >= 5 && avgWind10m < 8) windFactor = 1.0;
   else if (avgWind10m >= 18 && avgWind10m <= 25) windFactor = 0.7;
-  else if (avgWind10m < 5) windFactor = 0.4; // calma
-  else windFactor = 0.3; // vento forte
+  else if (avgWind10m < 5) windFactor = 0.4;
+  else windFactor = 0.3;
 
-  // Penalità per wind shear verticale eccessivo
+  // Penalità per shear verticale reale
   if (windShear > 15) windFactor *= 0.6;
   else if (windShear > 10) windFactor *= 0.8;
 
-  // Rotazione del vento con la quota (directions)
-  // Se c'è troppa rotazione, le termiche si inclinano
-  let dirShear = 0;
-  if (windDir != null && windDir80m != null) {
-    let diff = Math.abs(windDir80m - windDir);
-    if (diff > 180) diff = 360 - diff;
-    dirShear = diff;
-  }
+  // Penalità per rotazione eccessiva del vento con la quota
   if (dirShear > 60) windFactor *= 0.7;
   else if (dirShear > 30) windFactor *= 0.9;
 
   // --- 6. Nuvolosità ---
-  // Cumuli 10-40% = migliori termiche (ci sono nuvole che segnalano termiche)
   let cloudFactor: number;
   if (cloudCover >= 10 && cloudCover <= 40) cloudFactor = 1.3;
   else if (cloudCover >= 5 && cloudCover < 10) cloudFactor = 1.1;
   else if (cloudCover > 40 && cloudCover <= 60) cloudFactor = 0.8;
   else if (cloudCover > 60 && cloudCover <= 80) cloudFactor = 0.4;
   else if (cloudCover > 80) cloudFactor = 0.1;
-  else cloudFactor = 0.7; // <5% cielo sereno = termiche deboli (mancano i "marcatori")
+  else cloudFactor = 0.7;
 
   // --- 7. Umidità ---
   let humidityFactor: number;
@@ -144,7 +252,7 @@ export function calcolaTermiche(weather: HourData, altitude: number): TermicheDa
   else if (humidity > 50 && humidity <= 65) humidityFactor = 1.0;
   else if (humidity > 65 && humidity <= 80) humidityFactor = 0.6;
   else if (humidity > 80) humidityFactor = 0.2;
-  else humidityFactor = 0.8; // <30%
+  else humidityFactor = 0.8;
 
   // --- 8. Pressione ---
   let pressureFactor: number;
@@ -157,14 +265,13 @@ export function calcolaTermiche(weather: HourData, altitude: number): TermicheDa
     pressureFactor = 1.0;
   }
 
-  // --- 9. Correzione per ora del giorno (non più del giorno) ---
-  // Le termiche sono più forti tra 11:00 e 15:00
+  // --- 9. Ora del giorno ---
   const hour = weather.time?.getHours() ?? 12;
   let hourFactor = 1.0;
   if (hour >= 11 && hour <= 15) hourFactor = 1.3;
   else if (hour >= 9 && hour < 11) hourFactor = 0.8;
   else if (hour > 15 && hour <= 18) hourFactor = 0.6;
-  else hourFactor = 0.1; // fuori finestra
+  else hourFactor = 0.1;
 
   // --- 10. Calcolo finale ---
   const rateo = Math.round(
@@ -185,8 +292,7 @@ export function calcolaTermiche(weather: HourData, altitude: number): TermicheDa
   // --- Forza 0-10 ---
   const forza = Math.max(0, Math.min(10, Math.round((rateo / 5) * 10 * 10) / 10));
 
-  // --- Top termica (m AGL) ---
-  // Base + quota guadagnabile basata su rateo e gradiente
+  // --- Top termica ---
   const top = Math.round(
     Math.min(
       5000,
@@ -209,7 +315,7 @@ export function calcolaTermiche(weather: HourData, altitude: number): TermicheDa
 }
 
 /**
- * Genera dati termici per tutte le ore in un array di HourData (per uno specifico giorno)
+ * Genera dati termici per tutte le ore in un array di HourData
  */
 export function generaTermicheOrarie(
   hourlyData: HourData[],

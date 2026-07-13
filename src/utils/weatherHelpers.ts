@@ -36,19 +36,37 @@ export function getCloudCondition(cover: number): { text: string; icon: string; 
   return { text: 'Coperto', icon: '☁️', color: '#546e7a' };
 }
 
-export function getWindProfile(surfaceWind: number, surfaceDir: number) {
+/**
+ * Crea un profilo vento basato su dati reali se disponibili,
+ * altrimenti usa una stima per interpolazione
+ */
+export function getWindProfile(surfaceWind: number, surfaceDir: number, realProfile?: { height: number; speed: number; dir: number }[]) {
+  if (realProfile && realProfile.length > 0) {
+    return realProfile.map((level) => ({
+      alt: level.height,
+      speed: level.speed,
+      dir: level.dir,
+      dirName: getWindDirection(level.dir),
+    }));
+  }
+
+  // Fallback: stima
   const profile: { alt: number; speed: number; dir: number; dirName: string }[] = [];
-  for (let alt = 400; alt <= 4000; alt += 250) {
-    const factor = 1 + (alt - 10) * 0.0025;
-    let speed = Math.min(surfaceWind * factor, surfaceWind * 3.5);
-    let dirOffset = (alt - 10) / 1000 * 15;
-    dirOffset = Math.min(dirOffset, 45);
-    let dir = (surfaceDir + dirOffset) % 360;
+  const heights = [0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000];
+  for (const alt of heights) {
+    if (alt === 0) {
+      profile.push({ alt: 10, speed: surfaceWind, dir: surfaceDir, dirName: getWindDirection(surfaceDir) });
+      continue;
+    }
+    const factor = 1 + (alt / 1000) * 0.25;
+    const speed = Math.min(surfaceWind * factor, surfaceWind * 3.5);
+    const dirOffset = Math.min((alt / 1000) * 15, 45);
+    const dir = (surfaceDir + dirOffset) % 360;
     profile.push({
       alt,
       speed: Math.round(speed * 10) / 10,
       dir: Math.round(dir),
-      dirName: getWindDirection(dir)
+      dirName: getWindDirection(dir),
     });
   }
   return profile;

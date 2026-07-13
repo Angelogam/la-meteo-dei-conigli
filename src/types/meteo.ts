@@ -17,6 +17,8 @@ export interface HourData {
   soilMoisture: number | null;
   uvIndex: number | null;
   isDay: boolean;
+  /** Dati di vento in quota a diverse altitudini (m AGL) */
+  windProfile?: WindLevel[];
 }
 
 export interface DailyData {
@@ -47,8 +49,11 @@ export interface ThermalData {
 }
 
 export interface WindLevel {
+  /** Quota in metri AGL (Above Ground Level) */
   height: number;
+  /** Velocità del vento in km/h */
   speed: number | null;
+  /** Direzione del vento in gradi */
   dir: number | null;
 }
 

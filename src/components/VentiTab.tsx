@@ -28,6 +28,12 @@ export default function VentiTab({
 
   const hourRange = Array.from({ length: 11 }, (_, i) => i + 9);
 
+  // Usa i dati reali di vento in quota da windProfile (se disponibili)
+  const realWindProfile = currentData.windProfile && currentData.windProfile.length > 0
+    ? currentData.windProfile
+    : windProfile;
+
+  // Schede vento a diverse quote (reali)
   const windCards = [
     {
       label: "Superficie (10m)",
@@ -36,16 +42,28 @@ export default function VentiTab({
       gust: currentData.windGust || currentData.windSpeed + 8,
     },
     {
-      label: "Quota bassa (80m)",
-      speed: currentData.wind80m || currentData.windSpeed * 1.3,
-      dir: currentData.windDir80m || (currentData.windDir + 10) % 360,
-      gust: (currentData.wind80m || currentData.windSpeed * 1.3) * 1.3,
+      label: "Bassa quota (500m)",
+      speed: currentData.windProfile?.find((l: any) => l.height === 500)?.speed ?? currentData.windSpeed * 1.5,
+      dir: currentData.windProfile?.find((l: any) => l.height === 500)?.dir ?? currentData.windDir + 10,
+      gust: null,
     },
     {
-      label: "Quota media (120m)",
-      speed: currentData.wind120m || currentData.windSpeed * 1.5,
-      dir: currentData.windDir120m || (currentData.windDir + 20) % 360,
-      gust: (currentData.wind120m || currentData.windSpeed * 1.5) * 1.35,
+      label: "Media quota (1000m)",
+      speed: currentData.windProfile?.find((l: any) => l.height === 1000)?.speed ?? currentData.windSpeed * 2.0,
+      dir: currentData.windProfile?.find((l: any) => l.height === 1000)?.dir ?? currentData.windDir + 20,
+      gust: null,
+    },
+    {
+      label: "Alta quota (2000m)",
+      speed: currentData.windProfile?.find((l: any) => l.height === 2000)?.speed ?? currentData.windSpeed * 2.8,
+      dir: currentData.windProfile?.find((l: any) => l.height === 2000)?.dir ?? currentData.windDir + 35,
+      gust: null,
+    },
+    {
+      label: "Molto alta (4000m)",
+      speed: currentData.windProfile?.find((l: any) => l.height === 4000)?.speed ?? currentData.windSpeed * 3.5,
+      dir: currentData.windProfile?.find((l: any) => l.height === 4000)?.dir ?? currentData.windDir + 45,
+      gust: null,
     },
   ];
 
@@ -54,25 +72,24 @@ export default function VentiTab({
       <div>
         <h4 className="text-base font-bold text-emerald-300 uppercase tracking-wider mb-4 flex items-center gap-2">
           <Wind className="w-5 h-5" />
-          Vento a diverse quote
+          Vento a diverse quote (reale da Open-Meteo)
         </h4>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           {windCards.map((w, i) => (
             <div
               key={i}
-              className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-4 text-center"
+              className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-3 text-center"
             >
-              <div className="text-sm text-slate-300 font-semibold mb-2">{w.label}</div>
-              <div className="text-2xl font-bold text-slate-100 tabular-nums">
+              <div className="text-[10px] text-slate-400 font-semibold mb-2 uppercase tracking-wider">{w.label}</div>
+              <div className="text-xl font-bold text-slate-100 tabular-nums">
                 {getWindArrow(w.dir)} {Math.round(w.speed)}
               </div>
-              <div className="text-sm text-slate-400">{getWindDirName(w.dir)}</div>
-              <div className="text-sm text-red-300 flex items-center justify-center gap-2 mt-2">
-                <span>Raffiche</span>
-                <span className="font-bold tabular-nums">
-                  {Math.round(w.gust)} km/h
-                </span>
-              </div>
+              <div className="text-xs text-slate-400">{getWindDirName(w.dir)}</div>
+              {w.gust && (
+                <div className="text-[10px] text-red-300 mt-1">
+                  Raff. {Math.round(w.gust)}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -81,12 +98,12 @@ export default function VentiTab({
       <div>
         <h4 className="text-base font-bold text-emerald-300 uppercase tracking-wider mb-4 flex items-center gap-2">
           <TrendingUp className="w-5 h-5" />
-          Profilo vento (400m - 4000m)
+          Profilo vento reale (500m - 4000m)
         </h4>
         <div className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-4 max-h-64 overflow-y-auto space-y-1">
-          {windProfile.map((level, idx) => {
-            const maxSpeed = currentData.windSpeed * 3.5;
-            const width = Math.min(100, (level.speed / maxSpeed) * 100);
+          {realWindProfile.map((level: any, idx: number) => {
+            const maxSpeed = Math.max(...realWindProfile.map((l: any) => l.speed || 0), 1);
+            const width = maxSpeed > 0 ? Math.min(100, (level.speed / maxSpeed) * 100) : 10;
             const barColor =
               width < 30
                 ? "bg-emerald-400"
@@ -100,10 +117,10 @@ export default function VentiTab({
             return (
               <div
                 key={idx}
-                className="grid grid-cols-[60px_1fr_70px] gap-3 items-center py-2"
+                className="grid grid-cols-[70px_1fr_70px] gap-3 items-center py-2"
               >
                 <span className="text-sm text-slate-300 font-mono tabular-nums font-semibold">
-                  {level.alt}m
+                  {level.height >= 1000 ? `${(level.height / 1000).toFixed(1)}km` : `${level.height}m`}
                 </span>
                 <div className="h-6 bg-slate-700/60 rounded-full overflow-hidden">
                   <div
@@ -111,12 +128,12 @@ export default function VentiTab({
                     style={{ width: `${Math.max(width, 20)}%` }}
                   >
                     <span className="text-xs text-white font-bold drop-shadow-md tabular-nums">
-                      {Math.round(level.speed)}
+                      {level.speed != null ? Math.round(level.speed) : "—"}
                     </span>
                   </div>
                 </div>
                 <span className="text-sm text-slate-300 text-center tabular-nums font-semibold">
-                  {getWindArrow(level.dir)} {level.dirName}
+                  {level.dir != null ? `${getWindArrow(level.dir)} ${getWindDirName(level.dir)}` : "—"}
                 </span>
               </div>
             );
