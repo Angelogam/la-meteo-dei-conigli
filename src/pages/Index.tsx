@@ -41,10 +41,8 @@ export function Page() {
   if (loading) return <LoadingScreen />;
   if (error) return <ErrorScreen error={error} onRetry={loadWeather} />;
 
-  // Prendi la label del giorno selezionato
   const selectedDateLabel = dateLabels?.[selectedDay] || undefined;
 
-  // Formatta ultimo aggiornamento
   const lastUpdateStr = lastUpdate?.toLocaleTimeString("it-IT", {
     hour: "2-digit",
     minute: "2-digit",
@@ -52,7 +50,6 @@ export function Page() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 particle-bg">
-      {/* Sfondo decorativo con montagne stilizzate */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-[0.03]">
         <svg className="w-full h-full" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
           <path d="M0,600 L200,400 L400,520 L600,300 L800,450 L1000,250 L1200,380 L1440,200 L1440,900 L0,900 Z" fill="#f97316" opacity="0.8"/>
@@ -60,13 +57,10 @@ export function Page() {
         </svg>
       </div>
 
-      {/* Header con titolo centrale e parapendio laterali */}
       <header className="relative text-center py-5 md:py-6 border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-md overflow-hidden">
-        {/* Bagliore decorativo */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-32 bg-gradient-to-b from-orange-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
         
         <div className="flex items-center justify-center gap-3 md:gap-6 relative z-10">
-          {/* Coniglio sinistro con parapendio - decorativo */}
           <div className="hidden sm:flex flex-col items-center animate-float-slow">
             <div className="relative icon-neon">
               <div className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-orange-500/20 to-amber-500/10 border-2 border-orange-400/30 flex items-center justify-center">
@@ -78,7 +72,6 @@ export function Page() {
             </div>
           </div>
 
-          {/* Titolo centrale */}
           <div className="flex flex-col items-center justify-center gap-1.5">
             <div className="flex items-center justify-center gap-3">
               <div className="w-9 h-9 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-orange-500/25 to-amber-500/15 border border-orange-400/30 flex items-center justify-center animate-bounce-gentle">
@@ -98,7 +91,6 @@ export function Page() {
             </p>
           </div>
 
-          {/* Coniglio destro con parapendio - decorativo */}
           <div className="hidden sm:flex flex-col items-center animate-float-slow" style={{ animationDelay: '1.5s' }}>
             <div className="relative icon-neon">
               <div className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-orange-500/20 to-amber-500/10 border-2 border-orange-400/30 flex items-center justify-center">
@@ -111,7 +103,6 @@ export function Page() {
           </div>
         </div>
 
-        {/* Conigli mobili separati per mobile */}
         <div className="flex sm:hidden items-center justify-center gap-4 mt-3">
           {[0, 0.2, 0.4].map((delay, i) => (
             <div key={i} className="animate-bounce-gentle" style={{ animationDelay: `${delay}s` }}>
@@ -120,17 +111,14 @@ export function Page() {
           ))}
         </div>
 
-        {/* Info update */}
         <div className="absolute top-2 right-3 md:top-3 md:right-6 text-[10px] text-slate-500 flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
           <span>Aggiornato {lastUpdateStr}</span>
         </div>
       </header>
 
-      {/* Main layout */}
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
         <div className="flex flex-col md:flex-row gap-6">
-          {/* Sidebar */}
           <div className="w-full md:w-80 shrink-0">
             <DecolloList
               decolli={DECOLLI.map(d => ({ id: d.id, name: d.name, valley: d.valley, exposure: d.exposure, alt: d.altitude }))}
@@ -140,7 +128,6 @@ export function Page() {
             />
           </div>
 
-          {/* Main content */}
           <div className="flex-1 min-w-0 space-y-4">
             <SiteHeader
               name={site.name}
@@ -197,7 +184,6 @@ export function Page() {
                   currentData={currentData}
                   site={{ name: site.name, alt: site.altitude }}
                   thermalDelta={thermalDelta}
-                  thermalStrength={thermalStrength}
                   selectedDateLabel={selectedDateLabel}
                 />
               )}

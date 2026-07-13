@@ -158,7 +158,6 @@ export default function DecolloList({
                     </span>
                     <span className="flex items-center gap-1">
                       <Mountain className="w-2.5 h-2.5 text-amber-400/80" />
-                      {<dyad-write path="src/components/DecolloList.tsx" description="Completo la sidebar dei decolli">
                       {d.alt}m
                     </span>
                   </div>
@@ -178,7 +177,6 @@ export default function DecolloList({
                   </div>
                 )}
               </div>
-              {/* Linea decorativa sottile per separare */}
               {i < decolli.length - 1 && !isSelected && (
                 <div className="mt-2.5 border-b border-slate-700/30" />
               )}

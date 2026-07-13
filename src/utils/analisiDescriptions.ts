@@ -110,7 +110,6 @@ export function generateSituazioneGenerale(currentData: CurrentData, dayData?: D
     );
     cloudText += cloudDesc;
     
-    // Aggiungi dettagli specifici basati sulla nuvolosità
     if (currentData.clouds >= 20 && currentData.clouds < 60) {
       if (currentData.rainProb != null && currentData.rainProb < 20) {
         cloudText += ", ma senza rischio di precipitazioni significative.";
@@ -129,7 +128,6 @@ export function generateSituazioneGenerale(currentData: CurrentData, dayData?: D
 export function generateProfiloTermico(currentData: CurrentData, dayData?: DayData): string[] {
   const lines: string[] = [];
 
-  // Lifted Index
   if (currentData.liftingIndex != null) {
     const li = currentData.liftingIndex;
     let liText = `L'indice Lifted Index (LI) è ${li}`;
@@ -141,11 +139,8 @@ export function generateProfiloTermico(currentData: CurrentData, dayData?: DayDa
     else if (li <= 4) liText += ", atmosfera molto stabile. Cielo generalmente sereno, termiche deboli.";
     else liText += ", atmosfera estremamente stabile. Termiche molto deboli o assenti, condizioni di volo平静e.";
     lines.push(liText + ".");
-  } else if (currentData.stabilityIndex) {
-    lines.push(`Indice di stabilità: ${currentData.stabilityIndex}.`);
   }
 
-  // Termiche
   if (currentData.thermalStrength != null) {
     const ts = currentData.thermalStrength;
     let thermalText = `Termiche: ${ts.toFixed(1)} m/s`;
@@ -175,7 +170,6 @@ export function generateProfiloTermico(currentData: CurrentData, dayData?: DayDa
     lines.push(deltaText + ".");
   }
 
-  // CAPE
   if (currentData.cape != null) {
     let capeText = `CAPE: ${currentData.cape} J/kg`;
     if (currentData.cape < 100) capeText += " — energia convettiva molto bassa, temporali improbabili.";
@@ -210,7 +204,6 @@ export function generateVentoQuota(currentData: CurrentData): string[] {
       }
     }
 
-    // Turbolenza potenziale
     if (currentData.windGust != null && currentData.windSpeed != null) {
       const gustFactor = currentData.windGust / currentData.windSpeed;
       if (gustFactor > 2) {
@@ -225,7 +218,6 @@ export function generateVentoQuota(currentData: CurrentData): string[] {
     lines.push("Direzione del vento: dati non disponibili.");
   }
 
-  // Inversione termica
   if (currentData.temp != null && currentData.clouds != null && currentData.clouds < 30) {
     lines.push("Non si osservano condizioni di inversione termica significativa: la temperatura segue il gradiente adiabatico secco, segno di buon rimescolamento atmosferico e termiche ben sviluppate.");
   } else if (currentData.clouds != null && currentData.clouds > 70) {
@@ -238,7 +230,6 @@ export function generateVentoQuota(currentData: CurrentData): string[] {
 export function generateInterpretazione(currentData: CurrentData): string[] {
   const lines: string[] = [];
 
-  // Condizioni generali
   const conditions: string[] = [];
   if (currentData.windSpeed != null) {
     if (currentData.windSpeed < 12) conditions.push("vento ideale");
@@ -263,7 +254,6 @@ export function generateInterpretazione(currentData: CurrentData): string[] {
     lines.push(`Condizioni: ${conditions.join(", ")}.`);
   }
 
-  // Rischio pioggia/temporali
   if (currentData.rainProb != null) {
     let rainText = "";
     if (currentData.rainProb < 10) {
@@ -278,7 +268,6 @@ export function generateInterpretazione(currentData: CurrentData): string[] {
     lines.push(rainText);
   }
 
-  // Raccomandazioni
   if (currentData.windGust != null && currentData.windGust > 30) {
     lines.push("Attenzione: vento forte in quota. Si consiglia di rimanere a quote moderate o valutare l'opportunità del volo.");
   } else if (currentData.windSpeed != null && currentData.windSpeed > 25) {
