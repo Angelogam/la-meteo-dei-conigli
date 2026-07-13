@@ -62,15 +62,23 @@ export default function Page() {
           {/* Coniglio sinistro con parapendio */}
           <div className="hidden sm:flex flex-col items-center animate-float-left absolute left-4">
             <div className="relative">
-              <svg className="w-12 h-12 text-orange-400" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M32 8C16 8 4 16 4 28h8c0-8 8-14 20-14s20 6 20 14h8c0-12-12-20-28-20z" fill="currentColor" opacity="0.6"/>
-                <path d="M8 28h48" stroke="currentColor" strokeWidth="2" opacity="0.4"/>
-                <line x1="32" y1="28" x2="32" y2="44" stroke="currentColor" strokeWidth="2" opacity="0.5"/>
-                <circle cx="32" cy="48" r="4" fill="#f97316" opacity="0.8"/>
+              <svg className="w-14 h-14" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Vela del parapendio */}
+                <path d="M10 30 Q40 5 70 30" stroke="#4ade80" strokeWidth="3" fill="url(#grad1)" opacity="0.9"/>
+                <path d="M15 30 L40 15 L65 30" stroke="#facc15" strokeWidth="1.5" fill="none" opacity="0.6"/>
+                {/* Fettucce */}
+                <line x1="32" y1="28" x2="40" y2="48" stroke="#fcd34d" strokeWidth="2"/>
+                <line x1="48" y1="28" x2="40" y2="48" stroke="#fcd34d" strokeWidth="2"/>
+                {/* Coniglio sotto */}
+                <circle cx="40" cy="52" r="5" fill="#f97316" opacity="0.9"/>
+                <text x="40" y="56" textAnchor="middle" fontSize="14" fill="#fff9c4">🐰</text>
+                <defs>
+                  <linearGradient id="grad1" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#a7f3d0"/>
+                    <stop offset="100%" stopColor="#34d399"/>
+                  </linearGradient>
+                </defs>
               </svg>
-              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 text-xl animate-hop">
-                🐰
-              </span>
             </div>
           </div>
 
@@ -88,15 +96,23 @@ export default function Page() {
           {/* Coniglio destro con parapendio */}
           <div className="hidden sm:flex flex-col items-center animate-float-right absolute right-4">
             <div className="relative">
-              <svg className="w-12 h-12 text-orange-400" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M32 8C16 8 4 16 4 28h8c0-8 8-14 20-14s20 6 20 14h8c0-12-12-20-28-20z" fill="currentColor" opacity="0.6"/>
-                <path d="M8 28h48" stroke="currentColor" strokeWidth="2" opacity="0.4"/>
-                <line x1="32" y1="28" x2="32" y2="44" stroke="currentColor" strokeWidth="2" opacity="0.5"/>
-                <circle cx="32" cy="48" r="4" fill="#f97316" opacity="0.8"/>
+              <svg className="w-14 h-14" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Vela del parapendio */}
+                <path d="M10 30 Q40 5 70 30" stroke="#fbbf24" strokeWidth="3" fill="url(#grad2)" opacity="0.9"/>
+                <path d="M15 30 L40 15 L65 30" stroke="#fef08a" strokeWidth="1.5" fill="none" opacity="0.6"/>
+                {/* Fettucce */}
+                <line x1="32" y1="28" x2="40" y2="48" stroke="#fde68a" strokeWidth="2"/>
+                <line x1="48" y1="28" x2="40" y2="48" stroke="#fde68a" strokeWidth="2"/>
+                {/* Coniglio sotto */}
+                <circle cx="40" cy="52" r="5" fill="#f59e0b" opacity="0.9"/>
+                <text x="40" y="56" textAnchor="middle" fontSize="14" fill="#fff9c4">🐰</text>
+                <defs>
+                  <linearGradient id="grad2" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#fde68a"/>
+                    <stop offset="100%" stopColor="#fbbf24"/>
+                  </linearGradient>
+                </defs>
               </svg>
-              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 text-xl animate-hop" style={{ animationDelay: '0.3s' }}>
-                🐰
-              </span>
             </div>
           </div>
 
