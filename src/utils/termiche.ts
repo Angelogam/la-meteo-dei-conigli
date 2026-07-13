@@ -12,49 +12,55 @@ export interface TermicheData {
 }
 
 export function calcolaTermiche(weather: HourData, altitude: number): TermicheData {
-  const { temperature, windSpeed, cloudCover, pressure, humidity } = weather;
+  const { temperature, windSpeed, cloudCover, pressure, humidity, precipitation } = weather;
 
-  // Temperatura base (per calcoli)
-  const tempBase = temperature + (altitude / 100) * 0.65; // Temperatura al livello del mare approssimata
+  // Gradiente termico adiabatico secco
+  const GRADIENT = 0.0098; // °C/m
 
-  // Stima del gradiente termico (più alto = meglio)
-  const tempGradient = Math.max(0.3, Math.min(1.5, (tempBase - temperature) / 20));
+  // Temperatura potenziale (quanto è calda l'aria rispetto all'altitudine)
+  const tempPotential = temperature + (altitude / 100) * 0.65;
 
-  // Forza base del vento per le termiche
-  // Vento leggero (5-15 km/h) aiuta le termiche
-  let ventoForza = 1;
-  if (windSpeed >= 5 && windSpeed <= 8) ventoForza = 1.3;
-  else if (windSpeed > 8 && windSpeed <= 12) ventoForza = 1.5;
-  else if (windSpeed > 12 && windSpeed <= 18) ventoForza = 1.2;
-  else if (windSpeed > 18 && windSpeed <= 25) ventoForza = 0.8;
-  else if (windSpeed > 25) ventoForza = 0.4;
-  else ventoForza = 0.6; // Vento troppo debole
+  // Stima CAPE approssimato basato su temperatura e umidità
+  const dewPoint = tempPotential - (100 - humidity) / 5;
+  const deltaTemp = temperature - dewPoint; // Spread
+  const cape = Math.max(0, Math.round(deltaTemp * 80 + (temperature > 20 ? 200 : 0)));
 
-  // Nuvolosità (cumuli = buone termiche)
-  let nuvoleForza = 1;
-  if (cloudCover >= 10 && cloudCover <= 30) nuvoleForza = 1.4;  // Cumuli di bel tempo
-  else if (cloudCover > 30 && cloudCover <= 50) nuvoleForza = 1.2;
-  else if (cloudCover > 50 && cloudCover <= 70) nuvoleForza = 0.8;
-  else if (cloudCover > 70) nuvoleForza = 0.3;  // Troppo nuvoloso
-  else nuvoleForza = 0.9; // Cielo sereno (termiche più deboli ma presenti)
+  // Velocità termica base (m/s) basata su CAPE
+  const thermalSpeed = Math.sqrt(cape / 100) * 1.2;
 
-  // Umidità
-  let umiditaForza = 1;
-  if (humidity >= 30 && humidity <= 50) umiditaForza = 1.2;
-  else if (humidity > 50 && humidity <= 65) umiditaForza = 1.0;
-  else if (humidity > 65 && humidity <= 80) umiditaForza = 0.7;
-  else if (humidity > 80) umiditaForza = 0.3;
-  else umiditaForza = 0.9; // Molto secco
+  // Fattori correttivi basati su condizioni reali
+  let correction = 1.0;
 
-  // Pressione (alta pressione = migliori termiche)
-  let pressForza = 1;
-  if (pressure && pressure >= 1020) pressForza = 1.2;
-  else if (pressure && pressure >= 1010) pressForza = 1.0;
-  else if (pressure && pressure >= 1000) pressForza = 0.8;
-  else pressForza = 0.6;
+  // Vento: ideale 5-15 km/h per termiche organizzate
+  if (windSpeed >= 5 && windSpeed <= 8) correction = 1.3;
+  else if (windSpeed > 8 && windSpeed <= 12) correction = 1.5;
+  else if (windSpeed > 12 && windSpeed <= 18) correction = 1.2;
+  else if (windSpeed > 18 && windSpeed <= 25) correction = 0.8;
+  else if (windSpeed > 25) correction = 0.4;
+  else correction = 0.6; // Vento troppo debole
 
-  // Pioggia blocca tutto
-  if (weather.precipitation > 0.5) {
+  // Nuvolosità: cumuli 10-30% = migliori termiche
+  if (cloudCover >= 10 && cloudCover <= 30) correction *= 1.4;
+  else if (cloudCover > 30 && cloudCover <= 50) correction *= 1.2;
+  else if (cloudCover > 50 && cloudCover <= 70) correction *= 0.8;
+  else if (cloudCover > 70) correction *= 0.3;
+  else correction *= 0.9;
+
+  // Umidità: 30-50% ideale
+  if (humidity >= 30 && humidity <= 50) correction *= 1.2;
+  else if (humidity > 50 && humidity <= 65) correction *= 1.0;
+  else if (humidity > 65 && humidity <= 80) correction *= 0.7;
+  else if (humidity > 80) correction *= 0.3;
+  else correction *= 0.9;
+
+  // Pressione: alta pressione = migliori termiche
+  if (pressure && pressure >= 1020) correction *= 1.2;
+  else if (pressure && pressure >= 1010) correction *= 1.0;
+  else if (pressure && pressure >= 1000) correction *= 0.8;
+  else if (pressure) correction *= 0.6;
+
+  // Pioggia: blocca tutto
+  if (precipitation > 0.5) {
     return {
       base: 0,
       top: 0,
@@ -65,43 +71,40 @@ export function calcolaTermiche(weather: HourData, altitude: number): TermicheDa
     };
   }
 
-  // Calcolo forza finale (0-10)
-  const rawForza = tempGradient * ventoForza * nuvoleForza * umiditaForza * pressForza * 3.5;
-  const forza = Math.max(0, Math.min(10, Math.round(rawForza * 10) / 10));
+  // Velocità termica finale (m/s)
+  const rateo = Math.round(Math.max(0.1, thermalSpeed * correction) * 10) / 10;
 
-  // Calcolo base termica (m AGL)
-  const tempDiff = Math.max(2, temperature - (dewPointEstimate(temperature, humidity) || 5));
-  const base = Math.round(Math.min(2500, Math.max(200, altitude + tempDiff * 80 * (cloudCover > 50 ? 0.6 : 1))));
+  // Forza termica 0-10
+  const forza = Math.max(0, Math.min(10, Math.round((rateo / 4) * 10 * 10) / 10));
 
-  // Calcolo top termica (m AGL)
-  const topDiff = tempDiff * 120 * (forza / 5);
-  const top = Math.round(Math.min(4000, Math.max(base + 200, base + topDiff)));
+  // Base termica (m AGL) = Lifting Condensation Level
+  const base = Math.round(Math.min(2500, Math.max(200, altitude + deltaTemp * 80)));
 
-  // Rateo di salita (m/s)
-  const rateo = Math.round((forza / 10) * 4 * 10) / 10;
+  // Top termica (m AGL) = base + potenza termica
+  const top = Math.round(Math.min(4000, Math.max(base + 200, base + rateo * 400)));
 
-  // Label e colore
+  // Label e colore basati su rateo reale
   let label: string;
   let colore: string;
 
-  if (forza >= 7) {
+  if (rateo >= 3.5) {
     label = "Termiche forti 🔥";
-    colore = "#ef4444"; // Rosso
-  } else if (forza >= 5) {
+    colore = "#ef4444";
+  } else if (rateo >= 2.5) {
     label = "Buone termiche 🪂";
-    colore = "#f97316"; // Arancione
-  } else if (forza >= 3) {
+    colore = "#f97316";
+  } else if (rateo >= 1.5) {
     label = "Termiche moderate 🌤️";
-    colore = "#eab308"; // Giallo
-  } else if (forza >= 1) {
+    colore = "#eab308";
+  } else if (rateo >= 0.5) {
     label = "Termiche deboli 🌥️";
-    colore = "#84cc16"; // Verde chiaro
+    colore = "#84cc16";
   } else {
     label = "Niente termiche ❌";
-    colore = "#64748b"; // Grigio
+    colore = "#64748b";
   }
 
-  // Se vento troppo forte, termiche disorganizzate
+  // Vento forte: termiche disorganizzate
   if (windSpeed > 30) {
     return {
       base: Math.round(altitude + 50),
@@ -117,17 +120,10 @@ export function calcolaTermiche(weather: HourData, altitude: number): TermicheDa
     base,
     top,
     forza,
-    rateo: Math.max(0.1, rateo),
+    rateo,
     label,
     colore,
   };
-}
-
-function dewPointEstimate(temp: number, humidity: number): number {
-  const a = 17.27;
-  const b = 237.7;
-  const gamma = (a * temp) / (b + temp) + Math.log(humidity / 100);
-  return (b * gamma) / (a - gamma);
 }
 
 // Genera dati termici per tutte le ore 9-19
@@ -141,7 +137,7 @@ export function generaTermicheOrarie(
   }));
 }
 
-// Soglie per i metri a salire
+// Metri a salire
 export function metriSalitaForza(forza: number, base: number, top: number): number {
   return Math.max(0, top - base);
 }
