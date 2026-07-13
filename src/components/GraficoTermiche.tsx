@@ -9,7 +9,7 @@ interface GraficoTermicheProps {
   oraCorrente: number;
 }
 
-const QUOTE_LABELS = [4000, 3500, 3000, 2500, 2000, 1500, 1000, 500, 0];
+const QUOTE_LABELS = [4000, 3500, 3000, 2500, 2000, 1500, 1000, 500];
 const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 
 const LEGENDA: { colore: string; label: string }[] = [
@@ -28,14 +28,6 @@ function getColoreDaRateo(rateo: number): string {
   return "#64748b";
 }
 
-function getIntensitaClasse(rateo: number): string {
-  if (rateo >= 3) return "bg-red-500";
-  if (rateo >= 2) return "bg-orange-500";
-  if (rateo >= 1) return "bg-yellow-500";
-  if (rateo >= 0.3) return "bg-green-500";
-  return "bg-slate-500";
-}
-
 const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
   if (!hourly || hourly.length === 0) return null;
 
@@ -45,12 +37,20 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
     dataMap.set(h.hour, h.termiche);
   }
 
-  // Trova il max quota per scala
-  const maxQuota = Math.max(
-    100,
-    ...HOURS.map(h => dataMap.get(h)?.top ?? 0)
-  );
-  const scaleMax = Math.max(4000, maxQuota);
+  // Quote min/max per il grafico
+  const MIN_QUOTA = 500;
+  const MAX_QUOTA = 4000;
+
+  // Altezza totale del grafico in pixel (quota 500m = bottom, 4000m = top)
+  const GRAFICO_ALTEZZA = 220; // px
+
+  // Funzione per convertire una quota in percentuale Y (dal basso)
+  // 500m -> 0%, 4000m -> 100%
+  const quotaToPct = (q: number): number => {
+    if (q <= MIN_QUOTA) return 0;
+    if (q >= MAX_QUOTA) return 100;
+    return ((q - MIN_QUOTA) / (MAX_QUOTA - MIN_QUOTA)) * 100;
+  };
 
   return (
     <div className="w-full py-2 px-0.5">
@@ -68,9 +68,9 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
       {/* Griglia: colonne per ora, righe per quota */}
       <div className="flex gap-0">
         {/* Etichette quote verticali a sinistra */}
-        <div className="flex flex-col justify-between shrink-0 w-10 pr-1">
+        <div className="flex flex-col justify-between shrink-0 w-10 pr-1" style={{ height: GRAFICO_ALTEZZA + 'px' }}>
           {QUOTE_LABELS.map((q) => (
-            <div key={q} className="text-[7px] text-slate-500 text-right leading-none h-6 flex items-center justify-end">
+            <div key={q} className="text-[7px] text-slate-500 text-right leading-none flex items-center justify-end h-0" style={{ marginBottom: `calc(${GRAFICO_ALTEZZA / (QUOTE_LABELS.length - 1)}px - 3px)` }}>
               {q}
             </div>
           ))}
@@ -88,7 +88,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
           let topStr = "--";
 
           if (t) {
-            topPct = Math.min(100, (t.top / scaleMax) * 100);
+            topPct = quotaToPct(t.top);
             colore = getColoreDaRateo(t.rateo);
             rateoStr = t.rateo.toFixed(1);
             topStr = t.top.toString();
@@ -98,19 +98,22 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
             <div
               key={hour}
               className={`flex-1 flex flex-col items-center min-w-0 ${
-                isCurrentHour ? "bg-green-900/20 rounded-sm" : ""
+                isCurrentHour ? "bg-green-900/15 rounded-sm" : ""
               }`}
             >
-              {/* Barra verticale (cresce dal basso verso l'alto) */}
-              <div className="relative w-full h-[210px] bg-slate-800/40 rounded-sm overflow-hidden" style={{ display: 'flex', flexDirection: 'column-reverse' }}>
+              {/* Area del grafico */}
+              <div
+                className="relative w-full overflow-hidden"
+                style={{ height: GRAFICO_ALTEZZA + 'px' }}
+              >
                 {/* Linee guida orizzontali ogni 500m */}
                 {QUOTE_LABELS.map((q) => {
-                  const yPct = (q / scaleMax) * 100;
+                  const yPct = quotaToPct(q);
                   return (
                     <div
                       key={q}
                       className="absolute w-full border-t border-slate-700/30"
-                      style={{ top: `${100 - yPct}%` }}
+                      style={{ bottom: `${yPct}%` }}
                     />
                   );
                 })}
@@ -118,29 +121,24 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                 {/* Barra della termica (dal basso fino a top) */}
                 {nonNull && (
                   <div
-                    className="w-full transition-all duration-500 ease-out relative"
+                    className="absolute bottom-0 left-0 right-0 transition-all duration-500 ease-out"
                     style={{
                       height: `${topPct}%`,
                       backgroundColor: colore,
-                      opacity: 0.7,
-                      minHeight: t && t.rateo > 0.3 ? '4px' : '0px',
+                      opacity: 0.75,
+                      minHeight: '2px',
                     }}
                   >
                     {/* Etichetta m/s dentro la barra */}
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-[7px] font-bold text-white drop-shadow-md leading-none">
+                      <span className="text-[8px] font-bold text-white drop-shadow-md leading-none px-0.5">
                         {rateoStr}
                       </span>
                     </div>
                   </div>
                 )}
 
-                {/* Se non ci sono termiche, mostra "--" al centro */}
-                {!nonNull && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-[7px] text-slate-500">--</span>
-                  </div>
-                )}
+                {/* Se non ci sono termiche, non mostriamo nulla (barra invisibile) */}
               </div>
 
               {/* Etichetta ora sotto */}
@@ -152,7 +150,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                 {String(hour).padStart(2, "0")}
               </div>
 
-              {/* Quota max sotto */}
+              {/* Quota massima sotto */}
               <div className="text-[6px] text-slate-500 leading-none mt-0.5 truncate max-w-full">
                 {topStr}m
               </div>
@@ -172,7 +170,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
           ))}
           <div className="flex items-center gap-1">
             <ArrowUp className="w-2 h-2 text-amber-400 shrink-0" />
-            <span>Quota max (m)</span>
+            <span>Quota max termica (m slm)</span>
           </div>
         </div>
       </div>
