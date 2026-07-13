@@ -178,17 +178,17 @@ export default function DaySelector({
         const pressione = day.pressureSeaLevel ?? "--";
 
         // Valutazione volo
-        let voloRating = "Buono";
-        let voloColor = "text-emerald-400";
+        let voloRating = "BUONO";
+        let voloColor = "text-emerald-400 bg-emerald-500/10";
         if (vento > 25 || raffica > 35 || turbolenza > 4) {
-          voloRating = "Pericoloso";
-          voloColor = "text-red-400";
+          voloRating = "PERICOLOSO";
+          voloColor = "text-red-400 bg-red-500/10";
         } else if (vento > 18 || copertura > 70 || pioggia > 30) {
-          voloRating = "Difficile";
-          voloColor = "text-amber-400";
+          voloRating = "DIFFICILE";
+          voloColor = "text-amber-400 bg-amber-500/10";
         } else if (vento < 5) {
-          voloRating = "Debole";
-          voloColor = "text-sky-300";
+          voloRating = "DEBOLE";
+          voloColor = "text-sky-300 bg-sky-500/10";
         }
 
         return (
@@ -207,7 +207,7 @@ export default function DaySelector({
               <span className="text-sm font-bold text-slate-100">
                 {dateLabels[idx]}
               </span>
-              <span className={`text-[10px] font-bold uppercase tracking-widest ${voloColor}`}>
+              <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${voloColor}`}>
                 {voloRating}
               </span>
             </div>
