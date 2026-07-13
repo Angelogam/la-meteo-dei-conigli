@@ -19,17 +19,28 @@ interface PrevisioniGiornaliereProps {
 }
 
 /** Mappa WMO weather code a icona e descrizione */
-function getWeatherInfo(code: number, size: number = 32) {
+function getWeatherInfo(code: number | undefined | null, size: number = 32) {
+  // Se non c'è codice o è NaN, mostriamo nuvoloso come fallback
+  if (code === undefined || code === null || isNaN(code)) {
+    return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "N/D" };
+  }
+
+  // WMO 0: Sereno
   if (code === 0) return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "Sereno" };
+  // WMO 1: Prevalentemente sereno
   if (code === 1) return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "Prevalentemente sereno" };
+  // WMO 2: Poco nuvoloso
   if (code === 2) return { icon: <CloudSun size={size} className="text-amber-200 drop-shadow-lg" />, desc: "Poco nuvoloso" };
+  // WMO 3: Nuvoloso
   if (code === 3) return { icon: <CloudSun size={size} className="text-slate-300 drop-shadow-lg" />, desc: "Nuvoloso" };
+  // WMO 4-9: Nuvoloso variabile
   if (code >= 4 && code <= 9) return { icon: <Cloud size={size} className="text-slate-400 drop-shadow-lg" />, desc: "Nuvoloso variabile" };
-  if (code === 10) return { icon: <Cloud size={size} className="text-slate-400 drop-shadow-lg" />, desc: "Coperto" };
-  if (code === 11) return { icon: <CloudFog size={size} className="text-slate-400 drop-shadow-lg" />, desc: "Nebbia" };
-  if (code === 12) return { icon: <CloudFog size={size} className="text-slate-500 drop-shadow-lg" />, desc: "Nebbia fitta" };
+  // WMO 10: Coperto
+  if (code === 10) return { icon: <Cloud size={size} className="text-slate-500 drop-shadow-lg" />, desc: "Coperto" };
+  // WMO 11-12: Nebbia
+  if (code >= 11 && code <= 12) return { icon: <CloudFog size={size} className="text-slate-400 drop-shadow-lg" />, desc: "Nebbia" };
   if (code === 13) return { icon: <CloudLightning size={size} className="text-yellow-300 drop-shadow-lg" />, desc: "Temporale" };
-  // WMO 45-48: Nebbia / nebbia
+  // WMO 45-48: Nebbia
   if (code >= 45 && code <= 48) return { icon: <CloudFog size={size} className="text-slate-400 drop-shadow-lg" />, desc: "Nebbia" };
   // WMO 51-57: Pioggerella
   if (code >= 51 && code <= 57) return { icon: <CloudRain size={size} className="text-blue-300 drop-shadow-lg" />, desc: "Pioggerella" };
@@ -37,12 +48,12 @@ function getWeatherInfo(code: number, size: number = 32) {
   if (code >= 61 && code <= 67) return { icon: <CloudRain size={size} className="text-blue-400 drop-shadow-lg" />, desc: "Pioggia" };
   // WMO 71-77: Neve
   if (code >= 71 && code <= 77) return { icon: <Snowflake size={size} className="text-blue-200 drop-shadow-lg" />, desc: "Neve" };
-  // WMO 80-82: Rovesci
+  // WMO 80-84: Rovesci
   if (code >= 80 && code <= 84) return { icon: <CloudRain size={size} className="text-blue-300 drop-shadow-lg" />, desc: "Rovesci" };
   // WMO 95-99: Temporali
   if (code >= 95 && code <= 99) return { icon: <CloudLightning size={size} className="text-yellow-300 drop-shadow-lg" />, desc: "Temporali" };
-  // Fallback
-  return { icon: <CloudSun size={size} className="text-slate-300 drop-shadow-lg" />, desc: "Nuvoloso" };
+  // Fallback: se il codice non è in nessun range, mostriamo sereno
+  return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "Sereno" };
 }
 
 function formatDate(date: any): string {
@@ -177,7 +188,7 @@ export default function PrevisioniGiornaliere({
       score = Math.max(0, Math.min(10, Math.round(score)));
 
       // Icona meteo rappresentativa della fascia: prendo il weatherCode più frequente
-      const weatherCodes = ore.map((h: any) => h.weatherCode).filter((c: any) => c != null);
+      const weatherCodes = ore.map((h: any) => h.weatherCode).filter((c: any) => c != null && !isNaN(c));
       const weatherCode = weatherCodes.length > 0 
         ? weatherCodes.sort((a: number, b: number) => 
             weatherCodes.filter((v: number) => v === a).length - 
