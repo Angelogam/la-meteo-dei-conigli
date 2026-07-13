@@ -22,7 +22,6 @@ import DebugMeteo from "@/components/DebugMeteo";
 import {
   getWeatherAlert,
   getStabilityIndex,
-  getWindProfile,
   getWindDirection,
   WindLevel,
 } from "@/utils/weatherHelpers";
@@ -67,11 +66,6 @@ const Page = () => {
     return getStabilityIndex(currentData.temperature, currentData.humidity, currentData.cloudCover);
   }, [currentData]);
 
-  // windProfile: passiamo undefined perché MeteoHourly non ha windProfile
-  const windProfile: WindLevel[] = useMemo(() => {
-    return [];
-  }, []);
-
   const windProfileSimple: WindLevel[] = useMemo(() => {
     if (!currentData) return [];
     return [{
@@ -82,7 +76,6 @@ const Page = () => {
     }];
   }, [currentData]);
 
-  // Converti dayData (MeteoHourly[]) in HourData[] per TermicheTab
   const hourlyDataForTermiche: HourData[] = useMemo(() => {
     if (!dayData.length) return [];
     return dayData.map(h => ({
@@ -101,7 +94,6 @@ const Page = () => {
       uvIndex: h.uvIndex,
       temp80m: h.temp80m,
       temp120m: h.temp120m,
-      // Campi extra richiesti da HourData
       precipitationProba: 0,
       rain: h.precipitation > 0 ? h.precipitation : 0,
       showers: 0,
@@ -122,7 +114,6 @@ const Page = () => {
       terrestrialRadiation: 0,
       sunshineDuration: 0,
       windProfile: undefined,
-      // Aggiungi soilTemp e soilMoisture mancanti
       soil_temperature: 15,
       soil_moisture: 0.3,
     }));
@@ -137,7 +128,6 @@ const Page = () => {
       <Header />
 
       <main className="flex-1 container mx-auto px-3 py-4 md:px-6 lg:px-8">
-        {/* Mobile: sidebar con decolli scorrevole */}
         <div className="lg:hidden mb-4">
           <DecolloList
             decolli={DECOLLI}
@@ -157,7 +147,6 @@ const Page = () => {
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 lg:gap-6">
-          {/* Sidebar - visibile solo su desktop */}
           <aside className="hidden lg:block space-y-3">
             <DecolloList
               decolli={DECOLLI}
@@ -168,7 +157,6 @@ const Page = () => {
             />
           </aside>
 
-          {/* Main content */}
           <div className="space-y-5">
             <SiteHeader
               name={site.name}
@@ -206,58 +194,26 @@ const Page = () => {
               className="w-full"
             >
               <TabsList className="grid grid-cols-4 gap-1 bg-slate-800/60 rounded-xl p-1 border border-slate-700/30 text-sm">
-                <TabsTrigger value="meteo" className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-sky-500/30 data-[state=active]:to-sky-600/20 data-[state=active]:text-white whitespace-nowrap">
-                  <CloudSun className="w-4 h-4 mr-1 shrink-0" /> Meteo
-                </TabsTrigger>
-                <TabsTrigger value="venti" className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500/30 data-[state=active]:to-cyan-600/20 data-[state=active]:text-white whitespace-nowrap">
-                  <Sparkles className="w-4 h-4 mr-1 shrink-0" /> Venti
-                </TabsTrigger>
-                <TabsTrigger value="termiche" className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-orange-500/30 data-[state=active]:to-orange-600/20 data-[state=active]:text-white whitespace-nowrap">
-                  <Sparkles className="w-4 h-4 mr-1 shrink-0" /> Termiche
-                </TabsTrigger>
-                <TabsTrigger value="analisi" className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500/30 data-[state=active]:to-purple-600/20 data-[state=active]:text-white whitespace-nowrap">
-                  <AlertTriangle className="w-4 h-4 mr-1 shrink-0" /> Analisi
-                </TabsTrigger>
+                <TabsTrigger value="meteo">Meteo</TabsTrigger>
+                <TabsTrigger value="venti">Venti</TabsTrigger>
+                <TabsTrigger value="termiche">Termiche</TabsTrigger>
+                <TabsTrigger value="analisi">Analisi</TabsTrigger>
               </TabsList>
 
               <TabsContent value="meteo" className="mt-4">
-                <MeteoTab
-                  currentData={currentData}
-                  dayData={dayData}
-                  site={{ alt: site.altitude }}
-                  thermalDelta={thermalDelta}
-                  stabilityIndex={stabilityIndex}
-                />
+                <MeteoTab currentData={currentData} dayData={dayData} site={{ alt: site.altitude }} thermalDelta={thermalDelta} stabilityIndex={stabilityIndex} />
               </TabsContent>
 
               <TabsContent value="venti" className="mt-4">
-                <VentiTab
-                  currentData={currentData}
-                  dayData={dayData}
-                  windProfile={windProfileSimple}
-                />
+                <VentiTab currentData={currentData} dayData={dayData} windProfile={windProfileSimple} />
               </TabsContent>
 
               <TabsContent value="termiche" className="mt-4">
-                <TermicheTab
-                  currentData={currentData}
-                  dayData={dayData}
-                  site={{ alt: site.altitude, lat: site.lat, lon: site.lon }}
-                  thermalDelta={thermalDelta}
-                  thermalStrength={stabilityIndex}
-                  hourlyData={hourlyDataForTermiche}
-                  selectedHour={selectedHour}
-                  selectedDay={selectedDay}
-                />
+                <TermicheTab currentData={currentData} dayData={dayData} site={{ alt: site.altitude, lat: site.lat, lon: site.lon }} thermalDelta={thermalDelta} thermalStrength={stabilityIndex} hourlyData={hourlyDataForTermiche} selectedHour={selectedHour} selectedDay={selectedDay} />
               </TabsContent>
 
               <TabsContent value="analisi" className="mt-4">
-                <AnalisiTab
-                  currentData={currentData}
-                  site={{ name: site.name, alt: site.altitude }}
-                  thermalDelta={thermalDelta}
-                  selectedDateLabel={dateLabels[selectedDay]}
-                />
+                <AnalisiTab currentData={currentData} site={{ name: site.name, alt: site.altitude }} thermalDelta={thermalDelta} selectedDateLabel={dateLabels[selectedDay]} />
               </TabsContent>
             </Tabs>
           </div>
