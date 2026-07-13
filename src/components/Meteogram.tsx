@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { Sun, Cloud, CloudRain, Wind, Thermometer, Gauge, ArrowUp } from "lucide-react";
+import React, { useMemo } from "react";
+import { Sun, Cloud, CloudRain, Wind, Thermometer } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 import { calcolaTermiche } from "@/utils/termiche";
-import { getVoloStatus } from "@/utils/volo";
 
 interface MeteogramProps {
   dayData: HourData[];
@@ -13,445 +12,394 @@ interface MeteogramProps {
   onHourSelect: (hour: number) => void;
 }
 
-const ORE_VISIBILI = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+const ORE = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+const PANEL_HEIGHT = 38;
+const SVG_WIDTH = 500;
+
+// Direzioni vento
+const DIRS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+
+function getDirArrow(deg: number): string {
+  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
+  return arrows[Math.round(deg / 45) % 8];
+}
+
+function getDirLabel(deg: number): string {
+  return DIRS[Math.round(deg / 45) % 8];
+}
+
+// Da temperatura e quota: stima vento in quota interpolata
+function calcWindLevels(surfaceSpeed: number, surfaceDir: number) {
+  const heights = [10, 500, 1000, 1500, 2000, 3000, 4000];
+  return heights.map((h, i) => {
+    const factor = 1 + i * 0.25;
+    const speed = Math.min(surfaceSpeed * factor, 45);
+    const dir = (surfaceDir + i * 10) % 360;
+    const color =
+      speed < 10 ? "bg-green-400" :
+      speed < 18 ? "bg-lime-400" :
+      speed < 25 ? "bg-amber-400" :
+      speed < 35 ? "bg-orange-400" :
+      "bg-red-500";
+    return { height: h, speed: Math.round(speed), dir: Math.round(dir), dirArrow: getDirArrow(dir), dirLabel: getDirLabel(dir), color };
+  };
+}
 
 export default function Meteogram({ dayData, altitude, selectedHour, onHourSelect }: MeteogramProps) {
   const data = useMemo(() => {
-    return ORE_VISIBILI.map(ora => {
+    return ORE.map(ora => {
       const h = dayData.find(d => d.time.getHours() === ora);
       if (!h) return null;
-      const termiche = calcolaTermiche(h, altitude);
-      const volo = getVoloStatus(h);
-      const isDay = ora >= 6 && ora <= 20;
+      const t = calcolaTermiche(h, altitude);
+      const windLevels = calcWindLevels(h.windSpeed, h.windDir);
       return {
         ora,
-        temp: h.temperature,
-        dewPoint: h.dewPoint,
-        feelsLike: h.apparentTemp ?? h.temperature,
-        windSpeed: h.windSpeed,
-        windGust: h.windGusts ?? 0,
-        windDir: h.windDir,
-        cloudCover: h.cloudCover,
-        precipitation: h.precipitation,
-        pressure: h.pressure,
-        termiche: termiche.rateo,
-        termicheColore: termiche.colore,
-        termicheBase: termiche.base,
-        termicheTop: termiche.top,
-        weatherCode: h.weatherCode,
-        voloLabel: volo.label,
-        voloIcon: volo.icon,
-        voloColore: volo.color,
-        isDay,
+        temp: Math.round(h.temperature),
+        dew: Math.round(h.dewPoint),
+        wind: Math.round(h.windSpeed),
+        gust: Math.round(h.windGusts ?? h.windSpeed * 1.4),
+        dir: Math.round(h.windDir),
+        dirArrow: getDirArrow(h.windDir),
+        dirLabel: getDirLabel(h.windDir),
+        clouds: h.cloudCover,
+        rain: h.precipitation,
+        rateo: t.rateo,
+        base: t.base,
+        top: t.top,
+        termicheColore: t.colore,
+        termicheLabel: t.label,
+        windLevels,
       };
     }).filter(Boolean);
   }, [dayData, altitude]);
 
   if (!data.length) return null;
 
-  // Range per ogni pannello
-  const tempMin = Math.min(...data.map(d => Math.min(d.temp, d.dewPoint, d.feelsLike))) - 2;
-  const tempMax = Math.max(...data.map(d => Math.max(d.temp, d.dewPoint, d.feelsLike))) + 2;
-  const tempRange = Math.max(tempMax - tempMin, 10);
+  const maxRateo = Math.max(...data.map(d => d.rateo), 1);
+  const maxWind = Math.max(...data.map(d => d.wind), 1);
+  const maxGust = Math.max(...data.map(d => d.gust), 1);
+  const maxWindAll = Math.max(maxWind, maxGust);
+  const maxCloudBase = Math.max(...data.map(d => d.base), 1000);
+  const maxRain = Math.max(...data.map(d => d.rain), 0.5);
+  const maxClouds = Math.max(...data.map(d => d.clouds), 50);
 
-  const windMax = Math.max(...data.map(d => Math.max(d.windSpeed, d.windGust)), 1);
-  const windRange = Math.max(windMax, 10);
+  const PAN_START = 18; // spazio per label sinistra
+  const PAN_WIDTH = (SVG_WIDTH - PAN_START) / ORE.length;
 
-  const pressureMin = Math.min(...data.map(d => d.pressure)) - 2;
-  const pressureMax = Math.max(...data.map(d => d.pressure)) + 2;
-  const pressureRange = Math.max(pressureMax - pressureMin, 5);
-
-  const thermalMax = Math.max(...data.map(d => d.termiche), 1);
-
-  function tempToY(temp: number, height: number): number {
-    return height - ((temp - tempMin) / tempRange) * height * 0.85 - height * 0.075;
-  }
-
-  function pressureToY(p: number, height: number): number {
-    return height - ((p - pressureMin) / pressureRange) * height * 0.85 - height * 0.075;
-  }
-
-  function windToHeight(ws: number, height: number): number {
-    return (ws / windRange) * height * 0.9;
-  }
-
-  const PANEL_HEIGHT = 40;
+  // La selezione su SVG
+  const [selectedCol, setSelectedCol] = React.useState(ORE.indexOf(selectedHour));
+  const currentIdx = selectedCol >= 0 ? selectedCol : 0;
+  const current = data[currentIdx] ?? data[0];
 
   return (
-    <div className="bg-slate-800/40 rounded-2xl border border-slate-700/40 p-4 sm:p-6 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/30 to-orange-500/20 border border-amber-500/30 flex items-center justify-center">
-          <Sun className="w-5 h-5 text-amber-400" />
-        </div>
-        <div>
-          <h3 className="text-white font-semibold text-sm">Windgram · Andamento Giornaliero</h3>
-          <p className="text-[11px] text-slate-400">Pannelli: Temperatura, Vento, Nuvolosità, Pioggia, Pressione, Termiche</p>
-        </div>
+    <div className="bg-slate-800/40 rounded-2xl border border-slate-700/40 p-3 sm:p-4 overflow-hidden">
+      <div className="flex items-center gap-2 mb-4">
+        <Sun className="w-5 h-5 text-amber-400" />
+        <h3 className="text-white font-semibold text-sm">Meteogram · {ORE[0]}:00 – {ORE[ORE.length-1]}:00</h3>
       </div>
 
-      {/* LEGENDA */}
-      <div className="flex flex-wrap gap-x-5 gap-y-1.5 mb-4 text-[10px] text-slate-400">
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 rounded bg-amber-400" />
-          <span>Temperatura</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 rounded bg-sky-400 border-dashed" style={{ borderTop: "1px dashed #38bdf8", height: 0 }} />
-          <span>Dew point</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-1 rounded" style={{ background: "linear-gradient(to right, #0ea5e9, #fbbf24)" }} />
-          <span>Vento + raffiche</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-1 rounded bg-blue-400" />
-          <span>Pioggia</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 rounded bg-emerald-400" />
-          <span>Pressione</span>
-        </span>
-      </div>
+      {/* SVG GRAFICO */}
+      <div className="overflow-x-auto -mx-2">
+        <svg
+          viewBox={`0 0 ${SVG_WIDTH} ${PANEL_HEIGHT * 7 + 10}`}
+          className="w-full min-w-[600px]"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          {/* Sfondo linea ore selezionata */}
+          {data.map((d, i) => d.ora === selectedHour && (
+            <rect
+              key={`sel-${i}`}
+              x={PAN_START + i * PAN_WIDTH}
+              y={0}
+              width={PAN_WIDTH}
+              height={PANEL_HEIGHT * 7 + 10}
+              fill="rgba(251, 191, 36, 0.06)"
+              stroke="rgba(251, 191, 36, 0.3)"
+              strokeWidth={0.5}
+            />
+          ))}
 
-      {/* SVG PANNELLI */}
-      <div className="relative" style={{ height: `${PANEL_HEIGHT * 6 + 30}px` }}>
-        <svg className="absolute inset-0 w-full h-full" viewBox={`0 0 ${data.length * 50} ${PANEL_HEIGHT * 6 + 30}`} preserveAspectRatio="none">
+          {[0, 1, 2, 3, 4, 5, 6].map(panel => {
+            const yOff = panel * PANEL_HEIGHT + 2;
+            const labels = ["VENTO IN QUOTA", "VENTO SUOLO", "TERMICHE", "TEMPERATURA", "PIOGGIA", "BASE NUVOLE", "COPERTURA"];
 
-          {/* RIPETI PER OGNI PANNELLO */}
-          {[0, 1, 2, 3, 4, 5].map(panel => {
-            const yOffset = panel * PANEL_HEIGHT + 5;
-            const isFirst = panel === 0;
-            const isLast = panel === 5;
-            const label = ["Temperatura", "Vento", "Nuvolosità", "Pioggia", "Pressione", "Termiche"][panel];
-
-            // Griglia orizzontale
-            const gridLines = [];
-            for (let i = 0; i < 4; i++) {
-              gridLines.push(
-                <line
-                  key={`grid-${panel}-${i}`}
-                  x1={0} y1={yOffset + (PANEL_HEIGHT - 10) * (i / 4)}
-                  x2={data.length * 50} y2={yOffset + (PANEL_HEIGHT - 10) * (i / 4)}
-                  stroke="rgba(100, 116, 139, 0.12)"
-                  strokeWidth={0.3}
-                />
-              );
+            // Griglia
+            const grid = [];
+            if (panel < 3) {
+              for (let g = 0; g < 3; g++) {
+                grid.push(
+                  <line key={`g-${panel}-${g}`}
+                    x1={PAN_START} y1={yOff + g * (PANEL_HEIGHT - 6) / 3}
+                    x2={SVG_WIDTH} y2={yOff + g * (PANEL_HEIGHT - 6) / 3}
+                    stroke="rgba(100, 116, 139, 0.1)" strokeWidth={0.3}
+                  />
+                );
+              }
             }
 
             return (
               <g key={panel}>
                 {/* Label pannello */}
-                <text
-                  x={2} y={yOffset + 6}
-                  fill="#64748b"
-                  fontSize={3.5}
-                  fontWeight={700}
-                  opacity={0.7}
-                >
-                  {label}
+                <text x={2} y={yOff + (PANEL_HEIGHT - 4) / 2 + 1} fill="#64748b" fontSize={3} fontWeight={700} textAnchor="start">
+                  {labels[panel]}
                 </text>
+                <line x1={PAN_START} y1={yOff + PANEL_HEIGHT - 4} x2={SVG_WIDTH} y2={yOff + PANEL_HEIGHT - 4} stroke="rgba(100, 116, 139, 0.2)" strokeWidth={0.3} />
+                {grid}
 
-                {gridLines}
+                {/* === PANNELLO 0: VENTO IN QUOTA === */}
+                {panel === 0 && data.map((d, i) => {
+                  const x = PAN_START + i * PAN_WIDTH + PAN_WIDTH / 2;
+                  return d.windLevels.filter((_, idx) => idx % 2 === 0).map((wl, wi) => {
+                    const y = yOff + (PANEL_HEIGHT - 6) * 0.85 - wi * 8;
+                    const barH = 6;
+                    const colorMap: Record<string, string> = {
+                      "bg-green-400": "#4ade80",
+                      "bg-lime-400": "#a3e635",
+                      "bg-amber-400": "#fbbf24",
+                      "bg-orange-400": "#fb923c",
+                      "bg-red-500": "#ef4444",
+                    };
+                    return (
+                      <g key={`wl-${i}-${wi}`}>
+                        <rect x={x - 4} y={y} width={8} height={barH} rx={1} fill={colorMap[wl.color] ?? "#4ade80"} opacity={0.7} />
+                        <text x={x + 7} y={y + 4} fill="#94a3b8" fontSize={2.8}>{wl.speed}</text>
+                        <text x={x - 8} y={y + 4} fill="#64748b" fontSize={3} textAnchor="end">{wl.dirArrow} {wl.dirLabel}</text>
+                        <text x={x - 12} y={y + 3} fill="#475569" fontSize={2.5} textAnchor="end">
+                          {wl.height < 100 ? `${wl.height}m` : `${wl.height/1000}km`}
+                        </text>
+                      </g>
+                    );
+                  });
+                })}
 
-                {/* PANNELLO 0: TEMPERATURA */}
-                {panel === 0 && (
+                {/* === PANNELLO 1: VENTO SUOLO + RAFFICHE + TEMPERATURA === */}
+                {panel === 1 && data.map((d, i) => {
+                  const x = PAN_START + i * PAN_WIDTH + PAN_WIDTH / 2;
+                  const barH = ((d.wind ?? 0) / maxWindAll) * (PANEL_HEIGHT - 12);
+                  const gustH = ((d.gust ?? 0) / maxWindAll) * (PANEL_HEIGHT - 12);
+                  const barW = PAN_WIDTH * 0.5;
+                  return (
+                    <g key={`ws-${i}`}>
+                      {/* Barra vento */}
+                      <rect x={x - barW / 2} y={yOff + (PANEL_HEIGHT - 8) - barH} width={barW} height={barH} rx={1} fill="#60a5fa" opacity={0.6} />
+                      {/* Linea raffica */}
+                      {gustH > barH && (
+                        <line x1={x} y1={yOff + (PANEL_HEIGHT - 8) - gustH} x2={x} y2={yOff + (PANEL_HEIGHT - 8)} stroke="#f97316" strokeWidth={0.6} strokeDasharray="2,1" />
+                      )}
+                      {/* Pallino raffica */}
+                      {gustH > barH && <circle cx={x} cy={yOff + (PANEL_HEIGHT - 8) - gustH} r={1} fill="#f97316" />}
+                      {/* Etichetta velocità */}
+                      <text x={x} y={yOff + (PANEL_HEIGHT - 8) - barH - 1} fill="#60a5fa" fontSize={3} textAnchor="middle" fontWeight={600}>
+                        {d.wind}
+                        {d.gust > d.wind && <tspan fill="#fb923c" fontSize={2.5}>/{d.gust}</tspan>}
+                      </text>
+                      {/* Temperatura sulla barra */}
+                      <text x={x} y={yOff + (PANEL_HEIGHT - 8) - barH - 5} fill="#fbbf24" fontSize={3} textAnchor="middle" fontWeight={700}>
+                        {d.temp}°
+                      </text>
+                      {/* Direzione */}
+                      <text x={x} y={yOff + (PANEL_HEIGHT - 2)} fill="#94a3b8" fontSize={2.5} textAnchor="middle">
+                        {d.dirArrow} {d.dirLabel}
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {/* === PANNELLO 2: TERMICHE === */}
+                {panel === 2 && data.map((d, i) => {
+                  const x = PAN_START + i * PAN_WIDTH + PAN_WIDTH / 2;
+                  const barH = ((d.rateo ?? 0) / maxRateo) * (PANEL_HEIGHT - 12);
+                  const barW = PAN_WIDTH * 0.55;
+                  return (
+                    <g key={`th-${i}`}>
+                      <rect x={x - barW / 2} y={yOff + (PANEL_HEIGHT - 8) - barH} width={barW} height={barH} rx={1} fill={d.termicheColore} opacity={0.75} />
+                      <text x={x} y={yOff + (PANEL_HEIGHT - 8) - barH - 1} fill={d.termicheColore} fontSize={3.2} textAnchor="middle" fontWeight={800}>
+                        {d.rateo.toFixed(1)}
+                      </text>
+                      <text x={x} y={yOff + (PANEL_HEIGHT - 2)} fill="#64748b" fontSize={2.3} textAnchor="middle">
+                        {d.termicheLabel.slice(0, 10)}
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {/* === PANNELLO 3: TEMPERATURA + DEW POINT === */}
+                {panel === 3 && (
                   <>
-                    {/* Area temperatura */}
-                    <polyline
-                      fill="rgba(251, 191, 36, 0.08)"
-                      stroke="none"
-                      points={
-                        data.map((d, i) => {
-                          const x = (i + 0.5) * 50;
-                          const y = tempToY(d.temp, PANEL_HEIGHT - 10) + yOffset;
-                          return `${x},${y}`;
-                        }).join(" ") +
-                        ` ${(data.length - 0.5) * 50},${yOffset + PANEL_HEIGHT - 10} ${0.5 * 50},${yOffset + PANEL_HEIGHT - 10}`
-                      }
-                    />
                     {/* Linea temperatura */}
                     <polyline
-                      fill="none"
-                      stroke="#fbbf24"
-                      strokeWidth={0.7}
-                      vectorEffect="non-scaling-stroke"
-                      points={
-                        data.map((d, i) => {
-                          const x = (i + 0.5) * 50;
-                          const y = tempToY(d.temp, PANEL_HEIGHT - 10) + yOffset;
-                          return `${x},${y}`;
-                        }).join(" ")
-                      }
+                      fill="none" stroke="#fbbf24" strokeWidth={0.8}
+                      points={data.map((d, i) => {
+                        const x = PAN_START + i * PAN_WIDTH + PAN_WIDTH / 2;
+                        const y = yOff + (PANEL_HEIGHT - 8) - ((d.temp - 10) / 30) * (PANEL_HEIGHT - 10);
+                        return `${x},${y}`;
+                      }).join(" ")}
                     />
-                    {/* Punti temperatura */}
                     {data.map((d, i) => {
-                      const x = (i + 0.5) * 50;
-                      const y = tempToY(d.temp, PANEL_HEIGHT - 10) + yOffset;
-                      return (
-                        <circle
-                          key={`temp-${i}`}
-                          cx={x} cy={y}
-                          r={0.8}
-                          fill="#fbbf24"
-                          stroke="rgba(0,0,0,0.3)"
-                          strokeWidth={0.2}
-                        />
-                      );
+                      const x = PAN_START + i * PAN_WIDTH + PAN_WIDTH / 2;
+                      const y = yOff + (PANEL_HEIGHT - 8) - ((d.temp - 10) / 30) * (PANEL_HEIGHT - 10);
+                      return <circle key={`td-${i}`} cx={x} cy={y} r={1.2} fill="#fbbf24" stroke="#1e293b" strokeWidth={0.2} />;
                     })}
                     {/* Linea dew point */}
                     <polyline
-                      fill="none"
-                      stroke="#38bdf8"
-                      strokeWidth={0.5}
-                      strokeDasharray="3,2"
-                      vectorEffect="non-scaling-stroke"
-                      points={
-                        data.map((d, i) => {
-                          const x = (i + 0.5) * 50;
-                          const y = tempToY(d.dewPoint, PANEL_HEIGHT - 10) + yOffset;
-                          return `${x},${y}`;
-                        }).join(" ")
-                      }
+                      fill="none" stroke="#38bdf8" strokeWidth={0.6} strokeDasharray="2,2"
+                      points={data.map((d, i) => {
+                        const x = PAN_START + i * PAN_WIDTH + PAN_WIDTH / 2;
+                        const y = yOff + (PANEL_HEIGHT - 8) - ((d.dew - 5) / 25) * (PANEL_HEIGHT - 10);
+                        return `${x},${y}`;
+                      }).join(" ")}
                     />
-                    {/* Punti dew point */}
                     {data.map((d, i) => {
-                      const x = (i + 0.5) * 50;
-                      const y = tempToY(d.dewPoint, PANEL_HEIGHT - 10) + yOffset;
-                      return (
-                        <circle
-                          key={`dew-${i}`}
-                          cx={x} cy={y}
-                          r={0.6}
-                          fill="#38bdf8"
-                          stroke="rgba(0,0,0,0.3)"
-                          strokeWidth={0.2}
-                        />
-                      );
+                      const x = PAN_START + i * PAN_WIDTH + PAN_WIDTH / 2;
+                      const y = yOff + (PANEL_HEIGHT - 8) - ((d.dew - 5) / 25) * (PANEL_HEIGHT - 10);
+                      return <circle key={`dw-${i}`} cx={x} cy={y} r={0.8} fill="#38bdf8" />;
                     })}
-                    {/* Etich. valori */}
+                    {/* Etichette */}
                     {data.map((d, i) => {
                       if (i % 2 !== 0) return null;
-                      const x = (i + 0.5) * 50;
-                      const y = tempToY(d.temp, PANEL_HEIGHT - 10) + yOffset - 2;
+                      const x = PAN_START + i * PAN_WIDTH + PAN_WIDTH / 2;
+                      const yTemp = yOff + (PANEL_HEIGHT - 8) - ((d.temp - 10) / 30) * (PANEL_HEIGHT - 10);
+                      const yDew = yOff + (PANEL_HEIGHT - 8) - ((d.dew - 5) / 25) * (PANEL_HEIGHT - 10);
                       return (
-                        <text key={`temp-label-${i}`} x={x} y={y} fill="#fbbf24" fontSize={3} textAnchor="middle" fontWeight={600}>
-                          {Math.round(d.temp)}°
-                        </text>
-                      );
-                    })}
-                  </>
-                )}
-
-                {/* PANNELLO 1: VENTO */}
-                {panel === 1 && (
-                  <>
-                    {/* Barre vento */}
-                    {data.map((d, i) => {
-                      const x = (i + 0.5) * 50;
-                      const barWidth = 8;
-                      const h = windToHeight(d.windSpeed, PANEL_HEIGHT - 10);
-                      return (
-                        <g key={`wind-${i}`}>
-                          {/* Barra vento */}
-                          <rect
-                            x={x - barWidth / 2}
-                            y={yOffset + (PANEL_HEIGHT - 10) - h}
-                            width={barWidth}
-                            height={h}
-                            rx={1}
-                            fill="rgba(14, 165, 233, 0.5)"
-                          />
-                          {/* Linea raffica */}
-                          {d.windGust > 0 && (
-                            <line
-                              x1={x} y1={yOffset}
-                              x2={x} y2={yOffset + (PANEL_HEIGHT - 10) - windToHeight(Math.min(d.windGust, windRange), PANEL_HEIGHT - 10)}
-                              stroke="#f97316"
-                              strokeWidth={0.5}
-                              strokeDasharray="2,1"
-                            />
-                          )}
-                          {/* Etichetta velocità */}
-                          <text x={x} y={yOffset + (PANEL_HEIGHT - 10) - h - 1} fill="#38bdf8" fontSize={3} textAnchor="middle" fontWeight={600}>
-                            {Math.round(d.windSpeed)}
-                          </text>
+                        <g key={`tl-${i}`}>
+                          <text x={x + 6} y={yTemp} fill="#fbbf24" fontSize={2.8} fontWeight={600}>{d.temp}°</text>
+                          <text x={x + 6} y={yDew} fill="#38bdf8" fontSize={2.5}>{d.dew}°</text>
                         </g>
                       );
                     })}
                   </>
                 )}
 
-                {/* PANNELLO 2: NUOVOLOSITÀ */}
-                {panel === 2 && (
-                  <>
-                    {data.map((d, i) => {
-                      const x = (i + 0.5) * 50;
-                      const barWidth = 10;
-                      const h = (d.cloudCover / 100) * (PANEL_HEIGHT - 10);
-                      return (
-                        <g key={`cloud-${i}`}>
-                          <defs>
-                            <linearGradient id={`cloudGrad-${i}`} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor={d.cloudCover > 70 ? "rgba(255,255,255,0.3)" : "rgba(251, 191, 36, 0.2)"} />
-                              <stop offset="100%" stopColor="rgba(14, 165, 233, 0.6)" />
-                            </linearGradient>
-                          </defs>
-                          <rect
-                            x={x - barWidth / 2}
-                            y={yOffset + (PANEL_HEIGHT - 10) - h}
-                            width={barWidth}
-                            height={h}
-                            rx={1}
-                            fill={`url(#cloudGrad-${i})`}
-                          />
-                          <text x={x} y={yOffset + (PANEL_HEIGHT - 10) - h - 1} fill="#94a3b8" fontSize={3} textAnchor="middle">
-                            {d.cloudCover}%
-                          </text>
-                        </g>
-                      );
-                    })}
-                  </>
-                )}
-
-                {/* PANNELLO 3: PIOGGIA */}
-                {panel === 3 && (
-                  <>
-                    {data.map((d, i) => {
-                      const x = (i + 0.5) * 50;
-                      const barWidth = 8;
-                      const maxPrecip = Math.max(...data.map(p => p.precipitation), 0.5);
-                      const h = (d.precipitation / maxPrecip) * (PANEL_HEIGHT - 10);
-                      if (d.precipitation <= 0) return null;
-                      return (
-                        <g key={`rain-${i}`}>
-                          <rect
-                            x={x - barWidth / 2}
-                            y={yOffset + (PANEL_HEIGHT - 10) - h}
-                            width={barWidth}
-                            height={h}
-                            rx={1}
-                            fill="rgba(59, 130, 246, 0.6)"
-                          />
-                          <text x={x} y={yOffset + (PANEL_HEIGHT - 10) - h - 1} fill="#60a5fa" fontSize={3} textAnchor="middle" fontWeight={600}>
-                            {d.precipitation.toFixed(1)}
-                          </text>
-                        </g>
-                      );
-                    })}
-                    {/* Se niente pioggia */}
-                    {data.every(d => d.precipitation === 0) && (
-                      <text x={(data.length * 50) / 2} y={yOffset + (PANEL_HEIGHT - 10) / 2} fill="#475569" fontSize={4} textAnchor="middle">
-                        No precipitazioni
+                {/* === PANNELLO 4: PIOGGIA === */}
+                {panel === 4 && data.map((d, i) => {
+                  const x = PAN_START + i * PAN_WIDTH + PAN_WIDTH / 2;
+                  const barH = maxRain > 0 ? ((d.rain ?? 0) / maxRain) * (PANEL_HEIGHT - 10) : 0;
+                  const barW = PAN_WIDTH * 0.5;
+                  if (d.rain <= 0) return null;
+                  return (
+                    <g key={`rn-${i}`}>
+                      <rect x={x - barW / 2} y={yOff + (PANEL_HEIGHT - 8) - barH} width={barW} height={barH} rx={1} fill="rgba(59, 130, 246, 0.5)" />
+                      <text x={x} y={yOff + (PANEL_HEIGHT - 8) - barH - 1} fill="#60a5fa" fontSize={3} textAnchor="middle" fontWeight={600}>
+                        {d.rain.toFixed(1)}
                       </text>
-                    )}
-                  </>
+                    </g>
+                  );
+                })}
+                {panel === 4 && data.every(d => d.rain === 0) && (
+                  <text x={SVG_WIDTH / 2 + 20} y={yOff + (PANEL_HEIGHT - 4) / 2} fill="#475569" fontSize={3.5} textAnchor="middle">No pioggia</text>
                 )}
 
-                {/* PANNELLO 4: PRESSIONE */}
-                {panel === 4 && (
-                  <>
-                    <polyline
-                      fill="rgba(52, 211, 153, 0.08)"
-                      stroke="none"
-                      points={
-                        data.map((d, i) => {
-                          const x = (i + 0.5) * 50;
-                          const y = pressureToY(d.pressure, PANEL_HEIGHT - 10) + yOffset;
-                          return `${x},${y}`;
-                        }).join(" ") +
-                        ` ${(data.length - 0.5) * 50},${yOffset + PANEL_HEIGHT - 10} ${0.5 * 50},${yOffset + PANEL_HEIGHT - 10}`
-                      }
-                    />
-                    <polyline
-                      fill="none"
-                      stroke="#34d399"
-                      strokeWidth={0.7}
-                      vectorEffect="non-scaling-stroke"
-                      points={
-                        data.map((d, i) => {
-                          const x = (i + 0.5) * 50;
-                          const y = pressureToY(d.pressure, PANEL_HEIGHT - 10) + yOffset;
-                          return `${x},${y}`;
-                        }).join(" ")
-                      }
-                    />
-                    {data.map((d, i) => {
-                      if (i % 2 !== 0) return null;
-                      const x = (i + 0.5) * 50;
-                      const y = pressureToY(d.pressure, PANEL_HEIGHT - 10) + yOffset - 2;
-                      return (
-                        <text key={`pres-${i}`} x={x} y={y} fill="#34d399" fontSize={3} textAnchor="middle" fontWeight={600}>
-                          {Math.round(d.pressure)}
-                        </text>
-                      );
-                    })}
-                  </>
-                )}
+                {/* === PANNELLO 5: BASE NUVOLE === */}
+                {panel === 5 && data.map((d, i) => {
+                  const x = PAN_START + i * PAN_WIDTH + PAN_WIDTH / 2;
+                  const barH = (d.base / maxCloudBase) * (PANEL_HEIGHT - 10);
+                  const barW = PAN_WIDTH * 0.55;
+                  return (
+                    <g key={`cb-${i}`}>
+                      <rect x={x - barW / 2} y={yOff + (PANEL_HEIGHT - 8) - barH} width={barW} height={barH} rx={1} fill="rgba(168, 85, 247, 0.4)" />
+                      <text x={x} y={yOff + (PANEL_HEIGHT - 8) - barH - 1} fill="#c084fc" fontSize={3} textAnchor="middle" fontWeight={600}>
+                        {d.base}
+                      </text>
+                    </g>
+                  );
+                })}
 
-                {/* PANNELLO 5: TERMICHE */}
-                {panel === 5 && (
-                  <>
-                    {data.map((d, i) => {
-                      const x = (i + 0.5) * 50;
-                      const barWidth = 10;
-                      const h = (d.termiche / Math.max(thermalMax, 1)) * (PANEL_HEIGHT - 10);
-                      return (
-                        <g key={`therm-${i}`}>
-                          <rect
-                            x={x - barWidth / 2}
-                            y={yOffset + (PANEL_HEIGHT - 10) - h}
-                            width={barWidth}
-                            height={h}
-                            rx={1}
-                            fill={d.termicheColore}
-                            opacity={0.7}
-                          />
-                          <text x={x} y={yOffset + (PANEL_HEIGHT - 10) - h - 1} fill={d.termicheColore} fontSize={3} textAnchor="middle" fontWeight={700}>
-                            {d.termiche.toFixed(1)}
-                          </text>
-                        </g>
-                      );
-                    })}
-                  </>
-                )}
+                {/* === PANNELLO 6: COPERTURA NUVOLE === */}
+                {panel === 6 && data.map((d, i) => {
+                  const x = PAN_START + i * PAN_WIDTH + PAN_WIDTH / 2;
+                  const barH = (d.clouds / maxClouds) * (PANEL_HEIGHT - 10) * 0.9;
+                  const barW = PAN_WIDTH * 0.55;
+                  const opacity = 0.3 + (d.clouds / 100) * 0.6;
+                  return (
+                    <g key={`cc-${i}`}>
+                      <rect x={x - barW / 2} y={yOff + (PANEL_HEIGHT - 8) - barH} width={barW} height={barH} rx={1} fill="rgba(148, 163, 184, 0.5)" opacity={opacity} />
+                      <text x={x} y={yOff + (PANEL_HEIGHT - 8) - barH - 1} fill="#94a3b8" fontSize={3} textAnchor="middle" fontWeight={600}>
+                        {d.clouds}%
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {/* RIGA ORE IN BASSO */}
+                {panel === 6 && data.map((d, i) => {
+                  const isSelected = d.ora === selectedHour;
+                  const x = PAN_START + i * PAN_WIDTH + PAN_WIDTH / 2;
+                  return (
+                    <g key={`hr-${i}`} onClick={() => { setSelectedCol(i); onHourSelect(d.ora); }} style={{ cursor: "pointer" }}>
+                      <rect x={x - PAN_WIDTH / 2} y={yOff + PANEL_HEIGHT - 3} width={PAN_WIDTH} height={6} fill={isSelected ? "rgba(251, 191, 36, 0.15)" : "transparent"} rx={1} />
+                      <text x={x} y={yOff + PANEL_HEIGHT + 1} fill={isSelected ? "#fbbf24" : "#64748b"} fontSize={3.5} textAnchor="middle" fontWeight={isSelected ? 800 : 500}>
+                        {d.ora}:00
+                      </text>
+                    </g>
+                  );
+                })}
               </g>
             );
           })}
         </svg>
       </div>
 
-      {/* ORE IN BASSO (asse X) */}
-      <div className="flex justify-between mt-1 mb-4">
-        {data.map((d, i) => {
-          const isSelected = d.ora === selectedHour;
-          return (
-            <button
-              key={d.ora}
-              onClick={() => onHourSelect(d.ora)}
-              className={`
-                flex flex-col items-center gap-0.5 px-1.5 py-1 rounded-lg transition-all text-[10px]
-                ${isSelected
-                  ? "bg-amber-500/20 border border-amber-500/40 scale-105"
-                  : "bg-transparent hover:bg-slate-700/30"
-                }
-              `}
-            >
-              <span className={`font-bold ${isSelected ? "text-amber-300" : "text-slate-400"}`}>
-                {String(d.ora).padStart(2, "0")}
-              </span>
-              {/* Mini barretta termiche */}
-              <div className="w-5 h-1 bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full"
-                  style={{ width: `${(d.termiche / Math.max(thermalMax, 1)) * 100}%`, backgroundColor: d.termicheColore }}
-                />
-              </div>
-              <span className="text-slate-500">{Math.round(d.temp)}°</span>
-            </button>
-          );
-        })}
-      </div>
+      {/* TABELLA DATI ORA SELEZIONATA */}
+      {current && (
+        <div className="mt-5 bg-slate-800/60 border border-amber-500/20 rounded-2xl p-4 text-sm">
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-black text-amber-300 text-base">Ore {current.ora}:00</span>
+            <div className="flex gap-1">
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => ORE[i] !== undefined && (
+                <button
+                  key={ORE[i]}
+                  onClick={() => { setSelectedCol(i); onHourSelect(ORE[i]); }}
+                  className={`w-6 h-6 rounded text-[9px] font-bold ${
+                    ORE[i] === selectedHour
+                      ? "bg-amber-500/30 text-amber-300 border border-amber-400/40"
+                      : "bg-slate-700/50 text-slate-400 hover:bg-slate-700"
+                  }`}
+                >
+                  {ORE[i]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+            <div className="bg-slate-700/40 rounded-xl p-2.5 text-center">
+              <div className="text-[10px] text-slate-400 mb-0.5">Temperatura</div>
+              <div className="text-base font-bold text-amber-300">{current.temp}°C</div>
+            </div>
+            <div className="bg-slate-700/40 rounded-xl p-2.5 text-center">
+              <div className="text-[10px] text-slate-400 mb-0.5">Dew point</div>
+              <div className="text-base font-bold text-sky-300">{current.dew}°C</div>
+            </div>
+            <div className="bg-slate-700/40 rounded-xl p-2.5 text-center">
+              <div className="text-[10px] text-slate-400 mb-0.5">Vento</div>
+              <div className="text-base font-bold text-sky-300">{current.wind} <span className="text-xs text-slate-400">km/h</span></div>
+            </div>
+            <div className="bg-slate-700/40 rounded-xl p-2.5 text-center">
+              <div className="text-[10px] text-slate-400 mb-0.5">Raffica</div>
+              <div className="text-base font-bold text-orange-300">{current.gust} <span className="text-xs text-slate-400">km/h</span></div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="bg-slate-700/40 rounded-xl p-2.5 text-center">
+              <div className="text-[10px] text-slate-400 mb-0.5">Direzione</div>
+              <div className="text-base font-bold text-slate-200">{current.dirArrow} {current.dirLabel}</div>
+            </div>
+            <div className="bg-slate-700/40 rounded-xl p-2.5 text-center">
+              <div className="text-[10px] text-slate-400 mb-0.5">Termiche</div>
+              <div className="text-base font-bold" style={{ color: current.termicheColore }}>{current.rateo.toFixed(1)} <span className="text-xs text-slate-400">m/s</span></div>
+            </div>
+            <div className="bg-slate-700/40 rounded-xl p-2.5 text-center">
+              <div className="text-[10px] text-slate-400 mb-0.5">Base nuvole</div>
+              <div className="text-base font-bold text-purple-300">{current.base} <span className="text-xs text-slate-400">m</span></div>
+            </div>
+            <div className="bg-slate-700/40 rounded-xl p-2.5 text-center">
+              <div className="text-[10px] text-slate-400 mb-0.5">Copertura</div>
+              <div className="text-base font-bold text-slate-200">{current.clouds}%</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
