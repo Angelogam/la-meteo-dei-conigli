@@ -25,7 +25,6 @@ export function calcolaTermiche(weather: HourData, altitude: number): TermicheDa
     dewPoint,
     humidity,
     windSpeed,
-    windDir,
     temp80m,
     temp120m,
     cloudCover,

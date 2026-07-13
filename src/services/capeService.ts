@@ -2,8 +2,9 @@
 
 const BASE_URL = "https://api.open-meteo.com/v1/forecast";
 
-// Cache per non rifare sempre le stesse richieste
+// Cache per non rifare sempre le stesse richieste — MAX 10 elementi
 const capeCache = new Map<string, { time: string; cape: number; cin: number; li: number }[]>();
+const MAX_CACHE_SIZE = 10;
 
 export interface CapeData {
   time: Date;
@@ -77,7 +78,11 @@ export async function fetchCapeData(lat: number, lon: number): Promise<CapeData[
       li: raw.hourly.lifted_index?.[i] ?? 0,
     }));
 
-    // Salva in cache
+    // Salva in cache — gestione limite dimensione
+    if (capeCache.size >= MAX_CACHE_SIZE) {
+      const firstKey = capeCache.keys().next().value;
+      if (firstKey) capeCache.delete(firstKey);
+    }
     capeCache.set(cacheKey, capes.map(c => ({
       time: c.time.toISOString(),
       cape: c.cape,

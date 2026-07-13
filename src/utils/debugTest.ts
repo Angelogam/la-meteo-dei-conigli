@@ -71,7 +71,7 @@ export function debugMeteoData(data: any) {
   }
 
   // 8. Verifica dew point
-  dews = data.hourly.dewpoint_2m?.filter((d: any) => d != null) || [];
+  const dews = data.hourly.dewpoint_2m?.filter((d: any) => d != null) || [];
   if (dews.length > 0) {
     console.log(`✅ Dew points: ${dews.length} valori`);
   }
