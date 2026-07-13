@@ -66,7 +66,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
         <span className="text-sm font-bold text-slate-200 tracking-wide">Previsioni orarie 9:00 – 19:00</span>
         <span className="text-[10px] text-slate-500 bg-slate-800/60 px-2 py-0.5 rounded-full">{rows.length} ore</span>
       </div>
-      <div className="min-w-[800px] p-1">
+      <div className="p-1">
         <table className="w-full text-xs">
           <thead>
             <tr className="text-slate-400 text-[10px] uppercase tracking-wider">
