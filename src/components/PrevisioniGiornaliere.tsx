@@ -6,7 +6,7 @@ import {
   CloudLightning, CloudFog, Thermometer, Wind, Droplets,
   ArrowUp, CheckCircle, Gauge, Umbrella, Sparkles
 } from "lucide-react";
-import { degreesToCardinal, windArrow, formatWindDir } from "@/utils/windDirections";
+import { degreesToCardinal, windArrow } from "@/utils/windDirections";
 
 interface PrevisioniGiornaliereProps {
   enrichedDaily: any[];
@@ -34,6 +34,13 @@ function formatDate(date: any): string {
   if (!date) return "";
   const d = date instanceof Date ? date : new Date(date);
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+}
+
+function getDayLabel(idx: number, dateStr: string): string {
+  if (idx === 0) return `Oggi ${dateStr}`;
+  if (idx === 1) return `Domani ${dateStr}`;
+  if (idx === 2) return `Dopodomani ${dateStr}`;
+  return `Giorno ${dateStr}`;
 }
 
 export default function PrevisioniGiornaliere({
@@ -124,7 +131,6 @@ export default function PrevisioniGiornaliere({
       let termicheColore = "text-slate-400";
       if (salita >= 4) { termicheLabel = "Forti 🔥"; termicheColore = "text-red-400"; }
       else if (salita >= 3) { termicheLabel = "Buone 🪂"; termicheColore = "text-orange-400"; }
-      else if (salita >=```typescript
       else if (salita >= 2) { termicheLabel = "Moderate 👍"; termicheColore = "text-amber-400"; }
       else if (salita >= 1) { termicheLabel = "Deboli 👎"; termicheColore = "text-amber-300"; }
       else if (salita >= 0.3) { termicheLabel = "Molto deboli ☁️"; termicheColore = "text-yellow-300"; }
@@ -174,13 +180,7 @@ export default function PrevisioniGiornaliere({
       <div className="grid grid-cols-3 gap-2">
         {enrichedDaily.slice(0, 3).map((day: any, idx: number) => {
           const isActive = idx === selectedDay;
-          
-          let label = dateLabels[idx] || "Giorno";
           const dateStr = formatDate(day.date);
-          
-          if (idx === 0) label = `Oggi ${dateStr}`;
-          else if (idx === 1) label = `Domani ${dateStr}`;
-          else if (idx === 2) label = `Dopodomani ${dateStr}`;
 
           return (
             <button
@@ -192,7 +192,7 @@ export default function PrevisioniGiornaliere({
                   : "bg-slate-800/30 border-slate-700/40 hover:border-emerald-400/30"
               }`}
             >
-              <div className="text-xs font-bold text-white mb-2">{label}</div>
+              <div className="text-xs font-bold text-white mb-2">{getDayLabel(idx, dateStr)}</div>
               <div className="flex items-end justify-between">
                 <div>{getWeatherIcon(day.weatherCode || 0, 28)}</div>
                 <div className="text-right">
@@ -215,8 +215,10 @@ export default function PrevisioniGiornaliere({
           {fasce.map((fascia: any, idx: number) => {
             if (!fascia) return null;
 
-            const scoreColor = fascia.score >= 7 ? "bg-emerald-500/20 border-emerald-400/30 text-emerald-300" 
-              : fascia.score >= 4 ? "bg-amber-500/20 border-amber-400/30 text-amber-300" 
+            const scoreColor = fascia.score >= 7
+              ? "bg-emerald-500/20 border-emerald-400/30 text-emerald-300"
+              : fascia.score >= 4
+              ? "bg-amber-500/20 border-amber-400/30 text-amber-300"
               : "bg-red-500/20 border-red-400/30 text-red-300";
 
             const dirCardinal = degreesToCardinal(fascia.windDirMedia);
@@ -276,7 +278,7 @@ export default function PrevisioniGiornaliere({
                     <span className="text-[10px] font-bold text-purple-300">{fascia.pressMedia} hPa</span>
                   </div>
                   <div className="bg-slate-900/50 rounded px-2 py-1 flex items-center justify-between">
-                    {fascia.precipTot === 0 
+                    {fascia.precipTot === 0
                       ? <CheckCircle className="w-3 h-3 text-green-400" />
                       : <Umbrella className="w-3 h-3 text-blue-400" />
                     }
