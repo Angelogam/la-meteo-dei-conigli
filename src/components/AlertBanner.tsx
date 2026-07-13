@@ -48,11 +48,11 @@ export default function AlertBanner({ alert }: AlertBannerProps) {
 
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 rounded-2xl border ${s.bg} ${s.border} mb-4 card-neon relative overflow-hidden`}
+      className={`flex items-center justify-center gap-3 px-4 py-3 rounded-2xl border ${s.bg} ${s.border} mb-4 card-neon relative overflow-hidden`}
     >
       <div className="absolute inset-0 animate-shimmer pointer-events-none opacity-20" />
       <span className="shrink-0 text-xl relative z-10">{alert.icon}</span>
-      <span className={`text-sm font-bold ${s.color} leading-snug flex-1 relative z-10 tracking-wide`}>
+      <span className={`text-sm font-bold ${s.color} leading-snug text-center relative z-10 tracking-wide`}>
         {alert.message}
       </span>
       <Sparkles className={`w-4 h-4 animate-twinkle shrink-0 relative z-10 ${
