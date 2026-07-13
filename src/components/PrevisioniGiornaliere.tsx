@@ -95,18 +95,6 @@ export default function PrevisioniGiornaliere({
     return getDominantWeatherCode(codici);
   }, [dayData]);
 
-  // Prepara i codici dominanti per tutti e 3 i giorni (vengono passati dall'esterno come enrichedDaily con dayData)
-  const dailyWeatherCodes = useMemo(() => {
-    if (!enrichedDaily || enrichedDaily.length === 0) return {};
-    const codes: Record<string, number> = {};
-    enrichedDaily.slice(0, 3).forEach((day: any, idx: number) => {
-      // Se abbiamo dayData per questo giorno, usiamo quello
-      const dateStr = day.date ? formatDate(day.date) : "";
-      codes[dateStr] = day.weatherCode ?? 0;
-    });
-    return codes;
-  }, [enrichedDaily]);
-
   // Calcola statistiche per fasce orarie REALI con dati Open-Meteo
   const fasce = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
@@ -239,10 +227,11 @@ export default function PrevisioniGiornaliere({
           const isActive = idx === selectedDay;
           const dateStr = formatDate(day.date);
           
-          // Usiamo il weatherCode dominante dalle ore del giorno
-          const weatherCode = isActive && dayData?.length > 0 
-            ? dominantCode 
-            : (day.weatherCode ?? 0);
+          // IGNORA completamente il weatherCode raw da enrichedDaily
+          // Usa SEMPRE il codice dominante calcolato dalle ore
+          // Se siamo sul giorno selezionato, usiamo dominantCode calcolato da dayData
+          // Altrimenti usiamo 0 (sereno) o il codice dalla mappa
+          const weatherCode = isActive ? dominantCode : (day.weatherCode ?? 0);
           
           const weatherInfo = getWeatherInfo(weatherCode, 36);
           const condizioni = weatherInfo.desc;
