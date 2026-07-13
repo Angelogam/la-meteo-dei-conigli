@@ -17,11 +17,10 @@ import VentiTab from "@/components/VentiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiTab from "@/components/AnalisiTab";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
-import WeatherDashboard from "@/components/WeatherDashboard";
 import AlertBanner from "@/components/AlertBanner";
 import DayInfoPanel from "@/components/DayInfoPanel";
 import { getWeatherAlert, getWindProfile, getStabilityIndex } from "@/utils/weatherHelpers";
-import ThermalDayGraph from "@/components/ThermalDayGraph";
+import Meteogram from "@/components/Meteogram";
 
 const Page = () => {
   const {
@@ -45,25 +44,6 @@ const Page = () => {
   const stabilityIndex = currentData
     ? getStabilityIndex(currentData.temperature, currentData.humidity, currentData.cloudCover)
     : { label: "--", color: "#64748b" };
-
-  const windProfile = useMemo(() => {
-    if (!currentData) return [];
-    const raw = getWindProfile(currentData.windSpeed, currentData.windDir);
-    return raw.map((w: any) => {
-      const dir = w.dir ?? 0;
-      const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-      return {
-        alt: w.alt ?? w.height ?? 0,
-        speed: w.speed ?? 0,
-        dir,
-        dirName: dirs[Math.round(dir / 45) % 8],
-      };
-    });
-  }, [currentData]);
-
-  const windProfileForWeatherDashboard = useMemo(() => {
-    return windProfile.map(w => ({ height: w.alt, speed: w.speed, dir: w.dir }));
-  }, [windProfile]);
 
   if (loading && !meteoData) {
     return <LoadingScreen />;
@@ -149,7 +129,7 @@ const Page = () => {
                 <VentiTab
                   currentData={currentData}
                   dayData={dayData}
-                  windProfile={windProfile}
+                  windProfile={[]}
                 />
               </>
             )}
@@ -157,12 +137,11 @@ const Page = () => {
             {activeTab === "termiche" && (
               <>
                 <HourSlider selectedHour={selectedHour} onChange={setSelectedHour} />
-                <ThermalDayGraph
+                <Meteogram
                   dayData={dayData}
                   altitude={site.altitude}
                   selectedHour={selectedHour}
                   onHourSelect={setSelectedHour}
-                  thermalDelta={thermalDelta}
                 />
               </>
             )}
