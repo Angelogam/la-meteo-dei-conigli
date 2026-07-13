@@ -14,15 +14,15 @@ export function debugMeteoData(data: any) {
   const errors: string[] = [];
 
   // 1. Verifica struttura base
-  if (!data.hourly) { errors.push("Mancano dati orari"); }
-  if (!data.daily) { errors.push("Mancano dati giornalieri"); }
+  if (!data.hourly) errors.push("Mancano dati orari");
+  if (!data.daily) errors.push("Mancano dati giornalieri");
   
   if (errors.length > 0) {
     console.error("❌ DEBUG METEO — ERRORI:", errors.join(", "));
     return false;
   }
 
-  // 2. Verifica temperature (devono essere realistiche per il Piemonte)
+  // 2. Verifica temperature
   const temps = data.hourly.temperature_2m?.filter((t: any) => t != null) || [];
   if (temps.length === 0) {
     errors.push("Nessuna temperatura disponibile");
