@@ -25,12 +25,12 @@ export interface HourData {
   vapourPressureDeficit: number;
   windSpeed: number;
   windDir: number;
-  windGusts: number; // Nome corretto (plurale)
+  windGusts: number;
   soilTemp: number;
   soilMoisture: number;
   uvIndex: number;
-  temp80m: number;
-  temp120m: number;
+  temp80m: number | null;
+  temp120m: number | null;
   shortwaveRadiation: number;
   directRadiation: number;
   diffuseRadiation: number;
@@ -85,7 +85,7 @@ export interface DailyData {
   et0Sum: number;
 }
 
-// --- TIPI VECCHI (per retrocompatibilità con meteo.ts, volo.ts ecc.) ---
+// --- TIPI VECCHI (per retrocompatibilità) ---
 
 export interface MeteoData {
   hourly: HourData[];
