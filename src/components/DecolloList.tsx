@@ -16,6 +16,8 @@ import {
   XCircle,
   Sparkles,
   TrendingUp,
+  Gauge,
+  ArrowUp,
 } from "lucide-react";
 
 interface DecolloListProps {
@@ -72,6 +74,18 @@ function getWeatherIconComponent(code: number) {
   return <Cloud size={36} {...props} className="text-slate-200 drop-shadow-xl" />;
 }
 
+function getCardinal(deg: number): string {
+  if (deg == null) return "—";
+  const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+  return dirs[Math.round(deg / 22.5) % 16];
+}
+
+function getWindArrow(deg: number): string {
+  if (deg == null) return "↑";
+  const arrows = ["↑", "↑", "↗", "↗", "→", "→", "↘", "↘", "↓", "↓", "↙", "↙", "←", "←", "↖", "↖"];
+  return arrows[Math.round(deg / 22.5) % 16];
+}
+
 interface ScoreRingProps {
   score: number;
   size?: number;
@@ -82,7 +96,7 @@ function ScoreRing({ score, size = 52 }: ScoreRingProps) {
   const circumference = 2 * Math.PI * 22;
   const offset = circumference - (clamped / 10) * circumference;
 
-  let strokeColor = "#ef4444"; // rosso
+  let strokeColor = "#ef4444";
   let bgColor = "rgba(239, 68, 68, 0.15)";
   let textColor = "text-red-300";
 
@@ -257,6 +271,34 @@ export default function DecolloList({
                       {d.alt}m
                     </span>
                   </div>
+
+                  {/* 🆕 VENTO A QUOTA DECOLLO — visibile quando selezionato */}
+                  {isSelected && currentData && currentData.windSpeed != null && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-sky-500/50 text-xs font-bold">
+                        <Wind className="w-4 h-4 text-sky-400" />
+                        <span className="text-sky-300">
+                          {getCardinal(currentData.windDir)} {Math.round(currentData.windSpeed)} km/h
+                        </span>
+                        {currentData.windDir != null && (
+                          <span className="text-sky-500 text-[10px]">{getWindArrow(currentData.windDir)}</span>
+                        )}
+                      </span>
+                      {currentData.windGust != null && (
+                        <span className="inline-flex items-center gap-1 bg-slate-900/60 backdrop-blur-sm px-2 py-1 rounded-full border border-amber-500/30 text-[10px] font-semibold text-amber-300">
+                          <Gauge className="w-3 h-3" />
+                          raffiche {Math.round(currentData.windGust)} km/h
+                        </span>
+                      )}
+                      {/* Freccia ascendente se termiche attive */}
+                      {currentData.thermalStrength != null && currentData.thermalStrength > 0.5 && (
+                        <span className="inline-flex items-center gap-1 bg-emerald-900/60 px-2 py-1 rounded-full border border-emerald-500/30 text-[10px] font-semibold text-emerald-300">
+                          <ArrowUp className="w-3 h-3" />
+                          {currentData.thermalStrength.toFixed(1)} m/s
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Voto + icona meteo solo per selezionato */}
