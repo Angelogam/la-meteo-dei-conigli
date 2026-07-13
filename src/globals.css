@@ -32,18 +32,34 @@
 
   body {
     @apply bg-background text-foreground;
+    font-size: 16px;
+    line-height: 1.6;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
+  /* Font più grande per tutti i testi */
+  p, span, div, button {
+    @apply text-[15px];
+  }
+
+  /* Tabella meteo ancora più grande */
+  table {
+    font-size: 14px !important;
+  }
+
+  td, th {
+    @apply py-2.5 px-3 text-sm;
+  }
+
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
   }
   ::-webkit-scrollbar-track {
     background: rgba(15, 23, 42, 0.5);
   }
   ::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, #10b981, #059669);
-    border-radius: 3px;
+    border-radius: 4px;
   }
 }
