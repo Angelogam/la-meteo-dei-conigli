@@ -132,7 +132,9 @@ const DecolloList = ({ decolli, selectedId, onSelect, currentData, allWeatherDat
                     <span className="w-0.5 h-0.5 rounded-full bg-slate-500" />
                     <span className="flex items-center gap-0.5 truncate">
                       <MapPin className="w-3 h-3 text-rose-400 shrink-0" />
-                      <span className="truncate">{site.valley}</span>
+                      <span className="truncate">
+                        {site.name === "Malanotte" ? "Valle Ellero" : site.valley}
+                      </span>
                     </span>
                   </div>
 
