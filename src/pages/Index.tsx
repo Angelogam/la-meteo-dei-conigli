@@ -88,34 +88,34 @@ export function Page() {
         </svg>
       </div>
 
-      <header className="relative text-center py-5 md:py-6 border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-md overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-32 bg-gradient-to-b from-orange-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+      <header className="relative text-center py-3 md:py-5 border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-md overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-24 bg-gradient-to-b from-orange-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-        <div className="flex items-center justify-center gap-3 md:gap-6 relative z-10">
+        <div className="flex items-center justify-center gap-2 md:gap-4 relative z-10">
           <div className="hidden sm:flex flex-col items-center animate-float-slow">
             <div className="relative icon-neon">
-              <div className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-orange-500/20 to-amber-500/10 border-2 border-orange-400/30 flex items-center justify-center">
-                <span className="text-xl md:text-2xl" role="img" aria-label="coniglio">🐰</span>
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-orange-500/20 to-amber-500/10 border-2 border-orange-400/30 flex items-center justify-center">
+                <span className="text-lg md:text-xl" role="img" aria-label="coniglio">🐰</span>
               </div>
-              <div className="absolute -top-2 -right-2 w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center">
-                <Sparkles className="w-2.5 h-2.5 md:w-3 md:h-3 text-emerald-300 animate-twinkle" />
+              <div className="absolute -top-1.5 -right-1.5 w-4 h-4 md:w-5 md:h-5 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center">
+                <Sparkles className="w-2 h-2 md:w-2.5 md:h-2.5 text-emerald-300 animate-twinkle" />
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col items-center justify-center gap-1.5">
-            <div className="flex items-center justify-center gap-3">
-              <div className="w-9 h-9 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-orange-500/25 to-amber-500/15 border border-orange-400/30 flex items-center justify-center animate-bounce-gentle">
-                <Navigation className="w-4 h-4 md:w-6 md:h-6 text-orange-400 icon-neon" />
+          <div className="flex flex-col items-center justify-center gap-0.5">
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-7 h-7 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-orange-500/25 to-amber-500/15 border border-orange-400/30 flex items-center justify-center animate-bounce-gentle">
+                <Navigation className="w-3.5 h-3.5 md:w-5 md:h-5 text-orange-400 icon-neon" />
               </div>
-              <h1 className="text-xl md:text-3xl font-extrabold text-gradient-orange drop-shadow-lg animate-fade-in-up">
+              <h1 className="text-lg md:text-2xl font-extrabold text-gradient-orange drop-shadow-lg animate-fade-in-up">
                 Meteo dei Conigli
               </h1>
-              <div className="w-9 h-9 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-orange-500/25 to-amber-500/15 border border-orange-400/30 flex items-center justify-center animate-bounce-gentle" style={{ animationDelay: '0.3s' }}>
-                <CloudSun className="w-4 h-4 md:w-6 md:h-6 text-orange-400 icon-neon" />
+              <div className="w-7 h-7 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-orange-500/25 to-amber-500/15 border border-orange-400/30 flex items-center justify-center animate-bounce-gentle" style={{ animationDelay: '0.3s' }}>
+                <CloudSun className="w-3.5 h-3.5 md:w-5 md:h-5 text-orange-400 icon-neon" />
               </div>
             </div>
-            <p className="text-xs md:text-sm font-medium text-slate-400 flex items-center gap-2">
+            <p className="text-[10px] md:text-xs font-medium text-slate-400 flex items-center gap-2">
               <span className="w-1 h-1 rounded-full bg-orange-400 animate-pulse" />
               Previsioni per volo libero sui migliori decolli del Piemonte
               <span className="w-1 h-1 rounded-full bg-orange-400 animate-pulse" />
@@ -124,90 +124,90 @@ export function Page() {
 
           <div className="hidden sm:flex flex-col items-center animate-float-slow" style={{ animationDelay: '1.5s' }}>
             <div className="relative icon-neon">
-              <div className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-orange-500/20 to-amber-500/10 border-2 border-orange-400/30 flex items-center justify-center">
-                <span className="text-xl md:text-2xl" role="img" aria-label="coniglio">🐰</span>
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-orange-500/20 to-amber-500/10 border-2 border-orange-400/30 flex items-center justify-center">
+                <span className="text-lg md:text-xl" role="img" aria-label="coniglio">🐰</span>
               </div>
-              <div className="absolute -top-2 -right-2 w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center">
-                <Sparkles className="w-2.5 h-2.5 md:w-3 md:h-3 text-emerald-300 animate-twinkle" style={{ animationDelay: '1s' }} />
+              <div className="absolute -top-1.5 -right-1.5 w-4 h-4 md:w-5 md:h-5 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center">
+                <Sparkles className="w-2 h-2 md:w-2.5 md:h-2.5 text-emerald-300 animate-twinkle" style={{ animationDelay: '1s' }} />
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex sm:hidden items-center justify-center gap-4 mt-3">
+        <div className="flex sm:hidden items-center justify-center gap-3 mt-2">
           {[0, 0.2, 0.4].map((delay, i) => (
             <div key={i} className="animate-bounce-gentle" style={{ animationDelay: `${delay}s` }}>
-              <span className="text-xl" role="img" aria-label="coniglio">🐰</span>
+              <span className="text-lg" role="img" aria-label="coniglio">🐰</span>
             </div>
           ))}
         </div>
 
-        {/* INDICATORE REFRESH + COUNTDOWN — GRANDE E VISIBILE */}
-        <div className="absolute top-2 right-3 md:top-4 md:right-6 flex items-center gap-3">
+        {/* INDICATORE REFRESH + COUNTDOWN — COMPATTO MA LEGGIBILE */}
+        <div className="absolute top-1.5 right-2 md:top-3 md:right-4 flex items-center gap-2">
           <div className={`
-            flex items-center gap-3 px-5 py-2.5 rounded-2xl border-2 backdrop-blur-md shadow-xl
+            flex items-center gap-2 px-3 py-1.5 rounded-xl border backdrop-blur-md shadow-lg
             transition-all duration-500
             ${updating
-              ? "bg-emerald-900/40 border-emerald-400/60 shadow-emerald-400/20"
-              : "bg-slate-900/60 border-slate-600/40 hover:border-emerald-500/40 hover:bg-slate-800/60"
+              ? "bg-emerald-900/40 border-emerald-400/50 shadow-emerald-400/15"
+              : "bg-slate-900/60 border-slate-600/30 hover:border-emerald-500/30 hover:bg-slate-800/60"
             }
           `}>
-            {/* BOTTONE REFRESH */}
+            {/* BOTTONE REFRESH PICCOLO */}
             <button
               onClick={loadWeather}
               disabled={updating}
               className={`
-                p-2 rounded-xl transition-all duration-300
+                p-1.5 rounded-lg transition-all duration-300
                 ${updating
                   ? "bg-emerald-500/20 text-emerald-300 cursor-not-allowed"
-                  : "bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-emerald-300 border border-slate-600/30 hover:border-emerald-500/30"
+                  : "bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-emerald-300 border border-slate-600/20 hover:border-emerald-500/30"
                 }
               `}
               title="Aggiorna ora"
             >
-              <RefreshCw className={`w-5 h-5 md:w-6 md:h-6 ${updating ? "animate-spin" : ""} ${animRefresh ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-4 h-4 md:w-5 md:h-5 ${updating ? "animate-spin" : ""} ${animRefresh ? "animate-spin" : ""}`} />
             </button>
 
             {/* PALLINO + STATO */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <div className="flex flex-col items-start">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <span className={`
-                    w-3 h-3 rounded-full
-                    ${updating ? "bg-yellow-400 animate-pulse ring-2 ring-yellow-400/30" : "bg-emerald-400 ring-2 ring-emerald-400/20"}
+                    w-2 h-2 rounded-full
+                    ${updating ? "bg-yellow-400 animate-pulse ring-1 ring-yellow-400/30" : "bg-emerald-400 ring-1 ring-emerald-400/20"}
                   `} />
-                  <span className="text-sm md:text-base font-bold text-white tracking-tight">
-                    {updating ? "AGGIORNAMENTO IN CORSO" : "DATI IN TEMPO REALE"}
+                  <span className="text-[10px] md:text-xs font-bold text-white tracking-tight">
+                    {updating ? "AGGIORNAMENTO" : "DATI LIVE"}
                   </span>
                 </div>
-                <span className="text-[11px] md:text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
-                  <Clock className="w-3 h-3" />
-                  Ultimo aggiornamento: {lastUpdateStr}
+                <span className="text-[9px] text-slate-500 flex items-center gap-1">
+                  <Clock className="w-2.5 h-2.5" />
+                  Agg.: {lastUpdateStr}
                 </span>
               </div>
 
-              {/* DIVISORE */}
-              <div className="w-px h-10 bg-slate-600/40 mx-1" />
+              {/* DIVISORE SOTTILE */}
+              <div className="w-px h-7 bg-slate-600/30 mx-0.5" />
 
-              {/* COUNTDOWN GRANDE */}
-              <div className="flex items-center gap-2">
-                <Timer className={`w-5 h-5 ${countdownMin <= 5 ? "text-amber-400 animate-pulse" : "text-slate-400"}`} />
+              {/* COUNTDOWN */}
+              <div className="flex items-center gap-1.5">
+                <Timer className={`w-3.5 h-3.5 ${countdownMin <= 3 ? "text-amber-400 animate-pulse" : "text-slate-400"}`} />
                 <div className="flex flex-col">
                   {updating ? (
-                    <span className="text-base md:text-lg font-black text-emerald-300 tabular-nums">
-                      Caricamento...
+                    <span className="text-xs md:text-sm font-black text-emerald-300 tabular-nums">
+                      ...
                     </span>
                   ) : (
-                    <div className="flex items-baseline gap-1">
-                      <span className={`text-2xl md:text-3xl font-black tabular-nums drop-shadow-lg ${
-                        countdownMin <= 5 ? "text-amber-300" : countdownMin <= 10 ? "text-yellow-300" : "text-emerald-200"
+                    <div className="flex items-baseline gap-0.5">
+                      <span className={`text-base md:text-lg font-black tabular-nums drop-shadow-sm ${
+                        countdownMin <= 3 ? "text-amber-300" : countdownMin <= 7 ? "text-yellow-300" : "text-emerald-200"
                       }`}>
                         {countdownMin}
                       </span>
-                      <span className="text-sm md:text-base font-bold text-slate-400">min</span>
+                      <span className="text-[9px] md:text-[10px] font-bold text-slate-400">min</span>
                     </div>
                   )}
-                  <span className="text-[10px] text-slate-500 font-medium">Prossimo aggiornamento</span>
+                  <span className="text-[8px] text-slate-500 font-medium leading-none">Prossimo</span>
                 </div>
               </div>
             </div>
@@ -215,12 +215,12 @@ export function Page() {
         </div>
 
         {/* Barra di progresso refresh */}
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-700/50">
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-700/50">
           <div
             className="h-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-amber-400 transition-all duration-700 ease-linear"
             style={{
               width: updating ? "100%" : `${refreshProgress}%`,
-              opacity: updating ? 1 : 0.6,
+              opacity: updating ? 1 : 0.5,
             }}
           />
         </div>
@@ -242,10 +242,10 @@ export function Page() {
           <div className="flex-1 min-w-0 space-y-4">
             {/* Indicatore updating compatto */}
             {updating && (
-              <div className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-yellow-900/20 to-amber-900/20 border border-yellow-500/30 text-yellow-300 text-sm animate-pulse">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span className="font-bold">Aggiornamento previsioni in corso...</span>
-                <span className="ml-auto text-xs text-yellow-400/70 font-mono tabular-nums bg-yellow-900/30 px-3 py-1 rounded-lg">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-yellow-900/20 to-amber-900/20 border border-yellow-500/30 text-yellow-300 text-xs animate-pulse">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="font-bold">Aggiornamento in corso...</span>
+                <span className="ml-auto text-[10px] text-yellow-400/70 font-mono tabular-nums bg-yellow-900/30 px-2 py-0.5 rounded-lg">
                   00:{String(countdownSec).padStart(2, "0")}
                 </span>
               </div>
@@ -253,9 +253,9 @@ export function Page() {
 
             {/* PREVISIONI GIORNALIERE — con selezione giorni integrata */}
             <div className="bg-gradient-to-br from-slate-900/70 to-slate-800/40 border-2 border-emerald-500/30 rounded-3xl overflow-hidden shadow-xl shadow-emerald-500/10">
-              <div className="bg-gradient-to-r from-emerald-800/40 to-amber-800/20 px-5 py-3 border-b border-emerald-500/20">
-                <h2 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
-                  <CloudSun className="w-5 h-5 text-yellow-300" />
+              <div className="bg-gradient-to-r from-emerald-800/40 to-amber-800/20 px-4 py-2.5 border-b border-emerald-500/20">
+                <h2 className="text-base md:text-lg font-black text-white tracking-tight flex items-center gap-2">
+                  <CloudSun className="w-4 h-5 text-yellow-300" />
                   PREVISIONI GIORNALIERE — {dateLabels[selectedDay]?.toUpperCase() || "OGGI"} {currentDateStr}
                 </h2>
               </div>
@@ -275,7 +275,7 @@ export function Page() {
             {/* Sezione dettaglio con tab */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-black text-white tracking-tight">DETTAGLIO</h2>
+                <h2 className="text-sm font-black text-white tracking-tight">DETTAGLIO</h2>
               </div>
 
               <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
