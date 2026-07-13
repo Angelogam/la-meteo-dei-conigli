@@ -1,180 +1,26 @@
-"use client";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Page from "./pages/Index";
+import NotFound from "./pages/NotFound";
 
-import React, { useMemo } from "react";
-import { useWeatherData } from "@/hooks/useWeatherData";
-import { DECOLLI } from "@/data/decolli";
-import { Footer } from "@/components/Footer";
-import { Header } from "@/components/Header";
-import { MadeWithDyad } from "@/components/made-with-dyad";
-import LoadingScreen from "@/components/LoadingScreen";
-import ErrorScreen from "@/components/ErrorScreen";
-import DecolloList from "@/components/DecolloList";
-import SiteHeader from "@/components/SiteHeader";
-import TabNav from "@/components/TabNav";
-import HourSlider from "@/components/HourSlider";
-import MeteoTab from "@/components/MeteoTab";
-import VentiTab from "@/components/VentiTab";
-import TermicheTab from "@/components/TermicheTab";
-import AnalisiTab from "@/components/AnalisiTab";
-import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
-import AlertBanner from "@/components/AlertBanner";
-import DayInfoPanel from "@/components/DayInfoPanel";
-import { getWeatherAlert, getWindProfile, getStabilityIndex } from "@/utils/weatherHelpers";
-import Meteogram from "@/components/Meteogram";
+const queryClient = new QueryClient();
 
-const Page = () => {
-  const {
-    selectedId, setSelectedId,
-    meteoData, loading, updating, error,
-    selectedDay, setSelectedDay,
-    selectedHour, setSelectedHour,
-    activeTab, setActiveTab,
-    lastUpdate, refreshProgress,
-    site,
-    dayData,
-    currentData,
-    thermalDelta,
-    enrichedDaily,
-    dateLabels,
-    loadWeather,
-    allWeatherData,
-  } = useWeatherData();
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Page />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
-  const alert = currentData ? getWeatherAlert(currentData, thermalDelta) : null;
-  const stabilityIndex = currentData
-    ? getStabilityIndex(currentData.temperature, currentData.humidity, currentData.cloudCover)
-    : { label: "--", color: "#64748b" };
-
-  if (loading && !meteoData) {
-    return <LoadingScreen />;
-  }
-
-  if (error && !meteoData) {
-    return <ErrorScreen error={error} onRetry={loadWeather} />;
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex flex-col">
-      <Header />
-
-      <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 lg:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 lg:gap-6">
-          <aside className="order-2 lg:order-1">
-            <DecolloList
-              decolli={DECOLLI.map(d => ({
-                id: d.id,
-                name: d.name,
-                valley: d.valley,
-                exposure: d.exposure,
-                alt: d.altitude,
-              }))}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              currentData={allWeatherData[selectedId] || currentData}
-              allWeatherData={allWeatherData}
-            />
-          </aside>
-
-          <div className="order-1 lg:order-2 space-y-5">
-            <SiteHeader
-              name={site.name}
-              exposure={site.exposure}
-              valley={site.valley}
-              alt={site.altitude}
-              currentData={currentData}
-            />
-
-            {updating && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-900/30 border border-emerald-500/30 text-xs text-emerald-300 animate-pulse">
-                <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                Aggiornamento dati per {DECOLLI.length} decolli...
-              </div>
-            )}
-
-            <PrevisioniGiornaliere
-              enrichedDaily={enrichedDaily}
-              dateLabels={dateLabels}
-              currentData={currentData}
-              dayData={dayData}
-              site={{ name: site.name, altitude: site.altitude, exposure: site.exposure }}
-              selectedDay={selectedDay}
-              onSelectDay={setSelectedDay}
-            />
-
-            {alert && <AlertBanner alert={alert} />}
-
-            <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
-
-            {activeTab === "meteo" && (
-              <>
-                <MeteoTab
-                  currentData={currentData}
-                  dayData={dayData}
-                  site={{ alt: site.altitude }}
-                  thermalDelta={thermalDelta}
-                  stabilityIndex={stabilityIndex}
-                />
-                <DayInfoPanel
-                  currentData={currentData}
-                  dayData={dayData}
-                  site={{ name: site.name, alt: site.altitude }}
-                  selectedDate={dateLabels[selectedDay]}
-                />
-              </>
-            )}
-
-            {activeTab === "venti" && (
-              <>
-                <HourSlider selectedHour={selectedHour} onChange={setSelectedHour} />
-                <VentiTab
-                  currentData={currentData}
-                  dayData={dayData}
-                  windProfile={[]}
-                />
-              </>
-            )}
-
-            {activeTab === "termiche" && (
-              <>
-                <HourSlider selectedHour={selectedHour} onChange={setSelectedHour} />
-                <Meteogram
-                  dayData={dayData}
-                  altitude={site.altitude}
-                  selectedHour={selectedHour}
-                  onHourSelect={setSelectedHour}
-                />
-              </>
-            )}
-
-            {activeTab === "analisi" && (
-              <>
-                <HourSlider selectedHour={selectedHour} onChange={setSelectedHour} />
-                <TermicheTab
-                  currentData={currentData}
-                  dayData={dayData}
-                  site={{ alt: site.altitude, lat: site.lat, lon: site.lon }}
-                  thermalDelta={thermalDelta}
-                  thermalStrength={stabilityIndex}
-                  hourlyData={dayData}
-                  selectedHour={selectedHour}
-                  selectedDay={selectedDay}
-                />
-                <AnalisiTab
-                  currentData={currentData}
-                  site={{ name: site.name, alt: site.altitude }}
-                  thermalDelta={thermalDelta}
-                  selectedDateLabel={dateLabels[selectedDay]}
-                />
-              </>
-            )}
-          </div>
-        </div>
-      </main>
-
-      <Footer />
-      <MadeWithDyad />
-    </div>
-  );
-};
-
-export default Page;
+export default App;
