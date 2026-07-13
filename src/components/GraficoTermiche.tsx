@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { TrendingUp, MousePointerClick } from "lucide-react";
+import { TrendingUp, MousePointerClick, Clock } from "lucide-react";
 import type { TermicheData } from "@/utils/termiche";
 
 interface GraficoTermicheProps {
@@ -73,24 +73,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
   const selectedData = selectedHour !== null ? dataMap.get(selectedHour) : null;
 
   return (
-    <div className="w-full py-2">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-800/50 border border-amber-500/40 flex items-center justify-center">
-            <TrendingUp className="w-5 h-5 text-amber-400" />
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-amber-200">Previsione termiche</h3>
-            <p className="text-[11px] text-slate-500">Quota (m slm) — Forza (m/s) — Dati reali</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 bg-slate-800/60 px-2.5 py-1.5 rounded-lg border border-slate-700/30">
-          <MousePointerClick className="w-3 h-3" />
-          <span className="hidden sm:inline">Clicca per dettagli</span>
-        </div>
-      </div>
-
+    <div className="w-full">
       {/* Area grafico + etichette */}
       <div className="flex gap-0 relative">
         {/* Colonna etichette quota */}
@@ -144,12 +127,12 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
             return (
               <div
                 key={hour}
-                className={`relative cursor-pointer transition-all duration-200 rounded-xl border overflow-hidden ${
+                className={`relative cursor-pointer transition-all duration-200 rounded-xl border-2 overflow-hidden ${
                   isSelected
-                    ? "bg-amber-900/15 border-amber-400/60 shadow-lg shadow-amber-500/20 z-10 ring-1 ring-amber-400/30 scale-[1.02]"
+                    ? "bg-green-900/15 border-green-400/60 shadow-lg shadow-green-500/20 z-10 scale-[1.02]"
                     : isCurrent
                     ? "bg-green-900/10 border-green-500/40"
-                    : "bg-slate-800/25 border-slate-700/50 hover:border-amber-400/40 hover:bg-slate-700/40"
+                    : "bg-slate-800/25 border-slate-700/50 hover:border-green-400/40 hover:bg-slate-700/40"
                 }`}
                 onClick={() => setSelectedHour((prev) => (prev === hour ? null : hour))}
               >
@@ -196,22 +179,22 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                 </div>
 
                 {/* Footer colonna */}
-                <div className="bg-slate-900/90 border-t border-slate-700/40 px-1.5 py-3 text-center">
+                <div className="bg-slate-900/90 border-t border-slate-700/40 px-1.5 py-2.5 text-center">
                   {/* Ora */}
-                  <div className={`text-sm font-bold mb-2 ${isSelected ? 'text-amber-300' : isCurrent ? 'text-green-400' : 'text-slate-200'}`}>
+                  <div className={`text-sm font-bold mb-1.5 ${isSelected ? 'text-green-300' : isCurrent ? 'text-green-400' : 'text-slate-200'}`}>
                     {String(hour).padStart(2, "0")}:00
                   </div>
 
                   {/* Emoji + label forza */}
-                  <div className="flex items-center justify-center gap-1.5 mb-2">
+                  <div className="flex items-center justify-center gap-1 mb-1.5">
                     <span className="text-base">{emoji}</span>
-                    <span className={`text-[11px] font-semibold tracking-wide ${isSelected ? 'text-amber-400' : 'text-slate-400'}`}>
+                    <span className={`text-[11px] font-semibold tracking-wide ${isSelected ? 'text-green-400' : 'text-slate-400'}`}>
                       {labelForza}
                     </span>
                   </div>
 
                   {/* Rateo */}
-                  <div className="flex items-baseline justify-center gap-0.5 mb-2.5">
+                  <div className="flex items-baseline justify-center gap-0.5 mb-2">
                     <span className={`text-lg font-black tabular-nums leading-none ${rateo <= 0 ? 'text-slate-500' : ''}`} style={rateo > 0 ? { color: colore } : {}}>
                       {rateo > 0 ? rateo.toFixed(1) : "--"}
                     </span>
@@ -219,14 +202,14 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                   </div>
 
                   {/* Base - Top */}
-                  <div className="grid grid-cols-2 gap-1 border-t border-slate-700/20 pt-2">
+                  <div className="grid grid-cols-2 gap-1 border-t border-slate-700/20 pt-1.5">
                     <div className="text-center">
                       <div className="text-[9px] text-green-400/70 font-semibold uppercase tracking-wider mb-0.5">Base</div>
-                      <div className="text-xs font-bold text-green-300 tabular-nums">{quotaBase > 0 ? quotaBase + " m" : "--"}</div>
+                      <div className="text-xs font-bold text-green-300 tabular-nums">{quotaBase > 0 ? quotaBase + "m" : "--"}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-[9px] text-red-400/70 font-semibold uppercase tracking-wider mb-0.5">Top</div>
-                      <div className="text-xs font-bold text-red-300 tabular-nums">{quotaTop > 0 ? quotaTop + " m" : "--"}</div>
+                      <div className="text-xs font-bold text-red-300 tabular-nums">{quotaTop > 0 ? quotaTop + "m" : "--"}</div>
                     </div>
                   </div>
                 </div>
@@ -238,10 +221,10 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
 
       {/* Pannello dettaglio */}
       {selectedHour !== null && selectedData && (
-        <div className="mt-4 bg-slate-800/85 rounded-xl border border-amber-500/30 overflow-hidden animate-in slide-in-from-top-3 duration-200">
-          <div className="bg-amber-900/30 px-4 py-2.5 flex items-center justify-between border-b border-amber-500/20">
-            <span className="text-sm font-bold text-amber-200 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+        <div className="mt-4 bg-slate-800/85 rounded-2xl border-2 border-green-400/30 overflow-hidden animate-in slide-in-from-top-3 duration-200">
+          <div className="bg-green-900/30 px-4 py-2.5 flex items-center justify-between border-b border-green-400/20">
+            <span className="text-sm font-bold text-green-200 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
               Dettaglio termiche — ore {String(selectedHour).padStart(2, "0")}:00
             </span>
             <button
@@ -254,7 +237,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
           <div className="p-3 grid grid-cols-2 md:grid-cols-4 gap-2">
             <div className="bg-slate-900/60 rounded-xl p-2.5 border border-slate-700/30 text-center">
               <div className="text-[10px] text-slate-400 mb-0.5">Forza salita</div>
-              <div className="text-base font-bold text-amber-300">{selectedData.rateo.toFixed(1)} m/s</div>
+              <div className="text-base font-bold text-green-300">{selectedData.rateo.toFixed(1)} m/s</div>
             </div>
             <div className="bg-slate-900/60 rounded-xl p-2.5 border border-slate-700/30 text-center">
               <div className="text-[10px] text-slate-400 mb-0.5">Base (LCL)</div>
@@ -262,11 +245,11 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
             </div>
             <div className="bg-slate-900/60 rounded-xl p-2.5 border border-slate-700/30 text-center">
               <div className="text-[10px] text-slate-400 mb-0.5">Top</div>
-              <div className="text-base font-bold text-red-300">{selectedData.top} m</div>
+              <div className="text-base font-bold text-green-300">{selectedData.top} m</div>
             </div>
             <div className="bg-slate-900/60 rounded-xl p-2.5 border border-slate-700/30 text-center">
               <div className="text-[10px] text-slate-400 mb-0.5">Spessore</div>
-              <div className="text-base font-bold text-orange-300">{selectedData.top - selectedData.base} m</div>
+              <div className="text-base font-bold text-green-300">{selectedData.top - selectedData.base} m</div>
             </div>
           </div>
         </div>
@@ -280,7 +263,9 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
               <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.colore }} />
               <span>{item.label}</span>
             </div>
-          ))}
+))}
+          </div>
+
           <div className="flex items-center gap-1.5">
             <div className="w-3.5 h-0 border-t border-dashed border-white/30 shrink-0" />
             <span>Base termica (LCL)</span>
