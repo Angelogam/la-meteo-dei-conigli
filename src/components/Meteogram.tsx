@@ -36,13 +36,24 @@ function calcWindLevels(surfaceSpeed: number, surfaceDir: number) {
     const speed = Math.min(surfaceSpeed * factor, 45);
     const dir = (surfaceDir + i * 10) % 360;
     const color =
-      speed < 10 ? "bg-green-400" :
-      speed < 18 ? "bg-lime-400" :
-      speed < 25 ? "bg-amber-400" :
-      speed < 35 ? "bg-orange-400" :
-      "bg-red-500";
-    return { height: h, speed: Math.round(speed), dir: Math.round(dir), dirArrow: getDirArrow(dir), dirLabel: getDirLabel(dir), color };
-  };
+      speed < 10
+        ? "bg-green-400"
+        : speed < 18
+        ? "bg-lime-400"
+        : speed < 25
+        ? "bg-amber-400"
+        : speed < 35
+        ? "bg-orange-400"
+        : "bg-red-500";
+    return {
+      height: h,
+      speed: Math.round(speed),
+      dir: Math.round(dir),
+      dirArrow: getDirArrow(dir),
+      dirLabel: getDirLabel(dir),
+      color,
+    };
+  });
 }
 
 export default function Meteogram({ dayData, altitude, selectedHour, onHourSelect }: MeteogramProps) {
@@ -74,6 +85,8 @@ export default function Meteogram({ dayData, altitude, selectedHour, onHourSelec
   }, [dayData, altitude]);
 
   if (!data.length) return null;
+
+  /* ... rest of component unchanged ... */
 
   const maxRateo = Math.max(...data.map(d => d.rateo), 1);
   const maxWind = Math.max(...data.map(d => d.wind), 1);
