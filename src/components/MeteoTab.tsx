@@ -78,7 +78,6 @@ export default function MeteoTab({
   const topTermico = Math.min(5000, cloudBase + Math.round(forzaTermica * 250));
 
   const ventoDecollo = windSpeed;
-  const ventoAtterraggio = Math.round(windSpeed * 0.7);
   const raffiche = windGust ?? Math.round(windSpeed * 1.4);
 
   const turbolenza =
@@ -150,7 +149,7 @@ export default function MeteoTab({
         </div>
         <div className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-3 text-center">
           <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Vento atterraggio</div>
-          <div className="text-2xl font-black text-white tabular-nums">{ventoatterraggio}<span className="text-xs text-slate-500 font-normal ml-0.5">km/h</span></div>
+          <div className="text-2xl font-black text-white tabular-nums">{Math.round(ventoDecollo * 0.7)}<span className="text-xs text-slate-500 font-normal ml-0.5">km/h</span></div>
           <div className="text-[10px] text-slate-500">Raffiche {raffiche} km/h</div>
         </div>
       </div>
