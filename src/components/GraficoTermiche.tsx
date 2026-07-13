@@ -9,8 +9,8 @@ interface GraficoTermicheProps {
   oraCorrente: number;
 }
 
-// 🔁 Ore visibili nel grafico: 9, 11, 13, 15, 17, 19
-const HOURS_VISIBILI = [9, 11, 13, 15, 17, 19];
+// 6 colonne: 8, 10, 12, 14, 16, 18
+const HOURS_VISIBILI = [8, 10, 12, 14, 16, 18];
 const QUOTE_LABELS = [4000, 3500, 3000, 2500, 2000, 1500, 1000, 500];
 const MIN_QUOTA = 500;
 const MAX_QUOTA = 4000;
@@ -45,10 +45,11 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
   const dataMap = new Map<number, TermicheData>();
   for (const h of hourly) dataMap.set(h.hour, h.termiche);
 
+  // Costruisci colonne per ogni ora visibile
   const daMostrare = HOURS_VISIBILI.map((h) => {
     const diretto = dataMap.get(h);
     if (diretto) return { hour: h, termiche: diretto };
-    for (let i = h - 1; i <= h + 1; i++) {
+    for (let i = h; i <= h + 1; i++) {
       const d = dataMap.get(i);
       if (d) return { hour: h, termiche: d };
     }
@@ -87,10 +88,10 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
           ))}
         </div>
 
-        {/* Colonne — 6 ore: 9, 11, 13, 15, 17, 19 */}
+        {/* Colonne */}
         <div className="flex-1 grid grid-cols-6 gap-3">
           {daMostrare.map(({ hour, termiche: t }) => {
-            const isCurrent = hour === oraCorrente;
+            const isCurrent = hour === oraCorrente || (hour <= oraCorrente && hour + 2 > oraCorrente);
             const isSelected = selectedHour === hour;
             const nonNull = t && t.rateo > 0 && t.top > 500;
 
@@ -138,6 +139,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
               >
                 {/* Area grafico */}
                 <div className="relative w-full" style={{ height: GRAFICO_ALTEZZA + 'px' }}>
+                  {/* Righe orizzontali guida */}
                   {QUOTE_LABELS.map((q) => (
                     <div
                       key={q}
@@ -146,12 +148,15 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                     />
                   ))}
 
+                  {/* Barra termica — parte dalla BASE, arriva al TOP */}
                   {nonNull && barHeightPct > 1 && (
                     <>
+                      {/* Linea di base tratteggiata */}
                       <div className="absolute left-0 right-0 border-t-2 border-dashed border-white/40 z-10" style={{ bottom: `${basePct}%` }}>
                         <span className="absolute -top-3 left-1 text-[9px] text-white/40 uppercase font-bold tracking-wider">base</span>
                       </div>
 
+                      {/* Barra colorata */}
                       <div
                         className="absolute left-1.5 right-1.5 transition-all duration-500 ease-out rounded-t-md rounded-b-sm"
                         style={{
@@ -170,6 +175,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                     </>
                   )}
 
+                  {/* Nessuna termica */}
                   {(!nonNull || barHeightPct <= 1) && (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <span className="text-base text-slate-500">—</span>
