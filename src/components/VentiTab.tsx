@@ -50,26 +50,24 @@ export default function VentiTab({
   ];
 
   return (
-    <div className="animate-fadeIn space-y-4">
+    <div className="animate-fadeIn space-y-5">
       <div>
-        <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-          <Wind className="w-4 h-4" />
+        <h4 className="text-base font-bold text-emerald-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <Wind className="w-5 h-5" />
           Vento a diverse quote
         </h4>
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-3 gap-3">
           {windCards.map((w, i) => (
             <div
               key={i}
-              className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-3 text-center"
+              className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-4 text-center"
             >
-              <div className="text-[10px] text-slate-500 mb-1.5">{w.label}</div>
-              <div className="text-lg font-bold text-slate-100 tabular-nums">
+              <div className="text-sm text-slate-300 font-semibold mb-2">{w.label}</div>
+              <div className="text-2xl font-bold text-slate-100 tabular-nums">
                 {getWindArrow(w.dir)} {Math.round(w.speed)}
               </div>
-              <div className="text-[10px] text-slate-400">
-                {getWindDirName(w.dir)}
-              </div>
-              <div className="text-[10px] text-red-300 flex items-center justify-center gap-2 mt-1">
+              <div className="text-sm text-slate-400">{getWindDirName(w.dir)}</div>
+              <div className="text-sm text-red-300 flex items-center justify-center gap-2 mt-2">
                 <span>Raffiche</span>
                 <span className="font-bold tabular-nums">
                   {Math.round(w.gust)} km/h
@@ -81,11 +79,11 @@ export default function VentiTab({
       </div>
 
       <div>
-        <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-          <TrendingUp className="w-4 h-4" />
+        <h4 className="text-base font-bold text-emerald-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <TrendingUp className="w-5 h-5" />
           Profilo vento (400m - 4000m)
         </h4>
-        <div className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-3 max-h-52 overflow-y-auto space-y-0.5">
+        <div className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-4 max-h-64 overflow-y-auto space-y-1">
           {windProfile.map((level, idx) => {
             const maxSpeed = currentData.windSpeed * 3.5;
             const width = Math.min(100, (level.speed / maxSpeed) * 100);
@@ -102,22 +100,22 @@ export default function VentiTab({
             return (
               <div
                 key={idx}
-                className="grid grid-cols-[50px_1fr_55px] gap-2 items-center py-1"
+                className="grid grid-cols-[60px_1fr_70px] gap-3 items-center py-2"
               >
-                <span className="text-xs text-slate-500 font-mono tabular-nums">
+                <span className="text-sm text-slate-300 font-mono tabular-nums font-semibold">
                   {level.alt}m
                 </span>
-                <div className="h-4 bg-slate-700/60 rounded-full overflow-hidden">
+                <div className="h-6 bg-slate-700/60 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full flex items-center justify-end pr-1.5 ${barColor}`}
+                    className={`h-full rounded-full flex items-center justify-end pr-2 ${barColor}`}
                     style={{ width: `${Math.max(width, 20)}%` }}
                   >
-                    <span className="text-[9px] text-white font-bold drop-shadow-md tabular-nums">
+                    <span className="text-xs text-white font-bold drop-shadow-md tabular-nums">
                       {Math.round(level.speed)}
                     </span>
                   </div>
                 </div>
-                <span className="text-xs text-slate-400 text-center tabular-nums">
+                <span className="text-sm text-slate-300 text-center tabular-nums font-semibold">
                   {getWindArrow(level.dir)} {level.dirName}
                 </span>
               </div>
@@ -127,10 +125,10 @@ export default function VentiTab({
       </div>
 
       <div>
-        <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-3">
+        <h4 className="text-base font-bold text-emerald-300 uppercase tracking-wider mb-4">
           Vento orario (9:00 - 19:00)
         </h4>
-        <div className="grid grid-cols-11 gap-1.5 overflow-x-auto pb-2">
+        <div className="grid grid-cols-11 gap-2 overflow-x-auto pb-2">
           {hourRange.map((hour) => {
             const hData = dayData?.find(
               (h: any) => h.time.getHours() === hour
@@ -139,29 +137,31 @@ export default function VentiTab({
               return (
                 <div
                   key={hour}
-                  className="bg-slate-800/30 rounded-lg p-2 text-center text-[10px] text-slate-500"
+                  className="bg-slate-800/30 rounded-lg p-3 text-center"
                 >
-                  {String(hour).padStart(2, "0")}
-                  <div className="mt-1">--</div>
+                  <div className="text-sm text-slate-400 font-semibold">
+                    {String(hour).padStart(2, "0")}
+                  </div>
+                  <div className="text-base text-slate-500 mt-1">--</div>
                 </div>
               );
             }
             return (
               <div
                 key={hour}
-                className={`rounded-lg p-2 text-center border ${
+                className={`rounded-lg p-3 text-center border ${
                   hour === currentData.time?.getHours()
                     ? "bg-emerald-900/30 border-emerald-500/40"
                     : "bg-slate-800/50 border-slate-700/30"
                 }`}
               >
-                <div className="text-[9px] text-slate-500 font-mono">
+                <div className="text-xs text-slate-300 font-mono font-semibold">
                   {String(hour).padStart(2, "0")}:00
                 </div>
-                <div className="text-sm font-bold text-slate-100 tabular-nums mt-0.5">
+                <div className="text-base font-bold text-slate-100 tabular-nums mt-1">
                   {getWindArrow(hData.windDir)} {Math.round(hData.windSpeed)}
                 </div>
-                <div className="text-[9px] text-slate-400">
+                <div className="text-xs text-slate-400 font-semibold">
                   {getWindDirName(hData.windDir)}
                 </div>
               </div>
