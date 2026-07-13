@@ -50,7 +50,8 @@ const Page = () => {
     enrichedDaily,
     dateLabels,
     loadWeather,
-    allWeatherData,
+    allDailyData,
+    allHourlyData,
   } = useWeatherData();
 
   const [showDebug, setShowDebug] = useState(false);
@@ -96,8 +97,8 @@ const Page = () => {
             decolli={DECOLLI}
             selectedId={selectedId}
             onSelect={setSelectedId}
-            currentData={currentData}
-            allWeatherData={allWeatherData}
+            allDailyData={allDailyData}
+            allHourlyData={allHourlyData}
           />
         </div>
 
@@ -116,8 +117,8 @@ const Page = () => {
               decolli={DECOLLI}
               selectedId={selectedId}
               onSelect={setSelectedId}
-              currentData={currentData}
-              allWeatherData={allWeatherData}
+              allDailyData={allDailyData}
+              allHourlyData={allHourlyData}
             />
           </aside>
 

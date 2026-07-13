@@ -13,13 +13,16 @@ import {
   Gauge,
 } from "lucide-react";
 import type { Decollo } from "@/data/decolli";
+import type { MeteoDaily, MeteoHourly } from "@/services/weatherService";
 
 interface DecolloListProps {
   decolli: Decollo[];
   selectedId: string;
   onSelect: (id: string) => void;
-  currentData: any;
-  allWeatherData: Record<string, any>;
+  /** Mappa id decollo -> daily[] */
+  allDailyData?: Record<string, MeteoDaily[]>;
+  /** Mappa id decollo -> hourly[] */
+  allHourlyData?: Record<string, MeteoHourly[]>;
 }
 
 function getWeatherEmoji(code: number): string {
@@ -45,7 +48,49 @@ function getDirLabel(deg: number): string {
   return dirs[Math.round(deg / 45) % 8];
 }
 
-const DecolloList = ({ decolli, selectedId, onSelect, currentData, allWeatherData }: DecolloListProps) => {
+const DecolloList = ({ decolli, selectedId, onSelect, allDailyData, allHourlyData }: DecolloListProps) => {
+  // Prende i dati orari del giorno 0 (oggi) per ogni decollo
+  const getCurrentData = (id: string): { temperature: number; windSpeed: number; windDir: number; weatherCode: number; windGusts: number } | null => {
+    const hourly = allHourlyData?.[id];
+    if (!hourly || hourly.length === 0) return null;
+
+    const oggi = new Date();
+    // Cerca l'ora corrente nei dati
+    const now = new Date();
+    const currentHour = hourly.find(h => 
+      h.time.getFullYear() === oggi.getFullYear() &&
+      h.time.getMonth() === oggi.getMonth() &&
+      h.time.getDate() === oggi.getDate() &&
+      h.time.getHours() === now.getHours()
+    );
+
+    if (currentHour) {
+      return {
+        temperature: currentHour.temperature,
+        windSpeed: currentHour.windSpeed,
+        windDir: currentHour.windDir,
+        weatherCode: currentHour.weatherCode,
+        windGusts: currentHour.windGusts,
+      };
+    }
+
+    // Fallback: primo dato orario del giorno
+    const first = hourly.find(h => 
+      h.time.getFullYear() === oggi.getFullYear() &&
+      h.time.getMonth() === oggi.getMonth() &&
+      h.time.getDate() === oggi.getDate()
+    );
+    if (!first) return null;
+
+    return {
+      temperature: first.temperature,
+      windSpeed: first.windSpeed,
+      windDir: first.windDir,
+      weatherCode: first.weatherCode,
+      windGusts: first.windGusts,
+    };
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-800/60 rounded-2xl border border-emerald-500/20">
@@ -66,13 +111,13 @@ const DecolloList = ({ decolli, selectedId, onSelect, currentData, allWeatherDat
       <div className="space-y-2 max-h-[65vh] overflow-y-auto pr-1">
         {decolli.map((site) => {
           const isSelected = site.id === selectedId;
-          const siteData = allWeatherData[site.id];
-          const hasData = siteData != null;
-          const temp = hasData ? Math.round(siteData.temperature ?? 0) : null;
-          const wind = hasData ? Math.round(siteData.windSpeed ?? 0) : null;
-          const dir = hasData ? Math.round(siteData.windDir ?? 0) : null;
-          const gust = hasData && siteData.windGusts != null ? Math.round(siteData.windGusts) : null;
-          const code = hasData ? (siteData.weatherCode ?? 0) : null;
+          const current = getCurrentData(site.id);
+          const hasData = current != null;
+          const temp = hasData ? Math.round(current.temperature) : null;
+          const wind = hasData ? Math.round(current.windSpeed) : null;
+          const dir = hasData ? Math.round(current.windDir) : null;
+          const gust = hasData && current.windGusts > 0 ? Math.round(current.windGusts) : null;
+          const code = hasData ? current.weatherCode : null;
           const dirLabel = dir != null ? getDirLabel(dir) : "";
           const dirArrow = dir != null ? getDirArrow(dir) : "";
           const emoji = code != null ? getWeatherEmoji(code) : "—";
@@ -116,9 +161,7 @@ const DecolloList = ({ decolli, selectedId, onSelect, currentData, allWeatherDat
                     <span className="w-1 h-1 rounded-full bg-slate-500" />
                     <span className="flex items-center gap-1 truncate">
                       <MapPin className="w-4 h-4 text-rose-400 shrink-0" />
-                      <span className="truncate">
-                        {site.name === "Malanotte" ? "Valle Ellero" : site.valley}
-                      </span>
+                      <span className="truncate">{site.valley}</span>
                     </span>
                   </div>
 
