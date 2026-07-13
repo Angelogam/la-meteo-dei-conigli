@@ -1,19 +1,16 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import GraficoTermiche from "@/components/GraficoTermiche";
-import type { HourData, CurrentData, DailyData } from "@/types/meteo";
+import type { CurrentData, DailyData, HourData } from "@/types/meteo";
 import { calcolaPrevisioneTermica } from "@/services/algoritmoPrevisioni";
-import { fetchCapeData } from "@/services/capeService";
-
-// Cache per CAPE
-let capeCacheGlobal: { time: Date; cape: number; cin: number; li: number }[] = [];
-let capeLoaded = false;
+import { fetchRealHourlyData } from "@/services/openMeteoService";
+import type { RealHourData } from "@/services/openMeteoService";
 
 interface TermicheTabProps {
   currentData: CurrentData | null;
   dayData: DailyData | null;
-  site: { alt: number };
+  site: { alt: number; lat: number; lon: number };
   thermalDelta?: number;
   thermalStrength?: number;
   hourlyData?: HourData[];
@@ -31,59 +28,55 @@ export default function TermicheTab({
   selectedHour,
   selectedDay,
 }: TermicheTabProps) {
-  // Scarica CAPE al mount
-  React.useEffect(() => {
-    if (!capeLoaded) {
-      capeLoaded = true;
-      fetchCapeData(44.2587, 7.7943).then(data => {
-        capeCacheGlobal = data;
-      });
-    }
-  }, []);
+  const [realData, setRealData] = useState<RealHourData[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Calcola previsioni multi-fonte
+  // Carica dati REALI da Open-Meteo
+  useEffect(() => {
+    if (!site?.lat || !site?.lon) return;
+    
+    setLoading(true);
+    fetchRealHourlyData(site.lat, site.lon, site.alt, 3)
+      .then(data => {
+        setRealData(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [site?.lat, site?.lon, site?.alt]);
+
+  // Calcola previsioni usando DATI REALI
   const previsioni = useMemo(() => {
-    if (!hourlyData || hourlyData.length === 0) return [];
+    if (realData.length === 0) return [];
 
     const oggi = new Date();
     const targetDate = new Date(oggi);
     targetDate.setDate(oggi.getDate() + selectedDay);
     
-    const dayHours = hourlyData.filter((d: any) => {
-      const t = new Date(d.time);
-      return t.getFullYear() === targetDate.getFullYear() &&
-             t.getMonth() === targetDate.getMonth() &&
-             t.getDate() === targetDate.getDate();
+    // Filtra le ore per il giorno selezionato
+    const dayHours = realData.filter(h => {
+      return h.time.getFullYear() === targetDate.getFullYear() &&
+             h.time.getMonth() === targetDate.getMonth() &&
+             h.time.getDate() === targetDate.getDate();
     });
 
     if (dayHours.length === 0) return [];
 
-    const result = dayHours.map((weather: HourData) => {
-      const capeEntry = capeCacheGlobal.find(c => {
-        const ct = c.time;
-        const wt = new Date(weather.time);
-        return ct.getHours() === wt.getHours() && 
-               ct.getDate() === wt.getDate();
-      });
-
+    return dayHours.map((weather: RealHourData) => {
       const previsione = calcolaPrevisioneTermica(
-        weather,
-        capeEntry?.cape ?? 0,
-        capeEntry?.cin ?? 0,
-        capeEntry?.li ?? 0,
+        weather, // cast compatibile
+        weather.cape,
+        weather.cin,
+        weather.li,
         site.alt
       );
 
       return {
-        hour: new Date(weather.time).getHours(),
+        hour: weather.time.getHours(),
         previsione,
         weather,
       };
     });
-
-    // FILTRA SOLO ORE 9:00 – 19:00
-    return result.filter(p => p.hour >= 9 && p.hour <= 19);
-  }, [hourlyData, site.alt, selectedDay]);
+  }, [realData, site.alt, selectedDay]);
 
   const hourlyForGraph = useMemo(() => {
     return previsioni.map(p => ({
@@ -105,26 +98,54 @@ export default function TermicheTab({
     }));
   }, [previsioni]);
 
+  if (loading) {
+    return (
+      <div className="bg-slate-800/40 rounded-xl p-8 border border-slate-700/30 text-center">
+        <span className="text-sm text-slate-500">
+          ⏳ Caricamento previsioni reali da Open-Meteo...
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Badge dati reali */}
+      <div className="flex items-center gap-2 mb-2">
+        <span className="px-2 py-0.5 bg-emerald-900/40 text-emerald-300 rounded-full text-[10px] font-bold border border-emerald-700/30">
+          ✅ Dati reali Open-Meteo
+        </span>
+        <span className="text-[10px] text-slate-500">
+          {site.lat?.toFixed(2)}, {site.lon?.toFixed(2)} · {realData.length} ore
+        </span>
+      </div>
+
       {/* Riepilogo multi-fonte */}
       <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/30">
-        <h3 className="text-sm font-semibold mb-3 text-slate-300">Motore previsionale multi-fonte</h3>
+        <h3 className="text-sm font-semibold mb-3 text-slate-300">
+          Previsioni termiche reali 9:00 – 19:00
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           <div className="bg-slate-900/40 rounded-lg p-3">
-            <span className="text-[10px] text-cyan-400 block">GFS / CAPE</span>
-            <span className="text-base font-bold text-white">40%</span>
-            <span className="text-xs text-slate-400 ml-2">Energia convettiva</span>
+            <span className="text-[10px] text-cyan-400 block">CAPE reale</span>
+            <span className="text-base font-bold text-white">
+              {Math.round(previsioni.reduce((s, p) => s + p.weather.cape, 0) / Math.max(1, previsioni.length))} J/kg
+            </span>
+            <span className="text-xs text-slate-400 ml-2">Media</span>
           </div>
           <div className="bg-slate-900/40 rounded-lg p-3">
-            <span className="text-[10px] text-green-400 block">Open-Meteo</span>
-            <span className="text-base font-bold text-white">35%</span>
-            <span className="text-xs text-slate-400 ml-2">Condizioni locali</span>
+            <span className="text-[10px] text-green-400 block">Temp. reale</span>
+            <span className="text-base font-bold text-white">
+              {Math.round(previsioni.reduce((s, p) => s + p.weather.temperature, 0) / Math.max(1, previsioni.length))}°C
+            </span>
+            <span className="text-xs text-slate-400 ml-2">Media</span>
           </div>
           <div className="bg-slate-900/40 rounded-lg p-3">
-            <span className="text-[10px] text-amber-400 block">Climatologia</span>
-            <span className="text-base font-bold text-white">25%</span>
-            <span className="text-xs text-slate-400 ml-2">Pattern stagionali</span>
+            <span className="text-[10px] text-amber-400 block">Vento reale</span>
+            <span className="text-base font-bold text-white">
+              {Math.round(previsioni.reduce((s, p) => s + p.weather.windSpeed, 0) / Math.max(1, previsioni.length))} m/s
+            </span>
+            <span className="text-xs text-slate-400 ml-2">Media</span>
           </div>
         </div>
       </div>
@@ -181,7 +202,7 @@ export default function TermicheTab({
         </table>
       </div>
 
-      {/* Grafico termiche multi-fonte */}
+      {/* Grafico */}
       {hourlyForGraph.length > 0 && (
         <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/30">
           <GraficoTermiche
@@ -194,7 +215,7 @@ export default function TermicheTab({
       {previsioni.length === 0 && (
         <div className="bg-slate-800/40 rounded-xl p-8 border border-slate-700/30 text-center">
           <span className="text-sm text-slate-500">
-            ⏳ Recupero dati multi-fonte...
+            ⏳ Nessun dato disponibile per il giorno selezionato
           </span>
         </div>
       )}
