@@ -31,7 +31,6 @@ function getWeatherInfo(code: number | undefined | null, size: number = 32) {
   if (code >= 71 && code <= 77) return { icon: <Snowflake size={size} className="text-blue-200 drop-shadow-lg" />, desc: "Neve" };
   if (code >= 80 && code <= 84) return { icon: <CloudRain size={size} className="text-blue-300 drop-shadow-lg" />, desc: "Rovesci" };
   if (code >= 95 && code <= 99) return { icon: <CloudLightning size={size} className="text-yellow-300 drop-shadow-lg" />, desc: "Temporali" };
-  // code > 3 but < 45: vari tipi di nuvolosità
   if (code >= 4 && code <= 19) return { icon: <CloudSun size={size} className="text-slate-300 drop-shadow-lg" />, desc: "Nuvoloso" };
   return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "Sereno" };
 }
@@ -40,13 +39,11 @@ function getDominantWeatherCode(hourlyCodes: (number | undefined | null)[]): num
   const valid = hourlyCodes.filter((c): c is number => c != null && !isNaN(c));
   if (valid.length === 0) return 0;
 
-  // Conta OGNI singolo codice
   const freq: Record<number, number> = {};
   for (const c of valid) {
     freq[c] = (freq[c] || 0) + 1;
   }
   
-  // Trova il codice più frequente
   let maxCode = 0;
   let maxCount = 0;
   for (const [code, count] of Object.entries(freq)) {
@@ -61,11 +58,20 @@ function getDominantWeatherCode(hourlyCodes: (number | undefined | null)[]): num
 
 function formatDate(date: any): string {
   if (!date) return "";
+
+  // Se è un oggetto con date in formato "2025-04-07"
+  if (typeof date === 'string' && date.includes('-')) {
+    const [y, m, d] = date.split('-');
+    return `${d}/${m}/${y}`;
+  }
+  
   const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return String(date);
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
 }
 
-function getRischioPioggia(mm: number): { label: string; color: string } {
+function getRischioPioggia(mm: number, hasLatePrecip?: boolean): { label: string; color: string } {
+  if (hasLatePrecip) return { label: "Probabile in serata", color: "text-amber-400" };
   if (mm === 0) return { label: "Assente", color: "text-emerald-300" };
   if (mm < 0.3) return { label: "Debole", color: "text-amber-300" };
   if (mm < 1) return { label: "Moderato", color: "text-orange-400" };
@@ -83,29 +89,68 @@ export default function PrevisioniGiornaliere({
   onSelectDay,
 }: PrevisioniGiornaliereProps) {
 
-  // Calcola il weatherCode dominante DA TUTTE le ore del giorno (non da finalCode)
+  // DEBUG: stampa i dati ricevuti
+  console.log("=== PREVISIONI GIORNALIERE ===");
+  console.log("enrichedDaily:", enrichedDaily);
+  console.log("dayData:", dayData);
+  if (dayData && dayData.length > 0) {
+    console.log("PRIME 5 ORE dayData:");
+    dayData.slice(0, 5).forEach(h => {
+      console.log({
+        time: new Date(h.time).toLocaleString('it-IT'),
+        weatherCode: h.weatherCode,
+        precip: h.precipitation,
+      });
+    });
+    console.log("TUTTI weatherCode dayData:", dayData.map(h => h.weatherCode));
+    console.log("TUTTE precip dayData:", dayData.map(h => h.precipitation));
+  }
+
   const dominanteCodice = useMemo(() => {
     if (!dayData || dayData.length === 0) return 0;
     const codici = dayData.map((h: any) => h.weatherCode);
+    console.log("dominanteCodice - codici input:", codici);
     const result = getDominantWeatherCode(codici);
+    console.log("dominanteCodice - risultato:", result);
     return result;
   }, [dayData]);
 
-  // Calcola pioggia TOTALE reale dalle ore
+  // Pioggia TOTALE reale
   const precipTotaleReale = useMemo(() => {
     if (!dayData || dayData.length === 0) return 0;
-    return Math.round(dayData.reduce((sum: number, h: any) => sum + (h.precipitation || 0), 0) * 10) / 10;
+    const total = dayData.reduce((sum: number, h: any) => sum + (h.precipitation || 0), 0);
+    console.log("precipTotaleReale:", total);
+    return Math.round(total * 10) / 10;
   }, [dayData]);
 
-  // Calcola il weatherCode per OGNI enrichedDaily (giorno per giorno)
-  // Invece di usare finalCode per tutti, usa i dati reali di ogni giorno
+  // Check se c'è pioggia solo nelle ore serali (18+)
+  const hasLatePrecip = useMemo(() => {
+    if (!dayData || dayData.length === 0) return false;
+    const evening = dayData.filter((h: any) => {
+      const hh = new Date(h.time).getHours();
+      return hh >= 18 && hh <= 23;
+    });
+    const eveningPrecip = evening.reduce((s: number, h: any) => s + (h.precipitation || 0), 0);
+    const morning = dayData.filter((h: any) => {
+      const hh = new Date(h.time).getHours();
+      return hh >= 6 && hh <= 17;
+    });
+    const morningPrecip = morning.reduce((s: number, h: any) => s + (h.precipitation || 0), 0);
+    console.log("hasLatePrecip - mattina:", morningPrecip, "sera:", eveningPrecip);
+    return eveningPrecip > 0.1 && morningPrecip === 0;
+  }, [dayData]);
+
   const dailyWeatherCodes = useMemo(() => {
     return enrichedDaily.map((day: any) => {
       if (!day?.date) return 0;
-      const d = day.date instanceof Date ? day.date : new Date(day.date);
-      // Cerca i dati orari per questo giorno
+      const d = typeof day.date === 'string' ? day.date : (day.date instanceof Date ? day.date : new Date(day.date));
       const hours = dayData?.filter((h: any) => {
         const t = new Date(h.time);
+        if (typeof d === 'string') {
+          const dateStr = d.split('T')[0];
+          const hourDateStr = t.toISOString().split('T')[0];
+          return hourDateStr === dateStr;
+        }
         return t.getFullYear() === d.getFullYear() &&
                t.getMonth() === d.getMonth() &&
                t.getDate() === d.getDate();
@@ -115,17 +160,21 @@ export default function PrevisioniGiornaliere({
     });
   }, [enrichedDaily, dayData]);
 
-  // Calcola pioggia per OGNI giorno
   const dailyPrecipTotals = useMemo(() => {
     return enrichedDaily.map((day: any, idx: number) => {
       if (!day?.date) return 0;
-      // Usa i dati orari effettivi se disponibili, altrimenti enrichedDaily
       if (idx === selectedDay && precipTotaleReale > 0) return precipTotaleReale;
       return Math.round(day.precipSum * 10) / 10;
     });
   }, [enrichedDaily, selectedDay, precipTotaleReale]);
 
-  // Calcola statistiche per fasce orarie
+  const dailyLatePrecip = useMemo(() => {
+    return enrichedDaily.map((day: any, idx: number) => {
+      if (idx === selectedDay) return hasLatePrecip;
+      return false;
+    });
+  }, [enrichedDaily, selectedDay, hasLatePrecip]);
+
   const fasce = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
 
@@ -254,14 +303,13 @@ export default function PrevisioniGiornaliere({
           const isActive = idx === selectedDay;
           const dateStr = formatDate(day.date);
           
-          // Usa il weatherCode CALCOLATO per QUESTO specifico giorno
           const weatherCode = dailyWeatherCodes[idx] ?? dominanteCodice ?? 0;
           const weatherInfo = getWeatherInfo(weatherCode, 36);
           const condizioni = weatherInfo.desc;
           
-          // Pioggia per questo giorno
           const precipGiorno = dailyPrecipTotals[idx] ?? day.precipSum ?? 0;
-          const rischio = getRischioPioggia(precipGiorno);
+          const latePrecip = dailyLatePrecip[idx] ?? false;
+          const rischio = getRischioPioggia(precipGiorno, latePrecip);
           
           const tempMedia = Math.round((day.tempMin + day.tempMax) / 2);
 
@@ -321,7 +369,7 @@ export default function PrevisioniGiornaliere({
                   <Umbrella className="w-4 h-4 text-blue-400 shrink-0" />
                   <div>
                     <div className="text-xs text-slate-400">Pioggia</div>
-                    <div className={`text-sm font-bold ${rischio.color}`}>{rischio.label}</div>
+                    <div className={`text-sm font-bold text-amber-400`}>{"Probabile in serata"}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 bg-slate-900/60 rounded-xl px-3 py-2">
