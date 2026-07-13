@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { weatherService } from "@/services/weatherService";
-import { getWeatherAlert, getWindProfile, getThermalStrength, getStabilityIndex } from "@/utils/weatherHelpers";
 import { DECOLLI } from "@/data/decolli";
 
 export function useWeatherData() {
@@ -40,25 +39,30 @@ export function useWeatherData() {
 
   // Filtra i dati orari per il giorno selezionato
   const dayData = useMemo(() => {
-    if (!meteoData) return [];
+    if (!meteoData?.hourly) return [];
+    
     const today = new Date();
     const targetDate = new Date(today);
     targetDate.setDate(today.getDate() + selectedDay);
 
     return (meteoData.hourly || []).filter((h: any) => {
+      if (!h?.time) return false;
       const d = new Date(h.time);
       return d.getFullYear() === targetDate.getFullYear() &&
              d.getMonth() === targetDate.getMonth() &&
              d.getDate() === targetDate.getDate();
-    });
+    }).sort((a: any, b: any) => new Date(a.time).getTime() - new Date(b.time).getTime());
   }, [meteoData, selectedDay]);
 
   const currentData = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
+    
+    // Cerca l'ora più vicina a selectedHour
     let closest = dayData[0];
-    let minDiff = Math.abs(closest.time.getHours() - selectedHour);
+    let minDiff = Math.abs(new Date(closest.time).getHours() - selectedHour);
+    
     for (const h of dayData) {
-      const diff = Math.abs(h.time.getHours() - selectedHour);
+      const diff = Math.abs(new Date(h.time).getHours() - selectedHour);
       if (diff < minDiff) {
         minDiff = diff;
         closest = h;
@@ -75,55 +79,63 @@ export function useWeatherData() {
   }, [dayData]);
 
   const enrichedDaily = useMemo(() => {
-    if (!meteoData || !meteoData.daily) return [];
+    if (!meteoData?.daily) return [];
+    
     return meteoData.daily.map((day: any) => {
       const d = new Date(day.date);
-      const hours = meteoData.hourly.filter((h: any) =>
-        h.time.getDate() === d.getDate() && h.time.getMonth() === d.getMonth() && h.time.getFullYear() === d.getFullYear()
-      );
+      
+      // Filtra ore per QUESTO giorno specifico
+      const hours = (meteoData.hourly || []).filter((h: any) => {
+        if (!h?.time) return false;
+        const t = new Date(h.time);
+        return t.getFullYear() === d.getFullYear() &&
+               t.getMonth() === d.getMonth() &&
+               t.getDate() === d.getDate();
+      });
+
       const temps = hours.map((h: any) => h.temperature).filter((t: any) => t != null);
-      const delta = temps.length > 0 ? Math.round((Math.max(...temps) - Math.min(...temps)) * 10) / 10 : 0;
+      const delta = temps.length > 0 
+        ? Math.round((Math.max(...temps) - Math.min(...temps)) * 10) / 10 
+        : 0;
+      
       const avgWind = hours.length > 0
         ? Math.round(hours.reduce((s: number, h: any) => s + (h.windSpeed || 0), 0) / hours.length * 10) / 10
         : 0;
+      
       const maxWind = hours.length > 0
         ? Math.max(...hours.map((h: any) => h.windSpeed || 0))
         : 0;
+      
       const avgCloud = hours.length > 0
         ? Math.round(hours.reduce((s: number, h: any) => s + (h.cloudCover || 0), 0) / hours.length)
         : 0;
-      return { ...day, thermalDelta: delta, avgWind, maxWind, avgCloud };
+
+      return { 
+        ...day, 
+        date: d,
+        thermalDelta: delta, 
+        avgWind, 
+        maxWind, 
+        avgCloud 
+      };
     });
   }, [meteoData]);
 
-  const dateLabels = enrichedDaily.map((d: any) =>
-    d.date.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })
-  );
+  const dateLabels = enrichedDaily.map((d: any) => {
+    if (!d?.date) return "Giorno";
+    const date = new Date(d.date);
+    const oggi = new Date();
+    const domani = new Date(oggi);
+    domani.setDate(oggi.getDate() + 1);
+    const dopodomani = new Date(oggi);
+    dopodomani.setDate(oggi.getDate() + 2);
 
-  // WindProfile reale dai dati di vento in quota
-  const windProfile = useMemo(() => {
-    if (!currentData) return [];
-    if (!currentData.windProfile) return getWindProfile(currentData.windSpeed || 0, currentData.windDir || 0);
+    if (date.toDateString() === oggi.toDateString()) return "Oggi";
+    if (date.toDateString() === domani.toDateString()) return "Domani";
+    if (date.toDateString() === dopodomani.toDateString()) return "Dopodomani";
     
-    return currentData.windProfile.map((level: any) => ({
-      alt: level.height,
-      speed: level.speed != null ? Math.round(level.speed * 10) / 10 : 0,
-      dir: level.dir != null ? Math.round(level.dir) : 0,
-      dirName: getWindDirName(level.dir != null ? Math.round(level.dir) : 0),
-    }));
-  }, [currentData]);
-
-  const weatherAlert = useMemo(() => 
-    currentData ? getWeatherAlert(currentData, thermalDelta) : { level: 'info' as const, message: 'Caricamento...', icon: 'ℹ️' }, 
-  [currentData, thermalDelta]);
-  
-  const stabilityIndex = useMemo(() => 
-    currentData ? getStabilityIndex(currentData.temperature, currentData.humidity, currentData.cloudCover) : { label: '--', color: '#888' }, 
-  [currentData]);
-  
-  const thermalStrength = useMemo(() => 
-    currentData ? getThermalStrength(currentData.temperature, currentData.cloudCover, currentData.humidity, thermalDelta) : { label: '--', color: '#888' }, 
-  [currentData, thermalDelta]);
+    return date.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+  });
 
   return {
     selectedId, setSelectedId,
@@ -138,15 +150,6 @@ export function useWeatherData() {
     thermalDelta,
     enrichedDaily,
     dateLabels,
-    windProfile,
-    weatherAlert,
-    stabilityIndex,
-    thermalStrength,
     loadWeather,
   };
-}
-
-function getWindDirName(deg: number): string {
-  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-  return dirs[Math.round(deg / 45) % 8] || "-";
 }
