@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -15,7 +15,7 @@ import VentiTab from "@/components/VentiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiTab from "@/components/AnalisiTab";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
-import { Sparkles, Navigation, CloudSun } from "lucide-react";
+import { Sparkles, Navigation, CloudSun, RefreshCw, Loader2 } from "lucide-react";
 
 function formatDate(date: any): string {
   if (!date) return "";
@@ -26,11 +26,11 @@ function formatDate(date: any): string {
 export function Page() {
   const {
     selectedId, setSelectedId,
-    meteoData, loading, error,
+    meteoData, loading, updating, error,
     selectedDay, setSelectedDay,
     selectedHour, setSelectedHour,
     activeTab, setActiveTab,
-    lastUpdate,
+    lastUpdate, countdown, refreshProgress,
     site,
     dayData,
     currentData,
@@ -43,6 +43,18 @@ export function Page() {
     thermalStrength,
     loadWeather,
   } = useWeatherData();
+
+  const [animRefresh, setAnimRefresh] = useState(false);
+
+  // Animazione quando parte un refresh
+  useEffect(() => {
+    if (updating) {
+      setAnimRefresh(true);
+    } else {
+      const timeout = setTimeout(() => setAnimRefresh(false), 1000);
+      return () => clearTimeout(timeout);
+    }
+  }, [updating]);
 
   if (loading) return <LoadingScreen />;
   if (error) return <ErrorScreen error={error} onRetry={loadWeather} />;
@@ -64,7 +76,12 @@ export function Page() {
   const lastUpdateStr = lastUpdate?.toLocaleTimeString("it-IT", {
     hour: "2-digit",
     minute: "2-digit",
+    second: "2-digit",
   }) || "--:--";
+
+  // Formatta countdown
+  const countdownMin = Math.floor(countdown);
+  const countdownSec = Math.round((countdown - Math.floor(countdown)) * 60);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 particle-bg">
@@ -129,9 +146,46 @@ export function Page() {
           ))}
         </div>
 
-        <div className="absolute top-2 right-3 md:top-3 md:right-6 text-[10px] text-slate-500 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-          <span>Aggiornato {lastUpdateStr}</span>
+        {/* INDICATORE REFRESH + COUNTDOWN */}
+        <div className="absolute top-2 right-3 md:top-3 md:right-6 text-[10px] text-slate-500 flex items-center gap-2">
+          {/* Icona refresh animata */}
+          <button
+            onClick={loadWeather}
+            disabled={updating}
+            className={`p-1.5 rounded-full transition-all duration-300 ${
+              updating
+                ? "bg-emerald-500/20 text-emerald-300 cursor-not-allowed"
+                : "hover:bg-slate-700/50 hover:text-slate-200 text-slate-400"
+            }`}
+            title="Aggiorna ora"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${updating ? "animate-spin" : ""} ${animRefresh ? "animate-spin" : ""}`} />
+          </button>
+
+          {/* Pallino verde lampeggiante */}
+          <span className={`w-1.5 h-1.5 rounded-full ${updating ? "bg-yellow-400 animate-pulse" : "bg-emerald-400"}`} />
+
+          {/* Testo ultimo aggiornamento + countdown */}
+          <span className="font-mono tabular-nums hidden sm:inline">
+            {updating
+              ? "Aggiornamento..."
+              : `Agg. ${lastUpdateStr} · prox ${countdownMin}min`
+            }
+          </span>
+          <span className="font-mono tabular-nums sm:hidden">
+            {updating ? "..." : `${countdownMin}min`}
+          </span>
+        </div>
+
+        {/* Barra di progresso refresh */}
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-700/50">
+          <div
+            className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-700 ease-linear"
+            style={{
+              width: updating ? "100%" : `${refreshProgress}%`,
+              opacity: updating ? 1 : 0.6,
+            }}
+          />
         </div>
       </header>
 
@@ -149,6 +203,17 @@ export function Page() {
 
           {/* Contenuto principale */}
           <div className="flex-1 min-w-0 space-y-4">
+            {/* Indicatore updating compatto */}
+            {updating && (
+              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-yellow-900/20 border border-yellow-500/30 text-yellow-300 text-xs animate-pulse">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Aggiornamento previsioni in corso...</span>
+                <span className="ml-auto text-[10px] text-yellow-400/70 font-mono">
+                  {countdownMin}:{String(countdownSec).padStart(2, "0")}
+                </span>
+              </div>
+            )}
+
             {/* PREVISIONI GIORNALIERE — con selezione giorni integrata */}
             <div className="bg-gradient-to-br from-slate-900/70 to-slate-800/40 border-2 border-emerald-500/30 rounded-3xl overflow-hidden shadow-xl shadow-emerald-500/10">
               <div className="bg-gradient-to-r from-emerald-800/40 to-amber-800/20 px-5 py-3 border-b border-emerald-500/20">

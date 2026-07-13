@@ -9,32 +9,57 @@ export function useWeatherData() {
   const [selectedId, setSelectedId] = useState(DECOLLI[0].id);
   const [meteoData, setMeteoData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState(0);
   const [selectedHour, setSelectedHour] = useState(new Date().getHours());
   const [activeTab, setActiveTab] = useState<'meteo' | 'venti' | 'termiche' | 'analisi'>('meteo');
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [countdown, setCountdown] = useState(30); // 30 minuti default
+  const [refreshProgress, setRefreshProgress] = useState(0); // 0-100%
 
   const site = DECOLLI.find(d => d.id === selectedId)!;
+  const REFRESH_INTERVAL_MINUTES = 30;
 
   const loadWeather = useCallback(async () => {
     setLoading(true);
+    setUpdating(true);
     setError(null);
     try {
       const data = await weatherService.fetchWithFallback(site.lat, site.lon);
       setMeteoData(data);
-      setLastUpdate(new Date());
+      const now = new Date();
+      setLastUpdate(now);
+      setCountdown(REFRESH_INTERVAL_MINUTES);
+      setRefreshProgress(0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore sconosciuto');
     } finally {
       setLoading(false);
+      setUpdating(false);
     }
   }, [site.lat, site.lon]);
 
+  // Carica inizialmente
   useEffect(() => {
     loadWeather();
     setSelectedHour(new Date().getHours());
-    const interval = setInterval(loadWeather, 30 * 60 * 1000);
+  }, [loadWeather]);
+
+  // Countdown ogni minuto
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          // Ricarica quando il countdown arriva a 0
+          loadWeather();
+          return REFRESH_INTERVAL_MINUTES;
+        }
+        return prev - 1;
+      });
+      setRefreshProgress(prev => Math.min(100, prev + (100 / REFRESH_INTERVAL_MINUTES)));
+    }, 60 * 1000); // ogni minuto
+
     return () => clearInterval(interval);
   }, [loadWeather]);
 
@@ -55,6 +80,7 @@ export function useWeatherData() {
     }).sort((a: any, b: any) => new Date(a.time).getTime() - new Date(b.time).getTime());
   }, [meteoData, selectedDay]);
 
+  // Dati correnti basati sull'ora selezionata
   const currentData = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
     
@@ -71,6 +97,7 @@ export function useWeatherData() {
     return closest;
   }, [dayData, selectedHour]);
 
+  // Delta termico
   const thermalDelta = useMemo(() => {
     if (!dayData || dayData.length === 0) return 0;
     const temps = dayData.map((h: any) => h.temperature).filter((t: any) => t != null);
@@ -102,6 +129,7 @@ export function useWeatherData() {
     return getWindProfile(currentData.windSpeed || 0, currentData.windDir || 0, currentData.windProfile);
   }, [currentData]);
 
+  // Dati giornalieri arricchiti
   const enrichedDaily = useMemo(() => {
     if (!meteoData?.daily) return [];
     
@@ -143,6 +171,7 @@ export function useWeatherData() {
     });
   }, [meteoData]);
 
+  // Etichette date
   const dateLabels = enrichedDaily.map((d: any) => {
     if (!d?.date) return "Giorno";
     const date = new Date(d.date);
@@ -161,11 +190,11 @@ export function useWeatherData() {
 
   return {
     selectedId, setSelectedId,
-    meteoData, loading, error,
+    meteoData, loading, updating, error,
     selectedDay, setSelectedDay,
     selectedHour, setSelectedHour,
     activeTab, setActiveTab,
-    lastUpdate,
+    lastUpdate, countdown, refreshProgress,
     site,
     dayData,
     currentData,
