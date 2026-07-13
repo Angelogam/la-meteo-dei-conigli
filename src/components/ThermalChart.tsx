@@ -13,7 +13,7 @@ const HOURS = Array.from({ length: 18 }, (_, i) => i + 5); // 5:00 – 22:00
 function getThermalValue(hour: number, hourlyData: any[], alt: number): number {
   if (!hourlyData || hourlyData.length === 0) return 0;
 
-  // Find closest hour entry
+  // Find closest hour entry — match sul campo `time` Date
   const entry = hourlyData.find((d) => {
     const h = new Date(d.time).getHours();
     return h === hour;
@@ -21,31 +21,29 @@ function getThermalValue(hour: number, hourlyData: any[], alt: number): number {
 
   if (!entry) return 0;
 
-  // Use temperature to estimate thermal strength
-  const temp = entry.temperature2m;
-  const wind = entry.windSpeed10m || 5;
-  const humidity = entry.relativeHumidity2m || 50;
+  // Usa i campi reali restituiti da weatherService.parseData
+  const temp = entry.temperature;
+  const wind = entry.windSpeed || 5;
+  const humidity = entry.humidity || 50;
   const cloudCover = entry.cloudCover || 30;
 
   // Base thermal potential from temperature (C)
-  // At 30°C → 4 m/s, at 10°C → 0.5 m/s
   const tempFactor = Math.max(0, (temp - 5) / 6);
   
-  // Altitude bonus (higher = thinner air = stronger thermals)
+  // Altitude bonus
   const altFactor = Math.min(1.8, Math.max(0.7, alt / 1500));
   
   // Wind penalty (too much wind disrupts thermals)
   const windPenalty = Math.max(0.3, 1 - (wind - 3) * 0.05);
   
-  // Humidity penalty (high humidity = weaker thermals)
+  // Humidity penalty
   const humidityPenalty = Math.max(0.5, 1 - (humidity - 30) * 0.005);
   
-  // Cloud cover penalty (too many clouds = less heating)
+  // Cloud cover penalty
   const cloudPenalty = Math.max(0.3, 1 - cloudCover * 0.008);
 
   let value = tempFactor * altFactor * windPenalty * humidityPenalty * cloudPenalty;
   
-  // Round to 1 decimal
   return Math.max(0, Math.round(value * 10) / 10);
 }
 

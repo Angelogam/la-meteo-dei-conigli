@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import ThermalChart from "@/components/ThermalChart";
 
 interface TermicheTabProps {
@@ -11,20 +11,44 @@ interface TermicheTabProps {
   thermalStrength?: { label: string; color: string };
   hourlyData?: any[];
   selectedHour?: number;
+  selectedDay?: number;
 }
 
-export default function TermicheTab({ currentData, dayData, site, thermalDelta, thermalStrength, hourlyData, selectedHour }: TermicheTabProps) {
+export default function TermicheTab({ currentData, dayData, site, thermalDelta, thermalStrength, hourlyData, selectedHour, selectedDay }: TermicheTabProps) {
+  // Filtra hourlyData per il giorno selezionato
+  const dayHourly = useMemo(() => {
+    if (!hourlyData || selectedDay == null) return hourlyData || [];
+
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(today.getDate() + selectedDay);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+
+    return hourlyData.filter((h: any) => {
+      const t = new Date(h.time);
+      return t >= start && t < end;
+    });
+  }, [hourlyData, selectedDay]);
+
   const hasData = currentData && dayData;
 
   return (
     <div className="space-y-5">
       {/* Chart */}
-      {hasData && hourlyData && (
+      {hasData && dayHourly.length > 0 && (
         <ThermalChart
-          hourlyData={hourlyData}
+          hourlyData={dayHourly}
           selectedHour={selectedHour ?? 12}
           siteAltitude={site.alt}
         />
+      )}
+
+      {hasData && dayHourly.length === 0 && (
+        <div className="text-center py-8 text-slate-500 text-sm">
+          Nessun dato orario disponibile per questo giorno
+        </div>
       )}
 
       {/* Info cards */}

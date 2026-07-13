@@ -15,7 +15,7 @@ import MeteoTab from "@/components/MeteoTab";
 import VentiTab from "@/components/VentiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiTab from "@/components/AnalisiTab";
-import { Mountain, Sparkles, Navigation, CloudSun } from "lucide-react";
+import { Sparkles, Navigation, CloudSun } from "lucide-react";
 
 export function Page() {
   const {
@@ -43,7 +43,7 @@ export function Page() {
 
   const selectedDateLabel = dateLabels?.[selectedDay] || undefined;
 
-  // Get hourly data for the selected day
+  // Get all hourly data from meteoData
   const hourlyData = meteoData?.hourly;
 
   const lastUpdateStr = lastUpdate?.toLocaleTimeString("it-IT", {
@@ -182,6 +182,7 @@ export function Page() {
                   thermalStrength={thermalStrength}
                   hourlyData={hourlyData}
                   selectedHour={selectedHour}
+                  selectedDay={selectedDay}
                 />
               )}
               {activeTab === "analisi" && (
