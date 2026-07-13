@@ -72,49 +72,45 @@ export const weatherService = {
 
     const res = await fetch(`${BASE_URL}?${params.toString()}`);
     if (!res.ok) throw new Error(`Open-Meteo error: ${res.status}`);
-    
+
     const raw: any = await res.json();
 
-    // ===================== DEBUG RAW =====================
+    // ===================== DEBUG RAW COMPLETO =====================
     console.log("========= WEATHER SERVICE RAW HOURLY KEYS =========", Object.keys(raw.hourly));
-    console.log("========= WEATHER SERVICE RAW DAILY KEYS =========", Object.keys(raw.daily));
-    
-    // Stampa le prime 5 ore RAW per vedere se weather_code esiste
-    console.log("=== RAW HOURLY (prime 3 ore) ===");
-    const hCodes = raw.hourly.weather_code || raw.hourly.weathercode;
-    for (let i = 0; i < Math.min(3, raw.hourly.time.length); i++) {
-      console.log({
-        time: raw.hourly.time[i],
-        temperature: raw.hourly.temperature_2m?.[i],
-        precip: raw.hourly.precipitation?.[i],
-        weather_code: raw.hourly.weather_code?.[i],
-        weathercode: raw.hourly.weathercode?.[i],
-        cloud: raw.hourly.cloud_cover?.[i],
-        wind: raw.hourly.wind_speed_10m?.[i],
-      });
-    }
-    console.log("=== RAW DAILY ===");
-    for (let i = 0; i < Math.min(3, raw.daily.time.length); i++) {
-      console.log({
-        date: raw.daily.time[i],
-        weather_code_daily: raw.daily.weather_code?.[i],
-        weathercode_daily: raw.daily.weathercode?.[i],
-        precipsum: raw.daily.precipitation_sum?.[i],
-        tempmax: raw.daily.temperature_2m_max?.[i],
-      });
-    }
-    // ===================== FINE DEBUG =====================
+    console.log("========= WEATHER SERVICE RAW =========", JSON.stringify(raw, null, 2).slice(0, 5000));
 
-    // Se non trova weather_code, prova weathercode (vecchio nome)
-    if (!raw.hourly.weather_code && raw.hourly.weathercode) {
-      console.warn("⚠️ Usando weathercode (vecchio nome) invece di weather_code");
+    // Trova la chiave corretta per weather_code
+    const hourlyWeatherCodeKey =
+      raw.hourly.weather_code ? "weather_code" :
+      raw.hourly.weathercode ? "weathercode" :
+      raw.hourly.weatherCode ? "weatherCode" :
+      null;
+
+    const dailyWeatherCodeKey =
+      raw.daily.weather_code ? "weather_code" :
+      raw.daily.weathercode ? "weathercode" :
+      raw.daily.weatherCode ? "weatherCode" :
+      null;
+
+    console.log("❓ hourly weather_code key trovata:", hourlyWeatherCodeKey);
+    console.log("❓ daily weather_code key trovata:", dailyWeatherCodeKey);
+
+    if (!hourlyWeatherCodeKey) {
+      console.warn("⚠️ NESSUNA chiave weather_code trovata! Debug raw keys:", Object.keys(raw.hourly));
     }
 
     // --- HOURLY ---
     const hourly: MeteoHourly[] = (raw.hourly.time as string[]).map((t: string, i: number) => {
       const date = new Date(t);
-      // Prende weather_code o weathercode (vecchio nome)
-      const wCode = raw.hourly.weather_code?.[i] ?? raw.hourly.weathercode?.[i] ?? 0;
+      // Prende il weatherCode da qualsiasi chiave
+      let wCode = 0;
+      if (hourlyWeatherCodeKey) {
+        wCode = raw.hourly[hourlyWeatherCodeKey]?.[i] ?? 0;
+      } else {
+        // Fallback: prova tutte le possibili chiavi
+        wCode = raw.hourly.weather_code?.[i] ?? raw.hourly.weathercode?.[i] ?? raw.hourly.weatherCode?.[i] ?? 0;
+      }
+
       return {
         time: date,
         temperature: raw.hourly.temperature_2m?.[i] ?? 0,
@@ -137,7 +133,12 @@ export const weatherService = {
     // --- DAILY ---
     const daily: MeteoDaily[] = (raw.daily.time as string[]).map((t: string, i: number) => {
       const date = new Date(t);
-      const dCode = raw.daily.weather_code?.[i] ?? raw.daily.weathercode?.[i] ?? 0;
+      let dCode = 0;
+      if (dailyWeatherCodeKey) {
+        dCode = raw.daily[dailyWeatherCodeKey]?.[i] ?? 0;
+      } else {
+        dCode = raw.daily.weather_code?.[i] ?? raw.daily.weathercode?.[i] ?? raw.daily.weatherCode?.[i] ?? 0;
+      }
       return {
         date,
         weatherCode: dCode,
@@ -151,7 +152,7 @@ export const weatherService = {
     });
 
     // ===================== DEBUG POST-TRASFORMAZIONE =====================
-    console.log("=== HOURLY DOPO TRASFORMAZIONE (prime 5 ore) ===");
+    console.log("=== HOURLY DOPO TRASFORMAZIONE (prime 5) ===");
     hourly.slice(0, 5).forEach(h => {
       console.log({
         time: h.time.toLocaleString('it-IT'),
@@ -159,6 +160,7 @@ export const weatherService = {
         precip: h.precipitation,
         temp: h.temperature,
         cloud: h.cloudCover,
+        wind: h.windSpeed,
       });
     });
     console.log("=== DAILY DOPO TRASFORMAZIONE ===");
@@ -170,7 +172,6 @@ export const weatherService = {
         tempMax: d.tempMax,
       });
     });
-    // ===================== FINE DEBUG =====================
 
     return { hourly, daily };
   },

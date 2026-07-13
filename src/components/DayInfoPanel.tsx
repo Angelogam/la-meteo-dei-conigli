@@ -44,10 +44,10 @@ function generateHourlyData(currentData: any, dayDataArray?: any[]) {
     const hData = Array.isArray(dayDataArray) ? dayDataArray.find(
       (h: any) => h.time?.getHours() === ora
     ) : undefined;
-    
+
     const t = hData?.temperature ?? currentData?.temp ?? 20;
     const ws = hData?.windSpeed ?? currentData?.windSpeed ?? 10;
-    const cc = hData?.cloudCover ?? currentData?.clouds ?? 30;
+    const cc = hData?.cloudCover ?? currentData?.cloudCover ?? 30;
     const hum = hData?.humidity ?? currentData?.humidity ?? 50;
 
     // Emoji base
@@ -180,7 +180,7 @@ export default function DayInfoPanel({ currentData, dayData, site, selectedDate 
         </div>
       </div>
 
-      {/* 🌤️ Previsione oraria 9:00–19:00 (COLONNA CERCHIATA) */}
+      {/* 🌤️ Previsione oraria 9:00–19:00 */}
       <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-orange-500/40 rounded-2xl p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-sky-300 flex items-center gap-2">
@@ -239,7 +239,7 @@ export default function DayInfoPanel({ currentData, dayData, site, selectedDate 
         </div>
       </div>
 
-      {/* 🪂 Interpretazione per attività outdoor / volo libero */}
+      {/* 🪂 Interpretazione */}
       <div className="bg-gradient-to-br from-orange-900/20 to-amber-900/10 border-2 border-orange-700/30 rounded-2xl p-4 hover:border-green-400/40 transition-all duration-200">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-orange-400 flex items-center gap-2">
