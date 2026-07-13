@@ -81,7 +81,8 @@ export default function TermicheTab({
       };
     });
 
-    return result;
+    // FILTRA SOLO ORE 9:00 – 19:00
+    return result.filter(p => p.hour >= 9 && p.hour <= 19);
   }, [hourlyData, site.alt, selectedDay]);
 
   const hourlyForGraph = useMemo(() => {
