@@ -33,7 +33,38 @@ export default function VentiTab({
     ? currentData.windProfile
     : windProfile;
 
-  // Schede vento a diverse quote (reali)
+  // Quote FISSE in metri: partono da 10m e salgono ogni 500m fino a 4000m
+  const fixedAltitudes = [10, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000];
+
+  // Per ogni quota fissa, cerca il dato più vicino nel profilo reale
+  const profileWithAltitudes = fixedAltitudes.map((alt) => {
+    const matched = realWindProfile.find((l: any) => l.height === alt || l.alt === alt);
+    if (matched) {
+      return {
+        height: alt,
+        speed: matched.speed,
+        dir: matched.dir,
+        dirName: matched.dirName || getWindDirName(matched.dir),
+      };
+    }
+    // Se non c'è un dato esatto, cerca il livello più vicino
+    const sorted = [...realWindProfile].sort(
+      (a: any, b: any) =>
+        Math.abs((a.height || a.alt) - alt) - Math.abs((b.height || b.alt) - alt)
+    );
+    const nearest = sorted[0];
+    if (nearest && Math.abs((nearest.height || nearest.alt) - alt) <= 250) {
+      return {
+        height: alt,
+        speed: nearest.speed,
+        dir: nearest.dir,
+        dirName: nearest.dirName || getWindDirName(nearest.dir),
+      };
+    }
+    return null;
+  }).filter(Boolean);
+
+  // Schede vento a diverse quote
   const windCards = [
     {
       label: "Superficie (10m)",
@@ -98,11 +129,11 @@ export default function VentiTab({
       <div>
         <h4 className="text-base font-bold text-emerald-300 uppercase tracking-wider mb-4 flex items-center gap-2">
           <TrendingUp className="w-5 h-5" />
-          Profilo vento reale (500m - 4000m)
+          Profilo vento reale — tutte le quote
         </h4>
-        <div className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-4 max-h-64 overflow-y-auto space-y-1">
-          {realWindProfile.map((level: any, idx: number) => {
-            const maxSpeed = Math.max(...realWindProfile.map((l: any) => l.speed || 0), 1);
+        <div className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-4 max-h-96 overflow-y-auto space-y-1">
+          {profileWithAltitudes.map((level: any, idx: number) => {
+            const maxSpeed = Math.max(...profileWithAltitudes.map((l: any) => l.speed || 0), 1);
             const width = maxSpeed > 0 ? Math.min(100, (level.speed / maxSpeed) * 100) : 10;
             const barColor =
               width < 30
