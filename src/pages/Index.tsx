@@ -40,14 +40,7 @@ export const Page = () => {
     allWeatherData,
   } = useWeatherData();
 
-  if (loading && !meteoData) {
-    return <LoadingScreen />;
-  }
-
-  if (error && !meteoData) {
-    return <ErrorScreen error={error} onRetry={loadWeather} />;
-  }
-
+  // Calcola queste variabili PRIMA dei return condizionali
   const alert = currentData ? getWeatherAlert(currentData, thermalDelta) : null;
   const stabilityIndex = currentData ? getStabilityIndex(currentData.temperature, currentData.humidity, currentData.cloudCover) : { label: "--", color: "#64748b" };
 
@@ -64,6 +57,15 @@ export const Page = () => {
       };
     });
   }, [currentData]);
+
+  // Return condizionali (devono stare DOPO tutte le variabili calcolate)
+  if (loading && !meteoData) {
+    return <LoadingScreen />;
+  }
+
+  if (error && !meteoData) {
+    return <ErrorScreen error={error} onRetry={loadWeather} />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex flex-col">
