@@ -28,15 +28,13 @@ export default function VentiTab({
 
   const hourRange = Array.from({ length: 11 }, (_, i) => i + 9);
 
-  // Usa i dati reali di vento in quota da windProfile (se disponibili)
   const realWindProfile = currentData.windProfile && currentData.windProfile.length > 0
     ? currentData.windProfile
     : windProfile;
 
-  // Quote FISSE in metri: partono da 10m e salgono ogni 500m fino a 4000m
-  const fixedAltitudes = [10, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000];
+  // Quote fisse in metri: 10, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000
+  const fixedAltitudes = [4000, 3500, 3000, 2500, 2000, 1500, 1000, 500, 10];
 
-  // Per ogni quota fissa, cerca il dato più vicino nel profilo reale
   const profileWithAltitudes = fixedAltitudes.map((alt) => {
     const matched = realWindProfile.find((l: any) => l.height === alt || l.alt === alt);
     if (matched) {
@@ -47,7 +45,6 @@ export default function VentiTab({
         dirName: matched.dirName || getWindDirName(matched.dir),
       };
     }
-    // Se non c'è un dato esatto, cerca il livello più vicino
     const sorted = [...realWindProfile].sort(
       (a: any, b: any) =>
         Math.abs((a.height || a.alt) - alt) - Math.abs((b.height || b.alt) - alt)
@@ -64,7 +61,6 @@ export default function VentiTab({
     return null;
   }).filter(Boolean);
 
-  // Schede vento a diverse quote
   const windCards = [
     {
       label: "Superficie (10m)",
@@ -151,7 +147,7 @@ export default function VentiTab({
                 className="grid grid-cols-[70px_1fr_70px] gap-3 items-center py-2"
               >
                 <span className="text-sm text-slate-300 font-mono tabular-nums font-semibold">
-                  {level.height >= 1000 ? `${(level.height / 1000).toFixed(1)}km` : `${level.height}m`}
+                  {level.height}m
                 </span>
                 <div className="h-6 bg-slate-700/60 rounded-full overflow-hidden">
                   <div
