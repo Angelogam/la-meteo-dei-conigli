@@ -16,6 +16,14 @@ interface DaySelectorProps {
   onSelect: (idx: number) => void;
 }
 
+function formatFullDate(dateStr: string): string {
+  // dateStr es: "2025-05-24"
+  const parts = dateStr.split("-");
+  if (parts.length !== 3) return dateStr;
+  const [year, month, day] = parts;
+  return `${day}/${month}`;
+}
+
 export default function DaySelector({
   enrichedDaily,
   dateLabels,
@@ -28,6 +36,23 @@ export default function DaySelector({
     <div className="grid grid-cols-3 gap-2.5">
       {enrichedDaily.slice(0, 3).map((day: any, idx: number) => {
         const isActive = idx === selectedDay;
+        
+        // Costruisce etichetta con data
+        let label = dateLabels[idx] || "Giorno";
+        if (idx === 0) label = "Oggi";
+        else if (idx === 1) {
+          const dateStr = day.date instanceof Date 
+            ? `${String(day.date.getDate()).padStart(2, '0')}/${String(day.date.getMonth() + 1).padStart(2, '0')}`
+            : formatFullDate(day.date);
+          label = `Domani ${dateStr}`;
+        }
+        else if (idx === 2) {
+          const dateStr = day.date instanceof Date 
+            ? `${String(day.date.getDate()).padStart(2, '0')}/${String(day.date.getMonth() + 1).padStart(2, '0')}`
+            : formatFullDate(day.date);
+          label = `Dopodomani ${dateStr}`;
+        }
+
         return (
           <button
             key={idx}
@@ -41,7 +66,7 @@ export default function DaySelector({
           >
             <div className="flex items-center justify-between mb-1.5">
               <div className="text-xs font-semibold text-slate-300">
-                {dateLabels[idx]}
+                {label}
               </div>
               {isActive && (
                 <Sparkles className="w-3 h-3 text-orange-400 animate-twinkle" />

@@ -18,6 +18,12 @@ import AnalisiTab from "@/components/AnalisiTab";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import { Sparkles, Navigation, CloudSun } from "lucide-react";
 
+function formatDate(date: any): string {
+  if (!date) return "";
+  const d = date instanceof Date ? date : new Date(date);
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+}
+
 export function Page() {
   const {
     selectedId, setSelectedId,
@@ -43,6 +49,8 @@ export function Page() {
   if (error) return <ErrorScreen error={error} onRetry={loadWeather} />;
 
   const selectedDateLabel = dateLabels?.[selectedDay] || undefined;
+  const currentDay = enrichedDaily?.[selectedDay];
+  const currentDateStr = currentDay ? formatDate(currentDay.date) : "";
 
   // Ottieni tutti i dati orari
   const hourlyData = meteoData?.hourly;
@@ -142,7 +150,7 @@ export function Page() {
 
           {/* Contenuto principale */}
           <div className="flex-1 min-w-0 space-y-4">
-            {/* SELEZIONE GIORNI — OGGI / DOMANI / DOPODOMANI */}
+            {/* SELEZIONE GIORNI — OGGI / DOMANI / DOPODOMANI con data */}
             {enrichedDaily && enrichedDaily.length > 0 && (
               <div className="bg-gradient-to-br from-slate-900/70 to-slate-800/40 border-2 border-slate-700/30 rounded-2xl overflow-hidden shadow-xl">
                 <div className="px-4 py-2 border-b border-slate-700/30">
@@ -167,7 +175,7 @@ export function Page() {
               <div className="bg-gradient-to-r from-emerald-800/40 to-amber-800/20 px-5 py-3 border-b border-emerald-500/20">
                 <h2 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
                   <CloudSun className="w-5 h-5 text-yellow-300" />
-                  PREVISIONI GIORNALIERE — {dateLabels[selectedDay]?.toUpperCase() || "OGGI"}
+                  PREVISIONI GIORNALIERE — {dateLabels[selectedDay]?.toUpperCase() || "OGGI"} {currentDateStr}
                 </h2>
               </div>
               <div className="p-4">
