@@ -43,6 +43,28 @@ function getDayLabel(idx: number, dateStr: string): string {
   return `Giorno ${dateStr}`;
 }
 
+/** Restituisce descrizione del rischio pioggia in base ai mm */
+function getRischioPioggia(mm: number): { label: string; color: string; icon: string } {
+  if (mm === 0) return { label: "Nessun rischio", color: "text-emerald-400", icon: "☀️" };
+  if (mm < 0.3) return { label: "Rischio basso", color: "text-amber-300", icon: "🌤️" };
+  if (mm < 1) return { label: "Rischio moderato", color: "text-orange-400", icon: "⛅" };
+  if (mm < 3) return { label: "Rischio alto", color: "text-red-400", icon: "🌦️" };
+  return { label: "Pioggia probabile", color: "text-red-500", icon: "🌧️" };
+}
+
+/** Testo descrittivo condizioni meteo */
+function getCondizioniDescrizione(code: number): string {
+  if (code === 0) return "Sereno";
+  if (code <= 2) return "Poco nuvoloso";
+  if (code <= 3) return "Nuvoloso";
+  if (code <= 48) return "Nebbia";
+  if (code <= 57) return "Pioggia debole";
+  if (code <= 67) return "Pioggia forte";
+  if (code <= 77) return "Neve";
+  if (code <= 82) return "Rovesci";
+  return "Temporali";
+}
+
 export default function PrevisioniGiornaliere({
   enrichedDaily,
   dateLabels,
@@ -171,16 +193,24 @@ export default function PrevisioniGiornaliere({
     return <div className="text-center py-6 text-slate-400 text-sm">Caricamento previsioni...</div>;
   }
 
-  const giornoSelezionato = enrichedDaily[selectedDay];
-  const dataCompleta = giornoSelezionato ? formatDate(giornoSelezionato.date) : "";
-
   return (
     <div className="space-y-4">
-      {/* SELEZIONE GIORNI con data completa */}
+      {/* SELEZIONE GIORNI con meteo completo */}
       <div className="grid grid-cols-3 gap-2">
         {enrichedDaily.slice(0, 3).map((day: any, idx: number) => {
           const isActive = idx === selectedDay;
           const dateStr = formatDate(day.date);
+          const weatherCode = day.weatherCode || 0;
+          const condizioni = getCondizioniDescrizione(weatherCode);
+          const rischio = getRischioPioggia(day.precipSum || 0);
+          const tempMedia = Math.round((day.tempMin + day.tempMax) / 2);
+          const uvIndex = day.uvIndex || 0;
+          // Colore di sfondo per il rischio pioggia
+          const riskBg = day.precipSum > 1 
+            ? "bg-red-500/20 border-red-400/30" 
+            : day.precipSum > 0.3 
+            ? "bg-amber-500/20 border-amber-400/30" 
+            : "bg-emerald-500/20 border-emerald-400/30";
 
           return (
             <button
@@ -188,21 +218,62 @@ export default function PrevisioniGiornaliere({
               onClick={() => onSelectDay(idx)}
               className={`rounded-xl p-3 border-2 transition-all text-left ${
                 isActive
-                  ? "bg-emerald-800/30 border-emerald-400/50 shadow-md"
-                  : "bg-slate-800/30 border-slate-700/40 hover:border-emerald-400/30"
+                  ? "bg-emerald-800/30 border-emerald-400/50 shadow-md ring-2 ring-emerald-400/30"
+                  : "bg-slate-800/30 border-slate-700/40 hover:border-emerald-400/30 hover:bg-slate-700/30"
               }`}
             >
-              <div className="text-xs font-bold text-white mb-2">{getDayLabel(idx, dateStr)}</div>
-              <div className="flex items-end justify-between">
-                <div>{getWeatherIcon(day.weatherCode || 0, 28)}</div>
+              {/* Nome giorno */}
+              <div className="text-xs font-bold text-white mb-2">
+                {idx === 0 ? "⏰ OGGI" : idx === 1 ? "📅 DOMANI" : "📅 DOPODOMANI"}
+              </div>
+              <div className="text-[10px] text-slate-500 -mt-1 mb-2">{dateStr}</div>
+
+              {/* Icona e temperatura principale */}
+              <div className="flex items-end justify-between mb-2">
+                <div className="flex flex-col items-center">
+                  {getWeatherIcon(weatherCode, 28)}
+                  <span className="text-[9px] text-slate-400 mt-1">{condizioni}</span>
+                </div>
                 <div className="text-right">
-                  <div className="text-lg font-bold text-white">{Math.round(day.tempMax)}°</div>
-                  <div className="text-xs text-slate-400">{Math.round(day.tempMin)}°</div>
+                  <div className="text-lg font-bold text-amber-300 leading-none">{Math.round(day.tempMax)}°</div>
+                  <div className="text-[10px] text-slate-500">{Math.round(day.tempMin)}° min</div>
                 </div>
               </div>
-              <div className="flex items-center justify-between mt-1 pt-1 border-t border-slate-700/30 text-[10px] text-slate-400">
-                <span>{Math.round(day.avgWind || 0)} km/h</span>
-                <span className="text-amber-400">Δ{(day.thermalDelta || 0).toFixed(1)}°</span>
+
+              {/* Rischio pioggia */}
+              <div className={`rounded-lg px-2 py-1.5 border ${riskBg} flex items-center justify-between mb-1.5`}>
+                <span className="text-[9px] text-slate-400">Pioggia</span>
+                <div className="flex items-center gap-1">
+                  <span className={`text-[10px] font-bold ${rischio.color}`}>{rischio.icon}</span>
+                  <span className={`text-[10px] font-bold ${rischio.color}`}>
+                    {day.precipSum === 0 ? "0 mm" : `${(day.precipSum || 0).toFixed(1)} mm`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Vento e nuvolosità */}
+              <div className="flex items-center justify-between gap-1">
+                <div className="flex items-center gap-1 bg-slate-900/50 rounded px-1.5 py-1 flex-1">
+                  <Wind className="w-2.5 h-2.5 text-sky-400" />
+                  <span className="text-[9px] font-bold text-sky-300">{Math.round(day.avgWind || 0)}</span>
+                  <span className="text-[7px] text-slate-500">km/h</span>
+                </div>
+                <div className="flex items-center gap-1 bg-slate-900/50 rounded px-1.5 py-1 flex-1">
+                  <Cloud className="w-2.5 h-2.5 text-slate-400" />
+                  <span className="text-[9px] font-bold text-slate-300">{Math.round(day.avgCloud || 0)}%</span>
+                </div>
+              </div>
+
+              {/* UV e pressione */}
+              <div className="flex items-center justify-between gap-1 mt-1">
+                <div className="flex items-center gap-1 bg-slate-900/50 rounded px-1.5 py-1 flex-1">
+                  <Sun className="w-2.5 h-2.5 text-amber-400" />
+                  <span className="text-[9px] font-bold text-amber-300">UV {uvIndex}</span>
+                </div>
+                <div className="flex items-center gap-1 bg-slate-900/50 rounded px-1.5 py-1 flex-1">
+                  <Thermometer className="w-2.5 h-2.5 text-orange-400" />
+                  <span className="text-[9px] font-bold text-orange-300">{tempMedia}°C</span>
+                </div>
               </div>
             </button>
           );
