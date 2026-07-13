@@ -12,17 +12,10 @@ import {
   Wind,
   Gauge,
 } from "lucide-react";
-
-interface DecolloItem {
-  id: string;
-  name: string;
-  valley: string;
-  exposure: string;
-  alt: number;
-}
+import type { Decollo } from "@/data/decolli";
 
 interface DecolloListProps {
-  decolli: DecolloItem[];
+  decolli: Decollo[];
   selectedId: string;
   onSelect: (id: string) => void;
   currentData: any;
@@ -134,7 +127,7 @@ const DecolloList = ({ decolli, selectedId, onSelect, currentData, allWeatherDat
                     <span className="w-0.5 h-0.5 rounded-full bg-slate-500" />
                     <span className="flex items-center gap-0.5">
                       <Mountain className="w-3 h-3 text-amber-400" />
-                      <span className="font-bold text-amber-300">{site.alt}</span>m
+                      <span className="font-bold text-amber-300">{site.altitude}</span>m
                     </span>
                     <span className="w-0.5 h-0.5 rounded-full bg-slate-500" />
                     <span className="flex items-center gap-0.5 truncate">

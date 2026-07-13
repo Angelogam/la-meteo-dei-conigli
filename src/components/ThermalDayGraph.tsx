@@ -44,7 +44,7 @@ export default function ThermalDayGraph({
           irraggiamento,
           copertura: h.cloudCover ?? 50,
           ventoSuolo: h.windSpeed ?? 0,
-          ventoAlta: h.windSpeed2000 ?? h.windSpeed ?? 0,
+          ventoAlta: h.windSpeed ?? 0,
         };
       });
   }, [dayData, altitude]);

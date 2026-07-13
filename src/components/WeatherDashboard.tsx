@@ -83,6 +83,8 @@ export default function WeatherDashboard({
       oreAttive,
       totaleOre: oreVolo.length,
       thermalLabel,
+      mediaRateo: Math.round(mediaRateo * 10) / 10,
+      maxRateo: Math.round(maxRateo * 10) / 10,
     };
   }, [dayData, altitude]);
 
