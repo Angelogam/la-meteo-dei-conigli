@@ -3,10 +3,6 @@
 import type { HourData } from "@/types/meteo";
 import { fetchCapeData } from "./capeService";
 
-/**
- * Database climatologico locale (valori medi per decolli piemontesi)
- * Basato su ERA5 e osservazioni storiche 2000-2024
- */
 const CLIMATOLOGIA_LOCALE = [
   { mese: 1, tempMedia: -2, umiditaMedia: 65, ventoMedio: 8, termicheMedie: 1.2 },
   { mese: 2, tempMedia: 0, umiditaMedia: 60, ventoMedio: 9, termicheMedie: 1.4 },
@@ -34,20 +30,6 @@ export interface PrevisioneTermica {
   label: string;
 }
 
-/**
- * Algoritmo previsionale multi-fonte:
- * 
- * 1. Prende i dati Open-Meteo (temp, vento, nuvole, pressione)
- * 2. Prende i dati GFS (CAPE, CIN, LI)
- * 3. Combina con climatologia locale (ERA5 + osservazioni)
- * 
- * La formula finale è una media pesata:
- * - 40% GFS (CAPE e energia convettiva)
- * - 35% Open-Meteo (condizioni locali)
- * - 25% Climatologia (pattern stagionali)
- * 
- * Maggiore è la divergenza tra le fonti, minore è la confidenza.
- */
 export function calcolaPrevisioneTermica(
   weather: HourData,
   capeValue: number,
@@ -59,9 +41,7 @@ export function calcolaPrevisioneTermica(
   const ora = weather.time.getHours();
   const clima = CLIMATOLOGIA_LOCALE.find(c => c.mese === mese) ?? CLIMATOLOGIA_LOCALE[5];
 
-  // --- 1. Rateo da Open-Meteo (condizioni locali) ---
   let rateoOpenMeteo = 0;
-  
   const spread = weather.temperature - weather.dewPoint;
   const base = Math.max(200, Math.min(3000, Math.round(spread * 125)));
   
@@ -88,32 +68,26 @@ export function calcolaPrevisioneTermica(
   rateoOpenMeteo = Math.max(0, (forzaOM / 10.5) * 4);
   if (weather.precipitation > 1) rateoOpenMeteo = 0;
 
-  // --- 2. Rateo da GFS (CAPE reale) ---
   let rateoGFS = 0;
   if (capeValue > 50) {
     const spessore = Math.max(300, base + (capeValue * 2.5) - base);
     rateoGFS = Math.sqrt((2 * Math.max(1, capeValue)) / spessore) * 4;
-    
     if (cinValue < -100) rateoGFS *= 0.5;
     if (liValue > 0) rateoGFS *= 0.7;
   }
 
-  // --- 3. Rateo da Climatologia ---
   const rateoClimatologia = clima.termicheMedie;
 
-  // --- 4. Pesi dinamici ---
   const weightGFS = capeValue > 100 ? 0.40 : capeValue > 50 ? 0.30 : 0.15;
   const weightOpenMeteo = spread > 5 ? 0.35 : spread > 2 ? 0.25 : 0.15;
   const weightClimatologia = 1 - weightGFS - weightOpenMeteo;
 
-  // --- 5. Rateo finale pesato ---
   const rateoFinale = (
     rateoGFS * weightGFS +
     rateoOpenMeteo * weightOpenMeteo +
     rateoClimatologia * weightClimatologia
   );
 
-  // --- 6. Confidenza ---
   const divergenza = Math.max(
     Math.abs(rateoGFS - rateoOpenMeteo),
     Math.abs(rateoGFS - rateoClimatologia),
@@ -121,10 +95,8 @@ export function calcolaPrevisioneTermica(
   );
   const confidenza = Math.max(0, Math.min(1, 1 - divergenza / 4));
 
-  // --- 7. Top calcolato ---
   const top = Math.min(5000, base + Math.round(capeValue * 2.5 * (0.5 + confidenza * 0.5)));
 
-  // --- 8. Label ---
   let label: string;
   if (rateoFinale >= 4.0) label = "🔥 Termiche forti";
   else if (rateoFinale >= 3.0) label = "🪂 Buone termiche";
@@ -146,19 +118,16 @@ export function calcolaPrevisioneTermica(
   };
 }
 
-/**
- * Calcola previsioni termiche per TUTTE le ore di volo usando l'algoritmo multi-fonte
- */
 export async function calcolaPrevisioniMultiFonte(
   hourlyData: HourData[],
   lat: number,
   lon: number,
   altitude: number
 ): Promise<PrevisioneTermica[]> {
-  // Recupera CAPE con import statico
   const capeData = await fetchCapeData(lat, lon);
 
-  const oreVolo = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+  // 🔁 Ore volo 9:00 – 19:00
+  const oreVolo = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
   const oggi = new Date();
   const giornoCorrente = oggi.getDate();
 
@@ -175,24 +144,13 @@ export async function calcolaPrevisioniMultiFonte(
 
     if (!weather) {
       return {
-        ora,
-        rateoFinale: 0,
-        rateoGFS: 0,
-        rateoOpenMeteo: 0,
-        rateoClimatologia: 0,
-        confidenza: 0,
-        base: 0,
-        top: 0,
-        label: "N/D",
+        ora, rateoFinale: 0, rateoGFS: 0, rateoOpenMeteo: 0,
+        rateoClimatologia: 0, confidenza: 0, base: 0, top: 0, label: "N/D",
       };
     }
 
     return calcolaPrevisioneTermica(
-      weather,
-      cape?.cape ?? 0,
-      cape?.cin ?? 0,
-      cape?.li ?? 0,
-      altitude
+      weather, cape?.cape ?? 0, cape?.cin ?? 0, cape?.li ?? 0, altitude
     );
   });
 }
