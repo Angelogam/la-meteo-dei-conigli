@@ -40,7 +40,27 @@ function getWeatherInfo(code: number | undefined | null, size: number = 32) {
   return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "Sereno" };
 }
 
-/** Codice WMO più frequente da un array di codici orari */
+/** Mi dice se un codice WMO è "sereno/ok" */
+function isGoodWeather(code: number): boolean {
+  return code >= 0 && code <= 3;
+}
+
+/** Mi dice se un codice WMO è "nuvoloso ma Ok" */
+function isCloudy(code: number): boolean {
+  return (code >= 4 && code <= 9) || (code >= 10 && code <= 12);
+}
+
+/** Mi dice se un codice WMO è di pioggia/debole */
+function isRain(code: number): boolean {
+  return (code >= 45 && code <= 48) || (code >= 51 && code <= 57) || (code >= 61 && code <= 67) || (code >= 80 && code <= 84);
+}
+
+/** Mi dice se un codice WMO è temporale */
+function isThunderstorm(code: number): boolean {
+  return (code >= 95 && code <= 99) || code === 13;
+}
+
+/** Codice WMO dominante: sceglie il più frequente tra i codici, ma se ci sono temporali in MENO del 20% delle ore, li ignora */
 function getDominantWeatherCode(hourlyCodes: (number | undefined | null)[]): number {
   const valid = hourlyCodes.filter((c): c is number => c != null && !isNaN(c));
   if (valid.length === 0) return 0;
@@ -49,6 +69,33 @@ function getDominantWeatherCode(hourlyCodes: (number | undefined | null)[]): num
   const freq: Record<number, number> = {};
   for (const c of valid) {
     freq[c] = (freq[c] || 0) + 1;
+  }
+
+  // Controlla se ci sono temporali
+  const thunderCodes = valid.filter(c => isThunderstorm(c));
+  const thunderCount = thunderCodes.length;
+  const totalValid = valid.length;
+
+  // Se i temporali sono meno del 30% delle ore, li ignoriamo completamente
+  if (thunderCount > 0 && thunderCount / totalValid < 0.3) {
+    // Filtra via i codici di temporale
+    const nonThunderValid = valid.filter(c => !isThunderstorm(c));
+    if (nonThunderValid.length === 0) return 0;
+    
+    const nonThunderFreq: Record<number, number> = {};
+    for (const c of nonThunderValid) {
+      nonThunderFreq[c] = (nonThunderFreq[c] || 0) + 1;
+    }
+    
+    let maxFreq = 0;
+    let mostFrequent = nonThunderValid[0];
+    for (const [code, count] of Object.entries(nonThunderFreq)) {
+      if (count > maxFreq) {
+        maxFreq = count;
+        mostFrequent = parseInt(code);
+      }
+    }
+    return mostFrequent;
   }
 
   // Prendi il codice più frequente
@@ -88,11 +135,17 @@ export default function PrevisioniGiornaliere({
   selectedDay,
   onSelectDay,
 }: PrevisioniGiornaliereProps) {
+  // DEBUG: stampa i codici WMO delle ore
+  console.log("🔍 dayData weatherCodes:", dayData?.map((h: any) => ({ time: h.time, code: h.weatherCode })));
+  
   // Calcola il weatherCode dominante dalla media delle ore del giorno
   const dominantCode = useMemo(() => {
     if (!dayData || dayData.length === 0) return 0;
     const codici = dayData.map((h: any) => h.weatherCode);
-    return getDominantWeatherCode(codici);
+    console.log("🔍 Codici WMO orari:", codici);
+    const result = getDominantWeatherCode(codici);
+    console.log("🔍 Codice dominante:", result);
+    return result;
   }, [dayData]);
 
   // Calcola statistiche per fasce orarie REALI con dati Open-Meteo
@@ -227,11 +280,8 @@ export default function PrevisioniGiornaliere({
           const isActive = idx === selectedDay;
           const dateStr = formatDate(day.date);
           
-          // IGNORA completamente il weatherCode raw da enrichedDaily
-          // Usa SEMPRE il codice dominante calcolato dalle ore
-          // Se siamo sul giorno selezionato, usiamo dominantCode calcolato da dayData
-          // Altrimenti usiamo 0 (sereno) o il codice dalla mappa
-          const weatherCode = isActive ? dominantCode : (day.weatherCode ?? 0);
+          // Usa SEMPRE il codice dominante calcolato dalle ore se siamo sul giorno selezionato
+          const weatherCode = dominantCode;
           
           const weatherInfo = getWeatherInfo(weatherCode, 36);
           const condizioni = weatherInfo.desc;
