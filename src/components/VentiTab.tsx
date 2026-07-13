@@ -16,7 +16,7 @@ function getWindArrow(deg: number): string {
 
 function getWindDirName(deg: number): string {
   const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-  return dirs[Math.round(deg / 45) % 8] || "—";
+  return dirs[Math.round(deg / 45) % 8] || "-";
 }
 
 export default function VentiTab({
@@ -33,18 +33,18 @@ export default function VentiTab({
       label: "Superficie (10m)",
       speed: currentData.windSpeed,
       dir: currentData.windDir,
-      gust: currentData.windGust,
+      gust: currentData.windGust || currentData.windSpeed + 8,
     },
     {
       label: "Quota bassa (80m)",
       speed: currentData.wind80m || currentData.windSpeed * 1.3,
-      dir: currentData.windDir80m || currentData.windDir + 10,
+      dir: currentData.windDir80m || (currentData.windDir + 10) % 360,
       gust: (currentData.wind80m || currentData.windSpeed * 1.3) * 1.3,
     },
     {
       label: "Quota media (120m)",
       speed: currentData.wind120m || currentData.windSpeed * 1.5,
-      dir: currentData.windDir120m || currentData.windDir + 20,
+      dir: currentData.windDir120m || (currentData.windDir + 20) % 360,
       gust: (currentData.wind120m || currentData.windSpeed * 1.5) * 1.35,
     },
   ];
