@@ -122,12 +122,6 @@ export function Page() {
               currentData={currentData}
             />
 
-            <DayInfoPanel
-              currentData={currentData}
-              dayData={dayData}
-              site={{ name: site.name, alt: site.altitude }}
-            />
-
             <AlertBanner alert={weatherAlert} />
 
             <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
