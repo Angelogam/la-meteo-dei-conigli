@@ -142,7 +142,7 @@ export function Page() {
           ))}
         </div>
 
-        {/* INDICATORE REFRESH + COUNTDOWN — COMPATTO MA LEGGIBILE */}
+        {/* INDICATORE REFRESH + COUNTDOWN */}
         <div className="absolute top-1.5 right-2 md:top-3 md:right-4 flex items-center gap-2">
           <div className={`
             flex items-center gap-2 px-3 py-1.5 rounded-xl border backdrop-blur-md shadow-lg
@@ -152,7 +152,6 @@ export function Page() {
               : "bg-slate-900/60 border-slate-600/30 hover:border-emerald-500/30 hover:bg-slate-800/60"
             }
           `}>
-            {/* BOTTONE REFRESH PICCOLO */}
             <button
               onClick={loadWeather}
               disabled={updating}
@@ -168,7 +167,6 @@ export function Page() {
               <RefreshCw className={`w-4 h-4 md:w-5 md:h-5 ${updating ? "animate-spin" : ""} ${animRefresh ? "animate-spin" : ""}`} />
             </button>
 
-            {/* PALLINO + STATO */}
             <div className="flex items-center gap-2">
               <div className="flex flex-col items-start">
                 <div className="flex items-center gap-1.5">
@@ -186,10 +184,8 @@ export function Page() {
                 </span>
               </div>
 
-              {/* DIVISORE SOTTILE */}
               <div className="w-px h-7 bg-slate-600/30 mx-0.5" />
 
-              {/* COUNTDOWN */}
               <div className="flex items-center gap-1.5">
                 <Timer className={`w-3.5 h-3.5 ${countdownMin <= 3 ? "text-amber-400 animate-pulse" : "text-slate-400"}`} />
                 <div className="flex flex-col">
@@ -214,7 +210,6 @@ export function Page() {
           </div>
         </div>
 
-        {/* Barra di progresso refresh */}
         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-700/50">
           <div
             className="h-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-amber-400 transition-all duration-700 ease-linear"
@@ -251,9 +246,9 @@ export function Page() {
               </div>
             )}
 
-            {/* PREVISIONI GIORNALIERE — con selezione giorni integrata */}
+            {/* PREVISIONI GIORNALIERE */}
             <div className="bg-gradient-to-br from-slate-900/70 to-slate-800/40 border-2 border-emerald-500/30 rounded-3xl overflow-hidden shadow-xl shadow-emerald-500/10">
-              <div className="bg-gradient-to-r from-emerald-800/40 to-amber-800/20 px-4 py-2.5 border-b border-emerald-500/20">
+              <div className="bg-gradient-to-r from-emerald-800/40 to-amber-800/20 px-4 py-2.5 border-b border-emerald-500/20 flex items-center justify-center">
                 <h2 className="text-base md:text-lg font-black text-white tracking-tight flex items-center gap-2">
                   <CloudSun className="w-4 h-5 text-yellow-300" />
                   PREVISIONI GIORNALIERE — {dateLabels[selectedDay]?.toUpperCase() || "OGGI"} {currentDateStr}
