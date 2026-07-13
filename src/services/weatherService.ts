@@ -75,67 +75,46 @@ export const weatherService = {
     
     const raw: any = await res.json();
 
-    // === DEBUG ESTREMO: stampa TUTTE le ore con TUTTI i campi ===
-    console.log("=========== DEBUG ESTREMO WEATHER SERVICE ===========");
-    console.log("Coordinate:", lat, lon);
-    console.log("Elevazione:", raw.elevation, "m");
-    console.log("Numero ore:", raw.hourly.time?.length);
-    console.log("Numero giorni:", raw.daily.time?.length);
+    // ===================== DEBUG RAW =====================
+    console.log("========= WEATHER SERVICE RAW HOURLY KEYS =========", Object.keys(raw.hourly));
+    console.log("========= WEATHER SERVICE RAW DAILY KEYS =========", Object.keys(raw.daily));
     
-    // Stampa TUTTE le ore con weather_code e precipitation
-    if (raw.hourly && raw.hourly.time) {
-      for (let i = 0; i < Math.min(raw.hourly.time.length, 72); i++) {
-        const t = new Date(raw.hourly.time[i]);
-        const code = raw.hourly.weather_code?.[i] ?? "???";
-        const precip = raw.hourly.precipitation?.[i] ?? "???";
-        const temp = raw.hourly.temperature_2m?.[i] ?? "???";
-        const cloud = raw.hourly.cloud_cover?.[i] ?? "???";
-        
-        let codeDesc = "";
-        if (code === 0 || code === 1) codeDesc = "SERENO";
-        else if (code === 2) codeDesc = "Poco nuvoloso";
-        else if (code === 3) codeDesc = "Nuvoloso";
-        else if (code >= 45 && code <= 48) codeDesc = "Nebbia";
-        else if (code >= 61 && code <= 67) codeDesc = "Pioggia";
-        else codeDesc = "Altro(" + code + ")";
-        
-        console.log(
-          t.toLocaleDateString("it-IT") + " " + 
-          String(t.getHours()).padStart(2,"0") + ":00 | " +
-          "code=" + code + " | " +
-          "precip=" + precip + "mm | " +
-          "temp=" + temp + "°C | " +
-          "cloud=" + cloud + "% | " +
-          "descrizione: " + codeDesc
-        );
-      }
+    // Stampa le prime 5 ore RAW per vedere se weather_code esiste
+    console.log("=== RAW HOURLY (prime 3 ore) ===");
+    const hCodes = raw.hourly.weather_code || raw.hourly.weathercode;
+    for (let i = 0; i < Math.min(3, raw.hourly.time.length); i++) {
+      console.log({
+        time: raw.hourly.time[i],
+        temperature: raw.hourly.temperature_2m?.[i],
+        precip: raw.hourly.precipitation?.[i],
+        weather_code: raw.hourly.weather_code?.[i],
+        weathercode: raw.hourly.weathercode?.[i],
+        cloud: raw.hourly.cloud_cover?.[i],
+        wind: raw.hourly.wind_speed_10m?.[i],
+      });
     }
-    
-    // Stampa daily
-    if (raw.daily && raw.daily.time) {
-      for (let i = 0; i < raw.daily.time.length; i++) {
-        const d = new Date(raw.daily.time[i]);
-        console.log(
-          "GIORNO: " + d.toLocaleDateString("it-IT") + " | " +
-          "daily_code=" + (raw.daily.weather_code?.[i] ?? "???") + " | " +
-          "precip_sum=" + (raw.daily.precipitation_sum?.[i] ?? "???") + "mm | " +
-          "precip_prob=" + (raw.daily.precipitation_probability_max?.[i] ?? "???") + "%"
-        );
-      }
+    console.log("=== RAW DAILY ===");
+    for (let i = 0; i < Math.min(3, raw.daily.time.length); i++) {
+      console.log({
+        date: raw.daily.time[i],
+        weather_code_daily: raw.daily.weather_code?.[i],
+        weathercode_daily: raw.daily.weathercode?.[i],
+        precipsum: raw.daily.precipitation_sum?.[i],
+        tempmax: raw.daily.temperature_2m_max?.[i],
+      });
     }
-    console.log("=========== FINE DEBUG ESTREMO ===========");
+    // ===================== FINE DEBUG =====================
 
     // Se non trova weather_code, prova weathercode (vecchio nome)
-    const hourlyCodes = raw.hourly.weather_code || raw.hourly.weathercode;
-    const dailyCodes = raw.daily.weather_code || raw.daily.weathercode;
-    
-    if (!hourlyCodes) {
-      console.error("❌ CRITICAL: weather_code non trovato in hourly! Keys:", Object.keys(raw.hourly));
+    if (!raw.hourly.weather_code && raw.hourly.weathercode) {
+      console.warn("⚠️ Usando weathercode (vecchio nome) invece di weather_code");
     }
 
     // --- HOURLY ---
     const hourly: MeteoHourly[] = (raw.hourly.time as string[]).map((t: string, i: number) => {
       const date = new Date(t);
+      // Prende weather_code o weathercode (vecchio nome)
+      const wCode = raw.hourly.weather_code?.[i] ?? raw.hourly.weathercode?.[i] ?? 0;
       return {
         time: date,
         temperature: raw.hourly.temperature_2m?.[i] ?? 0,
@@ -143,7 +122,7 @@ export const weatherService = {
         dewPoint: raw.hourly.dew_point_2m?.[i] ?? 0,
         apparentTemp: raw.hourly.apparent_temperature?.[i] ?? 0,
         precipitation: raw.hourly.precipitation?.[i] ?? 0,
-        weatherCode: raw.hourly.weather_code?.[i] ?? raw.hourly.weathercode?.[i] ?? 0,
+        weatherCode: wCode,
         cloudCover: raw.hourly.cloud_cover?.[i] ?? 0,
         windSpeed: raw.hourly.wind_speed_10m?.[i] ?? 0,
         windDir: raw.hourly.wind_direction_10m?.[i] ?? 0,
@@ -158,9 +137,10 @@ export const weatherService = {
     // --- DAILY ---
     const daily: MeteoDaily[] = (raw.daily.time as string[]).map((t: string, i: number) => {
       const date = new Date(t);
+      const dCode = raw.daily.weather_code?.[i] ?? raw.daily.weathercode?.[i] ?? 0;
       return {
         date,
-        weatherCode: raw.daily.weather_code?.[i] ?? raw.daily.weathercode?.[i] ?? 0,
+        weatherCode: dCode,
         tempMax: raw.daily.temperature_2m_max?.[i] ?? 0,
         tempMin: raw.daily.temperature_2m_min?.[i] ?? 0,
         precipSum: raw.daily.precipitation_sum?.[i] ?? 0,
@@ -169,6 +149,28 @@ export const weatherService = {
         windGustsMax: raw.daily.wind_gusts_10m_max?.[i] ?? 0,
       };
     });
+
+    // ===================== DEBUG POST-TRASFORMAZIONE =====================
+    console.log("=== HOURLY DOPO TRASFORMAZIONE (prime 5 ore) ===");
+    hourly.slice(0, 5).forEach(h => {
+      console.log({
+        time: h.time.toLocaleString('it-IT'),
+        weatherCode: h.weatherCode,
+        precip: h.precipitation,
+        temp: h.temperature,
+        cloud: h.cloudCover,
+      });
+    });
+    console.log("=== DAILY DOPO TRASFORMAZIONE ===");
+    daily.forEach(d => {
+      console.log({
+        date: d.date.toLocaleDateString('it-IT'),
+        weatherCode: d.weatherCode,
+        precipSum: d.precipSum,
+        tempMax: d.tempMax,
+      });
+    });
+    // ===================== FINE DEBUG =====================
 
     return { hourly, daily };
   },
