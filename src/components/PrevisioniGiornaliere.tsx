@@ -80,7 +80,6 @@ export default function PrevisioniGiornaliere({
     const mediaValori = (arr: number[]) => 
       arr.length > 0 ? arr.reduce((s: number, v: number) => s + v, 0) / arr.length : 0;
     const maxValori = (arr: number[]) => arr.length > 0 ? Math.max(...arr) : 0;
-    const minValori = (arr: number[]) => arr.length > 0 ? Math.min(...arr) : 0;
 
     // Helper per calcolare una sezione (mattina / pomeriggio / sera)
     const calcolaSezione = (ore: any[], label: string, icon: string, oreRange: string) => {
@@ -121,18 +120,14 @@ export default function PrevisioniGiornaliere({
       const baseNuvole = Math.round(Math.max(200, Math.min(3000, spread * 125)));
 
       // Velocità di salita REALE dai dati Open-Meteo
-      // formula: rateo = sqrt(CAPE) o da gradiente termico
       let salitaMs = 0;
-      // Usiamo temperatura_80m se disponibile
       const dayOre = ore.filter((h: any) => h.hour >= 10 && h.hour <= 15);
       const temp80mMedia = dayOre.length ? mediaValori(dayOre.map((h: any) => h.temp80m || null).filter(Boolean)) : 0;
       
       if (temp80mMedia && temp80mMedia > 0) {
-        // Gradiente reale = (T2m - T80m) / 78 * 100
         const gradiente = (tempMedia - temp80mMedia) / 78 * 100;
         salitaMs = Math.round(Math.max(0, Math.min(5, (gradiente - 0.5) * 3)) * 10) / 10;
       } else {
-        // Fallback: stima da dati disponibili
         const score = Math.max(0, (tempDelta * 0.5) + (nuvoleMedia < 50 ? 1 : 0) + (ventoMedia >= 5 && ventoMedia <= 18 ? 1.5 : 0) - (pioggia > 0.5 ? 3 : 0));
         salitaMs = Math.round(Math.max(0, Math.min(5, score * 0.8)) * 10) / 10;
       }
@@ -146,10 +141,13 @@ export default function PrevisioniGiornaliere({
       else if (salitaMs >= 0.3) { termicheIntensita = "DEBOLI 👎"; termicheColore = "text-yellow-300"; }
       else { termicheIntensita = "ASSENTI ❌"; termicheColore = "text-slate-400"; }
 
-      // Turbolenza da dati reali (vento + gradiente)
-      const turbolenzaScore = (ventoMax > 20 ? 2 : ventoMax > 12 ? 1 : 0) + (tempDelta > 3 ? 1.5 : if (tempDelta > 2) 1 else 0) + (nuvoleMedia > 70 ? 1.5 : 0);
+      // Turbolenza da dati reali (vento + gradiente) — SENZA if inline
       let turbolenzaLabel = "DEBOLE";
       let turbolenzaColore = "text-emerald-300";
+      
+      const tempDeltaScore = tempDelta > 3 ? 1.5 : tempDelta > 2 ? 1 : 0;
+      const turbolenzaScore = (ventoMax > 20 ? 2 : ventoMax > 12 ? 1 : 0) + tempDeltaScore + (nuvoleMedia > 70 ? 1.5 : 0);
+      
       if (turbolenzaScore >= 3.5) { turbolenzaLabel = "FORTE ⚠️"; turbolenzaColore = "text-red-400"; }
       else if (turbolenzaScore >= 2) { turbolenzaLabel = "MODERATA"; turbolenzaColore = "text-amber-400"; }
       else if (turbolenzaScore >= 1) { turbolenzaLabel = "LEGGERA"; turbolenzaColore = "text-amber-300"; }
