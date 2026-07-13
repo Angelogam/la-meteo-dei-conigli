@@ -3,16 +3,18 @@
 import React from "react";
 import {
   Thermometer,
+  Wind,
+  Cloud,
   Droplets,
   Gauge,
-  Cloud,
-  Eye,
+  ArrowUp,
+  CloudSun,
   CloudRain,
-  Snowflake,
-  Wind,
   Sun,
-  Sunrise,
-  Sunset,
+  Eye,
+  AlertTriangle,
+  Compass,
+  TrendingUp,
 } from "lucide-react";
 
 interface MeteoTabProps {
@@ -20,7 +22,7 @@ interface MeteoTabProps {
   dayData: any[];
   site: { alt: number };
   thermalDelta: number;
-  stabilityIndex: number;
+  stabilityIndex: { label: string; color: string };
 }
 
 export default function MeteoTab({
@@ -32,196 +34,170 @@ export default function MeteoTab({
 }: MeteoTabProps) {
   if (!currentData) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <p className="text-slate-500 text-sm font-medium">Nessun dato meteo disponibile</p>
+      <div className="flex items-center justify-center py-16">
+        <CloudSun className="w-12 h-12 text-slate-600 mb-3" />
+        <p className="text-slate-500 text-sm">Nessun dato meteo disponibile</p>
       </div>
     );
   }
 
-  // Raccolta dati — con fallback
-  const temp = currentData.temperature;
-  const feelsLike = currentData.apparentTemperature ?? currentData.temperature;
-  const humidity = currentData.humidity;
-  const pressure = currentData.pressure;
-  const cloudCover = currentData.cloudCover;
-  const visibility = currentData.visibility;
-  const precipitation = currentData.precipitation;
-  const rain = currentData.rain;
-  const snow = currentData.snowfall ?? currentData.snow;
-  const dewPoint = currentData.dewPoint;
-  const uvIndex = currentData.uvIndex;
-  const windSpeed = currentData.windSpeed;
-  const windGust = currentData.windGust;
-  const windDir = currentData.windDir;
-  const isDay = currentData.isDay ?? 1;
-  const weatherCode = currentData.weatherCode;
+  const {
+    temperature: temp,
+    humidity,
+    pressure,
+    cloudCover,
+    windSpeed,
+    windDir,
+    windGust,
+    precipitation,
+    dewPoint,
+    weatherCode,
+    isDay,
+    temp80m,
+    temp120m,
+  } = currentData;
 
-  // Traduzione weatherCode
-  const weatherDesc = getWeatherDesc(weatherCode, isDay);
-  const weatherIcon = getWeatherEmoji(weatherCode, isDay);
+  // ===== CALCOLI PER VOLO LIBERO =====
+  const spread = temp - (dewPoint ?? (temp - (100 - (humidity ?? 50)) / 5));
+  const cloudBase = Math.max(200, Math.min(3000, Math.round(spread * 125)));
 
-  // Calcolo delta temperatura percepita
-  const feelsDelta = Math.round((feelsLike - temp) * 10) / 10;
+  const gradienteReale = temp80m != null
+    ? ((temp - temp80m) / 78) * 100
+    : temp120m != null
+    ? ((temp - temp120m) / 118) * 100
+    : 0.98;
+
+  const forzaTermica = Math.min(10, Math.max(0,
+    (gradienteReale > 1.2 ? 3 : gradienteReale > 0.98 ? 2 : gradienteReale > 0.7 ? 1 : 0) +
+    (windSpeed >= 5 && windSpeed <= 15 ? 2 : windSpeed >= 3 && windSpeed < 5 ? 1 : 0) +
+    (cloudCover >= 15 && cloudCover <= 45 ? 2 : cloudCover >= 5 && cloudCover < 15 ? 1 : 0) +
+    (humidity >= 30 && humidity <= 50 ? 1.5 : humidity > 50 && humidity <= 65 ? 1 : 0)
+  ));
+
+  const rateoTermico = Math.round((forzaTermica / 10) * 4 * 10) / 10;
+  const topTermico = Math.min(5000, cloudBase + Math.round(forzaTermica * 250));
+
+  const ventoDecollo = windSpeed;
+  const ventoAtterraggio = Math.round(windSpeed * 0.7);
+  const raffiche = windGust ?? Math.round(windSpeed * 1.4);
+
+  const turbolenza =
+    raffiche > 30 ? "Forte ⚠️" :
+    raffiche > 22 ? "Moderata 🟡" :
+    raffiche > 14 ? "Leggera 🟢" : "Assente ✅";
+
+  const condizioniVolo =
+    ventoDecollo < 5 ? "Troppo calma 🌀" :
+    ventoDecollo > 30 ? "Vento forte ❌" :
+    precipitation > 0.5 ? "Pioggia 🌧️" :
+    weatherCode >= 95 ? "Temporale ⛈️" :
+    forzaTermica >= 5 ? "Ottime 🪂🔥" :
+    forzaTermica >= 3 ? "Buone 👍" :
+    forzaTermica >= 1 ? "Deboli 👎" :
+    "Assenti ❄️";
+
+  const dirCardinali = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  const dirLabel = dirCardinali[Math.round((windDir ?? 0) / 45) % 8];
+  const arrow = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"][Math.round((windDir ?? 0) / 45) % 8];
 
   return (
-    <div className="space-y-5 animate-slide-up">
-      {/* Header — weather condition */}
-      <div className="flex items-center gap-3 bg-slate-800/50 rounded-2xl p-3 border border-slate-700/40">
-        <span className="text-4xl shrink-0">{weatherIcon}</span>
-        <div>
-          <div className="text-sm font-bold text-white">{weatherDesc}</div>
-          <div className="text-[10px] text-slate-500 font-mono">
-            Codice {weatherCode} · {isDay ? "Giorno" : "Notte"} · Nuvolosità {cloudCover ?? "?"}%
+    <div className="space-y-4">
+      {/* BANNER CONDIZIONI VOLO */}
+      <div className={`rounded-2xl p-4 border-2 ${
+        condizioniVolo.includes("Ottime") ? "bg-emerald-900/30 border-emerald-500/50" :
+        condizioniVolo.includes("Buone") ? "bg-green-900/30 border-green-500/40" :
+        condizioniVolo.includes("Deboli") ? "bg-amber-900/30 border-amber-500/40" :
+        condizioniVolo.includes("assente") || condizioniVolo.includes("calma") ? "bg-slate-800/40 border-slate-500/40" :
+        "bg-red-900/30 border-red-500/50"
+      }`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-3xl bg-slate-900/50 border border-slate-700/50">
+              {condizioniVolo.includes("Ottime") || condizioniVolo.includes("Buone") ? "🪂" :
+               condizioniVolo.includes("Deboli") ? "🌤️" :
+               condizioniVolo.includes("calma") ? "🌀" :
+               condizioniVolo.includes("pioggia") || condizioniVolo.includes("Temporale") ? "⛈️" :
+               condizioniVolo.includes("forte") ? "💨" : "❄️"}
+            </div>
+            <div>
+              <div className="text-lg font-black text-white">Condizioni: {condizioniVolo}</div>
+              <div className="text-xs text-slate-400 mt-0.5">
+                {weatherCode === 0 ? "Cielo sereno" :
+                 weatherCode <= 2 ? "Poco nuvoloso" :
+                 weatherCode <= 3 ? "Nuvoloso" :
+                 weatherCode >= 95 ? "Temporale" :
+                 "Coperto"} · 
+                Vento {ventoDecollo} km/h da {dirLabel}
+              </div>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-black text-white tabular-nums">{Math.round(temp)}°</div>
+            <div className="text-[10px] text-slate-500">temperatura</div>
           </div>
         </div>
       </div>
 
-      {/* Griglia metriche */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <MetricCard
-          icon={<Thermometer className="w-4 h-4 text-orange-400" />}
-          label="Temperatura"
-          value={temp != null ? `${Math.round(temp)}°C` : "—"}
-          sub={feelsDelta !== 0 ? `Percepita ${Math.round(feelsLike)}°C (${feelsDelta > 0 ? "+" : ""}${feelsDelta}°)` : undefined}
-        />
-        <MetricCard
-          icon={<Droplets className="w-4 h-4 text-sky-400" />}
-          label="Umidità"
-          value={humidity != null ? `${Math.round(humidity)}%` : "—"}
-          sub={dewPoint != null ? `Rugiada ${Math.round(dewPoint)}°C` : undefined}
-        />
-        <MetricCard
-          icon={<Gauge className="w-4 h-4 text-emerald-400" />}
-          label="Pressione"
-          value={pressure ? `${Math.round(pressure)} hPa` : "—"}
-          sub={pressure ? (pressure > 1020 ? "Alta" : pressure < 1010 ? "Bassa" : "Normale") : undefined}
-        />
-        <MetricCard
-          icon={<Cloud className="w-4 h-4 text-slate-400" />}
-          label="Nuvole"
-          value={cloudCover != null ? `${Math.round(cloudCover)}%` : "—"}
-          sub={
-            cloudCover != null
-              ? cloudCover < 20
-                ? "Sereno"
-                : cloudCover < 50
-                ? "Poco nuvoloso"
-                : cloudCover < 80
-                ? "Nuvoloso"
-                : "Coperto"
-              : undefined
-          }
-        />
-        <MetricCard
-          icon={<Eye className="w-4 h-4 text-cyan-400" />}
-          label="Visibilità"
-          value={visibility != null ? `${(visibility / 1000).toFixed(1)} km` : "—"}
-          sub={visibility != null && visibility < 5000 ? "Ridotta" : "Buona"}
-        />
-        <MetricCard
-          icon={<CloudRain className="w-4 h-4 text-blue-400" />}
-          label="Pioggia"
-          value={precipitation != null && precipitation > 0 ? `${precipitation.toFixed(1)} mm` : "0 mm"}
-          sub={rain && rain > 0 ? `Pioggia: ${rain.toFixed(1)} mm` : snow && snow > 0 ? `Neve: ${snow.toFixed(1)} cm` : undefined}
-        />
-        <MetricCard
-          icon={<Sun className="w-4 h-4 text-yellow-400" />}
-          label="UV"
-          value={uvIndex != null ? uvIndex.toFixed(1) : "—"}
-          sub={
-            uvIndex != null
-              ? uvIndex < 3
-                ? "Basso"
-                : uvIndex < 6
-                ? "Moderato"
-                : uvIndex < 8
-                ? "Alto"
-                : "Molto alto"
-              : undefined
-          }
-        />
-        <MetricCard
-          icon={<Wind className="w-4 h-4 text-sky-400" />}
-          label="Vento"
-          value={windSpeed != null ? `${Math.round(windSpeed)} km/h` : "—"}
-          sub={windGust ? `Raffiche ${Math.round(windGust)} km/h` : undefined}
-        />
+      {/* RIGA VELOCE — decollo + atterraggio */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-3 text-center">
+          <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Vento decollo</div>
+          <div className="text-2xl font-black text-white tabular-nums flex items-center justify-center gap-1">
+            {arrow} {Math.round(ventoDecollo)}
+            <span className="text-xs text-slate-500 font-normal">km/h</span>
+          </div>
+          <div className="text-[10px] text-slate-500">{dirLabel} ({Math.round(windDir ?? 0)}°)</div>
+        </div>
+        <div className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-3 text-center">
+          <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Vento atterraggio</div>
+          <div className="text-2xl font-black text-white tabular-nums">{ventoatterraggio}<span className="text-xs text-slate-500 font-normal ml-0.5">km/h</span></div>
+          <div className="text-[10px] text-slate-500">Raffiche {raffiche} km/h</div>
+        </div>
+      </div>
+
+      {/* RIGA TERMICHE */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <MiniCard icon={<ArrowUp className="w-4 h-4 text-green-400" />} label="Base nuvole" value={`${cloudBase} m`} sub="LCL" />
+        <MiniCard icon={<ArrowUp className="w-4 h-4 text-red-400" />} label="Top termiche" value={`${topTermico} m`} sub={`+${topTermico - cloudBase}m salita`} />
+        <MiniCard icon={<TrendingUp className="w-4 h-4 text-orange-400" />} label="Forza termica" value={`${forzaTermica.toFixed(1)}/10`} sub={`${rateoTermico} m/s`} />
+        <MiniCard icon={<AlertTriangle className="w-4 h-4 text-amber-400" />} label="Turbolenza" value={turbolenza.split(" ")[0]} sub={turbolenza.includes("⚠️") ? "Attenzione" : turbolenza.includes("🟡") ? "Gestibile" : "Tranquillo"} />
+      </div>
+
+      {/* GRIGLIA METRICHE DETTAGLIO */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        <DetailCard icon={<Droplets className="w-3.5 h-3.5 text-sky-400" />} label="Umidità" value={`${humidity ?? "--"}%`} sub={dewPoint ? `Rugiada ${Math.round(dewPoint)}°C` : undefined} />
+        <DetailCard icon={<Gauge className="w-3.5 h-3.5 text-emerald-400" />} label="Pressione" value={`${Math.round(pressure ?? 1013)} hPa`} sub={pressure > 1020 ? "Alta · bel tempo" : pressure < 1010 ? "Bassa · instabile" : "Normale"} />
+        <DetailCard icon={<Cloud className="w-3.5 h-3.5 text-slate-400" />} label="Nuvolosità" value={`${cloudCover ?? "--"}%`} sub={cloudCover < 20 ? "Sereno" : cloudCover < 50 ? "Poco nuvoloso" : cloudCover < 80 ? "Nuvoloso" : "Molto nuvoloso"} />
+        <DetailCard icon={<Sun className="w-3.5 h-3.5 text-yellow-400" />} label="Stabilità" value={stabilityIndex?.label ?? "--"} sub={stabilityIndex?.color ? "Atmosfera" : undefined} />
+        <DetailCard icon={<TrendingUp className="w-3.5 h-3.5 text-purple-400" />} label="Gradiente" value={`${gradienteReale.toFixed(2)}°C/100m`} sub={gradienteReale > 1.2 ? "Instabile" : gradienteReale > 0.98 ? "Neutro" : "Stabile"} />
+        <DetailCard icon={<Eye className="w-3.5 h-3.5 text-cyan-400" />} label="Delta T" value={`${Math.round(thermalDelta ?? 0)}°C`} sub={thermalDelta > 10 ? "Buona escursione" : thermalDelta > 6 ? "Moderata" : "Bassa"} />
       </div>
     </div>
   );
 }
 
-// ===== Componente card metrica =====
-function MetricCard({
-  icon,
-  label,
-  value,
-  sub,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  sub?: string;
-}) {
+// ===== CARD PICCOLA =====
+function MiniCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
   return (
-    <div className="bg-slate-800/50 border border-slate-700/40 rounded-xl p-3 hover:border-slate-600/60 transition-all">
-      <div className="flex items-center gap-1.5 mb-1.5">
-        {icon}
-        <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">{label}</span>
-      </div>
-      <div className="text-lg font-black text-white tabular-nums">{value}</div>
-      {sub && <div className="text-[10px] text-slate-500 mt-0.5">{sub}</div>}
+    <div className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-3 text-center">
+      <div className="flex justify-center mb-1">{icon}</div>
+      <div className="text-[9px] text-slate-400 uppercase tracking-wider mb-1">{label}</div>
+      <div className="text-base font-black text-white tabular-nums">{value}</div>
+      {sub && <div className="text-[9px] text-slate-500 mt-0.5">{sub}</div>}
     </div>
   );
 }
 
-// ===== Helper weather =====
-function getWeatherDesc(code: number | undefined, isDay: number | undefined): string {
-  if (code == null) return "Dato non disponibile";
-  const map: Record<number, string> = {
-    0: "Sereno",
-    1: "Poco nuvoloso",
-    2: "Parzialmente nuvoloso",
-    3: "Coperto",
-    45: "Nebbia",
-    48: "Nebbia con depositi",
-    51: "Pioviggine",
-    53: "Pioviggine",
-    55: "Pioviggine intensa",
-    56: "Pioviggine gelata",
-    57: "Pioviggine gelata",
-    61: "Pioggia debole",
-    63: "Pioggia",
-    65: "Pioggia forte",
-    66: "Pioggia gelata",
-    67: "Pioggia gelata",
-    71: "Neve debole",
-    73: "Neve",
-    75: "Neve forte",
-    77: "Granelli di neve",
-    80: "Rovesci deboli",
-    81: "Rovesci",
-    82: "Rovesci intensi",
-    85: "Rovesci di neve",
-    86: "Rovesci di neve forti",
-    95: "Temporale",
-    96: "Temporale con grandine",
-    99: "Temporale forte con grandine",
-  };
-  return map[code] || "Sconosciuto";
-}
-
-function getWeatherEmoji(code: number | undefined, isDay: number | undefined): string {
-  if (code == null) return "❓";
-  if (code === 0) return isDay ? "☀️" : "🌙";
-  if (code === 1 || code === 2) return isDay ? "🌤️" : "🌤️";
-  if (code === 3) return "☁️";
-  if (code >= 45 && code <= 48) return "🌫️";
-  if (code >= 51 && code <= 57) return "🌦️";
-  if (code >= 61 && code <= 67) return "🌧️";
-  if (code >= 71 && code <= 77) return "❄️";
-  if (code >= 80 && code <= 82) return "🌧️";
-  if (code >= 85 && code <= 86) return "❄️";
-  if (code >= 95) return "⛈️";
-  return "🌡️";
+// ===== CARD DETTAGLIO =====
+function DetailCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
+  return (
+    <div className="bg-slate-800/40 border border-slate-700/30 rounded-xl p-2.5">
+      <div className="flex items-center gap-1.5 mb-1">
+        {icon}
+        <span className="text-[9px] text-slate-400 uppercase tracking-wider">{label}</span>
+      </div>
+      <div className="text-sm font-bold text-white">{value}</div>
+      {sub && <div className="text-[9px] text-slate-500 mt-0.25">{sub}</div>}
+    </div>
+  );
 }
