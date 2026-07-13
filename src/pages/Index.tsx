@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Thermometer, Wind, CloudSun, Gauge, MapPin, Sun, Navigation, AlertTriangle, Info, ChevronDown, ArrowUp, CloudRain } from "lucide-react";
+import { Thermometer, Wind, CloudSun, Gauge, MapPin, Sun, Navigation, AlertTriangle, Info, ChevronDown, ArrowUp } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { ErrorScreen } from "@/components/ErrorScreen";
 import { WeatherIcon } from "@/components/WeatherIcon";
 import { DECOLLI } from "@/data/decolli";
-import { fetchMeteo, fetchWindProfiles, filterFlightHours, enrDaily, calcThermal, wd, wic } from "@/utils/meteo";
+import { fetchMeteo, fetchWindProfiles, filterFlightHours, enrDaily, calcThermal, wd } from "@/utils/meteo";
 import type { MeteoData, ThermalData, WindProfile, HourData } from "@/types/meteo";
 
 export default function Index() {
@@ -18,7 +18,6 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDecolloList, setShowDecolloList] = useState(false);
-  const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
 
   const loadMeteo = useCallback(async (decollo: typeof DECOLLI[0]) => {
     setLoading(true);
@@ -44,7 +43,6 @@ export default function Index() {
   const handleDecolloChange = (decollo: typeof DECOLLI[0]) => {
     setSelectedDecollo(decollo);
     setShowDecolloList(false);
-    setSelectedDayIndex(0);
   };
 
   const flightHours = meteoData ? filterFlightHours(meteoData.hourly) : [];
@@ -56,21 +54,6 @@ export default function Index() {
     const today = new Date();
     return h.time.getDate() === today.getDate() && h.time.getMonth() === today.getMonth();
   });
-
-  const dayLabels = ["Oggi", "Domani", "Tra 2 giorni", "Tra 3 giorni", "Tra 4 giorni", "Tra 5 giorni", "Tra 6 giorni"];
-
-  const getDayHours = (dayIndex: number): HourData[] => {
-    if (!meteoData) return [];
-    const targetDate = new Date();
-    targetDate.setDate(targetDate.getDate() + dayIndex);
-    return flightHours.filter((h) => {
-      return h.time.getDate() === targetDate.getDate() && h.time.getMonth() === targetDate.getMonth();
-    });
-  };
-
-  const dayData = getDayHours(selectedDayIndex);
-  const daily = enrichedDaily[selectedDayIndex];
-  const dayThermal = dayData.length > 0 ? calcThermal(dayData, selectedDecollo.altitude) : null;
 
   if (loading) return <LoadingScreen />;
   if (error) return <ErrorScreen message={error} onRetry={() => loadMeteo(selectedDecollo)} />;
@@ -156,111 +139,6 @@ export default function Index() {
           </div>
         </div>
 
-        {/* Day Tabs - Solo decorativi (non cliccabili) */}
-        <div className="mb-5">
-          <h3 className="text-sm font-semibold mb-3 text-gray-300">Giorni</h3>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {enrichedDaily.slice(0, 7).map((day, i) => (
-              <div
-                key={i}
-                className="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-medium border bg-[#1a2332] border-white/10 text-gray-400"
-              >
-                <div>{dayLabels[i]}</div>
-                <div className="mt-1 flex items-center gap-1 justify-center">
-                  <WeatherIcon code={day.weatherCode} size={16} />
-                  <span>{Math.round(day.tempMax)}°</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Sezione Dati Meteo - include dettaglio giorno + termiche */}
-        {dayData.length > 0 && daily && (
-          <div className="mb-5 p-4 rounded-2xl bg-gradient-to-br from-[#1a2332] to-[#0f1923] border border-green-500/20">
-            <h3 className="font-semibold text-sm text-green-300 mb-3">
-              Dettaglio — {dayLabels[selectedDayIndex]}
-            </h3>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-              <div className="bg-slate-700/50 rounded-xl p-3 text-center">
-                <Thermometer className="w-4 h-4 text-amber-400 mx-auto mb-1" />
-                <div className="text-lg font-bold text-white">{Math.round(daily.tempMax)}°</div>
-                <div className="text-[10px] text-slate-400">Max / {Math.round(daily.tempMin)}° Min</div>
-              </div>
-              <div className="bg-slate-700/50 rounded-xl p-3 text-center">
-                <Wind className="w-4 h-4 text-blue-400 mx-auto mb-1" />
-                <div className="text-lg font-bold text-white">
-                  {daily.avgWind !== undefined ? Math.round(daily.avgWind) : "--"} km/h
-                </div>
-                <div className="text-[10px] text-slate-400">
-                  Media {(daily.maxWind !== undefined ? Math.round(daily.maxWind) : "--")} max
-                </div>
-              </div>
-              {daily.precipitationSum > 0 && (
-                <div className="bg-slate-700/50 rounded-xl p-3 text-center">
-                  <CloudRain className="w-4 h-4 text-blue-300 mx-auto mb-1" />
-                  <div className="text-lg font-bold text-white">{daily.precipitationSum} mm</div>
-                  <div className="text-[10px] text-slate-400">Pioggia</div>
-                </div>
-              )}
-              {dayThermal && (
-                <div className="bg-slate-700/50 rounded-xl p-3 text-center">
-                  <ArrowUp className="w-4 h-4 text-emerald-400 mx-auto mb-1" />
-                  <div className="text-lg font-bold text-white">{dayThermal.cloudBase} m</div>
-                  <div className="text-[10px] text-slate-400">Base nuvole</div>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-1.5">
-              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Previsioni orarie</h4>
-              {dayData.map((h) => (
-                <div
-                  key={h.time.getHours()}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 bg-slate-700/30 border border-slate-600/50 text-left"
-                >
-                  <div className="w-12 shrink-0 text-center">
-                    <span className="text-xs font-bold text-white">
-                      {h.time.getHours().toString().padStart(2, "0")}:00
-                    </span>
-                  </div>
-                  <span className="text-lg shrink-0">{wic(h.weatherCode, true)}</span>
-                  <div className="flex-1 grid grid-cols-3 gap-2 text-[11px] text-slate-300">
-                    <span>{Math.round(h.temperature)}°C</span>
-                    <span>{Math.round(h.windSpeed)} km/h</span>
-                    <span>{h.humidity}%</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Termiche */}
-        {thermal && (
-          <div className="mb-5 p-4 rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/20">
-            <div className="flex items-center gap-2 mb-3">
-              <Sun size={16} className="text-green-400" />
-              <h3 className="font-semibold text-sm">Previsione termiche</h3>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="text-center">
-                <div className="text-xs text-gray-400 mb-0.5">Base nuvole</div>
-                <div className="text-lg font-bold text-green-400">{thermal.cloudBase}m</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xs text-gray-400 mb-0.5">Cima termica</div>
-                <div className="text-lg font-bold text-yellow-400">{thermal.thermalTop}m</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xs text-gray-400 mb-0.5">Indice volo</div>
-                <div className="text-lg font-bold text-cyan-400">{thermal.soarIdx}/10</div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Previsioni orarie */}
         <div className="mb-5">
           <h3 className="text-sm font-semibold mb-3 text-gray-300">Previsioni orarie (volo)</h3>
@@ -298,6 +176,30 @@ export default function Index() {
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Termiche */}
+        {thermal && (
+          <div className="mb-5 p-4 rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/20">
+            <div className="flex items-center gap-2 mb-3">
+              <Sun size={16} className="text-green-400" />
+              <h3 className="font-semibold text-sm">Previsioni termiche</h3>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center">
+                <div className="text-xs text-gray-400 mb-0.5">Base nuvole</div>
+                <div className="text-lg font-bold text-green-400">{thermal.cloudBase}m</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-gray-400 mb-0.5">Cima termica</div>
+                <div className="text-lg font-bold text-yellow-400">{thermal.thermalTop}m</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-gray-400 mb-0.5">Indice volo</div>
+                <div className="text-lg font-bold text-cyan-400">{thermal.soarIdx}/10</div>
               </div>
             </div>
           </div>
