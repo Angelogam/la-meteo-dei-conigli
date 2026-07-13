@@ -3,11 +3,13 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { weatherService } from "@/services/weatherService";
 import { DECOLLI } from "@/data/decolli";
-import { getWeatherAlert, getStabilityIndex, getThermalStrength, getWindProfile } from "@/utils/weatherHelpers";
+
+const REFRESH_INTERVAL_MS = 30 * 60 * 1000; // 30 minuti
 
 export function useWeatherData() {
   const [selectedId, setSelectedId] = useState(DECOLLI[0].id);
   const [meteoData, setMeteoData] = useState<any>(null);
+  const [allWeatherData, setAllWeatherData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,53 +17,130 @@ export function useWeatherData() {
   const [selectedHour, setSelectedHour] = useState(new Date().getHours());
   const [activeTab, setActiveTab] = useState<'meteo' | 'venti' | 'termiche' | 'analisi'>('meteo');
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-  const [countdown, setCountdown] = useState(30); // 30 minuti default
-  const [refreshProgress, setRefreshProgress] = useState(0); // 0-100%
+  const [countdown, setCountdown] = useState(30);
+  const [refreshProgress, setRefreshProgress] = useState(0);
 
   const site = DECOLLI.find(d => d.id === selectedId)!;
-  const REFRESH_INTERVAL_MINUTES = 30;
 
-  const loadWeather = useCallback(async () => {
+  // Carica dati per TUTTI i decolli in parallelo
+  const loadAllWeather = useCallback(async () => {
     setLoading(true);
     setUpdating(true);
     setError(null);
+    
     try {
-      const data = await weatherService.fetchWithFallback(site.lat, site.lon);
-      setMeteoData(data);
+      // Carica tutti i decolli in parallelo
+      const promises = DECOLLI.map(async (decollo) => {
+        try {
+          const data = await weatherService.fetchWithFallback(decollo.lat, decollo.lon);
+          return { id: decollo.id, data };
+        } catch {
+          return { id: decollo.id, data: null };
+        }
+      });
+
+      const results = await Promise.allSettled(promises);
+      
+      // Costruisce la mappa id -> dati
+      const weatherMap: Record<string, any> = {};
+      let selectedData: any = null;
+      
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value.data) {
+          const { id, data } = result.value;
+          weatherMap[id] = data;
+          
+          // Trova il dato orario corrente (ora più vicina)
+          if (data.hourly && data.hourly.length > 0) {
+            const now = new Date();
+            const currentHour = now.getHours();
+            
+            // Crea un "currentData" sintetico dal dato orario più vicino
+            const closestHour = data.hourly.reduce((best: any, h: any) => {
+              const hh = h.time.getHours();
+              return Math.abs(hh - currentHour) < Math.abs(best.time.getHours() - currentHour) ? h : best;
+            }, data.hourly[0]);
+            
+            weatherMap[id] = {
+              ...weatherMap[id],
+              currentData: closestHour,
+              temperature: closestHour.temperature,
+              humidity: closestHour.humidity,
+              dewPoint: closestHour.dewPoint,
+              windSpeed: closestHour.windSpeed,
+              windDir: closestHour.windDir,
+              windGusts: closestHour.windGusts,
+              cloudCover: closestHour.cloudCover,
+              precipitation: closestHour.precipitation,
+              weatherCode: closestHour.weatherCode,
+              pressure: closestHour.pressure,
+              uvIndex: closestHour.uvIndex,
+              temp80m: closestHour.temp80m,
+              temp120m: closestHour.temp120m,
+              isDay: new Date().getHours() >= 6 && new Date().getHours() <= 20 ? 1 : 0,
+            };
+          }
+
+          // Salva anche i dati completi per il decollo selezionato
+          if (id === selectedId) {
+            selectedData = data;
+          }
+        }
+      }
+
+      setAllWeatherData(weatherMap);
+      
+      // Se abbiamo dati per il selezionato, aggiorna meteoData
+      if (selectedData) {
+        setMeteoData(selectedData);
+      } else if (weatherMap[selectedId]) {
+        setMeteoData(weatherMap[selectedId]);
+      }
+
       const now = new Date();
       setLastUpdate(now);
-      setCountdown(REFRESH_INTERVAL_MINUTES);
+      setCountdown(30);
       setRefreshProgress(0);
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore sconosciuto');
     } finally {
       setLoading(false);
       setUpdating(false);
     }
-  }, [site.lat, site.lon]);
+  }, [selectedId]);
 
   // Carica inizialmente
   useEffect(() => {
-    loadWeather();
+    loadAllWeather();
     setSelectedHour(new Date().getHours());
-  }, [loadWeather]);
+  }, [loadAllWeather]);
 
-  // Countdown ogni minuto
+  // Ricarica ogni 30 minuti
   useEffect(() => {
-    const interval = setInterval(() => {
+    const interval = setInterval(loadAllWeather, REFRESH_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [loadAllWeather]);
+
+  // Countdown minuto per minuto
+  useEffect(() => {
+    const minuteInterval = setInterval(() => {
       setCountdown(prev => {
-        if (prev <= 1) {
-          // Ricarica quando il countdown arriva a 0
-          loadWeather();
-          return REFRESH_INTERVAL_MINUTES;
-        }
+        if (prev <= 1) return 30;
         return prev - 1;
       });
-      setRefreshProgress(prev => Math.min(100, prev + (100 / REFRESH_INTERVAL_MINUTES)));
-    }, 60 * 1000); // ogni minuto
+      setRefreshProgress(prev => Math.min(100, prev + (100 / 30)));
+    }, 60 * 1000);
+    return () => clearInterval(minuteInterval);
+  }, []);
 
-    return () => clearInterval(interval);
-  }, [loadWeather]);
+  // Quando cambia il decollo selezionato, usa i dati già caricati
+  useEffect(() => {
+    if (allWeatherData[selectedId]) {
+      setMeteoData(allWeatherData[selectedId]);
+      setSelectedHour(new Date().getHours());
+    }
+  }, [selectedId, allWeatherData]);
 
   // Filtra i dati orari per il giorno selezionato
   const dayData = useMemo(() => {
@@ -80,8 +159,14 @@ export function useWeatherData() {
     }).sort((a: any, b: any) => new Date(a.time).getTime() - new Date(b.time).getTime());
   }, [meteoData, selectedDay]);
 
-  // Dati correnti basati sull'ora selezionata
+  // Dati correnti — usa il decorrente sintetico se disponibile
   const currentData = useMemo(() => {
+    // Se abbiamo il currentData sintetico dalla mappa, usalo
+    if (allWeatherData[selectedId]?.currentData) {
+      return allWeatherData[selectedId].currentData;
+    }
+    
+    // Altrimenti cerca nell'hourly
     if (!dayData || dayData.length === 0) return null;
     
     let closest = dayData[0];
@@ -95,7 +180,7 @@ export function useWeatherData() {
       }
     }
     return closest;
-  }, [dayData, selectedHour]);
+  }, [dayData, selectedHour, allWeatherData, selectedId]);
 
   // Delta termico
   const thermalDelta = useMemo(() => {
@@ -104,30 +189,6 @@ export function useWeatherData() {
     if (temps.length === 0) return 0;
     return Math.round((Math.max(...temps) - Math.min(...temps)) * 10) / 10;
   }, [dayData]);
-
-  // Stabilità atmosferica
-  const stabilityIndex = useMemo(() => {
-    if (!currentData) return { label: "N/D", color: "#64748b" };
-    return getStabilityIndex(currentData.temperature || 20, currentData.humidity || 50, currentData.cloudCover || 30);
-  }, [currentData]);
-
-  // Forza termiche
-  const thermalStrength = useMemo(() => {
-    if (!currentData) return { label: "N/D", color: "#64748b" };
-    return getThermalStrength(currentData.temperature || 20, currentData.cloudCover || 30, currentData.humidity || 50, thermalDelta);
-  }, [currentData, thermalDelta]);
-
-  // Allerta meteo
-  const weatherAlert = useMemo(() => {
-    if (!currentData) return { level: 'info' as const, message: 'Caricamento...', icon: 'ℹ️' };
-    return getWeatherAlert(currentData, thermalDelta);
-  }, [currentData, thermalDelta]);
-
-  // Profilo vento
-  const windProfile = useMemo(() => {
-    if (!currentData) return [];
-    return getWindProfile(currentData.windSpeed || 0, currentData.windDir || 0, currentData.windProfile);
-  }, [currentData]);
 
   // Dati giornalieri arricchiti
   const enrichedDaily = useMemo(() => {
@@ -201,10 +262,7 @@ export function useWeatherData() {
     thermalDelta,
     enrichedDaily,
     dateLabels,
-    loadWeather,
-    stabilityIndex,
-    thermalStrength,
-    weatherAlert,
-    windProfile,
+    loadWeather: loadAllWeather,
+    allWeatherData,
   };
 }

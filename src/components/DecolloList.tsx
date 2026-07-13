@@ -26,7 +26,7 @@ interface DecolloListProps {
   selectedId: string;
   onSelect: (id: string) => void;
   currentData: any;
-  allWeatherData?: Record<string, any>;
+  allWeatherData: Record<string, any>;
 }
 
 function getWeatherEmoji(code: number): string {
@@ -54,21 +54,13 @@ function getDirLabel(deg: number): string {
 
 function getCurrentTime(): string {
   const now = new Date();
-  return now.toLocaleTimeString("it-IT", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatLastUpdate(): string {
-  const now = new Date();
   const h = now.getHours().toString().padStart(2, "0");
   const m = now.getMinutes().toString().padStart(2, "0");
   return `${h}:${m}`;
 }
 
 const DecolloList = ({ decolli, selectedId, onSelect, currentData, allWeatherData }: DecolloListProps) => {
-  const oraCorrente = formatLastUpdate();
+  const oraCorrente = getCurrentTime();
 
   return (
     <div className="space-y-2">
@@ -86,27 +78,25 @@ const DecolloList = ({ decolli, selectedId, onSelect, currentData, allWeatherDat
         <span className="text-[12px] font-bold text-slate-300 tabular-nums">
           {oraCorrente}
         </span>
-        <span className="text-[10px] text-slate-500">Italia</span>
       </div>
 
       <div className="space-y-1.5 max-h-[65vh] overflow-y-auto pr-1">
         {decolli.map((site) => {
           const isSelected = site.id === selectedId;
 
-          // Cerca i dati meteo per questo sito
-          const weather = site.id === selectedId
-            ? currentData
-            : allWeatherData?.[site.id];
+          // Prende i dati reali dalla mappa
+          const siteData = allWeatherData[site.id];
+          const hasData = siteData != null;
 
-          // Dati meteo disponibili
-          const temp = weather?.temperature != null ? Math.round(weather.temperature) : null;
-          const wind = weather?.windSpeed != null ? Math.round(weather.windSpeed) : null;
-          const dir = weather?.windDir != null ? Math.round(weather.windDir) : null;
-          const gust = weather?.windGusts != null ? Math.round(weather.windGusts) : null;
-          const code = weather?.weatherCode != null ? weather.weatherCode : null;
+          // Costruisce i campi meteo dai dati reali
+          const temp = hasData ? Math.round(siteData.temperature ?? 0) : null;
+          const wind = hasData ? Math.round(siteData.windSpeed ?? 0) : null;
+          const dir = hasData ? Math.round(siteData.windDir ?? 0) : null;
+          const gust = hasData && siteData.windGusts != null ? Math.round(siteData.windGusts) : null;
+          const code = hasData ? (siteData.weatherCode ?? 0) : null;
 
-          const dirLabel2 = dir != null ? getDirLabel(dir) : "";
-          const dirArrow2 = dir != null ? getDirArrow(dir) : "";
+          const dirLabel = dir != null ? getDirLabel(dir) : "";
+          const dirArrow = dir != null ? getDirArrow(dir) : "";
           const emoji = code != null ? getWeatherEmoji(code) : "—";
 
           return (
@@ -126,7 +116,7 @@ const DecolloList = ({ decolli, selectedId, onSelect, currentData, allWeatherDat
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <span className={`text-sm font-black truncate block leading-snug tracking-tight ${
-                      isSelected ? "text-white neon-green" : "text-slate-200"
+                      isSelected ? "text-white" : "text-slate-200"
                     }`}>
                       {site.name}
                     </span>
@@ -134,6 +124,8 @@ const DecolloList = ({ decolli, selectedId, onSelect, currentData, allWeatherDat
                       <Sparkles className="w-3 h-3 text-emerald-400 animate-twinkle shrink-0" />
                     )}
                   </div>
+                  
+                  {/* Info decollo */}
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-slate-400">
                     <span className="flex items-center gap-0.5">
                       <Compass className="w-3 h-3 text-sky-400" />
@@ -151,8 +143,8 @@ const DecolloList = ({ decolli, selectedId, onSelect, currentData, allWeatherDat
                     </span>
                   </div>
 
-                  {/* ===== DATI METEO ===== */}
-                  {temp != null && (
+                  {/* ===== DATI METEO REALI ===== */}
+                  {hasData && temp != null && (
                     <div className="mt-2 pt-2 border-t border-slate-700/20 grid grid-cols-3 gap-1">
                       {/* Temperatura */}
                       <div className="flex items-center gap-1 text-[11px] text-slate-300">
@@ -163,12 +155,10 @@ const DecolloList = ({ decolli, selectedId, onSelect, currentData, allWeatherDat
                       {/* Vento */}
                       <div className="flex items-center gap-1 text-[11px] text-slate-300">
                         <Wind className="w-3 h-3 text-sky-400" />
-                        <span className="font-bold tabular-nums">
-                          {wind}
-                        </span>
+                        <span className="font-bold tabular-nums">{wind}</span>
                         {dir != null && (
                           <span className="text-slate-500 text-[10px]">
-                            {dirArrow2}{dirLabel2}
+                            {dirArrow}{dirLabel}
                           </span>
                         )}
                       </div>
@@ -180,8 +170,8 @@ const DecolloList = ({ decolli, selectedId, onSelect, currentData, allWeatherDat
                     </div>
                   )}
 
-                  {/* Raffica separata se c'è */}
-                  {gust != null && gust > wind! && (
+                  {/* Raffica */}
+                  {gust != null && wind != null && gust > wind && (
                     <div className="flex items-center gap-1 text-[10px] text-red-300/70 mt-0.5">
                       <Gauge className="w-3 h-3" />
                       <span>Raffica {gust} km/h</span>
@@ -190,7 +180,7 @@ const DecolloList = ({ decolli, selectedId, onSelect, currentData, allWeatherDat
                 </div>
               </div>
 
-              {/* Selected indicator + ora */}
+              {/* Selected indicator */}
               {isSelected && (
                 <div className="mt-2 pt-2 border-t border-emerald-500/20">
                   <div className="flex items-center gap-2 text-[10px] text-emerald-300/70">
@@ -213,17 +203,3 @@ const DecolloList = ({ decolli, selectedId, onSelect, currentData, allWeatherDat
 };
 
 export default DecolloList;
-</dyad-file>
-
-Ora devo aggiornare `Index.tsx` per passare `allWeatherData` e fare in modo che `DecolloList` li riceva. Ma non ho quel file modificabile qui — fammi verificare se devo aggiornarlo.
-
-<dyad-write path="src/pages/Index.tsx" description="Passaggio allWeatherData a DecolloList per mostrare meteo su ogni decollo">
-// ... (solo la parte dove viene usato DecolloList)
-
-<DecolloList
-  decolli={DECOLLI.map(d => ({ id: d.id, name: d.name, valley: d.valley, exposure: d.exposure, alt: d.altitude }))}
-  selectedId={selectedId}
-  onSelect={setSelectedId}
-  currentData={currentData}
-  allWeatherData={meteoData?.allHourly || {}}
-/>
