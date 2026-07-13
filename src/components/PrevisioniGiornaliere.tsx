@@ -18,16 +18,31 @@ interface PrevisioniGiornaliereProps {
   onSelectDay: (day: number) => void;
 }
 
-function getWeatherIcon(code: number, size: number = 32) {
-  if (code === 0) return <Sun size={size} className="text-amber-300 drop-shadow-lg" />;
-  if (code <= 2) return <CloudSun size={size} className="text-amber-200 drop-shadow-lg" />;
-  if (code <= 3) return <CloudSun size={size} className="text-slate-300 drop-shadow-lg" />;
-  if (code <= 48) return <CloudFog size={size} className="text-slate-400 drop-shadow-lg" />;
-  if (code <= 57) return <CloudRain size={size} className="text-blue-300 drop-shadow-lg" />;
-  if (code <= 67) return <CloudRain size={size} className="text-blue-400 drop-shadow-lg" />;
-  if (code <= 77) return <Snowflake size={size} className="text-blue-200 drop-shadow-lg" />;
-  if (code <= 82) return <CloudRain size={size} className="text-blue-300 drop-shadow-lg" />;
-  return <CloudLightning size={size} className="text-yellow-300 drop-shadow-lg" />;
+/** Mappa WMO weather code a icona e descrizione */
+function getWeatherInfo(code: number, size: number = 32) {
+  if (code === 0) return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "Sereno" };
+  if (code === 1) return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "Prevalentemente sereno" };
+  if (code === 2) return { icon: <CloudSun size={size} className="text-amber-200 drop-shadow-lg" />, desc: "Poco nuvoloso" };
+  if (code === 3) return { icon: <CloudSun size={size} className="text-slate-300 drop-shadow-lg" />, desc: "Nuvoloso" };
+  if (code >= 4 && code <= 9) return { icon: <Cloud size={size} className="text-slate-400 drop-shadow-lg" />, desc: "Nuvoloso variabile" };
+  if (code === 10) return { icon: <Cloud size={size} className="text-slate-400 drop-shadow-lg" />, desc: "Coperto" };
+  if (code === 11) return { icon: <CloudFog size={size} className="text-slate-400 drop-shadow-lg" />, desc: "Nebbia" };
+  if (code === 12) return { icon: <CloudFog size={size} className="text-slate-500 drop-shadow-lg" />, desc: "Nebbia fitta" };
+  if (code === 13) return { icon: <CloudLightning size={size} className="text-yellow-300 drop-shadow-lg" />, desc: "Temporale" };
+  // WMO 45-48: Nebbia / nebbia
+  if (code >= 45 && code <= 48) return { icon: <CloudFog size={size} className="text-slate-400 drop-shadow-lg" />, desc: "Nebbia" };
+  // WMO 51-57: Pioggerella
+  if (code >= 51 && code <= 57) return { icon: <CloudRain size={size} className="text-blue-300 drop-shadow-lg" />, desc: "Pioggerella" };
+  // WMO 61-67: Pioggia
+  if (code >= 61 && code <= 67) return { icon: <CloudRain size={size} className="text-blue-400 drop-shadow-lg" />, desc: "Pioggia" };
+  // WMO 71-77: Neve
+  if (code >= 71 && code <= 77) return { icon: <Snowflake size={size} className="text-blue-200 drop-shadow-lg" />, desc: "Neve" };
+  // WMO 80-82: Rovesci
+  if (code >= 80 && code <= 84) return { icon: <CloudRain size={size} className="text-blue-300 drop-shadow-lg" />, desc: "Rovesci" };
+  // WMO 95-99: Temporali
+  if (code >= 95 && code <= 99) return { icon: <CloudLightning size={size} className="text-yellow-300 drop-shadow-lg" />, desc: "Temporali" };
+  // Fallback
+  return { icon: <CloudSun size={size} className="text-slate-300 drop-shadow-lg" />, desc: "Nuvoloso" };
 }
 
 function formatDate(date: any): string {
@@ -50,19 +65,6 @@ function getRischioPioggia(mm: number): { label: string; color: string } {
   if (mm < 1) return { label: "Moderato", color: "text-orange-400" };
   if (mm < 3) return { label: "Alto", color: "text-red-400" };
   return { label: "Probabile", color: "text-red-500" };
-}
-
-/** Testo descrittivo condizioni meteo */
-function getCondizioniDescrizione(code: number): string {
-  if (code === 0) return "Sereno";
-  if (code <= 2) return "Poco nuvoloso";
-  if (code <= 3) return "Nuvoloso";
-  if (code <= 48) return "Nebbia";
-  if (code <= 57) return "Pioggia debole";
-  if (code <= 67) return "Pioggia forte";
-  if (code <= 77) return "Neve";
-  if (code <= 82) return "Rovesci";
-  return "Temporali";
 }
 
 export default function PrevisioniGiornaliere({
@@ -174,8 +176,18 @@ export default function PrevisioniGiornaliere({
       
       score = Math.max(0, Math.min(10, Math.round(score)));
 
+      // Icona meteo rappresentativa della fascia: prendo il weatherCode più frequente
+      const weatherCodes = ore.map((h: any) => h.weatherCode).filter((c: any) => c != null);
+      const weatherCode = weatherCodes.length > 0 
+        ? weatherCodes.sort((a: number, b: number) => 
+            weatherCodes.filter((v: number) => v === a).length - 
+            weatherCodes.filter((v: number) => v === b).length
+          ).pop()
+        : 0;
+      const weatherInfo = getWeatherInfo(weatherCode, 18);
+
       return {
-        label, icon, borderColor,
+        label, icon: weatherInfo.icon, borderColor, weatherDesc: weatherInfo.desc,
         tempMedia, tempMax, windMedia, windMax, windDirMedia,
         cloudMedia, precipTot, humMedia, pressMedia,
         lcl, salita, top, termicheLabel, termicheColore, score, nOre: ore.length,
@@ -200,8 +212,9 @@ export default function PrevisioniGiornaliere({
         {enrichedDaily.slice(0, 3).map((day: any, idx: number) => {
           const isActive = idx === selectedDay;
           const dateStr = formatDate(day.date);
-          const weatherCode = day.weatherCode || 0;
-          const condizioni = getCondizioniDescrizione(weatherCode);
+          const weatherCode = day.weatherCode ?? 0;
+          const weatherInfo = getWeatherInfo(weatherCode, 36);
+          const condizioni = weatherInfo.desc;
           const rischio = getRischioPioggia(day.precipSum || 0);
           const tempMedia = Math.round((day.tempMin + day.tempMax) / 2);
 
@@ -231,10 +244,10 @@ export default function PrevisioniGiornaliere({
               {/* Riga principale: icona + temperatura */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  {getWeatherIcon(weatherCode, 32)}
+                  {weatherInfo.icon}
                   <div>
                     <div className="text-sm font-medium text-slate-300">{condizioni}</div>
-                    <div className="text-[11px] text-slate-500">
+                    <div className="text-xs text-slate-500">
                       {day.precipSum ? `${day.precipSum.toFixed(1)} mm` : "0 mm"}
                     </div>
                   </div>
@@ -309,6 +322,7 @@ export default function PrevisioniGiornaliere({
                   <div className="flex items-center gap-1.5">
                     {fascia.icon}
                     <span className="text-xs font-bold text-white">{fascia.label}</span>
+                    <span className="text-[10px] text-slate-400">({fascia.weatherDesc})</span>
                   </div>
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${scoreColor}`}>
                     {fascia.score}/10
@@ -346,22 +360,22 @@ export default function PrevisioniGiornaliere({
                 <div className="grid grid-cols-2 gap-1">
                   <div className="bg-slate-900/50 rounded px-2 py-1 flex items-center justify-between">
                     <Cloud className="w-3 h-3 text-slate-400" />
-                    <span className="text-[10px] font-bold text-slate-300">{fascia.cloudMedia}%</span>
+                    <span className="text-xs font-bold text-slate-300">{fascia.cloudMedia}%</span>
                   </div>
                   <div className="bg-slate-900/50 rounded px-2 py-1 flex items-center justify-between">
                     <Droplets className="w-3 h-3 text-blue-400" />
-                    <span className="text-[10px] font-bold text-blue-300">{fascia.humMedia}%</span>
+                    <span className="text-xs font-bold text-blue-300">{fascia.humMedia}%</span>
                   </div>
                   <div className="bg-slate-900/50 rounded px-2 py-1 flex items-center justify-between">
                     <Gauge className="w-3 h-3 text-purple-400" />
-                    <span className="text-[10px] font-bold text-purple-300">{fascia.pressMedia} hPa</span>
+                    <span className="text-xs font-bold text-purple-300">{fascia.pressMedia} hPa</span>
                   </div>
                   <div className="bg-slate-900/50 rounded px-2 py-1 flex items-center justify-between">
                     {fascia.precipTot === 0
                       ? <CheckCircle className="w-3 h-3 text-green-400" />
                       : <Umbrella className="w-3 h-3 text-blue-400" />
                     }
-                    <span className="text-[10px] font-bold">{fascia.precipTot === 0 ? "Secco" : `${fascia.precipTot}mm`}</span>
+                    <span className="text-xs font-bold">{fascia.precipTot === 0 ? "Secco" : `${fascia.precipTot}mm`}</span>
                   </div>
                 </div>
               </div>
