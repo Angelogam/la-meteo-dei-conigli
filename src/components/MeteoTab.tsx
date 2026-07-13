@@ -102,23 +102,23 @@ export default function MeteoTab({
   return (
     <div className="space-y-4">
       {/* BANNER CONDIZIONI VOLO */}
-      <div className={`rounded-2xl p-4 border-2 ${
+      <div className={`rounded-2xl p-4 border-2 text-center md:text-left ${
         condizioniVolo.includes("Ottime") ? "bg-emerald-900/30 border-emerald-500/50" :
         condizioniVolo.includes("Buone") ? "bg-green-900/30 border-green-500/40" :
         condizioniVolo.includes("Deboli") ? "bg-amber-900/30 border-amber-500/40" :
         condizioniVolo.includes("assente") || condizioniVolo.includes("calma") ? "bg-slate-800/40 border-slate-500/40" :
         "bg-red-900/30 border-red-500/50"
       }`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-3xl bg-slate-900/50 border border-slate-700/50">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+          <div className="flex flex-col md:flex-row items-center gap-3">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-3xl bg-slate-900/50 border border-slate-700/50 shrink-0">
               {condizioniVolo.includes("Ottime") || condizioniVolo.includes("Buone") ? "🪂" :
                condizioniVolo.includes("Deboli") ? "🌤️" :
                condizioniVolo.includes("calma") ? "🌀" :
                condizioniVolo.includes("pioggia") || condizioniVolo.includes("Temporale") ? "⛈️" :
                condizioniVolo.includes("forte") ? "💨" : "❄️"}
             </div>
-            <div>
+            <div className="text-center md:text-left">
               <div className="text-lg font-black text-white">Condizioni: {condizioniVolo}</div>
               <div className="text-xs text-slate-400 mt-0.5">
                 {weatherCode === 0 ? "Cielo sereno" :
@@ -130,7 +130,7 @@ export default function MeteoTab({
               </div>
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-center">
             <div className="text-3xl font-black text-white tabular-nums">{Math.round(temp)}°</div>
             <div className="text-[10px] text-slate-500">temperatura</div>
           </div>
@@ -140,17 +140,20 @@ export default function MeteoTab({
       {/* RIGA VELOCE — decollo + atterraggio */}
       <div className="grid grid-cols-2 gap-2">
         <div className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-3 text-center">
-          <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Vento decollo</div>
+          <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 text-center">Vento decollo</div>
           <div className="text-2xl font-black text-white tabular-nums flex items-center justify-center gap-1">
             {arrow} {Math.round(ventoDecollo)}
             <span className="text-xs text-slate-500 font-normal">km/h</span>
           </div>
-          <div className="text-[10px] text-slate-500">{dirLabel} ({Math.round(windDir ?? 0)}°)</div>
+          <div className="text-[10px] text-slate-500 text-center">{dirLabel} ({Math.round(windDir ?? 0)}°)</div>
         </div>
         <div className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-3 text-center">
-          <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Vento atterraggio</div>
-          <div className="text-2xl font-black text-white tabular-nums">{Math.round(ventoDecollo * 0.7)}<span className="text-xs text-slate-500 font-normal ml-0.5">km/h</span></div>
-          <div className="text-[10px] text-slate-500">Raffiche {raffiche} km/h</div>
+          <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 text-center">Vento atterraggio</div>
+          <div className="text-2xl font-black text-white tabular-nums flex items-center justify-center gap-1">
+            {Math.round(ventoDecollo * 0.7)}
+            <span className="text-xs text-slate-500 font-normal">km/h</span>
+          </div>
+          <div className="text-[10px] text-slate-500 text-center">Raffiche {raffiche} km/h</div>
         </div>
       </div>
 
@@ -180,9 +183,9 @@ function MiniCard({ icon, label, value, sub }: { icon: React.ReactNode; label: s
   return (
     <div className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-3 text-center">
       <div className="flex justify-center mb-1">{icon}</div>
-      <div className="text-[9px] text-slate-400 uppercase tracking-wider mb-1">{label}</div>
-      <div className="text-base font-black text-white tabular-nums">{value}</div>
-      {sub && <div className="text-[9px] text-slate-500 mt-0.5">{sub}</div>}
+      <div className="text-[9px] text-slate-400 uppercase tracking-wider mb-1 text-center">{label}</div>
+      <div className="text-base font-black text-white tabular-nums text-center">{value}</div>
+      {sub && <div className="text-[9px] text-slate-500 mt-0.5 text-center">{sub}</div>}
     </div>
   );
 }
@@ -190,13 +193,13 @@ function MiniCard({ icon, label, value, sub }: { icon: React.ReactNode; label: s
 // ===== CARD DETTAGLIO =====
 function DetailCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
   return (
-    <div className="bg-slate-800/40 border border-slate-700/30 rounded-xl p-2.5">
-      <div className="flex items-center gap-1.5 mb-1">
+    <div className="bg-slate-800/40 border border-slate-700/30 rounded-xl p-2.5 text-center">
+      <div className="flex items-center justify-center gap-1.5 mb-1">
         {icon}
         <span className="text-[9px] text-slate-400 uppercase tracking-wider">{label}</span>
       </div>
-      <div className="text-sm font-bold text-white">{value}</div>
-      {sub && <div className="text-[9px] text-slate-500 mt-0.25">{sub}</div>}
+      <div className="text-sm font-bold text-white text-center">{value}</div>
+      {sub && <div className="text-[9px] text-slate-500 mt-0.25 text-center">{sub}</div>}
     </div>
   );
 }
