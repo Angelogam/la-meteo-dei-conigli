@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   Gauge,
   Clock,
+  Calendar,
 } from "lucide-react";
 
 interface DayInfoPanelProps {
@@ -92,17 +93,49 @@ const hoursData = [
   { period: "Sera (18–21)", icon: "🌙", cond: "Cielo sereno, vento in calo", note: "Atmosfera stabile, temperatura in discesa" },
 ];
 
+function getCurrentDate(): string {
+  const now = new Date();
+  return now.toLocaleDateString("it-IT", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function getCurrentTime(): string {
+  const now = new Date();
+  return now.toLocaleTimeString("it-IT", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default function DayInfoPanel({ currentData, dayData, site }: DayInfoPanelProps) {
   const stability = getStabilityLabel(currentData?.liftingIndex ?? currentData?.stabilityIndex);
   const StabilityIcon = stability.icon;
+  const today = getCurrentDate();
+  const nowTime = getCurrentTime();
 
   return (
     <div className="space-y-3 mb-4">
       {/* ☀️ Situazione generale */}
       <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border border-slate-700/30 rounded-2xl p-4">
-        <h3 className="text-sm font-bold text-orange-400 mb-3 flex items-center gap-2">
-          <Sun className="w-4 h-4" /> Situazione generale
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-orange-400 flex items-center gap-2">
+            <Sun className="w-4 h-4" /> Situazione generale
+          </h3>
+          <div className="flex items-center gap-3 text-[10px] text-slate-500">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {today}
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {nowTime}
+            </span>
+          </div>
+        </div>
         <div className="space-y-2 text-xs md:text-sm text-slate-300 leading-relaxed">
           <p>
             Temperatura al suolo: <strong className="text-white">
@@ -145,9 +178,21 @@ export default function DayInfoPanel({ currentData, dayData, site }: DayInfoPane
 
       {/* 🌡️ Profilo termico e stabilità */}
       <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border border-slate-700/30 rounded-2xl p-4">
-        <h3 className="text-sm font-bold text-amber-400 mb-3 flex items-center gap-2">
-          <Thermometer className="w-4 h-4" /> Profilo termico e stabilità
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
+            <Thermometer className="w-4 h-4" /> Profilo termico e stabilità
+          </h3>
+          <div className="flex items-center gap-3 text-[10px] text-slate-500">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {today}
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {nowTime}
+            </span>
+          </div>
+        </div>
         <div className="space-y-2 text-xs md:text-sm text-slate-300 leading-relaxed">
           <p>
             <Gauge className="w-3 h-3 inline mr-1" style={{ color: stability.color }} />
@@ -182,9 +227,21 @@ export default function DayInfoPanel({ currentData, dayData, site }: DayInfoPane
 
       {/* 🌬️ Vento e dinamica in quota */}
       <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border border-slate-700/30 rounded-2xl p-4">
-        <h3 className="text-sm font-bold text-cyan-400 mb-3 flex items-center gap-2">
-          <Wind className="w-4 h-4" /> Vento e dinamica in quota
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-cyan-400 flex items-center gap-2">
+            <Wind className="w-4 h-4" /> Vento e dinamica in quota
+          </h3>
+          <div className="flex items-center gap-3 text-[10px] text-slate-500">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {today}
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {nowTime}
+            </span>
+          </div>
+        </div>
         <div className="space-y-2 text-xs md:text-sm text-slate-300 leading-relaxed">
           <p>
             Il profilo del vento mostra direzione prevalente da <strong className="text-white">{currentData?.windDir || "dati non disponibili"}</strong>,
@@ -206,9 +263,21 @@ export default function DayInfoPanel({ currentData, dayData, site }: DayInfoPane
 
       {/* 🌤️ Previsione per la giornata */}
       <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border border-slate-700/30 rounded-2xl p-4">
-        <h3 className="text-sm font-bold text-sky-400 mb-3 flex items-center gap-2">
-          <Clock className="w-4 h-4" /> Previsione per la giornata
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-sky-400 flex items-center gap-2">
+            <Clock className="w-4 h-4" /> Previsione per la giornata
+          </h3>
+          <div className="flex items-center gap-3 text-[10px] text-slate-500">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {today}
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {nowTime}
+            </span>
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs md:text-sm text-slate-300">
             <thead>
@@ -235,9 +304,21 @@ export default function DayInfoPanel({ currentData, dayData, site }: DayInfoPane
 
       {/* 🪂 Interpretazione per attività outdoor / volo libero */}
       <div className="bg-gradient-to-br from-orange-900/20 to-amber-900/10 border border-orange-700/30 rounded-2xl p-4">
-        <h3 className="text-sm font-bold text-orange-400 mb-3 flex items-center gap-2">
-          🪂 Interpretazione per attività outdoor / volo libero
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-orange-400 flex items-center gap-2">
+            🪂 Interpretazione per attività outdoor / volo libero
+          </h3>
+          <div className="flex items-center gap-3 text-[10px] text-slate-500">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {today}
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {nowTime}
+            </span>
+          </div>
+        </div>
         <div className="space-y-2 text-xs md:text-sm text-slate-300 leading-relaxed">
           <p>
             <strong className="text-orange-300">Condizioni</strong>:{" "}
