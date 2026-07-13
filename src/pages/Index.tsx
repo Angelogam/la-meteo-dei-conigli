@@ -24,9 +24,9 @@ import {
   getWindProfile,
   getWindDirection,
   getWeatherIcon,
+  WindLevel,
 } from "@/utils/weatherHelpers";
 import { RefreshCw, Sparkles, CloudSun, AlertTriangle } from "lucide-react";
-import type { WindLevel } from "@/utils/weatherHelpers";
 
 const Page = () => {
   const {
@@ -67,7 +67,7 @@ const Page = () => {
     );
   }, [currentData]);
 
-  const windProfile = useMemo(() => {
+  const windProfile = useMemo((): WindLevel[] => {
     if (!currentData) return [];
     return getWindProfile(currentData.windSpeed, currentData.windDir, currentData.windProfile);
   }, [currentData]);
@@ -212,12 +212,8 @@ const Page = () => {
 
             {/* Last update indicator */}
             <div className="flex items-center justify-between text-[10px] text-slate-600 pt-2 border-t border-slate-700/30">
-              <span>
-                Ultimo aggiornamento: {lastUpdate.toLocaleTimeString("it-IT")}
-              </span>
-              <span>
-                Prossimo aggiornamento tra {countdown} min
-              </span>
+              <span>Ultimo aggiornamento: {lastUpdate.toLocaleTimeString("it-IT")}</span>
+              <span>Prossimo aggiornamento tra {countdown} min</span>
               {updating && (
                 <span className="flex items-center gap-1 text-emerald-400">
                   <RefreshCw className="w-3 h-3 animate-spin" />

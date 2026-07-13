@@ -26,16 +26,9 @@ function getWindDirName(deg: number): string {
   return dirs[Math.round(deg / 45) % 8] || "-";
 }
 
-export default function VentiTab({
-  currentData,
-  dayData,
-  windProfile,
-}: VentiTabProps) {
+export default function VentiTab({ currentData, dayData, windProfile }: VentiTabProps) {
   if (!currentData) return null;
 
-  const hourRange = Array.from({ length: 11 }, (_, i) => i + 9);
-
-  // Normalize wind profile entries so they all have alt/speed/dir/dirName
   const realWindProfile: WindLevel[] = (currentData.windProfile && currentData.windProfile.length > 0
     ? currentData.windProfile
     : windProfile
@@ -50,12 +43,8 @@ export default function VentiTab({
 
   const profileWithAltitudes: WindLevel[] = fixedAltitudes.map((alt) => {
     const matched = realWindProfile.find((l) => l.alt === alt);
-    if (matched) {
-      return matched;
-    }
-    const sorted = [...realWindProfile].sort(
-      (a, b) => Math.abs(a.alt - alt) - Math.abs(b.alt - alt)
-    );
+    if (matched) return matched;
+    const sorted = [...realWindProfile].sort((a, b) => Math.abs(a.alt - alt) - Math.abs(b.alt - alt));
     const nearest = sorted[0];
     if (nearest && Math.abs(nearest.alt - alt) <= 250) {
       return { alt, speed: nearest.speed, dir: nearest.dir, dirName: nearest.dirName };
@@ -105,20 +94,13 @@ export default function VentiTab({
         </h4>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           {windCards.map((w, i) => (
-            <div
-              key={i}
-              className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-3 text-center"
-            >
+            <div key={i} className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-3 text-center">
               <div className="text-[10px] text-slate-400 font-semibold mb-2 uppercase tracking-wider">{w.label}</div>
               <div className="text-xl font-bold text-slate-100 tabular-nums">
                 {getWindArrow(w.dir)} {Math.round(w.speed)}
               </div>
               <div className="text-xs text-slate-400">{getWindDirName(w.dir)}</div>
-              {w.gust && (
-                <div className="text-[10px] text-red-300 mt-1">
-                  Raff. {Math.round(w.gust)}
-                </div>
-              )}
+              {w.gust && <div className="text-[10px] text-red-300 mt-1">Raff. {Math.round(w.gust)}</div>}
             </div>
           ))}
         </div>
@@ -127,38 +109,23 @@ export default function VentiTab({
       <div>
         <h4 className="text-base font-bold text-emerald-300 uppercase tracking-wider mb-4 flex items-center gap-2">
           <TrendingUp className="w-5 h-5" />
-          Profilo vento verticale (dal basso verso l'alto)
+          Profilo vento verticale
         </h4>
         <div className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-4 max-h-96 overflow-y-auto space-y-1">
           {profileWithAltitudes.map((level, idx) => {
             const maxSpeed = Math.max(...profileWithAltitudes.map(l => l.speed || 0), 1);
             const width = maxSpeed > 0 ? Math.min(100, (level.speed / maxSpeed) * 100) : 10;
             const barColor =
-              width < 30
-                ? "bg-emerald-400"
-                : width < 50
-                ? "bg-lime-400"
-                : width < 70
-                ? "bg-amber-400"
-                : width < 90
-                ? "bg-orange-400"
-                : "bg-red-400";
+              width < 30 ? "bg-emerald-400" :
+              width < 50 ? "bg-lime-400" :
+              width < 70 ? "bg-amber-400" :
+              width < 90 ? "bg-orange-400" : "bg-red-400";
             return (
-              <div
-                key={idx}
-                className="grid grid-cols-[70px_1fr_70px] gap-3 items-center py-2"
-              >
-                <span className="text-sm text-slate-300 font-mono tabular-nums font-semibold">
-                  {level.alt}m
-                </span>
+              <div key={idx} className="grid grid-cols-[70px_1fr_70px] gap-3 items-center py-2">
+                <span className="text-sm text-slate-300 font-mono tabular-nums font-semibold">{level.alt}m</span>
                 <div className="h-6 bg-slate-700/60 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full flex items-center justify-end pr-2 ${barColor}`}
-                    style={{ width: `${Math.max(width, 20)}%` }}
-                  >
-                    <span className="text-xs text-white font-bold drop-shadow-md tabular-nums">
-                      {level.speed != null ? Math.round(level.speed) : "—"}
-                    </span>
+                  <div className={`h-full rounded-full flex items-center justify-end pr-2 ${barColor}`} style={{ width: `${Math.max(width, 20)}%` }}>
+                    <span className="text-xs text-white font-bold drop-shadow-md tabular-nums">{level.speed != null ? Math.round(level.speed) : "—"}</span>
                   </div>
                 </div>
                 <span className="text-sm text-slate-300 text-center tabular-nums font-semibold">
