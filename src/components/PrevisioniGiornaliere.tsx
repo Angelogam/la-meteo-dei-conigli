@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import {
   Sun, Moon, CloudSun, Cloud, CloudRain, Snowflake,
   CloudLightning, CloudFog, Thermometer, Wind, Droplets,
-  ArrowUp, CheckCircle, Gauge, Umbrella, Sparkles
+  ArrowUp, CheckCircle, Gauge, Umbrella, Sparkles, ChevronUp
 } from "lucide-react";
 import { degreesToCardinal, windArrow } from "@/utils/windDirections";
 
@@ -18,126 +18,69 @@ interface PrevisioniGiornaliereProps {
   onSelectDay: (day: number) => void;
 }
 
-function getWeatherInfo(code: number | undefined | null, size: number = 32) {
+function getWeatherIcon(code: number | undefined | null, size: number = 40) {
   if (code === undefined || code === null || isNaN(code)) {
-    return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "N/D" };
+    return { icon: <Sun size={size} className="text-amber-300" />, desc: "N/D" };
   }
-  if (code === 0 || code === 1) return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "Sereno" };
-  if (code === 2) return { icon: <CloudSun size={size} className="text-amber-200 drop-shadow-lg" />, desc: "Poco nuvoloso" };
-  if (code === 3) return { icon: <Cloud size={size} className="text-slate-300 drop-shadow-lg" />, desc: "Nuvoloso" };
-  if (code >= 45 && code <= 48) return { icon: <CloudFog size={size} className="text-slate-400 drop-shadow-lg" />, desc: "Nebbia" };
-  if (code >= 51 && code <= 57) return { icon: <CloudRain size={size} className="text-blue-300 drop-shadow-lg" />, desc: "Pioggerella" };
-  if (code >= 61 && code <= 67) return { icon: <CloudRain size={size} className="text-blue-400 drop-shadow-lg" />, desc: "Pioggia" };
-  if (code >= 71 && code <= 77) return { icon: <Snowflake size={size} className="text-blue-200 drop-shadow-lg" />, desc: "Neve" };
-  if (code >= 80 && code <= 84) return { icon: <CloudRain size={size} className="text-blue-300 drop-shadow-lg" />, desc: "Rovesci" };
-  if (code >= 95 && code <= 99) return { icon: <CloudLightning size={size} className="text-yellow-300 drop-shadow-lg" />, desc: "Temporali" };
-  if (code >= 4 && code <= 19) return { icon: <CloudSun size={size} className="text-slate-300 drop-shadow-lg" />, desc: "Nuvoloso" };
-  return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "Sereno" };
+  if (code === 0 || code === 1) return { icon: <Sun size={size} className="text-amber-300" />, desc: "Sereno" };
+  if (code === 2) return { icon: <CloudSun size={size} className="text-amber-200" />, desc: "Poco nuvoloso" };
+  if (code === 3) return { icon: <Cloud size={size} className="text-slate-300" />, desc: "Nuvoloso" };
+  if (code >= 45 && code <= 48) return { icon: <CloudFog size={size} className="text-slate-400" />, desc: "Nebbia" };
+  if (code >= 51 && code <= 57) return { icon: <CloudRain size={size} className="text-blue-300" />, desc: "Pioggerella" };
+  if (code >= 61 && code <= 67) return { icon: <CloudRain size={size} className="text-blue-400" />, desc: "Pioggia" };
+  if (code >= 71 && code <= 77) return { icon: <Snowflake size={size} className="text-sky-200" />, desc: "Neve" };
+  if (code >= 80 && code <= 84) return { icon: <CloudRain size={size} className="text-blue-300" />, desc: "Rovesci" };
+  if (code >= 95 && code <= 99) return { icon: <CloudLightning size={size} className="text-yellow-300" />, desc: "Temporali" };
+  return { icon: <Sun size={size} className="text-amber-300" />, desc: "Sereno" };
 }
 
 function getDominantWeatherCode(hourlyCodes: (number | undefined | null)[]): number {
   const valid = hourlyCodes.filter((c): c is number => c != null && !isNaN(c));
   if (valid.length === 0) return 0;
-
   const freq: Record<number, number> = {};
-  for (const c of valid) {
-    freq[c] = (freq[c] || 0) + 1;
-  }
-  
-  let maxCode = 0;
-  let maxCount = 0;
+  for (const c of valid) freq[c] = (freq[c] || 0) + 1;
+  let maxCode = 0, maxCount = 0;
   for (const [code, count] of Object.entries(freq)) {
-    if (count > maxCount) {
-      maxCount = count;
-      maxCode = parseInt(code);
-    }
+    if (count > maxCount) { maxCount = count; maxCode = parseInt(code); }
   }
-  
   return maxCode;
 }
 
 function formatDate(date: any): string {
   if (!date) return "";
-
-  // Se è un oggetto con date in formato "2025-04-07"
   if (typeof date === 'string' && date.includes('-')) {
     const [y, m, d] = date.split('-');
-    return `${d}/${m}/${y}`;
+    return `${d}/${m}`;
   }
-  
   const d = date instanceof Date ? date : new Date(date);
   if (isNaN(d.getTime())) return String(date);
-  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
-}
-
-function getRischioPioggia(mm: number, hasLatePrecip?: boolean): { label: string; color: string } {
-  if (hasLatePrecip) return { label: "Probabile in serata", color: "text-amber-400" };
-  if (mm === 0) return { label: "Assente", color: "text-emerald-300" };
-  if (mm < 0.3) return { label: "Debole", color: "text-amber-300" };
-  if (mm < 1) return { label: "Moderato", color: "text-orange-400" };
-  if (mm < 3) return { label: "Alto", color: "text-red-400" };
-  return { label: "Probabile", color: "text-red-500" };
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
 export default function PrevisioniGiornaliere({
-  enrichedDaily,
-  dateLabels,
-  currentData,
-  dayData,
-  site,
-  selectedDay,
-  onSelectDay,
+  enrichedDaily, dateLabels, currentData, dayData, site,
+  selectedDay, onSelectDay,
 }: PrevisioniGiornaliereProps) {
-
-  // DEBUG: stampa i dati ricevuti
-  console.log("=== PREVISIONI GIORNALIERE ===");
-  console.log("enrichedDaily:", enrichedDaily);
-  console.log("dayData:", dayData);
-  if (dayData && dayData.length > 0) {
-    console.log("PRIME 5 ORE dayData:");
-    dayData.slice(0, 5).forEach(h => {
-      console.log({
-        time: new Date(h.time).toLocaleString('it-IT'),
-        weatherCode: h.weatherCode,
-        precip: h.precipitation,
-      });
-    });
-    console.log("TUTTI weatherCode dayData:", dayData.map(h => h.weatherCode));
-    console.log("TUTTE precip dayData:", dayData.map(h => h.precipitation));
-  }
 
   const dominanteCodice = useMemo(() => {
     if (!dayData || dayData.length === 0) return 0;
-    const codici = dayData.map((h: any) => h.weatherCode);
-    console.log("dominanteCodice - codici input:", codici);
-    const result = getDominantWeatherCode(codici);
-    console.log("dominanteCodice - risultato:", result);
-    return result;
+    return getDominantWeatherCode(dayData.map((h: any) => h.weatherCode));
   }, [dayData]);
 
-  // Pioggia TOTALE reale
   const precipTotaleReale = useMemo(() => {
     if (!dayData || dayData.length === 0) return 0;
-    const total = dayData.reduce((sum: number, h: any) => sum + (h.precipitation || 0), 0);
-    console.log("precipTotaleReale:", total);
-    return Math.round(total * 10) / 10;
+    return Math.round(dayData.reduce((s: number, h: any) => s + (h.precipitation || 0), 0) * 10) / 10;
   }, [dayData]);
 
-  // Check se c'è pioggia solo nelle ore serali (18+)
+  const weatherIcon = getWeatherIcon(dominanteCodice, 52);
+
   const hasLatePrecip = useMemo(() => {
     if (!dayData || dayData.length === 0) return false;
-    const evening = dayData.filter((h: any) => {
-      const hh = new Date(h.time).getHours();
-      return hh >= 18 && hh <= 23;
-    });
-    const eveningPrecip = evening.reduce((s: number, h: any) => s + (h.precipitation || 0), 0);
-    const morning = dayData.filter((h: any) => {
-      const hh = new Date(h.time).getHours();
-      return hh >= 6 && hh <= 17;
-    });
-    const morningPrecip = morning.reduce((s: number, h: any) => s + (h.precipitation || 0), 0);
-    console.log("hasLatePrecip - mattina:", morningPrecip, "sera:", eveningPrecip);
-    return eveningPrecip > 0.1 && morningPrecip === 0;
+    const evening = dayData.filter((h: any) => { const hh = new Date(h.time).getHours(); return hh >= 18; });
+    const morning = dayData.filter((h: any) => { const hh = new Date(h.time).getHours(); return hh >= 6 && hh <= 17; });
+    const ePrecip = evening.reduce((s: number, h: any) => s + (h.precipitation || 0), 0);
+    const mPrecip = morning.reduce((s: number, h: any) => s + (h.precipitation || 0), 0);
+    return ePrecip > 0.1 && mPrecip === 0;
   }, [dayData]);
 
   const dailyWeatherCodes = useMemo(() => {
@@ -146,57 +89,34 @@ export default function PrevisioniGiornaliere({
       const d = typeof day.date === 'string' ? day.date : (day.date instanceof Date ? day.date : new Date(day.date));
       const hours = dayData?.filter((h: any) => {
         const t = new Date(h.time);
-        if (typeof d === 'string') {
-          const dateStr = d.split('T')[0];
-          const hourDateStr = t.toISOString().split('T')[0];
-          return hourDateStr === dateStr;
-        }
-        return t.getFullYear() === d.getFullYear() &&
-               t.getMonth() === d.getMonth() &&
-               t.getDate() === d.getDate();
+        if (typeof d === 'string') return t.toISOString().split('T')[0] === d.split('T')[0];
+        return t.getFullYear() === d.getFullYear() && t.getMonth() === d.getMonth() && t.getDate() === d.getDate();
       }) || [];
-      const codici = hours.map((h: any) => h.weatherCode);
-      return getDominantWeatherCode(codici);
+      return getDominantWeatherCode(hours.map((h: any) => h.weatherCode));
     });
   }, [enrichedDaily, dayData]);
 
   const dailyPrecipTotals = useMemo(() => {
     return enrichedDaily.map((day: any, idx: number) => {
-      if (!day?.date) return 0;
       if (idx === selectedDay && precipTotaleReale > 0) return precipTotaleReale;
       return Math.round(day.precipSum * 10) / 10;
     });
   }, [enrichedDaily, selectedDay, precipTotaleReale]);
 
   const dailyLatePrecip = useMemo(() => {
-    return enrichedDaily.map((day: any, idx: number) => {
-      if (idx === selectedDay) return hasLatePrecip;
-      return false;
-    });
+    return enrichedDaily.map((day: any, idx: number) => idx === selectedDay ? hasLatePrecip : false);
   }, [enrichedDaily, selectedDay, hasLatePrecip]);
 
   const fasce = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
-
-    const mattina = dayData.filter((h: any) => {
-      const hh = new Date(h.time).getHours();
-      return hh >= 6 && hh <= 11;
+    const filtra = (min: number, max: number) => dayData.filter((h: any) => {
+      const hh = new Date(h.time).getHours(); return hh >= min && hh <= max;
     });
-    const pomeriggio = dayData.filter((h: any) => {
-      const hh = new Date(h.time).getHours();
-      return hh >= 12 && hh <= 17;
-    });
-    const sera = dayData.filter((h: any) => {
-      const hh = new Date(h.time).getHours();
-      return hh >= 18 && hh <= 23;
-    });
-
-    const calcola = (ore: any[], label: string, icon: React.ReactNode, borderColor: string) => {
+    const media = (arr: number[]) => arr.filter(v => v != null).reduce((s: number, v: number) => s + v, 0) / Math.max(1, arr.filter(v => v != null).length);
+    const max = (arr: number[]) => Math.max(...arr.filter(v => v != null), 0);
+    
+    const calcola = (ore: any[], label: string, borderColor: string) => {
       if (!ore.length) return null;
-
-      const media = (arr: number[]) => arr.filter(v => v != null).reduce((s: number, v: number) => s + v, 0) / Math.max(1, arr.filter(v => v != null).length);
-      const max = (arr: number[]) => Math.max(...arr.filter(v => v != null), 0);
-
       const tempMedia = Math.round(media(ore.map((h: any) => h.temperature)));
       const tempMax = Math.round(max(ore.map((h: any) => h.temperature)));
       const windMedia = Math.round(media(ore.map((h: any) => h.windSpeed)));
@@ -205,89 +125,49 @@ export default function PrevisioniGiornaliere({
       const cloudMedia = Math.round(media(ore.map((h: any) => h.cloudCover)));
       const precipTot = Math.round(ore.reduce((s: number, h: any) => s + (h.precipitation || 0), 0) * 10) / 10;
       const humMedia = Math.round(media(ore.map((h: any) => h.humidity)));
-      const pressMedia = Math.round(media(ore.map((h: any) => h.pressure || 1013)));
+      const weatherCodes = ore.map((h: any) => h.weatherCode).filter((c: any) => c != null && !isNaN(c));
+      const weatherCode = weatherCodes.length > 0 ? getDominantWeatherCode(weatherCodes) : 0;
+      const wi = getWeatherIcon(weatherCode, 24);
       
       const dewMedia = media(ore.map((h: any) => h.dewPoint || h.temperature - (100 - h.humidity) / 5));
       const spread = Math.max(0, tempMedia - dewMedia);
       const lcl = Math.max(200, Math.min(3000, Math.round(spread * 125)));
-
-      let salita = 0;
-      const ore10_15 = ore.filter((h: any) => { 
-        const hh = new Date(h.time).getHours(); 
-        return hh >= 10 && hh <= 15; 
-      });
       
+      const ore10_15 = ore.filter((h: any) => { const hh = new Date(h.time).getHours(); return hh >= 10 && hh <= 15; });
+      let salita = 0;
       if (ore10_15.length > 0) {
-        const t80mValues = ore10_15.map((h: any) => h.temp80m).filter((v: any) => v != null);
-        const t120mValues = ore10_15.map((h: any) => h.temp120m).filter((v: any) => v != null);
-        
-        if (t80mValues.length > 0) {
-          const t80mMedia = media(t80mValues);
-          const t2mMedia = media(ore10_15.map((h: any) => h.temperature));
-          const gradienteReale = (t2mMedia - t80mMedia) / 0.78;
-          salita = Math.max(0, Math.min(8, (gradienteReale - 0.5) * 3.5));
-        } else if (t120mValues.length > 0) {
-          const t120mMedia = media(t120mValues);
-          const t2mMedia = media(ore10_15.map((h: any) => h.temperature));
-          const gradienteReale = (t2mMedia - t120mMedia) / 1.18;
-          salita = Math.max(0, Math.min(8, (gradienteReale - 0.5) * 3.5));
+        const t80m = ore10_15.map((h: any) => h.temp80m).filter((v: any) => v != null);
+        const t120m = ore10_15.map((h: any) => h.temp120m).filter((v: any) => v != null);
+        if (t80m.length > 0) {
+          const gradiente = (media(ore10_15.map((h: any) => h.temperature)) - media(t80m)) / 0.78;
+          salita = Math.max(0, Math.min(8, (gradiente - 0.5) * 3.5));
+        } else if (t120m.length > 0) {
+          const gradiente = (media(ore10_15.map((h: any) => h.temperature)) - media(t120m)) / 1.18;
+          salita = Math.max(0, Math.min(8, (gradiente - 0.5) * 3.5));
         }
       }
-
       if (salita === 0) {
         const delta = tempMedia - dewMedia;
-        const salitaBase = delta * 0.1;
-        const bonusVento = windMedia >= 5 && windMedia <= 18 ? 1.2 : 0;
-        const malusVento = windMedia > 25 ? -1 : 0;
-        const bonusNuvole = cloudMedia >= 10 && cloudMedia <= 45 ? 0.8 : 0;
-        const malusPioggia = precipTot > 0.5 ? -3 : 0;
-        const bonusOrario = label === "Pomeriggio" ? 0.5 : label === "Mattina" ? 0.3 : 0;
-        salita = Math.max(0, salitaBase + bonusVento + malusVento + bonusNuvole + malusPioggia + bonusOrario);
+        salita = Math.max(0, Math.min(8, delta * 0.1 + (windMedia >= 5 && windMedia <= 18 ? 1.2 : 0) + (cloudMedia >= 10 && cloudMedia <= 45 ? 0.8 : 0) + (precipTot > 0.5 ? -3 : 0) + (label === "Pomeriggio" ? 0.5 : 0)));
       }
-
       salita = Math.round(salita * 10) / 10;
-      const top = Math.min(5000, lcl + Math.round(salita * 350));
-
-      let termicheLabel = "Assenti ❌";
-      let termicheColore = "text-slate-400";
-      if (salita >= 4) { termicheLabel = "Forti 🔥"; termicheColore = "text-red-400"; }
-      else if (salita >= 3) { termicheLabel = "Buone 🪂"; termicheColore = "text-orange-400"; }
-      else if (salita >= 2) { termicheLabel = "Moderate 👍"; termicheColore = "text-amber-400"; }
-      else if (salita >= 1) { termicheLabel = "Deboli 👎"; termicheColore = "text-amber-300"; }
-      else if (salita >= 0.3) { termicheLabel = "M. deboli ☁️"; termicheColore = "text-yellow-300"; }
-
-      let score = 5;
-      if (windMedia >= 5 && windMedia <= 18) score += 2;
-      else if (windMedia > 25) score -= 2;
-      else score -= 1;
       
-      if (precipTot < 0.1) score += 2;
-      else if (precipTot < 0.5) score += 1;
-      else score -= 3;
+      let termicheLabel = "Assenti", termicheColore = "text-slate-400";
+      if (salita >= 4) { termicheLabel = "Forti"; termicheColore = "text-red-400"; }
+      else if (salita >= 3) { termicheLabel = "Buone"; termicheColore = "text-orange-400"; }
+      else if (salita >= 2) { termicheLabel = "Moderate"; termicheColore = "text-amber-400"; }
+      else if (salita >= 1) { termicheLabel = "Deboli"; termicheColore = "text-amber-300"; }
       
-      if (cloudMedia >= 10 && cloudMedia <= 60) score += 1.5;
-      if (salita >= 2) score += 2;
-      else if (salita >= 1) score += 1;
-      if (windMax > 30) score -= 2;
+      const dirCardinal = degreesToCardinal(windDirMedia);
+      const dirArrow = windArrow(windDirMedia);
       
-      score = Math.max(0, Math.min(10, Math.round(score)));
-
-      const weatherCodes = ore.map((h: any) => h.weatherCode).filter((c: any) => c != null && !isNaN(c));
-      const weatherCode = weatherCodes.length > 0 ? getDominantWeatherCode(weatherCodes) : 0;
-      const weatherInfo = getWeatherInfo(weatherCode, 18);
-
-      return {
-        label, icon: weatherInfo.icon, borderColor, weatherDesc: weatherInfo.desc,
-        tempMedia, tempMax, windMedia, windMax, windDirMedia,
-        cloudMedia, precipTot, humMedia, pressMedia,
-        lcl, salita, top, termicheLabel, termicheColore, score, nOre: ore.length,
-      };
+      return { label, tempMedia, tempMax, windMedia, windMax, windDirMedia, cloudMedia, precipTot, humMedia, lcl, salita, top: Math.min(5000, lcl + Math.round(salita * 350)), termicheLabel, termicheColore, weatherIcon: wi, dirCardinal, dirArrow, borderColor };
     };
-
+    
     return [
-      calcola(mattina, "Mattina", <Sun className="w-5 h-5 text-amber-300" />, "border-amber-500/30"),
-      calcola(pomeriggio, "Pomeriggio", <CloudSun className="w-5 h-5 text-yellow-300" />, "border-sky-500/30"),
-      calcola(sera, "Sera", <Moon className="w-5 h-5 text-indigo-300" />, "border-indigo-500/30"),
+      calcola(filtra(6, 11), "Mattina", "border-amber-500/30"),
+      calcola(filtra(12, 17), "Pomeriggio", "border-sky-500/30"),
+      calcola(filtra(18, 23), "Sera", "border-indigo-500/30"),
     ].filter(Boolean);
   }, [dayData]);
 
@@ -297,87 +177,61 @@ export default function PrevisioniGiornaliere({
 
   return (
     <div className="space-y-4">
-      {/* SELEZIONE GIORNI */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* SELEZIONE GIORNI - più compatta con icone enormi */}
+      <div className="grid grid-cols-1 gap-3">
         {enrichedDaily.slice(0, 3).map((day: any, idx: number) => {
           const isActive = idx === selectedDay;
           const dateStr = formatDate(day.date);
-          
-          const weatherCode = dailyWeatherCodes[idx] ?? dominanteCodice ?? 0;
-          const weatherInfo = getWeatherInfo(weatherCode, 36);
-          const condizioni = weatherInfo.desc;
-          
-          const precipGiorno = dailyPrecipTotals[idx] ?? day.precipSum ?? 0;
-          const latePrecip = dailyLatePrecip[idx] ?? false;
-          const rischio = getRischioPioggia(precipGiorno, latePrecip);
-          
+          const wc = dailyWeatherCodes[idx] ?? dominanteCodice ?? 0;
+          const wi = getWeatherIcon(wc, 56);
+          const pg = dailyPrecipTotals[idx] ?? day.precipSum ?? 0;
+          const lp = dailyLatePrecip[idx] ?? false;
           const tempMedia = Math.round((day.tempMin + day.tempMax) / 2);
-
+          
+          const windDesc = `${Math.round(day.avgWind || 0)} km/h ` + degreesToCardinal(day.avgWindDir || 0);
+          
           return (
-            <button
-              key={idx}
-              onClick={() => onSelectDay(idx)}
-              className={`relative overflow-hidden rounded-2xl p-4 border-2 transition-all duration-300 text-left ${
-                isActive
-                  ? "border-emerald-400/60 bg-gradient-to-br from-emerald-900/40 to-slate-800/60 shadow-lg shadow-emerald-500/20"
-                  : "border-slate-700/50 bg-slate-800/30 hover:border-slate-600/60 hover:bg-slate-800/50"
+            <button key={idx} onClick={() => onSelectDay(idx)}
+              className={`relative rounded-2xl p-4 border-2 transition-all duration-300 text-left ${
+                isActive ? "border-emerald-400/60 bg-gradient-to-br from-emerald-900/40 to-slate-800/60 shadow-lg shadow-emerald-500/20" : "border-slate-700/50 bg-slate-800/30 hover:border-slate-600/60"
               }`}
             >
-              {isActive && (
-                <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              )}
-
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-                  {idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani"}
-                </span>
-                <span className="text-[11px] text-slate-500">{dateStr}</span>
-              </div>
-
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  {weatherInfo.icon}
+              {isActive && <div className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />}
+              
+              {/* RIGA SUPERIORE: icona enorme + nome giorno */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="-ml-1">{wi.icon}</div>
                   <div>
-                    <div className="text-sm font-medium text-slate-300">{condizioni}</div>
-                    <div className="text-xs text-slate-500">
-                      {precipGiorno > 0 ? `${precipGiorno.toFixed(1)} mm` : "0 mm"}
+                    <div className="text-lg font-bold text-white">
+                      {idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani"}
                     </div>
+                    <div className="text-sm text-slate-400">{dateStr}</div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-white">{Math.round(day.tempMax)}°</div>
-                  <div className="text-xs text-slate-500">min {Math.round(day.tempMin)}°</div>
+                  <div className="text-3xl font-bold text-white">{Math.round(day.tempMax)}°</div>
+                  <div className="text-xs text-slate-400">min {Math.round(day.tempMin)}°</div>
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center gap-2 bg-slate-900/60 rounded-xl px-3 py-2">
-                  <Wind className="w-4 h-4 text-sky-400 shrink-0" />
-                  <div>
-                    <div className="text-xs text-slate-400">Vento</div>
-                    <div className="text-sm font-bold text-sky-300">{Math.round(day.avgWind || 0)} km/h</div>
-                  </div>
+              
+              {/* RIGA METADATI: compatta, 4 colonne */}
+              <div className="grid grid-cols-4 gap-2 mt-3">
+                <div className="bg-slate-900/60 rounded-xl px-3 py-2 text-center">
+                  <Wind className="w-5 h-5 text-sky-400 mx-auto mb-0.5" />
+                  <div className="text-xs font-bold text-sky-300">{Math.round(day.avgWind || 0)} <span className="text-[10px] text-slate-500">km/h</span></div>
                 </div>
-                <div className="flex items-center gap-2 bg-slate-900/60 rounded-xl px-3 py-2">
-                  <Cloud className="w-4 h-4 text-slate-400 shrink-0" />
-                  <div>
-                    <div className="text-xs text-slate-400">Nuvole</div>
-                    <div className="text-sm font-bold text-slate-200">{Math.round(day.avgCloud || 0)}%</div>
-                  </div>
+                <div className="bg-slate-900/60 rounded-xl px-3 py-2 text-center">
+                  <Droplets className="w-5 h-5 text-blue-400 mx-auto mb-0.5" />
+                  <div className="text-xs font-bold text-blue-300">{Math.round(day.avgHum || 0)}%</div>
                 </div>
-                <div className="flex items-center gap-2 bg-slate-900/60 rounded-xl px-3 py-2">
-                  <Umbrella className="w-4 h-4 text-blue-400 shrink-0" />
-                  <div>
-                    <div className="text-xs text-slate-400">Pioggia</div>
-                    <div className={`text-sm font-bold text-amber-400`}>{"Probabile in serata"}</div>
-                  </div>
+                <div className="bg-slate-900/60 rounded-xl px-3 py-2 text-center">
+                  <Cloud className="w-5 h-5 text-slate-400 mx-auto mb-0.5" />
+                  <div className="text-xs font-bold text-slate-200">{Math.round(day.avgCloud || 0)}%</div>
                 </div>
-                <div className="flex items-center gap-2 bg-slate-900/60 rounded-xl px-3 py-2">
-                  <Thermometer className="w-4 h-4 text-orange-400 shrink-0" />
-                  <div>
-                    <div className="text-xs text-slate-400">Media</div>
-                    <div className="text-sm font-bold text-orange-300">{tempMedia}°C</div>
-                  </div>
+                <div className="bg-slate-900/60 rounded-xl px-3 py-2 text-center">
+                  <Umbrella className="w-5 h-5 text-amber-400 mx-auto mb-0.5" />
+                  <div className="text-xs font-bold text-amber-300">{lp ? "Serata" : pg > 0 ? `${pg}mm` : "No"}</div>
                 </div>
               </div>
             </button>
@@ -385,81 +239,81 @@ export default function PrevisioniGiornaliere({
         })}
       </div>
 
-      {/* FASCE ORARIE */}
+      {/* FASCE ORARIE - font grandi, frecce vento enormi */}
       {fasce && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {fasce.map((fascia: any, idx: number) => {
             if (!fascia) return null;
-
-            const scoreColor = fascia.score >= 7
-              ? "bg-emerald-500/20 border-emerald-400/30 text-emerald-300"
-              : fascia.score >= 4
-              ? "bg-amber-500/20 border-amber-400/30 text-amber-300"
-              : "bg-red-500/20 border-red-400/30 text-red-300";
-
-            const dirCardinal = degreesToCardinal(fascia.windDirMedia);
-            const dirArrow = windArrow(fascia.windDirMedia);
-
             return (
-              <div key={idx} className={`rounded-xl p-3 border-2 ${fascia.borderColor} bg-slate-800/40`}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5">
-                    {fascia.icon}
-                    <span className="text-xs font-bold text-white">{fascia.label}</span>
-                    <span className="text-[10px] text-slate-400">({fascia.weatherDesc})</span>
+              <div key={idx} className={`rounded-2xl p-4 border-2 ${fascia.borderColor} bg-slate-800/40`}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    {fascia.weatherIcon.icon}
+                    <div>
+                      <div className="text-lg font-bold text-white">{fascia.label}</div>
+                      <div className="text-xs text-slate-400">{fascia.weatherIcon.desc}</div>
+                    </div>
                   </div>
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${scoreColor}`}>
-                    {fascia.score}/10
-                  </span>
+                  <div className="text-2xl font-bold text-amber-300">{fascia.tempMedia}°</div>
                 </div>
 
-                <div className="text-2xl font-bold text-amber-300 mb-2">
-                  {fascia.tempMedia}°C <span className="text-xs text-slate-400 font-normal">max {fascia.tempMax}°</span>
-                </div>
-
-                <div className="bg-slate-900/60 rounded-lg p-2 mb-2">
-                  <div className="flex items-center gap-1 text-xs mb-1">
-                    <Wind className="w-3 h-3 text-sky-400" />
-                    <span className="text-sky-300 font-bold">{fascia.windMedia} km/h</span>
-                    <span className="text-slate-500">(raffiche {fascia.windMax})</span>
-                  </div>
-                  <div className="text-[10px] text-slate-400">
-                    Direzione: {dirArrow} {dirCardinal} ({fascia.windDirMedia}°)
-                  </div>
-                </div>
-
-                <div className="bg-slate-900/60 rounded-lg p-2 mb-2">
-                  <div className="flex items-center gap-1 text-xs mb-1">
-                    <ArrowUp className="w-3 h-3 text-orange-400" />
-                    <span className={fascia.termicheColore + " font-bold"}>{fascia.termicheLabel}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-1 text-[10px] text-slate-400">
-                    <span>Salita: <span className="text-emerald-300 font-bold">{fascia.salita.toFixed(1)} m/s</span></span>
-                    <span>Base: <span className="text-green-300 font-bold">{fascia.lcl} m</span></span>
-                    <span>Top: <span className="text-red-300 font-bold">{fascia.top} m</span></span>
-                    <span>Spessore: <span className="text-amber-300 font-bold">{fascia.top - fascia.lcl} m</span></span>
+                {/* VENTO con freccia grande */}
+                <div className="bg-slate-900/60 rounded-xl p-3 mb-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Wind className="w-6 h-6 text-sky-400" />
+                      <div>
+                        <div className="text-lg font-bold text-sky-300">{fascia.windMedia} <span className="text-xs text-slate-400">km/h</span></div>
+                        <div className="text-xs text-slate-400">Raffiche {fascia.windMax}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-slate-200">{fascia.dirArrow}</div>
+                      <div className="text-xs text-slate-400">{fascia.dirCardinal} ({fascia.windDirMedia}°)</div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-1">
-                  <div className="bg-slate-900/50 rounded px-2 py-1 flex items-center justify-between">
-                    <Cloud className="w-3 h-3 text-slate-400" />
-                    <span className="text-xs font-bold text-slate-300">{fascia.cloudMedia}%</span>
+                {/* TERMICHE */}
+                <div className="bg-slate-900/60 rounded-xl p-3 mb-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <ChevronUp className={`w-5 h-5 ${fascia.termicheColore}`} />
+                    <span className={`text-sm font-bold ${fascia.termicheColore}`}>{fascia.termicheLabel}</span>
+                    <span className="text-sm font-bold text-emerald-300 ml-auto">{fascia.salita.toFixed(1)} m/s</span>
                   </div>
-                  <div className="bg-slate-900/50 rounded px-2 py-1 flex items-center justify-between">
-                    <Droplets className="w-3 h-3 text-blue-400" />
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="bg-slate-950/40 rounded-lg p-1.5 text-center">
+                      <span className="text-slate-500">Base</span><br />
+                      <span className="text-green-300 font-bold text-sm">{fascia.lcl}m</span>
+                    </div>
+                    <div className="bg-slate-950/40 rounded-lg p-1.5 text-center">
+                      <span className="text-slate-500">Top</span><br />
+                      <span className="text-red-300 font-bold text-sm">{fascia.top}m</span>
+                    </div>
+                    <div className="bg-slate-950/40 rounded-lg p-1.5 text-center">
+                      <span className="text-slate-500">Spess.</span><br />
+                      <span className="text-amber-300 font-bold text-sm">{fascia.top - fascia.lcl}m</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGA dati extra - compatta */}
+                <div className="grid grid-cols-4 gap-1.5">
+                  <div className="bg-slate-900/50 rounded-lg p-1.5 text-center">
+                    <Cloud className="w-4 h-4 text-slate-400 mx-auto" />
+                    <span className="text-xs font-bold text-slate-200">{fascia.cloudMedia}%</span>
+                  </div>
+                  <div className="bg-slate-900/50 rounded-lg p-1.5 text-center">
+                    <Droplets className="w-4 h-4 text-blue-400 mx-auto" />
                     <span className="text-xs font-bold text-blue-300">{fascia.humMedia}%</span>
                   </div>
-                  <div className="bg-slate-900/50 rounded px-2 py-1 flex items-center justify-between">
-                    <Gauge className="w-3 h-3 text-purple-400" />
-                    <span className="text-xs font-bold text-purple-300">{fascia.pressMedia} hPa</span>
+                  <div className="bg-slate-900/50 rounded-lg p-1.5 text-center">
+                    <Gauge className="w-4 h-4 text-purple-400 mx-auto" />
+                    <span className="text-xs font-bold text-purple-300">{fascia.precipTot === 0 ? "Secco" : `${fascia.precipTot}mm`}</span>
                   </div>
-                  <div className="bg-slate-900/50 rounded px-2 py-1 flex items-center justify-between">
-                    {fascia.precipTot === 0
-                      ? <CheckCircle className="w-3 h-3 text-green-400" />
-                      : <Umbrella className="w-3 h-3 text-blue-400" />
-                    }
-                    <span className="text-xs font-bold">{fascia.precipTot === 0 ? "Secco" : `${fascia.precipTot}mm`}</span>
+                  <div className="bg-slate-900/50 rounded-lg p-1.5 text-center">
+                    <Thermometer className="w-4 h-4 text-orange-400 mx-auto" />
+                    <span className="text-xs font-bold text-orange-300">{fascia.tempMax}°</span>
                   </div>
                 </div>
               </div>
