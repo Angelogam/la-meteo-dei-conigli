@@ -19,6 +19,16 @@ export interface HourData {
   isDay: boolean;
   /** Dati di vento in quota a diverse altitudini (m AGL) */
   windProfile?: WindLevel[];
+  /** Campi extra per calcoli termici e vento in quota */
+  wind80m?: number | null;
+  windDir80m?: number | null;
+  wind120m?: number | null;
+  windDir120m?: number | null;
+  wind180m?: number | null;
+  windDir180m?: number | null;
+  temp80m?: number | null;
+  temp120m?: number | null;
+  visibility?: number | null;
 }
 
 export interface DailyData {
