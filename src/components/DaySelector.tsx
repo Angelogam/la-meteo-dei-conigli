@@ -7,6 +7,15 @@ import {
   CloudRain,
   Droplets,
   Sparkles,
+  Sun,
+  CloudSun,
+  Cloud,
+  CloudFog,
+  CloudDrizzle,
+  CloudSnow,
+  CloudLightning,
+  CloudMoon,
+  Moon,
 } from "lucide-react";
 
 interface DaySelectorProps {
@@ -28,6 +37,7 @@ export default function DaySelector({
     <div className="grid grid-cols-3 gap-2.5 mb-4">
       {enrichedDaily.map((day: any, idx: number) => {
         const isActive = idx === selectedDay;
+        const icon = getWeatherIcon(day.weatherCode || 0);
         return (
           <button
             key={idx}
@@ -47,8 +57,8 @@ export default function DaySelector({
                 <Sparkles className="w-3 h-3 text-orange-400 animate-twinkle" />
               )}
             </div>
-            <div className="text-2xl mb-2 animate-float-slow" style={{ animationDelay: `${idx * 0.2}s` }}>
-              {getEmoji(day.weatherCode || 0)}
+            <div className="text-2xl mb-2 flex items-center justify-center animate-float-slow" style={{ animationDelay: `${idx * 0.2}s` }}>
+              {icon}
             </div>
             <div className="text-sm font-bold text-slate-100 tabular-nums">
               {Math.round(day.tempMax)}° / {Math.round(day.tempMin)}°
@@ -72,29 +82,105 @@ export default function DaySelector({
   );
 }
 
-function getEmoji(code: number): string {
+function getWeatherIcon(code: number): React.ReactNode {
+  const sunClass = "text-amber-300 drop-shadow-lg";
+  const cloudClass = "text-slate-400 drop-shadow-md";
+  const darkCloudClass = "text-slate-500 drop-shadow-lg";
+  const rainClass = "text-blue-400 drop-shadow-md";
+  const snowClass = "text-blue-200 drop-shadow-md";
+
   switch (true) {
-    case code === 0:
-      return "☀️";
-    case code <= 2:
-      return "⛅";
-    case code === 3:
-      return "☁️☀️";  // molto nuvoloso con squarci di sole
-    case code <= 30:
-      return "🌫️";  // foschia/nebbia leggera
-    case code <= 48:
-      return "🌁";  // nebbia fitta
-    case code <= 57:
-      return "☁️🌦️";  // nuvoloso con pioviggine
-    case code <= 67:
-      return "☁️☁️🌧️";  // coperto con pioggia
-    case code <= 77:
-      return "☁️🌨️";  // coperto con neve
-    case code <= 82:
-      return "🌧️";  // pioggia forte
-    case code <= 86:
-      return "🌧️🌨️";  // rovesci misti
-    default:
-      return "⛈️";  // temporali
+    case code === 0: // sereno
+      return (
+        <div className="relative flex items-center justify-center w-10 h-10">
+          <Sun className={`w-9 h-9 ${sunClass} animate-pulse`} />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-amber-300/10 blur-sm animate-ping absolute" />
+          </div>
+        </div>
+      );
+
+    case code <= 2: // poco nuvoloso
+      return (
+        <div className="relative flex items-center justify-center w-10 h-10">
+          <Cloud className={`w-8 h-8 ${cloudClass}`} />
+          <Sun className={`w-6 h-6 ${sunClass} absolute -top-1 -right-1`} />
+        </div>
+      );
+
+    case code === 3: // molto nuvoloso
+      return (
+        <div className="relative flex items-center justify-center w-10 h-10">
+          <Cloud className={`w-9 h-9 ${darkCloudClass}`} />
+          <Cloud className={`w-6 h-6 ${cloudClass} absolute -bottom-1 -left-1`} />
+        </div>
+      );
+
+    case code <= 30: // foschia
+      return (
+        <div className="relative flex items-center justify-center w-10 h-10">
+          <CloudFog className={`w-9 h-9 text-slate-400 drop-shadow-md`} />
+        </div>
+      );
+
+    case code <= 48: // nebbia
+      return (
+        <div className="relative flex items-center justify-center w-10 h-10">
+          <CloudFog className={`w-9 h-9 text-slate-500 drop-shadow-lg`} />
+          <CloudFog className={`w-7 h-7 text-slate-400 absolute -bottom-1 opacity-60`} />
+        </div>
+      );
+
+    case code <= 57: // pioviggine
+      return (
+        <div className="relative flex items-center justify-center w-10 h-10">
+          <Cloud className={`w-9 h-9 ${darkCloudClass}`} />
+          <CloudDrizzle className={`w-5 h-5 ${rainClass} absolute bottom-0`} />
+        </div>
+      );
+
+    case code <= 67: // pioggia coperta
+      return (
+        <div className="relative flex items-center justify-center w-10 h-10">
+          <Cloud className={`w-9 h-9 text-slate-600 drop-shadow-xl`} />
+          <CloudRain className={`w-6 h-6 ${rainClass} absolute bottom-0`} />
+        </div>
+      );
+
+    case code <= 77: // neve
+      return (
+        <div className="relative flex items-center justify-center w-10 h-10">
+          <Cloud className={`w-9 h-9 text-slate-600 drop-shadow-xl`} />
+          <CloudSnow className={`w-5 h-5 ${snowClass} absolute bottom-0`} />
+        </div>
+      );
+
+    case code <= 82: // pioggia forte
+      return (
+        <div className="relative flex items-center justify-center w-10 h-10">
+          <Cloud className={`w-9 h-9 text-slate-700 drop-shadow-xl`} />
+          <CloudRain className={`w-7 h-7 text-blue-500 drop-shadow-md absolute bottom-0`} />
+        </div>
+      );
+
+    case code <= 86: // rovesci misti
+      return (
+        <div className="relative flex items-center justify-center w-10 h-10">
+          <Cloud className={`w-9 h-9 text-slate-600 drop-shadow-xl`} />
+          <div className="absolute bottom-0 flex gap-1">
+            <CloudRain className={`w-4 h-4 text-blue-500`} />
+            <CloudSnow className={`w-4 h-4 text-blue-200`} />
+          </div>
+        </div>
+      );
+
+    default: // temporali
+      return (
+        <div className="relative flex items-center justify-center w-10 h-10">
+          <Cloud className={`w-9 h-9 text-slate-700 drop-shadow-xl`} />
+          <CloudLightning className={`w-6 h-6 text-purple-400 drop-shadow-md absolute bottom-0 animate-pulse`} />
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400/40 rounded-full blur-sm animate-ping" />
+        </div>
+      );
   }
 }
