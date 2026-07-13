@@ -18,17 +18,12 @@ const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour, onHourSelect 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-3">
       <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl border border-slate-600 shadow-2xl w-full max-w-xl max-h-[85vh] flex flex-col">
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-600">
-          <h3 className="text-sm font-bold text-white">
-            Dettaglio orario · {dayLabel}
-          </h3>
+          <h3 className="text-sm font-bold text-white">Dettaglio orario · {dayLabel}</h3>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-700 border border-slate-500">
             <X className="w-4 h-4 text-slate-300" />
           </button>
         </div>
-
-        {/* Griglia ore */}
         <div className="overflow-y-auto p-3 space-y-1.5">
           {data.map((h) => {
             const volo = getVoloStatus(h);
@@ -37,26 +32,14 @@ const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour, onHourSelect 
               <button
                 key={h.time.getHours()}
                 onClick={() => onHourSelect(h.time.getHours())}
-                className={`
-                  w-full flex items-center gap-2 rounded-xl px-3 py-2.5 transition-all duration-150 border text-left
-                  ${
-                    isSelected
-                      ? "bg-slate-700 border-slate-400 shadow-md"
-                      : "bg-slate-800/60 border-slate-600/50 hover:bg-slate-700 hover:border-slate-500"
-                  }
-                `}
+                className={`w-full flex items-center gap-2 rounded-xl px-3 py-2.5 transition-all duration-150 border text-left ${
+                  isSelected ? "bg-slate-700 border-slate-400 shadow-md" : "bg-slate-800/60 border-slate-600/50 hover:bg-slate-700 hover:border-slate-500"
+                }`}
               >
-                {/* Ora */}
                 <div className="w-10 shrink-0 text-center">
-                  <span className="block text-xs font-bold text-white">
-                    {h.time.getHours().toString().padStart(2, "0")}:00
-                  </span>
+                  <span className="block text-xs font-bold text-white">{h.time.getHours().toString().padStart(2, "0")}:00</span>
                 </div>
-
-                {/* Icona meteo */}
                 <span className="text-lg shrink-0">{wic(h.weatherCode, true)}</span>
-
-                {/* Dati principali */}
                 <div className="flex items-center gap-2 text-[11px] text-slate-300 flex-1 min-w-0">
                   <span className="flex items-center gap-0.5">
                     <Thermometer className="w-3 h-3 text-amber-400" />
@@ -85,8 +68,6 @@ const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour, onHourSelect 
                     </>
                   )}
                 </div>
-
-                {/* Badge voloStatus */}
                 <span className={`shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-bold border ${volo.color}`}>
                   {volo.icon} {volo.label}
                 </span>

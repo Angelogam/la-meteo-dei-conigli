@@ -29,18 +29,13 @@ const DayDetailPopup = ({ dayData, daily, dayLabel, altitude, onClose, onHourSel
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-3">
       <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl border border-slate-600 shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-600">
-          <h3 className="text-sm font-bold text-white">
-            {dayLabel}
-          </h3>
+          <h3 className="text-sm font-bold text-white">{dayLabel}</h3>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-700 border border-slate-500">
             <X className="w-4 h-4 text-slate-300" />
           </button>
         </div>
-
         <div className="overflow-y-auto p-4 space-y-4">
-          {/* Riepilogo giornaliero */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="bg-slate-700/50 rounded-xl p-3 text-center">
               <Thermometer className="w-4 h-4 text-amber-400 mx-auto mb-1" />
@@ -49,12 +44,8 @@ const DayDetailPopup = ({ dayData, daily, dayLabel, altitude, onClose, onHourSel
             </div>
             <div className="bg-slate-700/50 rounded-xl p-3 text-center">
               <Wind className="w-4 h-4 text-blue-400 mx-auto mb-1" />
-              <div className="text-lg font-bold text-white">
-                {daily.avgWind !== undefined ? Math.round(daily.avgWind) : "—"} km/h
-              </div>
-              <div className="text-[10px] text-slate-400">
-                Media {(daily.maxWind !== undefined ? Math.round(daily.maxWind) : "—")} max
-              </div>
+              <div className="text-lg font-bold text-white">{daily.avgWind !== undefined ? Math.round(daily.avgWind) : "—"} km/h</div>
+              <div className="text-[10px] text-slate-400">Media {(daily.maxWind !== undefined ? Math.round(daily.maxWind) : "—")} max</div>
             </div>
             {daily.precipitationSum > 0 && (
               <div className="bg-slate-700/50 rounded-xl p-3 text-center">
@@ -71,21 +62,12 @@ const DayDetailPopup = ({ dayData, daily, dayLabel, altitude, onClose, onHourSel
               </div>
             )}
           </div>
-
-          {/* Tabella oraria */}
           <div className="space-y-1.5">
             <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Previsioni orarie</h4>
             {dayData.map((h) => (
-              <button
-                key={h.time.getHours()}
-                onClick={() => onHourSelect(h.time.getHours())}
-                className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 bg-slate-700/30 border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 transition-all text-left"
-              >
-                <div className="w-12 shrink-0 text-center">
-                  <span className="text-xs font-bold text-white">
-                    {h.time.getHours().toString().padStart(2, "0")}:00
-                  </span>
-                </div>
+              <button key={h.time.getHours()} onClick={() => onHourSelect(h.time.getHours())}
+                className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 bg-slate-700/30 border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 transition-all text-left">
+                <div className="w-12 shrink-0 text-center"><span className="text-xs font-bold text-white">{h.time.getHours().toString().padStart(2, "0")}:00</span></div>
                 <span className="text-lg shrink-0">{wic(h.weatherCode, true)}</span>
                 <div className="flex-1 grid grid-cols-3 gap-2 text-[11px] text-slate-300">
                   <span>{Math.round(h.temperature)}°C</span>

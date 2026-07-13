@@ -2,89 +2,6 @@
 
 const BASE_URL = "https://api.open-meteo.com/v1/forecast";
 
-// Parametri base in comune
-const COMMON_PARAMS = {
-  hourly: [
-    "temperature_2m",
-    "relative_humidity_2m",
-    "dew_point_2m",
-    "apparent_temperature",
-    "precipitation_probability",
-    "precipitation",
-    "rain",
-    "showers",
-    "snowfall",
-    "weather_code",
-    "pressure_msl",
-    "surface_pressure",
-    "cloud_cover",
-    "cloud_cover_low",
-    "cloud_cover_mid",
-    "cloud_cover_high",
-    "evapotranspiration",
-    "et0_fao_evapotranspiration",
-    "vapour_pressure_deficit",
-    "wind_speed_10m",
-    "wind_direction_10m",
-    "wind_gusts_10m",
-    "soil_temperature_0cm",
-    "soil_moisture_0_to_1cm",
-    "uv_index",
-    "temperature_80m",
-    "temperature_120m",
-    "shortwave_radiation",
-    "direct_radiation",
-    "diffuse_radiation",
-    "direct_normal_irradiance",
-    "terrestrial_radiation",
-    "sunshine_duration",
-  ].join(","),
-  daily: [
-    "temperature_2m_max",
-    "temperature_2m_min",
-    "apparent_temperature_max",
-    "apparent_temperature_min",
-    "sunrise",
-    "sunset",
-    "daylight_duration",
-    "sunshine_duration",
-    "uv_index_max",
-    "uv_index_clear_sky_max",
-    "precipitation_sum",
-    "rain_sum",
-    "showers_sum",
-    "snowfall_sum",
-    "precipitation_hours",
-    "precipitation_probability_max",
-    "weather_code",
-    "wind_speed_10m_max",
-    "wind_gusts_10m_max",
-    "wind_direction_10m_dominant",
-    "shortwave_radiation_sum",
-    "et0_fao_evapotranspiration",
-  ].join(","),
-  current: [
-    "temperature_2m",
-    "relative_humidity_2m",
-    "apparent_temperature",
-    "is_day",
-    "precipitation",
-    "rain",
-    "showers",
-    "snowfall",
-    "weather_code",
-    "cloud_cover",
-    "pressure_msl",
-    "surface_pressure",
-    "wind_speed_10m",
-    "wind_direction_10m",
-    "wind_gusts_10m",
-  ].join(","),
-  timezone: "auto",
-  forecast_days: "7",
-  models: "best_match",
-};
-
 export type FetchMeteoParams = {
   lat: number;
   lon: number;
@@ -108,19 +25,16 @@ export type MeteoResponse = {
 
 export async function fetchMeteo({ lat, lon }: FetchMeteoParams): Promise<MeteoResponse> {
   const params = new URLSearchParams();
-
-  // Aggiungi ogni parametro uno per uno per evitare problemi di tipo
   params.set("latitude", lat.toString());
   params.set("longitude", lon.toString());
-  params.set("hourly", COMMON_PARAMS.hourly);
-  params.set("daily", COMMON_PARAMS.daily);
-  params.set("current", COMMON_PARAMS.current);
-  params.set("timezone", COMMON_PARAMS.timezone);
-  params.set("forecast_days", String(COMMON_PARAMS.forecast_days));
-  params.set("models", COMMON_PARAMS.models);
+  params.set("hourly", "temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,precipitation_probability,precipitation,rain,showers,snowfall,weather_code,pressure_msl,surface_pressure,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,evapotranspiration,et0_fao_evapotranspiration,vapour_pressure_deficit,wind_speed_10m,wind_direction_10m,wind_gusts_10m,soil_temperature_0cm,soil_moisture_0_to_1cm,uv_index,temperature_80m,temperature_120m,shortwave_radiation,direct_radiation,diffuse_radiation,direct_normal_irradiance,terrestrial_radiation,sunshine_duration");
+  params.set("daily", "temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,daylight_duration,sunshine_duration,uv_index_max,uv_index_clear_sky_max,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,weather_code,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,et0_fao_evapotranspiration<dyad-write path="src/services/meteoApi.ts" description="Continuation: complete the file">
+  params.set("current", "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m");
+  params.set("timezone", "auto");
+  params.set("forecast_days", "7");
+  params.set("models", "best_match");
 
   const url = `${BASE_URL}?${params.toString()}`;
-
   const res = await fetch(url);
 
   if (!res.ok) {
