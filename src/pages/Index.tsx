@@ -15,7 +15,7 @@ import MeteoTab from "@/components/MeteoTab";
 import VentiTab from "@/components/VentiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiTab from "@/components/AnalisiTab";
-import { RefreshCcw } from "lucide-react";
+import DayInfoPanel from "@/components/DayInfoPanel";
 
 export function Page() {
   const {
@@ -50,7 +50,6 @@ export function Page() {
           <div className="hidden sm:flex flex-col items-center animate-float-left">
             <div className="relative">
               <svg className="w-10 h-10 md:w-12 md:h-12" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                {/* Paracadute con spicchi colorati */}
                 <path d="M32 6C14 6 2 16 2 30h8c0-10 10-16 22-16s22 6 22 16h8c0-14-12-24-30-24z" fill="#f97316" opacity="0.8"/>
                 <path d="M12 30C12 20 20 14 32 14s20 6 20 16" fill="none" stroke="#e2e8f0" strokeWidth="1" opacity="0.5"/>
                 <path d="M22 30C22 22 26 16 32 16s10 6 10 14" fill="none" stroke="#fbbf24" strokeWidth="1.5" opacity="0.6"/>
@@ -121,6 +120,12 @@ export function Page() {
               valley={site.valley}
               alt={site.altitude}
               currentData={currentData}
+            />
+
+            <DayInfoPanel
+              currentData={currentData}
+              dayData={dayData}
+              site={{ name: site.name, alt: site.altitude }}
             />
 
             <AlertBanner alert={weatherAlert} />
