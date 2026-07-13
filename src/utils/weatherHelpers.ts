@@ -1,5 +1,12 @@
 "use client";
 
+export interface WindLevel {
+  alt: number;
+  speed: number;
+  dir: number;
+  dirName: string;
+}
+
 export function getWeatherIcon(code: number, isDay: number): string {
   const icons: Record<number, string> = {
     0: isDay ? '☀️' : '🌙',
@@ -36,11 +43,11 @@ export function getCloudCondition(cover: number): { text: string; icon: string; 
   return { text: 'Coperto', icon: '☁️', color: '#546e7a' };
 }
 
-/**
- * Crea un profilo vento basato su dati reali se disponibili,
- * altrimenti usa una stima per interpolazione
- */
-export function getWindProfile(surfaceWind: number, surfaceDir: number, realProfile?: { height: number; speed: number; dir: number }[]) {
+export function getWindProfile(
+  surfaceWind: number,
+  surfaceDir: number,
+  realProfile?: { height: number; speed: number; dir: number }[]
+): WindLevel[] {
   if (realProfile && realProfile.length > 0) {
     return realProfile.map((level) => ({
       alt: level.height,
@@ -50,8 +57,7 @@ export function getWindProfile(surfaceWind: number, surfaceDir: number, realProf
     }));
   }
 
-  // Fallback: stima
-  const profile: { alt: number; speed: number; dir: number; dirName: string }[] = [];
+  const profile: WindLevel[] = [];
   const heights = [0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000];
   for (const alt of heights) {
     if (alt === 0) {

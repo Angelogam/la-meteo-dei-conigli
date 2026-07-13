@@ -46,7 +46,6 @@ export default function VentiTab({
     dirName: level.dirName ?? getWindDirName(level.dir ?? 0),
   }));
 
-  // Quote fisse in metri, DALLA PIù ALTA ALLA PIù BASSA
   const fixedAltitudes = [4000, 3500, 3000, 2500, 2000, 1500, 1000, 500, 10];
 
   const profileWithAltitudes: WindLevel[] = fixedAltitudes.map((alt) => {
@@ -54,7 +53,6 @@ export default function VentiTab({
     if (matched) {
       return matched;
     }
-    // Find nearest level
     const sorted = [...realWindProfile].sort(
       (a, b) => Math.abs(a.alt - alt) - Math.abs(b.alt - alt)
     );
@@ -65,115 +63,7 @@ export default function VentiTab({
     return { alt, speed: 0, dir: 0, dirName: "-" };
   });
 
-  const windCards = [
-    {
-      label: "Superficie (10m)",
-      speed: currentData.windSpeed,
-      dir: currentData.windDir,
-      gust: currentData.windGust || currentData.windSpeed + 8,
-    },
-    {
-      label: "Bassa quota (500m)",
-      speed: currentData.windProfile?.find((l: any) => l.height === 500)?.speed ?? currentData.windSpeed * 1.5,
-      dir: currentData.windProfile?.find((l: any) => l.height === 500)?.dir ?? currentData.windDir + 10,
-      gust: null,
-    },
-    {
-      label: "Media quota (1000m)",
-      speed: currentData.windProfile?.find((l: any) => l.height === 1000)?.speed ?? currentData.windSpeed * 2.0,
-      dir: currentData.windProfile?.find((l: any) => l.height === 1000)?.dir ?? currentData.windDir + 20,
-      gust: null,
-    },
-    {
-      label: "Alta quota (2000m)",
-      speed: currentData.windProfile?.find((l: any) => l.height === 2000)?.speed ?? currentData.windSpeed * 2.8,
-      dir: currentData.windProfile?.find((l: any) => l.height === 2000)?.dir ?? currentData.windDir + 35,
-      gust: null,
-    },
-    {
-      label: "Molto alta (4000m)",
-      speed: currentData.windProfile?.find((l: any) => l.height === 4000)?.speed ?? currentData.windSpeed * 3.5,
-      dir: currentData.windProfile?.find((l: any) => l.height === 4000)?.dir ?? currentData.windDir + 45,
-      gust: null,
-    },
-  ];
-
-  return (
-    <div className="space-y-5">
-      <div>
-        <h4 className="text-base font-bold text-emerald-300 uppercase tracking-wider mb-4 flex items-center gap-2">
-          <Wind className="w-5 h-5" />
-          Vento a diverse quote
-        </h4>
-        <div className="grid grid-cols-2 sm:<dyad-write path="src/components/VentiTab.tsx" description="Fix TS2322: Normalize windProfile shape">
-"use client";
-
-import React from "react";
-import { Wind, TrendingUp } from "lucide-react";
-
-interface WindLevel {
-  alt: number;
-  speed: number;
-  dir: number;
-  dirName: string;
-}
-
-interface VentiTabProps {
-  currentData: any;
-  dayData: any[];
-  windProfile: WindLevel[];
-}
-
-function getWindArrow(deg: number): string {
-  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
-  return arrows[Math.round(deg / 45) % 8] || "→";
-}
-
-function getWindDirName(deg: number): string {
-  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-  return dirs[Math.round(deg / 45) % 8] || "-";
-}
-
-export default function VentiTab({
-  currentData,
-  dayData,
-  windProfile,
-}: VentiTabProps) {
-  if (!currentData) return null;
-
-  const hourRange = Array.from({ length: 11 }, (_, i) => i + 9);
-
-  // Normalize wind profile entries so they all have alt/speed/dir/dirName
-  const realWindProfile: WindLevel[] = (currentData.windProfile && currentData.windProfile.length > 0
-    ? currentData.windProfile
-    : windProfile
-  ).map((level: any) => ({
-    alt: level.alt ?? level.height ?? 0,
-    speed: level.speed ?? 0,
-    dir: level.dir ?? 0,
-    dirName: level.dirName ?? getWindDirName(level.dir ?? 0),
-  }));
-
-  // Quote fisse in metri, DALLA PIù ALTA ALLA PIù BASSA
-  const fixedAltitudes = [4000, 3500, 3000, 2500, 2000, 1500, 1000, 500, 10];
-
-  const profileWithAltitudes: WindLevel[] = fixedAltitudes.map((alt) => {
-    const matched = realWindProfile.find((l) => l.alt === alt);
-    if (matched) {
-      return matched;
-    }
-    // Find nearest level
-    const sorted = [...realWindProfile].sort(
-      (a, b) => Math.abs(a.alt - alt) - Math.abs(b.alt - alt)
-    );
-    const nearest = sorted[0];
-    if (nearest && Math.abs(nearest.alt - alt) <= 250) {
-      return { alt, speed: nearest.speed, dir: nearest.dir, dirName: nearest.dirName };
-    }
-    return { alt, speed: 0, dir: 0, dirName: "-" };
-  });
-
-  const windCards = [
+  const windCards: { label: string; speed: number; dir: number; gust: number | null }[] = [
     {
       label: "Superficie (10m)",
       speed: currentData.windSpeed,

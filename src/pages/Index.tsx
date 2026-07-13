@@ -26,6 +26,7 @@ import {
   getWeatherIcon,
 } from "@/utils/weatherHelpers";
 import { RefreshCw, Sparkles, CloudSun, AlertTriangle } from "lucide-react";
+import type { WindLevel } from "@/utils/weatherHelpers";
 
 const Page = () => {
   const {
@@ -71,12 +72,13 @@ const Page = () => {
     return getWindProfile(currentData.windSpeed, currentData.windDir, currentData.windProfile);
   }, [currentData]);
 
-  const windProfileSimple = useMemo(() => {
+  const windProfileSimple: WindLevel[] = useMemo(() => {
     if (!currentData) return [];
-    const ground = {
-      height: 10,
+    const ground: WindLevel = {
+      alt: 10,
       speed: currentData.windSpeed,
       dir: currentData.windDir,
+      dirName: getWindDirection(currentData.windDir),
     };
     return [ground, ...windProfile];
   }, [currentData, windProfile]);
