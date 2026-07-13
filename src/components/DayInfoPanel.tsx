@@ -36,14 +36,15 @@ function getCurrentTime(): string {
 }
 
 /** Genera condizioni e note per ogni ora dalle 9:00 alle 19:00 */
-function generateHourlyData(currentData: any, dayData?: any[]) {
+function generateHourlyData(currentData: any, dayDataArray?: any[]) {
   const ore = Array.from({ length: 11 }, (_, i) => i + 9); // 9-19
 
   return ore.map((ora) => {
-    // Cerca il dato orario corrispondente
-    const hData = dayData?.find(
+    // Cerca il dato orario corrispondente — dayDataArray è un array di ore
+    const hData = Array.isArray(dayDataArray) ? dayDataArray.find(
       (h: any) => h.time?.getHours() === ora
-    );
+    ) : undefined;
+    
     const t = hData?.temperature ?? currentData?.temp ?? 20;
     const ws = hData?.windSpeed ?? currentData?.windSpeed ?? 10;
     const cc = hData?.cloudCover ?? currentData?.clouds ?? 30;
@@ -99,13 +100,16 @@ export default function DayInfoPanel({ currentData, dayData, site, selectedDate 
   const ventoLinee = generateVentoQuota(currentData);
   const interpretazioneLinee = generateInterpretazione(currentData);
 
+  // Assicura che dayData sia un array prima di passarlo
+  const dayDataArray = Array.isArray(dayData) ? dayData : undefined;
+
   // Genera dati per ogni ora 9-19
-  const hourlyRows = generateHourlyData(currentData, dayData);
+  const hourlyRows = generateHourlyData(currentData, dayDataArray);
 
   return (
     <div className="space-y-3 mb-4">
       {/* ☀️ Situazione generale */}
-      <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border border-slate-700/30 rounded-2xl p-4">
+      <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 rounded-2xl p-4 hover:border-green-400/40 transition-all duration-200">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-orange-400 flex items-center gap-2">
             <Sun className="w-4 h-4" /> Situazione generale
@@ -129,7 +133,7 @@ export default function DayInfoPanel({ currentData, dayData, site, selectedDate 
       </div>
 
       {/* 🌡️ Profilo termico e stabilità */}
-      <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border border-slate-700/30 rounded-2xl p-4">
+      <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 rounded-2xl p-4 hover:border-green-400/40 transition-all duration-200">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
             <Thermometer className="w-4 h-4" /> Profilo termico e stabilità
@@ -153,7 +157,7 @@ export default function DayInfoPanel({ currentData, dayData, site, selectedDate 
       </div>
 
       {/* 🌬️ Vento e dinamica in quota */}
-      <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border border-slate-700/30 rounded-2xl p-4">
+      <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 rounded-2xl p-4 hover:border-green-400/40 transition-all duration-200">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-cyan-400 flex items-center gap-2">
             <Wind className="w-4 h-4" /> Vento e dinamica in quota
@@ -236,7 +240,7 @@ export default function DayInfoPanel({ currentData, dayData, site, selectedDate 
       </div>
 
       {/* 🪂 Interpretazione per attività outdoor / volo libero */}
-      <div className="bg-gradient-to-br from-orange-900/20 to-amber-900/10 border border-orange-700/30 rounded-2xl p-4">
+      <div className="bg-gradient-to-br from-orange-900/20 to-amber-900/10 border-2 border-orange-700/30 rounded-2xl p-4 hover:border-green-400/40 transition-all duration-200">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-orange-400 flex items-center gap-2">
             🪂 Interpretazione
