@@ -36,15 +36,14 @@ function getCurrentTime(): string {
 }
 
 /** Genera condizioni e note per ogni ora dalle 9:00 alle 19:00 */
-function generateHourlyData(currentData: any, dayData?: any) {
+function generateHourlyData(currentData: any, dayData?: any[]) {
   const ore = Array.from({ length: 11 }, (_, i) => i + 9); // 9-19
 
   return ore.map((ora) => {
-    // Cerca il dato orario corrispondente - gestisci sia array che oggetto
-    const hData = Array.isArray(dayData) 
-      ? dayData.find((h: any) => h.time?.getHours() === ora)
-      : null;
-      
+    // Cerca il dato orario corrispondente
+    const hData = dayData?.find(
+      (h: any) => h.time?.getHours() === ora
+    );
     const t = hData?.temperature ?? currentData?.temp ?? 20;
     const ws = hData?.windSpeed ?? currentData?.windSpeed ?? 10;
     const cc = hData?.cloudCover ?? currentData?.clouds ?? 30;
