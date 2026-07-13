@@ -3,86 +3,82 @@
 export interface HourData {
   time: Date;
   temperature: number;
-  feelsLike: number;
   humidity: number;
   dewPoint: number;
+  apparentTemp: number;
+  precipitationProba: number;
   precipitation: number;
+  rain: number;
+  showers: number;
+  snowfall: number;
   weatherCode: number;
+  pressure: number;
+  surfacePressure: number;
   cloudCover: number;
-  pressure: number | null;
+  cloudCoverLow: number;
+  cloudCoverMid: number;
+  cloudCoverHigh: number;
+  evapotranspiration: number;
+  et0: number;
+  vapourPressureDeficit: number;
   windSpeed: number;
   windDir: number;
-  windGust: number | null;
-  soilTemp: number | null;
-  soilMoisture: number | null;
-  uvIndex: number | null;
-  isDay: boolean;
-  /** Dati di vento in quota a diverse altitudini (m AGL) */
-  windProfile?: WindLevel[];
-  /** Campi extra per calcoli termici e vento in quota */
-  wind80m?: number | null;
-  windDir80m?: number | null;
-  wind120m?: number | null;
-  windDir120m?: number | null;
-  wind180m?: number | null;
-  windDir180m?: number | null;
-  temp80m?: number | null;
-  temp120m?: number | null;
-  visibility?: number | null;
+  windGusts: number;
+  soilTemp: number;
+  soilMoisture: number;
+  uvIndex: number;
+  temp80m: number;
+  temp120m: number;
+  shortwaveRadiation: number;
+  directRadiation: number;
+  diffuseRadiation: number;
+  directNormalIrradiance: number;
+  terrestrialRadiation: number;
+  sunshineDuration: number;
+  windProfile?: { height: number; speed: number; dir: number }[];
+}
+
+export interface CurrentData {
+  time: Date;
+  temperature: number;
+  humidity: number;
+  apparentTemp: number;
+  isDay: number;
+  precipitation: number;
+  rain: number;
+  showers: number;
+  snowfall: number;
+  weatherCode: number;
+  cloudCover: number;
+  pressure: number;
+  surfacePressure: number;
+  windSpeed: number;
+  windDir: number;
+  windGusts: number;
 }
 
 export interface DailyData {
-  date: Date;
+  time: Date;
   tempMax: number;
   tempMin: number;
-  weatherCode: number;
+  apparentTempMax: number;
+  apparentTempMin: number;
+  sunrise: string;
+  sunset: string;
+  daylightDuration: number;
+  sunshineDuration: number;
+  uvIndexMax: number;
+  uvIndexClearSkyMax: number;
   precipitationSum: number;
-}
-
-export interface EnrichedDaily extends DailyData {
-  avgWind: number;
-  maxWind: number;
-  avgCloud: number;
-}
-
-export interface MeteoData {
-  hourly: HourData[];
-  daily: DailyData[];
-  lat: number;
-  lon: number;
-}
-
-export interface ThermalData {
-  cloudBase: number;
-  thermalTop: number;
-  soarIdx: number;
-}
-
-export interface WindLevel {
-  /** Quota in metri AGL (Above Ground Level) */
-  height: number;
-  /** Velocità del vento in km/h */
-  speed: number | null;
-  /** Direzione del vento in gradi */
-  dir: number | null;
-}
-
-export interface WindProfile {
-  time: Date;
-  levels: WindLevel[];
-}
-
-export interface AiAnalysis {
-  general: string;
-  thermal: string;
-  wind: string;
-  hourly: string;
-  advice: string;
-  thunderstorm: string;
-  altitude?: string;
-  pressure?: string;
-  summary?: string;
-  score?: number;
-  reasoning?: string;
-  recommendations?: string[];
+  rainSum: number;
+  showersSum: number;
+  snowfallSum: number;
+  precipitationHours: number;
+  precipitationProbaMax: number;
+  weatherCode: number;
+  windSpeedMax: number;
+  windGustsMax: number;
+  windDirDominant: number;
+  shortwaveRadiationSum: number;
+  et0Sum: number;
 }
