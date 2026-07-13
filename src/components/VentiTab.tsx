@@ -32,7 +32,7 @@ export default function VentiTab({
     ? currentData.windProfile
     : windProfile;
 
-  // Quote fisse in metri: 10, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000
+  // Quote fisse in metri, DALLA PIù ALTA ALLA PIù BASSA
   const fixedAltitudes = [4000, 3500, 3000, 2500, 2000, 1500, 1000, 500, 10];
 
   const profileWithAltitudes = fixedAltitudes.map((alt) => {
@@ -95,11 +95,11 @@ export default function VentiTab({
   ];
 
   return (
-    <div className="animate-fadeIn space-y-5">
+    <div className="space-y-5">
       <div>
         <h4 className="text-base font-bold text-emerald-300 uppercase tracking-wider mb-4 flex items-center gap-2">
           <Wind className="w-5 h-5" />
-          Vento a diverse quote (reale da Open-Meteo)
+          Vento a diverse quote
         </h4>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           {windCards.map((w, i) => (
@@ -125,7 +125,7 @@ export default function VentiTab({
       <div>
         <h4 className="text-base font-bold text-emerald-300 uppercase tracking-wider mb-4 flex items-center gap-2">
           <TrendingUp className="w-5 h-5" />
-          Profilo vento reale — tutte le quote
+          Profilo vento verticale (dal basso verso l'alto)
         </h4>
         <div className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-4 max-h-96 overflow-y-auto space-y-1">
           {profileWithAltitudes.map((level: any, idx: number) => {
@@ -162,52 +162,6 @@ export default function VentiTab({
                 <span className="text-sm text-slate-300 text-center tabular-nums font-semibold">
                   {level.dir != null ? `${getWindArrow(level.dir)} ${getWindDirName(level.dir)}` : "—"}
                 </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div>
-        <h4 className="text-base font-bold text-emerald-300 uppercase tracking-wider mb-4">
-          Vento orario (9:00 - 19:00)
-        </h4>
-        <div className="grid grid-cols-11 gap-2 overflow-x-auto pb-2">
-          {hourRange.map((hour) => {
-            const hData = dayData?.find(
-              (h: any) => h.time.getHours() === hour
-            );
-            if (!hData) {
-              return (
-                <div
-                  key={hour}
-                  className="bg-slate-800/30 rounded-lg p-3 text-center"
-                >
-                  <div className="text-sm text-slate-400 font-semibold">
-                    {String(hour).padStart(2, "0")}
-                  </div>
-                  <div className="text-base text-slate-500 mt-1">--</div>
-                </div>
-              );
-            }
-            return (
-              <div
-                key={hour}
-                className={`rounded-lg p-3 text-center border ${
-                  hour === currentData.time?.getHours()
-                    ? "bg-emerald-900/30 border-emerald-500/40"
-                    : "bg-slate-800/50 border-slate-700/30"
-                }`}
-              >
-                <div className="text-xs text-slate-300 font-mono font-semibold">
-                  {String(hour).padStart(2, "0")}:00
-                </div>
-                <div className="text-base font-bold text-slate-100 tabular-nums mt-1">
-                  {getWindArrow(hData.windDir)} {Math.round(hData.windSpeed)}
-                </div>
-                <div className="text-xs text-slate-400 font-semibold">
-                  {getWindDirName(hData.windDir)}
-                </div>
               </div>
             );
           })}
