@@ -1,21 +1,7 @@
 "use client";
 
-interface HourDataWithCape {
-  time: Date;
-  temperature: number;
-  dewPoint: number;
-  windSpeed: number;
-  cloudCover: number;
-  humidity: number;
-  pressure: number;
-  precipitation: number;
-  uvIndex: number;
-  temp80m?: number;
-  temp120m?: number;
-  cape?: number;
-  cin?: number;
-  li?: number;
-}
+import type { HourData } from "@/types/meteo";
+import { fetchCapeData } from "./capeService";
 
 /**
  * Database climatologico locale (valori medi per decolli piemontesi)
@@ -29,7 +15,7 @@ const CLIMATOLOGIA_LOCALE = [
   { mese: 5, tempMedia: 13, umiditaMedia: 48, ventoMedio: 10, termicheMedie: 2.8 },
   { mese: 6, tempMedia: 17, umiditaMedia: 45, ventoMedio: 9, termicheMedie: 3.2 },
   { mese: 7, tempMedia: 20, umiditaMedia: 42, ventoMedio: 8, termicheMedie: 3.8 },
-  { mese: 8, tempMedia: 19, umiditaMedia: 44, ventoMedio: 9, termicheMedie: 3.5 },
+  { mese: 8, tempMedia: 19, umiditaMedia: 44, ventoMedio: 8, termicheMedie: 3.5 },
   { mese: 9, tempMedia: 15, umiditaMedia: 48, ventoMedio: 9, termicheMedie: 2.8 },
   { mese: 10, tempMedia: 10, umiditaMedia: 55, ventoMedio: 10, termicheMedie: 2.0 },
   { mese: 11, tempMedia: 4, umiditaMedia: 62, ventoMedio: 11, termicheMedie: 1.3 },
@@ -51,17 +37,19 @@ export interface PrevisioneTermica {
 /**
  * Algoritmo previsionale multi-fonte:
  * 
- * 1. Prende i dati reali Open-Meteo (temp, vento, nuvole, pressione)
- * 2. Prende i dati CAPE/CIN/LI reali
+ * 1. Prende i dati Open-Meteo (temp, vento, nuvole, pressione)
+ * 2. Prende i dati GFS (CAPE, CIN, LI)
  * 3. Combina con climatologia locale (ERA5 + osservazioni)
  * 
  * La formula finale è una media pesata:
- * - 40% CAPE (energia convettiva reale)
+ * - 40% GFS (CAPE e energia convettiva)
  * - 35% Open-Meteo (condizioni locali)
  * - 25% Climatologia (pattern stagionali)
+ * 
+ * Maggiore è la divergenza tra le fonti, minore è la confidenza.
  */
 export function calcolaPrevisioneTermica(
-  weather: HourDataWithCape,
+  weather: HourData,
   capeValue: number,
   cinValue: number,
   liValue: number,
@@ -71,7 +59,7 @@ export function calcolaPrevisioneTermica(
   const ora = weather.time.getHours();
   const clima = CLIMATOLOGIA_LOCALE.find(c => c.mese === mese) ?? CLIMATOLOGIA_LOCALE[5];
 
-  // --- 1. Rateo da condizioni locali ---
+  // --- 1. Rateo da Open-Meteo (condizioni locali) ---
   let rateoOpenMeteo = 0;
   
   const spread = weather.temperature - weather.dewPoint;
@@ -100,7 +88,7 @@ export function calcolaPrevisioneTermica(
   rateoOpenMeteo = Math.max(0, (forzaOM / 10.5) * 4);
   if (weather.precipitation > 1) rateoOpenMeteo = 0;
 
-  // --- 2. Rateo da CAPE reale ---
+  // --- 2. Rateo da GFS (CAPE reale) ---
   let rateoGFS = 0;
   if (capeValue > 50) {
     const spessore = Math.max(300, base + (capeValue * 2.5) - base);
@@ -162,19 +150,27 @@ export function calcolaPrevisioneTermica(
  * Calcola previsioni termiche per TUTTE le ore di volo usando l'algoritmo multi-fonte
  */
 export async function calcolaPrevisioniMultiFonte(
-  hourlyData: HourDataWithCape[],
+  hourlyData: HourData[],
   lat: number,
   lon: number,
   altitude: number
 ): Promise<PrevisioneTermica[]> {
-  // I dati arrivano già da Open-Meteo con CAPE
-  const oreVolo = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+  // Recupera CAPE con import statico
+  const capeData = await fetchCapeData(lat, lon);
+
+  const oreVolo = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
   const oggi = new Date();
   const giornoCorrente = oggi.getDate();
 
   return oreVolo.map(ora => {
     const weather = hourlyData.find(h => {
-      return h.time.getHours() === ora && h.time.getDate() === giornoCorrente;
+      const t = new Date(h.time);
+      return t.getHours() === ora && t.getDate() === giornoCorrente;
+    });
+
+    const cape = capeData.find(c => {
+      const ct = new Date(c.time);
+      return ct.getHours() === ora && ct.getDate() === giornoCorrente;
     });
 
     if (!weather) {
@@ -193,9 +189,9 @@ export async function calcolaPrevisioniMultiFonte(
 
     return calcolaPrevisioneTermica(
       weather,
-      weather.cape ?? 0,
-      weather.cin ?? 0,
-      weather.li ?? 0,
+      cape?.cape ?? 0,
+      cape?.cin ?? 0,
+      cape?.li ?? 0,
       altitude
     );
   });
