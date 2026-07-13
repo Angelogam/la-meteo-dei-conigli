@@ -11,6 +11,7 @@ import {
   Gauge,
   Clock,
   Calendar,
+  Sparkles,
 } from "lucide-react";
 import {
   generateSituazioneGenerale,
@@ -26,17 +27,61 @@ interface DayInfoPanelProps {
   selectedDate?: string;
 }
 
-const hoursData = [
-  { period: "Mattina (8–11)", icon: "🌤️", cond: "Sole pieno, vento debole", note: "Ottima visibilità, aria secca" },
-  { period: "Pomeriggio (12–17)", icon: "⛅", cond: "Termiche moderate, qualche cumulo", note: "Buone condizioni per volo libero" },
-  { period: "Sera (18–21)", icon: "🌙", cond: "Cielo sereno, vento in calo", note: "Atmosfera stabile, temperatura in discesa" },
-];
-
 function getCurrentTime(): string {
   const now = new Date();
   return now.toLocaleTimeString("it-IT", {
     hour: "2-digit",
     minute: "2-digit",
+  });
+}
+
+/** Genera condizioni e note per ogni ora dalle 9:00 alle 19:00 */
+function generateHourlyData(currentData: any, dayData?: any[]) {
+  const ore = Array.from({ length: 11 }, (_, i) => i + 9); // 9-19
+
+  return ore.map((ora) => {
+    // Cerca il dato orario corrispondente
+    const hData = dayData?.find(
+      (h: any) => h.time?.getHours() === ora
+    );
+    const t = hData?.temperature ?? currentData?.temp ?? 20;
+    const ws = hData?.windSpeed ?? currentData?.windSpeed ?? 10;
+    const cc = hData?.cloudCover ?? currentData?.clouds ?? 30;
+    const hum = hData?.humidity ?? currentData?.humidity ?? 50;
+
+    // Emoji base
+    let emoji = "☀️";
+    if (cc > 80) emoji = "☁️";
+    else if (cc > 50) emoji = "⛅";
+    else if (cc > 20) emoji = "🌤️";
+
+    // Condizioni
+    const tempStr = `${Math.round(t)}°C`;
+    const ventoStr = `${Math.round(ws)} km/h`;
+    const cloudStr = cc > 50 ? "nuvoloso" : cc > 20 ? "poco nuvoloso" : "sereno";
+
+    // Note
+    let note = "";
+    if (ora >= 9 && ora <= 10) {
+      note = "Mattino fresco, termiche in attivazione";
+    } else if (ora >= 11 && ora <= 13) {
+      note = "Termiche in sviluppo, buona finestra";
+    } else if (ora >= 14 && ora <= 16) {
+      note = "Picco termico, condizioni stabili";
+    } else if (ora >= 17 && ora <= 19) {
+      note = "Termiche in calo, atmosfera tranquilla";
+    }
+
+    if (ws > 20) note += " · vento sostenuto";
+    else if (ws < 5) note += " · vento debole";
+    if (hum > 70) note += " · aria umida";
+
+    return {
+      ora,
+      emoji,
+      condizioni: `${tempStr} · ${ventoStr} · ${cloudStr}`,
+      note,
+    };
   });
 }
 
@@ -53,6 +98,9 @@ export default function DayInfoPanel({ currentData, dayData, site, selectedDate 
   const termicoLinee = generateProfiloTermico(currentData, dayData);
   const ventoLinee = generateVentoQuota(currentData);
   const interpretazioneLinee = generateInterpretazione(currentData);
+
+  // Genera dati per ogni ora 9-19
+  const hourlyRows = generateHourlyData(currentData, dayData);
 
   return (
     <div className="space-y-3 mb-4">
@@ -128,11 +176,12 @@ export default function DayInfoPanel({ currentData, dayData, site, selectedDate 
         </div>
       </div>
 
-      {/* 🌤️ Previsione per la giornata */}
-      <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border border-slate-700/30 rounded-2xl p-4">
+      {/* 🌤️ Previsione oraria 9:00–19:00 (COLONNA CERCHIATA) */}
+      <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-orange-500/40 rounded-2xl p-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-sky-400 flex items-center gap-2">
-            <Clock className="w-4 h-4" /> Previsione per la giornata
+          <h3 className="text-sm font-bold text-sky-300 flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Previsione oraria 9:00 – 19:00
           </h3>
           <div className="flex items-center gap-3 text-[10px] text-slate-500">
             <span className="flex items-center gap-1">
@@ -149,21 +198,38 @@ export default function DayInfoPanel({ currentData, dayData, site, selectedDate 
           <table className="w-full text-xs md:text-sm text-slate-300">
             <thead>
               <tr className="border-b border-slate-700/50">
-                <th className="text-left py-2 pr-3 font-medium text-slate-400">Fascia oraria</th>
-                <th className="text-left py-2 px-3 font-medium text-slate-400">Condizioni previste</th>
+                <th className="text-left py-2 pr-3 font-medium text-slate-400 whitespace-nowrap w-16">Ora</th>
+                <th className="text-left py-2 px-3 font-medium text-slate-400">Condizioni</th>
                 <th className="text-left py-2 pl-3 font-medium text-slate-400">Note</th>
               </tr>
             </thead>
             <tbody>
-              {hoursData.map((h, i) => (
-                <tr key={i} className="border-b border-slate-700/20 last:border-0">
-                  <td className="py-2 pr-3 whitespace-nowrap">
-                    <span className="text-white font-medium">{h.icon} {h.period}</span>
-                  </td>
-                  <td className="py-2 px-3">{h.cond}</td>
-                  <td className="py-2 pl-3 text-slate-400">{h.note}</td>
-                </tr>
-              ))}
+              {hourlyRows.map((h, i) => {
+                const isCurrent = h.ora === new Date().getHours();
+                return (
+                  <tr
+                    key={h.ora}
+                    className={`border-b border-slate-700/20 last:border-0 hover:bg-slate-700/20 transition-colors ${
+                      isCurrent ? "bg-emerald-900/20" : ""
+                    }`}
+                  >
+                    <td className="py-1.5 pr-3 whitespace-nowrap">
+                      <span className={`font-mono font-bold ${
+                        isCurrent ? "text-emerald-300" : "text-slate-100"
+                      }`}>
+                        {String(h.ora).padStart(2, "0")}:00
+                      </span>
+                    </td>
+                    <td className="py-1.5 px-3 whitespace-nowrap">
+                      <span className="mr-1">{h.emoji}</span>
+                      <span>{h.condizioni}</span>
+                    </td>
+                    <td className="py-1.5 pl-3 text-slate-400 text-[11px] leading-snug">
+                      {h.note}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
