@@ -8,7 +8,7 @@ interface TermicheTabProps {
   dayData: any;
   site: { alt: number };
   thermalDelta?: number;
-  thermalStrength?: number;
+  thermalStrength?: { label: string; color: string };
 }
 
 export default function TermicheTab({ currentData, dayData, site, thermalDelta, thermalStrength }: TermicheTabProps) {
@@ -46,9 +46,14 @@ export default function TermicheTab({ currentData, dayData, site, thermalDelta, 
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
             <span className="text-xs text-slate-400 uppercase tracking-wider">Forza termica</span>
           </div>
-          <p className="text-lg font-bold text-amber-300">
-            {thermalStrength != null ? `${thermalStrength.toFixed(1)} m/s` : "—"}
-          </p>
+          {thermalStrength ? (
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: thermalStrength.color }} />
+              <span className="text-lg font-bold text-amber-300">{thermalStrength.label}</span>
+            </div>
+          ) : (
+            <p className="text-lg font-bold text-slate-500">—</p>
+          )}
         </div>
       </div>
     </div>
