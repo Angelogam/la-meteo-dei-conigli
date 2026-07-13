@@ -25,8 +25,8 @@ export default function DaySelector({
   if (!enrichedDaily || enrichedDaily.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-3 gap-2.5 mb-4">
-      {enrichedDaily.map((day: any, idx: number) => {
+    <div className="grid grid-cols-3 gap-2.5">
+      {enrichedDaily.slice(0, 3).map((day: any, idx: number) => {
         const isActive = idx === selectedDay;
         return (
           <button
@@ -34,8 +34,8 @@ export default function DaySelector({
             onClick={() => onSelect(idx)}
             className={`rounded-xl px-3 py-3 transition-all duration-200 border-2 text-left animate-fade-in-up opacity-0 ${
               isActive
-                ? "bg-gradient-to-br from-orange-900/30 to-amber-900/15 border-orange-400/50 shadow-lg shadow-orange-500/15 card-hover"
-                : "bg-slate-800/40 border-slate-700/50 hover:bg-slate-700/40 hover:border-orange-400/30 card-hover"
+                ? "bg-gradient-to-br from-orange-900/30 to-amber-900/15 border-orange-400/50 shadow-lg shadow-orange-500/15"
+                : "bg-slate-800/40 border-slate-700/50 hover:bg-slate-700/40 hover:border-orange-400/30"
             }`}
             style={{ animationDelay: `${idx * 0.1}s` }}
           >
