@@ -28,7 +28,7 @@ export default function SiteHeader({
   currentData,
 }: SiteHeaderProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 pb-5 mb-4 border-b border-orange-400/20 relative">
+    <div className="flex flex-wrap items-center justify-center gap-4 pb-5 mb-4 border-b border-orange-400/20 relative">
       <div className="absolute -top-4 -left-4 w-32 h-32 bg-gradient-to-br from-orange-500/5 to-transparent rounded-full blur-2xl pointer-events-none" />
       
       <div className="flex items-center gap-3 relative">
