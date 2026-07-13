@@ -126,6 +126,59 @@ const Page = () => {
     }));
   }, [dayData]);
 
+  // Converte dayData (MeteoHourly[]) nel formato richiesto da WeatherDashboard (HourData[])
+  const dayDataForDashboard: HourData[] = useMemo(() => {
+    if (!dayData.length) return [];
+    return dayData.map(h => ({
+      time: h.time,
+      temperature: h.temperature,
+      humidity: h.humidity,
+      dewPoint: h.dewPoint,
+      apparentTemp: h.apparentTemp,
+      precipitation: h.precipitation,
+      weatherCode: h.weatherCode,
+      cloudCover: h.cloudCover,
+      windSpeed: h.windSpeed,
+      windDir: h.windDir,
+      windGusts: h.windGusts,
+      pressure: h.pressure,
+      uvIndex: h.uvIndex,
+      temp80m: h.temp80m,
+      temp120m: h.temp120m,
+      precipitationProba: 0,
+      rain: h.precipitation > 0 ? h.precipitation : 0,
+      showers: 0,
+      snowfall: 0,
+      surfacePressure: h.pressure,
+      cloudCoverLow: 0,
+      cloudCoverMid: 0,
+      cloudCoverHigh: 0,
+      evapotranspiration: 0,
+      et0: 0,
+      vapourPressureDeficit: 0,
+      soilTemp: 15,
+      soilMoisture: 0.3,
+      shortwaveRadiation: 0,
+      directRadiation: 0,
+      diffuseRadiation: 0,
+      directNormalIrradiance: 0,
+      terrestrialRadiation: 0,
+      sunshineDuration: 0,
+      windProfile: undefined,
+      soil_temperature: 15,
+      soil_moisture: 0.3,
+    }));
+  }, [dayData]);
+
+  // Converte windProfile (WindLevel[] con field "alt") nel formato {height, speed, dir}[]
+  const windProfileForDashboard: { height: number; speed: number; dir: number }[] = useMemo(() => {
+    return windProfile.map(w => ({
+      height: w.alt,
+      speed: w.speed,
+      dir: w.dir,
+    }));
+  }, [windProfile]);
+
   if (loading && !dayData.length) return <LoadingScreen />;
   if (error && !dayData.length) return <ErrorScreen error={error} onRetry={loadWeather} />;
 
@@ -203,11 +256,11 @@ const Page = () => {
             </div>
 
             <WeatherDashboard
-              dayData={dayData}
+              dayData={dayDataForDashboard}
               altitude={site.altitude}
               selectedHour={selectedHour}
               onHourSelect={setSelectedHour}
-              windProfile={windProfile}
+              windProfile={windProfileForDashboard}
               groundSpeed={currentData?.windSpeed}
               groundDir={currentData?.windDir}
             />
