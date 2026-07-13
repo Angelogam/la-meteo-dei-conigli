@@ -18,106 +18,45 @@ interface PrevisioniGiornaliereProps {
   onSelectDay: (day: number) => void;
 }
 
-/** Mappa WMO weather code a icona e descrizione */
 function getWeatherInfo(code: number | undefined | null, size: number = 32) {
   if (code === undefined || code === null || isNaN(code)) {
     return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "N/D" };
   }
-
-  if (code === 0) return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "Sereno" };
-  if (code === 1) return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "Sereno" };
+  if (code === 0 || code === 1) return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "Sereno" };
   if (code === 2) return { icon: <CloudSun size={size} className="text-amber-200 drop-shadow-lg" />, desc: "Poco nuvoloso" };
-  if (code === 3) return { icon: <CloudSun size={size} className="text-slate-300 drop-shadow-lg" />, desc: "Nuvoloso" };
-  if (code >= 4 && code <= 9) return { icon: <Cloud size={size} className="text-slate-400 drop-shadow-lg" />, desc: "Nuvoloso variabile" };
-  if (code >= 10 && code <= 12) return { icon: <Cloud size={size} className="text-slate-500 drop-shadow-lg" />, desc: "Coperto" };
-  if (code === 13) return { icon: <CloudLightning size={size} className="text-yellow-300 drop-shadow-lg" />, desc: "Temporale" };
+  if (code === 3) return { icon: <Cloud size={size} className="text-slate-300 drop-shadow-lg" />, desc: "Nuvoloso" };
   if (code >= 45 && code <= 48) return { icon: <CloudFog size={size} className="text-slate-400 drop-shadow-lg" />, desc: "Nebbia" };
   if (code >= 51 && code <= 57) return { icon: <CloudRain size={size} className="text-blue-300 drop-shadow-lg" />, desc: "Pioggerella" };
   if (code >= 61 && code <= 67) return { icon: <CloudRain size={size} className="text-blue-400 drop-shadow-lg" />, desc: "Pioggia" };
   if (code >= 71 && code <= 77) return { icon: <Snowflake size={size} className="text-blue-200 drop-shadow-lg" />, desc: "Neve" };
   if (code >= 80 && code <= 84) return { icon: <CloudRain size={size} className="text-blue-300 drop-shadow-lg" />, desc: "Rovesci" };
   if (code >= 95 && code <= 99) return { icon: <CloudLightning size={size} className="text-yellow-300 drop-shadow-lg" />, desc: "Temporali" };
+  // code > 3 but < 45: vari tipi di nuvolosità
+  if (code >= 4 && code <= 19) return { icon: <CloudSun size={size} className="text-slate-300 drop-shadow-lg" />, desc: "Nuvoloso" };
   return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "Sereno" };
 }
 
-/** Mi dice se un codice WMO è "sereno/ok" */
-function isGoodWeather(code: number): boolean {
-  return code >= 0 && code <= 3;
-}
-
-/** Mi dice se un codice WMO è "nuvoloso ma Ok" */
-function isCloudy(code: number): boolean {
-  return (code >= 4 && code <= 9) || (code >= 10 && code <= 12);
-}
-
-/** Mi dice se un codice WMO è di pioggia/debole */
-function isRain(code: number): boolean {
-  return (code >= 45 && code <= 48) || (code >= 51 && code <= 57) || (code >= 61 && code <= 67) || (code >= 80 && code <= 84);
-}
-
-/** Mi dice se un codice WMO è temporale */
-function isThunderstorm(code: number): boolean {
-  return (code >= 95 && code <= 99) || code === 13;
-}
-
-/** Codice WMO dominante: raggruppa per categoria e prende la più frequente */
 function getDominantWeatherCode(hourlyCodes: (number | undefined | null)[]): number {
   const valid = hourlyCodes.filter((c): c is number => c != null && !isNaN(c));
   if (valid.length === 0) return 0;
 
-  // Raggruppa per categoria
-  const categorie: Record<string, number[]> = {
-    sereno: [],
-    nuvole: [],
-    pioggia: [],
-    temporali: [],
-    nebbia: [],
-    altro: [],
-  };
-  
+  // Conta OGNI singolo codice
+  const freq: Record<number, number> = {};
   for (const c of valid) {
-    if (isGoodWeather(c)) categorie.sereno.push(c);
-    else if (isCloudy(c)) categorie.nuvole.push(c);
-    else if (isRain(c)) categorie.pioggia.push(c);
-    else if (isThunderstorm(c)) categorie.temporali.push(c);
-    else categorie.altro.push(c);
+    freq[c] = (freq[c] || 0) + 1;
   }
   
-  // Trova la categoria più numerosa
-  let maxCategoria = "sereno";
+  // Trova il codice più frequente
+  let maxCode = 0;
   let maxCount = 0;
-  for (const [cat, arr] of Object.entries(categorie)) {
-    if (arr.length > maxCount) {
-      maxCount = arr.length;
-      maxCategoria = cat;
+  for (const [code, count] of Object.entries(freq)) {
+    if (count > maxCount) {
+      maxCount = count;
+      maxCode = parseInt(code);
     }
   }
   
-  // Se la categoria più numerosa è sereno, restituisci 0/1 (sereno)
-  if (maxCategoria === "sereno") return 0;
-  // Se è nuvole, restituisci 2 o 3
-  if (maxCategoria === "nuvole") return 2;
-  // Se è pioggia, restituisci 61
-  if (maxCategoria === "pioggia") return 61;
-  // Se è temporali, controlla se sono davvero tanti
-  if (maxCategoria === "temporali") {
-    // Solo se i temporali sono più del 50% delle ore mostrali
-    if (categorie.temporali.length >= valid.length * 0.5) return 95;
-    // Altrimenti prendi la seconda categoria più frequente
-    let secondCategory = "sereno";
-    let secondCount = 0;
-    for (const [cat, arr] of Object.entries(categorie)) {
-      if (cat !== "temporali" && arr.length > secondCount) {
-        secondCount = arr.length;
-        secondCategory = cat;
-      }
-    }
-    if (secondCategory === "nuvole") return 2;
-    if (secondCategory === "pioggia") return 61;
-    return 0;
-  }
-  
-  return 0;
+  return maxCode;
 }
 
 function formatDate(date: any): string {
@@ -126,7 +65,6 @@ function formatDate(date: any): string {
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
 }
 
-/** Restituisce descrizione del rischio pioggia in base ai mm */
 function getRischioPioggia(mm: number): { label: string; color: string } {
   if (mm === 0) return { label: "Assente", color: "text-emerald-300" };
   if (mm < 0.3) return { label: "Debole", color: "text-amber-300" };
@@ -144,27 +82,53 @@ export default function PrevisioniGiornaliere({
   selectedDay,
   onSelectDay,
 }: PrevisioniGiornaliereProps) {
-  // Calcola il weatherCode dominante dalle ore del giorno
-  const dominantCode = useMemo(() => {
+
+  // Calcola il weatherCode dominante DA TUTTE le ore del giorno (non da finalCode)
+  const dominanteCodice = useMemo(() => {
     if (!dayData || dayData.length === 0) return 0;
     const codici = dayData.map((h: any) => h.weatherCode);
-    return getDominantWeatherCode(codici);
+    const result = getDominantWeatherCode(codici);
+    return result;
   }, [dayData]);
 
-  // Calcola pioggia TOTALE reale dalle ore (non da enrichedDaily)
+  // Calcola pioggia TOTALE reale dalle ore
   const precipTotaleReale = useMemo(() => {
     if (!dayData || dayData.length === 0) return 0;
     return Math.round(dayData.reduce((sum: number, h: any) => sum + (h.precipitation || 0), 0) * 10) / 10;
   }, [dayData]);
 
-  // Se il codice dominante è 0/1/2 usiamo cloudsun per non mostrare il sole pieno se nuvoloso
-  const finalCode = dominantCode;
+  // Calcola il weatherCode per OGNI enrichedDaily (giorno per giorno)
+  // Invece di usare finalCode per tutti, usa i dati reali di ogni giorno
+  const dailyWeatherCodes = useMemo(() => {
+    return enrichedDaily.map((day: any) => {
+      if (!day?.date) return 0;
+      const d = day.date instanceof Date ? day.date : new Date(day.date);
+      // Cerca i dati orari per questo giorno
+      const hours = dayData?.filter((h: any) => {
+        const t = new Date(h.time);
+        return t.getFullYear() === d.getFullYear() &&
+               t.getMonth() === d.getMonth() &&
+               t.getDate() === d.getDate();
+      }) || [];
+      const codici = hours.map((h: any) => h.weatherCode);
+      return getDominantWeatherCode(codici);
+    });
+  }, [enrichedDaily, dayData]);
 
-  // Calcola statistiche per fasce orarie REALI con dati Open-Meteo
+  // Calcola pioggia per OGNI giorno
+  const dailyPrecipTotals = useMemo(() => {
+    return enrichedDaily.map((day: any, idx: number) => {
+      if (!day?.date) return 0;
+      // Usa i dati orari effettivi se disponibili, altrimenti enrichedDaily
+      if (idx === selectedDay && precipTotaleReale > 0) return precipTotaleReale;
+      return Math.round(day.precipSum * 10) / 10;
+    });
+  }, [enrichedDaily, selectedDay, precipTotaleReale]);
+
+  // Calcola statistiche per fasce orarie
   const fasce = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
 
-    // Filtra ore per fascia
     const mattina = dayData.filter((h: any) => {
       const hh = new Date(h.time).getHours();
       return hh >= 6 && hh <= 11;
@@ -241,11 +205,10 @@ export default function PrevisioniGiornaliere({
       else if (salita >= 3) { termicheLabel = "Buone 🪂"; termicheColore = "text-orange-400"; }
       else if (salita >= 2) { termicheLabel = "Moderate 👍"; termicheColore = "text-amber-400"; }
       else if (salita >= 1) { termicheLabel = "Deboli 👎"; termicheColore = "text-amber-300"; }
-      else if (salita >= 0.3) { termicheLabel = "Molto deboli ☁️"; termicheColore = "text-yellow-300"; }
+      else if (salita >= 0.3) { termicheLabel = "M. deboli ☁️"; termicheColore = "text-yellow-300"; }
 
       let score = 5;
       if (windMedia >= 5 && windMedia <= 18) score += 2;
-      else if (windMedia > 18 && windMedia <= 25) score += 1;
       else if (windMedia > 25) score -= 2;
       else score -= 1;
       
@@ -260,9 +223,8 @@ export default function PrevisioniGiornaliere({
       
       score = Math.max(0, Math.min(10, Math.round(score)));
 
-      // Icona meteo più frequente nella fascia oraria
       const weatherCodes = ore.map((h: any) => h.weatherCode).filter((c: any) => c != null && !isNaN(c));
-      const weatherCode = getDominantWeatherCode(weatherCodes);
+      const weatherCode = weatherCodes.length > 0 ? getDominantWeatherCode(weatherCodes) : 0;
       const weatherInfo = getWeatherInfo(weatherCode, 18);
 
       return {
@@ -292,14 +254,14 @@ export default function PrevisioniGiornaliere({
           const isActive = idx === selectedDay;
           const dateStr = formatDate(day.date);
           
-          // Usa SEMPRE finalCode (dominantCode) per TUTTI i giorni
-          const weatherCode = finalCode;
-          
+          // Usa il weatherCode CALCOLATO per QUESTO specifico giorno
+          const weatherCode = dailyWeatherCodes[idx] ?? dominanteCodice ?? 0;
           const weatherInfo = getWeatherInfo(weatherCode, 36);
           const condizioni = weatherInfo.desc;
           
-          // USA la pioggia reale dalle ore, NON da enrichedDaily
-          const rischio = getRischioPioggia(precipTotaleReale);
+          // Pioggia per questo giorno
+          const precipGiorno = dailyPrecipTotals[idx] ?? day.precipSum ?? 0;
+          const rischio = getRischioPioggia(precipGiorno);
           
           const tempMedia = Math.round((day.tempMin + day.tempMax) / 2);
 
@@ -313,12 +275,10 @@ export default function PrevisioniGiornaliere({
                   : "border-slate-700/50 bg-slate-800/30 hover:border-slate-600/60 hover:bg-slate-800/50"
               }`}
             >
-              {/* Indicatore giorno selezionato */}
               {isActive && (
                 <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               )}
 
-              {/* Header giorno */}
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">
                   {idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani"}
@@ -326,14 +286,13 @@ export default function PrevisioniGiornaliere({
                 <span className="text-[11px] text-slate-500">{dateStr}</span>
               </div>
 
-              {/* Riga principale: icona + temperatura */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   {weatherInfo.icon}
                   <div>
                     <div className="text-sm font-medium text-slate-300">{condizioni}</div>
                     <div className="text-xs text-slate-500">
-                      {precipTotaleReale > 0 ? `${precipTotaleReale.toFixed(1)} mm` : "0 mm"}
+                      {precipGiorno > 0 ? `${precipGiorno.toFixed(1)} mm` : "0 mm"}
                     </div>
                   </div>
                 </div>
@@ -343,9 +302,7 @@ export default function PrevisioniGiornaliere({
                 </div>
               </div>
 
-              {/* Griglia dati meteo */}
               <div className="grid grid-cols-2 gap-2">
-                {/* Vento */}
                 <div className="flex items-center gap-2 bg-slate-900/60 rounded-xl px-3 py-2">
                   <Wind className="w-4 h-4 text-sky-400 shrink-0" />
                   <div>
@@ -353,8 +310,6 @@ export default function PrevisioniGiornaliere({
                     <div className="text-sm font-bold text-sky-300">{Math.round(day.avgWind || 0)} km/h</div>
                   </div>
                 </div>
-
-                {/* Nuvolosità */}
                 <div className="flex items-center gap-2 bg-slate-900/60 rounded-xl px-3 py-2">
                   <Cloud className="w-4 h-4 text-slate-400 shrink-0" />
                   <div>
@@ -362,8 +317,6 @@ export default function PrevisioniGiornaliere({
                     <div className="text-sm font-bold text-slate-200">{Math.round(day.avgCloud || 0)}%</div>
                   </div>
                 </div>
-
-                {/* Pioggia - ORA USA precipTotaleReale */}
                 <div className="flex items-center gap-2 bg-slate-900/60 rounded-xl px-3 py-2">
                   <Umbrella className="w-4 h-4 text-blue-400 shrink-0" />
                   <div>
@@ -371,8 +324,6 @@ export default function PrevisioniGiornaliere({
                     <div className={`text-sm font-bold ${rischio.color}`}>{rischio.label}</div>
                   </div>
                 </div>
-
-                {/* Temp media */}
                 <div className="flex items-center gap-2 bg-slate-900/60 rounded-xl px-3 py-2">
                   <Thermometer className="w-4 h-4 text-orange-400 shrink-0" />
                   <div>
