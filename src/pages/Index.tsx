@@ -15,7 +15,8 @@ import MeteoTab from "@/components/MeteoTab";
 import VentiTab from "@/components/VentiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiTab from "@/components/AnalisiTab";
-import { Sparkles, Navigation, CloudSun } from "lucide-react";
+import HourlyForecastChart from "@/components/HourlyForecastChart";
+import { Sparkles, Navigation, CloudSun, Clock } from "lucide-react";
 
 export function Page() {
   const {
@@ -42,8 +43,6 @@ export function Page() {
   if (error) return <ErrorScreen error={error} onRetry={loadWeather} />;
 
   const selectedDateLabel = dateLabels?.[selectedDay] || undefined;
-
-  // Ottieni tutti i dati orari
   const hourlyData = meteoData?.hourly;
 
   const lastUpdateStr = lastUpdate?.toLocaleTimeString("it-IT", {
@@ -154,6 +153,14 @@ export function Page() {
             <HourSlider
               selectedHour={selectedHour}
               onChange={setSelectedHour}
+            />
+
+            {/* 🌟 NUOVO GRAFICO ORARIO */}
+            <HourlyForecastChart
+              hourlyData={hourlyData || []}
+              selectedDay={selectedDay}
+              selectedHour={selectedHour}
+              onHourSelect={setSelectedHour}
             />
 
             <div className="bg-slate-900/40 border border-slate-700/30 rounded-2xl p-4 md:p-5 animate-scale-in">
