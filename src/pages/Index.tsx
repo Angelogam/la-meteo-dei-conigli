@@ -46,16 +46,19 @@ export function Page() {
       {/* Header con titolo centrale e parapendio laterali */}
       <header className="text-center py-4 border-b border-slate-800 relative overflow-hidden">
         <div className="flex items-center justify-center gap-3 md:gap-6">
-          {/* Coniglio sinistro con parapendio */}
+          {/* Coniglio sinistro con paracadute colorato piccolo */}
           <div className="hidden sm:flex flex-col items-center animate-float-left">
             <div className="relative">
-              <svg className="w-14 h-14 md:w-16 md:h-16 text-orange-400" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M32 8C16 8 4 16 4 28h8c0-8 8-14 20-14s20 6 20 14h8c0-12-12-20-28-20z" fill="currentColor" opacity="0.6"/>
-                <path d="M8 28h48" stroke="currentColor" strokeWidth="2" opacity="0.4"/>
-                <line x1="32" y1="28" x2="32" y2="44" stroke="currentColor" strokeWidth="2" opacity="0.5"/>
-                <circle cx="32" cy="48" r="4" fill="#f97316" opacity="0.8"/>
+              <svg className="w-10 h-10 md:w-12 md:h-12" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Paracadute con spicchi colorati */}
+                <path d="M32 6C14 6 2 16 2 30h8c0-10 10-16 22-16s22 6 22 16h8c0-14-12-24-30-24z" fill="#f97316" opacity="0.8"/>
+                <path d="M12 30C12 20 20 14 32 14s20 6 20 16" fill="none" stroke="#e2e8f0" strokeWidth="1" opacity="0.5"/>
+                <path d="M22 30C22 22 26 16 32 16s10 6 10 14" fill="none" stroke="#fbbf24" strokeWidth="1.5" opacity="0.6"/>
+                <path d="M8 30C8 22 16 14 32 14s24 8 24 16" fill="none" stroke="#22c55e" strokeWidth="1" opacity="0.4"/>
+                <line x1="32" y1="30" x2="32" y2="46" stroke="#cbd5e1" strokeWidth="1.5" opacity="0.7"/>
+                <circle cx="32" cy="48" r="3" fill="#f97316" opacity="0.9"/>
               </svg>
-              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 text-2xl animate-hop">🐰</span>
+              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 text-lg animate-hop">🐰</span>
             </div>
           </div>
 
@@ -73,16 +76,18 @@ export function Page() {
             </p>
           </div>
 
-          {/* Coniglio destro con parapendio */}
+          {/* Coniglio destro con paracadute colorato piccolo */}
           <div className="hidden sm:flex flex-col items-center animate-float-right">
             <div className="relative">
-              <svg className="w-14 h-14 md:w-16 md:h-16 text-orange-400" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M32 8C16 8 4 16 4 28h8c0-8 8-14 20-14s20 6 20 14h8c0-12-12-20-28-20z" fill="currentColor" opacity="0.6"/>
-                <path d="M8 28h48" stroke="currentColor" strokeWidth="2" opacity="0.4"/>
-                <line x1="32" y1="28" x2="32" y2="44" stroke="currentColor" strokeWidth="2" opacity="0.5"/>
-                <circle cx="32" cy="48" r="4" fill="#f97316" opacity="0.8"/>
+              <svg className="w-10 h-10 md:w-12 md:h-12" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M32 6C14 6 2 16 2 30h8c0-10 10-16 22-16s22 6 22 16h8c0-14-12-24-30-24z" fill="#f97316" opacity="0.8"/>
+                <path d="M12 30C12 20 20 14 32 14s20 6 20 16" fill="none" stroke="#e2e8f0" strokeWidth="1" opacity="0.5"/>
+                <path d="M22 30C22 22 26 16 32 16s10 6 10 14" fill="none" stroke="#fbbf24" strokeWidth="1.5" opacity="0.6"/>
+                <path d="M8 30C8 22 16 14 32 14s24 8 24 16" fill="none" stroke="#22c55e" strokeWidth="1" opacity="0.4"/>
+                <line x1="32" y1="30" x2="32" y2="46" stroke="#cbd5e1" strokeWidth="1.5" opacity="0.7"/>
+                <circle cx="32" cy="48" r="3" fill="#f97316" opacity="0.9"/>
               </svg>
-              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 text-2xl animate-hop" style={{ animationDelay: '0.3s' }}>🐰</span>
+              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 text-lg animate-hop" style={{ animationDelay: '0.3s' }}>🐰</span>
             </div>
           </div>
         </div>
