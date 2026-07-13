@@ -14,23 +14,27 @@ export interface TermicheData {
 
 /**
  * Calcola termiche usando SOLO dati reali da Open-Meteo.
- * 
- * CALIBRATA per le Alpi Piemontesi (dati reali da Meteo Parapente / 3B Meteo).
- * 
- * Base termica (LCL) = (T - Td) × 100  (più realistica delle Alpi)
- * Top = base + (forza × 150)
- * Rateo massimo = 3 m/s
- * 
- * Fattori:
- * - Gradiente: max 2.5 punti
- * - Vento: max 2 punti (ideale 8-20 km/h)
- * - Nuvolosità: max 1.5 punti
- * - UV: max 1 punto
- * - Umidità: max 1 punto
- * 
+ *
+ * CALIBRATA v2 — più severa per le Alpi Piemontesi (Bric Lombatera, Pian Munè).
+ *
+ * Base termica (LCL) = (T - Td) × 100
+ * Top = base + (forza × 120)
+ * Rateo massimo = 2.5 m/s
+ *
+ * Fattori (score 0-10):
+ * - Gradiente: max 2.5
+ * - Vento: max 2 (ideale 8-20 km/h)
+ * - Nuvolosità: max 1.5 (idealmente 15-45%)
+ * - UV: max 1
+ * - Umidità: max 1
+ * - Pressione: max 0.5
+ *
  * Penalità:
- * - Vento < 8 km/h: -1 punto (termiche deboli)
- * - Pioggia: annulla tutto
+ * - Vento < 8 km/h: forte riduzione
+ * - Vento > 22 km/h: riduzione
+ * - Pioggia: annulla
+ * - Nuvole > 60%: riduzione
+ * - Umidità > 65%: riduzione
  */
 export function calcolaTermiche(weather: HourData | any, altitude: number): TermicheData {
   const temperature = weather.temperature ?? 15;
@@ -58,16 +62,13 @@ export function calcolaTermiche(weather: HourData | any, altitude: number): Term
   }
 
   // --- 1. BASE TERMICA (LCL) ---
-  // LCL = (temperatura - dewPoint) × 100 (calibrato per Alpi)
   const spread = temperature - dewPoint;
   let cloudBase = Math.round(spread * 100);
-
-  // Limiti realistici per le Alpi
   if (cloudBase < 300) cloudBase = 300;
   if (cloudBase > 2500) cloudBase = 2500;
 
   // --- 2. GRADIENTE TERMICO REALE ---
-  let gradienteReale = 0.98; // default gradiente secco
+  let gradienteReale = 0.98;
   if (temp80m != null) {
     const diff = temperature - temp80m;
     gradienteReale = (diff / 78) * 100;
@@ -76,26 +77,34 @@ export function calcolaTermiche(weather: HourData | any, altitude: number): Term
     gradienteReale = (diff / 118) * 100;
   }
 
-  // --- 3. FORZA TERMICA (score 0-10, calibrato) ---
+  // --- 3. FORZA TERMICA (score 0-10) ---
   let score = 0;
 
-  // Fattore gradiente (max 2.5 punti)
+  // Fattore gradiente (max 2.5)
   if (gradienteReale >= 1.2) score += 2.5;
   else if (gradienteReale >= 0.98) score += 1.5;
   else if (gradienteReale >= 0.7) score += 0.5;
 
-  // Fattore vento (max 2 punti) — ideale 8-20 km/h per le Alpi
-  if (windSpeed >= 8 && windSpeed <= 20) score += 2;
-  else if (windSpeed >= 5 && windSpeed < 8) score += 1;
-  else if (windSpeed > 20 && windSpeed <= 25) score += 0.5;
-  else if (windSpeed >= 1 && windSpeed < 5) score += 0.3; // vento debole = termiche deboli
+  // Fattore vento (max 2) — ideale 8-20 km/h
+  if (windSpeed >= 8 && windSpeed <= 20) {
+    score += 2;
+  } else if (windSpeed > 20 && windSpeed <= 25) {
+    score += 0.8;
+  } else if (windSpeed > 25) {
+    score += 0.3;
+  } else {
+    // Vento < 8 km/h: penalità forte
+    if (windSpeed >= 6 && windSpeed < 8) score += 0.8;
+    else if (windSpeed >= 4 && windSpeed < 6) score += 0.3;
+    // sotto 4 km/h non si aggiunge nulla
+  }
 
-  // Fattore nuvolosità (max 1.5 punti)
+  // Fattore nuvolosità (max 1.5) — cumuli ideali per termiche
   if (cloudCover >= 15 && cloudCover <= 45) score += 1.5;
   else if (cloudCover >= 5 && cloudCover < 15) score += 1;
   else if (cloudCover >= 1 && cloudCover < 5) score += 0.3;
 
-  // Fattore UV (max 1 punto)
+  // Fattore UV (max 1)
   if (uvIndex != null) {
     if (uvIndex >= 8) score += 1;
     else if (uvIndex >= 6) score += 0.7;
@@ -103,65 +112,64 @@ export function calcolaTermiche(weather: HourData | any, altitude: number): Term
     else if (uvIndex >= 2) score += 0.2;
   }
 
-  // Fattore umidità (max 1 punto)
+  // Fattore umidità (max 1)
   if (humidity >= 30 && humidity <= 45) score += 1;
   else if (humidity > 45 && humidity <= 55) score += 0.7;
   else if (humidity >= 20 && humidity < 30) score += 0.3;
 
-  // Fattore pressione (max 0.5 punti)
+  // Fattore pressione (max 0.5)
   if (pressure != null) {
     if (pressure <= 1005) score += 0.5;
     else if (pressure <= 1010) score += 0.3;
     else if (pressure <= 1015) score += 0.1;
   }
 
-  // Penalità per vento debole (termiche non si attivano bene)
-  if (windSpeed < 4) score *= 0.7;
+  // Penalità per vento debole (termiche non si attivano)
+  if (windSpeed < 4) score *= 0.5;
+  else if (windSpeed >= 4 && windSpeed < 6) score *= 0.7;
 
   // --- 4. TOP TERMICO ---
-  // Deterministico: base + (forza × 150) — più realistico
   const forza = Math.min(10, Math.max(0, Math.round(score * 10) / 10));
-  const spessore = Math.round(forza * 150);
+  // Spessore più conservativo: forza × 120
+  const spessore = Math.round(forza * 120);
   let top = cloudBase + Math.max(50, spessore);
-
-  // Limiti realistici per Alpi Piemontesi
-  if (top > 4000) top = 4000;
+  if (top > 3500) top = 3500;
   if (top < cloudBase + 50) top = cloudBase + 50;
 
-  // --- 5. RATEO (m/s) ---
-  // Deterministico: (forza / 10) × 3 (max 3 m/s, più realistico)
-  let rateo = (forza / 10) * 3;
+  // --- 5. RATEO (m/s) — max 2.5 m/s (più realistico) ---
+  let rateo = (forza / 10) * 2.5;
 
   // Correzione per pioggia
   if (precipitation > 1) rateo = 0;
 
   // Correzione per vento forte
-  if (windSpeed > 22) rateo *= 0.5;
-  else if (windSpeed > 15) rateo *= 0.8;
+  if (windSpeed > 22) rateo *= 0.4;
+  else if (windSpeed > 15) rateo *= 0.7;
 
   // Correzione per nuvole eccessive
-  if (cloudCover > 70) rateo *= 0.3;
-  else if (cloudCover > 60) rateo *= 0.6;
+  if (cloudCover > 70) rateo *= 0.2;
+  else if (cloudCover > 60) rateo *= 0.4;
 
   // Correzione per vento troppo debole
-  if (windSpeed < 3) rateo *= 0.5;
+  if (windSpeed < 3) rateo *= 0.3;
+  else if (windSpeed < 5) rateo *= 0.6;
+
+  // Correzione per umidità alta
+  if (humidity > 65) rateo *= 0.5;
 
   rateo = Math.max(0.05, Math.round(rateo * 10) / 10);
 
-  // --- 6. LABEL (calibrato) ---
+  // --- 6. LABEL ---
   let label: string;
   let colore: string;
 
-  if (rateo >= 3.0) {
-    label = "Forte 🔥";
-    colore = "#ef4444";
-  } else if (rateo >= 2.0) {
+  if (rateo >= 2.2) {
     label = "Buona 🪂";
     colore = "#f97316";
-  } else if (rateo >= 1.2) {
+  } else if (rateo >= 1.5) {
     label = "Moderata 🌤️";
     colore = "#eab308";
-  } else if (rateo >= 0.5) {
+  } else if (rateo >= 0.7) {
     label = "Debole 🌥️";
     colore = "#84cc16";
   } else if (rateo >= 0.2) {
@@ -181,17 +189,4 @@ export function calcolaTermiche(weather: HourData | any, altitude: number): Term
     colore,
     gradienteReale: Math.round(gradienteReale * 100) / 100,
   };
-}
-
-/**
- * Genera dati termici per tutte le ore
- */
-export function generaTermicheOrarie(
-  hourlyData: HourData[],
-  altitude: number
-): { hour: number; termiche: TermicheData }[] {
-  return hourlyData.map((h) => ({
-    hour: h.time.getHours(),
-    termiche: calcolaTermiche(h, altitude),
-  }));
 }
