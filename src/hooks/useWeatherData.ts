@@ -22,6 +22,20 @@ export function useWeatherData() {
 
   const site = DECOLLI.find(d => d.id === selectedId)!;
 
+  // === FUNZIONE DI CONFRONTO DATA CORRETTA ===
+  // I dati di Open-Meteo con timezone=Europe/Rome hanno già l'ora locale
+  // Quindi new Date(time) restituisce l'ora in locale.
+  // Per confrontare il giorno, uso solo la data locale (ignoro fuso).
+  function isSameDay(d1: Date, dayOffset: number): boolean {
+    const oggi = new Date();
+    const target = new Date(oggi);
+    target.setDate(oggi.getDate() + dayOffset);
+    
+    return d1.getFullYear() === target.getFullYear() &&
+           d1.getMonth() === target.getMonth() &&
+           d1.getDate() === target.getDate();
+  }
+
   // Carica dati per TUTTI i decolli in parallelo
   const loadAllWeather = useCallback(async () => {
     setLoading(true);
@@ -48,21 +62,26 @@ export function useWeatherData() {
       for (const result of results) {
         if (result.status === 'fulfilled' && result.value.data) {
           const { id, data } = result.value;
-          weatherMap[id] = data;
           
           // Trova il dato orario corrente (ora più vicina)
           if (data.hourly && data.hourly.length > 0) {
             const now = new Date();
             const currentHour = now.getHours();
             
-            // Crea un "currentData" sintetico dal dato orario più vicino
+            // Cerca l'ora più vicina all'ora corrente TRA TUTTE LE DATE
             const closestHour = data.hourly.reduce((best: any, h: any) => {
               const hh = h.time.getHours();
-              return Math.abs(hh - currentHour) < Math.abs(best.time.getHours() - currentHour) ? h : best;
+              const diff = Math.abs(hh - currentHour);
+              const bestDiff = Math.abs(best.time.getHours() - currentHour);
+              // Se la differenza è uguale, scegli quella con la data più vicina
+              if (diff < bestDiff) return h;
+              if (diff === bestDiff && isSameDay(h.time, 0)) return h;
+              return best;
             }, data.hourly[0]);
             
             weatherMap[id] = {
               ...weatherMap[id],
+              ...data,
               currentData: closestHour,
               temperature: closestHour.temperature,
               humidity: closestHour.humidity,
@@ -77,13 +96,15 @@ export function useWeatherData() {
               uvIndex: closestHour.uvIndex,
               temp80m: closestHour.temp80m,
               temp120m: closestHour.temp120m,
-              isDay: new Date().getHours() >= 6 && new Date().getHours() <= 20 ? 1 : 0,
+              isDay: currentHour >= 6 && currentHour <= 20 ? 1 : 0,
             };
+          } else {
+            weatherMap[id] = { ...weatherMap[id], ...data };
           }
 
           // Salva anche i dati completi per il decollo selezionato
           if (id === selectedId) {
-            selectedData = data;
+            selectedData = weatherMap[id];
           }
         }
       }
@@ -142,31 +163,22 @@ export function useWeatherData() {
     }
   }, [selectedId, allWeatherData]);
 
-  // Filtra i dati orari per il giorno selezionato
+  // Filtra i dati orari per il giorno selezionato (corretto)
   const dayData = useMemo(() => {
     if (!meteoData?.hourly) return [];
     
-    const today = new Date();
-    const targetDate = new Date(today);
-    targetDate.setDate(today.getDate() + selectedDay);
-
-    return (meteoData.hourly || []).filter((h: any) => {
+    // I dati hourly hanno già time in locale (Europe/Rome)
+    // isSameDay confronta con la data di oggi + selectedDay
+    const filtered = (meteoData.hourly || []).filter((h: any) => {
       if (!h?.time) return false;
-      const d = new Date(h.time);
-      return d.getFullYear() === targetDate.getFullYear() &&
-             d.getMonth() === targetDate.getMonth() &&
-             d.getDate() === targetDate.getDate();
-    }).sort((a: any, b: any) => new Date(a.time).getTime() - new Date(b.time).getTime());
+      return isSameDay(new Date(h.time), selectedDay);
+    });
+
+    return filtered.sort((a: any, b: any) => new Date(a.time).getTime() - new Date(b.time).getTime());
   }, [meteoData, selectedDay]);
 
-  // Dati correnti — usa il decorrente sintetico se disponibile
+  // Dati correnti — usa il dato orario più vicino all'ora selezionata
   const currentData = useMemo(() => {
-    // Se abbiamo il currentData sintetico dalla mappa, usalo
-    if (allWeatherData[selectedId]?.currentData) {
-      return allWeatherData[selectedId].currentData;
-    }
-    
-    // Altrimenti cerca nell'hourly
     if (!dayData || dayData.length === 0) return null;
     
     let closest = dayData[0];
@@ -180,7 +192,7 @@ export function useWeatherData() {
       }
     }
     return closest;
-  }, [dayData, selectedHour, allWeatherData, selectedId]);
+  }, [dayData, selectedHour]);
 
   // Delta termico
   const thermalDelta = useMemo(() => {
@@ -196,12 +208,13 @@ export function useWeatherData() {
     
     return meteoData.daily.map((day: any) => {
       const d = new Date(day.date);
+      
+      // Trova le ore di questo giorno
       const hours = (meteoData.hourly || []).filter((h: any) => {
         if (!h?.time) return false;
-        const t = new Date(h.time);
-        return t.getFullYear() === d.getFullYear() &&
-               t.getMonth() === d.getMonth() &&
-               t.getDate() === d.getDate();
+        return isSameDay(new Date(h.time), 0) && 
+               new Date(h.time).getDate() === d.getDate() &&
+               new Date(h.time).getMonth() === d.getMonth();
       });
 
       const temps = hours.map((h: any) => h.temperature).filter((t: any) => t != null);
