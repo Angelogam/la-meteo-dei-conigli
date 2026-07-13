@@ -66,12 +66,12 @@ export default function MeteoTab({
   return (
     <div className="space-y-5 animate-slide-up">
       {/* Header — weather condition */}
-      <div className="flex items-center gap-4 bg-slate-800/40 rounded-2xl p-4 border border-slate-700/30">
-        <span className="text-5xl">{weatherIcon}</span>
+      <div className="flex items-center gap-3 bg-slate-800/50 rounded-2xl p-3 border border-slate-700/40">
+        <span className="text-4xl shrink-0">{weatherIcon}</span>
         <div>
-          <div className="text-lg font-bold text-white">{weatherDesc}</div>
-          <div className="text-sm text-slate-400">
-            {isDay ? "Giorno" : "Notte"} · Codice {weatherCode}
+          <div className="text-sm font-bold text-white">{weatherDesc}</div>
+          <div className="text-[10px] text-slate-500 font-mono">
+            Codice {weatherCode} · {isDay ? "Giorno" : "Notte"} · Nuvolosità {cloudCover ?? "?"}%
           </div>
         </div>
       </div>
@@ -81,14 +81,14 @@ export default function MeteoTab({
         <MetricCard
           icon={<Thermometer className="w-4 h-4 text-orange-400" />}
           label="Temperatura"
-          value={`${Math.round(temp)}°C`}
+          value={temp != null ? `${Math.round(temp)}°C` : "—"}
           sub={feelsDelta !== 0 ? `Percepita ${Math.round(feelsLike)}°C (${feelsDelta > 0 ? "+" : ""}${feelsDelta}°)` : undefined}
         />
         <MetricCard
           icon={<Droplets className="w-4 h-4 text-sky-400" />}
           label="Umidità"
-          value={`${humidity ?? "—"}%`}
-          sub={dewPoint != null ? `Punto rugiada ${Math.round(dewPoint)}°C` : undefined}
+          value={humidity != null ? `${Math.round(humidity)}%` : "—"}
+          sub={dewPoint != null ? `Rugiada ${Math.round(dewPoint)}°C` : undefined}
         />
         <MetricCard
           icon={<Gauge className="w-4 h-4 text-emerald-400" />}
@@ -98,8 +98,8 @@ export default function MeteoTab({
         />
         <MetricCard
           icon={<Cloud className="w-4 h-4 text-slate-400" />}
-          label="Nuvolosità"
-          value={`${cloudCover ?? "—"}%`}
+          label="Nuvole"
+          value={cloudCover != null ? `${Math.round(cloudCover)}%` : "—"}
           sub={
             cloudCover != null
               ? cloudCover < 20
@@ -108,32 +108,25 @@ export default function MeteoTab({
                 ? "Poco nuvoloso"
                 : cloudCover < 80
                 ? "Nuvoloso"
-                : "Molto nuvoloso"
+                : "Coperto"
               : undefined
           }
         />
         <MetricCard
           icon={<Eye className="w-4 h-4 text-cyan-400" />}
           label="Visibilità"
-          value={visibility ? `${(visibility / 1000).toFixed(1)} km` : "—"}
+          value={visibility != null ? `${(visibility / 1000).toFixed(1)} km` : "—"}
           sub={visibility != null && visibility < 5000 ? "Ridotta" : "Buona"}
         />
         <MetricCard
           icon={<CloudRain className="w-4 h-4 text-blue-400" />}
-          label="Precipitazioni"
-          value={precipitation ? `${precipitation.toFixed(1)} mm` : "0 mm"}
-          sub={rain ? `Pioggia: ${rain.toFixed(1)} mm` : snow ? `Neve: ${snow.toFixed(1)} cm` : undefined}
+          label="Pioggia"
+          value={precipitation != null && precipitation > 0 ? `${precipitation.toFixed(1)} mm` : "0 mm"}
+          sub={rain && rain > 0 ? `Pioggia: ${rain.toFixed(1)} mm` : snow && snow > 0 ? `Neve: ${snow.toFixed(1)} cm` : undefined}
         />
-        {snow != null && snow > 0 && (
-          <MetricCard
-            icon={<Snowflake className="w-4 h-4 text-blue-200" />}
-            label="Neve"
-            value={`${snow.toFixed(1)} cm`}
-          />
-        )}
         <MetricCard
           icon={<Sun className="w-4 h-4 text-yellow-400" />}
-          label="Indice UV"
+          label="UV"
           value={uvIndex != null ? uvIndex.toFixed(1) : "—"}
           sub={
             uvIndex != null
@@ -150,30 +143,10 @@ export default function MeteoTab({
         <MetricCard
           icon={<Wind className="w-4 h-4 text-sky-400" />}
           label="Vento"
-          value={`${Math.round(windSpeed ?? 0)} km/h`}
+          value={windSpeed != null ? `${Math.round(windSpeed)} km/h` : "—"}
           sub={windGust ? `Raffiche ${Math.round(windGust)} km/h` : undefined}
         />
       </div>
-
-      {/* Alba/Tramonto */}
-      {currentData.sunrise && currentData.sunset && (
-        <div className="flex gap-4">
-          <div className="flex-1 bg-slate-800/40 rounded-xl p-3 border border-slate-700/30 text-center">
-            <Sunrise className="w-4 h-4 text-amber-400 mx-auto mb-1" />
-            <div className="text-xs text-slate-400">Alba</div>
-            <div className="text-sm font-bold text-white">
-              {new Date(currentData.sunrise).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
-            </div>
-          </div>
-          <div className="flex-1 bg-slate-800/40 rounded-xl p-3 border border-slate-700/30 text-center">
-            <Sunset className="w-4 h-4 text-orange-400 mx-auto mb-1" />
-            <div className="text-xs text-slate-400">Tramonto</div>
-            <div className="text-sm font-bold text-white">
-              {new Date(currentData.sunset).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -191,7 +164,7 @@ function MetricCard({
   sub?: string;
 }) {
   return (
-    <div className="bg-slate-800/50 border border-slate-700/30 rounded-xl p-3 card-neon hover:border-slate-600/50">
+    <div className="bg-slate-800/50 border border-slate-700/40 rounded-xl p-3 hover:border-slate-600/60 transition-all">
       <div className="flex items-center gap-1.5 mb-1.5">
         {icon}
         <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">{label}</span>
@@ -207,33 +180,33 @@ function getWeatherDesc(code: number | undefined, isDay: number | undefined): st
   if (code == null) return "Dato non disponibile";
   const map: Record<number, string> = {
     0: "Sereno",
-    1: "Prevalentemente sereno",
+    1: "Poco nuvoloso",
     2: "Parzialmente nuvoloso",
     3: "Coperto",
     45: "Nebbia",
     48: "Nebbia con depositi",
-    51: "Pioviggine leggera",
-    53: "Pioviggine moderata",
+    51: "Pioviggine",
+    53: "Pioviggine",
     55: "Pioviggine intensa",
-    56: "Pioviggine gelata leggera",
-    57: "Pioviggine gelata intensa",
-    61: "Pioggia leggera",
-    63: "Pioggia moderata",
-    65: "Pioggia intensa",
-    66: "Pioggia gelata leggera",
-    67: "Pioggia gelata intensa",
-    71: "Neve leggera",
-    73: "Neve moderata",
-    75: "Neve intensa",
+    56: "Pioviggine gelata",
+    57: "Pioviggine gelata",
+    61: "Pioggia debole",
+    63: "Pioggia",
+    65: "Pioggia forte",
+    66: "Pioggia gelata",
+    67: "Pioggia gelata",
+    71: "Neve debole",
+    73: "Neve",
+    75: "Neve forte",
     77: "Granelli di neve",
-    80: "Rovesci di pioggia leggeri",
-    81: "Rovesci di pioggia moderati",
-    82: "Rovesci di pioggia violenti",
-    85: "Rovesci di neve leggeri",
-    86: "Rovesci di neve intensi",
+    80: "Rovesci deboli",
+    81: "Rovesci",
+    82: "Rovesci intensi",
+    85: "Rovesci di neve",
+    86: "Rovesci di neve forti",
     95: "Temporale",
-    96: "Temporale con grandine leggera",
-    99: "Temporale con grandine intensa",
+    96: "Temporale con grandine",
+    99: "Temporale forte con grandine",
   };
   return map[code] || "Sconosciuto";
 }
