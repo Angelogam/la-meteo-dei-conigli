@@ -40,32 +40,34 @@ function getWeatherInfo(code: number | undefined | null, size: number = 32) {
   return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "Sereno" };
 }
 
-/** Codice WMO dominante da un array di codici orari */
+/** Codice WMO più frequente da un array di codici orari */
 function getDominantWeatherCode(hourlyCodes: (number | undefined | null)[]): number {
   const valid = hourlyCodes.filter((c): c is number => c != null && !isNaN(c));
   if (valid.length === 0) return 0;
 
-  // Priorità per condizioni peggiori (temporali > pioggia > nuvole > sereno)
-  const priority = [95, 96, 97, 98, 99, 61, 62, 63, 64, 65, 66, 67, 51, 52, 53, 54, 55, 56, 57, 71, 72, 73, 74, 75, 76, 77, 80, 81, 82, 83, 84, 3, 2, 1, 0];
-  
-  for (const p of priority) {
-    if (valid.includes(p)) return p;
+  // Conta frequenze
+  const freq: Record<number, number> = {};
+  for (const c of valid) {
+    freq[c] = (freq[c] || 0) + 1;
   }
 
-  return valid[0] || 0;
+  // Prendi il codice più frequente
+  let maxFreq = 0;
+  let mostFrequent = valid[0];
+  for (const [code, count] of Object.entries(freq)) {
+    if (count > maxFreq) {
+      maxFreq = count;
+      mostFrequent = parseInt(code);
+    }
+  }
+
+  return mostFrequent;
 }
 
 function formatDate(date: any): string {
   if (!date) return "";
   const d = date instanceof Date ? date : new Date(date);
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
-}
-
-function getDayLabel(idx: number, dateStr: string): string {
-  if (idx === 0) return `Oggi ${dateStr}`;
-  if (idx === 1) return `Domani ${dateStr}`;
-  if (idx === 2) return `Dopodomani ${dateStr}`;
-  return `Giorno ${dateStr}`;
 }
 
 /** Restituisce descrizione del rischio pioggia in base ai mm */
@@ -92,6 +94,18 @@ export default function PrevisioniGiornaliere({
     const codici = dayData.map((h: any) => h.weatherCode);
     return getDominantWeatherCode(codici);
   }, [dayData]);
+
+  // Prepara i codici dominanti per tutti e 3 i giorni (vengono passati dall'esterno come enrichedDaily con dayData)
+  const dailyWeatherCodes = useMemo(() => {
+    if (!enrichedDaily || enrichedDaily.length === 0) return {};
+    const codes: Record<string, number> = {};
+    enrichedDaily.slice(0, 3).forEach((day: any, idx: number) => {
+      // Se abbiamo dayData per questo giorno, usiamo quello
+      const dateStr = day.date ? formatDate(day.date) : "";
+      codes[dateStr] = day.weatherCode ?? 0;
+    });
+    return codes;
+  }, [enrichedDaily]);
 
   // Calcola statistiche per fasce orarie REALI con dati Open-Meteo
   const fasce = useMemo(() => {
@@ -193,14 +207,9 @@ export default function PrevisioniGiornaliere({
       
       score = Math.max(0, Math.min(10, Math.round(score)));
 
-      // Icona meteo rappresentativa della fascia: weatherCode dominante
+      // Icona meteo più frequente nella fascia oraria
       const weatherCodes = ore.map((h: any) => h.weatherCode).filter((c: any) => c != null && !isNaN(c));
-      const weatherCode = weatherCodes.length > 0 
-        ? weatherCodes.sort((a: number, b: number) => 
-            weatherCodes.filter((v: number) => v === a).length - 
-            weatherCodes.filter((v: number) => v === b).length
-          ).pop()
-        : 0;
+      const weatherCode = getDominantWeatherCode(weatherCodes);
       const weatherInfo = getWeatherInfo(weatherCode, 18);
 
       return {
@@ -230,8 +239,7 @@ export default function PrevisioniGiornaliere({
           const isActive = idx === selectedDay;
           const dateStr = formatDate(day.date);
           
-          // Usiamo il weatherCode dominante dalle ore del giorno SE siamo nel giorno selezionato
-          // altrimenti usiamo il codice dal dayData passato
+          // Usiamo il weatherCode dominante dalle ore del giorno
           const weatherCode = isActive && dayData?.length > 0 
             ? dominantCode 
             : (day.weatherCode ?? 0);
