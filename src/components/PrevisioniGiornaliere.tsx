@@ -20,40 +20,39 @@ interface PrevisioniGiornaliereProps {
 
 /** Mappa WMO weather code a icona e descrizione */
 function getWeatherInfo(code: number | undefined | null, size: number = 32) {
-  // Se non c'è codice o è NaN, mostriamo nuvoloso come fallback
   if (code === undefined || code === null || isNaN(code)) {
     return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "N/D" };
   }
 
-  // WMO 0: Sereno
   if (code === 0) return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "Sereno" };
-  // WMO 1: Prevalentemente sereno
-  if (code === 1) return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "Prevalentemente sereno" };
-  // WMO 2: Poco nuvoloso
+  if (code === 1) return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "Sereno" };
   if (code === 2) return { icon: <CloudSun size={size} className="text-amber-200 drop-shadow-lg" />, desc: "Poco nuvoloso" };
-  // WMO 3: Nuvoloso
   if (code === 3) return { icon: <CloudSun size={size} className="text-slate-300 drop-shadow-lg" />, desc: "Nuvoloso" };
-  // WMO 4-9: Nuvoloso variabile
   if (code >= 4 && code <= 9) return { icon: <Cloud size={size} className="text-slate-400 drop-shadow-lg" />, desc: "Nuvoloso variabile" };
-  // WMO 10: Coperto
-  if (code === 10) return { icon: <Cloud size={size} className="text-slate-500 drop-shadow-lg" />, desc: "Coperto" };
-  // WMO 11-12: Nebbia
-  if (code >= 11 && code <= 12) return { icon: <CloudFog size={size} className="text-slate-400 drop-shadow-lg" />, desc: "Nebbia" };
+  if (code >= 10 && code <= 12) return { icon: <Cloud size={size} className="text-slate-500 drop-shadow-lg" />, desc: "Coperto" };
   if (code === 13) return { icon: <CloudLightning size={size} className="text-yellow-300 drop-shadow-lg" />, desc: "Temporale" };
-  // WMO 45-48: Nebbia
   if (code >= 45 && code <= 48) return { icon: <CloudFog size={size} className="text-slate-400 drop-shadow-lg" />, desc: "Nebbia" };
-  // WMO 51-57: Pioggerella
   if (code >= 51 && code <= 57) return { icon: <CloudRain size={size} className="text-blue-300 drop-shadow-lg" />, desc: "Pioggerella" };
-  // WMO 61-67: Pioggia
   if (code >= 61 && code <= 67) return { icon: <CloudRain size={size} className="text-blue-400 drop-shadow-lg" />, desc: "Pioggia" };
-  // WMO 71-77: Neve
   if (code >= 71 && code <= 77) return { icon: <Snowflake size={size} className="text-blue-200 drop-shadow-lg" />, desc: "Neve" };
-  // WMO 80-84: Rovesci
   if (code >= 80 && code <= 84) return { icon: <CloudRain size={size} className="text-blue-300 drop-shadow-lg" />, desc: "Rovesci" };
-  // WMO 95-99: Temporali
   if (code >= 95 && code <= 99) return { icon: <CloudLightning size={size} className="text-yellow-300 drop-shadow-lg" />, desc: "Temporali" };
-  // Fallback: se il codice non è in nessun range, mostriamo sereno
   return { icon: <Sun size={size} className="text-amber-300 drop-shadow-lg" />, desc: "Sereno" };
+}
+
+/** Codice WMO dominante da un array di codici orari */
+function getDominantWeatherCode(hourlyCodes: (number | undefined | null)[]): number {
+  const valid = hourlyCodes.filter((c): c is number => c != null && !isNaN(c));
+  if (valid.length === 0) return 0;
+
+  // Priorità per condizioni peggiori (temporali > pioggia > nuvole > sereno)
+  const priority = [95, 96, 97, 98, 99, 61, 62, 63, 64, 65, 66, 67, 51, 52, 53, 54, 55, 56, 57, 71, 72, 73, 74, 75, 76, 77, 80, 81, 82, 83, 84, 3, 2, 1, 0];
+  
+  for (const p of priority) {
+    if (valid.includes(p)) return p;
+  }
+
+  return valid[0] || 0;
 }
 
 function formatDate(date: any): string {
@@ -87,6 +86,13 @@ export default function PrevisioniGiornaliere({
   selectedDay,
   onSelectDay,
 }: PrevisioniGiornaliereProps) {
+  // Calcola il weatherCode dominante dalla media delle ore del giorno
+  const dominantCode = useMemo(() => {
+    if (!dayData || dayData.length === 0) return 0;
+    const codici = dayData.map((h: any) => h.weatherCode);
+    return getDominantWeatherCode(codici);
+  }, [dayData]);
+
   // Calcola statistiche per fasce orarie REALI con dati Open-Meteo
   const fasce = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
@@ -187,7 +193,7 @@ export default function PrevisioniGiornaliere({
       
       score = Math.max(0, Math.min(10, Math.round(score)));
 
-      // Icona meteo rappresentativa della fascia: prendo il weatherCode più frequente
+      // Icona meteo rappresentativa della fascia: weatherCode dominante
       const weatherCodes = ore.map((h: any) => h.weatherCode).filter((c: any) => c != null && !isNaN(c));
       const weatherCode = weatherCodes.length > 0 
         ? weatherCodes.sort((a: number, b: number) => 
@@ -218,12 +224,18 @@ export default function PrevisioniGiornaliere({
 
   return (
     <div className="space-y-4">
-      {/* SELEZIONE GIORNI — stile pulito, dati seri */}
+      {/* SELEZIONE GIORNI */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {enrichedDaily.slice(0, 3).map((day: any, idx: number) => {
           const isActive = idx === selectedDay;
           const dateStr = formatDate(day.date);
-          const weatherCode = day.weatherCode ?? 0;
+          
+          // Usiamo il weatherCode dominante dalle ore del giorno SE siamo nel giorno selezionato
+          // altrimenti usiamo il codice dal dayData passato
+          const weatherCode = isActive && dayData?.length > 0 
+            ? dominantCode 
+            : (day.weatherCode ?? 0);
+          
           const weatherInfo = getWeatherInfo(weatherCode, 36);
           const condizioni = weatherInfo.desc;
           const rischio = getRischioPioggia(day.precipSum || 0);
@@ -312,7 +324,7 @@ export default function PrevisioniGiornaliere({
         })}
       </div>
 
-      {/* FASCE ORARIE con dati REALI */}
+      {/* FASCE ORARIE */}
       {fasce && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           {fasce.map((fascia: any, idx: number) => {
