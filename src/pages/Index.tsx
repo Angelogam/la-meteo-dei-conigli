@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolloList from "@/components/DecolloList";
@@ -18,6 +18,7 @@ import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import AlertBanner from "@/components/AlertBanner";
 import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
+import DebugMeteo from "@/components/DebugMeteo";
 import {
   getWeatherAlert,
   getStabilityIndex,
@@ -25,7 +26,7 @@ import {
   getWindDirection,
   WindLevel,
 } from "@/utils/weatherHelpers";
-import { CloudSun, Sparkles, AlertTriangle } from "lucide-react";
+import { CloudSun, Sparkles, AlertTriangle, Bug } from "lucide-react";
 
 const Page = () => {
   const {
@@ -51,6 +52,8 @@ const Page = () => {
     loadWeather,
     allWeatherData,
   } = useWeatherData();
+
+  const [showDebug, setShowDebug] = useState(false);
 
   const alert = useMemo(() => {
     if (!currentData) return { level: "info", message: "Caricamento...", icon: "ℹ️" };
@@ -83,6 +86,7 @@ const Page = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-white flex flex-col">
+      {showDebug && <DebugMeteo />}
       <Header />
 
       <main className="flex-1 container mx-auto px-3 py-4 md:px-6 lg:px-8">
@@ -96,6 +100,14 @@ const Page = () => {
             allWeatherData={allWeatherData}
           />
         </div>
+
+        <button
+          onClick={() => setShowDebug(!showDebug)}
+          className="fixed bottom-4 right-4 z-50 bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded-xl shadow-lg text-sm font-bold flex items-center gap-2"
+        >
+          <Bug className="w-4 h-4" />
+          DEBUG
+        </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 lg:gap-6">
           {/* Sidebar - visibile solo su desktop */}
