@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { weatherService } from "@/services/weatherService";
 import { DECOLLI } from "@/data/decolli";
+import { getWeatherAlert, getStabilityIndex, getThermalStrength, getWindProfile } from "@/utils/weatherHelpers";
 
 export function useWeatherData() {
   const [selectedId, setSelectedId] = useState(DECOLLI[0].id);
@@ -57,7 +58,6 @@ export function useWeatherData() {
   const currentData = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
     
-    // Cerca l'ora più vicina a selectedHour
     let closest = dayData[0];
     let minDiff = Math.abs(new Date(closest.time).getHours() - selectedHour);
     
@@ -78,13 +78,35 @@ export function useWeatherData() {
     return Math.round((Math.max(...temps) - Math.min(...temps)) * 10) / 10;
   }, [dayData]);
 
+  // Stabilità atmosferica
+  const stabilityIndex = useMemo(() => {
+    if (!currentData) return { label: "N/D", color: "#64748b" };
+    return getStabilityIndex(currentData.temperature || 20, currentData.humidity || 50, currentData.cloudCover || 30);
+  }, [currentData]);
+
+  // Forza termiche
+  const thermalStrength = useMemo(() => {
+    if (!currentData) return { label: "N/D", color: "#64748b" };
+    return getThermalStrength(currentData.temperature || 20, currentData.cloudCover || 30, currentData.humidity || 50, thermalDelta);
+  }, [currentData, thermalDelta]);
+
+  // Allerta meteo
+  const weatherAlert = useMemo(() => {
+    if (!currentData) return { level: 'info' as const, message: 'Caricamento...', icon: 'ℹ️' };
+    return getWeatherAlert(currentData, thermalDelta);
+  }, [currentData, thermalDelta]);
+
+  // Profilo vento
+  const windProfile = useMemo(() => {
+    if (!currentData) return [];
+    return getWindProfile(currentData.windSpeed || 0, currentData.windDir || 0, currentData.windProfile);
+  }, [currentData]);
+
   const enrichedDaily = useMemo(() => {
     if (!meteoData?.daily) return [];
     
     return meteoData.daily.map((day: any) => {
       const d = new Date(day.date);
-      
-      // Filtra ore per QUESTO giorno specifico
       const hours = (meteoData.hourly || []).filter((h: any) => {
         if (!h?.time) return false;
         const t = new Date(h.time);
@@ -151,5 +173,9 @@ export function useWeatherData() {
     enrichedDaily,
     dateLabels,
     loadWeather,
+    stabilityIndex,
+    thermalStrength,
+    weatherAlert,
+    windProfile,
   };
 }

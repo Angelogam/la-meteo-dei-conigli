@@ -139,9 +139,9 @@ export default function MeteoTab({
             <div className="text-sm text-slate-300 mb-1 font-semibold">Stabilità</div>
             <div
               className="text-lg font-bold tabular-nums"
-              style={{ color: stabilityIndex.color }}
+              style={{ color: stabilityIndex?.color || "#64748b" }}
             >
-              {stabilityIndex.label}
+              {stabilityIndex?.label || "N/D"}
             </div>
           </div>
         </div>
