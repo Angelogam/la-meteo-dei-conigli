@@ -9,16 +9,22 @@ interface TermicheTabProps {
   site: { alt: number };
   thermalDelta?: number;
   thermalStrength?: { label: string; color: string };
+  hourlyData?: any[];
+  selectedHour?: number;
 }
 
-export default function TermicheTab({ currentData, dayData, site, thermalDelta, thermalStrength }: TermicheTabProps) {
+export default function TermicheTab({ currentData, dayData, site, thermalDelta, thermalStrength, hourlyData, selectedHour }: TermicheTabProps) {
   const hasData = currentData && dayData;
 
   return (
     <div className="space-y-5">
       {/* Chart */}
-      {hasData && (
-        <ThermalChart dayData={dayData} selectedHour={currentData.hour ?? 12} />
+      {hasData && hourlyData && (
+        <ThermalChart
+          hourlyData={hourlyData}
+          selectedHour={selectedHour ?? 12}
+          siteAltitude={site.alt}
+        />
       )}
 
       {/* Info cards */}

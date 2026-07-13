@@ -3,20 +3,50 @@
 import React, { useMemo } from "react";
 
 interface ThermalChartProps {
-  dayData: any;
+  hourlyData: any[];
   selectedHour: number;
+  siteAltitude: number;
 }
 
 const HOURS = Array.from({ length: 18 }, (_, i) => i + 5); // 5:00 – 22:00
 
-function getThermalIntensity(hour: number, dayData: any): number {
-  if (!dayData) return 0;
-  const solarNoon = 12 + (dayData.timezoneOffset || 0);
-  const dist = Math.abs(hour - solarNoon);
-  const peak = dayData.thermalMax || 3;
-  const base = Math.max(0, peak * Math.max(0, 1 - dist * 0.12));
-  const noise = (Math.sin(hour * 1.7) * 0.15 + Math.cos(hour * 0.9) * 0.1) * peak * 0.12;
-  return Math.max(0, Math.round((base + noise) * 10) / 10);
+function getThermalValue(hour: number, hourlyData: any[], alt: number): number {
+  if (!hourlyData || hourlyData.length === 0) return 0;
+
+  // Find closest hour entry
+  const entry = hourlyData.find((d) => {
+    const h = new Date(d.time).getHours();
+    return h === hour;
+  });
+
+  if (!entry) return 0;
+
+  // Use temperature to estimate thermal strength
+  const temp = entry.temperature2m;
+  const wind = entry.windSpeed10m || 5;
+  const humidity = entry.relativeHumidity2m || 50;
+  const cloudCover = entry.cloudCover || 30;
+
+  // Base thermal potential from temperature (C)
+  // At 30°C → 4 m/s, at 10°C → 0.5 m/s
+  const tempFactor = Math.max(0, (temp - 5) / 6);
+  
+  // Altitude bonus (higher = thinner air = stronger thermals)
+  const altFactor = Math.min(1.8, Math.max(0.7, alt / 1500));
+  
+  // Wind penalty (too much wind disrupts thermals)
+  const windPenalty = Math.max(0.3, 1 - (wind - 3) * 0.05);
+  
+  // Humidity penalty (high humidity = weaker thermals)
+  const humidityPenalty = Math.max(0.5, 1 - (humidity - 30) * 0.005);
+  
+  // Cloud cover penalty (too many clouds = less heating)
+  const cloudPenalty = Math.max(0.3, 1 - cloudCover * 0.008);
+
+  let value = tempFactor * altFactor * windPenalty * humidityPenalty * cloudPenalty;
+  
+  // Round to 1 decimal
+  return Math.max(0, Math.round(value * 10) / 10);
 }
 
 function getColor(value: number): string {
@@ -52,13 +82,13 @@ function getLabel(value: number): string {
   return "Eccezionale";
 }
 
-export default function ThermalChart({ dayData, selectedHour }: ThermalChartProps) {
+export default function ThermalChart({ hourlyData, selectedHour, siteAltitude }: ThermalChartProps) {
   const data = useMemo(() => {
     return HOURS.map((hour) => ({
       hour,
-      value: getThermalIntensity(hour, dayData),
+      value: getThermalValue(hour, hourlyData, siteAltitude),
     }));
-  }, [dayData]);
+  }, [hourlyData, siteAltitude]);
 
   const maxVal = Math.max(...data.map((d) => d.value), 1);
 

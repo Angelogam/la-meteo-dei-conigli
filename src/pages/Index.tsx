@@ -43,6 +43,9 @@ export function Page() {
 
   const selectedDateLabel = dateLabels?.[selectedDay] || undefined;
 
+  // Get hourly data for the selected day
+  const hourlyData = meteoData?.hourly;
+
   const lastUpdateStr = lastUpdate?.toLocaleTimeString("it-IT", {
     hour: "2-digit",
     minute: "2-digit",
@@ -177,6 +180,8 @@ export function Page() {
                   site={{ alt: site.altitude }}
                   thermalDelta={thermalDelta}
                   thermalStrength={thermalStrength}
+                  hourlyData={hourlyData}
+                  selectedHour={selectedHour}
                 />
               )}
               {activeTab === "analisi" && (
