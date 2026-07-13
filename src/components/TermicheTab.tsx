@@ -4,10 +4,11 @@ import React, { useMemo } from "react";
 import GraficoTermiche from "@/components/GraficoTermiche";
 import type { HourData, CurrentData, DailyData } from "@/types/meteo";
 import { calcolaPrevisioneTermica } from "@/services/algoritmoPrevisioni";
+import { fetchCapeData } from "@/services/capeService";
 
 // Cache per CAPE
 let capeCacheGlobal: { time: Date; cape: number; cin: number; li: number }[] = [];
-let capeCacheKey = "";
+let capeLoaded = false;
 
 interface TermicheTabProps {
   currentData: CurrentData | null;
@@ -30,6 +31,16 @@ export default function TermicheTab({
   selectedHour,
   selectedDay,
 }: TermicheTabProps) {
+  // Scarica CAPE al mount
+  React.useEffect(() => {
+    if (!capeLoaded) {
+      capeLoaded = true;
+      fetchCapeData(44.2587, 7.7943).then(data => {
+        capeCacheGlobal = data;
+      });
+    }
+  }, []);
+
   // Calcola previsioni multi-fonte
   const previsioni = useMemo(() => {
     if (!hourlyData || hourlyData.length === 0) return [];
@@ -38,7 +49,6 @@ export default function TermicheTab({
     const targetDate = new Date(oggi);
     targetDate.setDate(oggi.getDate() + selectedDay);
     
-    // Filtra per giorno selezionato
     const dayHours = hourlyData.filter((d: any) => {
       const t = new Date(d.time);
       return t.getFullYear() === targetDate.getFullYear() &&
@@ -48,9 +58,7 @@ export default function TermicheTab({
 
     if (dayHours.length === 0) return [];
 
-    // Usa il motore multi-fonte
     const result = dayHours.map((weather: HourData) => {
-      // Trova CAPE dal cache globale
       const capeEntry = capeCacheGlobal.find(c => {
         const ct = c.time;
         const wt = new Date(weather.time);
@@ -76,17 +84,6 @@ export default function TermicheTab({
     return result;
   }, [hourlyData, site.alt, selectedDay]);
 
-  // Scarica CAPE se non ancora fatto
-  React.useEffect(() => {
-    const loadCape = async () => {
-      const { fetchCapeData } = await import("@/services/termicheEngine");
-      const data = await fetchCapeData(44.2587, 7.7943); // lat/lon medio
-      capeCacheGlobal = data;
-    };
-    loadCape();
-  }, []);
-
-  // Formatta il grafico
   const hourlyForGraph = useMemo(() => {
     return previsioni.map(p => ({
       hour: p.hour,

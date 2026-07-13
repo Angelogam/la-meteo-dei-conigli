@@ -1,6 +1,7 @@
 "use client";
 
 import type { HourData } from "@/types/meteo";
+import { fetchCapeData } from "./capeService";
 
 /**
  * Database climatologico locale (valori medi per decolli piemontesi)
@@ -23,11 +24,11 @@ const CLIMATOLOGIA_LOCALE = [
 
 export interface PrevisioneTermica {
   ora: number;
-  rateoFinale: number; // m/s
-  rateoGFS: number; // m/s
-  rateoOpenMeteo: number; // m/s
-  rateoClimatologia: number; // m/s
-  confidenza: number; // 0-1
+  rateoFinale: number;
+  rateoGFS: number;
+  rateoOpenMeteo: number;
+  rateoClimatologia: number;
+  confidenza: number;
   base: number;
   top: number;
   label: string;
@@ -61,11 +62,9 @@ export function calcolaPrevisioneTermica(
   // --- 1. Rateo da Open-Meteo (condizioni locali) ---
   let rateoOpenMeteo = 0;
   
-  // Spread termico
   const spread = weather.temperature - weather.dewPoint;
   const base = Math.max(200, Math.min(3000, Math.round(spread * 125)));
   
-  // Gradiente termico
   let gradiente = 0.98;
   if (weather.temp80m != null) {
     gradiente = ((weather.temperature - weather.temp80m) / 78) * 100;
@@ -73,7 +72,6 @@ export function calcolaPrevisioneTermica(
     gradiente = ((weather.temperature - weather.temp120m) / 118) * 100;
   }
 
-  // Fattori Open-Meteo
   let forzaOM = 0;
   if (gradiente > 1.2) forzaOM += 3;
   else if (gradiente > 0.98) forzaOM += 2;
@@ -96,7 +94,6 @@ export function calcolaPrevisioneTermica(
     const spessore = Math.max(300, base + (capeValue * 2.5) - base);
     rateoGFS = Math.sqrt((2 * Math.max(1, capeValue)) / spessore) * 4;
     
-    // Correzioni CIN e LI
     if (cinValue < -100) rateoGFS *= 0.5;
     if (liValue > 0) rateoGFS *= 0.7;
   }
@@ -105,7 +102,6 @@ export function calcolaPrevisioneTermica(
   const rateoClimatologia = clima.termicheMedie;
 
   // --- 4. Pesi dinamici ---
-  // Pesi cambiano in base alla confidenza della fonte
   const weightGFS = capeValue > 100 ? 0.40 : capeValue > 50 ? 0.30 : 0.15;
   const weightOpenMeteo = spread > 5 ? 0.35 : spread > 2 ? 0.25 : 0.15;
   const weightClimatologia = 1 - weightGFS - weightOpenMeteo;
@@ -118,7 +114,6 @@ export function calcolaPrevisioneTermica(
   );
 
   // --- 6. Confidenza ---
-  // Alta se le tre fonti dicono la stessa cosa
   const divergenza = Math.max(
     Math.abs(rateoGFS - rateoOpenMeteo),
     Math.abs(rateoGFS - rateoClimatologia),
@@ -160,8 +155,7 @@ export async function calcolaPrevisioniMultiFonte(
   lon: number,
   altitude: number
 ): Promise<PrevisioneTermica[]> {
-  // Recupera CAPE
-  const { fetchCapeData } = await import("./termicheEngine");
+  // Recupera CAPE con import statico
   const capeData = await fetchCapeData(lat, lon);
 
   const oreVolo = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
