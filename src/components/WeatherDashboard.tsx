@@ -47,7 +47,6 @@ export default function WeatherDashboard({
     const maxRateo = Math.max(...ratei);
     const oreAttive = termichePerOra.filter(t => t.rateo >= 0.3).length;
 
-    // Calcola score 0-10
     let score = 0;
     if (mediaRateo >= 3) score = 9;
     else if (mediaRateo >= 2.5) score = 8;
@@ -60,7 +59,6 @@ export default function WeatherDashboard({
     else if (mediaRateo > 0) score = 1;
     else score = 0;
 
-    // Miglior ora
     const best = termichePerOra.reduce((best, t) => t.rateo > best.rateo ? t : best, termichePerOra[0]);
 
     let label = "";
@@ -85,14 +83,12 @@ export default function WeatherDashboard({
       oreAttive,
       totaleOre: oreVolo.length,
       thermalLabel,
-      mediaRateo: Math.round(mediaRateo * 10) / 10,
-      maxRateo: Math.round(maxRateo * 10) / 10,
     };
   }, [dayData, altitude]);
 
   return (
     <div className="space-y-5">
-      {/* Flight Score — Voto giornaliero */}
+      {/* Flight Score */}
       {flightScore && (
         <FlightScore
           score={flightScore.score}
@@ -105,7 +101,7 @@ export default function WeatherDashboard({
         />
       )}
 
-      {/* Tabella oraria 9-19 — come XC Weather */}
+      {/* Tabella oraria 9-19 */}
       <HourlyTable
         dayData={dayData}
         altitude={altitude}
@@ -113,7 +109,7 @@ export default function WeatherDashboard({
         onHourSelect={onHourSelect}
       />
 
-      {/* Profilo vento verticale — come Windy */}
+      {/* Profilo vento verticale */}
       {windProfile && windProfile.length > 0 && (
         <WindProfileComponent
           windProfile={windProfile}

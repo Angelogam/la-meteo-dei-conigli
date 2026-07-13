@@ -21,6 +21,7 @@ import WeatherDashboard from "@/components/WeatherDashboard";
 import AlertBanner from "@/components/AlertBanner";
 import DayInfoPanel from "@/components/DayInfoPanel";
 import { getWeatherAlert, getWindProfile, getStabilityIndex } from "@/utils/weatherHelpers";
+import VentiQuotaTab from "@/components/VentiQuotaTab";
 
 const Page = () => {
   const {
@@ -150,6 +151,12 @@ const Page = () => {
                   dayData={dayData}
                   windProfile={windProfile}
                 />
+                <VentiQuotaTab
+                  dayData={dayData}
+                  selectedHour={selectedHour}
+                  altitude={site.altitude}
+                  siteName={site.name}
+                />
               </>
             )}
 
@@ -164,6 +171,12 @@ const Page = () => {
                   windProfile={windProfileForWeatherDashboard}
                   groundSpeed={currentData?.windSpeed}
                   groundDir={currentData?.windDir}
+                />
+                <VentiQuotaTab
+                  dayData={dayData}
+                  selectedHour={selectedHour}
+                  altitude={site.altitude}
+                  siteName={site.name}
                 />
               </>
             )}
