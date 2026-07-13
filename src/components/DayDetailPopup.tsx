@@ -2,12 +2,21 @@
 
 import React from "react";
 import { X, Thermometer, Wind, CloudRain, Droplets, Gauge, ArrowUp } from "lucide-react";
-import type { HourData, EnrichedDaily } from "@/types/meteo";
+import type { HourData } from "@/types/meteo";
 import { wic, wd, calcThermal } from "@/utils/meteo";
 
 interface DayDetailPopupProps {
   dayData: HourData[];
-  daily: EnrichedDaily;
+  daily: {
+    date: Date;
+    tempMax: number;
+    tempMin: number;
+    weatherCode: number;
+    precipitationSum: number;
+    avgWind?: number;
+    maxWind?: number;
+    avgCloud?: number;
+  };
   dayLabel: string;
   altitude: number;
   onClose: () => void;

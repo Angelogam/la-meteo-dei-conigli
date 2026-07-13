@@ -2,6 +2,19 @@
 
 import type { HourData } from "@/types/meteo";
 
+// ... resto del file invariato, solo fix riga 121
+
+export function generaAnalisiReale(
+  dayData: HourData[],
+  altitude: number
+) {
+  if (!dayData.length) {
+    return {
+      situazioneGenerale: "Dati insufficienti per generare un'analisi<dyad-write path="src/utils/analisi.ts" description="Fix: windGust → windGusts">
+"use client";
+
+import type { HourData } from "@/types/meteo";
+
 interface AnalisiCompleta {
   situazioneGenerale: string;
   profiloTermico: string;
@@ -42,7 +55,7 @@ export function generaAnalisiReale(
   const nuvolositaMedia = media(dayData.map((h) => h.cloudCover || 0));
   const visibilita = nuvolositaMedia < 40 ? "buona" : "moderata";
 
-  // Stima rischio temporali: spread grande + pioggia + nuvolosità
+  // Stima rischio temporali
   const avgSpread = mattina.length ? media(mattina.map((h) => h.temperature - h.dewPoint)) : 0;
   const rischioTemporali = avgSpread > 10 && precipitazioni > 1 && nuvolositaMedia > 50 ? "possibili" : "improbabili";
 
@@ -75,7 +88,6 @@ Cielo: ${descrizioneNuvolosita()}${nuvolositaMedia < 60 ? "; qualche sviluppo cu
   const tempMin = min(dayData.map((h) => h.temperature));
   const spreadMattina = mattina.length ? media(mattina.map((h) => h.temperature - h.dewPoint)) : null;
 
-  // Stima stabilità: vento omogeneo + spread elevato = stabile
   const ventiAlti = dayData.filter((h) => h.time.getHours() >= 10 && h.time.getHours() <= 14).length > 0
     ? media(dayData.filter((h) => h.time.getHours() >= 10 && h.time.getHours() <= 14).map((h) => h.windSpeed))
     : ventoMattina ?? 0;
@@ -118,7 +130,7 @@ ${ventiAlti < 15 ? "Questo favorisce buone condizioni di volo libero: aria asciu
 
   // --- Interpretazione per attività outdoor / volo libero ---
   const ventoMax = max(dayData.map((h) => h.windSpeed));
-  const windGustMax = max(dayData.filter((h) => h.windGust !== null && h.windGust !== undefined).map((h) => h.windGust ?? 0));
+  const windGustsMax = max(dayData.filter((h) => h.windGusts !== null && h.windGusts !== undefined).map((h) => h.windGusts ?? 0));
   const conditions: string[] = [];
 
   if (ventoMax < 18 && nuvolositaMedia < 40 && precipitazioni < 0.5) {
@@ -138,7 +150,7 @@ ${ventiAlti < 15 ? "Questo favorisce buone condizioni di volo libero: aria asciu
   }
 
   if (ventoMax > 20) {
-    conditions.push(`Attenzione al vento in quota: sopra i 2500 m può essere più sostenuto (raffiche fino a ${Math.round(windGustMax)} km/h), quindi conviene restare su quote moderate.`);
+    conditions.push(`Attenzione al vento in quota: sopra i 2500 m può essere più sostenuto (raffiche fino a ${Math.round(windGustsMax)} km/h), quindi conviene restare su quote moderate.`);
   }
 
   const interpretazione = `🪂 Interpretazione per attività outdoor / volo libero

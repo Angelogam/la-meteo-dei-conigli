@@ -1,6 +1,6 @@
 "use client";
 
-import type { HourData, AiAnalysis } from "@/types/meteo";
+import type { HourData } from "@/types/meteo";
 
 // Gradiente termico adiabatico secco: 0.98°C/100m
 const TEMP_GRADIENT = 0.98;
@@ -78,12 +78,8 @@ const windForAltText = (groundSpeed: number, groundDir: number) => {
 const hourDesc = (hour: number, temp: number, cloudCover: number, windSpeed: number, precipitation: number) => {
   const now = new Date();
   const currentHour = now.getHours();
-  const isPast = hour < currentHour;
-  const isNow = hour === currentHour;
   
-  let prefix = isPast ? "Fino alle " : isNow ? "Adesso alle " : "Previste per le ";
-  if (isNow) prefix = `${String(hour).padStart(2, "0")}:00 — `;
-  else prefix = `${String(hour).padStart(2, "0")}:00 — `;
+  let prefix = `${String(hour).padStart(2, "0")}:00 — `;
   
   const tempText = `${Math.round(temp)}°C`;
   const cloudText = cloudCover > 70 ? "cielo molto nuvoloso" : cloudCover > 40 ? "cielo parzialmente nuvoloso" : "cielo sereno o poco nuvoloso";
@@ -125,7 +121,7 @@ const cloudText = (cloudBase: number, cloudCover: number, thermalTop: number | n
 export const generateAiAnalysis = (
   hourlyData: HourData[],
   dayIdx: number
-): AiAnalysis | null => {
+) => {
   if (!hourlyData || hourlyData.length === 0) return null;
 
   // Prendi i dati per le ore 9-17 (ore di volo)
@@ -184,7 +180,7 @@ export const generateAiAnalysis = (
     windForAltText(Math.round(avgWind), Math.round(groundWind.windDir));
 
   // Evoluzione oraria
-  const hourlyText = flightHours
+  const hourly = flightHours
     .sort((a, b) => a.time.getHours() - b.time.getHours())
     .map(h => {
       const hNum = h.time.getHours();
@@ -202,7 +198,7 @@ export const generateAiAnalysis = (
   return {
     thermal,
     altitude,
-    hourly: hourlyText,
+    hourly,
     thunderstorm,
-  } as unknown as AiAnalysis;
+  };
 };

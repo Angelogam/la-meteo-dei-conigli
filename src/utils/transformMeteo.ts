@@ -1,8 +1,14 @@
 "use client";
 
-import type { MeteoResponse, HourData, CurrentData, DailyData } from "@/types/meteo";
+import type { HourData, CurrentData, DailyData } from "@/types/meteo";
 
-export function transformHourlyData(raw: MeteoResponse["hourly"]): HourData[] {
+interface RawMeteoResponse {
+  hourly: Record<string, (number | string)[]>;
+  daily: Record<string, (number | string)[]>;
+  current: Record<string, number | string>;
+}
+
+export function transformHourlyData(raw: RawMeteoResponse["hourly"]): HourData[] {
   const len = raw.time.length;
   const result: HourData[] = [];
 
@@ -13,42 +19,42 @@ export function transformHourlyData(raw: MeteoResponse["hourly"]): HourData[] {
       humidity: raw.relative_humidity_2m[i] as number,
       dewPoint: (raw.dew_point_2m?.[i] as number) ?? 10,
       apparentTemp: raw.apparent_temperature[i] as number,
-      precipitationProba: raw.precipitation_probability[i] as number,
+      precipitationProba: (raw.precipitation_probability?.[i] as number) ?? 0,
       precipitation: raw.precipitation[i] as number,
-      rain: raw.rain[i] as number,
-      showers: raw.showers[i] as number,
-      snowfall: raw.snowfall[i] as number,
+      rain: (raw.rain?.[i] as number) ?? 0,
+      showers: (raw.showers?.[i] as number) ?? 0,
+      snowfall: (raw.snowfall?.[i] as number) ?? 0,
       weatherCode: raw.weather_code[i] as number,
       pressure: raw.pressure_msl[i] as number,
-      surfacePressure: raw.surface_pressure[i] as number,
+      surfacePressure: (raw.surface_pressure?.[i] as number) ?? 1013,
       cloudCover: raw.cloud_cover[i] as number,
-      cloudCoverLow: raw.cloud_cover_low[i] as number,
-      cloudCoverMid: raw.cloud_cover_mid[i] as number,
-      cloudCoverHigh: raw.cloud_cover_high[i] as number,
-      evapotranspiration: raw.evapotranspiration[i] as number,
-      et0: raw.et0_fao_evapotranspiration[i] as number,
-      vapourPressureDeficit: raw.vapour_pressure_deficit[i] as number,
+      cloudCoverLow: (raw.cloud_cover_low?.[i] as number) ?? 0,
+      cloudCoverMid: (raw.cloud_cover_mid?.[i] as number) ?? 0,
+      cloudCoverHigh: (raw.cloud_cover_high?.[i] as number) ?? 0,
+      evapotranspiration: (raw.evapotranspiration?.[i] as number) ?? 0,
+      et0: (raw.et0_fao_evapotranspiration?.[i] as number) ?? 0,
+      vapourPressureDeficit: (raw.vapour_pressure_deficit?.[i] as number) ?? 0,
       windSpeed: raw.wind_speed_10m[i] as number,
       windDir: raw.wind_direction_10m[i] as number,
-      windGusts: raw.wind_gusts_10m[i] as number,
+      windGusts: (raw.wind_gusts_10m?.[i] as number) ?? 0,
       soilTemp: (raw.soil_temperature_0cm?.[i] as number) ?? 15,
       soilMoisture: (raw.soil_moisture_0_to_1cm?.[i] as number) ?? 0.3,
       uvIndex: (raw.uv_index?.[i] as number) ?? 0,
       temp80m: (raw.temperature_80m?.[i] as number) ?? null,
       temp120m: (raw.temperature_120m?.[i] as number) ?? null,
-      shortwaveRadiation: raw.shortwave_radiation[i] as number,
-      directRadiation: raw.direct_radiation[i] as number,
-      diffuseRadiation: raw.diffuse_radiation[i] as number,
-      directNormalIrradiance: raw.direct_normal_irradiance[i] as number,
-      terrestrialRadiation: raw.terrestrial_radiation[i] as number,
-      sunshineDuration: raw.sunshine_duration[i] as number,
+      shortwaveRadiation: (raw.shortwave_radiation?.[i] as number) ?? 0,
+      directRadiation: (raw.direct_radiation?.[i] as number) ?? 0,
+      diffuseRadiation: (raw.diffuse_radiation?.[i] as number) ?? 0,
+      directNormalIrradiance: (raw.direct_normal_irradiance?.[i] as number) ?? 0,
+      terrestrialRadiation: (raw.terrestrial_radiation?.[i] as number) ?? 0,
+      sunshineDuration: (raw.sunshine_duration?.[i] as number) ?? 0,
     });
   }
 
   return result;
 }
 
-export function transformCurrentData(raw: MeteoResponse["current"]): CurrentData {
+export function transformCurrentData(raw: RawMeteoResponse["current"]): CurrentData {
   return {
     time: new Date(raw.time),
     temperature: raw.temperature_2m as number,
@@ -69,7 +75,7 @@ export function transformCurrentData(raw: MeteoResponse["current"]): CurrentData
   };
 }
 
-export function transformDailyData(raw: MeteoResponse["daily"]): DailyData[] {
+export function transformDailyData(raw: RawMeteoResponse["daily"]): DailyData[] {
   const len = raw.time.length;
   const result: DailyData[] = [];
 

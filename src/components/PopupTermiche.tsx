@@ -93,8 +93,8 @@ export default function PopupTermiche({ siteName, siteAltitude, hourlyData, onCl
                       <div className="flex items-center gap-1 text-[10px] text-slate-400">
                         <Wind className="w-2.5 h-2.5 text-blue-400" />
                         <span>{Math.round(h.windSpeed)} km/h</span>
-                        {h.windGust && (
-                          <span className="text-slate-500">/{Math.round(h.windGust)}</span>
+                        {h.windGusts && (
+                          <span className="text-slate-500">/{Math.round(h.windGusts)}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-1 text-[10px] text-slate-400">
@@ -114,7 +114,7 @@ export default function PopupTermiche({ siteName, siteAltitude, hourlyData, onCl
                       {termica && (
                         <div className="flex items-center gap-1 text-[10px] text-orange-300">
                           <span>↑</span>
-                          <span className="font-semibold">{termica.rateo.toFixed(1)} m/s</span>
+                          <span className="font-semibold">{termica.termiche.rateo.toFixed(1)} m/s</span>
                         </div>
                       )}
                       <span className={`inline-block px-1 py-0.5 rounded text-[8px] font-bold border mt-0.5 ${volo.color}`}>

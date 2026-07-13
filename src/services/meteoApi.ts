@@ -81,7 +81,7 @@ const COMMON_PARAMS = {
     "wind_gusts_10m",
   ].join(","),
   timezone: "auto",
-  forecast_days: 7,
+  forecast_days: "7",
   models: "best_match",
 };
 
@@ -107,11 +107,17 @@ export type MeteoResponse = {
 };
 
 export async function fetchMeteo({ lat, lon }: FetchMeteoParams): Promise<MeteoResponse> {
-  const params = new URLSearchParams({
-    latitude: lat.toString(),
-    longitude: lon.toString(),
-    ...COMMON_PARAMS,
-  } as Record<string, string>);
+  const params = new URLSearchParams();
+
+  // Aggiungi ogni parametro uno per uno per evitare problemi di tipo
+  params.set("latitude", lat.toString());
+  params.set("longitude", lon.toString());
+  params.set("hourly", COMMON_PARAMS.hourly);
+  params.set("daily", COMMON_PARAMS.daily);
+  params.set("current", COMMON_PARAMS.current);
+  params.set("timezone", COMMON_PARAMS.timezone);
+  params.set("forecast_days", String(COMMON_PARAMS.forecast_days));
+  params.set("models", COMMON_PARAMS.models);
 
   const url = `${BASE_URL}?${params.toString()}`;
 

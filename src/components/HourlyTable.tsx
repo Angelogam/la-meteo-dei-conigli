@@ -30,7 +30,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
         ora,
         temperatura: Math.round(h.temperature),
         vento: Math.round(h.windSpeed),
-        raffica: h.windGust ? Math.round(h.windGust) : null,
+        raffica: h.windGusts ? Math.round(h.windGusts) : null,
         direzione: getWindDirection(h.windDir),
         ventoDir: h.windDir,
         termiche: termiche.rateo,
