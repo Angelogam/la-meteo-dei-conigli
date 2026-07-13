@@ -55,24 +55,24 @@ export default function Page() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-white">
       {/* Header */}
-      <header className="border-b border-emerald-500/20 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b border-emerald-500/30 bg-slate-900/70 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-900/40 border border-emerald-500/30 flex items-center justify-center">
-              <CloudSun className="w-5 h-5 text-emerald-400" />
+            <div className="w-12 h-12 rounded-xl bg-emerald-900/50 border border-emerald-500/50 flex items-center justify-center">
+              <CloudSun className="w-6 h-6 text-emerald-300" />
             </div>
             <div>
-              <h1 className="text-lg font-bold bg-gradient-to-r from-emerald-300 to-lime-300 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-extrabold bg-gradient-to-r from-emerald-200 to-lime-200 bg-clip-text text-transparent tracking-tight">
                 Meteo dei Conigli
               </h1>
-              <p className="text-[10px] text-slate-500">Previsioni per volo libero</p>
+              <p className="text-sm text-slate-400 font-medium">Previsioni per volo libero</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-[10px] text-slate-500 flex items-center gap-1">
-              <RefreshCcw className="w-3 h-3" />
+            <span className="text-sm text-slate-400 flex items-center gap-1.5">
+              <RefreshCcw className="w-4 h-4" />
               {lastUpdate.toLocaleTimeString("it-IT")}
             </span>
           </div>
@@ -81,7 +81,7 @@ export default function Page() {
 
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-6">
           {/* Sidebar decolli */}
           <div className="md:sticky md:top-24">
             <DecolloList
@@ -99,7 +99,7 @@ export default function Page() {
           </div>
 
           {/* Pannello principale */}
-          <div className="bg-slate-900/40 backdrop-blur-sm rounded-2xl border border-emerald-500/20 p-5 shadow-xl shadow-emerald-500/5">
+          <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-emerald-500/25 p-6 shadow-xl shadow-emerald-500/5">
             <SiteHeader
               name={siteWithAlt.name}
               exposure={siteWithAlt.exposure}
@@ -166,8 +166,8 @@ export default function Page() {
 
       {/* Footer */}
       <footer className="border-t border-slate-800 py-4 mt-8">
-        <p className="text-center text-[10px] text-slate-600">
-          🐰 Vola sicuro e divertiti! 🪂 · Dati da Open-Meteo · Aggiornamento automatico ogni 30 min
+        <p className="text-center text-sm text-slate-500">
+          🐰 Vola sicuro e divertiti! 🪂 · Dati da Open-Meteo · Aggiornamento ogni 30 min
         </p>
       </footer>
     </div>
