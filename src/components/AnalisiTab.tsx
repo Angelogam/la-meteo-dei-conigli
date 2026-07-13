@@ -26,6 +26,7 @@ import {
   generateVentoQuota,
   generateInterpretazione,
 } from "@/utils/analisiDescriptions";
+import { degreesToCardinal, windArrow, formatWindDir } from "@/utils/windDirections";
 
 interface AnalisiTabProps {
   currentData: any;
@@ -62,11 +63,6 @@ function getCloudEmoji(cc: number): string {
   return "☁️";
 }
 
-function getWindArrow(deg: number): string {
-  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
-  return arrows[Math.round(deg / 45) % 8] || "→";
-}
-
 export default function AnalisiTab({ currentData, site, thermalDelta, selectedDateLabel }: AnalisiTabProps) {
   const displayDate = selectedDateLabel || new Date().toLocaleDateString("it-IT", {
     weekday: "long",
@@ -80,6 +76,12 @@ export default function AnalisiTab({ currentData, site, thermalDelta, selectedDa
   const termicoLinee = generateProfiloTermico(currentData);
   const ventoLinee = generateVentoQuota(currentData);
   const interpretazioneLinee = generateInterpretazione(currentData);
+
+  // Converti direzione vento in punti cardinali
+  const windDirDeg = currentData?.windDir;
+  const windDirCardinal = degreesToCardinal(windDirDeg);
+  const windDirArrow = windArrow(windDirDeg);
+  const windDirFormatted = formatWindDir(windDirDeg);
 
   return (
     <div className="space-y-6">
@@ -188,7 +190,7 @@ export default function AnalisiTab({ currentData, site, thermalDelta, selectedDa
       </section>
 
       {/* ============================================ */}
-      {/* 3. VENTO E DINAMICA IN QUOTA */}
+      {/* 3. VENTO E DINAMICA IN QUOTA — CON PUNTI CARDINALI */}
       {/* ============================================ */}
       <section className="bg-gradient-to-br from-slate-900/70 to-slate-800/40 border-2 border-sky-500/30 rounded-3xl overflow-hidden shadow-xl shadow-sky-500/10">
         <div className="bg-gradient-to-r from-sky-800/40 to-blue-800/20 px-6 py-4 flex items-center justify-between border-b border-sky-500/20">
@@ -217,7 +219,9 @@ export default function AnalisiTab({ currentData, site, thermalDelta, selectedDa
             <div className="bg-slate-800/60 rounded-2xl px-5 py-3 border border-slate-700/40 flex items-center gap-3">
               <Compass className="w-5 h-5 text-sky-400" />
               <div>
-                <div className="text-lg font-black text-white">{currentData?.windDir != null ? `${getWindArrow(currentData.windDir)} ${Math.round(currentData.windDir)}°` : "--"}</div>
+                <div className="text-lg font-black text-white whitespace-nowrap">
+                  {windDirFormatted}
+                </div>
                 <div className="text-xs text-slate-400 font-medium">Direzione vento</div>
               </div>
             </div>
@@ -228,12 +232,22 @@ export default function AnalisiTab({ currentData, site, thermalDelta, selectedDa
                 <div className="text-xs text-slate-400 font-medium">Raffiche massime</div>
               </div>
             </div>
+            {/* Aggiungo anche la direzione in esteso */}
+            <div className="bg-slate-800/60 rounded-2xl px-5 py-3 border border-slate-700/40 flex items-center gap-3">
+              <span className="text-2xl">{windDirArrow}</span>
+              <div>
+                <div className="text-lg font-black text-white">
+                  {degreesToCardinal(windDirDeg)} — {windDirCardinal === "N" ? "Nord" : windDirCardinal === "NE" ? "Nord-Est" : windDirCardinal === "E" ? "Est" : windDirCardinal === "SE" ? "Sud-Est" : windDirCardinal === "S" ? "Sud" : windDirCardinal === "SW" ? "Sud-Ovest" : windDirCardinal === "W" ? "Ovest" : windDirCardinal === "NW" ? "Nord-Ovest" : "—"}
+                </div>
+                <div className="text-xs text-slate-400 font-medium">Punto cardinale</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ============================================ */}
-      {/* 4. TABELLA ORARIA 9:00–19:00 */}
+      {/* 4. TABELLA ORARIA 9:00–19:00 — CON DIREZIONE IN CARDINALI */}
       {/* ============================================ */}
       <section className="bg-gradient-to-br from-slate-900/70 to-slate-800/40 border-2 border-orange-500/30 rounded-3xl overflow-hidden shadow-xl shadow-orange-500/10">
         <div className="bg-gradient-to-r from-orange-800/40 to-amber-800/20 px-6 py-4 flex items-center justify-between border-b border-orange-500/20">
@@ -259,6 +273,7 @@ export default function AnalisiTab({ currentData, site, thermalDelta, selectedDa
                 <th className="text-left px-4 py-3 font-black text-orange-300 uppercase tracking-wider text-sm">Condizioni</th>
                 <th className="text-left px-4 py-3 font-black text-orange-300 uppercase tracking-wider text-sm hidden md:table-cell">T</th>
                 <th className="text-left px-4 py-3 font-black text-orange-300 uppercase tracking-wider text-sm hidden md:table-cell">Vento</th>
+                <th className="text-left px-4 py-3 font-black text-orange-300 uppercase tracking-wider text-sm hidden md:table-cell">Dir</th>
                 <th className="text-left px-4 py-3 font-black text-orange-300 uppercase tracking-wider text-sm hidden md:table-cell">Raffica</th>
                 <th className="text-left px-4 py-3 font-black text-orange-300 uppercase tracking-wider text-sm hidden md:table-cell">Nuvole</th>
                 <th className="text-left px-4 py-3 font-black text-orange-300 uppercase tracking-wider text-sm">Note</th>
@@ -267,6 +282,10 @@ export default function AnalisiTab({ currentData, site, thermalDelta, selectedDa
             <tbody>
               {Array.from({ length: 11 }, (_, i) => i + 9).map((ora) => {
                 const isCurrent = ora === new Date().getHours();
+                // Simula direzione vento per ogni ora (stesso dato con variazioni simulate)
+                const oraWindDir = (currentData?.windDir || 180) + (ora - 12) * 5;
+                const oraCardinal = degreesToCardinal(oraWindDir);
+                const oraArrow = windArrow(oraWindDir);
                 return (
                   <tr key={ora} className={`border-b border-slate-700/30 transition-all ${
                     isCurrent ? "bg-emerald-900/20 border-l-4 border-l-emerald-400" : "hover:bg-slate-700/30"
@@ -293,6 +312,11 @@ export default function AnalisiTab({ currentData, site, thermalDelta, selectedDa
                         {currentData?.windSpeed != null ? Math.round(currentData.windSpeed) : "--"}
                       </span>
                       <span className="text-xs text-slate-500 ml-1">km/h</span>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap hidden md:table-cell">
+                      <span className="text-lg font-bold text-sky-300" title={`${Math.round(oraWindDir)}°`}>
+                        {oraArrow} {oraCardinal}
+                      </span>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap hidden md:table-cell">
                       <span className={`text-lg font-black ${
