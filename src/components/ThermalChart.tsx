@@ -8,37 +8,72 @@ interface ThermalChartProps {
   hourlyData: HourData[];
   selectedHour: number;
   siteAltitude: number;
+  selectedDay: number; // 0 = oggi, 1 = domani, ...
 }
 
-const HOURS_LOCAL = Array.from({ length: 14 }, (_, i) => i + 8); // 8:00 – 21:00 ora locale
-
 function getColorFromLabel(label: string): string {
-  if (label.includes("forti") || label.includes("🔥")) return "bg-red-500/70";
-  if (label.includes("Buone") || label.includes("🪂")) return "bg-orange-400/70";
-  if (label.includes("moderate") || label.includes("🌤️")) return "bg-yellow-400/60";
-  if (label.includes("deboli") || label.includes("🌥️")) return "bg-green-400/60";
-  if (label.includes("Niente") || label.includes("❌")) return "bg-slate-700/40";
-  if (label.includes("Vento forte") || label.includes("💨")) return "bg-blue-500/60";
+  if (label.includes("forti")) return "bg-red-500/70";
+  if (label.includes("Buone")) return "bg-orange-400/70";
+  if (label.includes("moderate")) return "bg-yellow-400/60";
+  if (label.includes("deboli")) return "bg-green-400/60";
+  if (label.includes("molto deboli")) return "bg-slate-500/50";
+  if (label.includes("Niente")) return "bg-slate-700/40";
   return "bg-slate-700/40";
 }
 
 function getTextColor(label: string): string {
-  if (label.includes("forti") || label.includes("🔥")) return "text-red-200";
-  if (label.includes("Buone") || label.includes("🪂")) return "text-orange-200";
-  if (label.includes("moderate") || label.includes("🌤️")) return "text-yellow-200";
-  if (label.includes("deboli") || label.includes("🌥️")) return "text-green-200";
+  if (label.includes("forti")) return "text-red-200";
+  if (label.includes("Buone")) return "text-orange-200";
+  if (label.includes("moderate")) return "text-yellow-200";
+  if (label.includes("deboli")) return "text-green-200";
   return "text-slate-400";
 }
 
-export default function ThermalChart({ hourlyData, selectedHour, siteAltitude }: ThermalChartProps) {
+// Ore locali (Italia, UTC+1) da mostrare
+const HOURS_LOCAL = Array.from({ length: 14 }, (_, i) => i + 8); // 8:00 – 21:00
+
+export default function ThermalChart({ hourlyData, selectedHour, siteAltitude, selectedDay }: ThermalChartProps) {
   const data = useMemo(() => {
+    // Filtra i dati per il giorno selezionato (selectedDay)
+    // selectedDay: 0 = oggi, 1 = domani, ...
+    const today = new Date();
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() + selectedDay);
+    
+    const dayStart = new Date(targetDate);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(targetDate);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    // Filtra hourlyData per questo giorno specifico (in UTC, ma i dati hanno timezone Europe/Rome)
+    const dayHours = (hourlyData || []).filter((d: any) => {
+      const t = new Date(d.time);
+      // Normalizza a data (confronta anno, mese, giorno)
+      return t.getFullYear() === targetDate.getFullYear() &&
+             t.getMonth() === targetDate.getMonth() &&
+             t.getDate() === targetDate.getDate();
+    });
+
+    if (dayHours.length === 0) {
+      // Fallback: prova a confrontare con la data in UTC
+      console.warn(`Nessun dato orario per il giorno ${selectedDay} (${targetDate.toLocaleDateString('it-IT')}). Uso fallback.`);
+      return HOURS_LOCAL.map((hour) => ({
+        hour,
+        value: 0,
+        rateo: 0,
+        label: "N/D",
+        colore: "bg-slate-700/40",
+        top: 0, base: 0, gradienteReale: 0,
+      }));
+    }
+
+    // Mappa ora locale -> dato meteo
     return HOURS_LOCAL.map((localHour) => {
-      // Cerca i dati meteo per quest'ora locale
-      const weatherData = hourlyData?.find((d: any) => {
+      // Trova il dato per quest'ora locale
+      const weatherData = dayHours.find((d: any) => {
         const t = new Date(d.time);
-        // Converte in ora locale italiana
-        const localH = t.getHours() + t.getTimezoneOffset() / 60 + 1; // UTC+1 per Italia
-        return localH === localHour;
+        // I dati da Open-Meteo con timezone Europe/Rome sono già in ora locale
+        return t.getHours() === localHour;
       });
 
       if (!weatherData) {
@@ -48,25 +83,29 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude }:
           rateo: 0,
           label: "N/D",
           colore: "bg-slate-700/40",
+          top: 0, base: 0, gradienteReale: 0,
         };
       }
 
-      // Calcola termiche reali usando la funzione dedicata
       const termiche = calcolaTermiche(weatherData, siteAltitude);
       
       return {
         hour: localHour,
-        value: termiche.forza,    // 0-10
-        rateo: termiche.rateo,    // m/s
+        value: termiche.forza,
+        rateo: termiche.rateo,
         label: termiche.label,
         colore: getColorFromLabel(termiche.label),
         top: termiche.top,
         base: termiche.base,
+        gradienteReale: termiche.gradienteReale,
       };
     });
-  }, [hourlyData, siteAltitude]);
+  }, [hourlyData, siteAltitude, selectedDay]);
 
   const maxVal = Math.max(...data.map((d) => d.value), 1);
+
+  // Trova l'ora selezionata per il dettaglio
+  const selectedDetail = data.find((d) => d.hour === selectedHour);
 
   return (
     <div className="space-y-3">
@@ -82,10 +121,10 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude }:
       {/* Legend */}
       <div className="flex flex-wrap gap-1.5 text-[10px]">
         {[
-          { label: "Forte (3.5+)", color: "bg-red-500/70" },
-          { label: "Buona (2.5-3.5)", color: "bg-orange-400/70" },
-          { label: "Moderata (1.5-2.5)", color: "bg-yellow-400/60" },
-          { label: "Debole (0.5-1.5)", color: "bg-green-400/60" },
+          { label: "Forte (3+)", color: "bg-red-500/70" },
+          { label: "Buona (2-3)", color: "bg-orange-400/70" },
+          { label: "Moderata (1-2)", color: "bg-yellow-400/60" },
+          { label: "Debole (0.3-1)", color: "bg-green-400/60" },
           { label: "Nulla", color: "bg-slate-700/40" },
         ].map((item) => (
           <span key={item.label} className="flex items-center gap-1">
@@ -109,9 +148,9 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude }:
             >
               {/* Value label */}
               <span
-                className={`text-[10px] font-bold leading-none mb-1 transition-colors ${getTextColor(d.label)} ${
-                  isSelected ? "text-white text-xs" : ""
-                }`}
+                className={`text-[10px] font-bold leading-none mb-1 transition-colors ${
+                  d.value > 0 ? getTextColor(d.label) : "text-slate-600"
+                } ${isSelected ? "text-white text-xs" : ""}`}
               >
                 {d.rateo > 0 ? d.rateo.toFixed(1) : "—"}
               </span>
@@ -122,7 +161,7 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude }:
                   className={`absolute bottom-0 left-0 right-0 rounded-t-sm transition-all duration-500 ${d.colore} ${
                     isSelected ? "ring-1 ring-white/30" : ""
                   }`}
-                  style={{ height: `${pct}%` }}
+                  style={{ height: `${Math.max(pct, 2)}%` }}
                 >
                   {isSelected && (
                     <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rounded-full shadow-lg shadow-white/50" />
@@ -133,7 +172,7 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude }:
               {/* Hour label */}
               <span
                 className={`text-[10px] mt-1 font-mono ${
-                  isSelected ? "text-orange-300 font-bold" : "text-slate-500"
+                  isSelected ? "text-orange-300 font-bold" : d.value > 0 ? "text-slate-400" : "text-slate-600"
                 }`}
               >
                 {d.hour.toString().padStart(2, "0")}
@@ -144,28 +183,33 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude }:
       </div>
 
       {/* Selected hour detail */}
-      {(() => {
-        const sel = data.find((d) => d.hour === selectedHour);
-        if (!sel || !sel.rateo) return null;
-        return (
-          <div className="bg-slate-800/40 rounded-xl p-3 border border-slate-700/30 text-center">
-            <span className="text-xs text-slate-400 block">
-              Alle {sel.hour.toString().padStart(2, "0")}:00 — {sel.label}
-            </span>
-            <span className="text-2xl font-bold text-orange-300">
-              {sel.rateo.toFixed(1)} m/s
-            </span>
-            <span className="text-xs text-slate-500 ml-2">di salita</span>
-            {sel.base > 0 && (
-              <div className="flex items-center justify-center gap-4 mt-2 text-[11px] text-slate-400">
-                <span>Base: {sel.base}m</span>
-                <span>Top: {sel.top}m</span>
-                <span>Salita: {sel.top - sel.base}m</span>
-              </div>
-            )}
-          </div>
-        );
-      })()}
+      {selectedDetail && selectedDetail.rateo > 0 && (
+        <div className="bg-slate-800/40 rounded-xl p-3 border border-slate-700/30 text-center">
+          <span className="text-xs text-slate-400 block">
+            Alle {selectedDetail.hour.toString().padStart(2, "0")}:00 — {selectedDetail.label}
+          </span>
+          <span className="text-2xl font-bold text-orange-300">
+            {selectedDetail.rateo.toFixed(1)} m/s
+          </span>
+          <span className="text-xs text-slate-500 ml-2">di salita</span>
+          {selectedDetail.base > 0 && (
+            <div className="flex items-center justify-center gap-4 mt-2 text-[11px] text-slate-400">
+              <span>Base: {selectedDetail.base}m</span>
+              <span>Top: {selectedDetail.top}m</span>
+              <span>Salita: {selectedDetail.top - selectedDetail.base}m</span>
+              <span>Gradiente: {selectedDetail.gradienteReale}°C/100m</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {selectedDetail && selectedDetail.rateo === 0 && selectedDetail.label !== "N/D" && (
+        <div className="bg-slate-800/40 rounded-xl p-3 border border-slate-700/30 text-center">
+          <span className="text-xs text-slate-400 block">
+            Alle {selectedDetail.hour.toString().padStart(2, "0")}:00 — {selectedDetail.label}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

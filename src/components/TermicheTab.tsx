@@ -15,37 +15,21 @@ interface TermicheTabProps {
 }
 
 export default function TermicheTab({ currentData, dayData, site, thermalDelta, thermalStrength, hourlyData, selectedHour, selectedDay }: TermicheTabProps) {
-  // Filtra hourlyData per il giorno selezionato
-  const dayHourly = useMemo(() => {
-    if (!hourlyData || selectedDay == null) return hourlyData || [];
-
-    const today = new Date();
-    const start = new Date(today);
-    start.setDate(today.getDate() + selectedDay);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
-
-    return hourlyData.filter((h: any) => {
-      const t = new Date(h.time);
-      return t >= start && t < end;
-    });
-  }, [hourlyData, selectedDay]);
-
   const hasData = currentData && dayData;
 
   return (
     <div className="space-y-5">
       {/* Chart */}
-      {hasData && dayHourly.length > 0 && (
+      {hasData && hourlyData && hourlyData.length > 0 && (
         <ThermalChart
-          hourlyData={dayHourly}
+          hourlyData={hourlyData}
           selectedHour={selectedHour ?? 12}
           siteAltitude={site.alt}
+          selectedDay={selectedDay ?? 0}
         />
       )}
 
-      {hasData && dayHourly.length === 0 && (
+      {hasData && (!hourlyData || hourlyData.length === 0) && (
         <div className="text-center py-8 text-slate-500 text-sm">
           Nessun dato orario disponibile per questo giorno
         </div>
@@ -85,7 +69,7 @@ export default function TermicheTab({ currentData, dayData, site, thermalDelta, 
             <p className="text-lg font-bold text-slate-500">—</p>
           )}
         </div>
-      </div>
+     </div>
     </div>
   );
 }

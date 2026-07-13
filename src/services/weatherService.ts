@@ -28,21 +28,27 @@ export class WeatherService {
       latitude: lat.toString(),
       longitude: lon.toString(),
       hourly: [
-        'temperature_2m', 'dewpoint_2m', 'relativehumidity_2m',
+        'temperature_2m', 'dewpoint_2m', 'relative_humidity_2m',
         'cloudcover', 'precipitation', 'visibility',
         'wind_speed_10m', 'wind_gusts_10m', 'wind_direction_10m',
         'wind_speed_80m', 'wind_direction_80m',
         'wind_speed_120m', 'wind_direction_120m',
-        'uv_index', 'is_day', 'weathercode', 'pressure_msl'
+        'wind_speed_180m', 'wind_direction_180m',
+        'uv_index', 'is_day', 'weathercode', 'pressure_msl',
+        'soil_temperature_0_to_7cm',
+        'soil_moisture_0_to_7cm',
+        'temperature_80m',
+        'temperature_120m',
       ].join(','),
       daily: [
         'weathercode', 'temperature_2m_max', 'temperature_2m_min',
         'sunrise', 'sunset', 'uv_index_max',
         'precipitation_sum', 'precipitation_hours',
-        'wind_speed_10m_max', 'wind_direction_10m_dominant'
+        'wind_speed_10m_max', 'wind_direction_10m_dominant',
+        'temperature_2m_max', 'temperature_2m_min',
       ].join(','),
       timezone: 'Europe/Rome',
-      forecast_days: '3',
+      forecast_days: '4',
     });
     params.append('_t', Date.now().toString());
     return `${this.baseUrl}?${params.toString()}`;
@@ -55,7 +61,7 @@ export class WeatherService {
       time: new Date(t),
       temperature: hourly.temperature_2m[i],
       dewPoint: hourly.dewpoint_2m[i],
-      humidity: hourly.relativehumidity_2m[i],
+      humidity: hourly.relative_humidity_2m[i],
       cloudCover: hourly.cloudcover[i],
       precipitation: hourly.precipitation[i] || 0,
       visibility: hourly.visibility ? hourly.visibility[i] / 1000 : 40,
@@ -66,10 +72,16 @@ export class WeatherService {
       windDir80m: hourly.wind_direction_80m ? hourly.wind_direction_80m[i] : null,
       wind120m: hourly.wind_speed_120m ? hourly.wind_speed_120m[i] : null,
       windDir120m: hourly.wind_direction_120m ? hourly.wind_direction_120m[i] : null,
+      wind180m: hourly.wind_speed_180m ? hourly.wind_speed_180m[i] : null,
+      windDir180m: hourly.wind_direction_180m ? hourly.wind_direction_180m[i] : null,
+      temp80m: hourly.temperature_80m?.[i] ?? null,
+      temp120m: hourly.temperature_120m?.[i] ?? null,
       uvIndex: hourly.uv_index ? hourly.uv_index[i] : 0,
       isDay: hourly.is_day ? hourly.is_day[i] : 1,
       weatherCode: hourly.weathercode ? hourly.weathercode[i] : 0,
       pressure: hourly.pressure_msl ? hourly.pressure_msl[i] : 1013,
+      soilTemp: hourly.soil_temperature_0_to_7cm?.[i] ?? null,
+      soilMoisture: hourly.soil_moisture_0_to_7cm?.[i] ?? null,
     }));
 
     const dailyData = daily.time.map((d: string, i: number) => ({

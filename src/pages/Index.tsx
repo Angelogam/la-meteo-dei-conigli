@@ -43,7 +43,7 @@ export function Page() {
 
   const selectedDateLabel = dateLabels?.[selectedDay] || undefined;
 
-  // Get all hourly data from meteoData
+  // Ottieni tutti i dati orari
   const hourlyData = meteoData?.hourly;
 
   const lastUpdateStr = lastUpdate?.toLocaleTimeString("it-IT", {
