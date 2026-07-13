@@ -68,12 +68,16 @@ const Page = () => {
     return getStabilityIndex(currentData.temperature, currentData.humidity, currentData.cloudCover);
   }, [currentData]);
 
-  const windProfile: WindLevel[] = useMemo(() => {
+  const windProfile = useMemo(() => {
     if (!currentData) return [];
-    return getWindProfile(currentData.windSpeed, currentData.windDir);
+    return getWindProfile(currentData.windSpeed, currentData.windDir).map(w => ({
+      height: w.alt,
+      speed: w.speed,
+      dir: w.dir,
+    }));
   }, [currentData]);
 
-  const windProfileSimple: WindLevel[] = useMemo(() => {
+  const windProfileSimple = useMemo(() => {
     if (!currentData) return [];
     return [{
       alt: 10,
@@ -203,7 +207,7 @@ const Page = () => {
             </div>
 
             <WeatherDashboard
-              dayData={dayData}
+              dayData={dayData as HourData[]}
               altitude={site.altitude}
               selectedHour={selectedHour}
               onHourSelect={setSelectedHour}
