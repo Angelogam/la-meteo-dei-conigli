@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
-import { TrendingUp, Info, ArrowUp, Thermometer, MousePointerClick } from "lucide-react";
+import React, { useState } from "react";
+import { TrendingUp, ArrowUp, Thermometer, MousePointerClick } from "lucide-react";
 import type { TermicheData } from "@/utils/termiche";
 
 interface GraficoTermicheProps {
@@ -9,7 +9,7 @@ interface GraficoTermicheProps {
   oraCorrente: number;
 }
 
-// Colonne ogni 2 ore
+// 6 colonne: 8, 10, 12, 14, 16, 18
 const HOURS_VISIBILI = [8, 10, 12, 14, 16, 18];
 const QUOTE_LABELS = [4000, 3500, 3000, 2500, 2000, 1500, 1000, 500];
 const MIN_QUOTA = 500;
@@ -39,17 +39,13 @@ const quotaToPct = (q: number): number => {
 
 const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
-  const [hoveredHour, setHoveredHour] = useState<number | null>(null);
 
   if (!hourly || hourly.length === 0) return null;
 
-  // Mappa ora → dato termico
   const dataMap = new Map<number, TermicheData>();
-  for (const h of hourly) {
-    dataMap.set(h.hour, h.termiche);
-  }
+  for (const h of hourly) dataMap.set(h.hour, h.termiche);
 
-  // Colonne per ogni ora visibile (ogni 2h)
+  // Costruisci colonne per ogni ora visibile
   const daMostrare = HOURS_VISIBILI.map((h) => {
     const diretto = dataMap.get(h);
     if (diretto) return { hour: h, termiche: diretto };
@@ -72,7 +68,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
           </div>
           <div>
             <h3 className="text-lg font-bold text-amber-200">Previsione termiche</h3>
-            <p className="text-sm text-slate-400">Quota (m slm) — Forza (m/s)</p>
+            <p className="text-sm text-slate-400">Quota (m slm) — Forza (m/s) — Dati reali</p>
           </div>
         </div>
         <div className="flex items-center gap-1.5 text-sm text-slate-500 bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700/30">
@@ -97,31 +93,34 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
           {daMostrare.map(({ hour, termiche: t }) => {
             const isCurrent = hour === oraCorrente || (hour <= oraCorrente && hour + 2 > oraCorrente);
             const isSelected = selectedHour === hour;
-            const isHovered = hoveredHour === hour;
+            const nonNull = t && t.rateo > 0 && t.top > 500;
 
-            // Default
             let colore = "#64748b";
             let rateoStr = "--";
             let quotaTopStr = "--";
             let quotaBaseStr = "--";
+            let deltaStr = "--";
             let labelForza = "N/D";
             let topPct = 0;
             let basePct = 0;
-            let tieneTermica = false;
 
-            if (t && t.rateo > 0 && t.top > 500) {
+            if (t) {
               colore = getColore(t.rateo);
-              rateoStr = t.rateo.toFixed(1);
-              quotaTopStr = t.top.toString();
-              quotaBaseStr = t.base.toString();
+              rateoStr = t.rateo > 0 ? t.rateo.toFixed(1) : "--";
+              quotaTopStr = t.top > 0 ? t.top.toString() : "--";
+              quotaBaseStr = t.base > 0 ? t.base.toString() : "--";
+              deltaStr = t.top > 0 && t.base > 0 ? (t.top - t.base).toString() : "--";
+
               if (t.rateo >= 3) labelForza = "Forte 🔥";
               else if (t.rateo >= 2) labelForza = "Buona 🪂";
               else if (t.rateo >= 1) labelForza = "Moderata 🌤️";
               else if (t.rateo >= 0.3) labelForza = "Debole 🌥️";
               else labelForza = "Assente ❄️";
+            }
+
+            if (nonNull) {
               topPct = quotaToPct(t.top);
               basePct = quotaToPct(t.base);
-              tieneTermica = true;
             }
 
             const barHeightPct = topPct - basePct;
@@ -137,12 +136,10 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                     : "bg-slate-800/30 border-slate-700/50 hover:border-amber-400/30 hover:bg-slate-700/30"
                 }`}
                 onClick={() => setSelectedHour((prev) => (prev === hour ? null : hour))}
-                onMouseEnter={() => setHoveredHour(hour)}
-                onMouseLeave={() => setHoveredHour(null)}
               >
                 {/* Area grafico */}
                 <div className="relative w-full" style={{ height: GRAFICO_ALTEZZA + 'px' }}>
-                  {/* Linee guida */}
+                  {/* Righe orizzontali guida */}
                   {QUOTE_LABELS.map((q) => (
                     <div
                       key={q}
@@ -151,56 +148,47 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                     />
                   ))}
 
-                  {/* Barra termica — PARTE DALLA BASE E ARRIVA AL TOP */}
-                  {tieneTermica && barHeightPct > 1 && (
+                  {/* Barra termica — parte dalla BASE, arriva al TOP */}
+                  {nonNull && barHeightPct > 1 && (
                     <>
-                      {/* Linea base (tratteggiata) */}
+                      {/* Linea di base tratteggiata */}
                       <div className="absolute left-0 right-0 border-t-2 border-dashed border-white/40 z-10" style={{ bottom: `${basePct}%` }}>
-                        <span className="absolute -top-3 left-1 text-[9px] text-white/40 uppercase tracking-wider font-bold">base</span>
+                        <span className="absolute -top-3 left-1 text-[9px] text-white/40 uppercase font-bold tracking-wider">base</span>
                       </div>
 
-                      {/* Barra colorata: parte dalla base, arriva al top */}
+                      {/* Barra colorata */}
                       <div
                         className="absolute left-1.5 right-1.5 transition-all duration-500 ease-out rounded-t-md rounded-b-sm"
                         style={{
                           bottom: `${basePct}%`,
                           height: `${Math.max(barHeightPct, 3)}%`,
                           backgroundColor: colore,
-                          opacity: isHovered || isSelected ? 0.95 : 0.8,
+                          opacity: isSelected ? 0.95 : 0.8,
                         }}
                       >
-                        {/* Etichette dentro la barra: quota top + rateo */}
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="text-lg font-extrabold text-white drop-shadow-xl leading-tight">
-                            {quotaTopStr}
-                          </span>
-                          <span className="text-[11px] font-semibold text-white/80 drop-shadow-md mt-0.5">
-                            m slm
-                          </span>
-                          <span className="text-sm font-bold text-white/80 drop-shadow-md mt-1">
-                            {rateoStr} m/s
-                          </span>
+                          <span className="text-lg font-extrabold text-white drop-shadow-xl leading-tight">{quotaTopStr}</span>
+                          <span className="text-[11px] font-semibold text-white/80 drop-shadow-md mt-0.5">m slm</span>
+                          <span className="text-sm font-bold text-white/80 drop-shadow-md mt-1">{rateoStr} m/s</span>
                         </div>
                       </div>
                     </>
                   )}
 
                   {/* Nessuna termica */}
-                  {(!tieneTermica || barHeightPct <= 1) && (
+                  {(!nonNull || barHeightPct <= 1) && (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <span className="text-base text-slate-500">—</span>
                     </div>
                   )}
                 </div>
 
-                {/* Dati SOTTO la colonna — grandi e chiari */}
+                {/* Dati SOTTO la colonna */}
                 <div className="bg-slate-900/80 border-t border-slate-700/50 px-2 py-3 text-center space-y-1">
                   <div className={`text-lg font-bold ${isSelected ? 'text-amber-300' : isCurrent ? 'text-green-400' : 'text-slate-200'}`}>
                     {String(hour).padStart(2, "0")}:00
                   </div>
-                  <div className={`text-xs font-semibold ${isSelected ? 'text-amber-400' : 'text-slate-400'}`}>
-                    {labelForza}
-                  </div>
+                  <div className={`text-xs font-semibold ${isSelected ? 'text-amber-400' : 'text-slate-400'}`}>{labelForza}</div>
                   <div className="flex items-center justify-center gap-1.5">
                     <span className="text-xs text-green-400 font-bold">⬇</span>
                     <span className="text-base font-bold text-green-300">{quotaBaseStr} m</span>
@@ -213,9 +201,9 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
                     <span className="text-lg font-extrabold text-amber-300">{rateoStr}</span>
                     <span className="text-xs text-amber-500 font-semibold">m/s</span>
                   </div>
-                  {tieneTermica && t && (
+                  {nonNull && (
                     <div className="text-xs font-medium text-blue-300">
-                      Δ {t.top - t.base} m
+                      Δ {deltaStr} m
                     </div>
                   )}
                 </div>
@@ -248,7 +236,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
             </div>
             <div className="bg-slate-900/60 rounded-xl p-4 border border-slate-700/30">
               <ArrowUp className="w-5 h-5 text-green-400 mb-2" />
-              <span className="text-xs text-slate-400 block">Quota base</span>
+              <span className="text-xs text-slate-400 block">Quota base (LCL)</span>
               <span className="text-2xl font-bold text-green-300">{selectedData.base} m</span>
             </div>
             <div className="bg-slate-900/60 rounded-xl p-4 border border-slate-700/30">
@@ -261,35 +249,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
               <span className="text-xs text-slate-400 block">Spessore</span>
               <span className="text-2xl font-bold text-orange-300">{selectedData.top - selectedData.base} m</span>
             </div>
-            {selectedData.gradienteReale > 0 && (
-              <div className="bg-slate-900/60 rounded-xl p-4 border border-slate-700/30 col-span-2">
-                <Thermometer className="w-5 h-5 text-blue-400 mb-2" />
-                <span className="text-xs text-slate-400 block">Gradiente termico reale</span>
-                <span className="text-2xl font-bold text-blue-300">{selectedData.gradienteReale}°C / 100m</span>
-              </div>
-            )}
-            <div className="bg-slate-900/60 rounded-xl p-4 border border-slate-700/30 col-span-2">
-              <Info className="w-5 h-5 text-slate-400 mb-2" />
-              <span className="text-xs text-slate-400 block">Indice di forza termica</span>
-              <div className="w-full bg-slate-700/60 rounded-full h-4 overflow-hidden mt-2">
-                <div className="h-full rounded-full transition-all duration-500" style={{
-                  width: `${Math.min(100, (selectedData.forza / 10) * 100)}%`,
-                  backgroundColor: getColore(selectedData.rateo),
-                }} />
-              </div>
-              <div className="flex justify-between text-xs text-slate-500 mt-1.5">
-                <span>Debole</span>
-                <span className="text-slate-300 font-bold">{selectedData.forza.toFixed(1)} / 10</span>
-                <span>Forte</span>
-              </div>
-            </div>
           </div>
-        </div>
-      )}
-
-      {selectedHour !== null && !selectedData && (
-        <div className="mt-4 bg-slate-800/50 rounded-xl border border-slate-700/30 p-5 text-center">
-          <span className="text-base text-slate-500">Nessun dato termico per le ore {String(selectedHour).padStart(2, "0")}:00</span>
         </div>
       )}
 
@@ -304,7 +264,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
           ))}
           <div className="flex items-center gap-1.5">
             <div className="w-5 h-0 border-t-2 border-dashed border-white/40 shrink-0" />
-            <span>Base termica</span>
+            <span>Base termica (LCL)</span>
           </div>
         </div>
       </div>

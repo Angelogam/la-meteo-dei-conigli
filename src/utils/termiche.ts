@@ -16,9 +16,9 @@ const GRADIENTE_SECCO = 0.98;
 
 /**
  * Calcola le termiche usando DATI REALI da Open-Meteo:
- * - Gradiente termico verticale reale (temp 2m vs 80m/120m)
- * - Vento a tutte le quote (da windProfile: 0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000m)
- * - Pressione, UV, temperatura suolo, spread temperatura-rugiada
+ * - Base nuvole (LCL) = (T - Td) × 125   [Lifting Condensation Level]
+ * - Top termico = base + CAPE/500 × 1500
+ * - Rateo (m/s) calcolato da CAPE, vento, nuvolosità, umidità, ora del giorno
  */
 export function calcolaTermiche(weather: HourData, altitude: number): TermicheData {
   const {
@@ -51,25 +51,24 @@ export function calcolaTermiche(weather: HourData, altitude: number): TermicheDa
     };
   }
 
-  // --- 1. Gradiente termico reale ---
+  // --- 1. Gradiente termico reale (da temp 2m vs 80m/120m) ---
   let gradienteReale = GRADIENTE_SECCO;
-
   if (temp80m != null) {
-    const diffAlt = 78; // 80m - 2m
-    const diffTemp = temperature - temp80m;
-    gradienteReale = (diffTemp / diffAlt) * 100;
+    gradienteReale = ((temperature - temp80m) / 78) * 100;
   } else if (temp120m != null) {
-    const diffAlt = 118;
-    const diffTemp = temperature - temp120m;
-    gradienteReale = (diffTemp / diffAlt) * 100;
+    gradienteReale = ((temperature - temp120m) / 118) * 100;
   }
 
-  // --- 2. Spread e base nuvole ---
+  // --- 2. BASE DELLA TERMICA (LCL) = dove si condensa l'aria ---
+  // Formula: LCL (metri) = (T - Td) × 125
   const spread = temperature - dewPoint;
-  const cloudBase = Math.round(Math.max(100, spread * 125));
+  const cloudBase = Math.round(Math.max(200, spread * 125));
 
-  // --- 3. CAPE stimato ---
+  // --- 3. CAPE stimato dai dati reali ---
+  // Base: spread termico × 80
   let capeBase = spread * 80;
+
+  // Correzione per gradiente termico reale
   if (gradienteReale > GRADIENTE_SECCO) {
     capeBase *= 1.4;
   } else if (gradienteReale > GRADIENTE_SECCO * 0.7) {
@@ -78,117 +77,103 @@ export function calcolaTermiche(weather: HourData, altitude: number): TermicheDa
     capeBase *= 0.5;
   }
 
-  if (temperature > 25) {
-    capeBase += 300;
-  } else if (temperature > 20) {
-    capeBase += 200;
-  } else if (temperature > 15) {
-    capeBase += 100;
+  // Correzione per temperatura alta (più energia)
+  if (temperature > 28) {
+    capeBase += 400;
+  } else if (temperature > 22) {
+    capeBase += 250;
+  } else if (temperature > 18) {
+    capeBase += 150;
+  } else if (temperature > 14) {
+    capeBase += 80;
   }
 
-  if (uvIndex != null && uvIndex > 5) {
-    capeBase *= 1.3;
-  } else if (uvIndex != null && uvIndex > 3) {
+  // Correzione UV (più irraggiamento = più termiche)
+  if (uvIndex != null && uvIndex > 6) {
+    capeBase *= 1.4;
+  } else if (uvIndex != null && uvIndex > 4) {
+    capeBase *= 1.2;
+  } else if (uvIndex != null && uvIndex > 2) {
     capeBase *= 1.1;
   }
 
-  if (soilTemp != null && soilTemp > temperature) {
-    capeBase *= 1.2;
+  // Correzione temperatura suolo (se più calda dell'aria, aiuta)
+  if (soilTemp != null && soilTemp > temperature + 3) {
+    capeBase *= 1.3;
+  } else if (soilTemp != null && soilTemp > temperature) {
+    capeBase *= 1.1;
   } else if (soilTemp != null && soilTemp < temperature - 5) {
-    capeBase *= 0.7;
+    capeBase *= 0.6;
   }
 
-  if (pressure != null && pressure > 1020) {
-    capeBase *= 1.2;
-  } else if (pressure != null && pressure < 1005) {
-    capeBase *= 0.6;
+  // Correzione pressione (alta pressione = aria più stabile)
+  if (pressure != null) {
+    if (pressure >= 1025) capeBase *= 0.8;
+    else if (pressure >= 1020) capeBase *= 0.9;
+    else if (pressure >= 1015) capeBase *= 1.0;
+    else if (pressure >= 1008) capeBase *= 1.2;
+    else if (pressure >= 1000) capeBase *= 1.3;
+    else capeBase *= 1.4;
   }
 
   const cape = Math.max(0, Math.round(capeBase));
 
-  // --- 4. Velocità termica base ---
-  const H = Math.max(300, cloudBase + 500);
-  const thermalSpeed = Math.sqrt(Math.max(0.01, (2 * cape) / H)) * 3.6;
+  // --- 4. TOP DELLA TERMICA = base + (CAPE factor) ---
+  // Con CAPE basso (<200), top = base + 200m (niente sviluppo)
+  // Con CAPE alto (>1000), top = base + 2000m+
+  const topExtra = Math.round((cape / 500) * 1500);
+  const top = Math.round(Math.min(5000, Math.max(cloudBase + 200, cloudBase + topExtra)));
 
-  // --- 5. Fattori correttivi basati su DATI REALI DI VENTO IN QUOTA ---
-  const avgWind10m = windSpeed || 0;
+  // --- 5. VELOCITÀ TERMICA (rateo in m/s) ---
+  // Formula fisica: v = sqrt(2 × CAPE / H) dove H = spessore dello strato convettivo
+  const H = Math.max(300, top - cloudBase + 200);
+  let rateoBase = Math.sqrt(Math.max(0.01, (2 * cape) / H)) * 3.6;
+  if (isNaN(rateoBase) || rateoBase < 0.05) rateoBase = 0.05;
 
-  // Trova shear verticale reale dal windProfile
-  const findWindAtHeight = (height: number): { speed: number; dir: number } | null => {
-    if (!windProfile || windProfile.length === 0) return null;
-    let closest = windProfile[0];
-    let minDiff = Math.abs(closest.height - height);
-    for (const level of windProfile) {
-      const diff = Math.abs(level.height - height);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closest = level;
-      }
-    }
-    if (closest.speed != null && closest.dir != null) {
-      return { speed: closest.speed, dir: closest.dir };
-    }
-    return null;
-  };
-
-  const wind1000m = findWindAtHeight(1000);
-  const wind500m = findWindAtHeight(500);
-
-  let windShear = 0;
-  const wind10m = { speed: windSpeed, dir: windDir };
-  if (wind1000m) {
-    windShear = Math.abs(wind1000m.speed - wind10m.speed);
-  }
-
-  let dirShear = 0;
-  if (wind500m) {
-    let diff = Math.abs(wind500m.dir - wind10m.dir);
-    if (diff > 180) diff = 360 - diff;
-    dirShear = diff;
-  } else if (wind1000m) {
-    let diff = Math.abs(wind1000m.dir - wind10m.dir);
-    if (diff > 180) diff = 360 - diff;
-    dirShear = diff * 0.5;
-  }
-
-  // Fattore vento basato su dati reali
-  let windFactor: number;
-  if (avgWind10m >= 8 && avgWind10m <= 18) {
-    windFactor = 1.3;
-  } else if (avgWind10m >= 5 && avgWind10m < 8) {
+  // --- 6. FATTORI CORRETTIVI ---
+  // Vento a 10m
+  let windFactor = 1.0;
+  if (windSpeed >= 8 && windSpeed <= 16) {
+    windFactor = 1.3;  // Vento ideale per termiche
+  } else if (windSpeed >= 5 && windSpeed < 8) {
     windFactor = 1.0;
-  } else if (avgWind10m >= 18 && avgWind10m <= 25) {
-    windFactor = 0.7;
-  } else if (avgWind10m < 5) {
+  } else if (windSpeed >= 16 && windSpeed <= 22) {
+    windFactor = 0.8;
+  } else if (windSpeed > 22) {
     windFactor = 0.4;
-  } else {
-    windFactor = 0.3;
+  } else if (windSpeed < 5) {
+    windFactor = 0.5;  // Troppo calma = termiche deboli
   }
 
-  if (windShear > 15) windFactor *= 0.6;
-  else if (windShear > 10) windFactor *= 0.8;
+  // Shear verticale dal windProfile (se disponibile)
+  let shearFactor = 1.0;
+  if (windProfile && windProfile.length > 0) {
+    const wind300m = windProfile.find((l) => l.height >= 200 && l.height <= 500);
+    const wind10m = { speed: windSpeed, dir: windDir };
+    if (wind300m && wind300m.speed != null) {
+      const shear = Math.abs(wind300m.speed - wind10m.speed);
+      if (shear > 20) shearFactor = 0.5;
+      else if (shear > 12) shearFactor = 0.7;
+      else if (shear > 6) shearFactor = 0.9;
+    }
+  }
 
-  if (dirShear > 60) windFactor *= 0.7;
-  else if (dirShear > 30) windFactor *= 0.9;
-
-  // --- 6. Nuvolosità ---
-  let cloudFactor: number;
-  if (cloudCover >= 10 && cloudCover <= 40) {
-    cloudFactor = 1.3;
-  } else if (cloudCover >= 5 && cloudCover < 10) {
+  // Nuvolosità (cumuli aiutano, cielo coperto no)
+  let cloudFactor = 1.0;
+  if (cloudCover >= 15 && cloudCover <= 45) {
+    cloudFactor = 1.3;  // Cumuli ben formati
+  } else if (cloudCover >= 5 && cloudCover < 15) {
     cloudFactor = 1.1;
-  } else if (cloudCover > 40 && cloudCover <= 60) {
-    cloudFactor = 0.8;
-  } else if (cloudCover > 60 && cloudCover <= 80) {
-    cloudFactor = 0.4;
-  } else if (cloudCover > 80) {
-    cloudFactor = 0.1;
-  } else {
+  } else if (cloudCover > 45 && cloudCover <= 65) {
     cloudFactor = 0.7;
+  } else if (cloudCover > 65 && cloudCover <= 85) {
+    cloudFactor = 0.3;
+  } else if (cloudCover > 85) {
+    cloudFactor = 0.1;
   }
 
-  // --- 7. Umidità ---
-  let humidityFactor: number;
+  // Umidità
+  let humidityFactor = 1.0;
   if (humidity >= 30 && humidity <= 50) {
     humidityFactor = 1.2;
   } else if (humidity > 50 && humidity <= 65) {
@@ -201,23 +186,7 @@ export function calcolaTermiche(weather: HourData, altitude: number): TermicheDa
     humidityFactor = 0.8;
   }
 
-  // --- 8. Pressione ---
-  let pressureFactor: number;
-  if (pressure != null) {
-    if (pressure >= 1020) {
-      pressureFactor = 1.3;
-    } else if (pressure >= 1013) {
-      pressureFactor = 1.1;
-    } else if (pressure >= 1005) {
-      pressureFactor = 0.8;
-    } else {
-      pressureFactor = 0.5;
-    }
-  } else {
-    pressureFactor = 1.0;
-  }
-
-  // --- 9. Ora del giorno ---
+  // Ora del giorno (picco 11-15)
   const hour = weather.time?.getHours() ?? 12;
   let hourFactor = 1.0;
   if (hour >= 11 && hour <= 15) {
@@ -226,16 +195,16 @@ export function calcolaTermiche(weather: HourData, altitude: number): TermicheDa
     hourFactor = 0.8;
   } else if (hour > 15 && hour <= 18) {
     hourFactor = 0.6;
-  } else {
+  } else if (hour > 18 || hour < 8) {
     hourFactor = 0.1;
   }
 
-  // --- 10. Calcolo finale ---
+  // --- 7. RATEO FINALE ---
   const rateo = Math.round(
-    Math.max(0.05, thermalSpeed * windFactor * cloudFactor * humidityFactor * pressureFactor * hourFactor) * 10
+    Math.max(0.05, rateoBase * windFactor * shearFactor * cloudFactor * humidityFactor * hourFactor) * 10
   ) / 10;
 
-  // --- Label e colore ---
+  // --- 8. LABEL E COLORE ---
   let label: string;
   let colore: string;
 
@@ -260,10 +229,6 @@ export function calcolaTermiche(weather: HourData, altitude: number): TermicheDa
   }
 
   const forza = Math.max(0, Math.min(10, Math.round((rateo / 5) * 10 * 10) / 10));
-
-  const top = Math.round(
-    Math.min(5000, Math.max(cloudBase + 200, cloudBase + (rateo / GRADIENTE_SECCO) * 300))
-  );
 
   return {
     base: cloudBase,
