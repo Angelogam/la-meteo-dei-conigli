@@ -59,25 +59,23 @@ export default function Page() {
       {/* Header */}
       <header className="border-b border-emerald-500/30 bg-slate-900/70 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-center relative">
-          {/* Coniglio sinistro con parapendio */}
-          <div className="hidden sm:flex flex-col items-center animate-float-left absolute left-4">
-            <div className="relative">
-              <svg className="w-14 h-14" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                {/* Vela del parapendio */}
-                <path d="M10 30 Q40 5 70 30" stroke="#4ade80" strokeWidth="3" fill="url(#grad1)" opacity="0.9"/>
-                <path d="M15 30 L40 15 L65 30" stroke="#facc15" strokeWidth="1.5" fill="none" opacity="0.6"/>
+          {/* Coniglio sinistro con paracadute — accanto al titolo */}
+          <div className="flex flex-col items-center mr-2 animate-float-left">
+            <div className="relative w-12 h-14 flex items-center justify-center">
+              {/* Paracadute colorato a strisce */}
+              <svg viewBox="0 0 50 60" className="w-10 h-12" xmlns="http://www.w3.org/2000/svg">
+                {/* Cupola principale */}
+                <path d="M5 25 Q25 0 45 25 L5 25Z" fill="#ef4444" />
+                {/* Striscia gialla */}
+                <path d="M12 22 Q25 5 38 22 L34 17 Q25 8 16 17Z" fill="#facc15" />
+                {/* Striscia verde */}
+                <path d="M20 35 Q25 28 30 35 L28 30 Q25 26 22 30Z" fill="#22c55e" />
                 {/* Fettucce */}
-                <line x1="32" y1="28" x2="40" y2="48" stroke="#fcd34d" strokeWidth="2"/>
-                <line x1="48" y1="28" x2="40" y2="48" stroke="#fcd34d" strokeWidth="2"/>
-                {/* Coniglio sotto */}
-                <circle cx="40" cy="52" r="5" fill="#f97316" opacity="0.9"/>
-                <text x="40" y="56" textAnchor="middle" fontSize="14" fill="#fff9c4">🐰</text>
-                <defs>
-                  <linearGradient id="grad1" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor="#a7f3d0"/>
-                    <stop offset="100%" stopColor="#34d399"/>
-                  </linearGradient>
-                </defs>
+                <line x1="25" y1="25" x2="25" y2="45" stroke="#fcd34d" strokeWidth="1.5" />
+                <line x1="18" y1="28" x2="25" y2="45" stroke="#fcd34d" strokeWidth="1.5" />
+                <line x1="32" y1="28" x2="25" y2="45" stroke="#fcd34d" strokeWidth="1.5" />
+                {/* Coniglio */}
+                <text x="25" y="52" textAnchor="middle" fontSize="16">🐰</text>
               </svg>
             </div>
           </div>
@@ -93,25 +91,23 @@ export default function Page() {
             <p className="text-xs text-slate-400 font-medium">Previsioni per volo libero</p>
           </div>
 
-          {/* Coniglio destro con parapendio */}
-          <div className="hidden sm:flex flex-col items-center animate-float-right absolute right-4">
-            <div className="relative">
-              <svg className="w-14 h-14" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                {/* Vela del parapendio */}
-                <path d="M10 30 Q40 5 70 30" stroke="#fbbf24" strokeWidth="3" fill="url(#grad2)" opacity="0.9"/>
-                <path d="M15 30 L40 15 L65 30" stroke="#fef08a" strokeWidth="1.5" fill="none" opacity="0.6"/>
+          {/* Coniglio destro con paracadute — accanto al titolo */}
+          <div className="flex flex-col items-center ml-2 animate-float-right">
+            <div className="relative w-12 h-14 flex items-center justify-center">
+              {/* Paracadute colorato a strisce */}
+              <svg viewBox="0 0 50 60" className="w-10 h-12" xmlns="http://www.w3.org/2000/svg">
+                {/* Cupola principale */}
+                <path d="M5 25 Q25 0 45 25 L5 25Z" fill="#ef4444" />
+                {/* Striscia gialla */}
+                <path d="M12 22 Q25 5 38 22 L34 17 Q25 8 16 17Z" fill="#facc15" />
+                {/* Striscia verde */}
+                <path d="M20 35 Q25 28 30 35 L28 30 Q25 26 22 30Z" fill="#22c55e" />
                 {/* Fettucce */}
-                <line x1="32" y1="28" x2="40" y2="48" stroke="#fde68a" strokeWidth="2"/>
-                <line x1="48" y1="28" x2="40" y2="48" stroke="#fde68a" strokeWidth="2"/>
-                {/* Coniglio sotto */}
-                <circle cx="40" cy="52" r="5" fill="#f59e0b" opacity="0.9"/>
-                <text x="40" y="56" textAnchor="middle" fontSize="14" fill="#fff9c4">🐰</text>
-                <defs>
-                  <linearGradient id="grad2" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor="#fde68a"/>
-                    <stop offset="100%" stopColor="#fbbf24"/>
-                  </linearGradient>
-                </defs>
+                <line x1="25" y1="25" x2="25" y2="45" stroke="#fcd34d" strokeWidth="1.5" />
+                <line x1="18" y1="28" x2="25" y2="45" stroke="#fcd34d" strokeWidth="1.5" />
+                <line x1="32" y1="28" x2="25" y2="45" stroke="#fcd34d" strokeWidth="1.5" />
+                {/* Coniglio */}
+                <text x="25" y="52" textAnchor="middle" fontSize="16">🐰</text>
               </svg>
             </div>
           </div>
