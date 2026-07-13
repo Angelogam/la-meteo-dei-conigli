@@ -15,6 +15,7 @@ import MeteoTab from "@/components/MeteoTab";
 import VentiTab from "@/components/VentiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiTab from "@/components/AnalisiTab";
+import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import { Sparkles, Navigation, CloudSun } from "lucide-react";
 
 export function Page() {
@@ -127,8 +128,9 @@ export function Page() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-        <div className="flex flex-col md:flex-row gap-6">
+      <div className="max-w-8xl mx-auto p-3 md:p-5 lg:p-6">
+        <div className="flex flex-col md:flex-row gap-5">
+          {/* Sidebar decolli */}
           <div className="w-full md:w-80 shrink-0">
             <DecolloList
               decolli={DECOLLI.map(d => ({ id: d.id, name: d.name, valley: d.valley, exposure: d.exposure, alt: d.altitude }))}
@@ -138,68 +140,80 @@ export function Page() {
             />
           </div>
 
+          {/* Contenuto principale */}
           <div className="flex-1 min-w-0 space-y-4">
-            <SiteHeader
-              name={site.name}
-              exposure={site.exposure}
-              valley={site.valley}
-              alt={site.altitude}
-              currentData={currentData}
-            />
-
-            <AlertBanner alert={weatherAlert} />
-
-            <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
-
-            <DaySelector
-              enrichedDaily={enrichedDaily}
-              dateLabels={dateLabels}
-              selectedDay={selectedDay}
-              onSelect={setSelectedDay}
-            />
-
-            <HourSlider
-              selectedHour={selectedHour}
-              onChange={setSelectedHour}
-            />
-
-            <div className="bg-slate-900/40 border border-slate-700/30 rounded-2xl p-4 md:p-5 animate-scale-in">
-              {activeTab === "meteo" && (
-                <MeteoTab
+            {/* PREVISIONI GIORNALIERE — stile 3B Meteo */}
+            <div className="bg-gradient-to-br from-slate-900/70 to-slate-800/40 border-2 border-emerald-500/30 rounded-3xl overflow-hidden shadow-xl shadow-emerald-500/10">
+              <div className="bg-gradient-to-r from-emerald-800/40 to-amber-800/20 px-5 py-3 border-b border-emerald-500/20">
+                <h2 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
+                  <CloudSun className="w-5 h-5 text-yellow-300" />
+                  PREVISIONI GIORNALIERE
+                </h2>
+              </div>
+              <div className="p-4">
+                <PrevisioniGiornaliere
+                  enrichedDaily={enrichedDaily}
+                  dateLabels={dateLabels}
                   currentData={currentData}
                   dayData={dayData}
-                  site={{ alt: site.altitude }}
-                  thermalDelta={thermalDelta}
-                  stabilityIndex={stabilityIndex}
-                />
-              )}
-              {activeTab === "venti" && (
-                <VentiTab
-                  currentData={currentData}
-                  dayData={dayData}
-                  windProfile={windProfile}
-                />
-              )}
-              {activeTab === "termiche" && (
-                <TermicheTab
-                  currentData={currentData}
-                  dayData={dayData}
-                  site={siteConCoordinate}
-                  thermalDelta={thermalDelta}
-                  thermalStrength={thermalStrength}
-                  hourlyData={hourlyData}
-                  selectedHour={selectedHour}
+                  site={site}
                   selectedDay={selectedDay}
+                  onSelectDay={setSelectedDay}
                 />
-              )}
-              {activeTab === "analisi" && (
-                <AnalisiTab
-                  currentData={currentData}
-                  site={{ name: site.name, alt: site.altitude }}
-                  thermalDelta={thermalDelta}
-                  selectedDateLabel={selectedDateLabel}
-                />
-              )}
+              </div>
+            </div>
+
+            {/* Sezione dettaglio con tab */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-black text-white tracking-tight">DETTAGLIO</h2>
+              </div>
+
+              <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+
+              <HourSlider
+                selectedHour={selectedHour}
+                onChange={setSelectedHour}
+              />
+
+              <div className="bg-slate-900/40 border border-slate-700/30 rounded-2xl p-4 md:p-5 animate-scale-in">
+                {activeTab === "meteo" && (
+                  <MeteoTab
+                    currentData={currentData}
+                    dayData={dayData}
+                    site={{ alt: site.altitude }}
+                    thermalDelta={thermalDelta}
+                    stabilityIndex={stabilityIndex}
+                  />
+                )}
+                {activeTab === "venti" && (
+                  <VentiTab
+                    currentData={currentData}
+                    dayData={dayData}
+                    windProfile={windProfile}
+                  />
+                )}
+                {activeTab === "termiche" && (
+                  <TermicheTab
+                    currentData={currentData}
+                    dayData={dayData}
+                    site={siteConCoordinate}
+                    thermalDelta={thermalDelta}
+                    thermalStrength={thermalStrength}
+                    hourlyData={hourlyData}
+                    selectedHour={selectedHour}
+                    selectedDay={selectedDay}
+                  />
+                )}
+                {activeTab === "analisi" && (
+                  <AnalisiTab
+                    currentData={currentData}
+                    site={{ name: site.name, alt: site.altitude }}
+                    thermalDelta={thermalDelta}
+                    selectedDateLabel={selectedDateLabel}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>
