@@ -92,7 +92,7 @@ export default function WindProfileComponent({ windProfile, groundSpeed, groundD
           {windProfile.length} livelli
         </span>
       </div>
-      <div className="p-3 space-y-0.5">
+      <div className="space-y-0.5">
         {rows.map((r, idx) => {
           const pct = maxSpeed > 0 ? (r.speed / maxSpeed) * 100 : 10;
           const barColor =
