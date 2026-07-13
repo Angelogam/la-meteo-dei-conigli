@@ -151,6 +151,12 @@ export default function PrevisioniGiornaliere({
     return getDominantWeatherCode(codici);
   }, [dayData]);
 
+  // Calcola pioggia TOTALE reale dalle ore (non da enrichedDaily)
+  const precipTotaleReale = useMemo(() => {
+    if (!dayData || dayData.length === 0) return 0;
+    return Math.round(dayData.reduce((sum: number, h: any) => sum + (h.precipitation || 0), 0) * 10) / 10;
+  }, [dayData]);
+
   // Se il codice dominante è 0/1/2 usiamo cloudsun per non mostrare il sole pieno se nuvoloso
   const finalCode = dominantCode;
 
@@ -291,7 +297,10 @@ export default function PrevisioniGiornaliere({
           
           const weatherInfo = getWeatherInfo(weatherCode, 36);
           const condizioni = weatherInfo.desc;
-          const rischio = getRischioPioggia(day.precipSum || 0);
+          
+          // USA la pioggia reale dalle ore, NON da enrichedDaily
+          const rischio = getRischioPioggia(precipTotaleReale);
+          
           const tempMedia = Math.round((day.tempMin + day.tempMax) / 2);
 
           return (
@@ -324,7 +333,7 @@ export default function PrevisioniGiornaliere({
                   <div>
                     <div className="text-sm font-medium text-slate-300">{condizioni}</div>
                     <div className="text-xs text-slate-500">
-                      {day.precipSum ? `${day.precipSum.toFixed(1)} mm` : "0 mm"}
+                      {precipTotaleReale > 0 ? `${precipTotaleReale.toFixed(1)} mm` : "0 mm"}
                     </div>
                   </div>
                 </div>
@@ -354,7 +363,7 @@ export default function PrevisioniGiornaliere({
                   </div>
                 </div>
 
-                {/* Pioggia */}
+                {/* Pioggia - ORA USA precipTotaleReale */}
                 <div className="flex items-center gap-2 bg-slate-900/60 rounded-xl px-3 py-2">
                   <Umbrella className="w-4 h-4 text-blue-400 shrink-0" />
                   <div>
