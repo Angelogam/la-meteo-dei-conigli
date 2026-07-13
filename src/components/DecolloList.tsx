@@ -64,10 +64,10 @@ const DecolloList = ({ decolli, selectedId, onSelect, currentData, allWeatherDat
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-800/60 rounded-2xl border border-emerald-500/20">
+      <div className="flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-800/60 rounded-2xl border border-emerald-500/20">
         <Navigation className="w-4 h-4 text-emerald-400" />
         <h3 className="text-sm font-black text-emerald-300 tracking-wider uppercase">Decolli</h3>
-        <span className="text-[10px] text-slate-500 bg-slate-700/60 px-2 py-0.5 rounded-full ml-auto">
+        <span className="text-[10px] text-slate-500 bg-slate-700/60 px-2 py-0.5 rounded-full">
           {decolli.length}
         </span>
       </div>
