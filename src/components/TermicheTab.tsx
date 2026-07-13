@@ -1,19 +1,15 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import GraficoTermiche from "@/components/GraficoTermiche";
 import type { HourData, CurrentData, DailyData } from "@/types/meteo";
 import { calcolaPrevisioneTermica } from "@/services/algoritmoPrevisioni";
 import { fetchCapeData } from "@/services/capeService";
 
-// Cache per CAPE
-let capeCacheGlobal: { time: Date; cape: number; cin: number; li: number }[] = [];
-let capeLoaded = false;
-
 interface TermicheTabProps {
   currentData: CurrentData | null;
   dayData: DailyData | null;
-  site: { alt: number };
+  site: { alt: number; lat?: number; lon?: number };
   thermalDelta?: number;
   thermalStrength?: number;
   hourlyData?: HourData[];
@@ -31,24 +27,36 @@ export default function TermicheTab({
   selectedHour,
   selectedDay,
 }: TermicheTabProps) {
-  // Scarica CAPE al mount
-  React.useEffect(() => {
-    if (!capeLoaded) {
-      capeLoaded = true;
-      fetchCapeData(44.2587, 7.7943).then(data => {
-        capeCacheGlobal = data;
+  const [capeData, setCapeData] = useState<{ time: Date; cape: number; cin: number; li: number }[]>([]);
+  const [loadingCape, setLoadingCape] = useState(false);
+
+  // Scarica CAPE ogni volta che cambiano le coordinate del sito
+  useEffect(() => {
+    const lat = site.lat ?? 44.2587;
+    const lon = site.lon ?? 7.7943;
+
+    setLoadingCape(true);
+    fetchCapeData(lat, lon)
+      .then(data => {
+        setCapeData(data);
+        setLoadingCape(false);
+      })
+      .catch(() => {
+        setCapeData([]);
+        setLoadingCape(false);
       });
-    }
-  }, []);
+  }, [site.lat, site.lon]);
 
   // Calcola previsioni multi-fonte
   const previsioni = useMemo(() => {
     if (!hourlyData || hourlyData.length === 0) return [];
+    if (capeData.length === 0 && !loadingCape) return [];
 
     const oggi = new Date();
     const targetDate = new Date(oggi);
     targetDate.setDate(oggi.getDate() + selectedDay);
-    
+
+    // Filtra dati orari per il giorno selezionato
     const dayHours = hourlyData.filter((d: any) => {
       const t = new Date(d.time);
       return t.getFullYear() === targetDate.getFullYear() &&
@@ -58,33 +66,41 @@ export default function TermicheTab({
 
     if (dayHours.length === 0) return [];
 
-    const result = dayHours.map((weather: HourData) => {
-      const capeEntry = capeCacheGlobal.find(c => {
-        const ct = c.time;
-        const wt = new Date(weather.time);
-        return ct.getHours() === wt.getHours() && 
-               ct.getDate() === wt.getDate();
-      });
+    const result = dayHours
+      .map((weather: HourData) => {
+        const hour = new Date(weather.time).getHours();
+        
+        // Trova CAPE per quest'ora e giorno
+        const capeEntry = capeData.find(c => {
+          const ct = c.time;
+          const wt = new Date(weather.time);
+          return ct.getHours() === wt.getHours() &&
+                 ct.getDate() === wt.getDate();
+        });
 
-      const previsione = calcolaPrevisioneTermica(
-        weather,
-        capeEntry?.cape ?? 0,
-        capeEntry?.cin ?? 0,
-        capeEntry?.li ?? 0,
-        site.alt
-      );
+        const previsione = calcolaPrevisioneTermica(
+          weather,
+          capeEntry?.cape ?? 0,
+          capeEntry?.cin ?? 0,
+          capeEntry?.li ?? 0,
+          site.alt
+        );
 
-      return {
-        hour: new Date(weather.time).getHours(),
-        previsione,
-        weather,
-      };
-    });
+        return {
+          hour,
+          previsione,
+          weather,
+        };
+      })
+      // Solo ore 9:00 – 19:00
+      .filter(p => p.hour >= 9 && p.hour <= 19)
+      // Ordina per ora crescente
+      .sort((a, b) => a.hour - b.hour);
 
-    // FILTRA SOLO ORE 9:00 – 19:00
-    return result.filter(p => p.hour >= 9 && p.hour <= 19);
-  }, [hourlyData, site.alt, selectedDay]);
+    return result;
+  }, [hourlyData, capeData, loadingCape, site.alt, selectedDay]);
 
+  // Dati per grafico
   const hourlyForGraph = useMemo(() => {
     return previsioni.map(p => ({
       hour: p.hour,
@@ -105,31 +121,97 @@ export default function TermicheTab({
     }));
   }, [previsioni]);
 
+  // Riepilogo multi-fonte
+  const riepilogo = useMemo(() => {
+    if (previsioni.length === 0) return null;
+
+    const medie = {
+      rateoFinale: 0,
+      rateoGFS: 0,
+      rateoOpenMeteo: 0,
+      rateoClimatologia: 0,
+      confidenza: 0,
+    };
+
+    for (const p of previsioni) {
+      medie.rateoFinale += p.previsione.rateoFinale;
+      medie.rateoGFS += p.previsione.rateoGFS;
+      medie.rateoOpenMeteo += p.previsione.rateoOpenMeteo;
+      medie.rateoClimatologia += p.previsione.rateoClimatologia;
+      medie.confidenza += p.previsione.confidenza;
+    }
+
+    const n = previsioni.length;
+    return {
+      rateoFinale: Math.round((medie.rateoFinale / n) * 10) / 10,
+      rateoGFS: Math.round((medie.rateoGFS / n) * 10) / 10,
+      rateoOpenMeteo: Math.round((medie.rateoOpenMeteo / n) * 10) / 10,
+      rateoClimatologia: Math.round((medie.rateoClimatologia / n) * 10) / 10,
+      confidenza: Math.round((medie.confidenza / n) * 100),
+      oreAttive: previsioni.filter(p => p.previsione.rateoFinale >= 0.3).length,
+    };
+  }, [previsioni]);
+
+  if (loadingCape) {
+    return (
+      <div className="bg-slate-800/40 rounded-xl p-8 border border-slate-700/30 text-center">
+        <span className="text-sm text-slate-400">
+          ⏳ Caricamento dati GFS per termiche reali...
+        </span>
+      </div>
+    );
+  }
+
+  if (previsioni.length === 0) {
+    return (
+      <div className="bg-slate-800/40 rounded-xl p-8 border border-slate-700/30 text-center">
+        <span className="text-sm text-slate-500">
+          ⏳ Recupero dati multi-fonte...
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Riepilogo multi-fonte */}
-      <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/30">
-        <h3 className="text-sm font-semibold mb-3 text-slate-300">Motore previsionale multi-fonte</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-          <div className="bg-slate-900/40 rounded-lg p-3">
-            <span className="text-[10px] text-cyan-400 block">GFS / CAPE</span>
-            <span className="text-base font-bold text-white">40%</span>
-            <span className="text-xs text-slate-400 ml-2">Energia convettiva</span>
+      {/* Riepilogo multi-fonte con dati reali */}
+      {riepilogo && (
+        <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/30">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-slate-300">Motore previsionale multi-fonte</h3>
+            <span className="text-[10px] text-slate-500 bg-slate-900/60 px-2 py-0.5 rounded-full">
+              {riepilogo.oreAttive}/{previsioni.length} ore attive
+            </span>
           </div>
-          <div className="bg-slate-900/40 rounded-lg p-3">
-            <span className="text-[10px] text-green-400 block">Open-Meteo</span>
-            <span className="text-base font-bold text-white">35%</span>
-            <span className="text-xs text-slate-400 ml-2">Condizioni locali</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div className="bg-slate-900/40 rounded-lg p-3">
+              <span className="text-[10px] text-amber-400 block">Media Finale</span>
+              <span className="text-xl font-bold text-amber-300">{riepilogo.rateoFinale}</span>
+              <span className="text-xs text-slate-400 ml-1">m/s</span>
+            </div>
+            <div className="bg-slate-900/40 rounded-lg p-3">
+              <span className="text-[10px] text-cyan-400 block">GFS / CAPE</span>
+              <span className="text-xl font-bold text-cyan-300">{riepilogo.rateoGFS}</span>
+              <span className="text-xs text-slate-400 ml-1">m/s</span>
+            </div>
+            <div className="bg-slate-900/40 rounded-lg p-3">
+              <span className="text-[10px] text-green-400 block">Open-Meteo</span>
+              <span className="text-xl font-bold text-green-300">{riepilogo.rateoOpenMeteo}</span>
+              <span className="text-xs text-slate-400 ml-1">m/s</span>
+            </div>
+            <div className="bg-slate-900/40 rounded-lg p-3">
+              <span className="text-[10px] text-amber-400 block">Climatologia</span>
+              <span className="text-xl font-bold text-amber-300">{riepilogo.rateoClimatologia}</span>
+              <span className="text-xs text-slate-400 ml-1">m/s</span>
+            </div>
           </div>
-          <div className="bg-slate-900/40 rounded-lg p-3">
-            <span className="text-[10px] text-amber-400 block">Climatologia</span>
-            <span className="text-base font-bold text-white">25%</span>
-            <span className="text-xs text-slate-400 ml-2">Pattern stagionali</span>
+          <div className="mt-2 text-[10px] text-slate-500 text-center">
+            Confidenza media: {riepilogo.confidenza}% · {previsioni.length} ore (9:00–19:00)
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Tabella previsioni */}
+      {/* Tabella previsioni orarie 9:00-19:00 */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -188,14 +270,6 @@ export default function TermicheTab({
             hourly={hourlyForGraph}
             oraCorrente={selectedHour}
           />
-        </div>
-      )}
-
-      {previsioni.length === 0 && (
-        <div className="bg-slate-800/40 rounded-xl p-8 border border-slate-700/30 text-center">
-          <span className="text-sm text-slate-500">
-            ⏳ Recupero dati multi-fonte...
-          </span>
         </div>
       )}
     </div>

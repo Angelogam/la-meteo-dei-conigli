@@ -46,6 +46,13 @@ export function Page() {
   // Ottieni tutti i dati orari
   const hourlyData = meteoData?.hourly;
 
+  // Prepara site con lat/lon per TermicheTab
+  const siteConCoordinate = {
+    alt: site.altitude,
+    lat: site.lat,
+    lon: site.lon,
+  };
+
   const lastUpdateStr = lastUpdate?.toLocaleTimeString("it-IT", {
     hour: "2-digit",
     minute: "2-digit",
@@ -177,7 +184,7 @@ export function Page() {
                 <TermicheTab
                   currentData={currentData}
                   dayData={dayData}
-                  site={{ alt: site.altitude }}
+                  site={siteConCoordinate}
                   thermalDelta={thermalDelta}
                   thermalStrength={thermalStrength}
                   hourlyData={hourlyData}
