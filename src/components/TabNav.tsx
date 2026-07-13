@@ -2,43 +2,38 @@
 
 import React from "react";
 
-export type Tab = "meteo" | "venti" | "quota" | "termiche" | "analisi";
+type Tab = 'meteo' | 'venti' | 'termiche' | 'analisi';
 
 interface TabNavProps {
-  tab: Tab;
+  activeTab: Tab;
   onTabChange: (tab: Tab) => void;
 }
 
-const tabs: { id: Tab; label: string; icon: string }[] = [
-  { id: "meteo", label: "Meteo", icon: "🌤️" },
-  { id: "venti", label: "Venti sup.", icon: "💨" },
-  { id: "quota", label: "Venti quota", icon: "⬆️" },
-  { id: "termiche", label: "Termiche", icon: "🔥" },
-  { id: "analisi", label: "Analisi AI", icon: "🤖" },
+const tabs: { id: Tab; label: string }[] = [
+  { id: 'meteo', label: '🌤️ Meteo' },
+  { id: 'venti', label: '💨 Venti' },
+  { id: 'termiche', label: '🔥 Termiche' },
+  { id: 'analisi', label: '🤖 Analisi' },
 ];
 
-export const TabNav = ({ tab, onTabChange }: TabNavProps) => {
+export default function TabNav({ activeTab, onTabChange }: TabNavProps) {
   return (
-    <div className="flex gap-1 bg-slate-700/70 rounded-xl p-1 border border-slate-600/40 mb-2 overflow-x-auto">
-      {tabs.map((t) => (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '12px' }}>
+      {tabs.map((tab) => (
         <button
-          key={t.id}
-          onClick={() => onTabChange(t.id)}
-          className={`
-            flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-200 whitespace-nowrap
-            ${
-              tab === t.id
-                ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md scale-105"
-                : "text-slate-300 hover:text-white hover:bg-slate-600/50"
-            }
-          `}
+          key={tab.id}
+          onClick={() => onTabChange(tab.id)}
+          style={{
+            padding: '8px 4px', borderRadius: '8px 8px 0 0',
+            border: 'none', color: '#e8f0f8', cursor: 'pointer',
+            fontSize: '0.8rem', fontWeight: 500, textAlign: 'center',
+            background: activeTab === tab.id ? 'rgba(76, 175, 80, 0.2)' : 'transparent',
+            borderBottom: activeTab === tab.id ? '2px solid #4caf50' : '2px solid transparent',
+          }}
         >
-          <span className="text-xs">{t.icon}</span>
-          <span>{t.label}</span>
+          {tab.label}
         </button>
       ))}
     </div>
   );
-};
-
-export default TabNav;
+}

@@ -1,22 +1,29 @@
 "use client";
 
+import React from "react";
+
 interface ErrorScreenProps {
-  message: string;
+  error: string;
   onRetry: () => void;
 }
 
-export const ErrorScreen = ({ message, onRetry }: ErrorScreenProps) => {
+export default function ErrorScreen({ error, onRetry }: ErrorScreenProps) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-white">
-      <div className="text-6xl mb-4">&#x26A0;&#xFE0F;</div>
-      <div className="text-xl font-bold text-red-500 mb-2">Errore di caricamento</div>
-      <div className="text-sm text-gray-500 mb-4 text-center max-w-md">{message}</div>
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      minHeight: '100vh', padding: '20px', background: 'linear-gradient(145deg, #1a2a3a, #0d1b2a)'
+    }}>
+      <p style={{ color: '#ff6b6b', fontSize: '1.1rem', marginBottom: '16px', textAlign: 'center' }}>❌ {error}</p>
       <button
         onClick={onRetry}
-        className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-colors"
+        style={{
+          background: '#4caf50', color: '#fff', border: 'none',
+          padding: '10px 24px', borderRadius: '8px', cursor: 'pointer',
+          fontSize: '1rem', fontWeight: 600
+        }}
       >
-        Riprova
+        🔄 Riprova
       </button>
     </div>
   );
-};
+}

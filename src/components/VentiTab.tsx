@@ -1,65 +1,89 @@
 "use client";
 
-import type { HourData } from "@/types/meteo";
-import { wa } from "@/utils/meteo";
+import React from "react";
+import { getWindArrow, getWindDirection, getWeatherIcon } from "@/utils/weatherHelpers";
 
 interface VentiTabProps {
-  dayData: HourData[];
-  selectedHour?: number;
+  currentData: any;
+  dayData: any[];
+  windProfile: { alt: number; speed: number; dir: number; dirName: string }[];
 }
 
-function windColor(speed: number): string {
-  if (speed < 8) return "bg-yellow-400";
-  if (speed < 12) return "bg-yellow-500";
-  if (speed < 16) return "bg-orange-400";
-  if (speed < 20) return "bg-orange-500";
-  if (speed < 24) return "bg-orange-600";
-  if (speed < 28) return "bg-red-500";
-  if (speed < 32) return "bg-red-600";
-  if (speed < 36) return "bg-red-700";
-  return "bg-red-800";
-}
+export default function VentiTab({ currentData, dayData, windProfile }: VentiTabProps) {
+  if (!currentData) return null;
 
-export const VentiTab = ({ dayData, selectedHour }: VentiTabProps) => {
-  if (!dayData.length) {
-    return <div className="text-sm text-slate-300 p-4 text-center">Nessun dato vento disponibile</div>;
-  }
+  const windCards = [
+    { label: '10 m (superficie)', speed: currentData.windSpeed, dir: currentData.windDir, gust: currentData.windGust, full: true },
+    { label: '80 m (quota termica)', speed: currentData.wind80m, dir: currentData.windDir80m, gust: currentData.wind80m ? currentData.wind80m * 1.3 : null, full: !!currentData.wind80m },
+    { label: '120 m (alta quota)', speed: currentData.wind120m, dir: currentData.windDir120m, gust: currentData.wind120m ? currentData.wind120m * 1.35 : null, full: !!currentData.wind120m },
+  ];
 
   return (
-    <div className="space-y-1">
-      {/* Ora attuale sincronizzata */}
-      {selectedHour !== undefined && (
-        <div className="flex items-center justify-between px-2 py-1.5 mb-1 text-xs text-blue-300 font-medium border-b border-slate-600/30">
-          <span>💨 Venti superficiali · ora selezionata</span>
-          <span className="text-blue-200 font-bold">{String(selectedHour).padStart(2, "0")}:00</span>
+    <div style={{ animation: 'fadeIn 0.3s ease' }}>
+      <div style={{ marginBottom: '12px' }}>
+        <h4 style={{ fontSize: '0.95rem', color: '#4caf50', marginBottom: '10px', fontWeight: 600 }}>💨 Vento a differenti quote</h4>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+          {windCards.map((w, i) => (
+            <div key={i} style={{ textAlign: 'center', padding: '10px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ fontSize: '0.7rem', color: '#8899aa' }}>{w.label}</div>
+              <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#e8f0f8' }}>
+                {w.full ? `${getWindArrow(w.dir)} ${Math.round(w.speed)} km/h` : 'N/D'}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#8899aa' }}>{w.full ? getWindDirection(w.dir) : '--'}</div>
+              <div style={{ fontSize: '0.7rem', color: '#ff6b6b' }}>⚡ {w.gust ? `${Math.round(w.gust)} km/h` : '--'}</div>
+            </div>
+          ))}
         </div>
-      )}
-      {dayData.map((h, i) => {
-        const barColor = windColor(h.windSpeed);
-        return (
-          <div key={i} className="flex items-center gap-2 py-1.5 px-2 border-b border-slate-600/30 last:border-0">
-            <div className="text-xs font-bold text-slate-300 w-10">
-              {String(h.time.getHours()).padStart(2, "0")}:00
-            </div>
-            <div className="text-sm text-slate-200 w-16">{wa(h.windDir)}</div>
-            <div className="flex-1 h-3 bg-slate-600/60 rounded-full overflow-hidden">
-              <div
-                className={`h-full ${barColor} rounded-full transition-all duration-300`}
-                style={{
-                  width: `${Math.min(100, (h.windSpeed / 40) * 100)}%`,
-                  boxShadow: h.windSpeed >= 28 ? "0 0 6px rgba(220, 38, 38, 0.6)" : "none",
-                }}
-              />
-            </div>
-            <div className="text-sm font-bold text-slate-100 w-14 text-right">
-              {Math.round(h.windSpeed)} km/h
-            </div>
-            <div className="text-xs text-slate-400 w-10 text-right">
-              {h.windGust ? Math.round(h.windGust) : "--"} km/h
-            </div>
-          </div>
-        );
-      })}
+      </div>
+
+      <div style={{ marginBottom: '12px' }}>
+        <h4 style={{ fontSize: '0.95rem', color: '#4caf50', marginBottom: '10px', fontWeight: 600 }}>📊 Profilo Vento (400m - 4000m)</h4>
+        <div style={{
+          background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '10px',
+          maxHeight: '200px', overflowY: 'auto',
+        }}>
+          {windProfile.map((level, idx) => {
+            const maxSpeed = currentData.windSpeed * 3.5;
+            const width = Math.min(100, (level.speed / maxSpeed) * 100);
+            const barColor = width < 30 ? '#4caf50' : width < 50 ? '#8bc34a' : width < 70 ? '#ff9800' : width < 90 ? '#ff5722' : '#f44336';
+            return (
+              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '50px 1fr 50px', gap: '6px', alignItems: 'center', padding: '2px 4px', fontSize: '0.7rem' }}>
+                <span style={{ color: '#8899aa' }}>{level.alt}m</span>
+                <div style={{ height: '16px', background: 'rgba(255,255,255,0.06)', borderRadius: '10px', overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%', borderRadius: '10px', display: 'flex', alignItems: 'center',
+                    justifyContent: 'flex-end', paddingRight: '4px', minWidth: '30px',
+                    width: `${width}%`, background: barColor,
+                  }}>
+                    <span style={{ fontSize: '0.55rem', color: '#fff', fontWeight: 'bold', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
+                      {level.speed} km/h
+                    </span>
+                  </div>
+                </div>
+                <span style={{ color: '#8899aa', textAlign: 'center' }}>{getWindArrow(level.dir)} {level.dirName}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '12px' }}>
+        <h4 style={{ fontSize: '0.95rem', color: '#4caf50', marginBottom: '10px', fontWeight: 600 }}>📊 Vento orario (9:00 - 19:00)</h4>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(11, 1fr)', gap: '2px', overflowX: 'auto' }}>
+          {Array.from({ length: 11 }, (_, i) => i + 9).map(hour => {
+            const hData = dayData?.find((h: any) => h.time.getHours() === hour);
+            if (!hData) return <div key={hour} style={{ textAlign: 'center', padding: '6px 2px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', minWidth: '40px' }}>--</div>;
+            return (
+              <div key={hour} style={{ textAlign: 'center', padding: '6px 2px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', minWidth: '40px' }}>
+                <div style={{ fontSize: '0.55rem', color: '#8899aa' }}>{String(hour).padStart(2, '0')}:00</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#e8f0f8' }}>{getWindArrow(hData.windDir)} {Math.round(hData.windSpeed)}</div>
+                <div style={{ fontSize: '0.5rem', color: '#667788' }}>{getWindDirection(hData.windDir)}</div>
+                <div style={{ fontSize: '0.7rem' }}>{getWeatherIcon(hData.weatherCode || 0, hData.isDay || 1)}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
-};
+}

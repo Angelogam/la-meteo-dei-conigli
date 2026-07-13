@@ -1,75 +1,68 @@
 "use client";
 
-import type { HourData } from "@/types/meteo";
-import { generaAnalisiReale } from "@/utils/analisi";
+import React from "react";
+import { getCloudBase, getThermalPlafond } from "@/utils/weatherHelpers";
 
 interface TermicheTabProps {
-  dayData: HourData[];
-  altitude: number;
-  selectedHour?: number;
+  currentData: any;
+  dayData: any[];
+  site: { alt: number };
+  thermalDelta: number;
+  thermalStrength: { label: string; color: string };
 }
 
-export const TermicheTab = ({ dayData, altitude, selectedHour }: TermicheTabProps) => {
-  const analisi = generaAnalisiReale(dayData, altitude);
+export default function TermicheTab({ currentData, dayData, site, thermalDelta, thermalStrength }: TermicheTabProps) {
+  if (!currentData) return null;
 
-  if (!dayData.length) {
-    return <div className="text-sm text-slate-300 p-4 text-center">Nessuna analisi termica disponibile</div>;
-  }
+  const cards = [
+    { label: 'Temperatura media', value: `${Math.round(currentData.temperature)}°C` },
+    { label: 'Delta termico', value: `${thermalDelta}°C` },
+    { label: 'Nuvolosità media', value: `${Math.round(currentData.cloudCover)}%` },
+    { label: 'Umidità media', value: `${Math.round(currentData.humidity)}%` },
+    { label: 'Base nuvole', value: `${getCloudBase(currentData.temperature, currentData.dewPoint, site.alt)}m` },
+    { label: 'Plafond', value: `${getThermalPlafond(site.alt, thermalDelta)}m` },
+    { label: 'Galleggiamento', value: thermalDelta > 10 ? 'Eccellente ⭐' : thermalDelta > 6 ? 'Buono 👍' : 'Limitato 🫤' },
+    { label: 'Cross Country', value: thermalDelta > 10 && currentData.windSpeed < 20 ? '✅ Favorevole' : '🫤 Valutare', valueColor: thermalDelta > 10 && currentData.windSpeed < 20 ? '#4caf50' : '#ff9800' },
+  ];
 
   return (
-    <div className="text-sm leading-relaxed text-slate-200 whitespace-pre-wrap space-y-3">
-      {/* Ora attuale sincronizzata */}
-      {selectedHour !== undefined && (
-        <div className="flex items-center justify-between px-2 py-1.5 mb-1 text-xs text-blue-300 font-medium border-b border-slate-600/30">
-          <span>🔥 Analisi termiche · ora selezionata</span>
-          <span className="text-blue-200 font-bold">{String(selectedHour).padStart(2, "0")}:00</span>
+    <div style={{ animation: 'fadeIn 0.3s ease' }}>
+      <div style={{ marginBottom: '12px' }}>
+        <h4 style={{ fontSize: '0.95rem', color: '#4caf50', marginBottom: '10px', fontWeight: 600 }}>🔥 Analisi Termiche</h4>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
+          {cards.map((card, i) => (
+            <div key={i} style={{ background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '10px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ fontSize: '0.7rem', color: '#8899aa' }}>{card.label}</div>
+              <div style={{ fontSize: '1rem', fontWeight: 'bold', color: (card as any).valueColor || '#e8f0f8' }}>{card.value}</div>
+            </div>
+          ))}
         </div>
-      )}
-      <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm">
-        <h4 className="font-extrabold text-orange-400 mb-1">🔥 Situazione Generale</h4>
-        <p className="text-slate-200 whitespace-pre-line">{analisi.situazioneGenerale}</p>
       </div>
 
-      <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm">
-        <h4 className="font-extrabold text-blue-300 mb-1">🌡️ Profilo Termico e Stabilità</h4>
-        <p className="text-slate-200 whitespace-pre-line">{analisi.profiloTermico}</p>
-      </div>
-
-      <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm">
-        <h4 className="font-extrabold text-green-300 mb-1">🌬️ Vento e Dinamica in Quota</h4>
-        <p className="text-slate-200 whitespace-pre-line">{analisi.ventoQuota}</p>
-      </div>
-
-      {analisi.tabellaOraria.length > 0 && (
-        <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm">
-          <h4 className="font-extrabold text-yellow-300 mb-2">🌤️ Previsione per la Giornata</h4>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead>
-                <tr className="border-b border-slate-500/40">
-                  <th className="py-1.5 pr-2 font-bold text-slate-300">Fascia oraria</th>
-                  <th className="py-1.5 pr-2 font-bold text-slate-300">Condizioni previste</th>
-                  <th className="py-1.5 font-bold text-slate-300">Note</th>
-                </tr>
-              </thead>
-              <tbody>
-                {analisi.tabellaOraria.map((row, i) => (
-                  <tr key={i} className="border-b border-slate-600/20 last:border-0">
-                    <td className="py-1.5 pr-2 font-semibold text-yellow-200/80 whitespace-nowrap">{row.fascia}</td>
-                    <td className="py-1.5 pr-2 text-slate-200">{row.condizioni}</td>
-                    <td className="py-1.5 text-slate-300">{row.note}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      <div style={{ marginBottom: '12px' }}>
+        <h4 style={{ fontSize: '0.95rem', color: '#4caf50', marginBottom: '10px', fontWeight: 600 }}>⏰ Sviluppo orario termiche (10:00 - 18:00)</h4>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9, 1fr)', gap: '4px', overflowX: 'auto' }}>
+          {Array.from({ length: 9 }, (_, i) => i + 10).map(hour => {
+            const hData = dayData?.find((h: any) => h.time.getHours() === hour);
+            if (!hData) return <div key={hour} style={{ textAlign: 'center', padding: '6px 2px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', minWidth: '50px' }}>--</div>;
+            const temp = hData.temperature;
+            const cloud = hData.cloudCover;
+            const hum = hData.humidity;
+            const score = (temp > 22 ? 2 : temp > 18 ? 1 : 0) +
+                          (cloud < 30 ? 2 : cloud < 50 ? 1 : 0) +
+                          (hum < 50 ? 1 : 0);
+            const label = score >= 5 ? 'Forte 🔥' : score >= 3 ? 'Media 💪' : score >= 1 ? 'Debole 🫤' : 'Assente ❄️';
+            const color = score >= 5 ? '#ff1744' : score >= 3 ? '#ff6d00' : score >= 1 ? '#ffd600' : '#4fc3f7';
+            return (
+              <div key={hour} style={{ textAlign: 'center', padding: '6px 2px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', minWidth: '50px' }}>
+                <div style={{ fontSize: '0.55rem', color: '#8899aa' }}>{String(hour).padStart(2, '0')}:00</div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color }}>{label}</div>
+                <div style={{ fontSize: '0.55rem', color: '#667788' }}>{Math.round(temp)}°C • {Math.round(cloud)}%</div>
+              </div>
+            );
+          })}
         </div>
-      )}
-
-      <div className="p-3 bg-slate-700/60 rounded-xl border border-slate-600/40 shadow-sm">
-        <h4 className="font-extrabold text-cyan-300 mb-1">🪂 Interpretazione per Attività Outdoor / Volo Libero</h4>
-        <p className="text-slate-200 whitespace-pre-line">{analisi.interpretazione}</p>
       </div>
     </div>
   );
-};
+}
