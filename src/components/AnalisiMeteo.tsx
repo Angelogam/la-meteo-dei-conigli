@@ -1,6 +1,3 @@
-</dyad-delete>
-
-<dyad-write path="src/components/AnalisiMeteo.tsx" description="Fresh file, no dyad-write residue">
 "use client";
 
 import React, { useMemo } from "react";
@@ -159,10 +156,10 @@ export default function AnalisiMeteo({ dayData }: AnalisiMeteoProps) {
     let valutazione = "";
     if (puntiPositivi.length >= 3 && rischioTemporali < 20 && oreTemporale === 0) {
       valutazione = "Condizioni favorevoli: " + puntiPositivi.join(", ") + ".";
-      if (puntiNegativi.length > 0) valutazione += "Attenzione: " + puntiNegativi.join(", ") + ".";
+      if (puntiNegativi.length > 0) valutazione += " Attenzione: " + puntiNegativi.join(", ") + ".";
     } else if (puntiPositivi.length >= 1) {
       valutazione = "Condizioni discrete: " + puntiPositivi.join(", ") + ".";
-      if (puntiNegativi.length > 0) valutazione += "Criticità: " + puntiNegativi.join(", ") + ".";
+      if (puntiNegativi.length > 0) valutazione += " Criticità: " + puntiNegativi.join(", ") + ".";
     } else {
       valutazione = "Condizioni difficili: " + puntiNegativi.join(", ") + ". Prudenza.";
     }
