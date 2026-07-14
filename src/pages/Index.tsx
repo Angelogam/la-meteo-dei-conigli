@@ -47,13 +47,24 @@ export default function Index() {
 
   const weatherAlert = getWeatherAlert(currentData, thermalDelta);
 
-  if (loading && !hourlyData?.length) {
+  // Schermata di caricamento
+  if (loading && (!hourlyData || hourlyData.length === 0)) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="w-12 h-12 rounded-full border-4 border-emerald-500/20 border-t-emerald-400 animate-spin" />
+      <div className="min-h-screen bg-slate-950 flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 rounded-full border-4 border-emerald-500/20 border-t-emerald-400 animate-spin" />
+            <p className="text-slate-400 text-sm">Caricamento previsioni...</p>
+          </div>
+        </main>
+        <Footer />
       </div>
     );
   }
+
+  // Se non c'è nessun dato, mostra comunque il layout vuoto
+  const hasData = site && currentData && dayData.length > 0;
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
@@ -70,20 +81,20 @@ export default function Index() {
             <DecolloList
               decolli={DECOLLI}
               selectedId={selectedId}
-              onSelect={(id) => { setSelectedId(id); setSelectedHour(new Date().getHours()); }}
+              onSelect={(id: string) => { setSelectedId(id); setSelectedHour(new Date().getHours()); }}
               allDailyData={allDailyData}
               allHourlyData={allHourlyData}
             />
           </aside>
 
           <div className="flex-1 min-w-0 space-y-6">
-            {site && currentData && dayData.length > 0 && (
+            {hasData && (
               <>
                 <SiteHeader
-                  name={site.name}
-                  exposure={site.exposure}
-                  valley={site.valley}
-                  alt={site.altitude}
+                  name={site!.name}
+                  exposure={site!.exposure}
+                  valley={site!.valley}
+                  alt={site!.altitude}
                   currentData={currentData}
                 />
 
@@ -99,15 +110,15 @@ export default function Index() {
                   enrichedDaily={enrichedDaily}
                   dateLabels={[]}
                   currentData={currentData}
-                  dayData={dayData as HourData[]}
-                  site={{ name: site.name, altitude: site.altitude, exposure: site.exposure }}
+                  dayData={dayData}
+                  site={{ name: site!.name, altitude: site!.altitude, exposure: site!.exposure }}
                   selectedDay={selectedDay}
                   onSelectDay={setSelectedDay}
                 />
 
                 <WeatherDashboard
-                  dayData={dayData as HourData[]}
-                  altitude={site.altitude}
+                  dayData={dayData}
+                  altitude={site!.altitude}
                   selectedHour={selectedHour}
                   onHourSelect={setSelectedHour}
                 />
@@ -117,8 +128,8 @@ export default function Index() {
                 {activeTab === "meteo" && (
                   <MeteoTab
                     currentData={currentData}
-                    dayData={dayData as HourData[]}
-                    site={{ alt: site.altitude }}
+                    dayData={dayData}
+                    site={{ alt: site!.altitude }}
                     thermalDelta={thermalDelta}
                     stabilityIndex={stabilityIndex}
                   />
@@ -127,7 +138,7 @@ export default function Index() {
                 {activeTab === "venti" && (
                   <VentiTab
                     currentData={currentData}
-                    dayData={dayData as HourData[]}
+                    dayData={dayData}
                     windProfile={[]}
                     hourlyData={hourlyData}
                     targetHour={12}
@@ -137,22 +148,22 @@ export default function Index() {
                 {activeTab === "termiche" && (
                   <TermicheTab
                     currentData={currentData}
-                    dayData={dayData as HourData[]}
-                    site={{ alt: site.altitude, lat: site.lat, lon: site.lon }}
+                    dayData={dayData}
+                    site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon }}
                   />
                 )}
 
                 {activeTab === "analisi" && (
                   <AnalisiTab
                     currentData={currentData}
-                    dayData={dayData as HourData[]}
-                    site={{ alt: site.altitude, lat: site.lat, lon: site.lon, name: site.name, exposure: site.exposure }}
+                    dayData={dayData}
+                    site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name, exposure: site!.exposure }}
                   />
                 )}
               </>
             )}
 
-            {(!site || !currentData || dayData.length === 0) && <SezioneMeteo />}
+            {!hasData && <SezioneMeteo />}
           </div>
         </div>
       </main>
