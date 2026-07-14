@@ -27,45 +27,6 @@ function getWindDirName(deg: number): string {
   return dirs[Math.round(deg / 45) % 8] || "-";
 }
 
-/** Estrae il profilo vento dai dati reali del server (weatherService) */
-function extractWindProfileFromHourly(hourlyData: any[], targetHour: number): WindLevel[] {
-  if (!hourlyData || hourlyData.length === 0) return [];
-
-  // Trova l'ora target
-  const now = new Date();
-  const targetDate = new Date(now);
-  targetDate.setHours(targetHour, 0, 0, 0);
-
-  const targetEntry = hourlyData.find((h: any) => {
-    const t = h.time instanceof Date ? h.time : new Date(h.time);
-    return t.getHours() === targetHour &&
-           t.getFullYear() === targetDate.getFullYear() &&
-           t.getMonth() === targetDate.getMonth() &&
-           t.getDate() === targetDate.getDate();
-  }) || hourlyData.find((h: any) => {
-    // fallback: qualsiasi ora dello stesso giorno
-    const t = h.time instanceof Date ? h.time : new Date(h.time);
-    return t.getFullYear() === targetDate.getFullYear() &&
-           t.getMonth() === targetDate.getMonth() &&
-           t.getDate() === targetDate.getDate();
-  });
-
-  if (!targetEntry) return [];
-
-  // windProfile dal server
-  const wp = targetEntry.windProfile;
-  if (wp && Array.isArray(wp) && wp.length > 0) {
-    return wp.map((l: any) => ({
-      alt: l.height ?? l.alt ?? 0,
-      speed: l.speed ?? 0,
-      dir: l.dir ?? 0,
-      dirName: getWindDirName(l.dir ?? 0),
-    })).filter((l: WindLevel) => l.alt > 0);
-  }
-
-  return [];
-}
-
 /** Seleziona le quote per la visualizzazione verticale */
 function getDisplayProfile(profile: WindLevel[]): WindLevel[] {
   const desiredAltitudes = [4000, 3500, 3000, 2500, 2000, 1500, 1000, 500, 10];
@@ -84,18 +45,50 @@ function getDisplayProfile(profile: WindLevel[]): WindLevel[] {
 export default function VentiTab({ currentData, dayData, hourlyData, targetHour = 12 }: VentiTabProps) {
   // Estrai profilo vento REALE dai dati hourly (che arrivano da weatherService)
   const windProfile = useMemo(() => {
-    if (hourlyData && hourlyData.length > 0) {
-      return extractWindProfileFromHourly(hourlyData, targetHour);
+    if (!hourlyData || hourlyData.length === 0) return [];
+    
+    // Trova l'ora target
+    const now = new Date();
+    const targetDate = new Date(now);
+    targetDate.setHours(targetHour, 0, 0, 0);
+
+    const entry = hourlyData.find((h: any) => {
+      const t = h.time instanceof Date ? h.time : new Date(h.time);
+      return t.getHours() === targetHour &&
+             t.getFullYear() === targetDate.getFullYear() &&
+             t.getMonth() === targetDate.getMonth() &&
+             t.getDate() === targetDate.getDate();
+    }) || hourlyData[0]; // fallback: prima ora disponibile
+
+    if (!entry?.windProfile || !Array.isArray(entry.windProfile) || entry.windProfile.length === 0) {
+      return [];
     }
-    return [];
-  }, [hourlyData, targetHour]);
 
-  const hasRealData = windProfile.length > 0;
+    // Mappa ai livelli di visualizzazione (10m + quote reali)
+    const surfaceSpeed = currentData?.windSpeed ?? 10;
+    const surfaceDir = currentData?.windDir ?? 0;
+    const profile = [
+      { alt: 10, speed: surfaceSpeed, dir: surfaceDir, dirName: getWindDirName(surfaceDir) },
+      ...entry.windProfile
+        .filter((l: any) => l.speed > 0 && l.dir >= 0)
+        .map((l: any) => ({
+          alt: l.height,
+          speed: l.speed,
+          dir: l.dir,
+          dirName: getWindDirName(l.dir),
+        })),
+    ];
 
-  // Se non ci sono dati reali, usa una stima
+    return profile;
+  }, [hourlyData, targetHour, currentData]);
+
+  const hasRealData = windProfile.length > 1; // più del solo livello 10m
+
+  // Se non ci sono dati reali, usa una stima di fallback
   const displayProfile = useMemo(() => {
     if (hasRealData) return getDisplayProfile(windProfile);
-    // Stima di fallback solo se non ci sono dati
+    
+    // Stima di fallback
     const surfaceSpeed = currentData?.windSpeed ?? 10;
     const surfaceDir = currentData?.windDir ?? 0;
     const estimated: WindLevel[] = [];
@@ -136,7 +129,6 @@ export default function VentiTab({ currentData, dayData, hourlyData, targetHour 
     );
   }
 
-  // Calcola velocità e direzione al suolo per fallback
   const surfaceSpeed = currentData?.windSpeed ?? 0;
   const surfaceDir = currentData?.windDir ?? 0;
   const surfaceGust = currentData?.windGusts ?? 0;
@@ -153,8 +145,8 @@ export default function VentiTab({ currentData, dayData, hourlyData, targetHour 
       >
         <Server className="w-4 h-4" />
         {hasRealData
-          ? `Dati reali da Open-Meteo (${windProfile.length} quote)`
-          : `Dati stimati — profilo vento da server non disponibile (venti al suolo reale: ${surfaceSpeed} km/h da ${getWindDirName(surfaceDir)})`}
+          ? `Dati reali da Open-Meteo (${windProfile.length - 1} quote in quota)`
+          : `Dati stimati — vento in quota non disponibile da Open-Meteo per questo sito/ora`}
       </div>
 
       {/* Carte riassuntive vento in quota */}
