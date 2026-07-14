@@ -20,14 +20,14 @@ function toHourData(mh: MeteoHourly): HourData {
     showers: mh.precipitation > 0 && mh.weatherCode >= 80 && mh.weatherCode <= 82 ? mh.precipitation : 0,
     snowfall: mh.precipitation > 0 && mh.weatherCode >= 71 && mh.weatherCode <= 77 ? mh.precipitation : 0,
     weatherCode: mh.weatherCode,
-    pressure: mh.pressure,
-    surfacePressure: mh.surfacePressure,
+    pressure: 1013,
+    surfacePressure: 1013,
     cloudCover: mh.cloudCover,
-    cloudCoverLow: mh.cloudCoverLow,
-    cloudCoverMid: mh.cloudCoverMid,
-    cloudCoverHigh: mh.cloudCoverHigh,
+    cloudCoverLow: 0,
+    cloudCoverMid: 0,
+    cloudCoverHigh: 0,
     evapotranspiration: mh.shortwaveRadiation * 0.02,
-    et0: mh.sunshineDuration * 0.01,
+    et0: 0,
     vapourPressureDeficit: mh.dewPoint > 0 ? mh.temperature - mh.dewPoint : 0,
     windSpeed: mh.windSpeed,
     windDir: mh.windDir,
@@ -35,31 +35,16 @@ function toHourData(mh: MeteoHourly): HourData {
     soilTemp: mh.temperature - 3,
     soilMoisture: mh.humidity > 70 ? 0.5 : 0.3,
     uvIndex: mh.uvIndex,
-    temp80m: mh.temp80m,
-    temp120m: mh.temp120m,
+    temp80m: null,
+    temp120m: null,
     shortwaveRadiation: mh.shortwaveRadiation,
-    directRadiation: mh.directRadiation,
+    directRadiation: 0,
     diffuseRadiation: 0,
     directNormalIrradiance: 0,
     terrestrialRadiation: 0,
-    sunshineDuration: mh.sunshineDuration,
-    windProfile: buildWindProfile(mh),
+    sunshineDuration: 0,
+    windProfile: mh.windProfile,
   };
-}
-
-function buildWindProfile(mh: MeteoHourly): { height: number; speed: number; dir: number }[] {
-  const levels = [
-    { height: 80, speed: mh.windSpeed80m, dir: mh.windDir80m },
-    { height: 120, speed: mh.windSpeed120m, dir: mh.windDir120m },
-    { height: 300, speed: mh.windSpeed300m, dir: mh.windDir300m },
-    { height: 600, speed: mh.windSpeed600m, dir: mh.windDir600m },
-    { height: 1000, speed: mh.windSpeed1000m, dir: mh.windDir1000m },
-    { height: 1500, speed: mh.windSpeed1500m, dir: mh.windDir1500m },
-    { height: 2000, speed: mh.windSpeed2000m, dir: mh.windDir2000m },
-    { height: 2500, speed: mh.windSpeed2500m, dir: mh.windDir2500m },
-    { height: 3000, speed: mh.windSpeed3000m, dir: mh.windDir3000m },
-  ];
-  return levels.filter(l => l.speed > 0).map(l => ({ height: l.height, speed: l.speed, dir: l.dir }));
 }
 
 async function loadSingleSite(id: string, lat: number, lon: number, retries = 2): Promise<{
@@ -70,7 +55,7 @@ async function loadSingleSite(id: string, lat: number, lon: number, retries = 2)
 } | null> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      if (attempt > 0) await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+      if (attempt > 0) await new Promise(resolve => setTimeout(resolve, attempt * 3000));
       const { data } = await weatherService.fetchWithFallback(lat, lon);
       if (data) return { id, daily: data.daily || [], hourly: data.hourly || [], model: data.model };
     } catch (err) {
@@ -109,7 +94,7 @@ export function useWeatherData() {
     const currentSite = DECOLLI.find(d => d.id === currentId) || DECOLLI[0];
 
     try {
-      // Carica SUBITO il sito selezionato con ICON-D2/ICON
+      // Carica SOLO il sito selezionato
       const primaryResult = await loadSingleSite(currentSite.id, currentSite.lat, currentSite.lon);
 
       const dailyMap: Record<string, MeteoDaily[]> = { ...allDailyData };
@@ -130,21 +115,19 @@ export function useWeatherData() {
       setLastUpdate(new Date());
       setCountdown(30);
 
-      // Carica altri siti in background
+      // Carica altri siti in background UNO ALLA VOLTA con delay di 3s
       const remainingSites = DECOLLI.filter(d => !dailyMap[d.id] || dailyMap[d.id].length === 0);
-      if (remainingSites.length > 0) {
-        for (const decollo of remainingSites) {
-          const result = await loadSingleSite(decollo.id, decollo.lat, decollo.lon);
-          if (result) {
-            dailyMap[decollo.id] = result.daily;
-            hourlyMap[decollo.id] = result.hourly;
-            setAllDailyData({ ...dailyMap });
-            setAllHourlyData({ ...hourlyMap });
-          }
-          await new Promise(resolve => setTimeout(resolve, 1500));
+      for (const decollo of remainingSites) {
+        if (decollo.id === currentSite.id) continue;
+        const result = await loadSingleSite(decollo.id, decollo.lat, decollo.lon);
+        if (result) {
+          dailyMap[decollo.id] = result.daily;
+          hourlyMap[decollo.id] = result.hourly;
+          setAllDailyData({ ...dailyMap });
+          setAllHourlyData({ ...hourlyMap });
         }
+        await new Promise(resolve => setTimeout(resolve, 3000));
       }
-
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore sconosciuto');
       setLoading(false);
@@ -200,7 +183,7 @@ export function useWeatherData() {
     }, dayData[0]);
   }, [dayData, selectedHour]);
 
-  /** CAPE attuale dal modello ICON */
+  /** CAPE attuale dal modello */
   const currentCape = useMemo(() => {
     if (!currentData || !hourlyData.length) return null;
     const targetDate = new Date();

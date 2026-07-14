@@ -145,7 +145,6 @@ export default function Index() {
                   <VentiTab
                     currentData={currentData}
                     dayData={dayData}
-                    windProfile={[]}
                     hourlyData={hourlyData}
                     targetHour={12}
                   />
