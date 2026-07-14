@@ -13,7 +13,7 @@ import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
-import AnalisiMeteo from "@/components/AnalisiMeteo";
+import AnalisiTab from "@/components/AnalisiTab";
 import MeteoTesterPanel from "@/components/MeteoTesterPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
@@ -159,13 +159,10 @@ export default function Index() {
                 )}
 
                 {activeTab === "analisi" && (
-                  <AnalisiMeteo
+                  <AnalisiTab
                     currentData={currentData}
                     dayData={dayData}
                     site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name, exposure: site!.exposure }}
-                    cape={currentCape?.cape}
-                    liftedIndex={currentCape?.liftedIndex}
-                    cin={currentCape?.cin}
                   />
                 )}
               </>
