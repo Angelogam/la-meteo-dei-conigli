@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React from "react";
 import { DECOLLI } from "@/data/decolli";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import MeteoTab from "./MeteoTab";
@@ -14,9 +14,7 @@ export default function SezioneMeteo() {
     dayData,
     currentData,
     hourlyData,
-    dailyData,
     thermalDelta,
-    enrichedDaily,
     selectedDay, setSelectedDay,
     selectedHour, setSelectedHour,
     activeTab, setActiveTab,
@@ -96,8 +94,6 @@ export default function SezioneMeteo() {
         <AnalisiTab 
           currentData={currentData} 
           dayData={dayData}
-          hourlyData={hourlyData}
-          targetHour={12}
           site={{ alt: site.altitude, lat: site.lat, lon: site.lon }}
         />
       )}

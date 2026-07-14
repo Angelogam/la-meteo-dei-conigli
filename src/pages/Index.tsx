@@ -23,7 +23,7 @@ import type { HourData } from "@/types/meteo";
 export default function Index() {
   const {
     selectedId, setSelectedId,
-    loading, updating, error,
+    loading, updating,
     selectedDay, setSelectedDay,
     selectedHour, setSelectedHour,
     activeTab, setActiveTab,
@@ -33,10 +33,8 @@ export default function Index() {
     currentData,
     thermalDelta,
     enrichedDaily,
-    dateLabels,
     loadWeather,
     hourlyData,
-    dailyData,
     allDailyData,
     allHourlyData,
   } = useWeatherData();
@@ -99,7 +97,7 @@ export default function Index() {
 
                 <PrevisioniGiornaliere
                   enrichedDaily={enrichedDaily}
-                  dateLabels={dateLabels}
+                  dateLabels={[]}
                   currentData={currentData}
                   dayData={dayData as HourData[]}
                   site={{ name: site.name, altitude: site.altitude, exposure: site.exposure }}
@@ -148,8 +146,6 @@ export default function Index() {
                   <AnalisiTab
                     currentData={currentData}
                     dayData={dayData as HourData[]}
-                    hourlyData={hourlyData}
-                    targetHour={12}
                     site={{ alt: site.altitude, lat: site.lat, lon: site.lon, name: site.name, exposure: site.exposure }}
                   />
                 )}
