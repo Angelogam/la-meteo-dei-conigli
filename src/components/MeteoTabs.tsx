@@ -8,6 +8,53 @@ import {
 import type { HourData } from "@/types/meteo";
 import { calcolaTermiche } from "@/utils/termiche";
 
+// ─── Helper functions ───────────────────────────────────────
+
+function getWindDirName(deg: number): string {
+  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  return dirs[Math.round(deg / 45) % 8] || "-";
+}
+
+function getWindArrow(deg: number): string {
+  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
+  return arrows[Math.round(deg / 45) % 8] || "→";
+}
+
+// ─── Small UI components ────────────────────────────────────
+
+function BigCard({ icon, label, value, unit, sub }: { icon: React.ReactNode; label: string; value: string; unit: string; sub?: string }) {
+  return (
+    <div className="bg-slate-800/60 border border-slate-600/50 rounded-xl p-4 text-center">
+      <div className="flex justify-center mb-2">{icon}</div>
+      <div className="text-sm text-slate-400 uppercase mb-1 font-bold">{label}</div>
+      <div className="text-2xl font-bold text-white mb-1">{value}<span className="text-base text-slate-400 font-normal ml-1">{unit}</span></div>
+      {sub && <div className="text-sm text-slate-400">{sub}</div>}
+    </div>
+  );
+}
+
+function SmallCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
+  return (
+    <div className="bg-slate-800/50 border border-slate-600/50 rounded-xl p-4 text-center">
+      <div className="flex justify-center mb-2">{icon}</div>
+      <div className="text-sm text-slate-400 uppercase mb-1 font-bold">{label}</div>
+      <div className="text-xl font-bold text-white">{value}</div>
+      {sub && <div className="text-sm text-slate-400 mt-1">{sub}</div>}
+    </div>
+  );
+}
+
+function MetricCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub: string }) {
+  return (
+    <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
+      <div className="flex justify-center mb-1">{icon}</div>
+      <div className="text-xs text-slate-400 uppercase font-bold mb-0.5">{label}</div>
+      <div className="text-lg font-bold text-white">{value}</div>
+      <div className="text-xs text-slate-400 mt-1">{sub}</div>
+    </div>
+  );
+}
+
 // ─── MeteoTab ────────────────────────────────────────────────
 
 interface MeteoTabProps {
@@ -22,7 +69,7 @@ interface MeteoTabProps {
   cin?: number;
 }
 
-export function MeteoTab({ currentData, dayData, site, thermalDelta, stabilityIndex, modelName, cape, liftedIndex, cin }: MeteoTabProps) {
+export function MeteoTab({ currentData, site, thermalDelta, modelName, cape, liftedIndex, cin }: MeteoTabProps) {
   if (!currentData) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-slate-400">
@@ -82,34 +129,35 @@ export function MeteoTab({ currentData, dayData, site, thermalDelta, stabilityIn
   const condizioniVolo =
     windSpeed < 3 ? "Troppo calma" :
     windSpeed > 30 ? "Vento forte" :
-    precipitation > 1 ? "Pioggia 🌧️" :
-    weatherCode >= 95 ? "Temporale ⛈️" :
-    forzaTermica >= 5 ? "Ottime 🪂🔥" :
-    forzaTermica >= 3 ? "Buone 🪂" :
-    forzaTermica >= 1 ? "Deboli 🌤️" :
-    "Assenti ❄️";
+    precipitation > 1 ? "Pioggia" :
+    weatherCode >= 95 ? "Temporale" :
+    forzaTermica >= 5 ? "Ottime" :
+    forzaTermica >= 3 ? "Buone" :
+    forzaTermica >= 1 ? "Deboli" :
+    "Assenti";
+
+  const voloEmoji =
+    condizioniVolo === "Ottime" ? "🪂🔥" :
+    condizioniVolo === "Buone" ? "🪂" :
+    condizioniVolo === "Deboli" ? "🌤️" :
+    condizioniVolo === "Troppo calma" ? "🌀" :
+    condizioniVolo === "Pioggia" || condizioniVolo === "Temporale" ? "⛈️" :
+    condizioniVolo === "Vento forte" ? "💨" : "❄️";
 
   const dirCardinali = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   const dirLabel = dirCardinali[Math.round((windDir ?? 0) / 45) % 8];
-  const arrow = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"][Math.round((windDir ?? 0) / 45) % 8];
+  const arrow = getWindArrow(windDir ?? 0);
 
-  const voloEmoji =
-    condizioniVolo.includes("Ottime") ? "🪂🔥" :
-    condizioniVolo.includes("Buone") ? "🪂" :
-    condizioniVolo.includes("Deboli") ? "🌤️" :
-    condizioniVolo.includes("calma") ? "🌀" :
-    condizioniVolo.includes("Pioggia") || condizioniVolo.includes("Temporale") ? "⛈️" :
-    condizioniVolo.includes("forte") ? "💨" : "❄️";
+  const cardBorderClass =
+    condizioniVolo === "Ottime" ? "bg-emerald-900/40 border-emerald-400" :
+    condizioniVolo === "Buone" ? "bg-green-900/40 border-green-400" :
+    condizioniVolo === "Deboli" ? "bg-amber-900/40 border-amber-400" :
+    condizioniVolo === "Troppo calma" ? "bg-slate-800/60 border-slate-400" :
+    "bg-red-900/40 border-red-400";
 
   return (
     <div className="space-y-4">
-      <div className={`rounded-xl p-6 border-4 text-center ${
-        condizioniVolo.includes("Ottime") ? "bg-emerald-900/40 border-emerald-400" :
-        condizioniVolo.includes("Buone") ? "bg-green-900/40 border-green-400" :
-        condizioniVolo.includes("Deboli") ? "bg-amber-900/40 border-amber-400" :
-        condizioniVolo.includes("calma") ? "bg-slate-800/60 border-slate-400" :
-        "bg-red-900/40 border-red-400"
-      }`}>
+      <div className={"rounded-xl p-6 border-4 text-center " + cardBorderClass}>
         <div className="text-6xl mb-3">{voloEmoji}</div>
         <div className="text-2xl font-bold text-white mb-1">{condizioniVolo}</div>
         <div className="text-base text-slate-300">Vento {windSpeed} km/h da {dirLabel}</div>
@@ -137,52 +185,30 @@ export function MeteoTab({ currentData, dayData, site, thermalDelta, stabilityIn
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <BigCard icon={<ArrowUp className="w-8 h-8 text-green-400" />} label="Base nuvole (LCL)" value={`${cloudBase}`} unit="m" sub={`Spread ${spread.toFixed(1)}°C`} />
-        <BigCard icon={<ArrowUp className="w-8 h-8 text-red-400" />} label="Top termiche" value={`${topTermico}`} unit="m" sub={precipitation > 1 ? "Pioggia ⛔" : `Spessore ${topTermico - cloudBase}m`} />
-        <BigCard icon={<TrendingUp className="w-8 h-8 text-orange-400" />} label="Forza termica" value={`${forzaTermica.toFixed(1)}`} unit="/10" sub={`${rateoTermico} m/s`} />
-        <BigCard icon={<AlertTriangle className="w-8 h-8 text-amber-400" />} label="Turbolenza" value={turbolenza} unit="" sub={turbolenza === "Forte" ? "⚠️ Attenzione" : turbolenza === "Moderata" ? "🟡 Gestibile" : turbolenza === "Leggera" ? "🟢 Ok" : "✅ Nessuna"} />
+        <BigCard icon={<ArrowUp className="w-8 h-8 text-green-400" />} label="Base nuvole (LCL)" value={`${cloudBase}`} unit="m" sub={"Spread " + spread.toFixed(1) + "°C"} />
+        <BigCard icon={<ArrowUp className="w-8 h-8 text-red-400" />} label="Top termiche" value={`${topTermico}`} unit="m" sub={precipitation > 1 ? "Pioggia" : "Spessore " + (topTermico - cloudBase) + "m"} />
+        <BigCard icon={<TrendingUp className="w-8 h-8 text-orange-400" />} label="Forza termica" value={forzaTermica.toFixed(1)} unit="/10" sub={rateoTermico + " m/s"} />
+        <BigCard icon={<AlertTriangle className="w-8 h-8 text-amber-400" />} label="Turbolenza" value={turbolenza} unit="" sub={turbolenza === "Forte" ? "Attenzione" : turbolenza === "Moderata" ? "Gestibile" : turbolenza === "Leggera" ? "Ok" : "Nessuna"} />
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <SmallCard icon={<TrendingUp className="w-6 h-6 text-purple-400" />} label="CAPE" value={cape != null ? `${Math.round(cape)} J/kg` : "--"} sub={cape != null ? (cape > 1000 ? "Molto instabile ⚠️" : cape > 500 ? "Instabile 🟡" : cape > 200 ? "Moderato 🟢" : "Stabile 🔵") : undefined} />
-        <SmallCard icon={<AlertTriangle className="w-6 h-6 text-amber-400" />} label="Lifted Index" value={liftedIndex != null ? `${liftedIndex.toFixed(1)}°C` : "--"} sub={liftedIndex != null ? (liftedIndex < -5 ? "Instabile 🟠" : liftedIndex < 0 ? "Leggero 🟢" : "Stabile 🔵") : undefined} />
-        <SmallCard icon={<Cloud className="w-6 h-6 text-blue-400" />} label="CIN" value={cin != null ? `${Math.round(cin)} J/kg` : "--"} sub={cin != null ? (cin < -50 ? "Inibizione forte ⛔" : cin < -20 ? "Inibizione media 🟡" : "Inibizione debole 🟢") : undefined} />
+        <SmallCard icon={<TrendingUp className="w-6 h-6 text-purple-400" />} label="CAPE" value={cape != null ? Math.round(cape) + " J/kg" : "--"} sub={cape != null ? (cape > 1000 ? "Molto instabile" : cape > 500 ? "Instabile" : cape > 200 ? "Moderato" : "Stabile") : undefined} />
+        <SmallCard icon={<AlertTriangle className="w-6 h-6 text-amber-400" />} label="Lifted Index" value={liftedIndex != null ? liftedIndex.toFixed(1) + " °C" : "--"} sub={liftedIndex != null ? (liftedIndex < -5 ? "Instabile" : liftedIndex < 0 ? "Leggero" : "Stabile") : undefined} />
+        <SmallCard icon={<Cloud className="w-6 h-6 text-blue-400" />} label="CIN" value={cin != null ? Math.round(cin) + " J/kg" : "--"} sub={cin != null ? (cin < -50 ? "Inibizione forte" : cin < -20 ? "Inibizione media" : "Inibizione debole") : undefined} />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <SmallCard icon={<Droplets className="w-6 h-6 text-sky-400" />} label="Umidità" value={`${humidity ?? "--"}%`} sub={dewPoint != null ? `Rugiada ${Math.round(dewPoint)}°C` : undefined} />
-        <SmallCard icon={<Gauge className="w-6 h-6 text-emerald-400" />} label="Pressione" value={`${Math.round(pressure ?? 1013)} hPa`} sub={pressure > 1020 ? "Alta" : pressure < 1010 ? "Bassa" : "Normale"} />
-        <SmallCard icon={<Cloud className="w-6 h-6 text-slate-400" />} label="Nuvolosità" value={`${cloudCover ?? "--"}%`} sub={cloudCover < 20 ? "Sereno" : cloudCover < 50 ? "Poco" : cloudCover < 80 ? "Nuvoloso" : "Coperto"} />
-        <SmallCard icon={<Sun className="w-6 h-6 text-yellow-400" />} label="UV Index" value={uvIndex != null ? `${uvIndex.toFixed(1)}` : "--"} sub={uvIndex >= 8 ? "Estremo" : uvIndex >= 6 ? "Alto" : uvIndex >= 3 ? "Moderato" : uvIndex >= 1 ? "Basso" : "Nessuno"} />
-        <SmallCard icon={<TrendingUp className="w-6 h-6 text-purple-400" />} label="Gradiente" value={`${gradienteReale.toFixed(2)}°`} sub={`${gradienteLabel} · ${gradienteReale > 1.2 ? "Instabile" : gradienteReale > 0.98 ? "Neutro" : "Stabile"}`} />
-        <SmallCard icon={<Eye className="w-6 h-6 text-cyan-400" />} label="Delta T" value={`${Math.round(thermalDelta ?? 0)}°C`} sub={thermalDelta > 10 ? "Buona escursione" : thermalDelta > 6 ? "Moderata" : "Bassa"} />
+        <SmallCard icon={<Droplets className="w-6 h-6 text-sky-400" />} label="Umidità" value={(humidity ?? "--") + "%"} sub={"Rugiada " + Math.round(dewPoint) + "°C"} />
+        <SmallCard icon={<Gauge className="w-6 h-6 text-emerald-400" />} label="Pressione" value={Math.round(pressure ?? 1013) + " hPa"} sub={pressure > 1020 ? "Alta" : pressure < 1010 ? "Bassa" : "Normale"} />
+        <SmallCard icon={<Cloud className="w-6 h-6 text-slate-400" />} label="Nuvolosità" value={(cloudCover ?? "--") + "%"} sub={cloudCover < 20 ? "Sereno" : cloudCover < 50 ? "Poco" : cloudCover < 80 ? "Nuvoloso" : "Coperto"} />
+        <SmallCard icon={<Sun className="w-6 h-6 text-yellow-400" />} label="UV Index" value={uvIndex != null ? uvIndex.toFixed(1) : "--"} sub={uvIndex >= 8 ? "Estremo" : uvIndex >= 6 ? "Alto" : uvIndex >= 3 ? "Moderato" : uvIndex >= 1 ? "Basso" : "Nessuno"} />
+        <SmallCard icon={<TrendingUp className="w-6 h-6 text-purple-400" />} label="Gradiente" value={gradienteReale.toFixed(2) + "°"} sub={gradienteLabel + (gradienteReale > 1.2 ? " · Instabile" : gradienteReale > 0.98 ? " · Neutro" : " · Stabile")} />
+        <SmallCard icon={<Eye className="w-6 h-6 text-cyan-400" />} label="Delta T" value={Math.round(thermalDelta ?? 0) + "°C"} sub={thermalDelta > 10 ? "Buona escursione" : thermalDelta > 6 ? "Moderata" : "Bassa"} />
       </div>
 
       <div className="text-center text-sm text-slate-600 border-t border-slate-700/30 pt-3">
         Dati da Open-Meteo · Modello: {modelName || "auto"} · Aggiornamento: {new Date().toLocaleTimeString("it-IT")}
       </div>
-    </div>
-  );
-}
-
-function BigCard({ icon, label, value, unit, sub }: { icon: React.ReactNode; label: string; value: string; unit: string; sub?: string }) {
-  return (
-    <div className="bg-slate-800/60 border border-slate-600/50 rounded-xl p-4 text-center">
-      <div className="flex justify-center mb-2">{icon}</div>
-      <div className="text-sm text-slate-400 uppercase mb-1 font-bold">{label}</div>
-      <div className="text-2xl font-bold text-white mb-1">{value}<span className="text-base text-slate-400 font-normal ml-1">{unit}</span></div>
-      {sub && <div className="text-sm text-slate-400">{sub}</div>}
-    </div>
-  );
-}
-
-function SmallCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
-  return (
-    <div className="bg-slate-800/50 border border-slate-600/50 rounded-xl p-4 text-center">
-      <div className="flex justify-center mb-2">{icon}</div>
-      <div className="text-sm text-slate-400 uppercase mb-1 font-bold">{label}</div>
-      <div className="text-xl font-bold text-white">{value}</div>
-      {sub && <div className="text-sm text-slate-400 mt-1">{sub}</div>}
     </div>
   );
 }
@@ -203,16 +229,6 @@ interface VentiTabProps {
   targetHour?: number;
 }
 
-function getWindArrow(deg: number): string {
-  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
-  return arrows[Math.round(deg / 45) % 8] || "→";
-}
-
-function getWindDirName(deg: number): string {
-  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-  return dirs[Math.round(deg / 45) % 8] || "-";
-}
-
 function getDisplayProfile(profile: WindLevel[]): WindLevel[] {
   const desiredAltitudes = [4000, 3500, 3000, 2500, 2000, 1500, 1000, 500, 10];
   return desiredAltitudes.map(alt => {
@@ -227,7 +243,7 @@ function getDisplayProfile(profile: WindLevel[]): WindLevel[] {
   });
 }
 
-export function VentiTab({ currentData, dayData, hourlyData, targetHour = 12 }: VentiTabProps) {
+export function VentiTab({ currentData, hourlyData, targetHour = 12 }: VentiTabProps) {
   const windProfile = useMemo(() => {
     if (!hourlyData || hourlyData.length === 0) return [];
     
@@ -314,17 +330,11 @@ export function VentiTab({ currentData, dayData, hourlyData, targetHour = 12 }: 
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-bold"
-        style={{
-          backgroundColor: hasRealData ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-          borderColor: hasRealData ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)',
-          color: hasRealData ? '#6ee7b7' : '#fcd34d',
-        }}
-      >
+      <div className={"flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-bold " + (hasRealData ? "bg-emerald-900/30 border-emerald-500/30 text-emerald-300" : "bg-amber-900/30 border-amber-500/30 text-amber-300")}>
         <Server className="w-4 h-4" />
         {hasRealData
-          ? `Dati reali da Open-Meteo (${windProfile.length - 1} quote in quota)`
-          : `Dati stimati — vento in quota non disponibile da Open-Meteo per questo sito/ora`}
+          ? "Dati reali da Open-Meteo (" + (windProfile.length - 1) + " quote in quota)"
+          : "Dati stimati — vento in quota non disponibile"}
       </div>
 
       <div>
@@ -351,7 +361,7 @@ export function VentiTab({ currentData, dayData, hourlyData, targetHour = 12 }: 
 
       <div>
         <h4 className="text-base font-bold text-emerald-300 mb-3 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5" /> Profilo vento verticale {hasRealData ? '(reale)' : '(stimato)'}
+          <TrendingUp className="w-5 h-5" /> Profilo vento verticale {(hasRealData ? " (reale)" : " (stimato)")}
         </h4>
         <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 space-y-1">
           {displayProfile.map((level, idx) => {
@@ -362,11 +372,11 @@ export function VentiTab({ currentData, dayData, hourlyData, targetHour = 12 }: 
               <div key={idx} className="grid grid-cols-[70px_1fr_80px] gap-3 items-center py-2">
                 <span className="text-sm text-slate-300 font-bold">{level.alt}m</span>
                 <div className="h-7 bg-slate-700/60 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full flex items-center justify-end pr-2 ${barColor}`} style={{ width: `${Math.max(width, 20)}%` }}>
+                  <div className={"h-full rounded-full flex items-center justify-end pr-2 " + barColor} style={{ width: Math.max(width, 20) + "%" }}>
                     <span className="text-sm text-white font-bold">{level.speed != null ? Math.round(level.speed) : "—"}</span>
                   </div>
                 </div>
-                <span className="text-sm text-slate-300 text-center font-bold">{level.dir != null ? `${getWindArrow(level.dir)} ${getWindDirName(level.dir)}` : "—"}</span>
+                <span className="text-sm text-slate-300 text-center font-bold">{level.dir != null ? getWindArrow(level.dir) + " " + getWindDirName(level.dir) : "—"}</span>
               </div>
             );
           })}
@@ -388,7 +398,7 @@ interface TermicheTabProps {
   site?: { alt: number; lat?: number; lon?: number };
 }
 
-export function TermicheTab({ currentData, dayData, site }: TermicheTabProps) {
+export function TermicheTab({ dayData, site }: TermicheTabProps) {
   const alt = site?.alt ?? 1000;
 
   const termichePerOra = useMemo(() => {
@@ -454,11 +464,6 @@ interface AnalisiTabProps {
   site: { alt: number; lat?: number; lon?: number; name?: string; exposure?: string };
 }
 
-function getWindDirName(deg: number): string {
-  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-  return dirs[Math.round(deg / 45) % 8] || "-";
-}
-
 export function AnalisiTab({ currentData, dayData, site }: AnalisiTabProps) {
   const analisi = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
@@ -509,8 +514,6 @@ export function AnalisiTab({ currentData, dayData, site }: AnalisiTabProps) {
     if (currentData?.temp80m != null) {
       gradienteReale = ((currentData.temperature - currentData.temp80m) / 78) * 100;
     } else if (currentData?.temp120m != null) {
-      gradienteReale = ((currentData.temperature - currentData.temp120m) / ```typescript
-    } else if (currentData?.temp120m != null) {
       gradienteReale = ((currentData.temperature - currentData.temp120m) / 118) * 100;
     }
 
@@ -518,6 +521,7 @@ export function AnalisiTab({ currentData, dayData, site }: AnalisiTabProps) {
     if (gradienteReale >= 1.2) forzaTermica += 3;
     else if (gradienteReale >= 0.98) forzaTermica += 2;
     else if (gradienteReale >= 0.7) forzaTermica += 1;
+    if (windMedia >= 5 && windMedia <= 15```typescript
     if (windMedia >= 5 && windMedia <= 15) forzaTermica += 2;
     else if (windMedia >= 3 && windMedia < 5) forzaTermica += 1.5;
     else if (windMedia > 15 && windMedia <= 22) forzaTermica += 1;
@@ -581,16 +585,18 @@ export function AnalisiTab({ currentData, dayData, site }: AnalisiTabProps) {
   }
 
   const scoreColor = analisi.score >= 8 ? "text-emerald-400" : analisi.score >= 6 ? "text-lime-400" : analisi.score >= 4 ? "text-amber-400" : "text-red-400";
-  const scoreBg = analisi.score >= 8 ? "bg-emerald-900/30 border-emerald-500/30" : analisi.score >= 6 ? "bg-lime-900/30 border-lime-500/30" : analisi.score >= 4 ? "bg-amber-900/30 border-amber-500/30" : "bg-red-900/30 border-red-500/30";
+  const scoreBgClass = analisi.score >= 8 ? "bg-emerald-900/30 border-emerald-500/30" : analisi.score >= 6 ? "bg-lime-900/30 border-lime-500/30" : analisi.score >= 4 ? "bg-amber-900/30 border-amber-500/30" : "bg-red-900/30 border-red-500/30";
 
   return (
     <div className="space-y-4">
-      <div className={`rounded-2xl border-2 p-5 ${scoreBg}`}>
+      <div className={"rounded-2xl border-2 p-5 " + scoreBgClass}>
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
             <span className="text-3xl">{analisi.scoreEmoji}</span>
             <div>
-              <div className="text-lg font-bold text-white">Giudizio volo: <span className={scoreColor}>{analisi.score}/10</span></div>
+              <div className="text-lg font-bold text-white">
+                Giudizio volo: <span className={scoreColor}>{analisi.score}/10</span>
+              </div>
               <p className="text-sm text-slate-300 mt-1">
                 {analisi.score >= 8 ? "Condizioni eccellenti per il volo libero." :
                  analisi.score >= 6 ? "Buone condizioni per il volo." :
@@ -602,20 +608,20 @@ export function AnalisiTab({ currentData, dayData, site }: AnalisiTabProps) {
           <div className="w-16 h-16 shrink-0 relative">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
               <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(148,163,184,0.15)" strokeWidth="3" />
-              <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray={`${(analisi.score / 10) * 100} 100`} strokeLinecap="round" className={scoreColor} />
+              <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray={(analisi.score / 10) * 100 + " 100"} strokeLinecap="round" className={scoreColor} />
             </svg>
-            <span className={`absolute inset-0 flex items-center justify-center text-lg font-bold ${scoreColor}`}>{analisi.score}</span>
+            <span className={"absolute inset-0 flex items-center justify-center text-lg font-bold " + scoreColor}>{analisi.score}</span>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <MetricCard icon={<Thermometer className="w-5 h-5 text-amber-400" />} label="Temperatura" value={`${analisi.tempMedia}°C`} sub={`max ${analisi.tempMax}°C · delta ${analisi.deltaTermico}°C`} />
-        <MetricCard icon={<Wind className="w-5 h-5 text-sky-400" />} label="Vento medio" value={`${analisi.windMedia} km/h`} sub={`max ${analisi.windMax} · raffiche ${analisi.windGustsMax}`} />
-        <MetricCard icon={<ArrowUp className="w-5 h-5 text-orange-400" />} label="Termiche" value={`${analisi.rateoMedio} m/s`} sub={`picco ${analisi.rateoMax} · ${analisi.oreAttive}/${analisi.totaleOre}h attive`} />
-        <MetricCard icon={<Cloud className="w-5 h-5 text-slate-400" />} label="Nuvolosità" value={`${analisi.cloudMedia}%`} sub={analisi.cloudMedia < 20 ? "Sereno" : analisi.cloudMedia < 40 ? "Poco nuvoloso" : analisi.cloudMedia < 60 ? "Nuvoloso" : "Coperto"} />
-        <MetricCard icon={<Droplets className="w-5 h-5 text-blue-400" />} label="Umidità" value={`${analisi.humidityMedia}%`} sub={analisi.humidityMedia < 40 ? "Aria secca" : analisi.humidityMedia < 60 ? "Normale" : "Aria umida"} />
-        <MetricCard icon={<Gauge className="w-5 h-5 text-purple-400" />} label="Pressione" value={`${analisi.pressureMed} hPa`} sub={analisi.pressureMed > 1020 ? "Alta" : analisi.pressureMed < 1010 ? "Bassa" : "Normale"} />
+        <MetricCard icon={<Thermometer className="w-5 h-5 text-amber-400" />} label="Temperatura" value={analisi.tempMedia + "°C"} sub={"max " + analisi.tempMax + "°C · delta " + analisi.deltaTermico + "°C"} />
+        <MetricCard icon={<Wind className="w-5 h-5 text-sky-400" />} label="Vento medio" value={analisi.windMedia + " km/h"} sub={"max " + analisi.windMax + " · raffiche " + analisi.windGustsMax} />
+        <MetricCard icon={<ArrowUp className="w-5 h-5 text-orange-400" />} label="Termiche" value={analisi.rateoMedio + " m/s"} sub={"picco " + analisi.rateoMax + " · " + analisi.oreAttive + "/" + analisi.totaleOre + "h attive"} />
+        <MetricCard icon={<Cloud className="w-5 h-5 text-slate-400" />} label="Nuvolosità" value={analisi.cloudMedia + "%"} sub={analisi.cloudMedia < 20 ? "Sereno" : analisi.cloudMedia < 40 ? "Poco nuvoloso" : analisi.cloudMedia < 60 ? "Nuvoloso" : "Coperto"} />
+        <MetricCard icon={<Droplets className="w-5 h-5 text-blue-400" />} label="Umidità" value={analisi.humidityMedia + "%"} sub={analisi.humidityMedia < 40 ? "Aria secca" : analisi.humidityMedia < 60 ? "Normale" : "Aria umida"} />
+        <MetricCard icon={<Gauge className="w-5 h-5 text-purple-400" />} label="Pressione" value={analisi.pressureMed + " hPa"} sub={analisi.pressureMed > 1020 ? "Alta" : analisi.pressureMed < 1010 ? "Bassa" : "Normale"} />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -624,7 +630,7 @@ export function AnalisiTab({ currentData, dayData, site }: AnalisiTabProps) {
           <div className="space-y-2 text-sm text-slate-300">
             <div className="flex justify-between"><span>Base nuvole (LCL):</span><span className="font-bold text-green-300">{analisi.baseLCL} m</span></div>
             <div className="flex justify-between"><span>Zero termico:</span><span className="font-bold text-amber-300">{analisi.zeroTermico} m</span></div>
-            <div className="flex justify-between"><span>Gradiente reale:</span><span className={`font-bold ${analisi.gradienteReale > 1.2 ? "text-red-300" : analisi.gradienteReale > 0.98 ? "text-amber-300" : "text-green-300"}`}>{analisi.gradienteReale}°C/100m</span></div>
+            <div className="flex justify-between"><span>Gradiente reale:</span><span className={"font-bold " + (analisi.gradienteReale > 1.2 ? "text-red-300" : analisi.gradienteReale > 0.98 ? "text-amber-300" : "text-green-300")}>{analisi.gradienteReale} °C/100m</span></div>
             <div className="flex justify-between"><span>Forza termica:</span><span className="font-bold text-white">{analisi.forzaTermica}/10</span></div>
           </div>
         </div>
@@ -632,23 +638,12 @@ export function AnalisiTab({ currentData, dayData, site }: AnalisiTabProps) {
           <h4 className="text-sm font-bold text-cyan-300 mb-2 flex items-center gap-2"><Wind className="w-4 h-4" /> Vento & atmosfera</h4>
           <div className="space-y-2 text-sm text-slate-300">
             <div className="flex justify-between"><span>Direzione dominante:</span><span className="font-bold text-white">{analisi.dirName} ({analisi.dirDom}°)</span></div>
-            <div className="flex justify-between"><span>Turbolenza:</span><span className={`font-bold ${analisi.turbolenza === "Forte" ? "text-red-300" : analisi.turbolenza === "Moderata" ? "text-amber-300" : "text-green-300"}`}>{analisi.turbolenza}</span></div>
+            <div className="flex justify-between"><span>Turbolenza:</span><span className={"font-bold " + (analisi.turbolenza === "Forte" ? "text-red-300" : analisi.turbolenza === "Moderata" ? "text-amber-300" : "text-green-300")}>{analisi.turbolenza}</span></div>
             <div className="flex justify-between"><span>UV Index medio:</span><span className="font-bold text-yellow-300">{analisi.uvMedia}</span></div>
-            <div className="flex justify-between"><span>Pioggia totale:</span><span className={`font-bold ${analisi.precipTot > 1 ? "text-blue-300" : "text-green-300"}`}>{analisi.precipTot === 0 ? "Assente" : `${analisi.precipTot} mm`}</span></div>
+            <div className="flex justify-between"><span>Pioggia totale:</span><span className={"font-bold " + (analisi.precipTot > 1 ? "text-blue-300" : "text-green-300")}>{analisi.precipTot === 0 ? "Assente" : analisi.precipTot + " mm"}</span></div>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function MetricCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub: string }) {
-  return (
-    <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
-      <div className="flex justify-center mb-1">{icon}</div>
-      <div className="text-xs text-slate-400 uppercase font-bold mb-0.5">{label}</div>
-      <div className="text-lg font-bold text-white">{value}</div>
-      <div className="text-xs text-slate-400 mt-1">{sub}</div>
     </div>
   );
 }
