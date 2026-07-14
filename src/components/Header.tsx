@@ -30,7 +30,7 @@ export const Header = () => {
               </span>
             </h1>
             <p className="text-xs md:text-sm font-medium text-slate-500 mt-1 tracking-wide">
-              Previsioni per volo libero · Open-Meteo · SHV FSVL Style
+              Previsioni per volo libero · Open-Meteo
             </p>
           </div>
 
