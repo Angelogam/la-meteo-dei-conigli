@@ -454,6 +454,11 @@ interface AnalisiTabProps {
   site: { alt: number; lat?: number; lon?: number; name?: string; exposure?: string };
 }
 
+function getWindDirName(deg: number): string {
+  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  return dirs[Math.round(deg / 45) % 8] || "-";
+}
+
 export function AnalisiTab({ currentData, dayData, site }: AnalisiTabProps) {
   const analisi = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
@@ -504,6 +509,8 @@ export function AnalisiTab({ currentData, dayData, site }: AnalisiTabProps) {
     if (currentData?.temp80m != null) {
       gradienteReale = ((currentData.temperature - currentData.temp80m) / 78) * 100;
     } else if (currentData?.temp120m != null) {
+      gradienteReale = ((currentData.temperature - currentData.temp120m) / ```typescript
+    } else if (currentData?.temp120m != null) {
       gradienteReale = ((currentData.temperature - currentData.temp120m) / 118) * 100;
     }
 
@@ -511,9 +518,6 @@ export function AnalisiTab({ currentData, dayData, site }: AnalisiTabProps) {
     if (gradienteReale >= 1.2) forzaTermica += 3;
     else if (gradienteReale >= 0.98) forzaTermica += 2;
     else if (gradienteReale >= 0.7) forzaTermica += 1;
-    if (windMedia >= 5 && windMedia <= 15) forzaTermica +=Continuing from exactly where I left off:
-
-```typescript
     if (windMedia >= 5 && windMedia <= 15) forzaTermica += 2;
     else if (windMedia >= 3 && windMedia < 5) forzaTermica += 1.5;
     else if (windMedia > 15 && windMedia <= 22) forzaTermica += 1;
