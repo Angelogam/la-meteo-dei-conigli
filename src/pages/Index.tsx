@@ -1,11 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolloList from "@/components/DecolloList";
 import SiteHeader from "@/components/SiteHeader";
-import AlertBanner from "@/components/AlertBanner";
 import UpdateTimer from "@/components/UpdateTimer";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import WeatherDashboard from "@/components/WeatherDashboard";
@@ -18,11 +17,14 @@ import MeteoTesterPanel from "@/components/MeteoTesterPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
 import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
+import ValidazionePrevisioni from "@/components/ValidazionePrevisioni";
+import { Bug } from "lucide-react";
 
 export default function Index() {
   const {
     selectedId, setSelectedId,
-    loading, updating,
+    loading,
+    updating,
     selectedDay, setSelectedDay,
     selectedHour, setSelectedHour,
     activeTab, setActiveTab,
@@ -41,6 +43,8 @@ export default function Index() {
     currentCape,
   } = useWeatherData();
 
+  const [showValidation, setShowValidation] = useState(false);
+
   const stabilityIndex = getStabilityIndex(
     currentData?.temperature || 20,
     currentData?.humidity || 50,
@@ -48,6 +52,20 @@ export default function Index() {
   );
 
   const weatherAlert = getWeatherAlert(currentData, thermalDelta);
+
+  if (showValidation) {
+    return (
+      <>
+        <ValidazionePrevisioni />
+        <button
+          onClick={() => setShowValidation(false)}
+          className="fixed top-4 right-4 z-[10000] bg-red-900/60 hover:bg-red-800 text-white px-4 py-2 rounded-xl text-sm font-bold border border-red-500/50"
+        >
+          Chiudi validazione
+        </button>
+      </>
+    );
+  }
 
   if (loading && (!hourlyData || hourlyData.length === 0)) {
     return (
@@ -97,14 +115,6 @@ export default function Index() {
                   alt={site!.altitude}
                   currentData={currentData}
                 />
-
-                {weatherAlert && (
-                  <AlertBanner alert={{
-                    level: weatherAlert.level,
-                    message: weatherAlert.message,
-                    icon: weatherAlert.icon,
-                  }} />
-                )}
 
                 <PrevisioniGiornaliere
                   enrichedDaily={enrichedDaily}
@@ -181,6 +191,15 @@ export default function Index() {
       </main>
       <Footer />
       <MeteoTesterPanel />
+
+      {/* Pulsante validazione */}
+      <button
+        onClick={() => setShowValidation(true)}
+        className="fixed bottom-4 right-20 z-50 bg-amber-800 hover:bg-amber-700 text-amber-200 border border-amber-500/40 rounded-full p-3 shadow-2xl shadow-amber-500/10"
+        title="Valida previsioni per domani e dopodomani"
+      >
+        <Bug className="w-5 h-5" />
+      </button>
     </div>
   );
 }
