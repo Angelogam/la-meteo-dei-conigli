@@ -1,7 +1,106 @@
-// Aggiungi questa riga all'inizio della funzione calcolaTermiche, dopo la dichiarazione:
+"use client";
+
+import type { HourData } from "@/types/meteo";
+
+export interface TermicheData {
+  rateo: number;
+  forza: number;
+  base: number;
+  top: number;
+  label: string;
+  colore: string;
+  gradienteReale: number;
+}
+
+/**
+ * Calcola le termiche per una data ora meteo.
+ * unified formula: spread → LCL → CAPE stimato → rateo (m/s) → label/colore
+ */
 export function calcolaTermiche(weather: HourData | any, altitude: number): TermicheData {
-  // GUARD: se altitude è null/undefined, usa 1000 (circa media dei decolli)
-  alt = altitude ?? 1000;
-  
-  // ...resto del codice...
+  const alt = altitude ?? 1000;
+
+  if (!weather) {
+    return { rateo: 0, forza: 0, base: 0, top: 0, label: "N/D", colore: "#475569", gradienteReale: 0 };
+  }
+
+  const temp = weather.temperature ?? 15;
+  const dew = weather.dewPoint ?? (temp - 8);
+  const hum = weather.humidity ?? 60;
+  const windSpeed = weather.windSpeed ?? 10;
+  const cloudCover = weather.cloudCover ?? 30;
+  const precipitation = weather.precipitation ?? 0;
+  const temp80m = weather.temp80m ?? null;
+  const temp120m = weather.temp120m ?? null;
+
+  // 1. Base termica (LCL)
+  const spread = Math.max(0.5, temp - dew);
+  const base = Math.max(200, Math.min(3000, Math.round(spread * 125)));
+
+  // 2. Gradiente termico verticale reale
+  let gradiente = 0.98;
+  if (temp80m != null) {
+    gradiente = ((temp - temp80m) / 78) * 100;
+  } else if (temp120m != null) {
+    gradiente = ((temp - temp120m) / 118) * 100;
+  }
+
+  // 3. Forza termica (0-10)
+  let forza = 0;
+
+  // Gradiente (max 3)
+  if (gradiente >= 1.2) forza += 3;
+  else if (gradiente >= 0.98) forza += 2;
+  else if (gradiente >= 0.7) forza += 1;
+
+  // Vento (max 2)
+  if (windSpeed >= 5 && windSpeed <= 15) forza += 2;
+  else if (windSpeed >= 3 && windSpeed < 5) forza += 1.5;
+  else if (windSpeed > 15 && windSpeed <= 22) forza += 1;
+
+  // Nuvolosità (max 2)
+  if (cloudCover >= 15 && cloudCover <= 45) forza += 2;
+  else if (cloudCover >= 5 && cloudCover < 15) forza += 1.5;
+
+  // Umidità (max 1.5)
+  if (hum >= 30 && hum <= 50) forza += 1.5;
+  else if (hum > 50 && hum <= 65) forza += 1;
+
+  // Spread (max 1.5)
+  if (spread >= 10) forza += 1.5;
+  else if (spread >= 6) forza += 1;
+  else if (spread >= 3) forza += 0.5;
+
+  // Pioggia annulla tutto
+  if (precipitation > 1) forza = 0;
+
+  forza = Math.max(0, Math.min(10, Math.round(forza * 10) / 10));
+
+  // 4. TOP termico
+  const top = Math.min(5000, base + Math.round(forza * 250));
+
+  // 5. RATEO (m/s)
+  let rateo = (forza / 10) * 4;
+  if (precipitation > 1) rateo = 0;
+  rateo = Math.max(0.05, Math.round(rateo * 10) / 10);
+
+  // 6. Label e colore
+  let label: string;
+  let colore: string;
+
+  if (rateo >= 4.0) { label = "Forti"; colore = "#ef4444"; }
+  else if (rateo >= 3.0) { label = "Buone"; colore = "#f97316"; }
+  else if (rateo >= 2.0) { label = "Moderate"; colore = "#eab308"; }
+  else if (rateo >= 1.0) { label = "Deboli"; colore = "#84cc16"; }
+  else if (rateo >= 0.3) { label = "M. deboli"; colore = "#6b7280"; }
+  else { label = "Assenti"; colore = "#475569"; }
+
+  return {
+    rateo,
+    forza,
+    base,
+    top,
+    label,
+    colore,
+    gradienteReale: Math.round(gradiente * 100) / 100,
+  };
 }

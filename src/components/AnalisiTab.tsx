@@ -8,16 +8,15 @@ interface AnalisiTabProps {
   currentData: any;
   dayData: any[];
   windProfile?: any[];
-  /** Dati orari del giorno selezionato (per vento e termiche) */
   hourlyData?: any[];
-  /** Ora di riferimento (default 12) */
   targetHour?: number;
+  site?: { alt: number; lat?: number; lon?: number };
 }
 
-export default function AnalisiTab({ currentData, dayData, windProfile = [], hourlyData, targetHour = 12 }: AnalisiTabProps) {
+export default function AnalisiTab({ currentData, dayData, windProfile = [], hourlyData, targetHour = 12, site }: AnalisiTabProps) {
   return (
     <div className="space-y-6">
-      <TermicheTab currentData={currentData} dayData={dayData} />
+      <TermicheTab currentData={currentData} dayData={dayData} site={site} />
       <VentiTab 
         currentData={currentData} 
         dayData={dayData} 
