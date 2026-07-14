@@ -183,8 +183,8 @@ export function VentiTab({ currentData, dayData, site }: VentiTabProps) {
     if (!currentData?.windProfile || !currentData.windProfile.length) return [];
     return currentData.windProfile
       .slice()
-      .sort((a: any, b: any) => a.height - b.height)
-      .map((l: any) => ({ ...l, dirName: dirName(l.dir) }));
+      .sort((a, b) => a.height - b.height)
+      .map(l => ({ ...l, dirName: dirName(l.dir) }));
   }, [currentData]);
 
   if (!currentData) {
@@ -223,7 +223,7 @@ export function VentiTab({ currentData, dayData, site }: VentiTabProps) {
           <div className="text-xs text-gray-500">Nessun profilo vento disponibile.</div>
         ) : (
           <div className="space-y-1">
-            {profile.map((level: any) => (
+            {profile.map(level => (
               <div key={level.height} className="flex items-center justify-between text-xs py-1 border-b border-gray-100 dark:border-gray-700/40 last:border-b-0">
                 <span className="text-gray-500">{level.height} m</span>
                 <span className="text-gray-700 dark:text-gray-200">
