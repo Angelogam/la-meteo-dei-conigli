@@ -87,7 +87,7 @@ export default function Index() {
             />
           </aside>
 
-          <div className="flex-1 min-w-0 space-y-6">
+          <div>
             {hasData && (
               <>
                 <SiteHeader
