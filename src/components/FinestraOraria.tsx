@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Wind, Cloud, Thermometer, ArrowUp, Gauge, Timer } from "lucide-react";
+import { Wind, Timer, Gauge, ArrowUp, Mountain, CheckCircle, AlertCircle, AlertTriangle, XCircle } from "lucide-react";
 
 function direzioneFreccia(dir: number): string {
   if (dir >= 337 || dir < 22) return "↑ N";
@@ -21,41 +21,46 @@ function coloreVento(speed: number): string {
   return "#F44336";
 }
 
-function coloreBgVento(speed: number): string {
-  if (speed <= 10) return "bg-green-900/20 border-green-500/30";
-  if (speed <= 18) return "bg-amber-900/20 border-amber-500/30";
-  if (speed <= 25) return "bg-orange-900/20 border-orange-500/30";
-  return "bg-red-900/20 border-red-500/30";
-}
-
-function coloreBgTermiche(rateo: number): string {
-  if (rateo >= 4) return "bg-red-900/30";
-  if (rateo >= 3) return "bg-orange-900/30";
-  if (rateo >= 2) return "bg-amber-900/30";
-  if (rateo >= 1) return "bg-lime-900/30";
-  if (rateo >= 0.3) return "bg-emerald-900/20";
-  return "bg-slate-800/30";
-}
-
-function coloreTestoTermiche(rateo: number): string {
-  if (rateo >= 4) return "text-red-300";
-  if (rateo >= 3) return "text-orange-300";
-  if (rateo >= 2) return "text-amber-300";
-  if (rateo >= 1) return "text-lime-300";
-  if (rateo >= 0.3) return "text-emerald-300";
-  return "text-slate-500";
+function qualitàVolo(speed: number, gust: number): { label: string; icon: React.ReactNode; color: string; bg: string } {
+  if (speed <= 10 && gust <= 18) {
+    return {
+      label: "Ottimo",
+      icon: <CheckCircle className="w-4 h-4" />,
+      color: "text-green-400",
+      bg: "bg-green-900/20 border-green-500/40"
+    };
+  }
+  if (speed <= 15 && gust <= 22) {
+    return {
+      label: "Buono",
+      icon: <AlertCircle className="w-4 h-4" />,
+      color: "text-amber-400",
+      bg: "bg-amber-900/20 border-amber-500/40"
+    };
+  }
+  if (speed <= 22 && gust <= 30) {
+    return {
+      label: "Difficile",
+      icon: <AlertTriangle className="w-4 h-4" />,
+      color: "text-orange-400",
+      bg: "bg-orange-900/20 border-orange-500/40"
+    };
+  }
+  return {
+    label: "Sconsigliato",
+    icon: <XCircle className="w-4 h-4" />,
+    color: "text-red-400",
+    bg: "bg-red-900/20 border-red-500/40"
+  };
 }
 
 interface DatoOrario {
   ora: number;
-  speed: number;
-  dir: number;
+  quote: Record<number, { speed: number; dir: number }>;
   gust: number;
+  base?: number;
+  top?: number;
   temp?: number;
-  cloudCover?: number;
-  rateoTermico?: number;
-  baseTermica?: number;
-  topTermico?: number;
 }
 
 interface FinestraOrariaProps {
@@ -66,8 +71,8 @@ interface FinestraOrariaProps {
 export default function FinestraOraria({ ventoOrario = [], quotaDecollo = 1000 }: FinestraOrariaProps) {
   if (!ventoOrario || ventoOrario.length === 0) {
     return (
-      <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-8 text-center">
-        <Wind className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+      <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-10 text-center">
+        <Wind className="w-14 h-14 text-slate-600 mx-auto mb-3" />
         <p className="text-slate-400 text-base">Nessun dato disponibile per questa giornata.</p>
       </div>
     );
@@ -78,42 +83,40 @@ export default function FinestraOraria({ ventoOrario = [], quotaDecollo = 1000 }
   return (
     <div className="bg-gradient-to-b from-slate-900/80 to-slate-950/60 border border-slate-700/40 rounded-2xl overflow-hidden shadow-xl">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 bg-slate-800/40 border-b border-slate-700/30">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between px-5 py-3.5 bg-slate-800/40 border-b border-slate-700/30">
+        <div className="flex items-center gap-2.5">
           <Timer className="w-5 h-5 text-emerald-400" />
-          <h3 className="text-base font-bold text-white">Previsione oraria</h3>
+          <h3 className="text-base font-bold text-white">Previsione oraria (09–19)</h3>
         </div>
-        <div className="flex items-center gap-3 text-xs text-slate-400">
-          <span className="flex items-center gap-1"><Wind className="w-3.5 h-3.5" /> km/h</span>
-          <span className="flex items-center gap-1"><ArrowUp className="w-3.5 h-3.5" /> m/s</span>
+        <div className="flex items-center gap-2 text-xs text-slate-400">
+          <Mountain className="w-4 h-4 text-amber-400" />
+          <span>Decollo {quotaDecollo}m</span>
         </div>
       </div>
 
       {/* Header colonne */}
-      <div className="hidden md:grid grid-cols-[60px_1fr_1fr_1fr_1fr_1fr] gap-2 px-5 py-2 bg-slate-800/30 border-b border-slate-700/20 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+      <div className="hidden lg:grid grid-cols-[60px_1fr_80px_80px_80px_120px] gap-3 px-5 py-2.5 bg-slate-800/30 border-b border-slate-700/20 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
         <span>Ora</span>
         <span>Vento decollo</span>
         <span>Raffiche</span>
         <span>Direzione</span>
-        <span>Temp</span>
-        <span>Termiche</span>
+        <span>Base</span>
+        <span>Volo</span>
       </div>
 
       {/* Righe orarie */}
       <div className="divide-y divide-slate-700/20">
         {ventoOrario.map((v) => {
-          const isCurrent = v.ora === now;
-          const speed = v.speed || 0;
+          const vento = v.quote?.[quotaDecollo] || { speed: 0, dir: 0 };
+          const speed = vento.speed || 0;
           const gust = v.gust || 0;
-          const temp = v.temp ?? 20;
-          const rateo = v.rateoTermico ?? 0;
-          const base = v.baseTermica ?? 0;
-          const top = v.topTermico ?? 0;
+          const qv = qualitàVolo(speed, gust);
+          const isCurrent = v.ora === now;
 
           return (
             <div
               key={v.ora}
-              className={`grid grid-cols-2 md:grid-cols-[60px_1fr_1fr_1fr_1fr_1fr] gap-2 px-5 py-3 items-center transition-all ${
+              className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-[60px_1fr_80px_80px_80px_120px] gap-2 lg:gap-3 px-5 py-3 items-center transition-all ${
                 isCurrent
                   ? "bg-emerald-900/20 border-l-4 border-l-emerald-400"
                   : "hover:bg-slate-800/30"
@@ -132,42 +135,35 @@ export default function FinestraOraria({ ventoOrario = [], quotaDecollo = 1000 }
               </div>
 
               {/* Vento decollo */}
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${
-                  speed <= 10 ? "bg-green-400" : speed <= 18 ? "bg-amber-400" : speed <= 25 ? "bg-orange-400" : "bg-red-400"
-                }`} />
-                <span className="text-sm font-bold text-white">{speed} km/h</span>
+              <div className="flex items-center gap-2.5">
+                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: coloreVento(speed) }} />
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold text-white">{speed} km/h</span>
+                  <span className="text-[10px] text-slate-500">{direzioneFreccia(vento.dir)}</span>
+                </div>
               </div>
 
               {/* Raffiche */}
-              <div className="text-sm text-slate-300 flex items-center gap-1">
-                <Gauge className="w-3.5 h-3.5 text-red-300" />
-                {gust} km/h
+              <div className="flex items-center gap-1.5 text-sm">
+                <Gauge className="w-4 h-4 text-red-300 shrink-0" />
+                <span className="font-bold text-red-200">{gust} km/h</span>
               </div>
 
-              {/* Direzione */}
-              <div className="text-sm font-bold text-sky-300">
-                {direzioneFreccia(v.dir)}
+              {/* Direzione (solo desktop) */}
+              <div className="hidden sm:block text-sm font-bold text-sky-300 text-center">
+                {direzioneFreccia(vento.dir)}
               </div>
 
-              {/* Temperatura */}
-              <div className="flex items-center gap-1 text-sm">
-                <Thermometer className="w-3.5 h-3.5 text-amber-400" />
-                <span className="font-bold text-white">{Math.round(temp)}°C</span>
+              {/* Base termica */}
+              <div className="hidden sm:flex items-center gap-1.5 text-sm">
+                <ArrowUp className="w-4 h-4 text-green-400 shrink-0" />
+                <span className="font-bold text-green-300">{v.base ? `${v.base}m` : "—"}</span>
               </div>
 
-              {/* Termiche */}
-              <div className={`text-sm font-bold ${coloreTestoTermiche(rateo)}`}>
-                {rateo > 0 ? (
-                  <span>{rateo.toFixed(1)} m/s</span>
-                ) : (
-                  <span className="text-slate-500">—</span>
-                )}
-                {rateo > 1 && (
-                  <span className="text-[10px] text-slate-400 ml-1">
-                    B{base}m T{top}m
-                  </span>
-                )}
+              {/* Qualità volo */}
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold ${qv.bg} ${qv.color}`}>
+                {qv.icon}
+                <span>{qv.label}</span>
               </div>
             </div>
           );
@@ -175,19 +171,20 @@ export default function FinestraOraria({ ventoOrario = [], quotaDecollo = 1000 }
       </div>
 
       {/* Legenda */}
-      <div className="flex flex-wrap gap-3 px-5 py-3 border-t border-slate-700/20 bg-slate-800/20">
+      <div className="flex flex-wrap gap-4 px-5 py-3 border-t border-slate-700/20 bg-slate-800/20">
         <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-          <span className="w-2.5 h-2.5 rounded-full bg-green-400" /> ≤10
+          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#4CAF50" }} /> ≤10
         </div>
         <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-400" /> 11-18
+          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#FFC107" }} /> 11-18
         </div>
         <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-          <span className="w-2.5 h-2.5 rounded-full bg-orange-400" /> 19-25
+          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#FF9800" }} /> 19-25
         </div>
         <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-400" /> {'>'}25
+          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#F44336" }} /> {'>'}25
         </div>
+        <span className="text-[10px] text-slate-500 ml-auto">km/h</span>
       </div>
     </div>
   );
