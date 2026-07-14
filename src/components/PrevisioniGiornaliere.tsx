@@ -148,7 +148,8 @@ export default function PrevisioniGiornaliere({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* Giorni */}
+      <div className="giorni-container">
         {enrichedDaily.slice(0, 3).map((day: any, idx: number) => {
           const isActive = idx === selectedDay;
           const weatherCode = dailyWeatherCodes[idx] ?? dominanteCodice ?? 0;
@@ -158,11 +159,14 @@ export default function PrevisioniGiornaliere({
             <button
               key={idx}
               onClick={() => onSelectDay(idx)}
-              className={`rounded-xl p-4 border-2 text-left transition-all ${
-                isActive
-                  ? "border-emerald-400 bg-emerald-900/40 shadow"
-                  : "border-slate-700/50 bg-slate-800/40 hover:border-slate-600"
-              }`}
+              className={`
+                card p-4 text-left transition-all border-2 cursor-pointer
+                ${
+                  isActive
+                    ? "border-emerald-400 bg-emerald-900/40 shadow-lg"
+                    : "border-slate-700/50 bg-slate-800/40 hover:border-slate-600"
+                }
+              `}
             >
               <div className="flex items-center justify-between mb-3">
                 <span className="text-base font-bold text-white">
@@ -199,8 +203,10 @@ export default function PrevisioniGiornaliere({
         })}
       </div>
 
+      {/* Fasce orarie: mattina, pomeriggio, sera */}
       {fasce && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="space-y-3">
+          <h3 className="text-base font-bold text-white px-1">Andamento orario</h3>
           {fasce.map((fascia: any, idx: number) => {
             if (!fascia) return null;
             const scoreColor = fascia.score >= 7 ? "bg-emerald-500/20 border-emerald-400/30 text-emerald-300"
@@ -209,7 +215,7 @@ export default function PrevisioniGiornaliere({
             const dirCardinal = degreesToCardinal(fascia.windDirMedia);
             const dirArr = windArrow(fascia.windDirMedia);
             return (
-              <div key={idx} className={`rounded-xl p-4 border-2 ${fascia.borderColor} bg-slate-800/40`}>
+              <div key={idx} className={`card p-4 border-2 ${fascia.borderColor} bg-slate-800/40`}>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-base font-bold text-white">{fascia.label}</span>
                   <span className={`text-sm font-bold px-2 py-0.5 rounded-full border ${scoreColor}`}>{fascia.score}/10</span>

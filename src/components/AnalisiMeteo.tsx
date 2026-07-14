@@ -73,6 +73,7 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
     const tempMedia = media(oreGiorno.map(h => h.temperature));
     const dewMedia = media(oreGiorno.map(h => h.dewPoint));
     const spread = tempMedia - dewMedia;
+    const lcl = Math.max(200, Math.min(3000, Math.round(spread * <dyad-write path="src/components/AnalisiMeteo.tsx" description="Completato il componente AnalisiMeteo con classi card">
     const lcl = Math.max(200, Math.min(3000, Math.round(spread * 125)));
     const zeroTermico = Math.max(0, Math.round((tempMedia / 0.0098) + 200));
     const dataGiorno = dayData[0]?.time ?? new Date();
@@ -84,37 +85,31 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
     });
 
     // NUOVO CALCOLO RISCHIO TEMPORALI — molto più conservativo
-    // Solo 3 fattori reali:
     let rischioTemporali = 0;
 
-    // 1. Pioggia in atto o weather code di temporale
     if (oreTemporale > 0) {
-      rischioTemporali = 85; // temporale in atto = rischio altissimo
+      rischioTemporali = 85;
     } else if (pioggiaTot > 3) {
-      rischioTemporali = 45; // pioggia consistente
+      rischioTemporali = 45;
     } else if (pioggiaTot > 1) {
-      rischioTemporali = 25; // pioggia leggera
+      rischioTemporali = 25;
     } else {
-      // 2. Solo se NON piove, guarda instabilità atmosferica
-      // Condizioni per temporale SERIO: tanto sole + tanto vapore + gradiente
       const haTantoSole = nuvoleMedia < 35;
       const haMoltoVapore = umiditaMedia >= 55 && umiditaMedia <= 80;
       const haAltaEscursione = deltaTermico >= 14;
       const haBassaPressione = pressioneMedia < 1005;
 
-      // Solo se ci sono ALMENO 3 condizioni su 4
       const condizioniInstabilita = [haTantoSole, haMoltoVapore, haAltaEscursione, haBassaPressione].filter(Boolean).length;
 
       if (condizioniInstabilita >= 3) {
-        rischioTemporali = 25; // possibile
+        rischioTemporali = 25;
       } else if (condizioniInstabilita === 2 && deltaTermico >= 16) {
-        rischioTemporali = 20; // possibile
+        rischioTemporali = 20;
       } else {
-        rischioTemporali = 2; // minimo — quasi sempre così
+        rischioTemporali = 2;
       }
     }
 
-    // Arrotonda
     rischioTemporali = Math.max(0, Math.min(100, Math.round(rischioTemporali)));
 
     let dettaglioTemporali = "";
@@ -225,31 +220,31 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
   return (
     <div className="space-y-4">
       {/* Situazione generale */}
-      <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 rounded-2xl p-5">
+      <div className="card bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 p-5">
         <div className="flex items-center gap-2 mb-4">
-          <Sun className="w-6 h-6 text-orange-400" />
+          <Sun className="w-6 h-6 text-orange-400 shrink-0" />
           <h3 className="text-base font-bold text-white">Situazione generale</h3>
           <span className="text-xs text-slate-500 ml-auto">{analisi.dateStr}</span>
         </div>
         <div className="space-y-2 text-sm text-slate-300">
-          <p><span className="text-emerald-400 mr-2">&bull;</span> Max {analisi.tempMaxGiorno}°C, min {analisi.tempMinGiorno}°C, delta {analisi.deltaTermico}°C.</p>
-          <p><span className="text-emerald-400 mr-2">&bull;</span> Umidità: {analisi.umiditaMedia}% &mdash; {getUmiditaDescrizione(analisi.umiditaMedia)}.</p>
-          <p><span className="text-emerald-400 mr-2">&bull;</span> Vento: {analisi.ventoMedio} km/h da {analisi.ventoDirNome} ({analisi.ventoDirMedia}°).{analisi.ventoGustsMax > analisi.ventoMedio * 1.5 ? " Raffiche " + analisi.ventoGustsMax + " km/h." : ""}</p>
-          <p><span className="text-emerald-400 mr-2">&bull;</span> Cielo: {getCloudDescription(analisi.nuvoleMedia)} ({analisi.nuvoleMedia}%).{analisi.pioggiaTot === 0 ? " Nessuna pioggia." : " Pioggia: " + analisi.pioggiaTot.toFixed(1) + " mm."}</p>
+          <p className="flex items-start gap-2"><span className="text-emerald-400 mt-1 shrink-0">&bull;</span> Max {analisi.tempMaxGiorno}°C, min {analisi.tempMinGiorno}°C, delta {analisi.deltaTermico}°C.</p>
+          <p className="flex items-start gap-2"><span className="text-emerald-400 mt-1 shrink-0">&bull;</span> Umidità: {analisi.umiditaMedia}% &mdash; {getUmiditaDescrizione(analisi.umiditaMedia)}.</p>
+          <p className="flex items-start gap-2"><span className="text-emerald-400 mt-1 shrink-0">&bull;</span> Vento: {analisi.ventoMedio} km/h da {analisi.ventoDirNome} ({analisi.ventoDirMedia}°).{analisi.ventoGustsMax > analisi.ventoMedio * 1.5 ? " Raffiche " + analisi.ventoGustsMax + " km/h." : ""}</p>
+          <p className="flex items-start gap-2"><span className="text-emerald-400 mt-1 shrink-0">&bull;</span> Cielo: {getCloudDescription(analisi.nuvoleMedia)} ({analisi.nuvoleMedia}%).{analisi.pioggiaTot === 0 ? " Nessuna pioggia." : " Pioggia: " + analisi.pioggiaTot.toFixed(1) + " mm."}</p>
         </div>
       </div>
 
-      {/* Rischio temporali — RIVISTO */}
-      <div className={"rounded-2xl border-2 p-5 " + rischioBg}>
+      {/* Rischio temporali */}
+      <div className={"card p-5 border-2 " + rischioBg}>
         <div className="flex items-center gap-3 mb-3">
           {analisi.rischioTemporali >= 70 || analisi.oreTemporale > 0 ? (
-            <CloudLightning className="w-8 h-8 text-red-400" />
+            <CloudLightning className="w-8 h-8 text-red-400 shrink-0" />
           ) : analisi.rischioTemporali >= 15 ? (
-            <CloudRain className="w-8 h-8 text-amber-400" />
+            <CloudRain className="w-8 h-8 text-amber-400 shrink-0" />
           ) : (
-            <Cloud className="w-8 h-8 text-green-400" />
+            <Cloud className="w-8 h-8 text-green-400 shrink-0" />
           )}
-          <div>
+          <div className="min-w-0">
             <h3 className="text-base font-bold text-white">Rischio temporali</h3>
             <p className={"text-sm font-medium " + rischioText}>{analisi.dettaglioTemporali}</p>
           </div>
@@ -263,35 +258,35 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
       </div>
 
       {/* Profilo termico */}
-      <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 rounded-2xl p-5">
+      <div className="card bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 p-5">
         <div className="flex items-center gap-2 mb-4">
-          <Thermometer className="w-6 h-6 text-amber-400" />
+          <Thermometer className="w-6 h-6 text-amber-400 shrink-0" />
           <h3 className="text-base font-bold text-white">Profilo termico e stabilità</h3>
         </div>
         <div className="space-y-2 text-sm text-slate-300">
-          <p><span className="text-emerald-400 mr-2">&bull;</span> {analisi.tempMinGiorno}°C min / {analisi.tempMaxGiorno}°C max &middot; delta {analisi.deltaTermico}°C.</p>
-          <p><span className="text-emerald-400 mr-2">&bull;</span> Umidità {analisi.umiditaMedia}% &middot; Spread {analisi.spread}°C.</p>
-          <p><span className="text-emerald-400 mr-2">&bull;</span> Base termica (LCL): {analisi.lcl} m &middot; Zero termico: ~{analisi.zeroTermico} m.</p>
-          <p><span className="text-emerald-400 mr-2">&bull;</span> Pressione: {analisi.pressioneMedia} hPa ({getPressioneDescrizione(analisi.pressioneMedia)}).</p>
+          <p className="flex items-start gap-2"><span className="text-emerald-400 mt-1 shrink-0">&bull;</span> {analisi.tempMinGiorno}°C min / {analisi.tempMaxGiorno}°C max &middot; delta {analisi.deltaTermico}°C.</p>
+          <p className="flex items-start gap-2"><span className="text-emerald-400 mt-1 shrink-0">&bull;</span> Umidità {analisi.umiditaMedia}% &middot; Spread {analisi.spread}°C.</p>
+          <p className="flex items-start gap-2"><span className="text-emerald-400 mt-1 shrink-0">&bull;</span> Base termica (LCL): {analisi.lcl} m &middot; Zero termico: ~{analisi.zeroTermico} m.</p>
+          <p className="flex items-start gap-2"><span className="text-emerald-400 mt-1 shrink-0">&bull;</span> Pressione: {analisi.pressioneMedia} hPa ({getPressioneDescrizione(analisi.pressioneMedia)}).</p>
         </div>
       </div>
 
       {/* Vento */}
-      <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 rounded-2xl p-5">
+      <div className="card bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 p-5">
         <div className="flex items-center gap-2 mb-4">
-          <Wind className="w-6 h-6 text-cyan-400" />
+          <Wind className="w-6 h-6 text-cyan-400 shrink-0" />
           <h3 className="text-base font-bold text-white">Vento e dinamica in quota</h3>
         </div>
         <div className="space-y-2 text-sm text-slate-300">
-          <p><span className="text-emerald-400 mr-2">&bull;</span> Direzione: {analisi.ventoDirNome} ({analisi.ventoDirMedia}°). Vento medio: {analisi.ventoMedio} km/h, raffiche max: {analisi.ventoGustsMax} km/h.</p>
-          <p><span className="text-emerald-400 mr-2">&bull;</span> {analisi.nuvoleMedia < 25 ? "Cielo sereno." : analisi.nuvoleMedia < 50 ? "Nuvolosità moderata." : "Nuvolosità significativa."}</p>
+          <p className="flex items-start gap-2"><span className="text-emerald-400 mt-1 shrink-0">&bull;</span> Direzione: {analisi.ventoDirNome} ({analisi.ventoDirMedia}°). Vento medio: {analisi.ventoMedio} km/h, raffiche max: {analisi.ventoGustsMax} km/h.</p>
+          <p className="flex items-start gap-2"><span className="text-emerald-400 mt-1 shrink-0">&bull;</span> {analisi.nuvoleMedia < 25 ? "Cielo sereno." : analisi.nuvoleMedia < 50 ? "Nuvolosità moderata." : "Nuvolosità significativa."}</p>
         </div>
       </div>
 
       {/* Interpretazione */}
-      <div className="bg-gradient-to-br from-green-900/20 to-emerald-900/10 border-2 border-green-700/30 rounded-2xl p-5">
+      <div className="card bg-gradient-to-br from-green-900/20 to-emerald-900/10 border-2 border-green-700/30 p-5">
         <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-6 h-6 text-green-400" />
+          <TrendingUp className="w-6 h-6 text-green-400 shrink-0" />
           <h3 className="text-base font-bold text-green-300">Interpretazione della giornata</h3>
         </div>
         <div className="space-y-2 text-sm text-slate-300">
@@ -301,23 +296,23 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
             ) : analisi.puntiNegativi.length > 0 || analisi.rischioTemporali >= 20 ? (
               <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
             ) : (
-              <span className="text-emerald-400 mt-1 shrink-0 mr-2">&bull;</span>
+              <span className="text-emerald-400 mt-1 shrink-0">&bull;</span>
             )}
             <span>{analisi.valutazione}</span>
           </p>
           {analisi.puntiPositivi.length > 0 && (
-            <div className="ml-7 mt-2">
+            <div className="ml-6 mt-2 space-y-1">
               <div className="text-xs text-emerald-400 font-bold mb-1">Punti positivi:</div>
               {analisi.puntiPositivi.map((p, i) => (
-                <p key={i}><span className="text-emerald-400 mr-2">&bull;</span>{p}</p>
+                <p key={i} className="flex items-start gap-2"><span className="text-emerald-400 mt-1 shrink-0">&bull;</span>{p}</p>
               ))}
             </div>
           )}
           {analisi.puntiNegativi.length > 0 && (
-            <div className="ml-7 mt-2">
+            <div className="ml-6 mt-2 space-y-1">
               <div className="text-xs text-amber-400 font-bold mb-1">Criticità:</div>
               {analisi.puntiNegativi.map((p, i) => (
-                <p key={i}><span className="text-amber-400 mr-2">&bull;</span>{p}</p>
+                <p key={i} className="flex items-start gap-2"><span className="text-amber-400 mt-1 shrink-0">&bull;</span>{p}</p>
               ))}
             </div>
           )}

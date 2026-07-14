@@ -11,14 +11,16 @@
 
   body {
     @apply bg-slate-950 text-white;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     font-size: 15px;
     line-height: 1.7;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    padding: 0;
   }
 
-  /* ===== DIMENSIONI UMANE ===== */
+  /* ===== DIMENSIONI UMANE — leggibili su mobile ===== */
   .text-\[10px\] { font-size: 13px !important; }
   .text-\[11px\] { font-size: 14px !important; }
   .text-xs { font-size: 14px !important; }
@@ -30,7 +32,7 @@
   .text-3xl { font-size: 28px !important; }
   .text-4xl { font-size: 34px !important; }
 
-  @media (min-width: 768px) {
+  @media (max-width: 768px) {
     .text-\[10px\] { font-size: 14px !important; }
     .text-\[11px\] { font-size: 15px !important; }
     .text-xs { font-size: 15px !important; }
@@ -47,11 +49,77 @@
   .tabular-nums { font-size: 16px !important; font-weight: 700 !important; }
   .table th, .table td { padding: 10px 12px !important; font-size: 15px !important; }
 
-  /* Contrasto potenziato */
+  /* Contrasto potenziato per leggibilità su schermi piccoli */
   .text-slate-300 { color: rgb(220, 225, 235) !important; }
   .text-slate-400 { color: rgb(180, 190, 210) !important; }
   .text-slate-500 { color: rgb(150, 160, 180) !important; }
   .text-slate-600 { color: rgb(130, 140, 160) !important; }
+}
+
+/* ===== MOBILE-FIRST LAYOUT ===== */
+
+/* Card standard moderno */
+.card {
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+@media (max-width: 768px) {
+  .card {
+    padding: 14px !important;
+    margin-bottom: 16px !important;
+    border-radius: 14px !important;
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+
+  h2, h3, h4 {
+    font-size: 1.2rem !important;
+    margin-bottom: 10px !important;
+  }
+
+  p, span {
+    font-size: 0.95rem !important;
+    line-height: 1.35;
+  }
+
+  /* Griglia oraria */
+  .grid-oraria {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    row-gap: 10px;
+    column-gap: 12px;
+    padding: 10px 0;
+  }
+
+  /* Card giorni */
+  .giorni-container {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* Vento quota */
+  .vento-quota-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 0.95rem;
+  }
+
+  /* Header */
+  .header-decollo {
+    padding: 16px !important;
+    text-align: center;
+  }
+
+  .header-decollo div {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
 }
 
 @keyframes hop {

@@ -50,77 +50,60 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-700/50 bg-slate-800/30">
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-700/30">
-        <Clock className="w-6 h-6 text-orange-400" />
+    <div className="card bg-slate-800/30 border border-slate-700/50 overflow-hidden">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-700/30">
+        <Clock className="w-6 h-6 text-orange-400 shrink-0" />
         <span className="text-base font-bold text-slate-200">Previsioni orarie 9:00 – 19:00</span>
-        <span className="text-sm text-slate-500 bg-slate-800/60 px-3 py-0.5 rounded-full">{rows.length} ore</span>
+        <span className="text-sm text-slate-500 bg-slate-800/60 px-3 py-0.5 rounded-full ml-auto">{rows.length} ore</span>
       </div>
-      <div className="p-2">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-slate-400 text-sm uppercase tracking-wider">
-              <th className="py-3 px-3 text-left">Ora</th>
-              <th className="py-3 px-3 text-center">☀️</th>
-              <th className="py-3 px-3 text-center">T°</th>
-              <th className="py-3 px-3 text-center">Vento</th>
-              <th className="py-3 px-3 text-center">Raff.</th>
-              <th className="py-3 px-3 text-center">Dir</th>
-              <th className="py-3 px-3 text-center">↑ Term.</th>
-              <th className="py-3 px-3 text-center">Base</th>
-              <th className="py-3 px-3 text-center">Top</th>
-              <th className="py-3 px-3 text-center">☁️</th>
-              <th className="py-3 px-3 text-center">💧</th>
-              <th className="py-3 px-3 text-center">Volo</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r: any) => {
-              if (!r) return null;
-              const isSelected = r.ora === selectedHour;
-              return (
-                <tr
-                  key={r.ora}
-                  onClick={() => onHourSelect(r.ora)}
-                  className={`cursor-pointer border-b border-slate-700/20 last:border-0 transition-all text-sm ${
-                    isSelected
-                      ? "bg-emerald-900/30 border-l-4 border-l-emerald-400"
-                      : r.isCurrent
-                      ? "bg-emerald-900/15 border-l-4 border-l-emerald-400"
-                      : "hover:bg-slate-700/30 border-l-4 border-l-transparent"
-                  }`}
-                >
-                  <td className="py-3 px-3"><span className="font-bold text-white text-base">{String(r.ora).padStart(2, "0")}:00</span></td>
-                  <td className="py-3 px-3 text-center text-2xl">{getWeatherIcon(r.codice, 1)}</td>
-                  <td className="py-3 px-3 text-center"><span className="font-bold text-amber-300 text-base">{r.temperatura}°</span></td>
-                  <td className="py-3 px-3 text-center"><span className="font-bold text-sky-300 text-base">{r.vento}</span></td>
-                  <td className="py-3 px-3 text-center"><span className={`font-bold text-base ${r.raffica && r.raffica > 30 ? "text-red-400" : "text-slate-400"}`}>{r.raffica || "—"}</span></td>
-                  <td className="py-3 px-3 text-center"><span className="font-bold text-slate-200 text-base">{r.direzione}</span></td>
-                  <td className="py-3 px-3 text-center"><span className="font-bold text-base" style={{ color: r.termicheColore }}>{r.termiche.toFixed(1)}</span></td>
-                  <td className="py-3 px-3 text-center">
-                    <div className="flex flex-col items-center">
-                      <Mountain className="w-4 h-4 text-green-400" />
-                      <span className="font-bold text-green-300 text-base">{r.base > 0 ? r.base : "—"}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-3 text-center">
-                    <div className="flex flex-col items-center">
-                      <TrendingUp className="w-4 h-4 text-red-400" />
-                      <span className="font-bold text-red-300 text-base">{r.top > 0 ? r.top : "—"}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-3 text-center"><span className="font-bold text-slate-200 text-base">{r.nuvole}%</span></td>
-                  <td className="py-3 px-3 text-center"><span className={`font-bold text-base ${r.pioggia > 0 ? "text-blue-300" : "text-slate-500"}`}>{r.pioggia > 0 ? `${r.pioggia.toFixed(1)}mm` : "—"}</span></td>
-                  <td className="py-3 px-3 text-center">
-                    <span className={`px-2 py-1 rounded-md text-sm font-bold border ${r.voloColore}`}>
-                      {r.voloIcon} {r.voloLabel}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="p-2 overflow-x-auto">
+        <div className="grid-oraria">
+          {rows.map((r: any) => {
+            if (!r) return null;
+            const isSelected = r.ora === selectedHour;
+            return (
+              <button
+                key={r.ora}
+                onClick={() => onHourSelect(r.ora)}
+                className={`rounded-xl p-3 text-left transition-all border-2 cursor-pointer ${
+                  isSelected
+                    ? "bg-emerald-900/30 border-emerald-400 shadow-md"
+                    : r.isCurrent
+                    ? "bg-emerald-900/15 border-emerald-400"
+                    : "bg-slate-800/60 border-slate-700/50 hover:bg-slate-700/30"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-sm font-bold text-white">{String(r.ora).padStart(2, "0")}:00</span>
+                  <span className="text-xl">{getWeatherIcon(r.codice, 1)}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-xs">
+                  <div className="flex items-center gap-1">
+                    <Thermometer className="w-3 h-3 text-amber-400" />
+                    <span className="font-bold text-amber-300">{r.temperatura}°</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Wind className="w-3 h-3 text-sky-400" />
+                    <span className="font-bold text-sky-300">{r.vento}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-xs mt-1 pt-1 border-t border-slate-700/30">
+                  <div className="flex items-center gap-1 text-slate-400">
+                    <span className="font-bold" style={{ color: r.termicheColore }}>{r.termiche.toFixed(1)} m/s</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-slate-400">
+                    <span>{r.nuvole}%</span>
+                  </div>
+                </div>
+                <div className="mt-1.5">
+                  <span className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-bold border ${r.voloColore}`}>
+                    {r.voloIcon} {r.voloLabel}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

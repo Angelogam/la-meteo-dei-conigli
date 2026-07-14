@@ -21,11 +21,7 @@ export default function WeatherDashboard({
   altitude,
   selectedHour,
   onHourSelect,
-  windProfile,
-  groundSpeed,
-  groundDir,
 }: WeatherDashboardProps) {
-  // Calcola flight score dalla media dei ratei termici
   const flightScore = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
 
@@ -88,7 +84,7 @@ export default function WeatherDashboard({
   }, [dayData, altitude]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Flight Score */}
       {flightScore && (
         <FlightScore
@@ -112,22 +108,24 @@ export default function WeatherDashboard({
 
       {/* Riepilogo rapido */}
       {flightScore && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="bg-slate-800/40 rounded-xl p-3 border border-slate-700/30 text-center">
-            <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Media termiche</div>
-            <div className="text-lg font-bold text-amber-300">{flightScore.mediaRateo} <span className="text-xs text-slate-400">m/s</span></div>
-          </div>
-          <div className="bg-slate-800/40 rounded-xl p-3 border border-slate-700/30 text-center">
-            <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Picco termico</div>
-            <div className="text-lg font-bold text-green-300">{flightScore.maxRateo} <span className="text-xs text-slate-400">m/s</span></div>
-          </div>
-          <div className="bg-slate-800/40 rounded-xl p-3 border border-slate-700/30 text-center">
-            <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Ore volabili</div>
-            <div className="text-lg font-bold text-sky-300">{flightScore.oreAttive}/{flightScore.totaleOre}</div>
-          </div>
-          <div className="bg-slate-800/40 rounded-xl p-3 border border-slate-700/30 text-center">
-            <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Migliore ora</div>
-            <div className="text-lg font-bold text-purple-300">{String(flightScore.bestHour).padStart(2, "0")}:00</div>
+        <div className="card bg-slate-800/40 border border-slate-700/30 p-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-slate-800/60 rounded-xl p-3 text-center">
+              <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Media termiche</div>
+              <div className="text-lg font-bold text-amber-300">{flightScore.mediaRateo} <span className="text-xs text-slate-400">m/s</span></div>
+            </div>
+            <div className="bg-slate-800/60 rounded-xl p-3 text-center">
+              <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Picco termico</div>
+              <div className="text-lg font-bold text-green-300">{flightScore.maxRateo} <span className="text-xs text-slate-400">m/s</span></div>
+            </div>
+            <div className="bg-slate-800/60 rounded-xl p-3 text-center">
+              <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Ore volabili</div>
+              <div className="text-lg font-bold text-sky-300">{flightScore.oreAttive}/{flightScore.totaleOre}</div>
+            </div>
+            <div className="bg-slate-800/60 rounded-xl p-3 text-center">
+              <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Migliore ora</div>
+              <div className="text-lg font-bold text-purple-300">{String(flightScore.bestHour).padStart(2, "0")}:00</div>
+            </div>
           </div>
         </div>
       )}

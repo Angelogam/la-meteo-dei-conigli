@@ -112,8 +112,8 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-emerald-900/15 border-emerald-500/30">
+      <div className="card bg-slate-800/40 border border-slate-700/50 flex items-center justify-between px-4 py-2">
+        <div className="flex items-center gap-2">
           <Server className="w-4 h-4 text-emerald-300" />
           <span className="text-xs font-bold text-emerald-300">Open-Meteo · {data.giorno}</span>
         </div>
@@ -139,9 +139,9 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
         ))}
       </div>
 
-      <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4">
+      <div className="card bg-slate-800/40 border border-slate-700/50 p-4">
         <div className="flex items-center gap-2 mb-4">
-          <Wind className="w-5 h-5 text-cyan-400" />
+          <Wind className="w-5 h-5 text-cyan-400 shrink-0" />
           <h4 className="text-base font-bold text-cyan-300">
             Profilo vento verticale · {String(oraSelezionata).padStart(2, "0")}:00
           </h4>
@@ -155,25 +155,25 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
             const width = maxSpeed > 0 ? (v.speed / maxSpeed) * 100 : 0;
             const isDecollo = q === data.quotaDecollo;
             return (
-              <div key={q} className={`grid grid-cols-[80px_1fr_100px] gap-2 items-center py-1 ${
-                isDecollo ? "bg-amber-900/20 rounded-lg px-1 -mx-1" : ""
-              }`}>
-                <span className={`text-xs font-mono font-bold ${
-                  isDecollo ? "text-amber-300" : "text-slate-400"
-                }`}>
-                  {q}m {isDecollo ? "🪂" : ""}
-                </span>
-                <div className="h-6 bg-slate-700/60 rounded-full overflow-hidden flex items-center">
-                  <div
-                    className={`h-full rounded-full ${getSpeedBarColor(v.speed)} transition-all`}
-                    style={{ width: `${Math.max(width, 8)}%` }}
-                  />
+              <div key={q} className={`vento-quota-row ${isDecollo ? "bg-amber-900/20 rounded-lg px-1 -mx-1" : ""}`}>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className={`text-xs font-mono font-bold shrink-0 ${
+                    isDecollo ? "text-amber-300" : "text-slate-400"
+                  }`}>
+                    {q}m {isDecollo ? "🪂" : ""}
+                  </span>
+                  <div className="flex-1 h-6 bg-slate-700/60 rounded-full overflow-hidden min-w-0">
+                    <div
+                      className={`h-full rounded-full ${getSpeedBarColor(v.speed)} transition-all`}
+                      style={{ width: `${Math.max(width, 8)}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-xs">
+                <div className="flex items-center gap-2 text-xs shrink-0">
                   <span className={`font-bold ${getSpeedColor(v.speed)}`}>
                     {v.speed} km/h
                   </span>
-                  <span className="text-slate-400">
+                  <span className="text-slate-400 hidden sm:inline">
                     {getWindArrow(v.dir)} {getWindDirName(v.dir)} ({v.dir}°)
                   </span>
                 </div>
