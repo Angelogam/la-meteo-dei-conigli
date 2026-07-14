@@ -1,4 +1,3 @@
-Valle Ellero">
 "use client";
 
 export interface Decollo {
