@@ -16,6 +16,7 @@ import TermicheTab from "@/components/TermicheTab";
 import AnalisiTab from "@/components/AnalisiTab";
 import MeteoTesterPanel from "@/components/MeteoTesterPanel";
 import SoaringWrfAnalyzer from "@/components/SoaringWrfAnalyzer";
+import ModelComparePanel from "@/components/ModelComparePanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
 import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
@@ -175,6 +176,7 @@ export default function Index() {
       <Footer />
       <MeteoTesterPanel />
       <SoaringWrfAnalyzer />
+      <ModelComparePanel />
     </div>
   );
 }
