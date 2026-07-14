@@ -2,7 +2,7 @@
 
 const BASE_URL = "https://api.open-meteo.com/v1/forecast";
 
-// Parametri base — SOLO i fondamentali, niente parametri in quota
+// Parametri UNIFICATI — tutto in una richiesta (tempo reale di risposta ~200ms)
 const HOURLY_PARAMS = [
   "temperature_2m",
   "relative_humidity_2m",
@@ -20,10 +20,7 @@ const HOURLY_PARAMS = [
   "cape",
   "convective_inhibition",
   "lifted_index",
-].join(",");
-
-// Richiesta separata per il profilo vento in quota
-const WIND_PROFILE_PARAMS = [
+  // Profilo vento in quota
   "temperature_80m",
   "temperature_120m",
   "wind_speed_80m", "wind_direction_80m",
@@ -72,10 +69,9 @@ const DAILY_PARAMS = [
 
 const CACHE_TTL = 3 * 60 * 1000; // 3 minuti
 const requestCache = new Map<string, { data: any; ts: number }>();
-const pendingRequests = new Map<string, Promise<any>>();
 
-function cacheKey(lat: number, lon: number, type: string) {
-  return `${lat.toFixed(4)},${lon.toFixed(4)}:${type}`;
+function cacheKey(lat: number, lon: number) {
+  return `${lat.toFixed(4)},${lon.toFixed(4)}`;
 }
 
 function getCached(key: string) {
@@ -88,7 +84,7 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Rate limiter globale: massimo 1 richiesta ogni 1.5 secondi
+// Rate limiter globale
 let lastRequestTime = 0;
 async function rateLimit() {
   const now = Date.now();
@@ -104,10 +100,7 @@ async function fetchWithRetry(url: string, retries = 2): Promise<Response> {
     try {
       const res = await fetch(url);
       if (res.ok) return res;
-      if (res.status === 429 && attempt < retries) {
-        console.warn(`429 alla richiesta, tento di nuovo tra ${(attempt + 1) * 2}s...`);
-        continue;
-      }
+      if (res.status === 429 && attempt < retries) continue;
       throw new Error(`Errore Open-Meteo: ${res.status}`);
     } catch (err) {
       if (attempt === retries) throw err;
@@ -142,8 +135,9 @@ export interface MeteoHourly {
   cape: number;
   cin: number;
   liftedIndex: number;
-  // Profilo vento (opzionale — arriva da richiesta separata o stima locale)
-  windProfile?: { height: number; speed: number; dir: number }[];
+  temp80m: number;
+  temp120m: number;
+  windProfile: { height: number; speed: number; dir: number }[];
 }
 
 export interface MeteoDaily {
@@ -192,46 +186,21 @@ export interface MeteoResponse {
   model: string;
 }
 
-function computeWindProfile(surfaceSpeed: number, surfaceDir: number): { height: number; speed: number; dir: number }[] {
-  const levels = [
-    { height: 80 },
-    { height: 120 },
-    { height: 300 },
-    { height: 600 },
-    { height: 1000 },
-    { height: 1500 },
-    { height: 2000 },
-    { height: 2500 },
-    { height: 3000 },
-  ];
-  return levels.map(l => {
-    const factor = 1 + (l.height / 500) * 0.4;
-    const speed = Math.round(Math.min(surfaceSpeed * factor, 60) * 10) / 10;
-    const rot = Math.round((l.height / 500) * 10);
-    const dir = (surfaceDir + rot) % 360;
-    return { height: l.height, speed, dir };
-  });
-}
-
-function parseMeteoResponse(raw: any, lat: number, lon: number, model: string): MeteoResponse {
+function parseMeteoResponse(raw: any, lat: number, lon: number): MeteoResponse {
   const hourly: MeteoHourly[] = (raw.hourly?.time || []).map((t: string, i: number) => {
-    // Cerca di estrarre profilo vento se presente
-    const ws80m = raw.hourly.wind_speed_80m?.[i];
-    const hasWindProfile = ws80m != null && ws80m > 0;
-    let windProfile: { height: number; speed: number; dir: number }[] | undefined;
-    if (hasWindProfile) {
-      windProfile = [
-        { height: 80, speed: safeGet(raw.hourly.wind_speed_80m, i), dir: safeGet(raw.hourly.wind_direction_80m, i) },
-        { height: 120, speed: safeGet(raw.hourly.wind_speed_120m, i), dir: safeGet(raw.hourly.wind_direction_120m, i) },
-        { height: 300, speed: safeGet(raw.hourly.wind_speed_300m, i), dir: safeGet(raw.hourly.wind_direction_300m, i) },
-        { height: 600, speed: safeGet(raw.hourly.wind_speed_600m, i), dir: safeGet(raw.hourly.wind_direction_600m, i) },
-        { height: 1000, speed: safeGet(raw.hourly.wind_speed_1000m, i), dir: safeGet(raw.hourly.wind_direction_1000m, i) },
-        { height: 1500, speed: safeGet(raw.hourly.wind_speed_1500m, i), dir: safeGet(raw.hourly.wind_direction_1500m, i) },
-        { height: 2000, speed: safeGet(raw.hourly.wind_speed_2000m, i), dir: safeGet(raw.hourly.wind_direction_2000m, i) },
-        { height: 2500, speed: safeGet(raw.hourly.wind_speed_2500m, i), dir: safeGet(raw.hourly.wind_direction_2500m, i) },
-        { height: 3000, speed: safeGet(raw.hourly.wind_speed_3000m, i), dir: safeGet(raw.hourly.wind_direction_3000m, i) },
-      ];
-    }
+    // Costruisci windProfile REALE dai dati del server
+    const windProfile = [
+      { height: 80, speed: safeGet(raw.hourly.wind_speed_80m, i), dir: safeGet(raw.hourly.wind_direction_80m, i) },
+      { height: 120, speed: safeGet(raw.hourly.wind_speed_120m, i), dir: safeGet(raw.hourly.wind_direction_120m, i) },
+      { height: 300, speed: safeGet(raw.hourly.wind_speed_300m, i), dir: safeGet(raw.hourly.wind_direction_300m, i) },
+      { height: 600, speed: safeGet(raw.hourly.wind_speed_600m, i), dir: safeGet(raw.hourly.wind_direction_600m, i) },
+      { height: 1000, speed: safeGet(raw.hourly.wind_speed_1000m, i), dir: safeGet(raw.hourly.wind_direction_1000m, i) },
+      { height: 1500, speed: safeGet(raw.hourly.wind_speed_1500m, i), dir: safeGet(raw.hourly.wind_direction_1500m, i) },
+      { height: 2000, speed: safeGet(raw.hourly.wind_speed_2000m, i), dir: safeGet(raw.hourly.wind_direction_2000m, i) },
+      { height: 2500, speed: safeGet(raw.hourly.wind_speed_2500m, i), dir: safeGet(raw.hourly.wind_direction_2500m, i) },
+      { height: 3000, speed: safeGet(raw.hourly.wind_speed_3000m, i), dir: safeGet(raw.hourly.wind_direction_3000m, i) },
+    ].filter(l => l.speed > 0 && l.dir >= 0); // Solo dati validi
+
     return {
       time: new Date(t),
       temperature: safeGet(raw.hourly.temperature_2m, i),
@@ -250,10 +219,9 @@ function parseMeteoResponse(raw: any, lat: number, lon: number, model: string): 
       cape: safeGet(raw.hourly.cape, i),
       cin: safeGet(raw.hourly.convective_inhibition, i),
       liftedIndex: safeGet(raw.hourly.lifted_index, i),
-      windProfile: windProfile || computeWindProfile(
-        safeGet(raw.hourly.wind_speed_10m, i),
-        safeGet(raw.hourly.wind_direction_10m, i)
-      ),
+      temp80m: safeGet(raw.hourly.temperature_80m, i),
+      temp120m: safeGet(raw.hourly.temperature_120m, i),
+      windProfile, // <-- DATI REALI
     };
   });
 
@@ -292,85 +260,30 @@ function parseMeteoResponse(raw: any, lat: number, lon: number, model: string): 
     windGusts: raw.current?.wind_gusts_10m ?? 0,
   };
 
-  return { hourly, daily, current, lat, lon, elevation: raw.elevation, timezone: raw.timezone, model };
+  return { hourly, daily, current, lat, lon, elevation: raw.elevation, timezone: raw.timezone, model: "auto" };
 }
 
 export const weatherService = {
   async fetchWeather(lat: number, lon: number): Promise<MeteoResponse> {
-    const key = cacheKey(lat, lon, "base");
-    const cached = getCached(key);
-    if (cached) return cached;
-
-    // Se c'è già una richiesta in corso, riutilizzala
-    if (pendingRequests.has(key)) return pendingRequests.get(key)!;
-
-    const promise = (async () => {
-      const params = new URLSearchParams({
-        latitude: lat.toString(),
-        longitude: lon.toString(),
-        hourly: HOURLY_PARAMS,
-        current: CURRENT_PARAMS,
-        daily: DAILY_PARAMS,
-        timezone: "Europe/Rome",
-        forecast_days: "3",
-      });
-
-      const res = await fetchWithRetry(`${BASE_URL}?${params.toString()}`);
-      const raw = await res.json();
-      const data = parseMeteoResponse(raw, lat, lon, "auto");
-      requestCache.set(key, { data, ts: Date.now() });
-
-      // Richiedi anche il profilo vento in modo separato (non bloccante)
-      weatherService.fetchWindProfile(lat, lon).catch(() => {});
-
-      return data;
-    })();
-
-    pendingRequests.set(key, promise);
-    promise.finally(() => pendingRequests.delete(key));
-
-    return promise;
-  },
-
-  async fetchWindProfile(lat: number, lon: number): Promise<{ height: number; speed: number; dir: number }[][] | null> {
-    const key = cacheKey(lat, lon, "wind_profile");
+    const key = cacheKey(lat, lon);
     const cached = getCached(key);
     if (cached) return cached;
 
     const params = new URLSearchParams({
       latitude: lat.toString(),
       longitude: lon.toString(),
-      hourly: WIND_PROFILE_PARAMS,
+      hourly: HOURLY_PARAMS,
+      current: CURRENT_PARAMS,
+      daily: DAILY_PARAMS,
       timezone: "Europe/Rome",
       forecast_days: "3",
     });
 
-    try {
-      await rateLimit(); // delay extra
-      const res = await fetch(`${BASE_URL}?${params.toString()}`);
-      if (!res.ok) return null;
-      const raw = await res.json();
-      if (!raw.hourly?.time) return null;
-
-      const profiles: { height: number; speed: number; dir: number }[][] = [];
-      const levels = [
-        "80", "120", "300", "600", "1000", "1500", "2000", "2500", "3000"
-      ];
-
-      for (let i = 0; i < raw.hourly.time.length; i++) {
-        const profile = levels.map(h => ({
-          height: parseInt(h),
-          speed: raw.hourly[`wind_speed_${h}m`]?.[i] ?? 0,
-          dir: raw.hourly[`wind_direction_${h}m`]?.[i] ?? 0,
-        }));
-        profiles.push(profile);
-      }
-
-      requestCache.set(key, { data: profiles, ts: Date.now() });
-      return profiles;
-    } catch {
-      return null;
-    }
+    const res = await fetchWithRetry(`${BASE_URL}?${params.toString()}`);
+    const raw = await res.json();
+    const data = parseMeteoResponse(raw, lat, lon);
+    requestCache.set(key, { data, ts: Date.now() });
+    return data;
   },
 
   async fetchWithFallback(lat: number, lon: number): Promise<{ data: MeteoResponse | null; ok: boolean }> {
