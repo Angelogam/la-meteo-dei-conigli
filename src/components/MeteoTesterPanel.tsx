@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { DECOLLI } from "@/data/decolli";
 import { testSingleSite, testAllSites, quickHealthCheck, type TestResult, type SiteCoord } from "@/utils/meteoTester";
-import { X, Play, Square, RefreshCw, CheckCircle, XCircle, AlertTriangle, Clock, TrendingUp, Bug } from "lucide-react";
+import { X, Play, Square, RefreshCw, CheckCircle, XCircle, AlertTriangle, Clock, TrendingUp, Bug, Activity } from "lucide-react";
 
 function SiteCoordFromDecollo(d: typeof DECOLLI[0]): SiteCoord {
   return { id: d.id, name: d.name, lat: d.lat, lon: d.lon, alt: d.altitude, exposure: d.exposure };
@@ -18,9 +18,7 @@ export default function MeteoTesterPanel() {
   const [health, setHealth] = useState<{ alive: boolean; responseTime: number; status: string } | null>(null);
   const [log, setLog] = useState<string[]>([]);
   const [testCount, setTestCount] = useState(0);
-  const [continuousMode, setContinuousMode] = useState(false);
   const abortRef = useRef(false);
-  const continuousRef = useRef(false);
   const logRef = useRef<string[]>([]);
 
   const addLog = useCallback((msg: string) => {
@@ -39,102 +37,128 @@ export default function MeteoTesterPanel() {
     addLog(`Health: ${result.status} (${result.responseTime}ms)`);
   }, [addLog]);
 
-  const runSingleTest = useCallback(async (siteId?: string) => {
-    const sites = siteId ? ALL_SITES.filter(s => s.id === siteId) : [ALL_SITES[0]];
-    for (const site of sites) {
-      if (abortRef.current) break;
-      addLog(`Test su ${site.name} (${site.lat}, ${site.lon})...`);
-      const result = await testSingleSite(site);
-      setResults(prev => {
-        const filtered = prev.filter(r => r.siteId !== site.id);
-        return [result, ...filtered].slice(0, 50);
-      });
-      setTestCount(prev => prev + 1);
-      if (result.success) {
-        addLog(`✅ ${site.name}: OK (${result.responseTimeMs}ms, ${result.warnings.length} warn)`);
-      } else {
-        addLog(`❌ ${site.name}: FALLITO — ${result.errors.join("; ")}`);
-      }
-      if (result.warnings.length > 0) {
-        result.warnings.forEach(w => addLog(`⚠️  ${site.name}: ${w}`));
-      }
-    }
-  }, [addLog]);
-
-  const runAllSequential = useCallback(async () => {
+  /** Test ping-pong: esegue N richieste rapide consecutive sullo STESSO sito */
+  const runPingPong = useCallback(async (numTests: number = 10) => {
     abortRef.current = false;
     setIsRunning(true);
-    addLog(`=== Test sequenziale su ${ALL_SITES.length} siti ===`);
-    
-    const onProgress = (result: TestResult, index: number, total: number) => {
-      setResults(prev => {
-        const filtered = prev.filter(r => r.siteId !== result.siteId);
-        return [result, ...filtered].slice(0, 50);
-      });
-      setTestCount(prev => prev + 1);
-      addLog(`[${index}/${total}] ${result.siteName}: ${result.success ? "✅" : "❌"} (${result.responseTimeMs}ms)`);
-      if (result.warnings.length > 0) {
-        result.warnings.forEach(w => addLog(`  ⚠️ ${w}`));
-      }
-    };
+    const site = ALL_SITES[0];
+    addLog(`=== PING-PONG: ${numTests} richieste su ${site.name} ===`);
 
-    const { summary } = await testAllSites(ALL_SITES, onProgress);
-    addLog(`=== RIEPILOGO: ${summary.passed}/${summary.total} passati, ${summary.totalErrors} errori, ${summary.totalWarnings} warnings, media ${summary.avgResponseTime}ms ===`);
+    const times: number[] = [];
+    const statuses: string[] = [];
+
+    for (let i = 0; i < numTests; i++) {
+      if (abortRef.current) break;
+      
+      const start = performance.now();
+      try {
+        const r = await quickHealthCheck(site);
+        const elapsed = Math.round(performance.now() - start);
+        times.push(elapsed);
+        statuses.push(r.status);
+        addLog(`[${i + 1}/${numTests}] ${r.status} (${elapsed}ms)`);
+        
+        // Aggiorna results
+        setResults(prev => {
+          const newR: TestResult = {
+            siteId: site.id,
+            siteName: site.name,
+            timestamp: new Date().toISOString(),
+            success: r.alive,
+            errors: r.alive ? [] : [r.status],
+            warnings: [],
+            rawData: null,
+            validation: { daily: [], hourly: [], current: [] },
+            responseTimeMs: elapsed,
+          };
+          return [newR, ...prev].slice(0, 50);
+        });
+        setTestCount(prev => prev + 1);
+      } catch (err) {
+        addLog(`[${i + 1}/${numTests}] ❌ ERRORE: ${err}`);
+        times.push(-1);
+        statuses.push(`ERR: ${err}`);
+      }
+
+      // Delay tra richieste (1.5s per non superare rate limit)
+      if (i < numTests - 1) await new Promise(r => setTimeout(r, 1500));
+    }
+
+    // Report statistiche
+    const successi = times.filter(t => t > 0);
+    if (successi.length > 0) {
+      const avg = Math.round(successi.reduce((s, t) => s + t, 0) / successi.length);
+      const min = Math.min(...successi);
+      const max = Math.max(...successi);
+      addLog(`=== PING-PONG COMPLETATO ===`);
+      addLog(`  ✅ ${successi.length}/${numTests} successi`);
+      addLog(`  ⏱️  Media: ${avg}ms · Min: ${min}ms · Max: ${max}ms`);
+      if (max - min > 500) addLog(`  ⚠️  Alta variabilità: ${max - min}ms di differenza`);
+      if (avg > 500) addLog(`  ⚠️  Latenza alta: media ${avg}ms`);
+    } else {
+      addLog(`  ❌ 0 successi su ${numTests} — server potrebbe essere offline`);
+    }
+
     setIsRunning(false);
   }, [addLog]);
 
-  const runContinuousLoop = useCallback(async () => {
-    continuousRef.current = true;
-    setContinuousMode(true);
-    addLog("=== MODALITÀ CONTINUA ATTIVATA (test ogni 3s) ===");
-    
-    while (continuousRef.current) {
+  /** Test multi-sito: richieste su siti diversi */
+  const runMultiSiteTest = useCallback(async () => {
+    abortRef.current = false;
+    setIsRunning(true);
+    const siti = ALL_SITES.slice(0, 8); // primi 8
+    addLog(`=== MULTI-SITO: ${siti.length} siti diversi ===`);
+
+    for (let i = 0; i < siti.length; i++) {
       if (abortRef.current) break;
-      
-      // Test rapido sul primo sito
-      const site = ALL_SITES[0];
+      const site = siti[i];
+      addLog(`Test su ${site.name}...`);
       const result = await testSingleSite(site);
       setResults(prev => {
         const filtered = prev.filter(r => r.siteId !== site.id);
         return [result, ...filtered].slice(0, 50);
       });
       setTestCount(prev => prev + 1);
-      
-      const statusIcon = result.success ? "✅" : "❌";
-      addLog(`[CICLO] ${site.name}: ${statusIcon} (${result.responseTimeMs}ms, errori:${result.errors.length}, warn:${result.warnings.length})`);
-      
-      // Ogni 10 test fa un giro completo
-      if (testCount % 10 === 0 && testCount > 0) {
-        addLog("--- Test completo siti ---");
-        for (const s of ALL_SITES.slice(0, 8)) {
-          if (abortRef.current || !continuousRef.current) break;
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          const r = await testSingleSite(s);
-          setResults(prev => {
-            const filtered = prev.filter(p => p.siteId !== s.id);
-            return [r, ...filtered].slice(0, 50);
-          });
-          setTestCount(prev => prev + 1);
-          addLog(`  ${s.name}: ${r.success ? "✅" : "❌"} (${r.responseTimeMs}ms)`);
-        }
-      }
-      
-      // Pausa tra cicli
-      for (let i = 0; i < 30 && continuousRef.current; i++) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+      addLog(`  ${result.success ? "✅" : "❌"} ${result.responseTimeMs}ms · ${result.errors.length} err · ${result.warnings.length} warn`);
+      if (i < siti.length - 1) await new Promise(r => setTimeout(r, 2000));
+    }
+
+    addLog(`=== MULTI-SITO COMPLETATO ===`);
+    setIsRunning(false);
+  }, [addLog]);
+
+  /** Test di stress: 3 cicli su 3 siti diversi = 9 richieste */
+  const runStressTest = useCallback(async () => {
+    abortRef.current = false;
+    setIsRunning(true);
+    const siti = [ALL_SITES[0], ALL_SITES[3], ALL_SITES[6], ALL_SITES[9]]; // 4 siti diversi
+    addLog(`=== STRESS TEST: ${siti.length} siti × 3 cicli = ${siti.length * 3} richieste ===`);
+
+    for (let ciclo = 0; ciclo < 3; ciclo++) {
+      if (abortRef.current) break;
+      addLog(`--- Ciclo ${ciclo + 1}/3 ---`);
+
+      for (let i = 0; i < siti.length; i++) {
+        if (abortRef.current) break;
+        const site = siti[i];
+        const result = await testSingleSite(site);
+        setResults(prev => {
+          const filtered = prev.filter(r => r.siteId !== site.id);
+          return [result, ...filtered].slice(0, 50);
+        });
+        setTestCount(prev => prev + 1);
+        addLog(`  [${ciclo + 1}.${i + 1}] ${site.name}: ${result.success ? "✅" : "❌"} (${result.responseTimeMs}ms)`);
+        if (i < siti.length - 1 || ciclo < 2) await new Promise(r => setTimeout(r, 1500));
       }
     }
-    
-    setContinuousMode(false);
-    addLog("=== MODALITÀ CONTINUA TERMINATA ===");
+
+    addLog(`=== STRESS TEST COMPLETATO ===`);
     setIsRunning(false);
-  }, [addLog, testCount]);
+  }, [addLog]);
 
   const stopAll = useCallback(() => {
     abortRef.current = true;
-    continuousRef.current = false;
     setIsRunning(false);
-    setContinuousMode(false);
     addLog("⛔ Test interrotto dall'utente");
   }, [addLog]);
 
@@ -183,56 +207,56 @@ export default function MeteoTesterPanel() {
           <span className="text-xs text-slate-400">
             <span className="text-green-400">{passed}✅</span> <span className="text-red-400">{failed}❌</span> media {avgTime}ms
           </span>
-          <button
-            onClick={clearLog}
-            className="text-xs text-slate-500 hover:text-white px-2 py-1 rounded"
-            title="Pulisci log"
-          >
+          <button onClick={clearLog} className="text-xs text-slate-500 hover:text-white px-2 py-1 rounded" title="Pulisci log">
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
-          <button
-            onClick={() => setIsOpen(false)}
-            className="text-slate-400 hover:text-white px-2 py-1 rounded"
-          >
+          <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white px-2 py-1 rounded">
             <X className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       {/* Controls */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-slate-800/50 bg-slate-900/40">
+      <div className="flex items-center gap-1.5 px-4 py-2 border-b border-slate-800/50 bg-slate-900/40 overflow-x-auto">
         <button
           onClick={runHealthCheck}
           disabled={isRunning}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 disabled:opacity-50 shrink-0"
         >
           <Activity className="w-3.5 h-3.5" /> Health
         </button>
         <button
-          onClick={() => runSingleTest()}
+          onClick={() => runPingPong(10)}
           disabled={isRunning}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-900/50 hover:bg-blue-800/50 text-xs text-blue-300 disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-900/50 hover:bg-blue-800/50 text-xs text-blue-300 disabled:opacity-50 shrink-0"
         >
-          <Play className="w-3.5 h-3.5" /> Test 1
+          <TrendingUp className="w-3.5 h-3.5" /> Ping-Pong (10)
         </button>
         <button
-          onClick={runAllSequential}
+          onClick={() => runPingPong(25)}
           disabled={isRunning}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-900/50 hover:bg-green-800/50 text-xs text-green-300 disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-900/50 hover:bg-indigo-800/50 text-xs text-indigo-300 disabled:opacity-50 shrink-0"
         >
-          <Play className="w-3.5 h-3.5" /> Test tutti ({ALL_SITES.length})
+          <TrendingUp className="w-3.5 h-3.5" /> Ping-Pong (25)
         </button>
         <button
-          onClick={runContinuousLoop}
-          disabled={isRunning || continuousMode}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-900/50 hover:bg-purple-800/50 text-xs text-purple-300 disabled:opacity-50"
+          onClick={runMultiSiteTest}
+          disabled={isRunning}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-900/50 hover:bg-green-800/50 text-xs text-green-300 disabled:opacity-50 shrink-0"
         >
-          <TrendingUp className="w-3.5 h-3.5" /> Continuo
+          <Play className="w-3.5 h-3.5" /> Multi-sito (8)
         </button>
-        {(isRunning || continuousMode) && (
+        <button
+          onClick={runStressTest}
+          disabled={isRunning}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-900/50 hover:bg-purple-800/50 text-xs text-purple-300 disabled:opacity-50 shrink-0"
+        >
+          <Activity className="w-3.5 h-3.5" /> Stress (12)
+        </button>
+        {isRunning && (
           <button
             onClick={stopAll}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-900/50 hover:bg-red-800/50 text-xs text-red-300"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-900/50 hover:bg-red-800/50 text-xs text-red-300 shrink-0"
           >
             <Square className="w-3.5 h-3.5" /> Stop
           </button>
@@ -249,14 +273,7 @@ export default function MeteoTesterPanel() {
             </div>
           )}
           {results.map((r, i) => (
-            <div
-              key={`${r.siteId}-${i}`}
-              className={`p-2 rounded-lg text-xs border ${
-                r.success
-                  ? "bg-slate-800/30 border-slate-700/30"
-                  : "bg-red-900/20 border-red-800/30"
-              }`}
-            >
+            <div key={`${r.siteId}-${i}`} className={`p-2 rounded-lg text-xs border ${r.success ? "bg-slate-800/30 border-slate-700/30" : "bg-red-900/20 border-red-800/30"}`}>
               <div className="flex items-center justify-between mb-1">
                 <span className="font-bold text-white">{r.siteName}</span>
                 <span className={`text-[10px] ${r.success ? "text-green-400" : "text-red-400"}`}>
@@ -273,24 +290,7 @@ export default function MeteoTesterPanel() {
                   </>
                 )}
               </div>
-              {r.errors.length > 0 && (
-                <div className="mt-1 text-[10px] text-red-400">{r.errors.join("; ")}</div>
-              )}
-              {/* Validazione daily */}
-              {r.validation.daily.length > 0 && (
-                <details className="mt-1">
-                  <summary className="text-[10px] text-slate-500 cursor-pointer">Daily</summary>
-                  <div className="grid grid-cols-2 gap-1 mt-1">
-                    {r.validation.daily.map((v, vi) => (
-                      <div key={vi} className="flex items-center gap-1 text-[10px]">
-                        <span className={v.ok ? "text-green-400" : "text-red-400"}>{v.ok ? "✓" : "✗"}</span>
-                        <span className="text-slate-400">{v.field}:</span>
-                        <span className="text-white">{JSON.stringify(v.value)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              )}
+              {r.errors.length > 0 && <div className="mt-1 text-[10px] text-red-400">{r.errors.join("; ")}</div>}
             </div>
           ))}
         </div>
@@ -299,9 +299,7 @@ export default function MeteoTesterPanel() {
         <div className="flex-1 overflow-auto p-3 font-mono">
           <div className="text-[10px] leading-5 text-slate-400 whitespace-pre-wrap">
             {log.length === 0 && (
-              <div className="text-slate-600 text-center py-8">
-                Log vuoto. Avvia un test per vedere i risultati.
-              </div>
+              <div className="text-slate-600 text-center py-8">Log vuoto. Avvia un test per vedere i risultati.</div>
             )}
             {log.map((line, i) => (
               <div key={i} className={
@@ -319,13 +317,5 @@ export default function MeteoTesterPanel() {
         </div>
       </div>
     </div>
-  );
-}
-
-function Activity(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-    </svg>
   );
 }
