@@ -11,7 +11,6 @@ import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import WeatherDashboard from "@/components/WeatherDashboard";
 import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
-import VentiTab from "@/components/VentiTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
@@ -164,6 +163,9 @@ export default function Index() {
                     currentData={currentData}
                     dayData={dayData}
                     site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name, exposure: site!.exposure }}
+                    cape={currentCape?.cape}
+                    liftedIndex={currentCape?.liftedIndex}
+                    cin={currentCape?.cin}
                   />
                 )}
               </>
