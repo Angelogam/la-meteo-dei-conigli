@@ -6,7 +6,6 @@ import {
   Mountain,
   Compass,
   Navigation,
-  ThermometerSun,
   Wind,
   Sparkles,
 } from "lucide-react";
@@ -32,11 +31,11 @@ export default function SiteHeader({
       <div className="absolute -top-4 -left-4 w-32 h-32 bg-gradient-to-br from-orange-500/5 to-transparent rounded-full blur-2xl pointer-events-none" />
       
       <div className="flex items-center justify-center gap-3 relative">
-        <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gradient-to-br from-orange-500/30 to-amber-500/15 border border-orange-400/40 flex items-center justify-center card-neon shadow-lg shadow-orange-500/10 shrink-0">
+        <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gradient-to-br from-orange-500/30 to-amber-500/15 border border-orange-400/40 flex items-center justify-center shadow-lg shadow-orange-500/10 shrink-0">
           <Navigation className="w-6 h-6 md:w-7 md:h-7 text-orange-400" />
         </div>
         <div className="text-center min-w-0">
-          <h2 className="text-xl md:text-2xl font-black text-white flex items-center justify-center gap-2 tracking-tight neon-green">
+          <h2 className="text-xl md:text-2xl font-black text-white flex items-center justify-center gap-2 tracking-tight">
             {name}
             <Sparkles className="w-3.5 h-3.5 text-orange-400 animate-twinkle shrink-0" />
           </h2>
@@ -59,13 +58,12 @@ export default function SiteHeader({
         </div>
       </div>
       {currentData && (
-        <div className="flex items-center justify-center gap-4 bg-gradient-to-br from-orange-900/30 to-amber-900/15 border border-orange-400/30 rounded-2xl px-4 py-2.5 card-neon relative overflow-hidden mt-3">
-          <div className="absolute inset-0 animate-shimmer pointer-events-none opacity-30" />
+        <div className="flex items-center justify-center gap-4 bg-gradient-to-br from-orange-900/30 to-amber-900/15 border border-orange-400/30 rounded-2xl px-4 py-2.5 relative overflow-hidden mt-3">
           <span className="text-3xl animate-float shrink-0">
             {getWeatherIcon(currentData.weatherCode || 0, currentData.isDay || 1)}
           </span>
           <div className="text-center relative z-10">
-            <div className="text-2xl font-black text-white tabular-nums neon-orange">
+            <div className="text-2xl font-black text-white tabular-nums">
               {Math.round(currentData.temperature)}°
             </div>
             <div className="flex items-center justify-center gap-2 text-xs text-slate-400">

@@ -74,26 +74,26 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                 )}
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm font-bold text-white">{String(r.ora).padStart(2, "0")}:00</span>
+                  <strong className="text-sm font-bold text-white">{String(r.ora).padStart(2, "0")}:00</strong>
                   <span className="text-xl">{getWeatherIcon(r.codice, 1)}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-1 text-xs">
-                  <div className="flex items-center gap-1">
+                  <span className="flex items-center gap-1">
                     <Thermometer className="w-3 h-3 text-amber-400" />
-                    <span className="font-bold text-amber-300">{r.temperatura}°</span>
-                  </div>
-                  <div className="flex items-center gap-1">
+                    <strong className="font-bold text-amber-300">{r.temperatura}°</strong>
+                  </span>
+                  <span className="flex items-center gap-1">
                     <Wind className="w-3 h-3 text-sky-400" />
-                    <span className="font-bold text-sky-300">{r.vento}</span>
-                  </div>
+                    <strong className="font-bold text-sky-300">{r.vento}</strong>
+                  </span>
                 </div>
                 <div className="grid grid-cols-2 gap-1 text-xs mt-1 pt-1 border-t border-slate-700/30">
-                  <div className="flex items-center gap-1 text-slate-400">
+                  <span className="flex items-center gap-1 text-slate-400">
                     <span className="font-bold" style={{ color: r.termicheColore }}>{r.termiche.toFixed(1)} m/s</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-slate-400">
+                  </span>
+                  <span className="flex items-center gap-1 text-slate-400">
                     <span>{r.nuvole}%</span>
-                  </div>
+                  </span>
                 </div>
                 <div className="mt-1.5">
                   <span className={"inline-block px-1.5 py-0.5 rounded text-[11px] font-bold border " + r.voloColore}>

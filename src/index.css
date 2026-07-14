@@ -20,45 +20,15 @@
     padding: 0;
   }
 
-  /* ===== DIMENSIONI UMANE — leggibili su mobile ===== */
-  .text-\[10px\] { font-size: 13px !important; }
-  .text-\[11px\] { font-size: 14px !important; }
-  .text-xs { font-size: 14px !important; }
-  .text-sm { font-size: 15px !important; }
-  .text-base { font-size: 16px !important; }
-  .text-lg { font-size: 18px !important; }
-  .text-xl { font-size: 20px !important; }
-  .text-2xl { font-size: 24px !important; }
-  .text-3xl { font-size: 28px !important; }
-  .text-4xl { font-size: 34px !important; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #1e293b; }
+  ::-webkit-scrollbar-thumb { background: #475569; border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
-  @media (max-width: 768px) {
-    .text-\[10px\] { font-size: 14px !important; }
-    .text-\[11px\] { font-size: 15px !important; }
-    .text-xs { font-size: 15px !important; }
-    .text-sm { font-size: 16px !important; }
-    .text-base { font-size: 17px !important; }
-    .text-lg { font-size: 19px !important; }
-    .text-xl { font-size: 22px !important; }
-    .text-2xl { font-size: 26px !important; }
-    .text-3xl { font-size: 30px !important; }
-    .text-4xl { font-size: 36px !important; }
-  }
-
-  /* Icone e numeri grandi */
-  .tabular-nums { font-size: 16px !important; font-weight: 700 !important; }
-  .table th, .table td { padding: 10px 12px !important; font-size: 15px !important; }
-
-  /* Contrasto potenziato per leggibilità su schermi piccoli */
-  .text-slate-300 { color: rgb(220, 225, 235) !important; }
-  .text-slate-400 { color: rgb(180, 190, 210) !important; }
-  .text-slate-500 { color: rgb(150, 160, 180) !important; }
-  .text-slate-600 { color: rgb(130, 140, 160) !important; }
+  ::selection { background: #f97316; color: white; }
 }
 
-/* ===== MOBILE-FIRST LAYOUT ===== */
-
-/* Card standard moderno */
+/* CARD GENERICA */
 .card {
   padding: 16px;
   margin-bottom: 16px;
@@ -67,59 +37,10 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
-@media (max-width: 768px) {
-  .card {
-    padding: 14px !important;
-    margin-bottom: 16px !important;
-    border-radius: 14px !important;
-    background: #fff;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  }
-
-  h2, h3, h4 {
-    font-size: 1.2rem !important;
-    margin-bottom: 10px !important;
-  }
-
-  p, span {
-    font-size: 0.95rem !important;
-    line-height: 1.35;
-  }
-
-  /* Griglia oraria */
-  .grid-oraria {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    row-gap: 10px;
-    column-gap: 12px;
-    padding: 10px 0;
-  }
-
-  /* Card giorni */
-  .giorni-container {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  /* Vento quota */
-  .vento-quota-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    font-size: 0.95rem;
-  }
-
-  /* Header */
-  .header-decollo {
-    padding: 16px !important;
-    text-align: center;
-  }
-
-  .header-decollo div {
-    flex-direction: column !important;
-    gap: 8px !important;
-  }
+.analisi-card {
+  padding: 18px;
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 @keyframes hop {
@@ -151,9 +72,91 @@
 .animate-slide-up { animation: slideUp 0.4s ease-out; }
 .animate-fade-in { animation: fadeIn 0.3s ease-out; }
 
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: #1e293b; }
-::-webkit-scrollbar-thumb { background: #475569; border-radius: 6px; }
-::-webkit-scrollbar-thumb:hover { background: #64748b; }
+/* ===== MOBILE FIRST ===== */
+@media (max-width: 768px) {
 
-::selection { background: #f97316; color: white; }
+  body {
+    background: #f5f5f5;
+    padding: 10px;
+  }
+
+  /* CARD GENERICA */
+  .card {
+    background: #ffffff;
+    padding: 12px !important;
+    margin-bottom: 14px !important;
+    border-radius: 14px !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    width: 100% !important;
+  }
+
+  /* HEADER DECOLLO */
+  .header-decollo {
+    padding: 14px !important;
+    text-align: center;
+  }
+
+  .header-decollo h2 {
+    font-size: 1.3rem !important;
+  }
+
+  .header-decollo p {
+    font-size: 0.95rem !important;
+  }
+
+  .header-decollo div {
+    display: flex;
+    flex-direction: column !important;
+    gap: 6px !important;
+    font-size: 0.9rem !important;
+  }
+
+  /* METEO GIORNI */
+  .giorni-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* VENTO QUOTA */
+  .vento-quota-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 0.9rem;
+  }
+
+  /* FINESTRA ORARIA */
+  .grid-oraria {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    row-gap: 10px;
+    column-gap: 12px;
+    padding: 10px 0;
+  }
+
+  .grid-oraria strong {
+    font-size: 1rem !important;
+  }
+
+  .grid-oraria span {
+    font-size: 0.85rem !important;
+  }
+
+  /* ANALISI */
+  .analisi-card {
+    padding: 14px !important;
+    font-size: 0.95rem !important;
+    line-height: 1.35;
+  }
+
+  /* TITOLI */
+  h2, h3, h4 {
+    font-size: 1.2rem !important;
+    margin-bottom: 10px !important;
+  }
+
+  p, span {
+    font-size: 0.9rem !important;
+  }
+}

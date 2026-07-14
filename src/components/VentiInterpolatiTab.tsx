@@ -47,7 +47,6 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
 
   useEffect(() => {
     if (!lat || !lon || !quotaDecollo) return;
-
     const oggi = new Date();
     const targetDate = new Date(oggi);
     targetDate.setDate(oggi.getDate() + selectedDay);
@@ -102,13 +101,11 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
   }
 
   const oraData = data.ventoOrario.find(v => v.ora === oraSelezionata) || data.ventoOrario[0];
-  const quoteKeys = Object.keys(oraData.quote).map(Number);
-  const maxSpeed = Math.max(...quoteKeys.map(q => oraData.quote[q].speed), 1);
-
   const quoteVisibili: number[] = [];
   for (let q = data.quotaDecollo; q <= 4000; q += 250) {
     quoteVisibili.push(q);
   }
+  const maxSpeed = Math.max(...quoteVisibili.map(q => oraData.quote[q]?.speed || 0), 1);
 
   return (
     <div className="space-y-4">
@@ -192,7 +189,7 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
       </div>
 
       <div className="text-center text-sm text-slate-500 border-t border-slate-700/30 pt-3">
-        Dati interpolati ogni 250m da Open-Meteo · Livelli: decollo, 925hPa (760m), 850hPa (1450m), 700hPa (3000m), 600hPa (4000m)
+        Dati interpolati ogni 250m da Open-Meteo
       </div>
     </div>
   );

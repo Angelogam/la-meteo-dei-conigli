@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import {
-  Sun, Moon, CloudSun, Cloud, CloudRain, Snowflake,
+  Sun, CloudSun, Cloud, CloudRain,
   CloudLightning, CloudFog, Thermometer, Wind, Droplets,
   ArrowUp, Gauge, Umbrella, Mountain, TrendingUp, CheckCircle
 } from "lucide-react";
@@ -27,7 +27,6 @@ function getWeatherInfo(code: number | undefined | null) {
   if (code >= 45 && code <= 48) return { icon: <CloudFog className="w-8 h-8 text-slate-400" />, desc: "Nebbia" };
   if (code >= 51 && code <= 57) return { icon: <CloudRain className="w-8 h-8 text-blue-300" />, desc: "Pioggerella" };
   if (code >= 61 && code <= 67) return { icon: <CloudRain className="w-8 h-8 text-blue-400" />, desc: "Pioggia" };
-  if (code >= 71 && code <= 77) return { icon: <Snowflake className="w-8 h-8 text-blue-200" />, desc: "Neve" };
   if (code >= 80 && code <= 84) return { icon: <CloudRain className="w-8 h-8 text-blue-300" />, desc: "Rovesci" };
   if (code >= 95 && code <= 99) return { icon: <CloudLightning className="w-8 h-8 text-yellow-300" />, desc: "Temporali" };
   return { icon: <Sun className="w-8 h-8 text-amber-300" />, desc: "Sereno" };
@@ -159,14 +158,11 @@ export default function PrevisioniGiornaliere({
             <button
               key={idx}
               onClick={() => onSelectDay(idx)}
-              className={`
-                card p-4 text-left transition-all border-2 cursor-pointer
-                ${
-                  isActive
-                    ? "border-emerald-400 bg-emerald-900/40 shadow-lg"
-                    : "border-slate-700/50 bg-slate-800/40 hover:border-slate-600"
-                }
-              `}
+              className={`card p-4 text-left transition-all border-2 cursor-pointer ${
+                isActive
+                  ? "border-emerald-400 bg-emerald-900/40 shadow-lg"
+                  : "border-slate-700/50 bg-slate-800/40 hover:border-slate-600"
+              }`}
             >
               <div className="flex items-center justify-between mb-3">
                 <span className="text-base font-bold text-white">
