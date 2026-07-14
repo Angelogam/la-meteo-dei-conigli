@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolloList from "@/components/DecolloList";
@@ -9,7 +9,6 @@ import AlertBanner from "@/components/AlertBanner";
 import UpdateTimer from "@/components/UpdateTimer";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import WeatherDashboard from "@/components/WeatherDashboard";
-import DayForecastPopup from "@/components/DayForecastPopup";
 import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
 import VentiTab from "@/components/VentiTab";
@@ -41,8 +40,6 @@ export default function Index() {
     allDailyData,
     allHourlyData,
   } = useWeatherData();
-
-  const [detailOpen, setDetailOpen] = useState(false);
 
   const stabilityIndex = getStabilityIndex(
     currentData?.temperature || 20,
@@ -82,7 +79,7 @@ export default function Index() {
           </aside>
 
           <div className="flex-1 min-w-0 space-y-6">
-            {site && currentData && dayData && (
+            {site && currentData && dayData.length > 0 && (
               <>
                 <SiteHeader
                   name={site.name}
@@ -154,13 +151,13 @@ export default function Index() {
                     windProfile={[]}
                     hourlyData={hourlyData}
                     targetHour={12}
-                    site={{ alt: site.altitude, lat: site.lat, lon: site.lon }}
+                    site={{ alt: site.altitude, lat: site.lat, lon: site.lon, name: site.name, exposure: site.exposure }}
                   />
                 )}
               </>
             )}
 
-            {(!site || !currentData) && <SezioneMeteo />}
+            {(!site || !currentData || dayData.length === 0) && <SezioneMeteo />}
           </div>
         </div>
       </main>
