@@ -3,7 +3,10 @@
 import React from "react";
 import { DECOLLI } from "@/data/decolli";
 import { useWeatherData } from "@/hooks/useWeatherData";
-import { MeteoTab, VentiTab, TermicheTab, AnalisiTab } from "./MeteoTabs";
+import MeteoTab from "./MeteoTab";
+import VentiTab from "./VentiTab";
+import TermicheTab from "./TermicheTab";
+import AnalisiTab from "./AnalisiTab";
 
 export default function SezioneMeteo() {
   const {
