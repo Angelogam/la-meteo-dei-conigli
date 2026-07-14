@@ -50,11 +50,11 @@ function generateHourlyData(currentData: any, dayDataArray?: any[]) {
     const cc = hData?.cloudCover ?? currentData?.cloudCover ?? 30;
     const hum = hData?.humidity ?? currentData?.humidity ?? 50;
 
-    // Emoji base
-    let emoji = "☀️";
-    if (cc > 80) emoji = "☁️";
-    else if (cc > 50) emoji = "⛅";
-    else if (cc > 20) emoji = "🌤️";
+    // Icon label
+    let iconLabel = "sereno";
+    if (cc > 80) iconLabel = "coperto";
+    else if (cc > 50) iconLabel = "nuvoloso";
+    else if (cc > 20) iconLabel = "poco nuvoloso";
 
     // Condizioni
     const tempStr = `${Math.round(t)}°C`;
@@ -79,7 +79,7 @@ function generateHourlyData(currentData: any, dayDataArray?: any[]) {
 
     return {
       ora,
-      emoji,
+      iconLabel,
       condizioni: `${tempStr} · ${ventoStr} · ${cloudStr}`,
       note,
     };
@@ -132,7 +132,7 @@ export default function DayInfoPanel({ currentData, dayData, site, selectedDate 
         </div>
       </div>
 
-      {/* 🌡️ Profilo termico e stabilità */}
+      {/* Profilo termico e stabilità */}
       <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 rounded-2xl p-4 hover:border-green-400/40 transition-all duration-200">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
@@ -156,7 +156,7 @@ export default function DayInfoPanel({ currentData, dayData, site, selectedDate 
         </div>
       </div>
 
-      {/* 🌬️ Vento e dinamica in quota */}
+      {/* Vento e dinamica in quota */}
       <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 rounded-2xl p-4 hover:border-green-400/40 transition-all duration-200">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-cyan-400 flex items-center gap-2">
@@ -180,7 +180,7 @@ export default function DayInfoPanel({ currentData, dayData, site, selectedDate 
         </div>
       </div>
 
-      {/* 🌤️ Previsione oraria 9:00–19:00 */}
+      {/* Previsione oraria 9:00–19:00 */}
       <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-orange-500/40 rounded-2xl p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-sky-300 flex items-center gap-2">
@@ -225,7 +225,7 @@ export default function DayInfoPanel({ currentData, dayData, site, selectedDate 
                       </span>
                     </td>
                     <td className="py-1.5 px-3 whitespace-nowrap">
-                      <span className="mr-1">{h.emoji}</span>
+                      <span className="text-xs text-slate-500 mr-1">{h.iconLabel}</span>
                       <span>{h.condizioni}</span>
                     </td>
                     <td className="py-1.5 pl-3 text-slate-400 text-[11px] leading-snug">

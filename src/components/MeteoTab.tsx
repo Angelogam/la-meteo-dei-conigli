@@ -74,24 +74,18 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, sta
   const condizioniVolo =
     windSpeed < 3 ? "Troppo calma" :
     windSpeed > 30 ? "Vento forte" :
-    precipitation > 1 ? "Pioggia 🌧️" :
-    weatherCode >= 95 ? "Temporale ⛈️" :
-    forzaTermica >= 5 ? "Ottime 🪂🔥" :
-    forzaTermica >= 3 ? "Buone 🪂" :
-    forzaTermica >= 1 ? "Deboli 🌤️" :
-    "Assenti ❄️";
+    precipitation > 1 ? "Pioggia" :
+    weatherCode >= 95 ? "Temporale" :
+    forzaTermica >= 5 ? "Ottime" :
+    forzaTermica >= 3 ? "Buone" :
+    forzaTermica >= 1 ? "Deboli" :
+    "Assenti";
 
   const dirCardinali = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   const dirLabel = dirCardinali[Math.round((windDir ?? 0) / 45) % 8];
   const arrow = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"][Math.round((windDir ?? 0) / 45) % 8];
 
-  const voloEmoji =
-    condizioniVolo.includes("Ottime") ? "🪂🔥" :
-    condizioniVolo.includes("Buone") ? "🪂" :
-    condizioniVolo.includes("Deboli") ? "🌤️" :
-    condizioniVolo.includes("calma") ? "🌀" :
-    condizioniVolo.includes("Pioggia") || condizioniVolo.includes("Temporale") ? "⛈️" :
-    condizioniVolo.includes("forte") ? "💨" : "❄️";
+  const voloIcon = "";
 
   const cieloDesc =
     weatherCode === 0 ? "Sereno" :
@@ -110,8 +104,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, sta
         condizioniVolo.includes("calma") ? "bg-slate-800/60 border-slate-400" :
         "bg-red-900/40 border-red-400"
       }`}>
-        <div className="text-6xl mb-3">{voloEmoji}</div>
-        <div className="text-2xl font-bold text-white mb-1">{condizioniVolo}</div>
+        <div className="text-xl font-bold text-white mb-1">{condizioniVolo}</div>
         <div className="text-base text-slate-300">{cieloDesc} · Vento {windSpeed} km/h da {dirLabel}</div>
         <div className="mt-4 pt-3 border-t border-white/10">
           <span className="text-sm text-slate-400">Zero termico</span>
@@ -138,9 +131,9 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, sta
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <BigCard icon={<ArrowUp className="w-8 h-8 text-green-400" />} label="Base nuvole (LCL)" value={`${cloudBase}`} unit="m" sub={`Spread ${spread.toFixed(1)}°C`} />
-        <BigCard icon={<ArrowUp className="w-8 h-8 text-red-400" />} label="Top termiche" value={`${topTermico}`} unit="m" sub={precipitation > 1 ? "Pioggia ⛔" : `Spessore ${topTermico - cloudBase}m`} />
+        <BigCard icon={<ArrowUp className="w-8 h-8 text-red-400" />} label="Top termiche" value={`${topTermico}`} unit="m" sub={precipitation > 1 ? "Pioggia" : `Spessore ${topTermico - cloudBase}m`} />
         <BigCard icon={<TrendingUp className="w-8 h-8 text-orange-400" />} label="Forza termica" value={`${forzaTermica.toFixed(1)}`} unit="/10" sub={`${rateoTermico} m/s`} />
-        <BigCard icon={<AlertTriangle className="w-8 h-8 text-amber-400" />} label="Turbolenza" value={turbolenza} unit="" sub={turbolenza === "Forte" ? "⚠️ Attenzione" : turbolenza === "Moderata" ? "🟡 Gestibile" : turbolenza === "Leggera" ? "🟢 Ok" : "✅ Nessuna"} />
+        <BigCard icon={<AlertTriangle className="w-8 h-8 text-amber-400" />} label="Turbolenza" value={turbolenza} unit="" sub={turbolenza === "Forte" ? "Attenzione" : turbolenza === "Moderata" ? "Gestibile" : turbolenza === "Leggera" ? "Ok" : "Nessuna"} />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
