@@ -15,8 +15,6 @@ import VentiTab from "@/components/VentiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiTab from "@/components/AnalisiTab";
 import MeteoTesterPanel from "@/components/MeteoTesterPanel";
-import SoaringWrfAnalyzer from "@/components/SoaringWrfAnalyzer";
-import ModelComparePanel from "@/components/ModelComparePanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
 import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
@@ -40,6 +38,8 @@ export default function Index() {
     hourlyData,
     allDailyData,
     allHourlyData,
+    activeModel,
+    currentCape,
   } = useWeatherData();
 
   const stabilityIndex = getStabilityIndex(
@@ -134,6 +134,10 @@ export default function Index() {
                     site={{ alt: site!.altitude }}
                     thermalDelta={thermalDelta}
                     stabilityIndex={stabilityIndex}
+                    modelName={activeModel}
+                    cape={currentCape?.cape}
+                    liftedIndex={currentCape?.liftedIndex}
+                    cin={currentCape?.cin}
                   />
                 )}
 
@@ -175,8 +179,6 @@ export default function Index() {
       </main>
       <Footer />
       <MeteoTesterPanel />
-      <SoaringWrfAnalyzer />
-      <ModelComparePanel />
     </div>
   );
 }

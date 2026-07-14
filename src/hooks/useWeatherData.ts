@@ -43,46 +43,42 @@ function toHourData(mh: MeteoHourly): HourData {
     directNormalIrradiance: 0,
     terrestrialRadiation: 0,
     sunshineDuration: mh.sunshineDuration,
+    windProfile: buildWindProfile(mh),
   };
 }
 
-// Carica un singolo sito con retry
-async function loadSingleSite(id: string, lat: number, lon: number, retries = 2): Promise<{ id: string; daily: MeteoDaily[]; hourly: MeteoHourly[] } | null> {
+function buildWindProfile(mh: MeteoHourly): { height: number; speed: number; dir: number }[] {
+  const levels = [
+    { height: 80, speed: mh.windSpeed80m, dir: mh.windDir80m },
+    { height: 120, speed: mh.windSpeed120m, dir: mh.windDir120m },
+    { height: 180, speed: mh.windSpeed180m, dir: mh.windDir180m },
+    { height: 300, speed: mh.windSpeed300m, dir: mh.windDir300m },
+    { height: 600, speed: mh.windSpeed600m, dir: mh.windDir600m },
+    { height: 1000, speed: mh.windSpeed1000m, dir: mh.windDir1000m },
+    { height: 1500, speed: mh.windSpeed1500m, dir: mh.windDir1500m },
+    { height: 2000, speed: mh.windSpeed2000m, dir: mh.windDir2000m },
+    { height: 2500, speed: mh.windSpeed2500m, dir: mh.windDir2500m },
+    { height: 3000, speed: mh.windSpeed3000m, dir: mh.windDir3000m },
+  ];
+  return levels.filter(l => l.speed > 0).map(l => ({ height: l.height, speed: l.speed, dir: l.dir }));
+}
+
+async function loadSingleSite(id: string, lat: number, lon: number, retries = 2): Promise<{
+  id: string;
+  daily: MeteoDaily[];
+  hourly: MeteoHourly[];
+  model: string;
+} | null> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      if (attempt > 0) {
-        // Aspetta prima di ritentare (backoff esponenziale)
-        await new Promise(resolve => setTimeout(resolve, attempt * 2000));
-      }
-      const data = await weatherService.fetchWeather(lat, lon);
-      return { id, daily: data.daily || [], hourly: data.hourly || [] };
+      if (attempt > 0) await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+      const { data } = await weatherService.fetchWithFallback(lat, lon);
+      if (data) return { id, daily: data.daily || [], hourly: data.hourly || [], model: data.model };
     } catch (err) {
-      if (attempt === retries) {
-        console.error(`Errore fetch per ${id} (${lat},${lon}):`, err);
-        return null;
-      }
+      if (attempt === retries) return null;
     }
   }
   return null;
-}
-
-// Carica tutti i siti in sequenza con delay tra le richieste
-async function loadAllSites(delayMs = 1200): Promise<{ dailyMap: Record<string, MeteoDaily[]>; hourlyMap: Record<string, MeteoHourly[]> }> {
-  const dailyMap: Record<string, MeteoDaily[]> = {};
-  const hourlyMap: Record<string, MeteoHourly[]> = {};
-
-  // Prima carica i siti principali con meno richieste (solo i primi 8)
-  const primarySites = DECOLLI.slice(0, 8);
-  for (const decollo of primarySites) {
-    const result = await loadSingleSite(decollo.id, decollo.lat, decollo.lon);
-    if (result) {
-      dailyMap[result.id] = result.daily;
-      hourlyMap[result.id] = result.hourly;
-    }
-    await new Promise(resolve => setTimeout(resolve, delayMs));
-  }
-
-  return { dailyMap, hourlyMap };
 }
 
 export function useWeatherData() {
@@ -91,6 +87,7 @@ export function useWeatherData() {
   const [dailyData, setDailyData] = useState<MeteoDaily[]>([]);
   const [allDailyData, setAllDailyData] = useState<Record<string, MeteoDaily[]>>({});
   const [allHourlyData, setAllHourlyData] = useState<Record<string, MeteoHourly[]>>({});
+  const [activeModel, setActiveModel] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -104,7 +101,6 @@ export function useWeatherData() {
 
   const site = DECOLLI.find(d => d.id === selectedId) || DECOLLI[0];
 
-  // Carica PRIMA il sito selezionato, POI gli altri in background
   const loadWeather = useCallback(async () => {
     setLoading(true);
     setUpdating(true);
@@ -114,9 +110,9 @@ export function useWeatherData() {
     const currentSite = DECOLLI.find(d => d.id === currentId) || DECOLLI[0];
 
     try {
-      // 1. Carica SUBITO il sito selezionato
+      // Carica SUBITO il sito selezionato con ICON-D2/ICON
       const primaryResult = await loadSingleSite(currentSite.id, currentSite.lat, currentSite.lon);
-      
+
       const dailyMap: Record<string, MeteoDaily[]> = { ...allDailyData };
       const hourlyMap: Record<string, MeteoHourly[]> = { ...allHourlyData };
 
@@ -125,6 +121,7 @@ export function useWeatherData() {
         hourlyMap[currentSite.id] = primaryResult.hourly;
         setDailyData(primaryResult.daily);
         setHourlyData(primaryResult.hourly);
+        setActiveModel(primaryResult.model);
       }
 
       setAllDailyData(dailyMap);
@@ -134,8 +131,7 @@ export function useWeatherData() {
       setLastUpdate(new Date());
       setCountdown(30);
 
-      // 2. Dopo aver mostrato i dati principali, carica gli altri siti in background (con delay)
-      // Solo se non sono già stati caricati
+      // Carica altri siti in background
       const remainingSites = DECOLLI.filter(d => !dailyMap[d.id] || dailyMap[d.id].length === 0);
       if (remainingSites.length > 0) {
         for (const decollo of remainingSites) {
@@ -146,7 +142,6 @@ export function useWeatherData() {
             setAllDailyData({ ...dailyMap });
             setAllHourlyData({ ...hourlyMap });
           }
-          // Delay tra le richieste per evitare rate limiting
           await new Promise(resolve => setTimeout(resolve, 1500));
         }
       }
@@ -158,19 +153,16 @@ export function useWeatherData() {
     }
   }, []);
 
-  // Carica inizialmente
   useEffect(() => {
     loadWeather();
     setSelectedHour(new Date().getHours());
   }, []);
 
-  // Refresh ogni 30 minuti
   useEffect(() => {
     const interval = setInterval(loadWeather, REFRESH_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [loadWeather]);
 
-  // Countdown
   useEffect(() => {
     const minuteInterval = setInterval(() => {
       setCountdown(prev => prev <= 1 ? 30 : prev - 1);
@@ -178,14 +170,9 @@ export function useWeatherData() {
     return () => clearInterval(minuteInterval);
   }, []);
 
-  // Quando cambia selectedId, aggiorna daily/hourly dai dati già caricati
   useEffect(() => {
-    if (allDailyData[selectedId]) {
-      setDailyData(allDailyData[selectedId]);
-    }
-    if (allHourlyData[selectedId]) {
-      setHourlyData(allHourlyData[selectedId]);
-    }
+    if (allDailyData[selectedId]) setDailyData(allDailyData[selectedId]);
+    if (allHourlyData[selectedId]) setHourlyData(allHourlyData[selectedId]);
     setSelectedHour(Math.min(selectedHour, 23));
   }, [selectedId, allDailyData, allHourlyData]);
 
@@ -213,6 +200,20 @@ export function useWeatherData() {
       return diffCurr < diffBest ? curr : best;
     }, dayData[0]);
   }, [dayData, selectedHour]);
+
+  /** CAPE attuale dal modello ICON */
+  const currentCape = useMemo(() => {
+    if (!currentData || !hourlyData.length) return null;
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + selectedDay);
+    const h = hourlyData.find(h =>
+      h.time.getHours() === selectedHour &&
+      h.time.getFullYear() === targetDate.getFullYear() &&
+      h.time.getMonth() === targetDate.getMonth() &&
+      h.time.getDate() === targetDate.getDate()
+    );
+    return h ? { cape: h.cape, cin: h.cin, liftedIndex: h.liftedIndex } : null;
+  }, [currentData, hourlyData, selectedHour, selectedDay]);
 
   const thermalDelta = useMemo(() => {
     if (!dayData.length) return 0;
@@ -243,14 +244,7 @@ export function useWeatherData() {
       const avgCloud = hours.length > 0
         ? Math.round(hours.reduce((s, h) => s + (h.cloudCover || 0), 0) / hours.length)
         : 0;
-      return { 
-        ...day, 
-        date: d, 
-        thermalDelta: delta, 
-        avgWind, 
-        maxWind, 
-        avgCloud,
-      };
+      return { ...day, date: d, thermalDelta: delta, avgWind, maxWind, avgCloud };
     });
   }, [dailyData, hourlyData]);
 
@@ -258,10 +252,8 @@ export function useWeatherData() {
     if (!d?.date) return "Giorno";
     const date = new Date(d.date);
     const oggi = new Date();
-    const domani = new Date(oggi);
-    domani.setDate(oggi.getDate() + 1);
-    const dopodomani = new Date(oggi);
-    dopodomani.setDate(oggi.getDate() + 2);
+    const domani = new Date(oggi); domani.setDate(oggi.getDate() + 1);
+    const dopodomani = new Date(oggi); dopodomani.setDate(oggi.getDate() + 2);
     if (date.toDateString() === oggi.toDateString()) return "Oggi";
     if (date.toDateString() === domani.toDateString()) return "Domani";
     if (date.toDateString() === dopodomani.toDateString()) return "Dopodomani";
@@ -286,5 +278,7 @@ export function useWeatherData() {
     dailyData,
     allDailyData,
     allHourlyData,
+    activeModel,
+    currentCape,
   };
 }
