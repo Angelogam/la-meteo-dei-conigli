@@ -14,7 +14,12 @@ export interface TermicheData {
 
 /**
  * Calcola le termiche per una data ora meteo.
- * unified formula: spread → LCL → CAPE stimato → rateo (m/s) → label/colore
+ * BASE e TOP sono in metri sul livello del mare (slm).
+ * 
+ * Formula:
+ * - LCL (base termica) = (temp - dew) × 125 + altitude (slm)
+ * - TOP = base + spessore stimato da CAPE / gradiente
+ * - RATEO = (forza / 10) × 4 (m/s)
  */
 export function calcolaTermiche(weather: HourData | any, altitude: number): TermicheData {
   const alt = altitude ?? 1000;
@@ -32,19 +37,24 @@ export function calcolaTermiche(weather: HourData | any, altitude: number): Term
   const temp80m = weather.temp80m ?? null;
   const temp120m = weather.temp120m ?? null;
 
-  // 1. Base termica (LCL)
+  // 1. Spread (differenza tra T e Td)
   const spread = Math.max(0.5, temp - dew);
-  const base = Math.max(200, Math.min(3000, Math.round(spread * 125)));
 
-  // 2. Gradiente termico verticale reale
-  let gradiente = 0.98;
+  // 2. BASE TERMICA = LCL (sollevamento per convezione) IN METRI SUL LIVELLO DEL MARE
+  //    LCL (m sopra il suolo) = spread × 125
+  //    Quota assoluta = LCL + altitudine decollo
+  const lclSopraSuolo = Math.round(spread * 125);
+  const base = Math.max(alt + 100, Math.min(alt + 3000, alt + lclSopraSuolo));
+
+  // 3. GRADIENTE TERMICO VERTICALE REALE (da temperature_80m / 120m)
+  let gradiente = 0.98; // adiabatico secco default
   if (temp80m != null) {
     gradiente = ((temp - temp80m) / 78) * 100;
   } else if (temp120m != null) {
     gradiente = ((temp - temp120m) / 118) * 100;
   }
 
-  // 3. Forza termica (0-10)
+  // 4. FORZA TERMICA (0-10)
   let forza = 0;
 
   // Gradiente (max 3)
@@ -75,15 +85,17 @@ export function calcolaTermiche(weather: HourData | any, altitude: number): Term
 
   forza = Math.max(0, Math.min(10, Math.round(forza * 10) / 10));
 
-  // 4. TOP termico
-  const top = Math.min(5000, base + Math.round(forza * 250));
+  // 5. TOP TERMICO (slm) = base + spessore stimato
+  //    Lo spessore dipende dalla forza: più forza = più spessore
+  const spessore = Math.round(forza * 250); // ~250m per punto di forza
+  const top = Math.min(alt + 5000, base + spessore);
 
-  // 5. RATEO (m/s)
+  // 6. RATEO (m/s)
   let rateo = (forza / 10) * 4;
   if (precipitation > 1) rateo = 0;
   rateo = Math.max(0.05, Math.round(rateo * 10) / 10);
 
-  // 6. Label e colore
+  // 7. Label e colore
   let label: string;
   let colore: string;
 
