@@ -14,7 +14,6 @@ import MeteoTab from "@/components/MeteoTab";
 import VentiTab from "@/components/VentiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiTab from "@/components/AnalisiTab";
-import SezioneMeteo from "@/components/SezioneMeteo";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
 import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
@@ -63,7 +62,6 @@ export default function Index() {
     );
   }
 
-  // Se non c'è nessun dato, mostra comunque il layout vuoto
   const hasData = site && currentData && dayData.length > 0;
 
   return (
@@ -163,7 +161,11 @@ export default function Index() {
               </>
             )}
 
-            {!hasData && <SezioneMeteo />}
+            {!hasData && (
+              <div className="text-center py-12 text-slate-400">
+                <p>Nessun dato meteo disponibile. Verifica la connessione o riprova.</p>
+              </div>
+            )}
           </div>
         </div>
       </main>
