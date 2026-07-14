@@ -68,11 +68,11 @@ export default function WeatherDashboard({
     else label = "SCARSA";
 
     let thermalLabel = "";
-    if (mediaRateo >= 3) thermalLabel = "Forte";
-    else if (mediaRateo >= 2) thermalLabel = "Buona";
-    else if (mediaRateo >= 1) thermalLabel = "Moderata";
-    else if (mediaRateo >= 0.3) thermalLabel = "Debole";
-    else thermalLabel = "Assenti";
+    if (mediaRateo >= 3) thermalLabel = "Forte 🔥";
+    else if (mediaRateo >= 2) thermalLabel = "Buona 🪂";
+    else if (mediaRateo >= 1) thermalLabel = "Moderata 🌤️";
+    else if (mediaRateo >= 0.3) thermalLabel = "Debole 🌥️";
+    else thermalLabel = "Assenti ❄️";
 
     return {
       score: Math.round(score * 10) / 10,

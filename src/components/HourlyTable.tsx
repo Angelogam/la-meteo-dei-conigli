@@ -5,7 +5,7 @@ import type { HourData } from "@/types/meteo";
 import { calcolaTermiche } from "@/utils/termiche";
 import { getVoloStatus } from "@/utils/volo";
 import { getWindDirection, getWeatherIcon } from "@/utils/weatherHelpers";
-import { Clock, Mountain, TrendingUp, Cloud, Droplets, Wind, Thermometer } from "lucide-react";
+import { Clock, Mountain, TrendingUp } from "lucide-react";
 
 interface HourlyTableProps {
   dayData: HourData[];
@@ -38,7 +38,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
         pioggia: h.precipitation,
         codice: h.weatherCode,
         voloLabel: volo.label,
-        voloIcon: "",
+        voloIcon: volo.icon,
         voloColore: volo.color,
         isCurrent,
       };
@@ -46,32 +46,32 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
   }, [dayData, altitude]);
 
   if (rows.length === 0) {
-    return <div className="text-center py-8 text-slate-500 text-sm">Nessun dato orario disponibile.</div>;
+    return <div className="text-center py-12 text-slate-400 text-base">Nessun dato disponibile per questa giornata.</div>;
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-800/60 bg-slate-900/40">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-800/50">
-        <Clock className="w-4 h-4 text-emerald-400" />
-        <span className="text-sm font-semibold text-slate-200">Orario 9:00–19:00</span>
-        <span className="text-xs text-slate-600 ml-auto">{rows.length} ore</span>
+    <div className="overflow-x-auto rounded-xl border border-slate-700/50 bg-slate-800/30">
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-700/30">
+        <Clock className="w-6 h-6 text-orange-400" />
+        <span className="text-base font-bold text-slate-200">Previsioni orarie 9:00 – 19:00</span>
+        <span className="text-sm text-slate-500 bg-slate-800/60 px-3 py-0.5 rounded-full">{rows.length} ore</span>
       </div>
-      <div className="p-1">
+      <div className="p-2">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
-              <th className="py-2.5 px-2 text-left font-medium">Ora</th>
-              <th className="py-2.5 px-2 text-center font-medium">Tempo</th>
-              <th className="py-2.5 px-2 text-center font-medium">T°</th>
-              <th className="py-2.5 px-2 text-center font-medium">Vento</th>
-              <th className="py-2.5 px-2 text-center font-medium">Raff.</th>
-              <th className="py-2.5 px-2 text-center font-medium">Dir</th>
-              <th className="py-2.5 px-2 text-center font-medium">↑ m/s</th>
-              <th className="py-2.5 px-2 text-center font-medium">Base</th>
-              <th className="py-2.5 px-2 text-center font-medium">Top</th>
-              <th className="py-2.5 px-2 text-center font-medium">Nuv</th>
-              <th className="py-2.5 px-2 text-center font-medium">Pioggia</th>
-              <th className="py-2.5 px-2 text-center font-medium">Volo</th>
+            <tr className="text-slate-400 text-sm uppercase tracking-wider">
+              <th className="py-3 px-3 text-left">Ora</th>
+              <th className="py-3 px-3 text-center">☀️</th>
+              <th className="py-3 px-3 text-center">T°</th>
+              <th className="py-3 px-3 text-center">Vento</th>
+              <th className="py-3 px-3 text-center">Raff.</th>
+              <th className="py-3 px-3 text-center">Dir</th>
+              <th className="py-3 px-3 text-center">↑ Term.</th>
+              <th className="py-3 px-3 text-center">Base</th>
+              <th className="py-3 px-3 text-center">Top</th>
+              <th className="py-3 px-3 text-center">☁️</th>
+              <th className="py-3 px-3 text-center">💧</th>
+              <th className="py-3 px-3 text-center">Volo</th>
             </tr>
           </thead>
           <tbody>
@@ -82,44 +82,38 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                 <tr
                   key={r.ora}
                   onClick={() => onHourSelect(r.ora)}
-                  className={`cursor-pointer border-b border-slate-800/30 last:border-0 transition-colors text-[13px] ${
+                  className={`cursor-pointer border-b border-slate-700/20 last:border-0 transition-all text-sm ${
                     isSelected
-                      ? "bg-emerald-900/25 border-l-2 border-l-emerald-500"
+                      ? "bg-emerald-900/30 border-l-4 border-l-emerald-400"
                       : r.isCurrent
-                      ? "bg-emerald-900/10 border-l-2 border-l-emerald-500/50"
-                      : "hover:bg-slate-800/30 border-l-2 border-l-transparent"
+                      ? "bg-emerald-900/15 border-l-4 border-l-emerald-400"
+                      : "hover:bg-slate-700/30 border-l-4 border-l-transparent"
                   }`}
                 >
-                  <td className="py-2.5 px-2"><span className="font-semibold text-slate-200">{String(r.ora).padStart(2, "0")}:00</span></td>
-                  <td className="py-2.5 px-2 text-center text-lg">{getWeatherIcon(r.codice, 1)}</td>
-                  <td className="py-2.5 px-2 text-center"><span className="font-semibold text-amber-400">{r.temperatura}°</span></td>
-                  <td className="py-2.5 px-2 text-center"><span className="font-semibold text-sky-300">{r.vento}</span></td>
-                  <td className="py-2.5 px-2 text-center"><span className={`font-semibold ${r.raffica && r.raffica > 30 ? "text-red-400" : "text-slate-500"}`}>{r.raffica || "—"}</span></td>
-                  <td className="py-2.5 px-2 text-center"><span className="font-medium text-slate-300">{r.direzione}</span></td>
-                  <td className="py-2.5 px-2 text-center">
-                    <span className="font-semibold" style={{ color: r.termicheColore }}>{r.termiche.toFixed(1)}</span>
-                  </td>
-                  <td className="py-2.5 px-2 text-center">
+                  <td className="py-3 px-3"><span className="font-bold text-white text-base">{String(r.ora).padStart(2, "0")}:00</span></td>
+                  <td className="py-3 px-3 text-center text-2xl">{getWeatherIcon(r.codice, 1)}</td>
+                  <td className="py-3 px-3 text-center"><span className="font-bold text-amber-300 text-base">{r.temperatura}°</span></td>
+                  <td className="py-3 px-3 text-center"><span className="font-bold text-sky-300 text-base">{r.vento}</span></td>
+                  <td className="py-3 px-3 text-center"><span className={`font-bold text-base ${r.raffica && r.raffica > 30 ? "text-red-400" : "text-slate-400"}`}>{r.raffica || "—"}</span></td>
+                  <td className="py-3 px-3 text-center"><span className="font-bold text-slate-200 text-base">{r.direzione}</span></td>
+                  <td className="py-3 px-3 text-center"><span className="font-bold text-base" style={{ color: r.termicheColore }}>{r.termiche.toFixed(1)}</span></td>
+                  <td className="py-3 px-3 text-center">
                     <div className="flex flex-col items-center">
-                      <Mountain className="w-3 h-3 text-emerald-500" />
-                      <span className="text-[11px] font-semibold text-emerald-400">{r.base > 0 ? r.base : "—"}</span>
+                      <Mountain className="w-4 h-4 text-green-400" />
+                      <span className="font-bold text-green-300 text-base">{r.base > 0 ? r.base : "—"}</span>
                     </div>
                   </td>
-                  <td className="py-2.5 px-2 text-center">
+                  <td className="py-3 px-3 text-center">
                     <div className="flex flex-col items-center">
-                      <TrendingUp className="w-3 h-3 text-orange-500" />
-                      <span className="text-[11px] font-semibold text-orange-400">{r.top > 0 ? r.top : "—"}</span>
+                      <TrendingUp className="w-4 h-4 text-red-400" />
+                      <span className="font-bold text-red-300 text-base">{r.top > 0 ? r.top : "—"}</span>
                     </div>
                   </td>
-                  <td className="py-2.5 px-2 text-center"><span className="font-medium text-slate-400">{r.nuvole}%</span></td>
-                  <td className="py-2.5 px-2 text-center">
-                    <span className={`font-medium ${r.pioggia > 0 ? "text-sky-400" : "text-slate-600"}`}>
-                      {r.pioggia > 0 ? `${r.pioggia.toFixed(1)}mm` : "—"}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-2 text-center">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium border ${r.voloColore}`}>
-                      {r.voloLabel}
+                  <td className="py-3 px-3 text-center"><span className="font-bold text-slate-200 text-base">{r.nuvole}%</span></td>
+                  <td className="py-3 px-3 text-center"><span className={`font-bold text-base ${r.pioggia > 0 ? "text-blue-300" : "text-slate-500"}`}>{r.pioggia > 0 ? `${r.pioggia.toFixed(1)}mm` : "—"}</span></td>
+                  <td className="py-3 px-3 text-center">
+                    <span className={`px-2 py-1 rounded-md text-sm font-bold border ${r.voloColore}`}>
+                      {r.voloIcon} {r.voloLabel}
                     </span>
                   </td>
                 </tr>

@@ -73,21 +73,21 @@ const AlertVolo = ({ weather }: AlertVoloProps) => {
   const statusLabel = (status: string) => {
     switch (status) {
       case "ottimo":
-        return "Si vola!";
+        return "✅ Si vola!";
       case "buono":
-        return "Si vola";
+        return "✅ Si vola";
       case "discreto":
-        return "Volo a rischio";
+        return "⚠️ Volo a rischio";
       case "rischioso":
-        return "Pericolo";
+        return "⚠️ Pericolo";
       case "calma":
-        return "Troppo calma";
+        return "🌀 Troppo calma";
       case "temporale":
-        return "Temporale";
+        return "⛈️ Temporale";
       case "pioggia":
-        return "Pioggia";
+        return "🌧️ Pioggia";
       default:
-        return "Non volabile";
+        return "❌ Non volabile";
     }
   };
 
@@ -124,6 +124,10 @@ const AlertVolo = ({ weather }: AlertVoloProps) => {
             </div>
           )}
         </div>
+      </div>
+      {/* Icona meteo grande */}
+      <div className="text-2xl shrink-0 drop-shadow-lg">
+        {volo.icon}
       </div>
     </div>
   );
