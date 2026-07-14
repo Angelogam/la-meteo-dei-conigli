@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { decolli } from "@/data/decolli";
+import { DECOLLI } from "@/data/decolli";
 
 export default function DebugMeteo() {
   const [logs, setLogs] = useState<string[]>([]);
@@ -9,7 +9,8 @@ export default function DebugMeteo() {
 
   useEffect(() => {
     const fetchDebug = async () => {
-      const site = decolli.find(d => d.id === "pian-mune-bric-lombatera") || decolli[0];
+      // Prendo Bric Lombatera (Pian Munè)
+      const site = DECOLLI.find(d => d.id === "pian-mune-bric-lombatera") || DECOLLI[0];
       
       const params = new URLSearchParams({
         latitude: site.lat.toString(),
@@ -27,6 +28,7 @@ export default function DebugMeteo() {
 
         const lines: string[] = [];
         
+        // Stampa daily
         lines.push("=== DATI GIORNALIERI ===");
         for (let i = 0; i < data.daily.time.length; i++) {
           const d = new Date(data.daily.time[i]);

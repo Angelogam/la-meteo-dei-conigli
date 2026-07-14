@@ -1,7 +1,7 @@
 "use client";
 
 import type { HourData } from "@/types/meteo";
-import { decolli } from "@/data/decolli";
+import { DECOLLI } from "@/data/decolli";
 import { wic } from "@/utils/meteo";
 
 interface SiteListProps {
@@ -14,7 +14,7 @@ interface SiteListProps {
 export const SiteList = ({ selected, current, onSelect, weatherMap }: SiteListProps) => {
   return (
     <div className="flex flex-col gap-2">
-      {decolli.map((site) => {
+      {DECOLLI.map((site) => {
         const w = weatherMap[site.id];
         const isSelected = site.id === selected;
         return (

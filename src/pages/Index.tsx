@@ -15,7 +15,7 @@ import VentiTab from "@/components/VentiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiTab from "@/components/AnalisiTab";
 import { useWeatherData } from "@/hooks/useWeatherData";
-import { decolli } from "@/data/decolli";
+import { DECOLLI } from "@/data/decolli";
 import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
 import type { HourData } from "@/types/meteo";
 
@@ -77,7 +77,7 @@ export default function Index() {
               onRefresh={loadWeather} 
             />
             <DecolloList
-              decolli={decolli}
+              decolli={DECOLLI}
               selectedId={selectedId}
               onSelect={(id: string) => { setSelectedId(id); setSelectedHour(new Date().getHours()); }}
               allDailyData={allDailyData}
