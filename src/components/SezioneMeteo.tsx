@@ -14,8 +14,6 @@ export default function SezioneMeteo() {
     thermalDelta,
     selectedDay, setSelectedDay,
     activeTab, setActiveTab,
-    currentCape,
-    activeModel,
   } = useWeatherData();
 
   const site = DECOLLI.find(d => d.id === selectedId);
@@ -61,37 +59,34 @@ export default function SezioneMeteo() {
       </div>
 
       {activeTab === "meteo" && (
-        <MeteoTab
-          currentData={currentData}
-          dayData={dayData}
-          site={site}
+        <MeteoTab 
+          currentData={currentData} 
+          dayData={dayData} 
+          site={{ alt: site.altitude }}
           thermalDelta={thermalDelta}
-          stabilityIndex={currentCape?.liftedIndex ?? null}
-          modelName={activeModel}
-          cape={currentCape?.cape ?? null}
-          liftedIndex={currentCape?.liftedIndex ?? null}
-          cin={currentCape?.cin ?? null}
+          stabilityIndex={{ label: "Stabile", color: "#4caf50" }}
         />
       )}
       {activeTab === "venti" && (
-        <VentiTab
-          currentData={currentData}
-          dayData={dayData}
-          site={site}
+        <VentiTab 
+          currentData={currentData} 
+          dayData={dayData} 
+          hourlyData={hourlyData} 
+          targetHour={12} 
         />
       )}
       {activeTab === "termiche" && (
-        <TermicheTab
-          currentData={currentData}
-          dayData={dayData}
-          site={site}
+        <TermicheTab 
+          currentData={currentData} 
+          dayData={dayData} 
+          site={{ alt: site.altitude, lat: site.lat, lon: site.lon }} 
         />
       )}
       {activeTab === "analisi" && (
-        <AnalisiTab
-          currentData={currentData}
+        <AnalisiTab 
+          currentData={currentData} 
           dayData={dayData}
-          site={site}
+          site={{ alt: site.altitude, lat: site.lat, lon: site.lon }}
         />
       )}
     </div>

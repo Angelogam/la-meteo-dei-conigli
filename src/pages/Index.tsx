@@ -15,6 +15,7 @@ import MeteoTesterPanel from "@/components/MeteoTesterPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
 import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
+import type { HourData } from "@/types/meteo";
 
 export default function Index() {
   const {
@@ -38,14 +39,15 @@ export default function Index() {
     currentCape,
   } = useWeatherData();
 
-  const stabilityIndexObj = getStabilityIndex(
+  const stabilityIndex = getStabilityIndex(
     currentData?.temperature || 20,
     currentData?.humidity || 50,
     currentData?.cloudCover || 30
   );
 
-  const weatherAlert = currentData ? getWeatherAlert(currentData, thermalDelta) : null;
+  const weatherAlert = getWeatherAlert(currentData, thermalDelta);
 
+  // Schermata di caricamento
   if (loading && (!hourlyData || hourlyData.length === 0)) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col">
@@ -126,13 +128,13 @@ export default function Index() {
                   <MeteoTab
                     currentData={currentData}
                     dayData={dayData}
-                    site={site!}
+                    site={{ alt: site!.altitude }}
                     thermalDelta={thermalDelta}
-                    stabilityIndex={currentCape?.liftedIndex ?? null}
+                    stabilityIndex={stabilityIndex}
                     modelName={activeModel}
-                    cape={currentCape?.cape ?? null}
-                    liftedIndex={currentCape?.liftedIndex ?? null}
-                    cin={currentCape?.cin ?? null}
+                    cape={currentCape?.cape}
+                    liftedIndex={currentCape?.liftedIndex}
+                    cin={currentCape?.cin}
                   />
                 )}
 
@@ -140,7 +142,8 @@ export default function Index() {
                   <VentiTab
                     currentData={currentData}
                     dayData={dayData}
-                    site={site!}
+                    hourlyData={hourlyData}
+                    targetHour={12}
                   />
                 )}
 
@@ -148,7 +151,7 @@ export default function Index() {
                   <TermicheTab
                     currentData={currentData}
                     dayData={dayData}
-                    site={site!}
+                    site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon }}
                   />
                 )}
 
@@ -156,7 +159,7 @@ export default function Index() {
                   <AnalisiTab
                     currentData={currentData}
                     dayData={dayData}
-                    site={site!}
+                    site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name, exposure: site!.exposure }}
                   />
                 )}
               </>
