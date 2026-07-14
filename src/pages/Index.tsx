@@ -14,11 +14,12 @@ import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
 import MeteoTesterPanel from "@/components/MeteoTesterPanel";
+import ZeroTermicoWindow from "@/components/ZeroTermicoWindow";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
 import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
 import ValidazionePrevisioni from "@/components/ValidazionePrevisioni";
-import { Bug } from "lucide-react";
+import { Bug, Thermometer } from "lucide-react";
 
 export default function Index() {
   const {
@@ -44,6 +45,7 @@ export default function Index() {
   } = useWeatherData();
 
   const [showValidation, setShowValidation] = useState(false);
+  const [showZeroTermico, setShowZeroTermico] = useState(true);
 
   const stabilityIndex = getStabilityIndex(
     currentData?.temperature || 20,
@@ -106,6 +108,21 @@ export default function Index() {
           </aside>
 
           <div className="flex-1 min-w-0 space-y-6">
+            {/* Zero termico window — sempre visibile in alto */}
+            {showZeroTermico && (
+              <ZeroTermicoWindow onClose={() => setShowZeroTermico(false)} />
+            )}
+
+            {!showZeroTermico && (
+              <button
+                onClick={() => setShowZeroTermico(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-900/30 border border-orange-500/30 text-orange-300 hover:bg-orange-900/50 transition-all text-sm font-bold"
+              >
+                <Thermometer className="w-4 h-4" />
+                Mostra zero termico
+              </button>
+            )}
+
             {hasData && (
               <>
                 <SiteHeader
