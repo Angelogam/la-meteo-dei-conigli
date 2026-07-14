@@ -73,25 +73,13 @@ export default function SezioneMeteo() {
         />
       )}
       {activeTab === "venti" && (
-        <VentiTab
-          currentData={currentData}
-          dayData={dayData}
-          site={site}
-        />
+        <VentiTab currentData={currentData} dayData={dayData} site={site} />
       )}
       {activeTab === "termiche" && (
-        <TermicheTab
-          currentData={currentData}
-          dayData={dayData}
-          site={site}
-        />
+        <TermicheTab currentData={currentData} dayData={dayData} site={site} />
       )}
       {activeTab === "analisi" && (
-        <AnalisiTab
-          currentData={currentData}
-          dayData={dayData}
-          site={site}
-        />
+        <AnalisiTab currentData={currentData} dayData={dayData} site={site} />
       )}
     </div>
   );
