@@ -2,9 +2,50 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { weatherService, MeteoHourly, MeteoDaily } from "@/services/weatherService";
+import type { HourData } from "@/types/meteo";
 import { DECOLLI } from "@/data/decolli";
 
 const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
+
+/** Converte MeteoHourly in HourData per compatibilità con componenti vecchi */
+function toHourData(mh: MeteoHourly): HourData {
+  return {
+    time: mh.time,
+    temperature: mh.temperature,
+    humidity: mh.humidity,
+    dewPoint: mh.dewPoint,
+    apparentTemp: mh.apparentTemp,
+    precipitationProba: mh.precipitationProbability,
+    precipitation: mh.precipitation,
+    rain: mh.precipitation > 0 && mh.weatherCode >= 61 && mh.weatherCode <= 67 ? mh.precipitation : 0,
+    showers: mh.precipitation > 0 && mh.weatherCode >= 80 && mh.weatherCode <= 82 ? mh.precipitation : 0,
+    snowfall: mh.precipitation > 0 && mh.weatherCode >= 71 && mh.weatherCode <= 77 ? mh.precipitation : 0,
+    weatherCode: mh.weatherCode,
+    pressure: mh.pressure,
+    surfacePressure: mh.surfacePressure,
+    cloudCover: mh.cloudCover,
+    cloudCoverLow: mh.cloudCoverLow,
+    cloudCoverMid: mh.cloudCoverMid,
+    cloudCoverHigh: mh.cloudCoverHigh,
+    evapotranspiration: mh.shortwaveRadiation * 0.02,
+    et0: mh.sunshineDuration * 0.01,
+    vapourPressureDeficit: mh.dewPoint > 0 ? mh.temperature - mh.dewPoint : 0,
+    windSpeed: mh.windSpeed,
+    windDir: mh.windDir,
+    windGusts: mh.windGusts,
+    soilTemp: mh.temperature - 3,
+    soilMoisture: mh.humidity > 70 ? 0.5 : 0.3,
+    uvIndex: mh.uvIndex,
+    temp80m: mh.temp80m,
+    temp120m: mh.temp120m,
+    shortwaveRadiation: mh.shortwaveRadiation,
+    directRadiation: mh.directRadiation,
+    diffuseRadiation: 0,
+    directNormalIrradiance: 0,
+    terrestrialRadiation: 0,
+    sunshineDuration: mh.sunshineDuration,
+  };
+}
 
 export function useWeatherData() {
   const [selectedId, setSelectedId] = useState(DECOLLI[0].id);
@@ -97,20 +138,25 @@ export function useWeatherData() {
     setSelectedHour(new Date().getHours() % 24);
   }, [selectedId, allDailyData, allHourlyData]);
 
-  const dayData = useMemo(() => {
+  // dayData CONVERTITO in HourData[] per compatibilità con componenti vecchi
+  const dayData: HourData[] = useMemo(() => {
     if (!hourlyData || hourlyData.length === 0) return [];
     const oggi = new Date();
     const targetDate = new Date(oggi);
     targetDate.setDate(oggi.getDate() + selectedDay);
-    return hourlyData.filter(h => {
-      const t = h.time;
-      return t.getFullYear() === targetDate.getFullYear() &&
-             t.getMonth() === targetDate.getMonth() &&
-             t.getDate() === targetDate.getDate();
-    }).sort((a, b) => a.time.getTime() - b.time.getTime());
+    return hourlyData
+      .filter(h => {
+        const t = h.time;
+        return t.getFullYear() === targetDate.getFullYear() &&
+               t.getMonth() === targetDate.getMonth() &&
+               t.getDate() === targetDate.getDate();
+      })
+      .sort((a, b) => a.time.getTime() - b.time.getTime())
+      .map(toHourData);
   }, [hourlyData, selectedDay]);
 
-  const currentData = useMemo(() => {
+  // currentData CONVERTITO in HourData
+  const currentData = useMemo((): HourData | null => {
     if (!dayData.length) return null;
     return dayData.reduce((best, curr) => {
       const diffBest = Math.abs(best.time.getHours() - selectedHour);
