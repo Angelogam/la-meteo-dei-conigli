@@ -12,13 +12,13 @@ import WeatherDashboard from "@/components/WeatherDashboard";
 import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
 import VentiTab from "@/components/VentiTab";
+import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiTab from "@/components/AnalisiTab";
 import MeteoTesterPanel from "@/components/MeteoTesterPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
 import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
-import type { HourData } from "@/types/meteo";
 
 export default function Index() {
   const {
@@ -50,7 +50,6 @@ export default function Index() {
 
   const weatherAlert = getWeatherAlert(currentData, thermalDelta);
 
-  // Schermata di caricamento
   if (loading && (!hourlyData || hourlyData.length === 0)) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col">
@@ -142,14 +141,13 @@ export default function Index() {
                 )}
 
                 {activeTab === "venti" && (
-                  <VentiTab
-                    currentData={currentData}
-                    dayData={dayData}
-                    hourlyData={hourlyData}
-                    targetHour={selectedHour}
+                  <VentiInterpolatiTab
                     lat={site!.lat}
                     lon={site!.lon}
+                    quotaDecollo={site!.altitude}
                     selectedDay={selectedDay}
+                    oraCorrente={selectedHour}
+                    onOraChange={setSelectedHour}
                   />
                 )}
 
