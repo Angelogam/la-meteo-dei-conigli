@@ -96,7 +96,6 @@ export default function SezioneMeteo() {
         <AnalisiTab 
           currentData={currentData} 
           dayData={dayData}
-          windProfile={[]}
           hourlyData={hourlyData}
           targetHour={12}
           site={{ alt: site.altitude, lat: site.lat, lon: site.lon }}

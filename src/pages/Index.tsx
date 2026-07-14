@@ -148,7 +148,6 @@ export default function Index() {
                   <AnalisiTab
                     currentData={currentData}
                     dayData={dayData as HourData[]}
-                    windProfile={[]}
                     hourlyData={hourlyData}
                     targetHour={12}
                     site={{ alt: site.altitude, lat: site.lat, lon: site.lon, name: site.name, exposure: site.exposure }}
