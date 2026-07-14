@@ -190,6 +190,10 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-orange-400" /> 23-30</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-400" /> {'>'}30</span>
       </div>
+
+      <div className="text-center text-sm text-slate-500 border-t border-slate-700/30 pt-3">
+        Dati interpolati ogni 250m da Open-Meteo · Livelli: decollo, 925hPa (760m), 850hPa (1450m), 700hPa (3000m), 600hPa (4000m)
+      </div>
     </div>
   );
 }
