@@ -23,6 +23,9 @@ export default function SezioneMeteo() {
   const site = DECOLLI.find(d => d.id === selectedId);
   if (!site) return null;
 
+  const siteAlt = { alt: site.altitude };
+  const siteFull = { alt: site.altitude, lat: site.lat, lon: site.lon, name: site.name, exposure: site.exposure };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 bg-slate-800/40 rounded-2xl p-1 border border-slate-700/30">
@@ -66,9 +69,9 @@ export default function SezioneMeteo() {
         <MeteoTab
           currentData={currentData}
           dayData={dayData}
-          site={site}
+          site={siteAlt}
           thermalDelta={thermalDelta}
-          stabilityIndex={currentCape?.liftedIndex ?? null}
+          stabilityIndex={{ label: "Stabile", color: "#4fc3f7" }}
           modelName={activeModel}
           cape={currentCape?.cape ?? null}
           liftedIndex={currentCape?.liftedIndex ?? null}
@@ -76,13 +79,13 @@ export default function SezioneMeteo() {
         />
       )}
       {activeTab === "venti" && (
-        <VentiTab currentData={currentData} dayData={dayData} site={site} />
+        <VentiTab currentData={currentData} dayData={dayData} />
       )}
       {activeTab === "termiche" && (
-        <TermicheTab currentData={currentData} dayData={dayData} site={site} />
+        <TermicheTab currentData={currentData} dayData={dayData} site={siteFull} />
       )}
       {activeTab === "analisi" && (
-        <AnalisiTab currentData={currentData} dayData={dayData} site={site} />
+        <AnalisiTab currentData={currentData} dayData={dayData} site={siteFull} />
       )}
     </div>
   );
