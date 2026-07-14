@@ -3,10 +3,7 @@
 import React from "react";
 import { DECOLLI } from "@/data/decolli";
 import { useWeatherData } from "@/hooks/useWeatherData";
-import MeteoTab from "./MeteoTab";
-import VentiTab from "./VentiTab";
-import TermicheTab from "./TermicheTab";
-import AnalisiTab from "./AnalisiTab";
+import { MeteoTab, VentiTab, TermicheTab, AnalisiTab } from "./MeteoTabs";
 
 export default function SezioneMeteo() {
   const {
@@ -17,6 +14,8 @@ export default function SezioneMeteo() {
     thermalDelta,
     selectedDay, setSelectedDay,
     activeTab, setActiveTab,
+    currentCape,
+    activeModel,
   } = useWeatherData();
 
   const site = DECOLLI.find(d => d.id === selectedId);
@@ -62,34 +61,37 @@ export default function SezioneMeteo() {
       </div>
 
       {activeTab === "meteo" && (
-        <MeteoTab 
-          currentData={currentData} 
-          dayData={dayData} 
-          site={{ alt: site.altitude }}
+        <MeteoTab
+          currentData={currentData}
+          dayData={dayData}
+          site={site}
           thermalDelta={thermalDelta}
-          stabilityIndex={{ label: "Stabile", color: "#4caf50" }}
+          stabilityIndex={currentCape?.liftedIndex ?? null}
+          modelName={activeModel}
+          cape={currentCape?.cape ?? null}
+          liftedIndex={currentCape?.liftedIndex ?? null}
+          cin={currentCape?.cin ?? null}
         />
       )}
       {activeTab === "venti" && (
-        <VentiTab 
-          currentData={currentData} 
-          dayData={dayData} 
-          hourlyData={hourlyData} 
-          targetHour={12} 
+        <VentiTab
+          currentData={currentData}
+          dayData={dayData}
+          site={site}
         />
       )}
       {activeTab === "termiche" && (
-        <TermicheTab 
-          currentData={currentData} 
-          dayData={dayData} 
-          site={{ alt: site.altitude, lat: site.lat, lon: site.lon }} 
+        <TermicheTab
+          currentData={currentData}
+          dayData={dayData}
+          site={site}
         />
       )}
       {activeTab === "analisi" && (
-        <AnalisiTab 
-          currentData={currentData} 
+        <AnalisiTab
+          currentData={currentData}
           dayData={dayData}
-          site={{ alt: site.altitude, lat: site.lat, lon: site.lon }}
+          site={site}
         />
       )}
     </div>

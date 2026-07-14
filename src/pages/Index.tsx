@@ -10,15 +10,11 @@ import UpdateTimer from "@/components/UpdateTimer";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import WeatherDashboard from "@/components/WeatherDashboard";
 import TabNav from "@/components/TabNav";
-import MeteoTab from "@/components/MeteoTab";
-import VentiTab from "@/components/VentiTab";
-import TermicheTab from "@/components/TermicheTab";
-import AnalisiTab from "@/components/AnalisiTab";
+import { MeteoTab, VentiTab, TermicheTab, AnalisiTab } from "@/components/MeteoTabs";
 import MeteoTesterPanel from "@/components/MeteoTesterPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
 import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
-import type { HourData } from "@/types/meteo";
 
 export default function Index() {
   const {
@@ -42,15 +38,14 @@ export default function Index() {
     currentCape,
   } = useWeatherData();
 
-  const stabilityIndex = getStabilityIndex(
+  const stabilityIndexObj = getStabilityIndex(
     currentData?.temperature || 20,
     currentData?.humidity || 50,
     currentData?.cloudCover || 30
   );
 
-  const weatherAlert = getWeatherAlert(currentData, thermalDelta);
+  const weatherAlert = currentData ? getWeatherAlert(currentData, thermalDelta) : null;
 
-  // Schermata di caricamento
   if (loading && (!hourlyData || hourlyData.length === 0)) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col">
@@ -131,13 +126,13 @@ export default function Index() {
                   <MeteoTab
                     currentData={currentData}
                     dayData={dayData}
-                    site={{ alt: site!.altitude }}
+                    site={site!}
                     thermalDelta={thermalDelta}
-                    stabilityIndex={stabilityIndex}
+                    stabilityIndex={currentCape?.liftedIndex ?? null}
                     modelName={activeModel}
-                    cape={currentCape?.cape}
-                    liftedIndex={currentCape?.liftedIndex}
-                    cin={currentCape?.cin}
+                    cape={currentCape?.cape ?? null}
+                    liftedIndex={currentCape?.liftedIndex ?? null}
+                    cin={currentCape?.cin ?? null}
                   />
                 )}
 
@@ -145,8 +140,7 @@ export default function Index() {
                   <VentiTab
                     currentData={currentData}
                     dayData={dayData}
-                    hourlyData={hourlyData}
-                    targetHour={12}
+                    site={site!}
                   />
                 )}
 
@@ -154,7 +148,7 @@ export default function Index() {
                   <TermicheTab
                     currentData={currentData}
                     dayData={dayData}
-                    site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon }}
+                    site={site!}
                   />
                 )}
 
@@ -162,7 +156,7 @@ export default function Index() {
                   <AnalisiTab
                     currentData={currentData}
                     dayData={dayData}
-                    site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name, exposure: site!.exposure }}
+                    site={site!}
                   />
                 )}
               </>

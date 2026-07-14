@@ -41,13 +41,11 @@ export function calcolaTermiche(weather: HourData | any, altitude: number): Term
   const spread = Math.max(0.5, temp - dew);
 
   // 2. BASE TERMICA = LCL (sollevamento per convezione) IN METRI SUL LIVELLO DEL MARE
-  //    LCL (m sopra il suolo) = spread × 125
-  //    Quota assoluta = LCL + altitudine decollo
   const lclSopraSuolo = Math.round(spread * 125);
   const base = Math.max(alt + 100, Math.min(alt + 3000, alt + lclSopraSuolo));
 
   // 3. GRADIENTE TERMICO VERTICALE REALE (da temperature_80m / 120m)
-  let gradiente = 0.98; // adiabatico secco default
+  let gradiente = 0.98;
   if (temp80m != null) {
     gradiente = ((temp - temp80m) / 78) * 100;
   } else if (temp120m != null) {
@@ -57,37 +55,30 @@ export function calcolaTermiche(weather: HourData | any, altitude: number): Term
   // 4. FORZA TERMICA (0-10)
   let forza = 0;
 
-  // Gradiente (max 3)
   if (gradiente >= 1.2) forza += 3;
   else if (gradiente >= 0.98) forza += 2;
   else if (gradiente >= 0.7) forza += 1;
 
-  // Vento (max 2)
   if (windSpeed >= 5 && windSpeed <= 15) forza += 2;
   else if (windSpeed >= 3 && windSpeed < 5) forza += 1.5;
   else if (windSpeed > 15 && windSpeed <= 22) forza += 1;
 
-  // Nuvolosità (max 2)
   if (cloudCover >= 15 && cloudCover <= 45) forza += 2;
   else if (cloudCover >= 5 && cloudCover < 15) forza += 1.5;
 
-  // Umidità (max 1.5)
   if (hum >= 30 && hum <= 50) forza += 1.5;
   else if (hum > 50 && hum <= 65) forza += 1;
 
-  // Spread (max 1.5)
   if (spread >= 10) forza += 1.5;
   else if (spread >= 6) forza += 1;
   else if (spread >= 3) forza += 0.5;
 
-  // Pioggia annulla tutto
   if (precipitation > 1) forza = 0;
 
   forza = Math.max(0, Math.min(10, Math.round(forza * 10) / 10));
 
   // 5. TOP TERMICO (slm) = base + spessore stimato
-  //    Lo spessore dipende dalla forza: più forza = più spessore
-  const spessore = Math.round(forza * 250); // ~250m per punto di forza
+  const spessore = Math.round(forza * 250);
   const top = Math.min(alt + 5000, base + spessore);
 
   // 6. RATEO (m/s)
