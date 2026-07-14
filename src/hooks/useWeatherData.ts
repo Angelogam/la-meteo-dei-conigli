@@ -51,7 +51,6 @@ function buildWindProfile(mh: MeteoHourly): { height: number; speed: number; dir
   const levels = [
     { height: 80, speed: mh.windSpeed80m, dir: mh.windDir80m },
     { height: 120, speed: mh.windSpeed120m, dir: mh.windDir120m },
-    { height: 180, speed: mh.windSpeed180m, dir: mh.windDir180m },
     { height: 300, speed: mh.windSpeed300m, dir: mh.windDir300m },
     { height: 600, speed: mh.windSpeed600m, dir: mh.windDir600m },
     { height: 1000, speed: mh.windSpeed1000m, dir: mh.windDir1000m },

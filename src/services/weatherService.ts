@@ -2,7 +2,9 @@
 
 const BASE_URL = "https://api.open-meteo.com/v1/forecast";
 
-// Parametri essenziali con CAPE, LI, CIN da ICON-D2
+// Parametri essenziali per il volo
+// Open-Meteo sceglie automaticamente il miglior modello per la posizione
+// (in Europa usa ICON, GFS, ECMWF in base alla disponibilità)
 const HOURLY_PARAMS = [
   "temperature_2m",
   "relative_humidity_2m",
@@ -11,8 +13,6 @@ const HOURLY_PARAMS = [
   "precipitation",
   "precipitation_probability",
   "weather_code",
-  "pressure_msl",
-  "surface_pressure",
   "cloud_cover",
   "cloud_cover_low",
   "cloud_cover_mid",
@@ -22,33 +22,20 @@ const HOURLY_PARAMS = [
   "wind_gusts_10m",
   "uv_index",
   "shortwave_radiation",
-  "direct_radiation",
-  "sunshine_duration",
   // temperature in quota
   "temperature_80m",
   "temperature_120m",
-  // profilo vento
-  "wind_speed_80m",
-  "wind_direction_80m",
-  "wind_speed_120m",
-  "wind_direction_120m",
-  "wind_speed_180m",
-  "wind_direction_180m",
-  "wind_speed_300m",
-  "wind_direction_300m",
-  "wind_speed_600m",
-  "wind_direction_600m",
-  "wind_speed_1000m",
-  "wind_direction_1000m",
-  "wind_speed_1500m",
-  "wind_direction_1500m",
-  "wind_speed_2000m",
-  "wind_direction_2000m",
-  "wind_speed_2500m",
-  "wind_direction_2500m",
-  "wind_speed_3000m",
-  "wind_direction_3000m",
-  // Parametri WRF per volo — disponibili con models=icon_d2/icon_seamless
+  // profilo vento in quota — livelli essenziali per il volo
+  "wind_speed_80m", "wind_direction_80m",
+  "wind_speed_120m", "wind_direction_120m",
+  "wind_speed_300m", "wind_direction_300m",
+  "wind_speed_600m", "wind_direction_600m",
+  "wind_speed_1000m", "wind_direction_1000m",
+  "wind_speed_1500m", "wind_direction_1500m",
+  "wind_speed_2000m", "wind_direction_2000m",
+  "wind_speed_2500m", "wind_direction_2500m",
+  "wind_speed_3000m", "wind_direction_3000m",
+  // Parametri stabilità atmosferica per il volo
   "cape",
   "convective_inhibition",
   "lifted_index",
@@ -128,7 +115,6 @@ export interface MeteoHourly {
   // Profilo vento
   windSpeed80m: number; windDir80m: number;
   windSpeed120m: number; windDir120m: number;
-  windSpeed180m: number; windDir180m: number;
   windSpeed300m: number; windDir300m: number;
   windSpeed600m: number; windDir600m: number;
   windSpeed1000m: number; windDir1000m: number;
@@ -224,8 +210,6 @@ function parseMeteoResponse(raw: any, lat: number, lon: number, model: string): 
     windDir80m: safeGet(raw.hourly.wind_direction_80m, i),
     windSpeed120m: safeGet(raw.hourly.wind_speed_120m, i),
     windDir120m: safeGet(raw.hourly.wind_direction_120m, i),
-    windSpeed180m: safeGet(raw.hourly.wind_speed_180m, i),
-    windDir180m: safeGet(raw.hourly.wind_direction_180m, i),
     windSpeed300m: safeGet(raw.hourly.wind_speed_300m, i),
     windDir300m: safeGet(raw.hourly.wind_direction_300m, i),
     windSpeed600m: safeGet(raw.hourly.wind_speed_600m, i),
@@ -292,15 +276,12 @@ function parseMeteoResponse(raw: any, lat: number, lon: number, model: string): 
 
 export const weatherService = {
   /**
-   * Fetch con modello ICON-D2 (2.2km, Europa) o fallback ICON (7km).
-   * ICON-D2 è il modello WRF tedesco ad alta risoluzione — 
-   * il migliore per il volo in Europa, fornisce anche CAPE/LI/CIN.
+   * Fetch meteo senza modello esplicito — Open-Meteo sceglie
+   * automaticamente il miglior modello per la posizione.
+   * Per l'Europa usa tipicamente ICON + ECMWF.
+   * Include CAPE, LI, CIN se disponibili dal modello selezionato.
    */
   async fetchWeather(lat: number, lon: number): Promise<MeteoResponse> {
-    // 1. Prova ICON-D2 (solo Europa)
-    const isEurope = lat >= 40 && lat <= 55 && lon >= -5 && lon <= 25;
-    const model = isEurope ? "icon_d2" : "icon_seamless";
-
     const params = new URLSearchParams({
       latitude: lat.toString(),
       longitude: lon.toString(),
@@ -308,16 +289,15 @@ export const weatherService = {
       current: CURRENT_PARAMS,
       daily: DAILY_PARAMS,
       timezone: "Europe/Rome",
-      forecast_days: "7",
-      models: model,
+      forecast_days: "3",
     });
 
     const url = `${BASE_URL}?${params.toString()}`;
     const res = await fetch(url);
 
     if (!res.ok) {
-      if (model === "icon_d2") {
-        // Fallback a ICON normale se ICON-D2 fallisce
+      // Se 429, riprova una volta con forecast_days=1
+      if (res.status === 429) {
         const params2 = new URLSearchParams({
           latitude: lat.toString(),
           longitude: lon.toString(),
@@ -325,19 +305,18 @@ export const weatherService = {
           current: CURRENT_PARAMS,
           daily: DAILY_PARAMS,
           timezone: "Europe/Rome",
-          forecast_days: "7",
-          models: "icon_seamless",
+          forecast_days: "1",
         });
         const res2 = await fetch(`${BASE_URL}?${params2.toString()}`);
-        if (!res2.ok) throw new Error(`Errore Open-Meteo (ICON): ${res2.status}`);
+        if (!res2.ok) throw new Error(`Errore Open-Meteo: ${res2.status}`);
         const raw2 = await res2.json();
-        return parseMeteoResponse(raw2, lat, lon, "icon_seamless");
+        return parseMeteoResponse(raw2, lat, lon, "auto");
       }
-      throw new Error(`Errore Open-Meteo (${model}): ${res.status}`);
+      throw new Error(`Errore Open-Meteo: ${res.status}`);
     }
 
     const raw = await res.json();
-    return parseMeteoResponse(raw, lat, lon, model);
+    return parseMeteoResponse(raw, lat, lon, "auto");
   },
 
   async fetchWithFallback(lat: number, lon: number): Promise<{ data: MeteoResponse | null; ok: boolean }> {

@@ -149,7 +149,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, sta
 
       {/* Riga WRF: CAPE + Lifted Index + Stabilità */}
       <div className="grid grid-cols-3 gap-3">
-        <SmallCard icon={<TrendingUp className="w-6 h-6 text-purple-400" />} label="CAPE (ICON-D2)" value={cape != null ? `${Math.round(cape)} J/kg` : "--"} sub={cape != null ? (cape > 1000 ? "Molto instabile ⚠️" : cape > 500 ? "Instabile 🟡" : cape > 200 ? "Moderato 🟢" : "Stabile 🔵") : undefined} />
+        <SmallCard icon={<TrendingUp className="w-6 h-6 text-purple-400" />} label="CAPE" value={cape != null ? `${Math.round(cape)} J/kg` : "--"} sub={cape != null ? (cape > 1000 ? "Molto instabile ⚠️" : cape > 500 ? "Instabile 🟡" : cape > 200 ? "Moderato 🟢" : "Stabile 🔵") : undefined} />
         <SmallCard icon={<AlertTriangle className="w-6 h-6 text-amber-400" />} label="Lifted Index" value={liftedIndex != null ? `${liftedIndex.toFixed(1)}°C` : "--"} sub={liftedIndex != null ? (liftedIndex < -5 ? "Instabile 🟠" : liftedIndex < 0 ? "Leggero 🟢" : "Stabile 🔵") : undefined} />
         <SmallCard icon={<Cloud className="w-6 h-6 text-blue-400" />} label="CIN" value={cin != null ? `${Math.round(cin)} J/kg` : "--"} sub={cin != null ? (cin < -50 ? "Inibizione forte ⛔" : cin < -20 ? "Inibizione media 🟡" : "Inibizione debole 🟢") : undefined} />
       </div>
@@ -164,7 +164,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, sta
       </div>
 
       <div className="text-center text-sm text-slate-600 border-t border-slate-700/30 pt-3">
-        Dati da Open-Meteo con {modelName || "ICON-D2"} · Aggiornamento: {new Date().toLocaleTimeString("it-IT")}
+        Dati da Open-Meteo · Modello: {modelName || "auto"} · Aggiornamento: {new Date().toLocaleTimeString("it-IT")}
       </div>
     </div>
   );
