@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Sun, Clock, Sparkles } from "lucide-react";
+import { Sun, Wind, Thermometer, CloudRain, Droplets, Gauge, Cloud, TrendingUp, ArrowUp, Eye } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 import { calcolaTermiche } from "@/utils/termiche";
 
@@ -11,10 +11,6 @@ interface AnalisiTabProps {
   site: { alt: number; lat?: number; lon?: number; name?: string; exposure?: string };
 }
 
-function media(arr: number[]) {
-  return arr.filter(v => v != null).reduce((s, v) => s + v, 0) / Math.max(1, arr.filter(v => v != null).length);
-}
-
 function getWindDirName(deg: number): string {
   if (deg == null) return "—";
   const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
@@ -22,186 +18,216 @@ function getWindDirName(deg: number): string {
 }
 
 export default function AnalisiTab({ currentData, dayData, site }: AnalisiTabProps) {
-  const alt = site?.alt ?? 1000;
-
-  const riepilogo = useMemo(() => {
+  const analisi = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
 
-    const temps = dayData.map(h => h.temperature);
-    const winds = dayData.map(h => h.windSpeed);
-    const hums = dayData.map(h => h.humidity);
-    const clouds = dayData.map(h => h.cloudCover);
-    const dirs = dayData.map(h => h.windDir);
-    const precips = dayData.map(h => h.precipitation);
+    const alt = site?.alt ?? 1000;
 
-    const tempMin = Math.min(...temps);
-    const tempMax = Math.max(...temps);
-    const tempMed = Math.round(media(temps));
-    const humMed = Math.round(media(hums));
-    const windMed = Math.round(media(winds));
-    const windMax = Math.round(Math.max(...winds));
-    const windDirMed = Math.round(media(dirs));
-    const cloudMed = Math.round(media(clouds));
-    const precipTot = Math.round(precips.reduce((s, v) => s + v, 0) * 10) / 10;
+    // Prende solo le ore diurne 8-19
+    const oreGiorno = dayData.filter(h => {
+      const hh = h.time.getHours();
+      return hh >= 8 && hh <= 19;
+    });
 
-    const termicheOre = dayData.map(h => calcolaTermiche(h, alt));
-    const salitaMedia = Math.round(media(termicheOre.map(t => t.rateo)) * 10) / 10;
-    const baseMedia = Math.round(media(termicheOre.map(t => t.base)));
-    const topMedia = Math.round(media(termicheOre.map(t => t.top)));
+    if (oreGiorno.length < 3) return null;
 
-    // Condizioni
-    const ventoDesc = windMed < 5 ? "debole" : windMed < 12 ? "leggero" : windMed < 20 ? "moderato" : "sostenuto";
-    const umidDesc = humMed < 40 ? "molto secca" : humMed < 55 ? "secca" : humMed < 70 ? "moderata" : "umida";
-    const nuvolDesc = cloudMed < 15 ? "prevalenza di sereno o poco nuvoloso" : cloudMed < 35 ? "poco nuvoloso" : cloudMed < 60 ? "parzialmente nuvoloso" : "molto nuvoloso";
-    const temporali = (salitaMedia >= 3 && precipTot < 0.5) ? "possibile sviluppo di cumuli pomeridiani, ma senza rischio di temporali significativi" : "nessun rischio di temporali significativi";
-    const stabile = salitaMedia < 2 ? "piuttosto stabile" : "tendenzialmente instabile";
-    const dirName = getWindDirName(windDirMed);
+    // --- METRICHE REALI (come in MeteoTab) ---
+    const tempMax = Math.max(...oreGiorno.map(h => h.temperature));
+    const tempMedia = oreGiorno.reduce((s, h) => s + h.temperature, 0) / oreGiorno.length;
+    const windMedia = oreGiorno.reduce((s, h) => s + h.windSpeed, 0) / oreGiorno.length;
+    const windMax = Math.max(...oreGiorno.map(h => h.windSpeed));
+    const windGustsMax = Math.max(...oreGiorno.map(h => h.windGusts || 0));
+    const cloudMedia = oreGiorno.reduce((s, h) => s + h.cloudCover, 0) / oreGiorno.length;
+    const humidityMedia = oreGiorno.reduce((s, h) => s + h.humidity, 0) / oreGiorno.length;
+    const precipTot = oreGiorno.reduce((s, h) => s + (h.precipitation || 0), 0);
+    const pressureMed = oreGiorno.reduce((s, h) => s + h.pressure, 0) / oreGiorno.length;
+    const dewMedia = oreGiorno.reduce((s, h) => s + h.dewPoint, 0) / oreGiorno.length;
+    const uvMedia = oreGiorno.reduce((s, h) => s + (h.uvIndex || 0), 0) / oreGiorno.length;
 
-    const situGen = `☀️ Situazione generale\n\nTemperatura al suolo: intorno ai ${tempMed} °C al mattino, con lieve aumento nelle ore centrali fino a circa ${tempMax} °C.\n\nUmidità relativa: ${umidDesc}, con valori tra ${Math.max(30, humMed - 10)}–${Math.min(80, humMed + 10)}%; l'aria è piuttosto secca nei bassi strati, segno di buona visibilità e scarsa probabilità di nebbie.\n\nVento: ${ventoDesc} da ${dirName} al suolo, tendente a rinforzare leggermente in quota (${windMed}–${windMax} km/h).\n\nCielo: ${nuvolDesc}; ${temporali}.`;
+    // Termiche (come in TermicheTab)
+    const termichePerOra = oreGiorno.map(h => ({
+      ...calcolaTermiche(h, alt),
+      ora: h.time.getHours(),
+    }));
+    const rateoMedio = termichePerOra.reduce((s, t) => s + t.rateo, 0) / termichePerOra.length;
+    const rateoMax = Math.max(...termichePerOra.map(t => t.rateo));
+    const oreAttive = termichePerOra.filter(t => t.rateo >= 0.3).length;
 
-    const profiloTerm = `🌡️ Profilo termico e stabilità\n\nIl gradiente verticale di temperatura mostra un'atmosfera ${stabile}: la temperatura e il punto di rugiada restano ben separati.\n\nL'indice di stabilità è normale, confermando ${stabile === "piuttosto stabile" ? "stabilità" : "moderata instabilità"} e ${temporali.includes("senza") ? "scarsa probabilità di temporali" : "possibile attività convettiva"}.\n\nIl valore CAPE stimato è ${salitaMedia > 2 ? "moderato" : "basso"}, quindi energia convettiva ${salitaMedia > 2 ? "discreta" : "quasi nulla"}.\n\nIn quota (2000–3000 m) si nota un ${salitaMedia > 2 ? "buon gradiente termico" : "lieve raffreddamento"}, ${salitaMedia > 2 ? "favorevole allo sviluppo di termiche" : "non sufficiente a generare instabilità significativa"}.`;
+    // Spread e base nuvole
+    const mediaSpread = tempMedia - dewMedia;
+    const baseLCL = Math.max(200, Math.min(3000, Math.round(mediaSpread * 125)));
 
-    const ventoQuota = `🌬️ Vento e dinamica in quota\n\nIl profilo del vento mostra direzione prevalente da ${dirName}, con intensità crescente fino a ${windMax + 10}–${windMax + 20} km/h sopra i 2000 m.\n\nQuesto favorisce ${ventoDesc === "debole" ? "buone condizioni di volo libero: aria asciutta, termiche regolari e nessuna turbolenza marcata" : "condizioni di volo gestibili, con vento moderato in quota"}.\n\nNon si osservano inversioni termiche forti: la temperatura decresce regolarmente con la quota, segno di buon rimescolamento dell'aria.`;
+    // Direzione vento dominante (moda)
+    const dirs = oreGiorno.map(h => h.windDir).filter(d => d != null);
+    const dirCount: Record<number, number> = {};
+    for (const d of dirs) dirCount[Math.round(d / 45) * 45] = (dirCount[Math.round(d / 45) * 45] || 0) + 1;
+    const dirDom = Object.entries(dirCount).sort((a, b) => b[1] - a[1])[0]?.[0];
+    const dirDomNum = dirDom ? parseInt(dirDom) : (currentData?.windDir ?? 0);
 
-    // Fasce orarie
-    const mattina = dayData.filter(h => { const hh = h.time.getHours(); return hh >= 8 && hh < 12; });
-    const pomeriggio = dayData.filter(h => { const hh = h.time.getHours(); return hh >= 12 && hh < 17; });
-    const sera = dayData.filter(h => { const hh = h.time.getHours(); return hh >= 17 && hh < 21; });
+    // Zero termico
+    const zeroTermico = Math.max(0, Math.round(alt + (tempMedia / 0.0098) + 200));
 
-    const descMatt = mattina.length > 0
-      ? `Sole pieno, vento ${media(mattina.map(h => h.windSpeed)) < 8 ? "debole" : "moderato"}`
-      : "Dati non disponibili";
-    const noteMatt = mattina.length > 0
-      ? "Ottima visibilità, aria secca"
-      : "";
-    const descPom = pomeriggio.length > 0
-      ? `Termiche ${salitaMedia > 2 ? "moderate" : "deboli"}, ${media(pomeriggio.map(h => h.cloudCover)) < 40 ? "qualche cumulo" : "cielo variabile"}`
-      : "Dati non disponibili";
-    const notePom = pomeriggio.length > 0
-      ? salitaMedia > 1.5 ? "Buone condizioni per volo libero" : "Condizioni discrete per volo"
-      : "";
-    const descSera = sera.length > 0
-      ? `Cielo ${media(sera.map(h => h.cloudCover)) < 30 ? "sereno" : "nuvoloso"}, vento in calo`
-      : "Dati non disponibili";
-    const noteSera = sera.length > 0
-      ? "Atmosfera stabile, temperatura in discesa"
-      : "";
+    // Delta termico
+    const tempMin = Math.min(...oreGiorno.map(h => h.temperature));
+    const deltaTermico = Math.round((tempMax - tempMin) * 10) / 10;
 
-    const tabellaOraria = `🌤️ Previsione per la giornata\n\nFascia oraria\tCondizioni previste\tNote\nMattina (8–11)\t${descMatt}\t${noteMatt}\nPomeriggio (12–17)\t${descPom}\t${notePom}\nSera (18–21)\t${descSera}\t${noteSera}`;
+    // Gradiente reale
+    let gradienteReale = 0.98;
+    if (currentData?.temp80m != null) {
+      gradienteReale = ((currentData.temperature - currentData.temp80m) / 78) * 100;
+    } else if (currentData?.temp120m != null) {
+      gradienteReale = ((currentData.temperature - currentData.temp120m) / 118) * 100;
+    }
 
-    // Interpretazione
-    let interp = "🪂 Interpretazione per attività outdoor / volo libero\n\n";
-    if (windMed < 20 && cloudMed < 50 && precipTot < 0.5 && salitaMedia > 1) {
-      interp += "Condizioni ideali per decolli e veleggiamento: aria asciutta, termiche regolari, vento gestibile.\n\nNessun rischio di temporali o pioggia.";
-    } else if (windMed < 25 && precipTot < 1 && salitaMedia > 0.3) {
-      interp += "Condizioni generalmente buone per il volo libero, con vento leggermente sostenuto in quota.\n\nNessun rischio di precipitazioni significative.";
-    } else if (windMed < 30) {
-      interp += "Condizioni marginali: vento sostenuto, si consiglia prudenza e quote moderate.";
+    // Forza termica (stessa formula di MeteoTab)
+    let forzaTermica = 0;
+    if (gradienteReale >= 1.2) forzaTermica += 3;
+    else if (gradienteReale >= 0.98) forzaTermica += 2;
+    else if (gradienteReale >= 0.7) forzaTermica += 1;
+    if (windMedia >= 5 && windMedia <= 15) forzaTermica += 2;
+    else if (windMedia >= 3 && windMedia < 5) forzaTermica += 1.5;
+    else if (windMedia > 15 && windMedia <= 22) forzaTermica += 1;
+    if (cloudMedia >= 15 && cloudMedia <= 45) forzaTermica += 2;
+    else if (cloudMedia >= 5 && cloudMedia < 15) forzaTermica += 1.5;
+    if (humidityMedia >= 30 && humidityMedia <= 50) forzaTermica += 1.5;
+    else if (humidityMedia > 50 && humidityMedia <= 65) forzaTermica += 1;
+    forzaTermica = Math.min(10, Math.max(0, Math.round(forzaTermica * 10) / 10));
+
+    // Turbolenza (stima da raffiche)
+    const rafficaMedia = oreGiorno.reduce((s, h) => s + (h.windGusts || h.windSpeed * 1.4), 0) / oreGiorno.length;
+    const turbolenza = rafficaMedia > 30 ? "Forte" : rafficaMedia > 22 ? "Moderata" : rafficaMedia > 14 ? "Leggera" : "Assente";
+
+    // Punteggio volo (composto)
+    let score = 5;
+    if (windMedia >= 5 && windMedia <= 12) score += 2;
+    else if (windMedia > 18) score -= 1;
+    if (precipTot === 0) score += 2;
+    else if (precipTot < 0.5) score += 1;
+    if (cloudMedia >= 10 && cloudMedia <= 55) score += 1;
+    if (rateoMedio >= 2) score += 2;
+    else if (rateoMedio >= 1) score += 1;
+    if (windMax > 30) score -= 1;
+    score = Math.max(0, Math.min(10, score));
+
+    const scoreEmoji = score >= 8 ? "🪂🔥" : score >= 6 ? "🪂" : score >= 4 ? "🌤️" : "❌";
+
+    // Descrizione volo
+    let descVolo: string;
+    if (score >= 8) {
+      descVolo = "Condizioni eccellenti per il volo libero. Termiche robuste, vento ideale e cielo favorevole.";
+    } else if (score >= 6) {
+      descVolo = "Buone condizioni per il volo. Qualche limite ma nel complesso si vola bene.";
+    } else if (score >= 4) {
+      descVolo = "Condizioni discrete. Volo possibile ma con qualche attenzione in più.";
     } else {
-      interp += "Condizioni difficili: vento forte, si sconsiglia il volo libero.";
-    }
-    if (windMax > 20) {
-      interp += `\n\nAttenzione solo al vento in quota: sopra i 2500 m può essere più sostenuto, quindi conviene restare su quote moderate.`;
-    }
-    if (precipTot > 0.5) {
-      interp += `\n\nPossibili precipitazioni (${precipTot} mm totali), monitorare l'evoluzione.`;
+      descVolo = "Condizioni difficili. Sconsigliato ai piloti meno esperti.";
     }
 
-    return { situGen, profiloTerm, ventoQuota, tabellaOraria, interp, tempMin: Math.round(tempMin), tempMax: Math.round(tempMax), tempMed, windMed, windMax, cloudMed, humMed, precipTot, salitaMedia, baseMedia, topMedia };
-  }, [dayData, alt]);
+    return {
+      tempMax: Math.round(tempMax),
+      tempMedia: Math.round(tempMedia),
+      windMedia: Math.round(windMedia),
+      windMax: Math.round(windMax),
+      windGustsMax: Math.round(windGustsMax),
+      cloudMedia: Math.round(cloudMedia),
+      humidityMedia: Math.round(humidityMedia),
+      precipTot: Math.round(precipTot * 10) / 10,
+      pressureMed: Math.round(pressureMed),
+      uvMedia: Math.round(uvMedia * 10) / 10,
+      rateoMedio: Math.round(rateoMedio * 10) / 10,
+      rateoMax: Math.round(rateoMax * 10) / 10,
+      oreAttive,
+      baseLCL,
+      zeroTermico,
+      deltaTermico,
+      gradienteReale: Math.round(gradienteReale * 100) / 100,
+      forzaTermica,
+      turbolenza,
+      dirDom: dirDomNum,
+      dirName: getWindDirName(dirDomNum),
+      score,
+      scoreEmoji,
+      descVolo,
+      totaleOre: termichePerOra.length,
+    };
+  }, [dayData, currentData, site]);
 
-  if (!riepilogo) {
+  if (!analisi) {
     return (
-      <div className="flex items-center justify-center py-16 text-slate-400 text-lg">
-        <Clock className="w-8 h-8 mr-3 text-slate-500" />
-        Nessun dato disponibile per questa giornata.
+      <div className="text-center py-12 text-slate-400 text-base">
+        <Sun className="w-10 h-10 mx-auto mb-3 text-slate-500" />
+        Dati insufficienti per generare l'analisi.
       </div>
     );
   }
 
+  const scoreColor = analisi.score >= 8 ? "text-emerald-400" : analisi.score >= 6 ? "text-lime-400" : analisi.score >= 4 ? "text-amber-400" : "text-red-400";
+  const scoreBg = analisi.score >= 8 ? "bg-emerald-900/30 border-emerald-500/30" : analisi.score >= 6 ? "bg-lime-900/30 border-lime-500/30" : analisi.score >= 4 ? "bg-amber-900/30 border-amber-500/30" : "bg-red-900/30 border-red-500/30";
+
   return (
-    <div className="space-y-4 animate-fade-in">
-      {/* ☀️ Situazione generale */}
-      <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/40 border-2 border-amber-500/30 rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-base font-bold text-amber-300 flex items-center gap-2">
-            <Sun className="w-5 h-5" /> Situazione generale
-          </h3>
-          <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
-        </div>
-        <div className="space-y-2 text-sm text-slate-300 leading-relaxed whitespace-pre-line">
-          {riepilogo.situGen.split('\n\n').map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
-        </div>
-      </div>
-
-      {/* 🌡️ Profilo termico */}
-      <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/40 border-2 border-sky-500/30 rounded-2xl p-5">
-        <h3 className="text-base font-bold text-sky-300 flex items-center gap-2 mb-3">
-          <span>🌡️</span> Profilo termico e stabilità
-        </h3>
-        <div className="space-y-2 text-sm text-slate-300 leading-relaxed whitespace-pre-line">
-          {riepilogo.profiloTerm.split('\n\n').map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
+    <div className="space-y-4">
+      {/* Punteggio volo + descrizione */}
+      <div className={`rounded-2xl border-2 p-5 ${scoreBg}`}>
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">{analisi.scoreEmoji}</span>
+            <div>
+              <div className="text-lg font-bold text-white">Giudizio volo: <span className={scoreColor}>{analisi.score}/10</span></div>
+              <p className="text-sm text-slate-300 mt-1">{analisi.descVolo}</p>
+            </div>
+          </div>
+          <div className="w-16 h-16 shrink-0 relative">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+              <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(148,163,184,0.15)" strokeWidth="3" />
+              <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray={`${(analisi.score / 10) * 100} 100`} strokeLinecap="round" className={scoreColor} />
+            </svg>
+            <span className={`absolute inset-0 flex items-center justify-center text-lg font-bold ${scoreColor}`}>{analisi.score}</span>
+          </div>
         </div>
       </div>
 
-      {/* 🌬️ Vento in quota */}
-      <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/40 border-2 border-emerald-500/30 rounded-2xl p-5">
-        <h3 className="text-base font-bold text-emerald-300 flex items-center gap-2 mb-3">
-          <span>🌬️</span> Vento e dinamica in quota
-        </h3>
-        <div className="space-y-2 text-sm text-slate-300 leading-relaxed whitespace-pre-line">
-          {riepilogo.ventoQuota.split('\n\n').map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
-        </div>
+      {/* Riepilogo meteo — stile come MeteoTab */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <MetricCard icon={<Thermometer className="w-5 h-5 text-amber-400" />} label="Temperatura" value={`${analisi.tempMedia}°C`} sub={`max ${analisi.tempMax}°C · delta ${analisi.deltaTermico}°C`} />
+        <MetricCard icon={<Wind className="w-5 h-5 text-sky-400" />} label="Vento medio" value={`${analisi.windMedia} km/h`} sub={`max ${analisi.windMax} · raffiche ${analisi.windGustsMax}`} />
+        <MetricCard icon={<ArrowUp className="w-5 h-5 text-orange-400" />} label="Termiche" value={`${analisi.rateoMedio} m/s`} sub={`picco ${analisi.rateoMax} · ${analisi.oreAttive}/${analisi.totaleOre}h attive`} />
+        <MetricCard icon={<Cloud className="w-5 h-5 text-slate-400" />} label="Nuvolosità" value={`${analisi.cloudMedia}%`} sub={analisi.cloudMedia < 20 ? "Sereno" : analisi.cloudMedia < 40 ? "Poco nuvoloso" : analisi.cloudMedia < 60 ? "Nuvoloso" : "Coperto"} />
+        <MetricCard icon={<Droplets className="w-5 h-5 text-blue-400" />} label="Umidità" value={`${analisi.humidityMedia}%`} sub={analisi.humidityMedia < 40 ? "Aria secca" : analisi.humidityMedia < 60 ? "Normale" : "Aria umida"} />
+        <MetricCard icon={<Gauge className="w-5 h-5 text-purple-400" />} label="Pressione" value={`${analisi.pressureMed} hPa`} sub={analisi.pressureMed > 1020 ? "Alta" : analisi.pressureMed < 1010 ? "Bassa" : "Normale"} />
       </div>
 
-      {/* 🌤️ Previsione oraria tabellare */}
-      <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/40 border-2 border-purple-500/30 rounded-2xl p-5">
-        <h3 className="text-base font-bold text-purple-300 flex items-center gap-2 mb-3">
-          <span>🌤️</span> Previsione per la giornata
-        </h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-700/50">
-                <th className="text-left py-2 pr-4 font-bold text-slate-400">Fascia oraria</th>
-                <th className="text-left py-2 px-4 font-bold text-slate-400">Condizioni previste</th>
-                <th className="text-left py-2 pl-4 font-bold text-slate-400">Note</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { fascia: "Mattina (8–11)", condizioni: riepilogo.tabellaOraria.match(/Mattina.*\t(.*?)\t(.*?)$/m)?.[1] || "Sole pieno, vento debole", note: riepilogo.tabellaOraria.match(/Mattina.*\t.*?\t(.*?)$/m)?.[1] || "Ottima visibilità" },
-                { fascia: "Pomeriggio (12–17)", condizioni: riepilogo.tabellaOraria.match(/Pomeriggio.*\t(.*?)\t(.*?)$/m)?.[1] || "Termiche moderate", note: riepilogo.tabellaOraria.match(/Pomeriggio.*\t.*?\t(.*?)$/m)?.[1] || "Buone condizioni" },
-                { fascia: "Sera (18–21)", condizioni: riepilogo.tabellaOraria.match(/Sera.*\t(.*?)\t(.*?)$/m)?.[1] || "Cielo sereno", note: riepilogo.tabellaOraria.match(/Sera.*\t.*?\t(.*?)$/m)?.[1] || "Atmosfera stabile" },
-              ].map((r, i) => (
-                <tr key={i} className="border-b border-slate-700/20 last:border-0">
-                  <td className="py-2 pr-4 font-semibold text-slate-200">{r.fascia}</td>
-                  <td className="py-2 px-4 text-slate-300">{r.condizioni}</td>
-                  <td className="py-2 pl-4 text-slate-400">{r.note}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Dettaglio termiche e vento in quota */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
+          <h4 className="text-sm font-bold text-orange-300 mb-2 flex items-center gap-2"><TrendingUp className="w-4 h-4" /> Termiche</h4>
+          <div className="space-y-2 text-sm text-slate-300">
+            <div className="flex justify-between"><span>Base nuvole (LCL):</span><span className="font-bold text-green-300">{analisi.baseLCL} m</span></div>
+            <div className="flex justify-between"><span>Zero termico:</span><span className="font-bold text-amber-300">{analisi.zeroTermico} m</span></div>
+            <div className="flex justify-between"><span>Gradiente reale:</span><span className={`font-bold ${analisi.gradienteReale > 1.2 ? "text-red-300" : analisi.gradienteReale > 0.98 ? "text-amber-300" : "text-green-300"}`}>{analisi.gradienteReale}°C/100m</span></div>
+            <div className="flex justify-between"><span>Forza termica:</span><span className="font-bold text-white">{analisi.forzaTermica}/10</span></div>
+          </div>
+        </div>
+        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
+          <h4 className="text-sm font-bold text-cyan-300 mb-2 flex items-center gap-2"><Wind className="w-4 h-4" /> Vento & atmosfera</h4>
+          <div className="space-y-2 text-sm text-slate-300">
+            <div className="flex justify-between"><span>Direzione dominante:</span><span className="font-bold text-white">{analisi.dirName} ({analisi.dirDom}°)</span></div>
+            <div className="flex justify-between"><span>Turbolenza:</span><span className={`font-bold ${analisi.turbolenza === "Forte" ? "text-red-300" : analisi.turbolenza === "Moderata" ? "text-amber-300" : "text-green-300"}`}>{analisi.turbolenza}</span></div>
+            <div className="flex justify-between"><span>UV Index medio:</span><span className="font-bold text-yellow-300">{analisi.uvMedia}</span></div>
+            <div className="flex justify-between"><span>Pioggia totale:</span><span className={`font-bold ${analisi.precipTot > 1 ? "text-blue-300" : "text-green-300"}`}>{analisi.precipTot === 0 ? "Assente" : `${analisi.precipTot} mm`}</span></div>
+          </div>
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* 🪂 Interpretazione */}
-      <div className="bg-gradient-to-br from-orange-900/20 to-amber-900/10 border-2 border-orange-700/30 rounded-2xl p-5">
-        <h3 className="text-base font-bold text-orange-300 flex items-center gap-2 mb-3">
-          <span>🪂</span> Interpretazione per attività outdoor / volo libero
-        </h3>
-        <div className="space-y-2 text-sm text-slate-300 leading-relaxed whitespace-pre-line">
-          {riepilogo.interp.split('\n\n').map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
-        </div>
-      </div>
+function MetricCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub: string }) {
+  return (
+    <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
+      <div className="flex justify-center mb-1">{icon}</div>
+      <div className="text-xs text-slate-400 uppercase font-bold mb-0.5">{label}</div>
+      <div className="text-lg font-bold text-white">{value}</div>
+      <div className="text-xs text-slate-400 mt-1">{sub}</div>
     </div>
   );
 }
