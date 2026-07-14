@@ -5,7 +5,7 @@ import type { HourData } from "@/types/meteo";
 import { calcolaTermiche } from "@/utils/termiche";
 import { getVoloStatus } from "@/utils/volo";
 import { getWindDirection, getWeatherIcon } from "@/utils/weatherHelpers";
-import { Clock, Mountain, TrendingUp } from "lucide-react";
+import { Clock, Thermometer, Wind } from "lucide-react";
 
 interface HourlyTableProps {
   dayData: HourData[];
@@ -65,13 +65,13 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
               <button
                 key={r.ora}
                 onClick={() => onHourSelect(r.ora)}
-                className={`rounded-xl p-3 text-left transition-all border-2 cursor-pointer ${
+                className={"rounded-xl p-3 text-left transition-all border-2 cursor-pointer " + (
                   isSelected
                     ? "bg-emerald-900/30 border-emerald-400 shadow-md"
                     : r.isCurrent
                     ? "bg-emerald-900/15 border-emerald-400"
                     : "bg-slate-800/60 border-slate-700/50 hover:bg-slate-700/30"
-                }`}
+                )}
               >
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-sm font-bold text-white">{String(r.ora).padStart(2, "0")}:00</span>
@@ -96,7 +96,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                   </div>
                 </div>
                 <div className="mt-1.5">
-                  <span className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-bold border ${r.voloColore}`}>
+                  <span className={"inline-block px-1.5 py-0.5 rounded text-[11px] font-bold border " + r.voloColore}>
                     {r.voloIcon} {r.voloLabel}
                   </span>
                 </div>
