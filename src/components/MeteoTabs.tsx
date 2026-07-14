@@ -520,8 +520,8 @@ export function AnalisiTab({ currentData, dayData, site }: AnalisiTabProps) {
     let forzaTermica = 0;
     if (gradienteReale >= 1.2) forzaTermica += 3;
     else if (gradienteReale >= 0.98) forzaTermica += 2;
-    else if (gradienteReale >= 0.7) forzaTermica += 1;
-    if (windMedia >= 5 && windMedia <= 15```typescript
+    else if (gradienteReale >= 0.7)<dyad-write path="src/components/MeteoTabs.tsx" description="Complete the remaining part of AnalisiTab function">
+} else if (gradienteReale >= 0.7) forzaTermica += 1;
     if (windMedia >= 5 && windMedia <= 15) forzaTermica += 2;
     else if (windMedia >= 3 && windMedia < 5) forzaTermica += 1.5;
     else if (windMedia > 15 && windMedia <= 22) forzaTermica += 1;
