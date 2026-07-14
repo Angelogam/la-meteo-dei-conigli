@@ -97,22 +97,61 @@ export function getStabilityIndex(temp: number, hum: number, cloud: number): { l
   return { label: 'Molto stabile ✅', color: '#4fc3f7' };
 }
 
-export function getWeatherAlert(currentData: any, thermalDelta: number): { level: 'info' | 'warning' | 'danger' | 'success'; message: string; icon: string } {
-  if (!currentData) return { level: 'info', message: 'Caricamento...', icon: 'ℹ️' };
-  const alerts: string[] = [];
-  if (currentData.windSpeed > 25) alerts.push('💨 VENTO FORTE');
-  if (currentData.windGust > 35) alerts.push('💨 RAFFICHE PERICOLOSE');
-  if (currentData.precipitation > 0.5) alerts.push('🌧️ PIOGGIA');
-  if (currentData.cloudCover > 80) alerts.push('☁️ CIELO COPERTISSIMO');
-  if (currentData.weatherCode >= 95) alerts.push('⛈️ TEMPORALE');
-  if (thermalDelta > 12) alerts.push('🔥 FORTI TERMICHE');
-  if (currentData.windSpeed < 5) alerts.push('🍃 VENTO DEBOLE');
+/**
+ * Genera un alert meteo basato sui dati reali di HourData.
+ * currentData è di tipo HourData (da useWeatherData).
+ */
+export function getWeatherAlert(currentData: any, thermalDelta: number): { level: 'info' | 'warning' | 'danger' | 'success'; message: string; icon: string } | null {
+  if (!currentData) return null;
 
-  if (alerts.length === 0) return { level: 'success', message: '✅ Condizioni ottimali per volare!', icon: '🪂' };
-  if (alerts.some(a => a.includes('TEMPORALE') || a.includes('PIOGGIA') || a.includes('VENTO FORTE'))) {
+  // Legge i campi da HourData
+  const windSpeed = currentData.windSpeed ?? 0;
+  const windGusts = currentData.windGusts ?? 0;
+  const weatherCode = currentData.weatherCode ?? 0;
+  const precipitation = currentData.precipitation ?? 0;
+  const cloudCover = currentData.cloudCover ?? 0;
+  const temperature = currentData.temperature ?? 0;
+
+  const alerts: string[] = [];
+
+  // Condizioni pericolose
+  if (weatherCode >= 95) alerts.push('⛈️ Temporale in corso');
+  if (precipitation > 2) alerts.push('🌧️ Pioggia intensa');
+  if (windSpeed > 35) alerts.push('💨 Vento fortissimo');
+  if (windGusts > 45) alerts.push('💨 Raffiche pericolose');
+
+  if (alerts.length > 0) {
     return { level: 'danger', message: '⚠️ ' + alerts.join(' • '), icon: '🚨' };
   }
-  return { level: 'warning', message: '⚠️ ' + alerts.join(' • '), icon: '⚡' };
+
+  // Condizioni di attenzione
+  const warnings: string[] = [];
+  if (windSpeed > 25) warnings.push('Vento forte');
+  if (windGusts > 30) warnings.push('Raffiche intense');
+  if (precipitation > 0.5) warnings.push('Pioggia debole');
+  if (cloudCover > 80) warnings.push('Cielo molto coperto');
+  if (windSpeed < 4) warnings.push('Vento troppo debole per volare');
+
+  if (warnings.length > 0) {
+    return { level: 'warning', message: '⚠️ ' + warnings.join(' • '), icon: '⚡' };
+  }
+
+  // Condizioni buone
+  const goods: string[] = [];
+  if (windSpeed >= 5 && windSpeed <= 18) goods.push('Vento ideale per volare');
+  if (cloudCover <= 40 && cloudCover >= 10) goods.push('Cumuli da termica');
+  if (thermalDelta > 8) goods.push('Buona escursione termica');
+  if (weatherCode <= 2) goods.push('Cielo sereno');
+
+  if (goods.length >= 2) {
+    return { level: 'success', message: '✅ Condizioni ottimali per volare! ' + goods.slice(0, 2).join(', '), icon: '🪂' };
+  }
+
+  if (goods.length >= 1) {
+    return { level: 'info', message: 'ℹ️ Condizioni discrete. ' + goods[0], icon: '☁️' };
+  }
+
+  return { level: 'info', message: 'ℹ️ Condizioni nella norma. Verifica i dettagli orari.', icon: '🌤️' };
 }
 
 export function getCloudBase(temp: number, dewPoint: number, siteAlt: number): number {
