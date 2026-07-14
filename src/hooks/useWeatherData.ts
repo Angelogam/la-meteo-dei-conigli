@@ -7,7 +7,6 @@ import { DECOLLI } from "@/data/decolli";
 
 const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
 
-/** Converte MeteoHourly in HourData per compatibilità con componenti vecchi */
 function toHourData(mh: MeteoHourly): HourData {
   return {
     time: mh.time,
@@ -48,7 +47,7 @@ function toHourData(mh: MeteoHourly): HourData {
 }
 
 export function useWeatherData() {
-  const [selectedId, setSelectedId] = useState(DECOLLI[0].id);
+  const [selectedId, setSelectedId] = useState(DECOLLI[0]?.id || "malanotte");
   const [hourlyData, setHourlyData] = useState<MeteoHourly[]>([]);
   const [dailyData, setDailyData] = useState<MeteoDaily[]>([]);
   const [allDailyData, setAllDailyData] = useState<Record<string, MeteoDaily[]>>({});
@@ -62,7 +61,8 @@ export function useWeatherData() {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [countdown, setCountdown] = useState(30);
 
-  const site = DECOLLI.find(d => d.id === selectedId)!;
+  // Restituisce sempre un sito valido (primo decollo come fallback)
+  const site = DECOLLI.find(d => d.id === selectedId) || DECOLLI[0];
 
   const loadAllWeather = useCallback(async () => {
     setLoading(true);
@@ -87,8 +87,8 @@ export function useWeatherData() {
       for (const result of results) {
         if (result.status === 'fulfilled' && result.value) {
           const { id, daily, hourly } = result.value;
-          dailyMap[id] = daily;
-          hourlyMap[id] = hourly;
+          dailyMap[id] = daily || [];
+          hourlyMap[id] = hourly || [];
         }
       }
 
@@ -96,12 +96,16 @@ export function useWeatherData() {
       setAllHourlyData(hourlyMap);
 
       if (dailyMap[selectedId]) setDailyData(dailyMap[selectedId]);
-      if (hourlyMap[selectedId]) setHourlyData(hourlyMap[selectedId]);
-
-      if (!dailyMap[selectedId] && Object.keys(dailyMap).length > 0) {
+      else if (Object.keys(dailyMap).length > 0) {
         const firstId = Object.keys(dailyMap)[0];
         setDailyData(dailyMap[firstId]);
-        setHourlyData(hourlyMap[firstId]);
+        setHourlyData(hourlyMap[firstId] || []);
+      }
+
+      if (hourlyMap[selectedId]) setHourlyData(hourlyMap[selectedId]);
+      else if (Object.keys(hourlyMap).length > 0) {
+        const firstId = Object.keys(hourlyMap)[0];
+        setHourlyData(hourlyMap[firstId] || []);
       }
 
       setLastUpdate(new Date());
@@ -135,10 +139,10 @@ export function useWeatherData() {
   useEffect(() => {
     if (allDailyData[selectedId]) setDailyData(allDailyData[selectedId]);
     if (allHourlyData[selectedId]) setHourlyData(allHourlyData[selectedId]);
-    setSelectedHour(new Date().getHours() % 24);
+    setSelectedHour(Math.min(selectedHour, new Date().getHours() <= 23 ? new Date().getHours() : 12));
   }, [selectedId, allDailyData, allHourlyData]);
 
-  // dayData CONVERTITO in HourData[] per compatibilità con componenti vecchi
+  // dayData CONVERTITO in HourData[]
   const dayData: HourData[] = useMemo(() => {
     if (!hourlyData || hourlyData.length === 0) return [];
     const oggi = new Date();
@@ -155,7 +159,7 @@ export function useWeatherData() {
       .map(toHourData);
   }, [hourlyData, selectedDay]);
 
-  // currentData CONVERTITO in HourData
+  // currentData convertito
   const currentData = useMemo((): HourData | null => {
     if (!dayData.length) return null;
     return dayData.reduce((best, curr) => {
@@ -194,7 +198,14 @@ export function useWeatherData() {
       const avgCloud = hours.length > 0
         ? Math.round(hours.reduce((s, h) => s + (h.cloudCover || 0), 0) / hours.length)
         : 0;
-      return { ...day, date: d, thermalDelta: delta, avgWind, maxWind, avgCloud };
+      return { 
+        ...day, 
+        date: d, 
+        thermalDelta: delta, 
+        avgWind, 
+        maxWind, 
+        avgCloud,
+      };
     });
   }, [dailyData, hourlyData]);
 
@@ -219,7 +230,7 @@ export function useWeatherData() {
     selectedHour, setSelectedHour,
     activeTab, setActiveTab,
     lastUpdate, countdown,
-    site,
+    site: site!,  // Sempre definito
     dayData,
     currentData,
     thermalDelta,
