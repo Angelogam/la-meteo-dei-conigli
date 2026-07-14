@@ -1,6 +1,6 @@
 "use client";
 
-import { Sunrise, Wind } from "lucide-react";
+import { Sunrise, Wind, CloudSun } from "lucide-react";
 
 export const Header = () => {
   return (
@@ -8,17 +8,19 @@ export const Header = () => {
       {/* Bagliore sottile in alto */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-orange-400/40 to-transparent" />
       
-      {/* Decorazione laterale destra */}
+      {/* Decorazioni laterali */}
       <div className="absolute -right-12 -top-12 w-40 h-40 rounded-full bg-orange-500/5 blur-3xl" />
       <div className="absolute -left-12 -bottom-12 w-40 h-40 rounded-full bg-sky-500/5 blur-3xl" />
 
       <div className="relative max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-5">
-        <div className="flex items-center justify-center gap-4 md:gap-8">
-          {/* Decorazione sinistra - desktop */}
-          <div className="hidden md:flex items-center gap-2">
-            <div className="w-10 h-px bg-orange-500/30" />
-            <Sunrise className="w-5 h-5 text-orange-400/60" />
-            <div className="w-10 h-px bg-orange-500/30" />
+        <div className="flex items-center justify-center gap-3 md:gap-6">
+          {/* Coniglio sinistro */}
+          <div className="hidden sm:flex flex-col items-center">
+            <div className="relative">
+              <div className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-orange-500/20 to-amber-500/10 border border-orange-400/30 flex items-center justify-center animate-hop subtle-shadow">
+                <span className="text-xl md:text-2xl drop-shadow-md">🐰</span>
+              </div>
+            </div>
           </div>
 
           {/* Titolo centrale */}
@@ -33,11 +35,13 @@ export const Header = () => {
             </p>
           </div>
 
-          {/* Decorazione destra - desktop */}
-          <div className="hidden md:flex items-center gap-2">
-            <div className="w-10 h-px bg-orange-500/30" />
-            <Wind className="w-5 h-5 text-sky-400/60" />
-            <div className="w-10 h-px bg-orange-500/30" />
+          {/* Coniglio destro */}
+          <div className="hidden sm:flex flex-col items-center">
+            <div className="relative">
+              <div className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-sky-500/20 to-emerald-500/10 border border-sky-400/30 flex items-center justify-center animate-hop subtle-shadow" style={{ animationDelay: '0.3s' }}>
+                <span className="text-xl md:text-2xl drop-shadow-md">🐇</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
