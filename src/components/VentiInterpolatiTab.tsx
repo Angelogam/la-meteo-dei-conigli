@@ -60,7 +60,6 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
       .then(result => {
         setData(result);
         setLoading(false);
-        // Seleziona ora più vicina a quella corrente
         if (result.ventoOrario.length > 0) {
           const closest = result.ventoOrario.reduce((prev, curr) =>
             Math.abs(curr.ora - oraCorrente) < Math.abs(prev.ora - oraCorrente) ? curr : prev
@@ -102,12 +101,10 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
     );
   }
 
-  // Dati per l'ora selezionata
   const oraData = data.ventoOrario.find(v => v.ora === oraSelezionata) || data.ventoOrario[0];
   const quoteKeys = Object.keys(oraData.quote).map(Number);
   const maxSpeed = Math.max(...quoteKeys.map(q => oraData.quote[q].speed), 1);
 
-  // Genera le quote da visualizzare (dalla quota decollo a 4000m)
   const quoteVisibili: number[] = [];
   for (let q = data.quotaDecollo; q <= 4000; q += 250) {
     quoteVisibili.push(q);
@@ -115,7 +112,6 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
 
   return (
     <div className="space-y-4">
-      {/* Intestazione */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-emerald-900/15 border-emerald-500/30">
           <Server className="w-4 h-4 text-emerald-300" />
@@ -127,7 +123,6 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
         </div>
       </div>
 
-      {/* Selezione ora */}
       <div className="flex flex-wrap gap-1.5">
         {data.ventoOrario.map(v => (
           <button
@@ -144,7 +139,6 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
         ))}
       </div>
 
-      {/* Profilo verticale a barre orizzontali */}
       <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4">
         <div className="flex items-center gap-2 mb-4">
           <Wind className="w-5 h-5 text-cyan-400" />
@@ -189,13 +183,12 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
         </div>
       </div>
 
-      {/* Legenda colori velocità */}
       <div className="flex flex-wrap gap-2 text-[11px] text-slate-400">
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-400" /> &le;8</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-400" /> ≤8</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-lime-400" /> 9-15</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-amber-400" /> 16-22</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-orange-400" /> 23-30</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-400" /> >30</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-400" /> {'>'}30</span>
       </div>
 
       <div className="text-center text-sm text-slate-500 border-t border-slate-700/30 pt-3">
