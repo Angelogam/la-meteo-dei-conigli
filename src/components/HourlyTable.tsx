@@ -5,7 +5,7 @@ import type { HourData } from "@/types/meteo";
 import { calcolaTermiche } from "@/utils/termiche";
 import { getVoloStatus } from "@/utils/volo";
 import { getWindDirection, getWeatherIcon } from "@/utils/weatherHelpers";
-import { Clock, Wind, ThermometerSun, Cloud, CloudRain, ArrowUp, Gauge, Sparkles } from "lucide-react";
+import { Clock, Wind, ThermometerSun, Cloud, CloudRain, ArrowUp, Gauge, Sparkles, Mountain, TrendingUp } from "lucide-react";
 
 interface HourlyTableProps {
   dayData: HourData[];
@@ -16,7 +16,7 @@ interface HourlyTableProps {
 
 export default function HourlyTable({ dayData, altitude, selectedHour, onHourSelect }: HourlyTableProps) {
   const rows = useMemo(() => {
-    const ore = Array.from({ length: 11 }, (_, i) => i + 9); // 9-19
+    const ore = Array.from({ length: 11 }, (_, i) => i + 9);
     return ore.map((ora) => {
       const h = dayData.find(d => d.time.getHours() === ora);
       if (!h) return null;
@@ -25,6 +25,11 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
       const volo = getVoloStatus(h);
       const now = new Date();
       const isCurrent = ora === now.getHours();
+
+      // La base termica è già assoluta (quota slm) da calcolaTermiche
+      // Es: se decollo a 1350m, base ~1700m, top ~2500m
+      const baseTermica = termiche.base;
+      const topTermica = termiche.top;
 
       return {
         ora,
@@ -36,8 +41,8 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
         termiche: termiche.rateo,
         termicheLabel: termiche.label,
         termicheColore: termiche.colore,
-        base: termiche.base,
-        top: termiche.top,
+        base: baseTermica,
+        top: topTermica,
         nuvole: h.cloudCover,
         pioggia: h.precipitation,
         codice: h.weatherCode,
@@ -77,8 +82,12 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
               <th className="py-3 px-3 text-center">Raff.</th>
               <th className="py-3 px-3 text-center">Dir</th>
               <th className="py-3 px-3 text-center">↑ Term.</th>
-              <th className="py-3 px-3 text-center">Base</th>
-              <th className="py-3 px-3 text-center">Top</th>
+              <th className="py-3 px-3 text-center" title="Quota base termica (slm)">
+                Base
+              </th>
+              <th className="py-3 px-3 text-center" title="Quota top termica (slm)">
+                Top
+              </th>
               <th className="py-3 px-3 text-center">☁️</th>
               <th className="py-3 px-3 text-center">💧</th>
               <th className="py-3 px-3 text-center">Volo</th>
@@ -119,7 +128,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                     <span className="font-bold text-amber-300 tabular-nums text-lg">{r.temperatura}°</span>
                   </td>
 
-                  {/* Vento */}
+                  {/* Vento km/h */}
                   <td className="py-4 px-3 text-center">
                     <span className="font-bold text-sky-300 tabular-nums text-lg">{r.vento}</span>
                     <span className="text-slate-500 text-xs ml-1">km/h</span>
@@ -137,12 +146,9 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                   {/* Direzione */}
                   <td className="py-4 px-3 text-center">
                     <span className="text-slate-300 font-semibold text-base">{r.direzione}</span>
-                    <span className="text-slate-500 text-xs ml-1">
-                      {getDirArrow(r.ventoDir)}
-                    </span>
                   </td>
 
-                  {/* Termiche */}
+                  {/* Termiche (m/s) */}
                   <td className="py-4 px-3 text-center">
                     <span className="font-bold tabular-nums text-lg" style={{ color: r.termicheColore }}>
                       {r.termiche.toFixed(1)}
@@ -150,23 +156,31 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                     <span className="text-slate-500 text-xs ml-1">m/s</span>
                   </td>
 
-                  {/* Base */}
-                  <td className="py-4 px-3 text-center">
-                    <span className="text-green-300 font-semibold tabular-nums text-base">{r.base}</span>
-                    <span className="text-slate-500 text-xs ml-1">m</span>
+                  {/* Base termica (quota slm) */}
+                  <td className="py-4 px-3 text-center" title="Quota base termica sul livello del mare">
+                    <div className="flex flex-col items-center">
+                      <Mountain className="w-3 h-3 text-green-400 mb-0.5" />
+                      <span className="text-green-300 font-semibold tabular-nums text-base">
+                        {r.base > 0 ? r.base : "—"}
+                      </span>
+                      <span className="text-[9px] text-slate-500">slm</span>
+                    </div>
                   </td>
 
-                  {/* Top */}
-                  <td className="py-4 px-3 text-center">
-                    <span className="text-red-300 font-semibold tabular-nums text-base">{r.top}</span>
-                    <span className="text-slate-500 text-xs ml-1">m</span>
+                  {/* Top termica (quota slm) */}
+                  <td className="py-4 px-3 text-center" title="Quota top termica sul livello del mare">
+                    <div className="flex flex-col items-center">
+                      <TrendingUp className="w-3 h-3 text-red-400 mb-0.5" />
+                      <span className="text-red-300 font-semibold tabular-nums text-base">
+                        {r.top > 0 ? r.top : "—"}
+                      </span>
+                      <span className="text-[9px] text-slate-500">slm</span>
+                    </div>
                   </td>
 
                   {/* Nuvolosità */}
                   <td className="py-4 px-3 text-center">
-                    <span className="text-slate-300 font-semibold text-base">
-                      <span className="text-2xl">{getCloudEmoji(r.nuvole)}</span> {r.nuvole}%
-                    </span>
+                    <span className="text-slate-300 font-semibold text-base">{r.nuvole}%</span>
                   </td>
 
                   {/* Pioggia */}
@@ -190,17 +204,4 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
       </div>
     </div>
   );
-}
-
-function getCloudEmoji(cc: number): string {
-  if (cc < 10) return "";
-  if (cc < 30) return "🌤️";
-  if (cc < 50) return "⛅";
-  if (cc < 70) return "☁️";
-  return "☁️";
-}
-
-function getDirArrow(deg: number): string {
-  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
-  return arrows[Math.round(deg / 45) % 8] || "→";
 }

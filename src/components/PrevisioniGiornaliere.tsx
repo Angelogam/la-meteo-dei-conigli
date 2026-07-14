@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import {
   Sun, Moon, CloudSun, Cloud, CloudRain, Snowflake,
   CloudLightning, CloudFog, Thermometer, Wind, Droplets,
-  ArrowUp, CheckCircle, Gauge, Umbrella, Sparkles
+  ArrowUp, CheckCircle, Gauge, Umbrella, Sparkles, Mountain, TrendingUp
 } from "lucide-react";
 import { degreesToCardinal, windArrow } from "@/utils/windDirections";
 import { calcolaTermiche } from "@/utils/termiche";
@@ -39,21 +39,12 @@ function getWeatherInfo(code: number | undefined | null, size: number = 32) {
 function getDominantWeatherCode(hourlyCodes: (number | undefined | null)[]): number {
   const valid = hourlyCodes.filter((c): c is number => c != null && !isNaN(c));
   if (valid.length === 0) return 0;
-
   const freq: Record<number, number> = {};
-  for (const c of valid) {
-    freq[c] = (freq[c] || 0) + 1;
-  }
-  
-  let maxCode = 0;
-  let maxCount = 0;
+  for (const c of valid) { freq[c] = (freq[c] || 0) + 1; }
+  let maxCode = 0, maxCount = 0;
   for (const [code, count] of Object.entries(freq)) {
-    if (count > maxCount) {
-      maxCount = count;
-      maxCode = parseInt(code);
-    }
+    if (count > maxCount) { maxCount = count; maxCode = parseInt(code); }
   }
-  
   return maxCode;
 }
 
@@ -120,13 +111,9 @@ export default function PrevisioniGiornaliere({
       const hours = dayData?.filter((h: any) => {
         const t = new Date(h.time);
         if (typeof d === 'string') {
-          const dateStr = d.split('T')[0];
-          const hourDateStr = t.toISOString().split('T')[0];
-          return hourDateStr === dateStr;
+          return t.toISOString().split('T')[0] === d.split('T')[0];
         }
-        return t.getFullYear() === d.getFullYear() &&
-               t.getMonth() === d.getMonth() &&
-               t.getDate() === d.getDate();
+        return t.getFullYear() === d.getFullYear() && t.getMonth() === d.getMonth() && t.getDate() === d.getDate();
       }) || [];
       const codici = hours.map((h: any) => h.weatherCode);
       return getDominantWeatherCode(codici);
@@ -148,7 +135,7 @@ export default function PrevisioniGiornaliere({
     });
   }, [enrichedDaily, selectedDay, hasLatePrecip]);
 
-  // Fasce orarie usando calcolaTermiche UNIFICATO
+  // Fasce orarie con calcolaTermiche UNIFICATO
   const fasce = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
 
@@ -181,17 +168,18 @@ export default function PrevisioniGiornaliere({
       const humMedia = Math.round(media(ore.map((h: any) => h.humidity)));
       const pressMedia = Math.round(media(ore.map((h: any) => h.pressure || 1013)));
 
-      // Calcola termiche usando la funzione UNIFICATA per ogni ora, poi media
+      // Calcola termiche usando calcolaTermiche per ogni ora
       const termicheOrarie = ore.map((h: any) => calcolaTermiche(h, site.altitude));
       const salitaMedia = media(termicheOrarie.map(t => t.rateo));
+      const salita = Math.round(salitaMedia * 10) / 10;
+
+      // BASE TERMICA: media delle basi calcolate (quota slm)
       const baseMedia = Math.round(media(termicheOrarie.map(t => t.base)));
+      // TOP TERMICA: media dei top calcolati (quota slm)
       const topMedia = Math.round(media(termicheOrarie.map(t => t.top)));
       const forzaMedia = media(termicheOrarie.map(t => t.forza));
 
-      const salita = Math.round(salitaMedia * 10) / 10;
-      const lcl = baseMedia;
-      const top = topMedia;
-
+      // Label termiche
       let termicheLabel = "Assenti ❌";
       let termicheColore = "text-slate-400";
       if (salita >= 4) { termicheLabel = "Forti 🔥"; termicheColore = "text-red-400"; }
@@ -200,20 +188,18 @@ export default function PrevisioniGiornaliere({
       else if (salita >= 1) { termicheLabel = "Deboli 👎"; termicheColore = "text-amber-300"; }
       else if (salita >= 0.3) { termicheLabel = "M. deboli ☁️"; termicheColore = "text-yellow-300"; }
 
+      // Score
       let score = 5;
       if (windMedia >= 5 && windMedia <= 18) score += 2;
       else if (windMedia > 25) score -= 2;
       else score -= 1;
-      
       if (precipTot < 0.1) score += 2;
       else if (precipTot < 0.5) score += 1;
       else score -= 3;
-      
       if (cloudMedia >= 10 && cloudMedia <= 60) score += 1.5;
       if (salita >= 2) score += 2;
       else if (salita >= 1) score += 1;
       if (windMax > 30) score -= 2;
-      
       score = Math.max(0, Math.min(10, Math.round(score)));
 
       const weatherCodes = ore.map((h: any) => h.weatherCode).filter((c: any) => c != null && !isNaN(c));
@@ -224,7 +210,7 @@ export default function PrevisioniGiornaliere({
         label, icon: weatherInfo.icon, borderColor, weatherDesc: weatherInfo.desc,
         tempMedia, tempMax, windMedia, windMax, windDirMedia,
         cloudMedia, precipTot, humMedia, pressMedia,
-        lcl, salita, top, termicheLabel, termicheColore, score, nOre: ore.length,
+        base: baseMedia, top: topMedia, salita, termicheLabel, termicheColore, score, nOre: ore.length,
       };
     };
 
@@ -329,7 +315,7 @@ export default function PrevisioniGiornaliere({
         })}
       </div>
 
-      {/* FASCE ORARIE */}
+      {/* FASCE ORARIE con base e top corretti */}
       {fasce && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           {fasce.map((fascia: any, idx: number) => {
@@ -379,16 +365,16 @@ export default function PrevisioniGiornaliere({
                   </div>
                   <div className="grid grid-cols-2 gap-1 text-[10px] text-slate-400">
                     <span>Salita: <span className="text-emerald-300 font-bold">{fascia.salita.toFixed(1)} m/s</span></span>
-                    <span>Base: <span className="text-green-300 font-bold">{fascia.lcl} m</span></span>
-                    <span>Top: <span className="text-red-300 font-bold">{fascia.top} m</span></span>
-                    <span>Spessore: <span className="text-amber-300 font-bold">{fascia.top - fascia.lcl} m</span></span>
+                    <span>Base: <Mountain className="w-2.5 h-2.5 text-green-400 inline" /> <span className="text-green-300 font-bold">{fascia.base} m slm</span></span>
+                    <span>Top: <TrendingUp className="w-2.5 h-2.5 text-red-400 inline" /> <span className="text-red-300 font-bold">{fascia.top} m slm</span></span>
+                    <span>Spessore: <span className="text-amber-300 font-bold">{fascia.top - fascia.base} m</span></span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-1">
                   <div className="bg-slate-900/50 rounded px-2 py-1 flex items-center justify-between">
                     <Cloud className="w-3 h-3 text-slate-400" />
-                    <span className="text-xs font-bold text-slate-300">{fascia.cloudMedia}%</span>
+                    <span className="text-xs font-bold text-slate-300">{<dyad-write path="src/components/PrevisioniGiornaliere.tsx" description="Continuazione: chiudo le card delle fasce orarie e fine componente">
                   </div>
                   <div className="bg-slate-900/50 rounded px-2 py-1 flex items-center justify-between">
                     <Droplets className="w-3 h-3 text-blue-400" />
