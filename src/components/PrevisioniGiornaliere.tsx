@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import {
   Sun, Moon, CloudSun, Cloud, CloudRain, Snowflake,
   CloudLightning, CloudFog, Thermometer, Wind, Droplets,
-  ArrowUp, CheckCircle, Gauge, Umbrella, Sparkles, Mountain, TrendingUp
+  ArrowUp, CheckCircle, Gauge, Umbrella, Mountain, TrendingUp
 } from "lucide-react";
 import { degreesToCardinal, windArrow } from "@/utils/windDirections";
 import { calcolaTermiche } from "@/utils/termiche";
@@ -77,7 +77,6 @@ export default function PrevisioniGiornaliere({
   selectedDay,
   onSelectDay,
 }: PrevisioniGiornaliereProps) {
-
   const dominanteCodice = useMemo(() => {
     if (!dayData || dayData.length === 0) return 0;
     const codici = dayData.map((h: any) => h.weatherCode);
@@ -135,7 +134,6 @@ export default function PrevisioniGiornaliere({
     });
   }, [enrichedDaily, selectedDay, hasLatePrecip]);
 
-  // Fasce orarie con calcolaTermiche UNIFICATO
   const fasce = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
 
@@ -168,18 +166,12 @@ export default function PrevisioniGiornaliere({
       const humMedia = Math.round(media(ore.map((h: any) => h.humidity)));
       const pressMedia = Math.round(media(ore.map((h: any) => h.pressure || 1013)));
 
-      // Calcola termiche usando calcolaTermiche per ogni ora
       const termicheOrarie = ore.map((h: any) => calcolaTermiche(h, site.altitude));
       const salitaMedia = media(termicheOrarie.map(t => t.rateo));
       const salita = Math.round(salitaMedia * 10) / 10;
-
-      // BASE TERMICA: media delle basi calcolate (quota slm)
       const baseMedia = Math.round(media(termicheOrarie.map(t => t.base)));
-      // TOP TERMICA: media dei top calcolati (quota slm)
       const topMedia = Math.round(media(termicheOrarie.map(t => t.top)));
-      const forzaMedia = media(termicheOrarie.map(t => t.forza));
 
-      // Label termiche
       let termicheLabel = "Assenti ❌";
       let termicheColore = "text-slate-400";
       if (salita >= 4) { termicheLabel = "Forti 🔥"; termicheColore = "text-red-400"; }
@@ -188,7 +180,6 @@ export default function PrevisioniGiornaliere({
       else if (salita >= 1) { termicheLabel = "Deboli 👎"; termicheColore = "text-amber-300"; }
       else if (salita >= 0.3) { termicheLabel = "M. deboli ☁️"; termicheColore = "text-yellow-300"; }
 
-      // Score
       let score = 5;
       if (windMedia >= 5 && windMedia <= 18) score += 2;
       else if (windMedia > 25) score -= 2;
@@ -227,20 +218,16 @@ export default function PrevisioniGiornaliere({
 
   return (
     <div className="space-y-4">
-      {/* SELEZIONE GIORNI */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {enrichedDaily.slice(0, 3).map((day: any, idx: number) => {
           const isActive = idx === selectedDay;
           const dateStr = formatDate(day.date);
-          
           const weatherCode = dailyWeatherCodes[idx] ?? dominanteCodice ?? 0;
           const weatherInfo = getWeatherInfo(weatherCode, 36);
           const condizioni = weatherInfo.desc;
-          
           const precipGiorno = dailyPrecipTotals[idx] ?? day.precipSum ?? 0;
           const latePrecip = dailyLatePrecip[idx] ?? false;
           const rischio = getRischioPioggia(precipGiorno, latePrecip);
-          
           const tempMedia = Math.round((day.tempMin + day.tempMax) / 2);
 
           return (
@@ -256,14 +243,12 @@ export default function PrevisioniGiornaliere({
               {isActive && (
                 <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               )}
-
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">
                   {idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani"}
                 </span>
                 <span className="text-[11px] text-slate-500">{dateStr}</span>
               </div>
-
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   {weatherInfo.icon}
@@ -279,7 +264,6 @@ export default function PrevisioniGiornaliere({
                   <div className="text-xs text-slate-500">min {Math.round(day.tempMin)}°</div>
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex items-center gap-2 bg-slate-900/60 rounded-xl px-3 py-2">
                   <Wind className="w-4 h-4 text-sky-400 shrink-0" />
@@ -315,7 +299,6 @@ export default function PrevisioniGiornaliere({
         })}
       </div>
 
-      {/* FASCE ORARIE con base e top corretti */}
       {fasce && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           {fasce.map((fascia: any, idx: number) => {
@@ -374,7 +357,7 @@ export default function PrevisioniGiornaliere({
                 <div className="grid grid-cols-2 gap-1">
                   <div className="bg-slate-900/50 rounded px-2 py-1 flex items-center justify-between">
                     <Cloud className="w-3 h-3 text-slate-400" />
-                    <span className="text-xs font-bold text-slate-300">{<dyad-write path="src/components/PrevisioniGiornaliere.tsx" description="Continuazione: chiudo le card delle fasce orarie e fine componente">
+                    <span className="text-xs font-bold text-slate-300">{fascia.cloudMedia}%</span>
                   </div>
                   <div className="bg-slate-900/50 rounded px-2 py-1 flex items-center justify-between">
                     <Droplets className="w-3 h-3 text-blue-400" />
