@@ -14,6 +14,7 @@ import MeteoTab from "@/components/MeteoTab";
 import VentiTab from "@/components/VentiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiTab from "@/components/AnalisiTab";
+import MeteoTesterPanel from "@/components/MeteoTesterPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
 import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
@@ -171,6 +172,7 @@ export default function Index() {
         </div>
       </main>
       <Footer />
+      <MeteoTesterPanel />
     </div>
   );
 }
