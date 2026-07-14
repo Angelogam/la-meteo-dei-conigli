@@ -19,6 +19,7 @@ import SezioneMeteo from "@/components/SezioneMeteo";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
 import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
+import type { HourData } from "@/types/meteo";
 
 export default function Index() {
   const {
@@ -102,14 +103,14 @@ export default function Index() {
               enrichedDaily={enrichedDaily}
               dateLabels={dateLabels}
               currentData={currentData}
-              dayData={dayData}
+              dayData={dayData as HourData[]}
               site={{ name: site.name, altitude: site.altitude, exposure: site.exposure }}
               selectedDay={selectedDay}
               onSelectDay={setSelectedDay}
             />
 
             <WeatherDashboard
-              dayData={dayData}
+              dayData={dayData as HourData[]}
               altitude={site.altitude}
               selectedHour={selectedHour}
               onHourSelect={setSelectedHour}
@@ -120,7 +121,7 @@ export default function Index() {
             {activeTab === "meteo" && (
               <MeteoTab
                 currentData={currentData}
-                dayData={dayData}
+                dayData={dayData as HourData[]}
                 site={{ alt: site.altitude }}
                 thermalDelta={thermalDelta}
                 stabilityIndex={stabilityIndex}
@@ -130,7 +131,7 @@ export default function Index() {
             {activeTab === "venti" && (
               <VentiTab
                 currentData={currentData}
-                dayData={dayData}
+                dayData={dayData as HourData[]}
                 windProfile={[]}
                 hourlyData={hourlyData}
                 targetHour={12}
@@ -140,7 +141,7 @@ export default function Index() {
             {activeTab === "termiche" && (
               <TermicheTab
                 currentData={currentData}
-                dayData={dayData}
+                dayData={dayData as HourData[]}
                 site={{ alt: site.altitude, lat: site.lat, lon: site.lon }}
               />
             )}
@@ -148,7 +149,7 @@ export default function Index() {
             {activeTab === "analisi" && (
               <AnalisiTab
                 currentData={currentData}
-                dayData={dayData}
+                dayData={dayData as HourData[]}
                 windProfile={[]}
                 hourlyData={hourlyData}
                 targetHour={12}
