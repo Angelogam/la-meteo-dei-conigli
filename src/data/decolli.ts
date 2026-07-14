@@ -11,7 +11,7 @@ export interface Decollo {
   description: string;
 }
 
-export const decolli: Decollo[] = [
+export const DECOLLI: Decollo[] = [
   {
     id: "pedona",
     name: "Pedona",
@@ -93,3 +93,5 @@ export const decolli: Decollo[] = [
     description: "Decollo tecnico su prato ripido, piloti esperti consigliati."
   }
 ];
+
+export const decolli = DECOLLI;
