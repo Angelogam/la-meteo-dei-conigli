@@ -14,7 +14,7 @@ import MeteoTab from "@/components/MeteoTab";
 import VentiTab from "@/components/VentiTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
-import AnalisiTab from "@/components/AnalisiTab";
+import AnalisiMeteo from "@/components/AnalisiMeteo";
 import MeteoTesterPanel from "@/components/MeteoTesterPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
@@ -160,10 +160,31 @@ export default function Index() {
                 )}
 
                 {activeTab === "analisi" && (
-                  <AnalisiTab
-                    currentData={currentData}
-                    dayData={dayData}
-                    site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name, exposure: site!.exposure }}
+                  <AnalisiMeteo
+                    analisi={{
+                      tempMattina: currentData?.temperature ?? 20,
+                      tempPomeriggio: Math.max(...(dayData.filter(h => {
+                        const hh = h.time.getHours();
+                        return hh >= 12 && hh <= 17;
+                      }).map(h => h.temperature)), 25),
+                      umidita: currentData?.humidity ?? 50,
+                      ventoSuolo: currentData?.windSpeed ?? 10,
+                      li: currentCape?.liftedIndex ?? 2,
+                      cape: currentCape?.cape ?? 50,
+                      lcl: Math.max(200, Math.min(3000, Math.round(((currentData?.temperature ?? 20) - (currentData?.dewPoint ?? 10)) * 125))),
+                      spread: (currentData?.temperature ?? 20) - (currentData?.dewPoint ?? 10),
+                      salita: 2.1,
+                      base: 1500,
+                      top: 2200,
+                    }}
+                    ventoOrario={[
+                      {
+                        quote: {
+                          2000: { speed: 12, dir: 225 },
+                          3000: { speed: 18, dir: 230 },
+                        }
+                      }
+                    ]}
                   />
                 )}
               </>
