@@ -5,7 +5,7 @@ import type { HourData } from "@/types/meteo";
 import { calcolaTermiche } from "@/utils/termiche";
 import { getVoloStatus } from "@/utils/volo";
 import { getWindDirection, getWeatherIcon } from "@/utils/weatherHelpers";
-import { Clock, Wind, Thermometer, Cloud, Mountain, TrendingUp } from "lucide-react";
+import { Clock, Mountain, TrendingUp } from "lucide-react";
 
 interface HourlyTableProps {
   dayData: HourData[];
@@ -25,37 +25,8 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
       const now = new Date();
       const isCurrent = ora === now.getHours();
       return {
-        ora, temperatura: Math.round(h.temperature),
-        vento: Math.round(h.windSpeed),
-        raffica: h.windGusts ? Math.round(h.windGusts) :<dyad-write path="src/components/HourlyTable.tsx" description="HourlyTable con dimensioni umane e leggibili">
-"use client";
-
-import React, { useMemo } from "react";
-import type { HourData } from "@/types/meteo";
-import { calcolaTermiche } from "@/utils/termiche";
-import { getVoloStatus } from "@/utils/volo";
-import { getWindDirection, getWeatherIcon } from "@/utils/weatherHelpers";
-import { Clock, Wind, Thermometer, Cloud, Mountain, TrendingUp } from "lucide-react";
-
-interface HourlyTableProps {
-  dayData: HourData[];
-  altitude: number;
-  selectedHour: number;
-  onHourSelect: (hour: number) => void;
-}
-
-export default function HourlyTable({ dayData, altitude, selectedHour, onHourSelect }: HourlyTableProps) {
-  const rows = useMemo(() => {
-    const ore = Array.from({ length: 11 }, (_, i) => i + 9);
-    return ore.map((ora) => {
-      const h = dayData.find(d => d.time.getHours() === ora);
-      if (!h) return null;
-      const termiche = calcolaTermiche(h, altitude);
-      const volo = getVoloStatus(h);
-      const now = new Date();
-      const isCurrent = ora === now.getHours();
-      return {
-        ora, temperatura: Math.round(h.temperature),
+        ora,
+        temperatura: Math.round(h.temperature),
         vento: Math.round(h.windSpeed),
         raffica: h.windGusts ? Math.round(h.windGusts) : null,
         direzione: getWindDirection(h.windDir),
@@ -71,7 +42,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
         voloColore: volo.color,
         isCurrent,
       };
-    }).filter(Boolean);
+    }).filter(Boolean) as any[];
   }, [dayData, altitude]);
 
   if (rows.length === 0) {
@@ -104,7 +75,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => {
+            {rows.map((r: any) => {
               if (!r) return null;
               const isSelected = r.ora === selectedHour;
               return (

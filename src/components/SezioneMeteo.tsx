@@ -16,7 +16,6 @@ export default function SezioneMeteo() {
     hourlyData,
     thermalDelta,
     selectedDay, setSelectedDay,
-    selectedHour, setSelectedHour,
     activeTab, setActiveTab,
   } = useWeatherData();
 
@@ -25,7 +24,6 @@ export default function SezioneMeteo() {
 
   return (
     <div className="space-y-3">
-      {/* Tabs giorno */}
       <div className="flex items-center gap-2 bg-slate-800/40 rounded-2xl p-1 border border-slate-700/30">
         {["oggi", "domani", "dopodomani"].map((label, idx) => (
           <button
@@ -42,7 +40,6 @@ export default function SezioneMeteo() {
         ))}
       </div>
 
-      {/* Sub-tabs */}
       <div className="flex items-center gap-1.5">
         {[
           { id: "meteo" as const, label: "Meteo" },
@@ -64,7 +61,6 @@ export default function SezioneMeteo() {
         ))}
       </div>
 
-      {/* Contenuto */}
       {activeTab === "meteo" && (
         <MeteoTab 
           currentData={currentData} 
