@@ -74,7 +74,6 @@ export default function SezioneMeteo() {
         <VentiTab 
           currentData={currentData} 
           dayData={dayData} 
-          windProfile={[]} 
           hourlyData={hourlyData} 
           targetHour={12} 
         />
