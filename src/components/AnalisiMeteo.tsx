@@ -29,10 +29,10 @@ function getCloudDescription(cover: number): string {
 }
 
 function getUmiditaDescrizione(hum: number): string {
-  if (hum < 30) return "molto secca, ottima visibilita";
-  if (hum < 50) return "secca, buona visibilita";
-  if (hum < 65) return "moderata, visibilita discreta";
-  if (hum < 80) return "umida, visibilita ridotta";
+  if (hum < 30) return "molto secca, ottima visibilità";
+  if (hum < 50) return "secca, buona visibilità";
+  if (hum < 65) return "moderata, visibilità discreta";
+  if (hum < 80) return "umida, visibilità ridotta";
   return "molto umida, possibile foschia";
 }
 
@@ -44,8 +44,7 @@ function getPressioneDescrizione(press: number): string {
   return "bassa, condizioni instabili";
 }
 
-export default function AnalisiMeteo({ dayData, site, cape, liftedIndex, cin }: AnalisiMeteoProps) {
-  const alt = site?.alt ?? 1000;
+export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
 
   const analisi = useMemo(() => {
     if (!dayData || dayData.length < 3) return null;
@@ -74,8 +73,8 @@ export default function AnalisiMeteo({ dayData, site, cape, liftedIndex, cin }: 
     const tempMedia = media(oreGiorno.map(h => h.temperature));
     const dewMedia = media(oreGiorno.map(h => h.dewPoint));
     const spread = tempMedia - dewMedia;
-    const lcl = Math.max(alt + 50, Math.min(alt + 3000, Math.round(spread * 125 + alt)));
-    const zeroTermico = Math.max(alt, Math.round(alt + (tempMedia / 0.0098)));
+    const lcl = Math.max(200, Math.min(3000, Math.round(spread * 125)));
+    const zeroTermico = Math.max(0, Math.round((tempMedia / 0.0098) + 200));
     const dataGiorno = dayData[0]?.time ?? new Date();
     const dateStr = dataGiorno.toLocaleDateString("it-IT", {
       weekday: "long",
@@ -84,45 +83,50 @@ export default function AnalisiMeteo({ dayData, site, cape, liftedIndex, cin }: 
       year: "numeric",
     });
 
+    // NUOVO CALCOLO RISCHIO TEMPORALI — molto più conservativo
+    // Solo 3 fattori reali:
     let rischioTemporali = 0;
-    let dettaglioTemporali = "";
 
-    if (cape != null) {
-      if (cape > 1500) rischioTemporali += 40;
-      else if (cape > 1000) rischioTemporali += 30;
-      else if (cape > 500) rischioTemporali += 20;
-      else if (cape > 200) rischioTemporali += 10;
-      else if (cape > 100) rischioTemporali += 5;
+    // 1. Pioggia in atto o weather code di temporale
+    if (oreTemporale > 0) {
+      rischioTemporali = 85; // temporale in atto = rischio altissimo
+    } else if (pioggiaTot > 3) {
+      rischioTemporali = 45; // pioggia consistente
+    } else if (pioggiaTot > 1) {
+      rischioTemporali = 25; // pioggia leggera
+    } else {
+      // 2. Solo se NON piove, guarda instabilità atmosferica
+      // Condizioni per temporale SERIO: tanto sole + tanto vapore + gradiente
+      const haTantoSole = nuvoleMedia < 35;
+      const haMoltoVapore = umiditaMedia >= 55 && umiditaMedia <= 80;
+      const haAltaEscursione = deltaTermico >= 14;
+      const haBassaPressione = pressioneMedia < 1005;
+
+      // Solo se ci sono ALMENO 3 condizioni su 4
+      const condizioniInstabilita = [haTantoSole, haMoltoVapore, haAltaEscursione, haBassaPressione].filter(Boolean).length;
+
+      if (condizioniInstabilita >= 3) {
+        rischioTemporali = 25; // possibile
+      } else if (condizioniInstabilita === 2 && deltaTermico >= 16) {
+        rischioTemporali = 20; // possibile
+      } else {
+        rischioTemporali = 2; // minimo — quasi sempre così
+      }
     }
 
-    if (liftedIndex != null) {
-      if (liftedIndex <= -6) rischioTemporali += 30;
-      else if (liftedIndex <= -4) rischioTemporali += 25;
-      else if (liftedIndex <= -2) rischioTemporali += 18;
-      else if (liftedIndex <= 0) rischioTemporali += 10;
-      else if (liftedIndex <= 2) rischioTemporali += 4;
-    }
-
-    if (cin != null) {
-      if (cin > -20) rischioTemporali += 10;
-      else if (cin > -50) rischioTemporali += 6;
-      else if (cin > -100) rischioTemporali += 3;
-    }
-
-    if (oreTemporale > 0) rischioTemporali += 25;
-    if (nuvoleMedia > 60 && umiditaMedia > 60) rischioTemporali += 5;
-    if (pioggiaTot > 2) rischioTemporali += 8;
-    else if (pioggiaTot > 0) rischioTemporali += 3;
-    if (deltaTermico >= 14 && umiditaMedia >= 60) rischioTemporali += 15;
-    else if (deltaTermico >= 10 && umiditaMedia >= 50) rischioTemporali += 8;
-
+    // Arrotonda
     rischioTemporali = Math.max(0, Math.min(100, Math.round(rischioTemporali)));
 
-    if (rischioTemporali >= 70) dettaglioTemporali = "ALTO (" + rischioTemporali + "%)";
-    else if (rischioTemporali >= 50) dettaglioTemporali = "MODERATO-ALTO (" + rischioTemporali + "%)";
-    else if (rischioTemporali >= 30) dettaglioTemporali = "MODERATO (" + rischioTemporali + "%)";
-    else if (rischioTemporali >= 15) dettaglioTemporali = "BASSO (" + rischioTemporali + "%)";
-    else dettaglioTemporali = "MINIMO (" + rischioTemporali + "%)";
+    let dettaglioTemporali = "";
+    if (oreTemporale > 0) {
+      dettaglioTemporali = `ALTO (${rischioTemporali}%)`;
+    } else if (rischioTemporali >= 40) {
+      dettaglioTemporali = `MODERATO (${rischioTemporali}%)`;
+    } else if (rischioTemporali >= 15) {
+      dettaglioTemporali = `BASSO (${rischioTemporali}%)`;
+    } else {
+      dettaglioTemporali = `MINIMO (${rischioTemporali}%)`;
+    }
 
     if (oreTemporale > 0) dettaglioTemporali += " - Temporali in atto!";
 
@@ -143,17 +147,15 @@ export default function AnalisiMeteo({ dayData, site, cape, liftedIndex, cin }: 
     else if (deltaTermico < 5) puntiNegativi.push("scarsa escursione termica");
 
     if (ventoGustsMax > 30) puntiNegativi.push("raffiche forti (" + ventoGustsMax + " km/h)");
-    if (rischioTemporali >= 50) puntiNegativi.push("rischio temporali: " + rischioTemporali + "%");
-    else if (rischioTemporali >= 30) puntiNegativi.push("possibili temporali: " + rischioTemporali + "%");
-    if (oreTemporale > 0) puntiNegativi.push("temporali in " + oreTemporale + " ore");
+    if (oreTemporale > 0) puntiNegativi.push("temporali in corso");
 
     let valutazione = "";
-    if (puntiPositivi.length >= 3 && rischioTemporali < 30 && oreTemporale === 0) {
+    if (puntiPositivi.length >= 3 && rischioTemporali < 20 && oreTemporale === 0) {
       valutazione = "Condizioni favorevoli: " + puntiPositivi.join(", ") + ".";
       if (puntiNegativi.length > 0) valutazione += " Attenzione: " + puntiNegativi.join(", ") + ".";
     } else if (puntiPositivi.length >= 1) {
       valutazione = "Condizioni discrete: " + puntiPositivi.join(", ") + ".";
-      if (puntiNegativi.length > 0) valutazione += " Criticita: " + puntiNegativi.join(", ") + ".";
+      if (puntiNegativi.length > 0) valutazione += " Criticità: " + puntiNegativi.join(", ") + ".";
     } else {
       valutazione = "Condizioni difficili: " + puntiNegativi.join(", ") + ". Prudenza.";
     }
@@ -181,7 +183,7 @@ export default function AnalisiMeteo({ dayData, site, cape, liftedIndex, cin }: 
       rischioTemporali,
       dettaglioTemporali,
     };
-  }, [dayData, alt, cape, liftedIndex, cin]);
+  }, [dayData]);
 
   if (!analisi) {
     return (
@@ -194,25 +196,25 @@ export default function AnalisiMeteo({ dayData, site, cape, liftedIndex, cin }: 
 
   const getRischioBg = (r: number) => {
     if (r >= 70) return "bg-red-900/30 border-red-500/40";
-    if (r >= 50) return "bg-orange-900/30 border-orange-500/40";
-    if (r >= 30) return "bg-amber-900/30 border-amber-500/40";
-    if (r >= 15) return "bg-yellow-900/20 border-yellow-500/30";
+    if (r >= 40) return "bg-orange-900/30 border-orange-500/40";
+    if (r >= 15) return "bg-amber-900/30 border-amber-500/40";
+    if (r >= 5) return "bg-yellow-900/20 border-yellow-500/30";
     return "bg-green-900/20 border-green-500/30";
   };
 
   const getRischioText = (r: number) => {
     if (r >= 70) return "text-red-400";
-    if (r >= 50) return "text-orange-400";
-    if (r >= 30) return "text-amber-400";
-    if (r >= 15) return "text-yellow-400";
+    if (r >= 40) return "text-orange-400";
+    if (r >= 15) return "text-amber-400";
+    if (r >= 5) return "text-yellow-400";
     return "text-green-400";
   };
 
   const getRischioBar = (r: number) => {
     if (r >= 70) return "bg-red-500";
-    if (r >= 50) return "bg-orange-500";
-    if (r >= 30) return "bg-amber-500";
-    if (r >= 15) return "bg-yellow-500";
+    if (r >= 40) return "bg-orange-500";
+    if (r >= 15) return "bg-amber-500";
+    if (r >= 5) return "bg-yellow-500";
     return "bg-green-500";
   };
 
@@ -231,18 +233,18 @@ export default function AnalisiMeteo({ dayData, site, cape, liftedIndex, cin }: 
         </div>
         <div className="space-y-2 text-sm text-slate-300">
           <p><span className="text-emerald-400 mr-2">&bull;</span> Max {analisi.tempMaxGiorno}°C, min {analisi.tempMinGiorno}°C, delta {analisi.deltaTermico}°C.</p>
-          <p><span className="text-emerald-400 mr-2">&bull;</span> Umidita: {analisi.umiditaMedia}% &mdash; {getUmiditaDescrizione(analisi.umiditaMedia)}.</p>
+          <p><span className="text-emerald-400 mr-2">&bull;</span> Umidità: {analisi.umiditaMedia}% &mdash; {getUmiditaDescrizione(analisi.umiditaMedia)}.</p>
           <p><span className="text-emerald-400 mr-2">&bull;</span> Vento: {analisi.ventoMedio} km/h da {analisi.ventoDirNome} ({analisi.ventoDirMedia}°).{analisi.ventoGustsMax > analisi.ventoMedio * 1.5 ? " Raffiche " + analisi.ventoGustsMax + " km/h." : ""}</p>
           <p><span className="text-emerald-400 mr-2">&bull;</span> Cielo: {getCloudDescription(analisi.nuvoleMedia)} ({analisi.nuvoleMedia}%).{analisi.pioggiaTot === 0 ? " Nessuna pioggia." : " Pioggia: " + analisi.pioggiaTot.toFixed(1) + " mm."}</p>
         </div>
       </div>
 
-      {/* Rischio temporali */}
+      {/* Rischio temporali — RIVISTO */}
       <div className={"rounded-2xl border-2 p-5 " + rischioBg}>
         <div className="flex items-center gap-3 mb-3">
-          {analisi.rischioTemporali >= 50 || analisi.oreTemporale > 0 ? (
+          {analisi.rischioTemporali >= 70 || analisi.oreTemporale > 0 ? (
             <CloudLightning className="w-8 h-8 text-red-400" />
-          ) : analisi.rischioTemporali >= 20 ? (
+          ) : analisi.rischioTemporali >= 15 ? (
             <CloudRain className="w-8 h-8 text-amber-400" />
           ) : (
             <Cloud className="w-8 h-8 text-green-400" />
@@ -264,11 +266,11 @@ export default function AnalisiMeteo({ dayData, site, cape, liftedIndex, cin }: 
       <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 rounded-2xl p-5">
         <div className="flex items-center gap-2 mb-4">
           <Thermometer className="w-6 h-6 text-amber-400" />
-          <h3 className="text-base font-bold text-white">Profilo termico e stabilita</h3>
+          <h3 className="text-base font-bold text-white">Profilo termico e stabilità</h3>
         </div>
         <div className="space-y-2 text-sm text-slate-300">
           <p><span className="text-emerald-400 mr-2">&bull;</span> {analisi.tempMinGiorno}°C min / {analisi.tempMaxGiorno}°C max &middot; delta {analisi.deltaTermico}°C.</p>
-          <p><span className="text-emerald-400 mr-2">&bull;</span> Umidita {analisi.umiditaMedia}% &middot; Spread {analisi.spread}°C.</p>
+          <p><span className="text-emerald-400 mr-2">&bull;</span> Umidità {analisi.umiditaMedia}% &middot; Spread {analisi.spread}°C.</p>
           <p><span className="text-emerald-400 mr-2">&bull;</span> Base termica (LCL): {analisi.lcl} m &middot; Zero termico: ~{analisi.zeroTermico} m.</p>
           <p><span className="text-emerald-400 mr-2">&bull;</span> Pressione: {analisi.pressioneMedia} hPa ({getPressioneDescrizione(analisi.pressioneMedia)}).</p>
         </div>
@@ -282,7 +284,7 @@ export default function AnalisiMeteo({ dayData, site, cape, liftedIndex, cin }: 
         </div>
         <div className="space-y-2 text-sm text-slate-300">
           <p><span className="text-emerald-400 mr-2">&bull;</span> Direzione: {analisi.ventoDirNome} ({analisi.ventoDirMedia}°). Vento medio: {analisi.ventoMedio} km/h, raffiche max: {analisi.ventoGustsMax} km/h.</p>
-          <p><span className="text-emerald-400 mr-2">&bull;</span> {analisi.nuvoleMedia < 25 ? "Cielo sereno." : analisi.nuvoleMedia < 50 ? "Nuvolosita moderata." : "Nuvolosita significativa."}</p>
+          <p><span className="text-emerald-400 mr-2">&bull;</span> {analisi.nuvoleMedia < 25 ? "Cielo sereno." : analisi.nuvoleMedia < 50 ? "Nuvolosità moderata." : "Nuvolosità significativa."}</p>
         </div>
       </div>
 
@@ -294,9 +296,9 @@ export default function AnalisiMeteo({ dayData, site, cape, liftedIndex, cin }: 
         </div>
         <div className="space-y-2 text-sm text-slate-300">
           <p className="flex items-start gap-2">
-            {analisi.puntiPositivi.length >= 3 && analisi.rischioTemporali < 30 ? (
+            {analisi.puntiPositivi.length >= 3 && analisi.rischioTemporali < 20 ? (
               <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-            ) : analisi.puntiNegativi.length > 0 || analisi.rischioTemporali >= 30 ? (
+            ) : analisi.puntiNegativi.length > 0 || analisi.rischioTemporali >= 20 ? (
               <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
             ) : (
               <span className="text-emerald-400 mt-1 shrink-0 mr-2">&bull;</span>
@@ -313,7 +315,7 @@ export default function AnalisiMeteo({ dayData, site, cape, liftedIndex, cin }: 
           )}
           {analisi.puntiNegativi.length > 0 && (
             <div className="ml-7 mt-2">
-              <div className="text-xs text-amber-400 font-bold mb-1">Criticita:</div>
+              <div className="text-xs text-amber-400 font-bold mb-1">Criticità:</div>
               {analisi.puntiNegativi.map((p, i) => (
                 <p key={i}><span className="text-amber-400 mr-2">&bull;</span>{p}</p>
               ))}
