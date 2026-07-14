@@ -18,7 +18,7 @@ import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
 import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
 import ValidazionePrevisioni from "@/components/ValidazionePrevisioni";
-import { Bug } from "lucide-react";
+import { Bug, ShieldCheck } from "lucide-react";
 
 export default function Index() {
   const {
@@ -59,7 +59,7 @@ export default function Index() {
         <ValidazionePrevisioni />
         <button
           onClick={() => setShowValidation(false)}
-          className="fixed top-4 right-4 z-[10000] bg-red-900/60 hover:bg-red-800 text-white px-4 py-2 rounded-xl text-sm font-bold border border-red-500/50"
+          className="fixed top-4 right-4 z-[10000] bg-red-900/60 hover:bg-red-800 text-white px-4 py-2 rounded-xl text-sm font-bold border border-red-500/50 shadow-2xl"
         >
           Chiudi validazione
         </button>
@@ -192,13 +192,13 @@ export default function Index() {
       <Footer />
       <MeteoTesterPanel />
 
-      {/* Pulsante validazione */}
+      {/* Pulsante validazione — in basso a sinistra */}
       <button
         onClick={() => setShowValidation(true)}
-        className="fixed bottom-4 right-20 z-50 bg-amber-800 hover:bg-amber-700 text-amber-200 border border-amber-500/40 rounded-full p-3 shadow-2xl shadow-amber-500/10"
-        title="Valida previsioni per domani e dopodomani"
+        className="fixed bottom-4 left-4 z-50 bg-amber-800/80 hover:bg-amber-700 text-amber-200 border border-amber-500/40 rounded-full p-3 shadow-2xl shadow-amber-500/10"
+        title="Confronta previsioni con climatologia storica"
       >
-        <Bug className="w-5 h-5" />
+        <ShieldCheck className="w-5 h-5" />
       </button>
     </div>
   );
