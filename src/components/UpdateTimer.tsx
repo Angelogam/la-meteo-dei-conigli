@@ -60,7 +60,7 @@ export default function UpdateTimer({ lastUpdate, countdown, updating, onRefresh
           onClick={onRefresh}
           disabled={updating}
           className={`
-            flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-200
+            flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 ml-6
             ${
               updating
                 ? "bg-slate-700 text-slate-500 cursor-not-allowed"
