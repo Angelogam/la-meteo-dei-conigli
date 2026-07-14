@@ -7,9 +7,5 @@ interface AlertBannerProps {
 }
 
 export default function AlertBanner({ alert }: AlertBannerProps) {
-  return (
-    <span className="text-sm font-medium leading-snug">
-      {alert.message}
-    </span>
-  );
+  return <>{alert.message}</>;
 }
