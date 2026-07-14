@@ -1,55 +1,45 @@
 "use client";
 
+import { Sunrise, Wind } from "lucide-react";
+
 export const Header = () => {
   return (
-    <header className="text-center py-4 border-b border-slate-800 relative overflow-hidden">
-      <div className="flex items-center justify-center gap-3 md:gap-6 px-3">
-        {/* Coniglio sinistro - visibile su tablet+ */}
-        <div className="hidden sm:flex flex-col items-center">
-          <div className="relative">
-            <svg className="w-12 h-12 md:w-14 md:h-14 text-orange-400 animate-float" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M32 8C16 8 4 16 4 28h8c0-8 8-14 20-14s20 6 20 14h8c0-12-12-20-28-20z" fill="currentColor" opacity="0.6"/>
-              <path d="M8 28h48" stroke="currentColor" strokeWidth="2" opacity="0.4"/>
-              <line x1="32" y1="28" x2="32" y2="44" stroke="currentColor" strokeWidth="2" opacity="0.5"/>
-              <circle cx="32" cy="48" r="4" fill="#f97316" opacity="0.8"/>
-            </svg>
-            <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 text-xl md:text-2xl animate-hop-sync">🐰</span>
+    <header className="relative bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border-b border-orange-800/20 overflow-hidden">
+      {/* Bagliore sottile in alto */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-orange-400/40 to-transparent" />
+      
+      {/* Decorazione laterale destra */}
+      <div className="absolute -right-12 -top-12 w-40 h-40 rounded-full bg-orange-500/5 blur-3xl" />
+      <div className="absolute -left-12 -bottom-12 w-40 h-40 rounded-full bg-sky-500/5 blur-3xl" />
+
+      <div className="relative max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-5">
+        <div className="flex items-center justify-center gap-4 md:gap-8">
+          {/* Decorazione sinistra - desktop */}
+          <div className="hidden md:flex items-center gap-2">
+            <div className="w-10 h-px bg-orange-500/30" />
+            <Sunrise className="w-5 h-5 text-orange-400/60" />
+            <div className="w-10 h-px bg-orange-500/30" />
+          </div>
+
+          {/* Titolo centrale */}
+          <div className="flex flex-col items-center text-center">
+            <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight">
+              <span className="bg-gradient-to-r from-orange-300 via-amber-400 to-yellow-300 bg-clip-text text-transparent drop-shadow-lg">
+                Meteo dei Conigli
+              </span>
+            </h1>
+            <p className="text-xs md:text-sm font-medium text-slate-500 mt-1 tracking-wide">
+              Previsioni per volo libero · Open-Meteo · SHV FSVL Style
+            </p>
+          </div>
+
+          {/* Decorazione destra - desktop */}
+          <div className="hidden md:flex items-center gap-2">
+            <div className="w-10 h-px bg-orange-500/30" />
+            <Wind className="w-5 h-5 text-sky-400/60" />
+            <div className="w-10 h-px bg-orange-500/30" />
           </div>
         </div>
-
-        {/* Titolo centrale */}
-        <div className="flex flex-col items-center justify-center gap-1">
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-xl md:text-2xl animate-hop-sync">🪂</span>
-            <span className="text-lg md:text-3xl font-extrabold bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500 bg-clip-text text-transparent drop-shadow-lg">
-              Meteo dei Conigli
-            </span>
-            <span className="text-xl md:text-2xl animate-hop-sync">🪂</span>
-          </div>
-          <p className="text-xs md:text-sm font-medium text-slate-400">
-            Previsioni per volo libero · Open-Meteo · SHV FSVL Style
-          </p>
-        </div>
-
-        {/* Coniglio destro - visibile su tablet+ */}
-        <div className="hidden sm:flex flex-col items-center">
-          <div className="relative">
-            <svg className="w-12 h-12 md:w-14 md:h-14 text-orange-400 animate-float" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M32 8C16 8 4 16 4 28h8c0-8 8-14 20-14s20 6 20 14h8c0-12-12-20-28-20z" fill="currentColor" opacity="0.6"/>
-              <path d="M8 28h48" stroke="currentColor" strokeWidth="2" opacity="0.4"/>
-              <line x1="32" y1="28" x2="32" y2="44" stroke="currentColor" strokeWidth="2" opacity="0.5"/>
-              <circle cx="32" cy="48" r="4" fill="#f97316" opacity="0.8"/>
-            </svg>
-            <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 text-xl md:text-2xl animate-hop-sync">🐰</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Coniglietti extra solo su mobile */}
-      <div className="flex sm:hidden items-center justify-center gap-2 mt-2">
-        <span className="text-base animate-hop-sync">🐰</span>
-        <span className="text-base text-orange-400">🪂</span>
-        <span className="text-base animate-hop-sync">🐰</span>
       </div>
     </header>
   );
