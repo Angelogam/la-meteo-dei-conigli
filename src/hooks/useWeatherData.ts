@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { weatherService, MeteoHourly, MeteoDaily } from "@/services/weatherService";
 import type { HourData } from "@/types/meteo";
-import { DECOLLI } from "@/data/decolli";
+import { decolli } from "@/data/decolli";
 
 const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
 
@@ -23,9 +23,9 @@ function toHourData(mh: MeteoHourly): HourData {
     pressure: mh.pressure,
     surfacePressure: mh.surfacePressure,
     cloudCover: mh.cloudCover,
-    cloudCoverLow: mh.cloudCoverLow,
-    cloudCoverMid: mh.cloudCoverMid,
-    cloudCoverHigh: mh.cloudCoverHigh,
+    cloudCoverLow: 0,
+    cloudCoverMid: 0,
+    cloudCoverHigh: 0,
     evapotranspiration: mh.shortwaveRadiation * 0.02,
     et0: mh.sunshineDuration * 0.01,
     vapourPressureDeficit: mh.dewPoint > 0 ? mh.temperature - mh.dewPoint : 0,
@@ -47,7 +47,7 @@ function toHourData(mh: MeteoHourly): HourData {
 }
 
 export function useWeatherData() {
-  const [selectedId, setSelectedId] = useState(DECOLLI[0]?.id || "malanotte");
+  const [selectedId, setSelectedId] = useState(decolli[0]?.id || "malanotte");
   const [hourlyData, setHourlyData] = useState<MeteoHourly[]>([]);
   const [dailyData, setDailyData] = useState<MeteoDaily[]>([]);
   const [allDailyData, setAllDailyData] = useState<Record<string, MeteoDaily[]>>({});
@@ -62,7 +62,7 @@ export function useWeatherData() {
   const [countdown, setCountdown] = useState(30);
 
   // Restituisce sempre un sito valido (primo decollo come fallback)
-  const site = DECOLLI.find(d => d.id === selectedId) || DECOLLI[0];
+  const site = decolli.find(d => d.id === selectedId) || decolli[0];
 
   const loadAllWeather = useCallback(async () => {
     setLoading(true);
@@ -70,7 +70,7 @@ export function useWeatherData() {
     setError(null);
     
     try {
-      const promises = DECOLLI.map(async (decollo) => {
+      const promises = decolli.map(async (decollo) => {
         try {
           const data = await weatherService.fetchWithFallback(decollo.lat, decollo.lon);
           return { id: decollo.id, ...data };

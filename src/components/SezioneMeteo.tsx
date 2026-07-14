@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { DECOLLI } from "@/data/decolli";
+import { decolli } from "@/data/decolli";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import MeteoTab from "./MeteoTab";
 import VentiTab from "./VentiTab";
@@ -19,7 +19,7 @@ export default function SezioneMeteo() {
     activeTab, setActiveTab,
   } = useWeatherData();
 
-  const site = DECOLLI.find(d => d.id === selectedId);
+  const site = decolli.find(d => d.id === selectedId);
   if (!site) return null;
 
   return (
