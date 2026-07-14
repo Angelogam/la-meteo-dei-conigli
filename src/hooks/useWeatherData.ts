@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { weatherService, MeteoHourly, MeteoDaily } from "@/services/weatherService";
 import type { HourData } from "@/types/meteo";
 import { DECOLLI } from "@/data/decolli";
@@ -46,6 +46,45 @@ function toHourData(mh: MeteoHourly): HourData {
   };
 }
 
+// Carica un singolo sito con retry
+async function loadSingleSite(id: string, lat: number, lon: number, retries = 2): Promise<{ id: string; daily: MeteoDaily[]; hourly: MeteoHourly[] } | null> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      if (attempt > 0) {
+        // Aspetta prima di ritentare (backoff esponenziale)
+        await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+      }
+      const data = await weatherService.fetchWeather(lat, lon);
+      return { id, daily: data.daily || [], hourly: data.hourly || [] };
+    } catch (err) {
+      if (attempt === retries) {
+        console.error(`Errore fetch per ${id} (${lat},${lon}):`, err);
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+// Carica tutti i siti in sequenza con delay tra le richieste
+async function loadAllSites(delayMs = 1200): Promise<{ dailyMap: Record<string, MeteoDaily[]>; hourlyMap: Record<string, MeteoHourly[]> }> {
+  const dailyMap: Record<string, MeteoDaily[]> = {};
+  const hourlyMap: Record<string, MeteoHourly[]> = {};
+
+  // Prima carica i siti principali con meno richieste (solo i primi 8)
+  const primarySites = DECOLLI.slice(0, 8);
+  for (const decollo of primarySites) {
+    const result = await loadSingleSite(decollo.id, decollo.lat, decollo.lon);
+    if (result) {
+      dailyMap[result.id] = result.daily;
+      hourlyMap[result.id] = result.hourly;
+    }
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+  }
+
+  return { dailyMap, hourlyMap };
+}
+
 export function useWeatherData() {
   const [selectedId, setSelectedId] = useState(DECOLLI[0]?.id || "malanotte");
   const [hourlyData, setHourlyData] = useState<MeteoHourly[]>([]);
@@ -60,75 +99,78 @@ export function useWeatherData() {
   const [activeTab, setActiveTab] = useState<'meteo' | 'venti' | 'termiche' | 'analisi'>('meteo');
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [countdown, setCountdown] = useState(30);
+  const selectedIdRef = useRef(selectedId);
+  selectedIdRef.current = selectedId;
 
-  // Restituisce sempre un sito valido (primo decollo come fallback)
   const site = DECOLLI.find(d => d.id === selectedId) || DECOLLI[0];
 
-  const loadAllWeather = useCallback(async () => {
+  // Carica PRIMA il sito selezionato, POI gli altri in background
+  const loadWeather = useCallback(async () => {
     setLoading(true);
     setUpdating(true);
     setError(null);
-    
-    try {
-      const promises = DECOLLI.map(async (decollo) => {
-        try {
-          const data = await weatherService.fetchWithFallback(decollo.lat, decollo.lon);
-          return { id: decollo.id, ...data };
-        } catch {
-          return null;
-        }
-      });
 
-      const results = await Promise.allSettled(promises);
+    const currentId = selectedIdRef.current;
+    const currentSite = DECOLLI.find(d => d.id === currentId) || DECOLLI[0];
+
+    try {
+      // 1. Carica SUBITO il sito selezionato
+      const primaryResult = await loadSingleSite(currentSite.id, currentSite.lat, currentSite.lon);
       
-      const dailyMap: Record<string, MeteoDaily[]> = {};
-      const hourlyMap: Record<string, MeteoHourly[]> = {};
-      
-      for (const result of results) {
-        if (result.status === 'fulfilled' && result.value) {
-          const { id, daily, hourly } = result.value;
-          dailyMap[id] = daily || [];
-          hourlyMap[id] = hourly || [];
-        }
+      const dailyMap: Record<string, MeteoDaily[]> = { ...allDailyData };
+      const hourlyMap: Record<string, MeteoHourly[]> = { ...allHourlyData };
+
+      if (primaryResult) {
+        dailyMap[currentSite.id] = primaryResult.daily;
+        hourlyMap[currentSite.id] = primaryResult.hourly;
+        setDailyData(primaryResult.daily);
+        setHourlyData(primaryResult.hourly);
       }
 
       setAllDailyData(dailyMap);
       setAllHourlyData(hourlyMap);
-
-      if (dailyMap[selectedId]) setDailyData(dailyMap[selectedId]);
-      else if (Object.keys(dailyMap).length > 0) {
-        const firstId = Object.keys(dailyMap)[0];
-        setDailyData(dailyMap[firstId]);
-        setHourlyData(hourlyMap[firstId] || []);
-      }
-
-      if (hourlyMap[selectedId]) setHourlyData(hourlyMap[selectedId]);
-      else if (Object.keys(hourlyMap).length > 0) {
-        const firstId = Object.keys(hourlyMap)[0];
-        setHourlyData(hourlyMap[firstId] || []);
-      }
-
+      setLoading(false);
+      setUpdating(false);
       setLastUpdate(new Date());
       setCountdown(30);
 
+      // 2. Dopo aver mostrato i dati principali, carica gli altri siti in background (con delay)
+      // Solo se non sono già stati caricati
+      const remainingSites = DECOLLI.filter(d => !dailyMap[d.id] || dailyMap[d.id].length === 0);
+      if (remainingSites.length > 0) {
+        for (const decollo of remainingSites) {
+          const result = await loadSingleSite(decollo.id, decollo.lat, decollo.lon);
+          if (result) {
+            dailyMap[decollo.id] = result.daily;
+            hourlyMap[decollo.id] = result.hourly;
+            setAllDailyData({ ...dailyMap });
+            setAllHourlyData({ ...hourlyMap });
+          }
+          // Delay tra le richieste per evitare rate limiting
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+      }
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore sconosciuto');
-    } finally {
       setLoading(false);
       setUpdating(false);
     }
-  }, [selectedId]);
+  }, []);
 
+  // Carica inizialmente
   useEffect(() => {
-    loadAllWeather();
+    loadWeather();
     setSelectedHour(new Date().getHours());
-  }, [loadAllWeather]);
+  }, []);
 
+  // Refresh ogni 30 minuti
   useEffect(() => {
-    const interval = setInterval(loadAllWeather, REFRESH_INTERVAL_MS);
+    const interval = setInterval(loadWeather, REFRESH_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [loadAllWeather]);
+  }, [loadWeather]);
 
+  // Countdown
   useEffect(() => {
     const minuteInterval = setInterval(() => {
       setCountdown(prev => prev <= 1 ? 30 : prev - 1);
@@ -136,13 +178,17 @@ export function useWeatherData() {
     return () => clearInterval(minuteInterval);
   }, []);
 
+  // Quando cambia selectedId, aggiorna daily/hourly dai dati già caricati
   useEffect(() => {
-    if (allDailyData[selectedId]) setDailyData(allDailyData[selectedId]);
-    if (allHourlyData[selectedId]) setHourlyData(allHourlyData[selectedId]);
-    setSelectedHour(Math.min(selectedHour, new Date().getHours() <= 23 ? new Date().getHours() : 12));
+    if (allDailyData[selectedId]) {
+      setDailyData(allDailyData[selectedId]);
+    }
+    if (allHourlyData[selectedId]) {
+      setHourlyData(allHourlyData[selectedId]);
+    }
+    setSelectedHour(Math.min(selectedHour, 23));
   }, [selectedId, allDailyData, allHourlyData]);
 
-  // dayData CONVERTITO in HourData[]
   const dayData: HourData[] = useMemo(() => {
     if (!hourlyData || hourlyData.length === 0) return [];
     const oggi = new Date();
@@ -159,7 +205,6 @@ export function useWeatherData() {
       .map(toHourData);
   }, [hourlyData, selectedDay]);
 
-  // currentData convertito
   const currentData = useMemo((): HourData | null => {
     if (!dayData.length) return null;
     return dayData.reduce((best, curr) => {
@@ -230,13 +275,13 @@ export function useWeatherData() {
     selectedHour, setSelectedHour,
     activeTab, setActiveTab,
     lastUpdate, countdown,
-    site: site!,  // Sempre definito
+    site: site!,
     dayData,
     currentData,
     thermalDelta,
     enrichedDaily,
     dateLabels,
-    loadWeather: loadAllWeather,
+    loadWeather,
     hourlyData,
     dailyData,
     allDailyData,

@@ -32,6 +32,7 @@ export default function Index() {
     currentData,
     thermalDelta,
     enrichedDaily,
+    dateLabels,
     loadWeather,
     hourlyData,
     allDailyData,
@@ -106,7 +107,7 @@ export default function Index() {
 
                 <PrevisioniGiornaliere
                   enrichedDaily={enrichedDaily}
-                  dateLabels={[]}
+                  dateLabels={dateLabels}
                   currentData={currentData}
                   dayData={dayData}
                   site={{ name: site!.name, altitude: site!.altitude, exposure: site!.exposure }}

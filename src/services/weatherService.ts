@@ -2,6 +2,7 @@
 
 const BASE_URL = "https://api.open-meteo.com/v1/forecast";
 
+// Parametri essenziali — ridotti al minimo per evitare rate limiting
 const HOURLY_PARAMS = [
   "temperature_2m",
   "relative_humidity_2m",
@@ -35,26 +36,16 @@ const HOURLY_PARAMS = [
   "wind_direction_300m",
   "wind_speed_600m",
   "wind_direction_600m",
-  "wind_speed_900m",
-  "wind_direction_900m",
-  "wind_speed_1200m",
-  "wind_direction_1200m",
+  "wind_speed_1000m",
+  "wind_direction_1000m",
   "wind_speed_1500m",
   "wind_direction_1500m",
-  "wind_speed_1800m",
-  "wind_direction_1800m",
-  "wind_speed_2100m",
-  "wind_direction_2100m",
-  "wind_speed_2400m",
-  "wind_direction_2400m",
-  "wind_speed_2800m",
-  "wind_direction_2800m",
-  "wind_speed_3200m",
-  "wind_direction_3200m",
-  "wind_speed_3600m",
-  "wind_direction_3600m",
-  "wind_speed_4000m",
-  "wind_direction_4000m",
+  "wind_speed_2000m",
+  "wind_direction_2000m",
+  "wind_speed_2500m",
+  "wind_direction_2500m",
+  "wind_speed_3000m",
+  "wind_direction_3000m",
   "cape",
   "convective_inhibition",
   "lifted_index",
@@ -144,26 +135,16 @@ export interface MeteoHourly {
   windDir300m: number;
   windSpeed600m: number;
   windDir600m: number;
-  windSpeed900m: number;
-  windDir900m: number;
-  windSpeed1200m: number;
-  windDir1200m: number;
+  windSpeed1000m: number;
+  windDir1000m: number;
   windSpeed1500m: number;
   windDir1500m: number;
-  windSpeed1800m: number;
-  windDir1800m: number;
-  windSpeed2100m: number;
-  windDir2100m: number;
-  windSpeed2400m: number;
-  windDir2400m: number;
-  windSpeed2800m: number;
-  windDir2800m: number;
-  windSpeed3200m: number;
-  windDir3200m: number;
-  windSpeed3600m: number;
-  windDir3600m: number;
-  windSpeed4000m: number;
-  windDir4000m: number;
+  windSpeed2000m: number;
+  windDir2000m: number;
+  windSpeed2500m: number;
+  windDir2500m: number;
+  windSpeed3000m: number;
+  windDir3000m: number;
 }
 
 export interface MeteoDaily {
@@ -238,7 +219,6 @@ export const weatherService = {
 
     const raw = await res.json();
 
-    // Converte dati orari — con safeGet per ogni campo
     const hourly: MeteoHourly[] = (raw.hourly?.time || []).map((t: string, i: number) => ({
       time: new Date(t),
       temperature: safeGet(raw.hourly.temperature_2m, i),
@@ -276,29 +256,18 @@ export const weatherService = {
       windDir300m: safeGet(raw.hourly.wind_direction_300m, i),
       windSpeed600m: safeGet(raw.hourly.wind_speed_600m, i),
       windDir600m: safeGet(raw.hourly.wind_direction_600m, i),
-      windSpeed900m: safeGet(raw.hourly.wind_speed_900m, i),
-      windDir900m: safeGet(raw.hourly.wind_direction_900m, i),
-      windSpeed1200m: safeGet(raw.hourly.wind_speed_1200m, i),
-      windDir1200m: safeGet(raw.hourly.wind_direction_1200m, i),
+      windSpeed1000m: safeGet(raw.hourly.wind_speed_1000m, i),
+      windDir1000m: safeGet(raw.hourly.wind_direction_1000m, i),
       windSpeed1500m: safeGet(raw.hourly.wind_speed_1500m, i),
       windDir1500m: safeGet(raw.hourly.wind_direction_1500m, i),
-      windSpeed1800m: safeGet(raw.hourly.wind_speed_1800m, i),
-      windDir1800m: safeGet(raw.hourly.wind_direction_1800m, i),
-      windSpeed2100m: safeGet(raw.hourly.wind_speed_2100m, i),
-      windDir2100m: safeGet(raw.hourly.wind_direction_2100m, i),
-      windSpeed2400m: safeGet(raw.hourly.wind_speed_2400m, i),
-      windDir2400m: safeGet(raw.hourly.wind_direction_2400m, i),
-      windSpeed2800m: safeGet(raw.hourly.wind_speed_2800m, i),
-      windDir2800m: safeGet(raw.hourly.wind_direction_2800m, i),
-      windSpeed3200m: safeGet(raw.hourly.wind_speed_3200m, i),
-      windDir3200m: safeGet(raw.hourly.wind_direction_3200m, i),
-      windSpeed3600m: safeGet(raw.hourly.wind_speed_3600m, i),
-      windDir3600m: safeGet(raw.hourly.wind_direction_3600m, i),
-      windSpeed4000m: safeGet(raw.hourly.wind_speed_4000m, i),
-      windDir4000m: safeGet(raw.hourly.wind_direction_4000m, i),
+      windSpeed2000m: safeGet(raw.hourly.wind_speed_2000m, i),
+      windDir2000m: safeGet(raw.hourly.wind_direction_2000m, i),
+      windSpeed2500m: safeGet(raw.hourly.wind_speed_2500m, i),
+      windDir2500m: safeGet(raw.hourly.wind_direction_2500m, i),
+      windSpeed3000m: safeGet(raw.hourly.wind_speed_3000m, i),
+      windDir3000m: safeGet(raw.hourly.wind_direction_3000m, i),
     }));
 
-    // Converte dati giornalieri
     const daily: MeteoDaily[] = (raw.daily?.time || []).map((t: string, i: number) => ({
       date: new Date(t),
       weatherCode: safeGet(raw.daily.weather_code, i),
@@ -324,7 +293,6 @@ export const weatherService = {
       et0Sum: safeGet(raw.daily.et0_fao_evapotranspiration, i),
     }));
 
-    // Converte dati correnti
     const current: MeteoCurrent = {
       time: raw.current?.time ? new Date(raw.current.time) : new Date(),
       temperature: raw.current?.temperature_2m ?? 0,
@@ -349,7 +317,6 @@ export const weatherService = {
       return await this.fetchWeather(lat, lon);
     } catch (err) {
       console.error(`Errore fetch per ${lat},${lon}:`, err);
-      // Restituisci dati vuoti per non far crashare l'app
       return {
         hourly: [] as MeteoHourly[],
         daily: [] as MeteoDaily[],
