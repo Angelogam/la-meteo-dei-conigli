@@ -146,7 +146,10 @@ export default function Index() {
                     currentData={currentData}
                     dayData={dayData}
                     hourlyData={hourlyData}
-                    targetHour={12}
+                    targetHour={selectedHour}
+                    lat={site!.lat}
+                    lon={site!.lon}
+                    selectedDay={selectedDay}
                   />
                 )}
 

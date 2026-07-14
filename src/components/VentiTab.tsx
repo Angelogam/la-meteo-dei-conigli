@@ -1,20 +1,17 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { Wind, TrendingUp, Server } from "lucide-react";
-
-interface WindLevel {
-  alt: number;
-  speed: number;
-  dir: number;
-  dirName: string;
-}
+import { getVento, type VentoData } from "@/utils/getVento";
 
 interface VentiTabProps {
   currentData: any;
   dayData: any[];
   hourlyData?: any[];
   targetHour?: number;
+  lat?: number;
+  lon?: number;
+  selectedDay?: number;
 }
 
 function getWindArrow(deg: number): string {
@@ -27,179 +24,135 @@ function getWindDirName(deg: number): string {
   return dirs[Math.round(deg / 45) % 8] || "-";
 }
 
-/** Seleziona le quote per la visualizzazione verticale */
-function getDisplayProfile(profile: WindLevel[]): WindLevel[] {
-  const desiredAltitudes = [4000, 3500, 3000, 2500, 2000, 1500, 1000, 500, 10];
-  return desiredAltitudes.map(alt => {
-    const exact = profile.find(l => l.alt === alt);
-    if (exact) return exact;
-    const sorted = [...profile].sort((a, b) => Math.abs(a.alt - alt) - Math.abs(b.alt - alt));
-    const nearest = sorted[0];
-    if (nearest && Math.abs(nearest.alt - alt) <= 250) {
-      return { ...nearest, alt };
-    }
-    return { alt, speed: 0, dir: 0, dirName: "-" };
-  });
-}
+export default function VentiTab({ currentData, dayData, hourlyData, targetHour = 12, lat, lon, selectedDay = 0 }: VentiTabProps) {
+  const [ventoData, setVentoData] = useState<VentoData | null>(null);
+  const [loadingVento, setLoadingVento] = useState(false);
+  const [errorVento, setErrorVento] = useState<string | null>(null);
 
-export default function VentiTab({ currentData, dayData, hourlyData, targetHour = 12 }: VentiTabProps) {
-  // Estrai profilo vento REALE dai dati hourly (che arrivano da weatherService)
-  const windProfile = useMemo(() => {
-    if (!hourlyData || hourlyData.length === 0) return [];
-    
-    // Trova l'ora target
-    const now = new Date();
-    const targetDate = new Date(now);
-    targetDate.setHours(targetHour, 0, 0, 0);
+  // Calcola la data YYYY-MM-DD dal selectedDay
+  useEffect(() => {
+    if (!lat || !lon) return;
 
-    const entry = hourlyData.find((h: any) => {
-      const t = h.time instanceof Date ? h.time : new Date(h.time);
-      return t.getHours() === targetHour &&
-             t.getFullYear() === targetDate.getFullYear() &&
-             t.getMonth() === targetDate.getMonth() &&
-             t.getDate() === targetDate.getDate();
-    }) || hourlyData[0]; // fallback: prima ora disponibile
+    const oggi = new Date();
+    const targetDate = new Date(oggi);
+    targetDate.setDate(oggi.getDate() + selectedDay);
+    const dayStr = targetDate.toISOString().split("T")[0]; // YYYY-MM-DD
 
-    if (!entry?.windProfile || !Array.isArray(entry.windProfile) || entry.windProfile.length === 0) {
-      return [];
-    }
+    setLoadingVento(true);
+    setErrorVento(null);
 
-    // Mappa ai livelli di visualizzazione (10m + quote reali)
-    const surfaceSpeed = currentData?.windSpeed ?? 10;
-    const surfaceDir = currentData?.windDir ?? 0;
-    const profile = [
-      { alt: 10, speed: surfaceSpeed, dir: surfaceDir, dirName: getWindDirName(surfaceDir) },
-      ...entry.windProfile
-        .filter((l: any) => l.speed > 0 && l.dir >= 0)
-        .map((l: any) => ({
-          alt: l.height,
-          speed: l.speed,
-          dir: l.dir,
-          dirName: getWindDirName(l.dir),
-        })),
-    ];
+    getVento(lat, lon, dayStr)
+      .then(data => {
+        setVentoData(data);
+        setLoadingVento(false);
+      })
+      .catch(err => {
+        setErrorVento(err instanceof Error ? err.message : "Errore nel recupero vento");
+        setLoadingVento(false);
+      });
+  }, [lat, lon, selectedDay]);
 
-    return profile;
-  }, [hourlyData, targetHour, currentData]);
-
-  const hasRealData = windProfile.length > 1; // più del solo livello 10m
-
-  // Se non ci sono dati reali, usa una stima di fallback
-  const displayProfile = useMemo(() => {
-    if (hasRealData) return getDisplayProfile(windProfile);
-    
-    // Stima di fallback
-    const surfaceSpeed = currentData?.windSpeed ?? 10;
-    const surfaceDir = currentData?.windDir ?? 0;
-    const estimated: WindLevel[] = [];
-    const altLevels = [10, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000];
-    for (const alt of altLevels) {
-      if (alt === 10) {
-        estimated.push({ alt, speed: surfaceSpeed, dir: surfaceDir, dirName: getWindDirName(surfaceDir) });
-      } else {
-        const factor = 1 + (alt / 1000) * 0.35;
-        const speed = Math.round(Math.min(surfaceSpeed * factor, 60) * 10) / 10;
-        const dir = (surfaceDir + Math.round((alt / 1000) * 15)) % 360;
-        estimated.push({ alt, speed, dir, dirName: getWindDirName(dir) });
-      }
-    }
-    return estimated;
-  }, [windProfile, hasRealData, currentData]);
-
-  // Carte riassuntive per le 5 quote principali
-  const summaryLevels = useMemo(() => {
-    const findLevel = (alt: number) =>
-      windProfile.find(l => l.alt === alt);
-    
-    return [
-      { label: "Superficie (10m)", level: findLevel(10) || displayProfile.find(l => l.alt === 10), gust: currentData?.windGusts },
-      { label: "Bassa (500m)", level: findLevel(500) || displayProfile.find(l => l.alt === 500) },
-      { label: "Media (1000m)", level: findLevel(1000) || displayProfile.find(l => l.alt === 1000) },
-      { label: "Alta (2000m)", level: findLevel(2000) || displayProfile.find(l => l.alt === 2000) },
-      { label: "Molto alta (4000m)", level: findLevel(4000) || displayProfile.find(l => l.alt === 4000) },
-    ];
-  }, [windProfile, displayProfile, currentData]);
-
-  if (!currentData) {
+  if (loadingVento) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-        <Wind className="w-16 h-16 text-slate-600 mb-4" />
-        <p className="text-lg font-bold">Nessun dato vento</p>
+      <div className="flex items-center justify-center py-16 text-slate-400">
+        <div className="w-8 h-8 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin mr-3" />
+        <span>Caricamento dati vento per il giorno selezionato...</span>
       </div>
     );
   }
 
-  const surfaceSpeed = currentData?.windSpeed ?? 0;
+  if (errorVento) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+        <Wind className="w-16 h-16 text-slate-600 mb-4" />
+        <p className="text-lg font-bold">Errore nel recupero vento</p>
+        <p className="text-sm text-slate-500 mt-1">{errorVento}</p>
+      </div>
+    );
+  }
+
+  if (!ventoData || ventoData.ventoOrario.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+        <Wind className="w-16 h-16 text-slate-600 mb-4" />
+        <p className="text-lg font-bold">Nessun dato vento per questo giorno</p>
+      </div>
+    );
+  }
+
+  const surfaceSpeed = currentData?.windSpeed ?? ventoData.ventoDecollo ?? 0;
   const surfaceDir = currentData?.windDir ?? 0;
-  const surfaceGust = currentData?.windGusts ?? 0;
+  const surfaceGust = currentData?.windGusts ?? ventoData.ventoAtterraggio ?? 0;
+  const maxSpeed = Math.max(...ventoData.ventoOrario.map(v => v.speed), 1);
 
   return (
     <div className="space-y-4">
-      {/* Badge dati reali / stimati */}
-      <div className="flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-bold"
-        style={{
-          backgroundColor: hasRealData ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-          borderColor: hasRealData ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)',
-          color: hasRealData ? '#6ee7b7' : '#fcd34d',
-        }}
-      >
+      {/* Badge fonte dati */}
+      <div className="flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-bold bg-emerald-900/15 border-emerald-500/30 text-emerald-300">
         <Server className="w-4 h-4" />
-        {hasRealData
-          ? `Dati reali da Open-Meteo (${windProfile.length - 1} quote in quota)`
-          : `Dati stimati — vento in quota non disponibile da Open-Meteo per questo sito/ora`}
+        Dati reali da Open-Meteo · {ventoData.giorno} · {ventoData.ventoOrario.length} ore
       </div>
 
       {/* Carte riassuntive vento in quota */}
       <div>
         <h4 className="text-base font-bold text-emerald-300 mb-3 flex items-center gap-2">
-          <Wind className="w-5 h-5" /> Vento a diverse quote
+          <Wind className="w-5 h-5" /> Vento orario · {ventoData.giorno}
         </h4>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-          {summaryLevels.map((w, i) => w.level ? (
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
+          {ventoData.ventoOrario.map((v, i) => (
             <div key={i} className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3 text-center">
-              <div className="text-sm text-slate-400 font-bold mb-2">{w.label}</div>
-              <div className="text-xl font-bold text-white">{getWindArrow(w.level.dir)} {Math.round(w.level.speed)}</div>
-              <div className="text-sm text-slate-400">{w.level.dirName} ({w.level.dir}°)</div>
-              {(w as any).gust && <div className="text-sm text-red-300 mt-1">Raff. {Math.round((w as any).gust)}</div>}
-            </div>
-          ) : (
-            <div key={i} className="bg-slate-800/30 border border-slate-700/30 rounded-xl p-3 text-center">
-              <div className="text-sm text-slate-400 font-bold mb-2">{w.label}</div>
-              <div className="text-xl font-bold text-slate-500">—</div>
-              <div className="text-sm text-slate-500">N/D</div>
+              <div className="text-sm text-slate-400 font-bold mb-2">{String(v.ora).padStart(2, "0")}:00</div>
+              <div className="text-xl font-bold text-white">{getWindArrow(v.dir)} {Math.round(v.speed)}</div>
+              <div className="text-sm text-slate-400">{getWindDirName(v.dir)} ({Math.round(v.dir)}°)</div>
+              <div className="text-sm text-red-300 mt-1">Raff. {Math.round(v.gust)}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Profilo verticale */}
+      {/* Profilo vento verticale (barre) */}
       <div>
         <h4 className="text-base font-bold text-emerald-300 mb-3 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5" /> Profilo vento verticale {hasRealData ? '(reale)' : '(stimato)'}
+          <TrendingUp className="w-5 h-5" /> Intensità vento oraria
         </h4>
         <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 space-y-1">
-          {displayProfile.map((level, idx) => {
-            const maxSpeed = Math.max(...displayProfile.map(l => l.speed || 0), 1);
-            const width = maxSpeed > 0 ? Math.min(100, (level.speed / maxSpeed) * 100) : 10;
+          {ventoData.ventoOrario.map((v, idx) => {
+            const width = maxSpeed > 0 ? Math.min(100, (v.speed / maxSpeed) * 100) : 10;
             const barColor = width < 30 ? "bg-emerald-400" : width < 50 ? "bg-lime-400" : width < 70 ? "bg-amber-400" : width < 90 ? "bg-orange-400" : "bg-red-400";
             return (
-              <div key={idx} className="grid grid-cols-[70px_1fr_80px] gap-3 items-center py-2">
-                <span className="text-sm text-slate-300 font-bold">{level.alt}m</span>
-                <div className="h-7 bg-slate-700/60 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full flex items-center justify-end pr-2 ${barColor}`} style={{ width: `${Math.max(width, 20)}%` }}>
-                    <span className="text-sm text-white font-bold">{level.speed != null ? Math.round(level.speed) : "—"}</span>
+              <div key={idx} className="grid grid-cols-[60px_1fr_80px_60px] gap-2 items-center py-1.5">
+                <span className="text-sm text-slate-300 font-bold">{String(v.ora).padStart(2, "0")}:00</span>
+                <div className="h-6 bg-slate-700/60 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full flex items-center justify-end pr-2 ${barColor}`} style={{ width: `${Math.max(width, 15)}%` }}>
+                    <span className="text-xs text-white font-bold">{Math.round(v.speed)}</span>
                   </div>
                 </div>
-                <span className="text-sm text-slate-300 text-center font-bold">{level.dir != null ? `${getWindArrow(level.dir)} ${getWindDirName(level.dir)}` : "—"}</span>
+                <span className="text-sm text-slate-300 text-center font-medium">{getWindArrow(v.dir)} {getWindDirName(v.dir)}</span>
+                <span className="text-sm text-red-300 text-center font-medium">{Math.round(v.gust)}</span>
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Dati del vento al suolo */}
-      <div className="bg-slate-800/30 border border-slate-700/30 rounded-xl p-4 text-center text-sm text-slate-400">
-        <span>Vento al suolo: {surfaceSpeed} km/h da {getWindDirName(surfaceDir)} ({Math.round(surfaceDir)}°) · Raffiche: {surfaceGust} km/h · Ora: {String(targetHour).padStart(2, "0")}:00</span>
+      {/* Riepilogo decollo e atterraggio */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
+          <div className="text-sm text-slate-400 uppercase font-bold mb-1">Vento decollo (ora 9:00)</div>
+          <div className="text-xl font-bold text-white">
+            {ventoData.ventoDecollo != null ? `${Math.round(ventoData.ventoDecollo)} km/h` : "N/D"}
+          </div>
+        </div>
+        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
+          <div className="text-sm text-slate-400 uppercase font-bold mb-1">Vento atterraggio (ora 10:00)</div>
+          <div className="text-xl font-bold text-white">
+            {ventoData.ventoAtterraggio != null ? `${Math.round(ventoData.ventoAtterraggio)} km/h` : "N/D"}
+          </div>
+        </div>
+      </div>
+
+      <div className="text-center text-sm text-slate-500 border-t border-slate-700/30 pt-3">
+        Coordinate: {lat?.toFixed(4)}, {lon?.toFixed(4)} · {ventoData.giorno}
       </div>
     </div>
   );
