@@ -11,90 +11,48 @@
 
   body {
     @apply bg-slate-950 text-white;
-    font-family: 'Inter', sans-serif;
-    font-size: 16px;
-    line-height: 1.6;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  @media (min-width: 768px) {
-    body {
-      font-size: 18px;
-    }
-  }
-
-  /* Testi base più grandi */
+  /* ===== DIMENSIONI UMANE ===== */
+  .text-\[10px\] { font-size: 13px !important; }
+  .text-\[11px\] { font-size: 14px !important; }
   .text-xs { font-size: 14px !important; }
-  .text-sm { font-size: 16px !important; }
-  .text-base { font-size: 17px !important; }
-  .text-lg { font-size: 19px !important; }
-  .text-xl { font-size: 22px !important; }
-  .text-2xl { font-size: 26px !important; }
-  .text-3xl { font-size: 32px !important; }
-  .text-4xl { font-size: 38px !important; }
-  .text-5xl { font-size: 46px !important; }
+  .text-sm { font-size: 15px !important; }
+  .text-base { font-size: 16px !important; }
+  .text-lg { font-size: 18px !important; }
+  .text-xl { font-size: 20px !important; }
+  .text-2xl { font-size: 24px !important; }
+  .text-3xl { font-size: 28px !important; }
+  .text-4xl { font-size: 34px !important; }
 
   @media (min-width: 768px) {
+    .text-\[10px\] { font-size: 14px !important; }
+    .text-\[11px\] { font-size: 15px !important; }
     .text-xs { font-size: 15px !important; }
-    .text-sm { font-size: 17px !important; }
-    .text-base { font-size: 18px !important; }
-    .text-lg { font-size: 20px !important; }
-    .text-xl { font-size: 24px !important; }
-    .text-2xl { font-size: 28px !important; }
-    .text-3xl { font-size: 34px !important; }
-    .text-4xl { font-size: 40px !important; }
-    .text-5xl { font-size: 48px !important; }
+    .text-sm { font-size: 16px !important; }
+    .text-base { font-size: 17px !important; }
+    .text-lg { font-size: 19px !important; }
+    .text-xl { font-size: 22px !important; }
+    .text-2xl { font-size: 26px !important; }
+    .text-3xl { font-size: 30px !important; }
+    .text-4xl { font-size: 36px !important; }
   }
 
-  /* Override per testi minuscoli */
-  .text-\[10px\] { font-size: 14px !important; }
-  .text-\[11px\] { font-size: 15px !important; }
-  .text-\[9px\] { font-size: 13px !important; }
-  .text-\[8px\] { font-size: 12px !important; }
+  /* Icone e numeri grandi */
+  .tabular-nums { font-size: 16px !important; font-weight: 700 !important; }
+  .table th, .table td { padding: 10px 12px !important; font-size: 15px !important; }
 
-  @media (min-width: 768px) {
-    .text-\[10px\] { font-size: 15px !important; }
-    .text-\[11px\] { font-size: 16px !important; }
-    .text-\[9px\] { font-size: 14px !important; }
-    .text-\[8px\] { font-size: 13px !important; }
-  }
-
-  /* Override per tabella meteo */
-  table, th, td { @apply text-base !important; }
-
-  /* Numeri tabellari ben leggibili */
-  .tabular-nums { @apply text-base font-bold; }
-
-  /* Override per testi davvero piccoli */
-  .text-\[7px\] { font-size: 12px !important; }
-  .text-\[6px\] { font-size: 11px !important; }
-  .text-\[5px\] { font-size: 10px !important; }
-
-  @media (min-width: 768px) {
-    .text-\[7px\] { font-size: 13px !important; }
-    .text-\[6px\] { font-size: 12px !important; }
-    .text-\[5px\] { font-size: 11px !important; }
-  }
+  /* Contrasto potenziato */
+  .text-slate-300 { color: rgb(220, 225, 235) !important; }
+  .text-slate-400 { color: rgb(180, 190, 210) !important; }
+  .text-slate-500 { color: rgb(150, 160, 180) !important; }
+  .text-slate-600 { color: rgb(130, 140, 160) !important; }
 }
-
-/* Animazioni */
-@keyframes hop-sync {
-  0%, 100% { transform: translateY(0); }
-  25% { transform: translateY(-4px); }
-  50% { transform: translateY(0); }
-  75% { transform: translateY(-2px); }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  25% { transform: translateY(-3px) rotate(-1deg); }
-  50% { transform: translateY(0) rotate(0deg); }
-  75% { transform: translateY(-1px) rotate(1deg); }
-}
-
-.animate-hop-sync { animation: hop-sync 1.5s ease-in-out infinite; }
-.animate-float { animation: float 3s ease-in-out infinite; }
 
 @keyframes hop {
   0%, 100% { transform: translateY(0); }
@@ -103,8 +61,15 @@
   75% { transform: translateY(-3px); }
 }
 
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-4px) rotate(-2deg); }
+  50% { transform: translateY(0) rotate(0deg); }
+  75% { transform: translateY(-2px) rotate(2deg); }
+}
+
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(25px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -114,26 +79,13 @@
 }
 
 .animate-hop { animation: hop 1.5s ease-in-out infinite; }
-.animate-slide-up { animation: slideUp 0.5s ease-out; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-slide-up { animation: slideUp 0.4s ease-out; }
 .animate-fade-in { animation: fadeIn 0.3s ease-out; }
 
-/* Scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: #1e293b; border-radius: 8px; }
-::-webkit-scrollbar-thumb { background: #475569; border-radius: 8px; }
+::-webkit-scrollbar-track { background: #1e293b; }
+::-webkit-scrollbar-thumb { background: #475569; border-radius: 6px; }
 ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
-/* Selection */
 ::selection { background: #f97316; color: white; }
-
-/* Migliora contrasto */
-.text-slate-400 { color: rgb(190, 198, 210) !important; }
-.text-slate-500 { color: rgb(160, 170, 185) !important; }
-.text-slate-600 { color: rgb(140, 150, 170) !important; }
-.text-slate-300 { color: rgb(230, 233, 240) !important; }
-
-/* Paragrafi */
-p { @apply text-base leading-relaxed; }
-
-/* Tabella */
-.table-auto td, .table-auto th { @apply py-3 px-4 text-base; }

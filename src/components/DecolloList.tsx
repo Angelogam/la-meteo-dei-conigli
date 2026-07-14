@@ -1,17 +1,7 @@
 "use client";
 
 import React from "react";
-import {
-  MapPin,
-  Mountain,
-  Compass,
-  Navigation,
-  Sparkles,
-  Clock,
-  Thermometer,
-  Wind,
-  Gauge,
-} from "lucide-react";
+import { MapPin, Mountain, Compass, Navigation, Sparkles, Thermometer, Wind, Gauge } from "lucide-react";
 import type { Decollo } from "@/data/decolli";
 import type { MeteoDaily, MeteoHourly } from "@/services/weatherService";
 
@@ -19,9 +9,7 @@ interface DecolloListProps {
   decolli: Decollo[];
   selectedId: string;
   onSelect: (id: string) => void;
-  /** Mappa id decollo -> daily[] */
   allDailyData?: Record<string, MeteoDaily[]>;
-  /** Mappa id decollo -> hourly[] */
   allHourlyData?: Record<string, MeteoHourly[]>;
 }
 
@@ -38,77 +26,45 @@ function getWeatherEmoji(code: number): string {
   return "☀️";
 }
 
-function getDirArrow(deg: number): string {
-  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
-  return arrows[Math.round(deg / 45) % 8] || "→";
-}
-
 function getDirLabel(deg: number): string {
   const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   return dirs[Math.round(deg / 45) % 8];
 }
 
+function getDirArrow(deg: number): string {
+  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
+  return arrows[Math.round(deg / 45) % 8];
+}
+
 const DecolloList = ({ decolli, selectedId, onSelect, allDailyData, allHourlyData }: DecolloListProps) => {
-  // Prende i dati orari del giorno 0 (oggi) per ogni decollo
-  const getCurrentData = (id: string): { temperature: number; windSpeed: number; windDir: number; weatherCode: number; windGusts: number } | null => {
+  const getCurrentData = (id: string) => {
     const hourly = allHourlyData?.[id];
     if (!hourly || hourly.length === 0) return null;
-
-    const oggi = new Date();
-    // Cerca l'ora corrente nei dati
     const now = new Date();
-    const currentHour = hourly.find(h => 
-      h.time.getFullYear() === oggi.getFullYear() &&
-      h.time.getMonth() === oggi.getMonth() &&
-      h.time.getDate() === oggi.getDate() &&
+    const currentHour = hourly.find(h =>
+      h.time.getFullYear() === now.getFullYear() &&
+      h.time.getMonth() === now.getMonth() &&
+      h.time.getDate() === now.getDate() &&
       h.time.getHours() === now.getHours()
     );
-
-    if (currentHour) {
-      return {
-        temperature: currentHour.temperature,
-        windSpeed: currentHour.windSpeed,
-        windDir: currentHour.windDir,
-        weatherCode: currentHour.weatherCode,
-        windGusts: currentHour.windGusts,
-      };
-    }
-
-    // Fallback: primo dato orario del giorno
-    const first = hourly.find(h => 
-      h.time.getFullYear() === oggi.getFullYear() &&
-      h.time.getMonth() === oggi.getMonth() &&
-      h.time.getDate() === oggi.getDate()
+    if (currentHour) return currentHour;
+    const first = hourly.find(h =>
+      h.time.getFullYear() === now.getFullYear() &&
+      h.time.getMonth() === now.getMonth() &&
+      h.time.getDate() === now.getDate()
     );
-    if (!first) return null;
-
-    return {
-      temperature: first.temperature,
-      windSpeed: first.windSpeed,
-      windDir: first.windDir,
-      weatherCode: first.weatherCode,
-      windGusts: first.windGusts,
-    };
+    return first || null;
   };
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-800/60 rounded-2xl border border-emerald-500/20">
-        <Navigation className="w-5 h-5 text-emerald-400" />
-        <h3 className="text-base font-black text-emerald-300 tracking-wider uppercase">Decolli</h3>
-        <span className="text-xs text-slate-500 bg-slate-700/60 px-2.5 py-0.5 rounded-full">
-          {decolli.length}
-        </span>
+      <div className="flex items-center gap-2 px-4 py-3 bg-slate-800/60 rounded-xl border border-emerald-500/30">
+        <Navigation className="w-6 h-6 text-emerald-400" />
+        <span className="text-lg font-bold text-emerald-300">Decolli</span>
+        <span className="text-sm text-slate-500 bg-slate-700/60 px-2 py-0.5 rounded-full">{decolli.length}</span>
       </div>
 
-      <div className="flex items-center gap-1.5 px-2 py-1.5 mb-1">
-        <Clock className="w-4 h-4 text-amber-400" />
-        <span className="text-sm font-bold text-slate-300 tabular-nums">
-          {new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
-        </span>
-      </div>
-
-      <div className="space-y-2 max-h-[65vh] overflow-y-auto pr-1">
+      <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
         {decolli.map((site) => {
           const isSelected = site.id === selectedId;
           const current = getCurrentData(site.id);
@@ -118,94 +74,48 @@ const DecolloList = ({ decolli, selectedId, onSelect, allDailyData, allHourlyDat
           const dir = hasData ? Math.round(current.windDir) : null;
           const gust = hasData && current.windGusts > 0 ? Math.round(current.windGusts) : null;
           const code = hasData ? current.weatherCode : null;
-          const dirLabel = dir != null ? getDirLabel(dir) : "";
           const dirArrow = dir != null ? getDirArrow(dir) : "";
+          const dirName = dir != null ? getDirLabel(dir) : "";
           const emoji = code != null ? getWeatherEmoji(code) : "—";
 
           return (
             <button
               key={site.id}
               onClick={() => onSelect(site.id)}
-              className={`
-                w-full text-left rounded-2xl px-4 py-4 transition-all duration-200 border-2
-                ${
-                  isSelected
-                    ? "bg-gradient-to-r from-emerald-900/50 to-slate-800/70 border-emerald-400/60 shadow-lg shadow-emerald-500/20 scale-[1.02]"
-                    : "bg-slate-800/40 border-slate-700/30 hover:bg-slate-700/50 hover:border-slate-600/50 hover:scale-[1.01]"
-                }
-              `}
+              className={`w-full text-left rounded-xl px-4 py-4 transition-all border-2 ${
+                isSelected
+                  ? "bg-emerald-900/50 border-emerald-500 shadow"
+                  : "bg-slate-800/40 border-slate-700/40 hover:bg-slate-700/50"
+              }`}
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className={`text-base font-black truncate block leading-snug tracking-tight ${
-                      isSelected ? "text-white" : "text-slate-200"
-                    }`}>
-                      {site.name}
-                    </span>
-                    {isSelected && (
-                      <Sparkles className="w-4 h-4 text-emerald-400 animate-twinkle shrink-0" />
-                    )}
+              <div className="flex items-start gap-3">
+                <div className="text-2xl mt-0.5">{emoji}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-base font-bold text-white mb-1">
+                    {site.name}
+                    {isSelected && <Sparkles className="w-4 h-4 text-emerald-400 inline ml-1.5" />}
                   </div>
-                  
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-400">
-                    <span className="flex items-center gap-1">
-                      <Compass className="w-4 h-4 text-sky-400" />
-                      {site.exposure}
-                    </span>
-                    <span className="w-1 h-1 rounded-full bg-slate-500" />
-                    <span className="flex items-center gap-1">
-                      <Mountain className="w-4 h-4 text-amber-400" />
-                      <span className="font-bold text-amber-300">{site.altitude}</span>m
-                    </span>
-                    <span className="w-1 h-1 rounded-full bg-slate-500" />
-                    <span className="flex items-center gap-1 truncate">
-                      <MapPin className="w-4 h-4 text-rose-400 shrink-0" />
-                      <span className="truncate">{site.valley}</span>
-                    </span>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
+                    <span className="flex items-center gap-1"><Compass className="w-4 h-4 text-sky-400" />{site.exposure}</span>
+                    <span className="flex items-center gap-1"><Mountain className="w-4 h-4 text-amber-400" />{site.altitude}m</span>
+                    <span className="flex items-center gap-1"><MapPin className="w-4 h-4 text-rose-400" />{site.valley}</span>
                   </div>
-
                   {hasData && temp != null && (
-                    <div className="mt-3 pt-2 border-t border-slate-700/20 grid grid-cols-3 gap-2">
-                      <div className="flex items-center gap-1.5 text-sm text-slate-300">
-                        <Thermometer className="w-4 h-4 text-amber-400" />
-                        <span className="font-bold tabular-nums">{temp}°</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-sm text-slate-300">
-                        <Wind className="w-4 h-4 text-sky-400" />
-                        <span className="font-bold tabular-nums">{wind}</span>
-                        {dir != null && (
-                          <span className="text-slate-400 text-xs">{dirArrow}{dirLabel}</span>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-end text-xl">{emoji}</div>
-                    </div>
-                  )}
-
-                  {gust != null && wind != null && gust > wind && (
-                    <div className="flex items-center gap-1.5 text-xs text-red-300/80 mt-1">
-                      <Gauge className="w-4 h-4" />
-                      <span>Raffica {gust} km/h</span>
+                    <div className="flex items-center gap-4 mt-3 pt-2 border-t border-slate-700/30">
+                      <span className="flex items-center gap-1.5 text-base font-bold text-amber-300">
+                        <Thermometer className="w-5 h-5 text-amber-400" />{temp}°
+                      </span>
+                      <span className="flex items-center gap-1.5 text-base font-bold text-sky-300">
+                        <Wind className="w-5 h-5 text-sky-400" />{wind}
+                        <span className="text-slate-400 font-normal text-sm">{dirArrow}{dirName}</span>
+                      </span>
+                      {gust != null && gust > 0 && (
+                        <span className="text-sm text-red-300"><Gauge className="w-4 h-4 inline" />{gust}</span>
+                      )}
                     </div>
                   )}
                 </div>
               </div>
-
-              {isSelected && (
-                <div className="mt-3 pt-2 border-t border-emerald-500/20">
-                  <div className="flex items-center gap-2 text-xs text-emerald-300/80">
-                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="font-bold tracking-wide uppercase">Selezionato</span>
-                    <span className="text-slate-600">·</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-4 h-4 text-slate-500" />
-                      <span className="text-slate-500 tabular-nums">
-                        {new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                    </span>
-                  </div>
-                </div>
-              )}
             </button>
           );
         })}

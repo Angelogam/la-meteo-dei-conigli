@@ -3,7 +3,7 @@
 import React from "react";
 import {
   CloudSun, Droplets, Gauge, Cloud, Wind, ArrowUp, TrendingUp,
-  Sun, Eye, AlertTriangle,
+  Sun, Eye, AlertTriangle, Thermometer,
 } from "lucide-react";
 
 interface MeteoTabProps {
@@ -14,99 +14,63 @@ interface MeteoTabProps {
   stabilityIndex: { label: string; color: string };
 }
 
-export default function MeteoTab({
-  currentData,
-  dayData,
-  site,
-  thermalDelta,
-  stabilityIndex,
-}: MeteoTabProps) {
+export default function MeteoTab({ currentData, dayData, site, thermalDelta, stabilityIndex }: MeteoTabProps) {
   if (!currentData) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <CloudSun className="w-12 h-12 text-slate-600 mb-3" />
-        <p className="text-slate-500 text-lg font-bold">Nessun dato meteo</p>
+      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+        <CloudSun className="w-16 h-16 text-slate-600 mb-4" />
+        <p className="text-lg font-bold">Nessun dato meteo</p>
       </div>
     );
   }
 
-  // ===== DATI REALE DA OPEN-METEO =====
-  const temp = currentData.temperature;                          // temperature_2m
-  const humidity = currentData.humidity;                         // relative_humidity_2m
-  const pressure = currentData.pressure;                         // pressure_msl
-  const cloudCover = currentData.cloudCover;                     // cloud_cover
-  const windSpeed = currentData.windSpeed;                       // wind_speed_10m
-  const windDir = currentData.windDir;                           // wind_direction_10m
-  const windGust = currentData.windGusts;                        // wind_gusts_10m
-  const precipitation = currentData.precipitation;               // precipitation
-  const dewPoint = currentData.dewPoint;                         // dew_point_2m
-  const weatherCode = currentData.weatherCode;                   // weather_code
-  const temp80m = currentData.temp80m;                           // temperature_80m
-  const temp120m = currentData.temp120m;                         // temperature_120m
-  const uvIndex = currentData.uvIndex;                           // uv_index
-  const soilTemp = currentData.soilTemp;                         // soil_temperature_0cm
+  const temp = currentData.temperature;
+  const humidity = currentData.humidity;
+  const pressure = currentData.pressure;
+  const cloudCover = currentData.cloudCover;
+  const windSpeed = currentData.windSpeed;
+  const windDir = currentData.windDir;
+  const windGust = currentData.windGusts;
+  const precipitation = currentData.precipitation;
+  const dewPoint = currentData.dewPoint ?? (temp - (100 - (humidity ?? 50)) / 5);
+  const weatherCode = currentData.weatherCode;
+  const temp80m = currentData.temp80m;
+  const temp120m = currentData.temp120m;
+  const uvIndex = currentData.uvIndex;
 
-  // ===== CALCOLI REALI =====
-  // LCL = (T - dew) × 125 — REALE
-  const spread = temp - (dewPoint ?? (temp - (100 - (humidity ?? 50)) / 5));
+  const spread = temp - dewPoint;
   const cloudBase = Math.max(200, Math.min(3000, Math.round(spread * 125)));
 
-  // Gradiente reale da temperatura_80m o temperature_120m — REALE
   let gradienteReale = 0.98;
   let gradienteLabel = "Adiabatico secco";
-  if (temp80m != null) {
-    gradienteReale = ((temp - temp80m) / 78) * 100;
-    gradienteLabel = "Da T80m";
-  } else if (temp120m != null) {
-    gradienteReale = ((temp - temp120m) / 118) * 100;
-    gradienteLabel = "Da T120m";
-  }
+  if (temp80m != null) { gradienteReale = ((temp - temp80m) / 78) * 100; gradienteLabel = "Da T80m"; }
+  else if (temp120m != null) { gradienteReale = ((temp - temp120m) / 118) * 100; gradienteLabel = "Da T120m"; }
 
-  // Forza termica (0-10) — da DATI REALE
   let forzaTermica = 0;
-  // Gradiente (max 3)
   if (gradienteReale >= 1.2) forzaTermica += 3;
   else if (gradienteReale >= 0.98) forzaTermica += 2;
   else if (gradienteReale >= 0.7) forzaTermica += 1;
-  // Vento (max 2)
   if (windSpeed >= 5 && windSpeed <= 15) forzaTermica += 2;
   else if (windSpeed >= 3 && windSpeed < 5) forzaTermica += 1.5;
   else if (windSpeed > 15 && windSpeed <= 22) forzaTermica += 1;
-  // Nuvolosità (max 2)
   if (cloudCover >= 15 && cloudCover <= 45) forzaTermica += 2;
   else if (cloudCover >= 5 && cloudCover < 15) forzaTermica += 1.5;
-  // Umidità (max 1.5)
   if (humidity >= 30 && humidity <= 50) forzaTermica += 1.5;
   else if (humidity > 50 && humidity <= 65) forzaTermica += 1;
-  // UV (max 1)
   if (uvIndex != null) {
     if (uvIndex >= 7) forzaTermica += 1;
     else if (uvIndex >= 5) forzaTermica += 0.7;
     else if (uvIndex >= 3) forzaTermica += 0.4;
   }
   forzaTermica = Math.min(10, Math.max(0, Math.round(forzaTermica * 10) / 10));
-
-  // Rateo da forza termica
   let rateoTermico = (forzaTermica / 10) * 4;
   if (precipitation > 1) rateoTermico = 0;
   rateoTermico = Math.round(rateoTermico * 10) / 10;
-
-  // Top termico: base + spessore basato su forza
   const topTermico = Math.min(5000, cloudBase + Math.round(forzaTermica * 250));
-
-  // Raffiche reali o stimate
   const raffiche = windGust ?? Math.round(windSpeed * 1.4);
-
-  // Zero termico: altitudine + (temp / 0.0098) + 200m — REALE da temperatura
   const zeroTermico = Math.max(0, Math.round(site.alt + (temp / 0.0098) + 200));
+  const turbolenza = raffiche > 30 ? "Forte" : raffiche > 22 ? "Moderata" : raffiche > 14 ? "Leggera" : "Assente";
 
-  // Turbolenza — da raffiche reali
-  const turbolenza =
-    raffiche > 30 ? "Forte" :
-    raffiche > 22 ? "Moderata" :
-    raffiche > 14 ? "Leggera" : "Assente";
-
-  // Condizioni volo — da dati reali
   const condizioniVolo =
     windSpeed < 3 ? "Troppo calma" :
     windSpeed > 30 ? "Vento forte" :
@@ -117,12 +81,10 @@ export default function MeteoTab({
     forzaTermica >= 1 ? "Deboli 🌤️" :
     "Assenti ❄️";
 
-  // Direzione vento
   const dirCardinali = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   const dirLabel = dirCardinali[Math.round((windDir ?? 0) / 45) % 8];
   const arrow = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"][Math.round((windDir ?? 0) / 45) % 8];
 
-  // Emoji condizioni
   const voloEmoji =
     condizioniVolo.includes("Ottime") ? "🪂🔥" :
     condizioniVolo.includes("Buone") ? "🪂" :
@@ -131,7 +93,6 @@ export default function MeteoTab({
     condizioniVolo.includes("Pioggia") || condizioniVolo.includes("Temporale") ? "⛈️" :
     condizioniVolo.includes("forte") ? "💨" : "❄️";
 
-  // Descrizione cielo — REALE da weatherCode
   const cieloDesc =
     weatherCode === 0 ? "Sereno" :
     weatherCode <= 2 ? "Poco nuvoloso" :
@@ -141,156 +102,81 @@ export default function MeteoTab({
     "Coperto";
 
   return (
-    <div className="space-y-6">
-      {/* ===== BANNER CONDIZIONI VOLO ===== */}
-      <div className={`rounded-3xl p-6 border-4 text-center ${
+    <div className="space-y-4">
+      <div className={`rounded-xl p-6 border-4 text-center ${
         condizioniVolo.includes("Ottime") ? "bg-emerald-900/40 border-emerald-400" :
         condizioniVolo.includes("Buone") ? "bg-green-900/40 border-green-400" :
         condizioniVolo.includes("Deboli") ? "bg-amber-900/40 border-amber-400" :
         condizioniVolo.includes("calma") ? "bg-slate-800/60 border-slate-400" :
         "bg-red-900/40 border-red-400"
       }`}>
-        <div className="text-5xl mb-3">{voloEmoji}</div>
-        <div className="text-3xl font-black text-white mb-1">{condizioniVolo}</div>
-        <div className="text-base text-slate-300">
-          {cieloDesc} · Vento {windSpeed} km/h da {dirLabel}
-        </div>
-        {/* Zero termico */}
+        <div className="text-6xl mb-3">{voloEmoji}</div>
+        <div className="text-2xl font-bold text-white mb-1">{condizioniVolo}</div>
+        <div className="text-base text-slate-300">{cieloDesc} · Vento {windSpeed} km/h da {dirLabel}</div>
         <div className="mt-4 pt-3 border-t border-white/10">
-          <span className="text-slate-400 text-sm">Zero termico</span>
-          <div className="text-2xl font-black text-white tabular-nums mt-0.5">
-            {zeroTermico} <span className="text-base text-slate-400 font-normal">m</span>
-          </div>
+          <span className="text-sm text-slate-400">Zero termico</span>
+          <div className="text-2xl font-bold text-white mt-0.5">{zeroTermico} <span className="text-base text-slate-400 font-normal">m</span></div>
         </div>
       </div>
 
-      {/* ===== VENTO DECOLLO / ATTERRAGGIO ===== */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-slate-800/60 border-2 border-slate-600 rounded-2xl p-5 text-center">
-          <div className="text-xs text-slate-400 uppercase tracking-widest mb-2 font-bold">Vento decollo</div>
-          <div className="text-4xl font-black text-white flex items-center justify-center gap-2 mb-1">
-            {arrow} {Math.round(windSpeed)}
-            <span className="text-base text-slate-400 font-normal">km/h</span>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-slate-800/60 border border-slate-600/50 rounded-xl p-4 text-center">
+          <div className="text-sm text-slate-400 uppercase mb-2 font-bold">Vento decollo</div>
+          <div className="text-3xl font-bold text-white flex items-center justify-center gap-2 mb-1">
+            {arrow} {Math.round(windSpeed)} <span className="text-base text-slate-400 font-normal">km/h</span>
           </div>
-          <div className="text-sm text-slate-400">{dirLabel} ({Math.round(windDir ?? 0)}°)</div>
+          <div className="text-base text-slate-400">{dirLabel} ({Math.round(windDir ?? 0)}°)</div>
         </div>
-        <div className="bg-slate-800/60 border-2 border-slate-600 rounded-2xl p-5 text-center">
-          <div className="text-xs text-slate-400 uppercase tracking-widest mb-2 font-bold">Vento atterraggio</div>
-          <div className="text-4xl font-black text-white flex items-center justify-center gap-2 mb-1">
-            {Math.round(windSpeed * 0.7)}
-            <span className="text-base text-slate-400 font-normal">km/h</span>
+        <div className="bg-slate-800/60 border border-slate-600/50 rounded-xl p-4 text-center">
+          <div className="text-sm text-slate-400 uppercase mb-2 font-bold">Vento atterraggio</div>
+          <div className="text-3xl font-bold text-white flex items-center justify-center gap-2 mb-1">
+            {Math.round(windSpeed * 0.7)} <span className="text-base text-slate-400 font-normal">km/h</span>
           </div>
-          <div className="text-sm text-slate-400">Raffiche {raffiche} km/h</div>
+          <div className="text-base text-slate-400">Raffiche {raffiche} km/h</div>
         </div>
       </div>
 
-      {/* ===== TERMICHE REALE ===== */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <BigCard
-          icon={<ArrowUp className="w-8 h-8 text-green-400" />}
-          label="Base nuvole (LCL)"
-          value={`${cloudBase}`}
-          unit="m"
-          sub={`Spread ${spread.toFixed(1)}°C`}
-        />
-        <BigCard
-          icon={<ArrowUp className="w-8 h-8 text-red-400" />}
-          label="Top termiche"
-          value={`${topTermico}`}
-          unit="m"
-          sub={precipitation > 1 ? "Pioggia ⛔" : `Spessore ${topTermico - cloudBase}m`}
-        />
-        <BigCard
-          icon={<TrendingUp className="w-8 h-8 text-orange-400" />}
-          label="Forza termica"
-          value={`${forzaTermica.toFixed(1)}`}
-          unit="/10"
-          sub={`${rateoTermico} m/s`}
-        />
-        <BigCard
-          icon={<AlertTriangle className="w-8 h-8 text-amber-400" />}
-          label="Turbolenza"
-          value={turbolenza}
-          unit=""
-          sub={
-            turbolenza === "Forte" ? "⚠️ Attenzione" :
-            turbolenza === "Moderata" ? "🟡 Gestibile" :
-            turbolenza === "Leggera" ? "🟢 Ok" : "✅ Nessuna"
-          }
-        />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <BigCard icon={<ArrowUp className="w-8 h-8 text-green-400" />} label="Base nuvole (LCL)" value={`${cloudBase}`} unit="m" sub={`Spread ${spread.toFixed(1)}°C`} />
+        <BigCard icon={<ArrowUp className="w-8 h-8 text-red-400" />} label="Top termiche" value={`${topTermico}`} unit="m" sub={precipitation > 1 ? "Pioggia ⛔" : `Spessore ${topTermico - cloudBase}m`} />
+        <BigCard icon={<TrendingUp className="w-8 h-8 text-orange-400" />} label="Forza termica" value={`${forzaTermica.toFixed(1)}`} unit="/10" sub={`${rateoTermico} m/s`} />
+        <BigCard icon={<AlertTriangle className="w-8 h-8 text-amber-400" />} label="Turbolenza" value={turbolenza} unit="" sub={turbolenza === "Forte" ? "⚠️ Attenzione" : turbolenza === "Moderata" ? "🟡 Gestibile" : turbolenza === "Leggera" ? "🟢 Ok" : "✅ Nessuna"} />
       </div>
 
-      {/* ===== DETTAGLIO REALE ===== */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <SmallCard
-          icon={<Droplets className="w-6 h-6 text-sky-400" />}
-          label="Umidità"
-          value={`${humidity ?? "--"}%`}
-          sub={dewPoint != null ? `Rugiada ${Math.round(dewPoint)}°C` : undefined}
-        />
-        <SmallCard
-          icon={<Gauge className="w-6 h-6 text-emerald-400" />}
-          label="Pressione QNH"
-          value={`${Math.round(pressure ?? 1013)} hPa`}
-          sub={pressure > 1020 ? "Alta" : pressure < 1010 ? "Bassa" : "Normale"}
-        />
-        <SmallCard
-          icon={<Cloud className="w-6 h-6 text-slate-400" />}
-          label="Nuvolosità"
-          value={`${cloudCover ?? "--"}%`}
-          sub={cloudCover < 20 ? "Sereno" : cloudCover < 50 ? "Poco" : cloudCover < 80 ? "Nuvoloso" : "Coperto"}
-        />
-        <SmallCard
-          icon={<Sun className="w-6 h-6 text-yellow-400" />}
-          label="UV Index"
-          value={uvIndex != null ? `${uvIndex.toFixed(1)}` : "--"}
-          sub={uvIndex >= 8 ? "Estremo" : uvIndex >= 6 ? "Alto" : uvIndex >= 3 ? "Moderato" : uvIndex >= 1 ? "Basso" : "Nessuno"}
-        />
-        <SmallCard
-          icon={<TrendingUp className="w-6 h-6 text-purple-400" />}
-          label="Gradiente"
-          value={`${gradienteReale.toFixed(2)}°`}
-          sub={`${gradienteLabel} · ${gradienteReale > 1.2 ? "Instabile" : gradienteReale > 0.98 ? "Neutro" : "Stabile"}`}
-        />
-        <SmallCard
-          icon={<Eye className="w-6 h-6 text-cyan-400" />}
-          label="Delta T"
-          value={`${Math.round(thermalDelta ?? 0)}°C`}
-          sub={thermalDelta > 10 ? "Buona escursione" : thermalDelta > 6 ? "Moderata" : "Bassa"}
-        />
+        <SmallCard icon={<Droplets className="w-6 h-6 text-sky-400" />} label="Umidità" value={`${humidity ?? "--"}%`} sub={dewPoint != null ? `Rugiada ${Math.round(dewPoint)}°C` : undefined} />
+        <SmallCard icon={<Gauge className="w-6 h-6 text-emerald-400" />} label="Pressione" value={`${Math.round(pressure ?? 1013)} hPa`} sub={pressure > 1020 ? "Alta" : pressure < 1010 ? "Bassa" : "Normale"} />
+        <SmallCard icon={<Cloud className="w-6 h-6 text-slate-400" />} label="Nuvolosità" value={`${cloudCover ?? "--"}%`} sub={cloudCover < 20 ? "Sereno" : cloudCover < 50 ? "Poco" : cloudCover < 80 ? "Nuvoloso" : "Coperto"} />
+        <SmallCard icon={<Sun className="w-6 h-6 text-yellow-400" />} label="UV Index" value={uvIndex != null ? `${uvIndex.toFixed(1)}` : "--"} sub={uvIndex >= 8 ? "Estremo" : uvIndex >= 6 ? "Alto" : uvIndex >= 3 ? "Moderato" : uvIndex >= 1 ? "Basso" : "Nessuno"} />
+        <SmallCard icon={<TrendingUp className="w-6 h-6 text-purple-400" />} label="Gradiente" value={`${gradienteReale.toFixed(2)}°`} sub={`${gradienteLabel} · ${gradienteReale > 1.2 ? "Instabile" : gradienteReale > 0.98 ? "Neutro" : "Stabile"}`} />
+        <SmallCard icon={<Eye className="w-6 h-6 text-cyan-400" />} label="Delta T" value={`${Math.round(thermalDelta ?? 0)}°C`} sub={thermalDelta > 10 ? "Buona escursione" : thermalDelta > 6 ? "Moderata" : "Bassa"} />
       </div>
 
-      {/* ===== FONTE DATI ===== */}
-      <div className="text-center text-[10px] text-slate-600 border-t border-slate-700/30 pt-3">
+      <div className="text-center text-sm text-slate-600 border-t border-slate-700/30 pt-3">
         Dati reali da Open-Meteo · Ultimo aggiornamento: {new Date().toLocaleTimeString("it-IT")}
       </div>
     </div>
   );
 }
 
-// ===== CARD GRANDE =====
 function BigCard({ icon, label, value, unit, sub }: { icon: React.ReactNode; label: string; value: string; unit: string; sub?: string }) {
   return (
-    <div className="bg-slate-800/60 border-2 border-slate-600 rounded-2xl p-5 text-center">
-      <div className="flex justify-center mb-3">{icon}</div>
-      <div className="text-xs text-slate-400 uppercase tracking-widest mb-2 font-bold">{label}</div>
-      <div className="text-4xl font-black text-white tabular-nums mb-1">
-        {value}
-        {unit && <span className="text-base text-slate-400 font-normal ml-1">{unit}</span>}
-      </div>
+    <div className="bg-slate-800/60 border border-slate-600/50 rounded-xl p-4 text-center">
+      <div className="flex justify-center mb-2">{icon}</div>
+      <div className="text-sm text-slate-400 uppercase mb-1 font-bold">{label}</div>
+      <div className="text-2xl font-bold text-white mb-1">{value}<span className="text-base text-slate-400 font-normal ml-1">{unit}</span></div>
       {sub && <div className="text-sm text-slate-400">{sub}</div>}
     </div>
   );
 }
 
-// ===== CARD PICCOLA =====
 function SmallCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
   return (
-    <div className="bg-slate-800/50 border-2 border-slate-600 rounded-2xl p-4 text-center">
+    <div className="bg-slate-800/50 border border-slate-600/50 rounded-xl p-4 text-center">
       <div className="flex justify-center mb-2">{icon}</div>
-      <div className="text-xs text-slate-400 uppercase tracking-wider mb-1 font-bold">{label}</div>
-      <div className="text-2xl font-black text-white tabular-nums">{value}</div>
-      {sub && <div className="text-xs text-slate-400 mt-1">{sub}</div>}
+      <div className="text-sm text-slate-400 uppercase mb-1 font-bold">{label}</div>
+      <div className="text-xl font-bold text-white">{value}</div>
+      {sub && <div className="text-sm text-slate-400 mt-1">{sub}</div>}
     </div>
   );
 }
