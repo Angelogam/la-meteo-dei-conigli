@@ -1,3 +1,6 @@
+</dyad-delete>
+
+<dyad-write path="src/components/AnalisiMeteo.tsx" description="Clean file, no dyad-write anywhere">
 "use client";
 
 import React, { useMemo } from "react";
@@ -203,7 +206,7 @@ export default function AnalisiMeteo({ dayData }: AnalisiMeteoProps) {
         </div>
         <div className="space-y-2 text-sm text-slate-300">
           <p><span className="text-emerald-400 mr-2">&bull;</span> Max {analisi.tempMaxGiorno}°C, min {analisi.tempMinGiorno}°C, delta {analisi.deltaTermico}°C.</p>
-          <p><span className="text-emerald-400 mr-2">&bull;</span> Umidit&agrave;: {analisi.umiditaMedia}% &mdash; {getUmiditaDescrizione(analisi.umiditaMedia)}.</p>
+          <p><span className="text-emerald-400 mr-2">&bull;</span> Umidità: {analisi.umiditaMedia}% — {getUmiditaDescrizione(analisi.umiditaMedia)}.</p>
           <p><span className="text-emerald-400 mr-2">&bull;</span> Vento: {analisi.ventoMedio} km/h da {analisi.ventoDirNome} ({analisi.ventoDirMedia}°).{analisi.ventoGustsMax > analisi.ventoMedio * 1.5 ? " Raffiche " + analisi.ventoGustsMax + " km/h." : ""}</p>
           <p><span className="text-emerald-400 mr-2">&bull;</span> Cielo: {getCloudDescription(analisi.nuvoleMedia)} ({analisi.nuvoleMedia}%).{analisi.pioggiaTot === 0 ? " Nessuna pioggia." : " Pioggia: " + analisi.pioggiaTot.toFixed(1) + " mm."}</p>
         </div>
@@ -234,11 +237,11 @@ export default function AnalisiMeteo({ dayData }: AnalisiMeteoProps) {
       <div className="card analisi-card bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 p-5">
         <div className="flex items-center gap-2 mb-4">
           <Thermometer className="w-6 h-6 text-amber-400 shrink-0" />
-          <h3 className="text-base font-bold text-white">Profilo termico e stabilit&agrave;</h3>
+          <h3 className="text-base font-bold text-white">Profilo termico e stabilità</h3>
         </div>
         <div className="space-y-2 text-sm text-slate-300">
           <p><span className="text-emerald-400 mr-2">&bull;</span> {analisi.tempMinGiorno}°C min / {analisi.tempMaxGiorno}°C max · delta {analisi.deltaTermico}°C.</p>
-          <p><span className="text-emerald-400 mr-2">&bull;</span> Umidit&agrave; {analisi.umiditaMedia}%.</p>
+          <p><span className="text-emerald-400 mr-2">&bull;</span> Umidità {analisi.umiditaMedia}%.</p>
           <p><span className="text-emerald-400 mr-2">&bull;</span> Pressione: {analisi.pressioneMedia} hPa ({getPressioneDescrizione(analisi.pressioneMedia)}).</p>
         </div>
       </div>
@@ -250,7 +253,7 @@ export default function AnalisiMeteo({ dayData }: AnalisiMeteoProps) {
         </div>
         <div className="space-y-2 text-sm text-slate-300">
           <p><span className="text-emerald-400 mr-2">&bull;</span> Direzione: {analisi.ventoDirNome} ({analisi.ventoDirMedia}°). Vento medio: {analisi.ventoMedio} km/h, raffiche max: {analisi.ventoGustsMax} km/h.</p>
-          <p><span className="text-emerald-400 mr-2">&bull;</span> {analisi.nuvoleMedia < 25 ? "Cielo sereno." : analisi.nuvoleMedia < 50 ? "Nuvolosit&agrave; moderata." : "Nuvolosit&agrave; significativa."}</p>
+          <p><span className="text-emerald-400 mr-2">&bull;</span> {analisi.nuvoleMedia < 25 ? "Cielo sereno." : analisi.nuvoleMedia < 50 ? "Nuvolosità moderata." : "Nuvolosità significativa."}</p>
         </div>
       </div>
 
@@ -271,7 +274,7 @@ export default function AnalisiMeteo({ dayData }: AnalisiMeteoProps) {
           )}
           {analisi.puntiNegativi.length > 0 && (
             <div className="mt-2">
-              <div className="text-xs text-amber-400 font-bold mb-1">Criticit&agrave;:</div>
+              <div className="text-xs text-amber-400 font-bold mb-1">Criticità:</div>
               {analisi.puntiNegativi.map((p, i) => (
                 <p key={i}><span className="text-amber-400 mr-2">&bull;</span>{p}</p>
               ))}
