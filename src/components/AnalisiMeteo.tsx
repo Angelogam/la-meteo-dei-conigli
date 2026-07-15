@@ -195,15 +195,7 @@ export default function AnalisiMeteo({ dayData }: AnalisiMeteoProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="card analisi-card bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Sun className="w-6 h-6 text-orange-400 shrink-0" />
-          <h3 className="text-base font-bold text-white">Situazione generale</h3>
-        </div>
-        <div className="space-y-2 text-sm text-slate-300">
-          <p><span className="text-emerald-400 mr-2">&bull;</span> Max {analisi.tempMaxGiorno}°C, min {analisi.tempMinGiorno}°C, delta {analisi.deltaTermico}°C.</p>
-          <p><span className="text-emerald-400 mr-2">&bull;</span> Umidità: {analisi.umiditaMedia}% — {getUmiditaDescrizione(analisi.umiditaMedia)}.</p>
+    <div className="space-y-<dyad-write path="src/components/AnalisiMeteo.tsx" description="Add analisi-card class to all sections">
           <p><span className="text-emerald-400 mr-2">&bull;</span> Vento: {analisi.ventoMedio} km/h da {analisi.ventoDirNome} ({analisi.ventoDirMedia}°).{analisi.ventoGustsMax > analisi.ventoMedio * 1.5 ? " Raffiche " + analisi.ventoGustsMax + " km/h." : ""}</p>
           <p><span className="text-emerald-400 mr-2">&bull;</span> Cielo: {getCloudDescription(analisi.nuvoleMedia)} ({analisi.nuvoleMedia}%).{analisi.pioggiaTot === 0 ? " Nessuna pioggia." : " Pioggia: " + analisi.pioggiaTot.toFixed(1) + " mm."}</p>
         </div>
