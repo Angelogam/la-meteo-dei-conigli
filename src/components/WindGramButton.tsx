@@ -1,3 +1,4 @@
+25 km/h con >25 km/h">
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -306,10 +307,12 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon, selectedDay
           {/* Info rapide + TERMICHE */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
             <div className="bg-slate-800/60 rounded-xl p-3 text-center">
+              <Thermometer className="w-5 h-5 text-amber-400 mx-auto mb-1" />
               <div className="text-xs text-slate-500">Temperatura</div>
               <div className="text-lg font-bold text-white">{Math.round(temp)}°C</div>
             </div>
             <div className="bg-slate-800/60 rounded-xl p-3 text-center">
+              <Wind className="w-5 h-5 text-sky-400 mx-auto mb-1" />
               <div className="text-xs text-slate-500">Vento suolo</div>
               <div className="text-lg font-bold text-sky-300">{Math.round(surfaceSpeed)}</div>
               <div className="text-xs text-slate-400">{getDirName(surfaceDir)}</div>
@@ -320,6 +323,7 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon, selectedDay
               <div className="text-xs text-slate-400">Raffiche {Math.round(gust)}</div>
             </div>
             <div className="bg-slate-800/60 rounded-xl p-3 text-center">
+              <ArrowUp className="w-5 h-5 text-orange-400 mx-auto mb-1" />
               <div className="text-xs text-slate-500">Termiche</div>
               <div className={`text-lg font-bold ${rateoColor}`}>
                 {termicheOra ? `${termicheOra.rateo.toFixed(1)} m/s` : "N/D"}
@@ -406,7 +410,7 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon, selectedDay
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-cyan-500" /> 6-10</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500" /> 11-18</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500" /> 19-25</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> >25 km/h</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> oltre 25 km/h</span>
               <span className="flex items-center gap-1 text-orange-400">🔥 Base termica</span>
               <span className="flex items-center gap-1 text-emerald-400">🪂 Decollo</span>
             </div>
