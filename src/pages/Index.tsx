@@ -19,6 +19,7 @@ import { DECOLLI } from "@/data/decolli";
 import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
 import ValidazionePrevisioni from "@/components/ValidazionePrevisioni";
 import { ShieldCheck } from "lucide-react";
+import type { MeteoHourly, MeteoCurrent } from "@/services/weatherService";
 
 // Palette meteo basata sul vento (colori visivi)
 function getWeatherMeta(vento: number): { iconaMeteo: string; coloreMeteo: string } {
@@ -62,6 +63,52 @@ export default function Index() {
   );
 
   const weatherAlert = getWeatherAlert(currentData, thermalDelta);
+
+  // Converte l'hourlyData nel formato MeteoHourly per l'analisi avanzata
+  const meteoHourlyForAnalysis: MeteoHourly[] = React.useMemo(() => {
+    if (!hourlyData || hourlyData.length === 0) return [];
+    return hourlyData.map(h => ({
+      time: h.time,
+      temperature: h.temperature,
+      humidity: h.humidity,
+      dewPoint: h.dewPoint,
+      apparentTemp: h.apparentTemp,
+      precipitation: h.precipitation,
+      precipitationProbability: h.precipitationProba,
+      weatherCode: h.weatherCode,
+      cloudCover: h.cloudCover,
+      windSpeed: h.windSpeed,
+      windDir: h.windDir,
+      windGusts: h.windGusts,
+      uvIndex: h.uvIndex,
+      shortwaveRadiation: h.shortwaveRadiation,
+      cape: h.cape ?? 0,
+      cin: h.cin ?? 0,
+      liftedIndex: h.liftedIndex ?? 0,
+      temp80m: h.temp80m ?? 0,
+      temp120m: h.temp120m ?? 0,
+      windProfile: h.windProfile || [],
+    }));
+  }, [hourlyData]);
+
+  const meteoCurrentForAnalysis: MeteoCurrent | null = React.useMemo(() => {
+    if (!currentData) return null;
+    return {
+      time: currentData.time,
+      temperature: currentData.temperature,
+      humidity: currentData.humidity,
+      apparentTemp: currentData.apparentTemp,
+      isDay: currentData.isDay ?? 1,
+      precipitation: currentData.precipitation,
+      weatherCode: currentData.weatherCode,
+      cloudCover: currentData.cloudCover,
+      pressure: currentData.pressure,
+      surfacePressure: currentData.surfacePressure,
+      windSpeed: currentData.windSpeed,
+      windDir: currentData.windDir,
+      windGusts: currentData.windGusts,
+    };
+  }, [currentData]);
 
   if (showValidation) {
     return (
@@ -192,6 +239,8 @@ export default function Index() {
                     currentData={currentData}
                     dayData={dayData}
                     site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon }}
+                    hourlyData={meteoHourlyForAnalysis}
+                    current={meteoCurrentForAnalysis || undefined}
                   />
                 )}
 
