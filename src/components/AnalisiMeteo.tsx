@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Sun, Thermometer, Wind, Cloud, CloudRain, CloudLightning, TrendingUp } from "lucide-react";
+import { Sun, Thermometer, Wind, Cloud, CloudRain, CloudLightning, TrendingUp, Calendar } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 
 interface AnalisiMeteoProps {
@@ -11,6 +11,12 @@ interface AnalisiMeteoProps {
   cape?: number | null;
   liftedIndex?: number | null;
   cin?: number | null;
+}
+
+function formatDateShort(date: Date): string {
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return "";
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
 }
 
 function getWindDirName(deg: number): string {
@@ -185,6 +191,12 @@ export default function AnalisiMeteo({ dayData }: AnalisiMeteoProps) {
     };
   }, [dayData]);
 
+  // Data del giorno
+  const dataGiorno = useMemo(() => {
+    if (dayData && dayData.length > 0) return formatDateShort(new Date(dayData[0].time));
+    return formatDateShort(new Date());
+  }, [dayData]);
+
   if (!analisi) {
     return (
       <div className="text-center py-12 text-slate-400 text-base">
@@ -196,6 +208,13 @@ export default function AnalisiMeteo({ dayData }: AnalisiMeteoProps) {
 
   return (
     <div className="space-y-4">
+      {/* Data del giorno */}
+      <div className="text-center">
+        <span className="inline-flex items-center gap-1.5 text-sm font-bold text-white bg-slate-800/60 border border-slate-600/50 px-4 py-1.5 rounded-lg">
+          <Calendar className="w-4 h-4 text-slate-400" />{dataGiorno}
+        </span>
+      </div>
+
       <div className="card analisi-card bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 p-5">
         <div className="flex items-center gap-2 mb-4">
           <Sun className="w-6 h-6 text-orange-400 shrink-0" />

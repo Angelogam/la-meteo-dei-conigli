@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Wind, TrendingUp, Server, Mountain } from "lucide-react";
+import { Wind, TrendingUp, Server, Mountain, Calendar } from "lucide-react";
 import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
 
 function getWindArrow(deg: number): string {
@@ -28,6 +28,12 @@ function getSpeedBarColor(speed: number): string {
   if (speed <= 22) return "bg-amber-400";
   if (speed <= 30) return "bg-orange-400";
   return "bg-red-400";
+}
+
+function formatDateShort(date: Date): string {
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return "";
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
 }
 
 interface VentiInterpolatiTabProps {
@@ -72,6 +78,12 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
       });
   }, [lat, lon, quotaDecollo, selectedDay, oraCorrente]);
 
+  // Data giorno
+  const oggi = new Date();
+  const targetDate = new Date(oggi);
+  targetDate.setDate(oggi.getDate() + selectedDay);
+  const dataGiorno = formatDateShort(targetDate);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16 text-slate-400">
@@ -109,6 +121,13 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
 
   return (
     <div className="space-y-4">
+      {/* Data del giorno */}
+      <div className="text-center">
+        <span className="inline-flex items-center gap-1.5 text-sm font-bold text-white bg-slate-800/60 border border-slate-600/50 px-4 py-1.5 rounded-lg">
+          <Calendar className="w-4 h-4 text-slate-400" />{dataGiorno}
+        </span>
+      </div>
+
       <div className="card bg-slate-800/40 border border-slate-700/50 flex items-center justify-between px-4 py-2">
         <div className="flex items-center gap-2">
           <Server className="w-4 h-4 text-emerald-300" />

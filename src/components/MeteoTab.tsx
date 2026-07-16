@@ -3,7 +3,7 @@
 import React from "react";
 import {
   CloudSun, Droplets, Gauge, Cloud, Wind, ArrowUp, TrendingUp,
-  Sun, Eye, AlertTriangle, Thermometer,
+  Sun, Eye, AlertTriangle, Thermometer, Calendar
 } from "lucide-react";
 
 interface MeteoTabProps {
@@ -18,9 +18,23 @@ interface MeteoTabProps {
   cin?: number;
 }
 
+function formatDateShort(date: Date): string {
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return "";
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+}
+
 export default function MeteoTab({
   currentData, dayData, site, thermalDelta, stabilityIndex, modelName, cape, liftedIndex, cin
 }: MeteoTabProps) {
+  // Data del giorno selezionato (dal primo elemento di dayData)
+  const dataGiorno = React.useMemo(() => {
+    if (dayData && dayData.length > 0) {
+      return formatDateShort(dayData[0].time);
+    }
+    return formatDateShort(new Date());
+  }, [dayData]);
+
   if (!currentData) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-slate-400">
@@ -106,7 +120,6 @@ export default function MeteoTab({
     weatherCode >= 95 ? "Temporale" :
     "Coperto";
 
-  // Helper per la label descrittiva
   const capeLabel = cape != null
     ? (cape > 1000 ? "Molto instabile ⚠️" : cape > 500 ? "Instabile 🟡" : cape > 200 ? "Moderato 🟢" : "Stabile 🔵")
     : "--";
@@ -119,6 +132,13 @@ export default function MeteoTab({
 
   return (
     <div className="space-y-4">
+      {/* Data del giorno */}
+      <div className="text-center">
+        <span className="inline-flex items-center gap-1.5 text-sm font-bold text-white bg-slate-800/60 border border-slate-600/50 px-4 py-1.5 rounded-lg">
+          <Calendar className="w-4 h-4 text-slate-400" />{dataGiorno}
+        </span>
+      </div>
+
       {/* Banner condizioni */}
       <div className={"card p-6 border-4 text-center " + (
         condizioniVolo.includes("Ottime") ? "bg-emerald-900/40 border-emerald-400" :

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Sun, Wind, Thermometer, CloudRain, Droplets, Gauge, Cloud, TrendingUp, ArrowUp, Eye } from "lucide-react";
+import { Sun, Wind, Thermometer, CloudRain, Droplets, Gauge, Cloud, TrendingUp, ArrowUp, Eye, Calendar } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 import { calcolaTermiche } from "@/utils/termiche";
 
@@ -9,6 +9,12 @@ interface AnalisiTabProps {
   currentData: HourData | null;
   dayData: HourData[];
   site: { alt: number; lat?: number; lon?: number; name?: string; exposure?: string };
+}
+
+function formatDateShort(date: Date): string {
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return "";
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
 }
 
 function getWindDirName(deg: number): string {
@@ -152,6 +158,188 @@ export default function AnalisiTab({ currentData, dayData, site }: AnalisiTabPro
     };
   }, [dayData, currentData, site]);
 
+  // Data del giorno
+  const dataGiorno = useMemo(() => {
+    if (dayData && dayData.length > 0) return formatDateShort(new Date(dayData[0].time));
+    return formatDateShort(new Date());
+  }, [dayData]);
+
+  if (!analisi) {
+    return (
+      <div className="text-center py-12 text-slate-400 text-base">
+        <Sun className="w-10 h-10 mx-auto mb-3 text-slate-500" />
+        Dati insufficienti per generare l'analisi.
+      </div>
+    );
+  }
+
+  const scoreColor = analisi.score >= 8 ? "text-emerald-400" : analisi.score >= 6 ? "text-lime<dyad-write path="src/components/AnalisiTab.tsx">
+"use client";
+
+import React, { useMemo } from "react";
+import { Sun, Wind, Thermometer, CloudRain, Droplets, Gauge, Cloud, TrendingUp, ArrowUp, Eye, Calendar } from "lucide-react";
+import type { HourData } from "@/types/meteo";
+import { calcolaTermiche } from "@/utils/termiche";
+
+interface AnalisiTabProps {
+  currentData: HourData | null;
+  dayData: HourData[];
+  site: { alt: number; lat?: number; lon?: number; name?: string; exposure?: string };
+}
+
+function formatDateShort(date: Date): string {
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return "";
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+}
+
+function getWindDirName(deg: number): string {
+  if (deg == null) return "—";
+  const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+  return dirs[Math.round(deg / 22.5) % 16];
+}
+
+export default function AnalisiTab({ currentData, dayData, site }: AnalisiTabProps) {
+  const analisi = useMemo(() => {
+    if (!dayData || dayData.length === 0) return null;
+
+    const alt = site?.alt ?? 1000;
+
+    // Prende solo le ore diurne 8-19
+    const oreGiorno = dayData.filter(h => {
+      const hh = h.time.getHours();
+      return hh >= 8 && hh <= 19;
+    });
+
+    if (oreGiorno.length < 3) return null;
+
+    // --- METRICHE REALI (come in MeteoTab) ---
+    const tempMax = Math.max(...oreGiorno.map(h => h.temperature));
+    const tempMedia = oreGiorno.reduce((s, h) => s + h.temperature, 0) / oreGiorno.length;
+    const windMedia = oreGiorno.reduce((s, h) => s + h.windSpeed, 0) / oreGiorno.length;
+    const windMax = Math.max(...oreGiorno.map(h => h.windSpeed));
+    const windGustsMax = Math.max(...oreGiorno.map(h => h.windGusts || 0));
+    const cloudMedia = oreGiorno.reduce((s, h) => s + h.cloudCover, 0) / oreGiorno.length;
+    const humidityMedia = oreGiorno.reduce((s, h) => s + h.humidity, 0) / oreGiorno.length;
+    const precipTot = oreGiorno.reduce((s, h) => s + (h.precipitation || 0), 0);
+    const pressureMed = oreGiorno.reduce((s, h) => s + h.pressure, 0) / oreGiorno.length;
+    const dewMedia = oreGiorno.reduce((s, h) => s + h.dewPoint, 0) / oreGiorno.length;
+    const uvMedia = oreGiorno.reduce((s, h) => s + (h.uvIndex || 0), 0) / oreGiorno.length;
+
+    // Termiche (come in TermicheTab)
+    const termichePerOra = oreGiorno.map(h => ({
+      ...calcolaTermiche(h, alt),
+      ora: h.time.getHours(),
+    }));
+    const rateoMedio = termichePerOra.reduce((s, t) => s + t.rateo, 0) / termichePerOra.length;
+    const rateoMax = Math.max(...termichePerOra.map(t => t.rateo));
+    const oreAttive = termichePerOra.filter(t => t.rateo >= 0.3).length;
+
+    // Spread e base nuvole
+    const mediaSpread = tempMedia - dewMedia;
+    const baseLCL = Math.max(200, Math.min(3000, Math.round(mediaSpread * 125)));
+
+    // Direzione vento dominante (moda)
+    const dirs = oreGiorno.map(h => h.windDir).filter(d => d != null);
+    const dirCount: Record<number, number> = {};
+    for (const d of dirs) dirCount[Math.round(d / 45) * 45] = (dirCount[Math.round(d / 45) * 45] || 0) + 1;
+    const dirDom = Object.entries(dirCount).sort((a, b) => b[1] - a[1])[0]?.[0];
+    const dirDomNum = dirDom ? parseInt(dirDom) : (currentData?.windDir ?? 0);
+
+    // Zero termico
+    const zeroTermico = Math.max(0, Math.round(alt + (tempMedia / 0.0098) + 200));
+
+    // Delta termico
+    const tempMin = Math.min(...oreGiorno.map(h => h.temperature));
+    const deltaTermico = Math.round((tempMax - tempMin) * 10) / 10;
+
+    // Gradiente reale
+    let gradienteReale = 0.98;
+    if (currentData?.temp80m != null) {
+      gradienteReale = ((currentData.temperature - currentData.temp80m) / 78) * 100;
+    } else if (currentData?.temp120m != null) {
+      gradienteReale = ((currentData.temperature - currentData.temp120m) / 118) * 100;
+    }
+
+    // Forza termica (stessa formula di MeteoTab)
+    let forzaTermica = 0;
+    if (gradienteReale >= 1.2) forzaTermica += 3;
+    else if (gradienteReale >= 0.98) forzaTermica += 2;
+    else if (gradienteReale >= 0.7) forzaTermica += 1;
+    if (windMedia >= 5 && windMedia <= 15) forzaTermica += 2;
+    else if (windMedia >= 3 && windMedia < 5) forzaTermica += 1.5;
+    else if (windMedia > 15 && windMedia <= 22) forzaTermica += 1;
+    if (cloudMedia >= 15 && cloudMedia <= 45) forzaTermica += 2;
+    else if (cloudMedia >= 5 && cloudMedia < 15) forzaTermica += 1.5;
+    if (humidityMedia >= 30 && humidityMedia <= 50) forzaTermica += 1.5;
+    else if (humidityMedia > 50 && humidityMedia <= 65) forzaTermica += 1;
+    forzaTermica = Math.min(10, Math.max(0, Math.round(forzaTermica * 10) / 10));
+
+    // Turbolenza (stima da raffiche)
+    const rafficaMedia = oreGiorno.reduce((s, h) => s + (h.windGusts || h.windSpeed * 1.4), 0) / oreGiorno.length;
+    const turbolenza = rafficaMedia > 30 ? "Forte" : rafficaMedia > 22 ? "Moderata" : rafficaMedia > 14 ? "Leggera" : "Assente";
+
+    // Punteggio volo (composto)
+    let score = 5;
+    if (windMedia >= 5 && windMedia <= 12) score += 2;
+    else if (windMedia > 18) score -= 1;
+    if (precipTot === 0) score += 2;
+    else if (precipTot < 0.5) score += 1;
+    if (cloudMedia >= 10 && cloudMedia <= 55) score += 1;
+    if (rateoMedio >= 2) score += 2;
+    else if (rateoMedio >= 1) score += 1;
+    if (windMax > 30) score -= 1;
+    score = Math.max(0, Math.min(10, score));
+
+    const scoreEmoji = score >= 8 ? "🪂🔥" : score >= 6 ? "🪂" : score >= 4 ? "🌤️" : "❌";
+
+    // Descrizione volo
+    let descVolo: string;
+    if (score >= 8) {
+      descVolo = "Condizioni eccellenti per il volo libero. Termiche robuste, vento ideale e cielo favorevole.";
+    } else if (score >= 6) {
+      descVolo = "Buone condizioni per il volo. Qualche limite ma nel complesso si vola bene.";
+    } else if (score >= 4) {
+      descVolo = "Condizioni discrete. Volo possibile ma con qualche attenzione in più.";
+    } else {
+      descVolo = "Condizioni difficili. Sconsigliato ai piloti meno esperti.";
+    }
+
+    return {
+      tempMax: Math.round(tempMax),
+      tempMedia: Math.round(tempMedia),
+      windMedia: Math.round(windMedia),
+      windMax: Math.round(windMax),
+      windGustsMax: Math.round(windGustsMax),
+      cloudMedia: Math.round(cloudMedia),
+      humidityMedia: Math.round(humidityMedia),
+      precipTot: Math.round(precipTot * 10) / 10,
+      pressureMed: Math.round(pressureMed),
+      uvMedia: Math.round(uvMedia * 10) / 10,
+      rateoMedio: Math.round(rateoMedio * 10) / 10,
+      rateoMax: Math.round(rateoMax * 10) / 10,
+      oreAttive,
+      baseLCL,
+      zeroTermico,
+      deltaTermico,
+      gradienteReale: Math.round(gradienteReale * 100) / 100,
+      forzaTermica,
+      turbolenza,
+      dirDom: dirDomNum,
+      dirName: getWindDirName(dirDomNum),
+      score,
+      scoreEmoji,
+      descVolo,
+      totaleOre: termichePerOra.length,
+    };
+  }, [dayData, currentData, site]);
+
+  // Data del giorno
+  const dataGiorno = useMemo(() => {
+    if (dayData && dayData.length > 0) return formatDateShort(new Date(dayData[0].time));
+    return formatDateShort(new Date());
+  }, [dayData]);
+
   if (!analisi) {
     return (
       <div className="text-center py-12 text-slate-400 text-base">
@@ -166,6 +354,13 @@ export default function AnalisiTab({ currentData, dayData, site }: AnalisiTabPro
 
   return (
     <div className="space-y-4">
+      {/* Data del giorno */}
+      <div className="text-center">
+        <span className="inline-flex items-center gap-1.5 text-sm font-bold text-white bg-slate-800/60 border border-slate-600/50 px-4 py-1.5 rounded-lg">
+          <Calendar className="w-4 h-4 text-slate-400" />{dataGiorno}
+        </span>
+      </div>
+
       {/* Punteggio volo + descrizione */}
       <div className={`rounded-2xl border-2 p-5 ${scoreBg}`}>
         <div className="flex items-start justify-between mb-3">
