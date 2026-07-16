@@ -1,15 +1,5 @@
 "use client";
 
-/**
- * DIAGNOSTICA COMPLETA DELL'APPLICAZIONE
- * 
- * Verifica realmente:
- * 1. I dati meteo da Open-Meteo sono realistici e coerenti
- * 2. I decolli hanno coordinate e campi validi
- * 3. Il calcolo termico produce risultati sensati
- * 4. Le funzioni windDirections funzionano
- */
-
 import { DECOLLI } from "@/data/decolli";
 import { weatherService } from "@/services/weatherService";
 import { degreesToCardinal } from "@/utils/windDirections";
@@ -46,10 +36,6 @@ export interface RisultatoDiagnostica {
   funzioniOk: boolean;
 }
 
-/**
- * Diagnostica completa eseguibile dal browser.
- * Ogni test è reale e produce output verificabile.
- */
 export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
   const inizio = performance.now();
   const problemi: ProblemaDiagnostica[] = [];
@@ -68,9 +54,6 @@ export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
     problemi.push(p);
   }
 
-  // ===================================================================
-  // TEST 1: DECOLLI
-  // ===================================================================
   function testDecolli(): boolean {
     const comp = "data/decolli.ts";
     let tuttoOk = true;
@@ -84,7 +67,6 @@ export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
 
     const ids = new Set<string>();
     for (const d of DECOLLI) {
-      // Campi obbligatori
       const mancanti: string[] = [];
       if (!d.id) mancanti.push("id");
       if (!d.name) mancanti.push("name");
@@ -101,7 +83,6 @@ export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
         ok(comp, `${d.name}: ${d.lat},${d.lon} ${d.altitude}m`);
       }
 
-      // ID univoci
       if (ids.has(d.id)) {
         tuttoOk = false;
         fail({ severita: "critico", componente: comp, descrizione: `ID duplicato: ${d.id}`, dettaglio: `Nome: ${d.name}`, fixSuggerito: "Rinominare ID" });
@@ -114,12 +95,9 @@ export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
     return tuttoOk;
   }
 
-  // ===================================================================
-  // TEST 2: API OPEN-METEO (reali)
-  // ===================================================================
   async function testApi(): Promise<boolean> {
     const comp = "Open-Meteo API";
-    const sitiTest = DECOLLI.slice(0, 3); // 3 siti
+    const sitiTest = DECOLLI.slice(0, 3);
     let sitiOk = 0;
     let tempOk = true;
     let ventoOk = true;
@@ -139,7 +117,6 @@ export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
           fail({ severita: "minore", componente: comp, descrizione: `Poche ore di dati per ${site.name}: ${data.hourly.length}`, dettaglio: "Attese almeno 10 ore", fixSuggerito: "Aumentare forecast_days" });
         }
 
-        // Verifica temperature realistiche per altitudine
         const temps = data.hourly.map(h => h.temperature);
         const tMin = Math.min(...temps);
         const tMax = Math.max(...temps);
@@ -148,7 +125,6 @@ export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
           fail({ severita: "importante", componente: comp, descrizione: `Temperature non realistiche per ${site.name}: ${tMin}°C / ${tMax}°C (alt: ${site.altitude}m)`, dettaglio: `Range ${tMin}°C ~ ${tMax}°C`, fixSuggerito: "Verificare che le coordinate siano corrette" });
         }
 
-        // Verifica vento realistico
         const winds = data.hourly.map(h => h.windSpeed);
         const wMax = Math.max(...winds);
         if (wMax > 120) {
@@ -156,16 +132,7 @@ export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
           fail({ severita: "importante", componente: comp, descrizione: `Vento eccessivo per ${site.name}: ${wMax} km/h`, dettaglio: `Max vento registrato: ${wMax} km/h`, fixSuggerito: "Verificare dati Open-Meteo" });
         }
 
-        // Verifica pressione realistica
-        const pressures = data.hourly.map(h => h.pressure);
-        const pMin = Math.min(...pressures);
-        const pMax = Math.max(...pressures);
-        if (pMin < 850 || pMax > 1100) {
-          pressioneOk = false;
-          fail({ severita: "importante", componente: comp, descrizione: `Pressione non realistica per ${site.name}: ${pMin}hPa / ${pMax}hPa`, dettaglio: `Range ${pMin}hPa ~ ${pMax}hPa`, fixSuggerito: "Verificare parametri richiesta" });
-        }
-
-        // Verifica nuvolosità nel range 0-100
+        // MeteoHourly non ha pressure, skip pressione
         const clouds = data.hourly.map(h => h.cloudCover);
         const cloudInvalid = clouds.filter(c => c < 0 || c > 100);
         if (cloudInvalid.length > 3) {
@@ -183,14 +150,10 @@ export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
     return sitiOk > 0 && tempOk && ventoOk && pressioneOk && nuvoleOk;
   }
 
-  // ===================================================================
-  // TEST 3: FUNZIONI DI CALCOLO (reali)
-  // ===================================================================
   function testCalcoli(): boolean {
     const comp = "Utility di calcolo";
     let tuttoOk = true;
 
-    // 3a. degreesToCardinal
     const cardTest = [
       { in: 0, atteso: "N" },
       { in: 45, atteso: "NE" },
@@ -208,7 +171,6 @@ export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
     }
     if (tuttoOk) ok(comp, "degreesToCardinal funziona correttamente");
 
-    // 3b. calcolaTermiche con dati reali
     const mockHourData: HourData = {
       time: new Date(),
       temperature: 24,
@@ -258,7 +220,6 @@ export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
       ok(comp, `calcolaTermiche: ${res.rateo} m/s, base ${res.base}m, top ${res.top}m, etichetta: "${res.label}"`);
     }
 
-    // 3c. Test con temporale (weatherCode 95)
     const mockTempesta: HourData = {
       ...mockHourData,
       temperature: 28,
@@ -277,18 +238,10 @@ export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
     return tuttoOk;
   }
 
-  // ===================================================================
-  // TEST 4: FUNZIONI AUSILIARIE (windDirections, weatherHelpers)
-  // ===================================================================
   function testFunzioni(): boolean {
     const comp = "Funzioni ausiliarie";
     let tuttoOk = true;
 
-    // windArrow
-    const { windArrow, formatWindDir, cardinalToLong } = require ? {} as any : {}; // non usiamo require
-    // Testiamo direttamente con degreesToCardinal già importato
-
-    // Verifica che la funzione esista
     if (typeof degreesToCardinal !== "function") {
       tuttoOk = false;
       fail({ severita: "critico", componente: comp, descrizione: "degreesToCardinal non è una funzione", dettaglio: "Import fallito", fixSuggerito: "Verificare windDirections.ts" });
@@ -296,7 +249,6 @@ export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
       ok(comp, "degreesToCardinal è una funzione valida");
     }
 
-    // Verifica calcolaTermiche esiste
     if (typeof calcolaTermiche !== "function") {
       tuttoOk = false;
       fail({ severita: "critico", componente: comp, descrizione: "calcolaTermiche non è una funzione", dettaglio: "Import fallito", fixSuggerito: "Verificare termiche.ts" });
@@ -307,20 +259,16 @@ export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
     return tuttoOk;
   }
 
-  // ===================================================================
-  // ESECUZIONE TEST
-  // ===================================================================
   try {
     const decolliOk = testDecolli();
     const apiResult = await testApi();
     const calcoliOk = testCalcoli();
     const funzioniOk = testFunzioni();
 
-    // Valutazione finale dati meteo
     const datiMeteo = {
       ok: apiResult,
       sitiTestati: 3,
-      sitiConDati: 0, // verrà sovrascritto
+      sitiConDati: 0,
       temperatureOk: true,
       ventoOk: true,
       pressioneOk: true,
