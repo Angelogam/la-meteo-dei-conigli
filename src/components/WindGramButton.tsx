@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect, useMemo } from "react";
 import { Wind, X, ArrowUp, Calendar, Thermometer } from "lucide-react";
 import { calcolaTermiche } from "@/utils/termiche";
@@ -15,18 +14,18 @@ interface WindGramButtonProps {
 }
 
 const ALT_KEYS: { alt: number; speedKey: string; dirKey: string }[] = [
-  { alt: 10,   speedKey: "wind_speed_10m",    dirKey: "wind_direction_10m" },
-  { alt: 80,   speedKey: "wind_speed_80m",    dirKey: "wind_direction_80m" },
-  { alt: 120,  speedKey: "wind_speed_120m",   dirKey: "wind_direction_120m" },
-  { alt: 300,  speedKey: "wind_speed_300m",   dirKey: "wind_direction_300m" },
-  { alt: 600,  speedKey: "wind_speed_600m",   dirKey: "wind_direction_600m" },
-  { alt: 1000, speedKey: "wind_speed_1000m",  dirKey: "wind_direction_1000m" },
-  { alt: 1500, speedKey: "wind_speed_1500m",  dirKey: "wind_direction_1500m" },
-  { alt: 2000, speedKey: "wind_speed_2000m",  dirKey: "wind_direction_2000m" },
-  { alt: 2500, speedKey: "wind_speed_2500m",  dirKey: "wind_direction_2500m" },
-  { alt: 3000, speedKey: "wind_speed_3000m",  dirKey: "wind_direction_3000m" },
-  { alt: 4000, speedKey: "wind_speed_4000m",  dirKey: "wind_direction_4000m" },
-  { alt: 5000, speedKey: "wind_speed_5000m",  dirKey: "wind_direction_5000m" },
+  { alt: 10, speedKey: "wind_speed_10m", dirKey: "wind_direction_10m" },
+  { alt: 80, speedKey: "wind_speed_80m", dirKey: "wind_direction_80m" },
+  { alt: 120, speedKey: "wind_speed_120m", dirKey: "wind_direction_120m" },
+  { alt: 300, speedKey: "wind_speed_300m", dirKey: "wind_direction_300m" },
+  { alt: 600, speedKey: "wind_speed_600m", dirKey: "wind_direction_600m" },
+  { alt: 1000, speedKey: "wind_speed_1000m", dirKey: "wind_direction_1000m" },
+  { alt: 1500, speedKey: "wind_speed_1500m", dirKey: "wind_direction_1500m" },
+  { alt: 2000, speedKey: "wind_speed_2000m", dirKey: "wind_direction_2000m" },
+  { alt: 2500, speedKey: "wind_speed_2500m", dirKey: "wind_direction_2500m" },
+  { alt: 3000, speedKey: "wind_speed_3000m", dirKey: "wind_direction_3000m" },
+  { alt: 4000, speedKey: "wind_speed_4000m", dirKey: "wind_direction_4000m" },
+  { alt: 5000, speedKey: "wind_speed_5000m", dirKey: "wind_direction_5000m" },
 ];
 
 function getWindColor(speed: number): string {
@@ -83,24 +82,7 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon, selectedDay
         const params = new URLSearchParams({
           latitude: useLat.toString(),
           longitude: useLon.toString(),
-          hourly: [
-            "temperature_2m",
-            "wind_speed_10m", "wind_direction_10m",
-            "wind_gusts_10m",
-            "cloud_cover",
-            "precipitation",
-            "wind_speed_80m", "wind_direction_80m",
-            "wind_speed_120m", "wind_direction_120m",
-            "wind_speed_300m", "wind_direction_300m",
-            "wind_speed_600m", "wind_direction_600m",
-            "wind_speed_1000m", "wind_direction_1000m",
-            "wind_speed_1500m", "wind_direction_1500m",
-            "wind_speed_2000m", "wind_direction_2000m",
-            "wind_speed_2500m", "wind_direction_2500m",
-            "wind_speed_3000m", "wind_direction_3000m",
-            "wind_speed_4000m", "wind_direction_4000m",
-            "wind_speed_5000m", "wind_direction_5000m",
-          ].join(","),
+          hourly: "temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_cover,precipitation,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_300m,wind_direction_300m,wind_speed_600m,wind_direction_600m,wind_speed_1000m,wind_direction_1000m,wind_speed_1500m,wind_direction_1500m,wind_speed_2000m,wind_direction_2000m,wind_speed_2500m,wind_direction_2500m,wind_speed_3000m,wind_direction_3000m,wind_speed_4000m,wind_direction_4000m,wind_speed_5000m,wind_direction_5000m",
           timezone: "Europe/Rome",
           forecast_days: "3",
         });
@@ -316,23 +298,19 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon, selectedDay
             <h4 className="text-sm font-bold text-white mb-4 text-center">
               Profilo verticale del vento · {String(selectedHour).padStart(2, "0")}:00
             </h4>
-
             <div className="space-y-1.5">
               <div className="grid grid-cols-[55px_1fr_80px] gap-2 pb-1.5 mb-1 border-b border-slate-700/30 text-[9px] text-slate-600 uppercase font-bold">
                 <span>Quota</span>
-                <span className="text-center">Direzione e intensità</span>
+                <span className="text-center">Direzione e intensit{'\u00E0'}</span>
                 <span className="text-right">km/h</span>
               </div>
-
               {[...interpolatedLevels].reverse().map((level) => {
                 const pct = (level.speed / maxSpeed) * 100;
                 const isDecolloExact = Math.abs(level.alt - siteAltitude) < 50;
                 const isBaseTermica = termicheOra && Math.abs(level.alt - termicheOra.base) < 150;
-
                 let bgClass = "hover:bg-slate-800/20";
                 if (isDecolloExact) bgClass = "bg-emerald-900/20 border-l-2 border-l-emerald-400";
                 else if (isBaseTermica) bgClass = "bg-orange-900/20 border-l-2 border-l-orange-400";
-
                 return (
                   <div key={level.alt} className={`grid grid-cols-[55px_1fr_80px] gap-2 py-2 items-center rounded-lg px-1 ${bgClass}`}>
                     <div className="flex items-center gap-1">
@@ -358,7 +336,6 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon, selectedDay
                 );
               })}
             </div>
-
             <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-700/30 text-[10px] text-slate-500">
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> ≤5</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-cyan-500" /> 6-10</span>
