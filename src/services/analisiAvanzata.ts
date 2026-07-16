@@ -1,6 +1,6 @@
 "use client";
 
-import type { MeteoHourly, MeteoDaily, MeteoCurrent } from "./weatherService";
+import type { MeteoHourly, MeteoCurrent } from "./weatherService";
 
 const ADIABATIC_SECCO = 0.98;
 const ADIABATIC_UMIDO = 0.6;
@@ -282,8 +282,7 @@ function analizzaOra(
   if (idxCorrente > 0 && idxCorrente < allHours.length - 1) {
     const hPrev = allHours[idxCorrente];
     const hNext = allHours[idxCorrente + 1];
-    // pressure_msl viene dal current, non da MeteoHourly — usiamo un valore di default
-    const diff = (weather.windGusts * 0.1) - (hPrev.windGusts * 0.1);
+    const diff = (hNext.windGusts * 0.1) - (hPrev.windGusts * 0.1);
     if (diff > 2) tendenzaPressione = "in aumento";
     else if (diff < -2) tendenzaPressione = "in calo";
   }
@@ -380,7 +379,7 @@ function analizzaOra(
     umidita: Math.round(weather.humidity),
     rugiada: Math.round(weather.dewPoint),
     spread: Math.round(spread * 10) / 10,
-    pressione: 1013, // MeteoHourly non ha pressure, usiamo default
+    pressione: 1013,
     tendenzaPressione,
     nuvolositaMedia: Math.round(weather.cloudCover),
     copertura: getCopertura(weather.cloudCover),
