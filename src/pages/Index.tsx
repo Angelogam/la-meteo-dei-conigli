@@ -100,12 +100,14 @@ const Index = () => {
               onRefresh={loadWeather}
             />
 
-            {/* WindGramButton */}
+            {/* WindGramButton con lat/lon per profilo vento verticale reale */}
             <div className="flex justify-end">
               <WindGramButton
                 dayData={dayData}
                 siteAltitude={site.altitude}
                 siteName={site.name}
+                lat={site.lat}
+                lon={site.lon}
               />
             </div>
 
