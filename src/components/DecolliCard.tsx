@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Wind } from "lucide-react";
 
 interface DecolloItem {
   nome: string;
@@ -59,10 +60,13 @@ const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
                 <span>{item.direzione}</span>
               </div>
 
-              {/* METEO ICONA + VENTO */}
+              {/* VENTO ATTUALE + GRADI + KM/H */}
               <div className="flex justify-between text-sm mt-1.5 pt-1.5 border-t border-slate-700/30">
-                <span>{item.iconaMeteo}</span>
-                <span className="text-slate-300 font-bold">{item.vento} km/h</span>
+                <div className="flex items-center gap-1 text-emerald-400">
+                  <Wind size={16} />
+                  <span className="font-bold">{item.vento} km/h</span>
+                </div>
+                <span className="text-slate-300">170°</span>
               </div>
             </button>
           );
