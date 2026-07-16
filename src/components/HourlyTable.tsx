@@ -5,16 +5,25 @@ import type { HourData } from "@/types/meteo";
 import { calcolaTermiche } from "@/utils/termiche";
 import { getVoloStatus } from "@/utils/volo";
 import { getWindDirection, getWeatherIcon } from "@/utils/weatherHelpers";
-import { Clock, Thermometer, Wind } from "lucide-react";
+import { Clock, Thermometer, Wind, Calendar } from "lucide-react";
 
 interface HourlyTableProps {
   dayData: HourData[];
   altitude: number;
   selectedHour: number;
   onHourSelect: (hour: number) => void;
+  dayLabel?: string;
 }
 
-export default function HourlyTable({ dayData, altitude, selectedHour, onHourSelect }: HourlyTableProps) {
+function formatDate(date: Date): string {
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return "";
+  const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+  const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+  return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
+}
+
+export default function HourlyTable({ dayData, altitude, selectedHour, onHourSelect, dayLabel }: HourlyTableProps) {
   const rows = useMemo(() => {
     const ore = Array.from({ length: 11 }, (_, i) => i + 9);
     return ore.map((ora) => {
@@ -45,6 +54,12 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
     }).filter(Boolean) as any[];
   }, [dayData, altitude]);
 
+  const dataLabel = useMemo(() => {
+    if (dayLabel) return dayLabel;
+    if (dayData && dayData.length > 0) return formatDate(dayData[0].time);
+    return "";
+  }, [dayData, dayLabel]);
+
   if (rows.length === 0) {
     return <div className="text-center py-12 text-slate-400 text-base">Nessun dato disponibile per questa giornata.</div>;
   }
@@ -53,7 +68,10 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
     <div className="card bg-slate-800/30 border border-slate-700/50 overflow-hidden">
       <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-700/30">
         <Clock className="w-6 h-6 text-orange-400 shrink-0" />
-        <span className="text-base font-bold text-slate-200">Previsioni orarie 9:00 – 19:00</span>
+        <span className="text-base font-bold text-slate-200">Previsioni orarie</span>
+        <span className="text-xs text-slate-400 flex items-center gap-1">
+          <Calendar className="w-3 h-3 text-slate-500" />{dataLabel}
+        </span>
         <span className="text-sm text-slate-500 bg-slate-800/60 px-3 py-0.5 rounded-full ml-auto">{rows.length} ore</span>
       </div>
       <div className="p-2 overflow-x-auto">

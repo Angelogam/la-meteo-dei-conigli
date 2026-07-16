@@ -100,15 +100,6 @@ export default function WeatherDashboard({
 
   return (
     <div className="space-y-4">
-      {/* Data del giorno selezionato */}
-      {dayLabel && (
-        <div className="text-center pb-1">
-          <span className="inline-block text-base font-bold text-white bg-slate-800/60 border border-slate-600/50 px-4 py-1.5 rounded-lg">
-            {dayLabel}
-          </span>
-        </div>
-      )}
-
       {/* Flight Score */}
       {flightScore && (
         <FlightScore
@@ -119,6 +110,7 @@ export default function WeatherDashboard({
           oreAttive={flightScore.oreAttive}
           totaleOre={flightScore.totaleOre}
           thermalLabel={flightScore.thermalLabel}
+          dayLabel={dayLabel || oggi}
         />
       )}
 
@@ -128,6 +120,7 @@ export default function WeatherDashboard({
         altitude={altitude}
         selectedHour={selectedHour}
         onHourSelect={onHourSelect}
+        dayLabel={dayLabel}
       />
 
       {/* Riepilogo rapido */}
