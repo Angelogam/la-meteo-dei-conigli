@@ -57,14 +57,14 @@ const DecolloList = ({ decolli, selectedId, onSelect, allDailyData, allHourlyDat
   };
 
   return (
-    <div className="space-y-3">
-      <div className="card bg-slate-800/60 border border-emerald-500/30 flex items-center gap-2 px-4 py-3">
+    <div className="h-full flex flex-col">
+      <div className="card bg-slate-800/60 border border-emerald-500/30 flex items-center gap-2 px-4 py-3 shrink-0">
         <Navigation className="w-6 h-6 text-emerald-400 shrink-0" />
         <span className="text-lg font-bold text-emerald-300">Decolli</span>
         <span className="text-sm text-slate-500 bg-slate-700/60 px-2 py-0.5 rounded-full ml-auto">{decolli.length}</span>
       </div>
 
-      <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
+      <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-3">
         {decolli.map((site) => {
           const isSelected = site.id === selectedId;
           const current = getCurrentData(site.id);
