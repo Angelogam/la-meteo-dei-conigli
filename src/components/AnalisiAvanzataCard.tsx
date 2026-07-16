@@ -97,7 +97,6 @@ export default function AnalisiAvanzataCard({ analisi, isSelected, onSelect }: A
           : "bg-slate-800/40 border-slate-700/50 hover:bg-slate-800/60"
       }`}
     >
-      {/* Header ora + volo score */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-lg font-black text-white">
@@ -110,7 +109,6 @@ export default function AnalisiAvanzataCard({ analisi, isSelected, onSelect }: A
         </div>
       </div>
 
-      {/* Volo score bar */}
       <div className="mb-3">
         <div className="flex items-center justify-between text-xs mb-1">
           <span className="text-slate-400">Volo Score</span>
@@ -130,10 +128,8 @@ export default function AnalisiAvanzataCard({ analisi, isSelected, onSelect }: A
         </div>
       </div>
 
-      {/* Descrizione volo */}
       <p className="text-sm text-slate-300 mb-3 leading-relaxed">{analisi.voloDescrizione}</p>
 
-      {/* Griglia metriche principali */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
         <div className="bg-slate-900/60 rounded-xl p-2.5 text-center">
           <Thermometer className="w-4 h-4 text-amber-400 mx-auto mb-1" />
@@ -159,7 +155,6 @@ export default function AnalisiAvanzataCard({ analisi, isSelected, onSelect }: A
         </div>
       </div>
 
-      {/* Stabilità e turbolenza */}
       <div className="grid grid-cols-2 gap-2 mb-3">
         <div className={`rounded-xl px-3 py-2 border text-xs flex items-center gap-2 ${getStabilitàColor(analisi.stabilitàAtmosferica)}`}>
           {getStabilitàIcon(analisi.stabilitàAtmosferica)}
@@ -183,7 +178,6 @@ export default function AnalisiAvanzataCard({ analisi, isSelected, onSelect }: A
         </div>
       </div>
 
-      {/* Dettaglio: zero termico, top termico, gradiente, pressione, umidità, UV */}
       <div className="grid grid-cols-3 gap-1.5 text-[11px]">
         <div className="bg-slate-900/40 rounded-lg px-2 py-1.5 text-center">
           <span className="text-slate-500 block">Zero termico</span>
@@ -219,7 +213,6 @@ export default function AnalisiAvanzataCard({ analisi, isSelected, onSelect }: A
         </div>
       </div>
 
-      {/* Rischio temporali */}
       {analisi.rischioTemporali > 0 && (
         <div className={`mt-2 rounded-xl px-3 py-2 border text-xs flex items-center gap-2 ${getRischioBg(analisi.rischioTemporali)} ${getRischioColor(analisi.rischioTemporali)}`}>
           {analisi.rischioTemporali >= 40 ? (
@@ -236,7 +229,6 @@ export default function AnalisiAvanzataCard({ analisi, isSelected, onSelect }: A
         </div>
       )}
 
-      {/* Confidenza */}
       <div className="mt-2 flex items-center justify-end gap-1 text-[10px] text-slate-500">
         <Activity className="w-3 h-3" />
         <span>Confidenza: {Math.round(analisi.confidenza * 100)}%</span>

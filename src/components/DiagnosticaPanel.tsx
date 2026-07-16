@@ -3,116 +3,10 @@
 import React, { useState, useCallback } from "react";
 import {
   Play, X, CheckCircle, XCircle, AlertTriangle, Info,
-  Activity, Clock, Thermometer, Wind, Cloud, Gauge,
+  Activity, Clock, Thermometer, Wind, Cloud,
   Bug, Zap, TrendingUp,
 } from "lucide-react";
-import { diagnosticaCompletaApp, type RisultatoDiagnostica, type ProblemaDiagnostica } from "@/utils/diagnosticaApp";
-
-function getSeveritaIcon(severita: string) {
-  switch (severita) {
-    case "critico": return <XCircle className="w-4 h-4 text-red-400" />;
-    case "importante": return <AlertTriangle className="w-4 h-4 text-orange-400" />;
-    case "minore": return <Info className="w-4 h-4 text-amber-400" />;
-    case "info": return <Info className="w-4 h-4 text-blue-400" />;
-    default: return <Info className="w-4 h-4 text-slate-400" />;
-  }
-}
-
-function getSeveritaBg(severita: string) {
-  switch (severita) {
-    case "critico": return "bg-red-900/20 border-red-800/40";
-    case "importante": return "bg-orange-900/20 border-orange-800/40";
-    case "minore": return "bg-amber-900/20 border-amber-800/40";
-    case "info": return "bg-blue-900/20 border-blue-800/40";
-    default: return "bg-slate-800/20 border-slate-700/40";
-  }
-}
-
-function getSeveritaBorder(severita: string) {
-  switch (severita) {
-    case "critico": return "border-l-red-500";
-    case "importante": return "border-l-orange-500";
-    case "minore": return "border-l-amber-500";
-    case "info": return "border-l-blue-500";
-    default: return "border-l-slate-500";
-  }
-}
-
-export default function DiagnosticaPanel() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isRunning, setIsRunning] = useState(false);
-  const [risultato, setRisultato] = useState<RisultatoDiagnostica | null>(null);
-  const [log, setLog] = useState<string[]>([]);
-
-  const avviaDiagnostica = useCallback(async () => {
-    setIsRunning(true);
-    setRisultato(null);
-    setLog([]);
-    addLog("🚀 Avvio diagnostica completa dell'applicazione...");
-    addLog("");
-
-    try {
-      const res = await diagnosticaCompletaApp();
-      setRisultato(res);
-      setIsRunning(false);
-
-      addLog("=== DIAGNOSTICA COMPLETATA ===");
-      addLog(`✅ ${res.testPassati}/${res.testEseguiti} test passati`);
-      addLog(`❌ ${res.testFalliti} test falliti`);
-      addLog(`⏱️  Tempo: ${res.tempoEsecuzione}ms`);
-
-      addLog("");
-      addLog("=== DATI METEO ===");
-      addLog(`🌡️  Temperature: ${res.datiMeteo.temperatureOk ? "✅ OK" : "❌ ANOMALE"}`);
-      addLog(`💨  Vento: ${res.datiMeteo.ventoOk ? "✅ OK" : "❌ ANOMALO"}`);
-      addLog(`☁️  Nuvolosità: ${res.datiMeteo.nuvoleOk ? "✅ OK" : "❌ ANOMALA"}`);
-
-      addLog("");
-      addLog("=== DECOLLI ===");
-      addLog(`🏔️  ${res.decolliOk ? "✅ Tutti validi" : "❌ Con problemi"}`);
-
-      addLog("");
-      addLog("=== CALCOLI ===");
-      addLog(`🧮  ${res.calcoliOk ? "✅ Tutti corretti" : "❌ Con errori"}`);
-
-      addLog("");
-      addLog("=== FUNZIONI ===");
-      addLog(`🔧  ${res.funzioniOk ? "✅ Tutte funzionanti" : "❌ Con errori"}`);
-
-      if (res.problemi.length > 0) {
-        addLog("");
-        addLog(`⚠️  ${res.problemi.length} problemi rilevati:`);
-        for (const p of res.problemi) {
-          addLog(`  [${p.severita.toUpperCase()}] ${p.componente}: ${p.descrizione}`);
-        }
-      } else {
-        addLog("");
-        addLog("🎉 NESSUN PROBLEMA RILEVATO!");
-      }
-
-    } catch (err) {
-      addLog(`❌ ERRORE: ${err instanceof Error ? err.message : String(err)}`);
-      setIsRunning(false);
-    }
-  }, []);
-
-  const addLog = useCallback((msg: string) => {
-    setLog(prev => {
-      const nuovo = [...prev, msg];
-      return nuovo.length > 500 ? nuovo.slice(-500) : nuovo;
-    });
-  }, []);
-
-  if<dyad-write path="src/components/DiagnosticaPanel.tsx">
-"use client";
-
-import React, { useState, useCallback } from "react";
-import {
-  Play, X, CheckCircle, XCircle, AlertTriangle, Info,
-  Activity, Clock, Thermometer, Wind, Cloud, Gauge,
-  Bug, Zap, TrendingUp,
-} from "lucide-react";
-import { diagnosticaCompletaApp, type RisultatoDiagnostica, type ProblemaDiagnostica } from "@/utils/diagnosticaApp";
+import { diagnosticaCompletaApp, type RisultatoDiagnostica } from "@/utils/diagnosticaApp";
 
 function getSeveritaIcon(severita: string) {
   switch (severita) {
@@ -223,7 +117,125 @@ export default function DiagnosticaPanel() {
 
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-950/98 flex flex-col">
-      {/* Header */}
+      <div className="flex items-center<dyad-write path="src/components/DiagnosticaPanel.tsx" description="Complete rewrite of DiagnosticaPanel.tsx fixing all TS errors">
+"use client";
+
+import React, { useState, useCallback } from "react";
+import {
+  Play, X, CheckCircle, XCircle, AlertTriangle, Info,
+  Activity, Clock, Thermometer, Wind, Cloud,
+  Bug, Zap, TrendingUp,
+} from "lucide-react";
+import { diagnosticaCompletaApp, type RisultatoDiagnostica } from "@/utils/diagnosticaApp";
+
+function getSeveritaIcon(severita: string) {
+  switch (severita) {
+    case "critico": return <XCircle className="w-4 h-4 text-red-400" />;
+    case "importante": return <AlertTriangle className="w-4 h-4 text-orange-400" />;
+    case "minore": return <Info className="w-4 h-4 text-amber-400" />;
+    case "info": return <Info className="w-4 h-4 text-blue-400" />;
+    default: return <Info className="w-4 h-4 text-slate-400" />;
+  }
+}
+
+function getSeveritaBg(severita: string) {
+  switch (severita) {
+    case "critico": return "bg-red-900/20 border-red-800/40";
+    case "importante": return "bg-orange-900/20 border-orange-800/40";
+    case "minore": return "bg-amber-900/20 border-amber-800/40";
+    case "info": return "bg-blue-900/20 border-blue-800/40";
+    default: return "bg-slate-800/20 border-slate-700/40";
+  }
+}
+
+function getSeveritaBorder(severita: string) {
+  switch (severita) {
+    case "critico": return "border-l-red-500";
+    case "importante": return "border-l-orange-500";
+    case "minore": return "border-l-amber-500";
+    case "info": return "border-l-blue-500";
+    default: return "border-l-slate-500";
+  }
+}
+
+export default function DiagnosticaPanel() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const [risultato, setRisultato] = useState<RisultatoDiagnostica | null>(null);
+  const [log, setLog] = useState<string[]>([]);
+
+  const avviaDiagnostica = useCallback(async () => {
+    setIsRunning(true);
+    setRisultato(null);
+    setLog([]);
+    addLog("🚀 Avvio diagnostica completa dell'applicazione...");
+    addLog("");
+
+    try {
+      const res = await diagnosticaCompletaApp();
+      setRisultato(res);
+      setIsRunning(false);
+
+      addLog("=== DIAGNOSTICA COMPLETATA ===");
+      addLog(`✅ ${res.testPassati}/${res.testEseguiti} test passati`);
+      addLog(`❌ ${res.testFalliti} test falliti`);
+      addLog(`⏱️  Tempo: ${res.tempoEsecuzione}ms`);
+
+      addLog("");
+      addLog("=== DATI METEO ===");
+      addLog(`🌡️  Temperature: ${res.datiMeteo.temperatureOk ? "✅ OK" : "❌ ANOMALE"}`);
+      addLog(`💨  Vento: ${res.datiMeteo.ventoOk ? "✅ OK" : "❌ ANOMALO"}`);
+      addLog(`☁️  Nuvolosità: ${res.datiMeteo.nuvoleOk ? "✅ OK" : "❌ ANOMALA"}`);
+
+      addLog("");
+      addLog("=== DECOLLI ===");
+      addLog(`🏔️  ${res.decolliOk ? "✅ Tutti validi" : "❌ Con problemi"}`);
+
+      addLog("");
+      addLog("=== CALCOLI ===");
+      addLog(`🧮  ${res.calcoliOk ? "✅ Tutti corretti" : "❌ Con errori"}`);
+
+      addLog("");
+      addLog("=== FUNZIONI ===");
+      addLog(`🔧  ${res.funzioniOk ? "✅ Tutte funzionanti" : "❌ Con errori"}`);
+
+      if (res.problemi.length > 0) {
+        addLog("");
+        addLog(`⚠️  ${res.problemi.length} problemi rilevati:`);
+        for (const p of res.problemi) {
+          addLog(`  [${p.severita.toUpperCase()}] ${p.componente}: ${p.descrizione}`);
+        }
+      } else {
+        addLog("");
+        addLog("🎉 NESSUN PROBLEMA RILEVATO!");
+      }
+    } catch (err) {
+      addLog(`❌ ERRORE: ${err instanceof Error ? err.message : String(err)}`);
+      setIsRunning(false);
+    }
+  }, []);
+
+  const addLog = useCallback((msg: string) => {
+    setLog(prev => {
+      const nuovo = [...prev, msg];
+      return nuovo.length > 500 ? nuovo.slice(-500) : nuovo;
+    });
+  }, []);
+
+  if (!isOpen) {
+    return (
+      <button
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-4 right-4 z-50 bg-teal-800 hover:bg-teal-700 text-teal-200 border border-teal-500/40 rounded-full p-3 shadow-2xl shadow-teal-500/10"
+        title="Diagnostica completa app"
+      >
+        <Activity className="w-5 h-5" />
+      </button>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-slate-950/98 flex flex-col">
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50 bg-slate-900/80 shrink-0">
         <div className="flex items-center gap-3">
           <Activity className="w-5 h-5 text-teal-400" />
@@ -249,11 +261,9 @@ export default function DiagnosticaPanel() {
       </div>
 
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Riepilogo (sinistra) */}
         <div className="w-full lg:w-1/3 overflow-auto border-r border-slate-800/50 p-3 space-y-2">
           {risultato && (
             <>
-              {/* Risultato principale */}
               <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-3 text-center">
                 <div className="text-xs text-slate-400 mb-1">Risultato diagnostica</div>
                 <div className={`text-3xl font-bold ${risultato.testFalliti === 0 ? "text-green-400" : "text-red-400"}`}>
@@ -272,7 +282,6 @@ export default function DiagnosticaPanel() {
                 </div>
               </div>
 
-              {/* Verifiche principali */}
               <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-3 space-y-1.5">
                 <div className="text-[11px] font-bold text-slate-300 mb-2">Verifiche</div>
                 <div className="flex items-center justify-between text-[10px]">
@@ -313,7 +322,6 @@ export default function DiagnosticaPanel() {
                 </div>
               </div>
 
-              {/* Problemi */}
               <div className="space-y-1.5">
                 <div className="text-[11px] font-bold text-slate-300 mb-1">Problemi rilevati ({risultato.problemi.length})</div>
                 {risultato.problemi.length === 0 && (
@@ -346,7 +354,6 @@ export default function DiagnosticaPanel() {
           )}
         </div>
 
-        {/* Log */}
         <div className="flex-1 overflow-auto p-3 font-mono">
           <div className="text-[10px] leading-5 text-slate-400 whitespace-pre-wrap">
             {log.length === 0 && (
