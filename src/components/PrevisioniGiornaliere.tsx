@@ -190,42 +190,47 @@ export default function PrevisioniGiornaliere({
             const dirArr = windArrow(fascia.windDirMedia);
             return (
               <div key={idx} className={`card p-4 border-2 ${fascia.borderColor} bg-slate-800/40`}>
+                {/* Intestazione: label a sinistra, score a destra */}
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-base font-bold text-white">{fascia.label}</span>
                   <span className={`text-sm font-bold px-2 py-0.5 rounded-full border ${scoreColor}`}>{fascia.score}/10</span>
                 </div>
-                <div className="text-xl font-bold text-amber-300 mb-3">{fascia.tempMedia}°C <span className="text-sm text-slate-400 font-normal">max {fascia.tempMax}°</span></div>
-                <div className="bg-slate-900/60 rounded-lg p-3 mb-2">
-                  <div className="flex items-center gap-2 text-sm mb-1">
+                {/* Temperatura centrata */}
+                <div className="text-center text-xl font-bold text-amber-300 mb-3">{fascia.tempMedia}°C <span className="text-sm text-slate-400 font-normal">max {fascia.tempMax}°</span></div>
+                {/* Vento - sezione centrata */}
+                <div className="bg-slate-900/60 rounded-lg p-3 mb-2 text-center">
+                  <div className="flex items-center justify-center gap-2 text-sm mb-1">
                     <Wind className="w-5 h-5 text-sky-400" />
                     <span className="font-bold text-sky-300">{fascia.windMedia} km/h</span>
                     <span className="text-slate-400">raffiche {fascia.windMax}</span>
                   </div>
                   <div className="text-sm text-slate-400">{dirArr} {dirCardinal} ({fascia.windDirMedia}°)</div>
                 </div>
-                <div className="bg-slate-900/60 rounded-lg p-3 mb-2">
-                  <div className="flex items-center gap-2 text-sm mb-1">
+                {/* Termiche - sezione centrata */}
+                <div className="bg-slate-900/60 rounded-lg p-3 mb-2 text-center">
+                  <div className="flex items-center justify-center gap-2 text-sm mb-2">
                     <ArrowUp className="w-5 h-5 text-orange-400" />
                     <span className={fascia.termicheColore + " font-bold"}>{fascia.termicheLabel}</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-1 text-sm">
-                    <span>Salita: <span className="text-emerald-300 font-bold">{fascia.salita.toFixed(1)} m/s</span></span>
-                    <span>Base: <Mountain className="w-4 h-4 text-green-400 inline" /> <span className="text-green-300 font-bold">{fascia.base} m</span></span>
-                    <span>Top: <TrendingUp className="w-4 h-4 text-red-400 inline" /> <span className="text-red-300 font-bold">{fascia.top} m</span></span>
-                    <span>Spessore: <span className="text-amber-300 font-bold">{fascia.top - fascia.base} m</span></span>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm max-w-xs mx-auto">
+                    <span className="text-right">Salita: <span className="text-emerald-300 font-bold">{fascia.salita.toFixed(1)} m/s</span></span>
+                    <span className="text-left">Base: <Mountain className="w-4 h-4 text-green-400 inline" /> <span className="text-green-300 font-bold">{fascia.base} m</span></span>
+                    <span className="text-right">Top: <TrendingUp className="w-4 h-4 text-red-400 inline" /> <span className="text-red-300 font-bold">{fascia.top} m</span></span>
+                    <span className="text-left">Spessore: <span className="text-amber-300 font-bold">{fascia.top - fascia.base} m</span></span>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="bg-slate-900/60 rounded-lg px-3 py-2 flex items-center justify-between">
+                {/* Griglia meteo - centrata con box affiancati */}
+                <div className="grid grid-cols-2 gap-2 text-sm max-w-xs mx-auto">
+                  <div className="bg-slate-900/60 rounded-lg px-3 py-2 flex items-center justify-center gap-1">
                     <Cloud className="w-4 h-4 text-slate-400" /> <span className="font-bold text-slate-200">{fascia.cloudMedia}%</span>
                   </div>
-                  <div className="bg-slate-900/60 rounded-lg px-3 py-2 flex items-center justify-between">
+                  <div className="bg-slate-900/60 rounded-lg px-3 py-2 flex items-center justify-center gap-1">
                     <Droplets className="w-4 h-4 text-blue-400" /> <span className="font-bold text-blue-200">{fascia.humMedia}%</span>
                   </div>
-                  <div className="bg-slate-900/60 rounded-lg px-3 py-2 flex items-center justify-between">
+                  <div className="bg-slate-900/60 rounded-lg px-3 py-2 flex items-center justify-center gap-1">
                     <Gauge className="w-4 h-4 text-purple-400" /> <span className="font-bold text-purple-200">{fascia.pressMedia} hPa</span>
                   </div>
-                  <div className="bg-slate-900/60 rounded-lg px-3 py-2 flex items-center justify-between">
+                  <div className="bg-slate-900/60 rounded-lg px-3 py-2 flex items-center justify-center gap-1">
                     {fascia.precipTot === 0 ? <CheckCircle className="w-4 h-4 text-green-400" /> : <Umbrella className="w-4 h-4 text-blue-400" />}
                     <span className="font-bold">{fascia.precipTot === 0 ? "Secco" : `${fascia.precipTot}mm`}</span>
                   </div>
