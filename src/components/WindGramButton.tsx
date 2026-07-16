@@ -1,4 +1,4 @@
-non escapato nella legenda">
+e import mancante">
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -123,7 +123,7 @@ const WindGramButton = ({ dayData, siteAltitude, siteName }: WindGramButtonProps
                   <span className="w-3 h-3 rounded-full bg-orange-400"></span> 19-25
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-red-400"></span> {'>'}25 km/h
+                  <span className="w-3 h-3 rounded-full bg-red-400"></span> over 25 km/h
                 </span>
               </div>
             </div>
