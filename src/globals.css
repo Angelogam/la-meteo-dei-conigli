@@ -73,3 +73,21 @@
     padding: 8px;
   }
 }
+
+/* ===== PREVISIONE BLOCCO ===== */
+.previsione-blocco {
+  width: 90%;
+  max-width: 360px;
+  padding: 8px;
+  margin: 10px auto;
+  border-radius: 10px;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 600px) {
+  .previsione-blocco {
+    width: 95%;
+    padding: 6px;
+    font-size: 0.75rem;
+  }
+}
