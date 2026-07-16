@@ -69,48 +69,7 @@
 @media (max-width: 600px) {
   .decollo-card {
     width: 95%;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     padding: 8px;
   }
-}
-
-/* ===== PREVISIONE BLOCCO ===== */
-.previsione-blocco {
-  width: 90%;
-  max-width: 360px;
-  padding: 8px;
-  margin: 10px auto;
-  border-radius: 10px;
-  font-size: 0.85rem;
-}
-
-@media (max-width: 600px) {
-  .previsione-blocco {
-    width: 95%;
-    padding: 6px;
-    font-size: 0.75rem;
-  }
-}
-
-/* ===== VENTO DIREZIONE ===== */
-.vento-direzione {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  background: rgba(56, 189, 248, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  border-radius: 8px;
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-
-.vento-direzione .freccia {
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
-.vento-direzione .testo {
-  font-weight: 600;
-  color: #7dd3fc;
 }
