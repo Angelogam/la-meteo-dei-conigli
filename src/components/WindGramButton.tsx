@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { BarChart3, X } from "lucide-react";
-import WindGramPro from "./WindGramPro";
+import WindGramProClean from "./WindGramPro";
 import type { HourData } from "@/types/meteo";
 
 interface WindGramButtonProps {
@@ -94,7 +94,7 @@ export default function WindGramButton({ dayData, siteAltitude }: WindGramButton
             >
               <X className="w-6 h-6" />
             </button>
-            <WindGramPro data={windGramData} />
+            <WindGramProClean data={windGramData} />
           </div>
         </div>
       )}

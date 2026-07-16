@@ -25,41 +25,6 @@ ChartJS.register(
   Filler
 );
 
-// Icone meteo dinamiche
-const WeatherIcon = ({ cover }: { cover: number }) => {
-  if (cover < 20) return <span>☀️</span>;
-  if (cover < 50) return <span>🌤️</span>;
-  if (cover < 80) return <span>⛅</span>;
-  return <span>☁️</span>;
-};
-
-// Freccia direzione vento
-const WindArrow = ({ dir }: { dir: string }) => {
-  const rotation: Record<string, number> = {
-    N: 180,
-    NE: 225,
-    E: 270,
-    SE: 315,
-    S: 0,
-    SW: 45,
-    W: 90,
-    NW: 135,
-  };
-  const deg = rotation[dir] || 0;
-
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        transform: `rotate(${deg}deg)`,
-        fontSize: "1.2rem",
-      }}
-    >
-      ➤
-    </span>
-  );
-};
-
 interface WindGramData {
   hours: string[];
   gradient: number[];
@@ -70,19 +35,19 @@ interface WindGramData {
   windDir: string[];
 }
 
-interface WindGramProProps {
+interface WindGramProCleanProps {
   data: WindGramData;
 }
 
-const WindGramPro = ({ data }: WindGramProProps) => {
+const WindGramProClean = ({ data }: WindGramProCleanProps) => {
   const chartData = {
     labels: data.hours,
     datasets: [
       {
         label: "Gradiente termico (°C/100m)",
         data: data.gradient,
-        borderColor: "rgba(255, 80, 0, 0.9)",
-        backgroundColor: "rgba(255, 80, 0, 0.3)",
+        borderColor: "#ff9933",
+        backgroundColor: "rgba(255,153,51,0.2)",
         fill: true,
         tension: 0.4,
         yAxisID: "y1",
@@ -90,30 +55,30 @@ const WindGramPro = ({ data }: WindGramProProps) => {
       {
         label: "Vento (km/h)",
         data: data.windSpeed,
-        borderColor: "rgba(0, 120, 255, 0.9)",
-        borderDash: [5, 5],
-        pointStyle: "rectRot",
+        borderColor: "#3399ff",
+        borderDash: [4, 4],
+        pointBackgroundColor: "#3399ff",
         yAxisID: "y2",
       },
       {
         label: "Quota base cumulo (m)",
         data: data.cloudBase,
-        borderColor: "rgba(0, 255, 150, 0.9)",
-        borderDash: [3, 3],
+        borderColor: "#66cc66",
+        borderDash: [2, 2],
         yAxisID: "y1",
       },
       {
         label: "Zero termico (m)",
         data: data.zeroThermic,
-        borderColor: "rgba(255, 255, 255, 1)",
+        borderColor: "#ffffff",
         borderWidth: 2,
         yAxisID: "y1",
       },
       {
         label: "Copertura nuvolosa (%)",
         data: data.cloudCover,
-        borderColor: "rgba(200, 200, 200, 0.8)",
-        backgroundColor: "rgba(200, 200, 200, 0.3)",
+        borderColor: "rgba(180,180,180,0.6)",
+        backgroundColor: "rgba(180,180,180,0.3)",
         fill: true,
         yAxisID: "y3",
       },
@@ -127,22 +92,24 @@ const WindGramPro = ({ data }: WindGramProProps) => {
       y1: {
         type: "linear" as const,
         position: "left" as const,
-        title: { display: true, text: "Quota (m)" },
+        title: { display: true, text: "Quota (m)", color: "#fff" },
         grid: { color: "rgba(255,255,255,0.1)" },
+        ticks: { color: "#fff" },
       },
       y2: {
         type: "linear" as const,
         position: "right" as const,
-        title: { display: true, text: "Vento (km/h)" },
+        title: { display: true, text: "Vento (km/h)", color: "#fff" },
         grid: { drawOnChartArea: false },
+        ticks: { color: "#fff" },
       },
-      y3: {
-        type: "linear" as const,
-        display: false,
-      },
+      y3: { display: false },
     },
     plugins: {
-      legend: { position: "bottom" as const, labels: { color: "#fff" } },
+      legend: {
+        position: "bottom" as const,
+        labels: { color: "#fff", boxWidth: 12, font: { size: 12 } },
+      },
       title: {
         display: true,
         text: "WindGram MeteoConigli",
@@ -150,11 +117,11 @@ const WindGramPro = ({ data }: WindGramProProps) => {
         font: { size: 18, weight: "bold" as const },
       },
       tooltip: {
-        mode: "index" as const,
-        intersect: false,
-        backgroundColor: "rgba(0,0,0,0.7)",
+        backgroundColor: "rgba(0,0,0,0.6)",
         titleColor: "#fff",
         bodyColor: "#fff",
+        borderColor: "#ff9933",
+        borderWidth: 1,
       },
     },
   };
@@ -162,7 +129,7 @@ const WindGramPro = ({ data }: WindGramProProps) => {
   return (
     <div
       style={{
-        background: "linear-gradient(180deg, #ff6600 0%, #ff3300 100%)",
+        background: "linear-gradient(180deg, #1a1a1a 0%, #000000 100%)",
         borderRadius: "12px",
         padding: "10px",
         height: "420px",
@@ -171,20 +138,26 @@ const WindGramPro = ({ data }: WindGramProProps) => {
     >
       <Line data={chartData} options={options} />
 
-      {/* Barra icone meteo + vento */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-around",
           marginTop: "10px",
-          fontSize: "1rem",
+          fontSize: "0.9rem",
         }}
       >
         {data.hours.map((h, i) => (
           <div key={i} style={{ textAlign: "center" }}>
             <div>{h}</div>
-            <WeatherIcon cover={data.cloudCover[i]} />
-            <WindArrow dir={data.windDir[i]} />
+            <div style={{ fontSize: "1rem" }}>
+              {data.cloudCover[i] < 20
+                ? "☀️"
+                : data.cloudCover[i] < 50
+                ? "🌤️"
+                : data.cloudCover[i] < 80
+                ? "⛅"
+                : "☁️"}
+            </div>
             <div style={{ fontSize: "0.8rem" }}>{data.windSpeed[i]} km/h</div>
           </div>
         ))}
@@ -193,4 +166,4 @@ const WindGramPro = ({ data }: WindGramProProps) => {
   );
 };
 
-export default WindGramPro;
+export default WindGramProClean;
