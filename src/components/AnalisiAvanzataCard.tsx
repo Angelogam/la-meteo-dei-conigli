@@ -123,7 +123,7 @@ export default function AnalisiAvanzataCard({ analisi, isSelected, onSelect }: A
             className={`h-full rounded-full transition-all ${
               analisi.voloScore >= 85 ? "bg-emerald-500" :
               analisi.voloScore >= 70 ? "bg-green-500" :
-              analanalisi.voloScore >= 55 ? "bg-amber-500" :
+              analisi.voloScore >= 55 ? "bg-amber-500" :
               analisi.voloScore >= 40 ? "bg-orange-500" :
               "bg-red-500"
             }`}
