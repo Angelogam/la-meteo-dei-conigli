@@ -36,11 +36,11 @@ interface WindGramData {
   date?: string;
 }
 
-interface WindGramUltimateProps {
+interface WindGramClearProps {
   data: WindGramData;
 }
 
-const WindGramUltimate = ({ data }: WindGramUltimateProps) => {
+const WindGramClear = ({ data }: WindGramClearProps) => {
   const chartData = {
     labels: data.hours,
     datasets: [
@@ -140,11 +140,11 @@ const WindGramUltimate = ({ data }: WindGramUltimateProps) => {
     >
       <Line data={chartData} options={options} />
 
-      {/* Nuvole + frecce vento */}
+      {/* Nuvole e frecce vento */}
       <div
         style={{
           position: "absolute",
-          top: "50px",
+          top: "60px",
           left: 0,
           right: 0,
           display: "flex",
@@ -162,6 +162,7 @@ const WindGramUltimate = ({ data }: WindGramUltimateProps) => {
                 ? "🌤️"
                 : "☀️"}
             </div>
+
             <div
               style={{
                 transform: `rotate(${data.windDir[i]}deg)`,
@@ -171,6 +172,7 @@ const WindGramUltimate = ({ data }: WindGramUltimateProps) => {
             >
               ➤
             </div>
+
             <div style={{ fontSize: "0.8rem" }}>
               {data.windSpeed[i]} km/h
             </div>
@@ -181,4 +183,4 @@ const WindGramUltimate = ({ data }: WindGramUltimateProps) => {
   );
 };
 
-export default WindGramUltimate;
+export default WindGramClear;

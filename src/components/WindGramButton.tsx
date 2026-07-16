@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { BarChart3, X } from "lucide-react";
-import WindGramUltimate from "./WindGramPro";
+import WindGramClear from "./WindGramPro";
 import type { HourData } from "@/types/meteo";
 
 interface WindGramButtonProps {
@@ -33,7 +33,6 @@ export default function WindGramButton({ dayData, siteAltitude }: WindGramButton
 
     if (ore.length === 0) return null;
 
-    // data per il titolo
     const dataStr = ore[0].time.toLocaleDateString("it-IT", {
       weekday: "long",
       day: "numeric",
@@ -43,7 +42,6 @@ export default function WindGramButton({ dayData, siteAltitude }: WindGramButton
     for (const h of ore) {
       hours.push(`${String(h.time.getHours()).padStart(2, "0")}:00`);
 
-      // Gradiente reale
       let grad = 0.98;
       if (h.temp80m != null) {
         grad = ((h.temperature - h.temp80m) / 78) * 100;
@@ -56,12 +54,10 @@ export default function WindGramButton({ dayData, siteAltitude }: WindGramButton
       cloudCover.push(h.cloudCover);
       windDir.push(h.windDir);
 
-      // Base nuvole (LCL)
       const spread = h.temperature - h.dewPoint;
       const base = Math.max(200, Math.min(3000, Math.round(spread * 125)));
       cloudBase.push(base + siteAltitude);
 
-      // Zero termico
       const zero = Math.max(0, Math.round(siteAltitude + h.temperature / 0.0098));
       zeroThermic.push(zero);
     }
@@ -99,7 +95,7 @@ export default function WindGramButton({ dayData, siteAltitude }: WindGramButton
             >
               <X className="w-6 h-6" />
             </button>
-            <WindGramUltimate data={windGramData} />
+            <WindGramClear data={windGramData} />
           </div>
         </div>
       )}
