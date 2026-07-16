@@ -1,11 +1,32 @@
 "use client";
 
 import React from "react";
-import { Wind, Clock } from "lucide-react";
+import { Wind, Clock, Thermometer, Gauge, Navigation, Mountain, MapPin } from "lucide-react";
 
 function getCardinalDir(deg: number): string {
+  if (deg == null) return "N/D";
   const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   return dirs[Math.round(deg / 45) % 8];
+}
+
+function getWindArrow(deg: number): string {
+  if (deg == null) return "→";
+  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
+  return arrows[Math.round(deg / 45) % 8];
+}
+
+function getWeatherEmoji(code: number | undefined | null): string {
+  if (code == null) return "☀️";
+  if (code === 0 || code === 1) return "☀️";
+  if (code === 2) return "🌤️";
+  if (code === 3) return "☁️";
+  if (code >= 45 && code <= 48) return "🌫️";
+  if (code >= 51 && code <= 57) return "🌦️";
+  if (code >= 61 && code <= 67) return "🌧️";
+  if (code >= 71 && code <= 77) return "❄️";
+  if (code >= 80 && code <= 82) return "🌦️";
+  if (code >= 95) return "⛈️";
+  return "☀️";
 }
 
 function getCurrentDateTime(): string {
@@ -30,9 +51,6 @@ interface DecolloItem {
   valle: string;
   quota: number;
   direzione: string;
-  vento: number;
-  iconaMeteo: string;
-  coloreMeteo: string;
 }
 
 interface DecolliCardProps {
@@ -42,7 +60,37 @@ interface DecolliCardProps {
   weatherMap?: Record<string, any>;
 }
 
-const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
+const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardProps) => {
+  // Trova il dato orario corrente per un dato id sito
+  const getCurrentData = (id: string) => {
+    if (!weatherMap?.[id]) return null;
+    const hourly = weatherMap[id];
+    if (!Array.isArray(hourly) || hourly.length === 0) return null;
+    const now = new Date();
+    const current = hourly.find((h: any) => {
+      const t = h.time instanceof Date ? h.time : new Date(h.time);
+      return (
+        !isNaN(t.getTime()) &&
+        t.getFullYear() === now.getFullYear() &&
+        t.getMonth() === now.getMonth() &&
+        t.getDate() === now.getDate() &&
+        t.getHours() === now.getHours()
+      );
+    });
+    if (current) return current;
+    // fallback: primo dato del giorno corrente
+    const today = hourly.find((h: any) => {
+      const t = h.time instanceof Date ? h.time : new Date(h.time);
+      return (
+        !isNaN(t.getTime()) &&
+        t.getFullYear() === now.getFullYear() &&
+        t.getMonth() === now.getMonth() &&
+        t.getDate() === now.getDate()
+      );
+    });
+    return today || hourly[0] || null;
+  };
+
   return (
     <div className="bg-slate-900/80 border border-slate-700/60 rounded-xl p-4">
       <h2 className="text-base font-bold text-white mb-3">
@@ -56,9 +104,19 @@ const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
           paddingRight: "4px",
         }}
       >
-        {decolli.map((item) => {
+        {decolli.map((item, idx) => {
           const isSelected = item.nome === selectedId;
-          const windDir = getCardinalDir(170);
+          const current = getCurrentData(item.nome);
+          const hasData = current != null;
+          const temp = hasData ? Math.round(current.temperature) : null;
+          const wind = hasData ? Math.round(current.windSpeed) : null;
+          const gust = hasData ? (current.windGusts ? Math.round(current.windGusts) : null) : null;
+          const dir = hasData ? Math.round(current.windDir) : null;
+          const code = hasData ? current.weatherCode : null;
+          const emoji = getWeatherEmoji(code);
+          const dirLabel = dir != null ? getCardinalDir(dir) : "N/D";
+          const dirArrow = dir != null ? getWindArrow(dir) : "→";
+
           return (
             <button
               key={item.nome}
@@ -85,10 +143,10 @@ const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
               {/* ICONA METEO + TEMPERATURA + VALLE / QUOTA / DIREZIONE */}
               <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg" style={{ color: item.coloreMeteo }}>
-                    {item.iconaMeteo}
+                  <span className="text-lg">{emoji}</span>
+                  <span className="text-sm font-bold text-amber-300">
+                    {temp != null ? `${temp}°` : "N/D"}
                   </span>
-                  <span className="text-sm font-bold text-amber-300">20°</span>
                 </div>
                 <div className="text-xs text-slate-400 flex gap-3">
                   <span>{item.valle}</span>
@@ -102,12 +160,23 @@ const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
                 <div className="text-[11px] text-slate-500 mb-1">
                   Vento attuale quota decollo
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between items-center text-sm">
                   <div className="flex items-center gap-1 text-emerald-400">
                     <Wind size={16} />
-                    <span className="font-bold">{item.vento} km/h</span>
+                    <span className="font-bold">
+                      {wind != null ? `${wind} km/h` : "N/D"}
+                    </span>
+                    {gust != null && (
+                      <span className="text-[10px] text-red-300 font-normal">
+                        (raff. {gust})
+                      </span>
+                    )}
                   </div>
-                  <span className="text-slate-300">{windDir}</span>
+                  {dir != null && (
+                    <span className="text-slate-300 font-bold">
+                      {dirArrow} {dirLabel} ({dir}°)
+                    </span>
+                  )}
                 </div>
               </div>
             </button>
