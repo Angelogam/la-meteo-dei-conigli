@@ -1,11 +1,28 @@
 "use client";
 
 import React from "react";
-import { Wind } from "lucide-react";
+import { Wind, Clock } from "lucide-react";
 
 function getCardinalDir(deg: number): string {
   const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   return dirs[Math.round(deg / 45) % 8];
+}
+
+function getCurrentDateTime(): string {
+  const now = new Date();
+  return now.toLocaleDateString("it-IT", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
+function getCurrentHour(): string {
+  const now = new Date();
+  return now.toLocaleTimeString("it-IT", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 interface DecolloItem {
@@ -59,20 +76,31 @@ const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
                 {item.nome}
               </div>
 
+              {/* GIORNO E ORA */}
+              <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5">
+                <Clock size={12} />
+                <span>{getCurrentDateTime()} · {getCurrentHour()}</span>
+              </div>
+
               {/* INFO VALLE / QUOTA / DIREZIONE */}
-              <div className="text-xs text-slate-400 flex justify-between mt-1">
+              <div className="text-xs text-slate-400 flex justify-between mt-2">
                 <span>{item.valle}</span>
                 <span>{item.quota} m</span>
                 <span>{item.direzione}</span>
               </div>
 
-              {/* VENTO ATTUALE + PUNTO CARDINALE + KM/H */}
-              <div className="flex justify-between text-sm mt-1.5 pt-1.5 border-t border-slate-700/30">
-                <div className="flex items-center gap-1 text-emerald-400">
-                  <Wind size={16} />
-                  <span className="font-bold">{item.vento} km/h</span>
+              {/* VENTO ATTUALE QUOTA DECOLLO + PUNTO CARDINALE + KM/H */}
+              <div className="mt-1.5 pt-1.5 border-t border-slate-700/30">
+                <div className="text-[11px] text-slate-500 mb-1">
+                  Vento attuale quota decollo
                 </div>
-                <span className="text-slate-300">{windDir}</span>
+                <div className="flex justify-between text-sm">
+                  <div className="flex items-center gap-1 text-emerald-400">
+                    <Wind size={16} />
+                    <span className="font-bold">{item.vento} km/h</span>
+                  </div>
+                  <span className="text-slate-300">{windDir}</span>
+                </div>
               </div>
             </button>
           );
