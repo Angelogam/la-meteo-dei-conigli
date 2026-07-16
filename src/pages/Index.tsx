@@ -14,6 +14,38 @@ import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
 import MeteoTesterPanel from "@/components/MeteoTesterPanel";
+import MegaTestPanel from "@/components/MegaTestPanel";
+import { useWeatherData } from "@/hooks/useWeatherData";
+import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
+import { DECOLLI } from "@/data/decolli";
+import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
+import ValidazionePrevisioni from "@/components/ValidazionePrevisioni";
+import { ShieldCheck, Activity } from "lucide-react";
+import type { MeteoHourly, MeteoCurrent } from "@/services/weatherService";
+
+export default function Index() {
+  const {
+    selectedId, setSelectedId,
+    loading: weatherLoading,
+    updating,
+   <dyad-write path="src/pages/Index.tsx">
+"use client";
+
+import React, { useState } from "react";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import DecolliCard from "@/components/DecolliCard";
+import SiteHeader from "@/components/SiteHeader";
+import UpdateTimer from "@/components/UpdateTimer";
+import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
+import WeatherDashboard from "@/components/WeatherDashboard";
+import TabNav from "@/components/TabNav";
+import MeteoTab from "@/components/MeteoTab";
+import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
+import TermicheTab from "@/components/TermicheTab";
+import AnalisiMeteo from "@/components/AnalisiMeteo";
+import MeteoTesterPanel from "@/components/MeteoTesterPanel";
+import MegaTestPanel from "@/components/MegaTestPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { DECOLLI } from "@/data/decolli";
@@ -21,16 +53,6 @@ import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
 import ValidazionePrevisioni from "@/components/ValidazionePrevisioni";
 import { ShieldCheck, Activity, RefreshCw } from "lucide-react";
 import type { MeteoHourly, MeteoCurrent } from "@/services/weatherService";
-
-// Palette meteo basata sul vento (colori visivi)
-function getWeatherMeta(vento: number): { iconaMeteo: string; coloreMeteo: string } {
-  if (vento <= 8) return { iconaMeteo: "☀️", coloreMeteo: "#00c853" };
-  if (vento <= 12) return { iconaMeteo: "🌤️", coloreMeteo: "#64dd17" };
-  if (vento <= 16) return { iconaMeteo: "⛅", coloreMeteo: "#ffeb3b" };
-  if (vento <= 20) return { iconaMeteo: "🌤️", coloreMeteo: "#ff9800" };
-  if (vento <= 25) return { iconaMeteo: "☁️", coloreMeteo: "#f44336" };
-  return { iconaMeteo: "💨", coloreMeteo: "#d32f2f" };
-}
 
 export default function Index() {
   const {
@@ -82,7 +104,6 @@ export default function Index() {
 
   // Converte l'hourlyData nel formato MeteoHourly per l'analisi avanzata
   const meteoHourlyForAnalysis: MeteoHourly[] = React.useMemo(() => {
-    // Usa i dati avanzati se disponibili, altrimenti quelli normali
     const data = hourlyDataAvanzati.length > 0 ? hourlyDataAvanzati : hourlyData;
     if (!data || data.length === 0) return [];
     return data.map(h => ({
@@ -160,7 +181,6 @@ export default function Index() {
 
   const hasData = site && currentData && dayData.length > 0;
 
-  // Costruisce la lista decolli da passare a DecolliCard - usa i veri nomi dei decolli
   const decolliList = DECOLLI.map(d => ({
     nome: d.name,
     valle: d.valley,
@@ -168,7 +188,6 @@ export default function Index() {
     direzione: d.exposure,
   }));
 
-  // Mappa nome -> id per DecolliCard
   const nomeToId: Record<string, string> = {};
   DECOLLI.forEach(d => { nomeToId[d.name] = d.id; });
 
@@ -318,6 +337,7 @@ export default function Index() {
       </main>
       <Footer />
       <MeteoTesterPanel />
+      <MegaTestPanel />
 
       <button
         onClick={() => setShowValidation(true)}
