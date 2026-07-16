@@ -72,7 +72,7 @@ export default function Index() {
       dewPoint: h.dewPoint,
       apparentTemp: h.apparentTemp,
       precipitation: h.precipitation,
-      precipitationProbability: h.precipitationProbability ?? 0,
+      precipitationProbability: (h as any).precipitationProbability ?? 0,
       weatherCode: h.weatherCode,
       cloudCover: h.cloudCover,
       windSpeed: h.windSpeed,
