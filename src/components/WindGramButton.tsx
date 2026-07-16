@@ -2,17 +2,12 @@
 
 import React, { useState, useMemo } from "react";
 import { BarChart3, X } from "lucide-react";
-import WindGramProClean from "./WindGramPro";
+import WindGramUltimate from "./WindGramPro";
 import type { HourData } from "@/types/meteo";
 
 interface WindGramButtonProps {
   dayData: HourData[];
   siteAltitude: number;
-}
-
-function getWindDirName(deg: number): string {
-  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-  return dirs[Math.round(deg / 45) % 8];
 }
 
 export default function WindGramButton({ dayData, siteAltitude }: WindGramButtonProps) {
@@ -27,7 +22,7 @@ export default function WindGramButton({ dayData, siteAltitude }: WindGramButton
     const cloudBase: number[] = [];
     const zeroThermic: number[] = [];
     const cloudCover: number[] = [];
-    const windDir: string[] = [];
+    const windDir: number[] = [];
 
     const ore = dayData
       .filter((h) => {
@@ -35,6 +30,15 @@ export default function WindGramButton({ dayData, siteAltitude }: WindGramButton
         return hh >= 8 && hh <= 19;
       })
       .sort((a, b) => a.time.getHours() - b.time.getHours());
+
+    if (ore.length === 0) return null;
+
+    // data per il titolo
+    const dataStr = ore[0].time.toLocaleDateString("it-IT", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    });
 
     for (const h of ore) {
       hours.push(`${String(h.time.getHours()).padStart(2, "0")}:00`);
@@ -50,7 +54,7 @@ export default function WindGramButton({ dayData, siteAltitude }: WindGramButton
 
       windSpeed.push(Math.round(h.windSpeed));
       cloudCover.push(h.cloudCover);
-      windDir.push(getWindDirName(h.windDir));
+      windDir.push(h.windDir);
 
       // Base nuvole (LCL)
       const spread = h.temperature - h.dewPoint;
@@ -58,7 +62,7 @@ export default function WindGramButton({ dayData, siteAltitude }: WindGramButton
       cloudBase.push(base + siteAltitude);
 
       // Zero termico
-      const zero = Math.max(0, Math.round(Math.round(siteAltitude + h.temperature / 0.0098)));
+      const zero = Math.max(0, Math.round(siteAltitude + h.temperature / 0.0098));
       zeroThermic.push(zero);
     }
 
@@ -70,6 +74,7 @@ export default function WindGramButton({ dayData, siteAltitude }: WindGramButton
       zeroThermic,
       cloudCover,
       windDir,
+      date: dataStr,
     };
   }, [dayData, siteAltitude]);
 
@@ -94,7 +99,7 @@ export default function WindGramButton({ dayData, siteAltitude }: WindGramButton
             >
               <X className="w-6 h-6" />
             </button>
-            <WindGramProClean data={windGramData} />
+            <WindGramUltimate data={windGramData} />
           </div>
         </div>
       )}

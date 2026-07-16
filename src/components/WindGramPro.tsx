@@ -32,39 +32,41 @@ interface WindGramData {
   cloudBase: number[];
   zeroThermic: number[];
   cloudCover: number[];
-  windDir: string[];
+  windDir: number[];
+  date?: string;
 }
 
-interface WindGramProCleanProps {
+interface WindGramUltimateProps {
   data: WindGramData;
 }
 
-const WindGramProClean = ({ data }: WindGramProCleanProps) => {
+const WindGramUltimate = ({ data }: WindGramUltimateProps) => {
   const chartData = {
     labels: data.hours,
     datasets: [
       {
-        label: "Gradiente termico (°C/100m)",
+        label: "Instabilità termica",
         data: data.gradient,
-        borderColor: "#ff9933",
-        backgroundColor: "rgba(255,153,51,0.2)",
+        borderColor: "rgba(255,120,0,0.9)",
+        backgroundColor: (ctx: any) => {
+          const chart = ctx.chart;
+          if (!chart?.ctx) return "rgba(255,120,0,0.3)";
+          const g = chart.ctx.createLinearGradient(0, 0, 0, 400);
+          g.addColorStop(0, "rgba(255,0,0,0.6)");
+          g.addColorStop(0.5, "rgba(255,200,0,0.4)");
+          g.addColorStop(1, "rgba(0,120,255,0.3)");
+          return g;
+        },
         fill: true,
         tension: 0.4,
         yAxisID: "y1",
       },
       {
-        label: "Vento (km/h)",
-        data: data.windSpeed,
-        borderColor: "#3399ff",
-        borderDash: [4, 4],
-        pointBackgroundColor: "#3399ff",
-        yAxisID: "y2",
-      },
-      {
         label: "Quota base cumulo (m)",
         data: data.cloudBase,
-        borderColor: "#66cc66",
-        borderDash: [2, 2],
+        borderColor: "#66ff99",
+        borderDash: [4, 4],
+        pointStyle: "circle" as const,
         yAxisID: "y1",
       },
       {
@@ -75,12 +77,12 @@ const WindGramProClean = ({ data }: WindGramProCleanProps) => {
         yAxisID: "y1",
       },
       {
-        label: "Copertura nuvolosa (%)",
-        data: data.cloudCover,
-        borderColor: "rgba(180,180,180,0.6)",
-        backgroundColor: "rgba(180,180,180,0.3)",
-        fill: true,
-        yAxisID: "y3",
+        label: "Vento (km/h)",
+        data: data.windSpeed,
+        borderColor: "#3399ff",
+        borderDash: [2, 2],
+        pointBackgroundColor: "#3399ff",
+        yAxisID: "y2",
       },
     ],
   };
@@ -103,7 +105,6 @@ const WindGramProClean = ({ data }: WindGramProCleanProps) => {
         grid: { drawOnChartArea: false },
         ticks: { color: "#fff" },
       },
-      y3: { display: false },
     },
     plugins: {
       legend: {
@@ -112,12 +113,12 @@ const WindGramProClean = ({ data }: WindGramProCleanProps) => {
       },
       title: {
         display: true,
-        text: "WindGram MeteoConigli",
+        text: `WindGram MeteoConigli – ${data.date || ""}`,
         color: "#fff",
         font: { size: 18, weight: "bold" as const },
       },
       tooltip: {
-        backgroundColor: "rgba(0,0,0,0.6)",
+        backgroundColor: "rgba(0,0,0,0.7)",
         titleColor: "#fff",
         bodyColor: "#fff",
         borderColor: "#ff9933",
@@ -129,36 +130,50 @@ const WindGramProClean = ({ data }: WindGramProCleanProps) => {
   return (
     <div
       style={{
-        background: "linear-gradient(180deg, #1a1a1a 0%, #000000 100%)",
+        background: "linear-gradient(180deg,#001a33 0%,#000000 100%)",
         borderRadius: "12px",
         padding: "10px",
-        height: "420px",
+        height: "480px",
         color: "#fff",
+        position: "relative",
       }}
     >
       <Line data={chartData} options={options} />
 
+      {/* Nuvole + frecce vento */}
       <div
         style={{
+          position: "absolute",
+          top: "50px",
+          left: 0,
+          right: 0,
           display: "flex",
           justifyContent: "space-around",
-          marginTop: "10px",
-          fontSize: "0.9rem",
+          fontSize: "1rem",
+          pointerEvents: "none",
         }}
       >
         {data.hours.map((h, i) => (
           <div key={i} style={{ textAlign: "center" }}>
-            <div>{h}</div>
-            <div style={{ fontSize: "1rem" }}>
-              {data.cloudCover[i] < 20
-                ? "☀️"
-                : data.cloudCover[i] < 50
+            <div style={{ opacity: 0.9 }}>
+              {data.cloudBase[i] > 3000
+                ? "☁️"
+                : data.cloudBase[i] > 1500
                 ? "🌤️"
-                : data.cloudCover[i] < 80
-                ? "⛅"
-                : "☁️"}
+                : "☀️"}
             </div>
-            <div style={{ fontSize: "0.8rem" }}>{data.windSpeed[i]} km/h</div>
+            <div
+              style={{
+                transform: `rotate(${data.windDir[i]}deg)`,
+                display: "inline-block",
+                fontSize: "1.2rem",
+              }}
+            >
+              ➤
+            </div>
+            <div style={{ fontSize: "0.8rem" }}>
+              {data.windSpeed[i]} km/h
+            </div>
           </div>
         ))}
       </div>
@@ -166,4 +181,4 @@ const WindGramProClean = ({ data }: WindGramProCleanProps) => {
   );
 };
 
-export default WindGramProClean;
+export default WindGramUltimate;
