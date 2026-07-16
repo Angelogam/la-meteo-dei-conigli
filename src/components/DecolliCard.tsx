@@ -21,19 +21,8 @@ interface DecolliCardProps {
 
 const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
   return (
-    <div
-      style={{
-        background: "#111",
-        padding: "16px",
-        borderRadius: "14px",
-        color: "white",
-        width: "100%",
-        maxWidth: "420px",
-        margin: "0 auto",
-        boxShadow: "0 0 12px rgba(0,0,0,0.4)",
-      }}
-    >
-      <h2 style={{ marginBottom: "12px", fontSize: "1.3rem", fontWeight: "bold" }}>
+    <div className="bg-slate-900/80 border border-slate-700/60 rounded-xl p-4">
+      <h2 className="text-base font-bold text-white mb-3">
         Decolli disponibili ({decolli.length})
       </h2>
 
@@ -41,7 +30,7 @@ const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
         style={{
           maxHeight: "160px",
           overflowY: "auto",
-          paddingRight: "6px",
+          paddingRight: "4px",
         }}
       >
         {decolli.map((item) => {
@@ -50,50 +39,30 @@ const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
             <button
               key={item.nome}
               onClick={() => onSelect(item)}
-              style={{
-                width: "100%",
-                background: item.coloreMeteo,
-                border: isSelected ? "2px solid #10b981" : "none",
-                borderRadius: "10px",
-                padding: "12px",
-                marginBottom: "10px",
-                textAlign: "left",
-                color: "white",
-                cursor: "pointer",
-                transition: "0.2s",
-              }}
+              className={`
+                w-full rounded-xl p-3 text-left transition-all border-2 mb-2
+                ${isSelected
+                  ? "bg-emerald-900/40 border-emerald-500"
+                  : "bg-slate-800/40 border-slate-700/50 hover:bg-slate-700/50"
+                }
+              `}
             >
               {/* NOME DECOLLO */}
-              <div style={{ fontSize: "1.05rem", fontWeight: "bold" }}>
+              <div className="text-sm font-bold text-white">
                 {item.nome}
               </div>
 
               {/* INFO VALLE / QUOTA / DIREZIONE */}
-              <div
-                style={{
-                  fontSize: "0.85rem",
-                  opacity: 0.9,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginTop: "4px",
-                }}
-              >
+              <div className="text-xs text-slate-400 flex justify-between mt-1">
                 <span>{item.valle}</span>
                 <span>{item.quota} m</span>
                 <span>{item.direzione}</span>
               </div>
 
               {/* METEO ICONA + VENTO */}
-              <div
-                style={{
-                  marginTop: "6px",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "0.9rem",
-                }}
-              >
+              <div className="flex justify-between text-sm mt-1.5 pt-1.5 border-t border-slate-700/30">
                 <span>{item.iconaMeteo}</span>
-                <span>{item.vento} km/h</span>
+                <span className="text-slate-300 font-bold">{item.vento} km/h</span>
               </div>
             </button>
           );
