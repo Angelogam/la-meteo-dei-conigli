@@ -31,16 +31,18 @@ interface WindGramData {
   windSpeed: number[];
   cloudBase: number[];
   zeroThermic: number[];
+  thermalTop: number[];
   cloudCover: number[];
   windDir: number[];
   date?: string;
+  location?: string;
 }
 
-interface WindGramClearProps {
+interface WindGramRealProps {
   data: WindGramData;
 }
 
-const WindGramClear = ({ data }: WindGramClearProps) => {
+const WindGramReal = ({ data }: WindGramRealProps) => {
   const chartData = {
     labels: data.hours,
     datasets: [
@@ -64,7 +66,7 @@ const WindGramClear = ({ data }: WindGramClearProps) => {
       {
         label: "Quota base cumulo (m)",
         data: data.cloudBase,
-        borderColor: "#66ff99",
+        borderColor: "#00ff99",
         borderDash: [4, 4],
         pointStyle: "circle" as const,
         yAxisID: "y1",
@@ -74,6 +76,14 @@ const WindGramClear = ({ data }: WindGramClearProps) => {
         data: data.zeroThermic,
         borderColor: "#ffffff",
         borderWidth: 2,
+        yAxisID: "y1",
+      },
+      {
+        label: "Quota max in termica (m)",
+        data: data.thermalTop,
+        borderColor: "#ffcc00",
+        borderWidth: 2,
+        borderDash: [3, 3],
         yAxisID: "y1",
       },
       {
@@ -113,7 +123,7 @@ const WindGramClear = ({ data }: WindGramClearProps) => {
       },
       title: {
         display: true,
-        text: `WindGram MeteoConigli – ${data.date || ""}`,
+        text: `WindGram MeteoConigli – ${data.location || ""} – ${data.date || ""}`,
         color: "#fff",
         font: { size: 18, weight: "bold" as const },
       },
@@ -133,7 +143,7 @@ const WindGramClear = ({ data }: WindGramClearProps) => {
         background: "linear-gradient(180deg,#001a33 0%,#000000 100%)",
         borderRadius: "12px",
         padding: "10px",
-        height: "480px",
+        height: "500px",
         color: "#fff",
         position: "relative",
       }}
@@ -183,4 +193,4 @@ const WindGramClear = ({ data }: WindGramClearProps) => {
   );
 };
 
-export default WindGramClear;
+export default WindGramReal;
