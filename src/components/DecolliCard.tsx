@@ -39,7 +39,7 @@ const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
 
       <div
         style={{
-          maxHeight: "480px",
+          maxHeight: "160px",
           overflowY: "auto",
           paddingRight: "6px",
         }}

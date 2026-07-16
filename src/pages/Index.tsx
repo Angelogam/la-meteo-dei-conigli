@@ -15,25 +15,24 @@ import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
 import MeteoTesterPanel from "@/components/MeteoTesterPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
-import { DECOLLI, type Decollo } from "@/data/decolli";
+import { DECOLLI } from "@/data/decolli";
 import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
 import ValidazionePrevisioni from "@/components/ValidazionePrevisioni";
 import { ShieldCheck } from "lucide-react";
 
-// Mappa colore meteo in base al vento e condizioni
+// Palette meteo basata sul vento (colori visivi)
 function getWeatherMeta(vento: number): { iconaMeteo: string; coloreMeteo: string } {
-  if (vento < 5) return { iconaMeteo: "🌀", coloreMeteo: "#555555" }; // calma
-  if (vento < 10) return { iconaMeteo: "☀️", coloreMeteo: "#33aa33" };
-  if (vento < 15) return { iconaMeteo: "🌤️", coloreMeteo: "#228822" };
-  if (vento < 20) return { iconaMeteo: "⛅", coloreMeteo: "#446644" };
-  if (vento < 25) return { iconaMeteo: "☁️", coloreMeteo: "#666644" };
-  return { iconaMeteo: "💨", coloreMeteo: "#664444" }; // vento forte
+  if (vento <= 8) return { iconaMeteo: "☀️", coloreMeteo: "#00c853" };       // verde brillante — ottimo
+  if (vento <= 12) return { iconaMeteo: "🌤️", coloreMeteo: "#64dd17" };      // verde chiaro — buono
+  if (vento <= 16) return { iconaMeteo: "⛅", coloreMeteo: "#ffeb3b" };      // giallo — discreto
+  if (vento <= 20) return { iconaMeteo: "🌤️", coloreMeteo: "#ff9800" };     // arancio — attenzione
+  if (vento <= 25) return { iconaMeteo: "☁️", coloreMeteo: "#f44336" };     // rosso — ventoso
+  return { iconaMeteo: "💨", coloreMeteo: "#d32f2f" };                       // rosso scuro — forte
 }
 
-// Costruisce la lista unendo dati statici + meteo dinamico da weatherData
+// Costruisce la lista decolli con i dati meteo dinamici
 function buildDecolliList(data: { allHourlyData?: Record<string, any>; selectedId: string }) {
-  return DECOLLI.map((d: Decollo) => {
-    // Prova a prendere il dato meteo orario corrente per questo decollo
+  return DECOLLI.map((d) => {
     const hourly = data.allHourlyData?.[d.id];
     let vento = 10; // default
     if (hourly && hourly.length > 0) {
