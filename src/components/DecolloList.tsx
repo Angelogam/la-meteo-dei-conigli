@@ -41,6 +41,7 @@ const DecolloList = ({ decolli, selectedId, onSelect, allDailyData, allHourlyDat
     const hourly = allHourlyData?.[id];
     if (!hourly || hourly.length === 0) return null;
     const now = new Date();
+    // Cerca l'ora corrente
     const currentHour = hourly.find(h =>
       h.time.getFullYear() === now.getFullYear() &&
       h.time.getMonth() === now.getMonth() &&
@@ -48,6 +49,7 @@ const DecolloList = ({ decolli, selectedId, onSelect, allDailyData, allHourlyDat
       h.time.getHours() === now.getHours()
     );
     if (currentHour) return currentHour;
+    // Fallback: primo dato del giorno corrente
     const first = hourly.find(h =>
       h.time.getFullYear() === now.getFullYear() &&
       h.time.getMonth() === now.getMonth() &&
@@ -58,13 +60,15 @@ const DecolloList = ({ decolli, selectedId, onSelect, allDailyData, allHourlyDat
 
   return (
     <div className="h-full flex flex-col">
-      <div className="card bg-slate-800/60 border border-emerald-500/30 flex items-center gap-2 px-4 py-3 shrink-0">
+      {/* Intestazione fissa */}
+      <div className="bg-slate-800/60 border border-emerald-500/30 rounded-t-xl flex items-center gap-2 px-4 py-3 shrink-0">
         <Navigation className="w-6 h-6 text-emerald-400 shrink-0" />
         <span className="text-lg font-bold text-emerald-300">Decolli</span>
         <span className="text-sm text-slate-500 bg-slate-700/60 px-2 py-0.5 rounded-full ml-auto">{decolli.length}</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-3">
+      {/* Lista scrollabile — UNICA FINESTRA con tutti i 24 decolli */}
+      <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-2">
         {decolli.map((site) => {
           const isSelected = site.id === selectedId;
           const current = getCurrentData(site.id);
@@ -82,7 +86,7 @@ const DecolloList = ({ decolli, selectedId, onSelect, allDailyData, allHourlyDat
             <button
               key={site.id}
               onClick={() => onSelect(site.id)}
-              className={`card w-full text-left p-4 transition-all border-2 cursor-pointer ${
+              className={`w-full text-left p-4 transition-all border-2 rounded-xl cursor-pointer ${
                 isSelected
                   ? "bg-emerald-900/50 border-emerald-500 shadow-lg"
                   : "bg-slate-800/40 border-slate-700/40 hover:bg-slate-700/50"
