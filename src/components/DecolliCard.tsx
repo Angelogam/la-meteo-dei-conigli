@@ -52,9 +52,7 @@ const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
               onClick={() => onSelect(item)}
               style={{
                 width: "100%",
-                background: isSelected
-                  ? "#1a3a2a"
-                  : item.coloreMeteo,
+                background: item.coloreMeteo,
                 border: isSelected ? "2px solid #10b981" : "none",
                 borderRadius: "10px",
                 padding: "12px",
