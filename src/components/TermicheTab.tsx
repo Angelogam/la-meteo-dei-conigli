@@ -27,7 +27,6 @@ export default function TermicheTab({ currentData, dayData, site }: TermicheTabP
       .sort((a, b) => a.ora - b.ora);
   }, [dayData, alt]);
 
-  // Data del giorno
   const dataGiorno = useMemo(() => {
     if (dayData && dayData.length > 0) return formatDateShort(new Date(dayData[0].time));
     return formatDateShort(new Date());
@@ -47,7 +46,6 @@ export default function TermicheTab({ currentData, dayData, site }: TermicheTabP
 
   return (
     <div className="space-y-4">
-      {/* Data del giorno */}
       <div className="text-center">
         <span className="inline-flex items-center gap-1.5 text-sm font-bold text-white bg-slate-800/60 border border-slate-600/50 px-4 py-1.5 rounded-lg">
           <Calendar className="w-4 h-4 text-slate-400" />{dataGiorno}
