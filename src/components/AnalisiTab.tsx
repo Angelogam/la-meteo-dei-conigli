@@ -53,7 +53,7 @@ export default function AnalisiTab({ currentData, dayData, site }: AnalisiTabPro
     const baseLCL = Math.max(200, Math.min(3000, Math.round(mediaSpread * 125)));
 
     const dirs = oreGiorno.map(h => h.windDir).filter(d => d != null);
-    const dirCount: Record<number, number> = {};
+    const dirCount = {} as Record<number, number>;
     for (const d of dirs) dirCount[Math.round(d / 45) * 45] = (dirCount[Math.round(d / 45) * 45] || 0) + 1;
     const dirDom = Object.entries(dirCount).sort((a, b) => b[1] - a[1])[0]?.[0];
     const dirDomNum = dirDom ? parseInt(dirDom) : (currentData?.windDir ?? 0);
