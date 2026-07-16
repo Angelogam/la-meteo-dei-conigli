@@ -15,10 +15,11 @@ import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
 import MeteoTesterPanel from "@/components/MeteoTesterPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
+import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { DECOLLI } from "@/data/decolli";
 import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
 import ValidazionePrevisioni from "@/components/ValidazionePrevisioni";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Activity, RefreshCw } from "lucide-react";
 import type { MeteoHourly, MeteoCurrent } from "@/services/weatherService";
 
 // Palette meteo basata sul vento (colori visivi)
@@ -34,7 +35,7 @@ function getWeatherMeta(vento: number): { iconaMeteo: string; coloreMeteo: strin
 export default function Index() {
   const {
     selectedId, setSelectedId,
-    loading,
+    loading: weatherLoading,
     updating,
     selectedDay, setSelectedDay,
     selectedHour, setSelectedHour,
@@ -56,6 +57,21 @@ export default function Index() {
 
   const [showValidation, setShowValidation] = useState(false);
 
+  // Analisi avanzata con refresh ogni 4s
+  const {
+    analisi: analisiAvanzata,
+    riepilogo: riepilogoAvanzato,
+    loading: analisiLoading,
+    hourlyData: hourlyDataAvanzati,
+    currentData: currentDataAvanzato,
+    tempoTrascorso,
+    marginiErrore,
+  } = useMeteoCompleto(
+    site?.lat ?? DECOLLI[0].lat,
+    site?.lon ?? DECOLLI[0].lon,
+    site?.altitude ?? DECOLLI[0].altitude
+  );
+
   const stabilityIndex = getStabilityIndex(
     currentData?.temperature || 20,
     currentData?.humidity || 50,
@@ -66,8 +82,10 @@ export default function Index() {
 
   // Converte l'hourlyData nel formato MeteoHourly per l'analisi avanzata
   const meteoHourlyForAnalysis: MeteoHourly[] = React.useMemo(() => {
-    if (!hourlyData || hourlyData.length === 0) return [];
-    return hourlyData.map(h => ({
+    // Usa i dati avanzati se disponibili, altrimenti quelli normali
+    const data = hourlyDataAvanzati.length > 0 ? hourlyDataAvanzati : hourlyData;
+    if (!data || data.length === 0) return [];
+    return data.map(h => ({
       time: h.time,
       temperature: h.temperature,
       humidity: h.humidity,
@@ -89,26 +107,27 @@ export default function Index() {
       temp120m: h.temp120m ?? 0,
       windProfile: h.windProfile || [],
     }));
-  }, [hourlyData]);
+  }, [hourlyData, hourlyDataAvanzati]);
 
   const meteoCurrentForAnalysis: MeteoCurrent | null = React.useMemo(() => {
-    if (!currentData) return null;
+    const data = currentDataAvanzato || currentData;
+    if (!data) return null;
     return {
-      time: currentData.time,
-      temperature: currentData.temperature,
-      humidity: currentData.humidity,
-      apparentTemp: currentData.apparentTemp,
-      isDay: currentData.isDay ?? 1,
-      precipitation: currentData.precipitation,
-      weatherCode: currentData.weatherCode,
-      cloudCover: currentData.cloudCover,
-      pressure: currentData.pressure,
-      surfacePressure: currentData.surfacePressure,
-      windSpeed: currentData.windSpeed,
-      windDir: currentData.windDir,
-      windGusts: currentData.windGusts,
+      time: data.time,
+      temperature: data.temperature,
+      humidity: data.humidity,
+      apparentTemp: data.apparentTemp,
+      isDay: data.isDay ?? 1,
+      precipitation: data.precipitation,
+      weatherCode: data.weatherCode,
+      cloudCover: data.cloudCover,
+      pressure: data.pressure,
+      surfacePressure: data.surfacePressure,
+      windSpeed: data.windSpeed,
+      windDir: data.windDir,
+      windGusts: data.windGusts,
     };
-  }, [currentData]);
+  }, [currentData, currentDataAvanzato]);
 
   if (showValidation) {
     return (
@@ -124,7 +143,7 @@ export default function Index() {
     );
   }
 
-  if (loading && (!hourlyData || hourlyData.length === 0)) {
+  if (weatherLoading && (!hourlyData || hourlyData.length === 0)) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col">
         <Header />
@@ -162,9 +181,41 @@ export default function Index() {
             <UpdateTimer 
               lastUpdate={lastUpdate} 
               countdown={countdown} 
-              updating={updating} 
+              updating={updating || analisiLoading} 
               onRefresh={loadWeather} 
             />
+            {/* Indicatore analisi in tempo reale */}
+            <div className="bg-slate-800/50 border border-emerald-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
+              <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
+              <span className="text-xs text-emerald-300">
+                Analisi in tempo reale
+              </span>
+              <span className="text-[10px] text-slate-500 ml-auto">
+                {tempoTrascorso}s
+              </span>
+            </div>
+            {riepilogoAvanzato && (
+              <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl px-4 py-2 space-y-1">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-slate-400">Confidenza media</span>
+                  <span className={`font-bold ${
+                    riepilogoAvanzato.mediaConfidenza >= 0.8 ? "text-green-400" :
+                    riepilogoAvanzato.mediaConfidenza >= 0.6 ? "text-amber-400" :
+                    "text-red-400"
+                  }`}>
+                    {Math.round(riepilogoAvanzato.mediaConfidenza * 100)}%
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-slate-400">Margine d'errore</span>
+                  <span className="text-amber-300 font-bold">{riepilogoAvanzato.medioErrore}%</span>
+                </div>
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-slate-400">CAPE medio</span>
+                  <span className="text-purple-300 font-bold">{riepilogoAvanzato.medioCape} J/kg</span>
+                </div>
+              </div>
+            )}
             <DecolliCard
               decolli={decolliList}
               selectedId={selectedId}
