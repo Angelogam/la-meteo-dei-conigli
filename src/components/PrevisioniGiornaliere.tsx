@@ -20,16 +20,16 @@ interface PrevisioniGiornaliereProps {
 }
 
 function getWeatherInfo(code: number | undefined | null) {
-  if (code === undefined || code === null || isNaN(code)) return { icon: <Sun className="w-8 h-8 text-amber-300" />, desc: "N/D" };
-  if (code === 0 || code === 1) return { icon: <Sun className="w-8 h-8 text-amber-300" />, desc: "Sereno" };
-  if (code === 2) return { icon: <CloudSun className="w-8 h-8 text-amber-200" />, desc: "Poco nuvoloso" };
-  if (code === 3) return { icon: <Cloud className="w-8 h-8 text-slate-300" />, desc: "Nuvoloso" };
-  if (code >= 45 && code <= 48) return { icon: <CloudFog className="w-8 h-8 text-slate-400" />, desc: "Nebbia" };
-  if (code >= 51 && code <= 57) return { icon: <CloudRain className="w-8 h-8 text-blue-300" />, desc: "Pioggerella" };
-  if (code >= 61 && code <= 67) return { icon: <CloudRain className="w-8 h-8 text-blue-400" />, desc: "Pioggia" };
-  if (code >= 80 && code <= 84) return { icon: <CloudRain className="w-8 h-8 text-blue-300" />, desc: "Rovesci" };
-  if (code >= 95 && code <= 99) return { icon: <CloudLightning className="w-8 h-8 text-yellow-300" />, desc: "Temporali" };
-  return { icon: <Sun className="w-8 h-8 text-amber-300" />, desc: "Sereno" };
+  if (code === undefined || code === null || isNaN(code)) return { icon: <Sun className="w-5 h-5 text-amber-300" />, desc: "N/D" };
+  if (code === 0 || code === 1) return { icon: <Sun className="w-5 h-5 text-amber-300" />, desc: "Sereno" };
+  if (code === 2) return { icon: <CloudSun className="w-5 h-5 text-amber-200" />, desc: "Poco nuvoloso" };
+  if (code === 3) return { icon: <Cloud className="w-5 h-5 text-slate-300" />, desc: "Nuvoloso" };
+  if (code >= 45 && code <= 48) return { icon: <CloudFog className="w-5 h-5 text-slate-400" />, desc: "Nebbia" };
+  if (code >= 51 && code <= 57) return { icon: <CloudRain className="w-5 h-5 text-blue-300" />, desc: "Pioggerella" };
+  if (code >= 61 && code <= 67) return { icon: <CloudRain className="w-5 h-5 text-blue-400" />, desc: "Pioggia" };
+  if (code >= 80 && code <= 84) return { icon: <CloudRain className="w-5 h-5 text-blue-300" />, desc: "Rovesci" };
+  if (code >= 95 && code <= 99) return { icon: <CloudLightning className="w-5 h-5 text-yellow-300" />, desc: "Temporali" };
+  return { icon: <Sun className="w-5 h-5 text-amber-300" />, desc: "Sereno" };
 }
 
 function getDominantWeatherCode(hourlyCodes: (number | undefined | null)[]): number {
@@ -48,7 +48,7 @@ function formatDate(date: any): string {
   if (!date) return "";
   const d = date instanceof Date ? date : new Date(date);
   if (isNaN(d.getTime())) return String(date);
-  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
 export default function PrevisioniGiornaliere({
@@ -147,8 +147,8 @@ export default function PrevisioniGiornaliere({
 
   return (
     <div className="space-y-4">
-      {/* Giorni */}
-      <div className="giorni-container">
+      {/* Giorni - palette centrate e piu compatte */}
+      <div className="flex flex-wrap justify-center gap-2">
         {enrichedDaily.slice(0, 3).map((day: any, idx: number) => {
           const isActive = idx === selectedDay;
           const weatherCode = dailyWeatherCodes[idx] ?? dominanteCodice ?? 0;
@@ -158,42 +158,20 @@ export default function PrevisioniGiornaliere({
             <button
               key={idx}
               onClick={() => onSelectDay(idx)}
-              className={`card p-4 text-left transition-all border-2 cursor-pointer ${
+              className={`text-center transition-all border-2 cursor-pointer w-32 p-3 rounded-xl ${
                 isActive
                   ? "border-emerald-400 bg-emerald-900/40 shadow-lg"
                   : "border-slate-700/50 bg-slate-800/40 hover:border-slate-600"
               }`}
             >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-base font-bold text-white">
-                  {idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani"}
-                </span>
-                <span className="text-sm text-slate-400">{formatDate(day.date)}</span>
+              <div className="text-sm font-bold text-white">
+                {idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani"}
               </div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  {weatherInfo.icon}
-                  <div>
-                    <div className="text-sm font-bold text-slate-200">{weatherInfo.desc}</div>
-                    <div className="text-sm text-slate-400">{precipGiorno > 0 ? `${precipGiorno.toFixed(1)} mm` : "0 mm"}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-white">{Math.round(day.tempMax)}°</div>
-                  <div className="text-sm text-slate-400">min {Math.round(day.tempMin)}°</div>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="bg-slate-900/60 rounded-lg px-3 py-2"><Wind className="w-4 h-4 text-sky-400 inline mr-1" />{Math.round(day.avgWind || 0)} km/h</div>
-                <div className="bg-slate-900/60 rounded-lg px-3 py-2"><Cloud className="w-4 h-4 text-slate-400 inline mr-1" />{Math.round(day.avgCloud || 0)}%</div>
-                <div className="bg-slate-900/60 rounded-lg px-3 py-2">
-                  <Umbrella className="w-4 h-4 text-blue-400 inline mr-1" />
-                  <span className={precipGiorno === 0 ? "text-emerald-300" : "text-amber-300"}>
-                    {precipGiorno === 0 ? "Assente" : `${precipGiorno.toFixed(1)}mm`}
-                  </span>
-                </div>
-                <div className="bg-slate-900/60 rounded-lg px-3 py-2"><Thermometer className="w-4 h-4 text-orange-400 inline mr-1" />{Math.round((day.tempMin + day.tempMax) / 2)}°C</div>
-              </div>
+              <div className="flex justify-center my-1">{weatherInfo.icon}</div>
+              <div className="text-xs text-slate-300 font-bold">{weatherInfo.desc}</div>
+              <div className="text-lg font-bold text-white my-0.5">{Math.round(day.tempMax)}°</div>
+              <div className="text-[11px] text-slate-400">min {Math.round(day.tempMin)}°</div>
+              <div className="text-[11px] text-slate-400 mt-0.5">{precipGiorno > 0 ? `${precipGiorno.toFixed(1)} mm` : "0 mm"}</div>
             </button>
           );
         })}
