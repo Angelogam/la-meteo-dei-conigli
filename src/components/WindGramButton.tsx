@@ -1,14 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Wind, X } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Wind, X, ArrowUp, Calendar, Thermometer } from "lucide-react";
+import { calcolaTermiche } from "@/utils/termiche";
+import type { HourData } from "@/types/meteo";
 
 interface WindGramButtonProps {
-  dayData: any[];
+  dayData: HourData[];
   siteAltitude: number;
   siteName?: string;
   lat?: number;
   lon?: number;
+  selectedDay?: number; // 0 = oggi, 1 = domani, 2 = dopodomani
 }
 
 const ALT_KEYS: { alt: number; speedKey: string; dirKey: string }[] = [
@@ -40,12 +43,38 @@ function getDirName(deg: number): string {
   return dirs[Math.round(deg / 45) % 8];
 }
 
-const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramButtonProps) => {
+function getDayLabel(selectedDay: number): string {
+  if (selectedDay === 0) return "Oggi";
+  if (selectedDay === 1) return "Domani";
+  if (selectedDay === 2) return "Dopodomani";
+  return `Giorno ${selectedDay + 1}`;
+}
+
+const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon, selectedDay = 0 }: WindGramButtonProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [rawHourly, setRawHourly] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedHour, setSelectedHour] = useState(12);
+
+  // Calcola le termiche per ogni ora del giorno selezionato
+  const termicheMap = useMemo(() => {
+    const mappa: Record<number, { base: number; rateo: number; top: number; label: string }> = {};
+    if (!dayData || dayData.length === 0) return mappa;
+
+    const oreVolo = dayData.filter(h => {
+      const hh = h.time.getHours();
+      return hh >= 8 && hh <= 19;
+    });
+
+    for (const h of oreVolo) {
+      const ora = h.time.getHours();
+      const t = calcolaTermiche(h, siteAltitude);
+      mappa[ora] = { base: t.base, rateo: t.rateo, top: t.top, label: t.label };
+    }
+
+    return mappa;
+  }, [dayData, siteAltitude]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -175,6 +204,10 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
   const surfaceSpeed = rawHourly.wind_speed_10m?.[hourIndex] ?? 0;
   const surfaceDir = rawHourly.wind_direction_10m?.[hourIndex] ?? 0;
 
+  // Termiche per l'ora selezionata
+  const termicheOra = termicheMap[selectedHour];
+
+  // Ore disponibili (8-19)
   const availableHours: { hour: number; index: number }[] = [];
   for (let i = 0; i < rawHourly.time.length; i++) {
     const d = new Date(rawHourly.time[i]);
@@ -184,6 +217,7 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
     }
   }
 
+  // Scala altimetrie dal decollo a 4000m step 500m
   const startAlt = Math.floor(siteAltitude / 500) * 500;
   const altSteps: number[] = [];
   for (let a = startAlt; a <= 4000; a += 500) {
@@ -192,10 +226,8 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
 
   function getInterpolatedLevel(requestedAlt: number) {
     if (levels.length === 0) return null;
-
     let lower = levels[0];
     let upper = levels[levels.length - 1];
-
     for (let j = 0; j < levels.length - 1; j++) {
       if (levels[j].alt <= requestedAlt && levels[j + 1].alt >= requestedAlt) {
         lower = levels[j];
@@ -203,15 +235,8 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
         break;
       }
     }
-
-    if (requestedAlt < lower.alt) {
-      return { alt: requestedAlt, speed: lower.speed, dir: lower.dir };
-    }
-
-    if (requestedAlt > upper.alt) {
-      return { alt: requestedAlt, speed: upper.speed, dir: upper.dir };
-    }
-
+    if (requestedAlt < lower.alt) return { alt: requestedAlt, speed: lower.speed, dir: lower.dir };
+    if (requestedAlt > upper.alt) return { alt: requestedAlt, speed: upper.speed, dir: upper.dir };
     const ratio = lower.alt === upper.alt ? 0 : (requestedAlt - lower.alt) / (upper.alt - lower.alt);
     return {
       alt: requestedAlt,
@@ -224,13 +249,31 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
     .map(alt => getInterpolatedLevel(alt))
     .filter((l): l is { alt: number; speed: number; dir: number } => l != null && l.speed > 0);
 
+  // Colore del rateo termico
+  const rateoColor = termicheOra
+    ? termicheOra.rateo >= 4 ? "text-red-400" :
+      termicheOra.rateo >= 3 ? "text-orange-400" :
+      termicheOra.rateo >= 2 ? "text-amber-400" :
+      termicheOra.rateo >= 1 ? "text-green-400" :
+      termicheOra.rateo >= 0.3 ? "text-emerald-400" : "text-slate-400"
+    : "text-slate-400";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3">
       <div className="bg-gradient-to-b from-slate-800 to-slate-950 rounded-2xl border border-slate-700/50 shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700/30 bg-slate-800/50 shrink-0">
           <div>
-            <h3 className="text-lg font-bold text-white">WindGram · {siteName}</h3>
-            <p className="text-sm text-slate-400">Quota decollo: {siteAltitude}m · Dati Open-Meteo</p>
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <Wind className="w-5 h-5 text-sky-400" />
+              WindGram · {siteName}
+            </h3>
+            <div className="flex items-center gap-3 text-sm text-slate-400">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5" />
+                {getDayLabel(selectedDay)}
+              </span>
+              <span>Quota decollo: {siteAltitude}m</span>
+            </div>
           </div>
           <button onClick={() => setIsOpen(false)} className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white">
             <X className="w-5 h-5" />
@@ -238,23 +281,30 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
         </div>
 
         <div className="flex gap-1 px-5 py-2.5 border-b border-slate-700/30 bg-slate-900/40 overflow-x-auto shrink-0">
-          {availableHours.map(({ hour }) => (
-            <button
-              key={hour}
-              onClick={() => setSelectedHour(hour)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                hour === selectedHour
-                  ? "bg-emerald-600/40 text-emerald-200 border border-emerald-500/40"
-                  : "bg-slate-800/60 text-slate-400 hover:text-slate-200 border border-slate-700/30"
-              }`}
-            >
-              {String(hour).padStart(2, "0")}:00
-            </button>
-          ))}
+          {availableHours.map(({ hour }) => {
+            const th = termicheMap[hour];
+            return (
+              <button
+                key={hour}
+                onClick={() => setSelectedHour(hour)}
+                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all flex flex-col items-center gap-0.5 ${
+                  hour === selectedHour
+                    ? "bg-emerald-600/40 text-emerald-200 border border-emerald-500/40"
+                    : "bg-slate-800/60 text-slate-400 hover:text-slate-200 border border-slate-700/30"
+                }`}
+              >
+                <span>{String(hour).padStart(2, "0")}:00</span>
+                {th && th.rateo > 0 && (
+                  <span className="text-[9px] text-orange-300">{th.rateo.toFixed(1)} m/s</span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         <div className="overflow-y-auto p-5">
-          <div className="grid grid-cols-3 gap-2 mb-4">
+          {/* Info rapide + TERMICHE */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
             <div className="bg-slate-800/60 rounded-xl p-3 text-center">
               <div className="text-xs text-slate-500">Temperatura</div>
               <div className="text-lg font-bold text-white">{Math.round(temp)}°C</div>
@@ -269,8 +319,18 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
               <div className="text-lg font-bold text-slate-200">{cloud}%</div>
               <div className="text-xs text-slate-400">Raffiche {Math.round(gust)}</div>
             </div>
+            <div className="bg-slate-800/60 rounded-xl p-3 text-center">
+              <div className="text-xs text-slate-500">Termiche</div>
+              <div className={`text-lg font-bold ${rateoColor}`}>
+                {termicheOra ? `${termicheOra.rateo.toFixed(1)} m/s` : "N/D"}
+              </div>
+              <div className="text-xs text-emerald-400">
+                Base {termicheOra ? `${termicheOra.base}m` : "--"}
+              </div>
+            </div>
           </div>
 
+          {/* Linea base termica sul profilo verticale */}
           <div className="bg-slate-900/60 rounded-2xl border border-slate-700/30 p-4">
             <h4 className="text-sm font-bold text-white mb-4 text-center">
               Profilo verticale del vento · {String(selectedHour).padStart(2, "0")}:00
@@ -286,25 +346,25 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
               {[...interpolatedLevels].reverse().map((level) => {
                 const pct = (level.speed / maxSpeed) * 100;
                 const isDecolloExact = Math.abs(level.alt - siteAltitude) < 50;
+                const isBaseTermica = termicheOra && Math.abs(level.alt - termicheOra.base) < 150;
+
+                let bgClass = "hover:bg-slate-800/20";
+                if (isDecolloExact) bgClass = "bg-emerald-900/20 border-l-2 border-l-emerald-400";
+                else if (isBaseTermica) bgClass = "bg-orange-900/20 border-l-2 border-l-orange-400";
 
                 return (
                   <div
                     key={level.alt}
-                    className={`grid grid-cols-[55px_1fr_80px] gap-2 py-2 items-center rounded-lg px-1 ${
-                      isDecolloExact
-                        ? "bg-emerald-900/20 border-l-2 border-l-emerald-400"
-                        : "hover:bg-slate-800/20"
-                    }`}
+                    className={`grid grid-cols-[55px_1fr_80px] gap-2 py-2 items-center rounded-lg px-1 ${bgClass}`}
                   >
                     <div className="flex items-center gap-1">
                       <span className={`text-xs font-mono ${
-                        isDecolloExact ? "text-emerald-300 font-bold" : "text-slate-500"
+                        isDecolloExact ? "text-emerald-300 font-bold" : isBaseTermica ? "text-orange-300 font-bold" : "text-slate-500"
                       }`}>
                         {level.alt}m
                       </span>
-                      {isDecolloExact && (
-                        <span className="text-[9px]">🪂</span>
-                      )}
+                      {isDecolloExact && <span className="text-[9px]">🪂</span>}
+                      {isBaseTermica && <span className="text-[9px]">🔥</span>}
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -340,12 +400,15 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
               })}
             </div>
 
+            {/* Legenda con base termica */}
             <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-700/30 text-[10px] text-slate-500">
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> ≤5</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-cyan-500" /> 6-10</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500" /> 11-18</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500" /> 19-25</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> oltre 25 km/h</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> >25 km/h</span>
+              <span className="flex items-center gap-1 text-orange-400">🔥 Base termica</span>
+              <span className="flex items-center gap-1 text-emerald-400">🪂 Decollo</span>
             </div>
           </div>
         </div>

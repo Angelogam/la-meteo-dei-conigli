@@ -60,7 +60,7 @@ const Index = () => {
         </button>
 
         <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-          {/* Sidebar decolli — mobile overlay */}
+          {/* Sidebar decolli */}
           <aside className={`${
             sidebarOpen ? "fixed inset-0 z-40 bg-slate-950/95 p-4 overflow-auto" : "hidden"
           } md:block md:w-72 lg:w-80 shrink-0`}>
@@ -100,7 +100,7 @@ const Index = () => {
               onRefresh={loadWeather}
             />
 
-            {/* WindGramButton con lat/lon per profilo vento verticale reale */}
+            {/* WindGramButton con dayData, selectedDay, lat/lon */}
             <div className="flex justify-end">
               <WindGramButton
                 dayData={dayData}
@@ -108,6 +108,7 @@ const Index = () => {
                 siteName={site.name}
                 lat={site.lat}
                 lon={site.lon}
+                selectedDay={selectedDay}
               />
             </div>
 
@@ -126,7 +127,7 @@ const Index = () => {
               onSelectDay={setSelectedDay}
             />
 
-            {/* Selettore tab e contenuto */}
+            {/* Selettore tab */}
             <div className="space-y-3">
               <div className="flex items-center gap-1.5">
                 {[
