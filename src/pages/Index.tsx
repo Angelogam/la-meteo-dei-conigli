@@ -14,44 +14,11 @@ import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
 import MeteoTesterPanel from "@/components/MeteoTesterPanel";
-import MegaTestPanel from "@/components/MegaTestPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { DECOLLI } from "@/data/decolli";
-import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
-import ValidazionePrevisioni from "@/components/ValidazionePrevisioni";
-import { ShieldCheck, Activity } from "lucide-react";
-import type { MeteoHourly, MeteoCurrent } from "@/services/weatherService";
-
-export default function Index() {
-  const {
-    selectedId, setSelectedId,
-    loading: weatherLoading,
-    updating,
-   <dyad-write path="src/pages/Index.tsx">
-"use client";
-
-import React, { useState } from "react";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import DecolliCard from "@/components/DecolliCard";
-import SiteHeader from "@/components/SiteHeader";
-import UpdateTimer from "@/components/UpdateTimer";
-import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
-import WeatherDashboard from "@/components/WeatherDashboard";
-import TabNav from "@/components/TabNav";
-import MeteoTab from "@/components/MeteoTab";
-import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
-import TermicheTab from "@/components/TermicheTab";
-import AnalisiMeteo from "@/components/AnalisiMeteo";
-import MeteoTesterPanel from "@/components/MeteoTesterPanel";
-import MegaTestPanel from "@/components/MegaTestPanel";
-import { useWeatherData } from "@/hooks/useWeatherData";
-import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
-import { DECOLLI } from "@/data/decolli";
-import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
-import ValidazionePrevisioni from "@/components/ValidazionePrevisioni";
-import { ShieldCheck, Activity, RefreshCw } from "lucide-react";
+import { getStabilityIndex } from "@/utils/weatherHelpers";
+import { Activity } from "lucide-react";
 import type { MeteoHourly, MeteoCurrent } from "@/services/weatherService";
 
 export default function Index() {
@@ -71,23 +38,17 @@ export default function Index() {
     dateLabels,
     loadWeather,
     hourlyData,
-    allDailyData,
     allHourlyData,
     activeModel,
     currentCape,
   } = useWeatherData();
 
-  const [showValidation, setShowValidation] = useState(false);
-
-  // Analisi avanzata con refresh ogni 4s
   const {
-    analisi: analisiAvanzata,
     riepilogo: riepilogoAvanzato,
     loading: analisiLoading,
     hourlyData: hourlyDataAvanzati,
     currentData: currentDataAvanzato,
     tempoTrascorso,
-    marginiErrore,
   } = useMeteoCompleto(
     site?.lat ?? DECOLLI[0].lat,
     site?.lon ?? DECOLLI[0].lon,
@@ -100,9 +61,6 @@ export default function Index() {
     currentData?.cloudCover || 30
   );
 
-  const weatherAlert = getWeatherAlert(currentData, thermalDelta);
-
-  // Converte l'hourlyData nel formato MeteoHourly per l'analisi avanzata
   const meteoHourlyForAnalysis: MeteoHourly[] = React.useMemo(() => {
     const data = hourlyDataAvanzati.length > 0 ? hourlyDataAvanzati : hourlyData;
     if (!data || data.length === 0) return [];
@@ -150,20 +108,6 @@ export default function Index() {
     };
   }, [currentData, currentDataAvanzato]);
 
-  if (showValidation) {
-    return (
-      <>
-        <ValidazionePrevisioni />
-        <button
-          onClick={() => setShowValidation(false)}
-          className="fixed top-4 right-4 z-[10000] bg-red-900/60 hover:bg-red-800 text-white px-4 py-2 rounded-xl text-sm font-bold border border-red-500/50 shadow-2xl"
-        >
-          Chiudi validazione
-        </button>
-      </>
-    );
-  }
-
   if (weatherLoading && (!hourlyData || hourlyData.length === 0)) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col">
@@ -203,15 +147,10 @@ export default function Index() {
               updating={updating || analisiLoading} 
               onRefresh={loadWeather} 
             />
-            {/* Indicatore analisi in tempo reale */}
             <div className="bg-slate-800/50 border border-emerald-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
               <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
-              <span className="text-xs text-emerald-300">
-                Analisi in tempo reale
-              </span>
-              <span className="text-[10px] text-slate-500 ml-auto">
-                {tempoTrascorso}s
-              </span>
+              <span className="text-xs text-emerald-300">Analisi in tempo reale</span>
+              <span className="text-[10px] text-slate-500 ml-auto">{tempoTrascorso}s</span>
             </div>
             {riepilogoAvanzato && (
               <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl px-4 py-2 space-y-1">
@@ -248,7 +187,6 @@ export default function Index() {
               weatherMap={allHourlyData}
             />
           </aside>
-
           <div className="flex-1 min-w-0 space-y-6">
             {hasData && (
               <>
@@ -259,7 +197,6 @@ export default function Index() {
                   alt={site!.altitude}
                   currentData={currentData}
                 />
-
                 <PrevisioniGiornaliere
                   enrichedDaily={enrichedDaily}
                   dateLabels={dateLabels}
@@ -269,16 +206,13 @@ export default function Index() {
                   selectedDay={selectedDay}
                   onSelectDay={setSelectedDay}
                 />
-
                 <WeatherDashboard
                   dayData={dayData}
                   altitude={site!.altitude}
                   selectedHour={selectedHour}
                   onHourSelect={setSelectedHour}
                 />
-
                 <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
-
                 {activeTab === "meteo" && (
                   <MeteoTab
                     currentData={currentData}
@@ -292,7 +226,6 @@ export default function Index() {
                     cin={currentCape?.cin}
                   />
                 )}
-
                 {activeTab === "venti" && (
                   <VentiInterpolatiTab
                     lat={site!.lat}
@@ -303,7 +236,6 @@ export default function Index() {
                     onOraChange={setSelectedHour}
                   />
                 )}
-
                 {activeTab === "termiche" && (
                   <TermicheTab
                     currentData={currentData}
@@ -313,7 +245,6 @@ export default function Index() {
                     current={meteoCurrentForAnalysis || undefined}
                   />
                 )}
-
                 {activeTab === "analisi" && (
                   <AnalisiMeteo
                     currentData={currentData}
@@ -326,7 +257,6 @@ export default function Index() {
                 )}
               </>
             )}
-
             {!hasData && (
               <div className="text-center py-12 text-slate-400">
                 <p>Nessun dato meteo disponibile. Verifica la connessione o riprova.</p>
@@ -337,15 +267,6 @@ export default function Index() {
       </main>
       <Footer />
       <MeteoTesterPanel />
-      <MegaTestPanel />
-
-      <button
-        onClick={() => setShowValidation(true)}
-        className="fixed bottom-4 left-4 z-50 bg-amber-800/80 hover:bg-amber-700 text-amber-200 border border-amber-500/40 rounded-full p-3 shadow-2xl shadow-amber-500/10"
-        title="Confronta previsioni con climatologia storica"
-      >
-        <ShieldCheck className="w-5 h-5" />
-      </button>
     </div>
   );
 }
