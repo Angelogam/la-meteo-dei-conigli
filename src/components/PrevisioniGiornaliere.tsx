@@ -48,7 +48,9 @@ function formatDate(date: any): string {
   if (!date) return "";
   const d = date instanceof Date ? date : new Date(date);
   if (isNaN(d.getTime())) return String(date);
-  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+  const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+  return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
 }
 
 export default function PrevisioniGiornaliere({
@@ -145,8 +147,20 @@ export default function PrevisioniGiornaliere({
     return <div className="text-center py-8 text-slate-400 text-base">Caricamento previsioni...</div>;
   }
 
+  const selectedDayData = enrichedDaily[selectedDay];
+  const dayDate = selectedDayData?.date ? formatDate(selectedDayData.date) : "";
+
   return (
     <div className="space-y-4">
+      {/* Data del giorno selezionato */}
+      {dayDate && (
+        <div className="text-center pb-1">
+          <span className="inline-block text-base font-bold text-white bg-slate-800/60 border border-slate-600/50 px-4 py-1.5 rounded-lg">
+            {dayDate}
+          </span>
+        </div>
+      )}
+
       {/* Giorni - palette centrate e piu compatte */}
       <div className="flex flex-wrap justify-center gap-2">
         {enrichedDaily.slice(0, 3).map((day: any, idx: number) => {

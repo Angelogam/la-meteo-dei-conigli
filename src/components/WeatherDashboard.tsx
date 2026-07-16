@@ -14,6 +14,15 @@ interface WeatherDashboardProps {
   windProfile?: { height: number; speed: number; dir: number }[];
   groundSpeed?: number;
   groundDir?: number;
+  dayLabel?: string;
+}
+
+function formatDate(date: Date): string {
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return "";
+  const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+  const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+  return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
 }
 
 export default function WeatherDashboard({
@@ -21,6 +30,7 @@ export default function WeatherDashboard({
   altitude,
   selectedHour,
   onHourSelect,
+  dayLabel,
 }: WeatherDashboardProps) {
   const flightScore = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
@@ -83,8 +93,22 @@ export default function WeatherDashboard({
     };
   }, [dayData, altitude]);
 
+  const oggi = useMemo(() => {
+    const data = dayData && dayData.length > 0 ? dayData[0].time : new Date();
+    return formatDate(data);
+  }, [dayData]);
+
   return (
     <div className="space-y-4">
+      {/* Data del giorno selezionato */}
+      {dayLabel && (
+        <div className="text-center pb-1">
+          <span className="inline-block text-base font-bold text-white bg-slate-800/60 border border-slate-600/50 px-4 py-1.5 rounded-lg">
+            {dayLabel}
+          </span>
+        </div>
+      )}
+
       {/* Flight Score */}
       {flightScore && (
         <FlightScore
