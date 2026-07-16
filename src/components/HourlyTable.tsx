@@ -57,7 +57,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
         <span className="text-sm text-slate-500 bg-slate-800/60 px-3 py-0.5 rounded-full ml-auto">{rows.length} ore</span>
       </div>
       <div className="p-2 overflow-x-auto">
-        <div className="grid-oraria">
+        <div className="flex gap-2 justify-center">
           {rows.map((r: any) => {
             if (!r) return null;
             const isSelected = r.ora === selectedHour;
@@ -65,7 +65,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
               <button
                 key={r.ora}
                 onClick={() => onHourSelect(r.ora)}
-                className={"rounded-xl p-3 text-left transition-all border-2 cursor-pointer " + (
+                className={"rounded-xl p-3 text-center transition-all border-2 cursor-pointer flex flex-col items-center gap-1 " + (
                   isSelected
                     ? "bg-emerald-900/30 border-emerald-400 shadow-md"
                     : r.isCurrent
@@ -73,29 +73,21 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                     : "bg-slate-800/60 border-slate-700/50 hover:bg-slate-700/30"
                 )}
               >
-                <div className="flex items-center justify-between mb-1.5">
-                  <strong className="text-sm font-bold text-white">{String(r.ora).padStart(2, "0")}:00</strong>
-                  <span className="text-xl">{getWeatherIcon(r.codice, 1)}</span>
+                <strong className="text-sm font-bold text-white">{String(r.ora).padStart(2, "0")}:00</strong>
+                <span className="text-xl">{getWeatherIcon(r.codice, 1)}</span>
+                <div className="flex items-center gap-1 text-xs">
+                  <Thermometer className="w-3 h-3 text-amber-400 shrink-0" />
+                  <strong className="font-bold text-amber-300">{r.temperatura}°</strong>
                 </div>
-                <div className="grid grid-cols-2 gap-1 text-xs">
-                  <span className="flex items-center gap-1">
-                    <Thermometer className="w-3 h-3 text-amber-400" />
-                    <strong className="font-bold text-amber-300">{r.temperatura}°</strong>
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Wind className="w-3 h-3 text-sky-400" />
-                    <strong className="font-bold text-sky-300">{r.vento}</strong>
-                  </span>
+                <div className="flex items-center gap-1 text-xs">
+                  <Wind className="w-3 h-3 text-sky-400 shrink-0" />
+                  <strong className="font-bold text-sky-300">{r.vento}</strong>
                 </div>
-                <div className="grid grid-cols-2 gap-1 text-xs mt-1 pt-1 border-t border-slate-700/30">
-                  <span className="flex items-center gap-1 text-slate-400">
-                    <span className="font-bold" style={{ color: r.termicheColore }}>{r.termiche.toFixed(1)} m/s</span>
-                  </span>
-                  <span className="flex items-center gap-1 text-slate-400">
-                    <span>{r.nuvole}%</span>
-                  </span>
+                <div className="text-xs text-slate-400">
+                  <span className="font-bold" style={{ color: r.termicheColore }}>{r.termiche.toFixed(1)} m/s</span>
                 </div>
-                <div className="mt-1.5">
+                <div className="text-xs text-slate-400">{r.nuvole}%</div>
+                <div className="mt-0.5">
                   <span className={"inline-block px-1.5 py-0.5 rounded text-[11px] font-bold border " + r.voloColore}>
                     {r.voloIcon} {r.voloLabel}
                   </span>
