@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Wind, TrendingUp, Server, Mountain, Calendar } from "lucide-react";
+import { Wind, TrendingUp, Server, Mountain, Calendar, Compass } from "lucide-react";
 import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
 
 function getWindArrow(deg: number): string {
@@ -12,6 +12,11 @@ function getWindArrow(deg: number): string {
 function getWindDirName(deg: number): string {
   const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   return dirs[Math.round(deg / 45) % 8] || "-";
+}
+
+function getDirAbbrev(deg: number): string {
+  const abbrevs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+  return abbrevs[Math.round(deg / 22.5) % 16] || "N";
 }
 
 function getSpeedColor(speed: number): string {
@@ -119,6 +124,9 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
   }
   const maxSpeed = Math.max(...quoteVisibili.map(q => oraData.quote[q]?.speed || 0), 1);
 
+  // Direzioni cardinali con le loro posizioni verticali per le righe della griglia
+  const windDirNames = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+
   return (
     <div className="space-y-4">
       {/* Data del giorno */}
@@ -170,32 +178,62 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
             if (!v) return null;
             const width = maxSpeed > 0 ? (v.speed / maxSpeed) * 100 : 0;
             const isDecollo = q === data.quotaDecollo;
+            
+            // Determina la classe della linea di direzione orizzontale
+            const dir = getDirAbbrev(v.dir);
+            const dirIdx = windDirNames.indexOf(getWindDirName(v.dir));
+            
             return (
-              <div key={q} className={`vento-quota-row ${isDecollo ? "bg-amber-900/20 rounded-lg px-1 -mx-1" : ""}`}>
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className={`text-xs font-mono font-bold shrink-0 ${
-                    isDecollo ? "text-amber-300" : "text-slate-400"
-                  }`}>
-                    {q}m {isDecollo ? "🪂" : ""}
-                  </span>
-                  <div className="flex-1 h-6 bg-slate-700/60 rounded-full overflow-hidden min-w-0">
-                    <div
-                      className={`h-full rounded-full ${getSpeedBarColor(v.speed)} transition-all`}
-                      style={{ width: `${Math.max(width, 8)}%` }}
-                    />
-                  </div>
+              <div key={q} className={`grid grid-cols-[4.5rem_1fr_5rem_1.8rem] gap-2 items-center ${
+                isDecollo ? "bg-amber-900/20 rounded-lg px-1 -mx-1 py-0.5" : ""
+              }`}>
+                {/* Quota */}
+                <span className={`text-xs font-mono font-bold shrink-0 ${
+                  isDecollo ? "text-amber-300" : "text-slate-400"
+                }`}>
+                  {q}m {isDecollo ? "🪂" : ""}
+                </span>
+
+                {/* Barra velocità */}
+                <div className="h-6 bg-slate-700/60 rounded-full overflow-hidden relative">
+                  <div
+                    className={`h-full rounded-full transition-all ${getSpeedBarColor(v.speed)}`}
+                    style={{ width: `${Math.max(width, 8)}%` }}
+                  />
                 </div>
-                <div className="flex items-center gap-2 text-xs shrink-0">
-                  <span className={`font-bold ${getSpeedColor(v.speed)}`}>
-                    {v.speed} km/h
-                  </span>
-                  <span className="text-slate-400 hidden sm:inline">
-                    {getWindArrow(v.dir)} {getWindDirName(v.dir)} ({v.dir}°)
-                  </span>
-                </div>
+
+                {/* Valore velocità */}
+                <span className={`text-xs font-bold shrink-0 text-right ${getSpeedColor(v.speed)}`}>
+                  {v.speed} km/h
+                </span>
+
+                {/* Direzione cardinale */}
+                <span className="text-xs font-mono font-bold text-slate-300 text-center shrink-0">
+                  {dir}
+                </span>
               </div>
             );
           })}
+        </div>
+
+        {/* Legenda direzioni orizzontali */}
+        <div className="mt-4 pt-3 border-t border-slate-700/30">
+          <div className="flex items-center gap-2 mb-2">
+            <Compass className="w-4 h-4 text-cyan-400" />
+            <span className="text-xs font-bold text-cyan-300">Direzione vento per quota</span>
+          </div>
+          <div className="grid grid-cols-8 gap-1">
+            {windDirNames.map((dir, i) => {
+              const angle = i * 45;
+              return (
+                <div key={dir} className="text-[10px] text-center text-slate-500 flex flex-col items-center gap-0.5">
+                  <span className="text-xs font-bold text-slate-400">{dir}</span>
+                  <span className="text-slate-600">{angle}°</span>
+                  <span className="text-lg text-slate-500">{getWindArrow(angle)}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
