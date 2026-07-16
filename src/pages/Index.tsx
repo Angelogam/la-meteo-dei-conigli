@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import DecolloList from "@/components/DecolloList";
+import DecolliCard from "@/components/DecolliCard";
 import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
@@ -15,10 +15,18 @@ import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
 import MeteoTesterPanel from "@/components/MeteoTesterPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
-import { DECOLLI } from "@/data/decolli";
+import { DECOLLI, type Decollo } from "@/data/decolli";
 import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
 import ValidazionePrevisioni from "@/components/ValidazionePrevisioni";
-import { Bug, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
+
+// Converti i decolli nel formato richiesto da DecolliCard
+const decolliList = DECOLLI.map((d: Decollo) => ({
+  nome: d.name,
+  valle: d.valley,
+  quota: d.altitude,
+  direzione: d.exposure,
+}));
 
 export default function Index() {
   const {
@@ -96,16 +104,21 @@ export default function Index() {
               updating={updating} 
               onRefresh={loadWeather} 
             />
-            <DecolloList
-              decolli={DECOLLI}
+            <DecolliCard
+              decolli={decolliList}
               selectedId={selectedId}
-              onSelect={(id: string) => { setSelectedId(id); setSelectedHour(new Date().getHours()); }}
-              allDailyData={allDailyData}
-              allHourlyData={allHourlyData}
+              onSelect={(item) => {
+                const decollo = DECOLLI.find(d => d.name === item.nome);
+                if (decollo) {
+                  setSelectedId(decollo.id);
+                  setSelectedHour(new Date().getHours());
+                }
+              }}
+              weatherMap={allHourlyData}
             />
           </aside>
 
-          <div className="flex-1 min-w-0 space-y-6 max-w-[320px] mx-auto text-center">
+          <div className="flex-1 min-w-0 space-y-6">
             {hasData && (
               <>
                 <SiteHeader
@@ -192,7 +205,6 @@ export default function Index() {
       <Footer />
       <MeteoTesterPanel />
 
-      {/* Pulsante validazione — in basso a sinistra */}
       <button
         onClick={() => setShowValidation(true)}
         className="fixed bottom-4 left-4 z-50 bg-amber-800/80 hover:bg-amber-700 text-amber-200 border border-amber-500/40 rounded-full p-3 shadow-2xl shadow-amber-500/10"
