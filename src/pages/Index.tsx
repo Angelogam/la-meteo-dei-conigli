@@ -88,16 +88,16 @@ export default function Index() {
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <Header />
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6">
-        <div className="flex flex-col lg:flex-row gap-6 h-full">
-          {/* Sidebar SINISTRA — tutta la lista decolli in un'unica finestra */}
-          <aside className="w-full lg:w-80 shrink-0 flex flex-col gap-4 h-full max-h-[calc(100vh-180px)]">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Sidebar SINISTRA — tutta la lista decolli in un'unica finestra scrollabile */}
+          <aside className="w-full lg:w-80 shrink-0 flex flex-col gap-4">
             <UpdateTimer 
               lastUpdate={lastUpdate} 
               countdown={countdown} 
               updating={updating} 
               onRefresh={loadWeather} 
             />
-            <div className="flex-1 flex flex-col min-h-0">
+            <div className="h-[calc(100vh-280px)] lg:h-[calc(100vh-260px)] flex flex-col">
               <DecolloList
                 decolli={DECOLLI}
                 selectedId={selectedId}
@@ -108,8 +108,8 @@ export default function Index() {
             </div>
           </aside>
 
-          {/* Colonna DESTRA — previsioni */}
-          <div className="flex-1 min-w-0 space-y-6 overflow-y-auto max-h-[calc(100vh-180px)]">
+          {/* Colonna DESTRA — previsioni scrollabili */}
+          <div className="flex-1 min-w-0 space-y-6 h-[calc(100vh-200px)] overflow-y-auto">
             {hasData && (
               <>
                 <SiteHeader
