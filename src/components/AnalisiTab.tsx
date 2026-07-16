@@ -1,4 +1,8 @@
-</dyad-delete>
+</dyad-cat>Let me check what's actually on disk.
+
+<dyad-cat path="src/components/AnalisiTab.tsx"></dyad-cat>The file still contains the corrupted `<dyad-write` text. Let me force-remove the bad file and create an entirely clean one.
+
+<dyad-delete path="src/components/AnalisiTab.tsx"></dyad-delete>
 
 <dyad-write path="src/components/AnalisiTab.tsx">
 "use client";
@@ -53,7 +57,7 @@ export default function AnalisiTab({ currentData, dayData, site }: AnalisiTabPro
     const baseLCL = Math.max(200, Math.min(3000, Math.round(mediaSpread * 125)));
 
     const dirs = oreGiorno.map(h => h.windDir).filter(d => d != null);
-    const dirCount = {} as Record<number, number>;
+    const dirCount: Record<number, number> = {};
     for (const d of dirs) dirCount[Math.round(d / 45) * 45] = (dirCount[Math.round(d / 45) * 45] || 0) + 1;
     const dirDom = Object.entries(dirCount).sort((a, b) => b[1] - a[1])[0]?.[0];
     const dirDomNum = dirDom ? parseInt(dirDom) : (currentData?.windDir ?? 0);
@@ -89,10 +93,36 @@ export default function AnalisiTab({ currentData, dayData, site }: AnalisiTabPro
     let descVolo: string;
     if (score >= 8) descVolo = "Condizioni eccellenti per il volo libero. Termiche robuste, vento ideale e cielo favorevole.";
     else if (score >= 6) descVolo = "Buone condizioni per il volo. Qualche limite ma nel complesso si vola bene.";
-    else if (score >= 4) descVolo = "Condizioni discrete. Volo possibile ma con qualche attenzione in più.";
+    else if (score >= 4) descVolo = "Condizioni discrete. Volo possibile ma con qualche attenzione in pi\u00f9.";
     else descVolo = "Condizioni difficili. Sconsigliato ai piloti meno esperti.";
 
-    return { tempMax: Math.round(tempMax), tempMedia: Math.round(tempMedia), windMedia: Math.round(windMedia), windMax: Math.round(windMax), windGustsMax: Math.round(windGustsMax), cloudMedia: Math.round(cloudMedia), humidityMedia: Math.round(humidityMedia), precipTot: Math.round(precipTot * 10) / 10, pressureMed: Math.round(pressureMed), uvMedia: Math.round(uvMedia * 10) / 10, rateoMedio: Math.round(rateoMedio * 10) / 10, rateoMax: Math.round(rateoMax * 10) / 10, oreAttive, baseLCL, zeroTermico, deltaTermico, gradienteReale: Math.round(gradienteReale * 100) / 100, forzaTermica, turbolenza, dirDom: dirDomNum, dirName: getWindDirName(dirDomNum), score, scoreEmoji, descVolo, totaleOre: termichePerOra.length };
+    return {
+      tempMax: Math.round(tempMax),
+      tempMedia: Math.round(tempMedia),
+      windMedia: Math.round(windMedia),
+      windMax: Math.round(windMax),
+      windGustsMax: Math.round(windGustsMax),
+      cloudMedia: Math.round(cloudMedia),
+      humidityMedia: Math.round(humidityMedia),
+      precipTot: Math.round(precipTot * 10) / 10,
+      pressureMed: Math.round(pressureMed),
+      uvMedia: Math.round(uvMedia * 10) / 10,
+      rateoMedio: Math.round(rateoMedio * 10) / 10,
+      rateoMax: Math.round(rateoMax * 10) / 10,
+      oreAttive,
+      baseLCL,
+      zeroTermico,
+      deltaTermico,
+      gradienteReale: Math.round(gradienteReale * 100) / 100,
+      forzaTermica,
+      turbolenza,
+      dirDom: dirDomNum,
+      dirName: getWindDirName(dirDomNum),
+      score,
+      scoreEmoji,
+      descVolo,
+      totaleOre: termichePerOra.length,
+    };
   }, [dayData, currentData, site]);
 
   const dataGiorno = useMemo(() => {
@@ -144,29 +174,29 @@ export default function AnalisiTab({ currentData, dayData, site }: AnalisiTabPro
           <div className="flex justify-center mb-1"><Thermometer className="w-5 h-5 text-amber-400" /></div>
           <div className="text-xs text-slate-400 uppercase font-bold mb-0.5">Temperatura</div>
           <div className="text-lg font-bold text-white">{analisi.tempMedia}°C</div>
-          <div className="text-xs text-slate-400 mt-1">max {analisi.tempMax}°C · delta {analisi.deltaTermico}°C</div>
+          <div className="text-xs text-slate-400 mt-1">max {analisi.tempMax}°C \u00b7 delta {analisi.deltaTermico}°C</div>
         </div>
         <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
           <div className="flex justify-center mb-1"><Wind className="w-5 h-5 text-sky-400" /></div>
           <div className="text-xs text-slate-400 uppercase font-bold mb-0.5">Vento medio</div>
           <div className="text-lg font-bold text-white">{analisi.windMedia} km/h</div>
-          <div className="text-xs text-slate-400 mt-1">max {analisi.windMax} · raffiche {analisi.windGustsMax}</div>
+          <div className="text-xs text-slate-400 mt-1">max {analisi.windMax} \u00b7 raffiche {analisi.windGustsMax}</div>
         </div>
         <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
           <div className="flex justify-center mb-1"><ArrowUp className="w-5 h-5 text-orange-400" /></div>
           <div className="text-xs text-slate-400 uppercase font-bold mb-0.5">Termiche</div>
           <div className="text-lg font-bold text-white">{analisi.rateoMedio} m/s</div>
-          <div className="text-xs text-slate-400 mt-1">picco {analisi.rateoMax} · {analisi.oreAttive}/{analisi.totaleOre}h attive</div>
+          <div className="text-xs text-slate-400 mt-1">picco {analisi.rateoMax} \u00b7 {analisi.oreAttive}/{analisi.totaleOre}h attive</div>
         </div>
         <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
           <div className="flex justify-center mb-1"><Cloud className="w-5 h-5 text-slate-400" /></div>
-          <div className="text-xs text-slate-400 uppercase font-bold mb-0.5">Nuvolosità</div>
+          <div className="text-xs text-slate-400 uppercase font-bold mb-0.5">Nuvolosit\u00e0</div>
           <div className="text-lg font-bold text-white">{analisi.cloudMedia}%</div>
           <div className="text-xs text-slate-400 mt-1">{analisi.cloudMedia < 20 ? "Sereno" : analisi.cloudMedia < 40 ? "Poco nuvoloso" : analisi.cloudMedia < 60 ? "Nuvoloso" : "Coperto"}</div>
         </div>
         <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
           <div className="flex justify-center mb-1"><Droplets className="w-5 h-5 text-blue-400" /></div>
-          <div className="text-xs text-slate-400 uppercase font-bold mb-0.5">Umidità</div>
+          <div className="text-xs text-slate-400 uppercase font-bold mb-0.5">Umidit\u00e0</div>
           <div className="text-lg font-bold text-white">{analisi.humidityMedia}%</div>
           <div className="text-xs text-slate-400 mt-1">{analisi.humidityMedia < 40 ? "Aria secca" : analisi.humidityMedia < 60 ? "Normale" : "Aria umida"}</div>
         </div>
