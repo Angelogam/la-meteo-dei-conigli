@@ -55,3 +55,21 @@
     border-radius: 4px;
   }
 }
+
+/* ===== DECOLLO CARD ===== */
+.decollo-card {
+  width: 90%;
+  max-width: 380px;
+  padding: 10px;
+  margin: 10px auto;
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+  .decollo-card {
+    width: 95%;
+    font-size: 0.85rem;
+    padding: 8px;
+  }
+}
