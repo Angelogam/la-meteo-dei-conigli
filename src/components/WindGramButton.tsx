@@ -1,4 +1,3 @@
-25 km/h">
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -12,7 +11,6 @@ interface WindGramButtonProps {
   lon?: number;
 }
 
-// Le quote per cui Open-Meteo fornisce dati vento reali
 const ALT_KEYS: { alt: number; speedKey: string; dirKey: string }[] = [
   { alt: 10,   speedKey: "wind_speed_10m",    dirKey: "wind_direction_10m" },
   { alt: 80,   speedKey: "wind_speed_80m",    dirKey: "wind_direction_80m" },
@@ -65,8 +63,7 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
           longitude: useLon.toString(),
           hourly: [
             "temperature_2m",
-            "wind_speed_10m",
-            "wind_direction_10m",
+            "wind_speed_10m", "wind_direction_10m",
             "wind_gusts_10m",
             "cloud_cover",
             "precipitation",
@@ -165,7 +162,6 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
     );
   }
 
-  // Costruisci i livelli per l'ora selezionata
   const levels = ALT_KEYS.map(k => ({
     alt: k.alt,
     speed: rawHourly[k.speedKey]?.[hourIndex] ?? null,
@@ -179,7 +175,6 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
   const surfaceSpeed = rawHourly.wind_speed_10m?.[hourIndex] ?? 0;
   const surfaceDir = rawHourly.wind_direction_10m?.[hourIndex] ?? 0;
 
-  // Ore disponibili (8-19)
   const availableHours: { hour: number; index: number }[] = [];
   for (let i = 0; i < rawHourly.time.length; i++) {
     const d = new Date(rawHourly.time[i]);
@@ -189,18 +184,15 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
     }
   }
 
-  // GENERA LA SCALA ALTIMETRIA: dal decollo selezionato a 4000m con step di 500m
   const startAlt = Math.floor(siteAltitude / 500) * 500;
   const altSteps: number[] = [];
   for (let a = startAlt; a <= 4000; a += 500) {
     altSteps.push(a);
   }
 
-  // Per ogni step di quota, trova il livello più vicino con dati reali
   function getInterpolatedLevel(requestedAlt: number) {
     if (levels.length === 0) return null;
 
-    // Trova i due livelli più vicini
     let lower = levels[0];
     let upper = levels[levels.length - 1];
 
@@ -213,11 +205,11 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
     }
 
     if (requestedAlt < lower.alt) {
-      return { alt: requestedAlt, ...lower };
+      return { alt: requestedAlt, speed: lower.speed, dir: lower.dir };
     }
 
     if (requestedAlt > upper.alt) {
-      return { alt: requestedAlt, ...upper };
+      return { alt: requestedAlt, speed: upper.speed, dir: upper.dir };
     }
 
     const ratio = lower.alt === upper.alt ? 0 : (requestedAlt - lower.alt) / (upper.alt - lower.alt);
@@ -235,7 +227,6 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3">
       <div className="bg-gradient-to-b from-slate-800 to-slate-950 rounded-2xl border border-slate-700/50 shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700/30 bg-slate-800/50 shrink-0">
           <div>
             <h3 className="text-lg font-bold text-white">WindGram · {siteName}</h3>
@@ -246,7 +237,6 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
           </button>
         </div>
 
-        {/* Selettore ora */}
         <div className="flex gap-1 px-5 py-2.5 border-b border-slate-700/30 bg-slate-900/40 overflow-x-auto shrink-0">
           {availableHours.map(({ hour }) => (
             <button
@@ -263,9 +253,7 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
           ))}
         </div>
 
-        {/* Profilo vento verticale */}
         <div className="overflow-y-auto p-5">
-          {/* Info rapide */}
           <div className="grid grid-cols-3 gap-2 mb-4">
             <div className="bg-slate-800/60 rounded-xl p-3 text-center">
               <div className="text-xs text-slate-500">Temperatura</div>
@@ -283,14 +271,12 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
             </div>
           </div>
 
-          {/* GRAFICO VENTO VERTICALE */}
           <div className="bg-slate-900/60 rounded-2xl border border-slate-700/30 p-4">
             <h4 className="text-sm font-bold text-white mb-4 text-center">
               Profilo verticale del vento · {String(selectedHour).padStart(2, "0")}:00
             </h4>
 
             <div className="space-y-1.5">
-              {/* Header colonne */}
               <div className="grid grid-cols-[55px_1fr_80px] gap-2 pb-1.5 mb-1 border-b border-slate-700/30 text-[9px] text-slate-600 uppercase font-bold">
                 <span>Quota</span>
                 <span className="text-center">Direzione e intensità</span>
@@ -299,7 +285,6 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
 
               {[...interpolatedLevels].reverse().map((level) => {
                 const pct = (level.speed / maxSpeed) * 100;
-                const isDecollo = Math.abs(level.alt - siteAltitude) < 100;
                 const isDecolloExact = Math.abs(level.alt - siteAltitude) < 50;
 
                 return (
@@ -311,7 +296,6 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
                         : "hover:bg-slate-800/20"
                     }`}
                   >
-                    {/* Quota */}
                     <div className="flex items-center gap-1">
                       <span className={`text-xs font-mono ${
                         isDecolloExact ? "text-emerald-300 font-bold" : "text-slate-500"
@@ -323,9 +307,7 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
                       )}
                     </div>
 
-                    {/* Barra vento + freccia */}
                     <div className="flex items-center gap-2">
-                      {/* Freccia direzione */}
                       <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" style={{ transform: `rotate(${level.dir}deg)` }}>
                         <polygon
                           points="12,2 20,20 12,15 4,20"
@@ -334,7 +316,6 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
                         />
                       </svg>
 
-                      {/* Barra intensità */}
                       <div className="flex-1 h-4 bg-slate-800 rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full flex items-center justify-end pr-1.5 transition-all"
@@ -350,7 +331,6 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
                       </div>
                     </div>
 
-                    {/* km/h e direzione */}
                     <div className="flex items-center justify-end gap-1">
                       <span className="text-xs font-bold text-slate-300">{Math.round(level.speed)}</span>
                       <span className="text-[10px] text-slate-500">{getDirName(level.dir)}</span>
@@ -360,13 +340,12 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
               })}
             </div>
 
-            {/* Legenda */}
             <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-700/30 text-[10px] text-slate-500">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> &le;5</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> ≤5</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-cyan-500" /> 6-10</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500" /> 11-18</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500" /> 19-25</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> >25 km/h</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> oltre 25 km/h</span>
             </div>
           </div>
         </div>
