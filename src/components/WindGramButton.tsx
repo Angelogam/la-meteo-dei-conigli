@@ -1,4 +1,3 @@
-25 km/h con >25 km/h">
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -12,7 +11,7 @@ interface WindGramButtonProps {
   siteName?: string;
   lat?: number;
   lon?: number;
-  selectedDay?: number; // 0 = oggi, 1 = domani, 2 = dopodomani
+  selectedDay?: number;
 }
 
 const ALT_KEYS: { alt: number; speedKey: string; dirKey: string }[] = [
@@ -58,35 +57,28 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon, selectedDay
   const [error, setError] = useState<string | null>(null);
   const [selectedHour, setSelectedHour] = useState(12);
 
-  // Calcola le termiche per ogni ora del giorno selezionato
   const termicheMap = useMemo(() => {
     const mappa: Record<number, { base: number; rateo: number; top: number; label: string }> = {};
     if (!dayData || dayData.length === 0) return mappa;
-
     const oreVolo = dayData.filter(h => {
       const hh = h.time.getHours();
       return hh >= 8 && hh <= 19;
     });
-
     for (const h of oreVolo) {
       const ora = h.time.getHours();
       const t = calcolaTermiche(h, siteAltitude);
       mappa[ora] = { base: t.base, rateo: t.rateo, top: t.top, label: t.label };
     }
-
     return mappa;
   }, [dayData, siteAltitude]);
 
   useEffect(() => {
     if (!isOpen) return;
-
     const fetchData = async () => {
       setLoading(true);
       setError(null);
-
       const useLat = lat ?? 44.76;
       const useLon = lon ?? 7.25;
-
       try {
         const params = new URLSearchParams({
           latitude: useLat.toString(),
@@ -112,13 +104,10 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon, selectedDay
           timezone: "Europe/Rome",
           forecast_days: "3",
         });
-
         const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-
         setRawHourly(data.hourly);
-
         const now = new Date();
         const currentHour = data.hourly.time.findIndex((t: string) => {
           const d = new Date(t);
@@ -134,7 +123,6 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon, selectedDay
         setLoading(false);
       }
     };
-
     fetchData();
   }, [isOpen, lat, lon]);
 
@@ -166,9 +154,7 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon, selectedDay
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
         <div className="bg-slate-900 rounded-2xl border border-slate-700 p-8 text-center">
           <p className="text-slate-400">{error || "Nessun dato"}</p>
-          <button onClick={() => setIsOpen(false)} className="mt-4 px-5 py-2 bg-slate-700 rounded-xl text-white text-sm font-bold hover:bg-slate-600">
-            Chiudi
-          </button>
+          <button onClick={() => setIsOpen(false)} className="mt-4 px-5 py-2 bg-slate-700 rounded-xl text-white text-sm font-bold hover:bg-slate-600">Chiudi</button>
         </div>
       </div>
     );
@@ -184,9 +170,7 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon, selectedDay
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
         <div className="bg-slate-900 rounded-2xl border border-slate-700 p-8 text-center">
           <p className="text-slate-400">Ora non trovata</p>
-          <button onClick={() => setIsOpen(false)} className="mt-4 px-5 py-2 bg-slate-700 rounded-xl text-white text-sm font-bold hover:bg-slate-600">
-            Chiudi
-          </button>
+          <button onClick={() => setIsOpen(false)} className="mt-4 px-5 py-2 bg-slate-700 rounded-xl text-white text-sm font-bold hover:bg-slate-600">Chiudi</button>
         </div>
       </div>
     );
@@ -204,11 +188,8 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon, selectedDay
   const gust = rawHourly.wind_gusts_10m?.[hourIndex] ?? 0;
   const surfaceSpeed = rawHourly.wind_speed_10m?.[hourIndex] ?? 0;
   const surfaceDir = rawHourly.wind_direction_10m?.[hourIndex] ?? 0;
-
-  // Termiche per l'ora selezionata
   const termicheOra = termicheMap[selectedHour];
 
-  // Ore disponibili (8-19)
   const availableHours: { hour: number; index: number }[] = [];
   for (let i = 0; i < rawHourly.time.length; i++) {
     const d = new Date(rawHourly.time[i]);
@@ -218,7 +199,6 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon, selectedDay
     }
   }
 
-  // Scala altimetrie dal decollo a 4000m step 500m
   const startAlt = Math.floor(siteAltitude / 500) * 500;
   const altSteps: number[] = [];
   for (let a = startAlt; a <= 4000; a += 500) {
@@ -250,7 +230,6 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon, selectedDay
     .map(alt => getInterpolatedLevel(alt))
     .filter((l): l is { alt: number; speed: number; dir: number } => l != null && l.speed > 0);
 
-  // Colore del rateo termico
   const rateoColor = termicheOra
     ? termicheOra.rateo >= 4 ? "text-red-400" :
       termicheOra.rateo >= 3 ? "text-orange-400" :
@@ -304,7 +283,6 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon, selectedDay
         </div>
 
         <div className="overflow-y-auto p-5">
-          {/* Info rapide + TERMICHE */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
             <div className="bg-slate-800/60 rounded-xl p-3 text-center">
               <Thermometer className="w-5 h-5 text-amber-400 mx-auto mb-1" />
@@ -334,7 +312,6 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon, selectedDay
             </div>
           </div>
 
-          {/* Linea base termica sul profilo verticale */}
           <div className="bg-slate-900/60 rounded-2xl border border-slate-700/30 p-4">
             <h4 className="text-sm font-bold text-white mb-4 text-center">
               Profilo verticale del vento · {String(selectedHour).padStart(2, "0")}:00
@@ -357,44 +334,22 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon, selectedDay
                 else if (isBaseTermica) bgClass = "bg-orange-900/20 border-l-2 border-l-orange-400";
 
                 return (
-                  <div
-                    key={level.alt}
-                    className={`grid grid-cols-[55px_1fr_80px] gap-2 py-2 items-center rounded-lg px-1 ${bgClass}`}
-                  >
+                  <div key={level.alt} className={`grid grid-cols-[55px_1fr_80px] gap-2 py-2 items-center rounded-lg px-1 ${bgClass}`}>
                     <div className="flex items-center gap-1">
-                      <span className={`text-xs font-mono ${
-                        isDecolloExact ? "text-emerald-300 font-bold" : isBaseTermica ? "text-orange-300 font-bold" : "text-slate-500"
-                      }`}>
-                        {level.alt}m
-                      </span>
+                      <span className={`text-xs font-mono ${isDecolloExact ? "text-emerald-300 font-bold" : isBaseTermica ? "text-orange-300 font-bold" : "text-slate-500"}`}>{level.alt}m</span>
                       {isDecolloExact && <span className="text-[9px]">🪂</span>}
                       {isBaseTermica && <span className="text-[9px]">🔥</span>}
                     </div>
-
                     <div className="flex items-center gap-2">
                       <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" style={{ transform: `rotate(${level.dir}deg)` }}>
-                        <polygon
-                          points="12,2 20,20 12,15 4,20"
-                          fill={getWindColor(level.speed)}
-                          opacity="0.85"
-                        />
+                        <polygon points="12,2 20,20 12,15 4,20" fill={getWindColor(level.speed)} opacity="0.85" />
                       </svg>
-
                       <div className="flex-1 h-4 bg-slate-800 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full flex items-center justify-end pr-1.5 transition-all"
-                          style={{
-                            width: `${Math.max(pct, 5)}%`,
-                            backgroundColor: getWindColor(level.speed),
-                          }}
-                        >
-                          {pct > 12 && (
-                            <span className="text-[8px] text-white font-bold">{Math.round(level.speed)}</span>
-                          )}
+                        <div className="h-full rounded-full flex items-center justify-end pr-1.5 transition-all" style={{ width: `${Math.max(pct, 5)}%`, backgroundColor: getWindColor(level.speed) }}>
+                          {pct > 12 && <span className="text-[8px] text-white font-bold">{Math.round(level.speed)}</span>}
                         </div>
                       </div>
                     </div>
-
                     <div className="flex items-center justify-end gap-1">
                       <span className="text-xs font-bold text-slate-300">{Math.round(level.speed)}</span>
                       <span className="text-[10px] text-slate-500">{getDirName(level.dir)}</span>
@@ -404,7 +359,6 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon, selectedDay
               })}
             </div>
 
-            {/* Legenda con base termica */}
             <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-700/30 text-[10px] text-slate-500">
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> ≤5</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-cyan-500" /> 6-10</span>
