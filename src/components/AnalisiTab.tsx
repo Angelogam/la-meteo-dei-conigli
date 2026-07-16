@@ -1,6 +1,3 @@
-</dyad-delete>
-
-<dyad-write path="src/components/AnalisiTab.tsx">
 "use client";
 
 import React, { useMemo } from "react";
@@ -89,7 +86,7 @@ export default function AnalisiTab({ currentData, dayData, site }: AnalisiTabPro
     let descVolo: string;
     if (score >= 8) descVolo = "Condizioni eccellenti per il volo libero. Termiche robuste, vento ideale e cielo favorevole.";
     else if (score >= 6) descVolo = "Buone condizioni per il volo. Qualche limite ma nel complesso si vola bene.";
-    else if (score >= 4) descVolo = "Condizioni discrete. Volo possibile ma con qualche attenzione in pi\u00f9.";
+    else if (score >= 4) descVolo = "Condizioni discrete. Volo possibile ma con qualche attenzione in più.";
     else descVolo = "Condizioni difficili. Sconsigliato ai piloti meno esperti.";
 
     return {
