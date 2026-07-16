@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import {
   Sun, CloudSun, Cloud, CloudRain,
   CloudLightning, CloudFog, Thermometer, Wind, Droplets,
-  ArrowUp, Gauge, Umbrella, Mountain, TrendingUp, CheckCircle
+  ArrowUp, Gauge, Umbrella, Mountain, TrendingUp, CheckCircle, Calendar
 } from "lucide-react";
 import { degreesToCardinal, windArrow } from "@/utils/windDirections";
 import { calcolaTermiche } from "@/utils/termiche";
@@ -51,6 +51,13 @@ function formatDate(date: any): string {
   const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
   const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
   return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
+}
+
+function formatDateShort(date: any): string {
+  if (!date) return "";
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return String(date);
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
 export default function PrevisioniGiornaliere({
@@ -148,19 +155,11 @@ export default function PrevisioniGiornaliere({
   }
 
   const selectedDayData = enrichedDaily[selectedDay];
-  const dayDate = selectedDayData?.date ? formatDate(selectedDayData.date) : "";
+  const dayDateFull = selectedDayData?.date ? formatDate(selectedDayData.date) : "";
+  const dayDateShort = selectedDayData?.date ? formatDateShort(selectedDayData.date) : "";
 
   return (
     <div className="space-y-4">
-      {/* Data del giorno selezionato */}
-      {dayDate && (
-        <div className="text-center pb-1">
-          <span className="inline-block text-base font-bold text-white bg-slate-800/60 border border-slate-600/50 px-4 py-1.5 rounded-lg">
-            {dayDate}
-          </span>
-        </div>
-      )}
-
       {/* Giorni - palette centrate e piu compatte */}
       <div className="flex flex-wrap justify-center gap-2">
         {enrichedDaily.slice(0, 3).map((day: any, idx: number) => {
@@ -172,14 +171,17 @@ export default function PrevisioniGiornaliere({
             <button
               key={idx}
               onClick={() => onSelectDay(idx)}
-              className={`text-center transition-all border-2 cursor-pointer w-32 p-3 rounded-xl ${
+              className={`text-center transition-all border-2 cursor-pointer p-3 rounded-xl ${
                 isActive
                   ? "border-emerald-400 bg-emerald-900/40 shadow-lg"
                   : "border-slate-700/50 bg-slate-800/40 hover:border-slate-600"
-              }`}
+              } ${idx === 0 ? "w-28" : "w-36"}`}
             >
               <div className="text-sm font-bold text-white">
                 {idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani"}
+              </div>
+              <div className="text-[10px] text-slate-400 mt-0.5">
+                <Calendar className="w-3 h-3 inline mr-1" />{day.date ? formatDateShort(day.date) : ""}
               </div>
               <div className="flex justify-center my-1">{weatherInfo.icon}</div>
               <div className="text-xs text-slate-300 font-bold">{weatherInfo.desc}</div>
@@ -204,9 +206,12 @@ export default function PrevisioniGiornaliere({
             const dirArr = windArrow(fascia.windDirMedia);
             return (
               <div key={idx} className={`card p-4 border-2 ${fascia.borderColor} bg-slate-800/40`}>
-                {/* Intestazione: label a sinistra, score a destra */}
-                <div className="flex items-center justify-between mb-3">
+                {/* Intestazione: label a sinistra, data al centro, score a destra */}
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-base font-bold text-white">{fascia.label}</span>
+                  <span className="text-xs text-slate-400 flex items-center gap-1">
+                    <Calendar className="w-3 h-3 text-slate-500" />{dayDateShort}
+                  </span>
                   <span className={`text-sm font-bold px-2 py-0.5 rounded-full border ${scoreColor}`}>{fascia.score}/10</span>
                 </div>
                 {/* Temperatura centrata */}
