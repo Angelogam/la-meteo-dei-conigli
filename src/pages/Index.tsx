@@ -14,11 +14,12 @@ import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
 import MeteoTesterPanel from "@/components/MeteoTesterPanel";
+import WindGramButton from "@/components/WindGramButton";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
 import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
 import ValidazionePrevisioni from "@/components/ValidazionePrevisioni";
-import { Bug, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 
 export default function Index() {
   const {
@@ -133,7 +134,10 @@ export default function Index() {
                   onHourSelect={setSelectedHour}
                 />
 
-                <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+                <div className="flex items-center justify-center gap-3">
+                  <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+                  <WindGramButton dayData={dayData} siteAltitude={site!.altitude} />
+                </div>
 
                 {activeTab === "meteo" && (
                   <MeteoTab
