@@ -11,7 +11,7 @@ interface WindGramButtonProps {
   lon?: number;
 }
 
-// Le uniche quote per cui Open-Meteo fornisce wind_speed e wind_direction reali
+// Le quote per cui Open-Meteo fornisce dati vento reali
 const ALT_KEYS: { alt: number; speedKey: string; dirKey: string }[] = [
   { alt: 10,   speedKey: "wind_speed_10m",    dirKey: "wind_direction_10m" },
   { alt: 80,   speedKey: "wind_speed_80m",    dirKey: "wind_direction_80m" },
@@ -32,21 +32,13 @@ function getWindColor(speed: number): string {
   if (speed <= 10) return "#06b6d4";
   if (speed <= 18) return "#eab308";
   if (speed <= 25) return "#f97316";
-  return "#ef4444";
+  if (speed <= 35) return "#ef4444";
+  return "#dc2626";
 }
 
 function getDirName(deg: number): string {
   const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   return dirs[Math.round(deg / 45) % 8];
-}
-
-function getDirArrow(deg: number, speed: number): React.ReactNode {
-  const color = getWindColor(speed);
-  return (
-    <svg className="w-6 h-6" viewBox="0 0 24 24" style={{ transform: `rotate(${deg}deg)` }}>
-      <polygon points="12,2 22,20 12,15 2,20" fill={color} opacity="0.8" />
-    </svg>
-  );
 }
 
 const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramButtonProps) => {
@@ -67,7 +59,6 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
       const useLon = lon ?? 7.25;
 
       try {
-        // Chiamata UNICA con TUTTI i parametri vento
         const params = new URLSearchParams({
           latitude: useLat.toString(),
           longitude: useLon.toString(),
@@ -78,28 +69,17 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
             "wind_gusts_10m",
             "cloud_cover",
             "precipitation",
-            "wind_speed_80m",
-            "wind_direction_80m",
-            "wind_speed_120m",
-            "wind_direction_120m",
-            "wind_speed_300m",
-            "wind_direction_300m",
-            "wind_speed_600m",
-            "wind_direction_600m",
-            "wind_speed_1000m",
-            "wind_direction_1000m",
-            "wind_speed_1500m",
-            "wind_direction_1500m",
-            "wind_speed_2000m",
-            "wind_direction_2000m",
-            "wind_speed_2500m",
-            "wind_direction_2500m",
-            "wind_speed_3000m",
-            "wind_direction_3000m",
-            "wind_speed_4000m",
-            "wind_direction_4000m",
-            "wind_speed_5000m",
-            "wind_direction_5000m",
+            "wind_speed_80m", "wind_direction_80m",
+            "wind_speed_120m", "wind_direction_120m",
+            "wind_speed_300m", "wind_direction_300m",
+            "wind_speed_600m", "wind_direction_600m",
+            "wind_speed_1000m", "wind_direction_1000m",
+            "wind_speed_1500m", "wind_direction_1500m",
+            "wind_speed_2000m", "wind_direction_2000m",
+            "wind_speed_2500m", "wind_direction_2500m",
+            "wind_speed_3000m", "wind_direction_3000m",
+            "wind_speed_4000m", "wind_direction_4000m",
+            "wind_speed_5000m", "wind_direction_5000m",
           ].join(","),
           timezone: "Europe/Rome",
           forecast_days: "3",
@@ -111,7 +91,6 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
 
         setRawHourly(data.hourly);
 
-        // Trova l'ora corrente
         const now = new Date();
         const currentHour = data.hourly.time.findIndex((t: string) => {
           const d = new Date(t);
@@ -167,7 +146,6 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
     );
   }
 
-  // Trova l'indice dell'ora selezionata
   const hourIndex = rawHourly.time.findIndex((t: string) => {
     const d = new Date(t);
     return d.getHours() === selectedHour;
@@ -201,7 +179,7 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
   const surfaceDir = rawHourly.wind_direction_10m?.[hourIndex] ?? 0;
 
   // Ore disponibili (8-19)
-  const availableHours = [];
+  const availableHours: { hour: number; index: number }[] = [];
   for (let i = 0; i < rawHourly.time.length; i++) {
     const d = new Date(rawHourly.time[i]);
     const hh = d.getHours();
@@ -210,6 +188,52 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
     }
   }
 
+  // GENERA LA SCALA ALTIMETRIA: dal decollo selezionato a 4000m con step di 500m
+  const startAlt = Math.floor(siteAltitude / 500) * 500; // arrotonda per difetto al 500 più vicino
+  const altSteps: number[] = [];
+  for (let a = startAlt; a <= 4000; a += 500) {
+    altSteps.push(a);
+  }
+
+  // Per ogni step di quota, trova il livello più vicino con dati reali
+  function getInterpolatedLevel(requestedAlt: number) {
+    if (levels.length === 0) return null;
+
+    // Trova i due livelli più vicini
+    let lower = levels[0];
+    let upper = levels[levels.length - 1];
+
+    for (let j = 0; j < levels.length - 1; j++) {
+      if (levels[j].alt <= requestedAlt && levels[j + 1].alt >= requestedAlt) {
+        lower = levels[j];
+        upper = levels[j + 1];
+        break;
+      }
+    }
+
+    // Se siamo sotto il livello più basso, usa quello
+    if (requestedAlt < lower.alt) {
+      return { alt: requestedAlt, ...lower };
+    }
+
+    // Se siamo sopra il livello più alto, usa quello
+    if (requestedAlt > upper.alt) {
+      return { alt: requestedAlt, ...upper };
+    }
+
+    // Interpolazione lineare
+    const ratio = lower.alt === upper.alt ? 0 : (requestedAlt - lower.alt) / (upper.alt - lower.alt);
+    return {
+      alt: requestedAlt,
+      speed: Math.round(lower.speed + ratio * (upper.speed - lower.speed)),
+      dir: Math.round(lower.dir + ratio * (upper.dir - lower.dir)),
+    };
+  }
+
+  const interpolatedLevels = altSteps
+    .map(alt => getInterpolatedLevel(alt))
+    .filter((l): l is { alt: number; speed: number; dir: number } => l != null && l.speed > 0);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3">
       <div className="bg-gradient-to-b from-slate-800 to-slate-950 rounded-2xl border border-slate-700/50 shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
@@ -217,14 +241,14 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700/30 bg-slate-800/50 shrink-0">
           <div>
             <h3 className="text-lg font-bold text-white">WindGram · {siteName}</h3>
-            <p className="text-sm text-slate-400">Quota decollo: {siteAltitude}m · Dati reali Open-Meteo</p>
+            <p className="text-sm text-slate-400">Quota decollo: {siteAltitude}m · Dati Open-Meteo</p>
           </div>
           <button onClick={() => setIsOpen(false)} className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Selettore ora - orizzontale e compatto */}
+        {/* Selettore ora */}
         <div className="flex gap-1 px-5 py-2.5 border-b border-slate-700/30 bg-slate-900/40 overflow-x-auto shrink-0">
           {availableHours.map(({ hour }) => (
             <button
@@ -241,7 +265,7 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
           ))}
         </div>
 
-        {/* Profilo vento verticale - UNA SOLA ORA */}
+        {/* Profilo vento verticale */}
         <div className="overflow-y-auto p-5">
           {/* Info rapide */}
           <div className="grid grid-cols-3 gap-2 mb-4">
@@ -257,57 +281,82 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
             <div className="bg-slate-800/60 rounded-xl p-3 text-center">
               <div className="text-xs text-slate-500">Nuvole</div>
               <div className="text-lg font-bold text-slate-200">{cloud}%</div>
+              <div className="text-xs text-slate-400">Raffiche {Math.round(gust)}</div>
             </div>
           </div>
 
-          {/* GRAFICO VENTO VERTICALE - stile meteoblue */}
+          {/* GRAFICO VENTO VERTICALE */}
           <div className="bg-slate-900/60 rounded-2xl border border-slate-700/30 p-4">
             <h4 className="text-sm font-bold text-white mb-4 text-center">
               Profilo verticale del vento · {String(selectedHour).padStart(2, "0")}:00
             </h4>
 
-            <div className="space-y-2">
-              {[...levels].reverse().map((level) => {
-                if (level.speed == null) return null;
-                const pct = (level.speed / maxSpeed) * 100;
-                const isDecollo = level.alt === 10;
-                
-                return (
-                  <div key={level.alt} className={`grid grid-cols-[55px_1fr_90px] gap-2 py-2 items-center rounded-lg px-2 ${
-                    isDecollo ? "bg-emerald-900/20 border-l-2 border-l-emerald-400" : "hover:bg-slate-800/20"
-                  }`}>
-                    {/* Quota */}
-                    <span className={`text-xs font-mono ${isDecollo ? "text-emerald-300 font-bold" : "text-slate-500"}`}>
-                      {level.alt}m
-                    </span>
+            <div className="space-y-1.5">
+              {/* Header colonne */}
+              <div className="grid grid-cols-[55px_1fr_80px] gap-2 pb-1.5 mb-1 border-b border-slate-700/30 text-[9px] text-slate-600 uppercase font-bold">
+                <span>Quota</span>
+                <span className="text-center">Direzione e intensità</span>
+                <span className="text-right">km/h</span>
+              </div>
 
-                    {/* Barra vento con triangolo direzione */}
+              {[...interpolatedLevels].reverse().map((level) => {
+                const pct = (level.speed / maxSpeed) * 100;
+                const isDecollo = Math.abs(level.alt - siteAltitude) < 100;
+                const isDecolloExact = Math.abs(level.alt - siteAltitude) < 50;
+
+                return (
+                  <div
+                    key={level.alt}
+                    className={`grid grid-cols-[55px_1fr_80px] gap-2 py-2 items-center rounded-lg px-1 ${
+                      isDecolloExact
+                        ? "bg-emerald-900/20 border-l-2 border-l-emerald-400"
+                        : "hover:bg-slate-800/20"
+                    }`}
+                  >
+                    {/* Quota */}
+                    <div className="flex items-center gap-1">
+                      <span className={`text-xs font-mono ${
+                        isDecolloExact ? "text-emerald-300 font-bold" : "text-slate-500"
+                      }`}>
+                        {level.alt}m
+                      </span>
+                      {isDecolloExact && (
+                        <span className="text-[9px]">🪂</span>
+                      )}
+                    </div>
+
+                    {/* Barra vento + freccia */}
                     <div className="flex items-center gap-2">
-                      {/* Triangolo direzione */}
-                      <div className="w-6 h-6 shrink-0 flex items-center justify-center" style={{ transform: `rotate(${level.dir}deg)` }}>
-                        <svg viewBox="0 0 24 24" className="w-5 h-5">
-                          <polygon points="12,2 20,20 12,15 4,20" fill={getWindColor(level.speed)} opacity="0.9" />
-                        </svg>
-                      </div>
-                      
+                      {/* Freccia direzione */}
+                      <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" style={{ transform: `rotate(${level.dir}deg)` }}>
+                        <polygon
+                          points="12,2 20,20 12,15 4,20"
+                          fill={getWindColor(level.speed)}
+                          opacity="0.85"
+                        />
+                      </svg>
+
                       {/* Barra intensità */}
                       <div className="flex-1 h-4 bg-slate-800 rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full flex items-center justify-end pr-1.5 transition-all"
-                          style={{ width: `${Math.max(pct, 5)}%`, backgroundColor: getWindColor(level.speed) }}
+                          style={{
+                            width: `${Math.max(pct, 5)}%`,
+                            backgroundColor: getWindColor(level.speed),
+                          }}
                         >
-                          {pct > 18 && (
-                            <span className="text-[9px] text-white font-bold">{Math.round(level.speed)}</span>
+                          {pct > 12 && (
+                            <span className="text-[8px] text-white font-bold">{Math.round(level.speed)}</span>
                           )}
                         </div>
                       </div>
-                      {pct <= 18 && (
-                        <span className="text-[10px] text-slate-400 font-bold w-6 text-right">{Math.round(level.speed)}</span>
-                      )}
                     </div>
 
-                    {/* Direzione */}
-                    <span className="text-xs text-slate-400 text-right">{getDirName(level.dir)} ({Math.round(level.dir)}°)</span>
+                    {/* km/h e direzione */}
+                    <div className="flex items-center justify-end gap-1">
+                      <span className="text-xs font-bold text-slate-300">{Math.round(level.speed)}</span>
+                      <span className="text-[10px] text-slate-500">{getDirName(level.dir)}</span>
+                    </div>
                   </div>
                 );
               })}
@@ -319,7 +368,7 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-cyan-500" /> 6-10</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500" /> 11-18</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500" /> 19-25</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> {'>'}25 km/h</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> >25 km/h</span>
             </div>
           </div>
         </div>
