@@ -20,13 +20,45 @@ import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
 import ValidazionePrevisioni from "@/components/ValidazionePrevisioni";
 import { ShieldCheck } from "lucide-react";
 
-// Converti i decolli nel formato richiesto da DecolliCard
-const decolliList = DECOLLI.map((d: Decollo) => ({
-  nome: d.name,
-  valle: d.valley,
-  quota: d.altitude,
-  direzione: d.exposure,
-}));
+// Mappa colore meteo in base al vento e condizioni
+function getWeatherMeta(vento: number): { iconaMeteo: string; coloreMeteo: string } {
+  if (vento < 5) return { iconaMeteo: "🌀", coloreMeteo: "#555555" }; // calma
+  if (vento < 10) return { iconaMeteo: "☀️", coloreMeteo: "#33aa33" };
+  if (vento < 15) return { iconaMeteo: "🌤️", coloreMeteo: "#228822" };
+  if (vento < 20) return { iconaMeteo: "⛅", coloreMeteo: "#446644" };
+  if (vento < 25) return { iconaMeteo: "☁️", coloreMeteo: "#666644" };
+  return { iconaMeteo: "💨", coloreMeteo: "#664444" }; // vento forte
+}
+
+// Costruisce la lista unendo dati statici + meteo dinamico da weatherData
+function buildDecolliList(data: { allHourlyData?: Record<string, any>; selectedId: string }) {
+  return DECOLLI.map((d: Decollo) => {
+    // Prova a prendere il dato meteo orario corrente per questo decollo
+    const hourly = data.allHourlyData?.[d.id];
+    let vento = 10; // default
+    if (hourly && hourly.length > 0) {
+      const now = new Date();
+      const current = hourly.find((h: any) =>
+        h.time.getFullYear() === now.getFullYear() &&
+        h.time.getMonth() === now.getMonth() &&
+        h.time.getDate() === now.getDate() &&
+        h.time.getHours() === now.getHours()
+      );
+      if (current?.windSpeed != null) vento = Math.round(current.windSpeed);
+      else if (hourly[0]?.windSpeed != null) vento = Math.round(hourly[0].windSpeed);
+    }
+    const { iconaMeteo, coloreMeteo } = getWeatherMeta(vento);
+    return {
+      nome: d.name,
+      valle: d.valley,
+      quota: d.altitude,
+      direzione: d.exposure,
+      vento,
+      iconaMeteo,
+      coloreMeteo,
+    };
+  });
+}
 
 export default function Index() {
   const {
@@ -60,6 +92,9 @@ export default function Index() {
   );
 
   const weatherAlert = getWeatherAlert(currentData, thermalDelta);
+
+  // Costruisce la lista decolli con i dati meteo dinamici
+  const decolliList = buildDecolliList({ allHourlyData, selectedId });
 
   if (showValidation) {
     return (
