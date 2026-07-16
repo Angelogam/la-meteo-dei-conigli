@@ -22,41 +22,12 @@ import { ShieldCheck } from "lucide-react";
 
 // Palette meteo basata sul vento (colori visivi)
 function getWeatherMeta(vento: number): { iconaMeteo: string; coloreMeteo: string } {
-  if (vento <= 8) return { iconaMeteo: "☀️", coloreMeteo: "#00c853" };       // verde brillante — ottimo
-  if (vento <= 12) return { iconaMeteo: "🌤️", coloreMeteo: "#64dd17" };      // verde chiaro — buono
-  if (vento <= 16) return { iconaMeteo: "⛅", coloreMeteo: "#ffeb3b" };      // giallo — discreto
-  if (vento <= 20) return { iconaMeteo: "🌤️", coloreMeteo: "#ff9800" };     // arancio — attenzione
-  if (vento <= 25) return { iconaMeteo: "☁️", coloreMeteo: "#f44336" };     // rosso — ventoso
-  return { iconaMeteo: "💨", coloreMeteo: "#d32f2f" };                       // rosso scuro — forte
-}
-
-// Costruisce la lista decolli con i dati meteo dinamici
-function buildDecolliList(data: { allHourlyData?: Record<string, any>; selectedId: string }) {
-  return DECOLLI.map((d) => {
-    const hourly = data.allHourlyData?.[d.id];
-    let vento = 10; // default
-    if (hourly && hourly.length > 0) {
-      const now = new Date();
-      const current = hourly.find((h: any) =>
-        h.time.getFullYear() === now.getFullYear() &&
-        h.time.getMonth() === now.getMonth() &&
-        h.time.getDate() === now.getDate() &&
-        h.time.getHours() === now.getHours()
-      );
-      if (current?.windSpeed != null) vento = Math.round(current.windSpeed);
-      else if (hourly[0]?.windSpeed != null) vento = Math.round(hourly[0].windSpeed);
-    }
-    const { iconaMeteo, coloreMeteo } = getWeatherMeta(vento);
-    return {
-      nome: d.name,
-      valle: d.valley,
-      quota: d.altitude,
-      direzione: d.exposure,
-      vento,
-      iconaMeteo,
-      coloreMeteo,
-    };
-  });
+  if (vento <= 8) return { iconaMeteo: "☀️", coloreMeteo: "#00c853" };
+  if (vento <= 12) return { iconaMeteo: "🌤️", coloreMeteo: "#64dd17" };
+  if (vento <= 16) return { iconaMeteo: "⛅", coloreMeteo: "#ffeb3b" };
+  if (vento <= 20) return { iconaMeteo: "🌤️", coloreMeteo: "#ff9800" };
+  if (vento <= 25) return { iconaMeteo: "☁️", coloreMeteo: "#f44336" };
+  return { iconaMeteo: "💨", coloreMeteo: "#d32f2f" };
 }
 
 export default function Index() {
@@ -92,9 +63,6 @@ export default function Index() {
 
   const weatherAlert = getWeatherAlert(currentData, thermalDelta);
 
-  // Costruisce la lista decolli con i dati meteo dinamici
-  const decolliList = buildDecolliList({ allHourlyData, selectedId });
-
   if (showValidation) {
     return (
       <>
@@ -126,6 +94,18 @@ export default function Index() {
 
   const hasData = site && currentData && dayData.length > 0;
 
+  // Costruisce la lista decolli da passare a DecolliCard - usa i veri nomi dei decolli
+  const decolliList = DECOLLI.map(d => ({
+    nome: d.name,
+    valle: d.valley,
+    quota: d.altitude,
+    direzione: d.exposure,
+  }));
+
+  // Mappa nome -> id per DecolliCard
+  const nomeToId: Record<string, string> = {};
+  DECOLLI.forEach(d => { nomeToId[d.name] = d.id; });
+
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <Header />
@@ -142,9 +122,9 @@ export default function Index() {
               decolli={decolliList}
               selectedId={selectedId}
               onSelect={(item) => {
-                const decollo = DECOLLI.find(d => d.name === item.nome);
-                if (decollo) {
-                  setSelectedId(decollo.id);
+                const id = nomeToId[item.nome];
+                if (id) {
+                  setSelectedId(id);
                   setSelectedHour(new Date().getHours());
                 }
               }}
