@@ -61,30 +61,130 @@ export default function DiagnosticaPanel() {
       addLog(`❌ ${res.testFalliti} test falliti`);
       addLog(`⏱️  Tempo: ${res.tempoEsecuzione}ms`);
 
-      // Dati meteo
       addLog("");
       addLog("=== DATI METEO ===");
       addLog(`🌡️  Temperature: ${res.datiMeteo.temperatureOk ? "✅ OK" : "❌ ANOMALE"}`);
       addLog(`💨  Vento: ${res.datiMeteo.ventoOk ? "✅ OK" : "❌ ANOMALO"}`);
-      addLog(`📊  Pressione: ${res.datiMeteo.pressioneOk ? "✅ OK" : "❌ ANOMALA"}`);
       addLog(`☁️  Nuvolosità: ${res.datiMeteo.nuvoleOk ? "✅ OK" : "❌ ANOMALA"}`);
 
-      // Decolli
       addLog("");
       addLog("=== DECOLLI ===");
       addLog(`🏔️  ${res.decolliOk ? "✅ Tutti validi" : "❌ Con problemi"}`);
 
-      // Calcoli
       addLog("");
       addLog("=== CALCOLI ===");
       addLog(`🧮  ${res.calcoliOk ? "✅ Tutti corretti" : "❌ Con errori"}`);
 
-      // Funzioni
       addLog("");
       addLog("=== FUNZIONI ===");
       addLog(`🔧  ${res.funzioniOk ? "✅ Tutte funzionanti" : "❌ Con errori"}`);
 
-      // Problemi
+      if (res.problemi.length > 0) {
+        addLog("");
+        addLog(`⚠️  ${res.problemi.length} problemi rilevati:`);
+        for (const p of res.problemi) {
+          addLog(`  [${p.severita.toUpperCase()}] ${p.componente}: ${p.descrizione}`);
+        }
+      } else {
+        addLog("");
+        addLog("🎉 NESSUN PROBLEMA RILEVATO!");
+      }
+
+    } catch (err) {
+      addLog(`❌ ERRORE: ${err instanceof Error ? err.message : String(err)}`);
+      setIsRunning(false);
+    }
+  }, []);
+
+  const addLog = useCallback((msg: string) => {
+    setLog(prev => {
+      const nuovo = [...prev, msg];
+      return nuovo.length > 500 ? nuovo.slice(-500) : nuovo;
+    });
+  }, []);
+
+  if<dyad-write path="src/components/DiagnosticaPanel.tsx">
+"use client";
+
+import React, { useState, useCallback } from "react";
+import {
+  Play, X, CheckCircle, XCircle, AlertTriangle, Info,
+  Activity, Clock, Thermometer, Wind, Cloud, Gauge,
+  Bug, Zap, TrendingUp,
+} from "lucide-react";
+import { diagnosticaCompletaApp, type RisultatoDiagnostica, type ProblemaDiagnostica } from "@/utils/diagnosticaApp";
+
+function getSeveritaIcon(severita: string) {
+  switch (severita) {
+    case "critico": return <XCircle className="w-4 h-4 text-red-400" />;
+    case "importante": return <AlertTriangle className="w-4 h-4 text-orange-400" />;
+    case "minore": return <Info className="w-4 h-4 text-amber-400" />;
+    case "info": return <Info className="w-4 h-4 text-blue-400" />;
+    default: return <Info className="w-4 h-4 text-slate-400" />;
+  }
+}
+
+function getSeveritaBg(severita: string) {
+  switch (severita) {
+    case "critico": return "bg-red-900/20 border-red-800/40";
+    case "importante": return "bg-orange-900/20 border-orange-800/40";
+    case "minore": return "bg-amber-900/20 border-amber-800/40";
+    case "info": return "bg-blue-900/20 border-blue-800/40";
+    default: return "bg-slate-800/20 border-slate-700/40";
+  }
+}
+
+function getSeveritaBorder(severita: string) {
+  switch (severita) {
+    case "critico": return "border-l-red-500";
+    case "importante": return "border-l-orange-500";
+    case "minore": return "border-l-amber-500";
+    case "info": return "border-l-blue-500";
+    default: return "border-l-slate-500";
+  }
+}
+
+export default function DiagnosticaPanel() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const [risultato, setRisultato] = useState<RisultatoDiagnostica | null>(null);
+  const [log, setLog] = useState<string[]>([]);
+
+  const avviaDiagnostica = useCallback(async () => {
+    setIsRunning(true);
+    setRisultato(null);
+    setLog([]);
+    addLog("🚀 Avvio diagnostica completa dell'applicazione...");
+    addLog("");
+
+    try {
+      const res = await diagnosticaCompletaApp();
+      setRisultato(res);
+      setIsRunning(false);
+
+      addLog("=== DIAGNOSTICA COMPLETATA ===");
+      addLog(`✅ ${res.testPassati}/${res.testEseguiti} test passati`);
+      addLog(`❌ ${res.testFalliti} test falliti`);
+      addLog(`⏱️  Tempo: ${res.tempoEsecuzione}ms`);
+
+      addLog("");
+      addLog("=== DATI METEO ===");
+      addLog(`🌡️  Temperature: ${res.datiMeteo.temperatureOk ? "✅ OK" : "❌ ANOMALE"}`);
+      addLog(`💨  Vento: ${res.datiMeteo.ventoOk ? "✅ OK" : "❌ ANOMALO"}`);
+      addLog(`☁️  Nuvolosità: ${res.datiMeteo.nuvoleOk ? "✅ OK" : "❌ ANOMALA"}`);
+
+      addLog("");
+      addLog("=== DECOLLI ===");
+      addLog(`🏔️  ${res.decolliOk ? "✅ Tutti validi" : "❌ Con problemi"}`);
+
+      addLog("");
+      addLog("=== CALCOLI ===");
+      addLog(`🧮  ${res.calcoliOk ? "✅ Tutti corretti" : "❌ Con errori"}`);
+
+      addLog("");
+      addLog("=== FUNZIONI ===");
+      addLog(`🔧  ${res.funzioniOk ? "✅ Tutte funzionanti" : "❌ Con errori"}`);
+
       if (res.problemi.length > 0) {
         addLog("");
         addLog(`⚠️  ${res.problemi.length} problemi rilevati:`);
@@ -175,7 +275,6 @@ export default function DiagnosticaPanel() {
               {/* Verifiche principali */}
               <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-3 space-y-1.5">
                 <div className="text-[11px] font-bold text-slate-300 mb-2">Verifiche</div>
-
                 <div className="flex items-center justify-between text-[10px]">
                   <span className="text-slate-400"><Thermometer className="w-3 h-3 inline mr-1" /> Temp</span>
                   <span className={risultato.datiMeteo.temperatureOk ? "text-green-400" : "text-red-400"}>
@@ -186,12 +285,6 @@ export default function DiagnosticaPanel() {
                   <span className="text-slate-400"><Wind className="w-3 h-3 inline mr-1" /> Vento</span>
                   <span className={risultato.datiMeteo.ventoOk ? "text-green-400" : "text-red-400"}>
                     {risultato.datiMeteo.ventoOk ? "✅" : "❌"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-slate-400"><Gauge className="w-3 h-3 inline mr-1" /> Pressione</span>
-                  <span className={risultato.datiMeteo.pressioneOk ? "text-green-400" : "text-red-400"}>
-                    {risultato.datiMeteo.pressioneOk ? "✅" : "❌"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-[10px]">
