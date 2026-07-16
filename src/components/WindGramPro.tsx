@@ -182,10 +182,6 @@ const WindGramReal = ({ data }: WindGramRealProps) => {
             >
               ➤
             </div>
-
-            <div style={{ fontSize: "0.8rem" }}>
-              {data.windSpeed[i]} km/h
-            </div>
           </div>
         ))}
       </div>
