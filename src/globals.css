@@ -91,3 +91,26 @@
     font-size: 0.75rem;
   }
 }
+
+/* ===== VENTO DIREZIONE ===== */
+.vento-direzione {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.vento-direzione .freccia {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.vento-direzione .testo {
+  font-weight: 600;
+  color: #7dd3fc;
+}
