@@ -3,6 +3,11 @@
 import React from "react";
 import { Wind } from "lucide-react";
 
+function getCardinalDir(deg: number): string {
+  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
 interface DecolloItem {
   nome: string;
   valle: string;
@@ -36,6 +41,7 @@ const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
       >
         {decolli.map((item) => {
           const isSelected = item.nome === selectedId;
+          const windDir = getCardinalDir(170);
           return (
             <button
               key={item.nome}
@@ -60,13 +66,13 @@ const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
                 <span>{item.direzione}</span>
               </div>
 
-              {/* VENTO ATTUALE + GRADI + KM/H */}
+              {/* VENTO ATTUALE + PUNTO CARDINALE + KM/H */}
               <div className="flex justify-between text-sm mt-1.5 pt-1.5 border-t border-slate-700/30">
                 <div className="flex items-center gap-1 text-emerald-400">
                   <Wind size={16} />
                   <span className="font-bold">{item.vento} km/h</span>
                 </div>
-                <span className="text-slate-300">170°</span>
+                <span className="text-slate-300">{windDir}</span>
               </div>
             </button>
           );
