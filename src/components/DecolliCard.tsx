@@ -82,11 +82,19 @@ const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
                 <span>{getCurrentDateTime()} · {getCurrentHour()}</span>
               </div>
 
-              {/* INFO VALLE / QUOTA / DIREZIONE */}
-              <div className="text-xs text-slate-400 flex justify-between mt-2">
-                <span>{item.valle}</span>
-                <span>{item.quota} m</span>
-                <span>{item.direzione}</span>
+              {/* ICONA METEO + TEMPERATURA + VALLE / QUOTA / DIREZIONE */}
+              <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg" style={{ color: item.coloreMeteo }}>
+                    {item.iconaMeteo}
+                  </span>
+                  <span className="text-sm font-bold text-amber-300">20°</span>
+                </div>
+                <div className="text-xs text-slate-400 flex gap-3">
+                  <span>{item.valle}</span>
+                  <span>{item.quota} m</span>
+                  <span>{item.direzione}</span>
+                </div>
               </div>
 
               {/* VENTO ATTUALE QUOTA DECOLLO + PUNTO CARDINALE + KM/H */}
