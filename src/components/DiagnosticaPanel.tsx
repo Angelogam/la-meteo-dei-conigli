@@ -3,8 +3,8 @@
 import React, { useState, useCallback } from "react";
 import {
   Play, X, CheckCircle, XCircle, AlertTriangle, Info,
-  Activity, Clock, Thermometer, Wind, Cloud, Gauge, Server,
-  ShieldAlert, Bug, Zap, TrendingUp, Droplets,
+  Activity, Clock, Thermometer, Wind, Cloud, Gauge,
+  Bug, Zap, TrendingUp,
 } from "lucide-react";
 import { diagnosticaCompletaApp, type RisultatoDiagnostica, type ProblemaDiagnostica } from "@/utils/diagnosticaApp";
 
@@ -60,22 +60,40 @@ export default function DiagnosticaPanel() {
       addLog(`✅ ${res.testPassati}/${res.testEseguiti} test passati`);
       addLog(`❌ ${res.testFalliti} test falliti`);
       addLog(`⏱️  Tempo: ${res.tempoEsecuzione}ms`);
+
+      // Dati meteo
       addLog("");
       addLog("=== DATI METEO ===");
-      addLog(`🌡️  Temperature realistiche: ${res.datiMeteo.temperatureRealistiche ? "✅ SÌ" : "❌ NO"}`);
-      addLog(`💨  Vento realistico: ${res.datiMeteo.ventoRealistico ? "✅ SÌ" : "❌ NO"}`);
-      addLog(`📊  Pressione realistica: ${res.datiMeteo.pressioneRealistica ? "✅ SÌ" : "❌ NO"}`);
-      addLog(`☁️  Nuvolosità realistica: ${res.datiMeteo.nuvoleRealistiche ? "✅ SÌ" : "❌ NO"}`);
-      addLog(`🏔️  Siti testati: ${res.datiMeteo.sitiTestati}, con dati: ${res.datiMeteo.sitiConDati}`);
+      addLog(`🌡️  Temperature: ${res.datiMeteo.temperatureOk ? "✅ OK" : "❌ ANOMALE"}`);
+      addLog(`💨  Vento: ${res.datiMeteo.ventoOk ? "✅ OK" : "❌ ANOMALO"}`);
+      addLog(`📊  Pressione: ${res.datiMeteo.pressioneOk ? "✅ OK" : "❌ ANOMALA"}`);
+      addLog(`☁️  Nuvolosità: ${res.datiMeteo.nuvoleOk ? "✅ OK" : "❌ ANOMALA"}`);
+
+      // Decolli
       addLog("");
-      
-      if (res.problemi.length === 0) {
-        addLog("🎉 NESSUN PROBLEMA RILEVATO! L'app è perfettamente funzionante.");
-      } else {
+      addLog("=== DECOLLI ===");
+      addLog(`🏔️  ${res.decolliOk ? "✅ Tutti validi" : "❌ Con problemi"}`);
+
+      // Calcoli
+      addLog("");
+      addLog("=== CALCOLI ===");
+      addLog(`🧮  ${res.calcoliOk ? "✅ Tutti corretti" : "❌ Con errori"}`);
+
+      // Funzioni
+      addLog("");
+      addLog("=== FUNZIONI ===");
+      addLog(`🔧  ${res.funzioniOk ? "✅ Tutte funzionanti" : "❌ Con errori"}`);
+
+      // Problemi
+      if (res.problemi.length > 0) {
+        addLog("");
         addLog(`⚠️  ${res.problemi.length} problemi rilevati:`);
         for (const p of res.problemi) {
           addLog(`  [${p.severita.toUpperCase()}] ${p.componente}: ${p.descrizione}`);
         }
+      } else {
+        addLog("");
+        addLog("🎉 NESSUN PROBLEMA RILEVATO!");
       }
 
     } catch (err) {
@@ -95,7 +113,7 @@ export default function DiagnosticaPanel() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-36 right-4 z-50 bg-teal-800 hover:bg-teal-700 text-teal-200 border border-teal-500/40 rounded-full p-3 shadow-2xl shadow-teal-500/10"
+        className="fixed bottom-4 right-4 z-50 bg-teal-800 hover:bg-teal-700 text-teal-200 border border-teal-500/40 rounded-full p-3 shadow-2xl shadow-teal-500/10"
         title="Diagnostica completa app"
       >
         <Activity className="w-5 h-5" />
@@ -135,6 +153,7 @@ export default function DiagnosticaPanel() {
         <div className="w-full lg:w-1/3 overflow-auto border-r border-slate-800/50 p-3 space-y-2">
           {risultato && (
             <>
+              {/* Risultato principale */}
               <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-3 text-center">
                 <div className="text-xs text-slate-400 mb-1">Risultato diagnostica</div>
                 <div className={`text-3xl font-bold ${risultato.testFalliti === 0 ? "text-green-400" : "text-red-400"}`}>
@@ -153,24 +172,51 @@ export default function DiagnosticaPanel() {
                 </div>
               </div>
 
-              {/* Dati meteo */}
+              {/* Verifiche principali */}
               <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-3 space-y-1.5">
-                <div className="text-[11px] font-bold text-slate-300 mb-2">Qualità dati meteo</div>
+                <div className="text-[11px] font-bold text-slate-300 mb-2">Verifiche</div>
+
                 <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-slate-400"><Thermometer className="w-3 h-3 inline mr-1" /> Temperature</span>
-                  <span className={risultato.datiMeteo.temperatureRealistiche ? "text-green-400" : "text-red-400"}>{risultato.datiMeteo.temperatureRealistiche ? "Realistiche ✅" : "Anomale ❌"}</span>
+                  <span className="text-slate-400"><Thermometer className="w-3 h-3 inline mr-1" /> Temp</span>
+                  <span className={risultato.datiMeteo.temperatureOk ? "text-green-400" : "text-red-400"}>
+                    {risultato.datiMeteo.temperatureOk ? "✅" : "❌"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-[10px]">
                   <span className="text-slate-400"><Wind className="w-3 h-3 inline mr-1" /> Vento</span>
-                  <span className={risultato.datiMeteo.ventoRealistico ? "text-green-400" : "text-red-400"}>{risultato.datiMeteo.ventoRealistico ? "Realistico ✅" : "Anomalo ❌"}</span>
-                </div>
-                <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-slate-400"><Cloud className="w-3 h-3 inline mr-1" /> Nuvolosità</span>
-                  <span className={risultato.datiMeteo.nuvoleRealistiche ? "text-green-400" : "text-red-400"}>{risultato.datiMeteo.nuvoleRealistiche ? "Realistica ✅" : "Anomala ❌"}</span>
+                  <span className={risultato.datiMeteo.ventoOk ? "text-green-400" : "text-red-400"}>
+                    {risultato.datiMeteo.ventoOk ? "✅" : "❌"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-[10px]">
                   <span className="text-slate-400"><Gauge className="w-3 h-3 inline mr-1" /> Pressione</span>
-                  <span className={risultato.datiMeteo.pressioneRealistica ? "text-green-400" : "text-red-400"}>{risultato.datiMeteo.pressioneRealistica ? "Realistica ✅" : "Anomala ❌"}</span>
+                  <span className={risultato.datiMeteo.pressioneOk ? "text-green-400" : "text-red-400"}>
+                    {risultato.datiMeteo.pressioneOk ? "✅" : "❌"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-slate-400"><Cloud className="w-3 h-3 inline mr-1" /> Nuvole</span>
+                  <span className={risultato.datiMeteo.nuvoleOk ? "text-green-400" : "text-red-400"}>
+                    {risultato.datiMeteo.nuvoleOk ? "✅" : "❌"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-slate-400"><TrendingUp className="w-3 h-3 inline mr-1" /> Decolli</span>
+                  <span className={risultato.decolliOk ? "text-green-400" : "text-red-400"}>
+                    {risultato.decolliOk ? "✅" : "❌"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-slate-400"><Zap className="w-3 h-3 inline mr-1" /> Calcoli</span>
+                  <span className={risultato.calcoliOk ? "text-green-400" : "text-red-400"}>
+                    {risultato.calcoliOk ? "✅" : "❌"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-slate-400"><Bug className="w-3 h-3 inline mr-1" /> Funzioni</span>
+                  <span className={risultato.funzioniOk ? "text-green-400" : "text-red-400"}>
+                    {risultato.funzioniOk ? "✅" : "❌"}
+                  </span>
                 </div>
               </div>
 
@@ -201,7 +247,7 @@ export default function DiagnosticaPanel() {
             <div className="text-center py-10 text-slate-500 text-sm">
               <Bug className="w-12 h-12 mx-auto mb-3 text-teal-500/40" />
               <p className="font-bold mb-1">Diagnostica applicazione</p>
-              <p className="text-xs">Verifica decolli, API meteo, calcoli e componenti</p>
+              <p className="text-xs">Verifica decolli, API meteo, calcoli e funzioni</p>
               <p className="text-xs mt-2 text-slate-600">Premi "Avvia diagnostica" per iniziare</p>
             </div>
           )}
