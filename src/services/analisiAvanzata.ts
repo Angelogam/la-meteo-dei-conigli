@@ -151,43 +151,34 @@ function analizzaOra(
   }
 
   let forzaTermica = 0;
-  // gradiente
   if (gradienteReale >= 1.2) forzaTermica += 3;
   else if (gradienteReale >= ADIABATIC_SECCO) forzaTermica += 2.5;
   else if (gradienteReale >= 0.7) forzaTermica += 1.5;
   else if (gradienteReale >= 0.4) forzaTermica += 0.5;
-  // vento
   if (weather.windSpeed >= 5 && weather.windSpeed <= 12) forzaTermica += 2;
   else if (weather.windSpeed >= 3 && weather.windSpeed < 5) forzaTermica += 1.5;
   else if (weather.windSpeed > 12 && weather.windSpeed <= 18) forzaTermica += 1.2;
   else if (weather.windSpeed > 18 && weather.windSpeed <= 22) forzaTermica += 0.5;
-  // nuvole
   if (weather.cloudCover >= 15 && weather.cloudCover <= 45) forzaTermica += 2;
   else if (weather.cloudCover >= 5 && weather.cloudCover < 15) forzaTermica += 1.5;
   else if (weather.cloudCover > 45 && weather.cloudCover <= 60) forzaTermica += 0.5;
-  // umidità
   if (weather.humidity >= 30 && weather.humidity <= 50) forzaTermica += 1.5;
   else if (weather.humidity > 50 && weather.humidity <= 65) forzaTermica += 1;
   else if (weather.humidity > 65 && weather.humidity <= 75) forzaTermica += 0.3;
-  // spread
   if (spread >= 12) forzaTermica += 1.5;
   else if (spread >= 8) forzaTermica += 1.2;
   else if (spread >= 5) forzaTermica += 0.8;
   else if (spread >= 3) forzaTermica += 0.3;
-  // cape
   if (weather.cape > 1500) forzaTermica += 2;
   else if (weather.cape > 800) forzaTermica += 1.5;
   else if (weather.cape > 300) forzaTermica += 1;
   else if (weather.cape > 100) forzaTermica += 0.5;
-  // ora
   if (ora >= 11 && ora <= 15) forzaTermica += 0.5;
   else if (ora >= 9 && ora < 11) forzaTermica += 0.3;
   else if (ora > 15 && ora <= 17) forzaTermica += 0.2;
-  // uv
   if (weather.uvIndex >= 7) forzaTermica += 0.5;
   else if (weather.uvIndex >= 5) forzaTermica += 0.3;
   else if (weather.uvIndex >= 3) forzaTermica += 0.2;
-  // pioggia annulla
   if (weather.precipitation > 1) forzaTermica = 0;
   forzaTermica = Math.max(0, Math.min(10, Math.round(forzaTermica * 10) / 10));
 
