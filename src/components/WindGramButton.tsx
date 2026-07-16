@@ -1,3 +1,4 @@
+25 km/h">
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -189,7 +190,7 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
   }
 
   // GENERA LA SCALA ALTIMETRIA: dal decollo selezionato a 4000m con step di 500m
-  const startAlt = Math.floor(siteAltitude / 500) * 500; // arrotonda per difetto al 500 più vicino
+  const startAlt = Math.floor(siteAltitude / 500) * 500;
   const altSteps: number[] = [];
   for (let a = startAlt; a <= 4000; a += 500) {
     altSteps.push(a);
@@ -211,17 +212,14 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
       }
     }
 
-    // Se siamo sotto il livello più basso, usa quello
     if (requestedAlt < lower.alt) {
       return { alt: requestedAlt, ...lower };
     }
 
-    // Se siamo sopra il livello più alto, usa quello
     if (requestedAlt > upper.alt) {
       return { alt: requestedAlt, ...upper };
     }
 
-    // Interpolazione lineare
     const ratio = lower.alt === upper.alt ? 0 : (requestedAlt - lower.alt) / (upper.alt - lower.alt);
     return {
       alt: requestedAlt,
@@ -364,7 +362,7 @@ const WindGramButton = ({ dayData, siteAltitude, siteName, lat, lon }: WindGramB
 
             {/* Legenda */}
             <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-700/30 text-[10px] text-slate-500">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> ≤5</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> &le;5</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-cyan-500" /> 6-10</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500" /> 11-18</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500" /> 19-25</span>
