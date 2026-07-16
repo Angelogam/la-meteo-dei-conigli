@@ -18,7 +18,7 @@ import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
 import { getWeatherAlert, getStabilityIndex } from "@/utils/weatherHelpers";
 import ValidazionePrevisioni from "@/components/ValidazionePrevisioni";
-import { Bug, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 
 export default function Index() {
   const {
@@ -87,25 +87,29 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <Header />
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6">
-        <div className="flex flex-col lg:flex-row gap-6">
-          <aside className="w-full lg:w-80 shrink-0 space-y-4">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6">
+        <div className="flex flex-col lg:flex-row gap-6 h-full">
+          {/* Sidebar SINISTRA — tutta la lista decolli in un'unica finestra */}
+          <aside className="w-full lg:w-80 shrink-0 flex flex-col gap-4 h-full max-h-[calc(100vh-180px)]">
             <UpdateTimer 
               lastUpdate={lastUpdate} 
               countdown={countdown} 
               updating={updating} 
               onRefresh={loadWeather} 
             />
-            <DecolloList
-              decolli={DECOLLI}
-              selectedId={selectedId}
-              onSelect={(id: string) => { setSelectedId(id); setSelectedHour(new Date().getHours()); }}
-              allDailyData={allDailyData}
-              allHourlyData={allHourlyData}
-            />
+            <div className="flex-1 flex flex-col min-h-0">
+              <DecolloList
+                decolli={DECOLLI}
+                selectedId={selectedId}
+                onSelect={(id: string) => { setSelectedId(id); setSelectedHour(new Date().getHours()); }}
+                allDailyData={allDailyData}
+                allHourlyData={allHourlyData}
+              />
+            </div>
           </aside>
 
-          <div className="flex-1 min-w-0 space-y-6 max-w-[320px] mx-auto text-center">
+          {/* Colonna DESTRA — previsioni */}
+          <div className="flex-1 min-w-0 space-y-6 overflow-y-auto max-h-[calc(100vh-180px)]">
             {hasData && (
               <>
                 <SiteHeader
@@ -192,7 +196,6 @@ export default function Index() {
       <Footer />
       <MeteoTesterPanel />
 
-      {/* Pulsante validazione — in basso a sinistra */}
       <button
         onClick={() => setShowValidation(true)}
         className="fixed bottom-4 left-4 z-50 bg-amber-800/80 hover:bg-amber-700 text-amber-200 border border-amber-500/40 rounded-full p-3 shadow-2xl shadow-amber-500/10"
