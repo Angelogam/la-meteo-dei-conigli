@@ -1,55 +1,36 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useAnalisiAvanzata, type AnalisiCompletaConMargine } from "./useAnalisiAvanzata";
 import { weatherService, type MeteoHourly, type MeteoCurrent, type MeteoDaily } from "@/services/weatherService";
 
 /**
  * Hook unico che combina tutti i dati meteo:
- * - Analisi avanzata (ogni 4s)
- * - Dati raw Open-Meteo
+ * - Analisi avanzata (ogni 5 minuti, senza doppie richieste)
+ * - Dati raw Open-Meteo (stessa chiamata di useAnalisiAvanzata)
  * - Previsioni giornaliere
  * - Calcoli di margine d'errore su TUTTI i parametri
  */
 
 export interface DatiCompleti {
-  // Dati analisi
   analisi: AnalisiCompletaConMargine[];
   riepilogo: {
-    oreValide: number;
-    oreTotali: number;
-    mediaRateo: number;
-    maxRateo: number;
-    oreAttive: number;
-    mediaForza: number;
-    mediaConfidenza: number;
-    medioErrore: number;
-    medioCape: number;
-    medioGradiente: number;
-    ultimoAggiornamento: Date;
+    oreValide: number; oreTotali: number; mediaRateo: number;
+    maxRateo: number; oreAttive: number; mediaForza: number;
+    mediaConfidenza: number; medioErrore: number; medioCape: number;
+    medioGradiente: number; ultimoAggiornamento: Date;
   } | null;
-  
-  // Dati raw
   hourlyData: MeteoHourly[];
   currentData: MeteoCurrent | null;
   dailyData: MeteoDaily[];
-  
-  // Stato
   loading: boolean;
   error: string | null;
   tempoTrascorso: number;
   ultimoAggiornamento: Date;
-  
-  // Margini d'errore per ogni parametro
   marginiErrore: {
-    temperatura: number; // °C
-    vento: number; // km/h
-    termiche: number; // m/s
-    baseNuvole: number; // m
-    topTermico: number; // m
-    pressione: number; // hPa
-    umidita: number; // %
-    pioggia: number; // mm
+    temperatura: number; vento: number; termiche: number;
+    baseNuvole: number; topTermico: number; pressione: number;
+    umidita: number; pioggia: number;
   };
 }
 
@@ -59,12 +40,9 @@ export function useMeteoCompleto(lat: number, lon: number, altitude: number): Da
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ultimoAggiornamento, setUltimoAggiornamento] = useState(new Date());
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Carica dati giornalieri ogni 4s
   useEffect(() => {
     let attivo = true;
-    
     const caricaDaily = async () => {
       try {
         const { data } = await weatherService.fetchWithFallback(lat, lon);
@@ -79,56 +57,31 @@ export function useMeteoCompleto(lat: number, lon: number, altitude: number): Da
         setLoading(false);
       }
     };
-
     caricaDaily();
-    intervalRef.current = setInterval(caricaDaily, 4000);
-
-    return () => {
-      attivo = false;
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+    return () => { attivo = false; };
   }, [lat, lon]);
 
-  // Calcola margini d'errore per ogni parametro
   const marginiErrore = useMemo(() => {
     if (!analisi.length) {
-      return {
-        temperatura: 2,
-        vento: 5,
-        termiche: 0.5,
-        baseNuvole: 200,
-        topTermico: 300,
-        pressione: 3,
-        umidita: 10,
-        pioggia: 0.5,
-      };
+      return { temperatura: 2, vento: 5, termiche: 0.5, baseNuvole: 200, topTermico: 300, pressione: 3, umidita: 10, pioggia: 0.5 };
     }
-
-    // Media degli errori su tutte le ore
     const mediaErrore = analisi.reduce((s, a) => s + a.errore, 0) / analisi.length;
-
     return {
-      temperatura: Math.round((mediaErrore / 100) * 3 * 10) / 10, // max ±3°C
-      vento: Math.round((mediaErrore / 100) * 8 * 10) / 10, // max ±8 km/h
-      termiche: Math.round((mediaErrore / 100) * 1.5 * 10) / 10, // max ±1.5 m/s
-      baseNuvole: Math.round((mediaErrore / 100) * 300), // max ±300m
-      topTermico: Math.round((mediaErrore / 100) * 500), // max ±500m
-      pressione: Math.round((mediaErrore / 100) * 5 * 10) / 10, // max ±5 hPa
-      umidita: Math.round((mediaErrore / 100) * 15 * 10) / 10, // max ±15%
-      pioggia: Math.round((mediaErrore / 100) * 1 * 10) / 10, // max ±1mm
+      temperatura: Math.round((mediaErrore / 100) * 3 * 10) / 10,
+      vento: Math.round((mediaErrore / 100) * 8 * 10) / 10,
+      termiche: Math.round((mediaErrore / 100) * 1.5 * 10) / 10,
+      baseNuvole: Math.round((mediaErrore / 100) * 300),
+      topTermico: Math.round((mediaErrore / 100) * 500),
+      pressione: Math.round((mediaErrore / 100) * 5 * 10) / 10,
+      umidita: Math.round((mediaErrore / 100) * 15 * 10) / 10,
+      pioggia: Math.round((mediaErrore / 100) * 1 * 10) / 10,
     };
   }, [analisi]);
 
   return {
-    analisi,
-    riepilogo,
-    hourlyData,
-    currentData,
-    dailyData,
+    analisi, riepilogo, hourlyData, currentData, dailyData,
     loading: loading || analisiLoading,
     error: error || analisiError,
-    tempoTrascorso,
-    ultimoAggiornamento,
-    marginiErrore,
+    tempoTrascorso, ultimoAggiornamento, marginiErrore,
   };
 }

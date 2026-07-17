@@ -5,24 +5,21 @@ import { analisiAvanzataCompleta, type AnalisiCompleta } from "@/services/analis
 import { weatherService, type MeteoHourly, type MeteoCurrent } from "@/services/weatherService";
 
 /**
- * Hook che esegue l'analisi avanzata in tempo reale su TUTTE le ore
- * e su TUTTI i tab contemporaneamente.
- * 
- * Fa refresh ogni 4 secondi con i dati ufficiali Open-Meteo.
- * Calcola il margine d'errore per ogni previsione.
+ * Hook che esegue l'analisi avanzata in tempo reale su TUTTE le ore.
+ * Usa SOLO weatherService, nessuna altra fonte.
  */
 
 export interface AnalisiCompletaConMargine extends Omit<AnalisiCompleta, 'confidenza'> {
   confidenza: number;
-  errore: number; // margine d'errore (0-100%)
-  erroreTemperatura: number; // °C
-  erroreVento: number; // km/h
-  erroreTermiche: number; // m/s
+  errore: number;
+  erroreTemperatura: number;
+  erroreVento: number;
+  erroreTermiche: number;
   oreValide: number;
   ultimoAggiornamento: Date;
 }
 
-const REFRESH_INTERVAL = 4000; // 4 secondi
+const REFRESH_INTERVAL = 300000; // 5 minuti
 
 export function useAnalisiAvanzata(lat: number, lon: number, altitude: number) {
   const [hourlyData, setHourlyData] = useState<MeteoHourly[]>([]);
@@ -32,7 +29,6 @@ export function useAnalisiAvanzata(lat: number, lon: number, altitude: number) {
   const [tempoTrascorso, setTempoTrascorso] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Carica dati all'inizio
   useEffect(() => {
     let attivo = true;
     
@@ -58,7 +54,6 @@ export function useAnalisiAvanzata(lat: number, lon: number, altitude: number) {
 
     carica();
 
-    // Refresh ogni 4 secondi
     intervalRef.current = setInterval(carica, REFRESH_INTERVAL);
 
     return () => {
@@ -67,7 +62,6 @@ export function useAnalisiAvanzata(lat: number, lon: number, altitude: number) {
     };
   }, [lat, lon]);
 
-  // Timer per il contatore
   useEffect(() => {
     const timer = setInterval(() => {
       setTempoTrascorso(prev => prev + 4);
@@ -75,45 +69,31 @@ export function useAnalisiAvanzata(lat: number, lon: number, altitude: number) {
     return () => clearInterval(timer);
   }, []);
 
-  // Calcola l'analisi avanzata per TUTTE le ore con margine d'errore
   const analisi = useMemo((): AnalisiCompletaConMargine[] => {
     if (!hourlyData.length || !currentData) return [];
-
     const analisiBase = analisiAvanzataCompleta(hourlyData, currentData, altitude);
-    
     return analisiBase.map(a => {
-      // Calcola margine d'errore basato sulla confidenza e sulla variabilità dei dati
+      const erroreBase = Math.max(5, 100 - a.confidenza * 100);
       const oreDisponibili = hourlyData.filter(h => {
         const hh = new Date(h.time).getHours();
         return hh === a.ora;
       }).length;
-      
-      // Più ore di dati = minore margine d'errore
-      const erroreBase = Math.max(5, 100 - a.confidenza * 100);
       const erroreOre = Math.max(0, 30 - oreDisponibili * 5);
       const erroreFinale = Math.min(100, erroreBase + erroreOre);
-      
-      // Errori specifici per parametro
-      const erroreTemperatura = Math.round((erroreFinale / 100) * 3 * 10) / 10; // max ±3°C
-      const erroreVento = Math.round((erroreFinale / 100) * 8 * 10) / 10; // max ±8 km/h
-      const erroreTermiche = Math.round((erroreFinale / 100) * 1.5 * 10) / 10; // max ±1.5 m/s
-
       return {
         ...a,
         errore: Math.round(erroreFinale * 10) / 10,
-        erroreTemperatura,
-        erroreVento,
-        erroreTermiche,
+        erroreTemperatura: Math.round((erroreFinale / 100) * 3 * 10) / 10,
+        erroreVento: Math.round((erroreFinale / 100) * 8 * 10) / 10,
+        erroreTermiche: Math.round((erroreFinale / 100) * 1.5 * 10) / 10,
         oreValide: oreDisponibili,
         ultimoAggiornamento: new Date(),
       };
     });
   }, [hourlyData, currentData, altitude]);
 
-  // Riepilogo generale per il giorno
   const riepilogo = useMemo(() => {
     if (!analisi.length) return null;
-
     const oreValide = analisi.filter(a => a.oreValide > 0).length;
     const mediaRateo = analisi.reduce((s, a) => s + a.rateoSalita, 0) / Math.max(1, analisi.length);
     const maxRateo = Math.max(...analisi.map(a => a.rateoSalita));
@@ -123,29 +103,16 @@ export function useAnalisiAvanzata(lat: number, lon: number, altitude: number) {
     const medioErrore = analisi.reduce((s, a) => s + a.errore, 0) / Math.max(1, analisi.length);
     const medioCape = Math.round(analisi.reduce((s, a) => s + a.cape, 0) / Math.max(1, analisi.length));
     const medioGradiente = Math.round(analisi.reduce((s, a) => s + a.gradienteReale, 0) / Math.max(1, analisi.length) * 100) / 100;
-
     return {
-      oreValide,
-      oreTotali: analisi.length,
+      oreValide, oreTotali: analisi.length,
       mediaRateo: Math.round(mediaRateo * 10) / 10,
-      maxRateo: Math.round(maxRateo * 10) / 10,
-      oreAttive,
+      maxRateo: Math.round(maxRateo * 10) / 10, oreAttive,
       mediaForza: Math.round(mediaForza * 10) / 10,
       mediaConfidenza: Math.round(mediaConfidenza * 100) / 100,
       medioErrore: Math.round(medioErrore * 10) / 10,
-      medioCape,
-      medioGradiente,
-      ultimoAggiornamento: new Date(),
+      medioCape, medioGradiente, ultimoAggiornamento: new Date(),
     };
   }, [analisi]);
 
-  return {
-    analisi,
-    riepilogo,
-    loading,
-    error,
-    hourlyData,
-    currentData,
-    tempoTrascorso,
-  };
+  return { analisi, riepilogo, loading, error, hourlyData, currentData, tempoTrascorso };
 }

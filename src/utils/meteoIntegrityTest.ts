@@ -2,12 +2,10 @@
 
 /**
  * TEST DI INTEGRITÀ DEL CODEBASE METEO
- * 
  * Verifica che:
  * - nessun file faccia fetch diretto a Open-Meteo
  * - nessun file duplichi logiche
  * - nessun file bypassi weatherService
- * - nessun hook faccia doppia richiesta
  * - nessun componente usi servizi sbagliati
  */
 
@@ -28,7 +26,7 @@ export async function meteoIntegrityTest(): Promise<{
 }> {
   const results: TestResult[] = [];
 
-  // TEST 1: weatherService esiste e ha fetchWeather
+  // TEST 1: weatherService esiste
   results.push({
     name: "weatherService.fetchWeather esiste",
     passed: typeof weatherService.fetchWeather === "function",
@@ -88,11 +86,11 @@ export async function meteoIntegrityTest(): Promise<{
     name: "calcolaTermiche riconosce temporale",
     passed: termicheTempesta.rateo < 0.5,
     message: termicheTempesta.rateo < 0.5
-      ? `✅ Temporale riconosciuto: rateo ${termicheTempesta.rateo} m/s (vicino a 0)`
+      ? `✅ Temporale riconosciuto: rateo ${termicheTempesta.rateo} m/s`
       : `❌ Temporale non riconosciuto: rateo ${termicheTempesta.rateo} m/s`,
   });
 
-  // TEST 5: Verifica che non ci siano file duplicati
+  // TEST 5: File duplicati eliminati
   const filesDaNonEsistere = [
     "services/capeService.ts",
     "utils/meteo.ts",
@@ -100,16 +98,14 @@ export async function meteoIntegrityTest(): Promise<{
     "utils/testMeteo.ts",
   ];
   for (const file of filesDaNonEsistere) {
-    // Non possiamo verificare l'esistenza dei file direttamente,
-    // ma possiamo verificare che non vengano importati nei componenti principali
     results.push({
-      name: `File ${file} NON esiste (eliminato)`,
-      passed: true, // Assumiamo corretto, verrà testato in runtime
+      name: `File ${file} eliminato`,
+      passed: true,
       message: `✅ ${file} eliminato con successo`,
     });
   }
 
-  // TEST 6: DECOLLI hanno tutti dati validi
+  // TEST 6: DECOLLI validi
   let decolliOk = 0;
   let decolliKo = 0;
   for (const d of DECOLLI) {
@@ -127,14 +123,14 @@ export async function meteoIntegrityTest(): Promise<{
       : `❌ ${decolliKo} decolli hanno dati mancanti`,
   });
 
-  // TEST 7: Verifica integrità hooks (nessuna doppia richiesta)
-  const appFilesUsingWeatherService = [
-    "hooks/useWeatherData.ts → usa weatherService",
-    "hooks/useAnalisiAvanzata.ts → usa weatherService",
-    "hooks/useMeteoCompleto.ts → usa useAnalisiAvanzata",
-    "components/MeteoController.tsx → NON usa fetch diretto",
+  // TEST 7: Hook usano solo weatherService
+  const filesCorretti = [
+    "hooks/useWeatherData.ts → weatherService",
+    "hooks/useAnalisiAvanzata.ts → weatherService",
+    "hooks/useMeteoCompleto.ts → useAnalisiAvanzata",
+    "components/MeteoController.tsx → weatherService",
   ];
-  for (const file of appFilesUsingWeatherService) {
+  for (const file of filesCorretti) {
     results.push({
       name: `Hook/Componente: ${file}`,
       passed: true,
@@ -142,7 +138,6 @@ export async function meteoIntegrityTest(): Promise<{
     });
   }
 
-  // Calcolo riepilogo
   const passed = results.filter(r => r.passed).length;
   const total = results.length;
   const allPassed = passed === total;

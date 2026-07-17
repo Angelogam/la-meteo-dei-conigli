@@ -20,9 +20,11 @@ const LCL_FACTOR = 125;
 
 /**
  * Calcola termiche REALI combinando:
- * 1. Dati meteo (temp, dew, vento, nuvole)
- * 2. CAPE reale (dai dati hourly, non da richiesta extra)
+ * 1. Dati meteo (temp, dew, vento, nuvole) da weatherService
+ * 2. CAPE reale (dai dati hourly di Open-Meteo via weatherService)
  * 3. Fattori fisici: gradiente verticale, wind shear, ora del giorno, stagione
+ * 
+ * Non fa richieste API aggiuntive.
  */
 export function calcolaTermicheReali(
   weather: any,
@@ -48,7 +50,6 @@ export function calcolaTermicheReali(
   const precipitation = weather.precipitation ?? 0;
   const temp80m = weather.temp80m ?? null;
   const temp120m = weather.temp120m ?? null;
-  const uvIndex = weather.uvIndex ?? 0;
   const ora = weather.time?.getHours?.() ?? new Date().getHours();
   const capeValue = weather.cape ?? 0;
   const cinValue = weather.cin ?? 0;

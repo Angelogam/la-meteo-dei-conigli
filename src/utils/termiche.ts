@@ -14,7 +14,7 @@ export interface TermicheData {
 
 /**
  * Calcola termiche per una data ora meteo.
- * Ora usa il motore unificato termicheEngine.
+ * Ora usa il motore unificato termicheEngine (senza duplicazioni).
  */
 export function calcolaTermiche(weather: any, altitude: number): TermicheData {
   const result = calcolaTermicheReali(weather, altitude);
