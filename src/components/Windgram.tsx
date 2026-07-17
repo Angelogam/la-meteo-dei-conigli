@@ -148,10 +148,9 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
 
   return (
     <div className="bg-slate-900/40 border border-slate-700/40 rounded-2xl overflow-hidden">
-      {/* Titolo finestra - compatto */}
+      {/* Titolo finestra */}
       <div className="px-4 pt-4 pb-0">
-        <h3 className="text-base font-bold text-white flex items-center gap-2">
-          <span className="text-xl">🌤️</span>
+        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
           Windgram · Dati meteo
         </h3>
       </div>
