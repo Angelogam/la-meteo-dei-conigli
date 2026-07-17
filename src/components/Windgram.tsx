@@ -152,7 +152,7 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
       <div className="px-6 pt-5 pb-1">
         <h3 className="text-xl font-bold text-white flex items-center gap-3">
           <span className="text-2xl">🌤️</span>
-          Dati meteo
+          Dati meteo Windgram
         </h3>
       </div>
 
