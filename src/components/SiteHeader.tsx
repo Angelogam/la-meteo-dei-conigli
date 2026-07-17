@@ -19,6 +19,20 @@ interface SiteHeaderProps {
   currentData: any;
 }
 
+function getWeatherLabel(weatherCode: number): string {
+  if (weatherCode >= 95) return "temporale";
+  if (weatherCode >= 80) return "rovesci";
+  if (weatherCode >= 71) return "neve";
+  if (weatherCode >= 61) return "pioggia";
+  if (weatherCode >= 51) return "pioviggine";
+  if (weatherCode >= 45) return "nebbia";
+  if (weatherCode >= 26) return "nuvole";
+  if (weatherCode >= 20) return "coperto";
+  if (weatherCode >= 10) return "nuvole e sole";
+  if (weatherCode >= 5) return "poco nuvoloso";
+  return "sereno";
+}
+
 export default function SiteHeader({
   name,
   exposure,
@@ -26,6 +40,10 @@ export default function SiteHeader({
   alt,
   currentData,
 }: SiteHeaderProps) {
+  const weatherCode = currentData?.weatherCode ?? 0;
+  const label = getWeatherLabel(weatherCode);
+  const isOvercast = weatherCode >= 20 && weatherCode < 61;
+
   return (
     <div className="card header-decollo pb-5 mb-4 border-b border-orange-400/20 relative overflow-hidden">
       <div className="absolute -top-4 -left-4 w-32 h-32 bg-gradient-to-br from-orange-500/5 to-transparent rounded-full blur-2xl pointer-events-none" />
@@ -59,9 +77,19 @@ export default function SiteHeader({
       </div>
       {currentData && (
         <div className="flex items-center justify-center gap-4 bg-gradient-to-br from-orange-900/30 to-amber-900/15 border border-orange-400/30 rounded-2xl px-4 py-2.5 relative overflow-hidden mt-3">
-          <span className="text-3xl animate-float shrink-0">
-            {getWeatherIcon(currentData.weatherCode || 0, currentData.isDay || 1)}
-          </span>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-3xl animate-float shrink-0">
+              {getWeatherIcon(currentData.weatherCode || 0, currentData.isDay || 1)}
+            </span>
+            {isOvercast && (
+              <span className="text-2xl shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-7 h-7 text-slate-200">
+                  <ellipse cx="28" cy="26" rx="14" ry="9" fill="currentColor" opacity="0.7"/>
+                  <ellipse cx="22" cy="22" rx="12" ry="8" fill="currentColor" opacity="0.55"/>
+                </svg>
+              </span>
+            )}
+          </div>
           <div className="text-center relative z-10">
             <div className="text-2xl font-black text-white tabular-nums">
               {Math.round(currentData.temperature)}°
@@ -70,6 +98,9 @@ export default function SiteHeader({
               <Wind className="w-3 h-3 text-sky-400" />
               <span className="tabular-nums font-bold">{Math.round(currentData.windSpeed)} km/h</span>
             </div>
+          </div>
+          <div className="text-xs text-slate-300 font-bold whitespace-nowrap">
+            {label}
           </div>
         </div>
       )}
