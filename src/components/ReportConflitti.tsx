@@ -1,3 +1,4 @@
+DECOLLO_NAMES">
 "use client";
 
 import React, { useState, useCallback } from "react";
@@ -23,6 +24,9 @@ function formatDate(iso: string | null): string {
   return d.toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
+// Import DECOLLI from data/decolli
+import { DECOLLI } from "@/data/decolli";
+
 export default function ReportConflitti() {
   const [isOpen, setIsOpen] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -39,7 +43,143 @@ export default function ReportConflitti() {
     setReport(null);
     setLog([]);
     addLog("🚀 Avvio diagnostica meteo completa su TUTTI i decolli...");
-    addLog(`📡 ${DECOLLI_NAMES.length} decolli da verificare con richieste reali a Open-Meteo`);
+    addLog(`📡 ${DECOLLI.length} decolli da verificare con richieste reali a Open-Meteo`);
+    addLog("⏱️ Tempo stimato: ~30 secondi (delay 2s tra ogni richiesta)");
+    addLog("");
+
+    try {
+      const res = await diagnosticaMeteoCompleta();
+      setReport(res);
+      setIsRunning(false);
+
+      addLog("");
+      addLog("=== DIAGNOSTICA COMPLETATA ===");
+      addLog(`✅ ${res.decolliConDati}/${res.totaleDecolli} decolli con dati ok`);
+      addLog(`❌ ${res.decolliSenzaDati} senza dati · ⚠ ${res.decolliConAnomalie} con anomalie`);
+      addLog(`📊 Media API: ${res.statistiche.apiMediaRisposta}ms`);
+      addLog(`🌡️ Temperature: ${res.statistiche.temperatureMin}°C ~ ${res.statistiche.temperatureMax}°C`);
+      addLog(`💨 Vento max: ${res.statistiche.ventoMax} km/h`);
+      addLog(`☁️ Nuvolosità media: ${res.statistiche.nuvoleMedia}%`);
+      addLog("");
+
+      // Test calcoli
+      for (const t of res.testCalcoli) {
+        addLog(t.ok ? `  ✅ ${t.dettaglio}` : `  ❌ ${t.dettaglio}`);
+      }
+      addLog("");
+
+      if (res.errori.length === 0) {
+        addLog("✅✅✅ NESSUN ERRORE RILEVATO!");
+      } else {
+        addLog(`❌ ${res.errori.length} errori trovati:`);
+        for (const e of res.errori) addLog(`  ❌ ${e}`);
+      }
+      if (res.warning.length > 0) {
+        addLog(`⚠️ ${res.warning.length} warning:`);
+        for (const w of res.warning) addLog(`  ⚠️ ${w}`);
+      }
+    } catch (err) {
+      addLog(`❌ ERRORE: ${err instanceof Error ? err.message : String(err)}`);
+      setIsRunning(false);
+    }
+  }, [addLog]);
+
+  const scaricaReport = useCallback(() => {
+    if (!report) return;
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `report-conflitti-${new Date().toISOString().split("T")[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    addLog("📥 Report scaricato");
+  }, [report, addLog]);
+
+  if (!isOpen) {
+    return (
+      <button
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-8 right-4 z-50 bg-amber-700 hover:bg-amber-600 text-amber-100 border border-amber-400/40 rounded-2xl px-4 py-2.5 shadow-2xl shadow-amber-500/20 flex items-center gap-2 font-bold text-sm"
+        title="Report conflitti meteo"
+      >
+        <Bug className="w-5 h-5" />
+        Report Meteo
+      </button>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-slate-950/98 flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50 bg-slate-900/80 shrink-0">
+        <div className="flex items-center gap-3">
+          <Bug className="w-5 h-5 text-amber-400" />
+          <span className="text-sm font-bold text-white">Report Conflitti — Dati Meteo</span>
+          {report && (
+            <span className={`text-xs ${report.ok ? "text-green-400" : "text-red-400"}`}>
+              {report.ok ? "✅ OK" : `❌ ${report.errori.length} errori`}
+            </span>
+          )}
+          {report && report.warning.length > 0 && (
+            <span className="text-xs text-amber-400">⚠️ {report.warning.length} warning</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={avviaDiagnostica}
+            disabled={isRunning}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-600 text-xs text-white disabled:opacity-50"
+          >
+            <Play className="w-3.5 h-3.5" />
+            {isRunning ? "Analisi in corso..." : "Esegui diagnostica"}
+          </button>
+          {report && (
+            <button
+              onClick={scaricaReport}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Report JSON
+            </button>
+          )}
+          <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white px-} from "lucide-react";
+import { diagnosticaMeteoCompleta, type ReportConflittoMeteo } from "@/utils/diagnosticaMeteo";
+
+function formatTime(iso: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatDate(iso: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+// Import DECOLLI from data/decolli
+import { DECOLLI } from "@/data/decolli";
+
+export default function ReportConflitti() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const [report, setReport] = useState<ReportConflittoMeteo | null>(null);
+  const [log, setLog] = useState<string[]>([]);
+
+  const addLog = useCallback((msg: string) => {
+    const ts = new Date().toLocaleTimeString("it-IT");
+    setLog(prev => [...prev, `[${ts}] ${msg}`].slice(-200));
+  }, []);
+
+  const avviaDiagnostica = useCallback(async () => {
+    setIsRunning(true);
+    setReport(null);
+    setLog([]);
+    addLog("🚀 Avvio diagnostica meteo completa su TUTTI i decolli...");
+    addLog(`📡 ${DECOLLI.length} decolli da verificare con richieste reali a Open-Meteo`);
     addLog("⏱️ Tempo stimato: ~30 secondi (delay 2s tra ogni richiesta)");
     addLog("");
 
@@ -377,14 +517,3 @@ export default function ReportConflitti() {
     </div>
   );
 }
-
-// Per evitare import circolari
-const DECOLLO_NAMES = [
-  "Malanotte", "Colle di Tenda", "Boves", "Monte Male – Dronero", "Iretta",
-  "Pratoni di Val Mala", "Monte Birrone", "Colle dell'Agnello",
-  "Pian Munè – Seggiovia", "Pian Munè – Bric Lombatera", "Martiniana Po",
-  "Rucas alto", "Montoso – decollo basso", "Monte Vandalino",
-  "Pian dell'Alpe", "Roletto – Piggi", "Piossasco – Monte S. Giorgio",
-  "Truccetti", "Val della Torre", "Rocca Canavese – M. della Neve",
-  "Santa Elisabetta", "Santa Elisabetta alto", "Monte Cavallaria", "Andrate",
-];

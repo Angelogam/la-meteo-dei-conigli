@@ -126,11 +126,13 @@ export function analisiAvanzataCompleta(
     const windSpeed = weather.windSpeed ?? 0;
     const windGusts = weather.windGusts ?? 0;
     const cloudCover = weather.cloudCover ?? 30;
-    const pressure = weather.pressure ?? 1013;
     const uv = weather.uvIndex ?? 0;
     const precipitation = weather.precipitation ?? 0;
     const temp80m = weather.temp80m ?? null;
     const temp120m = weather.temp120m ?? null;
+
+    // Usa la pressione dal current data come valore di default
+    const pressure = current?.pressure ?? 1013;
 
     // --- CALCOLI REALISTICI CON LIMITI FISICI ---
 

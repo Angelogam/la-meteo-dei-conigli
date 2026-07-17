@@ -1,7 +1,7 @@
 "use client";
 
 import { DECOLLI } from "@/data/decolli";
-import { weatherService } from "@/services/weatherService";
+import { weatherService, type MeteoHourly } from "@/services/weatherService";
 import { degreesToCardinal } from "@/utils/windDirections";
 import { calcolaTermiche } from "@/utils/termiche";
 import type { HourData } from "@/types/meteo";
@@ -141,7 +141,8 @@ export async function diagnosticaMeteoCompleta(): Promise<ReportConflittoMeteo> 
         sommaNuvole += h.cloudCover;
         countNuvole++;
 
-        const pv = validaPressione(h.pressure || 1013);
+        // Usa 1013 come default — MeteoHourly non ha il campo pressure
+        const pv = validaPressione(1013);
         if (!pv.ok) { pressioneOk = false; errori.push(`${d.name}: ${pv.msg}`); }
       }
 
