@@ -1,7 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Wind, Clock, Thermometer, Gauge, Navigation, Mountain, MapPin } from "lucide-react";
+import { weatherService } from "@/services/weatherService";
+import { DECOLLI } from "@/data/decolli";
+import { HourData } from "@/services/weatherService";
 
 function getCardinalDir(deg: number): string {
   if (deg == null) return "N/D";
@@ -46,28 +49,6 @@ function getCurrentHour(): string {
   });
 }
 
-/**
- * Restituisce l'ora corrente nel fuso Europe/Rome.
- */
-function getRomeHour(): number {
-  const now = new Date();
-  const utcHour = now.getUTCHours();
-  const month = now.getMonth() + 1;
-  const isCest = month > 3 && month < 10;
-  return (utcHour + (isCest ? 2 : 1)) % 24;
-}
-
-/**
- * Data odierna in formato YYYY-MM-DD nel fuso Europe/Rome.
- */
-function getRomeDate(): string {
-  return new Date().toLocaleDateString("it-IT", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).split("/").reverse().join("-");
-}
-
 interface DecolloItem {
   nome: string;
   valle: string;
@@ -82,54 +63,74 @@ interface DecolliCardProps {
   weatherMap?: Record<string, any>;
 }
 
+/** Dato meteo live per un decollo */
+interface LiveDato {
+  temp: number;
+  wind: number;
+  gust: number | null;
+  dir: number;
+  code: number;
+}
+
 const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardProps) => {
-  // Trova il dato orario corrente usando il fuso Europe/Rome
+  // Dati live per ogni decollo — caricati da Open-Meteo al mount
+  const [liveData, setLiveData] = useState<Record<string, LiveDato | null>>({});
+
+  useEffect(() => {
+    let attivo = true;
+
+    const caricaTutti = async () => {
+      const risultati: Record<string, LiveDato | null> = {};
+
+      for (const item of decolli) {
+        const decollo = DECOLLI.find(d => d.name === item.nome);
+        if (!decollo) continue;
+
+        try {
+          const { data } = await weatherService.fetchCurrent(decollo.lat, decollo.lon);
+          if (!attivo) return;
+          if (data) {
+            risultati[item.nome] = {
+              temp: data.temperature ?? 20,
+              wind: data.windSpeed ?? 0,
+              gust: data.windGusts ?? null,
+              dir: data.windDir ?? 0,
+              code: data.weatherCode ?? 0,
+            };
+          }
+        } catch {
+          // silenzioso
+        }
+      }
+
+      if (attivo) setLiveData(risultati);
+    };
+
+    caricaTutti();
+    return () => { attivo = false; };
+  }, [decolli]);
+
   const getCurrentData = (id: string) => {
+    // Priorità 1: dati live appena caricati
+    const live = liveData[id];
+    if (live) return live;
+
+    // Priorità 2: weatherMap (dati già caricati)
     if (!weatherMap?.[id]) return null;
     const hourly = weatherMap[id];
     if (!Array.isArray(hourly) || hourly.length === 0) return null;
 
-    const oraCorrente = getRomeHour();
-    const oggiRome = getRomeDate();
+    // Prendi l'ultimo dato disponibile
+    const last = hourly[hourly.length - 1];
+    if (!last) return null;
 
-    // Cerca tra tutti i dati il più vicino all'ora corrente per oggi
-    // Prova prima match esatto ora + data
-    const current = hourly.find((h: any) => {
-      if (!h.time) return false;
-      const t = h.time instanceof Date ? h.time : new Date(h.time);
-      if (isNaN(t.getTime())) return false;
-
-      // Estrai ora UTC e data UTC
-      const oraUtc = t.getUTCHours();
-      const giornoUtc = t.toISOString().slice(0, 10);
-
-      // L'API Open-Meteo dà i dati in UTC. Per avere l'ora italiana:
-      const month = new Date().getMonth() + 1;
-      const isCest = month > 3 && month < 10;
-      const offset = isCest ? 2 : 1;
-      const oraIta = (oraUtc + offset) % 24;
-
-      return oraIta === oraCorrente && giornoUtc <= oggiRome;
-    });
-
-    if (current) return current;
-
-    // Fallback 1: Match per data (oggi) e ora più vicina
-    const candidati = hourly.filter((h: any) => {
-      if (!h.time) return false;
-      const t = h.time instanceof Date ? h.time : new Date(h.time);
-      if (isNaN(t.getTime())) return false;
-      const giornoUtc = t.toISOString().slice(0, 10);
-      return giornoUtc <= oggiRome;
-    });
-
-    if (candidati.length > 0) {
-      // Prendi l'ultimo dato disponibile (più recente)
-      return candidati[candidati.length - 1];
-    }
-
-    // Fallback 2: primo dato disponibile
-    return hourly[0] || null;
+    return {
+      temp: last.temperature ?? 20,
+      wind: last.windSpeed ?? 0,
+      gust: last.windGusts ?? null,
+      dir: last.windDir ?? 0,
+      code: last.weatherCode ?? 0,
+    };
   };
 
   return (
@@ -149,11 +150,11 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardP
           const isSelected = item.nome === selectedId;
           const current = getCurrentData(item.nome);
           const hasData = current != null;
-          const temp = hasData ? Math.round(current.temperature) : null;
-          const wind = hasData ? Math.round(current.windSpeed) : null;
-          const gust = hasData ? (current.windGusts ? Math.round(current.windGusts) : null) : null;
-          const dir = hasData ? Math.round(current.windDir) : null;
-          const code = hasData ? current.weatherCode : null;
+          const temp = hasData ? Math.round(current.temp) : null;
+          const wind = hasData ? Math.round(current.wind) : null;
+          const gust = hasData ? (current.gust != null ? Math.round(current.gust) : null) : null;
+          const dir = hasData ? Math.round(current.dir) : null;
+          const code = hasData ? current.code : null;
           const emoji = getWeatherEmoji(code);
           const dirLabel = dir != null ? getCardinalDir(dir) : "N/D";
           const dirArrow = dir != null ? getWindArrow(dir) : "→";
