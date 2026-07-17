@@ -2,7 +2,19 @@
 
 import type { HourData } from "@/types/meteo";
 import { DECOLLI } from "@/data/decolli";
-import { wic } from "@/utils/meteo";
+
+function getWeatherEmoji(code: number): string {
+  if (code >= 95) return "⛈️";
+  if (code >= 80) return "🌧️";
+  if (code >= 71) return "❄️";
+  if (code >= 61) return "🌧️";
+  if (code >= 51) return "🌦️";
+  if (code >= 45) return "🌫️";
+  if (code >= 20) return "☁️";
+  if (code >= 10) return "⛅";
+  if (code >= 5) return "🌤️";
+  return "☀️";
+}
 
 interface SiteListProps {
   selected: string;
@@ -36,7 +48,7 @@ export const SiteList = ({ selected, current, onSelect, weatherMap }: SiteListPr
             </div>
             {w && (
               <div className="flex items-center gap-1.5 mt-1.5">
-                <span className="text-lg">{wic(w.weatherCode, true)}</span>
+                <span className="text-lg">{getWeatherEmoji(w.weatherCode)}</span>
                 <span className="text-sm font-bold text-gray-800">{Math.round(w.temperature)}°C</span>
                 <span className="text-xs text-gray-500">{w.windSpeed} km/h</span>
               </div>

@@ -3,10 +3,22 @@
 import React from "react";
 import { X, Clock, Thermometer, Wind, Droplets, Cloud, Gauge, CloudRain } from "lucide-react";
 import type { HourData } from "@/types/meteo";
-import { wic } from "@/utils/meteo";
 import { getVoloStatus } from "@/utils/volo";
 import GraficoTermiche from "@/components/GraficoTermiche";
 import { calcolaTermiche } from "@/utils/termiche";
+
+function getWeatherEmoji(code: number): string {
+  if (code >= 95) return "⛈️";
+  if (code >= 80) return "🌧️";
+  if (code >= 71) return "❄️";
+  if (code >= 61) return "🌧️";
+  if (code >= 51) return "🌦️";
+  if (code >= 45) return "🌫️";
+  if (code >= 20) return "☁️";
+  if (code >= 10) return "⛅";
+  if (code >= 5) return "🌤️";
+  return "☀️";
+}
 
 interface PopupTermicheProps {
   siteName: string;
@@ -93,7 +105,7 @@ export default function PopupTermiche({ siteName, siteAltitude, hourlyData, onCl
                       }`}>
                         {String(h.time.getHours()).padStart(2, "0")}:00
                       </span>
-                      <span className="text-lg">{wic(h.weatherCode, true)}</span>
+                      <span className="text-lg">{getWeatherEmoji(h.weatherCode)}</span>
                     </div>
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-1 text-[10px] text-slate-300">
