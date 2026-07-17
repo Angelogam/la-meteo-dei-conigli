@@ -47,7 +47,7 @@ function generaQuote(alt: number): number[] {
   return quote;
 }
 
-/** Stima vento a una quota data usando i dati del profilo + modello fisico */
+/** Stima vento a quota usando profilo wind shear standard (legge di potenza ICAO) */
 function stimaVento(hd: MeteoHourly, quota: number): { speed: number; dir: number } | null {
   const profilo = hd.windProfile || [];
   const surfaceSpeed = hd.windSpeed;
@@ -56,7 +56,6 @@ function stimaVento(hd: MeteoHourly, quota: number): { speed: number; dir: numbe
   // 1) Cerca corrispondenza esatta nel profilo (±100m)
   if (profilo.length > 0) {
     const ordinato = [...profilo].sort((a, b) => a.height - b.height);
-    
     const esatto = ordinato.find(l => Math.abs(l.height - quota) <= 100);
     if (esatto) return { speed: esatto.speed, dir: esatto.dir };
   }
@@ -66,7 +65,6 @@ function stimaVento(hd: MeteoHourly, quota: number): { speed: number; dir: numbe
     const ordinato = [...profilo].sort((a, b) => a.height - b.height);
     const sotto = ordinato.filter(l => l.height <= quota).pop();
     const sopra = ordinato.filter(l => l.height >= quota).shift();
-    
     if (sotto && sopra && sotto !== sopra) {
       const ratio = (quota - sotto.height) / (sopra.height - sotto.height);
       const speed = Math.round((sotto.speed + (sopra.speed - sotto.speed) * ratio) * 10) / 10;
@@ -76,34 +74,30 @@ function stimaVento(hd: MeteoHourly, quota: number): { speed: number; dir: numbe
       const dir = ((sotto.dir + dDiff * ratio) % 360 + 360) % 360;
       return { speed, dir };
     }
-  }
-
-  // 3) Estrapolazione dall'ultimo livello reale (limitata)
-  if (profilo.length > 0) {
-    const ordinato = [...profilo].sort((a, b) => a.height - b.height);
-    const ultimo = ordinato[ordinato.length - 1];
+    // Estrapolazione oltre l'ultimo livello: usa legge di potenza
+    const ultimo = sotto || sopra || ordinato[ordinato.length - 1];
     if (quota > ultimo.height) {
-      // Estrapola con incremento moderato: +20% ogni 1000m oltre l'ultimo punto
-      const extraMetri = quota - ultimo.height;
-      const fattore = 1 + (extraMetri / 1000) * 0.2;
-      const speed = Math.round(Math.min(ultimo.speed * fattore, ultimo.speed * 1.5) * 10) / 10;
+      const speed = Math.round(Math.min(ultimo.speed * Math.pow(quota / ultimo.height, 0.143), ultimo.speed * 1.4) * 10) / 10;
       return { speed, dir: ultimo.dir };
     }
-    // Estrapola verso il basso dal primo livello
-    const primo = ordinato[0];
-    if (quota < primo.height) {
-      const ratio = Math.max(0.5, quota / primo.height);
-      const speed = Math.round(primo.speed * ratio * 10) / 10;
-      return { speed, dir: primo.dir };
-    }
   }
 
-  // 4) Fallback finale: dal vento al suolo, incremento conservativo
+  // 3) Se c'è almeno un dato nel profilo, usalo come riferimento
+  if (profilo.length === 1) {
+    const p = profilo[0];
+    if (quota > p.height) {
+      const speed = Math.round(Math.min(p.speed * Math.pow(quota / p.height, 0.143), p.speed * 1.4) * 10) / 10;
+      return { speed, dir: p.dir };
+    }
+    const speed = Math.round(Math.max(p.speed * Math.pow(quota / p.height, 0.143), surfaceSpeed * 0.5) * 10) / 10;
+    return { speed, dir: surfaceDir };
+  }
+
+  // 4) Legge di potenza standard dal vento al suolo (ICAO)
   if (surfaceSpeed > 0) {
-    // Profilo reale medio: circa +15% ogni 1000m
-    const extraM = Math.max(0, quota - 10);
-    const fattore = 1 + (extraM / 1000) * 0.15;
-    const speed = Math.round(Math.min(surfaceSpeed * fattore, surfaceSpeed * 1.6) * 10) / 10;
+    // v(h) = v(10) * (h/10)^0.143, max 1.5x (molto realistico)
+    const h = Math.max(quota, 10);
+    const speed = Math.round(Math.min(surfaceSpeed * Math.pow(h / 10, 0.143), surfaceSpeed * 1.5) * 10) / 10;
     return { speed: Math.max(speed, 0.5), dir: surfaceDir };
   }
 
