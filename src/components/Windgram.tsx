@@ -214,7 +214,7 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
         {/* Intestazione */}
         <div className="grid grid-cols-[3.5rem_2.5rem_1fr_0.5rem_2rem_1.5fr] gap-1 mb-2 text-[10px] text-slate-500 font-bold uppercase tracking-wider items-end">
           <span>Quota</span>
-          <span className="text-right">km/h</span>
+          <span className="text-right bg-white text-gray-900 rounded px-1">km/h</span>
           <span>Velocità</span>
           <span />
           <span className="text-center">Dir</span>
@@ -242,10 +242,8 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
                   {r.q}m
                 </span>
 
-                {/* Numero velocità */}
-                <span className={`text-xs font-mono font-bold text-right ${
-                  r.speed > 22 ? "text-red-400" : r.speed > 15 ? "text-orange-300" : "text-slate-300"
-                }`}>
+                {/* Numero velocità — sfondo bianco come da design */}
+                <span className="text-xs font-mono font-bold text-right bg-white text-gray-900 px-1 py-0.5 rounded flex items-center justify-end">
                   {r.speed}
                 </span>
 
