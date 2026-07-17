@@ -148,8 +148,8 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
 
   return (
     <div className="bg-slate-900/40 border border-slate-700/40 rounded-2xl overflow-hidden">
-      {/* Selettore ore - PIÙ GRANDE */}
-      <div className="flex gap-2 overflow-x-auto p-4 bg-slate-800/30 border-b border-slate-700/30">
+      {/* Selettore ore - ANCORA PIÙ GRANDE */}
+      <div className="flex gap-3 overflow-x-auto p-5 bg-slate-800/30 border-b border-slate-700/30">
         {ORE.map(ora => {
           const isActive = ora === selectedHour;
           const haDatiOra = oreOggi.some(h => h.time.getHours() === ora);
@@ -158,9 +158,9 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
               key={ora}
               onClick={() => onHourSelect(ora)}
               disabled={!haDatiOra}
-              className={`shrink-0 px-4 py-2 rounded-xl text-base font-bold transition-all border ${
+              className={`shrink-0 px-5 py-3 rounded-2xl text-lg font-bold tracking-wide transition-all border-2 ${
                 isActive
-                  ? "bg-emerald-600/30 border-emerald-400/50 text-emerald-200 shadow-lg"
+                  ? "bg-emerald-600/30 border-emerald-400/60 text-emerald-200 shadow-lg shadow-emerald-900/30 scale-110"
                   : haDatiOra
                   ? "bg-slate-800/40 border-slate-700/40 text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
                   : "bg-slate-800/20 border-slate-700/20 text-slate-600 cursor-not-allowed"
@@ -172,23 +172,23 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
         })}
       </div>
 
-      {/* Info bar - PIÙ GRANDE */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-5 py-3 bg-slate-800/20 text-sm text-slate-300 border-b border-slate-700/20">
-        <span className="font-bold text-white text-base">{site.name}</span>
-        <span className="text-slate-500">·</span>
-        <span className="text-base">{String(selectedHour).padStart(2, "0")}:00</span>
-        <span className="text-slate-500">·</span>
-        <span className="text-base">Decollo {site.alt}m</span>
-        <span className="text-slate-500">·</span>
-        <span className="text-base">Suolo: <strong>{hd?.windSpeed ?? "?"}</strong> km/h <strong>{hd ? dirName(hd.windDir) : "?"}</strong></span>
+      {/* Info bar - ANCORA PIÙ GRANDE */}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-6 py-4 bg-slate-800/20 text-base text-slate-300 border-b border-slate-700/20">
+        <span className="font-bold text-white text-lg">{site.name}</span>
+        <span className="text-slate-500 text-2xl">·</span>
+        <span className="text-lg">{String(selectedHour).padStart(2, "0")}:00</span>
+        <span className="text-slate-500 text-2xl">·</span>
+        <span className="text-lg">Decollo {site.alt}m</span>
+        <span className="text-slate-500 text-2xl">·</span>
+        <span className="text-lg">Suolo: <strong>{hd?.windSpeed ?? "?"}</strong> km/h <strong>{hd ? dirName(hd.windDir) : "?"}</strong></span>
         {termiche && termiche.rateo > 0 && (
           <>
-            <span className="text-slate-500">·</span>
-            <span className="text-amber-300 font-semibold text-base">↑ {termiche.rateo.toFixed(1)} m/s</span>
-            <span className="text-slate-500">·</span>
-            <span className="text-emerald-300 font-semibold text-base">Base {termiche.base}m</span>
-            <span className="text-slate-500">·</span>
-            <span className="text-orange-300 font-semibold text-base">Top {termiche.top}m</span>
+            <span className="text-slate-500 text-2xl">·</span>
+            <span className="text-amber-300 font-semibold text-lg">↑ {termiche.rateo.toFixed(1)} m/s</span>
+            <span className="text-slate-500 text-2xl">·</span>
+            <span className="text-emerald-300 font-semibold text-lg">Base {termiche.base}m</span>
+            <span className="text-slate-500 text-2xl">·</span>
+            <span className="text-orange-300 font-semibold text-lg">Top {termiche.top}m</span>
           </>
         )}
       </div>
@@ -200,61 +200,61 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
         </div>
       ) : (
         <>
-          {/* GRAFICO - PIÙ GRANDE E SPAZIATO */}
-          <div className="p-5">
-            {/* Intestazione colonne - PIÙ GRANDE */}
-            <div className="grid grid-cols-[4rem_3.5rem_1.2fr_1.8fr] gap-3 mb-3 text-xs text-slate-500 font-bold uppercase tracking-wider">
+          {/* GRAFICO - MEGA SPAZIATO */}
+          <div className="p-6">
+            {/* Intestazione colonne - MEGA */}
+            <div className="grid grid-cols-[5rem_4.5rem_1.2fr_2fr] gap-4 mb-4 text-sm text-slate-500 font-bold uppercase tracking-wider">
               <span>Quota</span>
               <span className="text-center">km/h</span>
               <span>Velocità</span>
               <span>Direzione</span>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               {righe.map((r) => {
-                const w = Math.max(6, (r.speed / (maxSpeed + 5)) * 260);
+                const w = Math.max(8, (r.speed / (maxSpeed + 5)) * 320);
                 const isDecollo = Math.abs(r.q - site.alt) <= 100;
 
                 return (
                   <div
                     key={r.q}
-                    className={`grid grid-cols-[4rem_3.5rem_1.2fr_1.8fr] gap-3 items-center py-2.5 rounded-lg ${
-                      isDecollo ? "bg-amber-900/15 -mx-3 px-3 border border-amber-700/20" : ""
+                    className={`grid grid-cols-[5rem_4.5rem_1.2fr_2fr] gap-4 items-center py-3.5 rounded-xl ${
+                      isDecollo ? "bg-amber-900/20 -mx-4 px-4 border-2 border-amber-700/30" : ""
                     }`}
                   >
-                    {/* Quota - PIÙ GRANDE */}
-                    <span className={`text-sm font-mono font-bold ${
+                    {/* Quota - MEGA */}
+                    <span className={`text-base font-mono font-bold ${
                       isDecollo ? "text-amber-400" : "text-slate-400"
                     }`}>
                       {r.q} m
                     </span>
 
-                    {/* Velocità km/h - PIÙ GRANDE */}
+                    {/* Velocità km/h - MEGA */}
                     <div className="flex justify-center">
-                      <span className="text-sm font-mono font-bold bg-white text-gray-900 px-3 py-1 rounded">
+                      <span className="text-base font-mono font-bold bg-white text-gray-900 px-4 py-1.5 rounded-lg shadow-md">
                         {r.speed}
                       </span>
                     </div>
 
-                    {/* Barra velocità - PIÙ ALTA */}
-                    <div className="h-6 bg-slate-800/60 rounded overflow-hidden relative">
+                    {/* Barra velocità - MEGA ALTA */}
+                    <div className="h-8 bg-slate-800/60 rounded-lg overflow-hidden relative">
                       <div
-                        className="h-full rounded transition-all"
+                        className="h-full rounded-lg transition-all"
                         style={{ width: `${w}px`, background: speedColor(r.speed) }}
                       />
                       {isDecollo && (
-                        <div className="absolute inset-0 border-2 border-amber-400/40 rounded pointer-events-none" />
+                        <div className="absolute inset-0 border-2 border-amber-400/50 rounded-lg pointer-events-none" />
                       )}
                     </div>
 
-                    {/* Direzione - ICONE PIÙ GRANDI */}
-                    <div className="flex items-center gap-4">
-                      <span className={`text-2xl font-bold ${
+                    {/* Direzione - FRECCE MAXI */}
+                    <div className="flex items-center gap-5">
+                      <span className={`text-4xl font-extrabold drop-shadow-lg ${
                         r.speed > 22 ? "text-red-400" : r.speed > 15 ? "text-orange-300" : "text-sky-300"
                       }`}>
                         {dirArrow(r.dir)}
                       </span>
-                      <span className={`text-base font-bold ${
+                      <span className={`text-xl font-bold tracking-wider ${
                         r.speed > 22 ? "text-red-400" : r.speed > 15 ? "text-orange-300" : "text-sky-300"
                       }`}>
                         {dirName(r.dir)}
@@ -266,9 +266,9 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
             </div>
           </div>
 
-          {/* Legenda - PIÙ GRANDE */}
-          <div className="flex flex-wrap gap-x-5 gap-y-1.5 px-5 py-3 border-t border-slate-700/30 bg-slate-800/20 text-xs text-slate-500">
-            <span className="text-slate-400 font-bold text-sm">Legenda:</span>
+          {/* Legenda - MEGA */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-6 py-4 border-t border-slate-700/30 bg-slate-800/20 text-sm text-slate-500">
+            <span className="text-slate-400 font-bold text-base">Legenda:</span>
             {[
               { label: "≤5", color: "#10b981" },
               { label: "6-10", color: "#84cc16" },
@@ -277,12 +277,12 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
               { label: "23-30", color: "#ef4444" },
               { label: ">30", color: "#dc2626" },
             ].map(l => (
-              <span key={l.label} className="flex items-center gap-1.5 text-sm">
-                <span className="w-3 h-3 rounded-sm" style={{ background: l.color }} />
-                <span className="text-slate-300">{l.label} km/h</span>
+              <span key={l.label} className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded-sm" style={{ background: l.color }} />
+                <span className="text-slate-300 text-base">{l.label} km/h</span>
               </span>
             ))}
-            <span className="text-slate-600 ml-auto text-sm">Open-Meteo · Decollo {site.alt}m</span>
+            <span className="text-slate-600 ml-auto text-base">Open-Meteo · Decollo {site.alt}m</span>
           </div>
         </>
       )}
