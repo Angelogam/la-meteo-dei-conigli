@@ -77,19 +77,14 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
           temp120m: hd.temp120m,
         } as any, site.alt);
 
-        const profile = hd.windProfile || [];
+        const groundSpeed = hd.windSpeed;
+        const groundDir = hd.windDir;
 
         for (const q of quote) {
-          const match = profile.find(p => Math.abs(p.height - q) < 100);
-          let speed = 0, dir = 0;
-          if (match && match.speed > 0) {
-            speed = match.speed;
-            dir = match.dir;
-          } else {
-            const fattore = 1 + (q - site.alt) / 4000;
-            speed = Math.round(hd.windSpeed * fattore);
-            dir = hd.windDir;
-          }
+          // Scaling verticale: vento aumenta con la quota
+          const fattore = 1 + (q - site.alt) / 4000;
+          const speed = Math.round(groundSpeed * fattore);
+          const dir = groundDir;
           if (speed > mx) mx = speed;
           mat[ora][q] = { speed, dir: Math.round(dir) };
         }
@@ -103,16 +98,15 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
   const hourData = matrix[selectedHour];
   const t = termiche[selectedHour];
 
-  if (!hourData) {
+  if (!hourData || Object.values(hourData).every((v: any) => v.speed === 0)) {
     return <div className="text-center py-12 text-slate-400">Nessun dato vento per quest'ora.</div>;
   }
 
   return (
     <div className="bg-slate-900/40 border border-slate-700/40 rounded-2xl p-4 space-y-4">
-      {/* Selettore ore */}
       <div className="flex gap-1 overflow-x-auto pb-1">
         {ORE.map(ora => {
-          const hasData = Object.values(matrix[ora] || {}).some(v => v.speed > 0);
+          const hasData = Object.values(matrix[ora] || {}).some((v: any) => v.speed > 0);
           return (
             <button
               key={ora}
@@ -132,15 +126,12 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
         })}
       </div>
 
-      {/* Profilo verticale */}
       <div className="relative">
-        {/* Etichetta ora in alto */}
         <div className="text-center text-xs text-slate-500 mb-2">
           {String(selectedHour).padStart(2, "0")}:00 · {site.name}
         </div>
 
         <div className="flex gap-3">
-          {/* Colonne quote (sx) + barre (dx) */}
           <div className="flex-1 space-y-[2px]">
             {[...quote].reverse().map(q => {
               const v = hourData[q];
@@ -149,14 +140,11 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
 
               return (
                 <div key={q} className="grid grid-cols-[3.5rem_1fr_5rem] gap-2 items-center h-[18px]">
-                  {/* Quota */}
                   <span className={`text-[10px] font-mono text-right ${
                     q === site.alt ? "text-amber-400 font-bold" : "text-slate-500"
                   }`}>
                     {q}m
                   </span>
-
-                  {/* Barra vento */}
                   <div className="h-3 bg-slate-800/60 rounded-full overflow-hidden relative">
                     {v.speed > 0 && (
                       <div
@@ -165,8 +153,6 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
                       />
                     )}
                   </div>
-
-                  {/* Etichetta velocità + direzione */}
                   <span className={`text-[10px] font-mono ${speedColor(v.speed)}`}>
                     {v.speed > 0 ? `${v.speed} ${getDirArrow(v.dir)}${getDir(v.dir)}` : "—"}
                   </span>
@@ -175,7 +161,6 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
             })}
           </div>
 
-          {/* Legenda */}
           <div className="w-20 shrink-0 text-[10px] space-y-1.5 pt-4">
             <div className="text-slate-500 font-semibold mb-1">Vento</div>
             {[
@@ -194,7 +179,6 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
         </div>
       </div>
 
-      {/* Info termiche */}
       {t && t.rateo > 0 && (
         <div className="flex items-center gap-3 flex-wrap text-xs text-slate-400 bg-slate-800/30 rounded-xl px-3 py-2 border border-slate-700/30">
           <span className="text-slate-500 font-semibold">{String(selectedHour).padStart(2, "0")}:00</span>
