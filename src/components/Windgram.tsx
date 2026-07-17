@@ -47,21 +47,23 @@ function generaQuote(alt: number): number[] {
   return quote;
 }
 
-/** Stima vento a una quota data usando i dati del profilo + legge logaritmica */
+/** Stima vento a una quota data usando i dati del profilo + modello fisico */
 function stimaVento(hd: MeteoHourly, quota: number): { speed: number; dir: number } | null {
   const profilo = hd.windProfile || [];
   const surfaceSpeed = hd.windSpeed;
   const surfaceDir = hd.windDir;
 
-  // Cerca corrispondenza esatta o interpola dal profilo
+  // 1) Cerca corrispondenza esatta nel profilo (±100m)
   if (profilo.length > 0) {
     const ordinato = [...profilo].sort((a, b) => a.height - b.height);
     
-    // Corrispondenza esatta
-    const esatto = ordinato.find(l => Math.abs(l.height - quota) <= 50);
+    const esatto = ordinato.find(l => Math.abs(l.height - quota) <= 100);
     if (esatto) return { speed: esatto.speed, dir: esatto.dir };
+  }
 
-    // Interpolazione tra due livelli
+  // 2) Interpolazione tra due livelli reali
+  if (profilo.length >= 2) {
+    const ordinato = [...profilo].sort((a, b) => a.height - b.height);
     const sotto = ordinato.filter(l => l.height <= quota).pop();
     const sopra = ordinato.filter(l => l.height >= quota).shift();
     
@@ -72,25 +74,36 @@ function stimaVento(hd: MeteoHourly, quota: number): { speed: number; dir: numbe
       if (dDiff > 180) dDiff -= 360;
       if (dDiff < -180) dDiff += 360;
       const dir = ((sotto.dir + dDiff * ratio) % 360 + 360) % 360;
-      return { speed: Math.max(speed, 0.5), dir };
-    }
-    
-    // Estrapolazione dal più vicino
-    const piuVicino = sotto || sopra;
-    if (piuVicino) {
-      const ratio = Math.max(0.3, quota / piuVicino.height);
-      const speed = Math.round(Math.min(piuVicino.speed * ratio, piuVicino.speed * 2) * 10) / 10;
-      return { speed: Math.max(speed, 0.5), dir: piuVicino.dir };
+      return { speed, dir };
     }
   }
 
-  // Fallback: legge logaritmica dal vento al suolo
+  // 3) Estrapolazione dall'ultimo livello reale (limitata)
+  if (profilo.length > 0) {
+    const ordinato = [...profilo].sort((a, b) => a.height - b.height);
+    const ultimo = ordinato[ordinato.length - 1];
+    if (quota > ultimo.height) {
+      // Estrapola con incremento moderato: +20% ogni 1000m oltre l'ultimo punto
+      const extraMetri = quota - ultimo.height;
+      const fattore = 1 + (extraMetri / 1000) * 0.2;
+      const speed = Math.round(Math.min(ultimo.speed * fattore, ultimo.speed * 1.5) * 10) / 10;
+      return { speed, dir: ultimo.dir };
+    }
+    // Estrapola verso il basso dal primo livello
+    const primo = ordinato[0];
+    if (quota < primo.height) {
+      const ratio = Math.max(0.5, quota / primo.height);
+      const speed = Math.round(primo.speed * ratio * 10) / 10;
+      return { speed, dir: primo.dir };
+    }
+  }
+
+  // 4) Fallback finale: dal vento al suolo, incremento conservativo
   if (surfaceSpeed > 0) {
-    const z0 = 0.03;
-    const v10 = surfaceSpeed;
-    const hMeters = Math.max(quota, 10);
-    const fattore = Math.log(hMeters / z0) / Math.log(10 / z0);
-    const speed = Math.round(Math.min(v10 * fattore, v10 * 2.8) * 10) / 10;
+    // Profilo reale medio: circa +15% ogni 1000m
+    const extraM = Math.max(0, quota - 10);
+    const fattore = 1 + (extraM / 1000) * 0.15;
+    const speed = Math.round(Math.min(surfaceSpeed * fattore, surfaceSpeed * 1.6) * 10) / 10;
     return { speed: Math.max(speed, 0.5), dir: surfaceDir };
   }
 
