@@ -9,14 +9,14 @@ import {
   Wind,
   Sparkles,
 } from "lucide-react";
-import { getWeatherIcon } from "@/utils/weatherHelpers";
+import type { HourData } from "@/types/meteo";
 
 interface SiteHeaderProps {
   name: string;
   exposure: string;
   valley: string;
   alt: number;
-  currentData: any;
+  currentData: HourData | null;
 }
 
 function getWeatherLabel(weatherCode: number): string {
@@ -33,6 +33,19 @@ function getWeatherLabel(weatherCode: number): string {
   return "sereno";
 }
 
+function getWeatherIcon(code: number): string {
+  if (code >= 95) return "⛈️";
+  if (code >= 80) return "🌧️";
+  if (code >= 71) return "❄️";
+  if (code >= 61) return "🌧️";
+  if (code >= 51) return "🌦️";
+  if (code >= 45) return "🌫️";
+  if (code >= 20) return "☁️";
+  if (code >= 10) return "⛅";
+  if (code >= 5) return "🌤️";
+  return "☀️";
+}
+
 export default function SiteHeader({
   name,
   exposure,
@@ -43,6 +56,7 @@ export default function SiteHeader({
   const weatherCode = currentData?.weatherCode ?? 0;
   const label = getWeatherLabel(weatherCode);
   const isOvercast = weatherCode >= 20 && weatherCode < 61;
+  const isFog = weatherCode >= 45 && weatherCode <= 48;
 
   return (
     <div className="card header-decollo pb-5 mb-4 border-b border-orange-400/20 relative overflow-hidden">
@@ -79,7 +93,7 @@ export default function SiteHeader({
         <div className="flex items-center justify-center gap-4 bg-gradient-to-br from-orange-900/30 to-amber-900/15 border border-orange-400/30 rounded-2xl px-4 py-2.5 relative overflow-hidden mt-3">
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-3xl animate-float shrink-0">
-              {getWeatherIcon(currentData.weatherCode || 0, currentData.isDay || 1)}
+              {getWeatherIcon(weatherCode)}
             </span>
             {isOvercast && (
               <span className="flex items-center -ml-1">
