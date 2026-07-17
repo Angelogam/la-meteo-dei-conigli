@@ -1,166 +1,212 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import DecolliCard from "@/components/DecolliCard";
+import SiteHeader from "@/components/SiteHeader";
+import UpdateTimer from "@/components/UpdateTimer";
+import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
+import WeatherDashboard from "@/components/WeatherDashboard";
+import TabNav from "@/components/TabNav";
+import MeteoTab from "@/components/MeteoTab";
+import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
+import Windgram from "@/components/Windgram";
+import TermicheTab from "@/components/TermicheTab";
+import AnalisiMeteo from "@/components/AnalisiMeteo";
+import MeteoTesterPanel from "@/components/MeteoTesterPanel";
+import DiagnosticaPanel from "@/components/DiagnosticaPanel";
+import { useWeatherData } from "@/hooks/useWeatherData";
+import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { DECOLLI } from "@/data/decolli";
-import { Activity, Loader2, AlertTriangle } from "lucide-react";
+import { getStabilityIndex } from "@/utils/weatherHelpers";
+import { Activity } from "lucide-react";
+import type { MeteoHourly, MeteoCurrent } from "@/services/weatherService";
 
 export default function Index() {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [meteoData, setMeteoData] = useState<any>(null);
+  const {
+    selectedId, setSelectedId,
+    loading: weatherLoading,
+    updating,
+    selectedDay, setSelectedDay,
+    selectedHour, setSelectedHour,
+    activeTab, setActiveTab,
+    lastUpdate, countdown,
+    site,
+    dayData,
+    currentData,
+    thermalDelta,
+    enrichedDaily,
+    dateLabels,
+    loadWeather,
+    hourlyData,
+    allHourlyData,
+    allDailyData,
+    activeModel,
+    currentCape,
+  } = useWeatherData();
 
-  useEffect(() => {
-    const fetchMeteo = async () => {
-      try {
-        // Prendo il primo decollo (Malanotte)
-        const site = DECOLLI[0];
-        const params = new URLSearchParams({
-          latitude: site.lat.toString(),
-          longitude: site.lon.toString(),
-          hourly: "temperature_2m,relative_humidity_2m,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,weather_code,pressure_msl,dew_point_2m,uv_index,cape,convective_inhibition,lifted_index",
-          daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum",
-          current: "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,pressure_msl",
-          timezone: "Europe/Rome",
-          forecast_days: "3",
-        });
+  const {
+    riepilogo: riepilogoAvanzato,
+    loading: analisiLoading,
+    tempoTrascorso,
+  } = useMeteoCompleto(
+    site?.lat ?? DECOLLI[0].lat,
+    site?.lon ?? DECOLLI[0].lon,
+    site?.altitude ?? DECOLLI[0].altitude
+  );
 
-        const url = `https://api.open-meteo.com/v1/forecast?${params.toString()}`;
-        console.log("📡 Chiamata Open-Meteo:", url);
-        
-        const res = await fetch(url);
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        }
-        
-        const data = await res.json();
-        console.log("✅ Dati ricevuti:", data);
-        console.log("🌡️ Temperatura corrente:", data.current?.temperature_2m);
-        console.log("💨 Vento corrente:", data.current?.wind_speed_10m, "km/h");
-        console.log("☁️ Nuvolosità:", data.current?.cloud_cover, "%");
-        console.log("🌧️ Pioggia:", data.current?.precipitation, "mm");
-        
-        setMeteoData(data);
-        setLoading(false);
-      } catch (err) {
-        console.error("❌ Errore:", err);
-        setError(err instanceof Error ? err.message : "Errore sconosciuto");
-        setLoading(false);
-      }
-    };
+  const stabilityIndex = getStabilityIndex(
+    currentData?.temperature || 20,
+    currentData?.humidity || 50,
+    currentData?.cloudCover || 30
+  );
 
-    fetchMeteo();
-  }, []);
-
-  if (loading) {
+  if (weatherLoading && (!hourlyData || hourlyData.length === 0)) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
-        <Loader2 className="w-12 h-12 text-emerald-400 animate-spin mb-4" />
-        <p className="text-slate-400 text-lg">Caricamento dati meteo da Open-Meteo...</p>
+      <div className="min-h-screen bg-slate-950 flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 rounded-full border-4 border-emerald-500/20 border-t-emerald-400 animate-spin" />
+            <p className="text-slate-400 text-sm">Caricamento previsioni...</p>
+          </div>
+        </main>
+        <Footer />
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6">
-        <AlertTriangle className="w-16 h-16 text-red-400 mb-4" />
-        <h2 className="text-xl font-bold text-white mb-2">Errore di connessione</h2>
-        <p className="text-slate-400 text-center">{error}</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="mt-6 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all"
-        >
-          Riprova
-        </button>
-      </div>
-    );
-  }
+  const hasData = site && currentData && dayData.length > 0;
 
-  if (!meteoData) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
-        <p className="text-slate-400">Nessun dato ricevuto</p>
-      </div>
-    );
-  }
+  const decolliList = DECOLLI.map(d => ({
+    nome: d.name,
+    valle: d.valley,
+    quota: d.altitude,
+    direzione: d.exposure,
+  }));
 
-  const current = meteoData.current;
-  const hourly = meteoData.hourly;
-  const daily = meteoData.daily;
-  const site = DECOLLI[0];
+  const nomeToId: Record<string, string> = {};
+  DECOLLI.forEach(d => { nomeToId[d.name] = d.id; });
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-slate-950 flex flex-col">
       <Header />
-      <main className="max-w-7xl w-full mx-auto px-4 py-6">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-white">{site.name}</h2>
-          <p className="text-slate-400">{site.valley} · {site.altitude}m · {site.exposure}</p>
-        </div>
-
-        {/* Card meteo corrente */}
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 mb-6">
-          <h3 className="text-lg font-bold text-white mb-4">Meteo attuale</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-slate-900/50 rounded-xl p-4 text-center">
-              <div className="text-3xl font-bold text-amber-300">{Math.round(current.temperature_2m)}°C</div>
-              <div className="text-sm text-slate-400 mt-1">Temperatura</div>
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+          <aside className="w-full lg:w-80 shrink-0 space-y-4">
+            <UpdateTimer 
+              lastUpdate={lastUpdate} 
+              countdown={countdown} 
+              updating={updating} 
+              onRefresh={loadWeather} 
+            />
+            <div className="bg-slate-800/50 border border-emerald-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
+              <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
+              <span className="text-xs text-emerald-300">Analisi in tempo reale</span>
+              <span className="text-[10px] text-slate-500 ml-auto">{tempoTrascorso}s</span>
             </div>
-            <div className="bg-slate-900/50 rounded-xl p-4 text-center">
-              <div className="text-3xl font-bold text-sky-300">{Math.round(current.wind_speed_10m)} km/h</div>
-              <div className="text-sm text-slate-400 mt-1">Vento</div>
-            </div>
-            <div className="bg-slate-900/50 rounded-xl p-4 text-center">
-              <div className="text-3xl font-bold text-slate-200">{current.cloud_cover}%</div>
-              <div className="text-sm text-slate-400 mt-1">Nuvolosità</div>
-            </div>
-            <div className="bg-slate-900/50 rounded-xl p-4 text-center">
-              <div className="text-3xl font-bold text-blue-300">{current.precipitation} mm</div>
-              <div className="text-sm text-slate-400 mt-1">Pioggia</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabella oraria */}
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
-          <h3 className="text-lg font-bold text-white mb-4">Previsioni orarie</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-            {hourly.time.slice(0, 12).map((t: string, i: number) => {
-              const date = new Date(t);
-              const hour = date.getHours();
-              return (
-                <div key={i} className="bg-slate-900/50 rounded-xl p-3 text-center">
-                  <div className="text-sm font-bold text-slate-300">{String(hour).padStart(2, "0")}:00</div>
-                  <div className="text-lg font-bold text-amber-300 my-1">{Math.round(hourly.temperature_2m[i])}°</div>
-                  <div className="text-sm text-sky-300">{Math.round(hourly.wind_speed_10m[i])} km/h</div>
-                  <div className="text-sm text-slate-400">{hourly.cloud_cover[i]}%</div>
-                  {hourly.precipitation[i] > 0 && (
-                    <div className="text-sm text-blue-300">{hourly.precipitation[i].toFixed(1)}mm</div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Console log automatico */}
-        <div className="mt-6 bg-slate-900/80 border border-slate-700/50 rounded-2xl p-4">
-          <h4 className="text-sm font-bold text-emerald-400 mb-2">🧪 Test automatico</h4>
-          <div className="text-xs text-slate-400 space-y-1 font-mono">
-            <p>✅ {hourly.time.length} ore di dati disponibili</p>
-            <p>✅ {daily.time.length} giorni di previsioni</p>
-            <p>✅ Temperatura: {Math.round(current.temperature_2m)}°C</p>
-            <p>✅ Vento: {Math.round(current.wind_speed_10m)} km/h da {Math.round(current.wind_direction_10m)}°</p>
-            <p>✅ Nuvolosità: {current.cloud_cover}%</p>
-            <p>✅ Pioggia: {current.precipitation}mm</p>
-            <p>✅ Umidità: {current.relative_humidity_2m}%</p>
-            <p className="text-slate-600 mt-2">Dati ottenuti da Open-Meteo per {site.name}</p>
+            <DecolliCard
+              decolli={decolliList}
+              selectedId={selectedId}
+              onSelect={(item) => {
+                const id = nomeToId[item.nome];
+                if (id) {
+                  setSelectedId(id);
+                  setSelectedHour(new Date().getHours());
+                }
+              }}
+              weatherMap={allHourlyData}
+            />
+          </aside>
+          <div className="flex-1 min-w-0 space-y-6">
+            {hasData && (
+              <>
+                <SiteHeader
+                  name={site!.name}
+                  exposure={site!.exposure}
+                  valley={site!.valley}
+                  alt={site!.altitude}
+                  currentData={currentData}
+                />
+                <PrevisioniGiornaliere
+                  enrichedDaily={enrichedDaily}
+                  dateLabels={dateLabels}
+                  currentData={currentData}
+                  dayData={dayData}
+                  site={{ name: site!.name, altitude: site!.altitude, exposure: site!.exposure }}
+                  selectedDay={selectedDay}
+                  onSelectDay={setSelectedDay}
+                />
+                <WeatherDashboard
+                  dayData={dayData}
+                  altitude={site!.altitude}
+                  selectedHour={selectedHour}
+                  onHourSelect={setSelectedHour}
+                />
+                <TabNav activeTab={activeTab} onTabChange={(tab) => setActiveTab(tab)} />
+                {activeTab === "meteo" && (
+                  <MeteoTab
+                    currentData={currentData}
+                    dayData={dayData}
+                    site={{ alt: site!.altitude }}
+                    thermalDelta={thermalDelta}
+                    stabilityIndex={stabilityIndex}
+                    modelName={activeModel}
+                    cape={currentCape?.cape}
+                    liftedIndex={currentCape?.liftedIndex}
+                    cin={currentCape?.cin}
+                  />
+                )}
+                {activeTab === "venti" && (
+                  <VentiInterpolatiTab
+                    lat={site!.lat}
+                    lon={site!.lon}
+                    quotaDecollo={site!.altitude}
+                    selectedDay={selectedDay}
+                    oraCorrente={selectedHour}
+                    onOraChange={setSelectedHour}
+                  />
+                )}
+                {activeTab === "windgram" && (
+                  <Windgram
+                    hourlyData={hourlyData}
+                    site={{ name: site!.name, alt: site!.altitude, lat: site!.lat, lon: site!.lon }}
+                    selectedHour={selectedHour}
+                    onHourSelect={setSelectedHour}
+                  />
+                )}
+                {activeTab === "termiche" && (
+                  <TermicheTab
+                    currentData={currentData}
+                    dayData={dayData}
+                    site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon }}
+                    hourlyData={hourlyData}
+                  />
+                )}
+                {activeTab === "analisi" && (
+                  <AnalisiMeteo
+                    currentData={currentData}
+                    dayData={dayData}
+                    site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name, exposure: site!.exposure }}
+                    cape={currentCape?.cape}
+                    liftedIndex={currentCape?.liftedIndex}
+                    cin={currentCape?.cin}
+                  />
+                )}
+              </>
+            )}
+            {!hasData && (
+              <div className="text-center py-12 text-slate-400">
+                <p>Nessun dato meteo disponibile. Verifica la connessione o riprova.</p>
+              </div>
+            )}
           </div>
         </div>
       </main>
       <Footer />
+      <MeteoTesterPanel />
+      <DiagnosticaPanel />
     </div>
   );
 }

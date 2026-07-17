@@ -22,9 +22,6 @@ const HOURLY_PARAMS = [
   "lifted_index",
   "temperature_80m",
   "temperature_120m",
-  "freezing_level_height",
-  "soil_temperature_0cm",
-  "soil_moisture_0_to_1cm",
 ].join(",");
 
 const CURRENT_PARAMS = [
@@ -40,7 +37,6 @@ const CURRENT_PARAMS = [
   "wind_speed_10m",
   "wind_direction_10m",
   "wind_gusts_10m",
-  "freezing_level_height",
 ].join(",");
 
 const DAILY_PARAMS = [
@@ -59,8 +55,6 @@ const DAILY_PARAMS = [
   "wind_speed_10m_max",
   "wind_gusts_10m_max",
   "wind_direction_10m_dominant",
-  "freezing_level_height_max",
-  "freezing_level_height_min",
 ].join(",");
 
 // URL per i livelli di pressione (vento reale in quota!)
@@ -136,9 +130,6 @@ export interface MeteoHourly {
   liftedIndex: number;
   temp80m: number;
   temp120m: number;
-  freezingLevelHeight: number;
-  soilTemp: number;
-  soilMoisture: number;
   windProfile: { height: number; speed: number; dir: number }[];
 }
 
@@ -159,8 +150,6 @@ export interface MeteoDaily {
   windSpeedMax: number;
   windGustsMax: number;
   windDirDominant: number;
-  freezingLevelHeightMax: number;
-  freezingLevelHeightMin: number;
 }
 
 export interface MeteoCurrent {
@@ -177,7 +166,6 @@ export interface MeteoCurrent {
   windSpeed: number;
   windDir: number;
   windGusts: number;
-  freezingLevelHeight: number;
 }
 
 export interface MeteoResponse {
@@ -260,9 +248,6 @@ function parseMeteoResponse(raw: any, lat: number, lon: number): MeteoResponse {
       liftedIndex: safeGet(raw.hourly.lifted_index, i),
       temp80m: safeGet(raw.hourly.temperature_80m, i),
       temp120m: safeGet(raw.hourly.temperature_120m, i),
-      freezingLevelHeight: safeGet(raw.hourly.freezing_level_height, i),
-      soilTemp: safeGet(raw.hourly.soil_temperature_0cm, i),
-      soilMoisture: safeGet(raw.hourly.soil_moisture_0_to_1cm, i),
       windProfile: wp,
     };
   });
@@ -284,8 +269,6 @@ function parseMeteoResponse(raw: any, lat: number, lon: number): MeteoResponse {
     windSpeedMax: safeGet(raw.daily.wind_speed_10m_max, i),
     windGustsMax: safeGet(raw.daily.wind_gusts_10m_max, i),
     windDirDominant: safeGet(raw.daily.wind_direction_10m_dominant, i),
-    freezingLevelHeightMax: safeGet(raw.daily.freezing_level_height_max, i),
-    freezingLevelHeightMin: safeGet(raw.daily.freezing_level_height_min, i),
   }));
 
   const current: MeteoCurrent = {
@@ -302,7 +285,6 @@ function parseMeteoResponse(raw: any, lat: number, lon: number): MeteoResponse {
     windSpeed: raw.current?.wind_speed_10m ?? 0,
     windDir: raw.current?.wind_direction_10m ?? 0,
     windGusts: raw.current?.wind_gusts_10m ?? 0,
-    freezingLevelHeight: raw.current?.freezing_level_height ?? 0,
   };
 
   return { hourly, daily, current, lat, lon, elevation: raw.elevation, timezone: raw.timezone, model: "auto" };
@@ -359,18 +341,6 @@ export const weatherService = {
 
     const data = parseMeteoResponse(raw, lat, lon);
     requestCache.set(key, { data, ts: Date.now() });
-
-    // === TEST AUTOMATICO IN CONSOLE ===
-    console.log("%c🧪 TEST OPEN-METEO — Dati ricevuti", "font-weight:bold;color:#10b981");
-    console.log(`📍 ${lat.toFixed(4)}, ${lon.toFixed(4)} | Elev: ${raw.elevation}m | Mod: ${raw.timezone}`);
-    console.log(`🌡️  Temperatura: ${data.current.temperature}°C (felt ${data.current.apparentTemp}°C)`);
-    console.log(`💨 Vento: ${data.current.windSpeed} km/h da ${data.current.windDir}° (raffiche ${data.current.windGusts} km/h)`);
-    console.log(`☁️  Nuvolosità: ${data.current.cloudCover}% | Codice: ${data.current.weatherCode}`);
-    console.log(`🌧️  Pioggia: ${data.current.precipitation}mm`);
-    console.log(`🧊 Zero termico: ${data.current.freezingLevelHeight}m`);
-    console.log(`📊 Ore disponibili: ${data.hourly.length} | Giorni: ${data.daily.length}`);
-    console.log("");
-
     return data;
   },
 

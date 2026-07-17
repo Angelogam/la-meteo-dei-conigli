@@ -19,17 +19,17 @@ interface SiteHeaderProps {
   currentData: HourData | null;
 }
 
-function getWeatherLabel(code: number): string {
-  if (code >= 95) return "temporale";
-  if (code >= 80) return "rovesci";
-  if (code >= 71) return "neve";
-  if (code >= 61) return "pioggia";
-  if (code >= 51) return "pioviggine";
-  if (code >= 45) return "nebbia";
-  if (code >= 26) return "nuvole";
-  if (code >= 20) return "coperto";
-  if (code >= 10) return "nuvole e sole";
-  if (code >= 5) return "poco nuvoloso";
+function getWeatherLabel(weatherCode: number): string {
+  if (weatherCode >= 95) return "temporale";
+  if (weatherCode >= 80) return "rovesci";
+  if (weatherCode >= 71) return "neve";
+  if (weatherCode >= 61) return "pioggia";
+  if (weatherCode >= 51) return "pioviggine";
+  if (weatherCode >= 45) return "nebbia";
+  if (weatherCode >= 26) return "nuvole";
+  if (weatherCode >= 20) return "coperto";
+  if (weatherCode >= 10) return "nuvole e sole";
+  if (weatherCode >= 5) return "poco nuvoloso";
   return "sereno";
 }
 
@@ -57,11 +57,6 @@ export default function SiteHeader({
   const label = getWeatherLabel(weatherCode);
   const isOvercast = weatherCode >= 20 && weatherCode < 61;
   const isFog = weatherCode >= 45 && weatherCode <= 48;
-
-  // Calcola zero termico (approssimato se non disponibile)
-  const zeroTermico = currentData?.temp120m 
-    ? Math.round(alt + (currentData.temperature / 0.0098) + 200)
-    : alt + Math.round((currentData?.temperature || 20) * 100);
 
   return (
     <div className="card header-decollo pb-5 mb-4 border-b border-orange-400/20 relative overflow-hidden">
@@ -120,7 +115,6 @@ export default function SiteHeader({
             <div className="flex items-center justify-center gap-2 text-xs text-slate-400">
               <Wind className="w-3 h-3 text-sky-400" />
               <span className="tabular-nums font-bold">{Math.round(currentData.windSpeed)} km/h</span>
-              <span className="tabular-nums font-bold text-emerald-400">❄️ {zeroTermico}m</span>
             </div>
           </div>
           <div className="text-xs text-slate-300 font-bold whitespace-nowrap">
