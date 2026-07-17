@@ -47,15 +47,12 @@ function getCurrentHour(): string {
 }
 
 /**
- * Restituisce l'ora corrente nel fuso Europe/Rome (UTC+1 o UTC+2 se ora legale).
+ * Restituisce l'ora corrente nel fuso Europe/Rome.
  */
 function getRomeHour(): number {
   const now = new Date();
   const utcHour = now.getUTCHours();
-  // Italia: UTC+1 in inverno, UTC+2 in estate (CEST, ultima domenica di marzo a fine ottobre)
   const month = now.getMonth() + 1;
-  const day = now.getDate();
-  // Approssimazione semplice: da aprile a settembre CEST, resto CET
   const isCest = month > 3 && month < 10;
   return (utcHour + (isCest ? 2 : 1)) % 24;
 }
@@ -95,46 +92,44 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardP
     const oraCorrente = getRomeHour();
     const oggiRome = getRomeDate();
 
-    // Cerca un dato che abbia la stessa ora e lo stesso giorno nel fuso Rome
+    // Cerca tra tutti i dati il più vicino all'ora corrente per oggi
+    // Prova prima match esatto ora + data
     const current = hourly.find((h: any) => {
       if (!h.time) return false;
       const t = h.time instanceof Date ? h.time : new Date(h.time);
       if (isNaN(t.getTime())) return false;
 
-      // Estrai ora e data dal dato orario in formato ISO / Europe/Rome
-      const tUtc = t.getTime();
-      const tRome = new Date(tUtc + 3600000 * (getRomeHour() - t.getUTCHours()));
-      const oraRome = tRome.getHours();
+      // Estrai ora UTC e data UTC
+      const oraUtc = t.getUTCHours();
+      const giornoUtc = t.toISOString().slice(0, 10);
 
-      const dataRome = tRome.toLocaleDateString("it-IT", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }).split("/").reverse().join("-");
+      // L'API Open-Meteo dà i dati in UTC. Per avere l'ora italiana:
+      const month = new Date().getMonth() + 1;
+      const isCest = month > 3 && month < 10;
+      const offset = isCest ? 2 : 1;
+      const oraIta = (oraUtc + offset) % 24;
 
-      return oraRome === oraCorrente && dataRome === oggiRome;
+      return oraIta === oraCorrente && giornoUtc <= oggiRome;
     });
 
     if (current) return current;
 
-    // Fallback: primo dato della giornata corrente
-    const oggiStesso = hourly.find((h: any) => {
+    // Fallback 1: Match per data (oggi) e ora più vicina
+    const candidati = hourly.filter((h: any) => {
       if (!h.time) return false;
       const t = h.time instanceof Date ? h.time : new Date(h.time);
       if (isNaN(t.getTime())) return false;
-
-      const tUtc = t.getTime();
-      const dataRome = new Date(tUtc + 3600000 * (getRomeHour() - t.getUTCHours()))
-        .toLocaleDateString("it-IT", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        }).split("/").reverse().join("-");
-
-      return dataRome === oggiRome;
+      const giornoUtc = t.toISOString().slice(0, 10);
+      return giornoUtc <= oggiRome;
     });
 
-    return oggiStesso || hourly[0] || null;
+    if (candidati.length > 0) {
+      // Prendi l'ultimo dato disponibile (più recente)
+      return candidati[candidati.length - 1];
+    }
+
+    // Fallback 2: primo dato disponibile
+    return hourly[0] || null;
   };
 
   return (
