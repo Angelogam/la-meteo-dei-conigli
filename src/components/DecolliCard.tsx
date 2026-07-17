@@ -1,21 +1,20 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Wind, Clock, Thermometer, Gauge, Navigation, Mountain, MapPin } from "lucide-react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import { Wind, Clock, Thermometer } from "lucide-react";
 import { weatherService } from "@/services/weatherService";
 import { DECOLLI } from "@/data/decolli";
-import { HourData } from "@/services/weatherService";
 
 function getCardinalDir(deg: number): string {
   if (deg == null) return "N/D";
   const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-  return dirs[Math.round(deg / 45) % 8];
+  return dirs[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
 }
 
 function getWindArrow(deg: number): string {
   if (deg == null) return "→";
   const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
-  return arrows[Math.round(deg / 45) % 8];
+  return arrows[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
 }
 
 function getWeatherEmoji(code: number | undefined | null): string {
@@ -63,7 +62,6 @@ interface DecolliCardProps {
   weatherMap?: Record<string, any>;
 }
 
-/** Dato meteo live per un decollo */
 interface LiveDato {
   temp: number;
   wind: number;
@@ -72,43 +70,49 @@ interface LiveDato {
   code: number;
 }
 
+/** Carica vento reale per TUTTI i decolli */
+async function caricaTuttiIVenti(): Promise<Record<string, LiveDato | null>> {
+  const risultati: Record<string, LiveDato | null> = {};
+
+  for (const item of DECOLLI) {
+    try {
+      const { data } = await weatherService.fetchCurrent(item.lat, item.lon);
+      if (data) {
+        risultati[item.name] = {
+          temp: data.temperature ?? 20,
+          wind: data.windSpeed ?? 0,
+          gust: data.windGusts ?? null,
+          dir: data.windDir ?? 0,
+          code: data.weatherCode ?? 0,
+        };
+      }
+    } catch {
+      // silenzioso
+    }
+  }
+  return risultati;
+}
+
 const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardProps) => {
-  // Dati live per ogni decollo — caricati da Open-Meteo al mount
   const [liveData, setLiveData] = useState<Record<string, LiveDato | null>>({});
+  const isFirstMount = useRef(true);
+
+  const avviaAggiornamento = useCallback(async () => {
+    const risultati = await caricaTuttiIVenti();
+    setLiveData(risultati);
+    console.log(`✅ Vento aggiornato per ${Object.keys(risultati).length} decolli`);
+  }, []);
 
   useEffect(() => {
-    let attivo = true;
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      avviaAggiornamento();
+    }
 
-    const caricaTutti = async () => {
-      const risultati: Record<string, LiveDato | null> = {};
-
-      for (const item of decolli) {
-        const decollo = DECOLLI.find(d => d.name === item.nome);
-        if (!decollo) continue;
-
-        try {
-          const { data } = await weatherService.fetchCurrent(decollo.lat, decollo.lon);
-          if (!attivo) return;
-          if (data) {
-            risultati[item.nome] = {
-              temp: data.temperature ?? 20,
-              wind: data.windSpeed ?? 0,
-              gust: data.windGusts ?? null,
-              dir: data.windDir ?? 0,
-              code: data.weatherCode ?? 0,
-            };
-          }
-        } catch {
-          // silenzioso
-        }
-      }
-
-      if (attivo) setLiveData(risultati);
-    };
-
-    caricaTutti();
-    return () => { attivo = false; };
-  }, [decolli]);
+    // Refresh ogni 30 minuti
+    const intervallo = setInterval(avviaAggiornamento, 30 * 60 * 1000);
+    return () => clearInterval(intervallo);
+  }, [avviaAggiornamento]);
 
   const getCurrentData = (id: string) => {
     // Priorità 1: dati live appena caricati
@@ -120,7 +124,6 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardP
     const hourly = weatherMap[id];
     if (!Array.isArray(hourly) || hourly.length === 0) return null;
 
-    // Prendi l'ultimo dato disponibile
     const last = hourly[hourly.length - 1];
     if (!last) return null;
 
@@ -146,7 +149,7 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardP
           paddingRight: "4px",
         }}
       >
-        {decolli.map((item, idx) => {
+        {decolli.map((item) => {
           const isSelected = item.nome === selectedId;
           const current = getCurrentData(item.nome);
           const hasData = current != null;
