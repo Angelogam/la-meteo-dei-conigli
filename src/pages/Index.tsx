@@ -49,8 +49,6 @@ export default function Index() {
   const {
     riepilogo: riepilogoAvanzato,
     loading: analisiLoading,
-    hourlyData: hourlyDataAvanzati,
-    currentData: currentDataAvanzato,
     tempoTrascorso,
   } = useMeteoCompleto(
     site?.lat ?? DECOLLI[0].lat,
@@ -63,57 +61,6 @@ export default function Index() {
     currentData?.humidity || 50,
     currentData?.cloudCover || 30
   );
-
-  /* Combina i dati orari: prima prova quelli avanzati (con profilo vento), poi quelli base */
-  const hourlyForWindgram = React.useMemo((): MeteoHourly[] => {
-    const data = hourlyDataAvanzati.length > 0 ? hourlyDataAvanzati : hourlyData;
-    if (!data || data.length === 0) return [];
-    return data.map(h => ({
-      time: h.time,
-      temperature: h.temperature,
-      humidity: h.humidity,
-      dewPoint: h.dewPoint,
-      apparentTemp: h.apparentTemp,
-      precipitation: h.precipitation,
-      precipitationProbability: (h as any).precipitationProbability ?? 0,
-      weatherCode: h.weatherCode,
-      cloudCover: h.cloudCover,
-      windSpeed: h.windSpeed,
-      windDir: h.windDir,
-      windGusts: h.windGusts,
-      uvIndex: h.uvIndex,
-      shortwaveRadiation: h.shortwaveRadiation,
-      cape: h.cape ?? 0,
-      cin: h.cin ?? 0,
-      liftedIndex: h.liftedIndex ?? 0,
-      temp80m: h.temp80m ?? 0,
-      temp120m: h.temp120m ?? 0,
-      windProfile: h.windProfile || [],
-    }));
-  }, [hourlyData, hourlyDataAvanzati]);
-
-  const meteoCurrentForAnalysis: MeteoCurrent | null = React.useMemo(() => {
-    const data = currentDataAvanzato || currentData;
-    if (!data) return null;
-    return {
-      time: data.time,
-      temperature: data.temperature,
-      humidity: data.humidity,
-      apparentTemp: data.apparentTemp,
-      isDay: (data as any).isDay ?? 1,
-      precipitation: data.precipitation,
-      weatherCode: data.weatherCode,
-      cloudCover: data.cloudCover,
-      pressure: (data as any).pressure ?? 1013,
-      surfacePressure: (data as any).surfacePressure ?? 1013,
-      windSpeed: data.windSpeed,
-      windDir: data.windDir,
-      windGusts: data.windGusts,
-    };
-  }, [currentData, currentDataAvanzato]);
-
-  const extendedTabs = ["meteo", "venti", "windgram", "termiche", "analisi"] as const;
-  type ExtendedTab = typeof extendedTabs[number];
 
   if (weatherLoading && (!hourlyData || hourlyData.length === 0)) {
     return (
@@ -151,7 +98,7 @@ export default function Index() {
             <UpdateTimer 
               lastUpdate={lastUpdate} 
               countdown={countdown} 
-              updating={updating || analisiLoading} 
+              updating={updating} 
               onRefresh={loadWeather} 
             />
             <div className="bg-slate-800/50 border border-emerald-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
@@ -159,28 +106,6 @@ export default function Index() {
               <span className="text-xs text-emerald-300">Analisi in tempo reale</span>
               <span className="text-[10px] text-slate-500 ml-auto">{tempoTrascorso}s</span>
             </div>
-            {riepilogoAvanzato && (
-              <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl px-4 py-2 space-y-1">
-                <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-slate-400">Confidenza media</span>
-                  <span className={`font-bold ${
-                    riepilogoAvanzato.mediaConfidenza >= 0.8 ? "text-green-400" :
-                    riepilogoAvanzato.mediaConfidenza >= 0.6 ? "text-amber-400" :
-                    "text-red-400"
-                  }`}>
-                    {Math.round(riepilogoAvanzato.mediaConfidenza * 100)}%
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-slate-400">Margine d'errore</span>
-                  <span className="text-amber-300 font-bold">{riepilogoAvanzato.medioErrore}%</span>
-                </div>
-                <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-slate-400">CAPE medio</span>
-                  <span className="text-purple-300 font-bold">{riepilogoAvanzato.medioCape} J/kg</span>
-                </div>
-              </div>
-            )}
             <DecolliCard
               decolli={decolliList}
               selectedId={selectedId}
@@ -245,7 +170,7 @@ export default function Index() {
                 )}
                 {activeTab === "windgram" && (
                   <Windgram
-                    hourlyData={hourlyForWindgram}
+                    hourlyData={hourlyData}
                     site={{ name: site!.name, alt: site!.altitude, lat: site!.lat, lon: site!.lon }}
                     selectedHour={selectedHour}
                     onHourSelect={setSelectedHour}
@@ -256,8 +181,8 @@ export default function Index() {
                     currentData={currentData}
                     dayData={dayData}
                     site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon }}
-                    hourlyData={hourlyForWindgram}
-                    current={meteoCurrentForAnalysis || undefined}
+                    hourlyData={hourlyData}
+                    current={current}
                   />
                 )}
                 {activeTab === "analisi" && (

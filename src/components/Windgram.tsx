@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useMemo } from "react";
-import type { MeteoHourly } from "@/services/weatherService";
+import type { HourData } from "@/types/meteo";
 import { calcolaTermiche } from "@/utils/termiche";
 
 interface WindgramProps {
-  hourlyData: MeteoHourly[];
+  hourlyData: HourData[];
   site: { name: string; alt: number; lat: number; lon: number };
   selectedHour: number;
   onHourSelect: (hour: number) => void;
@@ -54,21 +54,7 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
       });
 
       if (hd) {
-        term[ora] = calcolaTermiche({
-          time: hd.time,
-          temperature: hd.temperature,
-          humidity: hd.humidity,
-          dewPoint: hd.dewPoint,
-          precipitation: hd.precipitation,
-          weatherCode: hd.weatherCode,
-          cloudCover: hd.cloudCover,
-          windSpeed: hd.windSpeed,
-          windDir: hd.windDir,
-          windGusts: hd.windGusts,
-          temp80m: hd.temp80m,
-          temp120m: hd.temp120m,
-        } as any, site.alt);
-
+        term[ora] = calcolaTermiche(hd, site.alt);
         const groundSpeed = hd.windSpeed;
         const groundDir = hd.windDir;
 
