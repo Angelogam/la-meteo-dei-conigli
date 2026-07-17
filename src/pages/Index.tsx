@@ -144,7 +144,7 @@ export default function Index() {
                   selectedHour={selectedHour}
                   onHourSelect={setSelectedHour}
                 />
-                <TabNav activeTab={activeTab as any} onTabChange={(tab) => setActiveTab(tab as any)} />
+                <TabNav activeTab={activeTab} onTabChange={(tab) => setActiveTab(tab)} />
                 {activeTab === "meteo" && (
                   <MeteoTab
                     currentData={currentData}

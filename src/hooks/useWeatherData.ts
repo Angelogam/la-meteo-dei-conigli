@@ -77,7 +77,7 @@ export function useWeatherData() {
   const [error, setError] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState(0);
   const [selectedHour, setSelectedHour] = useState(new Date().getHours());
-  const [activeTab, setActiveTab] = useState<'meteo' | 'venti' | 'termiche' | 'analisi'>('meteo');
+  const [activeTab, setActiveTab] = useState<'meteo' | 'venti' | 'windgram' | 'termiche' | 'analisi'>('meteo');
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [countdown, setCountdown] = useState(30);
   const selectedIdRef = useRef(selectedId);
