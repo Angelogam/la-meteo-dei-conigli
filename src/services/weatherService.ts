@@ -61,10 +61,11 @@ export interface MeteoDaily {
   sunset: string;
 }
 
-interface RawMeteoResponse {
-  hourly?: Record<string, (number | string)[]>;
-  daily?: Record<string, (number | string)[]>;
-  current?: Record<string, number | string>;
+export interface WeatherServiceResult {
+  hourly: MeteoHourly[];
+  current: MeteoCurrent;
+  daily: MeteoDaily[];
+  model: string;
 }
 
 const BASE_URL = "https://api.open-meteo.com/v1/forecast";
@@ -99,16 +100,19 @@ const DAILY_FIELDS = [
   "shortwave_radiation_sum", "sunrise", "sunset",
 ].join(",");
 
-const CURRENT_FIELDS = "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m";
+const CURRENT_FIELDS = [
+  "temperature_2m", "relative_humidity_2m", "apparent_temperature",
+  "is_day", "precipitation", "rain", "showers", "snowfall",
+  "weather_code", "cloud_cover", "pressure_msl", "surface_pressure",
+  "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",
+].join(",");
 
 const CACHE_TTL = 3 * 60 * 1000;
-const cache = new Map<string, { data: WeatherServiceResult; ts: number }>();
 
-export interface WeatherServiceResult {
-  hourly: MeteoHourly[];
-  current: MeteoCurrent;
-  daily: MeteoDaily[];
-  model: string;
+interface RawResponse {
+  hourly?: Record<string, (number | string)[]>;
+  daily?: Record<string, (number | string)[]>;
+  current?: Record<string, number | string>;
 }
 
 function safeVal(arr: (number | string)[] | undefined, i: number, fallback = 0): number {
@@ -117,35 +121,10 @@ function safeVal(arr: (number | string)[] | undefined, i: number, fallback = 0):
   return v != null ? Number(v) : fallback;
 }
 
-function buildWindProfile(raw: Record<string, (number | string)[]>, i: number): { height: number; speed: number; dir: number }[] {
-  const levels: { h: number; s: string; d: string }[] = [
-    { h: 80, s: "wind_speed_80m", d: "wind_direction_80m" },
-    { h: 120, s: "wind_speed_120m", d: "wind_direction_120m" },
-    { h: 180, s: "wind_speed_180m", d: "wind_direction_180m" },
-    { h: 300, s: "wind_speed_300m", d: "wind_direction_300m" },
-    { h: 600, s: "wind_speed_600m", d: "wind_direction_600m" },
-    { h: 1000, s: "wind_speed_1000m", d: "wind_direction_1000m" },
-    { h: 1500, s: "wind_speed_1500m", d: "wind_direction_1500m" },
-    { h: 2000, s: "wind_speed_2000m", d: "wind_direction_2000m" },
-    { h: 2500, s: "wind_speed_2500m", d: "wind_direction_2500m" },
-    { h: 3000, s: "wind_speed_3000m", d: "wind_direction_3000m" },
-  ];
-  const result: { height: number; speed: number; dir: number }[] = [];
-  for (const l of levels) {
-    const sp = safeVal(raw[l.s], i, -1);
-    const dr = safeVal(raw[l.d], i, -1);
-    if (sp > 0 && dr >= 0) {
-      result.push({ height: l.h, speed: Math.round(sp), dir: Math.round(dr) });
-    }
-  }
-  return result;
-}
-
-function parseHourly(raw: RawMeteoResponse["hourly"]): MeteoHourly[] {
+function parseHourly(raw: RawResponse["hourly"]): MeteoHourly[] {
   if (!raw?.time?.length) return [];
-  const n = raw.time.length;
   const hours: MeteoHourly[] = [];
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < raw.time.length; i++) {
     hours.push({
       time: new Date(String(raw.time[i])),
       temperature: safeVal(raw.temperature_2m, i),
@@ -170,13 +149,13 @@ function parseHourly(raw: RawMeteoResponse["hourly"]): MeteoHourly[] {
       liftedIndex: safeVal(raw.lifted_index, i, 99),
       temp80m: safeVal(raw.temperature_80m, i),
       temp120m: safeVal(raw.temperature_120m, i),
-      windProfile: buildWindProfile(raw, i),
+      windProfile: undefined,
     });
   }
   return hours;
 }
 
-function parseCurrent(raw: RawMeteoResponse["current"]): MeteoCurrent {
+function parseCurrent(raw: RawResponse["current"]): MeteoCurrent {
   return {
     time: new Date(String(raw?.time ?? new Date().toISOString())),
     temperature: Number(raw?.temperature_2m ?? 20),
@@ -197,11 +176,10 @@ function parseCurrent(raw: RawMeteoResponse["current"]): MeteoCurrent {
   };
 }
 
-function parseDaily(raw: RawMeteoResponse["daily"]): MeteoDaily[] {
+function parseDaily(raw: RawResponse["daily"]): MeteoDaily[] {
   if (!raw?.time?.length) return [];
-  const n = raw.time.length;
   const days: MeteoDaily[] = [];
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < raw.time.length; i++) {
     days.push({
       date: new Date(String(raw.time[i])),
       tempMax: safeVal(raw.temperature_2m_max, i),
@@ -222,7 +200,7 @@ function parseDaily(raw: RawMeteoResponse["daily"]): MeteoDaily[] {
   return days;
 }
 
-async function doFetch(lat: number, lon: number, days: number): Promise<RawMeteoResponse | null> {
+async function doFetch(lat: number, lon: number): Promise<RawResponse | null> {
   const params = new URLSearchParams({
     latitude: String(lat),
     longitude: String(lon),
@@ -230,12 +208,12 @@ async function doFetch(lat: number, lon: number, days: number): Promise<RawMeteo
     daily: DAILY_FIELDS,
     current: CURRENT_FIELDS,
     timezone: "Europe/Rome",
-    forecast_days: String(days),
+    forecast_days: "3",
   });
   try {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), 15000);
-    const res = await fetch(`${BASE_URL}?${params}`, { signal: controller.signal });
+    const res = await fetch(BASE_URL + "?" + params.toString(), { signal: controller.signal });
     clearTimeout(id);
     if (!res.ok) return null;
     return await res.json();
@@ -251,16 +229,15 @@ class WeatherService {
     return result.data;
   }
 
-  async fetchWithFallback(lat: number, lon: number): Promise<{ data: WeatherServiceResult | null; ok: boolean; cached```typescript
   async fetchWithFallback(lat: number, lon: number): Promise<{ data: WeatherServiceResult | null; ok: boolean; cached: boolean }> {
-    const key = `${lat.toFixed(4)},${lon.toFixed(4)}`;
+    const key = lat.toFixed(4) + "," + lon.toFixed(4);
     const cached = cache.get(key);
     if (cached && Date.now() - cached.ts < CACHE_TTL) {
       return { data: cached.data, ok: true, cached: true };
     }
 
     for (let attempt = 0; attempt < 3; attempt++) {
-      const raw = await doFetch(lat, lon, 3);
+      const raw = await doFetch(lat, lon);
       if (!raw?.hourly?.time?.length) {
         await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
         continue;
@@ -303,9 +280,9 @@ class WeatherService {
       });
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch(`${BASE_URL}?${params}`, { signal: controller.signal });
+      const res = await fetch(BASE_URL + "?" + params.toString(), { signal: controller.signal });
       clearTimeout(id);
-      if (!res.ok) return { data: null, ok: false, error: `HTTP ${res.status}` };
+      if (!res.ok) return { data: null, ok: false, error: "HTTP " + res.status };
       const raw = await res.json();
       if (!raw.current) return { data: null, ok: false, error: "No current data" };
       return { data: parseCurrent(raw.current), ok: true };
@@ -325,7 +302,7 @@ class WeatherService {
       });
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch(`${BASE_URL}?${params}`, { signal: controller.signal });
+      const res = await fetch(BASE_URL + "?" + params.toString(), { signal: controller.signal });
       clearTimeout(id);
       if (!res.ok) return { data: null, ok: false };
       const raw = await res.json();
@@ -337,346 +314,6 @@ class WeatherService {
   }
 }
 
-export const weatherService = new WeatherService();
-```
-
-<dyad-chat-summary>Fix 27 TypeScript import errors by rewriting weatherService.ts with proper exports</dyad-chat-summary><dyad-write path="src/services/weatherService.ts" description="Complete rewrite of weather service fixing all TypeScript exports">
-export interface MeteoHourly {
-  time: Date;
-  temperature: number;
-  humidity: number;
-  dewPoint: number;
-  apparentTemp: number;
-  precipitation: number;
-  precipitationProbability: number;
-  weatherCode: number;
-  cloudCover: number;
-  cloudCoverLow: number;
-  cloudCoverMid: number;
-  cloudCoverHigh: number;
-  windSpeed: number;
-  windDir: number;
-  windGusts: number;
-  uvIndex: number;
-  shortwaveRadiation: number;
-  pressure: number;
-  cape: number;
-  cin: number;
-  liftedIndex: number;
-  temp80m: number;
-  temp120m: number;
-  windProfile?: { height: number; speed: number; dir: number }[];
-}
-
-export interface MeteoCurrent {
-  time: Date;
-  temperature: number;
-  humidity: number;
-  apparentTemp: number;
-  isDay: number;
-  precipitation: number;
-  rain: number;
-  showers: number;
-  snowfall: number;
-  weatherCode: number;
-  cloudCover: number;
-  pressure: number;
-  surfacePressure: number;
-  windSpeed: number;
-  windDir: number;
-  windGusts: number;
-}
-
-export interface MeteoDaily {
-  date: Date;
-  tempMax: number;
-  tempMin: number;
-  apparentTempMax: number;
-  apparentTempMin: number;
-  weatherCode: number;
-  precipitationSum: number;
-  precipitationProbMax: number;
-  windSpeedMax: number;
-  windGustsMax: number;
-  windDirDominant: number;
-  uvIndexMax: number;
-  sunrise: string;
-  sunset: string;
-}
-
-interface RawMeteoResponse {
-  hourly?: Record<string, (number | string)[]>;
-  daily?: Record<string, (number | string)[]>;
-  current?: Record<string, number | string>;
-}
-
-const BASE_URL = "https://api.open-meteo.com/v1/forecast";
-
-const HOURLY_FIELDS = [
-  "temperature_2m", "relative_humidity_2m", "dew_point_2m",
-  "apparent_temperature", "precipitation", "precipitation_probability",
-  "weather_code", "pressure_msl", "surface_pressure", "cloud_cover",
-  "cloud_cover_low", "cloud_cover_mid", "cloud_cover_high",
-  "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",
-  "uv_index", "shortwave_radiation",
-  "temperature_80m", "temperature_120m",
-  "wind_speed_80m", "wind_direction_80m",
-  "wind_speed_120m", "wind_direction_120m",
-  "wind_speed_180m", "wind_direction_180m",
-  "wind_speed_300m", "wind_direction_300m",
-  "wind_speed_600m", "wind_direction_600m",
-  "wind_speed_1000m", "wind_direction_1000m",
-  "wind_speed_1500m", "wind_direction_1500m",
-  "wind_speed_2000m", "wind_direction_2000m",
-  "wind_speed_2500m", "wind_direction_2500m",
-  "wind_speed_3000m", "wind_direction_3000m",
-  "cape", "convective_inhibition", "lifted_index",
-].join(",");
-
-const DAILY_FIELDS = [
-  "weather_code", "temperature_2m_max", "temperature_2m_min",
-  "apparent_temperature_max", "apparent_temperature_min",
-  "precipitation_sum", "precipitation_probability_max",
-  "wind_speed_10m_max", "wind_gusts_10m_max",
-  "wind_direction_10m_dominant", "uv_index_max",
-  "shortwave_radiation_sum", "sunrise", "sunset",
-].join(",");
-
-const CURRENT_FIELDS = "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m";
-
-const CACHE_TTL = 3 * 60 * 1000;
 const cache = new Map<string, { data: WeatherServiceResult; ts: number }>();
-
-export interface WeatherServiceResult {
-  hourly: MeteoHourly[];
-  current: MeteoCurrent;
-  daily: MeteoDaily[];
-  model: string;
-}
-
-function safeVal(arr: (number | string)[] | undefined, i: number, fallback = 0): number {
-  if (!arr) return fallback;
-  const v = arr[i];
-  return v != null ? Number(v) : fallback;
-}
-
-function buildWindProfile(raw: Record<string, (number | string)[]>, i: number): { height: number; speed: number; dir: number }[] {
-  const levels: { h: number; s: string; d: string }[] = [
-    { h: 80, s: "wind_speed_80m", d: "wind_direction_80m" },
-    { h: 120, s: "wind_speed_120m", d: "wind_direction_120m" },
-    { h: 180, s: "wind_speed_180m", d: "wind_direction_180m" },
-    { h: 300, s: "wind_speed_300m", d: "wind_direction_300m" },
-    { h: 600, s: "wind_speed_600m", d: "wind_direction_600m" },
-    { h: 1000, s: "wind_speed_1000m", d: "wind_direction_1000m" },
-    { h: 1500, s: "wind_speed_1500m", d: "wind_direction_1500m" },
-    { h: 2000, s: "wind_speed_2000m", d: "wind_direction_2000m" },
-    { h: 2500, s: "wind_speed_2500m", d: "wind_direction_2500m" },
-    { h: 3000, s: "wind_speed_3000m", d: "wind_direction_3000m" },
-  ];
-  const result: { height: number; speed: number; dir: number }[] = [];
-  for (const l of levels) {
-    const sp = safeVal(raw[l.s], i, -1);
-    const dr = safeVal(raw[l.d], i, -1);
-    if (sp > 0 && dr >= 0) {
-      result.push({ height: l.h, speed: Math.round(sp), dir: Math.round(dr) });
-    }
-  }
-  return result;
-}
-
-function parseHourly(raw: RawMeteoResponse["hourly"]): MeteoHourly[] {
-  if (!raw?.time?.length) return [];
-  const n = raw.time.length;
-  const hours: MeteoHourly[] = [];
-  for (let i = 0; i < n; i++) {
-    hours.push({
-      time: new Date(String(raw.time[i])),
-      temperature: safeVal(raw.temperature_2m, i),
-      humidity: safeVal(raw.relative_humidity_2m, i),
-      dewPoint: safeVal(raw.dew_point_2m, i),
-      apparentTemp: safeVal(raw.apparent_temperature, i),
-      precipitation: safeVal(raw.precipitation, i),
-      precipitationProbability: safeVal(raw.precipitation_probability, i),
-      weatherCode: safeVal(raw.weather_code, i),
-      cloudCover: safeVal(raw.cloud_cover, i),
-      cloudCoverLow: safeVal(raw.cloud_cover_low, i),
-      cloudCoverMid: safeVal(raw.cloud_cover_mid, i),
-      cloudCoverHigh: safeVal(raw.cloud_cover_high, i),
-      windSpeed: safeVal(raw.wind_speed_10m, i),
-      windDir: safeVal(raw.wind_direction_10m, i),
-      windGusts: safeVal(raw.wind_gusts_10m, i),
-      uvIndex: safeVal(raw.uv_index, i),
-      shortwaveRadiation: safeVal(raw.shortwave_radiation, i),
-      pressure: safeVal(raw.pressure_msl, i),
-      cape: safeVal(raw.cape, i),
-      cin: safeVal(raw.convective_inhibition, i),
-      liftedIndex: safeVal(raw.lifted_index, i, 99),
-      temp80m: safeVal(raw.temperature_80m, i),
-      temp120m: safeVal(raw.temperature_120m, i),
-      windProfile: buildWindProfile(raw, i),
-    });
-  }
-  return hours;
-}
-
-function parseCurrent(raw: RawMeteoResponse["current"]): MeteoCurrent {
-  return {
-    time: new Date(String(raw?.time ?? new Date().toISOString())),
-    temperature: Number(raw?.temperature_2m ?? 20),
-    humidity: Number(raw?.relative_humidity_2m ?? 50),
-    apparentTemp: Number(raw?.apparent_temperature ?? 20),
-    isDay: Number(raw?.is_day ?? 1),
-    precipitation: Number(raw?.precipitation ?? 0),
-    rain: Number(raw?.rain ?? 0),
-    showers: Number(raw?.showers ?? 0),
-    snowfall: Number(raw?.snowfall ?? 0),
-    weatherCode: Number(raw?.weather_code ?? 0),
-    cloudCover: Number(raw?.cloud_cover ?? 0),
-    pressure: Number(raw?.pressure_msl ?? 1013),
-    surfacePressure: Number(raw?.surface_pressure ?? 1013),
-    windSpeed: Number(raw?.wind_speed_10m ?? 0),
-    windDir: Number(raw?.wind_direction_10m ?? 0),
-    windGusts: Number(raw?.wind_gusts_10m ?? 0),
-  };
-}
-
-function parseDaily(raw: RawMeteoResponse["daily"]): MeteoDaily[] {
-  if (!raw?.time?.length) return [];
-  const n = raw.time.length;
-  const days: MeteoDaily[] = [];
-  for (let i = 0; i < n; i++) {
-    days.push({
-      date: new Date(String(raw.time[i])),
-      tempMax: safeVal(raw.temperature_2m_max, i),
-      tempMin: safeVal(raw.temperature_2m_min, i),
-      apparentTempMax: safeVal(raw.apparent_temperature_max, i),
-      apparentTempMin: safeVal(raw.apparent_temperature_min, i),
-      weatherCode: safeVal(raw.weather_code, i),
-      precipitationSum: safeVal(raw.precipitation_sum, i),
-      precipitationProbMax: safeVal(raw.precipitation_probability_max, i),
-      windSpeedMax: safeVal(raw.wind_speed_10m_max, i),
-      windGustsMax: safeVal(raw.wind_gusts_10m_max, i),
-      windDirDominant: safeVal(raw.wind_direction_10m_dominant, i),
-      uvIndexMax: safeVal(raw.uv_index_max, i),
-      sunrise: String(raw.sunrise?.[i] ?? ""),
-      sunset: String(raw.sunset?.[i] ?? ""),
-    });
-  }
-  return days;
-}
-
-async function doFetch(lat: number, lon: number, days: number): Promise<RawMeteoResponse | null> {
-  const params = new URLSearchParams({
-    latitude: String(lat),
-    longitude: String(lon),
-    hourly: HOURLY_FIELDS,
-    daily: DAILY_FIELDS,
-    current: CURRENT_FIELDS,
-    timezone: "Europe/Rome",
-    forecast_days: String(days),
-  });
-  try {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), 15000);
-    const res = await fetch(`${BASE_URL}?${params}`, { signal: controller.signal });
-    clearTimeout(id);
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
-}
-
-class WeatherService {
-  async fetchWeather(lat: number, lon: number): Promise<WeatherServiceResult> {
-    const result = await this.fetchWithFallback(lat, lon);
-    if (!result.ok || !result.data) throw new Error("Weather fetch failed");
-    return result.data;
-  }
-
-  async fetchWithFallback(lat: number, lon: number): Promise<{ data: WeatherServiceResult | null; ok: boolean; cached: boolean }> {
-    const key = `${lat.toFixed(4)},${lon.toFixed(4)}`;
-    const cached = cache.get(key);
-    if (cached && Date.now() - cached.ts < CACHE_TTL) {
-      return { data: cached.data, ok: true, cached: true };
-    }
-
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const raw = await doFetch(lat, lon, 3);
-      if (!raw?.hourly?.time?.length) {
-        await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
-        continue;
-      }
-      const hourly = parseHourly(raw.hourly);
-      if (!hourly.length) continue;
-      const current = raw.current ? parseCurrent(raw.current) : {
-        time: new Date(),
-        temperature: hourly[0].temperature,
-        humidity: hourly[0].humidity,
-        apparentTemp: hourly[0].apparentTemp,
-        isDay: new Date().getHours() >= 6 && new Date().getHours() <= 20 ? 1 : 0,
-        precipitation: hourly[0].precipitation,
-        rain: 0, showers: 0, snowfall: 0,
-        weatherCode: hourly[0].weatherCode,
-        cloudCover: hourly[0].cloudCover,
-        pressure: 1013, surfacePressure: 1013,
-        windSpeed: hourly[0].windSpeed,
-        windDir: hourly[0].windDir,
-        windGusts: hourly[0].windGusts,
-      };
-      const daily = parseDaily(raw.daily || {});
-      const data: WeatherServiceResult = { hourly, current, daily, model: "open-meteo" };
-      cache.set(key, { data, ts: Date.now() });
-      return { data, ok: true, cached: false };
-    }
-
-    if (cached) return { data: cached.data, ok: true, cached: true };
-    return { data: null, ok: false, cached: false };
-  }
-
-  async fetchCurrent(lat: number, lon: number): Promise<{ data: MeteoCurrent | null; ok: boolean; error?: string }> {
-    try {
-      const params = new URLSearchParams({
-        latitude: String(lat),
-        longitude: String(lon),
-        current: CURRENT_FIELDS,
-        timezone: "Europe/Rome",
-        forecast_days: "1",
-      });
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch(`${BASE_URL}?${params}`, { signal: controller.signal });
-      clearTimeout(id);
-      if (!res.ok) return { data: null, ok: false, error: `HTTP ${res.status}` };
-      const raw = await res.json();
-      if (!raw.current) return { data: null, ok: false, error: "No current data" };
-      return { data: parseCurrent(raw.current), ok: true };
-    } catch (err) {
-      return { data: null, ok: false, error: err instanceof Error ? err.message : "Unknown error" };
-    }
-  }
-
-  async fetchDaily(lat: number, lon: number): Promise<{ data: MeteoDaily[] | null; ok: boolean }> {
-    try {
-      const params = new URLSearchParams({
-        latitude: String(lat),
-        longitude: String(lon),
-        daily: DAILY_FIELDS,
-        timezone: "Europe/Rome",
-        forecast_days: "3",
-      });
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch(`${BASE_URL}?${params}`, { signal: controller.signal });
-      clearTimeout(id);
-      if (!res.ok) return { data: null, ok: false };
-      const raw = await res.json();
-      if (!raw.daily?.time?.length) return { data: null, ok: false };
-      return { data: parseDaily(raw.daily), ok: true };
-    } catch {
-      return { data: null, ok: false };
-    }
-  }
-}
 
 export const weatherService = new WeatherService();
