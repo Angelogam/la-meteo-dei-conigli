@@ -12,7 +12,6 @@ interface WindgramProps {
 }
 
 const ORE = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
-
 const QUOTE_FISSE = [300, 600, 1000, 1500, 2000, 2500, 3000];
 
 const DIR_NAMES: Record<number, string> = {
@@ -39,20 +38,9 @@ function speedColor(speed: number): string {
   return "#dc2626";
 }
 
-function speedLabel(speed: number): string {
-  if (speed <= 5) return "Calma";
-  if (speed <= 10) return "Debole";
-  if (speed <= 15) return "Moderato";
-  if (speed <= 22) return "Fresco";
-  if (speed <= 30) return "Forte";
-  return "Burrasca";
-}
+function getWindAtQuota(hd: MeteoHourly) {
+  const result: { q: number; speed: number; dir: number }[] = [];
 
-/** Prende il profilo vento per quest'ora e lo organizza per le quote fisse */
-function getWindAtQuota(hd: MeteoHourly, quotaDecollo: number) {
-  const result: { q: number; speed: number; dir: number; fonte: string }[] = [];
-
-  // Mappa height -> {speed, dir} dal windProfile
   const profiloMap = new Map<number, { speed: number; dir: number }>();
   if (hd.windProfile) {
     for (const l of hd.windProfile) {
@@ -60,16 +48,13 @@ function getWindAtQuota(hd: MeteoHourly, quotaDecollo: number) {
     }
   }
 
-  // Per ogni quota fissa, cerca il livello più vicino
   for (const q of QUOTE_FISSE) {
-    // Cerca diretta
     if (profiloMap.has(q)) {
       const p = profiloMap.get(q)!;
-      result.push({ q, speed: p.speed, dir: p.dir, fonte: "reale" });
+      result.push({ q, speed: p.speed, dir: p.dir });
       continue;
     }
 
-    // Interpola tra i due livelli più vicini
     const heights = [...profiloMap.keys()].sort((a, b) => a - b);
     const sotto = heights.filter(h => h <= q).pop();
     const sopra = heights.filter(h => h >= q).shift();
@@ -79,20 +64,17 @@ function getWindAtQuota(hd: MeteoHourly, quotaDecollo: number) {
       const pp = profiloMap.get(sopra)!;
       const ratio = (q - sotto) / (sopra - sotto);
       const speed = Math.round((ps.speed + (pp.speed - ps.speed) * ratio) * 10) / 10;
-      // Interpolazione direzione con attenzione all'avvolgimento
       let dDiff = pp.dir - ps.dir;
       if (dDiff > 180) dDiff -= 360;
       if (dDiff < -180) dDiff += 360;
       const dir = ((ps.dir + dDiff * ratio) % 360 + 360) % 360;
-      result.push({ q, speed, dir, fonte: "interp" });
+      result.push({ q, speed, dir });
     } else if (sotto !== undefined) {
       const ps = profiloMap.get(sotto)!;
-      const ratio = q / sotto;
-      const speed = Math.round(ps.speed * ratio * 10) / 10;
-      result.push({ q, speed, dir: ps.dir, fonte: "estrap" });
+      result.push({ q, speed: Math.round(ps.speed * (q / sotto) * 10) / 10, dir: ps.dir });
     } else if (sopra !== undefined) {
       const pp = profiloMap.get(sopra)!;
-      result.push({ q, speed: pp.speed, dir: pp.dir, fonte: "estrap" });
+      result.push({ q, speed: pp.speed, dir: pp.dir });
     }
   }
 
@@ -103,27 +85,21 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
   const oggi = new Date();
   const oggiStr = oggi.toDateString();
 
-  // Trova i dati per oggi
   const oreOggi = useMemo(() => {
     return hourlyData.filter(h => h.time.toDateString() === oggiStr);
   }, [hourlyData, oggiStr]);
 
-  // Dati per l'ora selezionata
   const hd = useMemo(() => {
     return oreOggi.find(h => h.time.getHours() === selectedHour) || null;
   }, [oreOggi, selectedHour]);
 
-  // Profilo vento per l'ora selezionata
   const righe = useMemo(() => {
     if (!hd) return [];
-    return getWindAtQuota(hd, site.alt);
-  }, [hd, site.alt]);
+    return getWindAtQuota(hd);
+  }, [hd]);
 
-  // Calcola la massima velocità per la scala
   const maxSpeed = Math.max(...righe.map(r => r.speed), 5);
 
-  // Termiche per l'ora selezionata
-  // Converti MeteoHourly in HourData per calcolaTermiche
   const termiche = hd ? calcolaTermiche(
     {
       time: hd.time,
@@ -159,9 +135,6 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
     );
   }
 
-  // Scala barra velocità: larghezza max 240px
-  const scala = (s: number) => Math.max(4, (s / (maxSpeed + 5)) * 240);
-
   return (
     <div className="bg-slate-900/40 border border-slate-700/40 rounded-2xl overflow-hidden">
       {/* Selettore ore */}
@@ -188,7 +161,7 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
         })}
       </div>
 
-      {/* Barra informazioni superiori */}
+      {/* Info bar */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 bg-slate-800/20 text-xs text-slate-300 border-b border-slate-700/20">
         <span className="font-bold text-white text-sm">{site.name}</span>
         <span className="text-slate-500">·</span>
@@ -196,11 +169,11 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
         <span className="text-slate-500">·</span>
         <span>Decollo {site.alt}m</span>
         <span className="text-slate-500">·</span>
-        <span>Vento suolo: {hd.windSpeed} km/h {dirName(hd.windDir)}</span>
+        <span>Suolo: {hd.windSpeed} km/h {dirName(hd.windDir)}</span>
         {termiche && termiche.rateo > 0 && (
           <>
             <span className="text-slate-500">·</span>
-            <span className="text-amber-300 font-medium">↑ {termiche.rateo.toFixed(1)} m/s</span>
+            <span className="text-amber-300">↑ {termiche.rateo.toFixed(1)} m/s</span>
             <span className="text-slate-500">·</span>
             <span className="text-emerald-300">Base {termiche.base}m</span>
             <span className="text-slate-500">·</span>
@@ -209,29 +182,25 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
         )}
       </div>
 
-      {/* GRAFICO PRINCIPALE */}
+      {/* GRAFICO — layout a 4 colonne ben distinte */}
       <div className="p-4">
-        {/* Intestazione */}
-        <div className="grid grid-cols-[3.5rem_2.5rem_1fr_0.5rem_2rem_1.5fr] gap-1 mb-2 text-[10px] text-slate-500 font-bold uppercase tracking-wider items-end">
+        {/* Intestazione colonne */}
+        <div className="grid grid-cols-[3.5rem_3rem_1.2fr_1.5fr] gap-2 mb-2 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
           <span>Quota</span>
-          <span className="text-right bg-white text-gray-900 rounded px-1">km/h</span>
-          <span>Velocità</span>
-          <span />
-          <span className="text-center">Dir</span>
-          <span>Direzione vento</span>
+          <span className="text-center">km/h</span>
+          <span className="text-center">Velocità</span>
+          <span>Direzione</span>
         </div>
 
-        {/* Righe */}
         <div className="space-y-1">
           {righe.map((r) => {
-            const w = scala(r.speed);
-            const quotaRelativa = r.q - site.alt;
+            const w = Math.max(4, (r.speed / (maxSpeed + 5)) * 200);
             const isDecollo = r.q <= site.alt + 100 && r.q >= site.alt - 100;
 
             return (
               <div
                 key={r.q}
-                className={`grid grid-cols-[3.5rem_2.5rem_1fr_0.5rem_2rem_1.5fr] gap-1 items-center py-1 rounded ${
+                className={`grid grid-cols-[3.5rem_3rem_1.2fr_1.5fr] gap-2 items-center py-1.5 rounded ${
                   isDecollo ? "bg-amber-900/15 -mx-2 px-2" : ""
                 }`}
               >
@@ -242,66 +211,40 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
                   {r.q}m
                 </span>
 
-                {/* Numero velocità — sfondo bianco come da design */}
-                <span className="text-xs font-mono font-bold text-right bg-white text-gray-900 px-1 py-0.5 rounded flex items-center justify-end">
-                  {r.speed}
-                </span>
-
-                {/* Barra velocità */}
-                <div className="h-5 bg-slate-800/60 rounded overflow-hidden relative flex items-center">
-                  <div
-                    className="h-full rounded"
-                    style={{
-                      width: `${Math.max(w, 4)}px`,
-                      background: speedColor(r.speed),
-                      opacity: 0.85,
-                    }}
-                  />
-                  {isDecollo && (
-                    <div className="absolute inset-0 border border-amber-400/40 rounded pointer-events-none" />
-                  )}
+                {/* Velocità in km/h — sfondo bianco ben visibile */}
+                <div className="flex justify-center">
+                  <span className="text-xs font-mono font-bold bg-white text-gray-900 px-2 py-0.5 rounded">
+                    {r.speed}
+                  </span>
                 </div>
 
-                {/* Spazio separatore */}
-                <div className="w-px h-5 bg-slate-600/30 mx-auto" />
+                {/* Barra velocità con etichetta descrittiva */}
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-4 bg-slate-800/60 rounded overflow-hidden">
+                    <div
+                      className="h-full rounded transition-all"
+                      style={{ width: `${w}px`, background: speedColor(r.speed) }}
+                    />
+                  </div>
+                  <span className="text-[9px] text-slate-500 shrink-0 w-12">
+                    {speedColor(r.speed) === "#10b981" ? "calma" :
+                     speedColor(r.speed) === "#84cc16" ? "debole" :
+                     speedColor(r.speed) === "#eab308" ? "mod." :
+                     speedColor(r.speed) === "#f97316" ? "fresco" :
+                     speedColor(r.speed) === "#ef4444" ? "forte" : "burrasca"}
+                  </span>
+                </div>
 
-                {/* Freccia direzione */}
-                <div className="flex items-center justify-center">
-                  <span className={`text-base ${
+                {/* Direzione — nome e freccia grandi */}
+                <div className="flex items-center gap-3">
+                  <span className={`text-lg font-bold ${
                     r.speed > 22 ? "text-red-400" : r.speed > 15 ? "text-orange-300" : "text-sky-300"
                   }`}>
                     {dirArrow(r.dir)}
                   </span>
-                </div>
-
-                {/* Indicatore direzione + nome */}
-                <div className="flex items-center gap-2">
-                  {/* Barra direzione */}
-                  <div className="flex-1 h-4 bg-slate-800/60 rounded overflow-hidden relative">
-                    {/* Riferimenti cardinali */}
-                    <div className="absolute inset-0 flex">
-                      {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => (
-                        <div
-                          key={a}
-                          className="flex-1 border-r border-slate-700/20 last:border-r-0 flex items-center justify-center text-[7px] text-slate-600"
-                        >
-                          {dirName(a)}
-                        </div>
-                      ))}
-                    </div>
-                    {/* Marker direzione */}
-                    <div
-                      className="absolute top-0 bottom-0 w-0.5 bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.6)]"
-                      style={{ left: `${((((r.dir % 360) + 360) % 360) / 360) * 100}%` }}
-                    />
-                    <div
-                      className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-sky-400/20 border border-sky-400 flex items-center justify-center"
-                      style={{ left: `calc(${((((r.dir % 360) + 360) % 360) / 360) * 100}% - 7px)` }}
-                    >
-                      <span className="text-[7px] font-bold text-sky-200">{dirArrow(r.dir)}</span>
-                    </div>
-                  </div>
-                  <span className="text-[11px] font-bold text-sky-300 shrink-0 w-8 text-right font-mono">
+                  <span className={`text-sm font-bold ${
+                    r.speed > 22 ? "text-red-400" : r.speed > 15 ? "text-orange-300" : "text-sky-300"
+                  }`}>
                     {dirName(r.dir)}
                   </span>
                 </div>
@@ -315,20 +258,19 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
       <div className="flex flex-wrap gap-x-4 gap-y-1 px-4 py-2.5 border-t border-slate-700/30 bg-slate-800/20 text-[10px] text-slate-500">
         <span className="text-slate-400 font-bold text-xs">Legenda:</span>
         {[
-          { label: "≤5", color: "#10b981", desc: "Calma" },
-          { label: "6-10", color: "#84cc16", desc: "Debole" },
-          { label: "11-15", color: "#eab308", desc: "Moderato" },
-          { label: "16-22", color: "#f97316", desc: "Fresco" },
-          { label: "23-30", color: "#ef4444", desc: "Forte" },
-          { label: ">30", color: "#dc2626", desc: "Burrasca" },
+          { label: "≤5", color: "#10b981" },
+          { label: "6-10", color: "#84cc16" },
+          { label: "11-15", color: "#eab308" },
+          { label: "16-22", color: "#f97316" },
+          { label: "23-30", color: "#ef4444" },
+          { label: ">30", color: "#dc2626" },
         ].map(l => (
           <span key={l.label} className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-sm" style={{ background: l.color }} />
-            <span>{l.label}</span>
-            <span className="text-slate-600">({l.desc})</span>
+            <span>{l.label} km/h</span>
           </span>
         ))}
-        <span className="text-slate-600 ml-auto">Dati Open-Meteo · km/h · Decollo {site.alt}m</span>
+        <span className="text-slate-600 ml-auto">Open-Meteo · Decollo {site.alt}m</span>
       </div>
     </div>
   );
