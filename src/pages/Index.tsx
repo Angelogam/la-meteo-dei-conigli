@@ -64,7 +64,8 @@ export default function Index() {
     currentData?.cloudCover || 30
   );
 
-  const meteoHourlyForAnalysis: MeteoHourly[] = React.useMemo(() => {
+  /* Combina i dati orari: prima prova quelli avanzati (con profilo vento), poi quelli base */
+  const hourlyForWindgram = React.useMemo((): MeteoHourly[] => {
     const data = hourlyDataAvanzati.length > 0 ? hourlyDataAvanzati : hourlyData;
     if (!data || data.length === 0) return [];
     return data.map(h => ({
@@ -111,7 +112,6 @@ export default function Index() {
     };
   }, [currentData, currentDataAvanzato]);
 
-  // Gestione tab aggiuntive
   const extendedTabs = ["meteo", "venti", "windgram", "termiche", "analisi"] as const;
   type ExtendedTab = typeof extendedTabs[number];
 
@@ -245,7 +245,7 @@ export default function Index() {
                 )}
                 {activeTab === "windgram" && (
                   <Windgram
-                    hourlyData={meteoHourlyForAnalysis}
+                    hourlyData={hourlyForWindgram}
                     site={{ name: site!.name, alt: site!.altitude, lat: site!.lat, lon: site!.lon }}
                     selectedHour={selectedHour}
                     onHourSelect={setSelectedHour}
@@ -256,7 +256,7 @@ export default function Index() {
                     currentData={currentData}
                     dayData={dayData}
                     site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon }}
-                    hourlyData={meteoHourlyForAnalysis}
+                    hourlyData={hourlyForWindgram}
                     current={meteoCurrentForAnalysis || undefined}
                   />
                 )}
