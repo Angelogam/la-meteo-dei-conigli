@@ -182,7 +182,6 @@ export default function Index() {
                     dayData={dayData}
                     site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon }}
                     hourlyData={hourlyData}
-                    current={current}
                   />
                 )}
                 {activeTab === "analisi" && (
