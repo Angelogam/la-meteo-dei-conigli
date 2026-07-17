@@ -148,8 +148,16 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
 
   return (
     <div className="bg-slate-900/40 border border-slate-700/40 rounded-2xl overflow-hidden">
+      {/* Titolo finestra */}
+      <div className="px-6 pt-5 pb-1">
+        <h3 className="text-xl font-bold text-white flex items-center gap-3">
+          <span className="text-2xl">🌤️</span>
+          Dati meteo
+        </h3>
+      </div>
+
       {/* Selettore ore - ANCORA PIÙ GRANDE */}
-      <div className="flex gap-3 overflow-x-auto p-5 bg-slate-800/30 border-b border-slate-700/30">
+      <div className="flex gap-3 overflow-x-auto px-5 pb-5 bg-slate-800/30 border-b border-slate-700/30">
         {ORE.map(ora => {
           const isActive = ora === selectedHour;
           const haDatiOra = oreOggi.some(h => h.time.getHours() === ora);
