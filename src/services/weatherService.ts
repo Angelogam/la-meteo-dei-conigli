@@ -2,7 +2,7 @@
 
 const BASE_URL = "https://api.open-meteo.com/v1/forecast";
 
-// Parametri UNIFICATI — tutto in una richiesta (tempo reale di risposta ~200ms)
+// Parametri superficie (standard)
 const HOURLY_PARAMS = [
   "temperature_2m",
   "relative_humidity_2m",
@@ -20,18 +20,8 @@ const HOURLY_PARAMS = [
   "cape",
   "convective_inhibition",
   "lifted_index",
-  // Profilo vento in quota
   "temperature_80m",
   "temperature_120m",
-  "wind_speed_80m", "wind_direction_80m",
-  "wind_speed_120m", "wind_direction_120m",
-  "wind_speed_300m", "wind_direction_300m",
-  "wind_speed_600m", "wind_direction_600m",
-  "wind_speed_1000m", "wind_direction_1000m",
-  "wind_speed_1500m", "wind_direction_1500m",
-  "wind_speed_2000m", "wind_direction_2000m",
-  "wind_speed_2500m", "wind_direction_2500m",
-  "wind_speed_3000m", "wind_direction_3000m",
 ].join(",");
 
 const CURRENT_PARAMS = [
@@ -67,7 +57,11 @@ const DAILY_PARAMS = [
   "wind_direction_10m_dominant",
 ].join(",");
 
-const CACHE_TTL = 3 * 60 * 1000; // 3 minuti
+// URL per i livelli di pressione (vento reale in quota!)
+const PRESSURE_LEVEL_BASE = "https://api.open-meteo.com/v1/forecast";
+
+// Cache
+const CACHE_TTL = 3 * 60 * 1000;
 const requestCache = new Map<string, { data: any; ts: number }>();
 
 function cacheKey(lat: number, lon: number) {
@@ -84,7 +78,6 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Rate limiter globale
 let lastRequestTime = 0;
 async function rateLimit() {
   const now = Date.now();
@@ -188,18 +181,52 @@ export interface MeteoResponse {
 
 function parseMeteoResponse(raw: any, lat: number, lon: number): MeteoResponse {
   const hourly: MeteoHourly[] = (raw.hourly?.time || []).map((t: string, i: number) => {
-    // Costruisci windProfile REALE dai dati del server
-    const windProfile = [
-      { height: 80, speed: safeGet(raw.hourly.wind_speed_80m, i), dir: safeGet(raw.hourly.wind_direction_80m, i) },
-      { height: 120, speed: safeGet(raw.hourly.wind_speed_120m, i), dir: safeGet(raw.hourly.wind_direction_120m, i) },
-      { height: 300, speed: safeGet(raw.hourly.wind_speed_300m, i), dir: safeGet(raw.hourly.wind_direction_300m, i) },
-      { height: 600, speed: safeGet(raw.hourly.wind_speed_600m, i), dir: safeGet(raw.hourly.wind_direction_600m, i) },
-      { height: 1000, speed: safeGet(raw.hourly.wind_speed_1000m, i), dir: safeGet(raw.hourly.wind_direction_1000m, i) },
-      { height: 1500, speed: safeGet(raw.hourly.wind_speed_1500m, i), dir: safeGet(raw.hourly.wind_direction_1500m, i) },
-      { height: 2000, speed: safeGet(raw.hourly.wind_speed_2000m, i), dir: safeGet(raw.hourly.wind_direction_2000m, i) },
-      { height: 2500, speed: safeGet(raw.hourly.wind_speed_2500m, i), dir: safeGet(raw.hourly.wind_direction_2500m, i) },
-      { height: 3000, speed: safeGet(raw.hourly.wind_speed_3000m, i), dir: safeGet(raw.hourly.wind_direction_3000m, i) },
-    ].filter(l => l.speed > 0 && l.dir >= 0); // Solo dati validi
+    // Prende i dati del vento in quota dai livelli di pressione (parametri pressure_level)
+    // Oppure usa i dati standard wind_speed_10m se i livelli non sono disponibili
+    const wp: { height: number; speed: number; dir: number }[] = [];
+
+    // Livelli di pressione standard Open-Meteo (in hPa, convertiti in metri approssimativi)
+    // 1000hPa ~ 110m, 950hPa ~ 540m, 900hPa ~ 990m, 850hPa ~ 1450m
+    // 800hPa ~ 1950m, 700hPa ~ 3000m, 600hPa ~ 4200m
+    // Mappiamo i livelli effettivamente richiesti
+    const livelli = [
+      { pressure: 1000, height: 110, key: "wind_speed_1000hPa" },
+      { pressure: 975, height: 350, key: "wind_speed_975hPa" },
+      { pressure: 950, height: 540, key: "wind_speed_950hPa" },
+      { pressure: 925, height: 760, key: "wind_speed_925hPa" },
+      { pressure: 900, height: 990, key: "wind_speed_900hPa" },
+      { pressure: 850, height: 1450, key: "wind_speed_850hPa" },
+      { pressure: 800, height: 1950, key: "wind_speed_800hPa" },
+      { pressure: 700, height: 3000, key: "wind_speed_700hPa" },
+    ];
+
+    for (const l of livelli) {
+      const speed = safeGet(raw.hourly?.[`wind_speed_${l.pressure}hPa`], i);
+      const dir = safeGet(raw.hourly?.[`wind_direction_${l.pressure}hPa`], i);
+      if (speed > 0 && dir >= 0) {
+        wp.push({ height: l.height, speed: Math.round(speed * 10) / 10, dir });
+      }
+    }
+
+    // Fallback: se non arrivano dati pressure-level, stima con legge logaritmica
+    if (wp.length === 0) {
+      const surfaceSpeed = safeGet(raw.hourly?.wind_speed_10m, i);
+      const surfaceDir = safeGet(raw.hourly?.wind_direction_10m, i);
+      if (surfaceSpeed > 0) {
+        // Legge logaritmica del vento: v(h) = v(10m) * ln(h/z0) / ln(10/z0)
+        // z0 = rugosità ~ 0.03 per terreno aperto
+        const z0 = 0.03;
+        const v10 = surfaceSpeed;
+        const quoteLog = [100, 300, 500, 800, 1000, 1500, 2000, 2500, 3000];
+        for (const h of quoteLog) {
+          const fattore = Math.log(Math.max(h, 1) / z0) / Math.log(10 / z0);
+          const speed = Math.round(Math.min(v10 * fattore, v10 * 2.5) * 10) / 10;
+          if (speed > 0) {
+            wp.push({ height: h, speed, dir: surfaceDir });
+          }
+        }
+      }
+    }
 
     return {
       time: new Date(t),
@@ -221,7 +248,7 @@ function parseMeteoResponse(raw: any, lat: number, lon: number): MeteoResponse {
       liftedIndex: safeGet(raw.hourly.lifted_index, i),
       temp80m: safeGet(raw.hourly.temperature_80m, i),
       temp120m: safeGet(raw.hourly.temperature_120m, i),
-      windProfile, // <-- DATI REALI
+      windProfile: wp,
     };
   });
 
@@ -269,6 +296,7 @@ export const weatherService = {
     const cached = getCached(key);
     if (cached) return cached;
 
+    // Richiesta PRINCIPALE + richiesta LIVELLI DI PRESSIONE parallela
     const params = new URLSearchParams({
       latitude: lat.toString(),
       longitude: lon.toString(),
@@ -279,28 +307,38 @@ export const weatherService = {
       forecast_days: "3",
     });
 
-    const res = await fetchWithRetry(`${BASE_URL}?${params.toString()}`);
-    const raw = await res.json();
-    // Debug: controlla se arrivano dati del profilo vento
-    if (raw.hourly) {
-      const sampleIdx = 0;
-      console.log("[DEBUG Open-Meteo] Sample hourly wind data:", {
-        wind_speed_80m: raw.hourly?.wind_speed_80m?.[sampleIdx],
-        wind_speed_120m: raw.hourly?.wind_speed_120m?.[sampleIdx],
-        wind_speed_300m: raw.hourly?.wind_speed_300m?.[sampleIdx],
-        wind_speed_600m: raw.hourly?.wind_speed_600m?.[sampleIdx],
-        wind_speed_1000m: raw.hourly?.wind_speed_1000m?.[sampleIdx],
-        wind_speed_1500m: raw.hourly?.wind_speed_1500m?.[sampleIdx],
-        wind_speed_2000m: raw.hourly?.wind_speed_2000m?.[sampleIdx],
-        wind_speed_2500m: raw.hourly?.wind_speed_2500m?.[sampleIdx],
-        wind_speed_3000m: raw.hourly?.wind_speed_3000m?.[sampleIdx],
-      });
-      // Controlla quante ore hanno almeno un valore wind_speed_300m > 0
-      const countValidi = raw.hourly.wind_speed_300m?.filter((v: number) => v > 0).length || 0;
-      const countValidi1000 = raw.hourly.wind_speed_1000m?.filter((v: number) => v > 0).length || 0;
-      console.log(`[DEBUG Open-Meteo] Ore con wind_speed_300m > 0: ${countValidi} / ${raw.hourly.time?.length}`);
-      console.log(`[DEBUG Open-Meteo] Ore con wind_speed_1000m > 0: ${countValidi1000} / ${raw.hourly.time?.length}`);
+    // Richiesta separata per i livelli di pressione (vento in quota reale)
+    const pressureLevels = "1000,975,950,925,900,850,800,700";
+    const pressureParams = new URLSearchParams({
+      latitude: lat.toString(),
+      longitude: lon.toString(),
+      hourly: "wind_speed_1000hPa,wind_direction_1000hPa,wind_speed_975hPa,wind_direction_975hPa,wind_speed_950hPa,wind_direction_950hPa,wind_speed_925hPa,wind_direction_925hPa,wind_speed_900hPa,wind_direction_900hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_800hPa,wind_direction_800hPa,wind_speed_700hPa,wind_direction_700hPa",
+      timezone: "Europe/Rome",
+      forecast_days: "3",
+      pressure_level: pressureLevels,
+    });
+
+    // Fetch parallelo
+    // Fetch principale + livelli di pressione
+    const [res1, res2] = await Promise.allSettled([
+      fetchWithRetry(`${BASE_URL}?${params.toString()}`),
+      fetchWithRetry(`${PRESSURE_LEVEL_BASE}?${pressureParams.toString()}`),
+    ]);
+
+    const raw = res1.status === "fulfilled" ? await res1.value.json() : { hourly: {}, daily: {}, current: {} };
+
+    // Unisci i dati dei livelli di pressione se disponibili
+    if (res2.status === "fulfilled") {
+      const raw2 = await res2.value.json();
+      if (raw2?.hourly) {
+        for (const key of Object.keys(raw2.hourly)) {
+          if (key.startsWith("wind_speed_") || key.startsWith("wind_direction_")) {
+            raw.hourly[key] = raw2.hourly[key];
+          }
+        }
+      }
     }
+
     const data = parseMeteoResponse(raw, lat, lon);
     requestCache.set(key, { data, ts: Date.now() });
     return data;

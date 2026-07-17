@@ -12,7 +12,6 @@ interface WindgramProps {
 }
 
 const ORE = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
-const QUOTE_FISSE = [300, 600, 1000, 1500, 2000, 2500, 3000];
 
 const DIR_NAMES: Record<number, string> = {
   0: "N", 45: "NE", 90: "E", 135: "SE",
@@ -38,49 +37,6 @@ function speedColor(speed: number): string {
   return "#dc2626";
 }
 
-function getWindAtQuota(hd: MeteoHourly) {
-  const result: { q: number; speed: number; dir: number }[] = [];
-
-  const profiloMap = new Map<number, { speed: number; dir: number }>();
-  if (hd.windProfile) {
-    for (const l of hd.windProfile) {
-      profiloMap.set(l.height, { speed: l.speed, dir: l.dir });
-    }
-  }
-
-  for (const q of QUOTE_FISSE) {
-    if (profiloMap.has(q)) {
-      const p = profiloMap.get(q)!;
-      result.push({ q, speed: p.speed, dir: p.dir });
-      continue;
-    }
-
-    const heights = [...profiloMap.keys()].sort((a, b) => a - b);
-    const sotto = heights.filter(h => h <= q).pop();
-    const sopra = heights.filter(h => h >= q).shift();
-
-    if (sotto !== undefined && sopra !== undefined && sotto !== sopra) {
-      const ps = profiloMap.get(sotto)!;
-      const pp = profiloMap.get(sopra)!;
-      const ratio = (q - sotto) / (sopra - sotto);
-      const speed = Math.round((ps.speed + (pp.speed - ps.speed) * ratio) * 10) / 10;
-      let dDiff = pp.dir - ps.dir;
-      if (dDiff > 180) dDiff -= 360;
-      if (dDiff < -180) dDiff += 360;
-      const dir = ((ps.dir + dDiff * ratio) % 360 + 360) % 360;
-      result.push({ q, speed, dir });
-    } else if (sotto !== undefined) {
-      const ps = profiloMap.get(sotto)!;
-      result.push({ q, speed: Math.round(ps.speed * (q / sotto) * 10) / 10, dir: ps.dir });
-    } else if (sopra !== undefined) {
-      const pp = profiloMap.get(sopra)!;
-      result.push({ q, speed: pp.speed, dir: pp.dir });
-    }
-  }
-
-  return result;
-}
-
 export default function Windgram({ hourlyData, site, selectedHour, onHourSelect }: WindgramProps) {
   const oggi = new Date();
   const oggiStr = oggi.toDateString();
@@ -93,15 +49,13 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
     return oreOggi.find(h => h.time.getHours() === selectedHour) || null;
   }, [oreOggi, selectedHour]);
 
+  // Usa direttamente il windProfile reale, filtrando quote >= decollo
   const righe = useMemo(() => {
-    if (!hd) return [];
-    if (hd.windProfile) {
-      console.log("[DEBUG Windgram] windProfile per ora", selectedHour, ":", JSON.stringify(hd.windProfile));
-    } else {
-      console.log("[DEBUG Windgram] windProfile UNDEFINED per ora", selectedHour);
-    }
-    return getWindAtQuota(hd);
-  }, [hd, selectedHour]);
+    if (!hd || !hd.windProfile || hd.windProfile.length === 0) return [];
+    return hd.windProfile
+      .filter(l => l.height >= site.alt - 50 && l.speed > 0)
+      .sort((a, b) => a.height - b.height);
+  }, [hd, site.alt]);
 
   const maxSpeed = Math.max(...righe.map(r => r.speed), 5);
 
@@ -135,7 +89,7 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
     return (
       <div className="bg-slate-900/40 border border-slate-700/40 rounded-2xl p-6 text-center">
         <p className="text-slate-400 mb-2">Nessun dato vento in quota per le {String(selectedHour).padStart(2, "0")}:00</p>
-        <p className="text-xs text-slate-600">Seleziona un'altra ora o attendi l'aggiornamento dei dati.</p>
+        <p className="text-xs text-slate-500 mt-4">Vento al suolo: {hd?.windSpeed ?? "?"} km/h da {hd ? dirName(hd.windDir) : "?"}</p>
       </div>
     );
   }
@@ -187,9 +141,8 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
         )}
       </div>
 
-      {/* GRAFICO — layout a 4 colonne ben distinte */}
+      {/* GRAFICO */}
       <div className="p-4">
-        {/* Intestazione colonne */}
         <div className="grid grid-cols-[3.5rem_3rem_1.2fr_1.5fr] gap-2 mb-2 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
           <span>Quota</span>
           <span className="text-center">km/h</span>
@@ -200,11 +153,11 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
         <div className="space-y-1">
           {righe.map((r) => {
             const w = Math.max(4, (r.speed / (maxSpeed + 5)) * 200);
-            const isDecollo = r.q <= site.alt + 100 && r.q >= site.alt - 100;
+            const isDecollo = Math.abs(r.height - site.alt) <= 100;
 
             return (
               <div
-                key={r.q}
+                key={r.height}
                 className={`grid grid-cols-[3.5rem_3rem_1.2fr_1.5fr] gap-2 items-center py-1.5 rounded ${
                   isDecollo ? "bg-amber-900/15 -mx-2 px-2" : ""
                 }`}
@@ -213,17 +166,17 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
                 <span className={`text-xs font-mono font-bold ${
                   isDecollo ? "text-amber-400" : "text-slate-400"
                 }`}>
-                  {r.q}m
+                  {r.height}m
                 </span>
 
-                {/* Velocità in km/h — sfondo bianco ben visibile */}
+                {/* Velocità km/h */}
                 <div className="flex justify-center">
                   <span className="text-xs font-mono font-bold bg-white text-gray-900 px-2 py-0.5 rounded">
                     {r.speed}
                   </span>
                 </div>
 
-                {/* Barra velocità con etichetta descrittiva */}
+                {/* Barra velocità */}
                 <div className="flex items-center gap-2">
                   <div className="flex-1 h-4 bg-slate-800/60 rounded overflow-hidden">
                     <div
@@ -231,16 +184,9 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
                       style={{ width: `${w}px`, background: speedColor(r.speed) }}
                     />
                   </div>
-                  <span className="text-[9px] text-slate-500 shrink-0 w-12">
-                    {speedColor(r.speed) === "#10b981" ? "calma" :
-                     speedColor(r.speed) === "#84cc16" ? "debole" :
-                     speedColor(r.speed) === "#eab308" ? "mod." :
-                     speedColor(r.speed) === "#f97316" ? "fresco" :
-                     speedColor(r.speed) === "#ef4444" ? "forte" : "burrasca"}
-                  </span>
                 </div>
 
-                {/* Direzione — nome e freccia grandi */}
+                {/* Direzione */}
                 <div className="flex items-center gap-3">
                   <span className={`text-lg font-bold ${
                     r.speed > 22 ? "text-red-400" : r.speed > 15 ? "text-orange-300" : "text-sky-300"
@@ -275,7 +221,7 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
             <span>{l.label} km/h</span>
           </span>
         ))}
-        <span className="text-slate-600 ml-auto">Open-Meteo · Decollo {site.alt}m</span>
+        <span className="text-slate-600 ml-auto">Dati reali Open-Meteo · Decollo {site.alt}m</span>
       </div>
     </div>
   );
