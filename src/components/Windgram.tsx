@@ -148,16 +148,16 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
 
   return (
     <div className="bg-slate-900/40 border border-slate-700/40 rounded-2xl overflow-hidden">
-      {/* Titolo finestra */}
-      <div className="px-6 pt-5 pb-1">
-        <h3 className="text-xl font-bold text-white flex items-center gap-3">
-          <span className="text-2xl">🌤️</span>
+      {/* Titolo finestra - compatto */}
+      <div className="px-4 pt-4 pb-0">
+        <h3 className="text-base font-bold text-white flex items-center gap-2">
+          <span className="text-xl">🌤️</span>
           Windgram · Dati meteo
         </h3>
       </div>
 
-      {/* Selettore ore - ANCORA PIÙ GRANDE */}
-      <div className="flex gap-3 overflow-x-auto px-5 pb-5 bg-slate-800/30 border-b border-slate-700/30">
+      {/* Selettore ore - compatto */}
+      <div className="flex gap-2 overflow-x-auto px-4 pb-3 pt-2 bg-slate-800/30 border-b border-slate-700/30">
         {ORE.map(ora => {
           const isActive = ora === selectedHour;
           const haDatiOra = oreOggi.some(h => h.time.getHours() === ora);
@@ -166,9 +166,9 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
               key={ora}
               onClick={() => onHourSelect(ora)}
               disabled={!haDatiOra}
-              className={`shrink-0 px-5 py-3 rounded-2xl text-lg font-bold tracking-wide transition-all border-2 ${
+              className={`shrink-0 px-3 py-1.5 rounded-xl text-sm font-bold tracking-wide transition-all border ${
                 isActive
-                  ? "bg-emerald-600/30 border-emerald-400/60 text-emerald-200 shadow-lg shadow-emerald-900/30 scale-110"
+                  ? "bg-emerald-600/30 border-emerald-400/60 text-emerald-200 shadow-sm scale-105"
                   : haDatiOra
                   ? "bg-slate-800/40 border-slate-700/40 text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
                   : "bg-slate-800/20 border-slate-700/20 text-slate-600 cursor-not-allowed"
@@ -180,23 +180,23 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
         })}
       </div>
 
-      {/* Info bar - ANCORA PIÙ GRANDE */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-6 py-4 bg-slate-800/20 text-base text-slate-300 border-b border-slate-700/20">
-        <span className="font-bold text-white text-lg">{site.name}</span>
-        <span className="text-slate-500 text-2xl">·</span>
-        <span className="text-lg">{String(selectedHour).padStart(2, "0")}:00</span>
-        <span className="text-slate-500 text-2xl">·</span>
-        <span className="text-lg">Decollo {site.alt}m</span>
-        <span className="text-slate-500 text-2xl">·</span>
-        <span className="text-lg">Suolo: <strong>{hd?.windSpeed ?? "?"}</strong> km/h <strong>{hd ? dirName(hd.windDir) : "?"}</strong></span>
+      {/* Info bar - compatta */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 bg-slate-800/20 text-sm text-slate-300 border-b border-slate-700/20">
+        <span className="font-bold text-white">{site.name}</span>
+        <span className="text-slate-500">·</span>
+        <span>{String(selectedHour).padStart(2, "0")}:00</span>
+        <span className="text-slate-500">·</span>
+        <span>Decollo {site.alt}m</span>
+        <span className="text-slate-500">·</span>
+        <span>Suolo: <strong>{hd?.windSpeed ?? "?"}</strong> km/h <strong>{hd ? dirName(hd.windDir) : "?"}</strong></span>
         {termiche && termiche.rateo > 0 && (
           <>
-            <span className="text-slate-500 text-2xl">·</span>
-            <span className="text-amber-300 font-semibold text-lg">↑ {termiche.rateo.toFixed(1)} m/s</span>
-            <span className="text-slate-500 text-2xl">·</span>
-            <span className="text-emerald-300 font-semibold text-lg">Base {termiche.base}m</span>
-            <span className="text-slate-500 text-2xl">·</span>
-            <span className="text-orange-300 font-semibold text-lg">Top {termiche.top}m</span>
+            <span className="text-slate-500">·</span>
+            <span className="text-amber-300 font-semibold">↑ {termiche.rateo.toFixed(1)} m/s</span>
+            <span className="text-slate-500">·</span>
+            <span className="text-emerald-300 font-semibold">Base {termiche.base}m</span>
+            <span className="text-slate-500">·</span>
+            <span className="text-orange-300 font-semibold">Top {termiche.top}m</span>
           </>
         )}
       </div>
