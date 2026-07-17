@@ -120,6 +120,14 @@ export default function AnalisiAvanzataCard({
 }: AnalisiAvanzataCardProps) {
   if (!analisi) return null;
 
+  // Limita i valori visualizzati a range realistici
+  const rateoSalita = Math.min(5, Math.max(0, analisi.rateoSalita));
+  const forzaTermica = Math.min(10, Math.max(0, analisi.forzaTermica));
+  const baseNuvole = Math.min(3500, Math.max(0, analisi.baseNuvole));
+  const topTermico = Math.min(4500, Math.max(0, analisi.topTermico));
+  const zeroTermico = Math.min(5000, Math.max(0, analisi.zeroTermico));
+  const voloScore = Math.min(100, Math.max(0, analisi.voloScore));
+
   return (
     <button
       onClick={onSelect}
@@ -137,7 +145,7 @@ export default function AnalisiAvanzataCard({
           <span className="text-sm text-slate-400">{analisi.data}</span>
         </div>
         <div
-          className={`px-3 py-1 rounded-lg border text-sm font-bold ${getVoloBg(analisi.voloScore)} ${getVoloColor(analisi.voloScore)}`}
+          className={`px-3 py-1 rounded-lg border text-sm font-bold ${getVoloBg(voloScore)} ${getVoloColor(voloScore)}`}
         >
           {analisi.voloGiudizio.split(" ")[0]}
         </div>
@@ -146,24 +154,24 @@ export default function AnalisiAvanzataCard({
       <div className="mb-3">
         <div className="flex items-center justify-between text-xs mb-1">
           <span className="text-slate-400">Volo Score</span>
-          <span className={`font-bold ${getVoloColor(analisi.voloScore)}`}>
-            {analisi.voloScore}/100
+          <span className={`font-bold ${getVoloColor(voloScore)}`}>
+            {voloScore}/100
           </span>
         </div>
         <div className="h-2 bg-slate-700/50 rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all ${
-              analisi.voloScore >= 85
+              voloScore >= 85
                 ? "bg-emerald-500"
-                : analisi.voloScore >= 70
+                : voloScore >= 70
                   ? "bg-green-500"
-                  : analisi.voloScore >= 55
+                  : voloScore >= 55
                     ? "bg-amber-500"
-                    : analisi.voloScore >= 40
+                    : voloScore >= 40
                       ? "bg-orange-500"
                       : "bg-red-500"
             }`}
-            style={{ width: `${analisi.voloScore}%` }}
+            style={{ width: `${voloScore}%` }}
           />
         </div>
       </div>
@@ -192,17 +200,17 @@ export default function AnalisiAvanzataCard({
           </div>
         </div>
         <div className="bg-slate-900/60 rounded-xl p-2.5 text-center">
-          {getTermicheIcon(analisi.forzaTermica)}
+          {getTermicheIcon(forzaTermica)}
           <div
             className={`text-lg font-bold ${
-              analisi.forzaTermica >= 5
+              forzaTermica >= 5
                 ? "text-orange-300"
-                : analisi.forzaTermica >= 3
+                : forzaTermica >= 3
                   ? "text-amber-300"
                   : "text-green-300"
             }`}
           >
-            {analisi.rateoSalita.toFixed(1)}
+            {rateoSalita.toFixed(1)}
           </div>
           <div className="text-[10px] text-slate-500">
             m/s &middot; {analisi.intensitaTermica}
@@ -211,7 +219,7 @@ export default function AnalisiAvanzataCard({
         <div className="bg-slate-900/60 rounded-xl p-2.5 text-center">
           <Cloud className="w-4 h-4 text-slate-400 mx-auto mb-1" />
           <div className="text-lg font-bold text-white">
-            {analisi.baseNuvole}
+            {baseNuvole}
           </div>
           <div className="text-[10px] text-slate-500">
             m &middot; {analisi.copertura}
@@ -227,7 +235,7 @@ export default function AnalisiAvanzataCard({
           <div>
             <div className="font-bold">{analisi["stabilitàAtmosferica"]}</div>
             <div className="opacity-70">
-              CAPE {analisi.cape} J/kg &middot; LI {analisi.liftedIndex}&deg;C
+              CAPE {Math.min(2000, analisi.cape)} J/kg &middot; LI {analisi.liftedIndex}&deg;C
             </div>
           </div>
         </div>
@@ -259,11 +267,11 @@ export default function AnalisiAvanzataCard({
       <div className="grid grid-cols-3 gap-1.5 text-[11px]">
         <div className="bg-slate-900/40 rounded-lg px-2 py-1.5 text-center">
           <span className="text-slate-500 block">Zero termico</span>
-          <span className="font-bold text-white">{analisi.zeroTermico}m</span>
+          <span className="font-bold text-white">{zeroTermico}m</span>
         </div>
         <div className="bg-slate-900/40 rounded-lg px-2 py-1.5 text-center">
           <span className="text-slate-500 block">Top termico</span>
-          <span className="font-bold text-white">{analisi.topTermico}m</span>
+          <span className="font-bold text-white">{topTermico}m</span>
         </div>
         <div className="bg-slate-900/40 rounded-lg px-2 py-1.5 text-center">
           <span className="text-slate-500 block">Gradiente</span>
