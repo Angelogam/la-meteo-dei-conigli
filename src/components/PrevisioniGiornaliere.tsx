@@ -17,6 +17,7 @@ interface PrevisioniGiornaliereProps {
   site: { name: string; altitude: number; exposure?: string };
   selectedDay: number;
   onSelectDay: (day: number) => void;
+  nomeDecollo?: string;
 }
 
 function getWeatherInfo(code: number | undefined | null) {
@@ -61,6 +62,11 @@ function formatDateShort(date: any): string {
   return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0");
 }
 
+function getDayLabel(idx: number, date: any): string {
+  const base = idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani";
+  return date ? base + " " + formatDateShort(date) : base;
+}
+
 export default function PrevisioniGiornaliere({
   enrichedDaily,
   dateLabels,
@@ -68,7 +74,8 @@ export default function PrevisioniGiornaliere({
   dayData,
   site,
   selectedDay,
-  onSelectDay
+  onSelectDay,
+  nomeDecollo
 }: PrevisioniGiornaliereProps) {
   const alt = site.altitude;
 
@@ -242,6 +249,7 @@ export default function PrevisioniGiornaliere({
 
   const selectedDayData = enrichedDaily[selectedDay];
   const dayDateShort = selectedDayData?.date ? formatDateShort(selectedDayData.date) : "";
+  const nomeDisplay = nomeDecollo || site.name;
 
   const days = enrichedDaily.slice(0, 3);
   const dayButtons: React.ReactNode[] = [];
@@ -293,9 +301,13 @@ export default function PrevisioniGiornaliere({
       const dirArr = windArrow(fascia.windDirMedia);
       fasciaCards.push(
         <div key={fi} className="card p-3 border-2 border-emerald-500/50 bg-slate-800/40">
-          {/* Riga 1: Label + Data + Score */}
+          {/* Riga 1: Label + Decollo + Data + Score */}
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-base font-bold text-white">{fascia.label}</span>
+            <span className="text-xs text-emerald-300 font-medium truncate max-w-[120px]">
+              <Mountain className="w-3 h-3 inline mr-1" />
+              {nomeDisplay}
+            </span>
             <span className="text-xs text-slate-500 flex items-center gap-1">
               <Calendar className="w-3 h-3 text-slate-500" />{dayDateShort}
             </span>
@@ -365,7 +377,12 @@ export default function PrevisioniGiornaliere({
       </div>
       {fasce && fasciaCards.length > 0 && (
         <div className="space-y-2.5">
-          <h3 className="text-base font-bold text-white px-1">Andamento orario</h3>
+          <h3 className="text-base font-bold text-white px-1 flex items-center gap-2">
+            Andamento orario
+            <span className="text-xs font-normal text-emerald-300">
+              <Mountain className="w-3 h-3 inline mr-1" />{nomeDisplay}
+            </span>
+          </h3>
           {fasciaCards}
         </div>
       )}

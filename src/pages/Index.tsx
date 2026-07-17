@@ -143,6 +143,7 @@ export default function Index() {
                   site={{ name: site!.name, altitude: site!.altitude, exposure: site!.exposure }}
                   selectedDay={selectedDay}
                   onSelectDay={setSelectedDay}
+                  nomeDecollo={site!.name}
                 />
                 <WeatherDashboard
                   dayData={dayData}
