@@ -1,0 +1,134 @@
+================================================================================
+  REPORT SCAN COMPLETO CODEBASE - CONFLITTI E DUPLICAZIONI
+  Data: 2024-05-28
+================================================================================
+
+1. CONFLITTI TRA FILE DUPLICATI
+================================================================================
+
+CONFLITTO #1 - CRITICO
+File A: services/capeService.ts
+File B: services/weatherService.ts (parametri hourly: cape, convective_inhibition, lifted_index)
+Problema: capeService.ts fa una SECONDA richiesta separata a Open-Meteo per ottenere
+CAPE, CIN e Lifted Index. weatherService.ts include già questi parametri nella
+richiesta principale. Duplicazione di chiamate API.
+Fix: Eliminare capeService.ts e usare i dati già presenti in weatherService.
+
+CONFLITTO #2 - IMPORTANTE
+File A: utils/termiche.ts
+File B: services/termicheEngine.ts
+Problema: Entrambi calcolano termiche (rateo, base, top, ecc.) ma con logiche
+diverse. termicheEngine.ts usa CAPE reale da GFS + wind shear + ora del giorno.
+termiche.ts è una versione più semplice. Vengono usati in componenti diversi.
+Fix: Unificare in un unico servizio di calcolo termiche.
+
+CONFLITTO #3 - IMPORTANTE
+File A: utils/meteo.ts (trasformazione raw -> HourData)
+File B: utils/transformMeteo.ts (trasformazione raw -> HourData/CurrentData/DailyData)
+Problema: Due sistemi di trasformazione paralleli per gli stessi dati.
+Fix: Usare solo transformMeteo.ts che è più completo.
+
+CONFLITTO #4 - IMPORTANTE
+File A: utils/algoritmoPrevisioni.ts
+File B: services/termicheEngine.ts
+Problema: Stessa logica implementata due volte: calcolo termiche multi-fonte con
+climatologia + GFS.
+Fix: Unificare in services/termicheEngine.ts.
+
+CONFLITTO #5 - MEDIO
+File A: components/MeteoController.tsx (fetch diretta a Open-Meteo)
+File B: services/weatherService.ts (servizio ufficiale con cache)
+Problema: MeteoController fa una richiesta completamente separata a Open-Meteo,
+bypassando il sistema di cache e il servizio ufficiale.
+Fix: MeteoController dovrebbe usare weatherService.fetchWeather().
+
+
+2. SERVIZI CHE FANNO RICHIESTE DIRETTE A OPEN-METEO (SENZA CACHE)
+================================================================================
+
+   Servizio                    URL richiesto                              Cache
+   --------------------------  ----------------------------------------  ------
+   services/weatherService.ts  api.open-meteo.com/v1/forecast            ✅ 3 min
+   services/capeService.ts     api.open-meteo.com/v1/forecast            ✅ 5 min
+   utils/meteo.ts              api.open-meteo.com/v1/forecast            ❌ NO
+   utils/getVento.ts           api.open-meteo.com/v1/forecast            ❌ NO
+   utils/getVentiInterpolati.ts api.open-meteo.com/v1/forecast           ❌ NO
+   utils/meteoTester.ts        api.open-meteo.com/v1/forecast            ❌ NO
+   utils/megaTestMeteo.ts      api.open-meteo.com/v1/forecast            ❌ NO
+   utils/testMeteo.ts          api.open-meteo.com/v1/forecast            ❌ NO
+   components/MeteoController.tsx api.open-meteo.com/v1/forecast         ❌ NO
+
+   TOTALE: 8 file fanno richieste NON in cache.
+   Una volta eseguiti, producono fino a 8+ chiamate API in parallelo!
+
+
+3. COMPONENTI CHE USANO IL SERVIZIO SBAGLIATO
+================================================================================
+
+   Componente                Usa                                 Dovrebbe usare
+   ------------------------  ----------------------------------  -----------------------------
+   MeteoController           fetch diretta                       weatherService.fetchWeather()
+   VentiTab                  getVento()                          weatherService (ha windProfile)
+   VentiInterpolatiTab       getVentiInterpolati()               weatherService (ha pressure levels)
+   PrevOrarie (MeteoTab)     weatherService (hook)               ✅ OK
+   TermicheTab               weatherService (hook)               ✅ OK
+   AnalisiMeteo              weatherService (hook)               ✅ OK
+
+
+4. DIPENDENZE CIRCOLARI POTENZIALI
+================================================================================
+
+   useWeatherData
+     ├── services/weatherService.ts      (carica dati)
+     ├── services/capeService.ts         (carica CAPE extra - ridondante)
+     └── hooks/useMeteoCompleto
+           └── hooks/useAnalisiAvanzata
+                 ├── services/weatherService.ts   (ricarica dati)
+                 └── services/analisiAvanzata.ts  (elabora dati)
+
+   ⚠️  useWeatherData e useAnalisiAvanzata fanno ENTRAMBE richieste
+      a weatherService. Potenziale doppia richiesta sullo stesso sito.
+
+
+5. STATO GENERALE DELL'APP
+================================================================================
+
+   Aspetto                         Valutazione
+   ------------------------------  ---------------
+   Card interattive                ✅ TUTTE funzionanti
+   Dati realistici                 ✅ CONFERMATO da test
+   Icone dinamiche                 ✅ Cambiano in base ai dati
+   Sincronizzazione componenti     ✅ OK
+   Doppioni logici                 ⚠️ 3 conflitti maggiori
+   Chiamate API ridondanti         ⚠️ 5 file non usano cache
+   Performance                     ⚠️ MEDIA (troppe richieste)
+
+
+6. RIEPILOGO CONFLITTI GRAVI
+================================================================================
+
+   #  Gravità     Descrizione                                            Fix
+   -- ----------  -----------------------------------------------------  -----------------------------
+   1  CRITICO     MeteoController.tsx fa richiesta SEPARATA              Usare weatherService
+   2  IMPORTANTE  capeService.ts duplica parametri già in weatherService  Eliminare file
+   3  IMPORTANTE  utils/meteo.ts duplica transformMeteo.ts                Eliminare meteo.ts
+   4  IMPORTANTE  algoritmoPrevisioni.ts duplica termicheEngine.ts        Eliminare file
+   5  MEDIO       3 hook fanno fetch paralleli sullo stesso sito          Unificare in 1 hook
+
+
+7. AZIONI RACCOMANDATE
+================================================================================
+
+   [ ] Eliminare services/capeService.ts (dati già in weatherService)
+   [ ] Eliminare utils/meteo.ts (usare transformMeteo.ts)
+   [ ] Eliminare utils/algoritmoPrevisioni.ts (usare termicheEngine.ts)
+   [ ] Unificare utils/termiche.ts e services/termicheEngine.ts
+   [ ] Rifattorizzare MeteoController per usare weatherService
+   [ ] Aggiungere cache a getVento.ts e getVentiInterpolati.ts
+   [ ] Unificare useWeatherData e useAnalisiAvanzata in 1 hook
+   [ ] Eliminare utils/testMeteo.ts (superato da meteoTest.ts)
+   [ ] Aggiungere cache a meteoTest.ts e megaTestMeteo.ts
+
+================================================================================
+  FINE REPORT
+================================================================================
