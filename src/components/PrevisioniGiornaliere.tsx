@@ -227,11 +227,11 @@ export default function PrevisioniGiornaliere({
     };
 
     const results: any[] = [];
-    const m = compute(morning, "Mattina", "border-amber-500/40");
+    const m = compute(morning, "Mattina", "border-emerald-500/40");
     if (m) results.push(m);
-    const a = compute(afternoon, "Pomeriggio", "border-sky-500/40");
+    const a = compute(afternoon, "Pomeriggio", "border-emerald-500/40");
     if (a) results.push(a);
-    const e = compute(evening, "Sera", "border-indigo-500/40");
+    const e = compute(evening, "Sera", "border-emerald-500/40");
     if (e) results.push(e);
     return results.length > 0 ? results : null;
   }, [dayData, alt]);
@@ -255,11 +255,11 @@ export default function PrevisioniGiornaliere({
       <button
         key={idx}
         onClick={() => onSelectDay(idx)}
-        className={"text-center transition-all border-2 cursor-pointer p-3 rounded-xl " + (
+        className={"text-center transition-all border-2 cursor-pointer p-2.5 rounded-xl " + (
           isActive
             ? "border-emerald-400 bg-emerald-900/40 shadow-lg"
             : "border-slate-700/50 bg-slate-800/40 hover:border-slate-600"
-        ) + " " + (idx === 0 ? "w-28" : "w-36")}
+        )}
       >
         <div className="text-sm font-bold text-white">
           {idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani"}
@@ -268,11 +268,11 @@ export default function PrevisioniGiornaliere({
           <Calendar className="w-3 h-3 inline mr-1" />
           {day.date ? formatDateShort(day.date) : ""}
         </div>
-        <div className="flex justify-center my-1">{weatherInfo.icon}</div>
+        <div className="flex justify-center my-0.5">{weatherInfo.icon}</div>
         <div className="text-xs text-slate-300 font-bold">{weatherInfo.desc}</div>
-        <div className="text-lg font-bold text-white my-0.5">{Math.round(day.tempMax)}°</div>
-        <div className="text-[11px] text-slate-400">min {Math.round(day.tempMin)}°</div>
-        <div className="text-[11px] text-slate-400 mt-0.5">
+        <div className="text-base font-bold text-white my-0.5">{Math.round(day.tempMax)}°</div>
+        <div className="text-[10px] text-slate-400">min {Math.round(day.tempMin)}°</div>
+        <div className="text-[10px] text-slate-400 mt-0.5">
           {precipGiorno > 0 ? String(precipGiorno.toFixed(1)) + " mm" : "0 mm"}
         </div>
       </button>
@@ -292,55 +292,65 @@ export default function PrevisioniGiornaliere({
       const dirCardinal = degreesToCardinal(fascia.windDirMedia);
       const dirArr = windArrow(fascia.windDirMedia);
       fasciaCards.push(
-        <div key={fi} className={"card p-4 border-2 " + fascia.borderColor + " bg-slate-800/40"}>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-base font-bold text-white">{fascia.label}</span>
-            <span className="text-xs text-slate-400 flex items-center gap-1">
-              <Calendar className="w-3 h-3 text-slate-500" />{dayDateShort}
+        <div key={fi} className={"card p-2.5 border-2 border-emerald-500/50 bg-slate-800/40"}>
+          {/* Riga 1: Label + Data + Score */}
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-sm font-bold text-white">{fascia.label}</span>
+            <span className="text-[10px] text-slate-500 flex items-center gap-1">
+              <Calendar className="w-2.5 h-2.5 text-slate-500" />{dayDateShort}
             </span>
-            <span className={"text-sm font-bold px-2 py-0.5 rounded-full border " + scoreColor}>
+            <span className={"text-xs font-bold px-1.5 py-0.5 rounded-full border " + scoreColor}>
               {fascia.score}/10
             </span>
           </div>
-          <div className="text-center text-xl font-bold text-amber-300 mb-3">
-            {fascia.tempMedia}°C <span className="text-sm text-slate-400 font-normal">max {fascia.tempMax}°</span>
-          </div>
-          <div className="bg-slate-900/60 rounded-lg p-3 mb-2 text-center">
-            <div className="flex items-center justify-center gap-2 text-sm mb-1">
-              <Wind className="w-5 h-5 text-sky-400" />
-              <span className="font-bold text-sky-300">{fascia.windMedia} km/h</span>
-              <span className="text-slate-400">raffiche {fascia.windMax}</span>
+
+          {/* Riga 2: Temperatura + Vento su una riga */}
+          <div className="flex items-center justify-between bg-slate-900/60 rounded-lg px-2.5 py-1.5 mb-1.5">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-bold text-amber-300">{fascia.tempMedia}°C</span>
+              <span className="text-[10px] text-slate-500">max {fascia.tempMax}°</span>
             </div>
-            <div className="text-sm text-slate-400">{dirArr} {dirCardinal} ({fascia.windDirMedia}°)</div>
-          </div>
-          <div className="bg-slate-900/60 rounded-lg p-3 mb-2 text-center">
-            <div className="flex items-center justify-center gap-2 text-sm mb-2">
-              <ArrowUp className="w-5 h-5 text-orange-400" />
-              <span className={fascia.termicheColore + " font-bold"}>{fascia.termicheLabel}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm max-w-xs mx-auto">
-              <span className="text-right">Salita: <span className="text-emerald-300 font-bold">{fascia.salita.toFixed(1)} m/s</span></span>
-              <span className="text-left">Base: <Mountain className="w-4 h-4 text-green-400 inline" /> <span className="text-green-300 font-bold">{fascia.base} m</span></span>
-              <span className="text-right">Top: <TrendingUp className="w-4 h-4 text-red-400 inline" /> <span className="text-red-300 font-bold">{fascia.top} m</span></span>
-              <span className="text-left">Spessore: <span className="text-amber-300 font-bold">{fascia.top - fascia.base} m</span></span>
+            <div className="flex items-center gap-2">
+              <Wind className="w-3 h-3 text-sky-400" />
+              <span className="text-xs font-bold text-sky-300">{fascia.windMedia} km/h</span>
+              <span className="text-[10px] text-slate-400">{dirArr} {dirCardinal}</span>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-sm max-w-xs mx-auto">
-            <div className="bg-slate-900/60 rounded-lg px-3 py-2 flex items-center justify-center gap-1">
-              <Cloud className="w-4 h-4 text-slate-400" /> <span className="font-bold text-slate-200">{fascia.cloudMedia}%</span>
+
+          {/* Riga 3: Termiche + Nuvolosità */}
+          <div className="flex items-center justify-between bg-slate-900/60 rounded-lg px-2.5 py-1.5 mb-1.5">
+            <div className="flex items-center gap-1.5">
+              <ArrowUp className="w-3 h-3 text-orange-400" />
+              <span className={"text-xs font-bold " + fascia.termicheColore}>
+                {fascia.salita.toFixed(1)} m/s
+              </span>
             </div>
-            <div className="bg-slate-900/60 rounded-lg px-3 py-2 flex items-center justify-center gap-1">
-              <Droplets className="w-4 h-4 text-blue-400" /> <span className="font-bold text-blue-200">{fascia.humMedia}%</span>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] text-green-300">Base {fascia.base}m</span>
+              <span className="text-[10px] text-red-300">Top {fascia.top}m</span>
             </div>
-            <div className="bg-slate-900/60 rounded-lg px-3 py-2 flex items-center justify-center gap-1">
-              <Gauge className="w-4 h-4 text-purple-400" /> <span className="font-bold text-purple-200">{fascia.pressMedia} hPa</span>
+            <div className="flex items-center gap-1">
+              <Cloud className="w-3 h-3 text-slate-400" />
+              <span className="text-xs text-slate-200">{fascia.cloudMedia}%</span>
             </div>
-            <div className="bg-slate-900/60 rounded-lg px-3 py-2 flex items-center justify-center gap-1">
+          </div>
+
+          {/* Riga 4: Precipitazioni + Umidità + Pressione */}
+          <div className="flex items-center justify-between bg-slate-900/60 rounded-lg px-2.5 py-1.5">
+            <div className="flex items-center gap-1">
               {fascia.precipTot === 0
-                ? <CheckCircle className="w-4 h-4 text-green-400" />
-                : <Umbrella className="w-4 h-4 text-blue-400" />
+                ? <CheckCircle className="w-3 h-3 text-green-400" />
+                : <Umbrella className="w-3 h-3 text-blue-400" />
               }
-              <span className="font-bold">{fascia.precipTot === 0 ? "Secco" : fascia.precipTot + "mm"}</span>
+              <span className="text-xs font-bold">{fascia.precipTot === 0 ? "Secco" : fascia.precipTot + "mm"}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Droplets className="w-3 h-3 text-blue-400" />
+              <span className="text-xs text-blue-200">{fascia.humMedia}%</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Gauge className="w-3 h-3 text-purple-400" />
+              <span className="text-xs text-purple-200">{fascia.pressMedia} hPa</span>
             </div>
           </div>
         </div>
@@ -354,8 +364,8 @@ export default function PrevisioniGiornaliere({
         {dayButtons}
       </div>
       {fasce && fasciaCards.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-base font-bold text-white px-1">Andamento orario</h3>
+        <div className="space-y-2.5">
+          <h3 className="text-sm font-bold text-white px-1">Andamento orario</h3>
           {fasciaCards}
         </div>
       )}
