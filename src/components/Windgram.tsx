@@ -95,8 +95,13 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
 
   const righe = useMemo(() => {
     if (!hd) return [];
+    if (hd.windProfile) {
+      console.log("[DEBUG Windgram] windProfile per ora", selectedHour, ":", JSON.stringify(hd.windProfile));
+    } else {
+      console.log("[DEBUG Windgram] windProfile UNDEFINED per ora", selectedHour);
+    }
     return getWindAtQuota(hd);
-  }, [hd]);
+  }, [hd, selectedHour]);
 
   const maxSpeed = Math.max(...righe.map(r => r.speed), 5);
 

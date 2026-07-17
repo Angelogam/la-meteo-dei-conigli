@@ -281,6 +281,26 @@ export const weatherService = {
 
     const res = await fetchWithRetry(`${BASE_URL}?${params.toString()}`);
     const raw = await res.json();
+    // Debug: controlla se arrivano dati del profilo vento
+    if (raw.hourly) {
+      const sampleIdx = 0;
+      console.log("[DEBUG Open-Meteo] Sample hourly wind data:", {
+        wind_speed_80m: raw.hourly?.wind_speed_80m?.[sampleIdx],
+        wind_speed_120m: raw.hourly?.wind_speed_120m?.[sampleIdx],
+        wind_speed_300m: raw.hourly?.wind_speed_300m?.[sampleIdx],
+        wind_speed_600m: raw.hourly?.wind_speed_600m?.[sampleIdx],
+        wind_speed_1000m: raw.hourly?.wind_speed_1000m?.[sampleIdx],
+        wind_speed_1500m: raw.hourly?.wind_speed_1500m?.[sampleIdx],
+        wind_speed_2000m: raw.hourly?.wind_speed_2000m?.[sampleIdx],
+        wind_speed_2500m: raw.hourly?.wind_speed_2500m?.[sampleIdx],
+        wind_speed_3000m: raw.hourly?.wind_speed_3000m?.[sampleIdx],
+      });
+      // Controlla quante ore hanno almeno un valore wind_speed_300m > 0
+      const countValidi = raw.hourly.wind_speed_300m?.filter((v: number) => v > 0).length || 0;
+      const countValidi1000 = raw.hourly.wind_speed_1000m?.filter((v: number) => v > 0).length || 0;
+      console.log(`[DEBUG Open-Meteo] Ore con wind_speed_300m > 0: ${countValidi} / ${raw.hourly.time?.length}`);
+      console.log(`[DEBUG Open-Meteo] Ore con wind_speed_1000m > 0: ${countValidi1000} / ${raw.hourly.time?.length}`);
+    }
     const data = parseMeteoResponse(raw, lat, lon);
     requestCache.set(key, { data, ts: Date.now() });
     return data;
