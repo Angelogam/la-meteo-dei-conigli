@@ -3,13 +3,13 @@
 import React from "react";
 import {
   CloudSun, Droplets, Gauge, Cloud, Wind, ArrowUp, TrendingUp,
-  Sun, Eye, AlertTriangle, Thermometer, Calendar
+  Sun, Eye, AlertTriangle, Thermometer, Calendar, MapPin
 } from "lucide-react";
 
 interface MeteoTabProps {
   currentData: any;
   dayData: any[];
-  site: { alt: number };
+  site: { alt: number; name?: string };
   thermalDelta: number;
   stabilityIndex: { label: string; color: string };
   modelName?: string;
@@ -27,7 +27,6 @@ function formatDateShort(date: Date): string {
 export default function MeteoTab({
   currentData, dayData, site, thermalDelta, stabilityIndex, modelName, cape, liftedIndex, cin
 }: MeteoTabProps) {
-  // Data del giorno selezionato (dal primo elemento di dayData)
   const dataGiorno = React.useMemo(() => {
     if (dayData && dayData.length > 0) {
       return formatDateShort(dayData[0].time);
@@ -39,7 +38,7 @@ export default function MeteoTab({
     return (
       <div className="flex flex-col items-center justify-center py-16 text-slate-400">
         <CloudSun className="w-16 h-16 text-slate-600 mb-4" />
-        <p className="text-lg font-bold">Nessun dato meteo</p>
+        <p className="text-lg font-bold">Nessun dato meteo per {site?.name || "questo decollo"}</p>
       </div>
     );
   }
@@ -132,11 +131,18 @@ export default function MeteoTab({
 
   return (
     <div className="space-y-4">
-      {/* Data del giorno */}
-      <div className="text-center">
-        <span className="inline-flex items-center gap-1.5 text-sm font-bold text-white bg-slate-800/60 border border-slate-600/50 px-4 py-1.5 rounded-lg">
-          <Calendar className="w-4 h-4 text-slate-400" />{dataGiorno}
-        </span>
+      {/* Intestazione con nome decollo e data */}
+      <div className="bg-slate-800/60 border border-emerald-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
+        <MapPin className="w-5 h-5 text-emerald-400 shrink-0" />
+        <div>
+          <div className="text-sm font-bold text-white">{site?.name || "Decollo"}</div>
+          <div className="text-[10px] text-slate-400 flex items-center gap-2">
+            <Calendar className="w-3 h-3" />
+            <span>{dataGiorno}</span>
+            <span className="text-slate-600">·</span>
+            <span>{site?.alt || 0}m</span>
+          </div>
+        </div>
       </div>
 
       {/* Banner condizioni */}
@@ -227,7 +233,7 @@ export default function MeteoTab({
         </div>
       </div>
 
-      {/* Altre metriche: umidità, pressione, nuvole, UV, gradiente, delta */}
+      {/* Altre metriche */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div className="card bg-slate-800/50 border border-slate-600/50 p-4 text-center">
           <Droplets className="w-6 h-6 text-sky-400 mx-auto mb-2" />
@@ -258,14 +264,6 @@ export default function MeteoTab({
           </div>
         </div>
         <div className="card bg-slate-800/50 border border-slate-600/50 p-4 text-center">
-          <TrendingUp className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-          <div className="text-sm text-slate-400 uppercase mb-1 font-bold">Gradiente</div>
-          <div className="text-xl font-bold text-white">{gradienteReale.toFixed(2)}°</div>
-          <div className="text-sm text-slate-400 mt-1">
-            {gradienteLabel} · {gradienteReale > 1.2 ? "Instabile" : gradienteReale > 0.98 ? "Neutro" : "Stabile"}
-          </div>
-        </div>
-        <div className="card bg-slate-800/50 border border-slate-600/50 p-4 text-center">
           <Eye className="w-6 h-6 text-cyan-400 mx-auto mb-2" />
           <div className="text-sm text-slate-400 uppercase mb-1 font-bold">Delta T</div>
           <div className="text-xl font-bold text-white">{Math.round(thermalDelta ?? 0)}°C</div>
@@ -273,10 +271,16 @@ export default function MeteoTab({
             {thermalDelta > 10 ? "Buona escursione" : thermalDelta > 6 ? "Moderata" : "Bassa"}
           </div>
         </div>
+        <div className="card bg-slate-800/50 border border-slate-600/50 p-4 text-center">
+          <TrendingUp className="w-6 h-6 text-purple-400 mx-auto mb-2" />
+          <div className="text-sm text-slate-400 uppercase mb-1 font-bold">Gradiente</div>
+          <div className="text-xl font-bold text-white">{gradienteReale.toFixed(2)}°</div>
+          <div className="text-sm text-slate-400 mt-1">{gradienteLabel}</div>
+        </div>
       </div>
 
       <div className="text-center text-sm text-slate-600 border-t border-slate-700/30 pt-3">
-        Dati da Open-Meteo · Modello: {modelName || "auto"} · Aggiornamento: {new Date().toLocaleTimeString("it-IT")}
+        {site?.name} · Dati Open-Meteo · Modello: {modelName || "auto"}
       </div>
     </div>
   );

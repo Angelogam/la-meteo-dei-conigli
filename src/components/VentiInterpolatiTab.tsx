@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Wind, TrendingUp, Server, Mountain, Calendar, Compass } from "lucide-react";
+import { Wind, TrendingUp, Server, Mountain, Calendar, Compass, MapPin } from "lucide-react";
 import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
 
 function getWindArrow(deg: number): string {
@@ -48,9 +48,10 @@ interface VentiInterpolatiTabProps {
   selectedDay: number;
   oraCorrente?: number;
   onOraChange?: (ora: number) => void;
+  siteName?: string;
 }
 
-export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDay, oraCorrente = 12, onOraChange }: VentiInterpolatiTabProps) {
+export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDay, oraCorrente = 12, onOraChange, siteName }: VentiInterpolatiTabProps) {
   const [data, setData] = useState<VentiInterpolatiData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +84,6 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
       });
   }, [lat, lon, quotaDecollo, selectedDay, oraCorrente]);
 
-  // Data giorno
   const oggi = new Date();
   const targetDate = new Date(oggi);
   targetDate.setDate(oggi.getDate() + selectedDay);
@@ -93,7 +93,7 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
     return (
       <div className="flex items-center justify-center py-16 text-slate-400">
         <div className="w-8 h-8 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin mr-3" />
-        <span>Calcolo profilo vento interpolato...</span>
+        <span>Calcolo profilo vento per {siteName || "decollo"}...</span>
       </div>
     );
   }
@@ -102,7 +102,7 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
     return (
       <div className="flex flex-col items-center justify-center py-16 text-slate-400">
         <Wind className="w-16 h-16 text-slate-600 mb-4" />
-        <p className="text-lg font-bold">Errore nel recupero dati vento</p>
+        <p className="text-lg font-bold">Errore venti per {siteName || "decollo"}</p>
         <p className="text-sm text-slate-500 mt-1">{error}</p>
       </div>
     );
@@ -112,7 +112,7 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
     return (
       <div className="flex flex-col items-center justify-center py-16 text-slate-400">
         <Wind className="w-16 h-16 text-slate-600 mb-4" />
-        <p className="text-lg font-bold">Nessun dato vento per questo giorno</p>
+        <p className="text-lg font-bold">Nessun dato vento per {siteName || "decollo"} — {dataGiorno}</p>
       </div>
     );
   }
@@ -123,17 +123,22 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
     quoteVisibili.push(q);
   }
   const maxSpeed = Math.max(...quoteVisibili.map(q => oraData.quote[q]?.speed || 0), 1);
-
-  // Direzioni cardinali con le loro posizioni verticali per le righe della griglia
   const windDirNames = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 
   return (
     <div className="space-y-4">
-      {/* Data del giorno */}
-      <div className="text-center">
-        <span className="inline-flex items-center gap-1.5 text-sm font-bold text-white bg-slate-800/60 border border-slate-600/50 px-4 py-1.5 rounded-lg">
-          <Calendar className="w-4 h-4 text-slate-400" />{dataGiorno}
-        </span>
+      {/* Intestazione decollo */}
+      <div className="bg-slate-800/60 border border-cyan-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
+        <MapPin className="w-5 h-5 text-cyan-400 shrink-0" />
+        <div>
+          <div className="text-sm font-bold text-white">{siteName || "Decollo"} — Venti</div>
+          <div className="text-[10px] text-slate-400 flex items-center gap-2">
+            <Calendar className="w-3 h-3" />
+            <span>{dataGiorno}</span>
+            <span className="text-slate-600">·</span>
+            <span>Decollo {quotaDecollo}m</span>
+          </div>
+        </div>
       </div>
 
       <div className="card bg-slate-800/40 border border-slate-700/50 flex items-center justify-between px-4 py-2">
@@ -167,7 +172,7 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
         <div className="flex items-center gap-2 mb-4">
           <Wind className="w-5 h-5 text-cyan-400 shrink-0" />
           <h4 className="text-base font-bold text-cyan-300">
-            Profilo vento verticale · {String(oraSelezionata).padStart(2, "0")}:00
+            {siteName || "Decollo"} — Profilo vento verticale · {String(oraSelezionata).padStart(2, "0")}:00
           </h4>
           <span className="text-xs text-slate-500 ml-auto">Raffica {Math.round(oraData.gust)} km/h</span>
         </div>
@@ -178,36 +183,29 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
             if (!v) return null;
             const width = maxSpeed > 0 ? (v.speed / maxSpeed) * 100 : 0;
             const isDecollo = q === data.quotaDecollo;
-            
-            // Determina la classe della linea di direzione orizzontale
             const dir = getDirAbbrev(v.dir);
-            const dirIdx = windDirNames.indexOf(getWindDirName(v.dir));
             
             return (
               <div key={q} className={`grid grid-cols-[4.5rem_1fr_5rem_1.8rem] gap-2 items-center ${
                 isDecollo ? "bg-amber-900/20 rounded-lg px-1 -mx-1 py-0.5" : ""
               }`}>
-                {/* Quota */}
                 <span className={`text-xs font-mono font-bold shrink-0 ${
                   isDecollo ? "text-amber-300" : "text-slate-400"
                 }`}>
                   {q}m {isDecollo ? "🪂" : ""}
                 </span>
-
-                {/* Barra velocità */}
-                <div className="h-6 bg-slate-700/60 rounded-full overflow-hidden relative">
+                <div className="h-5 bg-slate-700/60 rounded-full overflow-hidden relative">
                   <div
                     className={`h-full rounded-full transition-all ${getSpeedBarColor(v.speed)}`}
                     style={{ width: `${Math.max(width, 8)}%` }}
                   />
+                  {isDecollo && (
+                    <div className="absolute inset-0 border border-amber-400/50 rounded-md pointer-events-none" />
+                  )}
                 </div>
-
-                {/* Valore velocità */}
                 <span className={`text-xs font-bold shrink-0 text-right ${getSpeedColor(v.speed)}`}>
                   {v.speed} km/h
                 </span>
-
-                {/* Direzione cardinale */}
                 <span className="text-xs font-mono font-bold text-slate-300 text-center shrink-0">
                   {dir}
                 </span>
@@ -216,7 +214,6 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
           })}
         </div>
 
-        {/* Legenda direzioni orizzontali */}
         <div className="mt-4 pt-3 border-t border-slate-700/30">
           <div className="flex items-center gap-2 mb-2">
             <Compass className="w-4 h-4 text-cyan-400" />
@@ -246,7 +243,7 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
       </div>
 
       <div className="text-center text-sm text-slate-500 border-t border-slate-700/30 pt-3">
-        Dati interpolati ogni 250m da Open-Meteo
+        {siteName || "Decollo"} · Dati interpolati ogni 250m da Open-Meteo · {dataGiorno}
       </div>
     </div>
   );
