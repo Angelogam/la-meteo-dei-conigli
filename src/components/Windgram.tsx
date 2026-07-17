@@ -155,8 +155,8 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
         </h3>
       </div>
 
-      {/* Selettore ore - compatto */}
-      <div className="flex gap-2 overflow-x-auto px-4 pb-3 pt-2 bg-slate-800/30 border-b border-slate-700/30">
+      {/* Selettore ore - ancora più compatto */}
+      <div className="flex gap-1.5 overflow-x-auto px-4 pb-2.5 pt-1.5 bg-slate-800/30 border-b border-slate-700/30">
         {ORE.map(ora => {
           const isActive = ora === selectedHour;
           const haDatiOra = oreOggi.some(h => h.time.getHours() === ora);
@@ -165,7 +165,7 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
               key={ora}
               onClick={() => onHourSelect(ora)}
               disabled={!haDatiOra}
-              className={`shrink-0 px-3 py-1.5 rounded-xl text-sm font-bold tracking-wide transition-all border ${
+              className={`shrink-0 px-2.5 py-1 rounded-lg text-xs font-bold tracking-wide transition-all border ${
                 isActive
                   ? "bg-emerald-600/30 border-emerald-400/60 text-emerald-200 shadow-sm scale-105"
                   : haDatiOra
@@ -179,22 +179,22 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
         })}
       </div>
 
-      {/* Info bar - compatta */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 bg-slate-800/20 text-sm text-slate-300 border-b border-slate-700/20">
+      {/* Info bar - ancora più compatta */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-1.5 bg-slate-800/20 text-xs text-slate-300 border-b border-slate-700/20">
         <span className="font-bold text-white">{site.name}</span>
-        <span className="text-slate-500">·</span>
+        <span className="text-slate-600">·</span>
         <span>{String(selectedHour).padStart(2, "0")}:00</span>
-        <span className="text-slate-500">·</span>
+        <span className="text-slate-600">·</span>
         <span>Decollo {site.alt}m</span>
-        <span className="text-slate-500">·</span>
+        <span className="text-slate-600">·</span>
         <span>Suolo: <strong>{hd?.windSpeed ?? "?"}</strong> km/h <strong>{hd ? dirName(hd.windDir) : "?"}</strong></span>
         {termiche && termiche.rateo > 0 && (
           <>
-            <span className="text-slate-500">·</span>
+            <span className="text-slate-600">·</span>
             <span className="text-amber-300 font-semibold">↑ {termiche.rateo.toFixed(1)} m/s</span>
-            <span className="text-slate-500">·</span>
+            <span className="text-slate-600">·</span>
             <span className="text-emerald-300 font-semibold">Base {termiche.base}m</span>
-            <span className="text-slate-500">·</span>
+            <span className="text-slate-600">·</span>
             <span className="text-orange-300 font-semibold">Top {termiche.top}m</span>
           </>
         )}
