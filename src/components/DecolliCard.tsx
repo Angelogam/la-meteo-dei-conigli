@@ -62,56 +62,29 @@ interface DecolliCardProps {
   weatherMap?: Record<string, any>;
 }
 
-/** Trova l'ora più vicina all'ora corrente tra i dati hourly */
-function getClosestHour(hourly: any[]): any | null {
-  if (!hourly || hourly.length === 0) return null;
-  const now = new Date();
-  const currentHour = now.getHours();
-  const today = now.toDateString();
-
-  // Cerca esattamente l'ora corrente di oggi
-  const exact = hourly.find((h: any) => {
-    const t = new Date(h.time);
-    return t.toDateString() === today && t.getHours() === currentHour;
-  });
-  if (exact) return exact;
-
-  // Fallback: ultima ora di oggi
-  const todayHours = hourly.filter((h: any) => {
-    const t = new Date(h.time);
-    return t.toDateString() === today;
-  });
-  if (todayHours.length > 0) {
-    return todayHours.reduce((prev: any, curr: any) => {
-      const prevT = new Date(prev.time);
-      const currT = new Date(curr.time);
-      return Math.abs(currT.getHours() - currentHour) < Math.abs(prevT.getHours() - currentHour) ? curr : prev;
-    }, todayHours[0]);
-  }
-
-  return hourly[0];
+interface LiveDato {
+  temp: number;
+  wind: number;
+  gust: number | null;
+  dir: number;
+  code: number;
 }
 
-/** Estrae i dati vento da un dato orario weatherService */
-function extractWind(d: any): { temp: number; wind: number; gust: number; dir: number; code: number } | null {
-  if (!d) return null;
-  const temp = d.temperature ?? d.temp ?? 20;
-  const wind = d.windSpeed ?? d.wind_speed_10m ?? 0;
-  const gust = d.windGusts ?? d.wind_gusts_10m ?? null;
-  const dir = d.windDir ?? d.wind_direction_10m ?? 0;
-  const code = d.weatherCode ?? d.weather_code ?? 0;
-  return { temp, wind, gust, dir, code };
-}
-
-/** Carica vento reale per TUTTI i decolli (fetch singolo per decollo) */
-async function caricaTuttiIVenti(): Promise<Record<string, { temp: number; wind: number; gust: number; dir: number; code: number } | null>> {
-  const risultati: Record<string, any> = {};
+/** Carica vento reale per TUTTI i decolli */
+async function caricaTuttiIVenti(): Promise<Record<string, LiveDato | null>> {
+  const risultati: Record<string, LiveDato | null> = {};
 
   for (const item of DECOLLI) {
     try {
       const { data } = await weatherService.fetchCurrent(item.lat, item.lon);
       if (data) {
-        risultati[item.name] = extractWind(data);
+        risultati[item.name] = {
+          temp: data.temperature ?? 20,
+          wind: data.windSpeed ?? 0,
+          gust: data.windGusts ?? null,
+          dir: data.windDir ?? 0,
+          code: data.weatherCode ?? 0,
+        };
       }
     } catch {
       // silenzioso
@@ -121,7 +94,7 @@ async function caricaTuttiIVenti(): Promise<Record<string, { temp: number; wind:
 }
 
 const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardProps) => {
-  const [liveData, setLiveData] = useState<Record<string, any>>({});
+  const [liveData, setLiveData] = useState<Record<string, LiveDato | null>>({});
   const isFirstMount = useRef(true);
 
   const avviaAggiornamento = useCallback(async () => {
@@ -146,23 +119,27 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardP
     const live = liveData[id];
     if (live) return live;
 
-    // Priorità 2: dati hourly da weatherMap (usa l'ora più vicina)
-    if (weatherMap?.[id]) {
-      const hourly = weatherMap[id];
-      if (Array.isArray(hourly) && hourly.length > 0) {
-        const closest = getClosestHour(hourly);
-        const extracted = extractWind(closest);
-        if (extracted) return extracted;
-      }
-    }
+    // Priorità 2: weatherMap (dati già caricati)
+    if (!weatherMap?.[id]) return null;
+    const hourly = weatherMap[id];
+    if (!Array.isArray(hourly) || hourly.length === 0) return null;
 
-    return null;
+    const last = hourly[hourly.length - 1];
+    if (!last) return null;
+
+    return {
+      temp: last.temperature ?? 20,
+      wind: last.windSpeed ?? 0,
+      gust: last.windGusts ?? null,
+      dir: last.windDir ?? 0,
+      code: last.weatherCode ?? 0,
+    };
   };
 
   return (
     <div className="bg-slate-900/80 border border-slate-700/60 rounded-xl p-4">
       <h2 className="text-base font-bold text-white mb-3">
-        Decolli disponibili ({decolli.length}) — Vento reale
+        Decolli disponibili ({decolli.length})
       </h2>
 
       <div
@@ -225,20 +202,23 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardP
 
               {/* VENTO ATTUALE QUOTA DECOLLO + PUNTO CARDINALE + KM/H */}
               <div className="mt-1.5 pt-1.5 border-t border-slate-700/30">
+                <div className="text-[11px] text-slate-500 mb-1">
+                  Vento attuale quota decollo
+                </div>
                 <div className="flex justify-between items-center text-sm">
                   <div className="flex items-center gap-1 text-emerald-400">
                     <Wind size={16} />
-                    <span className="font-bold text-white">
+                    <span className="font-bold">
                       {wind != null ? `${wind} km/h` : "N/D"}
                     </span>
-                    {gust != null && gust > wind && (
+                    {gust != null && (
                       <span className="text-[10px] text-red-300 font-normal">
-                        raff. {gust}
+                        (raff. {gust})
                       </span>
                     )}
                   </div>
                   {dir != null && (
-                    <span className="text-slate-300 font-bold text-xs">
+                    <span className="text-slate-300 font-bold">
                       {dirArrow} {dirLabel} ({dir}°)
                     </span>
                   )}
