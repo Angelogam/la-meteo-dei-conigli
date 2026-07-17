@@ -11,6 +11,7 @@ import WeatherDashboard from "@/components/WeatherDashboard";
 import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
+import Windgram from "@/components/Windgram";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
 import MeteoTesterPanel from "@/components/MeteoTesterPanel";
@@ -40,6 +41,7 @@ export default function Index() {
     loadWeather,
     hourlyData,
     allHourlyData,
+    allDailyData,
     activeModel,
     currentCape,
   } = useWeatherData();
@@ -108,6 +110,10 @@ export default function Index() {
       windGusts: data.windGusts,
     };
   }, [currentData, currentDataAvanzato]);
+
+  // Gestione tab aggiuntive
+  const extendedTabs = ["meteo", "venti", "windgram", "termiche", "analisi"] as const;
+  type ExtendedTab = typeof extendedTabs[number];
 
   if (weatherLoading && (!hourlyData || hourlyData.length === 0)) {
     return (
@@ -213,7 +219,7 @@ export default function Index() {
                   selectedHour={selectedHour}
                   onHourSelect={setSelectedHour}
                 />
-                <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+                <TabNav activeTab={activeTab as any} onTabChange={(tab) => setActiveTab(tab as any)} />
                 {activeTab === "meteo" && (
                   <MeteoTab
                     currentData={currentData}
@@ -235,6 +241,14 @@ export default function Index() {
                     selectedDay={selectedDay}
                     oraCorrente={selectedHour}
                     onOraChange={setSelectedHour}
+                  />
+                )}
+                {activeTab === "windgram" && (
+                  <Windgram
+                    hourlyData={meteoHourlyForAnalysis}
+                    site={{ name: site!.name, alt: site!.altitude, lat: site!.lat, lon: site!.lon }}
+                    selectedHour={selectedHour}
+                    onHourSelect={setSelectedHour}
                   />
                 )}
                 {activeTab === "termiche" && (
