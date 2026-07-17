@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
@@ -21,8 +21,14 @@ import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { DECOLLI } from "@/data/decolli";
 import { getStabilityIndex } from "@/utils/weatherHelpers";
 import { Activity } from "lucide-react";
+import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
 
 export default function Index() {
+  // Avvia verifica continua all'avvio
+  useEffect(() => {
+    avviaVerificaContinua(60000); // ogni 60 secondi
+  }, []);
+
   const {
     selectedId, setSelectedId,
     loading: weatherLoading,

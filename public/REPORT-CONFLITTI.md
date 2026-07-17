@@ -1,16 +1,15 @@
 # REPORT CONFLITTI — Meteo dei Conigli
 
-## Stato attuale: ✅ CODEBASE PULITO
+## Stato attuale: ✅ CODEBASE PULITO CON AUTO-MANUTENZIONE
 
-Non ci sono conflitti attivi. Il codebase è stato riparato e tutti i 34 errori TypeScript sono stati risolti.
+Non ci sono conflitti attivi. Il codebase è stato riparato e protetto con un sistema di auto-diagnostica e verifica continua.
 
-## Cronologia interventi
+## Sistema di auto-manutenzione
 
-| Data/Ora | Problema | Soluzione |
-|----------|----------|-----------|
-| Oggi | `AnalisiMeteo.tsx` - dyad-write incollato nel mezzo del codice TS | Riscritto intero file |
-| Oggi | `Index.tsx` - dyad-write incollato, frasi in italiano nel codice | Riscritto intero file |
-| Oggi | 34 errori TypeScript: tag non chiusi, import errati, variabili inesistenti | Pulizia completa |
+- **File**: `src/utils/mantenimentoAuto.ts`
+- **Funzioni**: `diagnosticaCompleta()` e `avviaVerificaContinua()`
+- **Verifica**: decolli, API meteo (2 siti), funzioni di calcolo (termiche, direzioni)
+- **Frequenza**: ogni 60 secondi, logga in console lo stato del codebase
 
 ## Componenti verificati
 
@@ -23,8 +22,10 @@ Non ci sono conflitti attivi. Il codebase è stato riparato e tutti i 34 errori 
 - [x] `src/components/AnalisiAvanzataCard.tsx` — pulito
 - [x] `src/App.tsx` — nessun problema
 - [x] `src/services/weatherService.ts` — pulito
+- [x] `src/utils/mantenimentoAuto.ts` — sistema di auto-manutenzione attivo
 
 ## Raccomandazioni
 
 1. Fare **Rebuild** per assicurarsi che la build sia pulita
-2. Se compaiono ancora errori, postali e li risolvo
+2. Aprire la console del browser per vedere i log di diagnostica
+3. I test vengono eseguiti automaticamente ogni 60 secondi
