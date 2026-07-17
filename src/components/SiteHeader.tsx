@@ -82,10 +82,14 @@ export default function SiteHeader({
               {getWeatherIcon(currentData.weatherCode || 0, currentData.isDay || 1)}
             </span>
             {isOvercast && (
-              <span className="text-2xl shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-7 h-7 text-slate-200">
-                  <ellipse cx="28" cy="26" rx="14" ry="9" fill="currentColor" opacity="0.7"/>
-                  <ellipse cx="22" cy="22" rx="12" ry="8" fill="currentColor" opacity="0.55"/>
+              <span className="flex items-center -ml-1">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" className="w-6 h-6 text-slate-500/60">
+                  <ellipse cx="20" cy="22" rx="12" ry="7" fill="currentColor"/>
+                  <ellipse cx="15" cy="18" rx="9" ry="6" fill="currentColor" opacity="0.7"/>
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" className="w-5 h-5 text-slate-600/50 -ml-2 mt-1">
+                  <ellipse cx="20" cy="22" rx="10" ry="6" fill="currentColor"/>
+                  <ellipse cx="16" cy="19" rx="8" ry="5" fill="currentColor" opacity="0.7"/>
                 </svg>
               </span>
             )}
