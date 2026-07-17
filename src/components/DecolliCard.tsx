@@ -46,6 +46,31 @@ function getCurrentHour(): string {
   });
 }
 
+/**
+ * Restituisce l'ora corrente nel fuso Europe/Rome (UTC+1 o UTC+2 se ora legale).
+ */
+function getRomeHour(): number {
+  const now = new Date();
+  const utcHour = now.getUTCHours();
+  // Italia: UTC+1 in inverno, UTC+2 in estate (CEST, ultima domenica di marzo a fine ottobre)
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  // Approssimazione semplice: da aprile a settembre CEST, resto CET
+  const isCest = month > 3 && month < 10;
+  return (utcHour + (isCest ? 2 : 1)) % 24;
+}
+
+/**
+ * Data odierna in formato YYYY-MM-DD nel fuso Europe/Rome.
+ */
+function getRomeDate(): string {
+  return new Date().toLocaleDateString("it-IT", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).split("/").reverse().join("-");
+}
+
 interface DecolloItem {
   nome: string;
   valle: string;
@@ -61,34 +86,55 @@ interface DecolliCardProps {
 }
 
 const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardProps) => {
-  // Trova il dato orario corrente per un dato id sito
+  // Trova il dato orario corrente usando il fuso Europe/Rome
   const getCurrentData = (id: string) => {
     if (!weatherMap?.[id]) return null;
     const hourly = weatherMap[id];
     if (!Array.isArray(hourly) || hourly.length === 0) return null;
-    const now = new Date();
+
+    const oraCorrente = getRomeHour();
+    const oggiRome = getRomeDate();
+
+    // Cerca un dato che abbia la stessa ora e lo stesso giorno nel fuso Rome
     const current = hourly.find((h: any) => {
+      if (!h.time) return false;
       const t = h.time instanceof Date ? h.time : new Date(h.time);
-      return (
-        !isNaN(t.getTime()) &&
-        t.getFullYear() === now.getFullYear() &&
-        t.getMonth() === now.getMonth() &&
-        t.getDate() === now.getDate() &&
-        t.getHours() === now.getHours()
-      );
+      if (isNaN(t.getTime())) return false;
+
+      // Estrai ora e data dal dato orario in formato ISO / Europe/Rome
+      const tUtc = t.getTime();
+      const tRome = new Date(tUtc + 3600000 * (getRomeHour() - t.getUTCHours()));
+      const oraRome = tRome.getHours();
+
+      const dataRome = tRome.toLocaleDateString("it-IT", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).split("/").reverse().join("-");
+
+      return oraRome === oraCorrente && dataRome === oggiRome;
     });
+
     if (current) return current;
-    // fallback: primo dato del giorno corrente
-    const today = hourly.find((h: any) => {
+
+    // Fallback: primo dato della giornata corrente
+    const oggiStesso = hourly.find((h: any) => {
+      if (!h.time) return false;
       const t = h.time instanceof Date ? h.time : new Date(h.time);
-      return (
-        !isNaN(t.getTime()) &&
-        t.getFullYear() === now.getFullYear() &&
-        t.getMonth() === now.getMonth() &&
-        t.getDate() === now.getDate()
-      );
+      if (isNaN(t.getTime())) return false;
+
+      const tUtc = t.getTime();
+      const dataRome = new Date(tUtc + 3600000 * (getRomeHour() - t.getUTCHours()))
+        .toLocaleDateString("it-IT", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).split("/").reverse().join("-");
+
+      return dataRome === oggiRome;
     });
-    return today || hourly[0] || null;
+
+    return oggiStesso || hourly[0] || null;
   };
 
   return (
@@ -134,7 +180,7 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardP
                 {item.nome}
               </div>
 
-              {/* GIORNO E ORA */}
+              {/* GIORNO E ORA (fuso Italy) */}
               <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5">
                 <Clock size={12} />
                 <span>{getCurrentDateTime()} · {getCurrentHour()}</span>
