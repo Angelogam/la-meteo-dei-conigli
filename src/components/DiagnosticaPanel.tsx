@@ -8,7 +8,6 @@ import {
   AlertTriangle,
   Info,
   Activity,
-  Clock,
   Thermometer,
   Wind,
   Cloud,
@@ -71,11 +70,22 @@ export default function DiagnosticaPanel() {
   const [isRunning, setIsRunning] = useState(false);
   const [risultato, setRisultato] = useState<RisultatoDiagnostica | null>(null);
   const [log, setLog] = useState<string[]>([]);
+  const [logLines, setLogLines] = useState<string[]>([]);
+
+  const addLog = useCallback(
+    (msg: string) => {
+      setLogLines((prev) => {
+        const nuovo = [...prev, msg];
+        return nuovo.length > 500 ? nuovo.slice(-500) : nuovo;
+      });
+    },
+    []
+  );
 
   const avviaDiagnostica = useCallback(async () => {
     setIsRunning(true);
     setRisultato(null);
-    setLog([]);
+    setLogLines([]);
     addLog("Avvio diagnostica completa dell'applicazione...");
     addLog("");
 
@@ -86,7 +96,7 @@ export default function DiagnosticaPanel() {
 
       addLog("=== DIAGNOSTICA COMPLETATA ===");
       addLog(
-        "Passati: " + res.testPassati + "/" + res.testEseguiti,
+        "Passati: " + res.testPassati + "/" + res.testEseguiti
       );
       addLog("Falliti: " + res.testFalliti);
       addLog("Tempo: " + res.tempoEsecuzione + "ms");
@@ -94,112 +104,15 @@ export default function DiagnosticaPanel() {
       addLog("=== DATI METEO ===");
       addLog(
         "Temperature: " +
-          (res.datiMeteo.temperatureOk ? "OK" : "ANOMALE"),
+          (res.datiMeteo.temperatureOk ? "OK" : "ANOMALE")
       );
       addLog(
-        "Vento: " +
-          (res.datiMeteo.ventoOk ? "OK" : "ANOMALO"),
+        "Vento: " + (res.datiMeteo.ventoOk ? "OK" : "ANOMALO")
       );
       addLog(
         "Nuvolosita: " +
-          (res.datiMeteo.nuvoleOk ? "OK" : "ANOMALA"),
+          (res.datiMeteo.nuvoleOk ? "OK" : "ANOMALA")
       );
-      add<dyad-write path="src/components/DiagnosticaPanel.tsx" description="Complete rewrite to fix all TS errors">
-"use client";
-
-import React, { useState, useCallback } from "react";
-import {
-  Play,
-  X,
-  XCircle,
-  AlertTriangle,
-  Info,
-  Activity,
-  Clock,
-  Thermometer,
-  Wind,
-  Cloud,
-  Bug,
-  Zap,
-  TrendingUp,
-} from "lucide-react";
-import {
-  diagnosticaCompletaApp,
-  type RisultatoDiagnostica,
-} from "@/utils/diagnosticaApp";
-
-function getSeveritaIcon(severita: string) {
-  switch (severita) {
-    case "critico":
-      return <XCircle className="w-4 h-4 text-red-400" />;
-    case "importante":
-      return <AlertTriangle className="w-4 h-4 text-orange-400" />;
-    case "minore":
-      return <Info className="w-4 h-4 text-amber-400" />;
-    case "info":
-      return <Info className="w-4 h-4 text-blue-400" />;
-    default:
-      return <Info className="w-4 h-4 text-slate-400" />;
-  }
-}
-
-function getSeveritaBg(severita: string) {
-  switch (severita) {
-    case "critico":
-      return "bg-red-900/20 border-red-800/40";
-    case "importante":
-      return "bg-orange-900/20 border-orange-800/40";
-    case "minore":
-      return "bg-amber-900/20 border-amber-800/40";
-    case "info":
-      return "bg-blue-900/20 border-blue-800/40";
-    default:
-      return "bg-slate-800/20 border-slate-700/40";
-  }
-}
-
-function getSeveritaBorder(severita: string) {
-  switch (severita) {
-    case "critico":
-      return "border-l-red-500";
-    case "importante":
-      return "border-l-orange-500";
-    case "minore":
-      return "border-l-amber-500";
-    case "info":
-      return "border-l-blue-500";
-    default:
-      return "border-l-slate-500";
-  }
-}
-
-export default function DiagnosticaPanel() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isRunning, setIsRunning] = useState(false);
-  const [risultato, setRisultato] = useState<RisultatoDiagnostica | null>(null);
-  const [log, setLog] = useState<string[]>([]);
-
-  const avviaDiagnostica = useCallback(async () => {
-    setIsRunning(true);
-    setRisultato(null);
-    setLog([]);
-    addLog("Avvio diagnostica completa dell'applicazione...");
-    addLog("");
-
-    try {
-      const res = await diagnosticaCompletaApp();
-      setRisultato(res);
-      setIsRunning(false);
-
-      addLog("=== DIAGNOSTICA COMPLETATA ===");
-      addLog("Passati: " + res.testPassati + "/" + res.testEseguiti);
-      addLog("Falliti: " + res.testFalliti);
-      addLog("Tempo: " + res.tempoEsecuzione + "ms");
-      addLog("");
-      addLog("=== DATI METEO ===");
-      addLog("Temperature: " + (res.datiMeteo.temperatureOk ? "OK" : "ANOMALE"));
-      addLog("Vento: " + (res.datiMeteo.ventoOk ? "OK" : "ANOMALO"));
-      addLog("Nuvolosita: " + (res.datiMeteo.nuvoleOk ? "OK" : "ANOMALA"));
       addLog("");
       addLog("=== DECOLLI ===");
       addLog(res.decolliOk ? "Tutti validi" : "Con problemi");
@@ -214,24 +127,27 @@ export default function DiagnosticaPanel() {
         addLog("");
         addLog("" + res.problemi.length + " problemi rilevati:");
         for (const p of res.problemi) {
-          addLog("[" + p.severita.toUpperCase() + "] " + p.componente + ": " + p.descrizione);
+          addLog(
+            "[" +
+              p.severita.toUpperCase() +
+              "] " +
+              p.componente +
+              ": " +
+              p.descrizione
+          );
         }
       } else {
         addLog("");
         addLog("NESSUN PROBLEMA RILEVATO!");
       }
     } catch (err) {
-      addLog("ERRORE: " + (err instanceof Error ? err.message : String(err)));
+      addLog(
+        "ERRORE: " +
+          (err instanceof Error ? err.message : String(err))
+      );
       setIsRunning(false);
     }
-  }, []);
-
-  const addLog = useCallback((msg: string) => {
-    setLog((prev) => {
-      const nuovo = [...prev, msg];
-      return nuovo.length > 500 ? nuovo.slice(-500) : nuovo;
-    });
-  }, []);
+  }, [addLog]);
 
   if (!isOpen) {
     return (
@@ -257,12 +173,16 @@ export default function DiagnosticaPanel() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50 bg-slate-900/80 shrink-0">
         <div className="flex items-center gap-3">
           <Activity className="w-5 h-5 text-teal-400" />
-          <span className="text-sm font-bold text-white">Diagnostica completa app</span>
+          <span className="text-sm font-bold text-white">
+            Diagnostica completa app
+          </span>
           {risultato && (
             <span
               className={
                 "text-xs " +
-                (risultato.testFalliti === 0 ? "text-green-400" : "text-red-400")
+                (risultato.testFalliti === 0
+                  ? "text-green-400"
+                  : "text-red-400")
               }
             >
               {risultato.testPassati}/{risultato.testEseguiti}
@@ -275,7 +195,7 @@ export default function DiagnosticaPanel() {
             disabled={isRunning}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-600 text-xs text-white disabled:opacity-50"
           >
-            <Play className="w-3.5 h-3.5" />{" "}
+            <Play className="w-3.5 h-3.5" />
             {isRunning ? "Esecuzione..." : "Avvia diagnostica"}
           </button>
           <button
@@ -298,7 +218,9 @@ export default function DiagnosticaPanel() {
                 <div
                   className={
                     "text-3xl font-bold " +
-                    (risultato.testFalliti === 0 ? "text-green-400" : "text-red-400")
+                    (risultato.testFalliti === 0
+                      ? "text-green-400"
+                      : "text-red-400")
                   }
                 >
                   {risultato.testFalliti === 0
@@ -317,7 +239,9 @@ export default function DiagnosticaPanel() {
                   </div>
                 </div>
                 <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-3 text-center">
-                  <div className="text-[10px] text-slate-400">Tempo</div>
+                  <div className="text-[10px] text-slate-400">
+                    Tempo
+                  </div>
                   <div className="text-lg font-bold text-sky-300">
                     {risultato.tempoEsecuzione}ms
                   </div>
@@ -330,7 +254,8 @@ export default function DiagnosticaPanel() {
                 </div>
                 <div className="flex items-center justify-between text-[10px]">
                   <span className="text-slate-400">
-                    <Thermometer className="w-3 h-3 inline mr-1" /> Temp
+                    <Thermometer className="w-3 h-3 inline mr-1" />{" "}
+                    Temp
                   </span>
                   <span
                     className={
@@ -372,10 +297,15 @@ export default function DiagnosticaPanel() {
                 </div>
                 <div className="flex items-center justify-between text-[10px]">
                   <span className="text-slate-400">
-                    <TrendingUp className="w-3 h-3 inline mr-1" /> Decolli
+                    <TrendingUp className="w-3 h-3 inline mr-1" />{" "}
+                    Decolli
                   </span>
                   <span
-                    className={risultato.decolliOk ? "text-green-400" : "text-red-400"}
+                    className={
+                      risultato.decolliOk
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }
                   >
                     {risultato.decolliOk ? "OK" : "NO"}
                   </span>
@@ -385,7 +315,11 @@ export default function DiagnosticaPanel() {
                     <Zap className="w-3 h-3 inline mr-1" /> Calcoli
                   </span>
                   <span
-                    className={risultato.calcoliOk ? "text-green-400" : "text-red-400"}
+                    className={
+                      risultato.calcoliOk
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }
                   >
                     {risultato.calcoliOk ? "OK" : "NO"}
                   </span>
@@ -395,7 +329,11 @@ export default function DiagnosticaPanel() {
                     <Bug className="w-3 h-3 inline mr-1" /> Funzioni
                   </span>
                   <span
-                    className={risultato.funzioniOk ? "text-green-400" : "text-red-400"}
+                    className={
+                      risultato.funzioniOk
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }
                   >
                     {risultato.funzioniOk ? "OK" : "NO"}
                   </span>
@@ -426,10 +364,12 @@ export default function DiagnosticaPanel() {
                     <div
                       className="flex items-center gap-1.5 font-bold"
                       style={{
-                        color: severityColors[p.severita] || "#94a3b8",
+                        color:
+                          severityColors[p.severita] || "#94a3b8",
                       }}
                     >
-                      {getSeveritaIcon(p.severita)} [{p.severita.toUpperCase()}]
+                      {getSeveritaIcon(p.severita)} [
+                      {p.severita.toUpperCase()}]
                     </div>
                     <div className="text-slate-300 mt-0.5">
                       {p.componente}: {p.descrizione}
@@ -448,7 +388,9 @@ export default function DiagnosticaPanel() {
           {!risultato && !isRunning && (
             <div className="text-center py-10 text-slate-500 text-sm">
               <Bug className="w-12 h-12 mx-auto mb-3 text-teal-500/40" />
-              <p className="font-bold mb-1">Diagnostica applicazione</p>
+              <p className="font-bold mb-1">
+                Diagnostica applicazione
+              </p>
               <p className="text-xs">
                 Verifica decolli, API meteo, calcoli e funzioni
               </p>
@@ -461,12 +403,12 @@ export default function DiagnosticaPanel() {
 
         <div className="flex-1 overflow-auto p-3 font-mono">
           <div className="text-[10px] leading-5 text-slate-400 whitespace-pre-wrap">
-            {log.length === 0 && (
+            {logLines.length === 0 && (
               <div className="text-center py-10 text-slate-600">
                 Premi "Avvia diagnostica" per iniziare
               </div>
             )}
-            {log.map((line, i) => (
+            {logLines.map((line, i) => (
               <div key={i} className="text-slate-400">
                 {line}
               </div>

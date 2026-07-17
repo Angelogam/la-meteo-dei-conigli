@@ -221,11 +221,11 @@ export default function AnalisiAvanzataCard({
 
       <div className="grid grid-cols-2 gap-2 mb-3">
         <div
-          className={`rounded-xl px-3 py-2 border text-xs flex items-center gap-2 ${getStabilitaColor(analisi.stabilitaAtmosferica)}`}
+          className={`rounded-xl px-3 py-2 border text-xs flex items-center gap-2 ${getStabilitaColor(analisi["stabilitàAtmosferica"])}`}
         >
-          {getStabilitaIcon(analisi.stabilitaAtmosferica)}
+          {getStabilitaIcon(analisi["stabilitàAtmosferica"])}
           <div>
-            <div className="font-bold">{analisi.stabilitaAtmosferica}</div>
+            <div className="font-bold">{analisi["stabilitàAtmosferica"]}</div>
             <div className="opacity-70">
               CAPE {analisi.cape} J/kg &middot; LI {analisi.liftedIndex}&deg;C
             </div>
