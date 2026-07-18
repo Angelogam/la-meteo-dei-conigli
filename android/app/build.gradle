@@ -24,7 +24,7 @@ android {
         }
     }
 
-    // JAVA 17 — questo serve per eliminare l’errore "invalid source release: 21"
+    // 🔥 FORZA JAVA 17 PER TUTTO IL MODULO APP
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
