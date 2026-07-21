@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
@@ -67,6 +67,64 @@ export default function Index() {
     currentData?.humidity || 50,
     currentData?.cloudCover || 30,
   );
+
+  const [meteoCard, setMeteoCard] = useState<any>(null);
+
+  const fetchMeteoCard = async () => {
+    try {
+      const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=44.2587&longitude=7.7943&current=temperature_2m,wind_speed_10m,relative_humidity_2m,pressure_msl&timezone=Europe/Rome");
+      const data = await res.json();
+      setMeteoCard({
+        mattina: {
+          temp: data.current.temperature_2m,
+          tempMax: data.daily?.temperature_2m_max?.[0] || 17,
+          vento: data.current.wind_speed_10m,
+          direzione: "NW",
+          base: 2005,
+          top: 2305,
+          umidita: data.current.relative_humidity_2m || 78,
+          pioggia: 0.2,
+          pressione: data.current.pressure_msl || 1013,
+          score: 8,
+          commentoVolo: "Termiche regolari, vento ideale per decollare tra le 10:30 e le 13:30.",
+        },
+        pomeriggio: {
+          temp: 19,
+          tempMax: 20,
+          vento: 5,
+          direzione: "S",
+          base: 2005,
+          top: 2305,
+          umidita: 92,
+          pioggia: 0.1,
+          pressione: 1013,
+          score: 8,
+          commentoVolo: "Ottima finestra di volo, attenzione a leggere inversioni e cali termici.",
+        },
+        sera: {
+          temp: 17,
+          tempMax: 19,
+          vento: 8,
+          direzione: "W",
+          base: 1961,
+          top: 2261,
+          umidita: 75,
+          pioggia: 0,
+          pressione: 1013,
+          score: 9,
+          commentoVolo: "Condizioni stabili, perfette per planate lunghe e atterraggi tranquilli.",
+        },
+      });
+    } catch (err) {
+      console.error("Errore nel fetch meteo:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchMeteoCard();
+    const interval = setInterval(fetchMeteoCard, 1800000); // ogni 30 minuti
+    return () => clearInterval(interval);
+  }, []);
 
   if (weatherLoading && (!hourlyData || hourlyData.length === 0)) {
     return (
@@ -239,56 +297,9 @@ export default function Index() {
 
                 {/* CARD ORARIE */}
                 <section className="flex flex-col gap-4 mt-4">
-                  <MeteoCardOraria
-                    fascia="Mattina"
-                    data={{
-                      temp: 16,
-                      tempMax: 17,
-                      vento: 11,
-                      direzione: "NW",
-                      base: 2005,
-                      top: 2305,
-                      umidita: 78,
-                      pioggia: 0.2,
-                      pressione: 1013,
-                      score: 8,
-                      commentoVolo: "Termiche regolari, vento ideale per decollare tra le 10:30 e le 13:30.",
-                    }}
-                  />
-
-                  <MeteoCardOraria
-                    fascia="Pomeriggio"
-                    data={{
-                      temp: 19,
-                      tempMax: 20,
-                      vento: 5,
-                      direzione: "S",
-                      base: 2005,
-                      top: 2305,
-                      umidita: 92,
-                      pioggia: 0.1,
-                      pressione: 1013,
-                      score: 8,
-                      commentoVolo: "Ottima finestra di volo, attenzione a leggere inversioni e cali termici.",
-                    }}
-                  />
-
-                  <MeteoCardOraria
-                    fascia="Sera"
-                    data={{
-                      temp: 17,
-                      tempMax: 19,
-                      vento: 8,
-                      direzione: "W",
-                      base: 1961,
-                      top: 2261,
-                      umidita: 75,
-                      pioggia: 0,
-                      pressione: 1013,
-                      score: 9,
-                      commentoVolo: "Condizioni stabili, perfette per planate lunghe e atterraggi tranquilli.",
-                    }}
-                  />
+                  <MeteoCardOraria fascia="Mattina" data={meteoCard?.mattina} />
+                  <MeteoCardOraria fascia="Pomeriggio" data={meteoCard?.pomeriggio} />
+                  <MeteoCardOraria fascia="Sera" data={meteoCard?.sera} />
                 </section>
               </>
             )}
