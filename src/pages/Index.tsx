@@ -23,6 +23,7 @@ import { getStabilityIndex } from "@/utils/weatherHelpers";
 import { Activity } from "lucide-react";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
 import FinestraSemplice from "@/components/FinestraSemplice";
+import MeteoCardOraria from "@/components/MeteoCardOraria";
 
 export default function Index() {
   // Avvia verifica continua all'avvio
@@ -235,6 +236,54 @@ export default function Index() {
                     note="Base 2000–2300 m, aria più umida."
                   />
                 </div>
+
+                {/* CARD ORARIE */}
+                <section className="flex flex-col gap-4 mt-4">
+                  <MeteoCardOraria
+                    fascia="Mattina"
+                    score={8}
+                    temp={16}
+                    tempMax={17}
+                    vento={11}
+                    direzione="NW"
+                    base={2005}
+                    top={2305}
+                    umidita={78}
+                    pioggia={0.2}
+                    pressione={1013}
+                    commentoVolo="Termiche regolari, vento ideale per decollare."
+                  />
+
+                  <MeteoCardOraria
+                    fascia="Pomeriggio"
+                    score={8}
+                    temp={19}
+                    tempMax={20}
+                    vento={5}
+                    direzione="S"
+                    base={2005}
+                    top={2305}
+                    umidita={92}
+                    pioggia={0.1}
+                    pressione={1013}
+                    commentoVolo="Ottima finestra di volo, attenzione a leggere inversioni."
+                  />
+
+                  <MeteoCardOraria
+                    fascia="Sera"
+                    score={9}
+                    temp={17}
+                    tempMax={19}
+                    vento={8}
+                    direzione="W"
+                    base={1961}
+                    top={2261}
+                    umidita={75}
+                    pioggia={0}
+                    pressione={1013}
+                    commentoVolo="Condizioni stabili, perfette per planate lunghe."
+                  />
+                </section>
               </>
             )}
             {!hasData && (
