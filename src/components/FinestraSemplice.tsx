@@ -22,19 +22,24 @@ export default function FinestraSemplice({
   termiche,
   note,
 }: FinestraProps) {
-  const coloreSfondo =
-    titolo.includes("Mattina")
-      ? "bg-blue-100"
-      : titolo.includes("Pomeriggio")
-      ? "bg-yellow-100"
-      : "bg-indigo-900 text-white";
+  const isMattina = titolo.includes("Mattina");
+  const isPomeriggio = titolo.includes("Pomeriggio");
+  const isSera = titolo.includes("Sera");
+
+  const bgColor = isMattina
+    ? "bg-blue-50"
+    : isPomeriggio
+    ? "bg-yellow-50"
+    : "bg-indigo-900";
+
+  const textColor = isSera ? "text-white" : "text-gray-900";
 
   return (
     <div
-      className={`rounded-xl border border-gray-300 p-4 text-left space-y-2 shadow-md hover:shadow-lg transition-shadow ${coloreSfondo}`}
+      className={`rounded-xl border border-gray-300 p-4 text-left space-y-2 shadow-sm hover:shadow-md transition-shadow ${bgColor} ${textColor}`}
     >
       <h3 className="text-lg font-semibold">{titolo}</h3>
-      <p className="text-sm font-medium text-green-700">{giudizio}</p>
+      <p className="text-sm font-medium text-green-600">{giudizio}</p>
 
       <div className="flex flex-col gap-1 text-sm">
         <p className="flex items-center gap-2">
@@ -48,8 +53,8 @@ export default function FinestraSemplice({
         </p>
       </div>
 
-      <p className="text-sm">
-        <strong>Finestra consigliata:</strong> {finestra}
+      <p className="text-sm font-semibold">
+        Finestra consigliata: {finestra}
       </p>
       <p className="text-xs italic opacity-80">{note}</p>
     </div>
