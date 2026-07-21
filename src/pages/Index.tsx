@@ -17,6 +17,7 @@ import AnalisiMeteo from "@/components/AnalisiMeteo";
 import MeteoTesterPanel from "@/components/MeteoTesterPanel";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import WindProfileUnified from "@/components/WindProfileUnified";
+import ThermalProfileGraph from "@/components/ThermalProfileGraph";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { DECOLLI } from "@/data/decolli";
@@ -258,6 +259,8 @@ export default function Index() {
                         zeroTermico: 3400,
                       }}
                     />
+                    {/* Grafico termico windgram/blipmap subito dopo MeteoAnalisi */}
+                    <ThermalProfileGraph />
                   </>
                 )}
                 {activeTab === "venti" && (
