@@ -1,5 +1,6 @@
 "use client";
 
+// === Esponenti pubblici ===
 export interface WindLevel {
   quota: number;
   vento: number;
@@ -62,22 +63,17 @@ export async function fetchRealWindData(
   warning: string | null;
 }> {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m&timezone=Europe/Rome&forecast_days=1`;
-
   try {
     const res = await fetch(url);
     if (!res.ok) return { livelliReali: [], warning: `Errore HTTP ${res.status}` };
-    const data = await res.json();
-
+    const raw = await res.json();
     const livelliReali = [
-      { quota: 10, speed: data.hourly.wind_speed_10m[0], dir: data.hourly.wind_direction_10m[0] },
-      { quota: 80, speed: data.hourly.wind_speed_80m[0], dir: data.hourly.wind_direction_80m[0] },
-      { quota: 120, speed: data.hourly.wind_speed_120m[0], dir: data.hourly.wind_direction_120m[0] },
-      { quota: 180, speed: data.hourly.wind_speed_180m[0], dir: data.hourly.wind_direction_180m[0] },
+      { quota: 10,  speed: raw.hourly.wind_speed_10m[0], dir: raw.hourly.wind_direction_10m[0] },
+      { quota: 80,  speed: raw.hourly.wind_speed_80m[0], dir: raw.hourly.wind_direction_80m[0] },
+      { quota: 120, speed: raw.hourly.wind_speed_120m[0], dir: raw.hourly.wind_direction_120m[0] },
+      { quota: 180, speed: raw.hourly.wind_speed_180m[0], dir: raw.hourly.wind_direction_180m[0] },
     ].filter(l => l.speed != null && !isNaN(l.speed) && l.dir != null && !isNaN(l.dir));
-
-    if (livelliReali.length === 0) {
-      return { livelliReali: [], warning: "Dati vento non disponibili." };
-    }
+    if (livelliReali.length === 0) return { livelliReali: [], warning: "Dati vento non disponibili." };
     return { livelliReali, warning: null };
   } catch (err) {
     return { livelliReali: [], warning: `Errore: ${err instanceof Error ? err.message : String(err)}` };
@@ -97,7 +93,6 @@ export function calcolaProfiloVento(
       direzioneMedia: "N",
     };
   }
-
   const sorted = [...livelliReali].sort((a, b) => a.quota - b.quota);
   let gradTot = 0, coppie = 0;
   for (let i = 1; i < sorted.length; i++) {
@@ -106,14 +101,12 @@ export function calcolaProfiloVento(
     if (dq > 0) { gradTot += dv / dq; coppie++; }
   }
   const gradienteMedio = coppie > 0 ? gradTot / coppie : 0.01;
-
   const dirsValide = sorted.map(l => l.dir).filter(d => d != null && !isNaN(d));
   const dirMediaDeg = dirsValide.length > 0 ? mediaDir(dirsValide) : 0;
   const direzioneMedia = degTo16Dir(dirMediaDeg);
   const speedBase = sorted[0]?.speed ?? 10;
   const quoteTarget = generaQuoteTarget(quotaDecollo);
   const profilo: WindLevel[] = [];
-
   const limiti: { min: number; max: number }[] = quoteTarget.map(q => {
     if (q <= quotaDecollo + 100) return { min: 3, max: 18 };
     if (q <= 2000) return { min: 8, max: 25 };
@@ -121,9 +114,7 @@ export function calcolaProfiloVento(
     if (q <= 2750) return { min: 15, max: 40 };
     return { min: 18, max: 45 };
   });
-
   let warning: string | null = null;
-
   for (let i = 0; i < quoteTarget.length; i++) {
     const quota = quoteTarget[i];
     const dist = Math.max(1, quota - 10);
@@ -134,16 +125,8 @@ export function calcolaProfiloVento(
     const dirq = ((dirMediaDeg + rot) % 360 + 360) % 360;
     profilo.push({ quota, vento, direzione: degTo16Dir(dirq) });
   }
-
   const hasExtreme = profilo.some(p => p.vento > 50);
   const hasJump = profilo.some((p, i) => i > 0 && Math.abs(p.vento - profilo[i - 1].vento) > 20);
   if (hasExtreme || hasJump) warning = "Profilo vento potenzialmente non realistico.";
-
-  return {
-    profilo,
-    warning,
-    datiReali: sorted,
-    gradienteMedio: Math.round(gradienteMedio * 1000) / 1000,
-    direzioneMedia,
-  };
+  return { profilo, warning, datiReali: sorted, gradienteMedio: Math.round(gradienteMedio * 1000) / 1000, direzioneMedia };
 }
