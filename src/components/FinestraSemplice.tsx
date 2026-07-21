@@ -1,7 +1,17 @@
 "use client";
 
-import React from "react";
-import { Wind, Thermometer, Sun, Clock } from "lucide-react";
+import React, { useState } from "react";
+import {
+  Wind,
+  Thermometer,
+  Sun,
+  Cloud,
+  CloudSun,
+  CloudRain,
+  Gauge,
+  Droplets,
+  Clock,
+} from "lucide-react";
 
 type FinestraProps = {
   titolo: string;
@@ -10,6 +20,9 @@ type FinestraProps = {
   vento: string;
   temperatura: string;
   termiche: string;
+  umidita: string;
+  pressione: string;
+  cielo: string;
   note: string;
 };
 
@@ -20,26 +33,37 @@ export default function FinestraSemplice({
   vento,
   temperatura,
   termiche,
+  umidita,
+  pressione,
+  cielo,
   note,
 }: FinestraProps) {
-  const isBuono = giudizio.toLowerCase().includes("buono");
-  const isOttimo = giudizio.toLowerCase().includes("ottimo");
-  const isIncerto = giudizio.toLowerCase().includes("incerto");
+  const [aperta, setAperta] = useState(false);
 
-  const borderColor = isOttimo
-    ? "border-green-400"
-    : isBuono
-    ? "border-emerald-500"
-    : isIncerto
-    ? "border-yellow-400"
-    : "border-red-500";
+  const iconaCielo =
+    cielo.toLowerCase().includes("sereno")
+      ? <Sun size={20} className="text-yellow-400" />
+      : cielo.toLowerCase().includes("cumuli")
+      ? <CloudSun size={20} className="text-sky-300" />
+      : cielo.toLowerCase().includes("coperto")
+      ? <Cloud size={20} className="text-gray-400" />
+      : cielo.toLowerCase().includes("pioggia")
+      ? <CloudRain size={20} className="text-blue-400" />
+      : <Cloud size={20} className="text-gray-300" />;
 
   return (
     <div
-      className={`rounded-xl border ${borderColor} bg-[#0f172a] p-4 text-left space-y-2 shadow-md hover:shadow-lg transition-shadow`}
+      onClick={() => setAperta(!aperta)}
+      className={`rounded-xl border border-[#1e293b] bg-[#0f172a] p-4 text-left space-y-2 shadow-md hover:shadow-lg transition-all cursor-pointer ${
+        aperta ? "ring-2 ring-emerald-500" : ""
+      }`}
     >
-      <h3 className="text-lg font-semibold text-white">{titolo}</h3>
-      <p className="text-sm font-medium text-emerald-400">{giudizio}</p>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-white">{titolo}</h3>
+        {iconaCielo}
+      </div>
+
+      <p className="text-sm font-medium text-[#22c55e]">{giudizio}</p>
 
       <div className="flex flex-col gap-1 text-sm text-gray-200">
         <p className="flex items-center gap-2">
@@ -56,7 +80,19 @@ export default function FinestraSemplice({
         </p>
       </div>
 
-      <p className="text-xs italic text-gray-400">{note}</p>
+      {aperta && (
+        <div className="mt-2 border-t border-gray-700 pt-2 text-sm text-gray-300 space-y-1">
+          <p className="flex items-center gap-2">
+            <Droplets size={14} className="text-blue-400" /> Umidità: {umidita}
+          </p>
+          <p className="flex items-center gap-2">
+            <Gauge size={14} className="text-purple-400" /> Pressione: {pressione}
+          </p>
+          <p className="flex items-center gap-2 italic text-gray-400">
+            <Cloud size={14} /> {note}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
