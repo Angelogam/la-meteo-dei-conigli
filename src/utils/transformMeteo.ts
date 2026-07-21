@@ -55,6 +55,10 @@ export function transformHourlyData(raw: RawMeteoResponse["hourly"]): HourData[]
 }
 
 export function transformCurrentData(raw: RawMeteoResponse["current"]): CurrentData {
+  console.log("RAW CURRENT DATA:", raw.current);
+  console.log("RAW HOURLY DATA:", raw.hourly);
+  console.log("RAW DAILY DATA:", raw.daily);
+
   return {
     time: new Date(raw.time),
     temperature: raw.temperature_2m as number,
