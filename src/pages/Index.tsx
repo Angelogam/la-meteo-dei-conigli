@@ -24,6 +24,7 @@ import { Activity } from "lucide-react";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
 import FinestraSemplice from "@/components/FinestraSemplice";
 import MeteoCardOraria from "@/components/MeteoCardOraria";
+import MeteoAnalisi from "@/components/MeteoAnalisi";
 
 export default function Index() {
   // Avvia verifica continua all'avvio
@@ -220,17 +221,40 @@ export default function Index() {
                 />
                 <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
                 {activeTab === "meteo" && (
-                  <MeteoTab
-                    currentData={currentData}
-                    dayData={dayData}
-                    site={{ alt: site!.altitude, name: site!.name }}
-                    thermalDelta={thermalDelta}
-                    stabilityIndex={stabilityIndex}
-                    modelName={activeModel}
-                    cape={currentCape?.cape}
-                    liftedIndex={currentCape?.liftedIndex}
-                    cin={currentCape?.cin}
-                  />
+                  <>
+                    <MeteoTab
+                      currentData={currentData}
+                      dayData={dayData}
+                      site={{ alt: site!.altitude, name: site!.name }}
+                      thermalDelta={thermalDelta}
+                      stabilityIndex={stabilityIndex}
+                      modelName={activeModel}
+                      cape={currentCape?.cape}
+                      liftedIndex={currentCape?.liftedIndex}
+                      cin={currentCape?.cin}
+                    />
+                    <MeteoAnalisi
+                      data={{
+                        ventoDecollo: 9,
+                        ventoAtterraggio: 6,
+                        raffiche: 46.1,
+                        baseNuvole: 250,
+                        topTermiche: 1500,
+                        forzaTermica: 5.0,
+                        turbolenza: "Forte",
+                        cape: 2930,
+                        liftedIndex: -7.4,
+                        cin: 0,
+                        umidita: 88,
+                        pressione: 1013,
+                        nuvolosita: 85,
+                        uvIndex: 7.3,
+                        deltaT: 6,
+                        gradiente: 0.98,
+                        pioggia: 0,
+                      }}
+                    />
+                  </>
                 )}
                 {activeTab === "venti" && (
                   <VentiInterpolatiTab
