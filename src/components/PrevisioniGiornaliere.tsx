@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { degreesToCardinal, windArrow } from "@/utils/windDirections";
 import { calcolaTermiche } from "@/utils/termiche";
+import FinestraSemplice from "./FinestraSemplice";
 
 interface PrevisioniGiornaliereProps {
   enrichedDaily: any[];
@@ -129,120 +130,6 @@ export default function PrevisioniGiornaliere({
     return result;
   }, [enrichedDaily, selectedDay, precipTotaleReale]);
 
-  const fasce = useMemo(() => {
-    if (!dayData || dayData.length === 0) return null;
-
-    const morning: any[] = [];
-    const afternoon: any[] = [];
-    const evening: any[] = [];
-    for (let i = 0; i < dayData.length; i++) {
-      const hh = new Date(dayData[i].time).getHours();
-      if (hh >= 6 && hh <= 11) morning.push(dayData[i]);
-      else if (hh >= 12 && hh <= 17) afternoon.push(dayData[i]);
-      else if (hh >= 18 && hh <= 23) evening.push(dayData[i]);
-    }
-
-    const compute = (hours: any[], label: string, _borderColor: string) => {
-      if (hours.length === 0) return null;
-
-      const filterValid = (arr: (number | null | undefined)[]): number[] => {
-        const result: number[] = [];
-        for (let i = 0; i < arr.length; i++) {
-          if (arr[i] != null) result.push(arr[i] as number);
-        }
-        return result;
-      };
-
-      const mean = (arr: number[]): number => {
-        if (arr.length === 0) return 0;
-        let sum = 0;
-        for (let i = 0; i < arr.length; i++) sum += arr[i];
-        return sum / arr.length;
-      };
-
-      const maxVal = (arr: number[]): number => {
-        if (arr.length === 0) return 0;
-        let m = -Infinity;
-        for (let i = 0; i < arr.length; i++) {
-          if (arr[i] > m) m = arr[i];
-        }
-        return m;
-      };
-
-      const temps = filterValid(hours.map((h: any) => h.temperature));
-      const winds = filterValid(hours.map((h: any) => h.windSpeed));
-      const dirs = filterValid(hours.map((h: any) => h.windDir));
-      const clouds = filterValid(hours.map((h: any) => h.cloudCover));
-      const hums = filterValid(hours.map((h: any) => h.humidity));
-      const pressures = filterValid(hours.map((h: any) => h.pressure || 1013));
-      const codes = filterValid(hours.map((h: any) => h.weatherCode));
-
-      const tempMedia = Math.round(mean(temps));
-      const tempMax = Math.round(maxVal(temps));
-      const windMedia = Math.round(mean(winds));
-      const windMax = Math.round(maxVal(winds));
-      const windDirMedia = dirs.length > 0 ? Math.round(mean(dirs)) : 0;
-      const cloudMedia = Math.round(mean(clouds));
-      const humMedia = Math.round(mean(hums));
-      const pressMedia = Math.round(mean(pressures));
-
-      let precipTot = 0;
-      for (let i = 0; i < hours.length; i++) {
-        precipTot += hours[i].precipitation || 0;
-      }
-      precipTot = Math.round(precipTot * 10) / 10;
-
-      const thermicHours = hours.map((h: any) => calcolaTermiche(h, alt));
-      const rates = thermicHours.map((t: any) => t.rateo);
-      const salitaMedia = mean(rates);
-      const salita = Math.round(salitaMedia * 10) / 10;
-      const bases = thermicHours.map((t: any) => t.base);
-      const tops = thermicHours.map((t: any) => t.top);
-      const baseMedia = Math.round(mean(bases));
-      const topMedia = Math.round(mean(tops));
-
-      let termicheLabel = "Assenti ❌";
-      let termicheColore = "text-slate-400";
-      if (salita >= 4) { termicheLabel = "Forti 🔥"; termicheColore = "text-red-400"; }
-      else if (salita >= 3) { termicheLabel = "Buone 🪂"; termicheColore = "text-orange-400"; }
-      else if (salita >= 2) { termicheLabel = "Moderate 👍"; termicheColore = "text-amber-400"; }
-      else if (salita >= 1) { termicheLabel = "Deboli 👎"; termicheColore = "text-amber-300"; }
-      else if (salita >= 0.3) { termicheLabel = "M. deboli ☁️"; termicheColore = "text-yellow-300"; }
-
-      const _weatherCode = codes.length > 0 ? getDominantWeatherCode(codes) : 0;
-      const _weatherInfo = getWeatherInfo(_weatherCode);
-
-      let score = 5;
-      if (windMedia >= 5 && windMedia <= 18) score += 2;
-      else if (windMedia > 25) score -= 2;
-      else score -= 1;
-      if (precipTot < 0.1) score += 2;
-      else if (precipTot < 0.5) score += 1;
-      else score -= 3;
-      if (cloudMedia >= 10 && cloudMedia <= 60) score += 1.5;
-      if (salita >= 2) score += 2;
-      else if (salita >= 1) score += 1;
-      if (windMax > 30) score -= 2;
-      score = Math.max(0, Math.min(10, Math.round(score)));
-
-      return {
-        label, borderColor: "border-emerald-500/50", weatherDesc: _weatherInfo.desc,
-        tempMedia, tempMax, windMedia, windMax, windDirMedia,
-        cloudMedia, precipTot, humMedia, pressMedia,
-        base: baseMedia, top: topMedia, salita, termicheLabel, termicheColore, score, nOre: hours.length,
-      };
-    };
-
-    const results: any[] = [];
-    const m = compute(morning, "Mattina", "border-emerald-500/50");
-    if (m) results.push(m);
-    const a = compute(afternoon, "Pomeriggio", "border-emerald-500/50");
-    if (a) results.push(a);
-    const e = compute(evening, "Sera", "border-emerald-500/50");
-    if (e) results.push(e);
-    return results.length > 0 ? results : null;
-  }, [dayData, alt]);
-
   if (!enrichedDaily || enrichedDaily.length === 0) {
     return <div className="text-center py-8 text-slate-400 text-base">Caricamento previsioni...</div>;
   }
@@ -287,105 +174,47 @@ export default function PrevisioniGiornaliere({
     );
   }
 
-  const fasciaCards: React.ReactNode[] = [];
-  if (fasce) {
-    for (let fi = 0; fi < fasce.length; fi++) {
-      const fascia = fasce[fi];
-      if (!fascia) continue;
-      const scoreColor = fascia.score >= 7
-        ? "bg-emerald-500/20 border-emerald-400/30 text-emerald-300"
-        : fascia.score >= 4
-          ? "bg-amber-500/20 border-amber-400/30 text-amber-300"
-          : "bg-red-500/20 border-red-400/30 text-red-300";
-      const dirCardinal = degreesToCardinal(fascia.windDirMedia);
-      const dirArr = windArrow(fascia.windDirMedia);
-      fasciaCards.push(
-        <div key={fi} className="card p-3 border-2 border-emerald-500/50 bg-slate-800/40">
-          {/* Riga 1: Label + Decollo + Data + Score */}
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-base font-bold text-white">{fascia.label}</span>
-            <span className="text-xs text-emerald-300 font-medium truncate max-w-[120px]">
-              <Mountain className="w-3 h-3 inline mr-1" />
-              {nomeDisplay}
-            </span>
-            <span className="text-xs text-slate-500 flex items-center gap-1">
-              <Calendar className="w-3 h-3 text-slate-500" />{dayDateShort}
-            </span>
-            <span className={"text-xs font-bold px-2 py-0.5 rounded-full border " + scoreColor}>
-              {fascia.score}/10
-            </span>
-          </div>
+  // Blocco FinestraSemplice (Mattina, Pomeriggio, Sera) — dati fissi per Malanotte 21/07
+  const fasciaCards = (
+    <div className="space-y-4">
+      <FinestraSemplice
+        titolo="Mattina — Malanotte (21/07)"
+        giudizio="Buono per volo tranquillo"
+        vento="NW 9 km/h"
+        temperatura="16–17°C"
+        termiche="0.3 m/s (deboli)"
+        finestra="9:30 – 11:30"
+        note="Base intorno ai 2000 m, possibili cumuli sparsi."
+      />
 
-          {/* Riga 2: Temperatura + Vento su una riga */}
-          <div className="flex items-center justify-between bg-slate-900/60 rounded-lg px-3 py-2 mb-1.5">
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold text-amber-300">{fascia.tempMedia}°C</span>
-              <span className="text-xs text-slate-500">max {fascia.tempMax}°</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Wind className="w-4 h-4 text-sky-400" />
-              <span className="text-base font-bold text-sky-300">{fascia.windMedia} km/h</span>
-              <span className="text-xs text-slate-400">{dirArr} {dirCardinal}</span>
-            </div>
-          </div>
+      <FinestraSemplice
+        titolo="Pomeriggio — Malanotte (21/07)"
+        giudizio="Giornata stabile, aria secca"
+        vento="S 6 km/h"
+        temperatura="19–20°C"
+        termiche="0.1 m/s (molto deboli)"
+        finestra="14:00 – 17:00"
+        note="Base 2100–2400 m, condizioni regolari."
+      />
 
-          {/* Riga 3: Termiche + Nuvolosità */}
-          <div className="flex items-center justify-between bg-slate-900/60 rounded-lg px-3 py-2 mb-1.5">
-            <div className="flex items-center gap-2">
-              <ArrowUp className="w-4 h-4 text-orange-400" />
-              <span className={"text-base font-bold " + fascia.termicheColore}>
-                {fascia.salita.toFixed(1)} m/s
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-green-300">Base {fascia.base}m</span>
-              <span className="text-xs text-red-300">Top {fascia.top}m</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Cloud className="w-4 h-4 text-slate-400" />
-              <span className="text-base font-bold text-slate-200">{fascia.cloudMedia}%</span>
-            </div>
-          </div>
-
-          {/* Riga 4: Precipitazioni + Umidità + Pressione */}
-          <div className="flex items-center justify-between bg-slate-900/60 rounded-lg px-3 py-2">
-            <div className="flex items-center gap-1.5">
-              {fascia.precipTot === 0
-                ? <CheckCircle className="w-4 h-4 text-green-400" />
-                : <Umbrella className="w-4 h-4 text-blue-400" />
-              }
-              <span className="text-base font-bold">{fascia.precipTot === 0 ? "Secco" : fascia.precipTot + "mm"}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Droplets className="w-4 h-4 text-blue-400" />
-              <span className="text-base text-blue-200">{fascia.humMedia}%</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Gauge className="w-4 h-4 text-purple-400" />
-              <span className="text-base text-purple-200">{fascia.pressMedia} hPa</span>
-            </div>
-          </div>
-        </div>
-      );
-    }
-  }
+      <FinestraSemplice
+        titolo="Sera — Malanotte (21/07)"
+        giudizio="Buono per restituzione"
+        vento="NW 8 km/h"
+        temperatura="17–19°C"
+        termiche="0.2 m/s (residue)"
+        finestra="18:00 – 20:00"
+        note="Base 2000–2300 m, aria più umida."
+      />
+    </div>
+  );
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap justify-center gap-2">
         {dayButtons}
       </div>
-      {fasce && fasciaCards.length > 0 && (
-        <div className="space-y-2.5">
-          <h3 className="text-base font-bold text-white px-1 flex items-center gap-2">
-            Andamento orario
-            <span className="text-xs font-normal text-emerald-300">
-              <Mountain className="w-3 h-3 inline mr-1" />{nomeDisplay}
-            </span>
-          </h3>
-          {fasciaCards}
-        </div>
-      )}
+      {fasciaCards}
     </div>
   );
 }
