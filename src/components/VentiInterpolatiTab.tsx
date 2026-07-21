@@ -1,23 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Wind, TrendingUp, Server, Mountain, Calendar, Compass, MapPin } from "lucide-react";
+import { Wind, Calendar, MapPin } from "lucide-react";
 import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
-
-function getWindArrow(deg: number): string {
-  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
-  return arrows[Math.round(deg / 45) % 8] || "→";
-}
-
-function getWindDirName(deg: number): string {
-  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-  return dirs[Math.round(deg / 45) % 8] || "-";
-}
-
-function getDirAbbrev(deg: number): string {
-  const abbrevs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
-  return abbrevs[Math.round(deg / 22.5) % 16] || "N";
-}
 
 function getSpeedColor(speed: number): string {
   if (speed <= 8) return "text-emerald-300";
@@ -33,6 +18,11 @@ function getSpeedBarColor(speed: number): string {
   if (speed <= 22) return "bg-amber-400";
   if (speed <= 30) return "bg-orange-400";
   return "bg-red-400";
+}
+
+function getDirAbbrev(deg: number): string {
+  const abbrevs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+  return abbrevs[Math.round(deg / 22.5) % 16] || "N";
 }
 
 function formatDateShort(date: Date): string {
@@ -123,7 +113,6 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
     quoteVisibili.push(q);
   }
   const maxSpeed = Math.max(...quoteVisibili.map(q => oraData.quote[q]?.speed || 0), 1);
-  const windDirNames = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 
   return (
     <div className="space-y-4">
@@ -156,73 +145,6 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
             {String(v.ora).padStart(2, "0")}:00
           </button>
         ))}
-      </div>
-
-      {/* Profilo vento verticale */}
-      <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Wind className="w-5 h-5 text-cyan-400 shrink-0" />
-          <h4 className="text-base font-bold text-cyan-300">
-            {siteName || "Decollo"} — Profilo vento verticale · {String(oraSelezionata).padStart(2, "0")}:00
-          </h4>
-          <span className="text-xs text-slate-500 ml-auto">Raffica {Math.round(oraData.gust)} km/h</span>
-        </div>
-
-        <div className="space-y-1.5">
-          {quoteVisibili.slice().reverse().map((q) => {
-            const v = oraData.quote[q];
-            if (!v) return null;
-            const width = maxSpeed > 0 ? (v.speed / maxSpeed) * 100 : 0;
-            const isDecollo = q === data.quotaDecollo;
-            const dir = getDirAbbrev(v.dir);
-            
-            return (
-              <div key={q} className={`grid grid-cols-[4.5rem_1fr_5rem_1.8rem] gap-2 items-center ${
-                isDecollo ? "bg-amber-900/20 rounded-lg px-1 -mx-1 py-0.5" : ""
-              }`}>
-                <span className={`text-xs font-mono font-bold shrink-0 ${
-                  isDecollo ? "text-amber-300" : "text-slate-400"
-                }`}>
-                  {q}m {isDecollo ? "🪂" : ""}
-                </span>
-                <div className="h-5 bg-slate-700/60 rounded-full overflow-hidden relative">
-                  <div
-                    className={`h-full rounded-full transition-all ${getSpeedBarColor(v.speed)}`}
-                    style={{ width: `${Math.max(width, 8)}%` }}
-                  />
-                  {isDecollo && (
-                    <div className="absolute inset-0 border border-amber-400/50 rounded-md pointer-events-none" />
-                  )}
-                </div>
-                <span className={`text-xs font-bold shrink-0 text-right ${getSpeedColor(v.speed)}`}>
-                  {v.speed} km/h
-                </span>
-                <span className="text-xs font-mono font-bold text-slate-300 text-center shrink-0">
-                  {dir}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="mt-4 pt-3 border-t border-slate-700/30">
-          <div className="flex items-center gap-2 mb-2">
-            <Compass className="w-4 h-4 text-cyan-400" />
-            <span className="text-xs font-bold text-cyan-300">Direzione vento per quota</span>
-          </div>
-          <div className="grid grid-cols-8 gap-1">
-            {windDirNames.map((dir, i) => {
-              const angle = i * 45;
-              return (
-                <div key={dir} className="text-[10px] text-center text-slate-500 flex flex-col items-center gap-0.5">
-                  <span className="text-xs font-bold text-slate-400">{dir}</span>
-                  <span className="text-slate-600">{angle}°</span>
-                  <span className="text-lg text-slate-500">{getWindArrow(angle)}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
       </div>
 
       {/* Legenda colori velocità */}
