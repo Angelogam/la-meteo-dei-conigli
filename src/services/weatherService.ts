@@ -256,6 +256,18 @@ export const weatherService = {
     } catch (err) {
       console.error("⚠️ Errore Open-Meteo:", err);
       console.warn(`[weatherService] fetchWithFallback fallito per ${lat},${lon}:`, err);
+
+      // TEST TEMPORANEO: verifica se Open-Meteo è raggiungibile con richiesta minima
+      try {
+        const testUrl = "https://api.open-meteo.com/v1/forecast?latitude=44.2587&longitude=7.7943&current=temperature_2m,wind_speed_10m&timezone=Europe/Rome";
+        const testRes = await fetch(testUrl);
+        if (!testRes.ok) throw new Error(`HTTP ${testRes.status}: ${testRes.statusText}`);
+        const testData = await testRes.json();
+        console.log("✅ TEST OPEN-METEO OK:", testData.current);
+      } catch (testErr) {
+        console.error("❌ TEST OPEN-METEO FALLITO:", testErr);
+      }
+
       return { data: null, ok: false };
     }
   },
