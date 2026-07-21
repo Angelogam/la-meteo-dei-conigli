@@ -1,49 +1,13 @@
+"use client";
+
 import React, { useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
-
-interface WindLevel {
-  quota: number;
-  speed: number;
-  dir: number;
-}
-
-/** ✅ Solo i 4 livelli che Open‑Meteo fornisce davvero */
-const QUOTE_ATTESE = [10, 80, 120, 180];
-
-async function fetchWindProfile(lat: number, lon: number): Promise<{
-  warning: string | null;
-  levels: WindLevel[];
-  time: string;
-}> {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m&timezone=Europe/Rome&forecast_days=1`;
-
-  const res = await fetch(url);
-  if (!res.ok) {
-    return { warning: `⚠️ Errore HTTP ${res.status}`, levels: [], time: "" };
-  }
-  const data = await res.json();
-
-  const levels: WindLevel[] = [
-    { quota: 10, speed: data.hourly.wind_speed_10m[0], dir: data.hourly.wind_direction_10m[0] },
-    { quota: 80, speed: data.hourly.wind_speed_80m[0], dir: data.hourly.wind_direction_80m[0] },
-    { quota: 120, speed: data.hourly.wind_speed_120m[0], dir: data.hourly.wind_direction_120m[0] },
-    { quota: 180, speed: data.hourly.wind_speed_180m[0], dir: data.hourly.wind_direction_180m[0] },
-  ];
-
-  const allZero = levels.every((l) => l.speed === 0);
-  const now = new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
-
-  if (allZero) {
-    return {
-      warning:
-        "⚠️ Dati vento in quota non disponibili — Open‑Meteo restituisce 0 km/h per tutti i livelli sopra il suolo.",
-      levels: [],
-      time: now,
-    };
-  }
-
-  return { warning: null, levels, time: now };
-}
+import {
+  fetchRealWindData,
+  calcolaProfiloVento,
+  type WindAlgorithmResult,
+  type WindLevel,
+} from "@/utils/windAlgorithm";
 
 function getSpeedColor(speed: number): string {
   if (speed <= 8) return "bg-emerald-400/60";
@@ -53,91 +17,219 @@ function getSpeedColor(speed: number): string {
   return "bg-red-500/70";
 }
 
-const WindProfileUnified: React.FC<{ lat: number; lon: number; siteName?: string }> = ({
-  lat,
-  lon,
-  siteName = "Decollo",
-}) => {
-  const [windData, setWindData] = useState<{
-    warning: string | null;
-    levels: WindLevel[];
-    time: string;
-  } | null>(null);
+function getDirArrow(deg: number): string {
+  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
+  return arrows[Math.round(deg / 45) % 8];
+}
+
+const WindProfileUnified: React.FC<{
+  lat: number;
+  lon: number;
+  quotaDecollo?: number;
+  siteName?: string;
+}> = ({ lat, lon, quotaDecollo = 1740, siteName = "Malanotte" }) => {
+  const [result, setResult] = useState<WindAlgorithmResult | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const load = async () => {
-    const data = await fetchWindProfile(lat, lon);
-    setWindData(data);
+    setLoading(true);
+    const { livelliReali, warning } = await fetchRealWindData(lat, lon, quotaDecollo);
+
+    if (warning) {
+      setResult({
+        profilo: [],
+        warning,
+        datiReali: [],
+        gradienteMedio: 0,
+        direzioneMedia: "N",
+      });
+      setLoading(false);
+      return;
+    }
+
+    const algoritmo = calcolaProfiloVento(livelliReali, quotaDecollo);
+    setResult(algoritmo);
+    setLoading(false);
   };
 
   useEffect(() => {
     load();
     const interval = setInterval(load, 30 * 60 * 1000); // ogni 30 minuti
     return () => clearInterval(interval);
-  }, [lat, lon]);
+  }, [lat, lon, quotaDecollo]);
 
-  if (!windData) {
+  if (loading) {
     return (
       <div className="flex items-center gap-2 p-4 rounded-xl bg-slate-800/50 text-slate-400 text-sm">
         <div className="w-5 h-5 rounded-full border-2 border-emerald-400/30 border-t-emerald-400 animate-spin" />
-        ⏳ Caricamento dati vento reale...
+        ⏳ Calcolo profilo vento reale per {siteName}...
       </div>
     );
   }
 
-  if (windData.warning) {
+  if (!result) {
     return (
-      <div className="flex items-start gap-2 p-4 rounded-xl bg-yellow-900/30 border border-yellow-500/30 text-yellow-300 text-sm">
-        <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
-        <span>{windData.warning}</span>
+      <div className="flex items-center gap-2 p-4 rounded-xl bg-slate-800/50 text-slate-400 text-sm">
+        <span>Nessun dato vento disponibile.</span>
       </div>
     );
   }
 
-  const maxSpeed = Math.max(...windData.levels.map((l) => l.speed), 1);
+  const { profilo, warning, datiReali, gradienteMedio, direzioneMedia } = result;
+  const showWarning = warning != null;
+
+  // Determina se limitare graficamente le barre
+  const hasExtremeSpeed = profilo.some((p) => p.vento > 50);
+  const hasBigJump = profilo.some((p, i) => {
+    if (i === 0) return false;
+    return Math.abs(p.vento - profilo[i - 1].vento) > 20;
+  });
+  const needsCap = hasExtremeSpeed || hasBigJump;
+
+  const maxSpeed = Math.max(...profilo.map((p) => p.vento), 1);
 
   return (
     <div className="flex flex-col gap-3 p-5 rounded-2xl bg-gradient-to-b from-[#0f172a] to-[#1e293b] border border-emerald-400/30 shadow-lg">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
-          💨 Vento reale — <span className="text-emerald-300">{siteName}</span>
+          💨 Vento reale —{" "}
+          <span className="text-emerald-300">{siteName}</span>
         </h3>
-        <span className="text-xs text-slate-500">🕐 {windData.time}</span>
+        <div className="text-right text-xs text-slate-500">
+          <div>Decollo: {quotaDecollo}m</div>
+          <div>Gradiente: {(gradienteMedio * 100).toFixed(2)} km/h/100m</div>
+        </div>
       </div>
 
-      <p className="text-xs text-slate-500">
-        Livelli reali da Open‑Meteo (max 180m — oltre Open‑Meteo non fornisce dati)
-      </p>
+      {/* Dati reali usati */}
+      {datiReali.length > 0 && (
+        <div className="flex flex-wrap gap-2 text-[10px] text-slate-400">
+          <span className="font-bold text-slate-300">Dati reali:</span>
+          {datiReali.map((l) => (
+            <span
+              key={l.quota}
+              className="bg-slate-800/60 px-1.5 py-0.5 rounded"
+            >
+              {l.quota}m: {Math.round(l.speed)}km/h {getDirArrow(l.dir)}
+              {degTo16Dir(l.dir)}
+            </span>
+          ))}
+        </div>
+      )}
 
-      {/* Barre verticali dei 4 livelli */}
-      <div className="flex items-end gap-3 mt-2 h-28">
-        {windData.levels.map((l) => {
-          const pct = (l.speed / maxSpeed) * 100;
-          return (
-            <div key={l.quota} className="flex flex-col items-center flex-1">
-              <span className="text-sm font-bold text-white mb-1">{l.speed}</span>
-              <div className="w-full bg-slate-700/50 rounded-md flex-1 relative">
+      {/* Warning */}
+      {showWarning && (
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-yellow-900/30 border border-yellow-500/30 text-yellow-300 text-sm">
+          <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+          <span>{warning}</span>
+        </div>
+      )}
+
+      {/* Profilo verticale (barre orizzontali per quota) */}
+      {profilo.length > 0 && (
+        <>
+          <div className="mt-2 flex flex-col gap-1.5">
+            {profilo.map((p) => {
+              const displaySpeed = needsCap
+                ? Math.min(p.vento, 40)
+                : p.vento;
+              const width = Math.min(
+                (displaySpeed / Math.max(maxSpeed, 40)) * 100,
+                100
+              );
+              return (
                 <div
-                  className={`absolute bottom-0 left-0 right-0 rounded-t-md transition-all ${getSpeedColor(l.speed)}`}
-                  style={{ height: `${Math.max(pct, 8)}%` }}
-                />
-              </div>
-              <span className="text-xs text-slate-400 mt-1">{l.quota}m</span>
-            </div>
-          );
-        })}
-      </div>
+                  key={p.quota}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  {/* Quota */}
+                  <span className="w-16 shrink-0 text-right text-xs font-bold text-slate-400 tabular-nums">
+                    {p.quota}m
+                  </span>
 
-      {/* Legenda */}
-      <div className="flex flex-wrap gap-2 text-xs text-slate-400 justify-center mt-1">
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400/60" /> ≤8</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-400/60" /> 9-15</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-orange-400/60" /> 16-22</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-400/60" /> ≥23</span>
-        <span className="text-slate-600 ml-auto">km/h</span>
+                  {/* Barra velocità */}
+                  <div className="flex-1 h-4 bg-slate-700/50 rounded-md overflow-hidden">
+                    <div
+                      className={`h-full rounded-md transition-all ${getSpeedColor(
+                        p.vento
+                      )}`}
+                      style={{ width: `${Math.max(width, 6)}%` }}
+                    >
+                      {width > 30 && (
+                        <span className="text-[10px] text-white font-bold pl-1 leading-4 block">
+                          {p.vento}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Valore e direzione */}
+                  <span className="w-20 shrink-0 text-left text-xs font-bold text-slate-300 tabular-nums">
+                    {p.vento} km/h {getDirArrow(degToDir(mediaDirDaNome(p.direzione)))}{" "}
+                    {p.direzione}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Avviso di cap */}
+          {needsCap && (
+            <div className="text-[10px] text-orange-400 text-center mt-1">
+              ⚠️ Barre limitate a 40 km/h — dati potenzialmente non realistici
+            </div>
+          )}
+
+          {/* Legenda */}
+          <div className="flex flex-wrap gap-2 text-xs text-slate-400 justify-center mt-2">
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/60" />{" "}
+              ≤8
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400/60" /> 9-15
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-orange-400/60" /> 16-22
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-400/60" /> 23-30
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500/70" /> ≥30
+            </span>
+            <span className="text-slate-600 ml-auto">km/h</span>
+          </div>
+        </>
+      )}
+
+      <div className="text-[10px] text-slate-600 text-center mt-1">
+        Algoritmo basato su dati reali Open-Meteo (10m, 80m, 120m, 180m) · gradiente {(gradienteMedio * 100).toFixed(2)} km/h/100m · direzione media {direzioneMedia}
       </div>
     </div>
   );
 };
+
+// Funzione helper per convertire nome direzione in gradi
+function degTo16Dir(deg: number): string {
+  const DIR_16 = [
+    "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+    "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW",
+  ];
+  if (deg == null || isNaN(deg)) return "N";
+  const index = Math.round(((deg % 360 + 360) % 360) / 22.5) % 16;
+  return DIR_16[index];
+}
+
+function mediaDirDaNome(dir: string): number {
+  const DIR_16 = [
+    "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+    "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW",
+  ];
+  const index = DIR_16.indexOf(dir);
+  if (index === -1) return 0;
+  return index * 22.5;
+}
 
 export default WindProfileUnified;
