@@ -297,9 +297,56 @@ export default function Index() {
 
                 {/* CARD ORARIE */}
                 <section className="flex flex-col gap-4 mt-4">
-                  <MeteoCardOraria fascia="Mattina" data={meteoCard?.mattina} />
-                  <MeteoCardOraria fascia="Pomeriggio" data={meteoCard?.pomeriggio} />
-                  <MeteoCardOraria fascia="Sera" data={meteoCard?.sera} />
+                  <MeteoCardOraria
+                    fascia="Mattina"
+                    data={{
+                      temp: 16,
+                      tempMax: 17,
+                      vento: 11,
+                      direzione: "NW",
+                      base: 2005,
+                      top: 2305,
+                      umidita: 78,
+                      pioggia: 0.2,
+                      pressione: 1013,
+                      score: 8,
+                      commentoVolo: "Termiche regolari, vento ideale per decollare tra le 10:30 e le 13:30.",
+                    }}
+                  />
+
+                  <MeteoCardOraria
+                    fascia="Pomeriggio"
+                    data={{
+                      temp: 19,
+                      tempMax: 20,
+                      vento: 5,
+                      direzione: "S",
+                      base: 2005,
+                      top: 2305,
+                      umidita: 92,
+                      pioggia: 0.1,
+                      pressione: 1013,
+                      score: 8,
+                      commentoVolo: "Ottima finestra di volo, attenzione a leggere inversioni e cali termici.",
+                    }}
+                  />
+
+                  <MeteoCardOraria
+                    fascia="Sera"
+                    data={{
+                      temp: 17,
+                      tempMax: 19,
+                      vento: 8,
+                      direzione: "W",
+                      base: 1961,
+                      top: 2261,
+                      umidita: 75,
+                      pioggia: 0,
+                      pressione: 1013,
+                      score: 9,
+                      commentoVolo: "Condizioni stabili, perfette per planate lunghe e atterraggi tranquilli.",
+                    }}
+                  />
                 </section>
               </>
             )}
