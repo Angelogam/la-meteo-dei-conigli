@@ -75,7 +75,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
         <span className="text-sm text-slate-500 bg-slate-800/60 px-3 py-0.5 rounded-full ml-auto">{rows.length} ore</span>
       </div>
       <div className="p-2 overflow-x-auto">
-        <div className="flex gap-2 justify-center">
+        <div className="flex gap-1 sm:gap-2 justify-center">
           {rows.map((r: any) => {
             if (!r) return null;
             const isSelected = r.ora === selectedHour;
@@ -83,7 +83,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
               <button
                 key={r.ora}
                 onClick={() => onHourSelect(r.ora)}
-                className={"rounded-xl p-3 text-center transition-all border-2 cursor-pointer flex flex-col items-center gap-1 " + (
+                className={"rounded-xl p-2 sm:p-3 text-center transition-all border-2 cursor-pointer flex flex-col items-center gap-1 " + (
                   isSelected
                     ? "bg-emerald-900/30 border-emerald-400 shadow-md"
                     : r.isCurrent

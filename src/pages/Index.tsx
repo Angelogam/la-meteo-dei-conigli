@@ -86,6 +86,8 @@ export default function Index() {
           pioggia: 0.2,
           pressione: data.current.pressure_msl || 1013,
           score: 8,
+          migliorOra: "10:30",
+          piccoTermico: 0.3,
           commentoVolo: "Termiche regolari, vento ideale per decollare tra le 10:30 e le 13:30.",
         },
         pomeriggio: {
@@ -99,6 +101,8 @@ export default function Index() {
           pioggia: 0.1,
           pressione: 1013,
           score: 8,
+          migliorOra: "14:00",
+          piccoTermico: 0.4,
           commentoVolo: "Ottima finestra di volo, attenzione a leggere inversioni e cali termici.",
         },
         sera: {
@@ -112,6 +116,8 @@ export default function Index() {
           pioggia: 0,
           pressione: 1013,
           score: 9,
+          migliorOra: "18:00",
+          piccoTermico: 0.3,
           commentoVolo: "Condizioni stabili, perfette per planate lunghe e atterraggi tranquilli.",
         },
       });
@@ -310,6 +316,8 @@ export default function Index() {
                       pioggia: 0.2,
                       pressione: 1013,
                       score: 8,
+                      migliorOra: "10:30",
+                      piccoTermico: 0.3,
                       commentoVolo: "Termiche regolari, vento ideale per decollare tra le 10:30 e le 13:30.",
                     }}
                   />
@@ -327,6 +335,8 @@ export default function Index() {
                       pioggia: 0.1,
                       pressione: 1013,
                       score: 8,
+                      migliorOra: "14:00",
+                      piccoTermico: 0.4,
                       commentoVolo: "Ottima finestra di volo, attenzione a leggere inversioni e cali termici.",
                     }}
                   />
@@ -344,6 +354,8 @@ export default function Index() {
                       pioggia: 0,
                       pressione: 1013,
                       score: 9,
+                      migliorOra: "18:00",
+                      piccoTermico: 0.3,
                       commentoVolo: "Condizioni stabili, perfette per planate lunghe e atterraggi tranquilli.",
                     }}
                   />
