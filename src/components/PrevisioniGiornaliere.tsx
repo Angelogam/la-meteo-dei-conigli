@@ -1,126 +1,391 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import {
-  Sun,
-  CloudSun,
-  CloudDrizzle,
-  CloudRain,
-  CloudLightning,
-  Cloud,
-  Wind,
+  Sun, CloudSun, Cloud, CloudRain, CloudLightning, CloudFog,
+  Thermometer, Wind, Droplets, ArrowUp, Gauge, Umbrella,
+  Mountain, TrendingUp, CheckCircle, Calendar
 } from "lucide-react";
-import FinestraSemplice from "@/components/FinestraSemplice";
-
-interface EnrichedDay {
-  date: Date;
-  tempMax: number;
-  tempMin: number;
-  weatherCode: number;
-  precipitationSum: number;
-  thermalDelta?: number;
-  avgWind?: number;
-  maxWind?: number;
-  avgCloud?: number;
-}
+import { degreesToCardinal, windArrow } from "@/utils/windDirections";
+import { calcolaTermiche } from "@/utils/termiche";
 
 interface PrevisioniGiornaliereProps {
-  nomeDecollo: string;
-  enrichedDaily: EnrichedDay[];
+  enrichedDaily: any[];
   dateLabels: string[];
   currentData: any;
   dayData: any[];
-  site: { name: string; altitude: number; exposure: string };
+  site: { name: string; altitude: number; exposure?: string };
   selectedDay: number;
   onSelectDay: (day: number) => void;
+  nomeDecollo?: string;
 }
 
-function getWeatherEmoji(code: number): string {
-  if (code >= 95) return "⛈️";
-  if (code >= 80) return "🌧️";
-  if (code >= 71) return "❄️";
-  if (code >= 61) return "🌧️";
-  if (code >= 51) return "🌦️";
-  if (code >= 45) return "🌫️";
-  if (code >= 20) return "☁️";
-  if (code >= 10) return "⛅";
-  if (code >= 5) return "🌤️";
-  return "☀️";
+function getWeatherInfo(code: number | undefined | null) {
+  if (code == null || (typeof code === "number" && isNaN(code))) {
+    return { icon: <Sun className="w-6 h-6 text-amber-300" />, desc: "N/D" };
+  }
+  if (code === 0 || code === 1) return { icon: <Sun className="w-6 h-6 text-amber-300" />, desc: "Sereno" };
+  if (code === 2) return { icon: <CloudSun className="w-6 h-6 text-amber-200" />, desc: "Poco nuvoloso" };
+  if (code === 3) return { icon: <Cloud className="w-6 h-6 text-slate-300" />, desc: "Nuvoloso" };
+  if (code >= 45 && code <= 48) return { icon: <CloudFog className="w-6 h-6 text-slate-400" />, desc: "Nebbia" };
+  if (code >= 51 && code <= 57) return { icon: <CloudRain className="w-6 h-6 text-blue-300" />, desc: "Pioggerella" };
+  if (code >= 61 && code <= 67) return { icon: <CloudRain className="w-6 h-6 text-blue-400" />, desc: "Pioggia" };
+  if (code >= 80 && code <= 84) return { icon: <CloudRain className="w-6 h-6 text-blue-300" />, desc: "Rovesci" };
+  if (code >= 95 && code <= 99) return { icon: <CloudLightning className="w-6 h-6 text-yellow-300" />, desc: "Temporali" };
+  return { icon: <Sun className="w-6 h-6 text-amber-300" />, desc: "Sereno" };
 }
 
-function getWeatherIcon(code: number, size: number = 24): React.ReactNode {
-  if (code >= 95) return <CloudLightning size={size} className="text-purple-400" />;
-  if (code >= 80) return <CloudRain size={size} className="text-blue-400" />;
-  if (code >= 61) return <CloudRain size={size} className="text-blue-400" />;
-  if (code >= 51) return <CloudDrizzle size={size} className="text-blue-300" />;
-  if (code >= 45) return <Cloud size={size} className="text-gray-400" />;
-  if (code >= 20) return <Cloud size={size} className="text-gray-300" />;
-  if (code >= 10) return <CloudSun size={size} className="text-yellow-400" />;
-  return <Sun size={size} className="text-yellow-400" />;
+function getDominantWeatherCode(hourlyCodes: (number | undefined | null)[]): number {
+  const valid = hourlyCodes.filter((c): c is number => c != null && !isNaN(c));
+  if (valid.length === 0) return 0;
+  const freq: Record<string, number> = {};
+  for (const c of valid) {
+    freq[String(c)] = (freq[String(c)] || 0) + 1;
+  }
+  let maxCode = 0;
+  let maxCount = 0;
+  const entries = Object.entries(freq);
+  for (let i = 0; i < entries.length; i++) {
+    const [ck, count] = entries[i];
+    if (count > maxCount) {
+      maxCount = count;
+      maxCode = parseInt(ck, 10);
+    }
+  }
+  return maxCode;
+}
+
+function formatDateShort(date: any): string {
+  if (!date) return "";
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return String(date);
+  return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0");
+}
+
+function getDayLabel(idx: number, date: any): string {
+  const base = idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani";
+  return date ? base + " " + formatDateShort(date) : base;
 }
 
 export default function PrevisioniGiornaliere({
   enrichedDaily,
   dateLabels,
+  currentData,
+  dayData,
+  site,
   selectedDay,
   onSelectDay,
+  nomeDecollo
 }: PrevisioniGiornaliereProps) {
+  const alt = site.altitude;
+
+  const precipTotaleReale = useMemo(() => {
+    if (!dayData || dayData.length === 0) return 0;
+    let sum = 0;
+    for (let i = 0; i < dayData.length; i++) {
+      sum += dayData[i].precipitation || 0;
+    }
+    return Math.round(sum * 10) / 10;
+  }, [dayData]);
+
+  const dailyWeatherCodes = useMemo(() => {
+    const result: number[] = [];
+    for (let di = 0; di < enrichedDaily.length; di++) {
+      const day = enrichedDaily[di];
+      if (!day?.date) {
+        result.push(0);
+        continue;
+      }
+      const d = day.date instanceof Date ? day.date : new Date(day.date);
+      const codes: number[] = [];
+      if (dayData && dayData.length > 0) {
+        for (let hi = 0; hi < dayData.length; hi++) {
+          const t = new Date(dayData[hi].time);
+          if (t.getFullYear() === d.getFullYear() && t.getMonth() === d.getMonth() && t.getDate() === d.getDate()) {
+            codes.push(dayData[hi].weatherCode);
+          }
+        }
+      }
+      if (codes.length === 0) codes.push(day.weatherCode);
+      result.push(getDominantWeatherCode(codes));
+    }
+    return result;
+  }, [enrichedDaily, dayData]);
+
+  const dailyPrecipTotals = useMemo(() => {
+    const result: number[] = [];
+    for (let i = 0; i < enrichedDaily.length; i++) {
+      const day = enrichedDaily[i];
+      if (!day?.date) {
+        result.push(0);
+        continue;
+      }
+      if (i === selectedDay && precipTotaleReale > 0) {
+        result.push(precipTotaleReale);
+      } else {
+        result.push(Math.round(day.precipSum * 10) / 10);
+      }
+    }
+    return result;
+  }, [enrichedDaily, selectedDay, precipTotaleReale]);
+
+  const fasce = useMemo(() => {
+    if (!dayData || dayData.length === 0) return null;
+
+    const morning: any[] = [];
+    const afternoon: any[] = [];
+    const evening: any[] = [];
+    for (let i = 0; i < dayData.length; i++) {
+      const hh = new Date(dayData[i].time).getHours();
+      if (hh >= 6 && hh <= 11) morning.push(dayData[i]);
+      else if (hh >= 12 && hh <= 17) afternoon.push(dayData[i]);
+      else if (hh >= 18 && hh <= 23) evening.push(dayData[i]);
+    }
+
+    const compute = (hours: any[], label: string, _borderColor: string) => {
+      if (hours.length === 0) return null;
+
+      const filterValid = (arr: (number | null | undefined)[]): number[] => {
+        const result: number[] = [];
+        for (let i = 0; i < arr.length; i++) {
+          if (arr[i] != null) result.push(arr[i] as number);
+        }
+        return result;
+      };
+
+      const mean = (arr: number[]): number => {
+        if (arr.length === 0) return 0;
+        let sum = 0;
+        for (let i = 0; i < arr.length; i++) sum += arr[i];
+        return sum / arr.length;
+      };
+
+      const maxVal = (arr: number[]): number => {
+        if (arr.length === 0) return 0;
+        let m = -Infinity;
+        for (let i = 0; i < arr.length; i++) {
+          if (arr[i] > m) m = arr[i];
+        }
+        return m;
+      };
+
+      const temps = filterValid(hours.map((h: any) => h.temperature));
+      const winds = filterValid(hours.map((h: any) => h.windSpeed));
+      const dirs = filterValid(hours.map((h: any) => h.windDir));
+      const clouds = filterValid(hours.map((h: any) => h.cloudCover));
+      const hums = filterValid(hours.map((h: any) => h.humidity));
+      const pressures = filterValid(hours.map((h: any) => h.pressure || 1013));
+      const codes = filterValid(hours.map((h: any) => h.weatherCode));
+
+      const tempMedia = Math.round(mean(temps));
+      const tempMax = Math.round(maxVal(temps));
+      const windMedia = Math.round(mean(winds));
+      const windMax = Math.round(maxVal(winds));
+      const windDirMedia = dirs.length > 0 ? Math.round(mean(dirs)) : 0;
+      const cloudMedia = Math.round(mean(clouds));
+      const humMedia = Math.round(mean(hums));
+      const pressMedia = Math.round(mean(pressures));
+
+      let precipTot = 0;
+      for (let i = 0; i < hours.length; i++) {
+        precipTot += hours[i].precipitation || 0;
+      }
+      precipTot = Math.round(precipTot * 10) / 10;
+
+      const thermicHours = hours.map((h: any) => calcolaTermiche(h, alt));
+      const rates = thermicHours.map((t: any) => t.rateo);
+      const salitaMedia = mean(rates);
+      const salita = Math.round(salitaMedia * 10) / 10;
+      const bases = thermicHours.map((t: any) => t.base);
+      const tops = thermicHours.map((t: any) => t.top);
+      const baseMedia = Math.round(mean(bases));
+      const topMedia = Math.round(mean(tops));
+
+      let termicheLabel = "Assenti ❌";
+      let termicheColore = "text-slate-400";
+      if (salita >= 4) { termicheLabel = "Forti 🔥"; termicheColore = "text-red-400"; }
+      else if (salita >= 3) { termicheLabel = "Buone 🪂"; termicheColore = "text-orange-400"; }
+      else if (salita >= 2) { termicheLabel = "Moderate 👍"; termicheColore = "text-amber-400"; }
+      else if (salita >= 1) { termicheLabel = "Deboli 👎"; termicheColore = "text-amber-300"; }
+      else if (salita >= 0.3) { termicheLabel = "M. deboli ☁️"; termicheColore = "text-yellow-300"; }
+
+      const _weatherCode = codes.length > 0 ? getDominantWeatherCode(codes) : 0;
+      const _weatherInfo = getWeatherInfo(_weatherCode);
+
+      let score = 5;
+      if (windMedia >= 5 && windMedia <= 18) score += 2;
+      else if (windMedia > 25) score -= 2;
+      else score -= 1;
+      if (precipTot < 0.1) score += 2;
+      else if (precipTot < 0.5) score += 1;
+      else score -= 3;
+      if (cloudMedia >= 10 && cloudMedia <= 60) score += 1.5;
+      if (salita >= 2) score += 2;
+      else if (salita >= 1) score += 1;
+      if (windMax > 30) score -= 2;
+      score = Math.max(0, Math.min(10, Math.round(score)));
+
+      return {
+        label, borderColor: "border-emerald-500/50", weatherDesc: _weatherInfo.desc,
+        tempMedia, tempMax, windMedia, windMax, windDirMedia,
+        cloudMedia, precipTot, humMedia, pressMedia,
+        base: baseMedia, top: topMedia, salita, termicheLabel, termicheColore, score, nOre: hours.length,
+      };
+    };
+
+    const results: any[] = [];
+    const m = compute(morning, "Mattina", "border-emerald-500/50");
+    if (m) results.push(m);
+    const a = compute(afternoon, "Pomeriggio", "border-emerald-500/50");
+    if (a) results.push(a);
+    const e = compute(evening, "Sera", "border-emerald-500/50");
+    if (e) results.push(e);
+    return results.length > 0 ? results : null;
+  }, [dayData, alt]);
+
   if (!enrichedDaily || enrichedDaily.length === 0) {
-    return (
-      <div className="text-center py-12 text-slate-400">
-        Nessuna previsione giornaliera disponibile.
-      </div>
+    return <div className="text-center py-8 text-slate-400 text-base">Caricamento previsioni...</div>;
+  }
+
+  const selectedDayData = enrichedDaily[selectedDay];
+  const dayDateShort = selectedDayData?.date ? formatDateShort(selectedDayData.date) : "";
+  const nomeDisplay = nomeDecollo || site.name;
+
+  const days = enrichedDaily.slice(0, 3);
+  const dayButtons: React.ReactNode[] = [];
+  for (let idx = 0; idx < days.length; idx++) {
+    const day = days[idx];
+    const isActive = idx === selectedDay;
+    const weatherCode = dailyWeatherCodes[idx] ?? 0;
+    const weatherInfo = getWeatherInfo(weatherCode);
+    const precipGiorno = dailyPrecipTotals[idx] ?? day.precipSum ?? 0;
+    dayButtons.push(
+      <button
+        key={idx}
+        onClick={() => onSelectDay(idx)}
+        className={"text-center transition-all border-2 cursor-pointer p-3 rounded-xl " + (
+          isActive
+            ? "border-emerald-400 bg-emerald-900/40 shadow-lg"
+            : "border-slate-700/50 bg-slate-800/40 hover:border-slate-600"
+        )}
+      >
+        <div className="text-base font-bold text-white">
+          {idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani"}
+        </div>
+        <div className="text-xs text-slate-400 mt-0.5">
+          <Calendar className="w-3.5 h-3.5 inline mr-1" />
+          {day.date ? formatDateShort(day.date) : ""}
+        </div>
+        <div className="flex justify-center my-1">{weatherInfo.icon}</div>
+        <div className="text-sm text-slate-300 font-bold">{weatherInfo.desc}</div>
+        <div className="text-lg font-bold text-white my-1">{Math.round(day.tempMax)}°</div>
+        <div className="text-xs text-slate-400">min {Math.round(day.tempMin)}°</div>
+        <div className="text-xs text-slate-400 mt-0.5">
+          {precipGiorno > 0 ? String(precipGiorno.toFixed(1)) + " mm" : "0 mm"}
+        </div>
+      </button>
     );
+  }
+
+  const fasciaCards: React.ReactNode[] = [];
+  if (fasce) {
+    for (let fi = 0; fi < fasce.length; fi++) {
+      const fascia = fasce[fi];
+      if (!fascia) continue;
+      const scoreColor = fascia.score >= 7
+        ? "bg-emerald-500/20 border-emerald-400/30 text-emerald-300"
+        : fascia.score >= 4
+          ? "bg-amber-500/20 border-amber-400/30 text-amber-300"
+          : "bg-red-500/20 border-red-400/30 text-red-300";
+      const dirCardinal = degreesToCardinal(fascia.windDirMedia);
+      const dirArr = windArrow(fascia.windDirMedia);
+      fasciaCards.push(
+        <div key={fi} className="card p-3 border-2 border-emerald-500/50 bg-slate-800/40">
+          {/* Riga 1: Label + Decollo + Data + Score */}
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-base font-bold text-white">{fascia.label}</span>
+            <span className="text-xs text-emerald-300 font-medium truncate max-w-[120px]">
+              <Mountain className="w-3 h-3 inline mr-1" />
+              {nomeDisplay}
+            </span>
+            <span className="text-xs text-slate-500 flex items-center gap-1">
+              <Calendar className="w-3 h-3 text-slate-500" />{dayDateShort}
+            </span>
+            <span className={"text-xs font-bold px-2 py-0.5 rounded-full border " + scoreColor}>
+              {fascia.score}/10
+            </span>
+          </div>
+
+          {/* Riga 2: Temperatura + Vento su una riga */}
+          <div className="flex items-center justify-between bg-slate-900/60 rounded-lg px-3 py-2 mb-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-bold text-amber-300">{fascia.tempMedia}°C</span>
+              <span className="text-xs text-slate-500">max {fascia.tempMax}°</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Wind className="w-4 h-4 text-sky-400" />
+              <span className="text-base font-bold text-sky-300">{fascia.windMedia} km/h</span>
+              <span className="text-xs text-slate-400">{dirArr} {dirCardinal}</span>
+            </div>
+          </div>
+
+          {/* Riga 3: Termiche + Nuvolosità */}
+          <div className="flex items-center justify-between bg-slate-900/60 rounded-lg px-3 py-2 mb-1.5">
+            <div className="flex items-center gap-2">
+              <ArrowUp className="w-4 h-4 text-orange-400" />
+              <span className={"text-base font-bold " + fascia.termicheColore}>
+                {fascia.salita.toFixed(1)} m/s
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-green-300">Base {fascia.base}m</span>
+              <span className="text-xs text-red-300">Top {fascia.top}m</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Cloud className="w-4 h-4 text-slate-400" />
+              <span className="text-base font-bold text-slate-200">{fascia.cloudMedia}%</span>
+            </div>
+          </div>
+
+          {/* Riga 4: Precipitazioni + Umidità + Pressione */}
+          <div className="flex items-center justify-between bg-slate-900/60 rounded-lg px-3 py-2">
+            <div className="flex items-center gap-1.5">
+              {fascia.precipTot === 0
+                ? <CheckCircle className="w-4 h-4 text-green-400" />
+                : <Umbrella className="w-4 h-4 text-blue-400" />
+              }
+              <span className="text-base font-bold">{fascia.precipTot === 0 ? "Secco" : fascia.precipTot + "mm"}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Droplets className="w-4 h-4 text-blue-400" />
+              <span className="text-base text-blue-200">{fascia.humMedia}%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Gauge className="w-4 h-4 text-purple-400" />
+              <span className="text-base text-purple-200">{fascia.pressMedia} hPa</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
   }
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {enrichedDaily.slice(0, 3).map((day, idx) => {
-          const isSelected = idx === selectedDay;
-          return (
-            <button
-              key={idx}
-              onClick={() => onSelectDay(idx)}
-              className={`rounded-2xl p-4 transition-all border-2 text-left ${
-                isSelected
-                  ? "bg-emerald-900/40 border-emerald-500 shadow-lg"
-                  : "bg-slate-800/40 border-slate-700/50 hover:bg-slate-800/60"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-bold text-white">
-                  {dateLabels[idx] || ""}
-                </span>
-                <span className="text-lg">{getWeatherEmoji(day.weatherCode)}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Sun className="w-4 h-4 text-amber-400" />
-                <span className="font-bold text-white">{Math.round(day.tempMax)}°C</span>
-                <span className="text-slate-400">/</span>
-                <span className="text-slate-400">{Math.round(day.tempMin)}°C</span>
-              </div>
-              {day.thermalDelta != null && (
-                <div className="flex items-center gap-1 mt-1 text-xs text-slate-400">
-                  <span>Delta: {day.thermalDelta}°C</span>
-                </div>
-              )}
-              {day.avgWind != null && (
-                <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
-                  <Wind className="w-3 h-3 text-sky-400" />
-                  <span>{Math.round(day.avgWind)} km/h</span>
-                </div>
-              )}
-              {day.precipitationSum > 0 && (
-                <div className="flex items-center gap-1 text-xs text-blue-300 mt-0.5">
-                  <CloudRain className="w-3 h-3" />
-                  <span>{day.precipitationSum} mm</span>
-                </div>
-              )}
-            </button>
-          );
-        })}
+      <div className="flex flex-wrap justify-center gap-2">
+        {dayButtons}
       </div>
+      {fasce && fasciaCards.length > 0 && (
+        <div className="space-y-2.5">
+          <h3 className="text-base font-bold text-white px-1 flex items-center gap-2">
+            Andamento orario
+            <span className="text-xs font-normal text-emerald-300">
+              <Mountain className="w-3 h-3 inline mr-1" />{nomeDisplay}
+            </span>
+          </h3>
+          {fasciaCards}
+        </div>
+      )}
     </div>
   );
 }
