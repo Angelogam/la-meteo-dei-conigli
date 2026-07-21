@@ -251,7 +251,7 @@ export default function Index() {
                     umidita={78}
                     pioggia={0.2}
                     pressione={1013}
-                    commentoVolo="Termiche regolari, vento ideale per decollare."
+                    commentoVolo="Termiche regolari, vento ideale per decollare tra le 10:30 e le 13:30."
                   />
 
                   <MeteoCardOraria
@@ -266,7 +266,7 @@ export default function Index() {
                     umidita={92}
                     pioggia={0.1}
                     pressione={1013}
-                    commentoVolo="Ottima finestra di volo, attenzione a leggere inversioni."
+                    commentoVolo="Ottima finestra di volo, attenzione a leggere inversioni e cali termici."
                   />
 
                   <MeteoCardOraria
@@ -281,7 +281,7 @@ export default function Index() {
                     umidita={75}
                     pioggia={0}
                     pressione={1013}
-                    commentoVolo="Condizioni stabili, perfette per planate lunghe."
+                    commentoVolo="Condizioni stabili, perfette per planate lunghe e atterraggi tranquilli."
                   />
                 </section>
               </>
