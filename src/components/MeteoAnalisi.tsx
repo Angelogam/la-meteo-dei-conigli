@@ -2,6 +2,10 @@ import React from "react";
 
 interface Props {
   data: {
+    giorno: string;
+    data: string;
+    decollo: string;
+    meteo: "sole" | "pioggia" | "nuvoloso";
     ventoDecollo: number;
     ventoAtterraggio: number;
     raffiche: number;
@@ -17,11 +21,16 @@ interface Props {
     uvIndex: number;
     deltaT: number;
     gradiente: number;
+    zeroTermico: number;
   };
 }
 
 const MeteoAnalisi: React.FC<Props> = ({ data }) => {
   const {
+    giorno,
+    data: dataGiorno,
+    decollo,
+    meteo,
     ventoDecollo,
     ventoAtterraggio,
     raffiche,
@@ -37,6 +46,7 @@ const MeteoAnalisi: React.FC<Props> = ({ data }) => {
     uvIndex,
     deltaT,
     gradiente,
+    zeroTermico,
   } = data;
 
   const instabilita =
@@ -60,23 +70,31 @@ const MeteoAnalisi: React.FC<Props> = ({ data }) => {
     liftedIndex < -2 &&
     cape > 1000;
 
+  const iconaMeteo =
+    meteo === "sole"
+      ? "🌞"
+      : meteo === "pioggia"
+      ? "🌧️"
+      : "☁️";
+
   return (
     <div className="flex flex-col gap-4 p-5 rounded-2xl bg-gradient-to-b from-[#0f172a] to-[#1e293b] border border-[#22c55e]/40 shadow-lg hover:shadow-[#22c55e]/20 transition-all duration-300">
       {/* Header */}
-      <h3 className="text-xl font-bold text-white tracking-wide flex items-center gap-2">
-        🌤️ Analisi atmosferica
-      </h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-bold text-white tracking-wide flex items-center gap-2">
+          {iconaMeteo} Analisi atmosferica
+        </h3>
+        <div className="text-sm text-gray-300 text-right">
+          📅 {giorno} — {dataGiorno}
+          <br />
+          🪂 Decollo: <span className="text-[#22c55e] font-semibold">{decollo}</span>
+        </div>
+      </div>
 
       {/* Vento */}
-      <div className="grid grid-cols-2 gap-4 text-sm text-gray-300">
-        <div className="flex flex-col">
-          <span className="font-semibold text-[#22c55e]">💨 Vento decollo</span>
-          <span>{ventoDecollo} km/h</span>
-        </div>
-        <div className="flex flex-col">
-          <span className="font-semibold text-[#22c55e]">🪁 Vento atterraggio</span>
-          <span>{ventoAtterraggio} km/h (raffiche {raffiche} km/h)</span>
-        </div>
+      <div className="grid grid-cols-2 gap-4 text-sm text-gray-300 mt-2">
+        <div>💨 Vento decollo: <span className="font-semibold">{ventoDecollo} km/h</span></div>
+        <div>🪁 Vento atterraggio: <span className="font-semibold">{ventoAtterraggio} km/h</span> (raffiche {raffiche} km/h)</div>
       </div>
 
       {/* Nuvole e termiche */}
@@ -101,6 +119,7 @@ const MeteoAnalisi: React.FC<Props> = ({ data }) => {
         <div>🌞 UV Index: <span className="font-semibold">{uvIndex}</span></div>
         <div>🌡️ Delta T: <span className="font-semibold">{deltaT}°C</span></div>
         <div>📊 Gradiente: <span className="font-semibold">{gradiente}°</span> (adiabatico secco)</div>
+        <div>❄️ Zero termico: <span className="font-semibold">{zeroTermico} m</span></div>
       </div>
 
       {/* Sintesi finale */}

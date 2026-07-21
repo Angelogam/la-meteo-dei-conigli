@@ -235,6 +235,10 @@ export default function Index() {
                     />
                     <MeteoAnalisi
                       data={{
+                        giorno: "Martedì",
+                        data: "21 Luglio 2026",
+                        decollo: "Malanotte",
+                        meteo: "nuvoloso",
                         ventoDecollo: 9,
                         ventoAtterraggio: 6,
                         raffiche: 46.1,
@@ -250,6 +254,7 @@ export default function Index() {
                         uvIndex: 7.3,
                         deltaT: 6,
                         gradiente: 0.98,
+                        zeroTermico: 3400,
                       }}
                     />
                   </>
