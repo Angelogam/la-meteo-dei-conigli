@@ -16,6 +16,7 @@ import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
 import MeteoTesterPanel from "@/components/MeteoTesterPanel";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
+import WindProfileUnified from "@/components/WindProfileUnified";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { DECOLLI } from "@/data/decolli";
@@ -25,7 +26,6 @@ import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
 import FinestraSemplice from "@/components/FinestraSemplice";
 import MeteoCardOraria from "@/components/MeteoCardOraria";
 import MeteoAnalisi from "@/components/MeteoAnalisi";
-import VentoProfilo from "@/components/VentoProfilo";
 
 export default function Index() {
   // Avvia verifica continua all'avvio
@@ -271,25 +271,10 @@ export default function Index() {
                       onOraChange={setSelectedHour}
                       siteName={site!.name}
                     />
-                    <VentoProfilo
-                      data={{
-                        giorno: "Martedì",
-                        data: "21 Luglio 2026",
-                        decollo: "Malanotte",
-                        raffica: 38,
-                        profilo: [
-                          { quota: 3990, vento: 74, direzione: "W" },
-                          { quota: 3740, vento: 67, direzione: "W" },
-                          { quota: 3490, vento: 59, direzione: "W" },
-                          { quota: 3240, vento: 52, direzione: "W" },
-                          { quota: 2990, vento: 44, direzione: "W" },
-                          { quota: 2740, vento: 39, direzione: "WNW" },
-                          { quota: 2490, vento: 33, direzione: "WNW" },
-                          { quota: 2240, vento: 27, direzione: "WNW" },
-                          { quota: 1990, vento: 21, direzione: "NW" },
-                          { quota: 1740, vento: 15, direzione: "NW" },
-                        ],
-                      }}
+                    <WindProfileUnified
+                      lat={site!.lat}
+                      lon={site!.lon}
+                      siteName={site!.name}
                     />
                   </>
                 )}
