@@ -2,35 +2,38 @@ import React from "react";
 
 interface Props {
   fascia: string;
-  score: number;
-  temp: number;
-  tempMax: number;
-  vento: number;
-  direzione: string;
-  base: number;
-  top: number;
-  umidita: number;
-  pioggia: number;
-  pressione: number;
-  commentoVolo: string;
+  data: {
+    temp: number;
+    tempMax: number;
+    vento: number;
+    direzione: string;
+    base: number;
+    top: number;
+    umidita: number;
+    pioggia: number;
+    pressione: number;
+    score: number;
+    commentoVolo: string;
+  };
 }
 
-const MeteoCardOraria: React.FC<Props> = ({
-  fascia,
-  score,
-  temp,
-  tempMax,
-  vento,
-  direzione,
-  base,
-  top,
-  umidita,
-  pioggia,
-  pressione,
-  commentoVolo,
-}) => {
+const MeteoCardOraria: React.FC<Props> = ({ fascia, data }) => {
+  const {
+    temp,
+    tempMax,
+    vento,
+    direzione,
+    base,
+    top,
+    umidita,
+    pioggia,
+    pressione,
+    score,
+    commentoVolo,
+  } = data;
+
   return (
-    <div className="flex flex-col gap-3 p-4 rounded-xl bg-gradient-to-b from-[#0f172a] to-[#1e293b] border border-[#22c55e]/40 shadow-md hover:shadow-lg transition-shadow duration-300">
+    <div className="flex flex-col gap-3 p-4 rounded-xl bg-gradient-to-b from-[#0f172a] to-[#1e293b] border border-[#22c55e]/40 shadow-md hover:shadow-lg transition-all duration-300">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-white tracking-wide">{fascia}</h3>
