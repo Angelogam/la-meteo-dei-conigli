@@ -63,14 +63,8 @@ function formatDateShort(date: any): string {
   return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0");
 }
 
-function getDayLabel(idx: number, date: any): string {
-  const base = idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani";
-  return date ? base + " " + formatDateShort(date) : base;
-}
-
 export default function PrevisioniGiornaliere({
   enrichedDaily,
-  dateLabels,
   currentData,
   dayData,
   site,
@@ -134,87 +128,84 @@ export default function PrevisioniGiornaliere({
     return <div className="text-center py-8 text-slate-400 text-base">Caricamento previsioni...</div>;
   }
 
-  const selectedDayData = enrichedDaily[selectedDay];
-  const dayDateShort = selectedDayData?.date ? formatDateShort(selectedDayData.date) : "";
-  const nomeDisplay = nomeDecollo || site.name;
-
   const days = enrichedDaily.slice(0, 3);
-  const dayButtons: React.ReactNode[] = [];
-  for (let idx = 0; idx < days.length; idx++) {
-    const day = days[idx];
-    const isActive = idx === selectedDay;
-    const weatherCode = dailyWeatherCodes[idx] ?? 0;
-    const weatherInfo = getWeatherInfo(weatherCode);
-    const precipGiorno = dailyPrecipTotals[idx] ?? day.precipSum ?? 0;
-    dayButtons.push(
-      <button
-        key={idx}
-        onClick={() => onSelectDay(idx)}
-        className={"text-center transition-all border-2 cursor-pointer p-3 rounded-xl " + (
-          isActive
-            ? "border-emerald-400 bg-emerald-900/40 shadow-lg"
-            : "border-slate-700/50 bg-slate-800/40 hover:border-slate-600"
-        )}
-      >
-        <div className="text-base font-bold text-white">
-          {idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani"}
-        </div>
-        <div className="text-xs text-slate-400 mt-0.5">
-          <Calendar className="w-3.5 h-3.5 inline mr-1" />
-          {day.date ? formatDateShort(day.date) : ""}
-        </div>
-        <div className="flex justify-center my-1">{weatherInfo.icon}</div>
-        <div className="text-sm text-slate-300 font-bold">{weatherInfo.desc}</div>
-        <div className="text-lg font-bold text-white my-1">{Math.round(day.tempMax)}°</div>
-        <div className="text-xs text-slate-400">min {Math.round(day.tempMin)}°</div>
-        <div className="text-xs text-slate-400 mt-0.5">
-          {precipGiorno > 0 ? String(precipGiorno.toFixed(1)) + " mm" : "0 mm"}
-        </div>
-      </button>
-    );
-  }
-
-  // Blocco FinestraSemplice (Mattina, Pomeriggio, Sera) — dati fissi per Malanotte 21/07
-  const fasciaCards = (
-    <div className="space-y-4">
-      <FinestraSemplice
-        titolo="Mattina — Malanotte (21/07)"
-        giudizio="Buono per volo tranquillo"
-        vento="NW 9 km/h"
-        temperatura="16–17°C"
-        termiche="0.3 m/s (deboli)"
-        finestra="9:30 – 11:30"
-        note="Base intorno ai 2000 m, possibili cumuli sparsi."
-      />
-
-      <FinestraSemplice
-        titolo="Pomeriggio — Malanotte (21/07)"
-        giudizio="Giornata stabile, aria secca"
-        vento="S 6 km/h"
-        temperatura="19–20°C"
-        termiche="0.1 m/s (molto deboli)"
-        finestra="14:00 – 17:00"
-        note="Base 2100–2400 m, condizioni regolari."
-      />
-
-      <FinestraSemplice
-        titolo="Sera — Malanotte (21/07)"
-        giudizio="Buono per restituzione"
-        vento="NW 8 km/h"
-        temperatura="17–19°C"
-        termiche="0.2 m/s (residue)"
-        finestra="18:00 – 20:00"
-        note="Base 2000–2300 m, aria più umida."
-      />
-    </div>
-  );
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap justify-center gap-2">
-        {dayButtons}
+        {days.map((day, idx) => {
+          const isActive = idx === selectedDay;
+          const weatherCode = dailyWeatherCodes[idx] ?? 0;
+          const weatherInfo = getWeatherInfo(weatherCode);
+          const precipGiorno = dailyPrecipTotals[idx] ?? day.precipSum ?? 0;
+          return (
+            <button
+              key={idx}
+              onClick={() => onSelectDay(idx)}
+              className={"text-center transition-all border-2 cursor-pointer p-3 rounded-xl " + (
+                isActive
+                  ? "border-emerald-400 bg-emerald-900/40 shadow-lg"
+                  : "border-slate-700/50 bg-slate-800/40 hover:border-slate-600"
+              )}
+            >
+              <div className="text-base font-bold text-white">
+                {idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani"}
+              </div>
+              <div className="text-xs text-slate-400 mt-0.5">
+                <Calendar className="w-3.5 h-3.5 inline mr-1" />
+                {day.date ? formatDateShort(day.date) : ""}
+              </div>
+              <div className="flex justify-center my-1">{weatherInfo.icon}</div>
+              <div className="text-sm text-slate-300 font-bold">{weatherInfo.desc}</div>
+              <div className="text-lg font-bold text-white my-1">{Math.round(day.tempMax)}°</div>
+              <div className="text-xs text-slate-400">min {Math.round(day.tempMin)}°</div>
+              <div className="text-xs text-slate-400 mt-0.5">
+                {precipGiorno > 0 ? String(precipGiorno.toFixed(1)) + " mm" : "0 mm"}
+              </div>
+            </button>
+          );
+        })}
       </div>
-      {fasciaCards}
+
+      {/* Finestre meteo con tutti i campi obbligatori */}
+      <div className="space-y-4">
+        <FinestraSemplice
+          titolo="Mattina — Malanotte (21/07)"
+          giudizio="Buono per volo tranquillo"
+          vento="NW 9 km/h"
+          temperatura="16–17°C"
+          termiche="0.3 m/s (deboli)"
+          finestra="9:30 – 11:30"
+          umidita="55%"
+          pressione="1015 hPa"
+          cielo="Cumuli sparsi"
+          note="Base intorno ai 2000 m, possibili cumuli sparsi."
+        />
+        <FinestraSemplice
+          titolo="Pomeriggio — Malanotte (21/07)"
+          giudizio="Giornata stabile, aria secca"
+          vento="S 6 km/h"
+          temperatura="19–20°C"
+          termiche="0.1 m/s (molto deboli)"
+          finestra="14:00 – 17:00"
+          umidita="45%"
+          pressione="1016 hPa"
+          cielo="Sereno"
+          note="Base 2100–2400 m, condizioni regolari."
+        />
+        <FinestraSemplice
+          titolo="Sera — Malanotte (21/07)"
+          giudizio="Buono per restituzione"
+          vento="NW 8 km/h"
+          temperatura="17–19°C"
+          termiche="0.2 m/s (residue)"
+          finestra="18:00 – 20:00"
+          umidita="50%"
+          pressione="1015 hPa"
+          cielo="Poco nuvoloso"
+          note="Base 2000–2300 m, aria più umida."
+        />
+      </div>
     </div>
   );
 }
