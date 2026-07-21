@@ -141,17 +141,7 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
         </div>
       </div>
 
-      <div className="card bg-slate-800/40 border border-slate-700/50 flex items-center justify-between px-4 py-2">
-        <div className="flex items-center gap-2">
-          <Server className="w-4 h-4 text-emerald-300" />
-          <span className="text-xs font-bold text-emerald-300">Open-Meteo · {data.giorno}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Mountain className="w-4 h-4 text-amber-400" />
-          <span className="text-xs text-slate-400">Decollo {data.quotaDecollo}m</span>
-        </div>
-      </div>
-
+      {/* Selezione oraria */}
       <div className="flex flex-wrap gap-1.5">
         {data.ventoOrario.map(v => (
           <button
@@ -168,7 +158,8 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
         ))}
       </div>
 
-      <div className="card bg-slate-800/40 border border-slate-700/50 p-4">
+      {/* Profilo vento verticale */}
+      <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4">
         <div className="flex items-center gap-2 mb-4">
           <Wind className="w-5 h-5 text-cyan-400 shrink-0" />
           <h4 className="text-base font-bold text-cyan-300">
@@ -234,12 +225,13 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
         </div>
       </div>
 
+      {/* Legenda colori velocità */}
       <div className="flex flex-wrap gap-2 text-[11px] text-slate-400">
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-400" /> ≤8</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-lime-400" /> 9-15</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-amber-400" /> 16-22</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-orange-400" /> 23-30</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-400" /> {'>'}30</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-400" /> over 30</span>
       </div>
 
       <div className="text-center text-sm text-slate-500 border-t border-slate-700/30 pt-3">
