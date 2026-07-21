@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { MapPin, Mountain, Compass, Navigation, Sparkles, Thermometer, Wind, Gauge, Cloud } from "lucide-react";
+import { MapPin, Mountain, Compass, Navigation, Sparkles, Thermometer, Wind, Gauge, Cloud, Loader2 } from "lucide-react";
 import type { Decollo } from "@/data/decolli";
 import type { MeteoDaily, MeteoHourly } from "@/services/weatherService";
 
@@ -11,6 +11,7 @@ interface DecolloListProps {
   onSelect: (id: string) => void;
   allDailyData?: Record<string, MeteoDaily[]>;
   allHourlyData?: Record<string, MeteoHourly[]>;
+  loading?: boolean;
 }
 
 function getWeatherEmoji(code: number): string {
@@ -36,7 +37,7 @@ function getDirArrow(deg: number): string {
   return arrows[Math.round(deg / 45) % 8];
 }
 
-const DecolloList = ({ decolli, selectedId, onSelect, allDailyData, allHourlyData }: DecolloListProps) => {
+const DecolloList = ({ decolli, selectedId, onSelect, allDailyData, allHourlyData, loading }: DecolloListProps) => {
   const getCurrentData = (id: string) => {
     const hourly = allHourlyData?.[id];
     if (!hourly || hourly.length === 0) return null;
@@ -67,7 +68,12 @@ const DecolloList = ({ decolli, selectedId, onSelect, allDailyData, allHourlyDat
       </div>
 
       <div className="flex flex-col gap-2 h-[calc(100vh-300px)] overflow-y-auto scroll-smooth scrollbar-thin scrollbar-thumb-[#22c55e] scrollbar-track-transparent pr-1">
-        {isEmpty ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center text-gray-400 py-10">
+            <Loader2 className="w-6 h-6 animate-spin mb-2" />
+            <p>Caricamento dati meteo...</p>
+          </div>
+        ) : isEmpty ? (
           <div className="flex flex-col items-center justify-center text-gray-400 py-10">
             <Cloud className="w-10 h-10 mb-2 opacity-50" />
             <p>Nessun decollo disponibile per questa località</p>
