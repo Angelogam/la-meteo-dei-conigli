@@ -5,6 +5,8 @@ import { AlertTriangle } from "lucide-react";
 import {
   fetchRealWindData,
   calcolaProfiloVento,
+  degTo16Dir,
+  dir16ToDeg,
   type WindAlgorithmResult,
   type WindLevel,
 } from "@/utils/windAlgorithm";
@@ -166,7 +168,7 @@ const WindProfileUnified: React.FC<{
 
                   {/* Valore e direzione */}
                   <span className="w-20 shrink-0 text-left text-xs font-bold text-slate-300 tabular-nums">
-                    {p.vento} km/h {getDirArrow(degToDir(mediaDirDaNome(p.direzione)))}{" "}
+                    {p.vento} km/h {getDirArrow(dir16ToDeg(p.direzione))}{" "}
                     {p.direzione}
                   </span>
                 </div>
@@ -210,26 +212,5 @@ const WindProfileUnified: React.FC<{
     </div>
   );
 };
-
-// Funzione helper per convertire nome direzione in gradi
-function degTo16Dir(deg: number): string {
-  const DIR_16 = [
-    "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
-    "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW",
-  ];
-  if (deg == null || isNaN(deg)) return "N";
-  const index = Math.round(((deg % 360 + 360) % 360) / 22.5) % 16;
-  return DIR_16[index];
-}
-
-function mediaDirDaNome(dir: string): number {
-  const DIR_16 = [
-    "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
-    "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW",
-  ];
-  const index = DIR_16.indexOf(dir);
-  if (index === -1) return 0;
-  return index * 22.5;
-}
 
 export default WindProfileUnified;
