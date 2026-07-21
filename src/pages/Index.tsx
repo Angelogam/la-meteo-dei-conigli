@@ -244,14 +244,12 @@ export default function Index() {
                         turbolenza: "Forte",
                         cape: 2930,
                         liftedIndex: -7.4,
-                        cin: 0,
                         umidita: 88,
                         pressione: 1013,
                         nuvolosita: 85,
                         uvIndex: 7.3,
                         deltaT: 6,
                         gradiente: 0.98,
-                        pioggia: 0,
                       }}
                     />
                   </>

@@ -11,14 +11,12 @@ interface Props {
     turbolenza: string;
     cape: number;
     liftedIndex: number;
-    cin: number;
     umidita: number;
     pressione: number;
     nuvolosita: number;
     uvIndex: number;
     deltaT: number;
     gradiente: number;
-    pioggia: number;
   };
 }
 
@@ -33,100 +31,84 @@ const MeteoAnalisi: React.FC<Props> = ({ data }) => {
     turbolenza,
     cape,
     liftedIndex,
-    cin,
     umidita,
     pressione,
     nuvolosita,
     uvIndex,
     deltaT,
     gradiente,
-    pioggia,
   } = data;
 
-  // Analisi sintetica per il volo
+  const instabilita =
+    liftedIndex < -6
+      ? "🌪️ Molto instabile"
+      : liftedIndex < -3
+      ? "⚠️ Instabile"
+      : "🌤️ Stabile";
+
+  const termiche =
+    forzaTermica > 4
+      ? "🔥 Buone termiche"
+      : forzaTermica > 2
+      ? "🌡️ Termiche deboli"
+      : "❄️ Termiche assenti";
+
   const voloOk =
     ventoDecollo >= 5 &&
     ventoDecollo <= 20 &&
     turbolenza !== "Forte" &&
     liftedIndex < -2 &&
-    cape > 1000 &&
-    pioggia < 0.5;
-
-  const stabilita =
-    liftedIndex < -6
-      ? "Molto instabile"
-      : liftedIndex < -3
-      ? "Instabile"
-      : "Stabile";
-
-  const termiche =
-    forzaTermica > 4
-      ? "Buone termiche"
-      : forzaTermica > 2
-      ? "Deboli termiche"
-      : "Assenti";
+    cape > 1000;
 
   return (
-    <div className="flex flex-col gap-4 p-4 rounded-xl bg-gradient-to-b from-[#0f172a] to-[#1e293b] border border-[#22c55e]/40 shadow-md">
+    <div className="flex flex-col gap-4 p-5 rounded-2xl bg-gradient-to-b from-[#0f172a] to-[#1e293b] border border-[#22c55e]/40 shadow-lg hover:shadow-[#22c55e]/20 transition-all duration-300">
       {/* Header */}
-      <h3 className="text-lg font-semibold text-white tracking-wide">
-        Analisi atmosferica
+      <h3 className="text-xl font-bold text-white tracking-wide flex items-center gap-2">
+        🌤️ Analisi atmosferica
       </h3>
 
-      {/* Sintesi visiva */}
-      <div className="flex flex-wrap gap-4 text-sm text-gray-300">
-        <div className="flex-1 min-w-[150px]">
-          💨 <span className="font-semibold">Vento decollo:</span>{" "}
-          {ventoDecollo} km/h
+      {/* Vento */}
+      <div className="grid grid-cols-2 gap-4 text-sm text-gray-300">
+        <div className="flex flex-col">
+          <span className="font-semibold text-[#22c55e]">💨 Vento decollo</span>
+          <span>{ventoDecollo} km/h</span>
         </div>
-        <div className="flex-1 min-w-[150px]">
-          🪂 <span className="font-semibold">Vento atterraggio:</span>{" "}
-          {ventoAtterraggio} km/h (raffiche {raffiche} km/h)
+        <div className="flex flex-col">
+          <span className="font-semibold text-[#22c55e]">🪁 Vento atterraggio</span>
+          <span>{ventoAtterraggio} km/h (raffiche {raffiche} km/h)</span>
         </div>
-        <div className="flex-1 min-w-[150px]">
-          ☁️ <span className="font-semibold">Base nuvole:</span>{" "}
-          {baseNuvole} m
-        </div>
-        <div className="flex-1 min-w-[150px]">
-          🔝 <span className="font-semibold">Top termiche:</span>{" "}
-          {topTermiche} m
-        </div>
+      </div>
+
+      {/* Nuvole e termiche */}
+      <div className="grid grid-cols-2 gap-4 text-sm text-gray-300">
+        <div>☁️ Base nuvole: <span className="font-semibold">{baseNuvole} m</span></div>
+        <div>🪂 Top termiche: <span className="font-semibold">{topTermiche} m</span></div>
       </div>
 
       {/* Termiche e stabilità */}
-      <div className="grid grid-cols-2 gap-4 text-sm text-gray-300 mt-2">
-        <div>
-          🌡️ <span className="font-semibold">Forza termica:</span>{" "}
-          {forzaTermica}/10 → {termiche}
-        </div>
-        <div>
-          ⚠️ <span className="font-semibold">Turbulenza:</span>{" "}
-          {turbolenza}
-        </div>
-        <div>
-          🔥 <span className="font-semibold">CAPE:</span> {cape} J/kg →{" "}
-          {stabilita}
-        </div>
-        <div>
-          📉 <span className="font-semibold">Lifted Index:</span>{" "}
-          {liftedIndex}°C
-        </div>
+      <div className="grid grid-cols-2 gap-4 text-sm text-gray-300">
+        <div>📎 Forza termica: <span className="font-semibold">{forzaTermica}/10</span> → {termiche}</div>
+        <div>⚠️ Turbolenza: <span className="font-semibold">{turbolenza}</span></div>
+        <div>🔥 CAPE: <span className="font-semibold">{cape} J/kg</span> → {instabilita}</div>
+        <div>↘️ Lifted Index: <span className="font-semibold">{liftedIndex}°C</span></div>
       </div>
 
       {/* Condizioni generali */}
-      <div className="grid grid-cols-2 gap-4 text-sm text-gray-300 mt-2">
-        <div>💧 Umidità: {umidita}%</div>
-        <div>📈 Pressione: {pressione} hPa</div>
-        <div>☁️ Nuvolosità: {nuvolosita}%</div>
-        <div>🌞 UV Index: {uvIndex}</div>
-        <div>🌡️ Delta T: {deltaT}°C</div>
-        <div>📊 Gradiente: {gradiente}° (adiabatico secco)</div>
+      <div className="grid grid-cols-2 gap-4 text-sm text-gray-300">
+        <div>💧 Umidità: <span className="font-semibold">{umidita}%</span></div>
+        <div>📈 Pressione: <span className="font-semibold">{pressione} hPa</span></div>
+        <div>🌥️ Nuvolosità: <span className="font-semibold">{nuvolosita}%</span></div>
+        <div>🌞 UV Index: <span className="font-semibold">{uvIndex}</span></div>
+        <div>🌡️ Delta T: <span className="font-semibold">{deltaT}°C</span></div>
+        <div>📊 Gradiente: <span className="font-semibold">{gradiente}°</span> (adiabatico secco)</div>
       </div>
 
       {/* Sintesi finale */}
       <div
-        className={`mt-3 text-sm font-semibold ${
-          voloOk ? "text-[#22c55e]" : "text-red-400"
+        className={`mt-3 text-sm font-semibold rounded-lg p-2 text-center ${
+          voloOk
+            ? "bg-[#22c55e]/10 text-[#22c55e]"
+            : "bg-red-900/20 text-red-400"
         }`}
       >
         {voloOk
