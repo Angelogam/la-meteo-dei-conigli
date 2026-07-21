@@ -64,7 +64,7 @@ const DecolloList = ({ decolli, selectedId, onSelect, allDailyData, allHourlyDat
         <span className="text-sm text-slate-500 bg-slate-700/60 px-2 py-0.5 rounded-full ml-auto">{decolli.length}</span>
       </div>
 
-      <div className="space-y-2 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#22c55e] scrollbar-track-transparent pr-1">
+      <div className="space-y-2 h-[calc(100vh-300px)] overflow-y-auto scrollbar-thin scrollbar-thumb-[#22c55e] scrollbar-track-transparent pr-1">
         {decolli.map((site) => {
           const isSelected = site.id === selectedId;
           const current = getCurrentData(site.id);
