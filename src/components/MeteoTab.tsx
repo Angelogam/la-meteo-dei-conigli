@@ -89,35 +89,9 @@ export default function MeteoTab({
   const raffiche = windGust ?? Math.round(windSpeed * 1.4);
   const zeroTermico = Math.max(0, Math.round(site.alt + (temp / 0.0098) + 200));
 
-  const condizioniVolo =
-    windSpeed < 3 ? "Troppo calma" :
-    windSpeed > 30 ? "Vento forte" :
-    precipitation > 1 ? "Pioggia 🌧️" :
-    weatherCode >= 95 ? "Temporale ⛈️" :
-    forzaTermica >= 5 ? "Ottime 🪂🔥" :
-    forzaTermica >= 3 ? "Buone 🪂" :
-    forzaTermica >= 1 ? "Deboli 🌤️" :
-    "Assenti ❄️";
-
   const dirCardinali = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   const dirLabel = dirCardinali[Math.round((windDir ?? 0) / 45) % 8];
   const arrow = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"][Math.round((windDir ?? 0) / 45) % 8];
-
-  const voloEmoji =
-    condizioniVolo.includes("Ottime") ? "🪂🔥" :
-    condizioniVolo.includes("Buone") ? "🪂" :
-    condizioniVolo.includes("Deboli") ? "🌤️" :
-    condizioniVolo.includes("calma") ? "🌀" :
-    condizioniVolo.includes("Pioggia") || condizioniVolo.includes("Temporale") ? "⛈️" :
-    condizioniVolo.includes("forte") ? "💨" : "❄️";
-
-  const cieloDesc =
-    weatherCode === 0 ? "Sereno" :
-    weatherCode <= 2 ? "Poco nuvoloso" :
-    weatherCode <= 3 ? "Nuvoloso" :
-    weatherCode <= 48 ? "Nebbia" :
-    weatherCode >= 95 ? "Temporale" :
-    "Coperto";
 
   return (
     <div className="space-y-4">
@@ -131,25 +105,6 @@ export default function MeteoTab({
             <span>{dataGiorno}</span>
             <span className="text-slate-600">·</span>
             <span>{site?.alt || 0}m</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Banner condizioni */}
-      <div className={"card p-6 border-4 text-center " + (
-        condizioniVolo.includes("Ottime") ? "bg-emerald-900/40 border-emerald-400" :
-        condizioniVolo.includes("Buone") ? "bg-green-900/40 border-green-400" :
-        condizioniVolo.includes("Deboli") ? "bg-amber-900/40 border-amber-400" :
-        condizioniVolo.includes("calma") ? "bg-slate-800/60 border-slate-400" :
-        "bg-red-900/40 border-red-400"
-      )}>
-        <div className="text-6xl mb-3">{voloEmoji}</div>
-        <div className="text-2xl font-bold text-white mb-1">{condizioniVolo}</div>
-        <div className="text-base text-slate-300">{cieloDesc} · Vento {windSpeed} km/h da {dirLabel}</div>
-        <div className="mt-4 pt-3 border-t border-white/10">
-          <span className="text-sm text-slate-400">Zero termico</span>
-          <div className="text-2xl font-bold text-white mt-0.5">
-            {zeroTermico} <span className="text-base text-slate-400 font-normal">m</span>
           </div>
         </div>
       </div>
