@@ -2,7 +2,7 @@
 
 import React from "react";
 import {
-  CloudSun, Droplets, Gauge, Cloud, Wind, ArrowUp, TrendingUp,
+  CloudSun, ArrowUp, TrendingUp,
   Sun, Eye, AlertTriangle, Thermometer, Calendar, MapPin
 } from "lucide-react";
 
@@ -119,16 +119,6 @@ export default function MeteoTab({
     weatherCode >= 95 ? "Temporale" :
     "Coperto";
 
-  const capeLabel = cape != null
-    ? (cape > 1000 ? "Molto instabile ⚠️" : cape > 500 ? "Instabile 🟡" : cape > 200 ? "Moderato 🟢" : "Stabile 🔵")
-    : "--";
-  const liftedLabel = liftedIndex != null
-    ? (liftedIndex < -5 ? "Instabile 🟠" : liftedIndex < 0 ? "Leggero 🟢" : "Stabile 🔵")
-    : "--";
-  const cinLabel = cin != null
-    ? (cin < -50 ? "Inibizione forte ⛔" : cin < -20 ? "Inibizione media 🟡" : "Inibizione debole 🟢")
-    : "--";
-
   return (
     <div className="space-y-4">
       {/* Intestazione con nome decollo e data */}
@@ -161,121 +151,6 @@ export default function MeteoTab({
           <div className="text-2xl font-bold text-white mt-0.5">
             {zeroTermico} <span className="text-base text-slate-400 font-normal">m</span>
           </div>
-        </div>
-      </div>
-
-      {/* Vento decollo / atterraggio */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="card bg-slate-800/60 border border-slate-600/50 p-4 text-center">
-          <div className="text-sm text-slate-400 uppercase mb-2 font-bold">Vento decollo</div>
-          <div className="text-3xl font-bold text-white flex items-center justify-center gap-2 mb-1">
-            {arrow} {Math.round(windSpeed)} <span className="text-base text-slate-400 font-normal">km/h</span>
-          </div>
-          <div className="text-base text-slate-400">{dirLabel} ({Math.round(windDir ?? 0)}°)</div>
-        </div>
-        <div className="card bg-slate-800/60 border border-slate-600/50 p-4 text-center">
-          <div className="text-sm text-slate-400 uppercase mb-2 font-bold">Vento atterraggio</div>
-          <div className="text-3xl font-bold text-white flex items-center justify-center gap-2 mb-1">
-            {Math.round(windSpeed * 0.7)} <span className="text-base text-slate-400 font-normal">km/h</span>
-          </div>
-          <div className="text-base text-slate-400">Raffiche {raffiche} km/h</div>
-        </div>
-      </div>
-
-      {/* 4 card: base, top, forza, turbolenza */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="card bg-slate-800/60 border border-slate-600/50 p-4 text-center">
-          <ArrowUp className="w-8 h-8 text-green-400 mx-auto mb-2" />
-          <div className="text-sm text-slate-400 uppercase mb-1 font-bold">Base nuvole</div>
-          <div className="text-2xl font-bold text-white mb-1">{cloudBase} <span className="text-base text-slate-400 font-normal">m</span></div>
-          <div className="text-sm text-slate-400">Spread {spread.toFixed(1)}°C</div>
-        </div>
-        <div className="card bg-slate-800/60 border border-slate-600/50 p-4 text-center">
-          <ArrowUp className="w-8 h-8 text-red-400 mx-auto mb-2" />
-          <div className="text-sm text-slate-400 uppercase mb-1 font-bold">Top termiche</div>
-          <div className="text-2xl font-bold text-white mb-1">{topTermico} <span className="text-base text-slate-400 font-normal">m</span></div>
-          <div className="text-sm text-slate-400">{precipitation > 1 ? "Pioggia ⛔" : "Spessore " + (topTermico - cloudBase) + "m"}</div>
-        </div>
-        <div className="card bg-slate-800/60 border border-slate-600/50 p-4 text-center">
-          <TrendingUp className="w-8 h-8 text-orange-400 mx-auto mb-2" />
-          <div className="text-sm text-slate-400 uppercase mb-1 font-bold">Forza termica</div>
-          <div className="text-2xl font-bold text-white mb-1">{forzaTermica.toFixed(1)} <span className="text-base text-slate-400 font-normal">/10</span></div>
-          <div className="text-sm text-slate-400">{rateoTermico} m/s</div>
-        </div>
-        <div className="card bg-slate-800/60 border border-slate-600/50 p-4 text-center">
-          <AlertTriangle className="w-8 h-8 text-amber-400 mx-auto mb-2" />
-          <div className="text-sm text-slate-400 uppercase mb-1 font-bold">Turbolenza</div>
-          <div className="text-xl font-bold text-white mb-1">
-            {raffiche > 30 ? "Forte ⚠️" : raffiche > 22 ? "Moderata 🟡" : raffiche > 14 ? "Leggera 🟢" : "Assente ✅"}
-          </div>
-        </div>
-      </div>
-
-      {/* CAPE, LI, CIN */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="card bg-slate-800/50 border border-slate-600/50 p-4 text-center">
-          <TrendingUp className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-          <div className="text-sm text-slate-400 uppercase mb-1 font-bold">CAPE</div>
-          <div className="text-xl font-bold text-white">{cape != null ? Math.round(cape) + " J/kg" : "--"}</div>
-          <div className="text-sm text-slate-400 mt-1">{capeLabel}</div>
-        </div>
-        <div className="card bg-slate-800/50 border border-slate-600/50 p-4 text-center">
-          <AlertTriangle className="w-6 h-6 text-amber-400 mx-auto mb-2" />
-          <div className="text-sm text-slate-400 uppercase mb-1 font-bold">Lifted Index</div>
-          <div className="text-xl font-bold text-white">{liftedIndex != null ? liftedIndex.toFixed(1) + "°C" : "--"}</div>
-          <div className="text-sm text-slate-400 mt-1">{liftedLabel}</div>
-        </div>
-        <div className="card bg-slate-800/50 border border-slate-600/50 p-4 text-center">
-          <Cloud className="w-6 h-6 text-blue-400 mx-auto mb-2" />
-          <div className="text-sm text-slate-400 uppercase mb-1 font-bold">CIN</div>
-          <div className="text-xl font-bold text-white">{cin != null ? Math.round(cin) + " J/kg" : "--"}</div>
-          <div className="text-sm text-slate-400 mt-1">{cinLabel}</div>
-        </div>
-      </div>
-
-      {/* Altre metriche */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <div className="card bg-slate-800/50 border border-slate-600/50 p-4 text-center">
-          <Droplets className="w-6 h-6 text-sky-400 mx-auto mb-2" />
-          <div className="text-sm text-slate-400 uppercase mb-1 font-bold">Umidità</div>
-          <div className="text-xl font-bold text-white">{humidity ?? "--"}%</div>
-          <div className="text-sm text-slate-400 mt-1">{dewPoint != null ? "Rugiada " + Math.round(dewPoint) + "°C" : ""}</div>
-        </div>
-        <div className="card bg-slate-800/50 border border-slate-600/50 p-4 text-center">
-          <Gauge className="w-6 h-6 text-emerald-400 mx-auto mb-2" />
-          <div className="text-sm text-slate-400 uppercase mb-1 font-bold">Pressione</div>
-          <div className="text-xl font-bold text-white">{Math.round(pressure ?? 1013)} hPa</div>
-          <div className="text-sm text-slate-400 mt-1">{pressure > 1020 ? "Alta" : pressure < 1010 ? "Bassa" : "Normale"}</div>
-        </div>
-        <div className="card bg-slate-800/50 border border-slate-600/50 p-4 text-center">
-          <Cloud className="w-6 h-6 text-slate-400 mx-auto mb-2" />
-          <div className="text-sm text-slate-400 uppercase mb-1 font-bold">Nuvolosità</div>
-          <div className="text-xl font-bold text-white">{cloudCover ?? "--"}%</div>
-          <div className="text-sm text-slate-400 mt-1">
-            {cloudCover < 20 ? "Sereno" : cloudCover < 50 ? "Poco" : cloudCover < 80 ? "Nuvoloso" : "Coperto"}
-          </div>
-        </div>
-        <div className="card bg-slate-800/50 border border-slate-600/50 p-4 text-center">
-          <Sun className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
-          <div className="text-sm text-slate-400 uppercase mb-1 font-bold">UV Index</div>
-          <div className="text-xl font-bold text-white">{uvIndex != null ? uvIndex.toFixed(1) : "--"}</div>
-          <div className="text-sm text-slate-400 mt-1">
-            {uvIndex >= 8 ? "Estremo" : uvIndex >= 6 ? "Alto" : uvIndex >= 3 ? "Moderato" : uvIndex >= 1 ? "Basso" : "Nessuno"}
-          </div>
-        </div>
-        <div className="card bg-slate-800/50 border border-slate-600/50 p-4 text-center">
-          <Eye className="w-6 h-6 text-cyan-400 mx-auto mb-2" />
-          <div className="text-sm text-slate-400 uppercase mb-1 font-bold">Delta T</div>
-          <div className="text-xl font-bold text-white">{Math.round(thermalDelta ?? 0)}°C</div>
-          <div className="text-sm text-slate-400 mt-1">
-            {thermalDelta > 10 ? "Buona escursione" : thermalDelta > 6 ? "Moderata" : "Bassa"}
-          </div>
-        </div>
-        <div className="card bg-slate-800/50 border border-slate-600/50 p-4 text-center">
-          <TrendingUp className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-          <div className="text-sm text-slate-400 uppercase mb-1 font-bold">Gradiente</div>
-          <div className="text-xl font-bold text-white">{gradienteReale.toFixed(2)}°</div>
-          <div className="text-sm text-slate-400 mt-1">{gradienteLabel}</div>
         </div>
       </div>
 
