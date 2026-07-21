@@ -19,6 +19,7 @@ import UpdateTimer from "@/components/UpdateTimer";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import LoadingScreen from "@/components/LoadingScreen";
 import ErrorScreen from "@/components/ErrorScreen";
+import { weatherService } from "@/services/weatherService";
 import type { HourData } from "@/types/meteo";
 
 function IndexPage() {
@@ -54,6 +55,11 @@ function IndexPage() {
   if (error && !hasData) {
     return <ErrorScreen error={error} onRetry={loadWeather} />;
   }
+
+  // Log dei dati meteo per debug
+  weatherService.fetchWithFallback(site.lat, site.lon).then((meteo) => {
+    console.log("METEO:", meteo.ok, meteo.data);
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
