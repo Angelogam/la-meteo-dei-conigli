@@ -295,7 +295,7 @@ export default function Index() {
                   />
                 </div>
 
-                {/* CARD ORARIE */}
+                {/* CARD ORARIE — Andamento orario */}
                 <section className="flex flex-col gap-4 mt-4">
                   <MeteoCardOraria
                     fascia="Mattina"
