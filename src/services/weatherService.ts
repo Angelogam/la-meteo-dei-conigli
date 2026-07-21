@@ -19,6 +19,8 @@ export interface MeteoHourly {
   cin: number;
   liftedIndex: number;
   windProfile?: { height: number; speed: number; dir: number }[];
+  temp80m: number | null;
+  temp120m: number | null;
 }
 
 export interface MeteoCurrent {
@@ -65,6 +67,8 @@ const HOURLY_PARAMS = [
   "cape",
   "convective_inhibition",
   "lifted_index",
+  "temperature_80m",
+  "temperature_120m",
   // venti in quota
   "wind_speed_80m",
   "wind_direction_80m",
@@ -162,6 +166,8 @@ function parseHourly(raw: MeteoResponse["hourly"]): MeteoHourly[] {
       cin: (raw.convective_inhibition?.[i] as number) ?? 0,
       liftedIndex: (raw.lifted_index?.[i] as number) ?? 0,
       windProfile: windProfile.length > 0 ? windProfile : undefined,
+      temp80m: (raw.temperature_80m?.[i] as number) ?? null,
+      temp120m: (raw.temperature_120m?.[i] as number) ?? null,
     });
   }
 
@@ -231,7 +237,7 @@ async function fetchMeteoData(lat: number, lon: number): Promise<{
 
   return {
     hourly: parseHourly(raw.hourly),
-    current: parseCurrent(raw.current || raw.hourly),
+    current: parseCurrent(raw.current),
     daily: parseDaily(raw.daily),
     model: "best_match",
   };
