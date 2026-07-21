@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import {
   Wind,
@@ -11,6 +9,8 @@ import {
   Gauge,
   Droplets,
   Clock,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 
 type FinestraProps = {
@@ -20,6 +20,8 @@ type FinestraProps = {
   vento: string;
   temperatura: string;
   termiche: string;
+  base: string;
+  top: string;
   umidita: string;
   pressione: string;
   cielo: string;
@@ -33,6 +35,8 @@ export default function FinestraSemplice({
   vento,
   temperatura,
   termiche,
+  base,
+  top,
   umidita,
   pressione,
   cielo,
@@ -42,14 +46,14 @@ export default function FinestraSemplice({
 
   const iconaCielo =
     cielo.toLowerCase().includes("sereno")
-      ? <Sun size={20} className="text-yellow-400" />
+      ? <Sun size={22} className="text-yellow-400 animate-pulse" />
       : cielo.toLowerCase().includes("cumuli")
-      ? <CloudSun size={20} className="text-sky-300" />
+      ? <CloudSun size={22} className="text-sky-300 animate-bounce" />
       : cielo.toLowerCase().includes("coperto")
-      ? <Cloud size={20} className="text-gray-400" />
+      ? <Cloud size={22} className="text-gray-400" />
       : cielo.toLowerCase().includes("pioggia")
-      ? <CloudRain size={20} className="text-blue-400" />
-      : <Cloud size={20} className="text-gray-300" />;
+      ? <CloudRain size={22} className="text-blue-400 animate-pulse" />
+      : <Cloud size={22} className="text-gray-300" />;
 
   return (
     <div
@@ -83,10 +87,16 @@ export default function FinestraSemplice({
       {aperta && (
         <div className="mt-2 border-t border-gray-700 pt-2 text-sm text-gray-300 space-y-1">
           <p className="flex items-center gap-2">
+            <ArrowUp size={14} className="text-orange-400" /> Base: {base}
+          </p>
+          <p className="flex items-center gap-2">
+            <ArrowDown size={14} className="text-purple-400" /> Top: {top}
+          </p>
+          <p className="flex items-center gap-2">
             <Droplets size={14} className="text-blue-400" /> Umidità: {umidita}
           </p>
           <p className="flex items-center gap-2">
-            <Gauge size={14} className="text-purple-400" /> Pressione: {pressione}
+            <Gauge size={14} className="text-indigo-400" /> Pressione: {pressione}
           </p>
           <p className="flex items-center gap-2 italic text-gray-400">
             <Cloud size={14} /> {note}
