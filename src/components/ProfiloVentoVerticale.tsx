@@ -92,6 +92,8 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
       maxSpeed,
       surfaceTemp: Math.round(surfaceTemp),
       dewPoint: Math.round(dewPoint),
+      surfaceSpeed: Math.round(surfaceSpeed),
+      surfaceDir: Math.round(surfaceDir),
     };
   }, [dayData, siteAlt]);
 
@@ -102,6 +104,25 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
       </div>
     );
   }
+
+  // Calcola descrizioni per coerenza visiva
+  const gradienteDesc = data.gradienteLabel === "Stabile"
+    ? "Debole: vento omogeneo fino a 3000m, termiche stabili"
+    : "Vento cresce gradualmente in quota";
+
+  const windShearDiff = data.righe.length > 0
+    ? Math.max(...data.righe.map(r => r.speed)) - data.righe[0].speed
+    : 0;
+  const windShearDesc = windShearDiff < 10
+    ? "debole, termiche stabili"
+    : windShearDiff < 20
+      ? "moderato, termiche irregolari"
+      : "forte, termiche turbolente";
+
+  const tempDiff = data.surfaceTemp - (data.righe[data.righe.length - 1]?.temp ?? 0);
+  const inversioneDesc = tempDiff < data.gradiente * 25
+    ? "assente, buon rimescolamento"
+    : "presente, possibile capping";
 
   return (
     <div className="space-y-3">
@@ -141,6 +162,28 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
           <div className="text-[10px] text-slate-400">
             a {data.righe.reduce((best, r) => r.speed > best.speed ? r : best, data.righe[0]).quota}m
           </div>
+        </div>
+      </div>
+
+      {/* Riepilogo struttura verticale — coerenza colore con AnalisiApprofonditaCard */}
+      <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 space-y-2 text-xs">
+        <div>
+          <span className="text-slate-500">Vento al suolo</span>
+          <div className="text-white font-bold mt-0.5">
+            {data.surfaceSpeed} km/h da {getDirAbbrev(data.surfaceDir)} ({data.surfaceDir}°)
+          </div>
+        </div>
+        <div>
+          <span className="text-slate-500">Gradiente verticale</span>
+          <div className="text-white font-bold mt-0.5 capitalize">{gradienteDesc}</div>
+        </div>
+        <div>
+          <span className="text-slate-500">Wind shear verticale</span>
+          <div className="text-white font-bold mt-0.5 capitalize">{windShearDesc}</div>
+        </div>
+        <div>
+          <span className="text-slate-500">Inversione termica</span>
+          <div className="text-white font-bold mt-0.5 capitalize">{inversioneDesc}</div>
         </div>
       </div>
 
