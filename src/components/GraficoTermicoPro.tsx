@@ -40,12 +40,12 @@ const GraficoTermicoPro: React.FC<GraficoTermicoProProps> = ({ data }) => {
   const full = HOURS.map((h) => map.get(h) || { hour: h, speed: 0, base: 0, top: 0 });
   const maxSpeed = Math.max(...full.map((d) => d.speed), 0.5);
   const sel = full[selected];
-  const barHeight = 160;
+  const barHeight = 180;
 
   return (
-    <div className="bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border border-slate-700/40 rounded-2xl p-5 shadow-xl">
+    <div className="bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border border-slate-700/40 rounded-2xl p-6 shadow-xl">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-6">
         <h3 className="text-sm font-bold text-orange-300 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
           Intensità termica
@@ -54,7 +54,7 @@ const GraficoTermicoPro: React.FC<GraficoTermicoProProps> = ({ data }) => {
       </div>
 
       {/* Legenda */}
-      <div className="flex flex-wrap gap-2 mb-4 text-[10px]">
+      <div className="flex flex-wrap gap-3 mb-5 text-[10px]">
         {[
           { label: "≥ 3.5", color: "#dc2626" },
           { label: "2.5–3.5", color: "#ea580c" },
@@ -64,14 +64,14 @@ const GraficoTermicoPro: React.FC<GraficoTermicoProProps> = ({ data }) => {
           { label: "< 0.3", color: "#facc15" },
         ].map((item) => (
           <span key={item.label} className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: item.color }} />
+            <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: item.color }} />
             <span className="text-slate-500">{item.label}</span>
           </span>
         ))}
       </div>
 
-      {/* Grafico barre */}
-      <div className="flex items-end justify-center gap-1.5 h-44 overflow-x-auto pb-1">
+      {/* Grafico barre sottili */}
+      <div className="flex items-end justify-center gap-3 h-48 overflow-x-auto pb-1">
         {full.map((d, i) => {
           const pct = maxSpeed > 0 ? (d.speed / maxSpeed) * 100 : 0;
           const isSelected = i === selected;
@@ -81,24 +81,26 @@ const GraficoTermicoPro: React.FC<GraficoTermicoProProps> = ({ data }) => {
             <button
               key={d.hour}
               onClick={() => setSelected(i)}
-              className={`flex flex-col items-center flex-shrink-0 transition-all duration-200 ${
-                isSelected ? "scale-110 z-10" : "opacity-80 hover:opacity-100"
-              }`}
-              style={{ width: "28px" }}
+              className="flex flex-col items-center flex-shrink-0 transition-all duration-200 cursor-pointer"
+              style={{ width: "20px" }}
             >
               {/* Valore sopra */}
               <span
-                className={`text-[10px] font-bold leading-none mb-0.5 transition-colors ${
-                  isSelected ? "text-white" : d.speed > 0 ? "text-orange-200/70" : "text-slate-600"
+                className={`text-[9px] font-bold leading-none mb-1 transition-colors ${
+                  isSelected ? "text-white" : d.speed > 0 ? "text-orange-200/60" : "text-slate-600"
                 }`}
               >
-                {d.speed > 0 ? d.speed.toFixed(1) : "—"}
+                {d.speed > 0 ? d.speed.toFixed(1) : ""}
               </span>
 
-              {/* Barra */}
+              {/* Barra sottile */}
               <div
-                className="w-full rounded-full relative overflow-hidden"
-                style={{ height: `${barHeight}px`, background: "rgba(30,41,59,0.6)" }}
+                className="w-full rounded-full relative overflow-hidden transition-all duration-300"
+                style={{
+                  height: `${barHeight}px`,
+                  background: "rgba(30,41,59,0.5)",
+                  width: isSelected ? "12px" : "8px",
+                }}
               >
                 {d.speed > 0 && (
                   <div
@@ -106,7 +108,7 @@ const GraficoTermicoPro: React.FC<GraficoTermicoProProps> = ({ data }) => {
                     style={{
                       height: `${Math.max(pct, 2)}%`,
                       background: col,
-                      boxShadow: isSelected ? `0 0 12px ${col}` : "none",
+                      boxShadow: isSelected ? `0 0 10px ${col}` : "none",
                     }}
                   />
                 )}
@@ -114,8 +116,8 @@ const GraficoTermicoPro: React.FC<GraficoTermicoProProps> = ({ data }) => {
 
               {/* Ora */}
               <span
-                className={`text-[10px] mt-1 font-mono transition-colors ${
-                  isSelected ? "text-orange-300 font-bold" : d.speed > 0 ? "text-slate-500" : "text-slate-600"
+                className={`text-[9px] mt-1.5 font-mono transition-colors ${
+                  isSelected ? "text-orange-300 font-bold" : "text-slate-600"
                 }`}
               >
                 {d.hour}
@@ -127,7 +129,7 @@ const GraficoTermicoPro: React.FC<GraficoTermicoProProps> = ({ data }) => {
 
       {/* Dettaglio ora selezionata */}
       {sel && sel.speed > 0 && (
-        <div className="mt-4 bg-gradient-to-r from-orange-900/20 to-amber-900/10 rounded-xl p-4 border border-orange-700/30 text-center">
+        <div className="mt-5 bg-gradient-to-r from-orange-900/20 to-amber-900/10 rounded-xl p-4 border border-orange-700/30 text-center">
           <span className="text-xs text-slate-400 block">
             Alle {sel.hour}:00 — {getLabel(sel.speed)}
           </span>
@@ -144,7 +146,7 @@ const GraficoTermicoPro: React.FC<GraficoTermicoProProps> = ({ data }) => {
       )}
 
       {sel && sel.speed === 0 && (
-        <div className="mt-4 bg-slate-800/40 rounded-xl p-4 border border-slate-700/30 text-center">
+        <div className="mt-5 bg-slate-800/40 rounded-xl p-4 border border-slate-700/30 text-center">
           <span className="text-xs text-slate-400">Alle {sel.hour}:00 — Nessuna termica</span>
         </div>
       )}
