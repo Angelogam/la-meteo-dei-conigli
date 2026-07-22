@@ -56,6 +56,16 @@ export default function Index() {
     setSelectedDay(day);
   };
 
+  // PrevisioniGiornaliere vuole { name, altitude, exposure }
+  const siteForPrevisioni = useMemo(() => ({
+    name: site?.name || "Decollo",
+    altitude: site?.altitude || 1000,
+    exposure: site?.exposure,
+  }), [site]);
+
+  // MeteoTab e TermicheGrafico vogliono { alt: number, name?: string }
+  const siteAlt = site?.altitude || 1000;
+
   if (loading) {
     return <LoadingScreen />;
   }
@@ -74,7 +84,7 @@ export default function Index() {
           enrichedDaily={enrichedDaily}
           currentData={currentData}
           dayData={dayData}
-          site={site}
+          site={siteForPrevisioni}
           selectedDay={selectedDay}
           onSelectDay={handleSelectDay}
         />
@@ -91,7 +101,7 @@ export default function Index() {
             <MeteoTab
               currentData={currentData}
               dayData={dayData}
-              site={site}
+              site={{ alt: siteAlt, name: site?.name }}
               thermalDelta={thermalDelta}
               stabilityIndex={stabilityIndex}
               modelName={activeModel}
@@ -104,7 +114,7 @@ export default function Index() {
           <TabsContent value="termiche">
             <TermicheGrafico
               dayData={dayData}
-              alt={site?.alt ?? 1000}
+              alt={siteAlt}
               siteName={site?.name}
               windProfile={windProfile}
             />
