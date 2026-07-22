@@ -40,7 +40,7 @@ const GraficoTermicoPro: React.FC<GraficoTermicoProProps> = ({ data }) => {
   const full = HOURS.map((h) => map.get(h) || { hour: h, speed: 0, base: 0, top: 0 });
   const maxSpeed = Math.max(...full.map((d) => d.speed), 0.5);
   const sel = full[selected];
-  const barHeight = 180;
+  const barHeight = 160;
 
   return (
     <div className="bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border border-slate-700/40 rounded-2xl p-6 shadow-xl">
@@ -70,8 +70,8 @@ const GraficoTermicoPro: React.FC<GraficoTermicoProProps> = ({ data }) => {
         ))}
       </div>
 
-      {/* Grafico barre sottili */}
-      <div className="flex items-end justify-center gap-3 h-48 overflow-x-auto pb-1">
+      {/* Grafico barre larghezza giusta */}
+      <div className="flex items-end justify-around gap-0.5 h-52 overflow-x-auto pb-1 px-1">
         {full.map((d, i) => {
           const pct = maxSpeed > 0 ? (d.speed / maxSpeed) * 100 : 0;
           const isSelected = i === selected;
@@ -81,34 +81,36 @@ const GraficoTermicoPro: React.FC<GraficoTermicoProProps> = ({ data }) => {
             <button
               key={d.hour}
               onClick={() => setSelected(i)}
-              className="flex flex-col items-center flex-shrink-0 transition-all duration-200 cursor-pointer"
-              style={{ width: "20px" }}
+              className={`flex flex-col items-center flex-shrink-0 transition-all duration-200 cursor-pointer ${
+                isSelected ? "scale-110 z-10" : "opacity-80 hover:opacity-100"
+              }`}
+              style={{ width: "36px" }}
             >
               {/* Valore sopra */}
               <span
-                className={`text-[9px] font-bold leading-none mb-1 transition-colors ${
-                  isSelected ? "text-white" : d.speed > 0 ? "text-orange-200/60" : "text-slate-600"
+                className={`text-[10px] font-bold leading-none mb-1 transition-colors ${
+                  isSelected ? "text-white" : d.speed > 0 ? "text-orange-200/70" : "text-slate-600"
                 }`}
               >
                 {d.speed > 0 ? d.speed.toFixed(1) : ""}
               </span>
 
-              {/* Barra sottile */}
+              {/* Barra */}
               <div
-                className="w-full rounded-full relative overflow-hidden transition-all duration-300"
+                className="rounded-lg relative overflow-hidden transition-all duration-300"
                 style={{
                   height: `${barHeight}px`,
+                  width: isSelected ? "28px" : "22px",
                   background: "rgba(30,41,59,0.5)",
-                  width: isSelected ? "12px" : "8px",
                 }}
               >
                 {d.speed > 0 && (
                   <div
-                    className="absolute bottom-0 left-0 right-0 rounded-full transition-all duration-500 ease-out"
+                    className="absolute bottom-0 left-0 right-0 rounded-t-lg transition-all duration-500 ease-out"
                     style={{
                       height: `${Math.max(pct, 2)}%`,
                       background: col,
-                      boxShadow: isSelected ? `0 0 10px ${col}` : "none",
+                      boxShadow: isSelected ? `0 0 12px ${col}` : "none",
                     }}
                   />
                 )}
@@ -116,8 +118,8 @@ const GraficoTermicoPro: React.FC<GraficoTermicoProProps> = ({ data }) => {
 
               {/* Ora */}
               <span
-                className={`text-[9px] mt-1.5 font-mono transition-colors ${
-                  isSelected ? "text-orange-300 font-bold" : "text-slate-600"
+                className={`text-[10px] mt-1.5 font-mono transition-colors ${
+                  isSelected ? "text-orange-300 font-bold" : "text-slate-500"
                 }`}
               >
                 {d.hour}
