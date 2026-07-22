@@ -17,6 +17,7 @@ import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { DECOLLI } from "@/data/decolli";
+import { weatherService } from "@/services/weatherService";
 import { getStabilityIndex } from "@/utils/weatherHelpers";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
 import { Activity, Server, Radar } from "lucide-react";
@@ -45,7 +46,7 @@ export default function Index() {
   );
 
   const decolliList = useMemo(
-    () => DECOLLI.map((d) => ({ nome: d.name, valle: d.valley, quota: d.altitude, direzione: d.exposure })),
+    () => DECOLLI.map((d) => ({ id: d.id, nome: d.name, valle: d.valley, quota: d.altitude, direzione: d.exposure, lat: d.lat, lon: d.lon })),
     [],
   );
 
@@ -89,7 +90,6 @@ export default function Index() {
               selectedId={selectedId}
               selectedDay={selectedDay}
               onSelect={(item) => { const id = nomeToId[item.nome]; if (id) { setSelectedId(id); setSelectedHour(new Date().getHours()); } }}
-              weatherMap={allHourlyData}
             />
           </aside>
           <div className="flex-1 min-w-0 space-y-6">

@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Wind, Clock, Thermometer, AlertTriangle } from "lucide-react";
 import { weatherService } from "@/services/weatherService";
-import { DECOLLI } from "@/data/decolli";
 import { validaVentoPerDecollo, getVentoStatusColor } from "@/utils/validaVentoDecollo";
 
 function getCardinalDir(deg: number): string {
@@ -32,53 +31,20 @@ function getWeatherEmoji(code: number | undefined | null): string {
   return "☀️";
 }
 
-function getDayHourData(
-  hourly: any[],
-  selectedDay: number
-): any | null {
-  if (!Array.isArray(hourly) || hourly.length === 0) return null;
-
-  const oggi = new Date();
-  const targetDate = new Date(oggi);
-  targetDate.setDate(oggi.getDate() + selectedDay);
-
-  const targetStr = `${targetDate.getFullYear()}-${targetDate.getMonth()}-${targetDate.getDate()}`;
-
-  const oreDelGiorno = hourly.filter((h) => {
-    const t = new Date(h.time);
-    const tStr = `${t.getFullYear()}-${t.getMonth()}-${t.getDate()}`;
-    return tStr === targetStr;
-  });
-
-  if (oreDelGiorno.length === 0) return null;
-
-  const hour = oggi.getHours();
-  let closest = oreDelGiorno[0];
-  let minDiff = Math.abs(new Date(closest.time).getHours() - hour);
-
-  for (const h of oreDelGiorno) {
-    const diff = Math.abs(new Date(h.time).getHours() - hour);
-    if (diff < minDiff) {
-      minDiff = diff;
-      closest = h;
-    }
-  }
-
-  return closest;
-}
-
 interface DecolloItem {
+  id: string;
   nome: string;
   valle: string;
   quota: number;
   direzione: string;
+  lat: number;
+  lon: number;
 }
 
 interface DecolliCardProps {
   decolli: DecolloItem[];
   selectedId: string;
   onSelect: (item: DecolloItem) => void;
-  weatherMap?: Record<string, any>;
   selectedDay?: number;
 }
 
@@ -92,52 +58,23 @@ interface LiveDato {
 
 const REFRESH_INTERVAL = 600000; // 10 minuti
 
-const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap, selectedDay = 0 }: DecolliCardProps) => {
+const DecolliCard = ({ decolli, selectedId, onSelect, selectedDay = 0 }: DecolliCardProps) => {
   const [liveData, setLiveData] = useState<Record<string, LiveDato | null>>({});
   const [loadingAll, setLoadingAll] = useState(true);
   const mountedRef = useRef(true);
 
-  // Carica TUTTI i decolli in blocco al mount e poi ogni 10 minuti
   const loadAllData = useCallback(async () => {
     if (!mountedRef.current) return;
 
-    // Se abbiamo weatherMap con dati giornalieri, usiamo quelli
-    if (weatherMap) {
-      const entries = Object.entries(weatherMap);
-      if (entries.length > 0) {
-        const newData: Record<string, LiveDato> = {};
-        for (const [key, hourly] of entries) {
-          const nome = DECOLLI.find(d => d.id === key)?.name;
-          if (!nome) continue;
-          const dayData = getDayHourData(hourly, selectedDay);
-          if (dayData) {
-            newData[nome] = {
-              temp: dayData.temperature ?? 20,
-              wind: dayData.windSpeed ?? 0,
-              gust: dayData.windGusts ?? null,
-              dir: dayData.windDir ?? 0,
-              code: dayData.weatherCode ?? 0,
-            };
-          }
-        }
-        if (Object.keys(newData).length > 0) {
-          setLiveData(prev => ({ ...prev, ...newData }));
-          setLoadingAll(false);
-          return;
-        }
-      }
-    }
-
-    // Fallback: carica da API in blocco
-    const newData: Record<string, LiveDato> = {};
     setLoadingAll(true);
+    const newData: Record<string, LiveDato> = {};
 
+    // Carica TUTTI i decolli in parallelo
     const promises = decolli.map(async (item) => {
-      const d = DECOLLI.find(d => d.name === item.nome);
-      if (!d) return;
       try {
-        const { data } = await weatherService.fetchCurrent(d.lat, d.lon);
-        if (data && mountedRef.current) {
+        console.log(`📡 Caricamento ${item.nome}...`);
+        const { data } = await weatherService.fetchCurrent(item.lat, item.lon);
+        if (data && data.windSpeed != null && mountedRef.current) {
           newData[item.nome] = {
             temp: Math.round(data.temperature),
             wind: Math.round(data.windSpeed),
@@ -145,58 +82,69 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap, selectedDay = 
             dir: Math.round(data.windDir),
             code: data.weatherCode,
           };
+          console.log(`✅ ${item.nome}: ${Math.round(data.windSpeed)} km/h da ${Math.round(data.windDir)}°`);
         }
-      } catch {
-        // silently fail — card resta vuota
+      } catch (err) {
+        console.warn(`❌ ${item.nome}: errore caricamento`);
       }
     });
 
     await Promise.all(promises);
+    
     if (mountedRef.current) {
       setLiveData(newData);
       setLoadingAll(false);
+      console.log(`✅ Caricati ${Object.keys(newData).length}/${decolli.length} decolli`);
     }
-  }, [decolli, weatherMap, selectedDay]);
+  }, [decolli]);
 
   // Carica subito al mount
   useEffect(() => {
     loadAllData();
 
     // Refresh periodico in background
-    const interval = setInterval(loadAllData, REFRESH_INTERVAL);
+    const interval = setInterval(() => {
+      console.log("🔄 Refresh periodico decolli (10 min)...");
+      loadAllData();
+    }, REFRESH_INTERVAL);
+
     return () => {
       mountedRef.current = false;
       clearInterval(interval);
     };
   }, [loadAllData]);
 
-  // Aggiorna anche quando cambia il giorno selezionato o la weatherMap
+  // Aggiorna anche quando cambia il giorno selezionato
   useEffect(() => {
     if (!loadingAll) {
       loadAllData();
     }
   }, [selectedDay]);
 
+  // Stato di caricamento iniziale
   if (loadingAll && Object.keys(liveData).length === 0) {
     return (
       <div className="bg-slate-900/80 border border-slate-700/60 rounded-xl p-3 md:p-4">
         <h2 className="text-sm md:text-base font-bold text-white mb-2 md:mb-3">
           Decolli ({decolli.length})
         </h2>
-        <div className="text-xs md:text-sm text-slate-400 flex items-center gap-2 justify-center py-8">
-          <div className="w-5 h-5 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin" />
-          <span>Caricamento in corso...</span>
+        <div className="flex flex-col items-center justify-center py-8 text-slate-400 space-y-2">
+          <div className="w-8 h-8 rounded-full border-3 border-emerald-500/20 border-t-emerald-400 animate-spin" />
+          <div className="text-xs md:text-sm">
+            Caricamento {Object.keys(liveData).length}/{decolli.length} decolli...
+          </div>
         </div>
       </div>
     );
   }
 
   const dt = getDateTime(selectedDay);
+  const caricati = Object.keys(liveData).length;
 
   return (
     <div className="bg-slate-900/80 border border-slate-700/60 rounded-xl p-3 md:p-4">
       <h2 className="text-sm md:text-base font-bold text-white mb-2 md:mb-3">
-        Decolli ({decolli.length})
+        Decolli ({caricati}/{decolli.length})
       </h2>
 
       <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-slate-400 mb-2 md:mb-3 bg-slate-800/60 rounded-lg px-2.5 py-1.5 border border-slate-700/40">
@@ -204,6 +152,8 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap, selectedDay = 
         <span className="font-medium">{dt.date}</span>
         <span className="text-slate-600">·</span>
         <span>aggiornato {dt.ora}</span>
+        <span className="text-slate-600">·</span>
+        <span className="text-emerald-400">{caricati}/{decolli.length}</span>
       </div>
 
       <div className="space-y-2 max-h-64 md:max-h-80 overflow-y-auto pr-1 scrollbar-thin">
@@ -286,7 +236,10 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap, selectedDay = 
               ) : (
                 <div className="flex items-center justify-between mt-1.5 text-[10px] md:text-xs text-slate-500">
                   <span>{item.valle} · {item.quota}m · {item.direzione}</span>
-                  <span className="italic">caricamento...</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin" />
+                    <span className="italic">attesa...</span>
+                  </div>
                 </div>
               )}
             </button>
