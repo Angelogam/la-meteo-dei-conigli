@@ -150,7 +150,7 @@ importers:
         specifier: ^6.30.4
         version: 6.30.4(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       recharts:
-        specifier: ^2.12.7
+        specifier: ^2.15.2
         version: 2.15.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       sonner:
         specifier: ^1.5.0
