@@ -23,6 +23,25 @@ function formatDate(date: Date): string {
   return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
 }
 
+/** Descrive la forza del vento in modo leggibile */
+function ventoDescrizione(speed: number): { label: string; icone: string; colore: string } {
+  if (speed < 3)  return { label: "Calma",    icone: "🌀", colore: "text-gray-400" };
+  if (speed < 8)  return { label: "Leggero",  icone: "🍃", colore: "text-green-400" };
+  if (speed < 15) return { label: "Moderato", icone: "🌬️", colore: "text-yellow-400" };
+  if (speed < 22) return { label: "Fresco",   icone: "💨", colore: "text-orange-400" };
+  if (speed < 30) return { label: "Forte",    icone: "🌪️", colore: "text-red-400" };
+  return                { label: "Molto forte", icone: "🌀", colore: "text-red-500" };
+}
+
+/** Descrive la nuvolosità in modo leggibile */
+function nuvoleDescrizione(cover: number): string {
+  if (cover < 10)  return "Sereno ☀️";
+  if (cover < 30)  return "Poco nuvoloso 🌤️";
+  if (cover < 60)  return "Nuvoloso ⛅";
+  if (cover < 85)  return "Molto nuvoloso ☁️";
+  return "Coperto ☁️";
+}
+
 export default function HourlyTable({ dayData, altitude, selectedHour, onHourSelect, dayLabel }: HourlyTableProps) {
   const rows = useMemo(() => {
     const ore = Array.from({ length: 11 }, (_, i) => i + 9);
@@ -33,17 +52,21 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
       const volo = getVoloStatus(h);
       const now = new Date();
       const isCurrent = ora === now.getHours();
+      const vento = ventoDescrizione(h.windSpeed);
       return {
         ora,
         temperatura: Math.round(h.temperature),
-        vento: Math.round(h.windSpeed),
+        ventoLabel: vento.label,
+        ventoIcone: vento.icone,
+        ventoColore: vento.colore,
+        velocita: Math.round(h.windSpeed),
         raffica: h.windGusts ? Math.round(h.windGusts) : null,
         direzione: getWindDirection(h.windDir),
         termiche: termiche.rateo,
         termicheColore: termiche.colore,
         base: termiche.base,
         top: termiche.top,
-        nuvole: h.cloudCover,
+        nuvole: nuvoleDescrizione(h.cloudCover),
         pioggia: h.precipitation,
         codice: h.weatherCode,
         voloLabel: volo.label,
@@ -99,12 +122,22 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                 </div>
                 <div className="flex items-center gap-1 text-xs">
                   <Wind className="w-3 h-3 text-sky-400 shrink-0" />
-                  <strong className="font-bold text-sky-300">{r.vento}</strong>
+                  <span className="font-bold text-sky-300">{r.ventoiIcone || r.ventoLabel}</span>
                 </div>
-                <div className="text-xs text-slate-400">
+                <div className="flex items-center gap-1 text-xs">
+                  <span>{r.ventoiIcone}</span>
+                  <span className={`font-bold ${r.ventoColore}`}>{r.ventoLabel}</span>
+                  <span className="text-slate-400">({r.velocita} km/h)</span>
+                </div>
+                <div className="flex items-center gap-1 text-xs">
+                  <span className="text-slate-400">Direzione:</span>
+                  <span className="font-bold text-blue-300">{r.direzione}</span>
+                </div>
+                <div className="text-xs">
+                  <span className="text-slate-400">Termiche: </span>
                   <span className="font-bold" style={{ color: r.termicheColore }}>{r.termiche.toFixed(1)} m/s</span>
                 </div>
-                <div className="text-xs text-slate-400">{r.nuvole}%</div>
+                <div className="text-xs text-slate-300">{r.nuvole}</div>
                 <div className="mt-0.5">
                   <span className={"inline-block px-1.5 py-0.5 rounded text-[11px] font-bold border " + r.voloColore}>
                     {r.voloIcon} {r.voloLabel}
