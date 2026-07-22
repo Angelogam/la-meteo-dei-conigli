@@ -13,12 +13,12 @@ const HOURS = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "1
 
 /** Palette esclusivamente arancio */
 function getColor(speed: number): string {
-  if (speed >= 3.5) return "#9a3412"; // arancio bruciato scuro
-  if (speed >= 2.5) return "#c2410c"; // arancio scuro
-  if (speed >= 1.5) return "#ea580c"; // arancio medio
-  if (speed >= 0.8) return "#f97316"; // arancio
-  if (speed >= 0.3) return "#fb923c"; // arancio chiaro
-  return "#fdba74";                   // arancio molto chiaro
+  if (speed >= 3.5) return "#9a3412";
+  if (speed >= 2.5) return "#c2410c";
+  if (speed >= 1.5) return "#ea580c";
+  if (speed >= 0.8) return "#f97316";
+  if (speed >= 0.3) return "#fb923c";
+  return "#fdba74";
 }
 
 function getLabel(speed: number): string {
@@ -37,7 +37,7 @@ const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
   const full = HOURS.map(h => map.get(h) || { hour: h, speed: 0, base: 0, top: 0 });
   const maxSpeed = Math.max(...full.map(d => d.speed), 0.5);
   const sel = full[selected];
-  const barHeight = 120;
+  const barHeight = 100;
 
   return (
     <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/40 border border-slate-700/40 rounded-2xl p-5">
@@ -67,13 +67,13 @@ const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
         ))}
       </div>
 
-      {/* Grafico barre strette */}
-      <div className="flex items-end gap-1.5 h-36 overflow-x-auto pb-1 justify-center">
+      {/* Grafico barre strette — scrollbar nascosta */}
+      <div className="flex items-end gap-1 h-32 overflow-x-auto pb-1 justify-center scrollbar-none">
         {full.map((d, i) => {
           const pct = maxSpeed > 0 ? (d.speed / maxSpeed) * 100 : 0;
           const isSelected = i === selected;
           const col = getColor(d.speed);
-          const barW = isSelected ? "w-10" : "w-7";
+          const barW = isSelected ? "w-7" : "w-5";
 
           return (
             <button
@@ -85,8 +85,8 @@ const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
             >
               {/* Valore sopra */}
               <span
-                className={`text-[10px] font-black leading-none mb-1 transition-all ${
-                  isSelected ? "text-orange-200 text-xs" : d.speed > 0 ? "text-orange-300/80" : "text-slate-600"
+                className={`text-[9px] font-black leading-none mb-0.5 transition-all ${
+                  isSelected ? "text-orange-200" : d.speed > 0 ? "text-orange-300/80" : "text-slate-600"
                 }`}
               >
                 {d.speed > 0 ? d.speed.toFixed(1) : "—"}
@@ -103,7 +103,7 @@ const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
                     style={{
                       height: `${Math.max(pct, 2)}%`,
                       background: col,
-                      boxShadow: isSelected ? `0 0 12px ${col}` : "none",
+                      boxShadow: isSelected ? `0 0 10px ${col}` : "none",
                     }}
                   />
                 )}
@@ -111,7 +111,7 @@ const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
 
               {/* Ora */}
               <span
-                className={`text-[9px] mt-1 font-mono ${
+                className={`text-[8px] mt-0.5 font-mono ${
                   isSelected ? "text-orange-300 font-bold" : d.speed > 0 ? "text-slate-500" : "text-slate-600"
                 }`}
               >
