@@ -4,13 +4,17 @@ import React from "react";
 import { RefreshCw, CloudSun, Timer } from "lucide-react";
 
 interface UpdateTimerProps {
-  lastUpdate: Date;
+  lastUpdate: Date | null;
   countdown: number;
   updating: boolean;
   onRefresh: () => void;
 }
 
 export default function UpdateTimer({ lastUpdate, countdown, updating, onRefresh }: UpdateTimerProps) {
+  const formattedTime = lastUpdate
+    ? lastUpdate.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
+    : "--:--";
+
   return (
     <div className="bg-slate-900/80 border border-slate-700/60 rounded-xl p-4">
       <div className="flex items-center gap-3 mb-3">
@@ -19,7 +23,7 @@ export default function UpdateTimer({ lastUpdate, countdown, updating, onRefresh
           <div className="min-w-0">
             <div className="text-sm font-bold text-white">Open-Meteo</div>
             <div className="text-base font-bold text-emerald-300 tabular-nums mt-0.5">
-              {lastUpdate.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
+              {formattedTime}
             </div>
           </div>
         </div>
