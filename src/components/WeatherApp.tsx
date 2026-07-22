@@ -8,7 +8,7 @@ import DailyCard from "./DailyCard";
 import TermicheTab from "./TermicheTab";
 import { fetchHourlyData, fetchAllWeatherData } from "@/services/openMeteoService";
 import type { HourData, DailyData, Site } from "@/types/meteo";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 export default function WeatherApp() {
   const [selectedSite, setSelectedSite] = useState<Site | null>(null);
