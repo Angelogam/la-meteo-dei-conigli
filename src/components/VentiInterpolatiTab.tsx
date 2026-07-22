@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Wind, Calendar, MapPin } from "lucide-react";
-import { getVentiInterpolati, type VentiInterpolatiData, type VentoOrario } from "@/utils/getVentiInterpolati";
+import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
 
 function getSpeedColor(speed: number): string {
   if (speed <= 8) return "text-emerald-300";
@@ -139,7 +139,7 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
         ))}
       </div>
 
-      {/* Grafico vento per tutte le quote — aggiornato all'ora selezionata */}
+      {/* Grafico vento per tutte le quote */}
       <div className="space-y-1">
         {quoteVisibili.map(q => {
           const entry = oraData.quote[q];

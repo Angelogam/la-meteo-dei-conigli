@@ -1,4 +1,4 @@
-in JSX con >">
+JSX error">
 import React from "react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
 
@@ -89,7 +89,7 @@ const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
           <span className="w-3 h-3 bg-[#f97316] rounded-sm"></span> Forte (1.5–2.5 m/s)
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-3 h-3 bg-[#dc2626] rounded-sm"></span> Fortissima (>2.5 m/s)
+          <span className="w-3 h-3 bg-[#dc2626] rounded-sm"></span> Fortissima ({">"}2.5 m/s)
         </div>
       </div>
 
