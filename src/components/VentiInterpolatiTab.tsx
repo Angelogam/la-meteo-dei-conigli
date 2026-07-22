@@ -1,3 +1,4 @@
+30 escaping in VentiInterpolatiTab">
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
@@ -101,7 +102,6 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
         quote.push({ quota: q, speed: oraData.quote[q].speed, dir: oraData.quote[q].dir });
       }
     }
-    // Aggiungi quota decollo se non già presente
     if (!quote.find(q => Math.abs(q.quota - quotaDecollo) < 100)) {
       const closest = Object.entries(oraData.quote)
         .map(([q, v]) => ({ quota: parseInt(q), ...v }))
@@ -143,7 +143,6 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
 
   return (
     <div className="space-y-3">
-      {/* Intestazione */}
       <div className="bg-slate-800/60 border border-blue-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
         <MapPin className="w-5 h-5 text-blue-400 shrink-0" />
         <div>
@@ -157,7 +156,6 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
         </div>
       </div>
 
-      {/* Selezione oraria - scroll orizzontale */}
       <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
         {data.ventoOrario.map(v => (
           <button
@@ -177,7 +175,6 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
         ))}
       </div>
 
-      {/* Grafico vento verticale */}
       <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4">
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp className="w-4 h-4 text-cyan-400" />
@@ -217,17 +214,15 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
           })}
         </div>
 
-        {/* Legenda colori */}
         <div className="flex flex-wrap gap-2 text-[10px] text-slate-400 mt-3 pt-2 border-t border-slate-700/30">
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400" /> ≤8</span>
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-lime-400" /> 9–15</span>
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-400" /> 16–22</span>
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-orange-400" /> 23–30</span>
-          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-400" /> >30</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-400" /> oltre 30</span>
         </div>
       </div>
 
-      {/* Tabella riepilogativa oraria semplificata */}
       <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl overflow-hidden">
         <div className="px-4 py-2 border-b border-slate-700/30 text-xs font-bold text-slate-400 uppercase tracking-wider">
           Riepilogo orario vento al decollo ({quotaDecollo}m)

@@ -2,7 +2,6 @@
 
 import React, { useState, useCallback } from "react";
 import { DECOLLI } from "@/data/decolli";
-import { weatherService7Timer } from "@/services/weatherService7Timer";
 import {
   testSingleSite,
   type TestResult,
@@ -58,7 +57,6 @@ function Card({
 
   return (
     <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-5">
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-xl bg-slate-800/80 border border-slate-600/50 flex items-center justify-center ${ringColor} ring-1`}>
@@ -88,7 +86,6 @@ function Card({
         </button>
       </div>
 
-      {/* Barra di progresso */}
       {isRunning && (
         <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden mb-3">
           <div
@@ -98,7 +95,6 @@ function Card({
         </div>
       )}
 
-      {/* Riepilogo */}
       {summary && (
         <div className={`rounded-xl px-4 py-2.5 text-sm mb-3 border ${bgColor}`}>
           <div className="flex items-center gap-2">
@@ -114,7 +110,6 @@ function Card({
         </div>
       )}
 
-      {/* Risultati */}
       {resultsLength > 0 && (
         <div className="space-y-1 max-h-64 overflow-y-auto">
           {results.map((r: any, i: number) => (
@@ -155,7 +150,6 @@ function Card({
         </div>
       )}
 
-      {/* Nessun dato */}
       {!isRunning && resultsLength === 0 && (
         <div className="text-center py-8 text-slate-500">
           <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-40" />
@@ -168,23 +162,16 @@ function Card({
 
 export default function MeteoTesterPanel({ onClose }: MeteoTesterPanelProps) {
   const [isOpen, setIsOpen] = useState(true);
-  // Stato per Open-Meteo
   const [omRunning, setOmRunning] = useState(false);
   const [omResults, setOmResults] = useState<TestResult[]>([]);
   const [omSummary, setOmSummary] = useState<string>("");
   const [omProgress, setOmProgress] = useState(0);
-  // Stato per 7Timer!
-  const [timerRunning, setTimerRunning] = useState(false);
-  const [timerResults, setTimerResults] = useState<{ nome: string; ok: boolean; temp?: number; rt: number; err?: string }[]>([]);
-  const [timerSummary, setTimerSummary] = useState<string>("");
-  const [timerProgress, setTimerProgress] = useState(0);
 
   const handleClose = useCallback(() => {
     setIsOpen(false);
     onClose?.();
   }, [onClose]);
 
-  // Test TUTTI i decolli con Open-Meteo
   const runOpenMeteoTests = useCallback(async () => {
     setOmRunning(true);
     setOmResults([]);
@@ -236,61 +223,14 @@ export default function MeteoTesterPanel({ onClose }: MeteoTesterPanelProps) {
     setOmRunning(false);
   }, []);
 
-  // Test TUTTI i decolli con 7Timer!
-  const run7TimerTests = useCallback(async () => {
-    setTimerRunning(true);
-    setTimerResults([]);
-    setTimerSummary("");
-
-    const siti = DECOLLI.slice(0, 8);
-    let okCount = 0;
-    let totalTime = 0;
-
-    for (let i = 0; i < siti.length; i++) {
-      const d = siti[i];
-      const start = performance.now();
-      try {
-        const { alive, responseTime, status } = await weatherService7Timer.healthCheck(d.lat, d.lon);
-        const rt = Math.round(performance.now() - start);
-        if (alive) okCount++;
-        totalTime += rt;
-        setTimerResults((prev) => [...prev, {
-          nome: d.name,
-          ok: alive,
-          rt,
-          err: status.startsWith("OK") ? undefined : status,
-        }]);
-      } catch (err) {
-        setTimerResults((prev) => [...prev, {
-          nome: d.name,
-          ok: false,
-          rt: Math.round(performance.now() - start),
-          err: err instanceof Error ? err.message : String(err),
-        }]);
-      }
-      setTimerProgress(Math.round(((i + 1) / siti.length) * 100));
-
-      if (i < siti.length - 1) {
-        await new Promise(r => setTimeout(r, 2000));
-      }
-    }
-
-    const avg = siti.length > 0 ? Math.round(totalTime / siti.length) : 0;
-    setTimerSummary(`✅ ${okCount}/${siti.length} OK · ❌ ${siti.length - okCount} falliti · ⏱️ ${avg}ms media`);
-    setTimerRunning(false);
-  }, []);
-
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-950/98 flex flex-col">
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50 bg-slate-900/80 shrink-0">
         <div className="flex items-center gap-3">
           <CloudSun className="w-5 h-5 text-amber-400" />
-          <span className="text-base font-bold text-white">
-            Meteo Tester
-          </span>
+          <span className="text-base font-bold text-white">Meteo Tester</span>
         </div>
         <button onClick={handleClose} className="text-slate-400 hover:text-white px-2 py-1 rounded">
           <X className="w-4 h-4" />
@@ -298,7 +238,6 @@ export default function MeteoTesterPanel({ onClose }: MeteoTesterPanelProps) {
       </div>
 
       <div className="flex-1 overflow-auto p-4 space-y-4">
-        {/* Card Open-Meteo */}
         <Card
           title="Open-Meteo"
           icon={<Server className="w-5 h-5 text-sky-400" />}
@@ -310,20 +249,6 @@ export default function MeteoTesterPanel({ onClose }: MeteoTesterPanelProps) {
           progress={omProgress}
           onStart={runOpenMeteoTests}
           color="sky"
-        />
-
-        {/* Card 7Timer! */}
-        <Card
-          title="7Timer! (GFS)"
-          icon={<Radar className="w-5 h-5 text-purple-400" />}
-          subtitle={`8 siti · Modello GFS`}
-          results={timerResults}
-          resultsLength={timerResults.length}
-          summary={timerSummary}
-          isRunning={timerRunning}
-          progress={timerProgress}
-          onStart={run7TimerTests}
-          color="purple"
         />
       </div>
     </div>
