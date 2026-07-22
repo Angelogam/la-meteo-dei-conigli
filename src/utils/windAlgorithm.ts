@@ -15,7 +15,7 @@ export interface WindAlgorithmResult {
   direzioneMedia: string;
 }
 
-const DIR_16: string[] = [
+const DIR_16 = [
   "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
   "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW",
 ];
@@ -34,8 +34,7 @@ export function dir16ToDeg(dir: string): number {
 
 function mediaDir(dirs: number[]): number {
   if (dirs.length === 0) return 0;
-  let sinSum = 0;
-  let cosSum = 0;
+  let sinSum = 0, cosSum = 0;
   for (const d of dirs) {
     const rad = (d * Math.PI) / 180;
     sinSum += Math.sin(rad);
@@ -63,20 +62,17 @@ export async function fetchRealWindData(
   livelliReali: { quota: number; speed: number; dir: number }[];
   warning: string | null;
 }> {
-  const url =
-    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m&timezone=Europe/Rome&forecast_days=1`;
-
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m&timezone=Europe/Rome&forecast_days=1`;
   try {
     const res = await fetch(url);
     if (!res.ok) return { livelliReali: [], warning: `Errore HTTP ${res.status}` };
     const raw = await res.json();
-    const livelliReali: { quota: number; speed: number; dir: number }[] = [
-      { quota: 10,  speed: raw.hourly.wind_speed_10m[0],       dir: raw.hourly.wind_direction_10m[0] },
-      { quota: 80,  speed: raw.hourly.wind_speed_80m[0],       dir: raw.hourly.wind_direction_80m[0] },
-      { quota: 120, speed: raw.hourly.wind_speed_120m[0],      dir: raw.hourly.wind_direction_120m[0] },
-      { quota: 180, speed: raw.hourly.wind_speed_180m[0],      dir: raw.hourly.wind_direction_180m[0] },
+    const livelliReali = [
+      { quota: 10,  speed: raw.hourly.wind_speed_10m[0], dir: raw.hourly.wind_direction_10m[0] },
+      { quota: 80,  speed: raw.hourly.wind_speed_80m[0], dir: raw.hourly.wind_direction_80m[0] },
+      { quota: 120, speed: raw.hourly.wind_speed_120m[0], dir: raw.hourly.wind_direction_120m[0] },
+      { quota: 180, speed: raw.hourly.wind_speed_180m[0], dir: raw.hourly.wind_direction_180m[0] },
     ].filter(l => l.speed != null && !isNaN(l.speed) && l.dir != null && !isNaN(l.dir));
-
     if (livelliReali.length === 0) return { livelliReali: [], warning: "Dati vento non disponibili." };
     return { livelliReali, warning: null };
   } catch (err) {
@@ -97,17 +93,14 @@ export function calcolaProfiloVento(
       direzioneMedia: "N",
     };
   }
-
   const sorted = [...livelliReali].sort((a, b) => a.quota - b.quota);
-  let gradTot = 0;
-  let coppie = 0;
+  let gradTot = 0, coppie = 0;
   for (let i = 1; i < sorted.length; i++) {
     const dq = sorted[i].quota - sorted[i - 1].quota;
     const dv = sorted[i].speed - sorted[i - 1].speed;
     if (dq > 0) { gradTot += dv / dq; coppie++; }
   }
   const gradienteMedio = coppie > 0 ? gradTot / coppie : 0.01;
-
   const dirsValide = sorted.map(l => l.dir).filter(d => d != null && !isNaN(d));
   const dirMediaDeg = dirsValide.length > 0 ? mediaDir(dirsValide) : 0;
   const direzioneMedia = degTo16Dir(dirMediaDeg);
@@ -122,7 +115,6 @@ export function calcolaProfiloVento(
     return { min: 18, max: 45 };
   });
   let warning: string | null = null;
-
   for (let i = 0; i < quoteTarget.length; i++) {
     const quota = quoteTarget[i];
     const dist = Math.max(1, quota - 10);
@@ -131,18 +123,10 @@ export function calcolaProfiloVento(
     const vento = Math.round(speed);
     const rot = Math.round(((quota - quotaDecollo) / 250) * 2);
     const dirq = ((dirMediaDeg + rot) % 360 + 360) % 360;
-    profilo.push({ quota: quota, vento: vento, direzione: degTo16Dir(dirq) });
+    profilo.push({ quota, vento, direzione: degTo16Dir(dirq) });
   }
-
   const hasExtreme = profilo.some(p => p.vento > 50);
   const hasJump = profilo.some((p, i) => i > 0 && Math.abs(p.vento - profilo[i - 1].vento) > 20);
   if (hasExtreme || hasJump) warning = "Profilo vento potenzialmente non realistico.";
-
-  return {
-    profilo,
-    warning,
-    datiReali: sorted,
-    gradienteMedio: Math.round(gradienteMedio * 1000) / 1000,
-    direzioneMedia,
-  };
+  return { profilo, warning, datiReali: sorted, gradienteMedio: Math.round(gradienteMedio * 1000) / 1000, direzioneMedia };
 }
