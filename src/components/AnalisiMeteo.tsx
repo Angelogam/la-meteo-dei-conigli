@@ -9,6 +9,8 @@ import {
 import type { HourData } from "@/types/meteo";
 import { calcolaAnalisiApprofondita } from "@/utils/analisiApprofondita";
 import AnalisiApprofonditaCard from "./AnalisiApprofonditaCard";
+import BadgeClima from "@/components/BadgeClima";
+import { confrontaClima } from "@/utils/climatologia";
 
 interface AnalisiMeteoProps {
   currentData: HourData | null;
@@ -163,6 +165,24 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
     return calcolaAnalisiApprofondita(dayData, site);
   }, [dayData, site]);
 
+  // Calcola anomalie climatologiche per l'Analisi
+  const anomalieClima = useMemo(() => {
+    if (!dayData || dayData.length === 0) return [];
+    const oreGiorno = dayData.filter(h => {
+      const hh = h.time.getHours();
+      return hh >= 8 && hh <= 18;
+    });
+    if (oreGiorno.length < 3) return [];
+
+    const tempMax = Math.max(...oreGiorno.map(h => h.temperature));
+    const tempMin = Math.min(...oreGiorno.map(h => h.temperature));
+    const ventoMedio = oreGiorno.reduce((s, h) => s + h.windSpeed, 0) / oreGiorno.length;
+    const pioggiaTot = oreGiorno.reduce((s, h) => s + (h.precipitation || 0), 0);
+    const delta = Math.round((tempMax - tempMin) * 10) / 10;
+
+    return confrontaClima(tempMax, tempMin, Math.round(ventoMedio), pioggiaTot, delta);
+  }, [dayData]);
+
   const dataGiorno = useMemo(() => {
     if (dayData && dayData.length > 0) return formatDateShort(dayData[0].time);
     return formatDateShort(new Date());
@@ -193,7 +213,10 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
         </div>
       </div>
 
-      {/* ANALISI APPROFONDITA — sempre visibile, con sezioni pieghevoli e profilo vento verticale */}
+      {/* Badge climatologico */}
+      {anomalieClima.length > 0 && <BadgeClima anomalie={anomalieClima} />}
+
+      {/* ANALISI APPROFONDITA */}
       {analisiApprofondita && (
         <AnalisiApprofonditaCard analisi={analisiApprofondita} siteName={site?.name || "Decollo"} dayData={dayData} />
       )}
