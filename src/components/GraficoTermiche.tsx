@@ -1,10 +1,19 @@
 "use client";
 
 import React, { useState } from "react";
-import type { TermicheData } from "@/utils/termiche";
+
+interface TermicheDato {
+  rateo: number;
+  forza: number;
+  base: number;
+  top: number;
+  label: string;
+  colore: string;
+  gradienteReale: number;
+}
 
 interface GraficoTermicheProps {
-  hourly: { hour: number; termiche: TermicheData }[];
+  hourly: { hour: number; termiche: TermicheDato }[];
   oraCorrente: number;
 }
 
