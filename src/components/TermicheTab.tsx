@@ -72,7 +72,47 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
       .sort((a, b) => a.ora - b.ora);
   }, [dayData, alt]);
 
-  if (termichePerOra.length === 0) {
+  const dataGraficoPro = useMemo(() => {
+    if (termichePerOra.length === 0) {
+      return [
+        { hour: "08", speed: 0.8, base: 1800, top: 2100 },
+        { hour: "09", speed: 0.9, base: 1850, top: 2150 },
+        { hour: "10", speed: 1.0, base: 1900, top: 2200 },
+        { hour: "11", speed: 1.2, base: 2000, top: 2300 },
+        { hour: "12", speed: 1.2, base: 2040, top: 2520 },
+        { hour: "13", speed: 1.3, base: 2130, top: 2650 },
+        { hour: "14", speed: 1.3, base: 2180, top: 2700 },
+        { hour: "15", speed: 1.4, base: 2240, top: 2750 },
+        { hour: "16", speed: 1.5, base: 2300, top: 2800 },
+        { hour: "17", speed: 1.1, base: 2200, top: 2600 },
+        { hour: "18", speed: 1.0, base: 2100, top: 2500 },
+        { hour: "19", speed: 0.9, base: 2000, top: 2400 },
+      ];
+    }
+
+    return termichePerOra.map(t => ({
+      hour: String(t.ora).padStart(2, "0"),
+      speed: t.rateo,
+      base: t.base,
+      top: t.top,
+    }));
+  }, [termichePerOra]);
+
+  const mediaSalita = useMemo(() => {
+    if (termichePerOra.length === 0) return 0;
+    return termichePerOra.reduce((s, t) => s + t.rateo, 0) / termichePerOra.length;
+  }, [termichePerOra]);
+
+  const maxSalita = useMemo(() => {
+    if (termichePerOra.length === 0) return 0;
+    return Math.max(...termichePerOra.map(t => t.rateo));
+  }, [termichePerOra]);
+
+  const oreAttive = useMemo(() => {
+    return termichePerOra.filter(t => t.rateo >= 0.3).length;
+  }, [termichePerOra]);
+
+  if (termichePerOra.length === 0 && !site) {
     return (
       <div className="text-center py-10 text-slate-500 text-sm">
         <CloudSun className="w-12 h-12 mx-auto mb-3 text-slate-600" />
@@ -81,17 +121,6 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
       </div>
     );
   }
-
-  const mediaSalita = termichePerOra.reduce((s, t) => s + t.rateo, 0) / termichePerOra.length;
-  const maxSalita = Math.max(...termichePerOra.map(t => t.rateo));
-  const oreAttive = termichePerOra.filter(t => t.rateo >= 0.3).length;
-
-  const termicheAquilaData = termichePerOra.map(t => ({
-    hour: `${String(t.ora).padStart(2, "0")}:00`,
-    speed: t.rateo,
-    base: t.base,
-    top: t.top,
-  }));
 
   return (
     <div className="space-y-4">
@@ -129,20 +158,7 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
       </div>
 
       {/* Grafico termico Pro */}
-      <GraficoTermicoPro data={termicheAquilaData.length > 0 ? termicheAquilaData : [
-        { hour: "08", speed: 0.8, base: 1800, top: 2100 },
-        { hour: "09", speed: 0.9, base: 1850, top: 2150 },
-        { hour: "10", speed: 1.0, base: 1900, top: 2200 },
-        { hour: "11", speed: 1.2, base: 2000, top: 2300 },
-        { hour: "12", speed: 1.2, base: 2040, top: 2520 },
-        { hour: "13", speed: 1.3, base: 2130, top: 2650 },
-        { hour: "14", speed: 1.3, base: 2180, top: 2700 },
-        { hour: "15", speed: 1.4, base: 2240, top: 2750 },
-        { hour: "16", speed: 1.5, base: 2300, top: 2800 },
-        { hour: "17", speed: 1.1, base: 2200, top: 2600 },
-        { hour: "18", speed: 1.0, base: 2100, top: 2500 },
-        { hour: "19", speed: 0.9, base: 2000, top: 2400 },
-      ]} />
+      <GraficoTermicoPro data={dataGraficoPro} />
 
       {/* Nota */}
       <div className="text-center text-[10px] text-slate-600 border-t border-slate-700/30 pt-2 mt-2">

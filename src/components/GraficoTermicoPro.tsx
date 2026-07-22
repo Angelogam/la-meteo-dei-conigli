@@ -1,5 +1,5 @@
 import React from "react";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, ReferenceLine } from "recharts";
 
 interface ThermalData {
   hour: string;
@@ -10,10 +10,10 @@ interface ThermalData {
 
 const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
   const getColor = (speed: number) => {
-    if (speed < 0.8) return "#facc15";
-    if (speed < 1.5) return "#22c55e";
-    if (speed < 2.5) return "#f97316";
-    return "#dc2626";
+    if (speed < 0.8) return "#facc15"; // giallo
+    if (speed < 1.5) return "#22c55e"; // verde
+    if (speed < 2.5) return "#f97316"; // arancio
+    return "#dc2626"; // rosso
   };
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -48,9 +48,12 @@ const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
         🔥 Intensità termica giornaliera
       </h3>
 
-      <div className="w-full h-72">
-        <ResponsiveContainer>
-          <BarChart data={data} margin={{ top: 20, right: 0, left: 0, bottom: 20 }}>
+      <div className="w-full h-72 flex justify-center">
+        <ResponsiveContainer width="90%" height="100%">
+          <BarChart
+            data={data}
+            margin={{ top: 20, right: 0, left: 0, bottom: 20 }}
+          >
             <XAxis
               dataKey="hour"
               tick={{ fill: "#94a3b8", fontSize: 12 }}
@@ -64,7 +67,8 @@ const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
               domain={[0, "dataMax + 0.5"]}
             />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.05)" }} />
-            <Bar dataKey="speed" radius={[8, 8, 0, 0]} barSize={30}>
+            <ReferenceLine y={1.5} stroke="#22c55e" strokeDasharray="3 3" />
+            <Bar dataKey="speed" radius={[8, 8, 0, 0]} barSize={28}>
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={getColor(entry.speed)} />
               ))}
@@ -84,7 +88,7 @@ const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
           <span className="w-3 h-3 bg-[#f97316] rounded-sm"></span> Forte (1.5–2.5 m/s)
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-3 h-3 bg-[#dc2626] rounded-sm"></span> Fortissima ({" >"}2.5 m/s)
+          <span className="w-3 h-3 bg-[#dc2626] rounded-sm"></span> Fortissima ({">"}2.5 m/s)
         </div>
       </div>
 
