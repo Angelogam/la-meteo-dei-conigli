@@ -95,7 +95,6 @@ export default function MeteoTab({
 
   return (
     <div className="space-y-4">
-      {/* Intestazione con nome decollo e data */}
       <div className="bg-slate-800/60 border border-emerald-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
         <MapPin className="w-5 h-5 text-emerald-400 shrink-0" />
         <div>

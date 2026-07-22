@@ -124,7 +124,6 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
 
   return (
     <div className="space-y-4">
-      {/* Intestazione */}
       <div className="bg-slate-800/60 border border-orange-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
         <MapPin className="w-5 h-5 text-orange-400 shrink-0" />
         <div>
@@ -138,7 +137,6 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
         </div>
       </div>
 
-      {/* Riepilogo */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
           <TrendingUp className="w-6 h-6 text-amber-400 mx-auto mb-1" />
@@ -157,10 +155,8 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
         </div>
       </div>
 
-      {/* Grafico termico Pro */}
       <GraficoTermicoPro data={dataGraficoPro} />
 
-      {/* Nota */}
       <div className="text-center text-[10px] text-slate-600 border-t border-slate-700/30 pt-2 mt-2">
         Valori realistici per Alpi &mdash; Rateo massimo ~4-5 m/s in condizioni estreme
       </div>
