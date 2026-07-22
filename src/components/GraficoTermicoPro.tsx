@@ -1,4 +1,3 @@
-JSX error">
 import React from "react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
 
@@ -11,10 +10,10 @@ interface ThermalData {
 
 const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
   const getColor = (speed: number) => {
-    if (speed < 0.8) return "#facc15"; // giallo
-    if (speed < 1.5) return "#22c55e"; // verde
-    if (speed < 2.5) return "#f97316"; // arancio
-    return "#dc2626"; // rosso
+    if (speed < 0.8) return "#facc15";
+    if (speed < 1.5) return "#22c55e";
+    if (speed < 2.5) return "#f97316";
+    return "#dc2626";
   };
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -51,10 +50,7 @@ const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
 
       <div className="w-full h-72">
         <ResponsiveContainer>
-          <BarChart
-            data={data}
-            margin={{ top: 20, right: 0, left: 0, bottom: 20 }}
-          >
+          <BarChart data={data} margin={{ top: 20, right: 0, left: 0, bottom: 20 }}>
             <XAxis
               dataKey="hour"
               tick={{ fill: "#94a3b8", fontSize: 12 }}
@@ -77,7 +73,6 @@ const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
         </ResponsiveContainer>
       </div>
 
-      {/* Legenda migliorata */}
       <div className="mt-6 text-xs text-gray-300 flex flex-wrap justify-center gap-3">
         <div className="flex items-center gap-1">
           <span className="w-3 h-3 bg-[#facc15] rounded-sm"></span> Debole (0.3–0.8 m/s)
@@ -89,11 +84,10 @@ const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
           <span className="w-3 h-3 bg-[#f97316] rounded-sm"></span> Forte (1.5–2.5 m/s)
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-3 h-3 bg-[#dc2626] rounded-sm"></span> Fortissima ({">"}2.5 m/s)
+          <span className="w-3 h-3 bg-[#dc2626] rounded-sm"></span> Fortissima ({" >"}2.5 m/s)
         </div>
       </div>
 
-      {/* Box informativo */}
       <div className="mt-6 w-full bg-[#1e293b] rounded-xl p-4 text-center border border-[#22c55e]/30">
         <div className="text-sm text-gray-300">
           Alle <span className="text-[#22c55e] font-semibold">12:00</span> —{" "}
