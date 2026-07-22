@@ -13,7 +13,6 @@ import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
-import MeteoQuickTest from "@/components/MeteoQuickTest";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
@@ -92,7 +91,6 @@ export default function Index() {
               onSelect={(item) => { const id = nomeToId[item.nome]; if (id) { setSelectedId(id); setSelectedHour(new Date().getHours()); } }}
               weatherMap={allHourlyData}
             />
-            <MeteoQuickTest />
           </aside>
           <div className="flex-1 min-w-0 space-y-6">
             {hasData && (
