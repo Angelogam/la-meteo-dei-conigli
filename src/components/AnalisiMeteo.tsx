@@ -193,9 +193,9 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
         </div>
       </div>
 
-      {/* ANALISI APPROFONDITA — sempre visibile, con sezioni pieghevoli */}
+      {/* ANALISI APPROFONDITA — sempre visibile, con sezioni pieghevoli e profilo vento verticale */}
       {analisiApprofondita && (
-        <AnalisiApprofonditaCard analisi={analisiApprofondita} siteName={site?.name || "Decollo"} />
+        <AnalisiApprofonditaCard analisi={analisiApprofondita} siteName={site?.name || "Decollo"} dayData={dayData} />
       )}
 
       {/* Situazione generale (riepilogo rapido) */}

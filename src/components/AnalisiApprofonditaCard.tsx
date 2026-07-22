@@ -7,10 +7,13 @@ import {
   ChevronDown, ChevronUp, Clock, Gauge, AlertTriangle, CheckCircle,
 } from "lucide-react";
 import type { AnalisiApprofondita } from "@/utils/analisiApprofondita";
+import ProfiloVentoVerticale from "./ProfiloVentoVerticale";
+import type { HourData } from "@/types/meteo";
 
 interface Props {
   analisi: AnalisiApprofondita;
   siteName: string;
+  dayData?: HourData[];
 }
 
 function getPunteggioColore(p: number): string {
@@ -54,7 +57,7 @@ function Sezione({ titolo, icona, children, defaultOpen = true }: {
   );
 }
 
-export default function AnalisiApprofonditaCard({ analisi, siteName }: Props) {
+export default function AnalisiApprofonditaCard({ analisi, siteName, dayData }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -118,9 +121,10 @@ export default function AnalisiApprofonditaCard({ analisi, siteName }: Props) {
         </div>
       </Sezione>
 
-      {/* Vento */}
-      <Sezione titolo="Vento e struttura verticale" icona={<Wind className="w-4 h-4 text-cyan-400" />}>
-        <div className="grid grid-cols-2 gap-2 text-xs">
+      {/* Vento e struttura verticale — ORA INCLUDE IL PROFILO COMPLETO */}
+      <Sezione titolo="Vento e struttura verticale" icona={<Wind className="w-4 h-4 text-cyan-400" />} defaultOpen={true}>
+        {/* Prima il riepilogo compatto */}
+        <div className="grid grid-cols-2 gap-2 text-xs mb-3">
           <div className="bg-slate-800/60 rounded-lg p-2">
             <span className="text-slate-500">Vento al suolo</span>
             <div className="text-cyan-300 font-bold mt-0.5">
@@ -148,6 +152,15 @@ export default function AnalisiApprofonditaCard({ analisi, siteName }: Props) {
             <div className="text-white font-bold mt-0.5 capitalize">{analisi.inversione}</div>
           </div>
         </div>
+
+        {/* Profilo verticale completo con gradiente, zero termico e quote 250m */}
+        {dayData && dayData.length > 0 && (
+          <ProfiloVentoVerticale
+            dayData={dayData}
+            siteAlt={analisi.alt}
+            siteName={siteName}
+          />
+        )}
       </Sezione>
 
       {/* Termiche */}
@@ -286,7 +299,7 @@ export default function AnalisiApprofonditaCard({ analisi, siteName }: Props) {
               : ` con probabilità di temporali del ${analisi.rischioTemporali}%.`
             }
             {analisi.visibilita > 30
-              ? ` Visibilità eccellente di circa ${analisi.visibilita} km.`
+              ? ` Visibilità eccellente di circa ${{analisi.visibilita} km.`
               : ` Visibilità di ${analisi.visibilita} km.`
             }
           </p>
