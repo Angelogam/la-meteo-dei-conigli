@@ -14,10 +14,12 @@ interface Props {
     pressione: number;
     score: number;
     migliorOra: string;
-    piccoTermico: number;
+    piccoTermico: number; // sarà già numero intero ora
     commentoVolo: string;
   };
 }
+
+const arrotonda = (n: number) => Math.round(n);
 
 const MeteoCardOraria: React.FC<Props> = ({ fascia, data }) => {
   if (!data) {
@@ -61,14 +63,14 @@ const MeteoCardOraria: React.FC<Props> = ({ fascia, data }) => {
         <span className={`text-sm font-bold px-2 py-1 rounded-lg ${
           voloOk ? "text-[#22c55e] bg-[#22c55e]/10" : "text-red-400 bg-red-900/20"
         }`}>
-          {score}/10
+          {arrotonda(score)}/10
         </span>
       </div>
 
       {/* Finestra integrata (Miglior ora + Picco termico) */}
       <div className="flex items-center justify-between text-sm text-gray-300 bg-[#1e293b]/40 rounded-lg p-2">
         <div>⭐ Miglior ora: <span className="text-[#22c55e] font-semibold">{migliorOra}</span></div>
-        <div>🔥 Picco termico: <span className="text-yellow-400 font-semibold">{piccoTermico} m/s</span></div>
+        <div>🔥 Picco termico: <span className="text-yellow-400 font-semibold">{arrotonda(piccoTermico)} m/s</span></div>
       </div>
 
       {/* Sintesi visiva */}
@@ -77,19 +79,19 @@ const MeteoCardOraria: React.FC<Props> = ({ fascia, data }) => {
           {pioggiaOk ? "☀️" : "🌧️"} {pioggiaOk ? "Secco" : "Pioggia"}
         </div>
         <div className="flex items-center gap-2">
-          💨 {vento} km/h {direzione}
+          💨 {arrotonda(vento)} km/h {direzione}
         </div>
         <div className="flex items-center gap-2">
-          🌡️ {temp}°C
+          🌡️ {arrotonda(temp)}°C
         </div>
       </div>
 
       {/* Dettagli tecnici */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-300 mt-2">
-        <div>🪂 Base <span className="text-[#22c55e] font-semibold">{base}m</span></div>
-        <div>🏔️ Top <span className="text-[#22c55e] font-semibold">{top}m</span></div>
-        <div>💧 Umidità <span className="font-semibold">{umidita}%</span></div>
-        <div>📈 Pressione <span className="font-semibold">{pressione} hPa</span></div>
+        <div>🪂 Base <span className="text-[#22c55e] font-semibold">{arrotonda(base)}m</span></div>
+        <div>🏔️ Top <span className="text-[#22c55e] font-semibold">{arrotonda(top)}m</span></div>
+        <div>💧 Umidità <span className="font-semibold">{arrotonda(umidita)}%</span></div>
+        <div>📈 Pressione <span className="font-semibold">{arrotonda(pressione)} hPa</span></div>
       </div>
 
       {/* Stato volabilità */}

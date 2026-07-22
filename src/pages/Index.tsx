@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
@@ -25,6 +25,8 @@ import { getStabilityIndex } from "@/utils/weatherHelpers";
 import { calcolaTermiche } from "@/utils/termiche";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
 import { Activity } from "lucide-react";
+
+const arrotonda = (n: number) => Math.round(n);
 
 export default function Index() {
   // Avvia verifica continua all'avvio
@@ -82,7 +84,7 @@ export default function Index() {
   // =====================
   // DATI PER FINESTRE SEMPLICI (Mattina/Pomeriggio/Sera) — reali da Open-Meteo
   // =====================
-  const fasceOrarie = React.useMemo(() => {
+  const fasceOrarie = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
 
     const morning = dayData.filter(h => {
@@ -106,11 +108,11 @@ export default function Index() {
       const clouds = hours.map((h: any) => h.cloudCover).filter((c: any) => c != null);
       const hums = hours.map((h: any) => h.humidity).filter((u: any) => u != null);
 
-      const tempMedia = Math.round(temps.reduce((s: number, t: number) => s + t, 0) / temps.length);
-      const tempMax = Math.round(Math.max(...temps));
-      const windMedia = Math.round(winds.reduce((s: number, w: number) => s + w, 0) / winds.length);
-      const cloudMedia = Math.round(clouds.reduce((s: number, c: number) => s + c, 0) / clouds.length);
-      const humMedia = Math.round(hums.reduce((s: number, u: number) => s + u, 0) / hums.length);
+      const tempMedia = arrotonda(temps.reduce((s: number, t: number) => s + t, 0) / temps.length);
+      const tempMax = arrotonda(Math.max(...temps));
+      const windMedia = arrotonda(winds.reduce((s: number, w: number) => s + w, 0) / winds.length);
+      const cloudMedia = arrotonda(clouds.reduce((s: number, c: number) => s + c, 0) / clouds.length);
+      const humMedia = arrotonda(hums.reduce((s: number, u: number) => s + u, 0) / hums.length);
 
       const termichePerOra = hours.map((h: any) => calcolaTermiche(h, site?.altitude ?? 1000));
       const ratei = termichePerOra.map((t: any) => t.rateo);
@@ -118,13 +120,13 @@ export default function Index() {
       const rateoMax = Math.max(...ratei);
       const basi = termichePerOra.map((t: any) => t.base);
       const top = termichePerOra.map((t: any) => t.top);
-      const baseMedia = Math.round(basi.reduce((s: number, b: number) => s + b, 0) / basi.length);
-      const topMedia = Math.round(top.reduce((s: number, t: number) => s + t, 0) / top.length);
+      const baseMedia = arrotonda(basi.reduce((s: number, b: number) => s + b, 0) / basi.length);
+      const topMedia = arrotonda(top.reduce((s: number, t: number) => s + t, 0) / top.length);
 
       let termicheLabel = "Assenti ❌";
-      if (rateoMedia >= 0.8) termicheLabel = `${rateoMedia.toFixed(1)} m/s (deboli)`;
-      if (rateoMedia >= 1.5) termicheLabel = `${rateoMedia.toFixed(1)} m/s (moderate)`;
-      if (rateoMedia >= 2.5) termicheLabel = `${rateoMedia.toFixed(1)} m/s (buone)`;
+      if (rateoMedia >= 0.8) termicheLabel = `${rateoMedia.toFixed(0)} m/s (deboli)`;
+      if (rateoMedia >= 1.5) termicheLabel = `${rateoMedia.toFixed(0)} m/s (moderate)`;
+      if (rateoMedia >= 2.5) termicheLabel = `${rateoMedia.toFixed(0)} m/s (buone)`;
 
       // Direzione vento (calcolo direzione dominante)
       const dirs = hours.map((h: any) => h.windDir).filter((d: any) => d != null);
@@ -285,20 +287,20 @@ export default function Index() {
                           meteo: (currentData?.weatherCode ?? 0) <= 2 ? "sole" : (currentData?.weatherCode ?? 0) >= 61 ? "pioggia" : "nuvoloso",
                           ventoDecollo: fasceOrarie.mattina.vento,
                           ventoAtterraggio: fasceOrarie.sera?.vento ?? fasceOrarie.mattina.vento,
-                          raffiche: currentData?.windGusts ?? Math.round((currentData?.windSpeed ?? 0) * 1.4),
+                          raffiche: arrotonda(currentData?.windGusts ?? (currentData?.windSpeed ?? 0) * 1.4),
                           baseNuvole: fasceOrarie.mattina.base,
                           topTermiche: fasceOrarie.mattina.top,
-                          forzaTermica: Math.min(10, Math.max(0, Math.round((fasceOrarie.mattina.rateo / 4) * 10))),
+                          forzaTermica: Math.min(10, Math.max(0, arrotonda((fasceOrarie.mattina.rateo / 4) * 10))),
                           turbolenza: (currentData?.windGusts ?? 0) > 30 ? "Forte" : (currentData?.windGusts ?? 0) > 20 ? "Moderata" : "Leggera",
-                          cape: currentCape?.cape ?? 0,
+                          cape: arrotonda(currentCape?.cape ?? 0),
                           liftedIndex: currentCape?.liftedIndex ?? 0,
                           umidita: currentData?.humidity ?? 50,
-                          pressione: currentData?.pressure ?? 1013,
+                          pressione: arrotonda(currentData?.pressure ?? 1013),
                           nuvolosita: currentData?.cloudCover ?? 30,
                           uvIndex: currentData?.uvIndex ?? 3,
                           deltaT: thermalDelta,
                           gradiente: 0.98,
-                          zeroTermico: site!.altitude + Math.round((currentData?.temperature ?? 15) / 0.0098) + 200,
+                          zeroTermico: site!.altitude + arrotonda((currentData?.temperature ?? 15) / 0.0098) + 200,
                         }}
                       />
                     )}
@@ -386,7 +388,7 @@ export default function Index() {
                       <MeteoCardOraria
                         fascia="Mattina"
                         data={{
-                          temp: Math.round(currentData?.temperature ?? 16),
+                          temp: arrotonda(currentData?.temperature ?? 16),
                           tempMax: fasceOrarie.mattina.tempMax,
                           vento: fasceOrarie.mattina.vento,
                           direzione: fasceOrarie.mattina.ventoDir,
@@ -394,10 +396,10 @@ export default function Index() {
                           top: fasceOrarie.mattina.top,
                           umidita: fasceOrarie.mattina.umidita,
                           pioggia: currentData?.precipitation ?? 0,
-                          pressione: currentData?.pressure ?? 1013,
-                          score: Math.min(10, Math.max(0, Math.round((fasceOrarie.mattina.rateo / 4) * 10))),
+                          pressione: arrotonda(currentData?.pressure ?? 1013),
+                          score: Math.min(10, Math.max(0, arrotonda((fasceOrarie.mattina.rateo / 4) * 10))),
                           migliorOra: "10:30",
-                          piccoTermico: fasceOrarie.mattina.rateo,
+                          piccoTermico: arrotonda(fasceOrarie.mattina.rateo),
                           commentoVolo: fasceOrarie.mattina.giudizio === "Buono per volo"
                             ? "Termiche regolari, vento ideale per decollare."
                             : "Condizioni non ottimali, valuta con attenzione.",
@@ -408,7 +410,7 @@ export default function Index() {
                       <MeteoCardOraria
                         fascia="Pomeriggio"
                         data={{
-                          temp: Math.round(currentData?.temperature ?? 19),
+                          temp: arrotonda(currentData?.temperature ?? 19),
                           tempMax: fasceOrarie.pomeriggio.tempMax,
                           vento: fasceOrarie.pomeriggio.vento,
                           direzione: fasceOrarie.pomeriggio.ventoDir,
@@ -416,10 +418,10 @@ export default function Index() {
                           top: fasceOrarie.pomeriggio.top,
                           umidita: fasceOrarie.pomeriggio.umidita,
                           pioggia: currentData?.precipitation ?? 0,
-                          pressione: currentData?.pressure ?? 1013,
-                          score: Math.min(10, Math.max(0, Math.round((fasceOrarie.pomeriggio.rateo / 4) * 10))),
+                          pressione: arrotonda(currentData?.pressure ?? 1013),
+                          score: Math.min(10, Math.max(0, arrotonda((fasceOrarie.pomeriggio.rateo / 4) * 10))),
                           migliorOra: "14:00",
-                          piccoTermico: fasceOrarie.pomeriggio.rateo,
+                          piccoTermico: arrotonda(fasceOrarie.pomeriggio.rateo),
                           commentoVolo: fasceOrarie.pomeriggio.giudizio === "Buono per volo"
                             ? "Condizioni stabili, buona finestra di volo."
                             : "Vento o nuvolosità potrebbero limitare il volo.",
@@ -430,7 +432,7 @@ export default function Index() {
                       <MeteoCardOraria
                         fascia="Sera"
                         data={{
-                          temp: Math.round(currentData?.temperature ?? 17),
+                          temp: arrotonda(currentData?.temperature ?? 17),
                           tempMax: fasceOrarie.sera.tempMax,
                           vento: fasceOrarie.sera.vento,
                           direzione: fasceOrarie.sera.ventoDir,
@@ -438,10 +440,10 @@ export default function Index() {
                           top: fasceOrarie.sera.top,
                           umidita: fasceOrarie.sera.umidita,
                           pioggia: currentData?.precipitation ?? 0,
-                          pressione: currentData?.pressure ?? 1013,
-                          score: Math.min(10, Math.max(0, Math.round((fasceOrarie.sera.rateo / 4) * 10))),
+                          pressione: arrotonda(currentData?.pressure ?? 1013),
+                          score: Math.min(10, Math.max(0, arrotonda((fasceOrarie.sera.rateo / 4) * 10))),
                           migliorOra: "18:00",
-                          piccoTermico: fasceOrarie.sera.rateo,
+                          piccoTermico: arrotonda(fasceOrarie.sera.rateo),
                           commentoVolo: fasceOrarie.sera.giudizio === "Buono per volo"
                             ? "Condizioni stabili, perfette per restituzione."
                             : "Attenzione: termiche in calo.",
