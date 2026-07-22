@@ -1,5 +1,21 @@
-/* ... whole file content is huge … only modifying the relevant part … */
+"use client";
 
+import React, { useEffect, useMemo, useState } from "react";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import DecolliCard from "@/components/DecolliCard";
+import SiteHeader from "@/components/SiteHeader";
+import UpdateTimer from "@/components/UpdateTimer";
+import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
+import WeatherDashboard from "@/components/WeatherDashboard";
+import TabNav from "@/components/TabNav";
+import MeteoTab from "@/components/MeteoTab";
+import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
+import TermicheTab from "@/components/TermicheTab";
+import AnalisiMeteo from "@/components/AnalisiMeteo";
+import MeteoTesterPanel from "@/components/MeteoTesterPanel";
+import DiagnosticaPanel from "@/components/DiagnosticaPanel";
+import ApiStatusBadge from "@/components/ApiStatusBadge";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { DECOLLI } from "@/data/decolli";
