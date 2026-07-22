@@ -14,7 +14,6 @@ export async function fetchHourlyData(
   altitude: number,
   forecastDays: number = 3,
 ): Promise<HourData[]> {
-  // Usa il modello GFS se possibile (più preciso), altrimenti usa il modello standard
   const baseUrl = "https://api.open-meteo.com/v1/forecast";
 
   const params = new URLSearchParams({
@@ -39,8 +38,6 @@ export async function fetchHourlyData(
     throw new Error("No hourly data");
   }
 
-  // Estrai CAPE e Lifted Index se disponibili (richiedono modello diverso)
-  // L'API standard non fornisce CAPE direttamente, lo calcoliamo
   const hourly = json.hourly;
   const times: string[] = hourly.time;
   const temps: number[] = hourly.temperature_2m;
@@ -69,34 +66,30 @@ export async function fetchHourlyData(
   const freeze: number[] = hourly.freezing_level_height;
   const sunshine: number[] = hourly.sunshine_duration;
 
-  // Dati orari con calcolo CAPE approssimato
   const data: HourData[] = times.map((timeStr, i) => {
-    const temp = temps[i];
-    const hum = hums[i];
-    const dew = dews[i];
+    const temp = temps[i] ?? 15;
+    const hum = hums[i] ?? 50;
+    const dew = dews[i] ?? (temp - 8); // stima realistica se manca
     const tempK = temp + 273.15;
     const humRel = hum / 100;
 
     // Calcolo CAPE approssimato (semplificato)
-    // CAPE ≈ 0.5 * g * Δz * (Δθ/θ₀)
-    // Usiamo un approccio: se l'umidità è alta e temperatura in superficie è alta, CAPE aumenta
-    const sigma = 461; // costante vapore acqueo J/(kg·K)
-    const Rd = 287; // costante aria secca J/(kg·K)
-    const eSat = 611 * Math.exp((17.67 * temp) / (temp + 243.5));
-    const e = (hum / 100) * eSat;
-    const mixingRatio = 0.622 * e / (sp[i] - e);
-    const virtualTempK = tempK * (1 + 0.608 * mixingRatio);
     const deltaT = temp - (dew || temp - 10);
     const capeApprox = Math.max(0, deltaT > 3 ? deltaT * 40 : 0);
     const liftedIndex = temp - (dew ? dew : temp - 5);
     const cin = Math.max(0, 200 - capeApprox * 2);
+
+    const eSat = 611 * Math.exp((17.67 * temp) / (temp + 243.5));
+    const e = (hum / 100) * eSat;
+    const mixingRatio = 0.622 * e / ((sp[i] ?? 1013) - e);
+    const virtualTempK = tempK * (1 + 0.608 * mixingRatio);
 
     return {
       time: new Date(timeStr + "Z"),
       temperature: temp,
       feelsLike: feels[i] ?? temp,
       humidity: hum,
-      dewPoint: dew ?? temp - 5,
+      dewPoint: dew,  // ora DEW è sempre un valore realistico
       pressure: psl[i] ?? 1013,
       surfacePressure: sp[i] ?? 1013,
       precipitation: preps[i] ?? 0,
@@ -118,7 +111,6 @@ export async function fetchHourlyData(
       isDay: isDay[i] === 1,
       freezingLevel: freeze[i] ?? 3000,
       sunshineDuration: sunshine[i] ?? 0,
-      // Calcoli termodinamici
       cape: capeApprox,
       cin: cin,
       liftedIndex: liftedIndex,
