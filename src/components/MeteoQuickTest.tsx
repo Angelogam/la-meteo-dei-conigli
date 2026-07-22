@@ -134,7 +134,7 @@ export default function MeteoQuickTest() {
         <Search className="w-5 h-5 text-sky-400 shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="text-sm font-bold text-white">Controllo vento TUTTI i decolli</div>
-          <div className="text-[10px] text-sky-300/70">Vento reale vs esposizione — 24 decolli</div>
+          <div className="text-[10px] text-sky-300/70">Cliccare su Controllo vento TUTTI i decolli per aggiornare le previsioni</div>
         </div>
         {running && (
           <div className="flex items-center gap-1">
@@ -171,7 +171,6 @@ export default function MeteoQuickTest() {
             const contrari = risultatiVento.filter(r => r.status === "contrario");
             const laterali = risultatiVento.filter(r => r.status === "laterale");
             const favorevoli = risultatiVento.filter(r => r.status === "favorevole");
-            const errori = risultatiVento.filter(r => r.status === "errore");
 
             return (
               <div className="space-y-2">
