@@ -91,11 +91,7 @@ export default function Index() {
               onSelect={(item) => { const id = nomeToId[item.nome]; if (id) { setSelectedId(id); setSelectedHour(new Date().getHours()); } }}
               weatherMap={allHourlyData}
             />
-            {/* Pulsanti test separati */}
-            <div className="space-y-1">
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold px-1 mb-1">Test API</div>
-              <MeteoQuickTest />
-            </div>
+            <MeteoQuickTest />
           </aside>
           <div className="flex-1 min-w-0 space-y-6">
             {hasData && (
