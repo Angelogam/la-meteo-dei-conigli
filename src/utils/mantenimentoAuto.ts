@@ -65,7 +65,6 @@ export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
   const errori: string[] = [];
   const warning: string[] = [];
 
-  // --- 1. Verifica decolli ---
   const decolliErrors: string[] = [];
   const ids = new Set<string>();
   let decolliConDati = 0;
@@ -80,7 +79,6 @@ export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
     else ids.add(d.id);
   }
 
-  // --- 2. Verifica API meteo (solo 2 siti per non stressare) ---
   const apiErrors: string[] = [];
   let apiOkCount = 0;
   let tempiRisposta: number[] = [];
@@ -100,7 +98,7 @@ export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
       apiOkCount++;
 
       if (data.hourly.length > 0) {
-        const temps = data.hourly.map(h => h.temperature).filter(t => t != null);
+        const temps = data.hourly.map((h: any) => h.temperature).filter((t: number) => t != null);
         if (temps.length > 0) {
           const minT = Math.min(...temps);
           const maxT = Math.max(...temps);
@@ -115,7 +113,6 @@ export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
     }
   }
 
-  // --- 3. Verifica calcoli ---
   const calcErrors: string[] = [];
 
   const testCardinali = [
@@ -147,7 +144,6 @@ export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
     warningNomi.push("Pochi decolli configurati");
   }
 
- <dyad-write path="src/utils/mantenimentoAuto.ts" description="Complete the diagnosticaCompleta function">
   const mediaRisposta = tempiRisposta.length > 0
     ? Math.round(tempiRisposta.reduce((s, t) => s + t, 0) / tempiRisposta.length)
     : 0;
@@ -197,7 +193,6 @@ export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
 
 export function avviaVerificaContinua(intervalMs: number = 30000) {
   console.log("🚀 [Manutenzione Auto] Verifica continua attiva (ogni " + (intervalMs / 1000) + "s)");
-
   const esegui = async () => {
     try {
       const report = await diagnosticaCompleta();
@@ -214,7 +209,6 @@ export function avviaVerificaContinua(intervalMs: number = 30000) {
       console.error("❌ [Manutenzione Auto] Errore diagnostica:", err);
     }
   };
-
   esegui();
   setInterval(esegui, intervalMs);
 }
