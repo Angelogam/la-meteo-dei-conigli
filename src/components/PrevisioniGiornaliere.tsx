@@ -8,163 +8,151 @@ import {
 
 interface PrevisioniGiornaliereProps {
   enrichedDaily: any[];
-  dateLabels: string[];
+  dateLabels?: string[];
   currentData: any;
   dayData: any[];
   site: { name: string; altitude: number; exposure?: string };
   selectedDay: number;
   onSelectDay: (day: number) => void;
-  nomeDecollo?: string;
 }
+// ... keep rest of file unchanged
+</dyad-watch>
 
-function getWeatherInfo(code: number | undefined | null) {
-  if (code == null || (typeof code === "number" && isNaN(code))) {
-    return { icon: <Sun className="w-6 h-6 text-amber-300" />, desc: "N/D" };
-  }
-  if (code === 0 || code === 1) return { icon: <Sun className="w-6 h-6 text-amber-300" />, desc: "Sereno" };
-  if (code === 2) return { icon: <CloudSun className="w-6 h-6 text-amber-200" />, desc: "Poco nuvoloso" };
-  if (code === 3) return { icon: <Cloud className="w-6 h-6 text-slate-300" />, desc: "Nuvoloso" };
-  if (code >= 45 && code <= 48) return { icon: <CloudFog className="w-6 h-6 text-slate-400" />, desc: "Nebbia" };
-  if (code >= 51 && code <= 57) return { icon: <CloudRain className="w-6 h-6 text-blue-300" />, desc: "Pioggerella" };
-  if (code >= 61 && code <= 67) return { icon: <CloudRain className="w-6 h-6 text-blue-400" />, desc: "Pioggia" };
-  if (code >= 80 && code <= 84) return { icon: <CloudRain className="w-6 h-6 text-blue-300" />, desc: "Rovesci" };
-  if (code >= 95 && code <= 99) return { icon: <CloudLightning className="w-6 h-6 text-yellow-300" />, desc: "Temporali" };
-  return { icon: <Sun className="w-6 h-6 text-amber-300" />, desc: "Sereno" };
-}
+No, that approach is fragile — I need to write the whole file for the changes to be applied properly. But actually the issues are just 2: `dateLabels` required, and `alt` vs `altitude` on the site prop. Let me fix Index.tsx to pass `alt` as a computed prop and add `dateLabels`.
 
-function getDominantWeatherCode(hourlyCodes: (number | undefined | null)[]): number {
-  const valid = hourlyCodes.filter((c): c is number => c != null && !isNaN(c));
-  if (valid.length === 0) return 0;
-  const freq: Record<string, number> = {};
-  for (const c of valid) {
-    freq[String(c)] = (freq[String(c)] || 0) + 1;
-  }
-  let maxCode = 0;
-  let maxCount = 0;
-  const entries = Object.entries(freq);
-  for (let i = 0; i < entries.length; i++) {
-    const [ck, count] = entries[i];
-    if (count > maxCount) {
-      maxCount = count;
-      maxCode = parseInt(ck, 10);
-    }
-  }
-  return maxCode;
-}
+<dyad-write path="src/pages/Index.tsx" description="Fix — passa dateLabels, usa site.altitudine al posto di site.alt per il calcolo alt">
+"use client";
 
-function formatDateShort(date: any): string {
-  if (!date) return "";
-  const d = date instanceof Date ? date : new Date(date);
-  if (isNaN(d.getTime())) return String(date);
-  return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0");
-}
+import React, { useState, useMemo } from "react";
+import { Header } from "@/components/Header";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import TermicheGrafico from "@/components/TermicheGrafico";
+import MeteoTab from "@/components/MeteoTab";
+import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
+import { useWeatherData } from "@/hooks/useWeatherData";
 
-function getCurrentDateTime(): string {
-  const now = new Date();
-  const date = now.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
-  const time = now.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
-  return `${date} · ${time}`;
-}
+import LoadingScreen from "@/components/LoadingScreen";
+import ErrorScreen from "@/components/ErrorScreen";
 
-export default function PrevisioniGiornaliere({
-  enrichedDaily,
-  currentData,
-  dayData,
-  site,
-  selectedDay,
-  onSelectDay,
-}: PrevisioniGiornaliereProps) {
-  const alt = site.altitude;
+export default function Index() {
+  const {
+    selectedId, setSelectedId,
+    loading, updating, error,
+    selectedDay, setSelectedDay,
+    selectedHour, setSelectedHour,
+    activeTab, setActiveTab,
+    lastUpdate, countdown,
+    site,
+    dayData,
+    currentData,
+    thermalDelta,
+    enrichedDaily,
+    dateLabels,
+    loadWeather,
+    allDailyData,
+    allHourlyData,
+    activeModel,
+    currentCape,
+  } = useWeatherData();
 
-  const dailyWeatherCodes = useMemo(() => {
-    const result: number[] = [];
-    for (let di = 0; di < enrichedDaily.length; di++) {
-      const day = enrichedDaily[di];
-      if (!day?.date) { result.push(0); continue; }
-      const d = day.date instanceof Date ? day.date : new Date(day.date);
-      const codes: number[] = [];
-      if (dayData && dayData.length > 0) {
-        for (let hi = 0; hi < dayData.length; hi++) {
-          const t = new Date(dayData[hi].time);
-          if (t.getFullYear() === d.getFullYear() && t.getMonth() === d.getMonth() && t.getDate() === d.getDate()) {
-            codes.push(dayData[hi].weatherCode);
-          }
-        }
-      }
-      if (codes.length === 0) codes.push(day.weatherCode);
-      result.push(getDominantWeatherCode(codes));
-    }
-    return result;
-  }, [enrichedDaily, dayData]);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
 
-  if (!enrichedDaily || enrichedDaily.length === 0) {
-    return <div className="text-center py-8 text-slate-400 text-base">Caricamento previsioni...</div>;
+  const windProfile = useMemo(() => {
+    if (!currentData) return undefined;
+    return currentData.windProfile;
+  }, [currentData]);
+
+  const stabilityIndex = useMemo(() => {
+    if (!currentData) return { label: "N/D", color: "#64748b" };
+    const ws = currentData.windSpeed || 0;
+    const cc = currentData.cloudCover || 0;
+    const hum = currentData.humidity || 50;
+    const capeVal = currentCape?.cape ?? 0;
+    const liVal = currentCape?.liftedIndex ?? 0;
+    if (capeVal > 800 || liVal < -4) return { label: "Instabile", color: "#f87171" };
+    if (capeVal > 300 || ws > 20 || hum > 70) return { label: "Moderato", color: "#fbbf24" };
+    if (cc < 20 && ws > 5 && ws < 15) return { label: "Stabile", color: "#4ade80" };
+    return { label: "Molto stabile", color: "#22d3ee" };
+  }, [currentData, currentCape]);
+
+  const handleSelectDay = (day: number) => {
+    setSelectedDay(day);
+  };
+
+  const siteForPrevisioni = useMemo(() => ({
+    name: site?.name || "Decollo",
+    altitude: site?.altitude || 1000,
+    exposure: site?.exposure,
+  }), [site]);
+
+  const siteForMeteo = useMemo(() => ({
+    alt: site?.altitude || 1000,
+    name: site?.name,
+  }), [site]);
+
+  if (loading) {
+    return <LoadingScreen />;
   }
 
-  const now = getCurrentDateTime();
-  const days = enrichedDaily.slice(0, 3);
+  if (error) {
+    return <ErrorScreen error={error} onRetry={loadWeather} />;
+  }
 
   return (
-    <div className="space-y-4">
-      {/* Data e ora aggiornamento */}
-      <div className="text-center text-[10px] text-slate-500 tracking-wider">
-        {now}
-      </div>
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+      <Header />
+      <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
 
-      {/* Card giorni centrate */}
-      <div className="flex flex-wrap justify-center gap-3">
-        {days.map((day, idx) => {
-          const isActive = idx === selectedDay;
-          const weatherCode = dailyWeatherCodes[idx] ?? 0;
-          const weatherInfo = getWeatherInfo(weatherCode);
+        {/* Previsioni Giornaliere */}
+        <PrevisioniGiornaliere
+          enrichedDaily={enrichedDaily}
+          dateLabels={dateLabels}
+          currentData={currentData}
+          dayData={dayData}
+          site={siteForPrevisioni}
+          selectedDay={selectedDay}
+          onSelectDay={handleSelectDay}
+        />
 
-          return (
-            <button
-              key={idx}
-              onClick={() => onSelectDay(idx)}
-              className={
-                "text-center transition-all border-2 cursor-pointer p-4 rounded-xl flex-1 min-w-[120px] max-w-[180px] " +
-                (isActive
-                  ? "border-emerald-400 bg-emerald-900/40 shadow-lg shadow-emerald-500/10"
-                  : "border-slate-700/50 bg-slate-800/40 hover:border-slate-500 hover:bg-slate-800/60")
-              }
-            >
-              {/* Nome giorno */}
-              <div className="text-sm font-bold text-white mb-1">
-                {idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani"}
-              </div>
+        {/* Tabs principali */}
+        <Tabs defaultValue="meteo" className="w-full">
+          <TabsList className="w-full justify-center">
+            <TabsTrigger value="meteo">Meteo</TabsTrigger>
+            <TabsTrigger value="termiche">Termiche</TabsTrigger>
+            <TabsTrigger value="vento">Vento</TabsTrigger>
+          </TabsList>
 
-              {/* Data */}
-              <div className="text-[10px] text-slate-500 mb-2">
-                <Calendar className="w-3 h-3 inline mr-1" />
-                {day.date ? formatDateShort(day.date) : ""}
-              </div>
+          <TabsContent value="meteo">
+            <MeteoTab
+              currentData={currentData}
+              dayData={dayData}
+              site={siteForMeteo}
+              thermalDelta={thermalDelta}
+              stabilityIndex={stabilityIndex}
+              modelName={activeModel}
+              cape={currentCape?.cape ?? null}
+              liftedIndex={currentCape?.liftedIndex ?? null}
+              cin={currentCape?.cin ?? null}
+            />
+          </TabsContent>
 
-              {/* Icona meteo */}
-              <div className="flex justify-center my-2">{weatherInfo.icon}</div>
+          <TabsContent value="termiche">
+            <TermicheGrafico
+              dayData={dayData}
+              alt={site?.altitude ?? 1000}
+              siteName={site?.name}
+              windProfile={windProfile}
+            />
+          </TabsContent>
 
-              {/* Descrizione meteo */}
-              <div className="text-xs text-slate-300 font-bold mb-1">{weatherInfo.desc}</div>
-
-              {/* Temperature */}
-              <div className="text-lg font-bold text-white">{Math.round(day.tempMax)}°</div>
-              <div className="text-[10px] text-slate-400">min {Math.round(day.tempMin)}°</div>
-
-              {/* Pioggia */}
-              <div className="text-[10px] text-slate-500 mt-1">
-                {(day.precipSum ?? 0) > 0
-                  ? `${(day.precipSum ?? 0).toFixed(1)} mm`
-                  : "0 mm"}
-              </div>
-
-              {/* Ora ultimo aggiornamento */}
-              <div className="text-[8px] text-slate-600 mt-2">
-                {now}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+          <TabsContent value="vento">
+            <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 text-center">
+              <p className="text-lg font-bold text-sky-300">Vento in arrivo nella prossima versione</p>
+              <p className="text-sm text-slate-400 mt-2">I dati vento sono già disponibili nelle tab Meteo e Termiche</p>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </main>
     </div>
   );
 }
