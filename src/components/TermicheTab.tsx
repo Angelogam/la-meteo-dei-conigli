@@ -4,6 +4,7 @@ import React, { useMemo } from "react";
 import { ArrowUp, TrendingUp, ThermometerSun, CloudSun, Calendar, Sparkles, Activity, MapPin } from "lucide-react";
 import { analisiAvanzataCompleta } from "@/services/analisiAvanzata";
 import AnalisiAvanzataCard from "@/components/AnalisiAvanzataCard";
+import TermicheNuvola from "@/components/TermicheNuvola";
 import type { MeteoHourly, MeteoCurrent } from "@/services/weatherService";
 
 interface TermicheTabProps {
@@ -69,15 +70,14 @@ function calcolaTermicheSicure(h: any, alt: number) {
 
   // Label e colore
   let label: string;
-  let colore: string;
-  if (rateo >= 4) { label = "Forti"; colore = "#ef4444"; }
-  else if (rateo >= 3) { label = "Buone"; colore = "#f97316"; }
-  else if (rateo >= 2) { label = "Moderate"; colore = "#eab308"; }
-  else if (rateo >= 1) { label = "Deboli"; colore = "#84cc16"; }
-  else if (rateo >= 0.3) { label = "M. deboli"; colore = "#6b7280"; }
-  else { label = "Assenti"; colore = "#475569"; }
+  if (rateo >= 4) { label = "Forti"; }
+  else if (rateo >= 3) { label = "Buone"; }
+  else if (rateo >= 2) { label = "Moderate"; }
+  else if (rateo >= 1) { label = "Deboli"; }
+  else if (rateo >= 0.3) { label = "M. deboli"; }
+  else { label = "Assenti"; }
 
-  return { ora: new Date(h.time).getHours(), rateo, base, top, label, colore };
+  return { ora: new Date(h.time).getHours(), rateo, base, top, label };
 }
 
 export default function TermicheTab({ currentData, dayData, site, hourlyData, current }: TermicheTabProps) {
@@ -182,7 +182,7 @@ export default function TermicheTab({ currentData, dayData, site, hourlyData, cu
         return hh >= 8 && hh <= 19;
       })
       .map((h: any) => calcolaTermicheSicure(h, alt))
-      .filter(t => t.rateo >= 0) // filtriamo rateo 0 (pioggia forte)
+      .filter(t => t.rateo >= 0)
       .sort((a, b) => a.ora - b.ora);
   }, [dayData, alt]);
 
@@ -200,6 +200,13 @@ export default function TermicheTab({ currentData, dayData, site, hourlyData, cu
   const mediaSalita = termichePerOra.reduce((s, t) => s + t.rateo, 0) / termichePerOra.length;
   const maxSalita = Math.max(...termichePerOra.map(t => t.rateo));
   const oreAttive = termichePerOra.filter(t => t.rateo >= 0.3).length;
+
+  const termicheNuvolaData = termichePerOra.map(t => ({
+    hour: `${String(t.ora).padStart(2, "0")}:00`,
+    speed: t.rateo,
+    base: t.base,
+    top: t.top,
+  }));
 
   return (
     <div className="space-y-4">
@@ -236,18 +243,8 @@ export default function TermicheTab({ currentData, dayData, site, hourlyData, cu
         </div>
       </div>
 
-      {/* Card orarie — valori GARANTITI 0-5 m/s */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {termichePerOra.map((t) => (
-          <div key={t.ora} className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4 text-center">
-            <div className="text-base font-bold text-slate-200 mb-1">{String(t.ora).padStart(2, "0")}:00</div>
-            <div className="text-2xl font-bold" style={{ color: t.colore }}>{t.rateo.toFixed(1)} m/s</div>
-            <div className="text-sm text-slate-400">{t.label}</div>
-            <div className="text-sm text-green-300 mt-1">Base {Math.min(alt + 3000, t.base)}m</div>
-            <div className="text-sm text-red-300">Top {Math.min(4000, t.top)}m</div>
-          </div>
-        ))}
-      </div>
+      {/* Card a colonna con nuvola - sostituisce le vecchie card */}
+      <TermicheNuvola data={termicheNuvolaData} />
 
       {/* Nota range realistico */}
       <div className="text-center text-[10px] text-slate-600 border-t border-slate-700/30 pt-2 mt-2">
