@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { Wind, Clock, Thermometer } from "lucide-react";
+import { Wind, Clock, Thermometer, AlertTriangle } from "lucide-react";
 import { weatherService } from "@/services/weatherService";
 import { DECOLLI } from "@/data/decolli";
+import { validaVentoPerDecollo, getVentoStatusColor } from "@/utils/validaVentoDecollo";
 
 function getCardinalDir(deg: number): string {
   if (deg == null) return "N/D";
@@ -162,6 +163,14 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardP
           const dirLabel = dir != null ? getCardinalDir(dir) : "N/D";
           const dirArrow = dir != null ? getWindArrow(dir) : "→";
 
+          // VALUTAZIONE VENTO VS ESPOSIZIONE
+          const valutazioneVento = dir != null
+            ? valutaVentoPerDecollo(dir, item.direzione)
+            : null;
+          const ventoColor = valutazioneVento
+            ? getVentoStatusColor(valutazioneVento.status)
+            : "text-slate-400";
+
           return (
             <button
               key={item.nome}
@@ -200,7 +209,7 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardP
                 </div>
               </div>
 
-              {/* VENTO ATTUALE QUOTA DECOLLO + PUNTO CARDINALE + KM/H */}
+              {/* VENTO ATTUALE + VALUTAZIONE ESPOSIZIONE */}
               <div className="mt-1.5 pt-1.5 border-t border-slate-700/30">
                 <div className="text-[11px] text-slate-500 mb-1">
                   Vento attuale quota decollo
@@ -223,6 +232,19 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardP
                     </span>
                   )}
                 </div>
+
+                {/* AVVISO VENTO/ESPOSIZIONE */}
+                {valutazioneVento && (
+                  <div className={`mt-1.5 flex items-center gap-1.5 text-[10px] rounded-lg px-2 py-1 border ${ventoColor}`}>
+                    {valutazioneVento.status === "sottovento" && (
+                      <AlertTriangle className="w-3 h-3 shrink-0" />
+                    )}
+                    <span className="font-bold">{valutazioneVento.icon}</span>
+                    <span>{valutazioneVento.label}</span>
+                    <span className="text-slate-500">|</span>
+                    <span className="opacity-80">{Math.round(wind)} km/h da {Math.round(dir)}° vs esposizione {item.direzione}</span>
+                  </div>
+                )}
               </div>
             </button>
           );
