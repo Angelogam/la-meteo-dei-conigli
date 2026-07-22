@@ -10,10 +10,10 @@ interface ThermalData {
 
 const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
   const getColor = (speed: number) => {
-    if (speed < 0.8) return "#facc15"; // giallo
-    if (speed < 1.5) return "#22c55e"; // verde
-    if (speed < 2.5) return "#f97316"; // arancio
-    return "#dc2626"; // rosso
+    if (speed < 0.8) return "#facc15";
+    if (speed < 1.5) return "#22c55e";
+    if (speed < 2.5) return "#f97316";
+    return "#dc2626";
   };
 
   const CustomTooltip = ({ active, payload }: any) => {
