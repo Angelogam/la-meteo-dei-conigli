@@ -146,153 +146,77 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
 
   const haDati = hd && righe.length > 0;
 
+  if (!haDati) {
+    return null;
+  }
+
   return (
     <div className="bg-slate-900/40 border border-slate-700/40 rounded-2xl overflow-hidden">
-      {/* Titolo finestra */}
-      <div className="px-4 pt-4 pb-0">
-        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
-          Windgram · Dati meteo
-        </h3>
-      </div>
-
-      {/* Selettore ore - ancora più compatto */}
-      <div className="flex gap-1.5 overflow-x-auto px-4 pb-2.5 pt-1.5 bg-slate-800/30 border-b border-slate-700/30">
-        {ORE.map(ora => {
-          const isActive = ora === selectedHour;
-          const haDatiOra = oreOggi.some(h => h.time.getHours() === ora);
-          return (
-            <button
-              key={ora}
-              onClick={() => onHourSelect(ora)}
-              disabled={!haDatiOra}
-              className={`shrink-0 px-2.5 py-1 rounded-lg text-xs font-bold tracking-wide transition-all border ${
-                isActive
-                  ? "bg-emerald-600/30 border-emerald-400/60 text-emerald-200 shadow-sm scale-105"
-                  : haDatiOra
-                  ? "bg-slate-800/40 border-slate-700/40 text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
-                  : "bg-slate-800/20 border-slate-700/20 text-slate-600 cursor-not-allowed"
-              }`}
-            >
-              {String(ora).padStart(2, "0")}:00
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Info bar - ancora più compatta */}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-1.5 bg-slate-800/20 text-xs text-slate-300 border-b border-slate-700/20">
-        <span className="font-bold text-white">{site.name}</span>
-        <span className="text-slate-600">·</span>
-        <span>{String(selectedHour).padStart(2, "0")}:00</span>
-        <span className="text-slate-600">·</span>
-        <span>Decollo {site.alt}m</span>
-        <span className="text-slate-600">·</span>
-        <span>Suolo: <strong>{hd?.windSpeed ?? "?"}</strong> km/h <strong>{hd ? dirName(hd.windDir) : "?"}</strong></span>
-        {termiche && termiche.rateo > 0 && (
-          <>
-            <span className="text-slate-600">·</span>
-            <span className="text-amber-300 font-semibold">↑ {termiche.rateo.toFixed(1)} m/s</span>
-            <span className="text-slate-600">·</span>
-            <span className="text-emerald-300 font-semibold">Base {termiche.base}m</span>
-            <span className="text-slate-600">·</span>
-            <span className="text-orange-300 font-semibold">Top {termiche.top}m</span>
-          </>
-        )}
-      </div>
-
-      {!haDati ? (
-        <div className="p-10 text-center">
-          <p className="text-slate-400 text-lg">Nessun dato vento disponibile per le {String(selectedHour).padStart(2, "0")}:00</p>
-          <p className="text-sm text-slate-600 mt-3">Seleziona un'altra ora o attendi l'aggiornamento.</p>
+      {/* GRAFICO - COMPATTO */}
+      <div className="p-3">
+        {/* Intestazione colonne */}
+        <div className="grid grid-cols-[4rem_3.5rem_1.2fr_1.8fr] gap-2 mb-2 text-xs text-slate-500 font-bold uppercase tracking-wider">
+          <span>Quota</span>
+          <span className="text-center">km/h</span>
+          <span>Velocità</span>
+          <span>Direzione</span>
         </div>
-      ) : (
-        <>
-          {/* GRAFICO - COMPATTO */}
-          <div className="p-3">
-            {/* Intestazione colonne */}
-            <div className="grid grid-cols-[4rem_3.5rem_1.2fr_1.8fr] gap-2 mb-2 text-xs text-slate-500 font-bold uppercase tracking-wider">
-              <span>Quota</span>
-              <span className="text-center">km/h</span>
-              <span>Velocità</span>
-              <span>Direzione</span>
-            </div>
 
-            <div className="space-y-1">
-              {righe.map((r) => {
-                const w = Math.max(6, (r.speed / (maxSpeed + 5)) * 240);
-                const isDecollo = Math.abs(r.q - site.alt) <= 100;
+        <div className="space-y-1">
+          {righe.map((r) => {
+            const w = Math.max(6, (r.speed / (maxSpeed + 5)) * 240);
+            const isDecollo = Math.abs(r.q - site.alt) <= 100;
 
-                return (
+            return (
+              <div
+                key={r.q}
+                className={`grid grid-cols-[4rem_3.5rem_1.2fr_1.8fr] gap-2 items-center py-1.5 rounded-lg ${
+                  isDecollo ? "bg-amber-900/20 -mx-2 px-2 border border-amber-700/30" : ""
+                }`}
+              >
+                {/* Quota */}
+                <span className={`text-xs font-mono font-bold ${
+                  isDecollo ? "text-amber-400" : "text-slate-400"
+                }`}>
+                  {r.q} m
+                </span>
+
+                {/* Velocità km/h */}
+                <div className="flex justify-center">
+                  <span className="text-xs font-mono font-bold bg-white text-gray-900 px-2.5 py-1 rounded-md shadow-sm">
+                    {r.speed}
+                  </span>
+                </div>
+
+                {/* Barra velocità */}
+                <div className="h-5 bg-slate-800/60 rounded-md overflow-hidden relative">
                   <div
-                    key={r.q}
-                    className={`grid grid-cols-[4rem_3.5rem_1.2fr_1.8fr] gap-2 items-center py-1.5 rounded-lg ${
-                      isDecollo ? "bg-amber-900/20 -mx-2 px-2 border border-amber-700/30" : ""
-                    }`}
-                  >
-                    {/* Quota */}
-                    <span className={`text-xs font-mono font-bold ${
-                      isDecollo ? "text-amber-400" : "text-slate-400"
-                    }`}>
-                      {r.q} m
-                    </span>
+                    className="h-full rounded-md transition-all"
+                    style={{ width: `${w}px`, background: speedColor(r.speed) }}
+                  />
+                  {isDecollo && (
+                    <div className="absolute inset-0 border border-amber-400/50 rounded-md pointer-events-none" />
+                  )}
+                </div>
 
-                    {/* Velocità km/h */}
-                    <div className="flex justify-center">
-                      <span className="text-xs font-mono font-bold bg-white text-gray-900 px-2.5 py-1 rounded-md shadow-sm">
-                        {r.speed}
-                      </span>
-                    </div>
-
-                    {/* Barra velocità */}
-                    <div className="h-5 bg-slate-800/60 rounded-md overflow-hidden relative">
-                      <div
-                        className="h-full rounded-md transition-all"
-                        style={{ width: `${w}px`, background: speedColor(r.speed) }}
-                      />
-                      {isDecollo && (
-                        <div className="absolute inset-0 border border-amber-400/50 rounded-md pointer-events-none" />
-                      )}
-                    </div>
-
-                    {/* Direzione */}
-                    <div className="flex items-center gap-2">
-                      <span className={`text-lg font-extrabold drop-shadow-lg ${
-                        r.speed > 22 ? "text-red-400" : r.speed > 15 ? "text-orange-300" : "text-sky-300"
-                      }`}>
-                        {dirArrow(r.dir)}
-                      </span>
-                      <span className={`text-xs font-bold tracking-wider ${
-                        r.speed > 22 ? "text-red-400" : r.speed > 15 ? "text-orange-300" : "text-sky-300"
-                      }`}>
-                        {dirName(r.dir)}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Legenda */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 border-t border-slate-700/30 bg-slate-800/20 text-xs text-slate-500">
-            <span className="text-slate-400 font-bold text-xs">Legenda:</span>
-            {[
-              { label: "≤5", color: "#10b981" },
-              { label: "6-10", color: "#84cc16" },
-              { label: "11-15", color: "#eab308" },
-              { label: "16-22", color: "#f97316" },
-              { label: "23-30", color: "#ef4444" },
-              { label: ">30", color: "#dc2626" },
-            ].map(l => (
-              <span key={l.label} className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-sm" style={{ background: l.color }} />
-                <span className="text-slate-300 text-xs">{l.label} km/h</span>
-              </span>
-            ))}
-            <span className="text-slate-600 ml-auto text-xs">Open-Meteo · Decollo {site.alt}m</span>
-          </div>
-        </>
-      )}
+                {/* Direzione */}
+                <div className="flex items-center gap-2">
+                  <span className={`text-lg font-extrabold drop-shadow-lg ${
+                    r.speed > 22 ? "text-red-400" : r.speed > 15 ? "text-orange-300" : "text-sky-300"
+                  }`}>
+                    {dirArrow(r.dir)}
+                  </span>
+                  <span className={`text-xs font-bold tracking-wider ${
+                    r.speed > 22 ? "text-red-400" : r.speed > 15 ? "text-orange-300" : "text-sky-300"
+                  }`}>
+                    {dirName(r.dir)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
