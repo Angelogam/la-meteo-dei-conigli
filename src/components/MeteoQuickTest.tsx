@@ -2,20 +2,17 @@
 
 import React, { useState } from "react";
 import { DECOLLI } from "@/data/decolli";
-import { weatherService7Timer } from "@/services/weatherService7Timer";
 import {
   testSingleSite,
   type TestResult,
 } from "@/utils/meteoTester";
 import {
   Play,
-  X,
   CheckCircle,
   XCircle,
   AlertTriangle,
   Loader2,
   Server,
-  Radar,
 } from "lucide-react";
 
 export default function MeteoQuickTest() {
@@ -25,20 +22,11 @@ export default function MeteoQuickTest() {
   const [omSummary, setOmSummary] = useState<string | null>(null);
   const [omProgress, setOmProgress] = useState(0);
 
-  // 7Timer
-  const [tRunning, setTRunning] = useState(false);
-  const [tResults, setTResults] = useState<{ nome: string; ok: boolean; rt: number }[]>([]);
-  const [tSummary, setTSummary] = useState<string | null>(null);
-  const [tProgress, setTProgress] = useState(0);
-
-  const [openView, setOpenView] = useState<"om" | "timer" | null>(null);
-
   // Test Open-Meteo
   const runOm = async () => {
     setOmRunning(true);
     setOmResults([]);
     setOmSummary(null);
-    setOpenView("om");
 
     const sites = DECOLLI.map(d => ({
       id: d.id, name: d.name, lat: d.lat, lon: d.lon, alt: d.altitude, exposure: d.exposure,
@@ -61,38 +49,6 @@ export default function MeteoQuickTest() {
     setOmRunning(false);
   };
 
-  // Test 7Timer
-  const runTimer = async () => {
-    setTRunning(true);
-    setTResults([]);
-    setTSummary(null);
-    setOpenView("timer");
-
-    const siti = DECOLLI.slice(0, 8);
-    let ok = 0;
-    let totalTime = 0;
-
-    for (let i = 0; i < siti.length; i++) {
-      const d = siti[i];
-      const start = performance.now();
-      try {
-        const { alive } = await weatherService7Timer.healthCheck(d.lat, d.lon);
-        const rt = Math.round(performance.now() - start);
-        if (alive) ok++;
-        totalTime += rt;
-        setTResults(prev => [...prev, { nome: d.name, ok: alive, rt }]);
-      } catch {
-        setTResults(prev => [...prev, { nome: d.name, ok: false, rt: Math.round(performance.now() - start) }]);
-      }
-      setTProgress(Math.round(((i + 1) / siti.length) * 100));
-      if (i < siti.length - 1) await new Promise(r => setTimeout(r, 2000));
-    }
-
-    const avg = siti.length > 0 ? Math.round(totalTime / siti.length) : 0;
-    setTSummary(`✅ ${ok}/${siti.length} OK · ❌ ${siti.length - ok} falliti · ⏱️ ${avg}ms media`);
-    setTRunning(false);
-  };
-
   return (
     <div className="space-y-2">
       {/* Pulsante Open-Meteo */}
@@ -103,59 +59,46 @@ export default function MeteoQuickTest() {
       >
         <Server className="w-5 h-5 text-sky-400 shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-bold text-white">Open-Meteo</div>
-          <div className="text-[10px] text-sky-300/70">{DECOLLI.length} siti</div>
+          <div className="text-sm font-bold text-white">Test API</div>
+          <div className="text-[10px] text-sky-300/70">{DECOLLI.length} siti · Open-Meteo</div>
         </div>
-        {omRunning ? (
-          <Loader2 className="w-5 h-5 text-sky-400 animate-spin shrink-0" />
-        ) : (
-          <Play className="w-5 h-5 text-sky-400 shrink-0" />
+        {omRunning && (
+          <div className="flex items-center gap-1">
+            <Loader2 className="w-4 h-4 text-sky-400 animate-spin shrink-0" />
+            <span className="text-xs text-sky-300">{omProgress}%</span>
+          </div>
         )}
+        {!omRunning && omResults.length === 0 && <Play className="w-5 h-5 text-sky-400 shrink-0" />}
       </button>
 
-      {/* Risultati Open-Meteo */}
-      {openView === "om" && omSummary && (
-        <div className="bg-sky-900/20 border border-sky-500/30 rounded-xl p-3 text-xs space-y-1">
-          <div className="text-sky-300 font-bold mb-1">{omSummary}</div>
-          {omResults.slice(-10).reverse().map((r, i) => (
-            <div key={i} className="flex items-center gap-2 text-slate-400">
-              {r.success ? <CheckCircle className="w-3 h-3 text-emerald-400 shrink-0" /> : <XCircle className="w-3 h-3 text-red-400 shrink-0" />}
-              <span className="truncate flex-1">{r.siteName}</span>
-              <span>{r.responseTimeMs}ms</span>
-            </div>
-          ))}
+      {/* Barra di progresso */}
+      {omRunning && (
+        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+          <div className="h-full bg-sky-500 transition-all duration-500" style={{ width: `${omProgress}%` }} />
         </div>
       )}
 
-      {/* Pulsante 7Timer */}
-      <button
-        onClick={runTimer}
-        disabled={tRunning}
-        className="w-full flex items-center gap-2.5 px-4 py-3 rounded-xl bg-purple-800/50 hover:bg-purple-700/60 border border-purple-500/40 text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <Radar className="w-5 h-5 text-purple-400 shrink-0" />
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-bold text-white">7Timer!</div>
-          <div className="text-[10px] text-purple-300/70">8 siti (GFS)</div>
+      {/* Riepilogo */}
+      {omSummary && (
+        <div className="bg-sky-900/20 border border-sky-500/30 rounded-xl p-3 text-xs">
+          <div className="text-sky-300 font-bold mb-1">{omSummary}</div>
+          <div className="space-y-1 mt-2">
+            {omResults.slice(-10).reverse().map((r, i) => (
+              <div key={i} className="flex items-center gap-2 text-slate-400">
+                {r.success ? <CheckCircle className="w-3 h-3 text-emerald-400 shrink-0" /> : <XCircle className="w-3 h-3 text-red-400 shrink-0" />}
+                <span className="truncate flex-1">{r.siteName}</span>
+                <span>{r.responseTimeMs}ms</span>
+                {r.warnings.length > 0 && <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />}
+              </div>
+            ))}
+          </div>
         </div>
-        {tRunning ? (
-          <Loader2 className="w-5 h-5 text-purple-400 animate-spin shrink-0" />
-        ) : (
-          <Play className="w-5 h-5 text-purple-400 shrink-0" />
-        )}
-      </button>
+      )}
 
-      {/* Risultati 7Timer */}
-      {openView === "timer" && tSummary && (
-        <div className="bg-purple-900/20 border border-purple-500/30 rounded-xl p-3 text-xs space-y-1">
-          <div className="text-purple-300 font-bold mb-1">{tSummary}</div>
-          {tResults.slice(-8).reverse().map((r, i) => (
-            <div key={i} className="flex items-center gap-2 text-slate-400">
-              {r.ok ? <CheckCircle className="w-3 h-3 text-emerald-400 shrink-0" /> : <XCircle className="w-3 h-3 text-red-400 shrink-0" />}
-              <span className="truncate flex-1">{r.nome}</span>
-              <span>{r.rt}ms</span>
-            </div>
-          ))}
+      {!omRunning && omResults.length > 0 && !omSummary && (
+        <div className="text-center py-6 text-slate-500 text-sm">
+          <Server className="w-8 h-8 mx-auto mb-2 opacity-40" />
+          Clicca "Test API" per iniziare
         </div>
       )}
     </div>
