@@ -1,4 +1,3 @@
-30 escaping in VentiInterpolatiTab">
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
@@ -88,7 +87,6 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
   targetDate.setDate(oggi.getDate() + selectedDay);
   const dataGiorno = formatDateShort(targetDate);
 
-  // Dati per il grafico verticale
   const oraData = useMemo(() => {
     if (!data) return null;
     return data.ventoOrario.find(v => v.ora === oraSelezionata) || data.ventoOrario[0] || null;
