@@ -88,6 +88,7 @@ export default function Index() {
             <DecolliCard
               decolli={decolliList}
               selectedId={selectedId}
+              selectedDay={selectedDay}
               onSelect={(item) => { const id = nomeToId[item.nome]; if (id) { setSelectedId(id); setSelectedHour(new Date().getHours()); } }}
               weatherMap={allHourlyData}
             />

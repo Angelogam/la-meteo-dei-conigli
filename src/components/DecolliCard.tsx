@@ -32,21 +32,63 @@ function getWeatherEmoji(code: number | undefined | null): string {
   return "☀️";
 }
 
-function getCurrentDateTime(): string {
+function getDateTime(selectedDay: number): { date: string; hour: string } {
   const now = new Date();
-  return now.toLocaleDateString("it-IT", {
+  const target = new Date(now);
+  target.setDate(now.getDate() + selectedDay);
+
+  const date = target.toLocaleDateString("it-IT", {
     weekday: "long",
     day: "numeric",
     month: "long",
   });
-}
-
-function getCurrentHour(): string {
-  const now = new Date();
-  return now.toLocaleTimeString("it-IT", {
+  const hour = now.toLocaleTimeString("it-IT", {
     hour: "2-digit",
     minute: "2-digit",
   });
+  return { date, hour };
+}
+
+/** Ottiene il dato orario più vicino all'ora corrente per il giorno specificato */
+function getDayHourData(
+  hourly: any[],
+  selectedDay: number
+): any | null {
+  if (!Array.isArray(hourly) || hourly.length === 0) return null;
+
+  const oggi = new Date();
+  const targetDate = new Date(oggi);
+  targetDate.setDate(oggi.getDate() + selectedDay);
+  const targetDay = targetDate.getDate();
+  const targetMonth = targetDate.getMonth();
+  const targetYear = targetDate.getFullYear();
+
+  const hour = oggi.getHours();
+
+  // Cerca l'ora esatta nel giorno target
+  const esatta = hourly.find((h) => {
+    const t = new Date(h.time);
+    return (
+      t.getDate() === targetDay &&
+      t.getMonth() === targetMonth &&
+      t.getFullYear() === targetYear &&
+      t.getHours() === hour
+    );
+  });
+  if (esatta) return esatta;
+
+  // Altrimenti qualsiasi ora del giorno target
+  const primaOra = hourly.find((h) => {
+    const t = new Date(h.time);
+    return (
+      t.getDate() === targetDay &&
+      t.getMonth() === targetMonth &&
+      t.getFullYear() === targetYear
+    );
+  });
+  if (primaOra) return primaOra;
+
+  return hourly[hourly.length - 1] || null;
 }
 
 interface DecolloItem {
@@ -61,6 +103,7 @@ interface DecolliCardProps {
   selectedId: string;
   onSelect: (item: DecolloItem) => void;
   weatherMap?: Record<string, any>;
+  selectedDay?: number;
 }
 
 interface LiveDato {
@@ -94,7 +137,7 @@ async function caricaTuttiIVenti(): Promise<Record<string, LiveDato | null>> {
   return risultati;
 }
 
-const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardProps) => {
+const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap, selectedDay = 0 }: DecolliCardProps) => {
   const [liveData, setLiveData] = useState<Record<string, LiveDato | null>>({});
   const isFirstMount = useRef(true);
 
@@ -120,22 +163,24 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardP
     const live = liveData[id];
     if (live) return live;
 
-    // Priorità 2: weatherMap (dati già caricati)
+    // Priorità 2: weatherMap (dati già caricati) — filtrati per selectedDay
     if (!weatherMap?.[id]) return null;
     const hourly = weatherMap[id];
     if (!Array.isArray(hourly) || hourly.length === 0) return null;
 
-    const last = hourly[hourly.length - 1];
-    if (!last) return null;
+    const dayData = getDayHourData(hourly, selectedDay);
+    if (!dayData) return null;
 
     return {
-      temp: last.temperature ?? 20,
-      wind: last.windSpeed ?? 0,
-      gust: last.windGusts ?? null,
-      dir: last.windDir ?? 0,
-      code: last.weatherCode ?? 0,
+      temp: dayData.temperature ?? 20,
+      wind: dayData.windSpeed ?? 0,
+      gust: dayData.windGusts ?? null,
+      dir: dayData.windDir ?? 0,
+      code: dayData.weatherCode ?? 0,
     };
   };
+
+  const dt = getDateTime(selectedDay);
 
   return (
     <div className="bg-slate-900/80 border border-slate-700/60 rounded-xl p-4">
@@ -188,10 +233,10 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardP
                 {item.nome}
               </div>
 
-              {/* GIORNO E ORA (fuso Italy) */}
+              {/* DATA E ORA */}
               <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5">
                 <Clock size={12} />
-                <span>{getCurrentDateTime()} · {getCurrentHour()}</span>
+                <span>{dt.date} · {dt.hour}</span>
               </div>
 
               {/* ICONA METEO + TEMPERATURA + VALLE / QUOTA / DIREZIONE */}
@@ -233,7 +278,7 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardP
                   )}
                 </div>
 
-                {/* AVVISO VENTO/ESPOSIZIONE — ORA USA validaVentoPerDecollo CORRETTO */}
+                {/* AVVISO VENTO/ESPOSIZIONE */}
                 {valutazioneVento && (
                   <div className={`mt-1.5 flex items-center gap-1.5 text-[10px] rounded-lg px-2 py-1 border ${ventoColor}`}>
                     {valutazioneVento.status === "sottovento" && (
