@@ -71,15 +71,15 @@ function MeteoTesterPanel({ onClose }: MeteoTesterPanelProps) {
     }));
 
     try {
-      const result = await testAllSites(
+      const outcome = await testAllSites(
         sites,
-        (result, index, total) => {
+        (testResult, index, total) => {
           setProgress(Math.round((index / total) * 100));
-          setResults((prev) => [...prev, result]);
+          setResults((prev) => [...prev, testResult]);
         }
       );
-      // testAllSites returns { results, summary } where summary is an object
-      setSummary(`✅ ${result.summary.passed}/${result.summary.total} OK · ⚠️ ${result.summary.totalWarnings} warn · ❌ ${result.summary.totalErrors} err · ⏱️ ${result.summary.avgResponseTime}ms media`);
+      const s = outcome.summary;
+      setSummary(`✅ ${s.passed}/${s.total} OK · ⚠️ ${s.totalWarnings} warn · ❌ ${s.totalErrors} err · ⏱️ ${s.avgResponseTime}ms media`);
     } catch (err) {
       setSummary(`Errore: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
