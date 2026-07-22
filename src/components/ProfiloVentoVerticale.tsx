@@ -1,4 +1,3 @@
-' character — replace with > entity">
 "use client";
 
 import React, { useMemo } from "react";
@@ -39,11 +38,7 @@ function getBarColor(speed: number): string {
   return "bg-red-400";
 }
 
-function getUnicodeDeg(_deg: number): string {
-  return "";
-}
-
-const ProfiloVentoVerticale = ({ dayData, siteAlt, siteName }: ProfiloVentoVerticaleProps) => {
+export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: ProfiloVentoVerticaleProps) {
   const data = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
 
@@ -207,12 +202,10 @@ const ProfiloVentoVerticale = ({ dayData, siteAlt, siteName }: ProfiloVentoVerti
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-lime-400" /> 9-15</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-amber-400" /> 16-22</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-orange-400" /> 23-30</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-red-400" /> >30 km/h</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-red-400" /> over 30 km/h</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-cyan-900/40 border border-cyan-500/50" /> Zero termico</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-emerald-900/40 border border-emerald-500/50" /> Decollo</span>
       </div>
     </div>
   );
-};
-
-export default ProfiloVentoVerticale;
+}
