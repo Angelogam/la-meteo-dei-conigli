@@ -100,6 +100,7 @@ export default function WeatherDashboard({
 
   return (
     <div className="space-y-4">
+      {/* Flight Score */}
       {flightScore && (
         <FlightScore
           score={flightScore.score}
@@ -113,6 +114,7 @@ export default function WeatherDashboard({
         />
       )}
 
+      {/* Tabella oraria 9-19 */}
       <HourlyTable
         dayData={dayData}
         altitude={altitude}
