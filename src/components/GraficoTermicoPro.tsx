@@ -10,10 +10,10 @@ interface ThermalData {
 
 const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
   const getColor = (speed: number) => {
-    if (speed < 0.8) return "#facc15";
-    if (speed < 1.5) return "#22c55e";
-    if (speed < 2.5) return "#f97316";
-    return "#dc2626";
+    if (speed < 0.8) return "#facc15"; // giallo
+    if (speed < 1.5) return "#22c55e"; // verde
+    if (speed < 2.5) return "#f97316"; // arancio
+    return "#dc2626"; // rosso
   };
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -77,6 +77,7 @@ const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
         </ResponsiveContainer>
       </div>
 
+      {/* Legenda migliorata */}
       <div className="mt-6 text-xs text-gray-300 flex flex-wrap justify-center gap-3">
         <div className="flex items-center gap-1">
           <span className="w-3 h-3 bg-[#facc15] rounded-sm"></span> Debole (0.3–0.8 m/s)
@@ -92,6 +93,7 @@ const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
         </div>
       </div>
 
+      {/* Box informativo */}
       <div className="mt-6 w-full bg-[#1e293b] rounded-xl p-4 text-center border border-[#22c55e]/30">
         <div className="text-sm text-gray-300">
           Alle <span className="text-[#22c55e] font-semibold">12:00</span> —{" "}
