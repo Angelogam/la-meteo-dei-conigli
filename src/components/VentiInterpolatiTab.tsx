@@ -147,15 +147,10 @@ export default function VentiInterpolatiTab({
       </div>
 
       <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
-        {data.ventoOrario
-          .filter(v => HOURS.includes(v.ora))
-          .map(v => (
+        {data.ventoOrario.filter(v => HOURS.includes(v.ora)).map(v => (
           <button
             key={v.ora}
-            onClick={() => {
-              setOraSelezionata(v.ora);
-              onOraChange?.(v.ora);
-            }}
+            onClick={() => { setOraSelezionata(v.ora); onOraChange?.(v.ora); }}
             className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
               v.ora === oraSelezionata
                 ? "bg-cyan-600/30 border-cyan-400/50 text-cyan-200 shadow-sm"
@@ -175,21 +170,17 @@ export default function VentiInterpolatiTab({
               Profilo verticale — {String(oraSelezionata).padStart(2, "0")}:00
             </h4>
           </div>
-          <span className="text-[10px] text-slate-500">{quotaDecollo}m &rarr; 3000m</span>
+          <span className="text-[10px] text-slate-500">{quotaDecollo}m → 3000m</span>
         </div>
 
         <div className="space-y-2">
           {quoteVisibili.map((q) => {
             const pct = Math.max(6, (q.speed / maxSpeed) * 100);
             const isDecollo = Math.abs(q.quota - quotaDecollo) < 150;
-
             return (
               <div key={q.quota} className="grid grid-cols-[3.5rem_1fr_5rem] gap-2 items-center">
-                <span className={`text-xs font-mono text-right ${
-                  isDecollo ? "text-emerald-400 font-bold" : "text-slate-500"
-                }`}>
-                  {q.quota}m
-                  {isDecollo && <span className="ml-0.5">🪂</span>}
+                <span className={`text-xs font-mono text-right ${isDecollo ? "text-emerald-400 font-bold" : "text-slate-500"}`}>
+                  {q.quota}m{isDecollo && <span className="ml-0.5">🪂</span>}
                 </span>
                 <div className="h-6 bg-slate-800/60 rounded-full overflow-hidden relative">
                   <div
@@ -214,9 +205,7 @@ export default function VentiInterpolatiTab({
                     q.speed <= 22 ? "text-amber-300" :
                     q.speed <= 30 ? "text-orange-300" :
                     "text-red-300"
-                  }`}>
-                    {Math.round(q.speed)}
-                  </span>
+                  }`}>{Math.round(q.speed)}</span>
                   <span className="text-slate-500">km/h</span>
                   <span className="text-sky-300 ml-1">{getDirArrow(q.dir)}{getDirAbbrev(q.dir)}</span>
                 </div>
@@ -226,24 +215,12 @@ export default function VentiInterpolatiTab({
         </div>
 
         <div className="flex flex-wrap gap-2 text-[10px] text-slate-400 mt-4 pt-3 border-t border-slate-700/30">
-          <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-emerald-400" /> &le;8
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-lime-400" /> 9&ndash;15
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-amber-400" /> 16&ndash;22
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-orange-400" /> 23&ndash;30
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-red-400" /> >30 km/h
-          </span>
-          <span className="ml-2 flex items-center gap-1">
-            <span className="text-emerald-400">🪂</span> Decollo
-          </span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-emerald-400" /> ≤8</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-lime-400" /> 9–15</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-400" /> 16–22</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-orange-400" /> 23–30</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-red-400" /> >30 km/h</span>
+          <span className="ml-2 flex items-center gap-1"><span className="text-emerald-400">🪂</span> Decollo</span>
         </div>
       </div>
 
@@ -253,58 +230,41 @@ export default function VentiInterpolatiTab({
           <span className="text-xs font-bold text-cyan-300 uppercase tracking-wider">Vento al decollo ({quotaDecollo}m)</span>
         </div>
         <div className="divide-y divide-slate-700/20">
-          {data.ventoOrario
-            .filter(v => HOURS.includes(v.ora))
-            .map(v => {
-              const ventoDecollo = v.quote[quotaDecollo] || v.quote[Object.keys(v.quote)[0]] || { speed: 0, dir: 0 };
-              const isSelected = v.ora === oraSelezionata;
-
-              return (
-                <button
-                  key={v.ora}
-                  onClick={() => {
-                    setOraSelezionata(v.ora);
-                    onOraChange?.(v.ora);
-                  }}
-                  className={`w-full grid grid-cols-[3rem_1fr_3.5rem_3rem] gap-2 px-5 py-3 text-xs transition-all text-left ${
-                    isSelected ? "bg-cyan-900/20 border-l-2 border-l-cyan-400" : "hover:bg-slate-700/30"
-                  }`}
-                >
-                  <span className={`font-bold font-mono ${isSelected ? "text-cyan-300" : "text-slate-300"}`}>
-                    {String(v.ora).padStart(2, "0")}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-2 bg-slate-700/50 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          ventoDecollo.speed <= 8 ? "bg-emerald-400" :
-                          ventoDecollo.speed <= 15 ? "bg-lime-400" :
-                          ventoDecollo.speed <= 22 ? "bg-amber-400" :
-                          ventoDecollo.speed <= 30 ? "bg-orange-400" :
-                          "bg-red-400"
-                        }`}
-                        style={{ width: `${Math.min(100, (ventoDecollo.speed / 40) * 100)}%` }}
-                      />
-                    </div>
-                    <span className={`font-bold font-mono tabular-nums w-8 text-right ${
-                      ventoDecollo.speed <= 8 ? "text-emerald-300" :
-                      ventoDecollo.speed <= 15 ? "text-lime-300" :
-                      ventoDecollo.speed <= 22 ? "text-amber-300" :
-                      ventoDecollo.speed <= 30 ? "text-orange-300" :
-                      "text-red-300"
-                    }`}>
-                      {Math.round(ventoDecollo.speed)}
-                    </span>
+          {data.ventoOrario.filter(v => HOURS.includes(v.ora)).map(v => {
+            const ventoDecollo = v.quote[quotaDecollo] || v.quote[Object.keys(v.quote)[0]] || { speed: 0, dir: 0 };
+            const isSelected = v.ora === oraSelezionata;
+            return (
+              <button
+                key={v.ora}
+                onClick={() => { setOraSelezionata(v.ora); onOraChange?.(v.ora); }}
+                className={`w-full grid grid-cols-[3rem_1fr_3.5rem_3rem] gap-2 px-5 py-3 text-xs transition-all text-left ${
+                  isSelected ? "bg-cyan-900/20 border-l-2 border-l-cyan-400" : "hover:bg-slate-700/30"
+                }`}
+              >
+                <span className={`font-bold font-mono ${isSelected ? "text-cyan-300" : "text-slate-300"}`}>{String(v.ora).padStart(2, "0")}</span>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-2 bg-slate-700/50 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${
+                      ventoDecollo.speed <= 8 ? "bg-emerald-400" :
+                      ventoDecollo.speed <= 15 ? "bg-lime-400" :
+                      ventoDecollo.speed <= 22 ? "bg-amber-400" :
+                      ventoDecollo.speed <= 30 ? "bg-orange-400" :
+                      "bg-red-400"
+                    }`} style={{ width: `${Math.min(100, (ventoDecollo.speed / 40) * 100)}%` }} />
                   </div>
-                  <span className="text-sky-300 text-center font-mono">
-                    {getDirArrow(ventoDecollo.dir)} {getDirAbbrev(ventoDecollo.dir)}
-                  </span>
-                  <span className="text-red-300 text-right font-mono">
-                    {Math.round(v.gust)}
-                  </span>
-                </button>
-              );
-            })}
+                  <span className={`font-bold font-mono tabular-nums w-8 text-right ${
+                    ventoDecollo.speed <= 8 ? "text-emerald-300" :
+                    ventoDecollo.speed <= 15 ? "text-lime-300" :
+                    ventoDecollo.speed <= 22 ? "text-amber-300" :
+                    ventoDecollo.speed <= 30 ? "text-orange-300" :
+                    "text-red-300"
+                  }`}>{Math.round(ventoDecollo.speed)}</span>
+                </div>
+                <span className="text-sky-300 text-center font-mono">{getDirArrow(ventoDecollo.dir)} {getDirAbbrev(ventoDecollo.dir)}</span>
+                <span className="text-red-300 text-right font-mono">{Math.round(v.gust)}</span>
+              </button>
+            );
+          })}
         </div>
         <div className="grid grid-cols-[3rem_1fr_3.5rem_3rem] gap-2 px-5 py-2 border-t border-slate-700/30 text-[9px] text-slate-500 font-bold uppercase tracking-wider">
           <span>Ora</span>
