@@ -319,14 +319,33 @@ export default function AnalisiApprofonditaCard({ analisi, siteName }: Props) {
       </Sezione>
 
       {/* Legenda */}
-      {!expnderline font-bold mb-1">Parametri</h4>
-            <div className="space-y-1">
-              <p><span className="text-slate-500">PBL:</span> Planetary Boundary Layer — lo strato limite atmosferico dove si sviluppano le termiche.</p>
-              <p><span className="text-slate-500">Thermal Index (TI):</span> Indica la forza delle termiche. Più negativo = più forti.</p>
-              <p><span className="text-slate-500">CAPE:</span> Convective Available Potential Energy — energia disponibile per la convezione.</p>
-              <p><span className="text-slate-500">Lifted Index (LI):</span> Stabilità atmosferica. Positivo = stabile, negativo = instabile.</p>
-              <p><span className="text-slate-500">CIN:</span> Convective Inhibition — energia che blocca l'innesco delle termiche.</p>
-            </div>
+      {!expanded && (
+        <button
+          onClick={() => setExpanded(true)}
+          className="w-full text-xs text-slate-500 hover:text-slate-300 py-2 flex items-center justify-center gap-1"
+        >
+          <Map className="w-3 h-3" />
+          Mostra legenda parametri
+        </button>
+      )}
+      {expanded && (
+        <div className="bg-slate-800/30 border border-slate-700/40 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <button
+              onClick={() => setExpanded(false)}
+              className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1"
+            >
+              <ChevronUp className="w-3 h-3" />
+              Nascondi legenda
+            </button>
+          </div>
+          <h4 className="text-xs text-slate-400 font-bold mb-1">Parametri</h4>
+          <div className="space-y-1">
+            <p><span className="text-slate-500">PBL:</span> Planetary Boundary Layer — lo strato limite atmosferico dove si sviluppano le termiche.</p>
+            <p><span className="text-slate-500">Thermal Index (TI):</span> Indica la forza delle termiche. Più negativo = più forti.</p>
+            <p><span className="text-slate-500">CAPE:</span> Convective Available Potential Energy — energia disponibile per la convezione.</p>
+            <p><span className="text-slate-500">Lifted Index (LI):</span> Stabilità atmosferica. Positivo = stabile, negativo = instabile.</p>
+            <p><span className="text-slate-500">CIN:</span> Convective Inhibition — energia che blocca l'innesco delle termiche.</p>
           </div>
         </div>
       )}
