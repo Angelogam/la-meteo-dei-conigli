@@ -14,7 +14,7 @@ interface Props {
     pressione: number;
     score: number;
     migliorOra: string;
-    piccoTermico: number; // sarà già numero intero ora
+    piccoTermico: number;
     commentoVolo: string;
   };
 }
