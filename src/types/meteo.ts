@@ -32,6 +32,12 @@ export interface HourData {
   liftedIndex: number;
   mixingRatio: number;
   virtualTemp: number;
+  // Campi opzionali per wind profile e temperature in quota
+  apparentTemp?: number;
+  precipitationProba?: number;
+  temp80m?: number;
+  temp120m?: number;
+  windProfile?: { height: number; speed: number; dir: number }[];
 }
 
 export interface DailyData {
@@ -60,4 +66,12 @@ export interface DailyData {
   windSpeed: number;
   cloudCover: number;
   weatherDescription: string;
+}
+
+export interface Site {
+  id: number;
+  name: string;
+  lat: number;
+  lon: number;
+  alt: number;
 }

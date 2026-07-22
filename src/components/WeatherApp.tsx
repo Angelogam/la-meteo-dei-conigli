@@ -7,8 +7,16 @@ import HourlyTable from "./HourlyTable";
 import DailyCard from "./DailyCard";
 import TermicheTab from "./TermicheTab";
 import { fetchHourlyData, fetchAllWeatherData } from "@/services/openMeteoService";
-import type { HourData, DailyData, Site } from "@/types/meteo";
+import type { HourData, DailyData } from "@/types/meteo";
 import { toast } from "sonner";
+
+interface Site {
+  id: number;
+  name: string;
+  lat: number;
+  lon: number;
+  alt: number;
+}
 
 export default function WeatherApp() {
   const [selectedSite, setSelectedSite] = useState<Site | null>(null);
@@ -59,7 +67,6 @@ export default function WeatherApp() {
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
           Meteo Volo
@@ -69,7 +76,6 @@ export default function WeatherApp() {
         </p>
       </div>
 
-      {/* Search / Site selector */}
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <input
@@ -108,7 +114,6 @@ export default function WeatherApp() {
 
       {selectedSite && (
         <>
-          {/* Update Timer */}
           <div className="mb-4">
             <UpdateTimer
               lastUpdate={lastUpdate}
@@ -117,7 +122,6 @@ export default function WeatherApp() {
             />
           </div>
 
-          {/* View Toggle */}
           <div className="flex gap-2 mb-6">
             <button
               onClick={() => setView("meteo")}

@@ -8,34 +8,30 @@ interface ThermalChartProps {
   hourlyData: HourData[];
   selectedHour: number;
   siteAltitude: number;
-  selectedDay: number; // 0 = oggi, 1 = domani, ...
+  selectedDay: number;
 }
 
 function getColorFromLabel(label: string): string {
-  if (label.includes("forti")) return "bg-red-500/70";
+  if (label.includes("forti") || label.includes("estreme")) return "bg-red-500/70";
   if (label.includes("Buone")) return "bg-orange-400/70";
-  if (label.includes("moderate")) return "bg-yellow-400/60";
-  if (label.includes("deboli")) return "bg-green-400/60";
-  if (label.includes("molto deboli")) return "bg-slate-500/50";
-  if (label.includes("Niente")) return "bg-slate-700/40";
+  if (label.includes("Moderate")) return "bg-yellow-400/60";
+  if (label.includes("Deboli")) return "bg-green-400/60";
+  if (label.includes("M. deboli") || label.includes("Assenti")) return "bg-slate-700/40";
   return "bg-slate-700/40";
 }
 
 function getTextColor(label: string): string {
-  if (label.includes("forti")) return "text-red-200";
+  if (label.includes("forti") || label.includes("estreme")) return "text-red-200";
   if (label.includes("Buone")) return "text-orange-200";
-  if (label.includes("moderate")) return "text-yellow-200";
-  if (label.includes("deboli")) return "text-green-200";
+  if (label.includes("Moderate")) return "text-yellow-200";
+  if (label.includes("Deboli")) return "text-green-200";
   return "text-slate-400";
 }
 
-// Ore locali (Italia, UTC+1) da mostrare
-const HOURS_LOCAL = Array.from({ length: 14 }, (_, i) => i + 8); // 8:00 – 21:00
+const HOURS_LOCAL = Array.from({ length: 14 }, (_, i) => i + 8);
 
 export default function ThermalChart({ hourlyData, selectedHour, siteAltitude, selectedDay }: ThermalChartProps) {
   const data = useMemo(() => {
-    // Filtra i dati per il giorno selezionato (selectedDay)
-    // selectedDay: 0 = oggi, 1 = domani, ...
     const today = new Date();
     const targetDate = new Date(today);
     targetDate.setDate(today.getDate() + selectedDay);
@@ -45,18 +41,14 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude, s
     const dayEnd = new Date(targetDate);
     dayEnd.setHours(23, 59, 59, 999);
 
-    // Filtra hourlyData per questo giorno specifico (in UTC, ma i dati hanno timezone Europe/Rome)
     const dayHours = (hourlyData || []).filter((d: any) => {
       const t = new Date(d.time);
-      // Normalizza a data (confronta anno, mese, giorno)
       return t.getFullYear() === targetDate.getFullYear() &&
              t.getMonth() === targetDate.getMonth() &&
              t.getDate() === targetDate.getDate();
     });
 
     if (dayHours.length === 0) {
-      // Fallback: prova a confrontare con la data in UTC
-      console.warn(`Nessun dato orario per il giorno ${selectedDay} (${targetDate.toLocaleDateString('it-IT')}). Uso fallback.`);
       return HOURS_LOCAL.map((hour) => ({
         hour,
         value: 0,
@@ -67,12 +59,9 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude, s
       }));
     }
 
-    // Mappa ora locale -> dato meteo
     return HOURS_LOCAL.map((localHour) => {
-      // Trova il dato per quest'ora locale
       const weatherData = dayHours.find((d: any) => {
         const t = new Date(d.time);
-        // I dati da Open-Meteo con timezone Europe/Rome sono già in ora locale
         return t.getHours() === localHour;
       });
 
@@ -103,13 +92,10 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude, s
   }, [hourlyData, siteAltitude, selectedDay]);
 
   const maxVal = Math.max(...data.map((d) => d.value), 1);
-
-  // Trova l'ora selezionata per il dettaglio
   const selectedDetail = data.find((d) => d.hour === selectedHour);
 
   return (
     <div className="space-y-3">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
@@ -118,7 +104,6 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude, s
         <span className="text-[10px] text-slate-500">m/s · indice 0-10</span>
       </div>
 
-      {/* Legend */}
       <div className="flex flex-wrap gap-1.5 text-[10px]">
         {[
           { label: "Forte (3+)", color: "bg-red-500/70" },
@@ -134,7 +119,6 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude, s
         ))}
       </div>
 
-      {/* Chart bars */}
       <div className="flex items-end gap-1 h-44 overflow-x-auto pb-1">
         {data.map((d) => {
           const pct = maxVal > 0 ? (d.value / maxVal) * 100 : 0;
@@ -146,7 +130,6 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude, s
                 isSelected ? "scale-110" : ""
               }`}
             >
-              {/* Value label */}
               <span
                 className={`text-[10px] font-bold leading-none mb-1 transition-colors ${
                   d.value > 0 ? getTextColor(d.label) : "text-slate-600"
@@ -155,21 +138,15 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude, s
                 {d.rateo > 0 ? d.rateo.toFixed(1) : "—"}
               </span>
 
-              {/* Bar */}
               <div className="w-full h-28 bg-slate-800/60 rounded-md relative overflow-hidden">
                 <div
                   className={`absolute bottom-0 left-0 right-0 rounded-t-sm transition-all duration-500 ${d.colore} ${
                     isSelected ? "ring-1 ring-white/30" : ""
                   }`}
                   style={{ height: `${Math.max(pct, 2)}%` }}
-                >
-                  {isSelected && (
-                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rounded-full shadow-lg shadow-white/50" />
-                  )}
-                </div>
+                />
               </div>
 
-              {/* Hour label */}
               <span
                 className={`text-[10px] mt-1 font-mono ${
                   isSelected ? "text-orange-300 font-bold" : d.value > 0 ? "text-slate-400" : "text-slate-600"
@@ -182,7 +159,6 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude, s
         })}
       </div>
 
-      {/* Selected hour detail */}
       {selectedDetail && selectedDetail.rateo > 0 && (
         <div className="bg-slate-800/40 rounded-xl p-3 border border-slate-700/30 text-center">
           <span className="text-xs text-slate-400 block">

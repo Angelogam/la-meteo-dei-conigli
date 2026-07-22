@@ -8,10 +8,11 @@ import { Calendar } from "lucide-react";
 
 interface HourlyTableProps {
   dayData: HourData[];
-  altitude: number;
-  selectedHour: number;
-  onHourSelect: (hour: number) => void;
+  altitude?: number;
+  selectedHour?: number;
+  onHourSelect?: (hour: number) => void;
   dayLabel?: string;
+  site?: { alt?: number };
 }
 
 /** Icona meteo in base al codice WMO */
@@ -44,13 +45,14 @@ function direzioneVento(deg: number): string {
   return dirs[Math.round(deg / 45) % 8];
 }
 
-export default function HourlyTable({ dayData, altitude, selectedHour, onHourSelect, dayLabel }: HourlyTableProps) {
+export default function HourlyTable({ dayData, altitude: _altitude, selectedHour, onHourSelect, dayLabel, site }: HourlyTableProps) {
   const rows = useMemo(() => {
     const ore = Array.from({ length: 11 }, (_, i) => i + 9);
+    const alt = _altitude || site?.alt || 500;
     return ore.map((ora) => {
       const h = dayData.find(d => d.time.getHours() === ora);
       if (!h) return null;
-      const t = calcolaTermiche(h, altitude);
+      const t = calcolaTermiche(h, alt);
       const v = getVoloStatus(h);
       const now = new Date();
       const isAdesso = ora === now.getHours();
@@ -72,7 +74,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
         isAdesso,
       };
     }).filter(Boolean) as any[];
-  }, [dayData, altitude]);
+  }, [dayData, _altitude, site?.alt]);
 
   const dataLabel = useMemo(() => {
     if (dayLabel) return dayLabel;
@@ -116,7 +118,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
             {rows.map((r: any) => (
               <tr
                 key={r.ora}
-                onClick={() => onHourSelect(r.ora)}
+                onClick={() => onHourSelect?.(r.ora)}
                 className={`
                   border-b border-slate-700/20 cursor-pointer transition-colors
                   ${r.ora === selectedHour ? "bg-emerald-900/30 border-emerald-500" : "hover:bg-slate-700/30"}
