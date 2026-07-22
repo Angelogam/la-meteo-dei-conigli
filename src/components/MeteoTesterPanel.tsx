@@ -78,7 +78,8 @@ function MeteoTesterPanel({ onClose }: MeteoTesterPanelProps) {
           setResults((prev) => [...prev, result]);
         }
       );
-      setSummary(result.summary);
+      // testAllSites returns { results, summary } where summary is an object
+      setSummary(`✅ ${result.summary.passed}/${result.summary.total} OK · ⚠️ ${result.summary.totalWarnings} warn · ❌ ${result.summary.totalErrors} err · ⏱️ ${result.summary.avgResponseTime}ms media`);
     } catch (err) {
       setSummary(`Errore: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
@@ -138,7 +139,7 @@ function MeteoTesterPanel({ onClose }: MeteoTesterPanelProps) {
         {summary && (
           <div
             className={`rounded-xl p-4 border text-sm ${
-              summary.includes("TUTTI")
+              summary.includes("OK")
                 ? "bg-emerald-900/20 border-emerald-500/40 text-emerald-300"
                 : "bg-amber-900/20 border-amber-500/40 text-amber-300"
             }`}
