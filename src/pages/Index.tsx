@@ -59,6 +59,7 @@ export default function Index() {
     return m;
   }, []);
 
+  // Calcola i dati delle fasce orarie a partire da dayData (dati reali Open-Meteo)
   const fasceOrarie = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
 
@@ -66,23 +67,34 @@ export default function Index() {
     const afternoon = dayData.filter((h) => { const hh = new Date(h.time).getHours(); return hh >= 12 && hh <= 17; });
     const evening = dayData.filter((h) => { const hh = new Date(h.time).getHours(); return hh >= 18 && hh <= 23; });
 
+    // Funzione helper per calcolare i dati di una fascia oraria
     const calcFascia = (hours: typeof dayData) => {
       if (hours.length === 0) return null;
+
       const temps = hours.map((h) => h.temperature).filter((t) => t != null);
       const winds = hours.map((h) => h.windSpeed).filter((w) => w != null);
       const clouds = hours.map((h) => h.cloudCover).filter((c) => c != null);
       const hums = hours.map((h) => h.humidity).filter((u) => u != null);
+
       if (temps.length === 0) return null;
 
-      const tempMedia = arrotonda(temps.reduce((s, t) => s + t, 0) / temps.length);
-      const tempMax = arrotonda(Math.max(...temps));
-      const windMedia = winds.length > 0 ? arrotonda(winds.reduce((s, w) => s + w, 0) / winds.length) : 0;
-      const cloudMedia = clouds.length > 0 ? arrotonda(clouds.reduce((s, c) => s + c, 0) / clouds.length) : 0;
-      const humMedia = hums.length > 0 ? arrotonda(hums.reduce((s, u) => s + u, 0) / hums.length) : 0;
+      const tempSum = temps.reduce((s, t) => s + t, 0);
+      const windSum = winds.reduce((s, w) => s + w, 0);
+      const humSum = hums.reduce((s, u) => s + u, 0);
+      const cloudSum = clouds.reduce((s, c) => s + c, 0);
+
+      const tempMedia = Math.round(tempSum / temps.length);
+      const tempMax = Math.round(Math.max(...temps));
+      const windMedia = winds.length > 0 ? Math.round(windSum / winds.length) : 0;
+      const cloudMedia = clouds.length > 0 ? Math.round(cloudSum / clouds.length) : 0;
+      const humMedia = hums.length > 0 ? Math.round(humSum / hums.length) : 0;
 
       const tPerOra = hours.map((h) => calcolaTermiche(h, site?.altitude ?? 1000));
-      const rateoMedia = tPerOra.length > 0 ? tPerOra.reduce((s, t) => s + t.rateo, 0) / tPerOra.length : 0;
+      const rateoMedia = tPerOra.length > 0
+        ? Math.round((tPerOra.reduce((s, t) => s + t.rateo, 0) / tPerOra.length) * 10) / 10
+        : 0;
 
+      // Calcola direzione dominante
       const dirs = hours.map((h) => h.windDir).filter((d) => d != null);
       const dirCount: Record<number, number> = {};
       for (const d of dirs) {
@@ -95,27 +107,39 @@ export default function Index() {
         if (count > maxCount) { maxCount = count; dirDominante = cardDirs[Number(deg)] || "N"; }
       }
 
+      // Giudizio
       let giudizio = "Condizioni normali";
       if (windMedia >= 5 && windMedia <= 15 && cloudMedia < 50 && rateoMedia >= 0.8) giudizio = "Buono per volo";
       else if (windMedia > 20 || rateoMedia < 0.3) giudizio = "Sconsigliato";
       else if (cloudMedia > 70) giudizio = "Cielo coperto";
 
+      // Base/Top medi dalla fascia
+      const idxCentrale = Math.floor(tPerOra.length / 2);
+      const baseMedia = tPerOra.length > 0 ? Math.round(tPerOra[idxCentrale]?.base ?? 1500) : 1500;
+      const topMedia = tPerOra.length > 0 ? Math.round(tPerOra[idxCentrale]?.top ?? 2000) : 2000;
+      const precipitazioneTot = hours.reduce((s, h) => s + (h.precipitation || 0), 0);
+
       return {
         giudizio,
         ventoDir: dirDominante,
         vento: windMedia,
-        temperatura: String(tempMedia) + "\u00b0C",
+        temperatura: tempMedia,
         tempMax,
         termiche: rateoMedia.toFixed(1) + " m/s",
         rateo: rateoMedia,
-        base: tPerOra.length > 0 ? Math.round(tPerOra[Math.floor(tPerOra.length / 2)]?.base ?? 1500) : 1500,
-        top: tPerOra.length > 0 ? Math.round(tPerOra[Math.floor(tPerOra.length / 2)]?.top ?? 2000) : 2000,
+        base: baseMedia,
+        top: topMedia,
         umidita: humMedia,
         nuvole: cloudMedia,
+        pioggiaTot: precipitazioneTot,
       };
     };
 
-    return { mattina: calcFascia(morning), pomeriggio: calcFascia(afternoon), sera: calcFascia(evening) };
+    return {
+      mattina: calcFascia(morning),
+      pomeriggio: calcFascia(afternoon),
+      sera: calcFascia(evening),
+    };
   }, [dayData, site]);
 
   if (weatherLoading) {
@@ -177,21 +201,26 @@ export default function Index() {
                       <MeteoCardOraria
                         fascia="Mattina (6-11)"
                         data={{
-                          temp: fasceOrarie.mattina.temp || Math.round((currentData?.temperature ?? 20) - 2),
+                          temp: fasceOrarie.mattina.temperatura,
                           tempMax: fasceOrarie.mattina.tempMax,
                           vento: fasceOrarie.mattina.vento,
                           direzione: fasceOrarie.mattina.ventoDir,
-                          base: fasceOrarie.mattina.base || Math.round((currentData?.temperature ?? 20 - (currentData?.dewPoint ?? 10)) * 125 + (site?.altitude ?? 1000)),
-                          top: fasceOrarie.mattina.top || Math.round((currentData?.temperature ?? 20 - (currentData?.dewPoint ?? 10)) * 125 + (site?.altitude ?? 1000) + 300),
-                          umidita: fasceOrarie.mattina.umidita || currentData?.humidity ?? 50,
-                          pioggia: currentData?.precipitation ?? 0,
+                          base: fasceOrarie.mattina.base,
+                          top: fasceOrarie.mattina.top,
+                          umidita: fasceOrarie.mattina.umidita,
+                          pioggia: fasceOrarie.mattina.pioggiaTot,
                           pressione: currentData?.pressure ?? 1013,
-                          score: Math.round(Math.min(10, ((fasceOrarie.mattina.vento >= 5 && fasceOrarie.mattina.vento <= 15 ? 3 : 0) + ((currentData?.precipitation ?? 0) < 0.5 ? 2 : 0) + (fasceOrarie.mattina.umidita < 70 ? 1 : 0) + (fasceOrarie.mattina.rateo >= 0.5 ? 2 : 0)))),
+                          score: Math.round(Math.min(10,
+                            ((fasceOrarie.mattina.vento >= 5 && fasceOrarie.mattina.vento <= 15 ? 3 : 0) +
+                            ((fasceOrarie.mattina.pioggiaTot ?? 0) < 0.5 ? 2 : 0) +
+                            (fasceOrarie.mattina.umidita < 70 ? 1 : 0) +
+                            (fasceOrarie.mattina.rateo >= 0.5 ? 2 : 0))
+                          )),
                           migliorOra: "10:00",
-                          piccoTermico: Math.round(fasceOrarie.mattina.rateo * 10) / 10,
+                          piccoTermico: fasceOrarie.mattina.rateo,
                           commentoVolo: fasceOrarie.mattina.giudizio === "Buono per volo"
                             ? "Termiche regolari, vento ideale per decollare."
-                            : "Condizioni non ottimali, valuta con attenzione."
+                            : "Condizioni non ottimali, valutare con attenzione."
                         }}
                       />
                     )}
@@ -199,18 +228,23 @@ export default function Index() {
                       <MeteoCardOraria
                         fascia="Pomeriggio (12-17)"
                         data={{
-                          temp: fasceOrarie.pomeriggio.temp || Math.round((currentData?.temperature ?? 20) + 2),
+                          temp: fasceOrarie.pomeriggio.temperatura,
                           tempMax: fasceOrarie.pomeriggio.tempMax,
                           vento: fasceOrarie.pomeriggio.vento,
                           direzione: fasceOrarie.pomeriggio.ventoDir,
-                          base: fasceOrarie.pomeriggio.base || Math.round(((currentData?.temperature ?? 20) - (currentData?.dewPoint ?? 10)) * 125 + (site?.altitude ?? 1000)),
-                          top: fasceOrarie.pomeriggio.top || Math.round(((currentData?.temperature ?? 20) - (currentData?.dewPoint ?? 10)) * 125 + (site?.altitude ?? 1000) + 500),
-                          umidita: fasceOrarie.pomeriggio.umidita || currentData?.humidity ?? 50,
-                          pioggia: currentData?.precipitation ?? 0,
+                          base: fasceOrarie.pomeriggio.base,
+                          top: fasceOrarie.pomeriggio.top,
+                          umidita: fasceOrarie.pomeriggio.umidita,
+                          pioggia: fasceOrarie.pomeriggio.pioggiaTot,
                           pressione: currentData?.pressure ?? 1013,
-                          score: Math.round(Math.min(10, ((fasceOrarie.pomeriggio.vento >= 5 && fasceOrarie.pomeriggio.vento <= 15 ? 3 : 0) + ((currentData?.precipitation ?? 0) < 0.5 ? 2 : 0) + (fasceOrarie.pomeriggio.umidita < 70 ? 1 : 0) + Math.min(3, fasceOrarie.pomeriggio.rateo * 2)))),
+                          score: Math.round(Math.min(10,
+                            ((fasceOrarie.pomeriggio.vento >= 5 && fasceOrarie.pomeriggio.vento <= 15 ? 3 : 0) +
+                            ((fasceOrarie.pomeriggio.pioggiaTot ?? 0) < 0.5 ? 2 : 0) +
+                            (fasceOrarie.pomeriggio.umidita < 70 ? 1 : 0) +
+                            Math.min(3, fasceOrarie.pomeriggio.rateo * 2))
+                          )),
                           migliorOra: "14:00",
-                          piccoTermico: Math.round(fasceOrarie.pomeriggio.rateo * 10) / 10,
+                          piccoTermico: fasceOrarie.pomeriggio.rateo,
                           commentoVolo: fasceOrarie.pomeriggio.giudizio === "Buono per volo"
                             ? "Condizioni stabili, buona finestra di volo."
                             : "Vento o nuvolosità potrebbero limitare il volo."
@@ -221,16 +255,19 @@ export default function Index() {
                       <MeteoCardOraria
                         fascia="Sera (18-23)"
                         data={{
-                          temp: fasceOrarie.sera.temp || Math.round((currentData?.temperature ?? 20) - 3),
+                          temp: fasceOrarie.sera.temperatura,
                           tempMax: fasceOrarie.sera.tempMax,
                           vento: fasceOrarie.sera.vento,
                           direzione: fasceOrarie.sera.ventoDir,
-                          base: fasceOrarie.sera.base || Math.round(((currentData?.temperature ?? 20) - (currentData?.dewPoint ?? 10)) * 125 + (site?.altitude ?? 1000)),
-                          top: fasceOrarie.sera.top || Math.round(((currentData?.temperature ?? 20) - (currentData?.dewPoint ?? 10)) * 125 + (site?.altitude ?? 1000) + 100),
-                          umidita: fasceOrarie.sera.umidita || Math.min(100, (currentData?.humidity ?? 50) + 10),
-                          pioggia: currentData?.precipitation ?? 0,
+                          base: fasceOrarie.sera.base,
+                          top: fasceOrarie.sera.top,
+                          umidita: fasceOrarie.sera.umidita,
+                          pioggia: fasceOrarie.sera.pioggiaTot,
                           pressione: currentData?.pressure ?? 1013,
-                          score: Math.max(0, Math.round(Math.min(10, ((currentData?.precipitation ?? 0) < 0.5 ? 3 : 0) + ((currentData?.windSpeed ?? 0) < 15 ? 1 : 0)))),
+                          score: Math.max(0, Math.round(Math.min(10,
+                            ((fasceOrarie.sera.pioggiaTot ?? 0) < 0.5 ? 3 : 0) +
+                            ((currentData?.windSpeed ?? 0) < 15 ? 1 : 0)
+                          ))),
                           migliorOra: "18:00",
                           piccoTermico: 0.1,
                           commentoVolo: fasceOrarie.sera.giudizio === "Buono per volo"
@@ -257,5 +294,3 @@ export default function Index() {
     </div>
   );
 }
-
-const arrotonda = (n: number) => Math.round(n);
