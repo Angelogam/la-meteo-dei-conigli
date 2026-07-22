@@ -3,11 +3,8 @@
 import React, { useMemo } from "react";
 import {
   Sun, CloudSun, Cloud, CloudRain, CloudLightning, CloudFog,
-  Thermometer, Wind, Droplets, ArrowUp, Gauge, Umbrella,
-  Mountain, TrendingUp, CheckCircle, Calendar
+  Calendar
 } from "lucide-react";
-import { degreesToCardinal, windArrow } from "@/utils/windDirections";
-import { calcolaTermiche } from "@/utils/termiche";
 
 interface PrevisioniGiornaliereProps {
   enrichedDaily: any[];
@@ -62,40 +59,28 @@ function formatDateShort(date: any): string {
   return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0");
 }
 
-function getDayLabel(idx: number, date: any): string {
-  const base = idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani";
-  return date ? base + " " + formatDateShort(date) : base;
+function getCurrentDateTime(): string {
+  const now = new Date();
+  const date = now.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
+  const time = now.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+  return `${date} · ${time}`;
 }
 
 export default function PrevisioniGiornaliere({
   enrichedDaily,
-  dateLabels,
   currentData,
   dayData,
   site,
   selectedDay,
   onSelectDay,
-  nomeDecollo
 }: PrevisioniGiornaliereProps) {
   const alt = site.altitude;
-
-  const precipTotaleReale = useMemo(() => {
-    if (!dayData || dayData.length === 0) return 0;
-    let sum = 0;
-    for (let i = 0; i < dayData.length; i++) {
-      sum += dayData[i].precipitation || 0;
-    }
-    return Math.round(sum * 10) / 10;
-  }, [dayData]);
 
   const dailyWeatherCodes = useMemo(() => {
     const result: number[] = [];
     for (let di = 0; di < enrichedDaily.length; di++) {
       const day = enrichedDaily[di];
-      if (!day?.date) {
-        result.push(0);
-        continue;
-      }
+      if (!day?.date) { result.push(0); continue; }
       const d = day.date instanceof Date ? day.date : new Date(day.date);
       const codes: number[] = [];
       if (dayData && dayData.length > 0) {
@@ -112,185 +97,73 @@ export default function PrevisioniGiornaliere({
     return result;
   }, [enrichedDaily, dayData]);
 
-  const dailyPrecipTotals = useMemo(() => {
-    const result: number[] = [];
-    for (let i = 0; i < enrichedDaily.length; i++) {
-      const day = enrichedDaily[i];
-      if (!day?.date) {
-        result.push(0);
-        continue;
-      }
-      if (i === selectedDay && precipTotaleReale > 0) {
-        result.push(precipTotaleReale);
-      } else {
-        result.push(Math.round(day.precipSum * 10) / 10);
-      }
-    }
-    return result;
-  }, [enrichedDaily, selectedDay, precipTotaleReale]);
-
-  const fasce = useMemo(() => {
-    if (!dayData || dayData.length === 0) return null;
-
-    const morning: any[] = [];
-    const afternoon: any[] = [];
-    const evening: any[] = [];
-    for (let i = 0; i < dayData.length; i++) {
-      const hh = new Date(dayData[i].time).getHours();
-      if (hh >= 6 && hh <= 11) morning.push(dayData[i]);
-      else if (hh >= 12 && hh <= 17) afternoon.push(dayData[i]);
-      else if (hh >= 18 && hh <= 23) evening.push(dayData[i]);
-    }
-
-    const compute = (hours: any[], label: string, _borderColor: string) => {
-      if (hours.length === 0) return null;
-
-      const filterValid = (arr: (number | null | undefined)[]): number[] => {
-        const result: number[] = [];
-        for (let i = 0; i < arr.length; i++) {
-          if (arr[i] != null) result.push(arr[i] as number);
-        }
-        return result;
-      };
-
-      const mean = (arr: number[]): number => {
-        if (arr.length === 0) return 0;
-        let sum = 0;
-        for (let i = 0; i < arr.length; i++) sum += arr[i];
-        return sum / arr.length;
-      };
-
-      const maxVal = (arr: number[]): number => {
-        if (arr.length === 0) return 0;
-        let m = -Infinity;
-        for (let i = 0; i < arr.length; i++) {
-          if (arr[i] > m) m = arr[i];
-        }
-        return m;
-      };
-
-      const temps = filterValid(hours.map((h: any) => h.temperature));
-      const winds = filterValid(hours.map((h: any) => h.windSpeed));
-      const dirs = filterValid(hours.map((h: any) => h.windDir));
-      const clouds = filterValid(hours.map((h: any) => h.cloudCover));
-      const hums = filterValid(hours.map((h: any) => h.humidity));
-      const pressures = filterValid(hours.map((h: any) => h.pressure || 1013));
-      const codes = filterValid(hours.map((h: any) => h.weatherCode));
-
-      const tempMedia = Math.round(mean(temps));
-      const tempMax = Math.round(maxVal(temps));
-      const windMedia = Math.round(mean(winds));
-      const windMax = Math.round(maxVal(winds));
-      const windDirMedia = dirs.length > 0 ? Math.round(mean(dirs)) : 0;
-      const cloudMedia = Math.round(mean(clouds));
-      const humMedia = Math.round(mean(hums));
-      const pressMedia = Math.round(mean(pressures));
-
-      let precipTot = 0;
-      for (let i = 0; i < hours.length; i++) {
-        precipTot += hours[i].precipitation || 0;
-      }
-      precipTot = Math.round(precipTot * 10) / 10;
-
-      const thermicHours = hours.map((h: any) => calcolaTermiche(h, alt));
-      const rates = thermicHours.map((t: any) => t.rateo);
-      const salitaMedia = mean(rates);
-      const salita = Math.round(salitaMedia * 10) / 10;
-      const bases = thermicHours.map((t: any) => t.base);
-      const tops = thermicHours.map((t: any) => t.top);
-      const baseMedia = Math.round(mean(bases));
-      const topMedia = Math.round(mean(tops));
-
-      let termicheLabel = "Assenti ❌";
-      let termicheColore = "text-slate-400";
-      if (salita >= 4) { termicheLabel = "Forti 🔥"; termicheColore = "text-red-400"; }
-      else if (salita >= 3) { termicheLabel = "Buone 🪂"; termicheColore = "text-orange-400"; }
-      else if (salita >= 2) { termicheLabel = "Moderate 👍"; termicheColore = "text-amber-400"; }
-      else if (salita >= 1) { termicheLabel = "Deboli 👎"; termicheColore = "text-amber-300"; }
-      else if (salita >= 0.3) { termicheLabel = "M. deboli ☁️"; termicheColore = "text-yellow-300"; }
-
-      const _weatherCode = codes.length > 0 ? getDominantWeatherCode(codes) : 0;
-      const _weatherInfo = getWeatherInfo(_weatherCode);
-
-      let score = 5;
-      if (windMedia >= 5 && windMedia <= 18) score += 2;
-      else if (windMedia > 25) score -= 2;
-      else score -= 1;
-      if (precipTot < 0.1) score += 2;
-      else if (precipTot < 0.5) score += 1;
-      else score -= 3;
-      if (cloudMedia >= 10 && cloudMedia <= 60) score += 1.5;
-      if (salita >= 2) score += 2;
-      else if (salita >= 1) score += 1;
-      if (windMax > 30) score -= 2;
-      score = Math.max(0, Math.min(10, Math.round(score)));
-
-      return {
-        label, borderColor: "border-emerald-500/50", weatherDesc: _weatherInfo.desc,
-        tempMedia, tempMax, windMedia, windMax, windDirMedia,
-        cloudMedia, precipTot, humMedia, pressMedia,
-        base: baseMedia, top: topMedia, salita, termicheLabel, termicheColore, score, nOre: hours.length,
-      };
-    };
-
-    const results: any[] = [];
-    const m = compute(morning, "Mattina", "border-emerald-500/50");
-    if (m) results.push(m);
-    const a = compute(afternoon, "Pomeriggio", "border-emerald-500/50");
-    if (a) results.push(a);
-    const e = compute(evening, "Sera", "border-emerald-500/50");
-    if (e) results.push(e);
-    return results.length > 0 ? results : null;
-  }, [dayData, alt]);
-
   if (!enrichedDaily || enrichedDaily.length === 0) {
     return <div className="text-center py-8 text-slate-400 text-base">Caricamento previsioni...</div>;
   }
 
-  const selectedDayData = enrichedDaily[selectedDay];
-  const dayDateShort = selectedDayData?.date ? formatDateShort(selectedDayData.date) : "";
-  const nomeDisplay = nomeDecollo || site.name;
-
+  const now = getCurrentDateTime();
   const days = enrichedDaily.slice(0, 3);
-  const dayButtons: React.ReactNode[] = [];
-  for (let idx = 0; idx < days.length; idx++) {
-    const day = days[idx];
-    const isActive = idx === selectedDay;
-    const weatherCode = dailyWeatherCodes[idx] ?? 0;
-    const weatherInfo = getWeatherInfo(weatherCode);
-    const precipGiorno = dailyPrecipTotals[idx] ?? day.precipSum ?? 0;
-    dayButtons.push(
-      <button
-        key={idx}
-        onClick={() => onSelectDay(idx)}
-        className={"text-center transition-all border-2 cursor-pointer p-3 rounded-xl " + (
-          isActive
-            ? "border-emerald-400 bg-emerald-900/40 shadow-lg"
-            : "border-slate-700/50 bg-slate-800/40 hover:border-slate-600"
-        )}
-      >
-        <div className="text-base font-bold text-white">
-          {idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani"}
-        </div>
-        <div className="text-xs text-slate-400 mt-0.5">
-          <Calendar className="w-3.5 h-3.5 inline mr-1" />
-          {day.date ? formatDateShort(day.date) : ""}
-        </div>
-        <div className="flex justify-center my-1">{weatherInfo.icon}</div>
-        <div className="text-sm text-slate-300 font-bold">{weatherInfo.desc}</div>
-        <div className="text-lg font-bold text-white my-1">{Math.round(day.tempMax)}°</div>
-        <div className="text-xs text-slate-400">min {Math.round(day.tempMin)}°</div>
-        <div className="text-xs text-slate-400 mt-0.5">
-          {precipGiorno > 0 ? String(precipGiorno.toFixed(1)) + " mm" : "0 mm"}
-        </div>
-      </button>
-    );
-  }
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap justify-center gap-2">
-        {dayButtons}
+      {/* Data e ora aggiornamento */}
+      <div className="text-center text-[10px] text-slate-500 tracking-wider">
+        {now}
+      </div>
+
+      {/* Card giorni centrate */}
+      <div className="flex flex-wrap justify-center gap-3">
+        {days.map((day, idx) => {
+          const isActive = idx === selectedDay;
+          const weatherCode = dailyWeatherCodes[idx] ?? 0;
+          const weatherInfo = getWeatherInfo(weatherCode);
+
+          return (
+            <button
+              key={idx}
+              onClick={() => onSelectDay(idx)}
+              className={
+                "text-center transition-all border-2 cursor-pointer p-4 rounded-xl flex-1 min-w-[120px] max-w-[180px] " +
+                (isActive
+                  ? "border-emerald-400 bg-emerald-900/40 shadow-lg shadow-emerald-500/10"
+                  : "border-slate-700/50 bg-slate-800/40 hover:border-slate-500 hover:bg-slate-800/60")
+              }
+            >
+              {/* Nome giorno */}
+              <div className="text-sm font-bold text-white mb-1">
+                {idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani"}
+              </div>
+
+              {/* Data */}
+              <div className="text-[10px] text-slate-500 mb-2">
+                <Calendar className="w-3 h-3 inline mr-1" />
+                {day.date ? formatDateShort(day.date) : ""}
+              </div>
+
+              {/* Icona meteo */}
+              <div className="flex justify-center my-2">{weatherInfo.icon}</div>
+
+              {/* Descrizione meteo */}
+              <div className="text-xs text-slate-300 font-bold mb-1">{weatherInfo.desc}</div>
+
+              {/* Temperature */}
+              <div className="text-lg font-bold text-white">{Math.round(day.tempMax)}°</div>
+              <div className="text-[10px] text-slate-400">min {Math.round(day.tempMin)}°</div>
+
+              {/* Pioggia */}
+              <div className="text-[10px] text-slate-500 mt-1">
+                {(day.precipSum ?? 0) > 0
+                  ? `${(day.precipSum ?? 0).toFixed(1)} mm`
+                  : "0 mm"}
+              </div>
+
+              {/* Ora ultimo aggiornamento */}
+              <div className="text-[8px] text-slate-600 mt-2">
+                {now}
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

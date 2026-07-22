@@ -43,6 +43,7 @@
     }
   }
 
+  /* Scrollbar personalizzata */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -56,11 +57,31 @@
   }
 }
 
-/* ===== DECOLLO CARD ===== */
+/* ===== CARD CON TESTO CENTRATO ===== */
+.card-center {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-center > * {
+  text-align: center;
+}
+
+/* ===== DATA E ORA IN OGNI CARD ===== */
+.card-datetime {
+  font-size: 0.7rem;
+  color: rgba(148, 163, 184, 0.7);
+  margin-top: 0.25rem;
+  letter-spacing: 0.02em;
+}
+
+/* ===== DECOLLO CARD (mobile-friendly) ===== */
 .decollo-card {
   width: 90%;
   max-width: 380px;
-  padding: 10px;
   margin: 10px auto;
   border-radius: 12px;
   font-size: 0.9rem;
@@ -70,6 +91,5 @@
   .decollo-card {
     width: 95%;
     font-size: 0.85rem;
-    padding: 8px;
   }
 }

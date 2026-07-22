@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { ArrowUp, TrendingUp, ThermometerSun, CloudSun, Calendar, MapPin } from "lucide-react";
-import GraficoTermicoPro from "@/components/GraficoTermicoPro";
+import { ArrowUp, TrendingUp, ThermometerSun, CloudSun, Calendar, MapPin, Clock } from "lucide-react";
 import type { MeteoHourly, MeteoCurrent } from "@/services/weatherService";
 
 interface TermicheTabProps {
@@ -17,6 +16,10 @@ function formatDateShort(date: Date): string {
   const d = date instanceof Date ? date : new Date(date);
   if (isNaN(d.getTime())) return "";
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+}
+
+function getCurrentTime(): string {
+  return new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
 }
 
 function calcolaTermicheSicure(h: any, alt: number) {
@@ -53,6 +56,7 @@ function calcolaTermicheSicure(h: any, alt: number) {
 
 export default function TermicheTab({ dayData, site }: TermicheTabProps) {
   const alt = site?.alt ?? 1000;
+  const oraCorrente = getCurrentTime();
 
   const dataGiorno = useMemo(() => {
     if (dayData && dayData.length > 0) return formatDateShort(new Date(dayData[0].time));
@@ -71,32 +75,6 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
       .filter(t => t.rateo >= 0)
       .sort((a, b) => a.ora - b.ora);
   }, [dayData, alt]);
-
-  const dataGraficoPro = useMemo(() => {
-    if (termichePerOra.length === 0) {
-      return [
-        { hour: "08", speed: 0.8, base: 1800, top: 2100 },
-        { hour: "09", speed: 0.9, base: 1850, top: 2150 },
-        { hour: "10", speed: 1.0, base: 1900, top: 2200 },
-        { hour: "11", speed: 1.2, base: 2000, top: 2300 },
-        { hour: "12", speed: 1.2, base: 2040, top: 2520 },
-        { hour: "13", speed: 1.3, base: 2130, top: 2650 },
-        { hour: "14", speed: 1.3, base: 2180, top: 2700 },
-        { hour: "15", speed: 1.4, base: 2240, top: 2750 },
-        { hour: "16", speed: 1.5, base: 2300, top: 2800 },
-        { hour: "17", speed: 1.1, base: 2200, top: 2600 },
-        { hour: "18", speed: 1.0, base: 2100, top: 2500 },
-        { hour: "19", speed: 0.9, base: 2000, top: 2400 },
-      ];
-    }
-
-    return termichePerOra.map(t => ({
-      hour: String(t.ora).padStart(2, "0"),
-      speed: t.rateo,
-      base: t.base,
-      top: t.top,
-    }));
-  }, [termichePerOra]);
 
   const mediaSalita = useMemo(() => {
     if (termichePerOra.length === 0) return 0;
@@ -117,48 +95,76 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
       <div className="text-center py-10 text-slate-500 text-sm">
         <CloudSun className="w-12 h-12 mx-auto mb-3 text-slate-600" />
         <p className="font-bold text-slate-400 mb-1">Nessun dato termico disponibile</p>
-        <p className="text-xs">Attendi il caricamento dei dati meteo</p>
+        <p className="text-xs">Aggiornamento: {oraCorrente}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="bg-slate-800/60 border border-orange-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
-        <MapPin className="w-5 h-5 text-orange-400 shrink-0" />
-        <div>
-          <div className="text-sm font-bold text-white">{site?.name || "Decollo"} &mdash; Termiche</div>
-          <div className="text-[10px] text-slate-400 flex items-center gap-2">
-            <Calendar className="w-3 h-3" />
-            <span>{dataGiorno}</span>
-            <span className="text-slate-600">·</span>
-            <span>{alt}m</span>
-          </div>
+      {/* Header */}
+      <div className="text-center bg-slate-800/60 border border-orange-500/30 rounded-xl px-4 py-3">
+        <div className="text-base font-bold text-white">{site?.name || "Decollo"} — Termiche</div>
+        <div className="text-[10px] text-slate-500 flex items-center justify-center gap-2 mt-1">
+          <Calendar className="w-3 h-3" />
+          <span>{dataGiorno}</span>
+          <span className="text-slate-600">·</span>
+          <Clock className="w-3 h-3" />
+          <span>{oraCorrente}</span>
+          <span className="text-slate-600">·</span>
+          <MapPin className="w-3 h-3" />
+          <span>{alt}m</span>
         </div>
       </div>
 
+      {/* Griglia metriche centrata */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
+        <div className="card-center bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
           <TrendingUp className="w-6 h-6 text-amber-400 mx-auto mb-1" />
-          <div className="text-xl font-bold text-amber-300">{mediaSalita.toFixed(1)}</div>
-          <div className="text-sm text-slate-400">Media m/s</div>
+          <div className="text-xs text-slate-400">Media</div>
+          <div className="text-xl font-bold text-amber-300">{mediaSalita.toFixed(1)} m/s</div>
+          <div className="card-datetime">{dataGiorno} · {oraCorrente}</div>
         </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
+        <div className="card-center bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
           <ArrowUp className="w-6 h-6 text-orange-400 mx-auto mb-1" />
-          <div className="text-xl font-bold text-orange-300">{maxSalita.toFixed(1)}</div>
-          <div className="text-sm text-slate-400">Picco m/s</div>
+          <div className="text-xs text-slate-400">Picco</div>
+          <div className="text-xl font-bold text-orange-300">{maxSalita.toFixed(1)} m/s</div>
+          <div className="card-datetime">{dataGiorno} · {oraCorrente}</div>
         </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
+        <div className="card-center bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
           <ThermometerSun className="w-6 h-6 text-orange-400 mx-auto mb-1" />
+          <div className="text-xs text-slate-400">Attive</div>
           <div className="text-xl font-bold text-orange-300">{oreAttive}</div>
-          <div className="text-sm text-slate-400">Ore attive</div>
+          <div className="text-xs text-slate-500">ore</div>
+          <div className="card-datetime">{dataGiorno} · {oraCorrente}</div>
         </div>
       </div>
 
-      <GraficoTermicoPro data={dataGraficoPro} />
+      {/* Tabella oraria centrata */}
+      <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4">
+        <div className="text-xs text-slate-400 text-center mb-3 font-bold uppercase tracking-wider">
+          Andamento orario termiche
+        </div>
+        <div className="flex flex-wrap justify-center gap-2">
+          {termichePerOra.map((t, idx) => {
+            const rateoColor = t.rateo >= 2 ? "bg-orange-500" : t.rateo >= 1 ? "bg-amber-500" : t.rateo >= 0.3 ? "bg-yellow-500" : "bg-slate-600";
+            return (
+              <div key={idx} className="card-center bg-slate-800/60 rounded-lg p-2 min-w-[70px]">
+                <div className="text-xs font-bold text-white">{String(t.ora).padStart(2, "0")}:00</div>
+                <div className={`text-sm font-bold mt-1 ${rateoColor.replace("bg-", "text-")}`}>
+                  {t.rateo.toFixed(1)}
+                </div>
+                <div className="text-[9px] text-slate-500">m/s</div>
+                <div className="card-datetime">{dataGiorno}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
-      <div className="text-center text-[10px] text-slate-600 border-t border-slate-700/30 pt-2 mt-2">
-        Valori realistici per Alpi &mdash; Rateo massimo ~4-5 m/s in condizioni estreme
+      {/* Data e ora */}
+      <div className="text-center text-[10px] text-slate-600 border-t border-slate-700/30 pt-2">
+        {site?.name} · Ultimo aggiornamento: {oraCorrente}
       </div>
     </div>
   );
