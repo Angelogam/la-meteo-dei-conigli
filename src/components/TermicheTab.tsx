@@ -1,168 +1,132 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { ArrowUp, TrendingUp, ThermometerSun, CloudSun, Calendar, MapPin } from "lucide-react";
-import GraficoTermicoPro from "@/components/GraficoTermicoPro";
-import type { MeteoHourly, MeteoCurrent } from "@/services/weatherService";
+import { HourData } from "@/types/meteo";
+import { calcolaTermiche } from "@/utils/termiche";
+import { Thermometer, Wind, Cloud, Droplets, Sun, TrendingUp, AlertTriangle } from "lucide-react";
 
 interface TermicheTabProps {
-  currentData: any;
-  dayData: any[];
-  site?: { alt: number; lat?: number; lon?: number; name?: string };
-  hourlyData?: MeteoHourly[];
-  current?: MeteoCurrent;
-}
-
-function formatDateShort(date: Date): string {
-  const d = date instanceof Date ? date : new Date(date);
-  if (isNaN(d.getTime())) return "";
-  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
-}
-
-function calcolaTermicheSicure(h: any, alt: number) {
-  const spread = Math.max(0.3, Math.min(20, h.temperature - h.dewPoint));
-  const windSpeed = h.windSpeed ?? 0;
-  const cloudCover = h.cloudCover ?? 30;
-  const precipitation = h.precipitation ?? 0;
-
-  const baseSopraSuolo = Math.round(Math.min(2000, Math.max(50, spread * 120)));
-  const base = alt + baseSopraSuolo;
-
-  let rateoSpread = Math.min(2.5, spread * 0.2);
-  let bonusVento = 0;
-  if (windSpeed >= 5 && windSpeed <= 15) bonusVento = Math.min(1, windSpeed / 15);
-  else if (windSpeed >= 3 && windSpeed < 5) bonusVento = 0.3;
-
-  let bonusNuvole = 0;
-  if (cloudCover >= 15 && cloudCover <= 40) bonusNuvole = 0.5;
-  else if (cloudCover >= 5 && cloudCover < 15) bonusNuvole = 0.3;
-  else if (cloudCover > 40 && cloudCover <= 55) bonusNuvole = 0.2;
-
-  let penalita = 1;
-  if (precipitation > 2) penalita = 0;
-  else if (precipitation > 1) penalita = 0.2;
-  else if (precipitation > 0.3) penalita = 0.5;
-  if (windSpeed > 25) penalita *= 0.3;
-  else if (windSpeed > 20) penalita *= 0.6;
-
-  const rateo = Math.max(0, Math.min(5, Math.round((rateoSpread + bonusVento + bonusNuvole) * penalita * 10) / 10));
-  const top = Math.min(4000, Math.max(base + 200, base + Math.round(rateo * 400)));
-
-  return { ora: new Date(h.time).getHours(), rateo, base, top };
+  currentData: HourData | null;
+  dayData: HourData[];
+  site: { alt: number; lat: number; lon: number; name: string };
 }
 
 export default function TermicheTab({ dayData, site }: TermicheTabProps) {
-  const alt = site?.alt ?? 1000;
-
-  const dataGiorno = useMemo(() => {
-    if (dayData && dayData.length > 0) return formatDateShort(new Date(dayData[0].time));
-    return formatDateShort(new Date());
-  }, [dayData]);
-
-  const termichePerOra = useMemo(() => {
-    if (!dayData || dayData.length === 0) return [];
-    return dayData
-      .filter((h: any) => {
-        if (!h.time) return false;
-        const hh = new Date(h.time).getHours();
-        return hh >= 8 && hh <= 19;
+  const oreConDati = useMemo(() => {
+    const ore = Array.from({ length: 14 }, (_, i) => i + 8);
+    return ore
+      .map(ora => {
+        const h = dayData.find(d => new Date(d.time).getHours() === ora);
+        if (!h) return null;
+        const t = calcolaTermiche(h, site.alt);
+        return { ora: `${String(ora).padStart(2, "0")}:00`, rateo: t.rateo, base: t.base, top: t.top, forza: t.forza, attendibilita: t.attendibilita, temp: h.temperature, vento: h.windSpeed, nuvole: h.cloudCover, umidita: h.humidity };
       })
-      .map((h: any) => calcolaTermicheSicure(h, alt))
-      .filter(t => t.rateo >= 0)
-      .sort((a, b) => a.ora - b.ora);
-  }, [dayData, alt]);
+      .filter(Boolean);
+  }, [dayData, site.alt]);
 
-  const dataGraficoPro = useMemo(() => {
-    if (termichePerOra.length === 0) {
-      return [
-        { hour: "08", speed: 0.8, base: 1800, top: 2100 },
-        { hour: "09", speed: 0.9, base: 1850, top: 2150 },
-        { hour: "10", speed: 1.0, base: 1900, top: 2200 },
-        { hour: "11", speed: 1.2, base: 2000, top: 2300 },
-        { hour: "12", speed: 1.2, base: 2040, top: 2520 },
-        { hour: "13", speed: 1.3, base: 2130, top: 2650 },
-        { hour: "14", speed: 1.3, base: 2180, top: 2700 },
-        { hour: "15", speed: 1.4, base: 2240, top: 2750 },
-        { hour: "16", speed: 1.5, base: 2300, top: 2800 },
-        { hour: "17", speed: 1.1, base: 2200, top: 2600 },
-        { hour: "18", speed: 1.0, base: 2100, top: 2500 },
-        { hour: "19", speed: 0.9, base: 2000, top: 2400 },
-      ];
-    }
+  const maxRateo = useMemo(() => Math.max(...oreConDati.map(o => o!.rateo), 0.1), [oreConDati]);
+  const mediaRateo = useMemo(() => {
+    const vals = oreConDati.map(o => o!.rateo);
+    return vals.length > 0 ? (vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+  }, [oreConDati]);
 
-    return termichePerOra.map(t => ({
-      hour: String(t.ora).padStart(2, "0"),
-      speed: t.rateo,
-      base: t.base,
-      top: t.top,
-    }));
-  }, [termichePerOra]);
-
-  const mediaSalita = useMemo(() => {
-    if (termichePerOra.length === 0) return 0;
-    return termichePerOra.reduce((s, t) => s + t.rateo, 0) / termichePerOra.length;
-  }, [termichePerOra]);
-
-  const maxSalita = useMemo(() => {
-    if (termichePerOra.length === 0) return 0;
-    return Math.max(...termichePerOra.map(t => t.rateo));
-  }, [termichePerOra]);
-
-  const oreAttive = useMemo(() => {
-    return termichePerOra.filter(t => t.rateo >= 0.3).length;
-  }, [termichePerOra]);
-
-  if (termichePerOra.length === 0 && !site) {
+  if (oreConDati.length === 0) {
     return (
-      <div className="text-center py-10 text-slate-500 text-sm">
-        <CloudSun className="w-12 h-12 mx-auto mb-3 text-slate-600" />
-        <p className="font-bold text-slate-400 mb-1">Nessun dato termico disponibile</p>
-        <p className="text-xs">Attendi il caricamento dei dati meteo</p>
+      <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-8 text-center">
+        <AlertTriangle className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+        <p className="text-slate-400">Nessun dato termico disponibile per oggi.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {/* Intestazione */}
-      <div className="bg-slate-800/60 border border-orange-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
-        <MapPin className="w-5 h-5 text-orange-400 shrink-0" />
-        <div>
-          <div className="text-sm font-bold text-white">{site?.name || "Decollo"} &mdash; Termiche</div>
-          <div className="text-[10px] text-slate-400 flex items-center gap-2">
-            <Calendar className="w-3 h-3" />
-            <span>{dataGiorno}</span>
-            <span className="text-slate-600">·</span>
-            <span>{alt}m</span>
+    <div className="space-y-6">
+      {/* Riepilogo */}
+      <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5">
+        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          <Thermometer className="w-5 h-5 text-orange-400" />
+          Previsione termiche — {site.name}
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-slate-900/60 rounded-xl p-3 text-center">
+            <p className="text-xs text-slate-400 mb-1">Media termiche</p>
+            <p className="text-xl font-bold text-orange-400">{mediaRateo.toFixed(1)} m/s</p>
+          </div>
+          <div className="bg-slate-900/60 rounded-xl p-3 text-center">
+            <p className="text-xs text-slate-400 mb-1">Picco massimo</p>
+            <p className="text-xl font-bold text-amber-300">{maxRateo.toFixed(1)} m/s</p>
+          </div>
+          <div className="bg-slate-900/60 rounded-xl p-3 text-center">
+            <p className="text-xs text-slate-400 mb-1">Ore attive</p>
+            <p className="text-xl font-bold text-emerald-400">{oreConDati.filter(o => o!.rateo >= 0.5).length}</p>
+          </div>
+          <div className="bg-slate-900/60 rounded-xl p-3 text-center">
+            <p className="text-xs text-slate-400 mb-1">Giudizio</p>
+            <p className="text-xl font-bold" style={{ color: mediaRateo >= 1.0 ? "#34d399" : mediaRateo >= 0.5 ? "#fbbf24" : "#f87171" }}>
+              {mediaRateo >= 1.0 ? "Ottimo" : mediaRateo >= 0.5 ? "Discreto" : "Debole"}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Riepilogo */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
-          <TrendingUp className="w-6 h-6 text-amber-400 mx-auto mb-1" />
-          <div className="text-xl font-bold text-amber-300">{mediaSalita.toFixed(1)}</div>
-          <div className="text-sm text-slate-400">Media m/s</div>
+      {/* Tabella oraria dettagliata */}
+      <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl overflow-hidden">
+        <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-700/30">
+          <TrendingUp className="w-4 h-4 text-orange-400" />
+          <span className="text-sm font-bold text-slate-200">Dettaglio orario termiche</span>
         </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
-          <ArrowUp className="w-6 h-6 text-orange-400 mx-auto mb-1" />
-          <div className="text-xl font-bold text-orange-300">{maxSalita.toFixed(1)}</div>
-          <div className="text-sm text-slate-400">Picco m/s</div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-slate-700/30 text-slate-500">
+                <th className="p-3 text-left">Ora</th>
+                <th className="p-3 text-left">Rateo</th>
+                <th className="p-3 text-left">Base</th>
+                <th className="p-3 text-left">Top</th>
+                <th className="p-3 text-left">Temp</th>
+                <th className="p-3 text-left">Vento</th>
+                <th className="p-3 text-left">Nuvole</th>
+                <th className="p-3 text-left">Umidità</th>
+              </tr>
+            </thead>
+            <tbody>
+              {oreConDati.map((r) => r && (
+                <tr key={r.ora} className="border-b border-slate-700/20 hover:bg-slate-700/30 transition-colors">
+                  <td className="p-3 font-bold text-white">{r.ora}</td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-2 bg-slate-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{
+                            width: `${Math.min(100, (r.rateo / 4.5) * 100)}%`,
+                            backgroundColor: r.rateo >= 1.5 ? "#34d399" : r.rateo >= 0.5 ? "#fbbf24" : "#f87171",
+                          }}
+                        />
+                      </div>
+                      <span className="font-bold text-orange-300 tabular-nums">{r.rateo.toFixed(1)} m/s</span>
+                    </div>
+                  </td>
+                  <td className="p-3 text-slate-300">{r.base} m</td>
+                  <td className="p-3 text-sky-300">{r.top} m</td>
+                  <td className="p-3 text-amber-300">{Math.round(r.temp)}°C</td>
+                  <td className="p-3 text-sky-300">
+                    <Wind className="w-3 h-3 inline mr-1" />
+                    {Math.round(r.vento)} km/h
+                  </td>
+                  <td className="p-3 text-slate-300">
+                    <Cloud className="w-3 h-3 inline mr-1" />
+                    {Math.round(r.nuvole)}%
+                  </td>
+                  <td className="p-3 text-blue-300">
+                    <Droplets className="w-3 h-3 inline mr-1" />
+                    {Math.round(r.umidita)}%
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
-          <ThermometerSun className="w-6 h-6 text-orange-400 mx-auto mb-1" />
-          <div className="text-xl font-bold text-orange-300">{oreAttive}</div>
-          <div className="text-sm text-slate-400">Ore attive</div>
-        </div>
-      </div>
-
-      {/* Grafico termico Pro */}
-      <GraficoTermicoPro data={dataGraficoPro} />
-
-      {/* Nota */}
-      <div className="text-center text-[10px] text-slate-600 border-t border-slate-700/30 pt-2 mt-2">
-        Valori realistici per Alpi &mdash; Rateo massimo ~4-5 m/s in condizioni estreme
       </div>
     </div>
   );
