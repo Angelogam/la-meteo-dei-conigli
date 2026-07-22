@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import { ArrowUp, TrendingUp, ThermometerSun, CloudSun, Calendar, Sparkles, Activity, MapPin } from "lucide-react";
 import { analisiAvanzataCompleta } from "@/services/analisiAvanzata";
 import AnalisiAvanzataCard from "@/components/AnalisiAvanzataCard";
-import TermicheNuvola from "@/components/TermicheNuvola";
+import TermicheAquila from "@/components/TermicheAquila";
 import type { MeteoHourly, MeteoCurrent } from "@/services/weatherService";
 
 interface TermicheTabProps {
@@ -201,7 +201,7 @@ export default function TermicheTab({ currentData, dayData, site, hourlyData, cu
   const maxSalita = Math.max(...termichePerOra.map(t => t.rateo));
   const oreAttive = termichePerOra.filter(t => t.rateo >= 0.3).length;
 
-  const termicheNuvolaData = termichePerOra.map(t => ({
+  const termicheAquilaData = termichePerOra.map(t => ({
     hour: `${String(t.ora).padStart(2, "0")}:00`,
     speed: t.rateo,
     base: t.base,
@@ -243,8 +243,8 @@ export default function TermicheTab({ currentData, dayData, site, hourlyData, cu
         </div>
       </div>
 
-      {/* Card a colonna con nuvola - sostituisce le vecchie card */}
-      <TermicheNuvola data={termicheNuvolaData} />
+      {/* Card a colonna con aquila e nuvole - sostituisce le vecchie card */}
+      <TermicheAquila data={termicheAquilaData} />
 
       {/* Nota range realistico */}
       <div className="text-center text-[10px] text-slate-600 border-t border-slate-700/30 pt-2 mt-2">
