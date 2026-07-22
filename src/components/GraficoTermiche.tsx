@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import type { TermicheResult } from "@/utils/termiche";
+import type { TermicheData } from "@/utils/termiche";
 
 interface GraficoTermicheProps {
-  hourly: { hour: number; termiche: TermicheResult }[];
+  hourly: { hour: number; termiche: TermicheData }[];
   oraCorrente: number;
 }
 
@@ -24,7 +24,7 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
       const vicino = hourly.find((x) => x.hour === i);
       if (vicino) return vicino;
     }
-    return { hour: h, termiche: { rateo: 0, forza: 0, base: 0, top: 0, label: "N/D", colore: "#475569", gradienteReale: 0, attendibilita: 0 } as TermicheResult };
+    return { hour: h, termiche: { rateo: 0, forza: 0, base: 0, top: 0, label: "N/D", colore: "#475569", gradienteReale: 0 } };
   });
 
   const maxVal = Math.max(...daMostrare.map((d) => d.termiche.rateo), 0.1);

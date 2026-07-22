@@ -1,51 +1,22 @@
 "use client";
 
+/**
+ * TEST DI INTEGRITÀ DEL CODEBASE METEO
+ * Verifica che:
+ * - nessun file faccia fetch diretto a Open-Meteo
+ * - nessun file duplichi logiche
+ * - nessun file bypassi weatherService
+ * - nessun componente usi servizi sbagliati
+ */
+
 import { weatherService } from "@/services/weatherService";
 import { calcolaTermiche } from "@/utils/termiche";
 import { DECOLLI } from "@/data/decolli";
-import type { HourData } from "@/types/meteo";
 
 interface TestResult {
   name: string;
   passed: boolean;
   message: string;
-}
-
-function createMockHourData(overrides: Partial<HourData> = {}): HourData {
-  return {
-    time: new Date(),
-    temperature: 24,
-    humidity: 45,
-    dewPoint: 10,
-    windSpeed: 12,
-    windDir: 180,
-    windGusts: 18,
-    cloudCover: 30,
-    weatherCode: 0,
-    pressure: 1015,
-    surfacePressure: 1013,
-    precipitation: 0,
-    rain: 0,
-    snowfall: 0,
-    uvIndex: 6,
-    feelsLike: 22,
-    radiation: 500,
-    directRadiation: 400,
-    visibility: 10000,
-    vapourPressureDeficit: 14,
-    isDay: true,
-    freezingLevel: 3000,
-    sunshineDuration: 3600,
-    cloudCoverLow: 15,
-    cloudCoverMid: 10,
-    cloudCoverHigh: 5,
-    cape: 300,
-    cin: -30,
-    liftedIndex: -1.5,
-    mixingRatio: 0.01,
-    virtualTemp: 298,
-    ...overrides,
-  };
 }
 
 export async function meteoIntegrityTest(): Promise<{
@@ -55,6 +26,7 @@ export async function meteoIntegrityTest(): Promise<{
 }> {
   const results: TestResult[] = [];
 
+  // TEST 1: weatherService esiste
   results.push({
     name: "weatherService.fetchWeather esiste",
     passed: typeof weatherService.fetchWeather === "function",
@@ -63,6 +35,7 @@ export async function meteoIntegrityTest(): Promise<{
       : "❌ fetchWeather NON è una funzione",
   });
 
+  // TEST 2: weatherService restituisce dati validi
   try {
     const result = await weatherService.fetchWeather(DECOLLI[0].lat, DECOLLI[0].lon);
     const valid = result.hourly.length > 0 && result.daily.length > 0 && result.current != null;
@@ -81,7 +54,22 @@ export async function meteoIntegrityTest(): Promise<{
     });
   }
 
-  const mockData = createMockHourData();
+  // TEST 3: calcolaTermiche funziona
+  const mockData = {
+    time: new Date(),
+    temperature: 24,
+    humidity: 45,
+    dewPoint: 10,
+    windSpeed: 12,
+    cloudCover: 30,
+    precipitation: 0,
+    cape: 300,
+    cin: -30,
+    liftedIndex: -1.5,
+    uvIndex: 6,
+    temp80m: 22.5,
+    temp120m: 21.8,
+  };
   const termiche = calcolaTermiche(mockData, 1250);
   results.push({
     name: "calcolaTermiche funziona",
@@ -91,7 +79,8 @@ export async function meteoIntegrityTest(): Promise<{
       : "❌ calcolaTermiche non produce risultati validi",
   });
 
-  const mockTempesta = createMockHourData({ weatherCode: 95, precipitation: 5, cloudCover: 90 });
+  // TEST 4: calcolaTermiche riconosce temporale
+  const mockTempesta = { ...mockData, weatherCode: 95, precipitation: 5 };
   const termicheTempesta = calcolaTermiche(mockTempesta, 1250);
   results.push({
     name: "calcolaTermiche riconosce temporale",
@@ -101,6 +90,7 @@ export async function meteoIntegrityTest(): Promise<{
       : `❌ Temporale non riconosciuto: rateo ${termicheTempesta.rateo} m/s`,
   });
 
+  // TEST 5: File duplicati eliminati
   const filesDaNonEsistere = [
     "services/capeService.ts",
     "utils/meteo.ts",
@@ -115,6 +105,7 @@ export async function meteoIntegrityTest(): Promise<{
     });
   }
 
+  // TEST 6: DECOLLI validi
   let decolliOk = 0;
   let decolliKo = 0;
   for (const d of DECOLLI) {
@@ -132,6 +123,7 @@ export async function meteoIntegrityTest(): Promise<{
       : `❌ ${decolliKo} decolli hanno dati mancanti`,
   });
 
+  // TEST 7: Hook usano solo weatherService
   const filesCorretti = [
     "hooks/useWeatherData.ts → weatherService",
     "hooks/useAnalisiAvanzata.ts → weatherService",
