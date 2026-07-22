@@ -4,10 +4,22 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import type { HourData, DailyData } from "@/types/meteo";
 import { DECOLLI } from "@/data/decolli";
 import { fetchAllWeatherData, fetchHourlyData } from "@/services/openMeteoService";
-import { arrotondaMeteo, getWeatherDescription } from "@/utils/weatherHelpers";
 
 const STORAGE_KEY_SITE = "meteo_selected_decollo";
 const REFRESH_INTERVAL = 600000; // 10 minuti
+
+function getWeatherDescription(code: number): string {
+  if (code === 0) return "Sereno";
+  if (code <= 2) return "Poco nuvoloso";
+  if (code <= 3) return "Nuvoloso";
+  if (code <= 48) return "Nebbia";
+  if (code <= 57) return "Pioggerella";
+  if (code <= 67) return "Pioggia";
+  if (code <= 77) return "Neve";
+  if (code <= 82) return "Rovesci";
+  if (code >= 95) return "Temporali";
+  return "N/D";
+}
 
 export function useWeatherData() {
   const [selectedId, setSelectedId] = useState<string>(() => {
@@ -24,7 +36,7 @@ export function useWeatherData() {
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL);
   const [selectedDay, setSelectedDay] = useState(0);
   const [selectedHour, setSelectedHour] = useState(new Date().getHours());
-  const [activeTab, setActiveTab] = useState("meteo");
+  const [activeTab, setActiveTab] = useState<"meteo" | "venti" | "termiche" | "analisi">("meteo");
   const [activeModel, setActiveModel] = useState("gfs");
 
   // Dati grezzi da Open-Meteo

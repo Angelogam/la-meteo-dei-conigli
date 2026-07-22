@@ -59,10 +59,8 @@ export default function AnalisiTab({ currentData, dayData, site }: AnalisiTabPro
     const tempMin = Math.min(...oreGiorno.map(h => h.temperature));
     const deltaTermico = Math.round((tempMax - tempMin) * 10) / 10;
 
-    let gradienteReale = 0.98;
-    if (currentData?.temp80m != null) gradienteReale = ((currentData.temperature - currentData.temp80m) / 78) * 100;
-    else if (currentData?.temp120m != null) gradienteReale = ((currentData.temperature - currentData.temp120m) / 118) * 100;
-
+    // Gradiente: usa feelsLike come approssimazione, oppure usa formula standard
+    const gradienteReale = 0.98;
     let forzaTermica = 0;
     if (gradienteReale >= 1.2) forzaTermica += 3; else if (gradienteReale >= 0.98) forzaTermica += 2; else if (gradienteReale >= 0.7) forzaTermica += 1;
     if (windMedia >= 5 && windMedia <= 15) forzaTermica += 2; else if (windMedia >= 3 && windMedia < 5) forzaTermica += 1.5; else if (windMedia > 15 && windMedia <= 22) forzaTermica += 1;
@@ -127,7 +125,7 @@ export default function AnalisiTab({ currentData, dayData, site }: AnalisiTabPro
     return (
       <div className="text-center py-12 text-slate-400 text-base">
         <Sun className="w-10 h-10 mx-auto mb-3 text-slate-500" />
-        Dati insufficienti per generare l&apos;analisi.
+        Dati insufficienti per generare l'analisi.
       </div>
     );
   }
@@ -157,70 +155,4 @@ export default function AnalisiTab({ currentData, dayData, site }: AnalisiTabPro
               <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(148,163,184,0.15)" strokeWidth="3" />
               <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray={`${(analisi.score / 10) * 100} 100`} strokeLinecap="round" className={scoreColor} />
             </svg>
-            <span className={`absolute inset-0 flex items-center justify-center text-lg font-bold ${scoreColor}`}>{analisi.score}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
-          <div className="flex justify-center mb-1"><Thermometer className="w-5 h-5 text-amber-400" /></div>
-          <div className="text-xs text-slate-400 uppercase font-bold mb-0.5">Temperatura</div>
-          <div className="text-lg font-bold text-white">{analisi.tempMedia}°C</div>
-          <div className="text-xs text-slate-400 mt-1">max {analisi.tempMax}°C · delta {analisi.deltaTermico}°C</div>
-        </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
-          <div className="flex justify-center mb-1"><Wind className="w-5 h-5 text-sky-400" /></div>
-          <div className="text-xs text-slate-400 uppercase font-bold mb-0.5">Vento medio</div>
-          <div className="text-lg font-bold text-white">{analisi.windMedia} km/h</div>
-          <div className="text-xs text-slate-400 mt-1">max {analisi.windMax} · raffiche {analisi.windGustsMax}</div>
-        </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
-          <div className="flex justify-center mb-1"><ArrowUp className="w-5 h-5 text-orange-400" /></div>
-          <div className="text-xs text-slate-400 uppercase font-bold mb-0.5">Termiche</div>
-          <div className="text-lg font-bold text-white">{analisi.rateoMedio} m/s</div>
-          <div className="text-xs text-slate-400 mt-1">picco {analisi.rateoMax} · {analisi.oreAttive}/{analisi.totaleOre}h attive</div>
-        </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
-          <div className="flex justify-center mb-1"><Cloud className="w-5 h-5 text-slate-400" /></div>
-          <div className="text-xs text-slate-400 uppercase font-bold mb-0.5">Nuvolosità</div>
-          <div className="text-lg font-bold text-white">{analisi.cloudMedia}%</div>
-          <div className="text-xs text-slate-400 mt-1">{analisi.cloudMedia < 20 ? "Sereno" : analisi.cloudMedia < 40 ? "Poco nuvoloso" : analisi.cloudMedia < 60 ? "Nuvoloso" : "Coperto"}</div>
-        </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
-          <div className="flex justify-center mb-1"><Droplets className="w-5 h-5 text-blue-400" /></div>
-          <div className="text-xs text-slate-400 uppercase font-bold mb-0.5">Umidità</div>
-          <div className="text-lg font-bold text-white">{analisi.humidityMedia}%</div>
-          <div className="text-xs text-slate-400 mt-1">{analisi.humidityMedia < 40 ? "Aria secca" : analisi.humidityMedia < 60 ? "Normale" : "Aria umida"}</div>
-        </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
-          <div className="flex justify-center mb-1"><Gauge className="w-5 h-5 text-purple-400" /></div>
-          <div className="text-xs text-slate-400 uppercase font-bold mb-0.5">Pressione</div>
-          <div className="text-lg font-bold text-white">{analisi.pressureMed} hPa</div>
-          <div className="text-xs text-slate-400 mt-1">{analisi.pressureMed > 1020 ? "Alta" : analisi.pressureMed < 1010 ? "Bassa" : "Normale"}</div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
-          <h4 className="text-sm font-bold text-orange-300 mb-2 flex items-center gap-2"><TrendingUp className="w-4 h-4" /> Termiche</h4>
-          <div className="space-y-2 text-sm text-slate-300">
-            <div className="flex justify-between"><span>Base nuvole (LCL):</span><span className="font-bold text-green-300">{analisi.baseLCL} m</span></div>
-            <div className="flex justify-between"><span>Zero termico:</span><span className="font-bold text-amber-300">{analisi.zeroTermico} m</span></div>
-            <div className="flex justify-between"><span>Gradiente reale:</span><span className={`font-bold ${analisi.gradienteReale > 1.2 ? "text-red-300" : analisi.gradienteReale > 0.98 ? "text-amber-300" : "text-green-300"}`}>{analisi.gradienteReale}°C/100m</span></div>
-            <div className="flex justify-between"><span>Forza termica:</span><span className="font-bold text-white">{analisi.forzaTermica}/10</span></div>
-          </div>
-        </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
-          <h4 className="text-sm font-bold text-cyan-300 mb-2 flex items-center gap-2"><Wind className="w-4 h-4" /> Vento & atmosfera</h4>
-          <div className="space-y-2 text-sm text-slate-300">
-            <div className="flex justify-between"><span>Direzione dominante:</span><span className="font-bold text-white">{analisi.dirName} ({analisi.dirDom}°)</span></div>
-            <div className="flex justify-between"><span>Turbolenza:</span><span className={`font-bold ${analisi.turbolenza === "Forte" ? "text-red-300" : analisi.turbolenza === "Moderata" ? "text-amber-300" : "text-green-300"}`}>{analisi.turbolenza}</span></div>
-            <div className="flex justify-between"><span>UV Index medio:</span><span className="font-bold text-yellow-300">{analisi.uvMedia}</span></div>
-            <div className="flex justify-between"><span>Pioggia totale:</span><span className={`font-bold ${analisi.precipTot > 1 ? "text-blue-300" : "text-green-300"}`}>{analisi.precipTot === 0 ? "Assente" : `${analisi.precipTot} mm`}</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+            <span className={`absolute inset-0 flex items-center

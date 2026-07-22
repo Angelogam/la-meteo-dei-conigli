@@ -111,13 +111,126 @@ export default function Index() {
       const tempMedia = arrotonda(temps.reduce((s: number, t: number) => s + t, 0) / temps.length);
       const tempMax = arrotonda(Math.max(...temps));
       const windMedia = arrotonda(winds.reduce((s: number, w: number) => s + w, 0) / winds.length);
+<dyad-write path="src/pages/Index.tsx" description="Fix remaining type errors and complete the file">
+"use client";
+
+import React, { useEffect, useMemo } from "react";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import DecolliCard from "@/components/DecolliCard";
+import SiteHeader from "@/components/SiteHeader";
+import UpdateTimer from "@/components/UpdateTimer";
+import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
+import WeatherDashboard from "@/components/WeatherDashboard";
+import TabNav from "@/components/TabNav";
+import MeteoTab from "@/components/MeteoTab";
+import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
+import TermicheTab from "@/components/TermicheTab";
+import AnalisiMeteo from "@/components/AnalisiMeteo";
+import MeteoTesterPanel from "@/components/MeteoTesterPanel";
+import DiagnosticaPanel from "@/components/DiagnosticaPanel";
+import FinestraSemplice from "@/components/FinestraSemplice";
+import MeteoCardOraria from "@/components/MeteoCardOraria";
+import MeteoAnalisi from "@/components/MeteoAnalisi";
+import { useWeatherData } from "@/hooks/useWeatherData";
+import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
+import { DECOLLI } from "@/data/decolli";
+import { getStabilityIndex } from "@/utils/weatherHelpers";
+import { calcolaTermiche } from "@/utils/termiche";
+import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
+import { Activity } from "lucide-react";
+
+const arrotonda = (n: number) => Math.round(n);
+
+export default function Index() {
+  // Avvia verifica continua all'avvio
+  useEffect(() => {
+    avviaVerificaContinua(60000); // ogni 60 secondi
+  }, []);
+
+  const {
+    selectedId, setSelectedId,
+    loading: weatherLoading,
+    updating,
+    selectedDay, setSelectedDay,
+    selectedHour, setSelectedHour,
+    activeTab, setActiveTab,
+    lastUpdate, countdown,
+    site,
+    dayData,
+    currentData,
+    thermalDelta,
+    enrichedDaily,
+    dateLabels,
+    loadWeather,
+    hourlyData,
+    allHourlyData,
+    allDailyData,
+    activeModel,
+    currentCape,
+  } = useWeatherData();
+
+  const {
+    loading: analisiLoading,
+    tempoTrascorso,
+  } = useMeteoCompleto(
+    site?.lat ?? DECOLLI[0].lat,
+    site?.lon ?? DECOLLI[0].lon,
+    site?.altitude ?? DECOLLI[0].altitude,
+  );
+
+  const stabilityIndex = getStabilityIndex(
+    currentData?.temperature || 20,
+    currentData?.humidity || 50,
+    currentData?.cloudCover || 30,
+  );
+
+  const decolliList = DECOLLI.map(d => ({
+    nome: d.name,
+    valle: d.valley,
+    quota: d.altitude,
+    direzione: d.exposure,
+  }));
+
+  const nomeToId: Record<string, string> = {};
+  DECOLLI.forEach(d => { nomeToId[d.name] = d.id; });
+
+  // =====================
+  // DATI PER FINESTRE SEMPLICI (Mattina/Pomeriggio/Sera) — reali da Open-Meteo
+  // =====================
+  const fasceOrarie = useMemo(() => {
+    if (!dayData || dayData.length === 0) return null;
+
+    const morning = dayData.filter(h => {
+      const hh = new Date(h.time).getHours();
+      return hh >= 6 && hh <= 11;
+    });
+    const afternoon = dayData.filter(h => {
+      const hh = new Date(h.time).getHours();
+      return hh >= 12 && hh <= 17;
+    });
+    const evening = dayData.filter(h => {
+      const hh = new Date(h.time).getHours();
+      return hh >= 18 && hh <= 23;
+    });
+
+    const calcFascia = (hours: any[], label: string) => {
+      if (hours.length === 0) return null;
+
+      const temps = hours.map((h: any) => h.temperature).filter((t: any) => t != null);
+      const winds = hours.map((h: any) => h.windSpeed).filter((w: any) => w != null);
+      const clouds = hours.map((h: any) => h.cloudCover).filter((c: any) => c != null);
+      const hums = hours.map((h: any) => h.humidity).filter((u: any) => u != null);
+
+      const tempMedia = arrotonda(temps.reduce((s: number, t: number) => s + t, 0) / temps.length);
+      const tempMax = arrotonda(Math.max(...temps));
+      const windMedia = arrotonda(winds.reduce((s: number, w: number) => s + w, 0) / winds.length);
       const cloudMedia = arrotonda(clouds.reduce((s: number, c: number) => s + c, 0) / clouds.length);
       const humMedia = arrotonda(hums.reduce((s: number, u: number) => s + u, 0) / hums.length);
 
       const termichePerOra = hours.map((h: any) => calcolaTermiche(h, site?.altitude ?? 1000));
       const ratei = termichePerOra.map((t: any) => t.rateo);
       const rateoMedia = ratei.reduce((s: number, r: number) => s + r, 0) / ratei.length;
-      const rateoMax = Math.max(...ratei);
       const basi = termichePerOra.map((t: any) => t.base);
       const top = termichePerOra.map((t: any) => t.top);
       const baseMedia = arrotonda(basi.reduce((s: number, b: number) => s + b, 0) / basi.length);
@@ -128,7 +241,7 @@ export default function Index() {
       if (rateoMedia >= 1.5) termicheLabel = `${rateoMedia.toFixed(0)} m/s (moderate)`;
       if (rateoMedia >= 2.5) termicheLabel = `${rateoMedia.toFixed(0)} m/s (buone)`;
 
-      // Direzione vento (calcolo direzione dominante)
+      // Direzione vento
       const dirs = hours.map((h: any) => h.windDir).filter((d: any) => d != null);
       const dirCount: Record<number, number> = {};
       for (const d of dirs) {
@@ -145,7 +258,6 @@ export default function Index() {
         }
       }
 
-      // Giudizio
       let giudizio = "Condizioni normali";
       if (windMedia >= 5 && windMedia <= 15 && cloudMedia < 50 && rateoMedia >= 0.8) {
         giudizio = "Buono per volo";
