@@ -4,9 +4,11 @@ import React, { useMemo } from "react";
 import {
   Sun, Thermometer, Wind, Cloud, CloudRain, CloudLightning,
   TrendingUp, ShieldCheck, AlertTriangle, CheckCircle, Activity,
-  MapPin, Calendar,
+  MapPin, Calendar, Sparkles,
 } from "lucide-react";
 import type { HourData } from "@/types/meteo";
+import { calcolaAnalisiApprofondita } from "@/utils/analisiApprofondita";
+import AnalisiApprofonditaCard from "./AnalisiApprofonditaCard";
 
 interface AnalisiMeteoProps {
   currentData: HourData | null;
@@ -16,6 +18,8 @@ interface AnalisiMeteoProps {
   liftedIndex?: number | null;
   cin?: number | null;
 }
+
+// ... keep all the existing helper functions unchanged ...
 
 function formatDateShort(date: Date): string {
   const d = date instanceof Date ? date : new Date(date);
@@ -169,6 +173,7 @@ function validaDati(
 
 export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
   const [showValidation, setShowValidation] = React.useState(false);
+  const [showLegenda, setShowLegenda] = React.useState(false);
 
   const analisi = useMemo(() => {
     if (!dayData || dayData.length < 3) return null;
@@ -261,6 +266,10 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
     );
   }, [dayData]);
 
+  const analisiApprofondita = useMemo(() => {
+    return calcolaAnalisiApprofondita(dayData, site);
+  }, [dayData, site]);
+
   const dataGiorno = useMemo(() => {
     if (dayData && dayData.length > 0) return formatDateShort(dayData[0].time);
     return formatDateShort(new Date());
@@ -343,6 +352,23 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
             {validazione.ok && <p className="text-green-400 font-bold mt-2">✓ Tutti i test superati: dati realistici e coerenti.</p>}
           </div>
         </div>
+      )}
+
+      {/* Bottone per Analisi approfondita */}
+      {analisiApprofondita && (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowLegenda(!showLegenda)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-900/40 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/60 transition-all"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            {showLegenda ? "Nascondi analisi approfondita" : "Mostra analisi approfondita"}
+          </button>
+        </div>
+      )}
+
+      {showLegenda && analisiApprofondita && (
+        <AnalisiApprofonditaCard analisi={analisiApprofondita} siteName={site?.name || "Decollo"} />
       )}
 
       {/* Situazione generale */}
