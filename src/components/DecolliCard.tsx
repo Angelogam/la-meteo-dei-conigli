@@ -165,7 +165,7 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardP
 
           // VALUTAZIONE VENTO VS ESPOSIZIONE
           const valutazioneVento = dir != null
-            ? valutaVentoPerDecollo(dir, item.direzione)
+            ? validaVentoPerDecollo(dir, item.direzione)
             : null;
           const ventoColor = valutazioneVento
             ? getVentoStatusColor(valutazioneVento.status)
@@ -233,7 +233,7 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardP
                   )}
                 </div>
 
-                {/* AVVISO VENTO/ESPOSIZIONE */}
+                {/* AVVISO VENTO/ESPOSIZIONE — ORA USA validaVentoPerDecollo CORRETTO */}
                 {valutazioneVento && (
                   <div className={`mt-1.5 flex items-center gap-1.5 text-[10px] rounded-lg px-2 py-1 border ${ventoColor}`}>
                     {valutazioneVento.status === "sottovento" && (
