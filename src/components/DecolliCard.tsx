@@ -32,19 +32,6 @@ function getWeatherEmoji(code: number | undefined | null): string {
   return "☀️";
 }
 
-function getDateTime(selectedDay: number): { date: string; ora: string } {
-  const oggi = new Date();
-  const target = new Date(oggi);
-  target.setDate(oggi.getDate() + selectedDay);
-
-  const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
-  const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
-
-  const date = `${giorni[target.getDay()]} ${target.getDate()} ${mesi[target.getMonth()]}`;
-  const ora = oggi.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
-  return { date, ora };
-}
-
 function getDayHourData(
   hourly: any[],
   selectedDay: number
@@ -55,10 +42,8 @@ function getDayHourData(
   const targetDate = new Date(oggi);
   targetDate.setDate(oggi.getDate() + selectedDay);
 
-  // Confronto per data (giorno/mese/anno) ignorando l'ora
   const targetStr = `${targetDate.getFullYear()}-${targetDate.getMonth()}-${targetDate.getDate()}`;
 
-  // Filtra tutte le ore del giorno target
   const oreDelGiorno = hourly.filter((h) => {
     const t = new Date(h.time);
     const tStr = `${t.getFullYear()}-${t.getMonth()}-${t.getDate()}`;
@@ -67,7 +52,6 @@ function getDayHourData(
 
   if (oreDelGiorno.length === 0) return null;
 
-  // Cerca ora più vicina all'ora corrente
   const hour = oggi.getHours();
   let closest = oreDelGiorno[0];
   let minDiff = Math.abs(new Date(closest.time).getHours() - hour);
@@ -106,20 +90,28 @@ interface LiveDato {
   code: number;
 }
 
+const REFRESH_INTERVAL = 600000; // 10 minuti
+
 const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap, selectedDay = 0 }: DecolliCardProps) => {
   const [liveData, setLiveData] = useState<Record<string, LiveDato | null>>({});
+  const [loadingAll, setLoadingAll] = useState(true);
+  const mountedRef = useRef(true);
 
-  const getCurrentData = (nome: string) => {
-    // Priorità 1: weatherMap con i dati reali del giorno selezionato
+  // Carica TUTTI i decolli in blocco al mount e poi ogni 10 minuti
+  const loadAllData = useCallback(async () => {
+    if (!mountedRef.current) return;
+
+    // Se abbiamo weatherMap con dati giornalieri, usiamo quelli
     if (weatherMap) {
-      // Cerca la chiave giusta — prova prima col nome, poi scorri
-      const entry = Object.entries(weatherMap).find(([key]) => key === nome || DECOLLI.find(d => d.name === nome)?.id === key);
-      if (entry) {
-        const hourly = entry[1];
-        if (Array.isArray(hourly) && hourly.length > 0) {
+      const entries = Object.entries(weatherMap);
+      if (entries.length > 0) {
+        const newData: Record<string, LiveDato> = {};
+        for (const [key, hourly] of entries) {
+          const nome = DECOLLI.find(d => d.id === key)?.name;
+          if (!nome) continue;
           const dayData = getDayHourData(hourly, selectedDay);
           if (dayData) {
-            return {
+            newData[nome] = {
               temp: dayData.temperature ?? 20,
               wind: dayData.windSpeed ?? 0,
               gust: dayData.windGusts ?? null,
@@ -128,15 +120,76 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap, selectedDay = 
             };
           }
         }
+        if (Object.keys(newData).length > 0) {
+          setLiveData(prev => ({ ...prev, ...newData }));
+          setLoadingAll(false);
+          return;
+        }
       }
     }
 
-    // Fallback: live data
-    const live = liveData[nome];
-    if (live) return live;
+    // Fallback: carica da API in blocco
+    const newData: Record<string, LiveDato> = {};
+    setLoadingAll(true);
 
-    return null;
-  };
+    const promises = decolli.map(async (item) => {
+      const d = DECOLLI.find(d => d.name === item.nome);
+      if (!d) return;
+      try {
+        const { data } = await weatherService.fetchCurrent(d.lat, d.lon);
+        if (data && mountedRef.current) {
+          newData[item.nome] = {
+            temp: Math.round(data.temperature),
+            wind: Math.round(data.windSpeed),
+            gust: data.windGusts != null ? Math.round(data.windGusts) : null,
+            dir: Math.round(data.windDir),
+            code: data.weatherCode,
+          };
+        }
+      } catch {
+        // silently fail — card resta vuota
+      }
+    });
+
+    await Promise.all(promises);
+    if (mountedRef.current) {
+      setLiveData(newData);
+      setLoadingAll(false);
+    }
+  }, [decolli, weatherMap, selectedDay]);
+
+  // Carica subito al mount
+  useEffect(() => {
+    loadAllData();
+
+    // Refresh periodico in background
+    const interval = setInterval(loadAllData, REFRESH_INTERVAL);
+    return () => {
+      mountedRef.current = false;
+      clearInterval(interval);
+    };
+  }, [loadAllData]);
+
+  // Aggiorna anche quando cambia il giorno selezionato o la weatherMap
+  useEffect(() => {
+    if (!loadingAll) {
+      loadAllData();
+    }
+  }, [selectedDay]);
+
+  if (loadingAll && Object.keys(liveData).length === 0) {
+    return (
+      <div className="bg-slate-900/80 border border-slate-700/60 rounded-xl p-3 md:p-4">
+        <h2 className="text-sm md:text-base font-bold text-white mb-2 md:mb-3">
+          Decolli ({decolli.length})
+        </h2>
+        <div className="text-xs md:text-sm text-slate-400 flex items-center gap-2 justify-center py-8">
+          <div className="w-5 h-5 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin" />
+          <span>Caricamento in corso...</span>
+        </div>
+      </div>
+    );
+  }
 
   const dt = getDateTime(selectedDay);
 
@@ -146,7 +199,6 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap, selectedDay = 
         Decolli ({decolli.length})
       </h2>
 
-      {/* Badge data selezionata */}
       <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-slate-400 mb-2 md:mb-3 bg-slate-800/60 rounded-lg px-2.5 py-1.5 border border-slate-700/40">
         <Clock size={12} />
         <span className="font-medium">{dt.date}</span>
@@ -157,7 +209,7 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap, selectedDay = 
       <div className="space-y-2 max-h-64 md:max-h-80 overflow-y-auto pr-1 scrollbar-thin">
         {decolli.map((item) => {
           const isSelected = item.nome === selectedId;
-          const current = getCurrentData(item.nome);
+          const current = liveData[item.nome];
           const hasData = current != null;
           const temp = hasData ? Math.round(current.temp) : null;
           const wind = hasData ? Math.round(current.wind) : null;
@@ -191,45 +243,52 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap, selectedDay = 
                 {item.nome}
               </div>
 
-              <div className="flex items-center justify-between mt-1.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-base md:text-lg">{emoji}</span>
-                  <span className="text-sm font-bold text-amber-300 tabular-nums">
-                    {temp != null ? `${temp}°` : "N/D"}
-                  </span>
-                </div>
-                <div className="text-[10px] md:text-xs text-slate-500">
-                  {item.valle} · {item.quota}m · {item.direzione}
-                </div>
-              </div>
-
-              <div className="mt-1.5 pt-1.5 border-t border-slate-700/30">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-1 text-xs md:text-sm">
-                    <Wind size={14} className="text-emerald-400 shrink-0" />
-                    <span className="font-bold text-white tabular-nums">
-                      {wind != null ? `${wind} km/h` : "N/D"}
-                    </span>
-                    {gust != null && gust > 0 && (
-                      <span className="text-[10px] text-red-300 font-normal">
-                        raf. {gust}
+              {hasData && temp != null ? (
+                <>
+                  <div className="flex items-center justify-between mt-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-base md:text-lg">{emoji}</span>
+                      <span className="text-sm font-bold text-amber-300 tabular-nums">
+                        {temp}°
                       </span>
+                    </div>
+                    <div className="text-[10px] md:text-xs text-slate-500">
+                      {item.valle} · {item.quota}m · {item.direzione}
+                    </div>
+                  </div>
+
+                  <div className="mt-1.5 pt-1.5 border-t border-slate-700/30">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-1 text-xs md:text-sm">
+                        <Wind size={14} className="text-emerald-400 shrink-0" />
+                        <span className="font-bold text-white tabular-nums">
+                          {wind} km/h
+                        </span>
+                        {gust != null && gust > 0 && (
+                          <span className="text-[10px] text-red-300 font-normal">
+                            raf. {gust}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-slate-300 font-bold">
+                        {dirArrow} {dirLabel}
+                      </span>
+                    </div>
+
+                    {valutazioneVento && (
+                      <div className={`mt-1 flex items-center gap-1 text-[10px] rounded-lg px-2 py-1 border ${ventoColor}`}>
+                        <span>{valutazioneVento.icon}</span>
+                        <span className="font-bold">{valutazioneVento.label}</span>
+                      </div>
                     )}
                   </div>
-                  {dir != null && (
-                    <span className="text-xs text-slate-300 font-bold">
-                      {dirArrow} {dirLabel}
-                    </span>
-                  )}
+                </>
+              ) : (
+                <div className="flex items-center justify-between mt-1.5 text-[10px] md:text-xs text-slate-500">
+                  <span>{item.valle} · {item.quota}m · {item.direzione}</span>
+                  <span className="italic">caricamento...</span>
                 </div>
-
-                {valutazioneVento && (
-                  <div className={`mt-1 flex items-center gap-1 text-[10px] rounded-lg px-2 py-1 border ${ventoColor}`}>
-                    <span>{valutazioneVento.icon}</span>
-                    <span className="font-bold">{valutazioneVento.label}</span>
-                  </div>
-                )}
-              </div>
+              )}
             </button>
           );
         })}
@@ -237,5 +296,18 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap, selectedDay = 
     </div>
   );
 };
+
+function getDateTime(selectedDay: number): { date: string; ora: string } {
+  const oggi = new Date();
+  const target = new Date(oggi);
+  target.setDate(oggi.getDate() + selectedDay);
+
+  const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+  const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+
+  const date = `${giorni[target.getDay()]} ${target.getDate()} ${mesi[target.getMonth()]}`;
+  const ora = oggi.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+  return { date, ora };
+}
 
 export default DecolliCard;
