@@ -1,3 +1,4 @@
+in JSX con >">
 import React from "react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
 
@@ -30,11 +31,11 @@ const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
       return (
         <div className="bg-[#0f172a] text-gray-200 p-3 rounded-lg border border-[#22c55e]/40 shadow-lg">
           <div className="text-sm font-semibold text-[#22c55e]">{hour}</div>
-          <div className="text-lg font-bold text-white">{speed.toFixed(1)} m/s</div>
+          <div className="text-lg font-bold text-white">{speed.toFixed(1)} m/s</div>
           <div className="text-xs text-gray-400">{label}</div>
           <div className="text-xs mt-1">
-            Base <span className="text-[#22c55e]">{Math.round(base)} m</span> — Top{" "}
-            <span className="text-red-400">{Math.round(top)} m</span>
+            Base <span className="text-[#22c55e]">{Math.round(base)} m</span> — Top{" "}
+            <span className="text-red-400">{Math.round(top)} m</span>
           </div>
         </div>
       );
@@ -79,16 +80,16 @@ const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
       {/* Legenda migliorata */}
       <div className="mt-6 text-xs text-gray-300 flex flex-wrap justify-center gap-3">
         <div className="flex items-center gap-1">
-          <span className="w-3 h-3 bg-[#facc15] rounded-sm"></span> Debole (0.3–0.8 m/s)
+          <span className="w-3 h-3 bg-[#facc15] rounded-sm"></span> Debole (0.3–0.8 m/s)
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-3 h-3 bg-[#22c55e] rounded-sm"></span> Moderata (0.8–1.5 m/s)
+          <span className="w-3 h-3 bg-[#22c55e] rounded-sm"></span> Moderata (0.8–1.5 m/s)
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-3 h-3 bg-[#f97316] rounded-sm"></span> Forte (1.5–2.5 m/s)
+          <span className="w-3 h-3 bg-[#f97316] rounded-sm"></span> Forte (1.5–2.5 m/s)
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-3 h-3 bg-[#dc2626] rounded-sm"></span> Fortissima (> 2.5 m/s)
+          <span className="w-3 h-3 bg-[#dc2626] rounded-sm"></span> Fortissima (>2.5 m/s)
         </div>
       </div>
 
@@ -98,11 +99,11 @@ const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
           Alle <span className="text-[#22c55e] font-semibold">12:00</span> —{" "}
           <span className="text-[#f97316] font-semibold">Moderata</span>
         </div>
-        <div className="text-3xl font-bold text-white mt-1">1.2 m/s</div>
+        <div className="text-3xl font-bold text-white mt-1">1.2 m/s</div>
         <div className="text-xs text-gray-400 mt-1">
-          Base <span className="text-[#22c55e]">2040 m</span> — Top{" "}
-          <span className="text-red-400">2520 m</span> — Salita{" "}
-          <span className="text-[#facc15]">480 m</span>
+          Base <span className="text-[#22c55e]">2040 m</span> — Top{" "}
+          <span className="text-red-400">2520 m</span> — Salita{" "}
+          <span className="text-[#facc15]">480 m</span>
         </div>
       </div>
     </div>
