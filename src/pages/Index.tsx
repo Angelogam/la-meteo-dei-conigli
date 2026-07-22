@@ -6,12 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TermicheGrafico from "@/components/TermicheGrafico";
 import MeteoTab from "@/components/MeteoTab";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
-import MeteoTesterPanel from "@/components/MeteoTesterPanel";
-import DiagnosticaPanel from "@/components/DiagnosticaPanel";
-import ViewToggle from "@/components/ViewToggle";
-import DecolloList from "@/components/DecolloList";
 import { useWeatherData } from "@/hooks/useWeatherData";
-import { DECOLLI } from "@/data/decolli";
 
 import LoadingScreen from "@/components/LoadingScreen";
 import ErrorScreen from "@/components/ErrorScreen";
