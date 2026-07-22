@@ -1,4 +1,3 @@
-in JSX">
 import React from "react";
 import {
   ResponsiveContainer,
@@ -21,10 +20,10 @@ interface ThermalData {
 
 const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
   const getColor = (speed: number) => {
-    if (speed < 0.8) return "#facc15"; // giallo
-    if (speed < 1.5) return "#22c55e"; // verde
-    if (speed < 2.5) return "#f97316"; // arancio
-    return "#dc2626"; // rosso
+    if (speed < 0.8) return "#facc15";
+    if (speed < 1.5) return "#22c55e";
+    if (speed < 2.5) return "#f97316";
+    return "#dc2626";
   };
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -89,19 +88,19 @@ const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
         </ResponsiveContainer>
       </div>
 
-      {/* Legenda migliorata */}
+      {/* Legenda */}
       <div className="mt-6 text-xs text-gray-300 flex flex-wrap justify-center gap-3">
         <div className="flex items-center gap-1">
-          <span className="w-3 h-3 bg-[#facc15] rounded-sm"></span> Debole (0.3&ndash;0.8 m/s)
+          <span className="w-3 h-3 bg-[#facc15] rounded-sm"></span> Debole (0.3-0.8 m/s)
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-3 h-3 bg-[#22c55e] rounded-sm"></span> Moderata (0.8&ndash;1.5 m/s)
+          <span className="w-3 h-3 bg-[#22c55e] rounded-sm"></span> Moderata (0.8-1.5 m/s)
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-3 h-3 bg-[#f97316] rounded-sm"></span> Forte (1.5&ndash;2.5 m/s)
+          <span className="w-3 h-3 bg-[#f97316] rounded-sm"></span> Forte (1.5-2.5 m/s)
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-3 h-3 bg-[#dc2626] rounded-sm"></span> Fortissima (>2.5 m/s)
+          <span className="w-3 h-3 bg-[#dc2626] rounded-sm"></span> Fortissima (oltre 2.5 m/s)
         </div>
       </div>
 
@@ -121,7 +120,7 @@ const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
 
       {/* Nota finale */}
       <div className="mt-4 text-[10px] text-gray-500 text-center">
-        Basato su dati reali Open-Meteo &bull; Rateo massimo ~4&ndash;5 m/s
+        Basato su dati reali Open-Meteo
       </div>
     </div>
   );
