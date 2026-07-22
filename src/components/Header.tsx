@@ -14,11 +14,11 @@ export const Header = () => {
 
       <div className="relative max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4">
         <div className="flex items-center justify-center gap-3 md:gap-5">
-          {/* Icona sinistra - stilizzata */}
+          {/* Coniglietto sinistro */}
           <div className="flex flex-col items-center">
             <div className="relative">
               <div className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-gradient-to-br from-emerald-500/20 to-emerald-400/10 border border-emerald-500/30 flex items-center justify-center">
-                <Navigation className="w-4 h-4 md:w-5 md:h-5 text-emerald-400" />
+                <span className="text-lg md:text-xl animate-float">🐰</span>
               </div>
             </div>
           </div>
@@ -35,11 +35,11 @@ export const Header = () => {
             </p>
           </div>
 
-          {/* Icona destra - stilizzata */}
+          {/* Coniglietto destro */}
           <div className="flex flex-col items-center">
             <div className="relative">
               <div className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-gradient-to-br from-sky-500/20 to-sky-400/10 border border-sky-500/30 flex items-center justify-center">
-                <CloudSun className="w-4 h-4 md:w-5 md:h-5 text-sky-400" />
+                <span className="text-lg md:text-xl animate-hop">🐇</span>
               </div>
             </div>
           </div>
