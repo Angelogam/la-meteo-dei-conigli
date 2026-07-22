@@ -11,8 +11,7 @@ import {
   AlertTriangle,
   Loader2,
   Wind,
-  Mountain,
-  MapPin,
+  X,
   Search,
 } from "lucide-react";
 
@@ -43,13 +42,11 @@ export default function MeteoQuickTest() {
   const [risultatiVento, setRisultatiVento] = useState<RisultatoTestVento[]>([]);
   const [progress, setProgress] = useState(0);
   const [summary, setSummary] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState(false);
 
   const runTest = async () => {
     setRunning(true);
     setRisultatiVento([]);
     setSummary(null);
-    setExpanded(false);
 
     const siti = DECOLLI;
     let okCount = 0;
@@ -121,6 +118,12 @@ export default function MeteoQuickTest() {
     setRunning(false);
   };
 
+  const resetTest = () => {
+    setRisultatiVento([]);
+    setSummary(null);
+    setProgress(0);
+  };
+
   return (
     <div className="space-y-2">
       <button
@@ -142,15 +145,25 @@ export default function MeteoQuickTest() {
         {!running && risultatiVento.length === 0 && <Play className="w-5 h-5 text-sky-400 shrink-0" />}
       </button>
 
+      {/* Barra di progresso durante la scansione */}
       {running && (
         <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
           <div className="h-full bg-sky-500 transition-all duration-500" style={{ width: `${progress}%` }} />
         </div>
       )}
 
+      {/* Card risultati — con pulsante Chiudi */}
       {summary && (
-        <div className="bg-sky-900/20 border border-sky-500/30 rounded-xl p-3">
-          <div className="text-sky-300 text-sm font-bold mb-2">{summary}</div>
+        <div className="bg-sky-900/20 border border-sky-500/30 rounded-xl p-3 relative">
+          {/* Pulsante Chiudi */}
+          <button
+            onClick={resetTest}
+            className="absolute top-2 right-2 p-1 rounded-lg hover:bg-sky-800/50 border border-sky-500/30 text-sky-400"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          <div className="text-sky-300 text-sm font-bold mb-2 pr-8">{summary}</div>
 
           {/* Report raggruppato per status */}
           {(() => {
@@ -164,7 +177,7 @@ export default function MeteoQuickTest() {
               <div className="space-y-2">
                 {/* SOTTOVENTO — ROSSO */}
                 {sottovento.length > 0 && (
-                  <details open={expanded}>
+                  <details>
                     <summary className="text-xs text-red-300 font-bold cursor-pointer hover:text-red-200">
                       🚫 SOTTOVENTO ({sottovento.length})
                     </summary>
