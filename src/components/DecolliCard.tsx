@@ -32,24 +32,19 @@ function getWeatherEmoji(code: number | undefined | null): string {
   return "☀️";
 }
 
-function getDateTime(selectedDay: number): { date: string; hour: string } {
-  const now = new Date();
-  const target = new Date(now);
-  target.setDate(now.getDate() + selectedDay);
+function getDateTime(selectedDay: number): { date: string; ora: string } {
+  const oggi = new Date();
+  const target = new Date(oggi);
+  target.setDate(oggi.getDate() + selectedDay);
 
-  const date = target.toLocaleDateString("it-IT", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
-  const hour = now.toLocaleTimeString("it-IT", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  return { date, hour };
+  const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+  const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+
+  const date = `${giorni[target.getDay()]} ${target.getDate()} ${mesi[target.getMonth()]}`;
+  const ora = oggi.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+  return { date, ora };
 }
 
-/** Ottiene il dato orario più vicino all'ora corrente per il giorno specificato */
 function getDayHourData(
   hourly: any[],
   selectedDay: number
@@ -59,36 +54,33 @@ function getDayHourData(
   const oggi = new Date();
   const targetDate = new Date(oggi);
   targetDate.setDate(oggi.getDate() + selectedDay);
-  const targetDay = targetDate.getDate();
-  const targetMonth = targetDate.getMonth();
-  const targetYear = targetDate.getFullYear();
 
+  // Confronto per data (giorno/mese/anno) ignorando l'ora
+  const targetStr = `${targetDate.getFullYear()}-${targetDate.getMonth()}-${targetDate.getDate()}`;
+
+  // Filtra tutte le ore del giorno target
+  const oreDelGiorno = hourly.filter((h) => {
+    const t = new Date(h.time);
+    const tStr = `${t.getFullYear()}-${t.getMonth()}-${t.getDate()}`;
+    return tStr === targetStr;
+  });
+
+  if (oreDelGiorno.length === 0) return null;
+
+  // Cerca ora più vicina all'ora corrente
   const hour = oggi.getHours();
+  let closest = oreDelGiorno[0];
+  let minDiff = Math.abs(new Date(closest.time).getHours() - hour);
 
-  // Cerca l'ora esatta nel giorno target
-  const esatta = hourly.find((h) => {
-    const t = new Date(h.time);
-    return (
-      t.getDate() === targetDay &&
-      t.getMonth() === targetMonth &&
-      t.getFullYear() === targetYear &&
-      t.getHours() === hour
-    );
-  });
-  if (esatta) return esatta;
+  for (const h of oreDelGiorno) {
+    const diff = Math.abs(new Date(h.time).getHours() - hour);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = h;
+    }
+  }
 
-  // Altrimenti qualsiasi ora del giorno target
-  const primaOra = hourly.find((h) => {
-    const t = new Date(h.time);
-    return (
-      t.getDate() === targetDay &&
-      t.getMonth() === targetMonth &&
-      t.getFullYear() === targetYear
-    );
-  });
-  if (primaOra) return primaOra;
-
-  return hourly[hourly.length - 1] || null;
+  return closest;
 }
 
 interface DecolloItem {
@@ -114,87 +106,55 @@ interface LiveDato {
   code: number;
 }
 
-/** Carica vento reale per TUTTI i decolli */
-async function caricaTuttiIVenti(): Promise<Record<string, LiveDato | null>> {
-  const risultati: Record<string, LiveDato | null> = {};
-
-  for (const item of DECOLLI) {
-    try {
-      const { data } = await weatherService.fetchCurrent(item.lat, item.lon);
-      if (data) {
-        risultati[item.name] = {
-          temp: data.temperature ?? 20,
-          wind: data.windSpeed ?? 0,
-          gust: data.windGusts ?? null,
-          dir: data.windDir ?? 0,
-          code: data.weatherCode ?? 0,
-        };
-      }
-    } catch {
-      // silenzioso
-    }
-  }
-  return risultati;
-}
-
 const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap, selectedDay = 0 }: DecolliCardProps) => {
   const [liveData, setLiveData] = useState<Record<string, LiveDato | null>>({});
-  const isFirstMount = useRef(true);
 
-  const avviaAggiornamento = useCallback(async () => {
-    const risultati = await caricaTuttiIVenti();
-    setLiveData(risultati);
-    console.log(`✅ Vento aggiornato per ${Object.keys(risultati).length} decolli`);
-  }, []);
-
-  useEffect(() => {
-    if (isFirstMount.current) {
-      isFirstMount.current = false;
-      avviaAggiornamento();
+  const getCurrentData = (nome: string) => {
+    // Priorità 1: weatherMap con i dati reali del giorno selezionato
+    if (weatherMap) {
+      // Cerca la chiave giusta — prova prima col nome, poi scorri
+      const entry = Object.entries(weatherMap).find(([key]) => key === nome || DECOLLI.find(d => d.name === nome)?.id === key);
+      if (entry) {
+        const hourly = entry[1];
+        if (Array.isArray(hourly) && hourly.length > 0) {
+          const dayData = getDayHourData(hourly, selectedDay);
+          if (dayData) {
+            return {
+              temp: dayData.temperature ?? 20,
+              wind: dayData.windSpeed ?? 0,
+              gust: dayData.windGusts ?? null,
+              dir: dayData.windDir ?? 0,
+              code: dayData.weatherCode ?? 0,
+            };
+          }
+        }
+      }
     }
 
-    // Refresh ogni 30 minuti
-    const intervallo = setInterval(avviaAggiornamento, 30 * 60 * 1000);
-    return () => clearInterval(intervallo);
-  }, [avviaAggiornamento]);
-
-  const getCurrentData = (id: string) => {
-    // Priorità 1: dati live appena caricati
-    const live = liveData[id];
+    // Fallback: live data
+    const live = liveData[nome];
     if (live) return live;
 
-    // Priorità 2: weatherMap (dati già caricati) — filtrati per selectedDay
-    if (!weatherMap?.[id]) return null;
-    const hourly = weatherMap[id];
-    if (!Array.isArray(hourly) || hourly.length === 0) return null;
-
-    const dayData = getDayHourData(hourly, selectedDay);
-    if (!dayData) return null;
-
-    return {
-      temp: dayData.temperature ?? 20,
-      wind: dayData.windSpeed ?? 0,
-      gust: dayData.windGusts ?? null,
-      dir: dayData.windDir ?? 0,
-      code: dayData.weatherCode ?? 0,
-    };
+    return null;
   };
 
   const dt = getDateTime(selectedDay);
 
   return (
-    <div className="bg-slate-900/80 border border-slate-700/60 rounded-xl p-4">
-      <h2 className="text-base font-bold text-white mb-3">
-        Decolli disponibili ({decolli.length})
+    <div className="bg-slate-900/80 border border-slate-700/60 rounded-xl p-3 md:p-4">
+      <h2 className="text-sm md:text-base font-bold text-white mb-2 md:mb-3">
+        Decolli ({decolli.length})
       </h2>
 
-      <div
-        style={{
-          maxHeight: "160px",
-          overflowY: "auto",
-          paddingRight: "4px",
-        }}
-      >
+      {/* Badge data selezionata */}
+      <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-slate-400 mb-2 md:mb-3 bg-slate-800/60 rounded-lg px-2.5 py-1.5 border border-slate-700/40">
+        <Clock size={12} />
+        <span className="font-medium">{dt.date}</span>
+        <span className="text-slate-600">·</span>
+        <span>aggiornato {dt.ora}</span>
+      </div>
+
+      <div className="space-y-2 max-h-64 md:max-h-80 overflow-y-auto pr-1 scrollbar-thin">
         {decolli.map((item) => {
           const isSelected = item.nome === selectedId;
           const current = getCurrentData(item.nome);
@@ -208,7 +168,6 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap, selectedDay = 
           const dirLabel = dir != null ? getCardinalDir(dir) : "N/D";
           const dirArrow = dir != null ? getWindArrow(dir) : "→";
 
-          // VALUTAZIONE VENTO VS ESPOSIZIONE
           const valutazioneVento = dir != null
             ? validaVentoPerDecollo(dir, item.direzione)
             : null;
@@ -221,73 +180,53 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap, selectedDay = 
               key={item.nome}
               onClick={() => onSelect(item)}
               className={`
-                w-full rounded-xl p-3 text-left transition-all border-2 mb-2
+                w-full rounded-xl p-3 text-left transition-all border-2 cursor-pointer
                 ${isSelected
-                  ? "bg-emerald-900/40 border-emerald-500"
+                  ? "bg-emerald-900/40 border-emerald-500 shadow-sm"
                   : "bg-slate-800/40 border-slate-700/50 hover:bg-slate-700/50"
                 }
               `}
             >
-              {/* NOME DECOLLO */}
-              <div className="text-sm font-bold text-white">
+              <div className="text-sm font-bold text-white truncate">
                 {item.nome}
               </div>
 
-              {/* DATA E ORA */}
-              <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5">
-                <Clock size={12} />
-                <span>{dt.date} · {dt.hour}</span>
-              </div>
-
-              {/* ICONA METEO + TEMPERATURA + VALLE / QUOTA / DIREZIONE */}
-              <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{emoji}</span>
-                  <span className="text-sm font-bold text-amber-300">
+              <div className="flex items-center justify-between mt-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-base md:text-lg">{emoji}</span>
+                  <span className="text-sm font-bold text-amber-300 tabular-nums">
                     {temp != null ? `${temp}°` : "N/D"}
                   </span>
                 </div>
-                <div className="text-xs text-slate-400 flex gap-3">
-                  <span>{item.valle}</span>
-                  <span>{item.quota} m</span>
-                  <span>{item.direzione}</span>
+                <div className="text-[10px] md:text-xs text-slate-500">
+                  {item.valle} · {item.quota}m · {item.direzione}
                 </div>
               </div>
 
-              {/* VENTO ATTUALE + VALUTAZIONE ESPOSIZIONE */}
               <div className="mt-1.5 pt-1.5 border-t border-slate-700/30">
-                <div className="text-[11px] text-slate-500 mb-1">
-                  Vento attuale quota decollo
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <div className="flex items-center gap-1 text-emerald-400">
-                    <Wind size={16} />
-                    <span className="font-bold">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-1 text-xs md:text-sm">
+                    <Wind size={14} className="text-emerald-400 shrink-0" />
+                    <span className="font-bold text-white tabular-nums">
                       {wind != null ? `${wind} km/h` : "N/D"}
                     </span>
-                    {gust != null && (
+                    {gust != null && gust > 0 && (
                       <span className="text-[10px] text-red-300 font-normal">
-                        (raff. {gust})
+                        raf. {gust}
                       </span>
                     )}
                   </div>
                   {dir != null && (
-                    <span className="text-slate-300 font-bold">
-                      {dirArrow} {dirLabel} ({dir}°)
+                    <span className="text-xs text-slate-300 font-bold">
+                      {dirArrow} {dirLabel}
                     </span>
                   )}
                 </div>
 
-                {/* AVVISO VENTO/ESPOSIZIONE */}
                 {valutazioneVento && (
-                  <div className={`mt-1.5 flex items-center gap-1.5 text-[10px] rounded-lg px-2 py-1 border ${ventoColor}`}>
-                    {valutazioneVento.status === "sottovento" && (
-                      <AlertTriangle className="w-3 h-3 shrink-0" />
-                    )}
-                    <span className="font-bold">{valutazioneVento.icon}</span>
-                    <span>{valutazioneVento.label}</span>
-                    <span className="text-slate-500">|</span>
-                    <span className="opacity-80">{Math.round(wind)} km/h da {Math.round(dir)}° vs esposizione {item.direzione}</span>
+                  <div className={`mt-1 flex items-center gap-1 text-[10px] rounded-lg px-2 py-1 border ${ventoColor}`}>
+                    <span>{valutazioneVento.icon}</span>
+                    <span className="font-bold">{valutazioneVento.label}</span>
                   </div>
                 )}
               </div>
