@@ -1,8 +1,7 @@
-entity">
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { Wind, Calendar, MapPin, TrendingUp, Info, Activity, Gauge } from "lucide-react";
+import { Wind, Calendar, TrendingUp, Activity, Gauge } from "lucide-react";
 import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
 
 function getDirAbbrev(deg: number): string {
