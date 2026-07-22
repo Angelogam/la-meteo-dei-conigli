@@ -91,19 +91,7 @@ const WindProfileUnified: React.FC<{
   const maxSpeed = Math.max(...profilo.map((p) => p.vento), 1);
 
   return (
-    <div className="flex flex-col gap-3 p-5 rounded-2xl bg-gradient-to-b from-[#0f172a] to-[#1e293b] border border-emerald-400/30 shadow-lg">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
-          💨 Vento reale —{" "}
-          <span className="text-emerald-300">{siteName}</span>
-        </h3>
-        <div className="text-right text-xs text-slate-500">
-          <div>Decollo: {quotaDecollo}m</div>
-          <div>Gradiente: {(gradienteMedio * 100).toFixed(2)} km/h/100m</div>
-        </div>
-      </div>
-
+    <div className="flex flex-col gap-2 p-3 rounded-xl bg-slate-800/30 border border-slate-700/30">
       {/* Dati reali usati */}
       {datiReali.length > 0 && (
         <div className="flex flex-wrap gap-2 text-[10px] text-slate-400">
@@ -122,8 +110,8 @@ const WindProfileUnified: React.FC<{
 
       {/* Warning */}
       {showWarning && (
-        <div className="flex items-start gap-2 p-3 rounded-xl bg-yellow-900/30 border border-yellow-500/30 text-yellow-300 text-sm">
-          <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2 p-2 rounded-lg bg-yellow-900/30 border border-yellow-500/30 text-yellow-300 text-xs">
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{warning}</span>
         </div>
       )}
@@ -131,7 +119,7 @@ const WindProfileUnified: React.FC<{
       {/* Profilo verticale (barre orizzontali per quota) */}
       {profilo.length > 0 && (
         <>
-          <div className="mt-2 flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1">
             {profilo.map((p) => {
               const displaySpeed = needsCap
                 ? Math.min(p.vento, 40)
@@ -146,12 +134,12 @@ const WindProfileUnified: React.FC<{
                   className="flex items-center gap-2 text-sm"
                 >
                   {/* Quota */}
-                  <span className="w-16 shrink-0 text-right text-xs font-bold text-slate-400 tabular-nums">
+                  <span className="w-12 shrink-0 text-right text-xs font-bold text-slate-400 tabular-nums">
                     {p.quota}m
                   </span>
 
                   {/* Barra velocità */}
-                  <div className="flex-1 h-4 bg-slate-700/50 rounded-md overflow-hidden">
+                  <div className="flex-1 h-3 bg-slate-700/50 rounded-md overflow-hidden">
                     <div
                       className={`h-full rounded-md transition-all ${getSpeedColor(
                         p.vento
@@ -159,7 +147,7 @@ const WindProfileUnified: React.FC<{
                       style={{ width: `${Math.max(width, 6)}%` }}
                     >
                       {width > 30 && (
-                        <span className="text-[10px] text-white font-bold pl-1 leading-4 block">
+                        <span className="text-[9px] text-white font-bold pl-1 leading-3 block">
                           {p.vento}
                         </span>
                       )}
@@ -167,7 +155,7 @@ const WindProfileUnified: React.FC<{
                   </div>
 
                   {/* Valore e direzione */}
-                  <span className="w-20 shrink-0 text-left text-xs font-bold text-slate-300 tabular-nums">
+                  <span className="w-16 shrink-0 text-left text-[10px] font-bold text-slate-300 tabular-nums">
                     {p.vento} km/h {getDirArrow(dir16ToDeg(p.direzione))}{" "}
                     {p.direzione}
                   </span>
@@ -178,35 +166,35 @@ const WindProfileUnified: React.FC<{
 
           {/* Avviso di cap */}
           {needsCap && (
-            <div className="text-[10px] text-orange-400 text-center mt-1">
+            <div className="text-[9px] text-orange-400 text-center mt-1">
               ⚠️ Barre limitate a 40 km/h — dati potenzialmente non realistici
             </div>
           )}
 
           {/* Legenda */}
-          <div className="flex flex-wrap gap-2 text-xs text-slate-400 justify-center mt-2">
+          <div className="flex flex-wrap gap-1.5 text-[10px] text-slate-400 justify-center mt-1">
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/60" />{" "}
+              <span className="w-2 h-2 rounded-full bg-emerald-400/60" />{" "}
               ≤8
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400/60" /> 9-15
+              <span className="w-2 h-2 rounded-full bg-amber-400/60" /> 9-15
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-orange-400/60" /> 16-22
+              <span className="w-2 h-2 rounded-full bg-orange-400/60" /> 16-22
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-400/60" /> 23-30
+              <span className="w-2 h-2 rounded-full bg-red-400/60" /> 23-30
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500/70" /> ≥30
+              <span className="w-2 h-2 rounded-full bg-red-500/70" /> ≥30
             </span>
             <span className="text-slate-600 ml-auto">km/h</span>
           </div>
         </>
       )}
 
-      <div className="text-[10px] text-slate-600 text-center mt-1">
+      <div className="text-[9px] text-slate-600 text-center mt-1">
         Algoritmo basato su dati reali Open-Meteo (10m, 80m, 120m, 180m) · gradiente {(gradienteMedio * 100).toFixed(2)} km/h/100m · direzione media {direzioneMedia}
       </div>
     </div>

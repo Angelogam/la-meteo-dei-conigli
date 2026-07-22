@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Wind, Calendar, MapPin } from "lucide-react";
-import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
+import { getVentiInterpolati, type VentiInterpolatiData, type VentoOrario } from "@/utils/getVentiInterpolati";
 
 function getSpeedColor(speed: number): string {
   if (speed <= 8) return "text-emerald-300";
@@ -107,7 +107,10 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
     );
   }
 
+  // Dati dell'ora selezionata
   const oraData = data.ventoOrario.find(v => v.ora === oraSelezionata) || data.ventoOrario[0];
+
+  // Quote visibili nel grafico (da quota decollo a 4000m ogni 250m)
   const quoteVisibili: number[] = [];
   for (let q = data.quotaDecollo; q <= 4000; q += 250) {
     quoteVisibili.push(q);
@@ -115,27 +118,16 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
   const maxSpeed = Math.max(...quoteVisibili.map(q => oraData.quote[q]?.speed || 0), 1);
 
   return (
-    <div className="space-y-4">
-      {/* Intestazione decollo */}
-      <div className="bg-slate-800/60 border border-cyan-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
-        <MapPin className="w-5 h-5 text-cyan-400 shrink-0" />
-        <div>
-          <div className="text-sm font-bold text-white">{siteName || "Decollo"} — Venti</div>
-          <div className="text-[10px] text-slate-400 flex items-center gap-2">
-            <Calendar className="w-3 h-3" />
-            <span>{dataGiorno}</span>
-            <span className="text-slate-600">·</span>
-            <span>Decollo {quotaDecollo}m</span>
-          </div>
-        </div>
-      </div>
-
+    <div className="space-y-3">
       {/* Selezione oraria */}
       <div className="flex flex-wrap gap-1.5">
         {data.ventoOrario.map(v => (
           <button
             key={v.ora}
-            onClick={() => { setOraSelezionata(v.ora); onOraChange?.(v.ora); }}
+            onClick={() => {
+              setOraSelezionata(v.ora);
+              onOraChange?.(v.ora);
+            }}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
               v.ora === oraSelezionata
                 ? "bg-emerald-600/30 border-emerald-400/50 text-emerald-200"
@@ -147,6 +139,31 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
         ))}
       </div>
 
+      {/* Grafico vento per tutte le quote — aggiornato all'ora selezionata */}
+      <div className="space-y-1">
+        {quoteVisibili.map(q => {
+          const entry = oraData.quote[q];
+          if (!entry) return null;
+          const wPerc = Math.max(6, (entry.speed / Math.max(maxSpeed, 1)) * 100);
+          return (
+            <div key={q} className="grid grid-cols-[3.5rem_1fr_5rem] gap-2 items-center py-0.5">
+              <span className="text-xs font-mono text-slate-500 text-right">{q}m</span>
+              <div className="h-4 bg-slate-800/50 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${getSpeedBarColor(entry.speed)}`}
+                  style={{ width: `${wPerc}%` }}
+                />
+              </div>
+              <div className="flex items-center gap-1 text-xs font-mono text-slate-300">
+                <span>{entry.speed}</span>
+                <span className="text-slate-500">km/h</span>
+                <span className="text-slate-600">{getDirAbbrev(entry.dir)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Legenda colori velocità */}
       <div className="flex flex-wrap gap-2 text-[11px] text-slate-400">
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-400" /> ≤8</span>
@@ -154,10 +171,6 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-amber-400" /> 16-22</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-orange-400" /> 23-30</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-400" /> over 30</span>
-      </div>
-
-      <div className="text-center text-sm text-slate-500 border-t border-slate-700/30 pt-3">
-        {siteName || "Decollo"} · Dati interpolati ogni 250m da Open-Meteo · {dataGiorno}
       </div>
     </div>
   );
