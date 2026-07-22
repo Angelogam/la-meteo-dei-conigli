@@ -87,7 +87,6 @@ export default function VentiInterpolatiTab({
         ris.push({ quota: q, speed: oraData.quote[q].speed, dir: oraData.quote[q].dir });
       }
     }
-    // Aggiungi quota decollo
     const tutteQuote = Object.keys(oraData.quote).map(Number);
     const piuVicina = tutteQuote.reduce((best, q) =>
       Math.abs(q - quotaDecollo) < Math.abs(best - quotaDecollo) ? q : best, tutteQuote[0]
@@ -130,7 +129,6 @@ export default function VentiInterpolatiTab({
 
   return (
     <div className="space-y-4">
-      {/* Header con data e nome */}
       <div className="bg-gradient-to-br from-slate-800/70 to-slate-900/50 border border-cyan-500/30 rounded-2xl px-5 py-4 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-800/60 to-cyan-700/30 border border-cyan-500/40 flex items-center justify-center shrink-0">
           <Wind className="w-5 h-5 text-cyan-400" />
@@ -143,12 +141,11 @@ export default function VentiInterpolatiTab({
             <span className="text-slate-600">·</span>
             <span>{quotaDecollo}m slm</span>
             <span className="text-slate-600">·</span>
-            <span>{lat.toFixed(4)}°N, {lon.toFixed(4)}°E</span>
+            <span>{lat.toFixed(4)}&deg;N, {lon.toFixed(4)}&deg;E</span>
           </div>
         </div>
       </div>
 
-      {/* Selettore ore — pillole orizzontali */}
       <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
         {data.ventoOrario
           .filter(v => HOURS.includes(v.ora))
@@ -170,7 +167,6 @@ export default function VentiInterpolatiTab({
         ))}
       </div>
 
-      {/* Profilo verticale grafico — ispirato a windgram */}
       <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/30 border border-slate-700/40 rounded-2xl p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -179,7 +175,7 @@ export default function VentiInterpolatiTab({
               Profilo verticale — {String(oraSelezionata).padStart(2, "0")}:00
             </h4>
           </div>
-          <span className="text-[10px] text-slate-500">{quotaDecollo}m → 3000m</span>
+          <span className="text-[10px] text-slate-500">{quotaDecollo}m &rarr; 3000m</span>
         </div>
 
         <div className="space-y-2">
@@ -229,19 +225,18 @@ export default function VentiInterpolatiTab({
           })}
         </div>
 
-        {/* Legenda */}
         <div className="flex flex-wrap gap-2 text-[10px] text-slate-400 mt-4 pt-3 border-t border-slate-700/30">
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-emerald-400" /> ≤8
+            <span className="w-3 h-3 rounded-full bg-emerald-400" /> &le;8
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-lime-400" /> 9–15
+            <span className="w-3 h-3 rounded-full bg-lime-400" /> 9&ndash;15
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-amber-400" /> 16–22
+            <span className="w-3 h-3 rounded-full bg-amber-400" /> 16&ndash;22
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-orange-400" /> 23–30
+            <span className="w-3 h-3 rounded-full bg-orange-400" /> 23&ndash;30
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-full bg-red-400" /> >30 km/h
@@ -252,7 +247,6 @@ export default function VentiInterpolatiTab({
         </div>
       </div>
 
-      {/* Tabella compatta ore/vento */}
       <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/30 border border-slate-700/40 rounded-2xl overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-700/30">
           <Gauge className="w-4 h-4 text-cyan-400" />
