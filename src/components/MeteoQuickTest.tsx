@@ -10,18 +10,32 @@ import {
   XCircle,
   AlertTriangle,
   Loader2,
-  Server,
   Wind,
+  Mountain,
+  MapPin,
+  Search,
 } from "lucide-react";
 
 interface RisultatoTestVento {
   nome: string;
   esposizione: string;
+  altitudine: number;
   ok: boolean;
   windSpeed: number;
   windDir: number;
+  dirLabel: string;
   valutazione: string;
+  label: string;
+  icon: string;
   color: string;
+  status: string;
+  ora: number;
+}
+
+function getDirName(deg: number): string {
+  if (deg == null) return "N/D";
+  const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+  return dirs[Math.round(((deg % 360) + 360) % 360 / 22.5) % 16];
 }
 
 export default function MeteoQuickTest() {
@@ -29,15 +43,19 @@ export default function MeteoQuickTest() {
   const [risultatiVento, setRisultatiVento] = useState<RisultatoTestVento[]>([]);
   const [progress, setProgress] = useState(0);
   const [summary, setSummary] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   const runTest = async () => {
     setRunning(true);
     setRisultatiVento([]);
     setSummary(null);
+    setExpanded(false);
 
     const siti = DECOLLI;
     let okCount = 0;
     let sottoventoCount = 0;
+    let contrarioCount = 0;
+    let lateraleCount = 0;
     const risultati: RisultatoTestVento[] = [];
 
     for (let i = 0; i < siti.length; i++) {
@@ -45,45 +63,60 @@ export default function MeteoQuickTest() {
       try {
         const { data } = await weatherService.fetchCurrent(d.lat, d.lon);
         if (data) {
-          const valutazione = valutaVentoPerDecollo(data.windDir, d.exposure);
+          const valutazione = validaVentoPerDecollo(data.windDir, d.exposure);
           const colorClass = getVentoStatusColor(valutazione.status);
           const isOk = valutazione.status === "favorevole" || valutazione.status === "laterale";
 
           if (isOk) okCount++;
           if (valutazione.status === "sottovento") sottoventoCount++;
+          if (valutazione.status === "contrario") contrarioCount++;
+          if (valutazione.status === "laterale") lateraleCount++;
 
           risultati.push({
             nome: d.name,
             esposizione: d.exposure,
+            altitudine: d.altitude,
             ok: isOk,
-            windSpeed: data.windSpeed,
-            windDir: data.windDir,
+            windSpeed: Math.round(data.windSpeed),
+            windDir: Math.round(data.windDir),
+            dirLabel: getDirName(data.windDir),
             valutazione: `${valutazione.label} — ${valutazione.descrizione}`,
+            label: valutazione.label,
+            icon: valutazione.icon,
             color: colorClass,
+            status: valutazione.status,
+            ora: new Date().getHours(),
           });
         }
       } catch {
         risultati.push({
           nome: d.name,
           esposizione: d.exposure,
+          altitudine: d.altitude,
           ok: false,
           windSpeed: 0,
           windDir: 0,
+          dirLabel: "N/D",
           valutazione: "Errore nel recupero dati",
-          color: "text-slate-400",
+          label: "Errore",
+          icon: "❓",
+          color: "text-slate-400 bg-slate-800/20 border-slate-500/30",
+          status: "errore",
+          ora: 0,
         });
       }
 
       setRisultatiVento([...risultati]);
       setProgress(Math.round(((i + 1) / siti.length) * 100));
 
+      // Delay per non sovraccaricare API
       if (i < siti.length - 1) {
         await new Promise(r => setTimeout(r, 1500));
       }
     }
 
     setSummary(
-      `✅ ${okCount}/${siti.length} decolli con vento favorevole o laterale · 🚫 ${sottoventoCount} sottovento · ${siti.length - okCount - sottoventoCount} contrari`
+      `✅ ${okCount} sopravv./later. · 🚫 ${sottoventoCount} sottovento · ❌ ${contrarioCount} contrari · ⚠️ ${lateraleCount} laterali · Totale ${siti.length} decolli`
     );
     setRunning(false);
   };
@@ -95,10 +128,10 @@ export default function MeteoQuickTest() {
         disabled={running}
         className="w-full flex items-center gap-2.5 px-4 py-3 rounded-xl bg-sky-800/50 hover:bg-sky-700/60 border border-sky-500/40 text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <Wind className="w-5 h-5 text-sky-400 shrink-0" />
+        <Search className="w-5 h-5 text-sky-400 shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-bold text-white">Test vento + esposizione</div>
-          <div className="text-[10px] text-sky-300/70">Controlla se il vento è giusto per ogni decollo</div>
+          <div className="text-sm font-bold text-white">Controllo vento TUTTI i decolli</div>
+          <div className="text-[10px] text-sky-300/70">Vento reale vs esposizione — 24 decolli</div>
         </div>
         {running && (
           <div className="flex items-center gap-1">
@@ -116,20 +149,97 @@ export default function MeteoQuickTest() {
       )}
 
       {summary && (
-        <div className="bg-sky-900/20 border border-sky-500/30 rounded-xl p-3 text-xs">
-          <div className="text-sky-300 font-bold mb-1">{summary}</div>
-          <div className="space-y-1 mt-2 max-h-48 overflow-y-auto">
-            {risultatiVento.map((r, i) => (
-              <div key={i} className={`flex items-center gap-2 text-slate-400 rounded-lg px-2 py-1 border ${r.color}`}>
-                {r.ok ? <CheckCircle className="w-3 h-3 text-emerald-400 shrink-0" /> : <XCircle className="w-3 h-3 text-red-400 shrink-0" />}
-                <span className="truncate flex-1 font-bold">{r.nome}</span>
-                <span className="text-slate-500">Esp. {r.esposizione}</span>
-                <span className="text-slate-400">→ {Math.round(r.windDir)}°</span>
-                <span className="text-sky-300">{Math.round(r.windSpeed)} km/h</span>
-                <span className="text-xs">{r.valutazione.split("—")[0]}</span>
+        <div className="bg-sky-900/20 border border-sky-500/30 rounded-xl p-3">
+          <div className="text-sky-300 text-sm font-bold mb-2">{summary}</div>
+
+          {/* Report raggruppato per status */}
+          {(() => {
+            const sottovento = risultatiVento.filter(r => r.status === "sottovento");
+            const contrari = risultatiVento.filter(r => r.status === "contrario");
+            const laterali = risultatiVento.filter(r => r.status === "laterale");
+            const favorevoli = risultatiVento.filter(r => r.status === "favorevole");
+            const errori = risultatiVento.filter(r => r.status === "errore");
+
+            return (
+              <div className="space-y-2">
+                {/* SOTTOVENTO — ROSSO */}
+                {sottovento.length > 0 && (
+                  <details open={expanded}>
+                    <summary className="text-xs text-red-300 font-bold cursor-pointer hover:text-red-200">
+                      🚫 SOTTOVENTO ({sottovento.length})
+                    </summary>
+                    <div className="mt-1 space-y-1">
+                      {sottovento.map((r, i) => (
+                        <div key={i} className="flex items-center gap-2 text-[11px] bg-red-900/20 border border-red-800/40 rounded-lg px-2.5 py-1.5">
+                          <AlertTriangle className="w-3 h-3 text-red-400 shrink-0" />
+                          <span className="font-bold text-white w-40 truncate">{r.nome}</span>
+                          <span className="text-slate-400">{r.esposizione}</span>
+                          <span className="text-red-300">{r.windSpeed} km/h da {r.dirLabel} ({r.windDir}°)</span>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+
+                {/* CONTRARI — ARANCIONE */}
+                {contrari.length > 0 && (
+                  <details>
+                    <summary className="text-xs text-orange-300 font-bold cursor-pointer hover:text-orange-200">
+                      ❌ CONTRARI ({contrari.length})
+                    </summary>
+                    <div className="mt-1 space-y-1">
+                      {contrari.map((r, i) => (
+                        <div key={i} className="flex items-center gap-2 text-[11px] bg-orange-900/20 border border-orange-800/40 rounded-lg px-2.5 py-1.5">
+                          <XCircle className="w-3 h-3 text-orange-400 shrink-0" />
+                          <span className="font-bold text-white w-40 truncate">{r.nome}</span>
+                          <span className="text-slate-400">{r.esposizione}</span>
+                          <span className="text-orange-300">{r.windSpeed} km/h da {r.dirLabel} ({r.windDir}°)</span>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+
+                {/* LATERALI — GIALLO */}
+                {laterali.length > 0 && (
+                  <details>
+                    <summary className="text-xs text-amber-300 font-bold cursor-pointer hover:text-amber-200">
+                      ⚠️ LATERALI ({laterali.length})
+                    </summary>
+                    <div className="mt-1 space-y-1">
+                      {laterali.map((r, i) => (
+                        <div key={i} className="flex items-center gap-2 text-[11px] bg-amber-900/20 border border-amber-800/40 rounded-lg px-2.5 py-1.5">
+                          <Wind className="w-3 h-3 text-amber-400 shrink-0" />
+                          <span className="font-bold text-white w-40 truncate">{r.nome}</span>
+                          <span className="text-slate-400">{r.esposizione}</span>
+                          <span className="text-amber-300">{r.windSpeed} km/h da {r.dirLabel} ({r.windDir}°)</span>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+
+                {/* FAVOREVOLI — VERDE */}
+                {favorevoli.length > 0 && (
+                  <details>
+                    <summary className="text-xs text-emerald-300 font-bold cursor-pointer hover:text-emerald-200">
+                      ✅ SOPRAVV. ({favorevoli.length})
+                    </summary>
+                    <div className="mt-1 space-y-1">
+                      {favorevoli.map((r, i) => (
+                        <div key={i} className="flex items-center gap-2 text-[11px] bg-emerald-900/20 border border-emerald-800/40 rounded-lg px-2.5 py-1.5">
+                          <CheckCircle className="w-3 h-3 text-emerald-400 shrink-0" />
+                          <span className="font-bold text-white w-40 truncate">{r.nome}</span>
+                          <span className="text-slate-400">{r.esposizione}</span>
+                          <span className="text-emerald-300">{r.windSpeed} km/h da {r.dirLabel} ({r.windDir}°)</span>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
               </div>
-            ))}
-          </div>
+            );
+          })()}
         </div>
       )}
     </div>
