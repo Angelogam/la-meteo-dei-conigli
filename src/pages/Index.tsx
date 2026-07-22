@@ -16,7 +16,6 @@ import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
 import MeteoTesterPanel from "@/components/MeteoTesterPanel";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
-import WindProfileUnified from "@/components/WindProfileUnified";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { DECOLLI } from "@/data/decolli";
@@ -269,11 +268,6 @@ export default function Index() {
                       selectedDay={selectedDay}
                       oraCorrente={selectedHour}
                       onOraChange={setSelectedHour}
-                      siteName={site!.name}
-                    />
-                    <WindProfileUnified
-                      lat={site!.lat}
-                      lon={site!.lon}
                       siteName={site!.name}
                     />
                   </>
