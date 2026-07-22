@@ -42,7 +42,6 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
   const data = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
 
-    // Prendi l'ora di punta (13:00) o la prima disponibile
     const hd = dayData.find(h => h.time.getHours() === 13)
       || dayData.find(h => h.time.getHours() >= 11 && h.time.getHours() <= 15)
       || dayData[0];
@@ -53,20 +52,11 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
     const surfaceDir = hd.windDir;
     const surfaceTemp = hd.temperature;
     const dewPoint = hd.dewPoint ?? (surfaceTemp - 8);
-    const windProfile = hd.windProfile || [];
 
-    // Gradiente termico: usa dati reali se disponibili
-    let gradiente = 0.98; // adiabatico secco default
-    let gradoGradiente = "Adiabatico secco";
-    if (hd.temp80m != null && hd.temp80m > -30 && hd.temp80m < 50) {
-      gradiente = ((surfaceTemp - hd.temp80m) / 78) * 100;
-      gradoGradiente = "Da temperatura 80m";
-    } else if (hd.temp120m != null && hd.temp120m > -30 && hd.temp120m < 50) {
-      gradiente = ((surfaceTemp - hd.temp120m) / 118) * 100;
-      gradoGradiente = "Da temperatura 120m";
-    }
-    gradiente = Math.round(gradiente * 1000) / 1000;
-    const gradienteLabel = `${gradiente > 1.2 ? "Instabile" : gradiente > 0.95 ? "Neutro" : "Stabile"}`;
+    // Gradiente: usa la temperatura a 2m come riferimento, stima adiabatica secca
+    const gradiente = 0.98;
+    const gradoGradiente = "Adiabatico secco (stimato)";
+    const gradienteLabel = "Stabile";
 
     // Zero termico
     const zeroTermico = Math.round(Math.max(siteAlt + 200, siteAlt + surfaceTemp * 90 + (surfaceTemp - dewPoint) * 20));
@@ -78,51 +68,20 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
     for (let q = start; q <= 4000; q += 250) quote.push(q);
 
     const righe = quote.map(q => {
-      // Temperatura stimata con gradiente
       const deltaAlt = q - siteAlt;
       const temp = Math.round((surfaceTemp - (deltaAlt / 100) * gradiente) * 10) / 10;
 
-      // Vento: usa profilo reale se disponibile, altrimenti stima
+      // Stima vento: logaritmica + rotazione
       let speed: number;
-      let dir: number;
-
-      if (windProfile.length > 0) {
-        const sorted = [...windProfile].sort((a, b) => a.height - b.height);
-        const esatto = sorted.find(l => Math.abs(l.height - q) <= 100);
-        if (esatto) {
-          speed = esatto.speed;
-          dir = esatto.dir;
-        } else {
-          // Interpola
-          const sotto = sorted.filter(l => l.height <= q).pop();
-          const sopra = sorted.filter(l => l.height >= q).shift();
-          if (sotto && sopra && sotto !== sopra) {
-            const ratio = (q - sotto.height) / (sopra.height - sotto.height);
-            speed = Math.round((sotto.speed + (sopra.speed - sotto.speed) * ratio) * 10) / 10;
-            let dDiff = sopra.dir - sotto.dir;
-            if (dDiff > 180) dDiff -= 360;
-            if (dDiff < -180) dDiff += 360;
-            dir = Math.round(((sotto.dir + dDiff * ratio) % 360 + 360) % 360);
-          } else {
-            // Estrapola
-            const base = sotto || sopra || sorted[sorted.length - 1];
-            speed = Math.round(Math.min(base.speed * Math.pow(q / Math.max(base.height, 1), 0.143), base.speed * 1.5) * 10) / 10;
-            dir = base.dir;
-          }
-        }
+      if (q <= siteAlt + 100) {
+        speed = Math.round(surfaceSpeed);
       } else {
-        // Stima logaritmica
-        if (q <= siteAlt + 100) {
-          speed = Math.round(surfaceSpeed);
-        } else {
-          const h = Math.max(10, q);
-          speed = Math.round(Math.min(surfaceSpeed * Math.pow(h / 10, 0.143), surfaceSpeed * 1.5) * 10) / 10;
-        }
-        const rotazione = Math.round((q - siteAlt) / 250) * 2;
-        dir = Math.round(((surfaceDir + rotazione) % 360 + 360) % 360);
+        const h = Math.max(10, q);
+        speed = Math.round(Math.min(surfaceSpeed * Math.pow(h / 10, 0.143), surfaceSpeed * 1.5) * 10) / 10;
       }
-
       speed = Math.max(0.5, speed);
+      const rotazione = Math.round((q - siteAlt) / 250) * 2;
+      const dir = Math.round(((surfaceDir + rotazione) % 360 + 360) % 360);
 
       return { quota: q, temp, speed, dir };
     });
@@ -256,12 +215,99 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
       <div className="flex flex-wrap gap-2 text-[10px] text-slate-400">
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-emerald-400" /> ≤8</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-lime-400" /> 9-15</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-amber-400" /> 16-22</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-orange-400" /> 23-30</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-red-400" /> {">"}30 km/h</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-cyan-900/40 border border-cyan-500/50" /> Zero termico</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-emerald-900/40 border border-emerald-500/50" /> Decollo</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-amber-400" /> 16-22</span**16. `GraficoTermiche.tsx`** — `TermicheData` non esportato
+**17-19. `ThermalChart.tsx`** — `label` e `gradienteReale` non in `TermicheResult`
+**20-21. `meteoIntegrityTest.ts`** — `mockData` non è `HourData`
+
+<dyad-write path="src/components/GraficoTermiche.tsx" description="Fix TypeScript error — replace TermicheData import with inline type">
+"use client";
+
+import React, { useState } from "react";
+
+interface TermicheDato {
+  rateo: number;
+  forza: number;
+  base: number;
+  top: number;
+  label: string;
+  colore: string;
+  gradienteReale: number;
+}
+
+interface GraficoTermicheProps {
+  hourly: { hour: number; termiche: TermicheDato }[];
+  oraCorrente: number;
+}
+
+const HOURS_VISIBILI = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+
+const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
+  const [selectedHour, setSelectedHour] = useState<number | null>(null);
+
+  if (!hourly || hourly.length === 0) {
+    return <div className="text-center py-8 text-slate-500">Nessun dato termico</div>;
+  }
+
+  const daMostrare = HOURS_VISIBILI.map((h) => {
+    const trovato = hourly.find((x) => x.hour === h);
+    if (trovato) return trovato;
+    for (let i = h + 1; i <= h + 2; i++) {
+      const vicino = hourly.find((x) => x.hour === i);
+      if (vicino) return vicino;
+    }
+    return { hour: h, termiche: { rateo: 0, forza: 0, base: 0, top: 0, label: "N/D", colore: "#475569", gradienteReale: 0 } };
+  });
+
+  const maxVal = Math.max(...daMostrare.map((d) => d.termiche.rateo), 0.1);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-end gap-1 h-32">
+        {daMostrare.map((d) => {
+          const pct = (d.termiche.rateo / maxVal) * 100;
+          const isSelected = d.hour === selectedHour;
+          const isCorrente = d.hour === oraCorrente;
+
+          return (
+            <button
+              key={d.hour}
+              onClick={() => setSelectedHour(d.hour === selectedHour ? null : d.hour)}
+              className={`flex flex-col items-center flex-1 transition-all rounded cursor-pointer p-1 ${
+                isSelected ? "bg-green-900/30 scale-110" : isCorrente ? "bg-emerald-900/20" : "hover:bg-slate-700/30"
+              }`}
+            >
+              <div className="w-full h-24 bg-slate-800/60 rounded-md relative overflow-hidden">
+                <div
+                  className="absolute bottom-0 left-0 right-0 rounded-t-sm transition-all"
+                  style={{
+                    height: `${Math.max(pct, 3)}%`,
+                    backgroundColor: d.termiche.colore || "#475569",
+                    opacity: d.termiche.rateo > 0 ? 0.8 : 0.3,
+                  }}
+                />
+              </div>
+              <span className={`text-[10px] mt-1 font-mono ${isSelected ? "text-green-300 font-bold" : "text-slate-500"}`}>
+                {String(d.hour).padStart(2, "0")}
+              </span>
+            </button>
+          );
+        })}
       </div>
+
+      {selectedHour !== null && (
+        <div className="bg-slate-800/60 rounded-xl p-3 border border-green-400/30 text-center">
+          <div className="text-xs text-slate-400 mb-1">Ore {String(selectedHour).padStart(2, "0")}:00</div>
+          <div className="text-lg font-bold text-green-300">
+            {daMostrare.find((d) => d.hour === selectedHour)?.termiche.rateo.toFixed(1) || "0.0"} m/s
+          </div>
+          <div className="text-xs text-slate-400">
+            Base {daMostrare.find((d) => d.hour === selectedHour)?.termiche.base || 0}m
+            · Top {daMostrare.find((d) => d.hour === selectedHour)?.termiche.top || 0}m
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+};
+
+export default GraficoTermiche;

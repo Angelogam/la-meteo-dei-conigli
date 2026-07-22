@@ -222,7 +222,6 @@ export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
     }
     if (tuttoOk) ok(comp, "degreesToCardinal funziona correttamente");
 
-    // Use the actual HourData interface — no apparentTemp or precipitationProba
     const mockHourData: HourData = {
       time: new Date(),
       temperature: 24,
@@ -239,7 +238,6 @@ export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
       rain: 0,
       snowfall: 0,
       uvIndex: 6,
-      // Other required HourData fields
       feelsLike: 22,
       radiation: 500,
       directRadiation: 400,
@@ -282,7 +280,7 @@ export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
     } else {
       ok(
         comp,
-        `calcolaTermiche: ${res.rateo} m/s, base ${res.base}m, top ${res.top}m, etichetta: "${res.label}"`,
+        `calcolaTermiche: ${res.rateo} m/s, base ${res.base}m, top ${res.top}m`,
       );
     }
     const mockTempesta: HourData = {
@@ -328,6 +326,15 @@ export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
     } else {
       ok(comp, "degreesToCardinal \u00e8 una funzione valida");
     }
+    if (typeof calcolaTermiche !== "function") {
+      tuttoOk = false;
+      fail({
+        severita: "critico",
+        componente: comp,
+        descrizione:
+          "calcolaTermiche non \<dyad-write path="src/utils/diagnosticaApp.ts" description="Complete the file — fix continuation">
+// ... existing code above ...
+
     if (typeof calcolaTermiche !== "function") {
       tuttoOk = false;
       fail({

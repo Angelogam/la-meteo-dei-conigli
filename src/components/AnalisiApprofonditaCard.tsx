@@ -121,9 +121,8 @@ export default function AnalisiApprofonditaCard({ analisi, siteName, dayData }: 
         </div>
       </Sezione>
 
-      {/* Vento e struttura verticale — ORA INCLUDE IL PROFILO COMPLETO */}
+      {/* Vento e struttura verticale */}
       <Sezione titolo="Vento e struttura verticale" icona={<Wind className="w-4 h-4 text-cyan-400" />} defaultOpen={true}>
-        {/* Prima il riepilogo compatto */}
         <div className="grid grid-cols-2 gap-2 text-xs mb-3">
           <div className="bg-slate-800/60 rounded-lg p-2">
             <span className="text-slate-500">Vento al suolo</span>
@@ -153,7 +152,6 @@ export default function AnalisiApprofonditaCard({ analisi, siteName, dayData }: 
           </div>
         </div>
 
-        {/* Profilo verticale completo con gradiente, zero termico e quote 250m */}
         {dayData && dayData.length > 0 && (
           <ProfiloVentoVerticale
             dayData={dayData}
@@ -270,7 +268,7 @@ export default function AnalisiApprofonditaCard({ analisi, siteName, dayData }: 
         </div>
       </Sezione>
 
-      {/* Condizioni complete */}
+      {/* Analisi completa */}
       <Sezione titolo="Analisi completa" icona={<Layers className="w-4 h-4 text-slate-400" />} defaultOpen={true}>
         <div className="text-xs text-slate-300 leading-relaxed space-y-2">
           <p>
@@ -299,7 +297,7 @@ export default function AnalisiApprofonditaCard({ analisi, siteName, dayData }: 
               : ` con probabilità di temporali del ${analisi.rischioTemporali}%.`
             }
             {analisi.visibilita > 30
-              ? ` Visibilità eccellente di circa ${{analisi.visibilita} km.`
+              ? ` Visibilità eccellente di circa ${analisi.visibilita} km.`
               : ` Visibilità di ${analisi.visibilita} km.`
             }
           </p>
