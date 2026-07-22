@@ -71,14 +71,14 @@ function MeteoTesterPanel({ onClose }: MeteoTesterPanelProps) {
     }));
 
     try {
-      const { results: testResults, summary: testSummary } = await testAllSites(
+      const result = await testAllSites(
         sites,
         (result, index, total) => {
           setProgress(Math.round((index / total) * 100));
           setResults((prev) => [...prev, result]);
         }
       );
-      setSummary(testSummary);
+      setSummary(result.summary);
     } catch (err) {
       setSummary(`Errore: ${err instanceof Error ? err.message : String(err)}`);
     } finally {

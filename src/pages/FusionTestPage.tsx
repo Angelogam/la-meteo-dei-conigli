@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { DECOLLI } from "@/data/decolli";
 import { fuseWeatherData, type FusionResult } from "@/services/weatherFusionService";
 import { weatherService7Timer } from "@/services/weatherService7Timer";
-import { CheckCircle, XCircle, AlertTriangle, Loader2, Clock, Server } from "lucide-react";
+import { CheckCircle, XCircle, AlertTriangle, Loader2, Clock, Server, Activity } from "lucide-react";
 
 export default function FusionTestPage() {
   const [result, setResult] = useState<FusionResult | null>(null);
