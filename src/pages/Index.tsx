@@ -13,15 +13,14 @@ import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
-import MeteoTesterPanel from "@/components/MeteoTesterPanel";
+import MeteoQuickTest from "@/components/MeteoQuickTest";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
-import ApiStatusBadge from "@/components/ApiStatusBadge";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { DECOLLI } from "@/data/decolli";
 import { getStabilityIndex } from "@/utils/weatherHelpers";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
-import { Activity } from "lucide-react";
+import { Activity, Server, Radar } from "lucide-react";
 
 export default function Index() {
   useEffect(() => { avviaVerificaContinua(60000); }, []);
@@ -56,9 +55,6 @@ export default function Index() {
     for (const d of DECOLLI) m[d.name] = d.id;
     return m;
   }, []);
-
-  // Stato per il tester — lo apriamo quando si clicca sul badge
-  const [testerMeteoOpen, setTesterMeteoOpen] = useState(false);
 
   if (weatherLoading) {
     return (
@@ -95,9 +91,10 @@ export default function Index() {
               onSelect={(item) => { const id = nomeToId[item.nome]; if (id) { setSelectedId(id); setSelectedHour(new Date().getHours()); } }}
               weatherMap={allHourlyData}
             />
-            {/* Badge stato API — cliccabile: apre il tester */}
-            <div className="flex justify-center">
-              <ApiStatusBadge onOpenTester={() => setTesterMeteoOpen(true)} />
+            {/* Pulsanti test separati */}
+            <div className="space-y-1">
+              <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold px-1 mb-1">Test API</div>
+              <MeteoQuickTest />
             </div>
           </aside>
           <div className="flex-1 min-w-0 space-y-6">
@@ -126,12 +123,6 @@ export default function Index() {
         </div>
       </main>
       <Footer />
-      {/* Tester meteo — controllato dal badge API */}
-      {testerMeteoOpen && (
-        <div className="fixed inset-0 z-[9999] bg-slate-950/98 flex flex-col">
-          <MeteoTesterPanel onClose={() => setTesterMeteoOpen(false)} />
-        </div>
-      )}
       <DiagnosticaPanel />
     </div>
   );
