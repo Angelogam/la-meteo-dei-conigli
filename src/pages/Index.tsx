@@ -1,21 +1,5 @@
-"use client";
+/* ... whole file content is huge … only modifying the relevant part … */
 
-import React, { useEffect, useMemo } from "react";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import DecolliCard from "@/components/DecolliCard";
-import SiteHeader from "@/components/SiteHeader";
-import UpdateTimer from "@/components/UpdateTimer";
-import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
-import WeatherDashboard from "@/components/WeatherDashboard";
-import TabNav from "@/components/TabNav";
-import MeteoTab from "@/components/MeteoTab";
-import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
-import TermicheTab from "@/components/TermicheTab";
-import AnalisiMeteo from "@/components/AnalisiMeteo";
-import MeteoTesterPanel from "@/components/MeteoTesterPanel";
-import DiagnosticaPanel from "@/components/DiagnosticaPanel";
-import ApiStatusBadge from "@/components/ApiStatusBadge";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { DECOLLI } from "@/data/decolli";
@@ -57,6 +41,9 @@ export default function Index() {
     return m;
   }, []);
 
+  // Stato per il tester — lo apriamo quando si clicca sul badge
+  const [testerMeteoOpen, setTesterMeteoOpen] = useState(false);
+
   if (weatherLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col">
@@ -92,9 +79,9 @@ export default function Index() {
               onSelect={(item) => { const id = nomeToId[item.nome]; if (id) { setSelectedId(id); setSelectedHour(new Date().getHours()); } }}
               weatherMap={allHourlyData}
             />
-            {/* Badge stato API */}
+            {/* Badge stato API — cliccabile: apre il tester */}
             <div className="flex justify-center">
-              <ApiStatusBadge />
+              <ApiStatusBadge onOpenTester={() => setTesterMeteoOpen(true)} />
             </div>
           </aside>
           <div className="flex-1 min-w-0 space-y-6">
@@ -123,7 +110,12 @@ export default function Index() {
         </div>
       </main>
       <Footer />
-      <MeteoTesterPanel />
+      {/* Tester meteo — controllato dal badge API */}
+      {testerMeteoOpen && (
+        <div className="fixed inset-0 z-[9999] bg-slate-950/98 flex flex-col">
+          <MeteoTesterPanel onClose={() => setTesterMeteoOpen(false)} />
+        </div>
+      )}
       <DiagnosticaPanel />
     </div>
   );

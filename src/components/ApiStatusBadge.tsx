@@ -1,11 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Server, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Server, CheckCircle, XCircle, Loader2, Bug } from "lucide-react";
 
 type ApiStatus = "loading" | "online" | "offline";
 
-export default function ApiStatusBadge() {
+interface ApiStatusBadgeProps {
+  onOpenTester?: () => void;
+}
+
+export default function ApiStatusBadge({ onOpenTester }: ApiStatusBadgeProps) {
   const [omStatus, setOmStatus] = useState<ApiStatus>("loading");
   const [timerStatus, setTimerStatus] = useState<ApiStatus>("loading");
 
@@ -31,17 +35,28 @@ export default function ApiStatusBadge() {
     <XCircle className="w-3 h-3 text-red-400" />;
 
   return (
-    <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700/40 text-[10px]">
-      <Server className="w-3 h-3 text-slate-400" />
-      <span className="flex items-center gap-1 text-slate-400">
-        {icon(omStatus)}
-        Open-Meteo
-      </span>
-      <span className="w-px h-3 bg-slate-700" />
-      <span className="flex items-center gap-1 text-slate-400">
-        {icon(timerStatus)}
-        7Timer!
-      </span>
-    </div>
+    <button
+      onClick={onOpenTester}
+      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/40 text-[10px] hover:bg-slate-700/50 hover:border-emerald-500/40 transition-all cursor-pointer text-left"
+    >
+      <Server className="w-4 h-4 text-slate-400 shrink-0" />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className="flex items-center gap-1 text-slate-400">
+            {icon(omStatus)}
+            <span className="font-medium">Open-Meteo</span>
+          </span>
+          <span className="w-px h-3 bg-slate-700" />
+          <span className="flex items-center gap-1 text-slate-400">
+            {icon(timerStatus)}
+            <span className="font-medium">7Timer!</span>
+          </span>
+        </div>
+        <div className="text-[9px] text-slate-500 flex items-center gap-1">
+          <Bug className="w-2.5 h-2.5" />
+          Clicca per aprire i tester
+        </div>
+      </div>
+    </button>
   );
 }
