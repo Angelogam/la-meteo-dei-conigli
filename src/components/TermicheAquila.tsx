@@ -9,89 +9,100 @@ interface ThermalData {
   top: number;
 }
 
-const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
-  const getColor = (speed: number) => {
-    if (speed < 0.8) return "#6b7280"; // grigio
-    if (speed < 1.2) return "#facc15"; // giallo
-    if (speed < 2.0) return "#f97316"; // arancio
-    return "#dc2626"; // rosso
-  };
+/** Mappa colore in base al rateo di salita */
+function barColor(speed: number): string {
+  if (speed < 0.8) return "#64748b";   // grigio
+  if (speed < 1.2) return "#facc15";   // giallo
+  if (speed < 2.0) return "#f97316";   // arancio
+  return "#dc2626";                     // rosso
+}
 
-  const getLabel = (speed: number) => {
-    if (speed < 0.8) return "Molto debole";
-    if (speed < 1.2) return "Debole";
-    if (speed < 2.0) return "Moderata";
-    return "Forte";
-  };
+function labelColor(speed: number): string {
+  if (speed < 0.8) return "text-slate-400";
+  if (speed < 1.2) return "text-yellow-400";
+  return "text-orange-300";
+}
+
+const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
+  const maxSpeed = Math.max(...data.map((t) => t.speed), 0.5);
+  const barMaxHeight = 160; // px massimi per la barra più alta
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-4">
-      {data.map((t, i) => (
-        <div
-          key={i}
-          className="relative flex flex-col items-center bg-[#0f172a] rounded-xl border border-[#22c55e]/30 p-3 shadow-lg overflow-hidden min-h-[320px]"
-        >
-          {/* Ora in alto */}
-          <div className="text-sm font-bold text-gray-300 mb-1 z-10">{t.hour}</div>
+    <div className="bg-slate-900/30 border border-slate-700/40 rounded-2xl p-4">
+      {/* Intestazione */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
+          Intensità termica
+        </h3>
+        <span className="text-[10px] text-slate-500">m/s</span>
+      </div>
 
-          {/* Aquila (più dettagliata, simile alla foto) */}
-          <svg viewBox="0 0 120 120" width="55" height="55" className="z-10 mt-1">
-            {/* corpo aquila */}
-            <ellipse cx="60" cy="50" rx="25" ry="18" fill="#78350f" />
-            {/* testa */}
-            <circle cx="60" cy="22" r="14" fill="#facc15" />
-            {/* occhi */}
-            <circle cx="55" cy="20" r="3" fill="#000" />
-            <circle cx="65" cy="20" r="3" fill="#000" />
-            {/* becco */}
-            <polygon points="60,26 55,34 65,34" fill="#f97316" />
-            {/* ali spiegate */}
-            <path d="M35 50 Q20 35 15 45 Q25 55 35 55Z" fill="#78350f" />
-            <path d="M85 50 Q100 35 105 45 Q95 55 85 55Z" fill="#78350f" />
-            {/* coda */}
-            <path d="M50 65 Q60 85 70 65Z" fill="#78350f" />
-          </svg>
+      {/* Legenda colori */}
+      <div className="flex flex-wrap gap-2 mb-4 text-[10px]">
+        {[
+          { label: "≥ 2.0 — Forte", color: "#dc2626" },
+          { label: "1.2 – 2.0 — Moderata", color: "#f97316" },
+          { label: "0.8 – 1.2 — Debole", color: "#facc15" },
+          { label: "< 0.8 — Molto debole", color: "#64748b" },
+        ].map((item) => (
+          <span key={item.label} className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-sm" style={{ background: item.color }} />
+            <span className="text-slate-400">{item.label}</span>
+          </span>
+        ))}
+      </div>
 
-          {/* Nuvola */}
-          <div className="relative w-24 h-14 bg-gray-200 rounded-full shadow-md z-10 mt-2">
-            <div className="absolute -top-3 left-3 w-16 h-10 bg-gray-100 rounded-full"></div>
-            <div className="absolute -top-2 right-2 w-14 h-9 bg-gray-100 rounded-full"></div>
+      {/* Barre verticali */}
+      <div className="flex items-end gap-2 h-44 overflow-x-auto pb-1">
+        {data.map((t, i) => {
+          const pct = maxSpeed > 0 ? (t.speed / maxSpeed) * 100 : 0;
+          const heightPx = Math.max(4, (pct / 100) * barMaxHeight);
+          return (
+            <div
+              key={i}
+              className="flex flex-col items-center flex-shrink-0 w-9"
+            >
+              {/* Valore in cima */}
+              <span className={`text-[10px] font-black leading-none mb-1 ${labelColor(t.speed)}`}>
+                {t.speed.toFixed(1)}
+              </span>
+
+              {/* Barra */}
+              <div className="w-full h-28 bg-slate-800/50 rounded-md relative overflow-hidden">
+                <div
+                  className="absolute bottom-0 left-0 right-0 rounded-t-sm transition-all duration-300"
+                  style={{
+                    height: `${heightPx}px`,
+                    background: barColor(t.speed),
+                  }}
+                />
+              </div>
+
+              {/* Ora in basso */}
+              <span className="text-[10px] mt-1 font-mono text-slate-400">
+                {t.hour.slice(0, 2)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Dettaglio orario selezionato (es. 12:00) */}
+      {data.length > 0 && (
+        <div className="mt-3 bg-slate-800/40 rounded-xl p-3 border border-slate-700/30 text-center text-xs">
+          <span className="text-slate-400 block">Alle ore {data[Math.min(4, data.length - 1)].hour}</span>
+          <span className="text-lg font-bold text-orange-300">
+            {data[Math.min(4, data.length - 1)].speed.toFixed(1)} m/s
+          </span>
+          <span className="text-slate-500 ml-2">di salita</span>
+          <div className="flex items-center justify-center gap-4 mt-1 text-[11px] text-slate-400">
+            <span>Base: {Math.round(data[Math.min(4, data.length - 1)].base)}m</span>
+            <span>Top: {Math.round(data[Math.min(4, data.length - 1)].top)}m</span>
+            <span>Salita: {Math.round(data[Math.min(4, data.length - 1)].top - data[Math.min(4, data.length - 1)].base)}m</span>
           </div>
-
-          {/* Colonna termica (dal basso della nuvola verso il basso) */}
-          <div
-            className="w-8 rounded-b-lg mt-1 z-10"
-            style={{
-              height: `${Math.max(30, (t.top - t.base) / 22)}px`,
-              backgroundColor: getColor(t.speed),
-              boxShadow: "0 0 12px rgba(255,255,255,0.25)",
-            }}
-          ></div>
-
-          {/* Dati sotto la colonna */}
-          <div className="mt-2 text-center text-xs text-gray-300 z-10">
-            <div className="text-[#22c55e] font-bold text-sm">{t.speed.toFixed(1)} m/s</div>
-            <div className="text-gray-400 text-[11px]">{getLabel(t.speed)}</div>
-            <div className="text-[#22c55e] mt-0.5">Base {Math.round(t.base)} m</div>
-            <div className="text-red-400">Top {Math.round(t.top)} m</div>
-          </div>
-
-          {/* Sfondo prato verde in basso (come nella foto) */}
-          <svg
-            viewBox="0 0 200 60"
-            width="100%"
-            height="55"
-            className="absolute bottom-0 left-0"
-            preserveAspectRatio="none"
-          >
-            <rect width="200" height="60" fill="#14532d" />
-            <path d="M0 35 Q40 15 100 35 T200 35 V60 H0 Z" fill="#166534" />
-            <circle cx="25" cy="30" r="10" fill="#22c55e" opacity="0.6" />
-            <circle cx="175" cy="30" r="10" fill="#22c55e" opacity="0.6" />
-            <circle cx="100" cy="32" r="7" fill="#22c55e" opacity="0.4" />
-          </svg>
         </div>
-      ))}
+      )}
     </div>
   );
 };
