@@ -12,79 +12,89 @@ interface TermicheResult {
 
 /**
  * Calcola le termiche a partire dai dati orari reali (Open‑Meteo).
- * Se i dati sono nulli o incompleti, usa stime conservative basate
- * sulle condizioni meteorologiche disponibili.
+ * Versione REALISTICA: produce 1.0-2.5 m/s in condizioni normali,
+ * 0.0-0.5 in condizioni avverse, 3.0-4.0 in condizioni eccellenti.
  */
 export function calcolaTermiche(h: HourData | undefined | null, altitude: number = 500): TermicheResult {
   if (!h || typeof h.temperature !== "number") {
-    return { rateo: 0, base: altitude + 200, top: altitude + 400, forza: 0, attendibilita: 0 };
+    return { rateo: 0.5, base: altitude + 200, top: altitude + 400, forza: 0.5, attendibilita: 30 };
   }
 
   const temp = h.temperature;
-  const dewPoint = h.dewPoint ?? temp - 8; // stima realistic se manca dew
+  const dewPoint = h.dewPoint ?? temp - 8;
   const windSpeed = h.windSpeed ?? 5;
   const cloudCover = h.cloudCover ?? 30;
   const humidity = h.humidity ?? 50;
   const precipitation = h.precipitation ?? 0;
+  const ora = new Date(h.time).getHours();
 
-  // Spread termico (differenza temp - dew) — driver principale delle termiche
-  const spread = temp - dewPoint;
-  let base = Math.round((spread * 125) + altitude);
-
-  // Se la temperatura è sotto zero o spread negativo, termiche debolissime
-  if (temp < 0 || spread < 0.5) {
-    return { rateo: 0.1, base: altitude + 50, top: altitude + 150, forza: 0.1, attendibilita: 50 };
+  // Se piove o temporale -> zero
+  if (precipitation > 1 || h.weatherCode >= 95) {
+    return { rateo: 0, base: altitude + 50, top: altitude + 100, forza: 0, attendibilita: 90 };
   }
 
-  // Super-adiabatic gradient rate (fisico: 0.65°C/100m fino a condensa)
-  // Rateo base = (spread / 80) * 3.5  MOLTO più realistico
-  // Poi modulato da vento (troppo vento rompe le termiche), nuvole e pioggia
-  let rateoBase = (spread / 10) * 0.8; // ~ 0.4-1.2 m/s per spread 5-15°C
+  // Spread termico
+  const spread = temp - dewPoint;
 
-  // Vento: ottimale 5-15 km/h, sotto 3 termiche deboli, sopra 20 le rompe
-  const windFactor = windSpeed < 3
-    ? 0.4
-    : windSpeed <= 15
-      ? 1.0 + (windSpeed - 5) * 0.03  // leggero boost fino a 15
-      : Math.max(0.1, 1.3 - (windSpeed - 15) * 0.08);
+  // Se freddo o spread nullo
+  if (temp < 5 || spread < 1) {
+    return { rateo: 0.2, base: altitude + 50, top: altitude + 200, forza: 0.2, attendibilita: 70 };
+  }
 
-  // Nuvolosità: cumuli aiutano (20-60%), nubi troppo alte/cielo coperto inibiscono
-  const cloudFactor = cloudCover < 10
-    ? 0.6                    // cielo sereno = termiche più deboli (sole forte, ma scarsi nuclei)
-    : cloudCover <= 60
-      ? 0.8 + (cloudCover / 60) * 0.4   // cumuli = 1.2x boost max
-      : Math.max(0.3, 1.2 - (cloudCover - 60) * 0.025);
+  // ===== CALCOLO RATEO BASE =====
+  // Spread 5°C → 0.8 m/s, 10°C → 1.5 m/s, 15°C → 2.2 m/s, 20°C → 3.0 m/s
+  let rateo = 0.15 * spread + 0.05;
 
-  // Pioggia: se pioggia > 0, termiche azzerate o quasi
-  const rainFactor = precipitation > 0 ? Math.max(0.05, 1 - precipitation * 0.5) : 1.0;
+  // Bonus ora del giorno: 11:00-15:00 è il picco
+  if (ora >= 11 && ora <= 15) rateo += 0.4;
+  else if (ora >= 9 && ora <= 10) rateo += 0.2;
+  else if (ora >= 16 && ora <= 17) rateo += 0.1;
+  else if (ora < 8 || ora > 18) rateo *= 0.3;
 
-  // Umidità: troppo secca = pochi nuclei, troppo umida = sviluppo limitato
-  const humFactor = humidity < 30
-    ? 0.5
-    : humidity <= 70
-      ? 0.7 + (humidity / 100) * 0.3
-      : Math.max(0.2, 1.0 - (humidity - 70) * 0.02);
+  // Bonus vento: 5-15 km/h aiuta, sotto 3 indebolisce, sopra 20 rompe
+  if (windSpeed >= 5 && windSpeed <= 15) rateo += 0.3;
+  else if (windSpeed > 15 && windSpeed <= 22) rateo -= 0.2;
+  else if (windSpeed > 22) rateo -= 0.5;
+  else if (windSpeed < 3) rateo -= 0.3;
 
-  let rateo = rateoBase * windFactor * cloudFactor * rainFactor * humFactor;
+  // Bonus nuvolosità: 15-50% è ideale (cumuli)
+  if (cloudCover >= 15 && cloudCover <= 50) rateo += 0.2;
+  else if (cloudCover > 70) rateo -= 0.5;
+  else if (cloudCover > 50) rateo -= 0.2;
 
-  // Limiti fisici realistici
-  rateo = Math.max(0.0, Math.min(4.5, rateo));
+  // Bonus temperatura
+  if (temp >= 22 && temp <= 30) rateo += 0.3;
+  else if (temp >= 18 && temp < 22) rateo += 0.1;
+  else if (temp > 30) rateo += 0.1;
 
-  // Top termico basato su spread e vento (più realistico)
-  const topIncrement = (spread * 80) + (windSpeed < 20 ? 200 : 0) + (cloudCover > 30 ? 150 : 0);
-  const top = Math.max(base + 100, Math.round(altitude + topIncrement));
+  // Penalità umidità eccessiva
+  if (humidity > 70) rateo -= 0.3;
+  else if (humidity > 85) rateo -= 0.6;
 
-  const attendibilita = Math.round(
-    ((dewPoint != null ? 30 : 0) + (h.windGusts != null ? 10 : 0) + 20) // campi realistici
-  );
+  // Pioggia leggera
+  if (precipitation > 0.3) rateo *= 0.5;
+  if (precipitation > 0.8) rateo = 0.2;
 
-  return {
-    rateo: Math.round(rateo * 10) / 10,
-    base,
-    top,
-    forza: Math.round(rateo * 2) / 10,
-    attendibilita: Math.min(100, attendibilita),
-  };
+  // Limiti
+  rateo = Math.max(0, Math.min(4.5, rateo));
+
+  // Arrotonda
+  rateo = Math.round(rateo * 10) / 10;
+
+  // ===== BASE TERMICA =====
+  const base = Math.round(Math.max(altitude + 100, Math.min(altitude + 2500, spread * 125 + altitude)));
+
+  // ===== TOP TERMICO =====
+  const topIncrement = rateo * 400 + spread * 30;
+  const top = Math.round(Math.max(base + 200, altitude + topIncrement));
+
+  // ===== FORZA (0-10) =====
+  const forza = Math.round(Math.min(10, Math.max(0, rateo * 2.5)));
+
+  // ===== ATTENDIBILITÀ =====
+  const attendibilita = Math.min(100, Math.round(40 + (h.dewPoint != null ? 20 : 0) + (h.windGusts != null ? 10 : 0) + (rateo > 0.5 ? 20 : 0)));
+
+  return { rateo, base, top, forza, attendibilita };
 }
 
 /**
