@@ -128,7 +128,7 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
       <div className="bg-slate-800/60 border border-orange-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
         <MapPin className="w-5 h-5 text-orange-400 shrink-0" />
         <div>
-          <div className="text-sm font-bold text-white">{site?.name || "Decollo"} — Termiche</div>
+          <div className="text-sm font-bold text-white">{site?.name || "Decollo"} &mdash; Termiche</div>
           <div className="text-[10px] text-slate-400 flex items-center gap-2">
             <Calendar className="w-3 h-3" />
             <span>{dataGiorno}</span>
@@ -162,7 +162,7 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
 
       {/* Nota */}
       <div className="text-center text-[10px] text-slate-600 border-t border-slate-700/30 pt-2 mt-2">
-        Valori realistici per Alpi · Rateo max ~4-5 m/s in condizioni estreme
+        Valori realistici per Alpi &mdash; Rateo massimo ~4-5 m/s in condizioni estreme
       </div>
     </div>
   );
