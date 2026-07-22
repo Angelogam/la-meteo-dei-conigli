@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import {
   Sun, Thermometer, Wind, Cloud, CloudRain, CloudLightning,
   TrendingUp, ShieldCheck, AlertTriangle, CheckCircle, Activity,
-  MapPin, Calendar, Sparkles,
+  MapPin, Calendar, Sparkles, Zap, Layers, Clock, Eye, Droplets, Gauge
 } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 import { calcolaAnalisiApprofondita } from "@/utils/analisiApprofondita";
@@ -18,8 +18,6 @@ interface AnalisiMeteoProps {
   liftedIndex?: number | null;
   cin?: number | null;
 }
-
-// ... keep all the existing helper functions unchanged ...
 
 function formatDateShort(date: Date): string {
   const d = date instanceof Date ? date : new Date(date);
@@ -82,99 +80,7 @@ function getRischioBar(r: number): string {
   return "bg-green-500";
 }
 
-function validaDati(
-  temperature: number[], humidity: number[], windSpeed: number[],
-  cloudCover: number[], pressure: number[], precipitation: number[], windGusts: number[]
-) {
-  const anomalie: string[] = [];
-  const metriche = {
-    tempRangeOk: true, windRangeOk: true, cloudRangeOk: true,
-    humidityRangeOk: true, pressureRangeOk: true, precipCoerenzaOk: true,
-    windCoerenzaOk: true, temporalConsistency: false,
-  };
-  let testSuperati = 0;
-  let testTotali = 0;
-
-  testTotali++;
-  const tempMin = Math.min(...temperature);
-  const tempMax = Math.max(...temperature);
-  if (tempMin < -30 || tempMax > 50) {
-    anomalie.push(`Temperature fuori range: min ${tempMin}°C / max ${tempMax}°C`);
-    metriche.tempRangeOk = false;
-  } else testSuperati++;
-
-  testTotali++;
-  if (Math.max(...windSpeed) > 120) {
-    anomalie.push(`Vento eccessivo: ${Math.max(...windSpeed)} km/h`);
-    metriche.windRangeOk = false;
-  } else testSuperati++;
-
-  testTotali++;
-  if (cloudCover.filter(c => c < 0 || c > 100).length > 0) {
-    anomalie.push("Nuvolosità fuori range");
-    metriche.cloudRangeOk = false;
-  } else testSuperati++;
-
-  testTotali++;
-  if (humidity.filter(h => h < 0 || h > 100).length > 0) {
-    anomalie.push("Umidità fuori range");
-    metriche.humidityRangeOk = false;
-  } else testSuperati++;
-
-  testTotali++;
-  if (pressure.length > 0) {
-    const pMin = Math.min(...pressure);
-    const pMax = Math.max(...pressure);
-    if (pMin < 900 || pMax > 1080) {
-      anomalie.push(`Pressione non realistica: ${pMin} / ${pMax} hPa`);
-      metriche.pressureRangeOk = false;
-    } else testSuperati++;
-  } else {
-    metriche.pressureRangeOk = false;
-    anomalie.push("Nessun dato pressione");
-  }
-
-  testTotali++;
-  const precipTot = precipitation.reduce((s, p) => s + p, 0);
-  const cloudAvg = cloudCover.length > 0
-    ? cloudCover.reduce((s, c) => s + c, 0) / cloudCover.length
-    : 0;
-  if (precipTot > 5 && cloudAvg < 20) {
-    anomalie.push(`Incoerenza: ${precipTot}mm pioggia, ${Math.round(cloudAvg)}% nuvole`);
-    metriche.precipCoerenzaOk = false;
-  } else testSuperati++;
-
-  testTotali++;
-  if (windGusts.length > 0 && windSpeed.length > 0) {
-    const gustMax = Math.max(...windGusts);
-    const windAvg = windSpeed.reduce((s, w) => s + w, 0) / windSpeed.length;
-    if (gustMax > 0 && gustMax < windAvg) {
-      anomalie.push(`Raffiche < vento medio`);
-      metriche.windCoerenzaOk = false;
-    } else testSuperati++;
-  }
-
-  testTotali++;
-  let tempOk = true;
-  for (let i = 1; i < temperature.length; i++) {
-    if (Math.abs(temperature[i] - temperature[i - 1]) > 15) {
-      tempOk = false;
-      anomalie.push("Salto termico > 15°C");
-      break;
-    }
-  }
-  if (tempOk) {
-    testSuperati++;
-    metriche.temporalConsistency = true;
-  }
-
-  return { ok: anomalie.length === 0, testSuperati, testTotali, anomalie, metriche };
-}
-
 export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
-  const [showValidation, setShowValidation] = React.useState(false);
-  const [showLegenda, setShowLegenda] = React.useState(false);
-
   const analisi = useMemo(() => {
     if (!dayData || dayData.length < 3) return null;
     const oreGiorno = dayData.filter(h => {
@@ -253,19 +159,6 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
     };
   }, [dayData]);
 
-  const validazione = useMemo(() => {
-    if (!dayData || dayData.length < 3) return null;
-    return validaDati(
-      dayData.map(h => h.temperature),
-      dayData.map(h => h.humidity),
-      dayData.map(h => h.windSpeed),
-      dayData.map(h => h.cloudCover),
-      dayData.map(h => h.pressure).filter(p => p != null),
-      dayData.map(h => h.precipitation || 0),
-      dayData.map(h => h.windGusts || 0),
-    );
-  }, [dayData]);
-
   const analisiApprofondita = useMemo(() => {
     return calcolaAnalisiApprofondita(dayData, site);
   }, [dayData, site]);
@@ -286,11 +179,11 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
 
   return (
     <div className="space-y-4">
-      {/* Intestazione decollo */}
+      {/* Intestazione decollo e data */}
       <div className="bg-slate-800/60 border border-purple-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
         <MapPin className="w-5 h-5 text-purple-400 shrink-0" />
         <div>
-          <div className="text-sm font-bold text-white">{site?.name || "Decollo"} — Analisi</div>
+          <div className="text-sm font-bold text-white">{site?.name || "Decollo"} — Analisi completa</div>
           <div className="text-[10px] text-slate-400 flex items-center gap-2">
             <Calendar className="w-3 h-3" />
             <span>{dataGiorno}</span>
@@ -300,78 +193,12 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
         </div>
       </div>
 
-      {/* Badge validazione */}
-      {validazione && (
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowValidation(!showValidation)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              validazione.ok
-                ? "bg-green-900/40 border border-green-500/40 text-green-300 hover:bg-green-900/60"
-                : "bg-amber-900/40 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60"
-            }`}
-          >
-            {validazione.ok ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
-            Dati {validazione.ok ? "veritieri" : "con anomalie"} ({validazione.testSuperati}/{validazione.testTotali} test)
-          </button>
-          {!validazione.ok && <span className="text-xs text-amber-400 animate-pulse font-bold">⚠ Attenzione</span>}
-        </div>
-      )}
-
-      {/* Pannello validazione */}
-      {showValidation && validazione && (
-        <div className={`card p-4 border-2 rounded-xl ${validazione.ok ? "bg-green-900/20 border-green-700/40" : "bg-amber-900/20 border-amber-700/40"}`}>
-          <div className="flex items-center gap-2 mb-3">
-            <ShieldCheck className={`w-5 h-5 ${validazione.ok ? "text-green-400" : "text-amber-400"}`} />
-            <h4 className="text-sm font-bold text-white">Validazione dati — {site?.name}</h4>
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
-            <div className={`text-center p-2 rounded-lg text-xs ${validazione.metriche.tempRangeOk ? "bg-green-900/30 text-green-300" : "bg-red-900/30 text-red-300"}`}>
-              <Activity className="w-4 h-4 mx-auto mb-1" /> Temperature {validazione.metriche.tempRangeOk ? "OK" : "ANOMALE"}
-            </div>
-            <div className={`text-center p-2 rounded-lg text-xs ${validazione.metriche.windRangeOk ? "bg-green-900/30 text-green-300" : "bg-red-900/30 text-red-300"}`}>
-              <Wind className="w-4 h-4 mx-auto mb-1" /> Vento {validazione.metriche.windRangeOk ? "OK" : "ANOMALO"}
-            </div>
-            <div className={`text-center p-2 rounded-lg text-xs ${validazione.metriche.cloudRangeOk ? "bg-green-900/30 text-green-300" : "bg-red-900/30 text-red-300"}`}>
-              <Cloud className="w-4 h-4 mx-auto mb-1" /> Nuvole {validazione.metriche.cloudRangeOk ? "OK" : "ANOMALE"}
-            </div>
-            <div className={`text-center p-2 rounded-lg text-xs ${validazione.metriche.pressureRangeOk ? "bg-green-900/30 text-green-300" : "bg-red-900/30 text-red-300"}`}>
-              <TrendingUp className="w-4 h-4 mx-auto mb-1" /> Pressione {validazione.metriche.pressureRangeOk ? "OK" : "ANOMALA"}
-            </div>
-          </div>
-          <div className="text-xs text-slate-400 space-y-1">
-            <p>Test superati: <span className="font-bold text-white">{validazione.testSuperati}/{validazione.testTotali}</span></p>
-            {validazione.anomalie.length > 0 && (
-              <div className="mt-2 space-y-1">
-                <p className="text-amber-400 font-bold">Anomalie riscontrate:</p>
-                {validazione.anomalie.map((a, i) => (
-                  <p key={i} className="text-red-300 pl-3 border-l-2 border-red-500/50">{a}</p>
-                ))}
-              </div>
-            )}
-            {validazione.ok && <p className="text-green-400 font-bold mt-2">✓ Tutti i test superati: dati realistici e coerenti.</p>}
-          </div>
-        </div>
-      )}
-
-      {/* Bottone per Analisi approfondita */}
+      {/* ANALISI APPROFONDITA — sempre visibile, con sezioni pieghevoli */}
       {analisiApprofondita && (
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowLegenda(!showLegenda)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-900/40 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/60 transition-all"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            {showLegenda ? "Nascondi analisi approfondita" : "Mostra analisi approfondita"}
-          </button>
-        </div>
-      )}
-
-      {showLegenda && analisiApprofondita && (
         <AnalisiApprofonditaCard analisi={analisiApprofondita} siteName={site?.name || "Decollo"} />
       )}
 
-      {/* Situazione generale */}
+      {/* Situazione generale (riepilogo rapido) */}
       <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 rounded-2xl p-5">
         <div className="flex items-center gap-2 mb-4">
           <Sun className="w-6 h-6 text-orange-400 shrink-0" />
@@ -404,31 +231,6 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
           <div className={"h-full rounded-full " + getRischioBar(analisi.rischioTemporali)} style={{ width: analisi.rischioTemporali + "%" }} />
         </div>
         <div className="flex items-center justify-between text-xs text-slate-500 mt-1"><span>0%</span><span>50%</span><span>100%</span></div>
-      </div>
-
-      {/* Profilo termico */}
-      <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 rounded-2xl p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Thermometer className="w-6 h-6 text-amber-400 shrink-0" />
-          <h3 className="text-base font-bold text-white">{site?.name} — Profilo termico</h3>
-        </div>
-        <div className="space-y-2 text-sm text-slate-300">
-          <p><span className="text-emerald-400 mr-2">&bull;</span> Temp min {analisi.tempMinGiorno}°C / max {analisi.tempMaxGiorno}°C · delta {analisi.deltaTermico}°C.</p>
-          <p><span className="text-emerald-400 mr-2">&bull;</span> Umidità {analisi.umiditaMedia}%.</p>
-          <p><span className="text-emerald-400 mr-2">&bull;</span> Pressione: {analisi.pressioneMedia} hPa ({getPressioneDescrizione(analisi.pressioneMedia)}).</p>
-        </div>
-      </div>
-
-      {/* Vento */}
-      <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 rounded-2xl p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Wind className="w-6 h-6 text-cyan-400 shrink-0" />
-          <h3 className="text-base font-bold text-white">{site?.name} — Vento</h3>
-        </div>
-        <div className="space-y-2 text-sm text-slate-300">
-          <p><span className="text-emerald-400 mr-2">&bull;</span> Direzione: {analisi.ventoDirNome} ({analisi.ventoDirMedia}°). Vento medio: {analisi.ventoMedio} km/h, raffiche max: {analisi.ventoGustsMax} km/h.</p>
-          <p><span className="text-emerald-400 mr-2">&bull;</span> {analisi.nuvoleMedia < 25 ? "Cielo sereno." : analisi.nuvoleMedia < 50 ? "Nuvolosità moderata." : "Nuvolosità significativa."}</p>
-        </div>
       </div>
 
       {/* Interpretazione */}
