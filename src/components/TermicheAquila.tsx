@@ -37,7 +37,7 @@ const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
   const full = HOURS.map(h => map.get(h) || { hour: h, speed: 0, base: 0, top: 0 });
   const maxSpeed = Math.max(...full.map(d => d.speed), 0.5);
   const sel = full[selected];
-  const barHeight = 100;
+  const barHeight = 140;
 
   return (
     <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/40 border border-slate-700/40 rounded-2xl p-5">
@@ -68,7 +68,7 @@ const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
       </div>
 
       {/* Grafico barre strette — scrollbar nascosta */}
-      <div className="flex items-end gap-1 h-32 overflow-x-auto pb-1 justify-center scrollbar-none">
+      <div className="flex items-end gap-1 h-44 overflow-x-auto pb-1 justify-center scrollbar-none">
         {full.map((d, i) => {
           const pct = maxSpeed > 0 ? (d.speed / maxSpeed) * 100 : 0;
           const isSelected = i === selected;
