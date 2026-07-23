@@ -47,51 +47,51 @@ export default function DecolloComparison({ decolli }: DecolloComparisonProps) {
         <h3 className="text-sm font-bold text-sky-300 uppercase tracking-wider">Confronto decolli</h3>
       </div>
 
-      <div className="space-y-2">
-        {sorted.map((d, i) => (
-          <div key={d.id} className={`rounded-xl p-3 border ${scoreBg(d.score)}`}>
-            <div className="flex items-center justify-between mb-1.5">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 font-bold w-5">#{i + 1}</span>
-                <span className="text-sm font-bold text-white">{d.nome}</span>
-              </div>
-              <span className={`text-lg font-extrabold ${scoreColor(d.score)}`}>
-                {d.score}/10
-              </span>
-            </div>
-
-            {/* Barra score */}
-            <div className="h-1.5 bg-slate-700/50 rounded-full overflow-hidden mb-2">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400"
-                style={{ width: `${d.score * 10}%` }}
-              />
-            </div>
-
-            <div className="grid grid-cols-4 gap-2 text-[10px] mt-2">
-              <div className="flex items-center gap-1 text-amber-300">
-                <Thermometer className="w-3 h-3" />
-                <span className="font-bold">{Math.round(d.temp)}°C</span>
-              </div>
-              <div className="flex items-center gap-1 text-sky-300">
-                <Wind className="w-3 h-3" />
-                <span className="font-bold">{Math.round(d.vento)} km/h</span>
-              </div>
-              <div className="flex items-center gap-1 text-slate-400">
-                <Cloud className="w-3 h-3" />
-                <span className="font-bold">{Math.round(d.nuvole)}%</span>
-              </div>
-              <div className="flex items-center gap-1 text-emerald-400">
-                <MapPin className="w-3 h-3" />
-                <span className="font-bold">{d.alt}m</span>
-              </div>
-            </div>
-
-            <div className="text-[9px] text-slate-500 mt-1">
-              Vento da {d.ventoDir}
-            </div>
-          </div>
-        ))}
+      <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+              {sorted.map((d, i) => (
+                <div key={d.id} className={`rounded-xl p-3 border ${scoreBg(d.score)}`}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500 font-bold w-5">#{i + 1}</span>
+                      <span className="text-sm font-bold text-white">{d.nome}</span>
+                    </div>
+                    <span className={`text-lg font-extrabold ${scoreColor(d.score)}`}>
+                      {d.score}/10
+                    </span>
+                  </div>
+      
+                  {/* Barra score */}
+                  <div className="h-1.5 bg-slate-700/50 rounded-full overflow-hidden mb-2">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+                      style={{ width: `${d.score * 10}%` }}
+                    />
+                  </div>
+      
+                  <div className="grid grid-cols-4 gap-2 text-[10px] mt-2">
+                    <div className="flex items-center gap-1 text-amber-300">
+                      <Thermometer className="w-3 h-3" />
+                      <span className="font-bold">{Math.round(d.temp)}°C</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-sky-300">
+                      <Wind className="w-3 h-3" />
+                      <span className="font-bold">{Math.round(d.vento)} km/h</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-slate-400">
+                      <Cloud className="w-3 h-3" />
+                      <span className="font-bold">{Math.round(d.nuvole)}%</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-emerald-400">
+                      <MapPin className="w-3 h-3" />
+                      <span className="font-bold">{d.alt}m</span>
+                    </div>
+                  </div>
+      
+                  <div className="text-[9px] text-slate-500 mt-1">
+                    Vento da {d.ventoDir}
+                  </div>
+                </div>
+              ))}
       </div>
     </div>
   );
