@@ -186,25 +186,26 @@ export default function Index() {
       <NotificationBell />
       <Header />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-8">
-        <div className="flex flex-col lg:flex-row gap-6 relative">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-8 max-h-screen overflow-y-auto">
+              <div className="flex flex-col lg:flex-row gap-6 relative">
           <SidebarToggle isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
           {sidebarOpen && (
             <div className="lg:hidden fixed inset-0 bg-slate-950/70 z-30" onClick={() => setSidebarOpen(false)} />
           )}
 
           <aside className={`
-            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-            lg:translate-x-0
-            fixed lg:sticky top-0 lg:top-0 left-0 z-40 lg:z-auto
-            w-72 lg:w-80
-            lg:h-auto lg:overflow-visible
-            h-full overflow-y-auto
-            bg-slate-950 lg:bg-transparent
-            p-4 lg:p-0
-            transition-transform duration-300 ease-in-out
-            shrink-0 space-y-4
-          `}>
+                      ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+                      lg:translate-x-0
+                      fixed lg:sticky top-0 lg:top-0 left-0 z-40 lg:z-auto
+                      w-72 lg:w-80
+                      lg:h-auto lg:overflow-visible
+                      h-full overflow-y-auto
+                      bg-slate-950 lg:bg-transparent
+                      p-4 lg:p-0
+                      transition-transform duration-300 ease-in-out
+                      shrink-0 space-y-4
+                      max-h-screen
+                    `}>
             <div className="flex items-center justify-between lg:hidden mb-4">
               <span className="text-sm font-bold text-white">Decolli</span>
               <button onClick={() => setSidebarOpen(false)} className="p-1 rounded-lg hover:bg-slate-800">
@@ -262,7 +263,7 @@ export default function Index() {
             </div>
 
             {currentData && (
-              <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 flex flex-col items-center">
+              <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 flex flex-col items-center max-h-screen overflow-y-auto">
                 <WindCompass windDir={currentData.windDir} windSpeed={currentData.windSpeed} gustSpeed={currentData.windGusts || 0} size={100} />
               </div>
             )}
