@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
-import { useMeteoBatch } from "@/services/meteoRepository";
-import { Wind, Clock, Loader2 } from "lucide-react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import { Wind, Clock } from "lucide-react";
+import { weatherService } from "@/services/weatherService";
 import { validaVentoPerDecollo, getVentoStatusColor } from "@/utils/validaVentoDecollo";
 
 function getCardinalDir(deg: number): string {
@@ -48,14 +48,68 @@ interface DecolliCardProps {
   selectedDay?: number;
 }
 
-const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
-  const { decolliData, isLoading, isFetching } = useMeteoBatch(
-    decolli.map(d => ({ id: d.id, lat: d.lat, lon: d.lon, name: d.nome }))
-  );
+interface LiveDato {
+  temp: number;
+  wind: number;
+  gust: number | null;
+  dir: number;
+  code: number;
+}
 
-  const caricati = Object.values(decolliData).filter(d => d.data != null).length;
+const REFRESH_INTERVAL = 600000;
 
-  if (isLoading && caricati === 0) {
+const DecolliCard = ({ decolli, selectedId, onSelect, selectedDay = 0 }: DecolliCardProps) => {
+  const [liveData, setLiveData] = useState<Record<string, LiveDato | null>>({});
+  const [initialLoading, setInitialLoading] = useState(true);
+  const mountedRef = useRef(true);
+
+  const loadAllData = useCallback(async () => {
+    if (!mountedRef.current) return;
+
+    try {
+      const coords = decolli.map(d => ({ lat: d.lat, lon: d.lon }));
+      const batchResults = await weatherService.fetchManyCurrent(coords);
+
+      const newData: Record<string, LiveDato> = {};
+      decolli.forEach((d) => {
+        const key = `light:${d.lat.toFixed(4)}:${d.lon.toFixed(4)}`;
+        const result = batchResults[key];
+        if (result?.ok && result.data) {
+          const dd = result.data;
+          newData[d.nome] = {
+            temp: Math.round(dd.temperature),
+            wind: Math.round(dd.windSpeed),
+            gust: dd.windGusts != null ? Math.round(dd.windGusts) : null,
+            dir: Math.round(dd.windDir),
+            code: dd.weatherCode,
+          };
+        }
+      });
+
+      if (mountedRef.current) {
+        setLiveData(newData);
+        setInitialLoading(false);
+        console.log(`✅ Caricati ${Object.keys(newData).length}/${decolli.length} decolli in unico batch`);
+      }
+    } catch (err) {
+      console.error("❌ Errore batch caricamento decolli:", err);
+      if (mountedRef.current) {
+        setInitialLoading(false);
+      }
+    }
+  }, [decolli]);
+
+  useEffect(() => {
+    loadAllData();
+    const interval = setInterval(loadAllData, REFRESH_INTERVAL);
+    return () => {
+      mountedRef.current = false;
+      clearInterval(interval);
+    };
+  }, [loadAllData]);
+
+  const caricati = Object.keys(liveData).length;
+  if (initialLoading && caricati === 0) {
     return (
       <div className="bg-slate-900/80 border border-slate-700/60 rounded-xl p-3 md:p-4">
         <h2 className="text-sm md:text-base font-bold text-white mb-3">
@@ -70,6 +124,11 @@ const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
   }
 
   const oggi = new Date();
+  const targetDate = new Date(oggi);
+  targetDate.setDate(oggi.getDate() + selectedDay);
+  const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+  const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+  const labelData = `${giorni[targetDate.getDay()]} ${targetDate.getDate()} ${mesi[targetDate.getMonth()]}`;
   const oraAgg = oggi.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
 
   return (
@@ -78,27 +137,25 @@ const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
         <h2 className="text-sm md:text-base font-bold text-white">
           Decolli ({caricati}/{decolli.length})
         </h2>
-        {isFetching && (
-          <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
-        )}
       </div>
 
       <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-slate-400 mb-2 md:mb-3 bg-slate-800/60 rounded-lg px-2.5 py-1.5 border border-slate-700/40">
         <Clock size={12} />
-        <span className="font-medium">Dati live</span>
+        <span className="font-medium">{labelData}</span>
         <span className="text-slate-600">·</span>
         <span>agg. {oraAgg}</span>
       </div>
 
       <div className="space-y-2 max-h-64 md:max-h-80 overflow-y-auto pr-1 scrollbar-thin">
         {decolli.map((item) => {
-          const isSelected = item.id === selectedId;
-          const current = decolliData[item.id]?.data;
+          const isSelected = item.nome === selectedId;
+          const current = liveData[item.nome];
           const hasData = current != null;
-          const temp = hasData ? current.temperature : null;
-          const wind = hasData ? current.windSpeed : null;
-          const dir = hasData ? current.windDir : null;
-          const code = hasData ? current.weatherCode : null;
+          const temp = hasData ? Math.round(current.temp) : null;
+          const wind = hasData ? Math.round(current.wind) : null;
+          const gust = hasData && current.gust != null ? Math.round(current.gust) : null;
+          const dir = hasData ? Math.round(current.dir) : null;
+          const code = hasData ? current.code : null;
           const emoji = getWeatherEmoji(code);
           const dirLabel = dir != null ? getCardinalDir(dir) : "N/D";
           const dirArrow = dir != null ? getWindArrow(dir) : "→";
@@ -112,7 +169,7 @@ const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
 
           return (
             <button
-              key={item.id}
+              key={item.nome}
               onClick={() => onSelect(item)}
               className={`
                 w-full rounded-xl p-3 text-left transition-all border-2 cursor-pointer
@@ -131,7 +188,7 @@ const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
                   <div className="flex items-center justify-between mt-1.5">
                     <div className="flex items-center gap-1.5">
                       <span className="text-base md:text-lg">{emoji}</span>
-                      <span className="text-sm font-bold text-amber-300 tabular-nums">{Math.round(temp)}°</span>
+                      <span className="text-sm font-bold text-amber-300 tabular-nums">{temp}°</span>
                     </div>
                     <div className="text-[10px] md:text-xs text-slate-500">
                       {item.valle} · {item.quota}m · {item.direzione}
@@ -142,7 +199,10 @@ const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-1 text-xs md:text-sm">
                         <Wind size={14} className="text-emerald-400 shrink-0" />
-                        <span className="font-bold text-white tabular-nums">{Math.round(wind)} km/h</span>
+                        <span className="font-bold text-white tabular-nums">{wind} km/h</span>
+                        {gust != null && gust > 0 && (
+                          <span className="text-[10px] text-red-300 font-normal">raf. {gust}</span>
+                        )}
                       </div>
                       <span className="text-xs text-slate-300 font-bold">{dirArrow} {dirLabel}</span>
                     </div>

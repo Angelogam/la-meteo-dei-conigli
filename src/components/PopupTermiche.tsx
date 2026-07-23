@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { X, Clock, Thermometer, Wind, Droplets, Cloud, CloudRain } from "lucide-react";
+import React from "react";
+import { X, Clock, Thermometer, Wind, Droplets, Cloud, Gauge, CloudRain } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 import { getVoloStatus } from "@/utils/volo";
+import GraficoTermiche from "@/components/GraficoTermiche";
 import { calcolaTermiche } from "@/utils/termiche";
 
 function getWeatherEmoji(code: number): string {
@@ -46,30 +47,31 @@ export default function PopupTermiche({ siteName, siteAltitude, hourlyData, onCl
   const now = new Date();
   const oraCorrente = now.getHours();
 
-  const termiche = useMemo(() => {
-    return hourlyData
-      .filter(h => {
-        const hh = h.time.getHours();
-        return hh >= 8 && hh <= 19;
-      })
-      .map(h => {
-        const t = calcolaTermiche(h, siteAltitude);
-        return {
-          hour: h.time.getHours(),
-          termiche: {
-            rateo: t.rateo,
-            forza: t.forza,
-            base: t.base,
-            top: t.top,
-            label: getLabelFromRateo(t.rateo),
-            colore: getColoreFromRateo(t.rateo),
-            gradienteReale: t.rateo / 4,
-          },
-        };
-      });
-  }, [hourlyData, siteAltitude]);
+  // Calcola termiche per ogni ora — con label/colore/gradienteReale aggiuntivi
+  const termiche = hourlyData
+    .filter(h => {
+      const hh = h.time.getHours();
+      return hh >= 8 && hh <= 19;
+    })
+    .map(h => {
+      const t = calcolaTermiche(h, siteAltitude);
+      return {
+        hour: h.time.getHours(),
+        termiche: {
+          rateo: t.rateo,
+          forza: t.forza,
+          base: t.base,
+          top: t.top,
+          label: getLabelFromRateo(t.rateo),
+          colore: getColoreFromRateo(t.rateo),
+          gradienteReale: t.rateo / 4,
+        },
+      };
+    });
 
-  if (!hourlyData || hourlyData.length === 0) return null;
+  if (!hourlyData || hourlyData.length === 0) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-3">
@@ -89,36 +91,19 @@ export default function PopupTermiche({ siteName, siteAltitude, hourlyData, onCl
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-700 transition-colors border border-slate-500/60">
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl hover:bg-slate-700 transition-colors border border-slate-500/60"
+          >
             <X className="w-5 h-5 text-slate-300" />
           </button>
         </div>
 
+        {/* Scroll container */}
         <div className="overflow-y-auto p-5 space-y-6">
-          {/* Inline thermal chart */}
+          {/* Grafico termiche */}
           <div className="bg-slate-800/50 border border-emerald-500/20 rounded-xl p-3">
-            <div className="flex items-end gap-1.5 h-32">
-              {termiche.map((t) => {
-                const pct = Math.max(2, (t.termiche.rateo / 4) * 100);
-                const isCurrent = t.hour === oraCorrente;
-                return (
-                  <div key={t.hour} className="flex flex-col items-center flex-1 min-w-0">
-                    <span className="text-[9px] font-bold leading-none mb-1" style={{ color: t.termiche.colore }}>
-                      {t.termiche.rateo.toFixed(1)}
-                    </span>
-                    <div className="w-full h-20 bg-slate-700/50 rounded-sm relative overflow-hidden">
-                      <div
-                        className={`absolute bottom-0 left-0 right-0 rounded-t transition-all ${isCurrent ? "ring-1 ring-white/30" : ""}`}
-                        style={{ height: `${pct}%`, backgroundColor: t.termiche.colore }}
-                      />
-                    </div>
-                    <span className={`text-[8px] mt-1 font-mono ${isCurrent ? "text-emerald-300 font-bold" : "text-slate-500"}`}>
-                      {String(t.hour).padStart(2, "0")}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+            <GraficoTermiche hourly={termiche} oraCorrente={oraCorrente} />
           </div>
 
           {/* Tabella oraria */}
@@ -133,7 +118,8 @@ export default function PopupTermiche({ siteName, siteAltitude, hourlyData, onCl
                 const termica = termiche.find(t => t.hour === h.time.getHours());
                 const isCurrentHour = h.time.getHours() === oraCorrente;
                 return (
-                  <div key={idx}
+                  <div
+                    key={idx}
                     className={`rounded-lg px-2.5 py-2 border transition-all ${
                       isCurrentHour
                         ? "bg-emerald-900/30 border-emerald-400/50 shadow-sm"
@@ -141,7 +127,9 @@ export default function PopupTermiche({ siteName, siteAltitude, hourlyData, onCl
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className={`text-xs font-mono font-bold ${isCurrentHour ? "text-emerald-300" : "text-slate-400"}`}>
+                      <span className={`text-xs font-mono font-bold ${
+                        isCurrentHour ? "text-emerald-300" : "text-slate-400"
+                      }`}>
                         {String(h.time.getHours()).padStart(2, "0")}:00
                       </span>
                       <span className="text-lg">{getWeatherEmoji(h.weatherCode)}</span>
@@ -154,7 +142,9 @@ export default function PopupTermiche({ siteName, siteAltitude, hourlyData, onCl
                       <div className="flex items-center gap-1 text-[10px] text-slate-400">
                         <Wind className="w-2.5 h-2.5 text-blue-400" />
                         <span>{Math.round(h.windSpeed)} km/h</span>
-                        {h.windGusts && <span className="text-slate-500">/{Math.round(h.windGusts)}</span>}
+                        {h.windGusts && (
+                          <span className="text-slate-500">/{Math.round(h.windGusts)}</span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1 text-[10px] text-slate-400">
                         <Droplets className="w-2.5 h-2.5 text-emerald-400" />

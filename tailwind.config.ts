@@ -70,12 +70,20 @@ export default {
       },
       keyframes: {
         "accordion-down": {
-          from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
+          from: {
+            height: "0",
+          },
+          to: {
+            height: "var(--radix-accordion-content-height)",
+          },
         },
         "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
+          from: {
+            height: "var(--radix-accordion-content-height)",
+          },
+          to: {
+            height: "0",
+          },
         },
         "hop-sync": {
           "0%, 100%": { transform: "translateY(0)" },
@@ -89,22 +97,12 @@ export default {
           "50%": { transform: "translateY(0) rotate(0deg)" },
           "75%": { transform: "translateY(-2px) rotate(2deg)" },
         },
-        "shimmer": {
-          "0%": { backgroundPosition: "-200% 0" },
-          "100%": { backgroundPosition: "200% 0" },
-        },
-        "twinkle": {
-          "0%, 100%": { opacity: "0.3", transform: "scale(0.8)" },
-          "50%": { opacity: "1", transform: "scale(1.2)" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "hop-sync": "hop-sync 1.5s ease-in-out infinite",
         "float": "float 3s ease-in-out infinite",
-        "shimmer": "shimmer 2s infinite",
-        "twinkle": "twinkle 2s ease-in-out infinite",
       },
     },
   },

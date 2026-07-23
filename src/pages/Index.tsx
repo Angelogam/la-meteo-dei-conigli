@@ -1,45 +1,27 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, lazy, Suspense } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import SplashScreen from "@/components/SplashScreen";
-import DecolloSelector from "@/components/DecolloSelector";
+import DecolliCard from "@/components/DecolliCard";
 import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
+import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import WeatherDashboard from "@/components/WeatherDashboard";
 import TabNav from "@/components/TabNav";
-import SidebarToggle from "@/components/SidebarToggle";
-import WeatherWidget from "@/components/WeatherWidget";
-import ThermalTimeline from "@/components/ThermalTimeline";
-import DecolloComparison from "@/components/DecolloComparison";
-import ThemeToggle from "@/components/ThemeToggle";
-import NotificationBell from "@/components/NotificationBell";
-import ForecastCarousel from "@/components/ForecastCarousel";
-import WindCompass from "@/components/WindCompass";
-import RadarChart from "@/components/RadarChart";
+import MeteoTab from "@/components/MeteoTab";
+import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
+import TermicheTab from "@/components/TermicheTab";
+import AnalisiMeteo from "@/components/AnalisiMeteo";
+import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
 import { getStabilityIndex } from "@/utils/weatherHelpers";
-import { Loader2, ChevronLeft, ChevronRight, Sparkles, MapPin, Navigation, List } from "lucide-react";
-
-const MeteoTab = lazy(() => import("@/components/MeteoTab"));
-const VentiInterpolatiTab = lazy(() => import("@/components/VentiInterpolatiTab"));
-const TermicheTab = lazy(() => import("@/components/TermicheTab"));
-const AnalisiMeteo = lazy(() => import("@/components/AnalisiMeteo"));
-const DiagnosticaPanel = lazy(() => import("@/components/DiagnosticaPanel"));
-
-const TabFallback = () => (
-  <div className="flex items-center justify-center py-16 text-slate-400">
-    <Loader2 className="w-6 h-6 animate-spin mr-2" />
-    <span>Caricamento...</span>
-  </div>
-);
+import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
+import { Activity } from "lucide-react";
 
 export default function Index() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showSplash, setShowSplash] = useState(true);
-  const [showSelector, setShowSelector] = useState(false);
+  useEffect(() => { avviaVerificaContinua(60000); }, []);
 
   const {
     selectedId, setSelectedId, loading: weatherLoading, updating,
@@ -49,98 +31,24 @@ export default function Index() {
     activeModel, currentCape,
   } = useWeatherData();
 
-  // Indice corrente del decollo
-  const siteIndex = useMemo(() => {
-    const idx = DECOLLI.findIndex(d => d.id === selectedId);
-    return idx >= 0 ? idx : 0;
-  }, [selectedId]);
-
-  const goToPrev = () => {
-    const next = siteIndex > 0 ? siteIndex - 1 : DECOLLI.length - 1;
-    setSelectedId(DECOLLI[next].id);
-    setSelectedHour(new Date().getHours());
-  };
-
-  const goToNext = () => {
-    const next = siteIndex < DECOLLI.length - 1 ? siteIndex + 1 : 0;
-    setSelectedId(DECOLLI[next].id);
-    setSelectedHour(new Date().getHours());
-  };
-
-  const handleSelectFromPopup = (index: number) => {
-    setSelectedId(DECOLLI[index].id);
-    setSelectedHour(new Date().getHours());
-    setShowSelector(false);
-  };
-
   const stabilityIndex = getStabilityIndex(
     currentData?.temperature ?? 20,
     currentData?.humidity ?? 50,
     currentData?.cloudCover ?? 30,
   );
 
-  const forecastData = useMemo(() => {
-    return enrichedDaily.slice(0, 5).map((d, i) => {
-      const days = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
-      const date = new Date(d.date);
-      const months = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
-      const icon = d.weatherCode >= 95 ? "⛈️" : d.weatherCode >= 80 ? "🌧️" : d.weatherCode >= 61 ? "🌧️" : d.weatherCode >= 51 ? "🌦️" : d.weatherCode >= 45 ? "🌫️" : d.weatherCode >= 20 ? "☁️" : d.weatherCode >= 10 ? "⛅" : "☀️";
-      return {
-        day: i === 0 ? "Oggi" : i === 1 ? "Domani" : days[date.getDay()],
-        date: `${date.getDate()} ${months[date.getMonth()]}`,
-        icon,
-        tempMax: d.temperatureMax,
-        tempMin: d.temperatureMin,
-        windMax: d.windSpeedMax,
-        precip: d.precipitationSum,
-        description: d.weatherDescription,
-      };
-    });
-  }, [enrichedDaily]);
+  const decolliList = useMemo(
+    () => DECOLLI.map((d) => ({ id: d.id, nome: d.name, valle: d.valley, quota: d.altitude, direzione: d.exposure, lat: d.lat, lon: d.lon })),
+    [],
+  );
 
-  const radarData = useMemo(() => {
-    if (!currentData) return [];
-    return [
-      { label: "Vento", value: Math.min(10, Math.round((currentData.windSpeed / 25) * 10)), max: 10 },
-      { label: "Temp", value: Math.min(10, Math.round(((currentData.temperature - 5) / 30) * 10)), max: 10 },
-      { label: "Sole", value: Math.min(10, Math.round(((100 - currentData.cloudCover) / 100) * 10)), max: 10 },
-      { label: "Term.", value: Math.min(10, Math.round((thermalDelta / 15) * 10)), max: 10 },
-      { label: "Stab.", value: Math.min(10, Math.max(2, Math.round(((currentData.pressure - 990) / 50) * 10))), max: 10 },
-    ];
-  }, [currentData, thermalDelta]);
+  const nomeToId = useMemo(() => {
+    const m: Record<string, string> = {};
+    for (const d of DECOLLI) m[d.name] = d.id;
+    return m;
+  }, []);
 
-  const comparisonData = useMemo(() => {
-    return DECOLLI.slice(0, 5).map(d => ({
-      id: d.id,
-      nome: d.name,
-      temp: currentData?.temperature ?? 20,
-      vento: currentData?.windSpeed ?? 10,
-      ventoDir: "S",
-      nuvole: currentData?.cloudCover ?? 30,
-      alt: d.altitude,
-      score: Math.min(10, Math.max(1, Math.round(5 + (d.altitude > 1000 ? 2 : -1) + (currentData?.windSpeed ? (currentData.windSpeed >= 5 && currentData.windSpeed <= 15 ? 2 : currentData.windSpeed > 25 ? -2 : 0) : 0)))),
-    }));
-  }, [currentData]);
-
-  const timelineData = useMemo(() => {
-    return dayData
-      .filter(h => {
-        const hh = h.time.getHours();
-        return hh >= 8 && hh <= 19;
-      })
-      .map(h => ({
-        ora: h.time.getHours(),
-        rateo: Math.min(4, Math.max(0.1, (h.temperature - (h.dewPoint || h.temperature - 8)) * 0.25 + (h.windSpeed >= 5 && h.windSpeed <= 15 ? 0.4 : 0))),
-        temp: h.temperature,
-        vento: h.windSpeed,
-      }));
-  }, [dayData]);
-
-  if (showSplash) {
-    return <SplashScreen onFinish={() => setShowSplash(false)} />;
-  }
-
-  if (weatherLoading && !currentData) {
+  if (weatherLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col">
         <Header />
@@ -157,167 +65,52 @@ export default function Index() {
 
   const hasData = Boolean(site && currentData && dayData.length > 0);
 
-  const tabContent: Record<string, React.ReactNode> = {
-    meteo: (
-      <Suspense fallback={<TabFallback />}>
-        <MeteoTab currentData={currentData} dayData={dayData} site={{ alt: site!.altitude, name: site!.name }} thermalDelta={thermalDelta} stabilityIndex={stabilityIndex} modelName={activeModel} cape={currentCape?.cape} liftedIndex={currentCape?.liftedIndex} cin={currentCape?.cin} />
-      </Suspense>
-    ),
-    venti: (
-      <Suspense fallback={<TabFallback />}>
-        <VentiInterpolatiTab lat={site!.lat} lon={site!.lon} quotaDecollo={site!.altitude} selectedDay={selectedDay} oraCorrente={selectedHour} onOraChange={setSelectedHour} siteName={site!.name} />
-      </Suspense>
-    ),
-    termiche: (
-      <Suspense fallback={<TabFallback />}>
-        <TermicheTab currentData={currentData} dayData={dayData} site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name }} />
-      </Suspense>
-    ),
-    analisi: (
-      <Suspense fallback={<TabFallback />}>
-        <AnalisiMeteo currentData={currentData} dayData={dayData} site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name, exposure: site!.exposure }} cape={currentCape?.cape} liftedIndex={currentCape?.liftedIndex} cin={currentCape?.cin} />
-      </Suspense>
-    ),
-  };
-
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
-      <ThemeToggle />
-      <NotificationBell />
       <Header />
-
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-8 max-h-screen overflow-y-auto">
-              <div className="flex flex-col lg:flex-row gap-6 relative">
-          <SidebarToggle isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
-          {sidebarOpen && (
-            <div className="lg:hidden fixed inset-0 bg-slate-950/70 z-30" onClick={() => setSidebarOpen(false)} />
-          )}
-
-          <aside className={`
-                      ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-                      lg:translate-x-0
-                      fixed lg:sticky top-0 lg:top-0 left-0 z-40 lg:z-auto
-                      w-72 lg:w-80
-                      lg:h-auto lg:overflow-visible
-                      h-full overflow-y-auto
-                      bg-slate-950 lg:bg-transparent
-                      p-4 lg:p-0
-                      transition-transform duration-300 ease-in-out
-                      shrink-0 space-y-4
-                      max-h-screen
-                    `}>
-            <div className="flex items-center justify-between lg:hidden mb-4">
-              <span className="text-sm font-bold text-white">Decolli</span>
-              <button onClick={() => setSidebarOpen(false)} className="p-1 rounded-lg hover:bg-slate-800">
-                <span className="text-slate-400">✕</span>
-              </button>
-            </div>
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+          <aside className="w-full lg:w-80 shrink-0 space-y-4">
             <UpdateTimer lastUpdate={lastUpdate} countdown={countdown} updating={updating} onRefresh={loadWeather} />
-
-            {/* Card decollo singolo con navigazione */}
-            <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-white flex items-center gap-1.5 uppercase tracking-wider">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-                  Decollo
-                </h3>
-                <span className="text-[10px] text-slate-500">{siteIndex + 1}/{DECOLLI.length}</span>
-              </div>
-
-              <div className="text-base font-extrabold text-white text-center py-2">
-                {site?.name ?? "Seleziona un decollo"}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={goToPrev}
-                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-slate-700/60 hover:bg-slate-600/60 border border-slate-600/40 text-xs font-bold text-slate-300 transition-all"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                  Prec.
-                </button>
-                <button
-                  onClick={goToNext}
-                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-slate-700/60 hover:bg-slate-600/60 border border-slate-600/40 text-xs font-bold text-slate-300 transition-all"
-                >
-                  Succ.
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {site && (
-                <div className="flex items-center justify-center gap-3 text-[10px] text-slate-500 pt-2 border-t border-slate-700/30">
-                  <span className="flex items-center gap-1"><Navigation className="w-3 h-3 text-sky-400" />{site.exposure}</span>
-                  <span>{site.valley}</span>
-                  <span>{site.altitude}m</span>
-                </div>
-              )}
-
-              <button
-                onClick={() => { setShowSelector(true); setSidebarOpen(false); }}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-gradient-to-r from-emerald-700/60 to-emerald-600/40 hover:from-emerald-600/70 hover:to-emerald-500/50 border border-emerald-500/40 text-xs font-bold text-emerald-200 transition-all"
-              >
-                <List className="w-4 h-4" />
-                Vedi tutti i {DECOLLI.length} decolli
-              </button>
+            <div className="bg-slate-800/50 border border-emerald-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
+              <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
+              <span className="text-xs text-emerald-300">{site?.name ?? "Decollo"} — Dati reali Open-Meteo</span>
+              <span className="text-[10px] text-slate-500 ml-auto">{countdown > 0 ? `${Math.round(countdown/1000)}s` : ""}</span>
             </div>
-
-            {currentData && (
-              <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 flex flex-col items-center max-h-screen overflow-y-auto">
-                <WindCompass windDir={currentData.windDir} windSpeed={currentData.windSpeed} gustSpeed={currentData.windGusts || 0} size={100} />
-              </div>
-            )}
+            <DecolliCard
+              decolli={decolliList}
+              selectedId={selectedId}
+              selectedDay={selectedDay}
+              onSelect={(item) => { const id = nomeToId[item.nome]; if (id) { setSelectedId(id); setSelectedHour(new Date().getHours()); } }}
+            />
           </aside>
-
-          <div className="flex-1 min-w-0 space-y-8">
-            {hasData ? (
+          <div className="flex-1 min-w-0 space-y-6">
+            {hasData && (
               <>
                 <SiteHeader name={site!.name} exposure={site!.exposure} valley={site!.valley} alt={site!.altitude} currentData={currentData} />
-                <WeatherWidget data={currentData} altitude={site!.altitude} siteName={site!.name} />
+                <PrevisioniGiornaliere enrichedDaily={enrichedDaily} dateLabels={dateLabels} currentData={currentData} dayData={dayData} site={{ name: site!.name, altitude: site!.altitude, exposure: site!.exposure }} selectedDay={selectedDay} onSelectDay={setSelectedDay} nomeDecollo={site!.name} />
+                <WeatherDashboard dayData={dayData} altitude={site!.altitude} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabels[selectedDay] ?? ""} />
+                <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
-                {radarData.length > 0 && (
-                  <div className="bg-slate-800/30 border border-slate-700/30 rounded-2xl p-5 flex flex-col items-center">
-                    <h3 className="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-emerald-400" />
-                      Qualità del volo
-                    </h3>
-                    <RadarChart values={radarData} size={220} />
-                  </div>
+                {activeTab === "meteo" && (
+                  <MeteoTab currentData={currentData} dayData={dayData} site={{ alt: site!.altitude, name: site!.name }} thermalDelta={thermalDelta} stabilityIndex={stabilityIndex} modelName={activeModel} cape={currentCape?.cape} liftedIndex={currentCape?.liftedIndex} cin={currentCape?.cin} />
                 )}
 
-                <ForecastCarousel forecasts={forecastData} selectedDay={selectedDay} onDaySelect={setSelectedDay} />
-                <ThermalTimeline hourlyData={timelineData} selectedHour={selectedHour} onHourSelect={setSelectedHour} />
-
-                <WeatherDashboard dayData={dayData} altitude={site!.altitude} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabels[selectedDay] ?? ""} />
-
-                <TabNav activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); setSidebarOpen(false); }} />
-                {tabContent[activeTab]}
-
-                <DecolloComparison decolli={comparisonData} />
+                {activeTab === "venti" && <VentiInterpolatiTab lat={site!.lat} lon={site!.lon} quotaDecollo={site!.altitude} selectedDay={selectedDay} oraCorrente={selectedHour} onOraChange={setSelectedHour} siteName={site!.name} />}
+                {activeTab === "termiche" && <TermicheTab currentData={currentData} dayData={dayData} site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name }} />}
+                {activeTab === "analisi" && <AnalisiMeteo currentData={currentData} dayData={dayData} site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name, exposure: site!.exposure }} cape={currentCape?.cape} liftedIndex={currentCape?.liftedIndex} cin={currentCape?.cin} />}
               </>
-            ) : (
-              <div className="text-center py-24 text-slate-400">
-                <div className="text-6xl mb-6">🐰</div>
-                <p className="text-xl font-bold text-white mb-2">Nessun dato meteo disponibile</p>
-                <p className="text-sm text-slate-500">Verifica la connessione o riprova.</p>
+            )}
+            {!hasData && (
+              <div className="text-center py-12 text-slate-400">
+                <p>Nessun dato meteo disponibile per {site?.name ?? "questo decollo"}. Verifica la connessione o riprova.</p>
               </div>
             )}
           </div>
         </div>
       </main>
-
-      {showSelector && (
-        <DecolloSelector
-          currentIndex={siteIndex}
-          onSelect={handleSelectFromPopup}
-          onClose={() => setShowSelector(false)}
-        />
-      )}
-
       <Footer />
-      <Suspense fallback={null}>
-        <DiagnosticaPanel />
-      </Suspense>
+      <DiagnosticaPanel />
     </div>
   );
 }
