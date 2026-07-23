@@ -21,8 +21,7 @@ import RadarChart from "@/components/RadarChart";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
 import { getStabilityIndex } from "@/utils/weatherHelpers";
-import { avviaVerificaContinua, diagnosticaCompleta } from "@/utils/mantenimentoAuto";
-import { Loader2, ChevronLeft, ChevronRight, Sparkles, Activity, CheckCircle, AlertTriangle, MapPin, Navigation, List } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Sparkles, MapPin, Navigation, List } from "lucide-react";
 
 const MeteoTab = lazy(() => import("@/components/MeteoTab"));
 const VentiInterpolatiTab = lazy(() => import("@/components/VentiInterpolatiTab"));
@@ -39,9 +38,7 @@ const TabFallback = () => (
 
 export default function Index() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [diagnosticStatus, setDiagnosticStatus] = useState<{ ok: boolean; count: number; label: string } | null>(null);
   const [showSplash, setShowSplash] = useState(true);
-  const [siteIndex, setSiteIndex] = useState(0);
   const [showSelector, setShowSelector] = useState(false);
 
   const {
@@ -52,49 +49,29 @@ export default function Index() {
     activeModel, currentCape,
   } = useWeatherData();
 
-  // Trova l'indice del decollo selezionato per sincronizzare i pulsanti
-  const currentIndex = useMemo(() => {
+  // Indice corrente del decollo
+  const siteIndex = useMemo(() => {
     const idx = DECOLLI.findIndex(d => d.id === selectedId);
     return idx >= 0 ? idx : 0;
   }, [selectedId]);
 
-  useEffect(() => {
-    setSiteIndex(currentIndex);
-  }, [currentIndex]);
-
   const goToPrev = () => {
     const next = siteIndex > 0 ? siteIndex - 1 : DECOLLI.length - 1;
-    setSiteIndex(next);
     setSelectedId(DECOLLI[next].id);
     setSelectedHour(new Date().getHours());
   };
 
   const goToNext = () => {
     const next = siteIndex < DECOLLI.length - 1 ? siteIndex + 1 : 0;
-    setSiteIndex(next);
     setSelectedId(DECOLLI[next].id);
     setSelectedHour(new Date().getHours());
   };
 
-  // Seleziona dal popup
   const handleSelectFromPopup = (index: number) => {
-    setSiteIndex(index);
     setSelectedId(DECOLLI[index].id);
     setSelectedHour(new Date().getHours());
     setShowSelector(false);
   };
-
-  // Chiamata diagnostica in un useEffect separato (dopo che tutto è inizializzato)
-  useEffect(() => {
-    avviaVerificaContinua(60000);
-    diagnosticaCompleta().then(report => {
-      if (report.ok) {
-        setDiagnosticStatus({ ok: true, count: 0, label: "Tutto ok" });
-      } else {
-        setDiagnosticStatus({ ok: false, count: report.errori.length, label: `${report.errori.length} problemi` });
-      }
-    });
-  }, []);
 
   const stabilityIndex = getStabilityIndex(
     currentData?.temperature ?? 20,
@@ -209,23 +186,6 @@ export default function Index() {
       <NotificationBell />
       <Header />
 
-      <div className="max-w-7xl mx-auto w-full px-3 md:px-6 pt-2">
-        {diagnosticStatus && (
-          <div className={`flex items-center gap-2 text-[10px] px-3 py-1.5 rounded-lg border ${
-            diagnosticStatus.ok
-              ? "bg-emerald-900/20 border-emerald-500/30 text-emerald-300"
-              : "bg-orange-900/20 border-orange-500/30 text-orange-300"
-          }`}>
-            {diagnosticStatus.ok ? (
-              <CheckCircle className="w-3 h-3 shrink-0" />
-            ) : (
-              <AlertTriangle className="w-3 h-3 shrink-0" />
-            )}
-            <span className="font-medium">Diagnostica: {diagnosticStatus.label}</span>
-          </div>
-        )}
-      </div>
-
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-8">
         <div className="flex flex-col lg:flex-row gap-6 relative">
           <SidebarToggle isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
@@ -263,12 +223,10 @@ export default function Index() {
                 <span className="text-[10px] text-slate-500">{siteIndex + 1}/{DECOLLI.length}</span>
               </div>
 
-              {/* Nome decollo */}
               <div className="text-base font-extrabold text-white text-center py-2">
                 {site?.name ?? "Seleziona un decollo"}
               </div>
 
-              {/* Pulsanti navigazione */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={goToPrev}
@@ -288,16 +246,12 @@ export default function Index() {
 
               {site && (
                 <div className="flex items-center justify-center gap-3 text-[10px] text-slate-500 pt-2 border-t border-slate-700/30">
-                  <span className="flex items-center gap-1">
-                    <Navigation className="w-3 h-3 text-sky-400" />
-                    {site.exposure}
-                  </span>
+                  <span className="flex items-center gap-1"><Navigation className="w-3 h-3 text-sky-400" />{site.exposure}</span>
                   <span>{site.valley}</span>
                   <span>{site.altitude}m</span>
                 </div>
               )}
 
-              {/* Pulsante per aprire la lista completa */}
               <button
                 onClick={() => { setShowSelector(true); setSidebarOpen(false); }}
                 className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-gradient-to-r from-emerald-700/60 to-emerald-600/40 hover:from-emerald-600/70 hover:to-emerald-500/50 border border-emerald-500/40 text-xs font-bold text-emerald-200 transition-all"
@@ -351,7 +305,6 @@ export default function Index() {
         </div>
       </main>
 
-      {/* Popup selezione decolli */}
       {showSelector && (
         <DecolloSelector
           currentIndex={siteIndex}
