@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Wind, Clock } from "lucide-react";
 import { weatherService } from "@/services/weatherService";
 import { validaVentoPerDecollo, getVentoStatusColor } from "@/utils/validaVentoDecollo";
@@ -56,60 +57,45 @@ interface LiveDato {
   code: number;
 }
 
-const REFRESH_INTERVAL = 600000;
+const REFRESH_INTERVAL = 600000; // 10 minuti
 
 const DecolliCard = ({ decolli, selectedId, onSelect, selectedDay = 0 }: DecolliCardProps) => {
-  const [liveData, setLiveData] = useState<Record<string, LiveDato | null>>({});
-  const [initialLoading, setInitialLoading] = useState(true);
-  const mountedRef = useRef(true);
-
-  const loadAllData = useCallback(async () => {
-    if (!mountedRef.current) return;
-
-    try {
+  // Query singola per TUTTI i decolli usando fetchManyCurrent
+  const { data: batchResult, isLoading, isFetching } = useQuery({
+    queryKey: ["decolli", "batch", decolli.map(d => `${d.lat.toFixed(4)}:${d.lon.toFixed(4)}`).join(",")],
+    queryFn: async () => {
       const coords = decolli.map(d => ({ lat: d.lat, lon: d.lon }));
-      const batchResults = await weatherService.fetchManyCurrent(coords);
+      return await weatherService.fetchManyCurrent(coords);
+    },
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: REFRESH_INTERVAL,
+  });
 
-      const newData: Record<string, LiveDato> = {};
-      decolli.forEach((d) => {
-        const key = `light:${d.lat.toFixed(4)}:${d.lon.toFixed(4)}`;
-        const result = batchResults[key];
-        if (result?.ok && result.data) {
-          const dd = result.data;
-          newData[d.nome] = {
-            temp: Math.round(dd.temperature),
-            wind: Math.round(dd.windSpeed),
-            gust: dd.windGusts != null ? Math.round(dd.windGusts) : null,
-            dir: Math.round(dd.windDir),
-            code: dd.weatherCode,
-          };
-        }
-      });
-
-      if (mountedRef.current) {
-        setLiveData(newData);
-        setInitialLoading(false);
-        console.log(`✅ Caricati ${Object.keys(newData).length}/${decolli.length} decolli in unico batch`);
-      }
-    } catch (err) {
-      console.error("❌ Errore batch caricamento decolli:", err);
-      if (mountedRef.current) {
-        setInitialLoading(false);
+  // Converte batchResult in un record chiave -> LiveDato
+  const liveData: Record<string, LiveDato> = React.useMemo(() => {
+    if (!batchResult) return {};
+    const result: Record<string, LiveDato> = {};
+    
+    for (const decollo of decolli) {
+      const key = `light:${decollo.lat.toFixed(4)}:${decollo.lon.toFixed(4)}`;
+      const batchEntry = batchResult[key];
+      if (batchEntry?.ok && batchEntry.data) {
+        const dd = batchEntry.data;
+        result[decollo.nome] = {
+          temp: Math.round(dd.temperature),
+          wind: Math.round(dd.windSpeed),
+          gust: dd.windGusts != null ? Math.round(dd.windGusts) : null,
+          dir: Math.round(dd.windDir),
+          code: dd.weatherCode,
+        };
       }
     }
-  }, [decolli]);
-
-  useEffect(() => {
-    loadAllData();
-    const interval = setInterval(loadAllData, REFRESH_INTERVAL);
-    return () => {
-      mountedRef.current = false;
-      clearInterval(interval);
-    };
-  }, [loadAllData]);
+    return result;
+  }, [batchResult, decolli]);
 
   const caricati = Object.keys(liveData).length;
-  if (initialLoading && caricati === 0) {
+
+  if (isLoading && caricati === 0) {
     return (
       <div className="bg-slate-900/80 border border-slate-700/60 rounded-xl p-3 md:p-4">
         <h2 className="text-sm md:text-base font-bold text-white mb-3">
@@ -137,6 +123,9 @@ const DecolliCard = ({ decolli, selectedId, onSelect, selectedDay = 0 }: Decolli
         <h2 className="text-sm md:text-base font-bold text-white">
           Decolli ({caricati}/{decolli.length})
         </h2>
+        {isFetching && (
+          <div className="w-4 h-4 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin" />
+        )}
       </div>
 
       <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-slate-400 mb-2 md:mb-3 bg-slate-800/60 rounded-lg px-2.5 py-1.5 border border-slate-700/40">

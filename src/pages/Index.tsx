@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
@@ -9,11 +9,6 @@ import UpdateTimer from "@/components/UpdateTimer";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import WeatherDashboard from "@/components/WeatherDashboard";
 import TabNav from "@/components/TabNav";
-import MeteoTab from "@/components/MeteoTab";
-import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
-import TermicheTab from "@/components/TermicheTab";
-import AnalisiMeteo from "@/components/AnalisiMeteo";
-import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import SidebarToggle from "@/components/SidebarToggle";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
@@ -21,13 +16,27 @@ import { getStabilityIndex } from "@/utils/weatherHelpers";
 import { avviaVerificaContinua, diagnosticaCompleta } from "@/utils/mantenimentoAuto";
 import { Activity, CheckCircle, AlertTriangle, XCircle, Loader2 } from "lucide-react";
 
+// Lazy load per componenti pesanti
+const MeteoTab = lazy(() => import("@/components/MeteoTab"));
+const VentiInterpolatiTab = lazy(() => import("@/components/VentiInterpolatiTab"));
+const TermicheTab = lazy(() => import("@/components/TermicheTab"));
+const AnalisiMeteo = lazy(() => import("@/components/AnalisiMeteo"));
+const DiagnosticaPanel = lazy(() => import("@/components/DiagnosticaPanel"));
+
+// Fallback UI per lazy loading
+const TabFallback = () => (
+  <div className="flex items-center justify-center py-16 text-slate-400">
+    <Loader2 className="w-6 h-6 animate-spin mr-2" />
+    <span>Caricamento...</span>
+  </div>
+);
+
 export default function Index() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [diagnosticStatus, setDiagnosticStatus] = useState<{ ok: boolean; count: number; label: string } | null>(null);
 
   useEffect(() => {
     avviaVerificaContinua(60000);
-    // Prima verifica sul caricamento
     diagnosticaCompleta().then(report => {
       if (report.ok) {
         setDiagnosticStatus({ ok: true, count: 0, label: "Tutto ok" });
@@ -89,6 +98,30 @@ export default function Index() {
 
   const hasData = Boolean(site && currentData && dayData.length > 0);
 
+  // Mappa tab -> componente lazy
+  const tabContent: Record<string, React.ReactNode> = {
+    meteo: (
+      <Suspense fallback={<TabFallback />}>
+        <MeteoTab currentData={currentData} dayData={dayData} site={{ alt: site!.altitude, name: site!.name }} thermalDelta={thermalDelta} stabilityIndex={stabilityIndex} modelName={activeModel} cape={currentCape?.cape} liftedIndex={currentCape?.liftedIndex} cin={currentCape?.cin} />
+      </Suspense>
+    ),
+    venti: (
+      <Suspense fallback={<TabFallback />}>
+        <VentiInterpolatiTab lat={site!.lat} lon={site!.lon} quotaDecollo={site!.altitude} selectedDay={selectedDay} oraCorrente={selectedHour} onOraChange={setSelectedHour} siteName={site!.name} />
+      </Suspense>
+    ),
+    termiche: (
+      <Suspense fallback={<TabFallback />}>
+        <TermicheTab currentData={currentData} dayData={dayData} site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name }} />
+      </Suspense>
+    ),
+    analisi: (
+      <Suspense fallback={<TabFallback />}>
+        <AnalisiMeteo currentData={currentData} dayData={dayData} site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name, exposure: site!.exposure }} cape={currentCape?.cape} liftedIndex={currentCape?.liftedIndex} cin={currentCape?.cin} />
+      </Suspense>
+    ),
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <Header />
@@ -127,7 +160,7 @@ export default function Index() {
             />
           )}
 
-          {/* Sidebar — collassabile su mobile */}
+          {/* Sidebar */}
           <aside className={`
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
             lg:translate-x-0
@@ -176,19 +209,8 @@ export default function Index() {
                 <WeatherDashboard dayData={dayData} altitude={site!.altitude} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabels[selectedDay] ?? ""} />
                 <TabNav activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); setSidebarOpen(false); }} />
 
-                {activeTab === "meteo" && (
-                  <MeteoTab currentData={currentData} dayData={dayData} site={{ alt: site!.altitude, name: site!.name }} thermalDelta={thermalDelta} stabilityIndex={stabilityIndex} modelName={activeModel} cape={currentCape?.cape} liftedIndex={currentCape?.liftedIndex} cin={currentCape?.cin} />
-                )}
-
-                {activeTab === "venti" && (
-                  <VentiInterpolatiTab lat={site!.lat} lon={site!.lon} quotaDecollo={site!.altitude} selectedDay={selectedDay} oraCorrente={selectedHour} onOraChange={setSelectedHour} siteName={site!.name} />
-                )}
-                {activeTab === "termiche" && (
-                  <TermicheTab currentData={currentData} dayData={dayData} site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name }} />
-                )}
-                {activeTab === "analisi" && (
-                  <AnalisiMeteo currentData={currentData} dayData={dayData} site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name, exposure: site!.exposure }} cape={currentCape?.cape} liftedIndex={currentCape?.liftedIndex} cin={currentCape?.cin} />
-                )}
+                {/* Tab content con lazy loading */}
+                {tabContent[activeTab]}
               </>
             )}
             {!hasData && (
@@ -200,7 +222,9 @@ export default function Index() {
         </div>
       </main>
       <Footer />
-      <DiagnosticaPanel />
+      <Suspense fallback={null}>
+        <DiagnosticaPanel />
+      </Suspense>
     </div>
   );
 }
