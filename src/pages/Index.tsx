@@ -42,16 +42,13 @@ export default function Index() {
   const [showSplash, setShowSplash] = useState(true);
   const [siteIndex, setSiteIndex] = useState(0);
 
-  useEffect(() => {
-    avviaVerificaContinua(60000);
-    diagnosticaCompleta().then(report => {
-      if (report.ok) {
-        setDiagnosticStatus({ ok: true, count: 0, label: "Tutto ok" });
-      } else {
-        setDiagnosticStatus({ ok: false, count: report.errori.length, label: `${report.errori.length} problemi` });
-      }
-    });
-  }, []);
+  const {
+    selectedId, setSelectedId, loading: weatherLoading, updating,
+    selectedDay, setSelectedDay, selectedHour, setSelectedHour,
+    activeTab, setActiveTab, lastUpdate, countdown, site, dayData,
+    currentData, thermalDelta, enrichedDaily, dateLabels, loadWeather,
+    activeModel, currentCape,
+  } = useWeatherData();
 
   // Trova l'indice del decollo selezionato per sincronizzare i pulsanti
   const currentIndex = useMemo(() => {
@@ -77,13 +74,17 @@ export default function Index() {
     setSelectedHour(new Date().getHours());
   };
 
-  const {
-    selectedId, setSelectedId, loading: weatherLoading, updating,
-    selectedDay, setSelectedDay, selectedHour, setSelectedHour,
-    activeTab, setActiveTab, lastUpdate, countdown, site, dayData,
-    currentData, thermalDelta, enrichedDaily, dateLabels, loadWeather,
-    activeModel, currentCape,
-  } = useWeatherData();
+  // Chiamata diagnostica in un useEffect separato (dopo che tutto è inizializzato)
+  useEffect(() => {
+    avviaVerificaContinua(60000);
+    diagnosticaCompleta().then(report => {
+      if (report.ok) {
+        setDiagnosticStatus({ ok: true, count: 0, label: "Tutto ok" });
+      } else {
+        setDiagnosticStatus({ ok: false, count: report.errori.length, label: `${report.errori.length} problemi` });
+      }
+    });
+  }, []);
 
   const stabilityIndex = getStabilityIndex(
     currentData?.temperature ?? 20,
