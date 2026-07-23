@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo, lazy, Suspense } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import SplashScreen from "@/components/SplashScreen";
+import DecolloSelector from "@/components/DecolloSelector";
 import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
 import WeatherDashboard from "@/components/WeatherDashboard";
@@ -21,7 +22,7 @@ import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
 import { getStabilityIndex } from "@/utils/weatherHelpers";
 import { avviaVerificaContinua, diagnosticaCompleta } from "@/utils/mantenimentoAuto";
-import { Loader2, ChevronLeft, ChevronRight, Sparkles, Activity, CheckCircle, AlertTriangle, MapPin, Navigation } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Sparkles, Activity, CheckCircle, AlertTriangle, MapPin, Navigation, List } from "lucide-react";
 
 const MeteoTab = lazy(() => import("@/components/MeteoTab"));
 const VentiInterpolatiTab = lazy(() => import("@/components/VentiInterpolatiTab"));
@@ -41,6 +42,7 @@ export default function Index() {
   const [diagnosticStatus, setDiagnosticStatus] = useState<{ ok: boolean; count: number; label: string } | null>(null);
   const [showSplash, setShowSplash] = useState(true);
   const [siteIndex, setSiteIndex] = useState(0);
+  const [showSelector, setShowSelector] = useState(false);
 
   const {
     selectedId, setSelectedId, loading: weatherLoading, updating,
@@ -72,6 +74,14 @@ export default function Index() {
     setSiteIndex(next);
     setSelectedId(DECOLLI[next].id);
     setSelectedHour(new Date().getHours());
+  };
+
+  // Seleziona dal popup
+  const handleSelectFromPopup = (index: number) => {
+    setSiteIndex(index);
+    setSelectedId(DECOLLI[index].id);
+    setSelectedHour(new Date().getHours());
+    setShowSelector(false);
   };
 
   // Chiamata diagnostica in un useEffect separato (dopo che tutto è inizializzato)
@@ -286,6 +296,15 @@ export default function Index() {
                   <span>{site.altitude}m</span>
                 </div>
               )}
+
+              {/* Pulsante per aprire la lista completa */}
+              <button
+                onClick={() => { setShowSelector(true); setSidebarOpen(false); }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-gradient-to-r from-emerald-700/60 to-emerald-600/40 hover:from-emerald-600/70 hover:to-emerald-500/50 border border-emerald-500/40 text-xs font-bold text-emerald-200 transition-all"
+              >
+                <List className="w-4 h-4" />
+                Vedi tutti i {DECOLLI.length} decolli
+              </button>
             </div>
 
             {currentData && (
@@ -331,6 +350,16 @@ export default function Index() {
           </div>
         </div>
       </main>
+
+      {/* Popup selezione decolli */}
+      {showSelector && (
+        <DecolloSelector
+          currentIndex={siteIndex}
+          onSelect={handleSelectFromPopup}
+          onClose={() => setShowSelector(false)}
+        />
+      )}
+
       <Footer />
       <Suspense fallback={null}>
         <DiagnosticaPanel />
