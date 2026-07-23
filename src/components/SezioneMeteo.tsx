@@ -4,7 +4,7 @@ import React from "react";
 import { DECOLLI } from "@/data/decolli";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import MeteoTab from "@/components/MeteoTab";
-import VentiTab from "@/components/VentiTab";
+import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiTab from "@/components/AnalisiTab";
 
@@ -14,13 +14,15 @@ export default function SezioneMeteo() {
     dayData,
     currentData,
     thermalDelta,
-    selectedDay, setSelectedDay,
-    activeTab, setActiveTab,
+    selectedDay,
+    setSelectedDay,
+    activeTab,
+    setActiveTab,
     currentCape,
     activeModel,
   } = useWeatherData();
 
-  const site = DECOLLI.find(d => d.id === selectedId);
+  const site = DECOLLI.find((d) => d.id === selectedId);
   if (!site) return null;
 
   const siteAlt = { alt: site.altitude };
@@ -79,14 +81,16 @@ export default function SezioneMeteo() {
         />
       )}
       {activeTab === "venti" && (
-        <VentiTab currentData={currentData} dayData={dayData} />
+        <VentiInterpolatiTab
+          lat={site.lat}
+          lon={site.lon}
+          quotaDecollo={site.altitude}
+          selectedDay={selectedDay}
+          siteName={site.name}
+        />
       )}
-      {activeTab === "termiche" && (
-        <TermicheTab currentData={currentData} dayData={dayData} site={siteFull} />
-      )}
-      {activeTab === "analisi" && (
-        <AnalisiTab currentData={currentData} dayData={dayData} site={siteFull} />
-      )}
+      {activeTab === "termiche" && <TermicheTab currentData={currentData} dayData={dayData} site={siteFull} />}
+      {activeTab === "analisi" && <AnalisiTab currentData={currentData} dayData={dayData} site={siteFull} />}
     </div>
   );
 }
