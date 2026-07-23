@@ -1,7 +1,5 @@
 "use client";
 
-import { transformHourlyData, transformCurrentData, transformDailyData } from "@/utils/transformMeteo";
-
 export interface MeteoHourly {
   time: Date;
   temperature: number;
@@ -16,7 +14,6 @@ export interface MeteoHourly {
   windDir: number;
   windGusts: number;
   uvIndex: number;
-  capes: number;
   cape: number;
   cin: number;
   liftedIndex: number;
@@ -125,13 +122,16 @@ export interface HourData {
   temp120m?: number;
 }
 
+// ---------- CONFIG ----------
 const BASE_URL = "https://api.open-meteo.com/v1/forecast";
-const CACHE_TTL = 300_000; // 5 minuti
+const FULL_CACHE_TTL = 300_000;       // 5 min full data
+const LIGHT_CACHE_TTL = 120_000;      // 2 min light data (sidebar)
 const RETRY_MAX = 2;
-const RETRY_DELAY = 1500; // 1.5s tra retry
-const MIN_REQUEST_INTERVAL = 1200; // 1.2s tra richieste (rispetta rate limit)
+const RETRY_DELAY = 1500;
+const MIN_REQUEST_INTERVAL = 1200;    // rispetta rate limit Open-Meteo
 
-const HOURLY_PARAMS = [
+// Parametri FULL (dettaglio decollo selezionato)
+const FULL_HOURLY = [
   "temperature_2m", "relative_humidity_2m", "dew_point_2m", "apparent_temperature",
   "precipitation", "precipitation_probability", "weather_code",
   "pressure_msl", "surface_pressure", "cloud_cover", "cloud_cover_low",
@@ -139,14 +139,11 @@ const HOURLY_PARAMS = [
   "wind_gusts_10m", "uv_index", "shortwave_radiation", "direct_radiation",
   "sunshine_duration", "temperature_80m", "temperature_120m",
   "wind_speed_80m", "wind_direction_80m", "wind_speed_120m", "wind_direction_120m",
-  "wind_speed_180m", "wind_direction_180m", "wind_speed_300m", "wind_direction_300m",
-  "wind_speed_600m", "wind_direction_600m", "wind_speed_1000m", "wind_direction_1000m",
-  "wind_speed_1500m", "wind_direction_1500m", "wind_speed_2000m", "wind_direction_2000m",
-  "wind_speed_2500m", "wind_direction_2500m", "wind_speed_3000m", "wind_direction_3000m",
+  "wind_speed_180m", "wind_direction_180m",
   "cape", "convective_inhibition", "lifted_index",
 ].join(",");
 
-const DAILY_PARAMS = [
+const FULL_DAILY = [
   "weather_code", "temperature_2m_max", "temperature_2m_min",
   "apparent_temperature_max", "apparent_temperature_min",
   "sunrise", "sunset", "daylight_duration", "sunshine_duration",
@@ -157,39 +154,41 @@ const DAILY_PARAMS = [
   "shortwave_radiation_sum", "et0_fao_evapotranspiration",
 ].join(",");
 
+// Parametri LIGHT (sidebar – solo per capire se un decollo è volabile)
+const LIGHT_CURRENT = [
+  "temperature_2m", "relative_humidity_2m", "apparent_temperature",
+  "precipitation", "rain", "showers", "snowfall",
+  "weather_code", "cloud_cover", "pressure_msl", "wind_speed_10m",
+  "wind_direction_10m", "wind_gusts_10m",
+].join(",");
+
 // ---------- CACHE ----------
 interface CacheEntry<T> {
   data: T;
   ts: number;
-  promise: Promise<T>;
+  promise?: Promise<T>;
 }
 
 const cache = new Map<string, CacheEntry<any>>();
 
-function cacheGet<T>(key: string): T | null {
+function cacheGet<T>(key: string, ttl: number): T | null {
   const entry = cache.get(key);
-  if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.data;
+  if (entry && Date.now() - entry.ts < ttl) return entry.data;
   return null;
 }
 
 function cacheSet<T>(key: string, data: T): void {
-  cache.set(key, { data, ts: Date.now(), promise: Promise.resolve(data) });
+  cache.set(key, { data, ts: Date.now() });
 }
 
-function cacheGetPromise<T>(key: string, factory: () => Promise<T>): Promise<T> {
+function cacheDedup<T>(key: string, factory: () => Promise<T>): Promise<T> {
   const entry = cache.get(key);
-  if (entry && Date.now() - entry.ts < CACHE_TTL) {
-    return Promise.resolve(entry.data);
-  }
-  // Se c'è già una promise in corso (stessa richiesta in volo), riutilizzala
-  if (entry && entry.promise) {
-    return entry.promise;
-  }
-  const promise = factory();
-  cache.set(key, { data: null as any, ts: 0, promise });
-  promise.then(data => {
-    cache.set(key, { data, ts: Date.now(), promise });
+  if (entry && entry.promise) return entry.promise;
+  const promise = factory().then(data => {
+    cache.set(key, { data, ts: Date.now() });
+    return data;
   });
+  cache.set(key, { data: null as any, ts: 0, promise });
   return promise;
 }
 
@@ -207,14 +206,14 @@ async function rateLimit(): Promise<void> {
 async function fetchWithRetry(url: string, retries = RETRY_MAX): Promise<Response> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
       if (res.ok) return res;
-      // 429 o 5xx → retry
-      if (res.status === 429 || res.status >= 500) {
-        if (attempt < retries) {
-          await new Promise(r => setTimeout(r, RETRY_DELAY * (attempt + 1)));
-          continue;
-        }
+      if ((res.status === 429 || res.status >= 500) && attempt < retries) {
+        await new Promise(r => setTimeout(r, RETRY_DELAY * (attempt + 1)));
+        continue;
       }
       return res;
     } catch (err) {
@@ -228,20 +227,13 @@ async function fetchWithRetry(url: string, retries = RETRY_MAX): Promise<Respons
   throw new Error("Fetch failed after retries");
 }
 
-// ---------- BUILD WIND PROFILE ----------
+// ---------- WIND PROFILE ----------
 function buildWindProfile(rawHourly: Record<string, (number | string)[]>, idx: number): { height: number; speed: number; dir: number }[] {
   const profile: { height: number; speed: number; dir: number }[] = [];
   const levels = [
     { height: 80, speedKey: "wind_speed_80m", dirKey: "wind_direction_80m" },
     { height: 120, speedKey: "wind_speed_120m", dirKey: "wind_direction_120m" },
     { height: 180, speedKey: "wind_speed_180m", dirKey: "wind_direction_180m" },
-    { height: 300, speedKey: "wind_speed_300m", dirKey: "wind_direction_300m" },
-    { height: 600, speedKey: "wind_speed_600m", dirKey: "wind_direction_600m" },
-    { height: 1000, speedKey: "wind_speed_1000m", dirKey: "wind_direction_1000m" },
-    { height: 1500, speedKey: "wind_speed_1500m", dirKey: "wind_direction_1500m" },
-    { height: 2000, speedKey: "wind_speed_2000m", dirKey: "wind_direction_2000m" },
-    { height: 2500, speedKey: "wind_speed_2500m", dirKey: "wind_direction_2500m" },
-    { height: 3000, speedKey: "wind_speed_3000m", dirKey: "wind_direction_3000m" },
   ];
   for (const level of levels) {
     const speedArr = rawHourly[level.speedKey];
@@ -249,29 +241,27 @@ function buildWindProfile(rawHourly: Record<string, (number | string)[]>, idx: n
     if (speedArr && dirArr && typeof speedArr[idx] === "number" && typeof dirArr[idx] === "number") {
       const speed = speedArr[idx] as number;
       const dir = dirArr[idx] as number;
-      if (speed >= 0) {
-        profile.push({ height: level.height, speed: Math.round(speed * 10) / 10, dir });
-      }
+      if (speed >= 0) profile.push({ height: level.height, speed: Math.round(speed * 10) / 10, dir });
     }
   }
   return profile;
 }
 
-// ---------- API CALL ----------
-async function rawFetch(lat: number, lon: number): Promise<{
-  hourly: MeteoHourly[];
-  current: MeteoCurrent;
-  daily: MeteoDaily[];
-  model: string;
-}> {
+// ---------- FULL FETCH (2 giorni invece di 3) ----------
+async function rawFetchFull(lat: number, lon: number) {
   const params = new URLSearchParams({
     latitude: lat.toString(),
     longitude: lon.toString(),
-    hourly: HOURLY_PARAMS,
-    daily: DAILY_PARAMS,
-    current: "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m",
+    hourly: FULL_HOURLY,
+    daily: FULL_DAILY,
+    current: [
+      "temperature_2m", "relative_humidity_2m", "apparent_temperature",
+      "is_day", "precipitation", "rain", "showers", "snowfall",
+      "weather_code", "cloud_cover", "pressure_msl", "surface_pressure",
+      "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",
+    ].join(","),
     timezone: "Europe/Rome",
-    forecast_days: "3",
+    forecast_days: "2", // invece di 3
   });
 
   await rateLimit();
@@ -303,7 +293,6 @@ async function rawFetch(lat: number, lon: number): Promise<{
       windDir: hourlyRaw.wind_direction_10m[i] as number,
       windGusts: (hourlyRaw.wind_gusts_10m?.[i] as number) ?? 0,
       uvIndex: (hourlyRaw.uv_index?.[i] as number) ?? 0,
-      capes: (hourlyRaw.cape?.[i] as number) ?? 0,
       cape: (hourlyRaw.cape?.[i] as number) ?? 0,
       cin: (hourlyRaw.convective_inhibition?.[i] as number) ?? 0,
       liftedIndex: (hourlyRaw.lifted_index?.[i] as number) ?? 0,
@@ -366,115 +355,137 @@ async function rawFetch(lat: number, lon: number): Promise<{
   return { hourly, current, daily, model: "auto" };
 }
 
+// ---------- LIGHTWEIGHT CURRENT (solo current, nessun hourly/daily) ----------
+async function rawFetchCurrent(lat: number, lon: number) {
+  const params = new URLSearchParams({
+    latitude: lat.toString(),
+    longitude: lon.toString(),
+    current: LIGHT_CURRENT,
+    timezone: "auto",
+  });
+
+  await rateLimit();
+  const res = await fetchWithRetry(`${BASE_URL}?${params.toString()}`);
+  if (!res.ok) return null;
+
+  const json = await res.json();
+  const c = json.current;
+  if (!c) return null;
+
+  return {
+    time: new Date(c.time),
+    temperature: c.temperature_2m,
+    humidity: c.relative_humidity_2m,
+    apparentTemp: c.apparent_temperature,
+    precipitation: c.precipitation,
+    rain: c.rain,
+    showers: c.showers,
+    snowfall: c.snowfall,
+    weatherCode: c.weather_code,
+    cloudCover: c.cloud_cover,
+    pressure: c.pressure_msl,
+    surfacePressure: 0,
+    windSpeed: c.wind_speed_10m,
+    windDir: c.wind_direction_10m,
+    windGusts: c.wind_gusts_10m,
+    dewPoint: 0,
+    precipitationProba: 0,
+    cloudCoverLow: 0,
+    cloudCoverMid: 0,
+    cloudCoverHigh: 0,
+    evapotranspiration: 0,
+    et0: 0,
+    vapourPressureDeficit: 0,
+    soilTemp: 0,
+    soilMoisture: 0,
+    uvIndex: 0,
+    shortwaveRadiation: 0,
+    directRadiation: 0,
+    diffuseRadiation: 0,
+    directNormalIrradiance: 0,
+    terrestrialRadiation: 0,
+    sunshineDuration: 0,
+    windProfile: undefined,
+    temp80m: undefined,
+    temp120m: undefined,
+  } as HourData;
+}
+
+// ---------- BATCH CURRENT ----------
+let batchQueue: Array<{
+  id: string;
+  lat: number;
+  lon: number;
+  resolve: (d: HourData | null) => void;
+}> = [];
+let batchTimer: ReturnType<typeof setTimeout> | null = null;
+
+function batchCurrent(id: string, lat: number, lon: number): Promise<HourData | null> {
+  return new Promise(resolve => {
+    batchQueue.push({ id, lat, lon, resolve });
+
+    if (!batchTimer) {
+      batchTimer = setTimeout(async () => {
+        const queue = [...batchQueue];
+        batchQueue = [];
+        batchTimer = null;
+
+        // Esegue tutte le richieste in parallelo (con rate limit gestito internamente)
+        const results = await Promise.allSettled(
+          queue.map(item => rawFetchCurrent(item.lat, item.lon))
+        );
+
+        results.forEach((result, i) => {
+          queue[i].resolve(result.status === "fulfilled" ? result.value : null);
+        });
+      }, 50); // batch window di 50ms
+    }
+  });
+}
+
 // ========================
 // ESPORTAZIONE PUBBLICA
 // ========================
 export const weatherService = {
   /**
-   * Recupera i dati meteo con cache e retry.
-   * La stessa coppia (lat, lon) non viene richiesta più di una volta ogni CACHE_TTL.
+   * Dati completi per un decollo (cache 5 minuti, 2 giorni di previsione)
    */
-  fetchWeather(lat: number, lon: number): Promise<{
-    hourly: MeteoHourly[];
-    current: MeteoCurrent;
-    daily: MeteoDaily[];
-    model: string;
-  }> {
-    const key = `weather:${lat.toFixed(4)}:${lon.toFixed(4)}`;
-    const cached = cacheGet<{
-      hourly: MeteoHourly[];
-      current: MeteoCurrent;
-      daily: MeteoDaily[];
-      model: string;
-    }>(key);
+  fetchWeather(lat: number, lon: number) {
+    const key = `full:${lat.toFixed(4)}:${lon.toFixed(4)}`;
+    const cached = cacheGet<ReturnType<typeof rawFetchFull> extends Promise<infer T> ? T : never>(key, FULL_CACHE_TTL);
     if (cached) return Promise.resolve(cached);
-
-    return cacheGetPromise(key, () => rawFetch(lat, lon));
+    return cacheDedup(key, () => rawFetchFull(lat, lon));
   },
 
   /**
-   * Versione soft di fetchWeather: non lancia mai eccezione (tranne che per errori di programmazione).
+   * Versione sicura (non lancia eccezioni)
    */
-  async fetchWithFallback(lat: number, lon: number): Promise<{
-    data: { hourly: MeteoHourly[]; current: MeteoCurrent; daily: MeteoDaily[]; model: string } | null;
-    ok: boolean;
-  }> {
+  async fetchWithFallback(lat: number, lon: number) {
     try {
       const data = await this.fetchWeather(lat, lon);
       return { data, ok: true };
     } catch (err) {
-      console.warn(`[weatherService] fetchWithFallback fallito per ${lat},${lon}:`, err);
+      console.warn(`[weatherService] fallito per ${lat},${lon}:`, err);
       return { data: null, ok: false };
     }
   },
 
   /**
-   * Solo current (leggero, per la sidebar dei decolli). Con cache.
+   * Solo current (molto più leggero, cache 2 minuti, batched)
    */
-  fetchCurrent: async (lat: number, lon: number): Promise<{ data: HourData | null; ok: boolean }> => {
-    const key = `current:${lat.toFixed(4)}:${lon.toFixed(4)}`;
-    const cached = cacheGet<{ data: HourData | null; ok: boolean }>(key);
+  async fetchCurrent(lat: number, lon: number) {
+    const key = `light:${lat.toFixed(4)}:${lon.toFixed(4)}`;
+    const cached = cacheGet<{ data: HourData | null; ok: boolean }>(key, LIGHT_CACHE_TTL);
     if (cached) return cached;
 
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=auto&forecast_days=1`;
-
-    try {
-      await rateLimit();
-      const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-      if (!res.ok) return { data: null, ok: false };
-      const json = await res.json();
-      const c = json.current;
-      if (!c) return { data: null, ok: false };
-
-      const data: HourData = {
-        time: new Date(c.time),
-        temperature: c.temperature_2m,
-        humidity: c.relative_humidity_2m,
-        apparentTemp: c.apparent_temperature,
-        precipitation: c.precipitation,
-        rain: c.rain,
-        showers: c.showers,
-        snowfall: c.snowfall,
-        weatherCode: c.weather_code,
-        pressure: c.pressure_msl,
-        surfacePressure: c.surface_pressure,
-        cloudCover: c.cloud_cover,
-        windSpeed: c.wind_speed_10m,
-        windDir: c.wind_direction_10m,
-        windGusts: c.wind_gusts_10m,
-        dewPoint: 0,
-        precipitationProba: 0,
-        cloudCoverLow: 0,
-        cloudCoverMid: 0,
-        cloudCoverHigh: 0,
-        evapotranspiration: 0,
-        et0: 0,
-        vapourPressureDeficit: 0,
-        soilTemp: 0,
-        soilMoisture: 0,
-        uvIndex: 0,
-        shortwaveRadiation: 0,
-        directRadiation: 0,
-        diffuseRadiation: 0,
-        directNormalIrradiance: 0,
-        terrestrialRadiation: 0,
-        sunshineDuration: 0,
-        windProfile: undefined,
-        temp80m: undefined,
-        temp120m: undefined,
-      };
-      const result = { data, ok: true };
-      cacheSet(key, result);
-      return result;
-    } catch {
-      return { data: null, ok: false };
-    }
+    const data = await batchCurrent(key, lat, lon);
+    const result = { data, ok: data != null };
+    if (data) cacheSet(key, result);
+    return result;
   },
 
-  /**
-   * Svuota la cache (utile per forzare refresh).
-   */
-  clearCache(): void {
+  /** Svuota cache */
+  clearCache() {
     cache.clear();
   },
 };
