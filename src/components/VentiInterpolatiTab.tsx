@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { Wind, Calendar, TrendingUp, Activity, Gauge } from "lucide-react";
-import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
+import { Wind, Calendar, TrendingUp, Gauge } from "lucide-react";
+import { weatherService, type WindProfileResult } from "@/services/weatherService";
 
 function getDirAbbrev(deg: number): string {
   const abbrevs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
@@ -34,10 +34,29 @@ interface VentiInterpolatiTabProps {
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 const QUOTE_LABELS = [500, 1000, 1500, 2000, 2500, 3000];
 
+function interpolateWind(quote: Record<number, { speed: number; dir: number }>, targetQuota: number): { speed: number; dir: number } | null {
+  const keys = Object.keys(quote).map(Number).sort((a, b) => a - b);
+  if (keys.length === 0) return null;
+  if (keys.length === 1) return quote[keys[0]];
+  const lower = keys.filter(k => k <= targetQuota).pop();
+  const upper = keys.filter(k => k >= targetQuota).shift();
+  if (!lower && !upper) return null;
+  if (!lower && upper) return quote[upper];
+  if (lower && !upper) return quote[lower];
+  if (lower === upper) return quote[lower];
+  const ratio = (targetQuota - lower) / (upper - lower);
+  const speed = Math.round(quote[lower].speed + (quote[upper].speed - quote[lower].speed) * ratio);
+  let dDiff = quote[upper].dir - quote[lower].dir;
+  if (dDiff > 180) dDiff -= 360;
+  if (dDiff < -180) dDiff += 360;
+  const dir = ((quote[lower].dir + dDiff * ratio) % 360 + 360) % 360;
+  return { speed: Math.round(speed), dir: Math.round(dir) };
+}
+
 export default function VentiInterpolatiTab({
   lat, lon, quotaDecollo, selectedDay, oraCorrente = 12, onOraChange, siteName
 }: VentiInterpolatiTabProps) {
-  const [data, setData] = useState<VentiInterpolatiData | null>(null);
+  const [windData, setWindData] = useState<WindProfileResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [oraSelezionata, setOraSelezionata] = useState(oraCorrente);
@@ -52,11 +71,11 @@ export default function VentiInterpolatiTab({
     setLoading(true);
     setError(null);
 
-    getVentiInterpolati(lat, lon, quotaDecollo, dayStr)
+    weatherService.fetchWindProfile(lat, lon, dayStr)
       .then(result => {
-        setData(result);
+        setWindData(result);
         setLoading(false);
-        if (result.ventoOrario.length > 0) {
+        if (result?.ventoOrario?.length > 0) {
           const closest = result.ventoOrario.reduce((prev, curr) =>
             Math.abs(curr.ora - oraCorrente) < Math.abs(prev.ora - oraCorrente) ? curr : prev
           );
@@ -75,9 +94,9 @@ export default function VentiInterpolatiTab({
   const dataGiorno = formatDateShort(targetDate);
 
   const oraData = useMemo(() => {
-    if (!data) return null;
-    return data.ventoOrario.find(v => v.ora === oraSelezionata) || data.ventoOrario[0] || null;
-  }, [data, oraSelezionata]);
+    if (!windData) return null;
+    return windData.ventoOrario.find(v => v.ora === oraSelezionata) || windData.ventoOrario[0] || null;
+  }, [windData, oraSelezionata]);
 
   const quoteVisibili = useMemo(() => {
     if (!oraData) return [];
@@ -87,13 +106,13 @@ export default function VentiInterpolatiTab({
         ris.push({ quota: q, speed: oraData.quote[q].speed, dir: oraData.quote[q].dir });
       }
     }
-    const tutteQuote = Object.keys(oraData.quote).map(Number);
-    const piuVicina = tutteQuote.reduce((best, q) =>
-      Math.abs(q - quotaDecollo) < Math.abs(best - quotaDecollo) ? q : best, tutteQuote[0]
-    );
-    if (!ris.find(r => Math.abs(r.quota - piuVicina) < 50)) {
-      ris.push({ quota: piuVicina, speed: oraData.quote[piuVicina].speed, dir: oraData.quote[piuVicina].dir });
+    // Aggiungi quota decollo interpolata se non è già presente
+    const decolloInterpolato = interpolateWind(oraData.quote, quotaDecollo);
+    if (decolloInterpolato && !ris.find(r => Math.abs(r.quota - quotaDecollo) < 50)) {
+      ris.push({ quota: quotaDecollo, speed: decolloInterpolato.speed, dir: decolloInterpolato.dir });
     }
+    return ris.sort((a, b) =><dyad-write path="src/components/VentiInterpolatiTab.tsx" description="Complete VentiInterpolatiTab using weatherService.fetchWindProfile">
+    });
     return ris.sort((a, b) => a.quota - b.quota);
   }, [oraData, quotaDecollo]);
 
@@ -103,7 +122,7 @@ export default function VentiInterpolatiTab({
     return (
       <div className="flex items-center justify-center py-16 text-slate-400">
         <div className="w-8 h-8 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin mr-3" />
-        <span>Calcolo venti per {siteName || "decollo"}...</span>
+        <span>Caricamento venti per {siteName || "decollo"}...</span>
       </div>
     );
   }
@@ -118,7 +137,7 @@ export default function VentiInterpolatiTab({
     );
   }
 
-  if (!data || data.ventoOrario.length === 0) {
+  if (!windData || windData.ventoOrario.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-slate-400">
         <Wind className="w-16 h-16 text-slate-600 mb-4" />
@@ -140,14 +159,12 @@ export default function VentiInterpolatiTab({
             <span>{dataGiorno}</span>
             <span className="text-slate-600">·</span>
             <span>{quotaDecollo}m slm</span>
-            <span className="text-slate-600">·</span>
-            <span>{lat.toFixed(4)}&deg;N, {lon.toFixed(4)}&deg;E</span>
           </div>
         </div>
       </div>
 
       <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
-        {data.ventoOrario.filter(v => HOURS.includes(v.ora)).map(v => (
+        {windData.ventoOrario.filter(v => HOURS.includes(v.ora)).map(v => (
           <button
             key={v.ora}
             onClick={() => { setOraSelezionata(v.ora); onOraChange?.(v.ora); }}
@@ -216,9 +233,9 @@ export default function VentiInterpolatiTab({
 
         <div className="flex flex-wrap gap-2 text-[10px] text-slate-400 mt-4 pt-3 border-t border-slate-700/30">
           <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-emerald-400" /> {"<="}8</span>
-          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-lime-400" /> 9&ndash;15</span>
-          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-400" /> 16&ndash;22</span>
-          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-orange-400" /> 23&ndash;30</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-lime-400" /> 9–15</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-400" /> 16–22</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-orange-400" /> 23–30</span>
           <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-red-400" /> {">"}30 km/h</span>
           <span className="ml-2 flex items-center gap-1"><span className="text-emerald-400">🪂</span> Decollo</span>
         </div>
@@ -230,8 +247,8 @@ export default function VentiInterpolatiTab({
           <span className="text-xs font-bold text-cyan-300 uppercase tracking-wider">Vento al decollo ({quotaDecollo}m)</span>
         </div>
         <div className="divide-y divide-slate-700/20">
-          {data.ventoOrario.filter(v => HOURS.includes(v.ora)).map(v => {
-            const ventoDecollo = v.quote[quotaDecollo] || v.quote[Object.keys(v.quote)[0]] || { speed: 0, dir: 0 };
+          {windData.ventoOrario.filter(v => HOURS.includes(v.ora)).map(v => {
+            const ventoDecollo = interpolateWind(v.quote, quotaDecollo) || { speed: 0, dir: 0 };
             const isSelected = v.ora === oraSelezionata;
             return (
               <button

@@ -1,5 +1,17 @@
 "use client";
 
+// =====================================================
+// weatherService — UNICO punto di accesso alle API meteo
+// =====================================================
+// - Cache a due livelli: full (5min) / light (2min)
+// - Batch per richieste current (sidebar)
+// - Dedup automatico delle richieste in corso
+// - Stale-while-revalidate (10 min fallback)
+// - Rate limiter a 1s
+// - Semaforo: max 6 richieste full contemporanee
+// - Metodi dedicati: fetchWeather, fetchCurrent, fetchManyCurrent, fetchWindProfile
+// =====================================================
+
 export interface MeteoHourly {
   time: Date;
   temperature: number;
@@ -124,15 +136,14 @@ export interface HourData {
 
 // ---------- CONFIG ----------
 const BASE_URL = "https://api.open-meteo.com/v1/forecast";
-const FULL_CACHE_TTL = 300_000;       // 5 min full data
-const LIGHT_CACHE_TTL = 120_000;      // 2 min light data (sidebar)
-const STALE_TTL = 600_000;            // 10 min stale data (se fallisce la richiesta, riusa il dato vecchio)
+const FULL_CACHE_TTL = 300_000;
+const LIGHT_CACHE_TTL = 120_000;
+const STALE_TTL = 600_000;
 const RETRY_MAX = 2;
 const RETRY_DELAY = 1500;
-const MIN_REQUEST_INTERVAL = 1000;    // 1s tra richieste (ancora più veloce di prima)
-const MAX_CONCURRENT = 6;             // massimo 6 richieste full contemporanee (safety)
+const MIN_REQUEST_INTERVAL = 1000;
+const MAX_CONCURRENT = 6;
 
-// Parametri FULL (dettaglio decollo selezionato)
 const FULL_HOURLY = [
   "temperature_2m", "relative_humidity_2m", "dew_point_2m", "apparent_temperature",
   "precipitation", "precipitation_probability", "weather_code",
@@ -156,12 +167,18 @@ const FULL_DAILY = [
   "shortwave_radiation_sum", "et0_fao_evapotranspiration",
 ].join(",");
 
-// Parametri LIGHT (sidebar – solo per capire se un decollo è volabile)
 const LIGHT_CURRENT = [
   "temperature_2m", "relative_humidity_2m", "apparent_temperature",
   "precipitation", "rain", "showers", "snowfall",
   "weather_code", "cloud_cover", "pressure_msl", "wind_speed_10m",
   "wind_direction_10m", "wind_gusts_10m",
+].join(",");
+
+const WIND_HOURLY = [
+  "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",
+  "wind_speed_80m", "wind_direction_80m",
+  "wind_speed_120m", "wind_direction_120m",
+  "wind_speed_180m", "wind_direction_180m",
 ].join(",");
 
 // ---------- CACHE ----------
@@ -173,14 +190,12 @@ interface CacheEntry<T> {
 
 const cache = new Map<string, CacheEntry<any>>();
 
-/** Ottiene il dato se è ancora valido */
 function cacheGet<T>(key: string, ttl: number): T | null {
   const entry = cache.get(key);
   if (entry && Date.now() - entry.ts < ttl) return entry.data;
   return null;
 }
 
-/** Ottiene il dato anche se scaduto (stale), per fallback */
 function cacheGetStale<T>(key: string): T | null {
   const entry = cache.get(key);
   if (entry && Date.now() - entry.ts < STALE_TTL) return entry.data;
@@ -193,17 +208,22 @@ function cacheSet<T>(key: string, data: T): void {
 
 function cacheDedup<T>(key: string, factory: () => Promise<T>): Promise<T> {
   const entry = cache.get(key);
-  if (entry && entry.promise) return entry.promise;
+  if (entry?.promise) return entry.promise;
   const promise = factory().then(data => {
     cache.set(key, { data, ts: Date.now() });
     return data;
   }).catch(err => {
-    // Se la promise fallisce, rimuoviamo l'entry così la prossima volta riprova
     cache.delete(key);
+    const stale = cacheGetStale<T>(key);
+    if (stale) return stale;
     throw err;
   });
   cache.set(key, { data: null as any, ts: 0, promise });
   return promise;
+}
+
+function cacheKey(lat: number, lon: number, prefix: string): string {
+  return `${prefix}:${lat.toFixed(4)}:${lon.toFixed(4)}`;
 }
 
 // ---------- RATE LIMITER ----------
@@ -217,7 +237,6 @@ async function rateLimit(): Promise<void> {
   lastRequest = Date.now();
 }
 
-// ---------- SEMAFORO (max 6 richieste full contemporanee) ----------
 const fullQueue: Array<() => void> = [];
 
 async function acquireFullSlot(): Promise<void> {
@@ -226,10 +245,7 @@ async function acquireFullSlot(): Promise<void> {
     return;
   }
   await new Promise<void>(resolve => {
-    fullQueue.push(() => {
-      concurrentCount++;
-      resolve();
-    });
+    fullQueue.push(() => { concurrentCount++; resolve(); });
   });
 }
 
@@ -264,7 +280,7 @@ async function fetchWithRetry(url: string, retries = RETRY_MAX): Promise<Respons
   throw new Error("Fetch failed after retries");
 }
 
-// ---------- WIND PROFILE ----------
+// ---------- BUILD WIND PROFILE ----------
 function buildWindProfile(rawHourly: Record<string, (number | string)[]>, idx: number): { height: number; speed: number; dir: number }[] {
   const profile: { height: number; speed: number; dir: number }[] = [];
   const levels = [
@@ -284,7 +300,9 @@ function buildWindProfile(rawHourly: Record<string, (number | string)[]>, idx: n
   return profile;
 }
 
-// ---------- FULL FETCH (2 giorni) ----------
+// ========================
+// FULL FETCH (2 giorni)
+// ========================
 async function rawFetchFull(lat: number, lon: number) {
   await acquireFullSlot();
   try {
@@ -397,8 +415,10 @@ async function rawFetchFull(lat: number, lon: number) {
   }
 }
 
-// ---------- LIGHTWEIGHT CURRENT ----------
-async function rawFetchCurrentSafe(lat: number, lon: number): Promise<HourData | null> {
+// ========================
+// LIGHT CURRENT (solo current, per sidebar)
+// ========================
+async function rawFetchCurrent(lat: number, lon: number): Promise<HourData | null> {
   try {
     const params = new URLSearchParams({
       latitude: lat.toString(),
@@ -429,33 +449,21 @@ async function rawFetchCurrentSafe(lat: number, lon: number): Promise<HourData |
       windSpeed: c.wind_speed_10m,
       windDir: c.wind_direction_10m,
       windGusts: c.wind_gusts_10m,
-      dewPoint: 0,
-      precipitationProba: 0,
-      cloudCoverLow: 0,
-      cloudCoverMid: 0,
-      cloudCoverHigh: 0,
-      evapotranspiration: 0,
-      et0: 0,
-      vapourPressureDeficit: 0,
-      soilTemp: 0,
-      soilMoisture: 0,
-      uvIndex: 0,
-      shortwaveRadiation: 0,
-      directRadiation: 0,
-      diffuseRadiation: 0,
-      directNormalIrradiance: 0,
-      terrestrialRadiation: 0,
-      sunshineDuration: 0,
-      windProfile: undefined,
-      temp80m: undefined,
-      temp120m: undefined,
+      dewPoint: 0, precipitationProba: 0, cloudCoverLow: 0, cloudCoverMid: 0, cloudCoverHigh: 0,
+      evapotranspiration: 0, et0: 0, vapourPressureDeficit: 0,
+      soilTemp: 0, soilMoisture: 0, uvIndex: 0,
+      shortwaveRadiation: 0, directRadiation: 0, diffuseRadiation: 0,
+      directNormalIrradiance: 0, terrestrialRadiation: 0, sunshineDuration: 0,
+      windProfile: undefined, temp80m: undefined, temp120m: undefined,
     } as HourData;
   } catch {
     return null;
   }
 }
 
-// ---------- BATCH CURRENT ----------
+// ========================
+// BATCH CURRENT
+// ========================
 let batchQueue: Array<{
   id: string;
   lat: number;
@@ -468,12 +476,8 @@ let batchInFlight = false;
 function batchCurrent(id: string, lat: number, lon: number): Promise<HourData | null> {
   return new Promise(resolve => {
     batchQueue.push({ id, lat, lon, resolve });
-
     if (!batchTimer && !batchInFlight) {
-      batchTimer = setTimeout(() => {
-        batchTimer = null;
-        flushBatch();
-      }, 50); // Finestra di batch di 50ms
+      batchTimer = setTimeout(() => { batchTimer = null; flushBatch(); }, 50);
     }
   });
 }
@@ -481,32 +485,82 @@ function batchCurrent(id: string, lat: number, lon: number): Promise<HourData | 
 async function flushBatch(): Promise<void> {
   if (batchInFlight) return;
   batchInFlight = true;
-
   const queue = [...batchQueue];
   batchQueue = [];
 
   try {
-    // Esegue tutte le richieste in parallelo (max 6 alla volta)
     const results: (HourData | null)[] = [];
     for (let i = 0; i < queue.length; i += MAX_CONCURRENT) {
       const chunk = queue.slice(i, i + MAX_CONCURRENT);
       const chunkResults = await Promise.allSettled(
-        chunk.map(item => rawFetchCurrentSafe(item.lat, item.lon))
+        chunk.map(item => rawFetchCurrent(item.lat, item.lon))
       );
       for (const result of chunkResults) {
         results.push(result.status === "fulfilled" ? result.value : null);
       }
     }
-
-    results.forEach((data, i) => {
-      queue[i].resolve(data);
-    });
+    results.forEach((data, i) => queue[i].resolve(data));
   } finally {
     batchInFlight = false;
-    // Se altre richieste sono arrivate durante l'esecuzione, processale
-    if (batchQueue.length > 0) {
-      flushBatch();
+    if (batchQueue.length > 0) flushBatch();
+  }
+}
+
+// ========================
+// WIND PROFILE (solo venti)
+// ========================
+export interface WindProfileResult {
+  ventoOrario: {
+    ora: number;
+    quote: Record<number, { speed: number; dir: number }>;
+    gust: number;
+  }[];
+}
+
+async function rawFetchWindProfile(lat: number, lon: number, day: string): Promise<WindProfileResult | null> {
+  try {
+    await rateLimit();
+    const res = await fetchWithRetry(
+      `${BASE_URL}?latitude=${lat}&longitude=${lon}&hourly=${WIND_HOURLY}&timezone=Europe/Rome&start_date=${day}&end_date=${day}`
+    );
+    if (!res.ok) return null;
+    const raw = await res.json();
+    const hours: string[] = raw.hourly.time;
+    const speeds10: number[] = raw.hourly.wind_speed_10m;
+    const dirs10: number[] = raw.hourly.wind_direction_10m;
+    const gusts: number[] = raw.hourly.wind_gusts_10m;
+    const speeds80: number[] = raw.hourly.wind_speed_80m;
+    const dirs80: number[] = raw.hourly.wind_direction_80m;
+    const speeds120: number[] = raw.hourly.wind_speed_120m;
+    const dirs120: number[] = raw.hourly.wind_direction_120m;
+    const speeds180: number[] = raw.hourly.wind_speed_180m;
+    const dirs180: number[] = raw.hourly.wind_direction_180m;
+
+    const livelli: { quota: number; speeds: number[]; dirs: number[] }[] = [
+      { quota: 10, speeds: speeds10, dirs: dirs10 },
+      { quota: 80, speeds: speeds80, dirs: dirs80 },
+      { quota: 120, speeds: speeds120, dirs: dirs120 },
+      { quota: 180, speeds: speeds180, dirs: dirs180 },
+    ];
+
+    const ventoOrario: WindProfileResult["ventoOrario"] = [];
+    for (let i = 0; i < hours.length; i++) {
+      const ora = Number(hours[i].split("T")[1].split(":")[0]);
+      if (ora >= 9 && ora <= 19) {
+        const quote: Record<number, { speed: number; dir: number }> = {};
+        for (const l of livelli) {
+          if (l.speeds[i] != null && l.dirs[i] != null) {
+            quote[l.quota] = { speed: Math.round(l.speeds[i]), dir: Math.round(l.dirs[i]) };
+          }
+        }
+        if (Object.keys(quote).length > 0) {
+          ventoOrario.push({ ora, quote, gust: Math.round(gusts[i]) });
+        }
+      }
     }
+    return { ventoOrario };
+  } catch {
+    return null;
   }
 }
 
@@ -515,41 +569,19 @@ async function flushBatch(): Promise<void> {
 // ========================
 export const weatherService = {
   /**
-   * Dati completi per un decollo (cache 5 minuti, stale-while-revalidate 10 min)
-   * Se la richiesta fallisce e ci sono dati scaduti, li restituisce comunque.
+   * Dati completi (hourly + daily + current) per un decollo
+   * Cache: 5 minuti
+   * Fallback: fino a 10 min (se API non risponde)
    */
-  async fetchWeather(lat: number, lon: number) {
-    const key = `full:${lat.toFixed(4)}:${lon.toFixed(4)}`;
-
-    // Prova a restituire dati freschi
-    const cached = cacheGet<ReturnType<typeof rawFetchFull> extends Promise<infer T> ? T : never>(key, FULL_CACHE_TTL);
-    if (cached) return cached;
-
-    // Se c'è già una promise in corso, unisciti a quella
-    const existing = cache.get(key);
-    if (existing?.promise) return existing.promise;
-
-    // Avvia una nuova richiesta
-    const promise = rawFetchFull(lat, lon).then(data => {
-      cacheSet(key, data);
-      return data;
-    }).catch(err => {
-      cache.delete(key);
-      // Se ci sono dati scaduti, restituiscili come fallback
-      const stale = cacheGetStale<ReturnType<typeof rawFetchFull> extends Promise<infer T> ? T : never>(key);
-      if (stale) {
-        console.warn(`[weatherService] Fallback a dati scaduti per ${lat},${lon}`);
-        return stale;
-      }
-      throw err;
-    });
-
-    cache.set(key, { data: null as any, ts: 0, promise });
-    return promise;
+  fetchWeather(lat: number, lon: number) {
+    const key = cacheKey(lat, lon, "full");
+    const cached = cacheGet<Awaited<ReturnType<typeof rawFetchFull>>>(key, FULL_CACHE_TTL);
+    if (cached) return Promise.resolve(cached);
+    return cacheDedup(key, () => rawFetchFull(lat, lon));
   },
 
   /**
-   * Versione sicura (restituisce sempre {data, ok}, mai eccezioni)
+   * Versione sicura (restituisce {data, ok}, mai eccezioni)
    */
   async fetchWithFallback(lat: number, lon: number): Promise<{
     data: { hourly: MeteoHourly[]; current: MeteoCurrent; daily: MeteoDaily[]; model: string } | null;
@@ -558,20 +590,20 @@ export const weatherService = {
     try {
       const data = await this.fetchWeather(lat, lon);
       return { data, ok: true };
-    } catch (err) {
-      console.warn(`[weatherService] fetchWithFallback fallito per ${lat},${lon}:`, err);
+    } catch {
       return { data: null, ok: false };
     }
   },
 
   /**
-   * Solo current (cache 2 minuti, batch mode)
+   * Solo current (ultra-leggero, per sidebar)
+   * Cache: 2 minuti
+   * Batch: raggruppa più richieste in finestra 50ms
    */
   async fetchCurrent(lat: number, lon: number): Promise<{ data: HourData | null; ok: boolean }> {
-    const key = `light:${lat.toFixed(4)}:${lon.toFixed(4)}`;
+    const key = cacheKey(lat, lon, "light");
     const cached = cacheGet<{ data: HourData | null; ok: boolean }>(key, LIGHT_CACHE_TTL);
     if (cached) return cached;
-
     const data = await batchCurrent(key, lat, lon);
     const result = { data, ok: data != null };
     if (data) cacheSet(key, result);
@@ -579,18 +611,15 @@ export const weatherService = {
   },
 
   /**
-   * Richiede più siti light in un colpo solo (per la sidebar)
-   * Usa un batch unico anziché chiamate separate.
+   * Carica current per MULTIPLI siti in un unico batch
+   * Usato da DecolliCard per la sidebar
    */
   async fetchManyCurrent(coords: { lat: number; lon: number }[]): Promise<Record<string, { data: HourData | null; ok: boolean }>> {
     const results: Record<string, { data: HourData | null; ok: boolean }> = {};
-    const promises = coords.map(async (c, i) => {
-      const key = `light:${c.lat.toFixed(4)}:${c.lon.toFixed(4)}`;
+    const promises = coords.map(async (c) => {
+      const key = cacheKey(c.lat, c.lon, "light");
       const cached = cacheGet<{ data: HourData | null; ok: boolean }>(key, LIGHT_CACHE_TTL);
-      if (cached) {
-        results[key] = cached;
-        return;
-      }
+      if (cached) { results[key] = cached; return; }
       const data = await batchCurrent(key, c.lat, c.lon);
       const result = { data, ok: data != null };
       if (data) cacheSet(key, result);
@@ -600,16 +629,26 @@ export const weatherService = {
     return results;
   },
 
-  /** Svuota cache */
+  /**
+   * Profilo vento verticale per un giorno specifico
+   * Sostituisce getVento.ts e getVentiInterpolati.ts
+   * Cache: 5 minuti
+   */
+  async fetchWindProfile(lat: number, lon: number, day: string): Promise<WindProfileResult | null> {
+    const key = `wind:${lat.toFixed(4)}:${lon.toFixed(4)}:${day}`;
+    const cached = cacheGet<WindProfileResult>(key, FULL_CACHE_TTL);
+    if (cached) return cached;
+    const data = await cacheDedup(key, () => rawFetchWindProfile(lat, lon, day));
+    return data;
+  },
+
+  /** Svuota tutta la cache */
   clearCache(): void {
     cache.clear();
   },
 
-  /** Restituisce statistiche cache (utile per debug) */
+  /** Statistiche cache (debug) */
   getCacheStats(): { size: number; keys: string[] } {
-    return {
-      size: cache.size,
-      keys: Array.from(cache.keys()),
-    };
+    return { size: cache.size, keys: Array.from(cache.keys()) };
   },
 };
