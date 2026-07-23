@@ -15,7 +15,6 @@ import ThermalTimeline from "@/components/ThermalTimeline";
 import DecolloComparison from "@/components/DecolloComparison";
 import ThemeToggle from "@/components/ThemeToggle";
 import NotificationBell from "@/components/NotificationBell";
-import SiteMapView from "@/components/SiteMapView";
 import ForecastCarousel from "@/components/ForecastCarousel";
 import WindCompass from "@/components/WindCompass";
 import RadarChart from "@/components/RadarChart";
@@ -144,17 +143,6 @@ export default function Index() {
         vento: h.windSpeed,
       }));
   }, [dayData]);
-
-  const mapSites = useMemo(() => {
-    return DECOLLI.slice(0, 15).map(d => ({
-      id: d.id,
-      nome: d.name,
-      lat: d.lat,
-      lon: d.lon,
-      alt: d.altitude,
-      valle: d.valley,
-    }));
-  }, []);
 
   if (showSplash) {
     return <SplashScreen onFinish={() => setShowSplash(false)} />;
@@ -291,7 +279,6 @@ export default function Index() {
                 {tabContent[activeTab]}
 
                 <DecolloComparison decolli={comparisonData} />
-                <SiteMapView sites={mapSites} />
               </>
             ) : (
               <div className="text-center py-24 text-slate-400">
