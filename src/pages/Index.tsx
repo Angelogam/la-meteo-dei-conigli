@@ -13,7 +13,6 @@ import SidebarToggle from "@/components/SidebarToggle";
 import WeatherWidget from "@/components/WeatherWidget";
 import ThermalTimeline from "@/components/ThermalTimeline";
 import DecolloComparison from "@/components/DecolloComparison";
-import RecentFlights from "@/components/RecentFlights";
 import ThemeToggle from "@/components/ThemeToggle";
 import NotificationBell from "@/components/NotificationBell";
 import SiteMapView from "@/components/SiteMapView";
@@ -293,7 +292,6 @@ export default function Index() {
 
                 <DecolloComparison decolli={comparisonData} />
                 <SiteMapView sites={mapSites} />
-                <RecentFlights />
               </>
             ) : (
               <div className="text-center py-24 text-slate-400">
