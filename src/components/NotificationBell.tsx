@@ -13,7 +13,7 @@ interface Notification {
 }
 
 const SAMPLE_NOTIFICATIONS: Notification[] = [
-  { id: 1, icon: <Sun className="w-4 h-4 text-emerald-400" />, title: "Condizioni perfette", message: "Malanotte: vento ideale 12 km/h, cielo sereno. Ottima giornata per volare!", time: "5 min fa", type: "success"...type: "success" },
+  { id: 1, icon: <Sun className="w-4 h-4 text-emerald-400" />, title: "Condizioni perfette", message: "Malanotte: vento ideale 12 km/h, cielo sereno. Ottima giornata per volare!", time: "5 min fa", type: "success" },
   { id: 2, icon: <Wind className="w-4 h-4 text-amber-400" />, title: "Vento in aumento", message: "Pian Munè: raffiche previste fino a 28 km/h nel pomeriggio. Consigliata prudenza.", time: "15 min fa", type: "warning" },
   { id: 3, icon: <CloudRain className="w-4 h-4 text-blue-400" />, title: "Pioggia in arrivo", message: "Colle dell'Agnello: possibili rovesci dalle 15:00. Meglio anticipare il volo.", time: "30 min fa", type: "warning" },
 ];

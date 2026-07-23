@@ -26,7 +26,6 @@ import { getStabilityIndex } from "@/utils/weatherHelpers";
 import { avviaVerificaContinua, diagnosticaCompleta } from "@/utils/mantenimentoAuto";
 import { Loader2, Sparkles, Activity, CheckCircle, AlertTriangle } from "lucide-react";
 
-// Lazy load tabs
 const MeteoTab = lazy(() => import("@/components/MeteoTab"));
 const VentiInterpolatiTab = lazy(() => import("@/components/VentiInterpolatiTab"));
 const TermicheTab = lazy(() => import("@/components/TermicheTab"));
@@ -45,7 +44,6 @@ export default function Index() {
   const [diagnosticStatus, setDiagnosticStatus] = useState<{ ok: boolean; count: number; label: string } | null>(null);
   const [showSplash, setShowSplash] = useState(true);
 
-  // Auto-maintenance
   useEffect(() => {
     avviaVerificaContinua(60000);
     diagnosticaCompleta().then(report => {
@@ -91,7 +89,6 @@ export default function Index() {
     }
   };
 
-  // Prepara dati per ForecastCarousel
   const forecastData = useMemo(() => {
     return enrichedDaily.slice(0, 5).map((d, i) => {
       const days = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
@@ -111,7 +108,6 @@ export default function Index() {
     });
   }, [enrichedDaily]);
 
-  // Prepara dati per RadarChart
   const radarData = useMemo(() => {
     if (!currentData) return [];
     return [
@@ -123,7 +119,6 @@ export default function Index() {
     ];
   }, [currentData, thermalDelta]);
 
-  // Prepara dati per DecolloComparison
   const comparisonData = useMemo(() => {
     return DECOLLI.slice(0, 5).map(d => ({
       id: d.id,
@@ -137,7 +132,6 @@ export default function Index() {
     }));
   }, [currentData]);
 
-  // Prepara dati per ThermalTimeline
   const timelineData = useMemo(() => {
     return dayData
       .filter(h => {
@@ -152,7 +146,6 @@ export default function Index() {
       }));
   }, [dayData]);
 
-  // Prepara dati per SiteMapView
   const mapSites = useMemo(() => {
     return DECOLLI.slice(0, 15).map(d => ({
       id: d.id,
@@ -185,7 +178,6 @@ export default function Index() {
 
   const hasData = Boolean(site && currentData && dayData.length > 0);
 
-  // Mappa tab -> componente lazy
   const tabContent: Record<string, React.ReactNode> = {
     meteo: (
       <Suspense fallback={<TabFallback />}>
@@ -211,13 +203,10 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
-      {/* Theme toggle e notifiche globali */}
       <ThemeToggle />
       <NotificationBell />
-
       <Header />
-      
-      {/* Badge diagnostica */}
+
       <div className="max-w-7xl mx-auto w-full px-3 md:px-6 pt-2">
         {diagnosticStatus && (
           <div className={`flex items-center gap-2 text-[10px] px-3 py-1.5 rounded-lg border ${
@@ -237,18 +226,11 @@ export default function Index() {
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-8">
         <div className="flex flex-col lg:flex-row gap-6 relative">
-          {/* Sidebar toggle mobile */}
           <SidebarToggle isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
-
-          {/* Overlay mobile */}
           {sidebarOpen && (
-            <div
-              className="lg:hidden fixed inset-0 bg-slate-950/70 z-30"
-              onClick={() => setSidebarOpen(false)}
-            />
+            <div className="lg:hidden fixed inset-0 bg-slate-950/70 z-30" onClick={() => setSidebarOpen(false)} />
           )}
 
-          {/* Sidebar */}
           <aside className={`
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
             lg:translate-x-0
@@ -266,61 +248,31 @@ export default function Index() {
                 <span className="text-slate-400">✕</span>
               </button>
             </div>
-            <UpdateTimer
-              lastUpdate={lastUpdate}
-              countdown={countdown}
-              updating={updating}
-              onRefresh={loadWeather}
-            />
+            <UpdateTimer lastUpdate={lastUpdate} countdown={countdown} updating={updating} onRefresh={loadWeather} />
             <div className="bg-slate-800/50 border border-emerald-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
               <Activity className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
-              <span className="text-xs text-emerald-300 truncate">{site?.name ?? "Decollo"} — Dati reali Open-Meteo</span>
+              <span className="text-xs text-emerald-300 truncate">{site?.name ?? "Decollo"}</span>
               <span className="text-[10px] text-slate-500 ml-auto shrink-0">
                 {countdown > 0 ? `${Math.round(countdown/1000)}s` : ""}
                 {updating && <Loader2 className="w-3 h-3 inline animate-spin ml-1" />}
               </span>
             </div>
 
-            {/* Bussola del vento in sidebar */}
             {currentData && (
               <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 flex flex-col items-center">
-                <WindCompass
-                  windDir={currentData.windDir}
-                  windSpeed={currentData.windSpeed}
-                  gustSpeed={currentData.windGusts || 0}
-                  size={100}
-                />
+                <WindCompass windDir={currentData.windDir} windSpeed={currentData.windSpeed} gustSpeed={currentData.windGusts || 0} size={100} />
               </div>
             )}
 
-            <DecolliCard
-              decolli={decolliList}
-              selectedId={selectedId}
-              selectedDay={selectedDay}
-              onSelect={handleSelectDecollo}
-            />
+            <DecolliCard decolli={decolliList} selectedId={selectedId} selectedDay={selectedDay} onSelect={handleSelectDecollo} />
           </aside>
 
-          {/* Contenuto principale */}
           <div className="flex-1 min-w-0 space-y-8">
-            {hasData && (
+            {hasData ? (
               <>
-                <SiteHeader
-                  name={site!.name}
-                  exposure={site!.exposure}
-                  valley={site!.valley}
-                  alt={site!.altitude}
-                  currentData={currentData}
-                />
+                <SiteHeader name={site!.name} exposure={site!.exposure} valley={site!.valley} alt={site!.altitude} currentData={currentData} />
+                <WeatherWidget data={currentData} altitude={site!.altitude} siteName={site!.name} />
 
-                {/* Widget meteo glassmorphism */}
-                <WeatherWidget
-                  data={currentData}
-                  altitude={site!.altitude}
-                  siteName={site!.name}
-                />
-
-                {/* Radar Chart */}
                 {radarData.length > 0 && (
                   <div className="bg-slate-800/30 border border-slate-700/30 rounded-2xl p-5 flex flex-col items-center">
                     <h3 className="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider flex items-center gap-2">
@@ -331,45 +283,19 @@ export default function Index() {
                   </div>
                 )}
 
-                {/* Carosello previsioni */}
-                <ForecastCarousel
-                  forecasts={forecastData}
-                  selectedDay={selectedDay}
-                  onDaySelect={setSelectedDay}
-                />
+                <ForecastCarousel forecasts={forecastData} selectedDay={selectedDay} onDaySelect={setSelectedDay} />
+                <ThermalTimeline hourlyData={timelineData} selectedHour={selectedHour} onHourSelect={setSelectedHour} />
 
-                {/* Timeline termiche */}
-                <ThermalTimeline
-                  hourlyData={timelineData}
-                  selectedHour={selectedHour}
-                  onHourSelect={setSelectedHour}
-                />
-
-                <WeatherDashboard
-                  dayData={dayData}
-                  altitude={site!.alt<dyad-write path="src/pages/Index.tsx" description="Continue rewriting Index page">
-                  altitude={site!.altitude}
-                  selectedHour={selectedHour}
-                  onHourSelect={setSelectedHour}
-                  dayLabel={dateLabels[selectedDay] ?? ""}
-                />
+                <WeatherDashboard dayData={dayData} altitude={site!.altitude} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabels[selectedDay] ?? ""} />
 
                 <TabNav activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); setSidebarOpen(false); }} />
-
-                {/* Tab content con lazy loading */}
                 {tabContent[activeTab]}
 
-                {/* Confronto decolli */}
                 <DecolloComparison decolli={comparisonData} />
-
-                {/* Mappa decolli */}
                 <SiteMapView sites={mapSites} />
-
-                {/* Voli recenti */}
                 <RecentFlights />
               </>
-            )}
-            {!hasData && (
+            ) : (
               <div className="text-center py-24 text-slate-400">
                 <div className="text-6xl mb-6">🐰</div>
                 <p className="text-xl font-bold text-white mb-2">Nessun dato meteo disponibile</p>
@@ -380,8 +306,6 @@ export default function Index() {
         </div>
       </main>
       <Footer />
-      
-      {/* Pannello diagnostica in fondo */}
       <Suspense fallback={null}>
         <DiagnosticaPanel />
       </Suspense>
