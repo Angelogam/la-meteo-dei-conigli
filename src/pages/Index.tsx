@@ -4,7 +4,6 @@ import React, { useEffect, useState, useMemo, lazy, Suspense } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import SplashScreen from "@/components/SplashScreen";
-import DecolliCard from "@/components/DecolliCard";
 import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
 import WeatherDashboard from "@/components/WeatherDashboard";
@@ -22,7 +21,7 @@ import { useWeatherData } from "@/hooks/useWeatherData";
 import { DECOLLI } from "@/data/decolli";
 import { getStabilityIndex } from "@/utils/weatherHelpers";
 import { avviaVerificaContinua, diagnosticaCompleta } from "@/utils/mantenimentoAuto";
-import { Loader2, Sparkles, Activity, CheckCircle, AlertTriangle } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Sparkles, Activity, CheckCircle, AlertTriangle, MapPin, Navigation } from "lucide-react";
 
 const MeteoTab = lazy(() => import("@/components/MeteoTab"));
 const VentiInterpolatiTab = lazy(() => import("@/components/VentiInterpolatiTab"));
@@ -41,6 +40,7 @@ export default function Index() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [diagnosticStatus, setDiagnosticStatus] = useState<{ ok: boolean; count: number; label: string } | null>(null);
   const [showSplash, setShowSplash] = useState(true);
+  const [siteIndex, setSiteIndex] = useState(0);
 
   useEffect(() => {
     avviaVerificaContinua(60000);
@@ -52,6 +52,30 @@ export default function Index() {
       }
     });
   }, []);
+
+  // Trova l'indice del decollo selezionato per sincronizzare i pulsanti
+  const currentIndex = useMemo(() => {
+    const idx = DECOLLI.findIndex(d => d.id === selectedId);
+    return idx >= 0 ? idx : 0;
+  }, [selectedId]);
+
+  useEffect(() => {
+    setSiteIndex(currentIndex);
+  }, [currentIndex]);
+
+  const goToPrev = () => {
+    const next = siteIndex > 0 ? siteIndex - 1 : DECOLLI.length - 1;
+    setSiteIndex(next);
+    setSelectedId(DECOLLI[next].id);
+    setSelectedHour(new Date().getHours());
+  };
+
+  const goToNext = () => {
+    const next = siteIndex < DECOLLI.length - 1 ? siteIndex + 1 : 0;
+    setSiteIndex(next);
+    setSelectedId(DECOLLI[next].id);
+    setSelectedHour(new Date().getHours());
+  };
 
   const {
     selectedId, setSelectedId, loading: weatherLoading, updating,
@@ -66,26 +90,6 @@ export default function Index() {
     currentData?.humidity ?? 50,
     currentData?.cloudCover ?? 30,
   );
-
-  const decolliList = useMemo(
-    () => DECOLLI.map((d) => ({ id: d.id, nome: d.name, valle: d.valley, quota: d.altitude, direzione: d.exposure, lat: d.lat, lon: d.lon })),
-    [],
-  );
-
-  const nomeToId = useMemo(() => {
-    const m: Record<string, string> = {};
-    for (const d of DECOLLI) m[d.name] = d.id;
-    return m;
-  }, []);
-
-  const handleSelectDecollo = (item: any) => {
-    const id = nomeToId[item.nome];
-    if (id) {
-      setSelectedId(id);
-      setSelectedHour(new Date().getHours());
-      setSidebarOpen(false);
-    }
-  };
 
   const forecastData = useMemo(() => {
     return enrichedDaily.slice(0, 5).map((d, i) => {
@@ -237,13 +241,50 @@ export default function Index() {
               </button>
             </div>
             <UpdateTimer lastUpdate={lastUpdate} countdown={countdown} updating={updating} onRefresh={loadWeather} />
-            <div className="bg-slate-800/50 border border-emerald-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
-              <span className="text-xs text-emerald-300 truncate">{site?.name ?? "Decollo"}</span>
-              <span className="text-[10px] text-slate-500 ml-auto shrink-0">
-                {countdown > 0 ? `${Math.round(countdown/1000)}s` : ""}
-                {updating && <Loader2 className="w-3 h-3 inline animate-spin ml-1" />}
-              </span>
+
+            {/* Card decollo singolo con navigazione */}
+            <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-white flex items-center gap-1.5 uppercase tracking-wider">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                  Decollo
+                </h3>
+                <span className="text-[10px] text-slate-500">{siteIndex + 1}/{DECOLLI.length}</span>
+              </div>
+
+              {/* Nome decollo */}
+              <div className="text-base font-extrabold text-white text-center py-2">
+                {site?.name ?? "Seleziona un decollo"}
+              </div>
+
+              {/* Pulsanti navigazione */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={goToPrev}
+                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-slate-700/60 hover:bg-slate-600/60 border border-slate-600/40 text-xs font-bold text-slate-300 transition-all"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  Prec.
+                </button>
+                <button
+                  onClick={goToNext}
+                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-slate-700/60 hover:bg-slate-600/60 border border-slate-600/40 text-xs font-bold text-slate-300 transition-all"
+                >
+                  Succ.
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {site && (
+                <div className="flex items-center justify-center gap-3 text-[10px] text-slate-500 pt-2 border-t border-slate-700/30">
+                  <span className="flex items-center gap-1">
+                    <Navigation className="w-3 h-3 text-sky-400" />
+                    {site.exposure}
+                  </span>
+                  <span>{site.valley}</span>
+                  <span>{site.altitude}m</span>
+                </div>
+              )}
             </div>
 
             {currentData && (
@@ -251,8 +292,6 @@ export default function Index() {
                 <WindCompass windDir={currentData.windDir} windSpeed={currentData.windSpeed} gustSpeed={currentData.windGusts || 0} size={100} />
               </div>
             )}
-
-            <DecolliCard decolli={decolliList} selectedId={selectedId} selectedDay={selectedDay} onSelect={handleSelectDecollo} />
           </aside>
 
           <div className="flex-1 min-w-0 space-y-8">
