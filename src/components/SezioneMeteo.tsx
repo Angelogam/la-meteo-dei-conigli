@@ -18,9 +18,6 @@ export default function SezioneMeteo() {
   const site = DECOLLI.find((d) => d.id === selectedId);
   if (!site) return null;
 
-  const siteAlt = { alt: site.altitude };
-  const siteFull = { alt: site.altitude, lat: site.lat, lon: site.lon, name: site.name, exposure: site.exposure };
-
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 bg-slate-800/40 rounded-2xl p-1 border border-slate-700/30">
@@ -30,37 +27,40 @@ export default function SezioneMeteo() {
               selectedDay === i
                 ? "bg-gradient-to-r from-emerald-600/60 to-emerald-500/40 text-white shadow-sm border border-emerald-500/30"
                 : "text-slate-400 hover:text-slate-200"
-            }`}>
-            {l.charAt(0).toUpperCase() + l.slice(1)}
-          </button>
+            }`}>{l.charAt(0).toUpperCase() + l.slice(1)}</button>
         ))}
       </div>
 
       <div className="flex items-center gap-1.5">
-        {(["meteo", "venti", "termiche", "analisi"] as const).map((t) => (
+        {(["meteo", "venti", "termiche", "analisi"] as const).map(t => (
           <button key={t} onClick={() => setActiveTab(t)}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
               activeTab === t
                 ? "bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 shadow-sm"
                 : "text-slate-500 hover:text-slate-300"
-            }`}>
-            {t}
-          </button>
+            }`}>{t}</button>
         ))}
       </div>
 
       {activeTab === "meteo" && (
-        <MeteoTab currentData={currentData} dayData={dayData} site={siteAlt}
-          thermalDelta={thermalDelta} stabilityIndex={{ label: "Stabile", color: "#4fc3f7" }}
+        <MeteoTab currentData={currentData} dayData={dayData}
+          site={{ alt: site.altitude }} thermalDelta={0}
+          stabilityIndex={{ label: "Stabile", color: "#4fc3f7" }}
           modelName={activeModel} cape={currentCape?.cape ?? null}
           liftedIndex={currentCape?.liftedIndex ?? null} cin={currentCape?.cin ?? null} />
       )}
       {activeTab === "venti" && (
-        <VentiInterpolatiTab lat={site.lat} lon={site.lon} quotaDecollo={site.altitude}
-          selectedDay={selectedDay} siteName={site.name} />
+        <VentiInterpolatiTab lat={site.lat} lon={site.lon}
+          quotaDecollo={site.altitude} selectedDay={selectedDay} siteName={site.name} />
       )}
-      {activeTab === "termiche" && <TermicheTab currentData={currentData} dayData={dayData} site={siteFull} />}
-      {activeTab === "analisi" && <AnalisiTab currentData={currentData} dayData={dayData} site={siteFull} />}
+      {activeTab === "termiche" && (
+        <TermicheTab currentData={currentData} dayData={dayData}
+          site={{ alt: site.altitude, lat: site.lat, lon: site.lon, name: site.name }} />
+      )}
+      {activeTab === "analisi" && (
+        <AnalisiTab currentData={currentData} dayData={dayData}
+          site={{ alt: site.altitude, lat: site.lat, lon: site.lon, name: site.name, exposure: site.exposure }} />
+      )}
     </div>
   );
 }
