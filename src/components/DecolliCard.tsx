@@ -48,59 +48,7 @@ interface DecolliCardProps {
   selectedDay?: number;
 }
 
-const DecolliCard =<dyad-write path="src/components/DecolliCard.tsx" description="Riscrittura completa con useMeteoBatch">
-"use client";
-
-import React from "react";
-import { useMeteoBatch } from "@/services/meteoRepository";
-import { Wind, Clock, Loader2 } from "lucide-react";
-import { validaVentoPerDecollo, getVentoStatusColor } from "@/utils/validaVentoDecollo";
-
-function getCardinalDir(deg: number): string {
-  if (deg == null) return "N/D";
-  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-  return dirs[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
-}
-
-function getWindArrow(deg: number): string {
-  if (deg == null) return "→";
-  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
-  return arrows[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
-}
-
-function getWeatherEmoji(code: number | undefined | null): string {
-  if (code == null) return "☀️";
-  if (code === 0 || code === 1) return "☀️";
-  if (code === 2) return "🌤️";
-  if (code === 3) return "☁️";
-  if (code >= 45 && code <= 48) return "🌫️";
-  if (code >= 51 && code <= 57) return "🌦️";
-  if (code >= 61 && code <= 67) return "🌧️";
-  if (code >= 71 && code <= 77) return "❄️";
-  if (code >= 80 && code <= 82) return "🌦️";
-  if (code >= 95) return "⛈️";
-  return "☀️";
-}
-
-interface DecolloItem {
-  id: string;
-  nome: string;
-  valle: string;
-  quota: number;
-  direzione: string;
-  lat: number;
-  lon: number;
-}
-
-interface DecolliCardProps {
-  decolli: DecolloItem[];
-  selectedId: string;
-  onSelect: (item: DecolloItem) => void;
-  selectedDay?: number;
-}
-
 const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
-  // Hook batch con clustering geografico (UNA chiamata per cluster)
   const { decolliData, isLoading, isFetching } = useMeteoBatch(
     decolli.map(d => ({ id: d.id, lat: d.lat, lon: d.lon, name: d.nome }))
   );
@@ -144,7 +92,7 @@ const DecolliCard = ({ decolli, selectedId, onSelect }: DecolliCardProps) => {
 
       <div className="space-y-2 max-h-64 md:max-h-80 overflow-y-auto pr-1 scrollbar-thin">
         {decolli.map((item) => {
-          const isSelected = item.nome === selectedId;
+          const isSelected = item.id === selectedId;
           const current = decolliData[item.id]?.data;
           const hasData = current != null;
           const temp = hasData ? current.temperature : null;

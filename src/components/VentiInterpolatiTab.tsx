@@ -74,12 +74,9 @@ export default function VentiInterpolatiTab({
 
   useEffect(() => {
     if (!lat || !lon || !quotaDecollo) return;
-    const t = new Date();
-    t.setDate(t.getDate() + selectedDay);
-    const ds = t.toISOString().split("T")[0];
     setLoading(true);
     setError(null);
-    weatherService.fetchWindProfile(lat, lon, ds)
+    weatherService.fetchWindProfile(lat, lon)
       .then(result => {
         setWindData(result);
         setLoading(false);
@@ -219,10 +216,11 @@ export default function VentiInterpolatiTab({
             const vd = interpolate(v.quote, quotaDecollo) || { speed: 0, dir: 0 };
             const isSel = v.ora === selectedOra;
             return (
-              <button key={v.ora} onClick={() => { setSelectedOra(v.ora); onOraChange?.(v.ora); }}
-                className={`w-full grid grid-cols-[3rem_1fr_3.5rem_3rem] gap-2 px-5 py-3 text-xs transition-all text-left ${
-                  isSel ? "bg-cyan-900/20 border-l-2 border-l-cyan-400" : "hover:bg-slate-700/30"
-                }`}>
+              <button key={v.ora} onClick={() => { setSelectedO<dyad-write path="src/components/VentiInterpolatiTab.tsx" description="Complete the rewriten file">
+            `}
+              className={`w-full grid grid-cols-[3rem_1fr_3.5rem_3rem] gap-2 px-5 py-3 text-xs transition-all text-left ${
+                isSel ? "bg-cyan-900/20 border-l-2 border-l-cyan-400" : "hover:bg-slate-700/30"
+              }`}>
                 <span className={`font-bold font-mono ${isSel ? "text-cyan-300" : "text-slate-300"}`}>
                   {String(v.ora).padStart(2, "0")}
                 </span>

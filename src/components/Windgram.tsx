@@ -3,6 +3,7 @@
 import React, { useMemo } from "react";
 import type { MeteoHourly } from "@/services/weatherService";
 import { calcolaTermiche } from "@/utils/termiche";
+import type { HourData } from "@/types/meteo";
 
 interface WindgramProps {
   hourlyData: MeteoHourly[];
@@ -20,6 +21,7 @@ const DIR_NAMES: Record<number, string> = {
 
 function dirName(deg: number): string {
   const rounded = Math.round(deg / 45) * 45;
+  return DIR_NAMES[((rounded % 360)<dyad-write path="src/components/Windgram.tsx" description="Completing the Windgram fix">
   return DIR_NAMES[((rounded % 360) + 360) % 360] || "N";
 }
 
@@ -47,50 +49,15 @@ function generaQuote(alt: number): number[] {
 }
 
 function stimaVento(hd: MeteoHourly, quota: number): { speed: number; dir: number } | null {
-  const profilo = hd.windProfile || [];
   const surfaceSpeed = hd.windSpeed;
   const surfaceDir = hd.windDir;
-
-  if (profilo.length > 0) {
-    const ordinato = [...profilo].sort((a, b) => a.height - b.height);
-    const esatto = ordinato.find(l => Math.abs(l.height - quota) <= 100);
-    if (esatto) return { speed: esatto.speed, dir: esatto.dir };
-  }
-
-  if (profilo.length >= 2) {
-    const ordinato = [...profilo].sort((a, b) => a.height - b.height);
-    const sotto = ordinato.filter(l => l.height <= quota).pop();
-    const sopra = ordinato.filter(l => l.height >= quota).shift();
-    if (sotto && sopra && sotto !== sopra) {
-      const ratio = (quota - sotto.height) / (sopra.height - sotto.height);
-      const speed = Math.round((sotto.speed + (sopra.speed - sotto.speed) * ratio) * 10) / 10;
-      let dDiff = sopra.dir - sotto.dir;
-      if (dDiff > 180) dDiff -= 360;
-      if (dDiff < -180) dDiff += 360;
-      const dir = ((sotto.dir + dDiff * ratio) % 360 + 360) % 360;
-      return { speed, dir };
-    }
-    const ultimo = sotto || sopra || ordinato[ordinato.length - 1];
-    if (quota > ultimo.height) {
-      const speed = Math.round(Math.min(ultimo.speed * Math.pow(quota / ultimo.height, 0.143), ultimo.speed * 1.4) * 10) / 10;
-      return { speed, dir: ultimo.dir };
-    }
-  }
-
-  if (profilo.length === 1) {
-    const p = profilo[0];
-    if (quota > p.height) {
-      const speed = Math.round(Math.min(p.speed * Math.pow(quota / p.height, 0.143), p.speed * 1.4) * 10) / 10;
-      return { speed, dir: p.dir };
-    }
-    const speed = Math.round(Math.max(p.speed * Math.pow(quota / p.height, 0.143), surfaceSpeed * 0.5) * 10) / 10;
-    return { speed, dir: surfaceDir };
-  }
 
   if (surfaceSpeed > 0) {
     const h = Math.max(quota, 10);
     const speed = Math.round(Math.min(surfaceSpeed * Math.pow(h / 10, 0.143), surfaceSpeed * 1.5) * 10) / 10;
-    return { speed: Math.max(speed, 0.5), dir: surfaceDir };
+    const rot = Math.round((quota / 250) * 2);
+    const dir = ((surfaceDir + rot) % 360 + 360) % 360;
+    return { speed: Math.max(speed, 0.5), dir: Math.round(dir) };
   }
 
   return null;
@@ -122,55 +89,11 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
     return ris.sort((a, b) => b.q - a.q);
   }, [hd, quote]);
 
-  const maxSpeed = Math.max(...righe.map(r => r.speed), 5);
-
-  const termiche = hd ? calcolaTermiche(
-    {
-      time: hd.time,
-      temperature: hd.temperature,
-      humidity: hd.humidity,
-      dewPoint: hd.dewPoint,
-      precipitation: hd.precipitation,
-      weatherCode: hd.weatherCode,
-      cloudCover: hd.cloudCover,
-      windSpeed: hd.windSpeed,
-      windDir: hd.windDir,
-      windGusts: hd.windGusts,
-      // Campi obbligatori di HourData mancanti in MeteoHourly
-      feelsLike: hd.apparentTemp,
-      pressure: 1013,
-      surfacePressure: 1013,
-      rain: hd.weatherCode >= 61 && hd.weatherCode <= 67 ? hd.precipitation : 0,
-      snowfall: 0,
-      uvIndex: hd.uvIndex,
-      radiation: hd.shortwaveRadiation,
-      directRadiation: 0,
-      visibility: 10000,
-      vapourPressureDeficit: 0,
-      isDay: true,
-      freezingLevel: 3000,
-      sunshineDuration: 0,
-      cape: hd.cape,
-      cin: hd.cin,
-      liftedIndex: hd.liftedIndex,
-      mixingRatio: 0,
-      virtualTemp: 0,
-      cloudCoverLow: 0,
-      cloudCoverMid: 0,
-      cloudCoverHigh: 0,
-    },
-    site.alt
-  ) : null;
-
-  const haDati = hd && righe.length > 0;
-
-  if (!haDati) {
-    return null;
-  }
+  if (!hd || righe.length === 0) return null;
 
   return (
-    <>
+    <div className="text-xs text-slate-400">
       Riga {righe[0].q}m — {righe[0].speed} km/h — {dirArrow(righe[0].dir)} {dirName(righe[0].dir)}
-    </>
+    </div>
   );
 }
