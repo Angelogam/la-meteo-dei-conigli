@@ -223,9 +223,8 @@ export default function Index() {
             lg:translate-x-0
             fixed lg:sticky top-0 lg:top-0 left-0 z-40 lg:z-auto
             w-72 lg:w-80
-            lg:h-auto lg:max-h-none
-            h-full max-h-screen
-            overflow-y-auto
+            lg:h-auto lg:overflow-visible
+            h-full overflow-y-auto
             bg-slate-950 lg:bg-transparent
             p-4 lg:p-0
             transition-transform duration-300 ease-in-out
