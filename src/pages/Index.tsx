@@ -222,7 +222,9 @@ export default function Index() {
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
             lg:translate-x-0
             fixed lg:sticky top-0 lg:top-0 left-0 z-40 lg:z-auto
-            w-72 lg:w-80 h-full lg:h-auto
+            w-72 lg:w-80
+            lg:h-auto lg:max-h-none
+            h-full max-h-screen
             overflow-y-auto
             bg-slate-950 lg:bg-transparent
             p-4 lg:p-0
