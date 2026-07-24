@@ -24,6 +24,12 @@ export interface MeteoHourly {
   liftedIndex: number;
   temp80m: number | null;
   temp120m: number | null;
+  windSpeed80m: number | null;
+  windDir80m: number | null;
+  windSpeed120m: number | null;
+  windDir120m: number | null;
+  windSpeed180m: number | null;
+  windDir180m: number | null;
 }
 
 export interface MeteoCurrent {
@@ -283,6 +289,12 @@ function parseHourly(raw: any): MeteoHourly[] {
       liftedIndex: hourly.lifted_index?.[i] ?? 0,
       temp80m: hourly.temperature_80m?.[i] ?? null,
       temp120m: hourly.temperature_120m?.[i] ?? null,
+      windSpeed80m: hourly.wind_speed_80m?.[i] ?? null,
+      windDir80m: hourly.wind_direction_80m?.[i] ?? null,
+      windSpeed120m: hourly.wind_speed_120m?.[i] ?? null,
+      windDir120m: hourly.wind_direction_120m?.[i] ?? null,
+      windSpeed180m: hourly.wind_speed_180m?.[i] ?? null,
+      windDir180m: hourly.wind_direction_180m?.[i] ?? null,
     });
   }
   return result;
@@ -485,6 +497,12 @@ async function fetchTimerGFS(lat: number, lon: number): Promise<{
         liftedIndex: 0,
         temp80m: null,
         temp120m: null,
+        windSpeed80m: null,
+        windDir80m: null,
+        windSpeed120m: null,
+        windDir120m: null,
+        windSpeed180m: null,
+        windDir180m: null,
       });
 
       const dateKey = `${time.getDate()}/${time.getMonth() + 1}`;

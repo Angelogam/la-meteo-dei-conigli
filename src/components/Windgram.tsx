@@ -47,9 +47,9 @@ function generaQuote(alt: number): number[] {
 }
 
 function stimaVento(hd: MeteoHourly, quota: number): { speed: number; dir: number } | null {
-  const profilo = hd.windProfile || [];
-  const surfaceSpeed = hd.windSpeed;
-  const surfaceDir = hd.windDir;
+  const profilo = hd.windProfile || []; // Aggiunto controllo per valori negativi
+  const surfaceSpeed = Math.max(hd.windSpeed, 0); // Assicurarsi che la velocità sia non negativa
+  const surfaceDir = Math.max(hd.windDir, 0); // Assicurarsi che la direzione sia non negativa
 
   if (profilo.length > 0) {
     const ordinato = [...profilo].sort((a, b) => a.height - b.height);
@@ -59,18 +59,18 @@ function stimaVento(hd: MeteoHourly, quota: number): { speed: number; dir: numbe
 
   if (profilo.length >= 2) {
     const ordinato = [...profilo].sort((a, b) => a.height - b.height);
-    const sotto = ordinato.filter(l => l.height <= quota).pop();
-    const sopra = ordinato.filter(l => l.height >= quota).shift();
+    const sotto = ordinato.filter(l => l.height <= quota && l.height >= 0).pop(); // Filtra altezze negative
+    const sopra = ordinato.filter(l => l.height >= quota && l.height >= 0).shift(); // Filtra altezze negative
     if (sotto && sopra && sotto !== sopra) {
       const ratio = (quota - sotto.height) / (sopra.height - sotto.height);
-      const speed = Math.round((sotto.speed + (sopra.speed - sotto.speed) * ratio) * 10) / 10;
+      const speed = Math.max(Math.round((sotto.speed + (sopra.speed - sotto.speed) * ratio) * 10) / 10, 0); // Assicurarsi che la velocità sia non negativa
       let dDiff = sopra.dir - sotto.dir;
       if (dDiff > 180) dDiff -= 360;
       if (dDiff < -180) dDiff += 360;
-      const dir = ((sotto.dir + dDiff * ratio) % 360 + 360) % 360;
+      const dir = ((sotto.dir + dDiff * ratio) % 360 + 360) % 360; // Normalizza direzione a [0, 360)
       return { speed, dir };
     }
-    const ultimo = sotto || sopra || ordinato[ordinato.length - 1];
+    const ultimo = sotto || sopra || ordinato.filter(p => p.height >= 0)[ordinato.length - 1]; // Usa solo dati validi
     if (quota > ultimo.height) {
       const speed = Math.round(Math.min(ultimo.speed * Math.pow(quota / ultimo.height, 0.143), ultimo.speed * 1.4) * 10) / 10;
       return { speed, dir: ultimo.dir };
@@ -80,16 +80,16 @@ function stimaVento(hd: MeteoHourly, quota: number): { speed: number; dir: numbe
   if (profilo.length === 1) {
     const p = profilo[0];
     if (quota > p.height) {
-      const speed = Math.round(Math.min(p.speed * Math.pow(quota / p.height, 0.143), p.speed * 1.4) * 10) / 10;
+      const speed = Math.max(Math.round(Math.min(p.speed * Math.pow(quota / p.height, 0.143), p.speed * 1.4) * 10) / 10, 0); // Assicurarsi che la velocità sia non negativa
       return { speed, dir: p.dir };
     }
-    const speed = Math.round(Math.max(p.speed * Math.pow(quota / p.height, 0.143), surfaceSpeed * 0.5) * 10) / 10;
+    const speed = Math.max(Math.round(Math.max(p.speed * Math.pow(quota / p.height, 0.143), surfaceSpeed * 0.5) * 10) / 10, 0); // Assicurarsi che la velocità sia non negativa
     return { speed, dir: surfaceDir };
   }
 
   if (surfaceSpeed > 0) {
     const h = Math.max(quota, 10);
-    const speed = Math.round(Math.min(surfaceSpeed * Math.pow(h / 10, 0.143), surfaceSpeed * 1.5) * 10) / 10;
+    const speed = Math.max(Math.round(Math.min(surfaceSpeed * Math.pow(h / 10, 0.143), surfaceSpeed * 1.5) * 10) / 10, 0); // Assicurarsi che la velocità sia non negativa
     return { speed: Math.max(speed, 0.5), dir: surfaceDir };
   }
 
