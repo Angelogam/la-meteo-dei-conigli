@@ -1,257 +1,244 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { ArrowUp, TrendingUp, ThermometerSun, CloudSun, Calendar, Sparkles, Activity, MapPin } from "lucide-react";
-import { analisiAvanzataCompleta } from "@/services/analisiAvanzata";
-import AnalisiAvanzataCard from "@/components/AnalisiAvanzataCard";
-import type { MeteoHourly, MeteoCurrent } from "@/services/weatherService";
+import React, { useMemo, useState } from "react";
+import { HourData } from "@/types/meteo";
+import { calcolaTermiche } from "@/utils/termiche";
+import {
+  Thermometer, Wind, Cloud, Droplets, TrendingUp, ArrowUp,
+  Flame, Activity, Sparkles, Info
+} from "lucide-react";
 
 interface TermicheTabProps {
-  currentData: any;
-  dayData: any[];
-  site?: { alt: number; lat?: number; lon?: number; name?: string };
-  hourlyData?: MeteoHourly[];
-  current?: MeteoCurrent;
+  currentData: HourData | null;
+  dayData: HourData[];
+  site: { alt: number; lat: number; lon: number; name: string };
 }
 
-function formatDateShort(date: Date): string {
-  const d = date instanceof Date ? date : new Date(date);
-  if (isNaN(d.getTime())) return "";
-  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
-}
+const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 
-/**
- * Calcolo termiche FALLBACK con limiti FISICI:
- * - Rateo MAX 5 m/s (già estremo per Alpi)
- * - Base MAX alt + 2000m
- * - Top MAX 4000m
- * - Spread e vento non possono da soli produrre rateo > 3 m/s
- */
-function calcolaTermicheSicure(h: any, alt: number) {
-  const spread = Math.max(0.3, Math.min(20, h.temperature - h.dewPoint));
-  const windSpeed = h.windSpeed ?? 0;
-  const cloudCover = h.cloudCover ?? 30;
-  const precipitation = h.precipitation ?? 0;
+export default function TermicheTab({ dayData, site }: TermicheTabProps) {
+  const [selectedHour, setSelectedHour] = useState<number | null>(null);
 
-  // Base termica (LCL) — limitata
-  const baseSopraSuolo = Math.round(Math.min(2000, Math.max(50, spread * 120)));
-  const base = alt + baseSopraSuolo;
-
-  // Fattore spread (max 2.5 m/s da solo)
-  let rateoSpread = Math.min(2.5, spread * 0.2);
-
-  // Fattore vento (max +1 m/s)
-  let bonusVento = 0;
-  if (windSpeed >= 5 && windSpeed <= 15) bonusVento = Math.min(1, windSpeed / 15);
-  else if (windSpeed >= 3 && windSpeed < 5) bonusVento = 0.3;
-
-  // Fattore nuvole (max +0.5 m/s)
-  let bonusNuvole = 0;
-  if (cloudCover >= 15 && cloudCover <= 40) bonusNuvole = 0.5;
-  else if (cloudCover >= 5 && cloudCover < 15) bonusNuvole = 0.3;
-  else if (cloudCover > 40 && cloudCover <= 55) bonusNuvole = 0.2;
-
-  // Penalità per pioggia
-  let penalita = 1;
-  if (precipitation > 2) penalita = 0;
-  else if (precipitation > 1) penalita = 0.2;
-  else if (precipitation > 0.3) penalita = 0.5;
-
-  // Vento forte penalizza
-  if (windSpeed > 25) penalita *= 0.3;
-  else if (windSpeed > 20) penalita *= 0.6;
-
-  // Calcolo rateo finale (MAX 5 m/s)
-  const rateo = Math.max(0, Math.min(5, Math.round((rateoSpread + bonusVento + bonusNuvole) * penalita * 10) / 10));
-
-  // Top — basato su rateo e base, limitato a 4000m
-  const top = Math.min(4000, Math.max(base + 200, base + Math.round(rateo * 400)));
-
-  // Label e colore
-  let label: string;
-  let colore: string;
-  if (rateo >= 4) { label = "Forti"; colore = "#ef4444"; }
-  else if (rateo >= 3) { label = "Buone"; colore = "#f97316"; }
-  else if (rateo >= 2) { label = "Moderate"; colore = "#eab308"; }
-  else if (rateo >= 1) { label = "Deboli"; colore = "#84cc16"; }
-  else if (rateo >= 0.3) { label = "M. deboli"; colore = "#6b7280"; }
-  else { label = "Assenti"; colore = "#475569"; }
-
-  return { ora: new Date(h.time).getHours(), rateo, base, top, label, colore };
-}
-
-export default function TermicheTab({ currentData, dayData, site, hourlyData, current }: TermicheTabProps) {
-  const alt = site?.alt ?? 1000;
-
-  const analisiAvanzata = useMemo(() => {
-    if (hourlyData && hourlyData.length > 0 && current) {
-      return analisiAvanzataCompleta(hourlyData, current, alt);
-    }
-    return null;
-  }, [hourlyData, current, alt]);
-
-  const dataGiorno = useMemo(() => {
-    if (dayData && dayData.length > 0) return formatDateShort(new Date(dayData[0].time));
-    return formatDateShort(new Date());
-  }, [dayData]);
-
-  if (analisiAvanzata && analisiAvanzata.length > 0) {
-    // Usa analisiAvanzata — valori già limitati nel motore
-    const mediaRateo = analisiAvanzata.reduce((s, a) => s + a.rateoSalita, 0) / analisiAvanzata.length;
-    const maxRateo = Math.max(...analisiAvanzata.map(a => a.rateoSalita));
-    const oreAttive = analisiAvanzata.filter(a => a.rateoSalita >= 0.3).length;
-    const mediaForza = analisiAvanzata.reduce((s, a) => s + a.forzaTermica, 0) / analisiAvanzata.length;
-    const mediaConfidenza = analisiAvanzata.reduce((s, a) => s + a.confidenza, 0) / analisiAvanzata.length;
-
-    return (
-      <div className="space-y-4">
-        <div className="bg-slate-800/60 border border-orange-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
-          <MapPin className="w-5 h-5 text-orange-400 shrink-0" />
-          <div>
-            <div className="text-sm font-bold text-white">{site?.name || "Decollo"} — Termiche</div>
-            <div className="text-[10px] text-slate-400 flex items-center gap-2">
-              <Calendar className="w-3 h-3" />
-              <span>{dataGiorno}</span>
-              <span className="text-slate-600">·</span>
-              <span>{alt}m</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/40 border-2 border-orange-500/30 rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-orange-400" />
-            <h3 className="text-base font-bold text-orange-300">Analisi termica — {site?.name}</h3>
-            <span className="text-xs text-slate-500 ml-auto bg-slate-800/60 px-2 py-0.5 rounded-full">
-              <Activity className="w-3 h-3 inline mr-1" />
-              Confidenza {Math.round(mediaConfidenza * 100)}%
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-            <div className="bg-slate-900/50 rounded-xl p-3 text-center">
-              <TrendingUp className="w-5 h-5 text-amber-400 mx-auto mb-1" />
-              <div className="text-2xl font-bold text-amber-300">{Math.min(5, mediaRateo).toFixed(1)}</div>
-              <div className="text-xs text-slate-400">Media m/s</div>
-            </div>
-            <div className="bg-slate-900/50 rounded-xl p-3 text-center">
-              <ArrowUp className="w-5 h-5 text-orange-400 mx-auto mb-1" />
-              <div className="text-2xl font-bold text-orange-300">{Math.min(5, maxRateo).toFixed(1)}</div>
-              <div className="text-xs text-slate-400">Picco m/s</div>
-            </div>
-            <div className="bg-slate-900/50 rounded-xl p-3 text-center">
-              <Activity className="w-5 h-5 text-green-400 mx-auto mb-1" />
-              <div className="text-2xl font-bold text-green-300">{oreAttive}</div>
-              <div className="text-xs text-slate-400">Ore attive</div>
-            </div>
-            <div className="bg-slate-900/50 rounded-xl p-3 text-center">
-              <ThermometerSun className="w-5 h-5 text-sky-400 mx-auto mb-1" />
-              <div className="text-2xl font-bold text-sky-300">{Math.min(10, mediaForza).toFixed(1)}</div>
-              <div className="text-xs text-slate-400">Forza /10</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <h4 className="text-sm font-bold text-slate-300 px-1">{site?.name} — Dettaglio orario termiche</h4>
-          {analisiAvanzata.map((a) => (
-            <AnalisiAvanzataCard key={a.ora} analisi={{
-              ...a,
-              rateoSalita: Math.min(5, a.rateoSalita),
-              forzaTermica: Math.min(10, a.forzaTermica),
-              baseNuvole: Math.min(3500, a.baseNuvole),
-              topTermico: Math.min(4500, a.topTermico),
-            }} />
-          ))}
-        </div>
-
-        <div className="text-center text-xs text-slate-600 border-t border-slate-700/30 pt-3">
-          {site?.name} · {analisiAvanzata.length} ore analizzate
-        </div>
-      </div>
-    );
-  }
-
-  // FALLBACK — usa calcolaTermicheSicure con limiti fisici REALI (0-5 m/s)
-  const termichePerOra = useMemo(() => {
-    if (!dayData || dayData.length === 0) return [];
-    return dayData
-      .filter((h: any) => {
-        if (!h.time) return false;
-        const hh = new Date(h.time).getHours();
-        return hh >= 8 && hh <= 19;
+  const oreConDati = useMemo(() => {
+    return HOURS
+      .map(ora => {
+        const h = dayData.find(d => new Date(d.time).getHours() === ora);
+        if (!h) return null;
+        const t = calcolaTermiche(h, site.alt);
+        return {
+          ora, rateo: t.rateo, base: t.base, top: t.top,
+          forza: t.forza, attendibilita: t.attendibilita,
+          temp: h.temperature, vento: h.windSpeed, nuvole: h.cloudCover, umidita: h.humidity,
+        };
       })
-      .map((h: any) => calcolaTermicheSicure(h, alt))
-      .filter(t => t.rateo >= 0) // filtriamo rateo 0 (pioggia forte)
-      .sort((a, b) => a.ora - b.ora);
-  }, [dayData, alt]);
+      .filter(Boolean) as any[];
+  }, [dayData, site.alt]);
 
-  // Se non ci sono dati, mostra messaggio
-  if (termichePerOra.length === 0) {
+  const maxRateo = useMemo(() => Math.max(...oreConDati.map(o => o!.rateo), 0.1), [oreConDati]);
+  const mediaRateo = useMemo(() => {
+    const vals = oreConDati.map(o => o!.rateo);
+    return vals.length > 0 ? (vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+  }, [oreConDati]);
+  const oreAttive = useMemo(() => oreConDati.filter(o => o!.rateo >= 0.5).length, [oreConDati]);
+
+  const selectedDetail = useMemo(() => {
+    if (selectedHour == null) return null;
+    return oreConDati.find(o => o!.ora === selectedHour) || null;
+  }, [selectedHour, oreConDati]);
+
+  if (oreConDati.length === 0) {
     return (
-      <div className="text-center py-10 text-slate-500 text-sm">
-        <CloudSun className="w-12 h-12 mx-auto mb-3 text-slate-600" />
-        <p className="font-bold text-slate-400 mb-1">Nessun dato termico disponibile</p>
-        <p className="text-xs">Attendi il caricamento dei dati meteo</p>
+      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+        <Flame className="w-12 h-12 text-slate-600 mb-4" />
+        <p className="text-lg font-bold">Nessun dato termico per {site.name}</p>
       </div>
     );
   }
-
-  const mediaSalita = termichePerOra.reduce((s, t) => s + t.rateo, 0) / termichePerOra.length;
-  const maxSalita = Math.max(...termichePerOra.map(t => t.rateo));
-  const oreAttive = termichePerOra.filter(t => t.rateo >= 0.3).length;
 
   return (
     <div className="space-y-4">
-      {/* Intestazione */}
-      <div className="bg-slate-800/60 border border-orange-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
-        <MapPin className="w-5 h-5 text-orange-400 shrink-0" />
-        <div>
-          <div className="text-sm font-bold text-white">{site?.name || "Decollo"} — Termiche</div>
-          <div className="text-[10px] text-slate-400 flex items-center gap-2">
-            <Calendar className="w-3 h-3" />
-            <span>{dataGiorno}</span>
-            <span className="text-slate-600">·</span>
-            <span>{alt}m</span>
+      {/* Header con nome decollo */}
+      <div className="bg-gradient-to-br from-orange-900/40 to-amber-800/20 border border-orange-500/30 rounded-2xl px-5 py-4">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-800/60 to-amber-700/30 border border-orange-500/40 flex items-center justify-center shrink-0">
+            <Flame className="w-5 h-5 text-orange-400" />
+          </div>
+          <div>
+            <div className="text-base font-bold text-white">{site.name} — Termiche</div>
+            <div className="text-[10px] text-slate-400">{site.alt}m slm · {oreConDati.length} ore di volo</div>
+          </div>
+        </div>
+
+        {/* Statistiche rapide */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-slate-900/60 rounded-xl p-3 text-center">
+            <Activity className="w-4 h-4 text-orange-400 mx-auto mb-1" />
+            <div className="text-lg font-bold text-orange-300">{mediaRateo.toFixed(1)}</div>
+            <div className="text-[10px] text-slate-500">Media m/s</div>
+          </div>
+          <div className="bg-slate-900/60 rounded-xl p-3 text-center">
+            <ArrowUp className="w-4 h-4 text-amber-400 mx-auto mb-1" />
+            <div className="text-lg font-bold text-amber-300">
+              {oreConDati.reduce((max, o) => o!.rateo > max ? o!.rateo : max, 0).toFixed(1)}
+            </div>
+            <div className="text-[10px] text-slate-500">Picco m/s</div>
+          </div>
+          <div className="bg-slate-900/60 rounded-xl p-3 text-center">
+            <Sparkles className="w-4 h-4 text-emerald-400 mx-auto mb-1" />
+            <div className="text-lg font-bold text-emerald-300">{oreAttive}/{oreConDati.length}</div>
+            <div className="text-[10px] text-slate-500">Ore attive</div>
           </div>
         </div>
       </div>
 
-      {/* Riepilogo */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
-          <TrendingUp className="w-6 h-6 text-amber-400 mx-auto mb-1" />
-          <div className="text-xl font-bold text-amber-300">{mediaSalita.toFixed(1)}</div>
-          <div className="text-sm text-slate-400">Media m/s</div>
+      {/* Grafico a barre interattivo */}
+      <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/30 border border-slate-700/40 rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="text-sm font-bold text-white flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-orange-400" />
+            Intensità termica oraria
+          </h4>
+          <span className="text-[10px] text-slate-500">m/s</span>
         </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
-          <ArrowUp className="w-6 h-6 text-orange-400 mx-auto mb-1" />
-          <div className="text-xl font-bold text-orange-300">{maxSalita.toFixed(1)}</div>
-          <div className="text-sm text-slate-400">Picco m/s</div>
+
+        <div className="flex items-end gap-1.5 h-40 pb-1">
+          {oreConDati.map((d: any) => {
+            const pct = maxRateo > 0 ? (d.rateo / maxRateo) * 100 : 0;
+            const isSelected = d.ora === selectedHour;
+
+            return (
+              <button
+                key={d.ora}
+                onClick={() => setSelectedHour(d.ora === selectedHour ? null : d.ora)}
+                className={`flex flex-col items-center flex-1 min-w-0 transition-all duration-200 ${
+                  isSelected ? "scale-110 z-10" : "hover:scale-105"
+                }`}
+              >
+                <span className={`text-[9px] font-bold leading-none mb-1 transition-colors ${
+                  d.rateo >= 3 ? "text-red-300" :
+                  d.rateo >= 2 ? "text-orange-300" :
+                  d.rateo >= 1 ? "text-amber-300" :
+                  d.rateo >= 0.3 ? "text-lime-300" :
+                  "text-slate-600"
+                }`}>
+                  {d.rateo.toFixed(1)}
+                </span>
+
+                <div className="w-full h-28 bg-slate-800/60 rounded-lg relative overflow-hidden">
+                  <div
+                    className={`absolute bottom-0 left-0 right-0 rounded-t transition-all duration-300 ${
+                      d.rateo >= 3 ? "bg-gradient-to-t from-red-500 to-red-600" :
+                      d.rateo >= 2 ? "bg-gradient-to-t from-orange-500 to-orange-600" :
+                      d.rateo >= 1 ? "bg-gradient-to-t from-amber-500 to-amber-600" :
+                      d.rateo >= 0.3 ? "bg-gradient-to-t from-lime-500 to-lime-600" :
+                      "bg-slate-700"
+                    } ${isSelected ? "ring-2 ring-white/30" : ""}`}
+                    style={{ height: `${Math.max(pct, 2)}%` }}
+                  >
+                    {isSelected && (
+                      <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rounded-full shadow-lg shadow-white/50" />
+                    )}
+                  </div>
+                </div>
+
+                <span className={`text-[9px] mt-1 font-mono ${
+                  isSelected ? "text-orange-300 font-bold" : d.rateo > 0 ? "text-slate-400" : "text-slate-600"
+                }`}>
+                  {String(d.ora).padStart(2, "0")}
+                </span>
+              </button>
+            );
+          })}
         </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
-          <ThermometerSun className="w-6 h-6 text-orange-400 mx-auto mb-1" />
-          <div className="text-xl font-bold text-orange-300">{oreAttive}</div>
-          <div className="text-sm text-slate-400">Ore attive</div>
+
+        {/* Legenda */}
+        <div className="flex flex-wrap gap-2 text-[10px] text-slate-400 mt-3 pt-3 border-t border-slate-700/30">
+          <span className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500" /> ≥3 — Forti
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-orange-500" /> 2-3 — Buone
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> 1-2 — Mod.
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-lime-500" /> 0.3-1 — Deboli
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-700" /> {'<'}0.3 — Nulla
+          </span>
         </div>
       </div>
 
-      {/* Card orarie — valori GARANTITI 0-5 m/s */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {termichePerOra.map((t) => (
-          <div key={t.ora} className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4 text-center">
-            <div className="text-base font-bold text-slate-200 mb-1">{String(t.ora).padStart(2, "0")}:00</div>
-            <div className="text-2xl font-bold" style={{ color: t.colore }}>{t.rateo.toFixed(1)} m/s</div>
-            <div className="text-sm text-slate-400">{t.label}</div>
-            <div className="text-sm text-green-300 mt-1">Base {Math.min(alt + 3000, t.base)}m</div>
-            <div className="text-sm text-red-300">Top {Math.min(4000, t.top)}m</div>
+      {/* Dettaglio ora selezionata */}
+      {selectedDetail && (
+        <div className="bg-gradient-to-br from-orange-900/30 to-amber-800/15 border border-orange-500/20 rounded-2xl p-5 animate-slide-up">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-orange-800/40 border border-orange-400/30 flex items-center justify-center">
+              <Flame className="w-4 h-4 text-orange-400" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-white">
+                {String(selectedDetail.ora).padStart(2, "0")}:00
+              </div>
+              <div className="text-[10px] text-slate-500">Dettaglio orario</div>
+            </div>
           </div>
-        ))}
-      </div>
 
-      {/* Nota range realistico */}
-      <div className="text-center text-[10px] text-slate-600 border-t border-slate-700/30 pt-2 mt-2">
-        Valori realistici per Alpi · Rateo max ~4-5 m/s in condizioni estreme
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+            <div className="bg-slate-900/60 rounded-xl p-3 text-center">
+              <span className="text-[10px] text-slate-500 block">Termiche</span>
+              <span className="text-xl font-bold text-orange-300">{selectedDetail.rateo.toFixed(1)} m/s</span>
+            </div>
+            <div className="bg-slate-900/60 rounded-xl p-3 text-center">
+              <span className="text-[10px] text-slate-500 block">Base</span>
+              <span className="text-xl font-bold text-emerald-300">{selectedDetail.base}m</span>
+            </div>
+            <div className="bg-slate-900/60 rounded-xl p-3 text-center">
+              <span className="text-[10px] text-slate-500 block">Top</span>
+              <span className="text-xl font-bold text-sky-300">{selectedDetail.top}m</span>
+            </div>
+            <div className="bg-slate-900/60 rounded-xl p-3 text-center">
+              <span className="text-[10px] text-slate-500 block">Salita</span>
+              <span className="text-xl font-bold text-purple-300">{selectedDetail.top - selectedDetail.base}m</span>
+            </div>
+          </div>
+
+          <div className="bg-slate-900/40 rounded-xl p-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <Thermometer className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-slate-400">Temp:</span>
+                <span className="font-bold text-amber-300">{Math.round(selectedDetail.temp)}°C</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Wind className="w-3.5 h-3.5 text-sky-400" />
+                <span className="text-slate-400">Vento:</span>
+                <span className="font-bold text-sky-300">{Math.round(selectedDetail.vento)} km/h</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Cloud className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-slate-400">Nuvole:</span>
+                <span className="font-bold text-slate-300">{Math.round(selectedDetail.nuvole)}%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Droplets className="w-3.5 h-3.5 text-blue-400" />
+                <span className="text-slate-400">Umidità:</span>
+                <span className="font-bold text-blue-300">{Math.round(selectedDetail.umidita)}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Info legenda */}
+      <div className="flex items-start gap-2 bg-slate-800/30 border border-slate-700/30 rounded-xl px-4 py-3">
+        <Info className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
+        <p className="text-[10px] text-slate-400 leading-relaxed">
+          Le termiche sono calcolate combinando temperatura, punto di rugiada, vento, nuvolosità e ora del giorno.
+          I valori rappresentano la velocità di salita in m/s. Clicca su una barra per vedere il dettaglio.
+        </p>
       </div>
     </div>
   );

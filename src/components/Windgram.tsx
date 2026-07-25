@@ -47,9 +47,9 @@ function generaQuote(alt: number): number[] {
 }
 
 function stimaVento(hd: MeteoHourly, quota: number): { speed: number; dir: number } | null {
-  const profilo = hd.windProfile || [];
-  const surfaceSpeed = hd.windSpeed;
-  const surfaceDir = hd.windDir;
+  const profilo = hd.windProfile || []; // Aggiunto controllo per valori negativi
+  const surfaceSpeed = Math.max(hd.windSpeed, 0); // Assicurarsi che la velocità sia non negativa
+  const surfaceDir = Math.max(hd.windDir, 0); // Assicurarsi che la direzione sia non negativa
 
   if (profilo.length > 0) {
     const ordinato = [...profilo].sort((a, b) => a.height - b.height);
@@ -59,18 +59,18 @@ function stimaVento(hd: MeteoHourly, quota: number): { speed: number; dir: numbe
 
   if (profilo.length >= 2) {
     const ordinato = [...profilo].sort((a, b) => a.height - b.height);
-    const sotto = ordinato.filter(l => l.height <= quota).pop();
-    const sopra = ordinato.filter(l => l.height >= quota).shift();
+    const sotto = ordinato.filter(l => l.height <= quota && l.height >= 0).pop(); // Filtra altezze negative
+    const sopra = ordinato.filter(l => l.height >= quota && l.height >= 0).shift(); // Filtra altezze negative
     if (sotto && sopra && sotto !== sopra) {
       const ratio = (quota - sotto.height) / (sopra.height - sotto.height);
-      const speed = Math.round((sotto.speed + (sopra.speed - sotto.speed) * ratio) * 10) / 10;
+      const speed = Math.max(Math.round((sotto.speed + (sopra.speed - sotto.speed) * ratio) * 10) / 10, 0); // Assicurarsi che la velocità sia non negativa
       let dDiff = sopra.dir - sotto.dir;
       if (dDiff > 180) dDiff -= 360;
       if (dDiff < -180) dDiff += 360;
-      const dir = ((sotto.dir + dDiff * ratio) % 360 + 360) % 360;
+      const dir = ((sotto.dir + dDiff * ratio) % 360 + 360) % 360; // Normalizza direzione a [0, 360)
       return { speed, dir };
     }
-    const ultimo = sotto || sopra || ordinato[ordinato.length - 1];
+    const ultimo = sotto || sopra || ordinato.filter(p => p.height >= 0)[ordinato.length - 1]; // Usa solo dati validi
     if (quota > ultimo.height) {
       const speed = Math.round(Math.min(ultimo.speed * Math.pow(quota / ultimo.height, 0.143), ultimo.speed * 1.4) * 10) / 10;
       return { speed, dir: ultimo.dir };
@@ -80,16 +80,16 @@ function stimaVento(hd: MeteoHourly, quota: number): { speed: number; dir: numbe
   if (profilo.length === 1) {
     const p = profilo[0];
     if (quota > p.height) {
-      const speed = Math.round(Math.min(p.speed * Math.pow(quota / p.height, 0.143), p.speed * 1.4) * 10) / 10;
+      const speed = Math.max(Math.round(Math.min(p.speed * Math.pow(quota / p.height, 0.143), p.speed * 1.4) * 10) / 10, 0); // Assicurarsi che la velocità sia non negativa
       return { speed, dir: p.dir };
     }
-    const speed = Math.round(Math.max(p.speed * Math.pow(quota / p.height, 0.143), surfaceSpeed * 0.5) * 10) / 10;
+    const speed = Math.max(Math.round(Math.max(p.speed * Math.pow(quota / p.height, 0.143), surfaceSpeed * 0.5) * 10) / 10, 0); // Assicurarsi che la velocità sia non negativa
     return { speed, dir: surfaceDir };
   }
 
   if (surfaceSpeed > 0) {
     const h = Math.max(quota, 10);
-    const speed = Math.round(Math.min(surfaceSpeed * Math.pow(h / 10, 0.143), surfaceSpeed * 1.5) * 10) / 10;
+    const speed = Math.max(Math.round(Math.min(surfaceSpeed * Math.pow(h / 10, 0.143), surfaceSpeed * 1.5) * 10) / 10, 0); // Assicurarsi che la velocità sia non negativa
     return { speed: Math.max(speed, 0.5), dir: surfaceDir };
   }
 
@@ -126,107 +126,51 @@ export default function Windgram({ hourlyData, site, selectedHour, onHourSelect 
 
   const termiche = hd ? calcolaTermiche(
     {
-      time: hd.time, temperature: hd.temperature, humidity: hd.humidity,
-      dewPoint: hd.dewPoint, apparentTemp: hd.apparentTemp,
-      precipitationProba: hd.precipitationProbability, precipitation: hd.precipitation,
-      rain: hd.precipitation > 0 && hd.weatherCode >= 61 && hd.weatherCode <= 67 ? hd.precipitation : 0,
-      showers: 0, snowfall: 0, weatherCode: hd.weatherCode,
-      pressure: 1013, surfacePressure: 1013, cloudCover: hd.cloudCover,
-      cloudCoverLow: 0, cloudCoverMid: 0, cloudCoverHigh: 0,
-      evapotranspiration: 0, et0: 0, vapourPressureDeficit: 0,
-      windSpeed: hd.windSpeed, windDir: hd.windDir, windGusts: hd.windGusts,
-      soilTemp: 0, soilMoisture: 0, uvIndex: hd.uvIndex,
-      temp80m: null, temp120m: null,
-      shortwaveRadiation: hd.shortwaveRadiation,
-      directRadiation: 0, diffuseRadiation: 0, directNormalIrradiance: 0,
-      terrestrialRadiation: 0, sunshineDuration: 0,
+      time: hd.time,
+      temperature: hd.temperature,
+      humidity: hd.humidity,
+      dewPoint: hd.dewPoint,
+      precipitation: hd.precipitation,
+      weatherCode: hd.weatherCode,
+      cloudCover: hd.cloudCover,
+      windSpeed: hd.windSpeed,
+      windDir: hd.windDir,
+      windGusts: hd.windGusts,
+      // Campi obbligatori di HourData mancanti in MeteoHourly
+      feelsLike: hd.apparentTemp,
+      pressure: 1013,
+      surfacePressure: 1013,
+      rain: hd.weatherCode >= 61 && hd.weatherCode <= 67 ? hd.precipitation : 0,
+      snowfall: 0,
+      uvIndex: hd.uvIndex,
+      radiation: hd.shortwaveRadiation,
+      directRadiation: 0,
+      visibility: 10000,
+      vapourPressureDeficit: 0,
+      isDay: true,
+      freezingLevel: 3000,
+      sunshineDuration: 0,
+      cape: hd.cape,
+      cin: hd.cin,
+      liftedIndex: hd.liftedIndex,
+      mixingRatio: 0,
+      virtualTemp: 0,
+      cloudCoverLow: 0,
+      cloudCoverMid: 0,
+      cloudCoverHigh: 0,
     },
     site.alt
   ) : null;
 
   const haDati = hd && righe.length > 0;
 
+  if (!haDati) {
+    return null;
+  }
+
   return (
-    <div className="bg-slate-900/40 border border-slate-700/40 rounded-2xl overflow-hidden">
-      {/* Titolo finestra */}
-      <div className="px-4 pt-4 pb-0">
-        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
-          Windgram · Dati meteo
-        </h3>
-      </div>
-
-      {/* Selettore ore - ancora più compatto */}
-      <div className="flex gap-1.5 overflow-x-auto px-4 pb-2.5 pt-1.5 bg-slate-800/30 border-b border-slate-700/30">
-        {ORE.map(ora => {
-          const isActive = ora === selectedHour;
-          const haDatiOra = oreOggi.some(h => h.time.getHours() === ora);
-          return (
-            <button
-              key={ora}
-              onClick={() => onHourSelect(ora)}
-              disabled={!haDatiOra}
-              className={`shrink-0 px-2.5 py-1 rounded-lg text-xs font-bold tracking-wide transition-all border ${
-                isActive
-                  ? "bg-emerald-600/30 border-emerald-400/60 text-emerald-200 shadow-sm scale-105"
-                  : haDatiOra
-                  ? "bg-slate-800/40 border-slate-700/40 text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
-                  : "bg-slate-800/20 border-slate-700/20 text-slate-600 cursor-not-allowed"
-              }`}
-            >
-              {String(ora).padStart(2, "0")}:00
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Info bar - ancora più compatta */}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-1.5 bg-slate-800/20 text-xs text-slate-300 border-b border-slate-700/20">
-        <span className="font-bold text-white">{site.name}</span>
-        <span className="text-slate-600">·</span>
-        <span>{String(selectedHour).padStart(2, "0")}:00</span>
-        <span className="text-slate-600">·</span>
-        <span>Decollo {site.alt}m</span>
-        <span className="text-slate-600">·</span>
-        <span>Suolo: <strong>{hd?.windSpeed ?? "?"}</strong> km/h <strong>{hd ? dirName(hd.windDir) : "?"}</strong></span>
-        {termiche && termiche.rateo > 0 && (
-          <>
-            <span className="text-slate-600">·</span>
-            <span className="text-amber-300 font-semibold">↑ {termiche.rateo.toFixed(1)} m/s</span>
-            <span className="text-slate-600">·</span>
-            <span className="text-emerald-300 font-semibold">Base {termiche.base}m</span>
-            <span className="text-slate-600">·</span>
-            <span className="text-orange-300 font-semibold">Top {termiche.top}m</span>
-          </>
-        )}
-      </div>
-
-      {!haDati ? (
-        <div className="p-10 text-center">
-          <p className="text-slate-400 text-lg">Nessun dato vento disponibile per le {String(selectedHour).padStart(2, "0")}:00</p>
-          <p className="text-sm text-slate-600 mt-3">Seleziona un'altra ora o attendi l'aggiornamento.</p>
-        </div>
-      ) : (
-        <>
-          {/* Legenda */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 border-t border-slate-700/30 bg-slate-800/20 text-xs text-slate-500">
-            <span className="text-slate-400 font-bold text-xs">Legenda:</span>
-            {[
-              { label: "≤5", color: "#10b981" },
-              { label: "6-10", color: "#84cc16" },
-              { label: "11-15", color: "#eab308" },
-              { label: "16-22", color: "#f97316" },
-              { label: "23-30", color: "#ef4444" },
-              { label: ">30", color: "#dc2626" },
-            ].map(l => (
-              <span key={l.label} className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-sm" style={{ background: l.color }} />
-                <span className="text-slate-300 text-xs">{l.label} km/h</span>
-              </span>
-            ))}
-            <span className="text-slate-600 ml-auto text-xs">Open-Meteo · Decollo {site.alt}m</span>
-          </div>
-        </>
-      )}
-    </div>
+    <>
+      Riga {righe[0].q}m — {righe[0].speed} km/h — {dirArrow(righe[0].dir)} {dirName(righe[0].dir)}
+    </>
   );
 }

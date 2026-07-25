@@ -1,13 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import {
-  Sun, CloudSun, Cloud, CloudRain, CloudLightning, CloudFog,
-  Thermometer, Wind, Droplets, ArrowUp, Gauge, Umbrella,
-  Mountain, TrendingUp, CheckCircle, Calendar
-} from "lucide-react";
-import { degreesToCardinal, windArrow } from "@/utils/windDirections";
-import { calcolaTermiche } from "@/utils/termiche";
+import { Calendar, Thermometer, Umbrella, Sun, Wind } from "lucide-react";
 
 interface PrevisioniGiornaliereProps {
   enrichedDaily: any[];
@@ -20,39 +14,51 @@ interface PrevisioniGiornaliereProps {
   nomeDecollo?: string;
 }
 
-function getWeatherInfo(code: number | undefined | null) {
-  if (code == null || (typeof code === "number" && isNaN(code))) {
-    return { icon: <Sun className="w-6 h-6 text-amber-300" />, desc: "N/D" };
-  }
-  if (code === 0 || code === 1) return { icon: <Sun className="w-6 h-6 text-amber-300" />, desc: "Sereno" };
-  if (code === 2) return { icon: <CloudSun className="w-6 h-6 text-amber-200" />, desc: "Poco nuvoloso" };
-  if (code === 3) return { icon: <Cloud className="w-6 h-6 text-slate-300" />, desc: "Nuvoloso" };
-  if (code >= 45 && code <= 48) return { icon: <CloudFog className="w-6 h-6 text-slate-400" />, desc: "Nebbia" };
-  if (code >= 51 && code <= 57) return { icon: <CloudRain className="w-6 h-6 text-blue-300" />, desc: "Pioggerella" };
-  if (code >= 61 && code <= 67) return { icon: <CloudRain className="w-6 h-6 text-blue-400" />, desc: "Pioggia" };
-  if (code >= 80 && code <= 84) return { icon: <CloudRain className="w-6 h-6 text-blue-300" />, desc: "Rovesci" };
-  if (code >= 95 && code <= 99) return { icon: <CloudLightning className="w-6 h-6 text-yellow-300" />, desc: "Temporali" };
-  return { icon: <Sun className="w-6 h-6 text-amber-300" />, desc: "Sereno" };
+/** Icona meteo chiara */
+function iconaMeteo(code: number): string {
+  if (code >= 95) return "⛈️";
+  if (code >= 80) return "🌧️";
+  if (code >= 71) return "❄️";
+  if (code >= 61) return "🌧️";
+  if (code >= 51) return "🌦️";
+  if (code >= 45) return "🌫️";
+  if (code >= 20) return "☁️";
+  if (code >= 10) return "⛅";
+  if (code >= 3) return "🌤️";
+  return "☀️";
 }
 
-function getDominantWeatherCode(hourlyCodes: (number | undefined | null)[]): number {
-  const valid = hourlyCodes.filter((c): c is number => c != null && !isNaN(c));
-  if (valid.length === 0) return 0;
-  const freq: Record<string, number> = {};
-  for (const c of valid) {
-    freq[String(c)] = (freq[String(c)] || 0) + 1;
-  }
-  let maxCode = 0;
-  let maxCount = 0;
-  const entries = Object.entries(freq);
-  for (let i = 0; i < entries.length; i++) {
-    const [ck, count] = entries[i];
-    if (count > maxCount) {
-      maxCount = count;
-      maxCode = parseInt(ck, 10);
-    }
-  }
-  return maxCode;
+/** Descrizione meteo chiara in italiano */
+function descrizioneMeteo(code: number): string {
+  if (code >= 95) return "Temporali";
+  if (code >= 80) return "Rovesci";
+  if (code >= 71) return "Neve";
+  if (code >= 61) return "Pioggia";
+  if (code >= 51) return "Pioggerella";
+  if (code >= 45) return "Nebbia";
+  if (code >= 20) return "Nuvoloso";
+  if (code >= 10) return "Poco nuv.";
+  if (code >= 3) return "Sereno";
+  return "Sereno";
+}
+
+/** Label leggibile per la quantità di pioggia */
+function pioggiaLabel(mm: number): string {
+  if (mm < 0.1) return "No";
+  if (mm < 1) return "Debole";
+  if (mm < 5) return "Moderata";
+  if (mm < 15) return "Forte";
+  return "Molto forte";
+}
+
+/** Label per la forza del vento medio */
+function ventoLabel(speed: number): string {
+  if (speed < 3) return "Calma";
+  if (speed < 8) return "Leggero";
+  if (speed < 15) return "Moderato";
+  if (speed < 22) return "Fresco";
+  if (speed < 30) return "Forte";
+  return "Molto forte";
 }
 
 function formatDateShort(date: any): string {
@@ -62,9 +68,10 @@ function formatDateShort(date: any): string {
   return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0");
 }
 
-function getDayLabel(idx: number, date: any): string {
-  const base = idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani";
-  return date ? base + " " + formatDateShort(date) : base;
+function getDayLabel(idx: number): string {
+  if (idx === 0) return "Oggi";
+  if (idx === 1) return "Domani";
+  return "Dopodomani";
 }
 
 export default function PrevisioniGiornaliere({
@@ -77,8 +84,6 @@ export default function PrevisioniGiornaliere({
   onSelectDay,
   nomeDecollo
 }: PrevisioniGiornaliereProps) {
-  const alt = site.altitude;
-
   const precipTotaleReale = useMemo(() => {
     if (!dayData || dayData.length === 0) return 0;
     let sum = 0;
@@ -88,200 +93,80 @@ export default function PrevisioniGiornaliere({
     return Math.round(sum * 10) / 10;
   }, [dayData]);
 
-  const dailyWeatherCodes = useMemo(() => {
-    const result: number[] = [];
-    for (let di = 0; di < enrichedDaily.length; di++) {
-      const day = enrichedDaily[di];
-      if (!day?.date) {
-        result.push(0);
-        continue;
-      }
-      const d = day.date instanceof Date ? day.date : new Date(day.date);
-      const codes: number[] = [];
-      if (dayData && dayData.length > 0) {
-        for (let hi = 0; hi < dayData.length; hi++) {
-          const t = new Date(dayData[hi].time);
-          if (t.getFullYear() === d.getFullYear() && t.getMonth() === d.getMonth() && t.getDate() === d.getDate()) {
-            codes.push(dayData[hi].weatherCode);
-          }
-        }
-      }
-      if (codes.length === 0) codes.push(day.weatherCode);
-      result.push(getDominantWeatherCode(codes));
-    }
-    return result;
-  }, [enrichedDaily, dayData]);
-
-  const dailyPrecipTotals = useMemo(() => {
-    const result: number[] = [];
-    for (let i = 0; i < enrichedDaily.length; i++) {
-      const day = enrichedDaily[i];
-      if (!day?.date) {
-        result.push(0);
-        continue;
-      }
-      if (i === selectedDay && precipTotaleReale > 0) {
-        result.push(precipTotaleReale);
-      } else {
-        result.push(Math.round(day.precipSum * 10) / 10);
-      }
-    }
-    return result;
-  }, [enrichedDaily, selectedDay, precipTotaleReale]);
-
-  const fasce = useMemo(() => {
-    if (!dayData || dayData.length === 0) return null;
-
-    const morning: any[] = [];
-    const afternoon: any[] = [];
-    const evening: any[] = [];
-    for (let i = 0; i < dayData.length; i++) {
-      const hh = new Date(dayData[i].time).getHours();
-      if (hh >= 6 && hh <= 11) morning.push(dayData[i]);
-      else if (hh >= 12 && hh <= 17) afternoon.push(dayData[i]);
-      else if (hh >= 18 && hh <= 23) evening.push(dayData[i]);
-    }
-
-    const compute = (hours: any[], label: string, _borderColor: string) => {
-      if (hours.length === 0) return null;
-
-      const filterValid = (arr: (number | null | undefined)[]): number[] => {
-        const result: number[] = [];
-        for (let i = 0; i < arr.length; i++) {
-          if (arr[i] != null) result.push(arr[i] as number);
-        }
-        return result;
-      };
-
-      const mean = (arr: number[]): number => {
-        if (arr.length === 0) return 0;
-        let sum = 0;
-        for (let i = 0; i < arr.length; i++) sum += arr[i];
-        return sum / arr.length;
-      };
-
-      const maxVal = (arr: number[]): number => {
-        if (arr.length === 0) return 0;
-        let m = -Infinity;
-        for (let i = 0; i < arr.length; i++) {
-          if (arr[i] > m) m = arr[i];
-        }
-        return m;
-      };
-
-      const temps = filterValid(hours.map((h: any) => h.temperature));
-      const winds = filterValid(hours.map((h: any) => h.windSpeed));
-      const dirs = filterValid(hours.map((h: any) => h.windDir));
-      const clouds = filterValid(hours.map((h: any) => h.cloudCover));
-      const hums = filterValid(hours.map((h: any) => h.humidity));
-      const pressures = filterValid(hours.map((h: any) => h.pressure || 1013));
-      const codes = filterValid(hours.map((h: any) => h.weatherCode));
-
-      const tempMedia = Math.round(mean(temps));
-      const tempMax = Math.round(maxVal(temps));
-      const windMedia = Math.round(mean(winds));
-      const windMax = Math.round(maxVal(winds));
-      const windDirMedia = dirs.length > 0 ? Math.round(mean(dirs)) : 0;
-      const cloudMedia = Math.round(mean(clouds));
-      const humMedia = Math.round(mean(hums));
-      const pressMedia = Math.round(mean(pressures));
-
-      let precipTot = 0;
-      for (let i = 0; i < hours.length; i++) {
-        precipTot += hours[i].precipitation || 0;
-      }
-      precipTot = Math.round(precipTot * 10) / 10;
-
-      const thermicHours = hours.map((h: any) => calcolaTermiche(h, alt));
-      const rates = thermicHours.map((t: any) => t.rateo);
-      const salitaMedia = mean(rates);
-      const salita = Math.round(salitaMedia * 10) / 10;
-      const bases = thermicHours.map((t: any) => t.base);
-      const tops = thermicHours.map((t: any) => t.top);
-      const baseMedia = Math.round(mean(bases));
-      const topMedia = Math.round(mean(tops));
-
-      let termicheLabel = "Assenti ❌";
-      let termicheColore = "text-slate-400";
-      if (salita >= 4) { termicheLabel = "Forti 🔥"; termicheColore = "text-red-400"; }
-      else if (salita >= 3) { termicheLabel = "Buone 🪂"; termicheColore = "text-orange-400"; }
-      else if (salita >= 2) { termicheLabel = "Moderate 👍"; termicheColore = "text-amber-400"; }
-      else if (salita >= 1) { termicheLabel = "Deboli 👎"; termicheColore = "text-amber-300"; }
-      else if (salita >= 0.3) { termicheLabel = "M. deboli ☁️"; termicheColore = "text-yellow-300"; }
-
-      const _weatherCode = codes.length > 0 ? getDominantWeatherCode(codes) : 0;
-      const _weatherInfo = getWeatherInfo(_weatherCode);
-
-      let score = 5;
-      if (windMedia >= 5 && windMedia <= 18) score += 2;
-      else if (windMedia > 25) score -= 2;
-      else score -= 1;
-      if (precipTot < 0.1) score += 2;
-      else if (precipTot < 0.5) score += 1;
-      else score -= 3;
-      if (cloudMedia >= 10 && cloudMedia <= 60) score += 1.5;
-      if (salita >= 2) score += 2;
-      else if (salita >= 1) score += 1;
-      if (windMax > 30) score -= 2;
-      score = Math.max(0, Math.min(10, Math.round(score)));
-
-      return {
-        label, borderColor: "border-emerald-500/50", weatherDesc: _weatherInfo.desc,
-        tempMedia, tempMax, windMedia, windMax, windDirMedia,
-        cloudMedia, precipTot, humMedia, pressMedia,
-        base: baseMedia, top: topMedia, salita, termicheLabel, termicheColore, score, nOre: hours.length,
-      };
-    };
-
-    const results: any[] = [];
-    const m = compute(morning, "Mattina", "border-emerald-500/50");
-    if (m) results.push(m);
-    const a = compute(afternoon, "Pomeriggio", "border-emerald-500/50");
-    if (a) results.push(a);
-    const e = compute(evening, "Sera", "border-emerald-500/50");
-    if (e) results.push(e);
-    return results.length > 0 ? results : null;
-  }, [dayData, alt]);
-
   if (!enrichedDaily || enrichedDaily.length === 0) {
     return <div className="text-center py-8 text-slate-400 text-base">Caricamento previsioni...</div>;
   }
-
-  const selectedDayData = enrichedDaily[selectedDay];
-  const dayDateShort = selectedDayData?.date ? formatDateShort(selectedDayData.date) : "";
-  const nomeDisplay = nomeDecollo || site.name;
 
   const days = enrichedDaily.slice(0, 3);
   const dayButtons: React.ReactNode[] = [];
   for (let idx = 0; idx < days.length; idx++) {
     const day = days[idx];
     const isActive = idx === selectedDay;
-    const weatherCode = dailyWeatherCodes[idx] ?? 0;
-    const weatherInfo = getWeatherInfo(weatherCode);
-    const precipGiorno = dailyPrecipTotals[idx] ?? day.precipSum ?? 0;
+    const weatherCode = day.weatherCode ?? 0;
+    const precipGiorno = idx === selectedDay && precipTotaleReale > 0 ? precipTotaleReale : Math.round((day.precipSum ?? 0) * 10) / 10;
+
+    // Stima vento medio del giorno (dal primo dato utile)
+    let ventoMedio = 0;
+    if (day.windSpeedMax != null) ventoMedio = day.windSpeedMax;
+    else if (dayData && dayData.length > 0) {
+      const oreGiorno = dayData.filter((h: any) => {
+        const hd = h.time instanceof Date ? h.time : new Date(h.time);
+        const dd = day.date instanceof Date ? day.date : new Date(day.date);
+        return hd.getDate() === dd.getDate() && hd.getMonth() === dd.getMonth();
+      });
+      if (oreGiorno.length > 0) {
+        let sum = 0;
+        for (let i = 0; i < oreGiorno.length; i++) sum += oreGiorno[i].windSpeed || 0;
+        ventoMedio = sum / oreGiorno.length;
+      }
+    }
+
     dayButtons.push(
       <button
         key={idx}
         onClick={() => onSelectDay(idx)}
-        className={"text-center transition-all border-2 cursor-pointer p-3 rounded-xl " + (
+        className={`text-left transition-all border-2 cursor-pointer p-4 rounded-xl flex-1 min-w-[140px] ${
           isActive
             ? "border-emerald-400 bg-emerald-900/40 shadow-lg"
             : "border-slate-700/50 bg-slate-800/40 hover:border-slate-600"
-        )}
+        }`}
       >
-        <div className="text-base font-bold text-white">
-          {idx === 0 ? "Oggi" : idx === 1 ? "Domani" : "Dopodomani"}
-        </div>
-        <div className="text-xs text-slate-400 mt-0.5">
-          <Calendar className="w-3.5 h-3.5 inline mr-1" />
+        {/* Nome giorno */}
+        <div className="text-sm font-bold text-white mb-1">{getDayLabel(idx)}</div>
+        <div className="text-xs text-slate-400 mb-2 flex items-center gap-1">
+          <Calendar className="w-3 h-3" />
           {day.date ? formatDateShort(day.date) : ""}
         </div>
-        <div className="flex justify-center my-1">{weatherInfo.icon}</div>
-        <div className="text-sm text-slate-300 font-bold">{weatherInfo.desc}</div>
-        <div className="text-lg font-bold text-white my-1">{Math.round(day.tempMax)}°</div>
-        <div className="text-xs text-slate-400">min {Math.round(day.tempMin)}°</div>
-        <div className="text-xs text-slate-400 mt-0.5">
-          {precipGiorno > 0 ? String(precipGiorno.toFixed(1)) + " mm" : "0 mm"}
+
+        {/* Icona meteo + descrizione */}
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-2xl">{iconaMeteo(weatherCode)}</span>
+          <span className="text-sm font-bold text-slate-200">{descrizioneMeteo(weatherCode)}</span>
+        </div>
+
+        {/* Temperatura */}
+        <div className="flex items-center gap-1 text-xs mb-1">
+          <Thermometer className="w-3 h-3 text-amber-400 shrink-0" />
+          <span className="text-white font-bold">{Math.round(day.tempMax)}°</span>
+          <span className="text-slate-500">max</span>
+          <span className="text-white font-bold ml-1">{Math.round(day.tempMin)}°</span>
+          <span className="text-slate-500">min</span>
+        </div>
+
+        {/* Vento */}
+        <div className="flex items-center gap-1 text-xs mb-1">
+          <Wind className="w-3 h-3 text-sky-400 shrink-0" />
+          <span className="font-bold text-sky-300">{ventoLabel(ventoMedio)}</span>
+          <span className="text-slate-500">({Math.round(ventoMedio)} km/h)</span>
+        </div>
+
+        {/* Pioggia */}
+        <div className="flex items-center gap-1 text-xs">
+          <Umbrella className="w-3 h-3 text-blue-400 shrink-0" />
+          <span className="font-bold text-blue-300">{pioggiaLabel(precipGiorno)}</span>
+          {precipGiorno > 0 && (
+            <span className="text-slate-500">({precipGiorno.toFixed(1)}mm)</span>
+          )}
         </div>
       </button>
     );
