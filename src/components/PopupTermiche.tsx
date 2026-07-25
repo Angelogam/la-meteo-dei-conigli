@@ -27,47 +27,20 @@ interface PopupTermicheProps {
   onClose: () => void;
 }
 
-function getLabelFromRateo(rateo: number): string {
-  if (rateo >= 3) return "forti";
-  if (rateo >= 2) return "Buone";
-  if (rateo >= 1) return "moderate";
-  if (rateo >= 0.3) return "deboli";
-  return "Niente";
-}
-
-function getColoreFromRateo(rateo: number): string {
-  if (rateo >= 3) return "#ef4444";
-  if (rateo >= 2) return "#f97316";
-  if (rateo >= 1) return "#eab308";
-  if (rateo >= 0.3) return "#22c55e";
-  return "#475569";
-}
-
 export default function PopupTermiche({ siteName, siteAltitude, hourlyData, onClose }: PopupTermicheProps) {
   const now = new Date();
   const oraCorrente = now.getHours();
 
-  // Calcola termiche per ogni ora — con label/colore/gradienteReale aggiuntivi
+  // Calcola termiche per ogni ora
   const termiche = hourlyData
     .filter(h => {
       const hh = h.time.getHours();
       return hh >= 8 && hh <= 19;
     })
-    .map(h => {
-      const t = calcolaTermiche(h, siteAltitude);
-      return {
-        hour: h.time.getHours(),
-        termiche: {
-          rateo: t.rateo,
-          forza: t.forza,
-          base: t.base,
-          top: t.top,
-          label: getLabelFromRateo(t.rateo),
-          colore: getColoreFromRateo(t.rateo),
-          gradienteReale: t.rateo / 4,
-        },
-      };
-    });
+    .map(h => ({
+      hour: h.time.getHours(),
+      termiche: calcolaTermiche(h, siteAltitude),
+    }));
 
   if (!hourlyData || hourlyData.length === 0) {
     return null;

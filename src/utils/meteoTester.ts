@@ -42,17 +42,53 @@ const VALIDATION_RULES = {
 
 const BASE_URL = "https://api.open-meteo.com/v1/forecast";
 
-// Parametri ridotti per il test — stessi usati dall'app
+// Stessi parametri usati dall'app in weatherService.ts
 const HOURLY_PARAMS = [
   "temperature_2m",
   "relative_humidity_2m",
+  "dew_point_2m",
+  "apparent_temperature",
   "precipitation",
+  "precipitation_probability",
   "weather_code",
+  "pressure_msl",
+  "surface_pressure",
   "cloud_cover",
+  "cloud_cover_low",
+  "cloud_cover_mid",
+  "cloud_cover_high",
   "wind_speed_10m",
   "wind_direction_10m",
   "wind_gusts_10m",
   "uv_index",
+  "shortwave_radiation",
+  "direct_radiation",
+  "sunshine_duration",
+  "temperature_80m",
+  "temperature_120m",
+  "wind_speed_80m",
+  "wind_direction_80m",
+  "wind_speed_120m",
+  "wind_direction_120m",
+  "wind_speed_180m",
+  "wind_direction_180m",
+  "wind_speed_300m",
+  "wind_direction_300m",
+  "wind_speed_600m",
+  "wind_direction_600m",
+  "wind_speed_1000m",
+  "wind_direction_1000m",
+  "wind_speed_1500m",
+  "wind_direction_1500m",
+  "wind_speed_2000m",
+  "wind_direction_2000m",
+  "wind_speed_2500m",
+  "wind_direction_2500m",
+  "wind_speed_3000m",
+  "wind_direction_3000m",
+  "cape",
+  "convective_inhibition",
+  "lifted_index",
 ].join(",");
 
 const DAILY_PARAMS = [
@@ -60,7 +96,12 @@ const DAILY_PARAMS = [
   "temperature_2m_max",
   "temperature_2m_min",
   "precipitation_sum",
+  "precipitation_probability_max",
   "wind_speed_10m_max",
+  "wind_gusts_10m_max",
+  "wind_direction_10m_dominant",
+  "uv_index_max",
+  "shortwave_radiation_sum",
 ].join(",");
 
 export interface SiteCoord {
@@ -114,6 +155,7 @@ export async function testSingleSite(site: SiteCoord): Promise<TestResult> {
     // Verifiche dati essenziali
     if (!raw.hourly?.time?.length) errors.push("Nessun dato orario ricevuto");
     if (!raw.daily?.time?.length) errors.push("Nessun dato giornaliero ricevuto");
+    if (!raw.current) warnings.push("Nessun dato current ricevuto");
 
     // Verifica temperature realistiche
     if (raw.hourly?.temperature_2m) {
@@ -144,6 +186,19 @@ export async function testSingleSite(site: SiteCoord): Promise<TestResult> {
     // Verifica coordinate non siano zero
     if (raw.latitude === 0 && raw.longitude === 0) {
       errors.push("Open-Meteo ha restituito coordinate 0,0 — lat/lon errati?");
+    }
+
+    // Verifica weather_code notturno
+    if (raw.current?.weather_code != null && raw.current?.is_day != null) {
+      if (raw.current.is_day === 0 && raw.current.weather_code === 0) {
+        // notte serena — ok
+      }
+    }
+
+    // Verifica che i campi di vento in alta quota siano presenti
+    const hasWindProfile = raw.hourly?.wind_speed_80m?.some((v: number) => v != null && v > 0);
+    if (!hasWindProfile) {
+      warnings.push("Profilo vento in quota (80m) assente o tutto zero — i dati vento potrebbero essere incompleti");
     }
 
     return {
@@ -187,6 +242,7 @@ function validateRawData(raw: any, site: SiteCoord): FieldValidation {
     daily.push({ field: "temp_min", value: raw.daily.temperature_2m_min?.[idx], expected: "-20..50°C", ok: raw.daily.temperature_2m_min?.[idx] >= -20 && raw.daily.temperature_2m_min?.[idx] <= 50 });
     daily.push({ field: "precipitation_sum", value: raw.daily.precipitation_sum?.[idx], expected: "≥ 0", ok: raw.daily.precipitation_sum?.[idx] >= 0 });
     daily.push({ field: "wind_speed_max", value: raw.daily.wind_speed_10m_max?.[idx], expected: "0..80", ok: raw.daily.wind_speed_10m_max?.[idx] >= 0 && raw.daily.wind_speed_10m_max?.[idx] <= 80 });
+    daily.push({ field: "uv_index_max", value: raw.daily.uv_index_max?.[idx], expected: "0..20", ok: raw.daily.uv_index_max?.[idx] >= 0 && raw.daily.uv_index_max?.[idx] <= 20 });
   }
 
   // Hourly validations (prima ora del primo giorno)
@@ -200,8 +256,13 @@ function validateRawData(raw: any, site: SiteCoord): FieldValidation {
     hourly.push({ field: "wind_direction_10m", value: raw.hourly.wind_direction_10m?.[idx], expected: "0-360°", ok: raw.hourly.wind_direction_10m?.[idx] >= 0 && raw.hourly.wind_direction_10m?.[idx] <= 360 });
   }
 
-  // Current validations — Open-Meteo non include "current" se non richiesto
-  // Quindi lo saltiamo
+  // Current validations
+  if (raw.current) {
+    current.push({ field: "temperature_2m", value: raw.current.temperature_2m, expected: "-20..50°C", ok: raw.current.temperature_2m >= -20 && raw.current.temperature_2m <= 50 });
+    current.push({ field: "relative_humidity_2m", value: raw.current.relative_humidity_2m, expected: "0-100%", ok: raw.current.relative_humidity_2m >= 0 && raw.current.relative_humidity_2m <= 100 });
+    current.push({ field: "wind_speed_10m", value: raw.current.wind_speed_10m, expected: "0-80 km/h", ok: raw.current.wind_speed_10m >= 0 && raw.current.wind_speed_10m <= 80 });
+    current.push({ field: "weather_code", value: raw.current.weather_code, expected: "0-99", ok: raw.current.weather_code >= 0 && raw.current.weather_code <= 99 });
+  }
 
   return { daily, hourly, current };
 }

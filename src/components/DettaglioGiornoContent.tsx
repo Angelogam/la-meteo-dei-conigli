@@ -1,35 +1,29 @@
 "use client";
 
 import React from "react";
-import Windgram from "./Windgram";
-import { MapPin } from "lucide-react";
+import WindProfileUnified from "@/components/WindProfileUnified";
 
 interface DettaglioGiornoContentProps {
-  site: {
-    name: string;
-    alt: number;
-    lat: number;
-    lon: number;
-  };
+  lat: number;
+  lon: number;
+  quotaDecollo: number;
   selectedDay: number;
-  selectedHour: number;
-  onHourSelect: (hour: number) => void;
+  siteName?: string;
 }
 
 export default function DettaglioGiornoContent({
-  site,
-  selectedDay,
-  selectedHour,
-  onHourSelect,
+  lat,
+  lon,
+  quotaDecollo,
+  siteName,
 }: DettaglioGiornoContentProps) {
   return (
-    <div className="space-y-3">
-      {/* Windgram */}
-      <Windgram
-        hourlyData={[]}
-        site={site}
-        selectedHour={selectedHour}
-        onHourSelect={onHourSelect}
+    <div className="space-y-4">
+      <WindProfileUnified
+        lat={lat}
+        lon={lon}
+        quotaDecollo={quotaDecollo}
+        siteName={siteName}
       />
     </div>
   );

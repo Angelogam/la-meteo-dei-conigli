@@ -1,273 +1,266 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import type { HourData, DailyData } from "@/types/meteo";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { weatherService, MeteoHourly, MeteoDaily } from "@/services/weatherService";
+import type { HourData } from "@/types/meteo";
 import { DECOLLI } from "@/data/decolli";
-import { weatherService } from "@/services/weatherService";
 
-const STORAGE_KEY_SITE = "meteo_selected_decollo";
-const REFRESH_INTERVAL = 600000; // 10 minuti
+const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
 
-function getWeatherDescription(code: number): string {
-  if (code === 0) return "Sereno";
-  if (code <= 2) return "Poco nuvoloso";
-  if (code <= 3) return "Nuvoloso";
-  if (code <= 48) return "Nebbia";
-  if (code <= 57) return "Pioggerella";
-  if (code <= 67) return "Pioggia";
-  if (code <= 77) return "Neve";
-  if (code <= 82) return "Rovesci";
-  if (code >= 95) return "Temporali";
-  return "N/D";
+function toHourData(mh: MeteoHourly): HourData {
+  return {
+    time: mh.time,
+    temperature: mh.temperature,
+    humidity: mh.humidity,
+    dewPoint: mh.dewPoint,
+    apparentTemp: mh.apparentTemp,
+    precipitationProba: mh.precipitationProbability,
+    precipitation: mh.precipitation,
+    rain: mh.precipitation > 0 && mh.weatherCode >= 61 && mh.weatherCode <= 67 ? mh.precipitation : 0,
+    showers: mh.precipitation > 0 && mh.weatherCode >= 80 && mh.weatherCode <= 82 ? mh.precipitation : 0,
+    snowfall: mh.precipitation > 0 && mh.weatherCode >= 71 && mh.weatherCode <= 77 ? mh.precipitation : 0,
+    weatherCode: mh.weatherCode,
+    pressure: 1013,
+    surfacePressure: 1013,
+    cloudCover: mh.cloudCover,
+    cloudCoverLow: 0,
+    cloudCoverMid: 0,
+    cloudCoverHigh: 0,
+    evapotranspiration: mh.shortwaveRadiation * 0.02,
+    et0: 0,
+    vapourPressureDeficit: mh.dewPoint > 0 ? mh.temperature - mh.dewPoint : 0,
+    windSpeed: mh.windSpeed,
+    windDir: mh.windDir,
+    windGusts: mh.windGusts,
+    soilTemp: mh.temperature - 3,
+    soilMoisture: mh.humidity > 70 ? 0.5 : 0.3,
+    uvIndex: mh.uvIndex,
+    temp80m: null,
+    temp120m: null,
+    shortwaveRadiation: mh.shortwaveRadiation,
+    directRadiation: 0,
+    diffuseRadiation: 0,
+    directNormalIrradiance: 0,
+    terrestrialRadiation: 0,
+    sunshineDuration: 0,
+    windProfile: mh.windProfile,
+  };
 }
 
-function convertHourlyToHourData(raw: any[]): HourData[] {
-  return raw.map(h => ({
-    time: h.time instanceof Date ? h.time : new Date(h.time),
-    temperature: h.temperature ?? h.temperature_2m ?? 0,
-    humidity: h.humidity ?? h.relative_humidity_2m ?? 50,
-    dewPoint: h.dewPoint ?? h.dew_point_2m ?? 10,
-    pressure: h.pressure ?? h.pressure_msl ?? 1013,
-    surfacePressure: h.surfacePressure ?? h.surface_pressure ?? 1013,
-    precipitation: h.precipitation ?? 0,
-    rain: h.rain ?? 0,
-    snowfall: h.snowfall ?? 0,
-    weatherCode: h.weatherCode ?? h.weather_code ?? 0,
-    cloudCover: h.cloudCover ?? h.cloud_cover ?? 30,
-    cloudCoverLow: h.cloudCoverLow ?? h.cloud_cover_low ?? 0,
-    cloudCoverMid: h.cloudCoverMid ?? h.cloud_cover_mid ?? 0,
-    cloudCoverHigh: h.cloudCoverHigh ?? h.cloud_cover_high ?? 0,
-    windSpeed: h.windSpeed ?? h.wind_speed_10m ?? 0,
-    windDir: h.windDir ?? h.wind_direction_10m ?? 0,
-    windGusts: h.windGusts ?? h.wind_gusts_10m ?? 0,
-    uvIndex: h.uvIndex ?? h.uv_index ?? 0,
-    feelsLike: h.apparentTemp ?? h.apparent_temperature ?? h.temperature ?? 0,
-    radiation: h.shortwaveRadiation ?? h.shortwave_radiation ?? 0,
-    directRadiation: h.directRadiation ?? h.direct_radiation ?? 0,
-    visibility: h.visibility ?? 10000,
-    vapourPressureDeficit: h.vapourPressureDeficit ?? 0,
-    isDay: h.isDay ?? (h.time ? new Date(h.time).getHours() >= 6 && new Date(h.time).getHours() <= 20 : true),
-    freezingLevel: h.freezingLevel ?? 3000,
-    sunshineDuration: h.sunshineDuration ?? 0,
-    cape: h.cape ?? 0,
-    cin: h.cin ?? 0,
-    liftedIndex: h.liftedIndex ?? 0,
-    mixingRatio: 0,
-    virtualTemp: 298,
-  }));
-}
-
-function convertDailyData(raw: any[]): DailyData[] {
-  if (!raw || raw.length === 0) return [];
-  return raw.map(d => {
-    const date = d.date instanceof Date ? d.date : new Date(d.date);
-    return {
-      date,
-      weatherCode: d.weatherCode ?? d.weather_code ?? 0,
-      temperatureMax: d.tempMax ?? d.temperature_2m_max ?? 0,
-      temperatureMin: d.tempMin ?? d.temperature_2m_min ?? 0,
-      temperatureMean: d.tempMean ?? ((d.tempMax ?? 0) + (d.tempMin ?? 0)) / 2,
-      apparentTempMax: d.apparentTempMax ?? d.tempMax ?? 0,
-      apparentTempMin: d.apparentTempMin ?? d.tempMin ?? 0,
-      sunrise: d.sunrise ?? "",
-      sunset: d.sunset ?? "",
-      daylightDuration: d.daylightDuration ?? 0,
-      sunshineDuration: d.sunshineDuration ?? 0,
-      precipitationSum: d.precipitationSum ?? 0,
-      rainSum: d.rainSum ?? 0,
-      snowfallSum: d.snowfallSum ?? 0,
-      precipitationHours: d.precipitationHours ?? 0,
-      precipitationProbabilityMax: d.precipitationProbaMax ?? 0,
-      windSpeedMax: d.windSpeedMax ?? d.wind_speed_10m_max ?? 0,
-      windGustsMax: d.windGustsMax ?? d.wind_gusts_10m_max ?? 0,
-      windDirDominant: d.windDirDominant ?? d.wind_direction_10m_dominant ?? 0,
-      shortwaveRadiationSum: d.shortwaveRadiationSum ?? 0,
-      uvIndexMax: d.uvIndexMax ?? d.uv_index_max ?? 0,
-      windSpeed: d.windSpeed ?? 0,
-      cloudCover: d.cloudCover ?? 0,
-      weatherDescription: d.weatherDescription ?? getWeatherDescription(d.weatherCode ?? d.weather_code ?? 0),
-    };
-  });
+async function loadSingleSite(id: string, lat: number, lon: number, retries = 2): Promise<{
+  id: string;
+  daily: MeteoDaily[];
+  hourly: MeteoHourly[];
+  model: string;
+} | null> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      if (attempt > 0) await new Promise(resolve => setTimeout(resolve, attempt * 3000));
+      const { data } = await weatherService.fetchWithFallback(lat, lon);
+      if (data) return { id, daily: data.daily || [], hourly: data.hourly || [], model: data.model };
+    } catch (err) {
+      if (attempt === retries) return null;
+    }
+  }
+  return null;
 }
 
 export function useWeatherData() {
-  const [selectedId, setSelectedId] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem(STORAGE_KEY_SITE) || DECOLLI[0].id;
-    }
-    return DECOLLI[0].id;
-  });
-
-  const site = DECOLLI.find(d => d.id === selectedId) || DECOLLI[0];
+  const [selectedId, setSelectedId] = useState(DECOLLI[0]?.id || "malanotte");
+  const [hourlyData, setHourlyData] = useState<MeteoHourly[]>([]);
+  const [dailyData, setDailyData] = useState<MeteoDaily[]>([]);
+  const [allDailyData, setAllDailyData] = useState<Record<string, MeteoDaily[]>>({});
+  const [allHourlyData, setAllHourlyData] = useState<Record<string, MeteoHourly[]>>({});
+  const [activeModel, setActiveModel] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  const [countdown, setCountdown] = useState(REFRESH_INTERVAL);
+  const [error, setError] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState(0);
   const [selectedHour, setSelectedHour] = useState(new Date().getHours());
-  const [activeTab, setActiveTab] = useState<"meteo" | "venti" | "termiche" | "analisi">("meteo");
-  const [activeModel, setActiveModel] = useState("gfs");
+  const [activeTab, setActiveTab] = useState<'meteo' | 'venti' | 'windgram' | 'termiche' | 'analisi'>('meteo');
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [countdown, setCountdown] = useState(30);
+  const selectedIdRef = useRef(selectedId);
+  selectedIdRef.current = selectedId;
 
-  const [hourlyData, setHourlyData] = useState<HourData[]>([]);
-  const [dailyData, setDailyData] = useState<DailyData[]>([]);
-  const [allHourlyData, setAllHourlyData] = useState<Record<string, HourData[]>>({});
-
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const countdownRef = useRef<NodeJS.Timeout | null>(null);
-
-  const dayData = hourlyData.filter(h => {
-    const oggi = new Date();
-    const targetDate = new Date(oggi);
-    targetDate.setDate(oggi.getDate() + selectedDay);
-    const hDate = new Date(h.time);
-    return (
-      hDate.getDate() === targetDate.getDate() &&
-      hDate.getMonth() === targetDate.getMonth() &&
-      hDate.getFullYear() === targetDate.getFullYear()
-    );
-  });
-
-  const currentData = dayData.find(h => new Date(h.time).getHours() === selectedHour) ||
-    dayData[0] || hourlyData[0] || null;
-
-  const currentDataRounded = currentData ? {
-    ...currentData,
-    temperature: Math.round(currentData.temperature * 10) / 10,
-    windSpeed: Math.round(currentData.windSpeed * 10) / 10,
-    windGusts: currentData.windGusts ? Math.round(currentData.windGusts) : 0,
-    humidity: Math.round(currentData.humidity),
-    pressure: Math.round(currentData.pressure),
-    precipitation: Math.round(currentData.precipitation * 100) / 100,
-    cloudCover: Math.round(currentData.cloudCover),
-    uvIndex: Math.round(currentData.uvIndex * 10) / 10,
-    visibility: currentData.visibility ? Math.round(currentData.visibility / 100) * 100 : 10000,
-  } : null;
-
-  const enrichedDaily = dailyData.map((d, i) => {
-    const dayHours = hourlyData.filter(h => {
-      const hDate = new Date(h.time);
-      const dDate = new Date(d.date);
-      return (
-        hDate.getDate() === dDate.getDate() &&
-        hDate.getMonth() === dDate.getMonth()
-      );
-    });
-
-    const temps = dayHours.map(h => h.temperature).filter(t => t != null);
-    const winds = dayHours.map(h => h.windSpeed).filter(w => w != null);
-    const clouds = dayHours.map(h => h.cloudCover).filter(c => c != null);
-
-    return {
-      ...d,
-      temperatureMax: temps.length > 0 ? Math.round(Math.max(...temps)) : d.temperatureMax,
-      temperatureMin: temps.length > 0 ? Math.round(Math.min(...temps)) : d.temperatureMin,
-      windSpeedMax: winds.length > 0 ? Math.round(Math.max(...winds)) : d.windSpeedMax,
-      windSpeed: winds.length > 0 ? Math.round(winds.reduce((s, w) => s + w, 0) / winds.length) : d.windSpeed,
-      cloudCover: clouds.length > 0 ? Math.round(clouds.reduce((s, c) => s + c, 0) / clouds.length) : d.cloudCover,
-      weatherDescription: getWeatherDescription(d.weatherCode),
-    };
-  });
-
-  const thermalDelta = currentData ? Math.round((currentData.temperature - (currentData.dewPoint || currentData.temperature - 8)) * 10) / 10 : 0;
-
-  const currentCape = currentData ? {
-    cape: Math.round(currentData.cape || 0),
-    cin: Math.round(currentData.cin || 0),
-    liftedIndex: currentData.liftedIndex !== undefined ? Math.round(currentData.liftedIndex * 10) / 10 : 0,
-  } : null;
-
-  const dateLabels = Array.from({ length: 3 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
-    const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
-    return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
-  });
+  const site = DECOLLI.find(d => d.id === selectedId) || DECOLLI[0];
 
   const loadWeather = useCallback(async () => {
-    if (!site) return;
+    setLoading(true);
+    setUpdating(true);
+    setError(null);
+
+    const currentId = selectedIdRef.current;
+    const currentSite = DECOLLI.find(d => d.id === currentId) || DECOLLI[0];
 
     try {
-      setUpdating(true);
-      setLoading(true);
+      // Carica SOLO il sito selezionato
+      const primaryResult = await loadSingleSite(currentSite.id, currentSite.lat, currentSite.lon);
 
-      const { data } = await weatherService.fetchWithFallback(site.lat, site.lon);
+      const dailyMap: Record<string, MeteoDaily[]> = { ...allDailyData };
+      const hourlyMap: Record<string, MeteoHourly[]> = { ...allHourlyData };
 
-      if (data) {
-        // Converti MeteoHourly in HourData
-        const converted = convertHourlyToHourData(data.hourly);
-        setHourlyData(converted);
-        setDailyData(convertDailyData(data.daily));
+      if (primaryResult) {
+        dailyMap[currentSite.id] = primaryResult.daily;
+        hourlyMap[currentSite.id] = primaryResult.hourly;
+        setDailyData(primaryResult.daily);
+        setHourlyData(primaryResult.hourly);
+        setActiveModel(primaryResult.model);
+      }
 
-        setAllHourlyData(prev => ({
-          ...prev,
-          [site.id]: converted,
-        }));
+      setAllDailyData(dailyMap);
+      setAllHourlyData(hourlyMap);
+      setLoading(false);
+      setUpdating(false);
+      setLastUpdate(new Date());
+      setCountdown(30);
 
-        setLastUpdate(new Date());
-        setCountdown(REFRESH_INTERVAL);
+      // Carica altri siti in background UNO ALLA VOLTA con delay di 3s
+      const remainingSites = DECOLLI.filter(d => !dailyMap[d.id] || dailyMap[d.id].length === 0);
+      for (const decollo of remainingSites) {
+        if (decollo.id === currentSite.id) continue;
+        const result = await loadSingleSite(decollo.id, decollo.lat, decollo.lon);
+        if (result) {
+          dailyMap[decollo.id] = result.daily;
+          hourlyMap[decollo.id] = result.hourly;
+          setAllDailyData({ ...dailyMap });
+          setAllHourlyData({ ...hourlyMap });
+        }
+        await new Promise(resolve => setTimeout(resolve, 3000));
       }
     } catch (err) {
-      console.error("Errore caricamento dati:", err);
-    } finally {
+      setError(err instanceof Error ? err.message : 'Errore sconosciuto');
       setLoading(false);
       setUpdating(false);
     }
-  }, [site]);
-
-  useEffect(() => {
-    loadWeather();
-  }, [loadWeather]);
-
-  useEffect(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => {
-      loadWeather();
-    }, REFRESH_INTERVAL);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [loadWeather]);
-
-  useEffect(() => {
-    if (countdownRef.current) clearInterval(countdownRef.current);
-    countdownRef.current = setInterval(() => {
-      setCountdown(prev => Math.max(0, prev - 1000));
-    }, 1000);
-    return () => {
-      if (countdownRef.current) clearInterval(countdownRef.current);
-    };
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_SITE, selectedId);
-  }, [selectedId]);
+    loadWeather();
+    setSelectedHour(new Date().getHours());
+  }, []);
 
   useEffect(() => {
-    const ora = new Date().getHours();
-    if (selectedHour < 0 || selectedHour > 23) {
-      setSelectedHour(ora);
-    }
-  }, [selectedDay, selectedHour]);
+    const interval = setInterval(loadWeather, REFRESH_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [loadWeather]);
+
+  useEffect(() => {
+    const minuteInterval = setInterval(() => {
+      setCountdown(prev => prev <= 1 ? 30 : prev - 1);
+    }, 60 * 1000);
+    return () => clearInterval(minuteInterval);
+  }, []);
+
+  useEffect(() => {
+    if (allDailyData[selectedId]) setDailyData(allDailyData[selectedId]);
+    if (allHourlyData[selectedId]) setHourlyData(allHourlyData[selectedId]);
+    setSelectedHour(Math.min(selectedHour, 23));
+  }, [selectedId, allDailyData, allHourlyData]);
+
+  const dayData: HourData[] = useMemo(() => {
+    if (!hourlyData || hourlyData.length === 0) return [];
+    const oggi = new Date();
+    const targetDate = new Date(oggi);
+    targetDate.setDate(oggi.getDate() + selectedDay);
+    return hourlyData
+      .filter(h => {
+        const t = h.time;
+        return t.getFullYear() === targetDate.getFullYear() &&
+               t.getMonth() === targetDate.getMonth() &&
+               t.getDate() === targetDate.getDate();
+      })
+      .sort((a, b) => a.time.getTime() - b.time.getTime())
+      .map(toHourData);
+  }, [hourlyData, selectedDay]);
+
+  const currentData = useMemo((): HourData | null => {
+    if (!dayData.length) return null;
+    return dayData.reduce((best, curr) => {
+      const diffBest = Math.abs(best.time.getHours() - selectedHour);
+      const diffCurr = Math.abs(curr.time.getHours() - selectedHour);
+      return diffCurr < diffBest ? curr : best;
+    }, dayData[0]);
+  }, [dayData, selectedHour]);
+
+  /** CAPE attuale dal modello */
+  const currentCape = useMemo(() => {
+    if (!currentData || !hourlyData.length) return null;
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + selectedDay);
+    const h = hourlyData.find(h =>
+      h.time.getHours() === selectedHour &&
+      h.time.getFullYear() === targetDate.getFullYear() &&
+      h.time.getMonth() === targetDate.getMonth() &&
+      h.time.getDate() === targetDate.getDate()
+    );
+    return h ? { cape: h.cape, cin: h.cin, liftedIndex: h.liftedIndex } : null;
+  }, [currentData, hourlyData, selectedHour, selectedDay]);
+
+  const thermalDelta = useMemo(() => {
+    if (!dayData.length) return 0;
+    const temps = dayData.map(h => h.temperature).filter(t => t != null);
+    if (temps.length === 0) return 0;
+    return Math.round((Math.max(...temps) - Math.min(...temps)) * 10) / 10;
+  }, [dayData]);
+
+  const enrichedDaily = useMemo(() => {
+    if (!dailyData.length) return [];
+    return dailyData.map(day => {
+      const d = day.date;
+      const hours = hourlyData.filter(h => {
+        return h.time.getFullYear() === d.getFullYear() &&
+               h.time.getMonth() === d.getMonth() &&
+               h.time.getDate() === d.getDate();
+      });
+      const temps = hours.map(h => h.temperature).filter(t => t != null);
+      const delta = temps.length > 0 
+        ? Math.round((Math.max(...temps) - Math.min(...temps)) * 10) / 10 
+        : 0;
+      const avgWind = hours.length > 0
+        ? Math.round(hours.reduce((s, h) => s + (h.windSpeed || 0), 0) / hours.length * 10) / 10
+        : 0;
+      const maxWind = hours.length > 0
+        ? Math.max(...hours.map(h => h.windSpeed || 0))
+        : 0;
+      const avgCloud = hours.length > 0
+        ? Math.round(hours.reduce((s, h) => s + (h.cloudCover || 0), 0) / hours.length)
+        : 0;
+      return { ...day, date: d, thermalDelta: delta, avgWind, maxWind, avgCloud };
+    });
+  }, [dailyData, hourlyData]);
+
+  const dateLabels = enrichedDaily.map((d: any) => {
+    if (!d?.date) return "Giorno";
+    const date = new Date(d.date);
+    const oggi = new Date();
+    const domani = new Date(oggi); domani.setDate(oggi.getDate() + 1);
+    const dopodomani = new Date(oggi); dopodomani.setDate(oggi.getDate() + 2);
+    if (date.toDateString() === oggi.toDateString()) return "Oggi";
+    if (date.toDateString() === domani.toDateString()) return "Domani";
+    if (date.toDateString() === dopodomani.toDateString()) return "Dopodomani";
+    return date.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+  });
 
   return {
     selectedId, setSelectedId,
-    loading, updating,
+    loading, updating, error,
     selectedDay, setSelectedDay,
     selectedHour, setSelectedHour,
     activeTab, setActiveTab,
     lastUpdate, countdown,
-    activeModel, setActiveModel,
-    site,
+    site: site!,
     dayData,
-    currentData: currentDataRounded,
+    currentData,
     thermalDelta,
     enrichedDaily,
     dateLabels,
-    hourlyData,
-    allHourlyData,
-    allDailyData: dailyData,
-    currentCape,
     loadWeather,
+    hourlyData,
+    dailyData,
+    allDailyData,
+    allHourlyData,
+    activeModel,
+    currentCape,
   };
 }

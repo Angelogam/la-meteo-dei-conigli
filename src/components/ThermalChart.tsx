@@ -29,51 +29,50 @@ function getTextColor(label: string): string {
   return "text-slate-400";
 }
 
-function getColorFromRateo(rateo: number): string {
-  if (rateo >= 3) return "bg-red-500/70";
-  if (rateo >= 2) return "bg-orange-400/70";
-  if (rateo >= 1) return "bg-yellow-400/60";
-  if (rateo >= 0.3) return "bg-green-400/60";
-  return "bg-slate-700/40";
-}
-
-function getLabelFromRateo(rateo: number): string {
-  if (rateo >= 3) return "forti";
-  if (rateo >= 2) return "Buone";
-  if (rateo >= 1) return "moderate";
-  if (rateo >= 0.3) return "deboli";
-  return "Niente";
-}
-
+// Ore locali (Italia, UTC+1) da mostrare
 const HOURS_LOCAL = Array.from({ length: 14 }, (_, i) => i + 8); // 8:00 – 21:00
 
 export default function ThermalChart({ hourlyData, selectedHour, siteAltitude, selectedDay }: ThermalChartProps) {
   const data = useMemo(() => {
+    // Filtra i dati per il giorno selezionato (selectedDay)
+    // selectedDay: 0 = oggi, 1 = domani, ...
     const today = new Date();
     const targetDate = new Date(today);
     targetDate.setDate(today.getDate() + selectedDay);
+    
+    const dayStart = new Date(targetDate);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(targetDate);
+    dayEnd.setHours(23, 59, 59, 999);
 
+    // Filtra hourlyData per questo giorno specifico (in UTC, ma i dati hanno timezone Europe/Rome)
     const dayHours = (hourlyData || []).filter((d: any) => {
       const t = new Date(d.time);
+      // Normalizza a data (confronta anno, mese, giorno)
       return t.getFullYear() === targetDate.getFullYear() &&
              t.getMonth() === targetDate.getMonth() &&
              t.getDate() === targetDate.getDate();
     });
 
     if (dayHours.length === 0) {
+      // Fallback: prova a confrontare con la data in UTC
+      console.warn(`Nessun dato orario per il giorno ${selectedDay} (${targetDate.toLocaleDateString('it-IT')}). Uso fallback.`);
       return HOURS_LOCAL.map((hour) => ({
         hour,
         value: 0,
         rateo: 0,
         label: "N/D",
         colore: "bg-slate-700/40",
-        top: 0, base: 0,
+        top: 0, base: 0, gradienteReale: 0,
       }));
     }
 
+    // Mappa ora locale -> dato meteo
     return HOURS_LOCAL.map((localHour) => {
+      // Trova il dato per quest'ora locale
       const weatherData = dayHours.find((d: any) => {
         const t = new Date(d.time);
+        // I dati da Open-Meteo con timezone Europe/Rome sono già in ora locale
         return t.getHours() === localHour;
       });
 
@@ -84,26 +83,28 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude, s
           rateo: 0,
           label: "N/D",
           colore: "bg-slate-700/40",
-          top: 0, base: 0,
+          top: 0, base: 0, gradienteReale: 0,
         };
       }
 
       const termiche = calcolaTermiche(weatherData, siteAltitude);
-      const label = getLabelFromRateo(termiche.rateo);
-
+      
       return {
         hour: localHour,
         value: termiche.forza,
         rateo: termiche.rateo,
-        label,
-        colore: getColorFromRateo(termiche.rateo),
+        label: termiche.label,
+        colore: getColorFromLabel(termiche.label),
         top: termiche.top,
         base: termiche.base,
+        gradienteReale: termiche.gradienteReale,
       };
     });
   }, [hourlyData, siteAltitude, selectedDay]);
 
   const maxVal = Math.max(...data.map((d) => d.value), 1);
+
+  // Trova l'ora selezionata per il dettaglio
   const selectedDetail = data.find((d) => d.hour === selectedHour);
 
   return (
@@ -145,6 +146,7 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude, s
                 isSelected ? "scale-110" : ""
               }`}
             >
+              {/* Value label */}
               <span
                 className={`text-[10px] font-bold leading-none mb-1 transition-colors ${
                   d.value > 0 ? getTextColor(d.label) : "text-slate-600"
@@ -153,6 +155,7 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude, s
                 {d.rateo > 0 ? d.rateo.toFixed(1) : "—"}
               </span>
 
+              {/* Bar */}
               <div className="w-full h-28 bg-slate-800/60 rounded-md relative overflow-hidden">
                 <div
                   className={`absolute bottom-0 left-0 right-0 rounded-t-sm transition-all duration-500 ${d.colore} ${
@@ -166,6 +169,7 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude, s
                 </div>
               </div>
 
+              {/* Hour label */}
               <span
                 className={`text-[10px] mt-1 font-mono ${
                   isSelected ? "text-orange-300 font-bold" : d.value > 0 ? "text-slate-400" : "text-slate-600"
@@ -193,6 +197,7 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude, s
               <span>Base: {selectedDetail.base}m</span>
               <span>Top: {selectedDetail.top}m</span>
               <span>Salita: {selectedDetail.top - selectedDetail.base}m</span>
+              <span>Gradiente: {selectedDetail.gradienteReale}°C/100m</span>
             </div>
           )}
         </div>

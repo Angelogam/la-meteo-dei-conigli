@@ -4,7 +4,6 @@ import { DECOLLI } from "@/data/decolli";
 import { weatherService } from "@/services/weatherService";
 import { calcolaTermiche } from "@/utils/termiche";
 import { degreesToCardinal } from "@/utils/windDirections";
-import type { HourData } from "@/types/meteo";
 
 export interface ReportDiagnostica {
   timestamp: string;
@@ -24,6 +23,10 @@ export interface ReportDiagnostica {
   };
 }
 
+/**
+ * Diagnostica completa e reale del codebase.
+ * Verifica decolli, API meteo, funzioni di calcolo e coerenza dei dati.
+ */
 export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
   const errori: string[] = [];
   const warning: string[] = [];
@@ -43,7 +46,7 @@ export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
     else ids.add(d.id);
   }
 
-  // --- 2. Verifica API meteo ---
+  // --- 2. Verifica API meteo (solo 2 siti per non stressare) ---
   const apiErrors: string[] = [];
   let apiOkCount = 0;
   let tempiRisposta: number[] = [];
@@ -62,6 +65,7 @@ export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
       }
       apiOkCount++;
 
+      // Verifica temperature realistiche
       if (data.hourly.length > 0) {
         const temps = data.hourly.map(h => h.temperature).filter(t => t != null);
         if (temps.length > 0) {
@@ -81,6 +85,7 @@ export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
   // --- 3. Verifica calcoli ---
   const calcErrors: string[] = [];
 
+  // degreesToCardinal
   const testCardinali = [
     { in: 0, atteso: "N" },
     { in: 90, atteso: "E" },
@@ -97,38 +102,42 @@ export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
 
   // calcolaTermiche
   let termicheOk = true;
-  const mockData: HourData = {
+  const mockData = {
     time: new Date(),
     temperature: 24,
     humidity: 45,
     dewPoint: 10,
-    windSpeed: 12,
-    windDir: 180,
-    windGusts: 18,
-    cloudCover: 30,
+    apparentTemp: 22,
+    precipitationProba: 0,
+    precipitation: 0,
+    rain: 0,
+    showers: 0,
+    snowfall: 0,
     weatherCode: 0,
     pressure: 1015,
     surfacePressure: 1013,
-    precipitation: 0,
-    rain: 0,
-    snowfall: 0,
-    uvIndex: 6,
-    feelsLike: 22,
-    radiation: 500,
-    directRadiation: 400,
-    visibility: 10000,
-    vapourPressureDeficit: 14,
-    isDay: true,
-    freezingLevel: 3000,
-    sunshineDuration: 3600,
+    cloudCover: 30,
     cloudCoverLow: 15,
     cloudCoverMid: 10,
     cloudCoverHigh: 5,
-    cape: 300,
-    cin: -30,
-    liftedIndex: -1.5,
-    mixingRatio: 0.01,
-    virtualTemp: 298,
+    evapotranspiration: 0,
+    et0: 0,
+    vapourPressureDeficit: 14,
+    windSpeed: 12,
+    windDir: 180,
+    windGusts: 18,
+    soilTemp: 22,
+    soilMoisture: 0.25,
+    uvIndex: 6,
+    temp80m: 22.5,
+    temp120m: 21.8,
+    shortwaveRadiation: 500,
+    directRadiation: 400,
+    diffuseRadiation: 100,
+    directNormalIrradiance: 350,
+    terrestrialRadiation: 0,
+    sunshineDuration: 3600,
+    windProfile: undefined,
   };
 
   const termiche = calcolaTermiche(mockData, 1250);
@@ -137,10 +146,11 @@ export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
     calcErrors.push(`calcolaTermiche: risultato non valido (rateo=${termiche?.rateo}, base=${termiche?.base})`);
   }
 
-  // --- 4. Warning ---
+  // --- 4. Warning: potenziali duplicati e nomi ---
   const warningDuplicati: string[] = [];
   const warningNomi: string[] = [];
 
+  // Verifica che ci siano file che potrebbero essere duplicati
   if (DECOLLI.length < 5) {
     warningNomi.push("Pochi decolli configurati");
   }

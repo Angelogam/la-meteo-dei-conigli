@@ -9,18 +9,18 @@ export interface WindLevel {
 
 export function getWeatherIcon(code: number, isDay: number): string {
   const icons: Record<number, string> = {
-    0: isDay ? '\u2600\ufe0f' : '\U0001f319',
-    1: isDay ? '\U0001f324\ufe0f' : '\U0001f324\ufe0f',
-    2: isDay ? '\u26c5' : '\u2601\ufe0f',
-    3: '\u2601\ufe0f',
-    45: '\U0001f32b\ufe0f', 48: '\U0001f32b\ufe0f',
-    51: '\U0001f326\ufe0f', 53: '\U0001f327\ufe0f', 55: '\U0001f327\ufe0f',
-    61: '\U0001f327\ufe0f', 63: '\U0001f327\ufe0f', 65: '\U0001f327\ufe0f',
-    71: '\u2744\ufe0f', 73: '\u2744\ufe0f', 75: '\u2744\ufe0f',
-    80: '\U0001f327\ufe0f', 81: '\U0001f327\ufe0f', 82: '\u26c8\ufe0f',
-    95: '\u26c8\ufe0f', 96: '\u26c8\ufe0f', 99: '\u26c8\ufe0f',
+    0: isDay ? '☀️' : '🌙',
+    1: isDay ? '🌤️' : '🌤️',
+    2: isDay ? '⛅' : '☁️',
+    3: '☁️',
+    45: '🌫️', 48: '🌫️',
+    51: '🌦️', 53: '🌧️', 55: '🌧️',
+    61: '🌧️', 63: '🌧️', 65: '🌧️',
+    71: '❄️', 73: '❄️', 75: '❄️',
+    80: '🌧️', 81: '🌧️', 82: '⛈️',
+    95: '⛈️', 96: '⛈️', 99: '⛈️',
   };
-  return icons[code] || (isDay ? '\u2600\ufe0f' : '\U0001f319');
+  return icons[code] || (isDay ? '☀️' : '🌙');
 }
 
 export function getWindDirection(deg: number): string {
@@ -30,17 +30,17 @@ export function getWindDirection(deg: number): string {
 }
 
 export function getWindArrow(deg: number): string {
-  if (deg == null) return '\u27a1\ufe0f';
-  const arrows = ['\u2191', '\u2197', '\u2192', '\u2198', '\u2193', '\u2199', '\u2190', '\u2196'];
+  if (deg == null) return '➡️';
+  const arrows = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'];
   return arrows[Math.round(deg / 45) % 8];
 }
 
 export function getCloudCondition(cover: number): { text: string; icon: string; color: string } {
-  if (cover < 20) return { text: 'Sereno', icon: '\u2600\ufe0f', color: '#ffd93d' };
-  if (cover < 40) return { text: 'Poco nuvoloso', icon: '\U0001f324\ufe0f', color: '#f9a825' };
-  if (cover < 60) return { text: 'Nuvoloso', icon: '\u26c5', color: '#90a4ae' };
-  if (cover < 80) return { text: 'Molto nuvoloso', icon: '\u2601\ufe0f', color: '#78909c' };
-  return { text: 'Coperto', icon: '\u2601\ufe0f', color: '#546e7a' };
+  if (cover < 20) return { text: 'Sereno', icon: '☀️', color: '#ffd93d' };
+  if (cover < 40) return { text: 'Poco nuvoloso', icon: '🌤️', color: '#f9a825' };
+  if (cover < 60) return { text: 'Nuvoloso', icon: '⛅', color: '#90a4ae' };
+  if (cover < 80) return { text: 'Molto nuvoloso', icon: '☁️', color: '#78909c' };
+  return { text: 'Coperto', icon: '☁️', color: '#546e7a' };
 }
 
 export function getWindProfile(
@@ -83,32 +83,18 @@ export function getThermalStrength(temp: number, cloud: number, hum: number, the
     (cloud < 30 ? 2 : cloud < 50 ? 1 : 0) +
     (hum < 50 ? 1 : 0) +
     (thermalDelta > 10 ? 2 : thermalDelta > 6 ? 1 : 0);
-  if (score >= 6) return { label: 'Forte \U0001f525', color: '#ff1744' };
-  if (score >= 4) return { label: 'Media \U0001f4aa', color: '#ff6d00' };
-  if (score >= 2) return { label: 'Debole \U0001fae4', color: '#ffd600' };
-  return { label: 'Assente \u2744\ufe0f', color: '#4fc3f7' };
+  if (score >= 6) return { label: 'Forte 🔥', color: '#ff1744' };
+  if (score >= 4) return { label: 'Media 💪', color: '#ff6d00' };
+  if (score >= 2) return { label: 'Debole 🫤', color: '#ffd600' };
+  return { label: 'Assente ❄️', color: '#4fc3f7' };
 }
 
 export function getStabilityIndex(temp: number, hum: number, cloud: number): { label: string; color: string } {
   const cape = Math.max(0, (temp - 15) * 50 + (50 - hum) * 10 - cloud * 2);
-  if (cape > 1500) return { label: 'Instabile \u26a0\ufe0f', color: '#ff1744' };
-  if (cape > 800) return { label: 'Moderato \U0001f7e1', color: '#ff9800' };
-  if (cape > 300) return { label: 'Stabile \U0001f7e2', color: '#4caf50' };
-  return { label: 'Molto stabile \u2705', color: '#4fc3f7' };
-}
-
-/** Descrive un weather code WMO in italiano */
-export function getWeatherDescription(code: number): string {
-  if (code === 0 || code === 1) return "Sereno";
-  if (code === 2) return "Poco nuvoloso";
-  if (code === 3) return "Nuvoloso";
-  if (code >= 45 && code <= 48) return "Nebbia";
-  if (code >= 51 && code <= 57) return "Pioggerella";
-  if (code >= 61 && code <= 67) return "Pioggia";
-  if (code >= 71 && code <= 77) return "Neve";
-  if (code >= 80 && code <= 82) return "Rovesci";
-  if (code >= 95) return "Temporali";
-  return "N/D";
+  if (cape > 1500) return { label: 'Instabile ⚠️', color: '#ff1744' };
+  if (cape > 800) return { label: 'Moderato 🟡', color: '#ff9800' };
+  if (cape > 300) return { label: 'Stabile 🟢', color: '#4caf50' };
+  return { label: 'Molto stabile ✅', color: '#4fc3f7' };
 }
 
 /**
@@ -129,13 +115,13 @@ export function getWeatherAlert(currentData: any, thermalDelta: number): { level
   const alerts: string[] = [];
 
   // Condizioni pericolose
-  if (weatherCode >= 95) alerts.push('\u26c8\ufe0f Temporale in corso');
-  if (precipitation > 2) alerts.push('\U0001f327\ufe0f Pioggia intensa');
-  if (windSpeed > 35) alerts.push('\U0001f4a8 Vento fortissimo');
-  if (windGusts > 45) alerts.push('\U0001f4a8 Raffiche pericolose');
+  if (weatherCode >= 95) alerts.push('⛈️ Temporale in corso');
+  if (precipitation > 2) alerts.push('🌧️ Pioggia intensa');
+  if (windSpeed > 35) alerts.push('💨 Vento fortissimo');
+  if (windGusts > 45) alerts.push('💨 Raffiche pericolose');
 
   if (alerts.length > 0) {
-    return { level: 'danger', message: '\u26a0\ufe0f ' + alerts.join(' \u2022 '), icon: '\U0001f6a8' };
+    return { level: 'danger', message: '⚠️ ' + alerts.join(' • '), icon: '🚨' };
   }
 
   // Condizioni di attenzione
@@ -147,7 +133,7 @@ export function getWeatherAlert(currentData: any, thermalDelta: number): { level
   if (windSpeed < 4) warnings.push('Vento troppo debole per volare');
 
   if (warnings.length > 0) {
-    return { level: 'warning', message: '\u26a0\ufe0f ' + warnings.join(' \u2022 '), icon: '\u26a1' };
+    return { level: 'warning', message: '⚠️ ' + warnings.join(' • '), icon: '⚡' };
   }
 
   // Condizioni buone
@@ -158,14 +144,14 @@ export function getWeatherAlert(currentData: any, thermalDelta: number): { level
   if (weatherCode <= 2) goods.push('Cielo sereno');
 
   if (goods.length >= 2) {
-    return { level: 'success', message: '\u2705 Condizioni ottimali per volare! ' + goods.slice(0, 2).join(', '), icon: '\U0001fa82' };
+    return { level: 'success', message: '✅ Condizioni ottimali per volare! ' + goods.slice(0, 2).join(', '), icon: '🪂' };
   }
 
   if (goods.length >= 1) {
-    return { level: 'info', message: '\u2139\ufe0f Condizioni discrete. ' + goods[0], icon: '\u2601\ufe0f' };
+    return { level: 'info', message: 'ℹ️ Condizioni discrete. ' + goods[0], icon: '☁️' };
   }
 
-  return { level: 'info', message: '\u2139\ufe0f Condizioni nella norma. Verifica i dettagli orari.', icon: '\U0001f324\ufe0f' };
+  return { level: 'info', message: 'ℹ️ Condizioni nella norma. Verifica i dettagli orari.', icon: '🌤️' };
 }
 
 export function getCloudBase(temp: number, dewPoint: number, siteAlt: number): number {
@@ -181,5 +167,5 @@ export function getPressureGradient(dayData: any[]): string {
   const last = dayData[dayData.length - 1]?.pressure;
   if (first == null || last == null) return '--';
   const diff = last - first;
-  return diff > 0 ? '\u2b06\ufe0f +' + Math.round(diff) + ' hPa' : diff < 0 ? '\u2b07\ufe0f ' + Math.round(diff) + ' hPa' : '\u27a1\ufe0f Stabile';
+  return diff > 0 ? `⬆️ +${Math.round(diff)} hPa` : diff < 0 ? `⬇️ ${Math.round(diff)} hPa` : '➡️ Stabile';
 }
