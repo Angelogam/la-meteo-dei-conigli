@@ -349,7 +349,6 @@ async function fetchWithRetry(url: string, retries = 3, backoffMs = 1000): Promi
       clearTimeout(timeoutId);
       if (res.ok) return res;
       if (res.status === 429 || res.status >= 500) {
-        // Rate limit o server error — retry
         if (attempt < retries) {
           const wait = backoffMs * Math.pow(2, attempt);
           await new Promise(r => setTimeout(r, wait));
@@ -380,7 +379,6 @@ async function fetchOpenMeteo(lat: number, lon: number): Promise<{
 } | null> {
   const cacheKey = `forecast:${lat.toFixed(4)}:${lon.toFixed(4)}`;
 
-  // Cache hit — restituisci subito
   const cached = forecastCache.get<{ hourly: MeteoHourly[]; daily: MeteoDaily[]; current: MeteoCurrent }>(cacheKey);
   if (cached) {
     return { ...cached, responseTimeMs: 0 };
@@ -413,7 +411,6 @@ async function fetchOpenMeteo(lat: number, lon: number): Promise<{
     const daily = parseDaily(raw);
     const current = parseCurrent(raw, hourly);
 
-    // Salva in cache (TTL: 5 minuti per forecast, 2 minuti per current)
     forecastCache.set(cacheKey, { hourly, daily, current }, 5 * 60 * 1000);
     currentCache.set(cacheKey, current, 2 * 60 * 1000);
 
@@ -450,7 +447,6 @@ async function fetchTimerGFS(lat: number, lon: number): Promise<{
     const responseTimeMs = Math.round(performance.now() - start);
     if (!raw?.dataseries?.length) return null;
 
-    // 7Timer! restituisce dati in formato diverso — convertiamo
     const now = new Date();
     const hourly: MeteoHourly[] = [];
     const daily: MeteoDaily[] = [];
@@ -474,7 +470,6 @@ async function fetchTimerGFS(lat: number, lon: number): Promise<{
       const wind10m = d.wind10m?.speed ?? 10;
       const windDir = d.wind10m?.direction ?? 180;
 
-      // Stima dew point
       const dew = temp - ((100 - rh) / 5);
 
       hourly.push({
@@ -607,7 +602,6 @@ export const weatherService = {
       return { ...result, source: "open-meteo" };
     }
 
-    // Fallback su 7Timer
     result = await fetchTimerGFS(lat, lon);
     if (result) {
       return { ...result, source: "7timer" };
@@ -651,7 +645,6 @@ export const weatherService = {
     const results: Record<string, BatchCurrentResult> = {};
     const clusters = clusterCoords(coords);
 
-    // Processa cluster in parallelo (massimo 3 alla volta)
     const chunks: GeoCluster[][] = [];
     for (let i = 0; i < clusters.length; i += 3) {
       chunks.push(clusters.slice(i, i + 3));
@@ -669,7 +662,6 @@ export const weatherService = {
             source: result.source,
           };
 
-          // Usa lo stesso dato per tutti i siti nel cluster
           for (const site of cluster.sites) {
             const siteKey = `light:${site.lat.toFixed(4)}:${site.lon.toFixed(4)}`;
             if (!results[siteKey]) {
