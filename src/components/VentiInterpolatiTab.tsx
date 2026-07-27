@@ -78,7 +78,11 @@ export default function VentiInterpolatiTab({
   const [selectedOra, setSelectedOra] = useState(oraCorrente);
 
   useEffect(() => {
-    if (!lat || !lon || !quotaDecollo) return;
+    if (!lat || !lon || !quotaDecollo) {
+      setError("Invalid coordinates or altitude");
+      setLoading(false);
+      return;
+    }
     const t = new Date();
     t.setDate(t.getDate() + selectedDay);
     const ds = t.toISOString().split("T")[0];
@@ -97,7 +101,7 @@ export default function VentiInterpolatiTab({
         }
       })
       .catch((e) => {
-        setError(e instanceof Error ? e.message : "Errore");
+        setError(e instanceof Error ? e.message : "Errore nel recupero dei dati vento");
         setLoading(false);
       });
   }, [lat, lon, quotaDecollo, selectedDay, oraCorrente]);
@@ -124,27 +128,35 @@ export default function VentiInterpolatiTab({
     return items.sort((a, b) => a.q - b.q);
   }, [detail, quotaDecollo]);
 
-  const maxSpeed = useMemo(() => Math.max(...levels.map((x) => x.s), 1), [levels]);
+  const maxSpeed = useMemo(() => Math.max(1, ...levels.map((x) => x.s)), [levels]);
 
-  if (loading) return (
-    <div className="flex items-center justify-center py-16 text-slate-400">
-      <div className="w-8 h-8 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin mr-3" />
-      <span>Caricamento venti per {siteName || "decollo"}...</span>
-    </div>
-  );
-  if (error) return (
-    <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-      <Wind className="w-16 h-16 text-slate-600 mb-4" />
-      <p className="text-lg font-bold">Errore venti</p>
-      <p className="text-sm text-slate-500 mt-1">{error}</p>
-    </div>
-  );
-  if (!windData || !windData.ventoOrario.length) return (
-    <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-      <Wind className="w-16 h-16 text-slate-600 mb-4" />
-      <p className="text-lg font-bold">Nessun dato vento per {siteName || "decollo"}</p>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16 text-slate-400">
+        <div className="w-8 h-8 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin mr-3" />
+        <span>Caricamento venti per {siteName || "decollo"}...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+        <Wind className="w-16 h-16 text-slate-600 mb-4" />
+        <p className="text-lg font-bold">Errore venti</p>
+        <p className="text-sm text-slate-500 mt-1">{error}</p>
+      </div>
+    );
+  }
+
+  if (!windData || !windData.ventoOrario.length) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+        <Wind className="w-16 h-16 text-slate-600 mb-4" />
+        <p className="text-lg font-bold">Nessun dato vento per {siteName || "decollo"}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -227,12 +239,14 @@ export default function VentiInterpolatiTab({
               <Flame className="w-4 h-4 text-orange-400" />
             </div>
             <div>
-              <div className="text-sm font-bold text-white">{String(selectedOra).padStart(2, "0")}:00</div>
+              <div className="text-sm font-bold text-white">
+                {String(selectedOra).padStart(2, "0")}:00
+              </div>
               <div className="text-[10px] text-slate-500">Dettaglio orario</div>
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-            {detail && levels.map((l) => (
+            {levels.map((l) => (
               <div key={l.q} className="bg-slate-800/60 rounded-xl p-3 text-center">
                 <span className="text-[10px] text-slate-500 block">Termiche</span>
                 <span className="text-xl font-bold text-orange-300">{l.s.toFixed(1)} m/s</span>
@@ -245,7 +259,9 @@ export default function VentiInterpolatiTab({
       <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/30 border border-slate-700/40 rounded-2xl overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-700/30">
           <Gauge className="w-4 h-4 text-cyan-400" />
-          <span className="text-xs font-bold text-cyan-300 uppercase tracking-wider">Vento al decollo ({quotaDecollo}m)</span>
+          <span className="text-xs font-bold text-cyan-300 uppercase tracking-wider">
+            Vento al decollo ({quotaDecollo}m)
+          </span>
         </div>
         <div className="divide-y divide-slate-700/20">
           {windData.ventoOrario
@@ -258,7 +274,9 @@ export default function VentiInterpolatiTab({
                   key={v.ora}
                   onClick={() => { setSelectedOra(v.ora); onOraChange?.(v.ora); }}
                   className={`w-full grid grid-cols-[3rem_1fr_3.5rem_3rem] gap-2 px-5 py-3 text-xs transition-all text-left ${
-                    isSel ? "bg-cyan-900/20 border-l-2 border-l-cyan-400" : "hover:bg-slate-700/30"
+                    isSel
+                      ? "bg-cyan-900/20 border-l-2 border-l-cyan-400"
+                      : "hover:bg-slate-700/30"
                   }`}
                 >
                   <span className={`font-bold font-mono ${isSel ? "text-cyan-300" : "text-slate-300"}`}>
@@ -268,10 +286,9 @@ export default function VentiInterpolatiTab({
                     <div className="flex-1 h-2 bg-slate-700/50 rounded-full overflow-hidden">
                       <div className={`h-full rounded-full ${barColor(vd.speed)}`} style={{ width: `${Math.min(100, (vd.speed / 40) * 100)}` }} />
                     </div>
-                    <span className={`font-bold font-mono tabular-nums w-8 text-right ${textColor(vd.speed)}`}>{Math.round(vd.speed)}</span>
+                    <span className="text-sky-300 text-center font-mono">{dirArrow(vd.dir)} {dirAbbrev(vd.dir)}</span>
+                    <span className="text-red-300 text-right font-mono">{Math.round(v.gust)}</span>
                   </div>
-                  <span className="text-sky-300 text-center font-mono">{dirArrow(vd.dir)} {dirAbbrev(vd.dir)}</span>
-                  <span className="text-red-300 text-right font-mono">{Math.round(v.gust)}</span>
                 </button>
               );
             })}
