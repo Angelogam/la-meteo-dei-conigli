@@ -1,13 +1,35 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { Wind, Calendar, TrendingUp, Gauge } from "lucide-react";
+import {
+  Wind,
+  Calendar,
+  TrendingUp,
+  Gauge,
+} from "lucide-react";
 import { weatherService, type WindProfileResult } from "@/services/weatherService";
 
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 const QUOTES = [500, 1000, 1500, 2000, 2500, 3000];
 
-const DIRS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+const DIRS = [
+  "N",
+  "NNE",
+  "NE",
+  "ENE",
+  "E",
+  "ESE",
+  "SE",
+  "SSE",
+  "S",
+  "SSW",
+  "SW",
+  "WSW",
+  "W",
+  "WNW",
+  "NW",
+  "NNW",
+];
 const ARROWS = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
 
 function dirAbbrev(deg: number): string {
@@ -21,12 +43,15 @@ function formatShort(d: Date): string {
   const days = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
   return `${days[d.getDay()]} ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
-function interpolate(quote: Record<number, { speed: number; dir: number }>, target: number) {
+function interpolate(
+  quote: Record<number, { speed: number; dir: number }>,
+  target: number
+) {
   const keys = Object.keys(quote).map(Number).sort((a, b) => a - b);
   if (!keys.length) return null;
   if (keys.length === 1) return quote[keys[0]];
-  const lo = keys.filter(k => k <= target).pop();
-  const hi = keys.filter(k => k >= target).shift();
+  const lo = keys.filter((k) => k <= target).pop();
+  const hi = keys.filter((k) => k >= target).shift();
   if (!lo && hi) return quote[hi];
   if (lo && !hi) return quote[lo];
   if (lo === hi) return quote[lo];
@@ -64,8 +89,13 @@ interface Props {
 }
 
 export default function VentiInterpolatiTab({
-  lat, lon, quotaDecollo, selectedDay,
-  oraCorrente = 12, onOraChange, siteName
+  lat,
+  lon,
+  quotaDecollo,
+  selectedDay,
+  oraCorrente = 12,
+  onOraChange,
+  siteName,
 }: Props) {
   const [windData, setWindData] = useState<WindProfileResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -79,8 +109,9 @@ export default function VentiInterpolatiTab({
     const ds = t.toISOString().split("T")[0];
     setLoading(true);
     setError(null);
-    weatherService.fetchWindProfile(lat, lon, ds)
-      .then(result => {
+    weatherService
+      .fetchWindProfile(lat, lon, ds)
+      .then((result) => {
         setWindData(result);
         setLoading(false);
         if (result?.ventoOrario?.length) {
@@ -90,33 +121,42 @@ export default function VentiInterpolatiTab({
           setSelectedOra(c.ora);
         }
       })
-      .catch(e => {
+      .catch((e) => {
         setError(e instanceof Error ? e.message : "Errore");
         setLoading(false);
       });
   }, [lat, lon, quotaDecollo, selectedDay, oraCorrente]);
 
-  const dayLabel = formatShort(new Date(Date.now() + selectedDay * 86400000));
+  const dayLabel = formatShort(
+    new Date(Date.now() + selectedDay * 86400000)
+  );
 
   const detail = useMemo(() => {
     if (!windData) return null;
-    return windData.ventoOrario.find(v => v.ora === selectedOra) || windData.ventoOrario[0] || null;
+    return windData.ventoOrario.find((v) => v.ora === selectedOra) || windData.ventoOrario[0] || null;
   }, [windData, selectedOra]);
 
   const levels = useMemo(() => {
     if (!detail) return [];
     const items: { q: number; s: number; d: number }[] = [];
+
+    // IMPORTANTE: Prendi i dati da detail.quote per ogni quota
     for (const q of QUOTES) {
-      if (detail.quote[q]) items.push({ q, s: detail.quote[q].speed, d: detail.quote[q].dir });
+      if (detail.quote && detail.quote[q]) {
+        items.push({ q, s: detail.quote[q].speed, d: detail.quote[q].dir });
+      }
     }
+
+    // Interpola per la quota di decollo se non è già presente
     const interp = interpolate(detail.quote, quotaDecollo);
-    if (interp && !items.find(x => Math.abs(x.q - quotaDecollo) < 50)) {
+    if (interp && !items.find((x) => Math.abs(x.q - quotaDecollo) < 50)) {
       items.push({ q: quotaDecollo, s: interp.speed, d: interp.dir });
     }
+
     return items.sort((a, b) => a.q - b.q);
   }, [detail, quotaDecollo]);
 
-  const maxSpeed = useMemo(() => Math.max(...levels.map(x => x.s), 1), [levels]);
+  const maxSpeed = useMemo(() => Math.max(...levels.map((x) => x.s), 1), [levels]);
 
   if (loading) return (
     <div className="flex items-center justify-center py-16 text-slate-400">
@@ -140,6 +180,7 @@ export default function VentiInterpolatiTab({
 
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="bg-gradient-to-br from-slate-800/70 to-slate-900/50 border border-cyan-500/30 rounded-2xl px-5 py-4 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-800/60 to-cyan-700/30 border border-cyan-500/40 flex items-center justify-center shrink-0">
           <Wind className="w-5 h-5 text-cyan-400" />
@@ -148,34 +189,45 @@ export default function VentiInterpolatiTab({
           <div className="text-base font-bold text-white">{siteName || "Decollo"} — Venti in quota</div>
           <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
             <Calendar className="w-3.5 h-3.5" /><span>{dayLabel}</span>
-            <span className="text-slate-600">·</span><span>{quotaDecollo}m slm</span>
+            <span className="text-slate-600">·</span>{quotaDecollo}m slm
           </div>
         </div>
       </div>
 
+      {/* Hour selector */}
       <div className="flex gap-1.5 overflow-x-auto pb-1">
-        {windData.ventoOrario.filter(v => HOURS.includes(v.ora)).map(v => (
-          <button key={v.ora} onClick={() => { setSelectedOra(v.ora); onOraChange?.(v.ora); }}
-            className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-              v.ora === selectedOra
-                ? "bg-cyan-600/30 border-cyan-400/50 text-cyan-200 shadow-sm"
-                : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700/40"
-            }`}>
-            {String(v.ora).padStart(2, "0")}:00
-          </button>
-        ))}
-      </div>
+        {windData.ventoOrario
+          .filter((v) => HOURS.includes(v.ora))
+          .map((v) => (
+            <button
+              key={v.ora}
+              onClick={() => {
+                setSelectedOra(v.ora);
+                onOraChange?.(v.ora);
+              }}
+              className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                v.ora === selectedOra
+                  ? "bg-cyan-600/30 border-cyan-400/50 text-cyan-200 shadow-sm"
+                  : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700/40"
+              }`}
+            >
+              {String(v.ora).padStart(2, "0")}:00
+            </button>
+          })}
+        </div>
 
-      <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/30 border border-slate-700/40 rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
+        <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/30 border border-slate-700/40 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
             <TrendingUp className="w-4 h-4 text-cyan-400" />
-            <h4 className="text-sm font-bold text-white uppercase tracking-wider">Profilo verticale — {String(selectedOra).padStart(2, "0")}:00</h4>
+            <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+              Profilo verticale — {String(selectedOra).padStart(2, "0")}:00
+            </h4>
           </div>
           <span className="text-[10px] text-slate-500">{quotaDecollo}m → 3000m</span>
         </div>
+
         <div className="space-y-2">
-          {levels.map(l => {
+          {levels.map((l) => {
             const pct = Math.max(6, (l.s / maxSpeed) * 100);
             const isDecollo = Math.abs(l.q - quotaDecollo) < 150;
             return (
@@ -184,10 +236,8 @@ export default function VentiInterpolatiTab({
                   {l.q}m{isDecollo && <span className="ml-0.5">🪂</span>}
                 </span>
                 <div className="h-6 bg-slate-800/60 rounded-full overflow-hidden relative">
-                  <div className={`h-full rounded-full transition-all ${barColor(l.s)}`} style={{ width: `${pct}%` }}>
-                    <span className="absolute inset-0 flex items-center justify-end pr-3 text-[10px] text-white font-bold">
-                      {l.s >= 12 && Math.round(l.s)}
-                    </span>
+                  <div className={`h-full rounded-full transition-all ${barColor(l.s)}`}
+                    style={{ width: `${pct}%` }}
                   </div>
                 </div>
                 <div className="flex items-center gap-1 text-xs font-mono">
@@ -196,9 +246,10 @@ export default function VentiInterpolatiTab({
                   <span className="text-sky-300 ml-1">{dirArrow(l.d)}{dirAbbrev(l.d)}</span>
                 </div>
               </div>
-            );
+            </div>
           })}
         </div>
+
         <div className="flex flex-wrap gap-2 text-[10px] text-slate-400 mt-4 pt-3 border-t border-slate-700/30">
           <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-emerald-400" /> {"<="}8</span>
           <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-lime-400" /> 9–15</span>
@@ -209,37 +260,83 @@ export default function VentiInterpolatiTab({
         </div>
       </div>
 
-      <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/30 border border-slate-700/40 rounded-2xl overflow-hidden">
-        <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-700/30">
-          <Gauge className="w-4 h-4 text-cyan-400" />
-          <span className="text-xs font-bold text-cyan-300 uppercase tracking-wider">Vento al decollo ({quotaDecollo}m)</span>
-        </div>
-        <div className="divide-y divide-slate-700/20">
-          {windData.ventoOrario.filter(v => HOURS.includes(v.ora)).map(v => {
-            const vd = interpolate(v.quote, quotaDecollo) || { speed: 0, dir: 0 };
-            const isSel = v.ora === selectedOra;
-            return (
-              <button key={v.ora} onClick={() => { setSelectedOra(v.ora); onOraChange?.(v.ora); }}
-                className={`w-full grid grid-cols-[3rem_1fr_3.5rem_3rem] gap-2 px-5 py-3 text-xs transition-all text-left ${
-                  isSel ? "bg-cyan-900/20 border-l-2 border-l-cyan-400" : "hover:bg-slate-700/30"
-                }`}>
-                <span className={`font-bold font-mono ${isSel ? "text-cyan-300" : "text-slate-300"}`}>
-                  {String(v.ora).padStart(2, "0")}
-                </span>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-slate-700/50 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full ${barColor(vd.speed)}`}
-                      style={{ width: `${Math.min(100, (vd.speed / 40) * 100)}%` }} />
-                  </div>
-                  <span className={`font-bold font-mono tabular-nums w-8 text-right ${textColor(vd.speed)}`}>
-                    {Math.round(vd.speed)}
-                  </span>
+      {/* Detail for selected hour */}
+      {selectedOra && detail && (
+        <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/30 border border-slate-700/40 rounded-2xl p-5 animate-slide-up">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-orange-800/40 border border-orange-400/30 flex items-center justify-center">
+              <Flame className="w-4 h-4 text-orange-400" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-white">
+                {String(selectedOra).padStart(2, "0")}:00
+              </div>
+              <div className="text-[10px] text-slate-500">Dettaglio orario</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+            {detail &&
+              items.map((l) => (
+                <div key={l.q} className="bg-slate-800/60 rounded-xl p-3 text-center">
+                  <span className="text-[10px] text-slate-500 block">Termiche</span>
+                  <span className="text-xl font-bold text-orange-300">{l.s.toFixed(1)} m/s</span>
                 </div>
-                <span className="text-sky-300 text-center font-mono">{dirArrow(vd.dir)} {dirAbbrev(vd.dir)}</span>
-                <span className="text-red-300 text-right font-mono">{Math.round(v.gust)}</span>
-              </button>
-            );
-          })}
+                <div className="bg-slate-800/60 rounded-xl p-3 text-center">
+                  <span className="text-[10px] text-slate-500 block">Base</span>
+                  <span className="text-xl font-bold text-emerald-300">{l.base}m</span>
+                </div>
+                <div className="bg-slate-800/60 rounded-xl p-3 text-center">
+                  <span className="text-[10px] text-slate-500 block">Top</span>
+                  <span className="text-xl font-bold text-sky-300">{l.top}m</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/30 border border-slate-700/40 rounded-2xl p-5">
+          <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-700/30">
+            <Gauge className="w-4 h-4 text-cyan-400" />
+            <span className="text-xs font-bold text-cyan-300 uppercase tracking-wider">
+              Vento al decollo ({quotaDecollo}m)
+            </span>
+          </div>
+          <div className="divide-y divide-slate-700/20">
+            {windData.ventoOrario
+              .filter((v) => HOURS.includes(v.ora))
+              .map((v) => {
+                const vd = interpolate(v.quote, quotaDecollo) ?? { speed: 0, dir: 0 };
+                const isSel = v.ora === selectedOra;
+                return (
+                  <button
+                    key={v.ora}
+                    onClick={() => {
+                      setSelectedOra(v.ora);
+                      onOraChange?.(v.ora);
+                    }}
+                    className={`w-full grid grid-cols-[3rem_1fr_3.5rem_3rem] gap-2 px-5 py-3 text-xs transition-all text-left ${
+                      isSel
+                        ? "bg-cyan-900/20 border-l-2 border-l-cyan-400"
+                        : "hover:bg-slate-700/30"
+                    }`}>
+                    <span className={`font-bold font-mono ${isSel ? "text-cyan-300" : "text-slate-300"}`}>
+                      {String(v.ora).padStart(2, "0")}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-slate-700/50 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${barColor(vd.speed)}`}
+                          style={{ width: `${Math.min(100, (vd.speed / 40) * 100)}` }}
+                        </div>
+                      </div>
+                      <span className="text-sky-300 text-center font-mono">{dirArrow(vd.dir)} {dirAbbrev(vd.dir)}</span>
+                      <span className="text-red-300 text-right font-mono">{Math.round(v.gust)}</span>
+                    </div>
+                  </button>
+                </div>
+              })}
+            </div>
+          </div>
         </div>
         <div className="grid grid-cols-[3rem_1fr_3.5rem_3rem] gap-2 px-5 py-2 border-t border-slate-700/30 text-[9px] text-slate-500 font-bold uppercase tracking-wider">
           <span>Ora</span><span>Vento</span><span className="text-center">Dir</span><span className="text-right">Raff.</span>

@@ -3,5 +3,5 @@
 import React from "react";
 
 export default function Index() {
-  return <div>Index Page</div>;
+  return <div>Index</div>;
 }
