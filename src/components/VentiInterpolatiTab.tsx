@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { Wind, Calendar, TrendingUp, Gauge, Flame } from "lucide-react";
+import { Wind, Calendar, TrendingUp, Gauge } from "lucide-react";
 import { weatherService, type WindProfileResult } from "@/services/weatherService";
 
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
@@ -25,8 +25,8 @@ function interpolate(quote: Record<number, { speed: number; dir: number }>, targ
   const keys = Object.keys(quote).map(Number).sort((a, b) => a - b);
   if (!keys.length) return null;
   if (keys.length === 1) return quote[keys[0]];
-  const lo = keys.filter((k) => k <= target).pop();
-  const hi = keys.filter((k) => k >= target).shift();
+  const lo = keys.filter(k => k <= target).pop();
+  const hi = keys.filter(k => k >= target).shift();
   if (!lo && hi) return quote[hi];
   if (lo && !hi) return quote[lo];
   if (lo === hi) return quote[lo];
@@ -64,13 +64,8 @@ interface Props {
 }
 
 export default function VentiInterpolatiTab({
-  lat,
-  lon,
-  quotaDecollo,
-  selectedDay,
-  oraCorrente = 12,
-  onOraChange,
-  siteName,
+  lat, lon, quotaDecollo, selectedDay,
+  oraCorrente = 12, onOraChange, siteName
 }: Props) {
   const [windData, setWindData] = useState<WindProfileResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -78,19 +73,14 @@ export default function VentiInterpolatiTab({
   const [selectedOra, setSelectedOra] = useState(oraCorrente);
 
   useEffect(() => {
-    if (!lat || !lon || !quotaDecollo) {
-      setError("Invalid coordinates or altitude");
-      setLoading(false);
-      return;
-    }
+    if (!lat || !lon || !quotaDecollo) return;
     const t = new Date();
     t.setDate(t.getDate() + selectedDay);
     const ds = t.toISOString().split("T")[0];
     setLoading(true);
     setError(null);
-    weatherService
-      .fetchWindProfile(lat, lon, ds)
-      .then((result) => {
+    weatherService.fetchWindProfile(lat, lon, ds)
+      .then(result => {
         setWindData(result);
         setLoading(false);
         if (result?.ventoOrario?.length) {
@@ -100,8 +90,8 @@ export default function VentiInterpolatiTab({
           setSelectedOra(c.ora);
         }
       })
-      .catch((e) => {
-        setError(e instanceof Error ? e.message : "Errore nel recupero dei dati vento");
+      .catch(e => {
+        setError(e instanceof Error ? e.message : "Errore");
         setLoading(false);
       });
   }, [lat, lon, quotaDecollo, selectedDay, oraCorrente]);
@@ -110,53 +100,43 @@ export default function VentiInterpolatiTab({
 
   const detail = useMemo(() => {
     if (!windData) return null;
-    return windData.ventoOrario.find((v) => v.ora === selectedOra) || windData.ventoOrario[0] || null;
+    return windData.ventoOrario.find(v => v.ora === selectedOra) || windData.ventoOrario[0] || null;
   }, [windData, selectedOra]);
 
   const levels = useMemo(() => {
     if (!detail) return [];
     const items: { q: number; s: number; d: number }[] = [];
     for (const q of QUOTES) {
-      if (detail.quote && detail.quote[q]) {
-        items.push({ q, s: detail.quote[q].speed, d: detail.quote[q].dir });
-      }
+      if (detail.quote[q]) items.push({ q, s: detail.quote[q].speed, d: detail.quote[q].dir });
     }
     const interp = interpolate(detail.quote, quotaDecollo);
-    if (interp && !items.find((x) => Math.abs(x.q - quotaDecollo) < 50)) {
+    if (interp && !items.find(x => Math.abs(x.q - quotaDecollo) < 50)) {
       items.push({ q: quotaDecollo, s: interp.speed, d: interp.dir });
     }
     return items.sort((a, b) => a.q - b.q);
   }, [detail, quotaDecollo]);
 
-  const maxSpeed = useMemo(() => Math.max(1, ...levels.map((x) => x.s)), [levels]);
+  const maxSpeed = useMemo(() => Math.max(...levels.map(x => x.s), 1), [levels]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16 text-slate-400">
-        <div className="w-8 h-8 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin mr-3" />
-        <span>Caricamento venti per {siteName || "decollo"}...</span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-        <Wind className="w-16 h-16 text-slate-600 mb-4" />
-        <p className="text-lg font-bold">Errore venti</p>
-        <p className="text-sm text-slate-500 mt-1">{error}</p>
-      </div>
-    );
-  }
-
-  if (!windData || !windData.ventoOrario.length) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-        <Wind className="w-16 h-16 text-slate-600 mb-4" />
-        <p className="text-lg font-bold">Nessun dato vento per {siteName || "decollo"}</p>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="flex items-center justify-center py-16 text-slate-400">
+      <div className="w-8 h-8 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin mr-3" />
+      <span>Caricamento venti per {siteName || "decollo"}...</span>
+    </div>
+  );
+  if (error) return (
+    <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+      <Wind className="w-16 h-16 text-slate-600 mb-4" />
+      <p className="text-lg font-bold">Errore venti</p>
+      <p className="text-sm text-slate-500 mt-1">{error}</p>
+    </div>
+  );
+  if (!windData || !windData.ventoOrario.length) return (
+    <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+      <Wind className="w-16 h-16 text-slate-600 mb-4" />
+      <p className="text-lg font-bold">Nessun dato vento per {siteName || "decollo"}</p>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
@@ -174,35 +154,28 @@ export default function VentiInterpolatiTab({
       </div>
 
       <div className="flex gap-1.5 overflow-x-auto pb-1">
-        {windData.ventoOrario
-          .filter((v) => HOURS.includes(v.ora))
-          .map((v) => (
-            <button
-              key={v.ora}
-              onClick={() => { setSelectedOra(v.ora); onOraChange?.(v.ora); }}
-              className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-                v.ora === selectedOra
-                  ? "bg-cyan-600/30 border-cyan-400/50 text-cyan-200 shadow-sm"
-                  : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700/40"
-              }`}
-            >
-              {String(v.ora).padStart(2, "0")}:00
-            </button>
-          ))}
+        {windData.ventoOrario.filter(v => HOURS.includes(v.ora)).map(v => (
+          <button key={v.ora} onClick={() => { setSelectedOra(v.ora); onOraChange?.(v.ora); }}
+            className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+              v.ora === selectedOra
+                ? "bg-cyan-600/30 border-cyan-400/50 text-cyan-200 shadow-sm"
+                : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700/40"
+            }`}>
+            {String(v.ora).padStart(2, "0")}:00
+          </button>
+        ))}
       </div>
 
       <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/30 border border-slate-700/40 rounded-2xl p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-cyan-400" />
-            <h4 className="text-sm font-bold text-white uppercase tracking-wider">
-              Profilo verticale — {String(selectedOra).padStart(2, "0")}:00
-            </h4>
+            <h4 className="text-sm font-bold text-white uppercase tracking-wider">Profilo verticale — {String(selectedOra).padStart(2, "0")}:00</h4>
           </div>
           <span className="text-[10px] text-slate-500">{quotaDecollo}m → 3000m</span>
         </div>
         <div className="space-y-2">
-          {levels.map((l) => {
+          {levels.map(l => {
             const pct = Math.max(6, (l.s / maxSpeed) * 100);
             const isDecollo = Math.abs(l.q - quotaDecollo) < 150;
             return (
@@ -211,7 +184,11 @@ export default function VentiInterpolatiTab({
                   {l.q}m{isDecollo && <span className="ml-0.5">🪂</span>}
                 </span>
                 <div className="h-6 bg-slate-800/60 rounded-full overflow-hidden relative">
-                  <div className={`h-full rounded-full transition-all ${barColor(l.s)}`} style={{ width: `${pct}%` }} />
+                  <div className={`h-full rounded-full transition-all ${barColor(l.s)}`} style={{ width: `${pct}%` }}>
+                    <span className="absolute inset-0 flex items-center justify-end pr-3 text-[10px] text-white font-bold">
+                      {l.s >= 12 && Math.round(l.s)}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-1 text-xs font-mono">
                   <span className={`font-bold ${textColor(l.s)}`}>{Math.round(l.s)}</span>
@@ -232,66 +209,37 @@ export default function VentiInterpolatiTab({
         </div>
       </div>
 
-      {selectedOra && detail && (
-        <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/30 border border-slate-700/40 rounded-2xl p-5 animate-slide-up">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-lg bg-orange-800/40 border border-orange-400/30 flex items-center justify-center">
-              <Flame className="w-4 h-4 text-orange-400" />
-            </div>
-            <div>
-              <div className="text-sm font-bold text-white">
-                {String(selectedOra).padStart(2, "0")}:00
-              </div>
-              <div className="text-[10px] text-slate-500">Dettaglio orario</div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-            {levels.map((l) => (
-              <div key={l.q} className="bg-slate-800/60 rounded-xl p-3 text-center">
-                <span className="text-[10px] text-slate-500 block">Termiche</span>
-                <span className="text-xl font-bold text-orange-300">{l.s.toFixed(1)} m/s</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/30 border border-slate-700/40 rounded-2xl overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-700/30">
           <Gauge className="w-4 h-4 text-cyan-400" />
-          <span className="text-xs font-bold text-cyan-300 uppercase tracking-wider">
-            Vento al decollo ({quotaDecollo}m)
-          </span>
+          <span className="text-xs font-bold text-cyan-300 uppercase tracking-wider">Vento al decollo ({quotaDecollo}m)</span>
         </div>
         <div className="divide-y divide-slate-700/20">
-          {windData.ventoOrario
-            .filter((v) => HOURS.includes(v.ora))
-            .map((v) => {
-              const vd = interpolate(v.quote, quotaDecollo) ?? { speed: 0, dir: 0 };
-              const isSel = v.ora === selectedOra;
-              return (
-                <button
-                  key={v.ora}
-                  onClick={() => { setSelectedOra(v.ora); onOraChange?.(v.ora); }}
-                  className={`w-full grid grid-cols-[3rem_1fr_3.5rem_3rem] gap-2 px-5 py-3 text-xs transition-all text-left ${
-                    isSel
-                      ? "bg-cyan-900/20 border-l-2 border-l-cyan-400"
-                      : "hover:bg-slate-700/30"
-                  }`}
-                >
-                  <span className={`font-bold font-mono ${isSel ? "text-cyan-300" : "text-slate-300"}`}>
-                    {String(v.ora).padStart(2, "0")}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-2 bg-slate-700/50 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${barColor(vd.speed)}`} style={{ width: `${Math.min(100, (vd.speed / 40) * 100)}` }} />
-                    </div>
-                    <span className="text-sky-300 text-center font-mono">{dirArrow(vd.dir)} {dirAbbrev(vd.dir)}</span>
-                    <span className="text-red-300 text-right font-mono">{Math.round(v.gust)}</span>
+          {windData.ventoOrario.filter(v => HOURS.includes(v.ora)).map(v => {
+            const vd = interpolate(v.quote, quotaDecollo) || { speed: 0, dir: 0 };
+            const isSel = v.ora === selectedOra;
+            return (
+              <button key={v.ora} onClick={() => { setSelectedOra(v.ora); onOraChange?.(v.ora); }}
+                className={`w-full grid grid-cols-[3rem_1fr_3.5rem_3rem] gap-2 px-5 py-3 text-xs transition-all text-left ${
+                  isSel ? "bg-cyan-900/20 border-l-2 border-l-cyan-400" : "hover:bg-slate-700/30"
+                }`}>
+                <span className={`font-bold font-mono ${isSel ? "text-cyan-300" : "text-slate-300"}`}>
+                  {String(v.ora).padStart(2, "0")}
+                </span>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-2 bg-slate-700/50 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${barColor(vd.speed)}`}
+                      style={{ width: `${Math.min(100, (vd.speed / 40) * 100)}%` }} />
                   </div>
-                </button>
-              );
-            })}
+                  <span className={`font-bold font-mono tabular-nums w-8 text-right ${textColor(vd.speed)}`}>
+                    {Math.round(vd.speed)}
+                  </span>
+                </div>
+                <span className="text-sky-300 text-center font-mono">{dirArrow(vd.dir)} {dirAbbrev(vd.dir)}</span>
+                <span className="text-red-300 text-right font-mono">{Math.round(v.gust)}</span>
+              </button>
+            );
+          })}
         </div>
         <div className="grid grid-cols-[3rem_1fr_3.5rem_3rem] gap-2 px-5 py-2 border-t border-slate-700/30 text-[9px] text-slate-500 font-bold uppercase tracking-wider">
           <span>Ora</span><span>Vento</span><span className="text-center">Dir</span><span className="text-right">Raff.</span>

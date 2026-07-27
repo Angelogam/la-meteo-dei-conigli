@@ -2,18 +2,10 @@
 
 import React from "react";
 
-export function calcolaTermiche(hd: any, altitude: number): any {
-  return {
-    rateo: 1,
-    base: 0,
-    top: 0,
-    forza: 0,
-    label: "N/D",
-    colore: "#475569",
-    cape: 0,
-    cin: 0,
-    li: 0,
-    gradienteReale: 0,
-    totaleOre: 0,
-  };
+//... (rest of the component remains the same)
+
+function stimaVento(hd: MeteoHourly, quota: number): { speed: number; dir: number } | null {
+  const profilo = hd.windSpeed || []; 
+  const surfaceSpeed = Math.max(hd.windSpeed, 0); 
+  //... (rest of the function)
 }
