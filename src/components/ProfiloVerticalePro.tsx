@@ -40,6 +40,7 @@ const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
 
   return (
     <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/40 border border-slate-700/40 rounded-2xl p-5">
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-bold text-orange-300 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
@@ -48,7 +49,8 @@ const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
         <span className="text-[10px] text-slate-500">m/s</span>
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-4 text-[10px]">
+      {/* Legenda arancio */}
+      <div className="flex flex-wrap gap-3 mb-4 text-sm text-slate-500">
         {[
           { label: "≥ 3.5 — Fortissime", color: "#9a3412" },
           { label: "2.5–3.5 — Forte", color: "#c2410c" },
@@ -58,12 +60,13 @@ const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
           { label: "< 0.3 — Assente", color: "#fdba74" },
         ].map((item) => (
           <span key={item.label} className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-sm" style={{ background: item.color }} />
+            <span className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
             <span className="text-slate-400">{item.label}</span>
           </span>
         ))}
       </div>
 
+      {/* Grafico termiche */}
       <div className="flex items-end gap-1 h-44 overflow-x-auto pb-1 justify-center scrollbar-none">
         {full.map((d, i) => {
           const pct = maxSpeed > 0 ? (d.speed / maxSpeed) * 100 : 0;
@@ -74,7 +77,7 @@ const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
           return (
             <button
               key={d.hour}
-              onClick={() => setSelected(i === selected ? null : i)}
+              onClick={() => setSelected(i)}
               className={`flex flex-col items-center flex-shrink-0 transition-all duration-200 ${barW} ${
                 isSelected ? "scale-110 z-10" : ""
               }`}
@@ -103,7 +106,7 @@ const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
               </div>
 
               <span className={`text-[8px] mt-1 font-mono ${
-                isSelected ? "text-orange-300 font-bold" : d.speed > 0 ? "text-slate-500" : "text-slate-600"
+                isSelected ? "text-orange-300 font-bold" : d.speed > 0 ? "text-slate-400" : "text-slate-600"
               }`}>
                 {d.hour.slice(0, 2)}
               </span>
@@ -112,6 +115,7 @@ const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
         })}
       </div>
 
+      {/* Dettaglio ora selezionata */}
       {sel && sel.speed > 0 && (
         <div className="mt-4 bg-gradient-to-r from-orange-900/20 to-amber-900/10 rounded-xl p-4 border border-orange-700/30 text-center">
           <span className="text-xs text-slate-400 block">
