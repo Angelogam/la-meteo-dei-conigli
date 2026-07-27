@@ -1,14 +1,5 @@
 "use client";
 
-/**
- * TEST DI INTEGRITÀ DEL CODEBASE METEO
- * Verifica che:
- * - nessun file faccia fetch diretto a Open-Meteo
- * - nessun file duplichi logiche
- * - nessun file bypassi weatherService
- * - nessun componente usi servizi sbagliati
- */
-
 import { weatherService } from "@/services/weatherService";
 import { calcolaTermiche } from "@/utils/termiche";
 import { DECOLLI } from "@/data/decolli";
@@ -39,12 +30,12 @@ export async function meteoIntegrityTest(): Promise<{
   // TEST 2: weatherService restituisce dati validi
   try {
     const result = await weatherService.fetchWeather(DECOLLI[0].lat, DECOLLI[0].lon);
-    const valid = result.hourly.length > 0 && result.daily.length > 0 && result.current != null;
+    const valid = result.data?.hourly.length > 0 && result.data?.daily.length > 0 && result.data?.current != null;
     results.push({
       name: "weatherService restituisce dati",
       passed: valid,
       message: valid
-        ? `✅ ${result.hourly.length} ore, ${result.daily.length} giorni, current OK`
+        ? `✅ ${result.data?.hourly.length} ore, ${result.data?.daily.length} giorni, current OK`
         : "❌ Dati incompleti da weatherService",
     });
   } catch (err) {

@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
-import Windgram from "./Windgram";
 import { MapPin } from "lucide-react";
+import DayDetailPopup from "./Windgram";
 
-//... (rest of the component remains the same)
+export default function DettaglioGiornoContent() {
+  return null;
+}

@@ -14,10 +14,13 @@ export default function ApiTestPage() {
   useEffect(() => {
     const site = DECOLLI[0];
 
-    // Test Open-Meteo
     weatherService.fetchWeather(site.lat, site.lon)
-      .then(data => {
-        setOmStatus({ ok: true, rt: 0, temp: Math.round(data.current.temperature) });
+      .then(result => {
+        if (result.data) {
+          setOmStatus({ ok: true, rt: 0, temp: Math.round(result.data.current.temperature) });
+        } else {
+          setOmStatus({ ok: false, rt: 0 });
+        }
         setLoadingOM(false);
       })
       .catch(() => {
@@ -25,7 +28,6 @@ export default function ApiTestPage() {
         setLoadingOM(false);
       });
 
-    // Test 7Timer!
     fetch(
       `https://www.7timer.info/bin/astro.php?lon=${site.lon}&lat=${site.lat}&ac=0&unit=metric&output=json&tzshift=0`
     )
@@ -51,7 +53,6 @@ export default function ApiTestPage() {
           Verifica rapida su <strong>{DECOLLI[0].name}</strong>
         </p>
 
-        {/* Open-Meteo */}
         <div className={`rounded-2xl p-5 border-2 ${
           loadingOM
             ? "bg-slate-800/40 border-slate-700/40"
@@ -81,7 +82,6 @@ export default function ApiTestPage() {
           )}
         </div>
 
-        {/* 7Timer! */}
         <div className={`rounded-2xl p-5 border-2 ${
           loading7T
             ? "bg-slate-800/40 border-slate-700/40"

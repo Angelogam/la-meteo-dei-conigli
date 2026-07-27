@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { Wind, Calendar, TrendingUp, Gauge } from "lucide-react";
-import { weatherService, type WindProfileResult } from "@/services/weatherService";
+import { weatherService } from "@/services/weatherService";
 
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 const QUOTES = [500, 1000, 1500, 2000, 2500, 3000];
@@ -67,7 +67,7 @@ export default function VentiInterpolatiTab({
   lat, lon, quotaDecollo, selectedDay,
   oraCorrente = 12, onOraChange, siteName
 }: Props) {
-  const [windData, setWindData] = useState<WindProfileResult | null>(null);
+  const [windData, setWindData] = useState<{ ventoOrario: { ora: number; gust: number; quote: Record<number, { speed: number; dir: number }> }[] } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedOra, setSelectedOra] = useState(oraCorrente);

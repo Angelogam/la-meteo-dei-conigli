@@ -3,14 +3,14 @@
 import React from "react";
 import { MapPin, Mountain, Compass, Navigation, Sparkles, Thermometer, Wind, Gauge } from "lucide-react";
 import type { Decollo } from "@/data/decolli";
-import type { MeteoDaily, MeteoHourly } from "@/services/weatherService";
+import type { DailyData, HourData } from "@/types/meteo";
 
 interface DecolloListProps {
   decolli: Decollo[];
   selectedId: string;
   onSelect: (id: string) => void;
-  allDailyData?: Record<string, MeteoDaily[]>;
-  allHourlyData?: Record<string, MeteoHourly[]>;
+  allDailyData?: Record<string, DailyData[]>;
+  allHourlyData?: Record<string, HourData[]>;
 }
 
 function getWeatherEmoji(code: number): string {

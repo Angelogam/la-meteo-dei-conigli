@@ -4,11 +4,6 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { analisiAvanzataCompleta, type AnalisiCompleta } from "@/services/analisiAvanzata";
 import { weatherService, type MeteoHourly, type MeteoCurrent } from "@/services/weatherService";
 
-/**
- * Hook che esegue l'analisi avanzata in tempo reale su TUTTE le ore.
- * Usa SOLO weatherService, nessuna altra fonte.
- */
-
 export interface AnalisiCompletaConMargine extends Omit<AnalisiCompleta, 'confidenza'> {
   confidenza: number;
   errore: number;
@@ -19,7 +14,7 @@ export interface AnalisiCompletaConMargine extends Omit<AnalisiCompleta, 'confid
   ultimoAggiornamento: Date;
 }
 
-const REFRESH_INTERVAL = 300000; // 5 minuti
+const REFRESH_INTERVAL = 300000;
 
 export function useAnalisiAvanzata(lat: number, lon: number, altitude: number) {
   const [hourlyData, setHourlyData] = useState<MeteoHourly[]>([]);

@@ -1,18 +1,19 @@
+"use client";
+
 import React from "react";
-import TermicheAquila as ProfiloVerticalePro from "@/components/ProfiloVerticalePro";
+import TermicheAquila from "@/components/ProfiloVerticalePro";
 
 export default function ProfiloVerticale() {
   return (
     <div style={{ maxWidth: "400px", margin: "0 auto" }}>
-      <ProfiloVerticalePro
+      <TermicheAquila
         data={[
-          { quota: 500, speed: 12, dir: "←SW" },
-          { quota: 1000, speed: 14, dir: "←SW" },
-          { quota: 1350, speed: 16, dir: "←SW" },
-          { quota: 1500, speed: 18, dir: "←SW" },
-          { quota: 2000, speed: 20, dir: "→W" },
-          { quota: 2500, speed: 23, dir: "→W" },
-          { quota: 3000, speed: 26, dir: "→NW" },
+          { hour: "08:00", speed: 0.7, base: 1800, top: 2100 },
+          { hour: "11:00", speed: 0.9, base: 1850, top: 2150 },
+          { hour: "13:00", speed: 1.1, base: 1900, top: 2200 },
+          { hour: "15:00", speed: 1.3, base: 2000, top: 2300 },
+          { hour: "17:00", speed: 1.6, base: 2040, top: 2520 },
+          { hour: "19:00", speed: 1.2, base: 1950, top: 2400 },
         ]}
       />
     </div>

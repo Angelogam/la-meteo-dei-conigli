@@ -1,6 +1,82 @@
 "use client";
 
-import type { MeteoHourly, MeteoDaily, MeteoCurrent } from "@/types/meteo";
+import type { HourData, DailyData } from "@/types/meteo";
+
+export interface MeteoHourly {
+  time: Date;
+  temperature: number;
+  humidity: number;
+  dewPoint: number;
+  pressure: number;
+  apparentTemp: number;
+  precipitation: number;
+  weatherCode: number;
+  cloudCover: number;
+  windSpeed: number;
+  windDir: number;
+  windGusts: number;
+  uvIndex: number;
+  shortwaveRadiation: number;
+  cape: number;
+  cin: number;
+  liftedIndex: number;
+  temp80m: number | null;
+  temp120m: number | null;
+  windSpeed80m: number | null;
+  windDir80m: number | null;
+  windSpeed120m: number | null;
+  windDir120m: number | null;
+  windSpeed180m: number | null;
+  windDir180m: number | null;
+}
+
+export interface MeteoDaily {
+  date: Date;
+  weatherCode: number;
+  tempMax: number;
+  tempMin: number;
+  tempMean: number;
+  apparentTempMax: number;
+  apparentTempMin: number;
+  sunrise: string;
+  sunset: string;
+  daylightDuration: number;
+  sunshineDuration: number;
+  precipitationSum: number;
+  rainSum: number;
+  snowfallSum: number;
+  precipitationHours: number;
+  precipitationProbabilityMax: number;
+  windSpeedMax: number;
+  windGustsMax: number;
+  windDirDominant: number;
+  shortwaveRadiationSum: number;
+  uvIndexMax: number;
+  windSpeed: number;
+  cloudCover: number;
+  weatherDescription: string;
+}
+
+export interface MeteoCurrent {
+  temperature: number;
+  humidity: number;
+  windSpeed: number;
+  windDir: number;
+  windGusts: number;
+  weatherCode: number;
+  cloudCover: number;
+  precipitation: number;
+  pressure: number;
+  uvIndex: number;
+}
+
+export interface WindProfileResult {
+  ventoOrario: {
+    ora: number;
+    gust: number;
+    quote: Record<number, { speed: number; dir: number }>;
+  }[];
+}
 
 const BASE_URL = "https://api.open-meteo.com/v1/forecast";
 const TIMER_URL = "https://www.7timer.info/bin/astro.php";
@@ -145,7 +221,52 @@ function parseCurrent(raw: any, hourly: MeteoHourly[]): MeteoCurrent {
   };
 }
 
-async function fetchOpenMeteo(lat: number, lon: number): Promise<{ hourly: MeteoHourly[]; daily: MeteoDaily[]; current: MeteoCurrent; responseTimeMs: number } | null> {
+const forecastCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+
+function forecastCacheGet<T>(key: string): T | null {
+  const entry = forecastCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > entry.ttl) {
+    forecastCache.delete(key);
+    return null;
+  }
+  return entry.data as T;
+}
+
+function forecastCacheSet(key: string, data: any, ttl: number): void {
+  forecastCache.set(key, { data, timestamp: Date.now(), ttl });
+}
+
+async function fetchWithRetry(url: string, retries = 3, backoffMs = 1000): Promise<Response | null> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) return res;
+      if (res.status === 429 || res.status >= 500) {
+        if (attempt < retries) {
+          const wait = backoffMs * Math.pow(2, attempt);
+          await new Promise(r => setTimeout(r, wait));
+          continue;
+        }
+        return null;
+      }
+      return null;
+    } catch (err) {
+      if (attempt < retries) {
+        const wait = backoffMs * Math.pow(2, attempt);
+        await new Promise(r => setTimeout(r, wait));
+        continue;
+      }
+      return null;
+    }
+  }
+  return null;
+}
+
+async function fetchOpenMeteo(lat: number, lon: number): Promise<FetchResult | null> {
   const params = new URLSearchParams({
     latitude: lat.toString(),
     longitude: lon.toString(),
@@ -175,19 +296,18 @@ async function fetchOpenMeteo(lat: number, lon: number): Promise<{ hourly: Meteo
     const daily = parseDaily(raw);
     const current = parseCurrent(raw, hourly);
 
-    return { hourly, daily, current, responseTimeMs };
+    return { hourly, daily, current, source: "open-meteo", responseTimeMs };
   } catch (err) {
     console.error("Open-Meteo fetch error:", err);
     return null;
   }
 }
 
-async function fetchTimerGFS(lat: number, lon: number): Promise<{ hourly: MeteoHourly[]; daily: MeteoDaily[]; current: MeteoCurrent; responseTimeMs: number } | null> {
+async function fetchTimerGFS(lat: number, lon: number): Promise<FetchResult | null> {
   const cacheKey = `7timer:${lat.toFixed(4)}:${lon.toFixed(4)}`;
-  const cached = forecastCache.get<{ hourly: MeteoHourly[]; daily: MeteoDaily[]; current: MeteoCurrent }>(cacheKey);
-  if (cached) return { ...cached, responseTimeMs: 0 };
+  const cached = forecastCacheGet<FetchResult>(cacheKey);
+  if (cached) return cached;
 
-  await rateLimiter.wait();
   const start = performance.now();
 
   try {
@@ -274,8 +394,9 @@ async function fetchTimerGFS(lat: number, lon: number): Promise<{ hourly: MeteoH
 
     const current = parseCurrent(null, hourly);
 
-    forecastCache.set(cacheKey, { hourly, daily, current }, 10 * 60 * 1000);
-    return { hourly, daily, current, responseTimeMs };
+    const result = { hourly, daily, current, source: "7timer" as const, responseTimeMs };
+    forecastCacheSet(cacheKey, result, 10 * 60 * 1000);
+    return result;
   } catch (err) {
     console.error("7Timer fetch error:", err);
     return null;
@@ -314,51 +435,6 @@ const rateLimiter = {
     this.callsInWindow++;
   }
 };
-
-const forecastCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
-
-function forecastCacheGet<T>(key: string): T | null {
-  const entry = forecastCache.get(key);
-  if (!entry) return null;
-  if (Date.now() - entry.timestamp > entry.ttl) {
-    forecastCache.delete(key);
-    return null;
-  }
-  return entry.data as T;
-}
-
-function forecastCacheSet(key: string, data: any, ttl: number): void {
-  forecastCache.set(key, { data, timestamp: Date.now(), ttl });
-}
-
-async function fetchWithRetry(url: string, retries = 3, backoffMs = 1000): Promise<Response | null> {
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-      const res = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeoutId);
-      if (res.ok) return res;
-      if (res.status === 429 || res.status >= 500) {
-        if (attempt < retries) {
-          const wait = backoffMs * Math.pow(2, attempt);
-          await new Promise(r => setTimeout(r, wait));
-          continue;
-        }
-        return null;
-      }
-      return null;
-    } catch (err) {
-      if (attempt < retries) {
-        const wait = backoffMs * Math.pow(2, attempt);
-        await new Promise(r => setTimeout(r, wait));
-        continue;
-      }
-      return null;
-    }
-  }
-  return null;
-}
 
 export const weatherService = {
   async fetchWeather(lat: number, lon: number) {

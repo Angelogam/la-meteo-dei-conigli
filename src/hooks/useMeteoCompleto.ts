@@ -4,14 +4,6 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useAnalisiAvanzata, type AnalisiCompletaConMargine } from "./useAnalisiAvanzata";
 import { weatherService, type MeteoHourly, type MeteoCurrent, type MeteoDaily } from "@/services/weatherService";
 
-/**
- * Hook unico che combina tutti i dati meteo:
- * - Analisi avanzata (ogni 5 minuti, senza doppie richieste)
- * - Dati raw Open-Meteo (stessa chiamata di useAnalisiAvanzata)
- * - Previsioni giornaliere
- * - Calcoli di margine d'errore su TUTTI i parametri
- */
-
 export interface DatiCompleti {
   analisi: AnalisiCompletaConMargine[];
   riepilogo: {

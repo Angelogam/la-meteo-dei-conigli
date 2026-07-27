@@ -1,6 +1,6 @@
 "use client";
 
-import type { MeteoHourly, MeteoCurrent } from "@/services/weatherService";
+import type { HourData } from "@/types/meteo";
 
 export interface AnalisiCompleta {
   ora: number;
@@ -104,8 +104,8 @@ function calcolaGiudizioVolo(score: number): { giudizio: string; descrizione: st
 }
 
 export function analisiAvanzataCompleta(
-  hourlyData: MeteoHourly[],
-  current: MeteoCurrent,
+  hourlyData: HourData[],
+  current: { temperature: number; humidity: number; windSpeed: number; windDir: number; windGusts: number; cloudCover: number; precipitation: number; uvIndex: number; pressure: number; dewPoint: number; temp80m: number | null; temp120m: number | null },
   altitude: number
 ): AnalisiCompleta[] {
   if (!hourlyData || hourlyData.length === 0 || !current) return [];

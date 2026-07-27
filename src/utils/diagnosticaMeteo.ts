@@ -149,7 +149,7 @@ export async function diagnosticaMeteoCompleta(): Promise<ReportConflittoMeteo> 
 
   return {
     timestamp: new Date().toISOString(),
-    ok: false, // Placeholder
+    ok: false,
     totaleDecolli: 0,
     decolliConDati: 0,
     decolliSenzaDati: 0,
