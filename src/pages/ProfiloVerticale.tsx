@@ -1,5 +1,5 @@
 import React from "react";
-import { ProfiloVerticalePro } from "@/components/ProfiloVerticalePro";
+import TermicheAquila as ProfiloVerticalePro from "@/components/ProfiloVerticalePro";
 
 export default function ProfiloVerticale() {
   return (
