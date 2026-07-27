@@ -1,5 +1,3 @@
-"use client";
-
 export interface HourData {
   time: Date;
   temperature: number;
