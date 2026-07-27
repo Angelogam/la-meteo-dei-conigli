@@ -2,6 +2,12 @@
 
 import React from "react";
 
-export default function TermicheTab() {
-  return <div>Termiche Tab</div>;
+interface TermicheTabProps {
+  currentData?: any;
+  dayData?: any[];
+  site?: { alt: number; lat: number; lon: number; name: string };
+}
+
+export default function TermicheTab({ currentData, dayData, site }: TermicheTabProps) {
+  return <div>Termiche Tab - {site?.name || "Decollo"}</div>;
 }

@@ -1,11 +1,9 @@
-character and closing tags">
 "use client";
 
 import React from "react";
 import {
   Thermometer,
   Wind,
-  Cloud,
   CloudRain,
   Droplets,
   Gauge,
@@ -21,6 +19,7 @@ interface Props {
   currentData: any;
   dayData?: any;
   selectedDate?: string;
+  onSelectDay?: (day: number) => void;
 }
 
 export default function ProfiloVerticalePro({
@@ -29,6 +28,7 @@ export default function ProfiloVerticalePro({
   currentData,
   dayData,
   selectedDate,
+  onSelectDay,
 }: Props) {
   if (!currentData) {
     return (

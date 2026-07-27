@@ -5,6 +5,14 @@ import { X, Thermometer, Wind, CloudRain, Droplets, Gauge, ArrowUp } from "lucid
 import type { HourData } from "@/types/meteo";
 import { getVoloStatus } from "@/utils/volo";
 
+interface DailyInfo {
+  tempMax: number;
+  tempMin: number;
+  avgWind?: number;
+  maxWind?: number;
+  precipitationSum: number;
+}
+
 export default function DayDetailPopup({
   dayData,
   daily,
@@ -14,7 +22,7 @@ export default function DayDetailPopup({
   onHourSelect,
 }: {
   dayData: HourData[];
-  daily: any[];
+  daily: DailyInfo;
   dayLabel: string;
   altitude: number;
   onClose: () => void;

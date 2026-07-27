@@ -11,8 +11,7 @@ export default function ProfiloVerticale() {
         altitude={1200}
         currentData={{}}
         dayData={[]}
-        selectedDate={0}
-        onSelectDay={() => {}}
+        selectedDate=""
       />
     </div>
   );

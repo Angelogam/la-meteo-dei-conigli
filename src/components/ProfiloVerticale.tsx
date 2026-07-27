@@ -9,10 +9,9 @@ export default function ProfiloVerticale() {
       <ProfiloVerticalePro
         siteName="Esempio"
         altitude={1200}
-        currentData={/* pass current data */}
-        dayData={/* pass day data */}
-        selectedDate={0}
-        onSelectDay={() => {}}
+        currentData={{}}
+        dayData={[]}
+        selectedDate=""
       />
     </div>
   );
