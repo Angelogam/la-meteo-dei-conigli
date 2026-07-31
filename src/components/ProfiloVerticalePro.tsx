@@ -32,43 +32,7 @@ function getLabel(speed: number): string {
 const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
   const [selected, setSelected] = useState<number>(4);
 
-  const map = new Map(data.map(d => [d.hour, d]));
-  const full = HOURS.map(h => map.get(h) || { hour: h,<dyad-write path="src/components/ProfiloVerticalePro.tsx" description="Rewriting ProfiloVerticalePro.tsx as a clean thermal chart component">
-"use client";
-
-import React, { useState } from "react";
-
-interface ThermalData {
-  hour: string;
-  speed: number;
-  base: number;
-  top: number;
-}
-
-const HOURS = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
-
-function getColor(speed: number): string {
-  if (speed >= 3.5) return "#9a3412";
-  if (speed >= 2.5) return "#c2410c";
-  if (speed >= 1.5) return "#ea580c";
-  if (speed >= 0.8) return "#f97316";
-  if (speed >= 0.3) return "#fb923c";
-  return "#fdba74";
-}
-
-function getLabel(speed: number): string {
-  if (speed >= 3.5) return "Fortissime";
-  if (speed >= 2.5) return "Forte";
-  if (speed >= 1.5) return "Buona";
-  if (speed >= 0.8) return "Moderata";
-  if (speed >= 0.3) return "Debole";
-  return "Assente";
-}
-
-const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
-  const [selected, setSelected] = useState<number>(4);
-
-  const map = new Map(data.map(d => [d.hour, d]));
+  const map = new Mapconst map = new Map(data.map(d => [d.hour, d]));
   const full = HOURS.map(h => map.get(h) || { hour: h, speed: 0, base: 0, top: 0 });
   const maxSpeed = Math.max(...full.map(d => d.speed), 0.5);
   const sel = full[selected];
