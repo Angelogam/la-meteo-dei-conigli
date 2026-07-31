@@ -1,23 +1,9 @@
-"use client";
-
-import React from "react";
-import {
-  AlertTriangle,
-  AlertCircle,
-  CheckCircle,
-  CloudRain,
-  Zap,
-  Sun,
-  Wind,
-  Cloud,
-  Thermometer,
-  Droplets,
-} from "lucide-react";
+import { AlertTriangle, AlertCircle, CheckCircle, CloudRain, Zap, Sun, Wind, Cloud, Thermometer, Droplets } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 import { getVoloStatus } from "@/utils/volo";
 
 interface AlertVoloProps {
-  weather: HourData | undefined;
+  weather: HourData | null | undefined;
 }
 
 const AlertVolo = ({ weather }: AlertVoloProps) => {
@@ -25,7 +11,6 @@ const AlertVolo = ({ weather }: AlertVoloProps) => {
 
   const volo = getVoloStatus(weather);
 
-  // Mappa icone per ogni stato
   const statusIcon = (status: string, size: number = 24) => {
     switch (status) {
       case "ottimo":
@@ -47,7 +32,6 @@ const AlertVolo = ({ weather }: AlertVoloProps) => {
     }
   };
 
-  // Mappa gradienti di sfondo per ogni stato
   const statusBg = (status: string) => {
     switch (status) {
       case "ottimo":
@@ -69,7 +53,6 @@ const AlertVolo = ({ weather }: AlertVoloProps) => {
     }
   };
 
-  // Mappa testi descrittivi
   const statusLabel = (status: string) => {
     switch (status) {
       case "ottimo":
@@ -103,7 +86,6 @@ const AlertVolo = ({ weather }: AlertVoloProps) => {
         <p className="text-[11px] font-medium text-white/80 mt-0.5 leading-tight">
           {volo.description}
         </p>
-        {/* Dettaglio aggiuntivo */}
         <div className="flex flex-wrap items-center gap-2 mt-1.5 pt-1.5 border-t border-white/10">
           <div className="flex items-center gap-1 text-[10px] text-white/70">
             <Wind className="w-3 h-3" />
@@ -119,13 +101,12 @@ const AlertVolo = ({ weather }: AlertVoloProps) => {
           </div>
           {weather.precipitation > 0 && (
             <div className="flex items-center gap-1 text-[10px] text-blue-300">
-              <Droplets className="w-3 h-3" />
+              <CloudRain className="w-3 h-3" />
               <span>{weather.precipitation.toFixed(1)} mm</span>
             </div>
           )}
         </div>
       </div>
-      {/* Icona meteo grande */}
       <div className="text-2xl shrink-0 drop-shadow-lg">
         {volo.icon}
       </div>
