@@ -9,6 +9,18 @@ interface ThermalData {
   top: number;
 }
 
+const HOURS = ["08:00", "09:00", "10:00", "11:00", "12<dyad-write path="src/components/ProfiloVerticalePro.tsx" description="Riscrittura pulita di ProfiloVerticalePro.tsx con il componente TermicheAquila">
+"use client";
+
+import React, { useState } from "react";
+
+interface ThermalData {
+  hour: string;
+  speed: number;
+  base: number;
+  top: number;
+}
+
 const HOURS = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
 
 function getColor(speed: number): string {
@@ -32,138 +44,120 @@ function getLabel(speed: number): string {
 const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
   const [selected, setSelected] = useState<number>(4);
 
-  const map = new Map(data.map(d => [d.hour, dI'll completely rewrite both corrupted files now, ensuring they contain only clean TypeScript code with no embedded markup.
-
-<dyad-write path="src/components/Windgram.tsx" description="Windgram.tsx - clean DayDetailPopup component">
-"use client";
-
-import React from "react";
-import type { HourData } from "@/types/meteo";
-import { getVoloStatus } from "@/utils/volo";
-import { X, Wind, Thermometer, CloudRain, Droplets } from "lucide-react";
-
-function getWeatherEmoji(code: number): string {
-  if (code >= 95) return "⛈️";
-  if (code >= 80) return "🌧️";
-  if (code >= 71) return "❄️";
-  if (code >= 61) return "🌧️";
-  if (code >= 51) return "🌦️";
-  if (code >= 45) return "🌫️";
-  if (code >= 20) return "☁️";
-  if (code >= 10) return "⛅";
-  if (code >= 5) return "🌤️";
-  return "☀️";
-}
-
-interface DayDetailPopupProps {
-  data: HourData[];
-  daily: {
-    date: Date;
-    tempMax: number;
-    tempMin: number;
-    weatherCode: number;
-    precipitationSum: number;
-    avgWind?: number;
-    maxWind?: number;
-    avgCloud?: number;
-  };
-  dayLabel: string;
-  onClose: () => void;
-  onHourSelect: (hour: number) => void;
-}
-
-const DayDetailPopup = ({ data, daily, dayLabel, onClose, onHourSelect }: DayDetailPopupProps) => {
-  if (!data || data.length === 0) return null;
+  const map = new Map(data.map(d => [d.hour, d]));
+  const full = HOURS.map(h => map.get(h) || { hour: h, speed: 0, base: 0, top: 0 });
+  const maxSpeed = Math.max(...full.map(d => d.speed), 0.5);
+  const sel = full[selected];
+  const barHeight = 140;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-3">
-      <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl border border-slate-600 shadow-2xl w-full max-w-xl max-h-[85vh] flex flex-col">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-600 shrink-0">
-          <h3 className="text-sm font-bold text-white">
-            Dettaglio orario · {dayLabel}
-          </h3>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-slate-700 border border-slate-500"
-            aria-label="Chiudi"
-          >
-            <X className="w-4 h-4 text-slate-300" />
-          </button>
-        </div>
+    <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/40 border border-slate-700/40 rounded-2xl p-5">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-bold text-orange-300 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
+          Intensità termica
+        </h3>
+        <span className="text-[10px] text-slate-500">m/s</span>
+      </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-4 pt-4 pb-2 shrink-0">
-          <div className="bg-slate-700/50 rounded-xl p-3 text-center">
-            <Thermometer className="w-4 h-4 text-amber-400 mx-auto mb-1" />
-            <div className="text-lg font-bold text-white">
-              {Math.round(daily.tempMax)}° / {Math.round(daily.tempMin)}°
-            </div>
-            <div className="text-[10px] text-slate-400">Max / Min</div>
-          </div>
-          <div className="bg-slate-700/50 rounded-xl p-3 text-center">
-            <Wind className="w-4 h-4 text-blue-400 mx-auto mb-1" />
-            <div className="text-lg font-bold text-white">
-              {daily.avgWind !== undefined ? Math.round(daily.avgWind) : "—"} km/h
-            </div>
-            <div className="text-[10px] text-slate-400">
-              Media {daily.maxWind !== undefined ? Math.round(daily.maxWind) : "—"} max
-            </div>
-          </div>
-          <div className="bg-slate-700/50 rounded-xl p-3 text-center">
-            <CloudRain className="w-4 h-4 text-blue-300 mx-auto mb-1" />
-            <div className="text-lg font-bold text-white">
-              {daily.precipitationSum > 0 ? `${daily.precipitationSum.toFixed(1)} mm` : "0 mm"}
-            </div>
-            <div className="text-[10px] text-slate-400">Pioggia</div>
-          </div>
-          <div className="bg-slate-700/50 rounded-xl p-3 text-center">
-            <span className="text-2xl block mb-1">{getWeatherEmoji(daily.weatherCode)}</span>
-            <div className="text-[10px] text-slate-400">Meteo</div>
-          </div>
-        </div>
+      {/* Legenda arancio */}
+      <div className="flex flex-wrap gap-3 mb-4 text-sm text-slate-500">
+        {[
+          { label: "≥ 3.5 — Fortissime", color: "#9a3412" },
+          { label: "2.5–3.5 — Forte", color: "#c2410c" },
+          { label: "1.5–2.5 — Buona", color: "#ea580c" },
+          { label: "0.8–1.5 — Moderata", color: "#f97316" },
+          { label: "0.3–0.8 — Debole", color: "#fb923c" },
+          { label: "< 0.3 — Assente", color: "#fdba74" },
+        ].map((item, i) => (
+          <span key={i} className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-sm" style={{ background: item.color }} />
+            <span className="text-slate-400">{item.label}</span>
+          </span>
+        ))}
+      </div>
 
-        <div className="overflow-y-auto p-3 space-y-1.5">
-          {data.map((h) => {
-            const volo = getVoloStatus(h);
-            const isSelected = h.time.getHours() === new Date().getHours();
-            return (
-              <button
-                key={h.time.getHours()}
-                onClick={() => onHourSelect(h.time.getHours())}
-                className={`w-full flex items-center gap-2 rounded-xl px-3 py-2.5 border transition-all ${
-                  isSelected
-                    ? "bg-slate-700 border-slate-400 shadow-md"
-                    : "bg-slate-800/60 border-slate-600/50 hover:bg-slate-700/40 hover:border-slate-500"
+      {/* Grafico */}
+      <div className="flex items-end gap-1 h-44 overflow-x-auto pb-1 justify-center">
+        {full.map((d, i) => {
+          const pct = maxSpeed > 0 ? (d.speed / maxSpeed) * 100 : 0;
+          const isSelected = i === selected;
+          const col = getColor(d.speed);
+          const barW = isSelected ? "w-7" : "w-5";
+
+          return (
+            <button
+              key={d.hour}
+              onClick={() => setSelected(i)}
+              className={`flex flex-col items-center flex-shrink-0 transition-all duration-200 ${barW} ${
+                isSelected ? "scale-110 z-10" : ""
+              }`}
+            >
+              {/* Valore sopra */}
+              <span
+                className={`text-[9px] font-black leading-none mb-0.5 transition-all ${
+                  isSelected ? "text-orange-200" : d.speed > 0 ? "text-orange-300/80" : "text-slate-600"
                 }`}
               >
-                <div className="w-10 shrink-0 text-center">
-                  <span className="text-xs font-bold text-white">
-                    {h.time.getHours().toString().padStart(2, "0")}:00
-                  </span>
-                </div>
-                <span className="text-lg shrink-0">{getWeatherEmoji(h.weatherCode)}</span>
-                <div className="flex-1 flex items-center gap-2 text-[11px] text-slate-300 min-w-0">
-                  <span>{Math.round(h.temperature)}°C</span>
-                  <span className="text-slate-500">|</span>
-                  <span>{Math.round(h.windSpeed)} km/h</span>
-                  <span className="text-slate-500">|</span>
-                  <span>{h.humidity}%</span>
-                </div>
-                {h.precipitation > 0 && (
-                  <span className="flex items-center gap-1 text-[11px] text-blue-300 shrink-0">
-                    <Droplets className="w-3 h-3" />
-                    {h.precipitation.toFixed(1)}mm
-                  </span>
+                {d.speed > 0 ? d.speed.toFixed(1) : "—"}
+              </span>
+
+              {/* Barra */}
+              <div
+                className="w-full rounded-xl relative overflow-hidden transition-all"
+                style={{ height: `${barHeight}px`, background: "rgba(30,41,59,0.6)" }}
+              >
+                {d.speed > 0 && (
+                  <div
+                    className="absolute bottom-0 left-0 right-0 rounded-xl transition-all duration-500"
+                    style={{
+                      height: `${Math.max(pct, 2)}%`,
+                      background: col,
+                      boxShadow: isSelected ? `0 0 10px ${col}` : "none",
+                    }}
+                  />
                 )}
-                <span className={`shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-bold border ${volo.color}`}>
-                  {volo.icon} {volo.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+              </div>
+
+              {/* Ora */}
+              <span
+                className={`text-[8px] mt-1 font-mono ${
+                  isSelected ? "text-orange-300 font-bold" : d.speed > 0 ? "text-slate-500" : "text-slate-600"
+                }`}
+              >
+                {d.hour.slice(0, 2)}
+              </span>
+            </button>
+          );
+        })}
       </div>
+
+      {/* Dettaglio ora selezionata */}
+      {sel && sel.speed > 0 && (
+        <div className="mt-4 bg-gradient-to-r from-orange-900/20 to-amber-900/10 rounded-xl p-4 border border-orange-700/30 text-center">
+          <span className="text-xs text-slate-400 block">
+            Alle {sel.hour} — {getLabel(sel.speed)}
+          </span>
+          <span className="text-3xl font-black text-orange-300 drop-shadow-lg">{sel.speed.toFixed(1)} m/s</span>
+          <span className="text-xs text-slate-500 ml-2">di salita</span>
+          {sel.base > 0 && (
+            <div className="flex items-center justify-center gap-5 mt-2 text-[11px] text-slate-400">
+              <span>Base <strong className="text-orange-200">{sel.base}m</strong></span>
+              <span>Top <strong className="text-orange-200">{sel.top}m</strong></span>
+              <span>Salita <strong className="text-orange-200">{sel.top - sel.base}m</strong></span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {sel && sel.speed === 0 && (
+        <div className="mt-4 bg-slate-800/40 rounded-xl p-4 border border-slate-700/30 text-center">
+          <span className="text-xs text-slate-400">Alle {sel.hour} — Nessuna termica</span>
+        </div>
+      )}
     </div>
   );
 };
 
-export default DayDetailPopup;
+export default TermicheAquila;

@@ -1,8 +1,5 @@
 "use client";
 
-<dyad-write path="src/components/Windgram.tsx" description="Rewriting the corrupted Windgram.tsx with a clean DayDetailPopup component">
-"use client";
-
 import React from "react";
 import type { HourData } from "@/types/meteo";
 import { getVoloStatus } from "@/utils/volo";
@@ -46,9 +43,7 @@ const DayDetailPopup = ({ data, daily, dayLabel, onClose, onHourSelect }: DayDet
       <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl border border-slate-600 shadow-2xl w-full max-w-xl max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-600 shrink-0">
-          <h3 className="text-sm font-bold text-white">
-            Dettaglio orario · {dayLabel}
-          </h3>
+          <h3 className="text-sm font-bold text-white">Dettaglio orario · {dayLabel}</h3>
           <button
             onClick={onClose}
             className="p-1 rounded-lg hover:bg-slate-700 border border-slate-500"
