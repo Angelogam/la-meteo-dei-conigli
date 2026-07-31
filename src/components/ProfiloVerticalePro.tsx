@@ -20,9 +20,21 @@ function getColor(speed: number): string {
   return "#fdba74";
 }
 
-function getI'll rewrite both corrupted files completely with clean content only.
+function getLabel(speed: number): string {
+  if (speed >= 3.5) return "Fortissime";
+  if (speed >= 2.5) return "Forte";
+  if (speed >= 1.5) return "Buona";
+  if (speed >= 0.8) return "Moderata";
+  if (speed >= 0.3) return "Debole";
+  return "Assente";
+}
 
-<dyad-write path="src/components/Windgram.tsx" description="Rewriting Windgram.tsx as a clean DayDetailPopup component">
+const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
+  const [selected, setSelected] = useState<number>(4);
+
+  const map = new Map(data.map(d => [d.hour, dI'll completely rewrite both corrupted files now, ensuring they contain only clean TypeScript code with no embedded markup.
+
+<dyad-write path="src/components/Windgram.tsx" description="Windgram.tsx - clean DayDetailPopup component">
 "use client";
 
 import React from "react";
