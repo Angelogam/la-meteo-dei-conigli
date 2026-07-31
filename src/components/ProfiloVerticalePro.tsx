@@ -11,6 +11,31 @@ interface ThermalData {
 
 const HOURS = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
 
+/** Palette esclusivamente arancio */
+function getColor(speed: number): string {
+  if (speed >= 3.5) return "#9a3412";
+  if (speed >= 2.5) return "#c2410c";
+  if (speed >= 1.5) return "#ea580c";
+  if (speed >= 0.8) return "#f97316";
+  if (speed >= 0.3) return "#fb923c";
+  return "#fdba74";
+}
+
+function getLabel(s<dyad-write path="src/components/ProfiloVerticalePro.tsx" description="Completing the ProfiloVerticalePro component with fixed legend escaping">
+"use client";
+
+import React, { useState } from "react";
+
+interface ThermalData {
+  hour: string;
+  speed: number;
+  base: number;
+  top: number;
+}
+
+const HOURS = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
+
+/** Palette esclusivamente arancio */
 function getColor(speed: number): string {
   if (speed >= 3.5) return "#9a3412";
   if (speed >= 2.5) return "#c2410c";
@@ -49,25 +74,25 @@ const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
         <span className="text-[10px] text-slate-500">m/s</span>
       </div>
 
-      {/* Legenda arancio */}
-      <div className="flex flex-wrap gap-3 mb-4 text-sm text-slate-500">
+      {/* Legenda con caratteri speciali correttamente escapati */}
+      <div className="flex flex-wrap gap-3 mb-4 text-[10px] text-slate-400">
         {[
-          { label: "≥ 3.5 — Fortissime", color: "#9a3412" },
-          { label: "2.5–3.5 — Forte", color: "#c2410c" },
-          { label: "1.5–2.5 — Buona", color: "#ea580c" },
-          { label: "0.8–1.5 — Moderata", color: "#f97316" },
-          { label: "0.3–0.8 — Debole", color: "#fb923c" },
-          { label: "< 0.3 — Assente", color: "#fdba74" },
+          { label: "\u2265 3.5 \u2014 Fortissime", color: "#9a3412" },
+          { label: "2.5\u20133.5 \u2014 Forte", color: "#c2410c" },
+          { label: "1.5\u20132.5 \u2014 Buona", color: "#ea580c" },
+          { label: "0.8\u20131.5 \u2014 Moderata", color: "#f97316" },
+          { label: "0.3\u20130.8 \u2014 Debole", color: "#fb923c" },
+          { label: "\u003C 0.3 \u2014 Assente", color: "#fdba74" },
         ].map((item) => (
           <span key={item.label} className="flex items-center gap-1">
-            <span className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
+            <span className="w-2.5 h-2.5 rounded-sm" style={{ background: item.color }} />
             <span className="text-slate-400">{item.label}</span>
           </span>
         ))}
       </div>
 
       {/* Grafico termiche */}
-      <div className="flex items-end gap-1 h-44 overflow-x-auto pb-1 justify-center scrollbar-none">
+      <div className="flex items-end gap-1 h-44 overflow-x-auto pb-1 justify-center">
         {full.map((d, i) => {
           const pct = maxSpeed > 0 ? (d.speed / maxSpeed) * 100 : 0;
           const isSelected = i === selected;
@@ -82,32 +107,35 @@ const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
                 isSelected ? "scale-110 z-10" : ""
               }`}
             >
-              <span className={`text-[9px] font-black leading-none mb-0.5 transition-all ${
-                isSelected ? "text-orange-200" : d.speed > 0 ? "text-orange-300/80" : "text-slate-600"
-              }`}>
-                {d.speed > 0 ? d.speed.toFixed(1) : "—"}
+              <span
+                className={`text-[9px] font-black leading-none mb-0.5 transition-all ${
+                  isSelected ? "text-orange-200" : d.speed > 0 ? "text-orange-300/80" : "text-slate-600"
+                }`}
+              >
+                {d.speed > 0 ? d.speed.toFixed(1) : "\u2014"}
               </span>
 
-              <div className="w-full h-28 bg-slate-800/60 rounded-lg relative overflow-hidden">
+              <div
+                className="w-full rounded-xl relative overflow-hidden transition-all"
+                style={{ height: `${barHeight}px`, background: "rgba(30,41,59,0.6)" }}
+              >
                 {d.speed > 0 && (
                   <div
-                    className="absolute bottom-0 left-0 right-0 rounded-full transition-all duration-500"
+                    className="absolute bottom-0 left-0 right-0 rounded-xl transition-all duration-500"
                     style={{
                       height: `${Math.max(pct, 2)}%`,
                       background: col,
                       boxShadow: isSelected ? `0 0 10px ${col}` : "none",
                     }}
-                  >
-                    {isSelected && (
-                      <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rounded-full shadow-lg shadow-white/50" />
-                    )}
-                  </div>
+                  />
                 )}
               </div>
 
-              <span className={`text-[8px] mt-1 font-mono ${
-                isSelected ? "text-orange-300 font-bold" : d.speed > 0 ? "text-slate-400" : "text-slate-600"
-              }`}>
+              <span
+                className={`text-[8px] mt-1 font-mono ${
+                  isSelected ? "text-orange-300 font-bold" : d.speed > 0 ? "text-slate-500" : "text-slate-600"
+                }`}
+              >
                 {d.hour.slice(0, 2)}
               </span>
             </button>
@@ -123,11 +151,13 @@ const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
           </span>
           <span className="text-3xl font-black text-orange-300 drop-shadow-lg">{sel.speed.toFixed(1)} m/s</span>
           <span className="text-xs text-slate-500 ml-2">di salita</span>
-          <div className="flex items-center justify-center gap-5 mt-2 text-[11px] text-slate-400">
-            <span>Base <strong className="text-orange-200">{sel.base}m</strong></span>
-            <span>Top <strong className="text-orange-200">{sel.top}m</strong></span>
-            <span>Salita <strong className="text-orange-200">{sel.top - sel.base}m</strong></span>
-          </div>
+          {sel.base > 0 && (
+            <div className="flex items-center justify-center gap-5 mt-2 text-[11px] text-slate-400">
+              <span>Base <strong className="text-orange-200">{sel.base}m</strong></span>
+              <span>Top <strong className="text-orange-200">{sel.top}m</strong></span>
+              <span>Salita <strong className="text-orange-200">{sel.top - sel.base}m</strong></span>
+            </div>
+          )}
         </div>
       )}
 
@@ -136,14 +166,6 @@ const TermicheAquila: React.FC<{ data: ThermalData[] }> = ({ data }) => {
           <span className="text-xs text-slate-400">Alle {sel.hour} — Nessuna termica</span>
         </div>
       )}
-
-      <div className="flex flex-wrap gap-2 text-[10px] text-slate-400 mt-3 pt-3 border-t border-slate-700/30">
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> ≥3.5 — Fortissime</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-orange-500" /> 2.5–3.5 — Forte</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> 1.5–2.5 — Buona</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-lime-500" /> 0.8–1.5 — Mod.</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-slate-700" /> <0.3 — Nulla</span>
-      </div>
     </div>
   );
 };
