@@ -66,7 +66,61 @@ export function useAnalisiAvanzata(lat: number, lon: number, altitude: number) {
 
   const analisi = useMemo((): AnalisiCompletaConMargine[] => {
     if (!hourlyData.length || !currentData) return [];
-    const analisiBase = analisiAvanzataCompleta(hourlyData, currentData, altitude);
+    
+    // Convert MeteoHourly[] to HourData[]
+    const hourlyDataConverted = hourlyData.map(h => ({
+      time: h.time,
+      temperature: h.temperature,
+      feelsLike: h.apparentTemp, // MeteoHourly has apparentTemp
+      humidity: h.humidity,
+      dewPoint: h.dewPoint,
+      pressure: h.pressure,
+      surfacePressure: h.pressure, // approximation
+      precipitation: h.precipitation,
+      rain: 0, // not available in MeteoHourly
+      snowfall: 0, // not available
+      weatherCode: h.weatherCode,
+      cloudCover: h.cloudCover,
+      cloudCoverLow: 0, // not available
+      cloudCoverMid: 0, // not available
+      cloudCoverHigh: 0, // not available
+      windSpeed: h.windSpeed,
+      windDir: h.windDir,
+      windGusts: h.windGusts,
+      radiation: h.shortwaveRadiation,
+      directRadiation: h.shortwaveRadiation, // approximation
+      uvIndex: h.uvIndex,
+      visibility: 10000, // default
+      vapourPressureDeficit: 0, // default
+      isDay: true, // we don't have it, set to true (not used in analisiAvanzataCompleta)
+      freezingLevel: 3000, // default
+      sunshineDuration: 0, // default
+      cape: h.cape,
+      cin: h.cin,
+      liftedIndex: h.liftedIndex,
+      mixingRatio: 0, // default
+      virtualTemp: 298, // default
+      temp80m: h.temp80m ?? null, // from MeteoHourly
+      temp120m: h.temp120m ?? null, // from MeteoHourly
+    }));
+    
+    // Convert MeteoCurrent to the expected current object for analisiAvanzataCompleta
+    const currentDataConverted = {
+      temperature: currentData?.temperature ?? 0,
+      humidity: currentData?.humidity ?? 0,
+      windSpeed: currentData?.windSpeed ?? 0,
+      windDir: currentData?.windDir ?? 0,
+      windGusts: currentData?.windGusts ?? 0,
+      cloudCover: currentData?.cloudCover ?? 0,
+      precipitation: currentData?.precipitation ?? 0,
+      pressure: currentData?.pressure ?? 0,
+      uvIndex: currentData?.uvIndex ?? 0,
+      dewPoint: currentData ? (currentData.temperature - ((100 - currentData.humidity) / 5)) : 0, // approximate dewPoint
+      temp80m: null, // not available in MeteoCurrent
+      temp120m: null, // not available in MeteoCurrent
+    };
+
+    const analisiBase = analisiAvanzataCompleta(hourlyDataConverted, currentDataConverted, altitude);
     return analisiBase.map(a => {
       const erroreBase = Math.max(5, 100 - a.confidenza * 100);
       const oreDisponibili = hourlyData.filter(h => {

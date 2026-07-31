@@ -202,6 +202,80 @@ function parseDaily(raw: any): MeteoDaily[] {
       weatherDescription: "",
     });
   }
+
+  // If we don't have Open-Meteo data, try to parse 7Timer data
+  if (result.length === 0 && raw?.dataseries) {
+    const now = new Date();
+    const seenDates = new Set<string>();
+
+    for (let i = 0; i < raw.dataseries.length && i < 24 * FORECAST_DAYS; i++) {
+      const d = raw.dataseries[i];
+      const time = new Date(now);
+      time.setHours(now.getHours() + (d.timepoint || i));
+      time.setMinutes(0, 0, 0);
+
+      const temp = d.temp2m ?? 15;
+      const weatherCode = d.cloudcover != null
+        ? d.cloudcover > 80 ? 3
+          : d.cloudcover > 50 ? 2
+            : d.cloudcover > 20 ? 1
+              : 0
+        : 0;
+      const rh = d.rh2m ?? 50;
+      const wind10m = d.wind10m?.speed ?? 10;
+      const windDir = d.wind10m?.direction ?? 180;
+
+      const dew = temp - ((100 - rh) / 5);
+
+      const precipAmount = d.prec_amount ?? 0;
+      let precipitationSum = 0;
+      let rainSum = 0;
+      let snowfallSum = 0;
+      if (d.prec_type === "rain") {
+        rainSum = precipAmount;
+        precipitationSum = precipAmount;
+      } else if (d.prec_type === "snow") {
+        snowfallSum = precipAmount;
+        precipitationSum = precipAmount;
+      } else {
+        // none or other
+        precipitationSum = 0;
+      }
+
+      result.push({
+        date: time,
+        weatherCode,
+        tempMax: temp + 3,
+        tempMin: temp - 4,
+        tempMean: (temp + 3 + temp - 4) / 2, // approximate
+        apparentTempMax: temp,
+        apparentTempMin: temp,
+        sunrise: "",
+        sunset: "",
+        daylightDuration: 0,
+        sunshineDuration: 0,
+        precipitationSum,
+        rainSum,
+        snowfallSum,
+        precipitationHours: d.prec_type === "none" ? 0 : 1, // approximate
+        precipitationProbabilityMax: d.prec_type === "rain" ? 60 : 10,
+        windSpeedMax: wind10m + 5,
+        windGustsMax: wind10m + 10,
+        windDirDominant: windDir,
+        shortwaveRadiationSum: 500,
+        uvIndexMax: 5,
+        windSpeed: wind10m,
+        cloudCover: d.cloudcover ?? 30,
+        weatherDescription: "",
+      });
+
+      const dateKey = `${time.getDate()}/${time.getMonth() + 1}`;
+      if (!seenDates.has(dateKey)) {
+        seenDates.add(dateKey);
+      }
+    }
+  }
+
   return result;
 }
 
@@ -344,6 +418,21 @@ async function fetchTimerGFS(lat: number, lon: number): Promise<FetchResult | nu
 
       const dew = temp - ((100 - rh) / 5);
 
+      const precipAmount = d.prec_amount ?? 0;
+      let precipitationSum = 0;
+      let rainSum = 0;
+      let snowfallSum = 0;
+      if (d.prec_type === "rain") {
+        rainSum = precipAmount;
+        precipitationSum = precipAmount;
+      } else if (d.prec_type === "snow") {
+        snowfallSum = precipAmount;
+        precipitationSum = precipAmount;
+      } else {
+        // none or other
+        precipitationSum = 0;
+      }
+
       hourly.push({
         time,
         temperature: temp,
@@ -352,6 +441,8 @@ async function fetchTimerGFS(lat: number, lon: number): Promise<FetchResult | nu
         pressure: d.msl_pressure ?? 1013,
         apparentTemp: temp,
         precipitation: d.prec_type === "rain" ? (d.prec_amount ?? 0.5) : 0,
+        rain: d.prec_type === "rain" ? (d.prec_amount ?? 0) : 0,
+        snowfall: d.prec_type === "snow" ? (d.prec_amount ?? 0) : 0,
         weatherCode,
         cloudCover: d.cloudcover ?? 30,
         windSpeed: wind10m,
@@ -380,12 +471,26 @@ async function fetchTimerGFS(lat: number, lon: number): Promise<FetchResult | nu
           weatherCode,
           tempMax: temp + 3,
           tempMin: temp - 4,
-          precipSum: d.prec_type === "rain" ? (d.prec_amount ?? 1) : 0,
-          precipProbaMax: d.prec_type === "rain" ? 60 : 10,
+          tempMean: (temp + 3 + temp - 4) / 2, // approximate
+          apparentTempMax: temp,
+          apparentTempMin: temp,
+          sunrise: "",
+          sunset: "",
+          daylightDuration: 0,
+          sunshineDuration: 0,
+          precipitationSum,
+          rainSum,
+          snowfallSum,
+          precipitationHours: d.prec_type === "none" ? 0 : 1, // approximate
+          precipitationProbabilityMax: d.prec_type === "rain" ? 60 : 10,
           windSpeedMax: wind10m + 5,
           windGustsMax: wind10m + 10,
           windDirDominant: windDir,
+          shortwaveRadiationSum: 500,
           uvIndexMax: 5,
+          windSpeed: wind10m,
+          cloudCover: d.cloudcover ?? 30,
+          weatherDescription: "",
         });
       }
     }
@@ -471,7 +576,8 @@ export const weatherService = {
     const results: Record<string, { ok: boolean; data: MeteoCurrent | null; source?: string }> = {};
     const clusters = clusterCoords(coords);
 
-    for (const cluster of clusters) {
+    for (let i = 0; i < clusters.length; i++) {
+      const cluster = clusters[i];
       const key = `light:${cluster.lat.toFixed(4)}:${cluster.lon.toFixed(4)}`;
       try {
         const result = await this.fetchWeather(cluster.lat, cluster.lon);
@@ -493,10 +599,10 @@ export const weatherService = {
           }
         }
       } catch (err) {
-        results[key] = { ok: false, data: null, error: String(err) };
+        results[key] = { ok: false, data: null };
       }
 
-      if (clusters.indexOf(cluster) < clusters.length - 1) {
+      if (i < clusters.length - 1) {
         await new Promise(r => setTimeout(r, 1500));
       }
     }
@@ -518,7 +624,7 @@ export const weatherService = {
 };
 
 function clusterCoords(coords: { lat: number; lon: number }[], threshold = 0.1): { lat: number; lon: number; sites: { lat: number; lon: number }[] }[] {
-  const clusters: { lat: number; lon: number; sites: { lat: number; lon: number }[] }[] = [];
+  const clusters: { lat: number; lon: number; sites: { lat: number; lon: number }[] } = [];
   const used = new Set<number>();
 
   for (let i = 0; i < coords.length; i++) {
