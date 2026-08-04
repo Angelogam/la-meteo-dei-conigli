@@ -1,9 +1,12 @@
-import { useAnalisiAvanzata, type AnalisiCompletaConMargine } from "./useAnalisiAvanzata";
-import { weatherService, type MeteoHourly, type MeteoCurrent, type MeteoDaily } from "@/services/weatherService";
+"use client";
 
-export function useMeteoCompleto() {
-  return {
-    useAnalisiAvanzata,
-    weatherService,
-  };
-}
+import { useState } from "react";
+import type { AnalisiCompletaConMargine } from "./useAnalisiAvanzata";
+
+export const useMeteoCompleto = () => {
+  const [meteo, setMeteo] = useState<AnalisiCompletaConMargine | null>(null);
+
+  return { meteo, setMeteo };
+};
+
+export default useMeteoCompleto;
