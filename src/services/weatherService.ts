@@ -1,4 +1,10 @@
-import { WeatherResponse, MeteoHourly, MeteoCurrent, MeteoDaily } from "@/types/meteo";
+import type { HourData, DailyData, MeteoCurrent, MeteoHourly, MeteoDaily } from "@/types/meteo";
+
+export interface WeatherResponse {
+  hourly: HourData[];
+  daily: DailyData[];
+  current: MeteoCurrent;
+}
 
 export const weatherService = {
   async fetchWeather(lat: number, lon: number): Promise<{ data: WeatherResponse | null; ok: boolean }> {
@@ -15,5 +21,7 @@ export const weatherService = {
   },
   async fetchWindProfile(lat: number, lon: number, date: string): Promise<{ ventoOrario: any[] } | null> {
     return null;
-  }
+  },
 };
+
+export type { MeteoHourly, MeteoCurrent, MeteoDaily };
