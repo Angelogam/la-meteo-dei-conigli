@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Sun, Thermometer, Wind, Cloud, CloudRain, CloudLightning, TrendingUp, Activity, Eye, Droplets, Gauge, Zap, Info, Calendar } from "lucide-react";
+import {
+  Sun, Thermometer, Wind, Cloud, CloudRain, CloudLightning,
+  TrendingUp, ShieldCheck, AlertTriangle, CheckCircle, Activity,
+  MapPin, Calendar, Sparkles, Zap, Layers, Clock, Eye, Droplets, Gauge
+} from "lucide-react";
 import type { HourData } from "@/types/meteo";
 import { calcolaAnalisiApprofondita } from "@/utils/analisiApprofondita";
 import AnalisiApprofonditaCard from "./AnalisiApprofonditaCard";
-import BadgeClima from "@/components/BadgeClima";
-import { confrontaClima } from "@/utils/climatologia";
 
 interface AnalisiMeteoProps {
   currentData: HourData | null;
@@ -17,7 +19,7 @@ interface AnalisiMeteoProps {
   cin?: number | null;
 }
 
-function formatDate(date: Date): string {
+function formatDateShort(date: Date): string {
   const d = date instanceof Date ? date : new Date(date);
   if (isNaN(d.getTime())) return "";
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
@@ -29,7 +31,7 @@ function getWindDirName(deg: number): string {
   return dirs[Math.round(deg / 22.5) % 16];
 }
 
-function getCloudDesc(cover: number): string {
+function getCloudDescription(cover: number): string {
   if (cover < 10) return "sereno";
   if (cover < 25) return "poco nuvoloso";
   if (cover < 45) return "parzialmente nuvoloso";
@@ -38,25 +40,44 @@ function getCloudDesc(cover: number): string {
   return "coperto";
 }
 
-function rischioBg(r: number): string {
-  if (r >= 70) return "from-red-900/40 to-red-800/20 border-red-500/40";
-  if (r >= 40) return "from-orange-900/40 to-orange-800/20 border-orange-500/40";
-  if (r >= 15) return "from-amber-900/30 to-amber-800/15 border-amber-500/30";
-  return "from-green-900/20 to-green-800/10 border-green-500/20";
+function getUmiditaDescrizione(hum: number): string {
+  if (hum < 30) return "molto secca, ottima visibilità";
+  if (hum < 50) return "secca, buona visibilità";
+  if (hum < 65) return "moderata, visibilità discreta";
+  if (hum < 80) return "umida, visibilità ridotta";
+  return "molto umida, possibile foschia";
 }
 
-function rischioText(r: number): string {
+function getPressioneDescrizione(press: number): string {
+  if (press > 1025) return "alta, tempo stabile";
+  if (press > 1015) return "moderatamente alta, condizioni discrete";
+  if (press > 1005) return "nella norma";
+  if (press > 995) return "in calo, possibile peggioramento";
+  return "bassa, condizioni instabili";
+}
+
+function getRischioBg(r: number): string {
+  if (r >= 70) return "bg-red-900/30 border-red-500/40";
+  if (r >= 40) return "bg-orange-900/30 border-orange-500/40";
+  if (r >= 15) return "bg-amber-900/30 border-amber-500/40";
+  if (r >= 5) return "bg-yellow-900/20 border-yellow-500/30";
+  return "bg-green-900/20 border-green-500/30";
+}
+
+function getRischioText(r: number): string {
   if (r >= 70) return "text-red-400";
   if (r >= 40) return "text-orange-400";
   if (r >= 15) return "text-amber-400";
+  if (r >= 5) return "text-yellow-400";
   return "text-green-400";
 }
 
-function rischioLabel(r: number): string {
-  if (r >= 70) return "ALTO";
-  if (r >= 40) return "MODERATO";
-  if (r >= 15) return "BASSO";
-  return "NESSUNO";
+function getRischioBar(r: number): string {
+  if (r >= 70) return "bg-red-500";
+  if (r >= 40) return "bg-orange-500";
+  if (r >= 15) return "bg-amber-500";
+  if (r >= 5) return "bg-yellow-500";
+  return "bg-green-500";
 }
 
 export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
@@ -68,9 +89,9 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
     });
     if (oreGiorno.length < 3) return null;
 
-    const media = (arr: number[]) => (arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0);
-    const max = (arr: number[]) => (arr.length ? Math.max(...arr) : 0);
-    const minLocal = (arr: number[]) => (arr.length ? Math.min(...arr) : 0);
+    const media = (arr: number[]) => arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0;
+    const max = (arr: number[]) => arr.length ? Math.max(...arr) : 0;
+    const minLocal = (arr: number[]) => arr.length ? Math.min(...arr) : 0;
 
     const tempMaxGiorno = Math.round(max(oreGiorno.map(h => h.temperature)));
     const tempMinGiorno = Math.round(minLocal(oreGiorno.map(h => h.temperature)));
@@ -89,105 +110,110 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
     else if (pioggiaTot > 3) rischioTemporali = 45;
     else if (pioggiaTot > 1) rischioTemporali = 25;
     else {
-      const sole = nuvoleMedia < 35;
-      const vapore = umiditaMedia >= 55 && umiditaMedia <= 80;
-      const escursione = deltaTermico >= 14;
-      const bassaPress = pressioneMedia < 1005;
-      const cnt = [sole, vapore, escursione, bassaPress].filter(Boolean).length;
-      if (cnt >= 3) rischioTemporali = 25;
-      else if (cnt === 2 && deltaTermico >= 16) rischioTemporali = 20;
+      const haTantoSole = nuvoleMedia < 35;
+      const haMoltoVapore = umiditaMedia >= 55 && umiditaMedia <= 80;
+      const haAltaEscursione = deltaTermico >= 14;
+      const haBassaPressione = pressioneMedia < 1005;
+      const condizioniInstabilita = [haTantoSole, haMoltoVapore, haAltaEscursione, haBassaPressione].filter(Boolean).length;
+      if (condizioniInstabilita >= 3) rischioTemporali = 25;
+      else if (condizioniInstabilita === 2 && deltaTermico >= 16) rischioTemporali = 20;
       else rischioTemporali = 2;
     }
     rischioTemporali = Math.max(0, Math.min(100, Math.round(rischioTemporali)));
 
-    const gColor =
-      ventoMedio > 25 || pioggiaTot > 5 || oreTemporale > 0
-        ? "text-red-400 bg-red-900/30 border-red-500/30"
-        : ventoMedio > 18 || pioggiaTot > 2 || nuvoleMedia > 70
-          ? "text-orange-400 bg-orange-900/30 border-orange-500/30"
-          : ventoMedio < 4 || deltaTermico < 6
-            ? "text-yellow-400 bg-yellow-900/30 border-yellow-500/30"
-            : "text-green-400 bg-green-900/30 border-green-500/30";
-    const gLabel =
-      ventoMedio > 25 || pioggiaTot > 5 || oreTemporale > 0
-        ? "SCARSO"
-        : ventoMedio > 18 || pioggiaTot > 2 || nuvoleMedia > 70
-          ? "DIFFICILE"
-          : ventoMedio < 4 || deltaTermico < 6
-            ? "DISCRETO"
-            : "BUONO";
+    let dettaglioTemporali = `MINIMO (${rischioTemporali}%)`;
+    if (oreTemporale > 0) dettaglioTemporali = `ALTO (${rischioTemporali}%) - Temporali in atto!`;
+    else if (rischioTemporali >= 40) dettaglioTemporali = `MODERATO (${rischioTemporali}%)`;
+    else if (rischioTemporali >= 15) dettaglioTemporali = `BASSO (${rischioTemporali}%)`;
+
+    const puntiPositivi: string[] = [];
+    const puntiNegativi: string[] = [];
+    if (ventoMedio >= 5 && ventoMedio <= 15) puntiPositivi.push("vento ideale per il volo");
+    else if (ventoMedio > 22) puntiNegativi.push("vento forte, sconsigliato");
+    else if (ventoMedio < 3) puntiNegativi.push("vento troppo debole");
+    if (pioggiaTot === 0) puntiPositivi.push("nessuna pioggia prevista");
+    else if (pioggiaTot > 2) puntiNegativi.push(`pioggia prevista (${pioggiaTot.toFixed(1)} mm)`);
+    if (nuvoleMedia >= 15 && nuvoleMedia <= 50) puntiPositivi.push("cumuli da termica ben distribuiti");
+    else if (nuvoleMedia > 70) puntiNegativi.push("cielo molto coperto");
+    if (deltaTermico >= 10) puntiPositivi.push("buona escursione termica");
+    else if (deltaTermico < 5) puntiNegativi.push("scarsa escursione termica");
+    if (ventoGustsMax > 30) puntiNegativi.push(`raffiche forti (${ventoGustsMax} km/h)`);
+    if (oreTemporale > 0) puntiNegativi.push("temporali in corso");
+
+    let valutazione = "";
+    if (puntiPositivi.length >= 3 && rischioTemporali < 20 && oreTemporale === 0) {
+      valutazione = "Condizioni favorevoli: " + puntiPositivi.join(", ") + ".";
+      if (puntiNegativi.length > 0) valutazione += " Attenzione: " + puntiNegativi.join(", ") + ".";
+    } else if (puntiPositivi.length >= 1) {
+      valutazione = "Condizioni discrete: " + puntiPositivi.join(", ") + ".";
+      if (puntiNegativi.length > 0) valutazione += " Criticità: " + puntiNegativi.join(", ") + ".";
+    } else {
+      valutazione = "Condizioni difficili: " + puntiNegativi.join(", ") + ". Prudenza.";
+    }
 
     return {
       tempMaxGiorno, tempMinGiorno, deltaTermico, umiditaMedia, ventoMedio,
-      ventoGustsMax, ventoDirMedia,
-      ventoDirNome: getWindDirName(ventoDirMedia),
+      ventoGustsMax, ventoDirMedia, ventoDirNome: getWindDirName(ventoDirMedia),
       nuvoleMedia, pioggiaTot, oreTemporale, pressioneMedia,
-      rischioTemporali, giudizioColor: gColor, giudizioLabel: gLabel,
+      valutazione, puntiPositivi, puntiNegativi, rischioTemporali, dettaglioTemporali,
     };
   }, [dayData]);
 
-  const analisiApprofondita = useMemo(() => calcolaAnalisiApprofondita(dayData, site), [dayData, site]);
-
-  const anomalieClima = useMemo(() => {
-    if (!dayData || dayData.length === 0) return [];
-    const oreGiorno = dayData.filter(h => {
-      const hh = h.time.getHours();
-      return hh >= 8 && hh <= 18;
-    });
-    if (oreGiorno.length < 3) return [];
-    const tempMax = Math.max(...oreGiorno.map(h => h.temperature));
-    const tempMin = Math.min(...oreGiorno.map(h => h.temperature));
-    const vMedia = oreGiorno.reduce((s, h) => s + h.windSpeed, 0) / oreGiorno.length;
-    const pTot = oreGiorno.reduce((s, h) => s + (h.precipitation || 0), 0);
-    const delta = Math.round((tempMax - tempMin) * 10) / 10;
-    return confrontaClima(tempMax, tempMin, Math.round(vMedia), pTot, delta);
-  }, [dayData]);
+  const analisiApprofondita = useMemo(() => {
+    return calcolaAnalisiApprofondita(dayData, site);
+  }, [dayData, site]);
 
   const dataGiorno = useMemo(() => {
-    if (dayData && dayData.length > 0) return formatDate(dayData[0].time);
-    return formatDate(new Date());
+    if (dayData && dayData.length > 0) return formatDateShort(dayData[0].time);
+    return formatDateShort(new Date());
   }, [dayData]);
 
   if (!analisi) {
     return (
       <div className="text-center py-12 text-slate-400 text-base">
         <Sun className="w-10 h-10 mx-auto mb-3 text-slate-500" />
-        Dati insufficienti per generare l&apos;analisi per {site?.name || "questo decollo"}.
+        Dati insufficienti per generare l'analisi per {site?.name || "questo decollo"}.
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="bg-gradient-to-br from-slate-800/70 to-slate-900/50 border border-purple-500/30 rounded-2xl px-5 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-800/60 to-purple-700/30 border border-purple-500/40 flex items-center justify-center shrink-0">
-              <Sun className="w-5 h-5 text-purple-400" />
-            </div>
-            <div>
-              <div className="text-base font-bold text-white">{site?.name || "Decollo"}</div>
-              <div className="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5">
-                <Calendar className="w-3.5 h-3.5" />
-                <span>{dataGiorno}</span>
-                <span className="text-slate-600">·</span>
-                <span>{site?.alt || 0}m · {site?.exposure || "N/D"}</span>
-              </div>
-            </div>
+      {/* Intestazione decollo e data */}
+      <div className="bg-slate-800/60 border border-purple-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
+        <MapPin className="w-5 h-5 text-purple-400 shrink-0" />
+        <div>
+          <div className="text-sm font-bold text-white">{site?.name || "Decollo"} — Analisi completa</div>
+          <div className="text-[10px] text-slate-400 flex items-center gap-2">
+            <Calendar className="w-3 h-3" />
+            <span>{dataGiorno}</span>
+            <span className="text-slate-600">·</span>
+            <span>{site?.alt || 0}m · Esposizione {site?.exposure || "N/D"}</span>
           </div>
-          <span className={`text-xs font-bold px-3 py-1.5 rounded-full border ${analisi.giudizioColor}`}>
-            {analisi.giudizioLabel}
-          </span>
         </div>
       </div>
 
-      {anomalieClima.length > 0 && <BadgeClima anomalie={anomalieClima} />}
-
+      {/* ANALISI APPROFONDITA — sempre visibile, con sezioni pieghevoli e profilo vento verticale */}
       {analisiApprofondita && (
         <AnalisiApprofonditaCard analisi={analisiApprofondita} siteName={site?.name || "Decollo"} dayData={dayData} />
       )}
 
-      <div className={`rounded-2xl p-5 border-2 bg-gradient-to-br ${rischioBg(analisi.rischioTemporali)}`}>
+      {/* Situazione generale (riepilogo rapido) */}
+      <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 rounded-2xl p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Sun className="w-6 h-6 text-orange-400 shrink-0" />
+          <h3 className="text-base font-bold text-white">{site?.name} — Situazione generale</h3>
+        </div>
+        <div className="space-y-2 text-sm text-slate-300">
+          <p><span className="text-emerald-400 mr-2">&bull;</span> Max {analisi.tempMaxGiorno}°C, min {analisi.tempMinGiorno}°C, delta {analisi.deltaTermico}°C.</p>
+          <p><span className="text-emerald-400 mr-2">&bull;</span> Umidità: {analisi.umiditaMedia}% — {getUmiditaDescrizione(analisi.umiditaMedia)}.</p>
+          <p><span className="text-emerald-400 mr-2">&bull;</span> Vento: {analisi.ventoMedio} km/h da {analisi.ventoDirNome} ({analisi.ventoDirMedia}°).{analisi.ventoGustsMax > analisi.ventoMedio * 1.5 ? ` Raffiche ${analisi.ventoGustsMax} km/h.` : ""}</p>
+          <p><span className="text-emerald-400 mr-2">&bull;</span> Cielo: {getCloudDescription(analisi.nuvoleMedia)} ({analisi.nuvoleMedia}%).{analisi.pioggiaTot === 0 ? " Nessuna pioggia." : ` Pioggia: ${analisi.pioggiaTot.toFixed(1)} mm.`}</p>
+        </div>
+      </div>
+
+      {/* Rischio temporali */}
+      <div className={"rounded-2xl p-5 border-2 " + getRischioBg(analisi.rischioTemporali)}>
         <div className="flex items-center gap-3 mb-3">
           {analisi.rischioTemporali >= 70 || analisi.oreTemporale > 0 ? (
             <CloudLightning className="w-8 h-8 text-red-400 shrink-0" />
@@ -197,66 +223,41 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
             <Cloud className="w-8 h-8 text-green-400 shrink-0" />
           )}
           <div className="min-w-0">
-            <h3 className="text-base font-bold text-white">Rischio temporali</h3>
-            <p className={`text-sm font-bold ${rischioText(analisi.rischioTemporali)}`}>
-              {rischioLabel(analisi.rischioTemporali)} ({analisi.rischioTemporali}%)
-              {analisi.oreTemporale > 0 && " — Temporali in atto!"}
-            </p>
+            <h3 className="text-base font-bold text-white">{site?.name} — Rischio temporali</h3>
+            <p className={"text-sm font-medium " + getRischioText(analisi.rischioTemporali)}>{analisi.dettaglioTemporali}</p>
           </div>
         </div>
-        <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden">
-          <div className="h-full rounded-full transition-all duration-500" style={{
-            width: `${analisi.rischioTemporali}%`,
-            background: analisi.rischioTemporali >= 70
-              ? "linear-gradient(90deg, #ef4444, #dc2626)"
-              : analisi.rischioTemporali >= 40
-                ? "linear-gradient(90deg, #f97316, #ea580c)"
-                : analisi.rischioTemporali >= 15
-                  ? "linear-gradient(90deg, #f59e0b, #d97706)"
-                  : "linear-gradient(90deg, #22c55e, #16a34a)"
-          }} />
+        <div className="h-4 bg-slate-700/50 rounded-full overflow-hidden">
+          <div className={"h-full rounded-full " + getRischioBar(analisi.rischioTemporali)} style={{ width: analisi.rischioTemporali + "%" }} />
         </div>
-        <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
-          <span>0%</span>
-          <span>50%</span>
-          <span>100%</span>
-        </div>
+        <div className="flex items-center justify-between text-xs text-slate-500 mt-1"><span>0%</span><span>50%</span><span>100%</span></div>
       </div>
 
-      <div className="bg-gradient-to-br from-green-900/20 to-emerald-900/10 border border-green-700/30 rounded-2xl p-5">
+      {/* Interpretazione */}
+      <div className="bg-gradient-to-br from-green-900/20 to-emerald-900/10 border-2 border-green-700/30 rounded-2xl p-5">
         <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-5 h-5 text-green-400" />
-          <h3 className="text-sm font-bold text-green-300">Riepilogo — {site?.name || "Decollo"}</h3>
+          <TrendingUp className="w-6 h-6 text-green-400 shrink-0" />
+          <h3 className="text-base font-bold text-green-300">{site?.name} — Interpretazione</h3>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {[
-            { icon: <Thermometer className="w-4 h-4 text-amber-400" />, label: "Max / Min", value: `${analisi.tempMaxGiorno}° / ${analisi.tempMinGiorno}°` },
-            { icon: <Wind className="w-4 h-4 text-sky-400" />, label: "Vento medio", value: `${analisi.ventoMedio} km/h da ${analisi.ventoDirNome}` },
-            { icon: <Gauge className="w-4 h-4 text-red-400" />, label: "Raffiche max", value: `${analisi.ventoGustsMax} km/h` },
-            { icon: <Cloud className="w-4 h-4 text-slate-400" />, label: "Nuvolosità", value: `${analisi.nuvoleMedia}% (${getCloudDesc(analisi.nuvoleMedia)})` },
-            { icon: <Droplets className="w-4 h-4 text-blue-400" />, label: "Umidità", value: `${analisi.umiditaMedia}%` },
-            { icon: <Eye className="w-4 h-4 text-emerald-400" />, label: "Pressione", value: `${analisi.pressioneMedia} hPa` },
-            { icon: <Activity className="w-4 h-4 text-purple-400" />, label: "Delta termico", value: `${analisi.deltaTermico}°C` },
-            { icon: <CloudRain className="w-4 h-4 text-blue-300" />, label: "Pioggia", value: analisi.pioggiaTot > 0 ? `${analisi.pioggiaTot} mm` : "0 mm" },
-            { icon: <Zap className="w-4 h-4 text-orange-400" />, label: "Rischio temp.", value: rischioLabel(analisi.rischioTemporali) },
-          ].map((item, i) => (
-            <div key={i} className="bg-slate-900/60 rounded-xl p-3">
-              <div className="flex items-center gap-1.5 mb-1">
-                {item.icon}
-                <span className="text-[10px] text-slate-500">{item.label}</span>
-              </div>
-              <div className="text-sm font-bold text-white">{item.value}</div>
+        <div className="space-y-2 text-sm text-slate-300">
+          <p>{analisi.valutazione}</p>
+          {analisi.puntiPositivi.length > 0 && (
+            <div className="mt-2">
+              <div className="text-xs text-emerald-400 font-bold mb-1">Punti positivi:</div>
+              {analisi.puntiPositivi.map((p, i) => (
+                <p key={i}><span className="text-emerald-400 mr-2">&bull;</span>{p}</p>
+              ))}
             </div>
-          ))}
+          )}
+          {analisi.puntiNegativi.length > 0 && (
+            <div className="mt-2">
+              <div className="text-xs text-amber-400 font-bold mb-1">Criticità:</div>
+              {analisi.puntiNegativi.map((p, i) => (
+                <p key={i}><span className="text-amber-400 mr-2">&bull;</span>{p}</p>
+              ))}
+            </div>
+          )}
         </div>
-      </div>
-
-      <div className="flex items-start gap-2 bg-slate-800/30 border border-slate-700/30 rounded-xl px-4 py-3">
-        <Info className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
-        <p className="text-[10px] text-slate-400 leading-relaxed">
-          Analisi basata sui dati reali Open-Meteo per il giorno selezionato. Il giudizio considera vento,
-          precipitazioni, nuvolosità e stabilità atmosferica. I dati vengono aggiornati ogni 10 minuti.
-        </p>
       </div>
     </div>
   );
