@@ -12,6 +12,7 @@ import {
   CloudSun,
   Clock,
   BarChart3,
+  Zap,
 } from "lucide-react";
 
 export default function MeteoTesterPanel() {

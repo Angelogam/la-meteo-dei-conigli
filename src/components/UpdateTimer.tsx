@@ -6,9 +6,11 @@ import { RefreshCw, Clock } from "lucide-react";
 interface UpdateTimerProps {
   lastUpdate: Date | null;
   countdown: number;
+  updating?: boolean;
+  onRefresh?: () => Promise<void>;
 }
 
-export default function UpdateTimer({ lastUpdate, countdown }: UpdateTimerProps) {
+export default function UpdateTimer({ lastUpdate, countdown, updating, onRefresh }: UpdateTimerProps) {
   const [timeLeft, setTimeLeft] = useState(countdown);
 
   useEffect(() => {
@@ -25,14 +27,23 @@ export default function UpdateTimer({ lastUpdate, countdown }: UpdateTimerProps)
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
+  const handleRefresh = async () => {
+    if (onRefresh) {
+      await onRefresh();
+    } else {
+      window.location.reload();
+    }
+  };
+
   return (
     <div className="flex items-center space-x-2">
       <Clock className="h-4 w-4" />
       <span>{lastUpdate ? lastUpdate.toLocaleTimeString() : "Never"}</span>
+      {updating && <span className="text-xs text-emerald-400">Updating...</span>}
       <span>•</span>
       <span>{formatTime(timeLeft)}</span>
       <button
-        onClick={() => window.location.reload()}
+        onClick={handleRefresh}
         className="p-1 rounded hover:bg-gray-200"
         aria-label="Refresh"
       >

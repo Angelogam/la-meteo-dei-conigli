@@ -4,7 +4,6 @@ import { weatherService, type MeteoHourly, type MeteoCurrent, type MeteoDaily } 
 export function useMeteoCompleto() {
   return {
     useAnalisiAvanzata,
-    AnalisiCompletaConMargine,
     weatherService,
   };
 }

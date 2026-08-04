@@ -8,6 +8,5 @@ export type AnalisiCompletaConMargine = AnalisiCompleta & {
 export function useAnalisiAvanzata() {
   return {
     analisi: analisiAvanzataCompleta,
-    AnalisiCompleta,
   };
 }
