@@ -6,6 +6,13 @@ export interface VoloStatus {
   icon: string;
 }
 
+export interface WindLevel {
+  quota?: number;
+  alt?: number;
+  velocita: number;
+  direzione: number;
+}
+
 export function getVoloStatus(data: HourData): VoloStatus {
   const windSpeed = data.windSpeed ?? 0;
   const windGusts = data.windGusts ?? 0;
