@@ -23,6 +23,3 @@ dist-ssr
 *.sln
 *.sw?
 .dyad/
-
-# JDK installers
-OpenJDK21U-jdk_x64_windows_hotspot_21.0.11_10.msi

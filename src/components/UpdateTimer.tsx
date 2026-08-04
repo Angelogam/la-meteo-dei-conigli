@@ -1,54 +1,45 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { RefreshCw, Clock } from "lucide-react";
+import React from "react";
+import { RefreshCw, CloudSun } from "lucide-react";
 
 interface UpdateTimerProps {
   lastUpdate: Date | null;
   countdown: number;
-  updating?: boolean;
-  onRefresh?: () => Promise<void>;
+  updating: boolean;
+  onRefresh: () => void;
 }
 
-export default function UpdateTimer({ lastUpdate, countdown, updating, onRefresh }: UpdateTimerProps) {
-  const [timeLeft, setTimeLeft] = useState(countdown);
-
-  useEffect(() => {
-    setTimeLeft(countdown);
-    const interval = setInterval(() => {
-      setTimeLeft((prev) => Math.max(prev - 1, 0));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [countdown]);
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  };
-
-  const handleRefresh = async () => {
-    if (onRefresh) {
-      await onRefresh();
-    } else {
-      window.location.reload();
-    }
-  };
+export default function UpdateTimer({ lastUpdate, updating, onRefresh }: UpdateTimerProps) {
+  const formattedTime = lastUpdate
+    ? lastUpdate.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
+    : "--:--";
 
   return (
-    <div className="flex items-center space-x-2">
-      <Clock className="h-4 w-4" />
-      <span>{lastUpdate ? lastUpdate.toLocaleTimeString() : "Never"}</span>
-      {updating && <span className="text-xs text-emerald-400">Updating...</span>}
-      <span>•</span>
-      <span>{formatTime(timeLeft)}</span>
-      <button
-        onClick={handleRefresh}
-        className="p-1 rounded hover:bg-gray-200"
-        aria-label="Refresh"
-      >
-        <RefreshCw className="h-4 w-4" />
-      </button>
+    <div className="bg-slate-900/80 border border-slate-700/60 rounded-xl p-4">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <CloudSun className="w-6 h-6 text-emerald-400 shrink-0" />
+          <div className="min-w-0">
+            <div className="text-sm font-bold text-white">Open-Meteo</div>
+            <div className="text-xs text-emerald-300 mt-0.5">
+              Ultimo aggiornamento: {formattedTime}
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={onRefresh}
+          disabled={updating}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg font-bold text-sm transition-all shrink-0 ${
+            updating
+              ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+              : "bg-emerald-600 hover:bg-emerald-500 text-white shadow"
+          }`}
+        >
+          <RefreshCw className={`w-4 h-4 ${updating ? "animate-spin" : ""}`} />
+          {updating ? "..." : "Aggiorna"}
+        </button>
+      </div>
     </div>
   );
 }
