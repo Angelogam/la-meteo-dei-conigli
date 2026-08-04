@@ -1,34 +1,28 @@
 "use client";
 
 import React from "react";
-import { Wind, Calendar, TrendingUp, Gauge } from "lucide-react";
 
 interface VentiInterpolatiTabProps {
-  lat: number;
-  lon: number;
-  quotaDecollo: number;
-  selectedDay: number;
-  oraCorrente: number;
-  onOraChange: (hour: number) => void;
-  siteName: string;
+  currentData?: any;
+  lat?: number;
+  lon?: number;
+  quota?: number;
 }
 
-export default function VentiInterpolatiTab({
+export const VentiInterpolatiTab: React.FC<VentiInterpolatiTabProps> = ({
+  currentData,
   lat,
   lon,
-  quotaDecollo,
-  selectedDay,
-  oraCorrente,
-  onOraChange,
-  siteName,
-}: VentiInterpolatiTabProps) {
+  quota
+}) => {
   return (
-    <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4">
-      <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-        <Wind className="w-4 h-4" />
-        Venti interpolati - {siteName}
-      </h3>
-      <p className="text-slate-400 text-sm">Dati vento interpolati per quota {quotaDecollo}m</p>
+    <div className="p-4 bg-white rounded-xl">
+      <h3 className="font-bold mb-2">Venti Interpolati</h3>
+      <div className="text-xs text-gray-600">
+        <p>Lat: {lat ?? 'N/D'} | Lon: {lon ?? 'N/D'} | Quota: {quota ?? 'N/D'}m</p>
+      </div>
     </div>
   );
-}
+};
+
+export default VentiInterpolatiTab;
