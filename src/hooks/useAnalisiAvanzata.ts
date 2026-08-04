@@ -1,12 +1,24 @@
+"use client";
+
+import { useState, useCallback } from "react";
 import { analisiAvanzataCompleta, type AnalisiCompleta } from "@/services/analisiAvanzata";
-import { weatherService, type MeteoHourly, type MeteoCurrent } from "@/services/weatherService";
+import type { HourData } from "@/types/meteo";
 
 export type AnalisiCompletaConMargine = AnalisiCompleta & {
   margineSicurezza: number;
 };
 
 export function useAnalisiAvanzata() {
-  return {
-    analisi: analisiAvanzataCompleta,
-  };
+  const [analisi, setAnalisi] = useState<AnalisiCompletaConMargine | null>(null);
+
+  const calcolaAnalisi = useCallback((hourData: HourData[], altitude: number) => {
+    const base = analisiAvanzataCompleta(hourData, altitude);
+    const margineSicurezza = Math.max(0, Math.min(100, 100 - Math.round(base.voloScore / 2)));
+    setAnalisi({ ...base, margineSicurezza });
+    return base;
+  }, []);
+
+  return { analisi, calcolaAnalisi };
 }
+
+export default useAnalisiAvanzata;
