@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { analisiAvanzataCompleta, type AnalisiCompleta } from "@/services/analisiAvanzata";
+import { analisiAvanzataCompleta } from "@/services/analisiAvanzata";
+import type { AnalisiCompleta } from "@/types/volo";
 import type { HourData } from "@/types/meteo";
 
 export type AnalisiCompletaConMargine = AnalisiCompleta & {
