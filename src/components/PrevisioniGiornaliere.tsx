@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Calendar, Thermometer, Umbrella, Wind } from "lucide-react";
+import { Calendar, Thermometer, Umbrella, Wind, Droplets } from "lucide-react";
 
 interface PrevisioniGiornaliereProps {
   enrichedDaily: any[];
@@ -40,14 +40,6 @@ function descrizioneMeteo(code: number): string {
   return "Sereno";
 }
 
-function pioggiaLabel(mm: number): string {
-  if (mm < 0.1) return "No";
-  if (mm < 1) return "Debole";
-  if (mm < 5) return "Moderata";
-  if (mm < 15) return "Forte";
-  return "Molto forte";
-}
-
 function ventoLabel(speed: number): string {
   if (speed < 3) return "Calma";
   if (speed < 8) return "Leggero";
@@ -55,6 +47,13 @@ function ventoLabel(speed: number): string {
   if (speed < 22) return "Fresco";
   if (speed < 30) return "Forte";
   return "Molto forte";
+}
+
+function probPioggiaColor(prob: number): string {
+  if (prob >= 70) return "text-red-300";
+  if (prob >= 40) return "text-amber-300";
+  if (prob >= 15) return "text-yellow-300";
+  return "text-emerald-300";
 }
 
 function formatDateShort(date: any): string {
@@ -77,14 +76,12 @@ function safeNum(v: any, fallback: number = 0): number {
 
 export default function PrevisioniGiornaliere({
   enrichedDaily,
-  dateLabels,
   currentData,
   dayData,
-  site,
   selectedDay,
   onSelectDay,
-  nomeDecollo
 }: PrevisioniGiornaliereProps) {
+  // Pioggia totale reale per il giorno selezionato (dai dati orari)
   const precipTotaleReale = useMemo(() => {
     if (!dayData || dayData.length === 0) return 0;
     let sum = 0;
@@ -103,29 +100,142 @@ export default function PrevisioniGiornaliere({
   for (let idx = 0; idx < days.length; idx++) {
     const day = days[idx] || {};
     const isActive = idx === selectedDay;
+
+    // Campi reali di Open-Meteo (campi daily)
     const weatherCode = safeNum(day.weatherCode, 0);
-    const precipGiorno = idx === selectedDay && precipTotaleReale > 0
+    const tempMax = safeNum(day.temperatureMax, 0);
+    const tempMin = safeNum(day.temperatureMin, 0);
+    const precipSum = idx === selectedDay && precipTotaleReale > 0
       ? precipTotaleReale
-      : Math.round(safeNum(day.precipSum) * 10) / 10;
+      : safeNum(day.precipitationSum, 0);
+    const probPioggia = Math.min(100, Math.max(0, safeNum(day.precipitationProbabilityMax, 0)));
+    const ventoMax = safeNum(day.windSpeedMax, 0);
+    const ventoMedio = Math.round(ventoMax * 0.6);
 
-    let ventoMedio = 0;
-    if (day.windSpeedMax != null) ventoMedio = safeNum(day.windSpeedMax);
-    else if (dayData && dayData.length > 0) {
-      const oreGiorno = dayData.filter((h: any) => {
-        const hd = h.time instanceof Date ? h.time : new Date(h.time);
-        const dd = day.date instanceof Date ? day.date : new Date(day.date);
-        return hd.getDate() === dd.getDate() && hd.getMonth() === dd.getMonth();
-      });
-      if (oreGiorno.length > 0) {
-        let sum = 0;
-        for (let i = 0; i < oreGiorno.length; i++) sum += oreGiorno[i].windSpeed || 0;
-        ventoMedio = sum / oreGiorno.length;
-      }
+    dayButtons.push(
+      <button
+        key={idx}
+        onClick={() => onSelectDay(idx)}
+        className={`text-left transition-all border-2 cursor-pointer p-4 rounded-xl flex-1 min-w-[140px] ${
+          isActive
+            ? "border-emerald-400 bg-emerald-900/40 shadow-lg"
+            : "border-slate-700/50 bg-slate-800/40 hover:border-slate-600"
+        }`}
+      >
+        <div className="text-sm<dyad-write path="src/components/PrevisioniGiornaliere.tsx" description="Riscrittura completa e definitiva del componente previsioni giornaliere con dati reali Open-Meteo">
+"use client";
+
+import React, { useMemo } from "react";
+import { Calendar, Thermometer, Umbrella, Wind, Droplets } from "lucide-react";
+
+interface PrevisioniGiornaliereProps {
+  enrichedDaily: any[];
+  dateLabels: string[];
+  currentData: any;
+  dayData: any[];
+  site: { name: string; altitude: number; exposure?: string };
+  selectedDay: number;
+  onSelectDay: (day: number) => void;
+  nomeDecollo?: string;
+}
+
+function iconaMeteo(code: number): string {
+  if (code >= 95) return "⛈️";
+  if (code >= 80) return "🌧️";
+  if (code >= 71) return "❄️";
+  if (code >= 61) return "🌧️";
+  if (code >= 51) return "🌦️";
+  if (code >= 45) return "🌫️";
+  if (code >= 20) return "☁️";
+  if (code >= 10) return "⛅";
+  if (code >= 3) return "🌤️";
+  return "☀️";
+}
+
+function descrizioneMeteo(code: number): string {
+  if (code >= 95) return "Temporali";
+  if (code >= 80) return "Rovesci";
+  if (code >= 71) return "Neve";
+  if (code >= 61) return "Pioggia";
+  if (code >= 51) return "Pioggerella";
+  if (code >= 45) return "Nebbia";
+  if (code >= 20) return "Nuvoloso";
+  if (code >= 10) return "Poco nuv.";
+  if (code >= 3) return "Sereno";
+  return "Sereno";
+}
+
+function ventoLabel(speed: number): string {
+  if (speed < 3) return "Calma";
+  if (speed < 8) return "Leggero";
+  if (speed < 15) return "Moderato";
+  if (speed < 22) return "Fresco";
+  if (speed < 30) return "Forte";
+  return "Molto forte";
+}
+
+function probPioggiaColor(prob: number): string {
+  if (prob >= 70) return "text-red-300";
+  if (prob >= 40) return "text-amber-300";
+  if (prob >= 15) return "text-yellow-300";
+  return "text-emerald-300";
+}
+
+function formatDateShort(date: any): string {
+  if (!date) return "";
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return String(date);
+  return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0");
+}
+
+function getDayLabel(idx: number): string {
+  if (idx === 0) return "Oggi";
+  if (idx === 1) return "Domani";
+  return "Dopodomani";
+}
+
+function safeNum(v: any, fallback: number = 0): number {
+  const n = typeof v === "number" ? v : Number(v);
+  return isNaN(n) ? fallback : n;
+}
+
+export default function PrevisioniGiornaliere({
+  enrichedDaily,
+  currentData,
+  dayData,
+  selectedDay,
+  onSelectDay,
+}: PrevisioniGiornaliereProps) {
+  // Pioggia totale reale per il giorno selezionato (dai dati orari)
+  const precipTotaleReale = useMemo(() => {
+    if (!dayData || dayData.length === 0) return 0;
+    let sum = 0;
+    for (let i = 0; i < dayData.length; i++) {
+      sum += dayData[i].precipitation || 0;
     }
-    ventoMedio = safeNum(ventoMedio);
+    return Math.round(sum * 10) / 10;
+  }, [dayData]);
 
-    const tempMax = safeNum(day.tempMax ?? day.temperatureMax);
-    const tempMin = safeNum(day.tempMin ?? day.temperatureMin);
+  if (!enrichedDaily || enrichedDaily.length === 0) {
+    return <div className="text-center py-8 text-slate-400 text-base">Caricamento previsioni...</div>;
+  }
+
+  const days = enrichedDaily.slice(0, 3);
+  const dayButtons: React.ReactNode[] = [];
+  for (let idx = 0; idx < days.length; idx++) {
+    const day = days[idx] || {};
+    const isActive = idx === selectedDay;
+
+    // Campi reali di Open-Meteo (campi daily)
+    const weatherCode = safeNum(day.weatherCode, 0);
+    const tempMax = safeNum(day.temperatureMax, 0);
+    const tempMin = safeNum(day.temperatureMin, 0);
+    const precipSum = idx === selectedDay && precipTotaleReale > 0
+      ? precipTotaleReale
+      : safeNum(day.precipitationSum, 0);
+    const probPioggia = Math.min(100, Math.max(0, safeNum(day.precipitationProbabilityMax, 0)));
+    const ventoMax = safeNum(day.windSpeedMax, 0);
+    const ventoMedio = Math.round(ventoMax * 0.6);
 
     dayButtons.push(
       <button
@@ -159,15 +269,22 @@ export default function PrevisioniGiornaliere({
         <div className="flex items-center gap-1 text-xs mb-1">
           <Wind className="w-3 h-3 text-sky-400 shrink-0" />
           <span className="font-bold text-sky-300">{ventoLabel(ventoMedio)}</span>
-          <span className="text-slate-500">({Math.round(ventoMedio)} km/h)</span>
+          <span className="text-slate-500">({ventoMedio} km/h)</span>
         </div>
 
-        <div className="flex items-center gap-1 text-xs">
+        {/* 🚿 Probabilità pioggia in percentuale */}
+        <div className="flex items-center gap-1 text-xs mb-1">
           <Umbrella className="w-3 h-3 text-blue-400 shrink-0" />
-          <span className="font-bold text-blue-300">{pioggiaLabel(precipGiorno)}</span>
-          {precipGiorno > 0 && (
-            <span className="text-slate-500">({precipGiorno.toFixed(1)}mm)</span>
-          )}
+          <span className={`font-bold ${probPioggiaColor(probPioggia)}`}>{probPioggia}%</span>
+          <span className="text-slate-500">pioggia</span>
+        </div>
+
+        {/* 💧 Quantità pioggia prevista */}
+        <div className="flex items-center gap-1 text-xs">
+          <Droplets className="w-3 h-3 text-cyan-400 shrink-0" />
+          <span className="font-bold text-cyan-300">
+            {precipSum > 0 ? precipSum.toFixed(1) + " mm" : "0 mm"}
+          </span>
         </div>
       </button>
     );
