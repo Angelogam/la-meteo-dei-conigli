@@ -16,27 +16,6 @@ export function getWindDirection(deg: number): string {
 export function getWindArrow(deg: number): string {
   if (deg == null) return "→";
   const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
-Continua da dove mi sono interrotto. Sto riscrivendo `weatherHelpers.ts`:
-
-<dyad-write path="src/utils/weatherHelpers.ts" description="Riscrittura completa del file weatherHelpers pulito e professionale">
-"use client";
-
-export interface WindLevel {
-  alt: number;
-  speed: number;
-  dir: number;
-  dirName: string;
-}
-
-export function getWindDirection(deg: number): string {
-  if (deg == null) return "--";
-  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-  return dirs[Math.round(deg / 45) % 8];
-}
-
-export function getWindArrow(deg: number): string {
-  if (deg == null) return "→";
-  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
   return arrows[Math.round(deg / 45) % 8];
 }
 
