@@ -1,5 +1,3 @@
-"use client";
-
 export interface HourData {
   time: Date;
   temperature: number;
@@ -56,11 +54,9 @@ export interface DailyData {
   windDirDominant: number;
   shortwaveRadiationSum: number;
   uvIndexMax: number;
-  // Campi arricchiti
   windSpeed: number;
   cloudCover: number;
   weatherDescription: string;
-  // Campi arricchiti per le card (calcolati dal hook)
   freezingLevelMin?: number;
   freezingLevelMax?: number;
   humidityMin?: number;

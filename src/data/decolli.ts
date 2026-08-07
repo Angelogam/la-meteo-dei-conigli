@@ -1,7 +1,3 @@
-"use client";
-
-import type { HourData } from "@/types/meteo";
-
 export interface Decollo {
   id: string;
   name: string;
