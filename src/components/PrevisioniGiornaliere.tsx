@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Calendar, CloudRain, Wind, Thermometer, Droplets } from "lucide-react";
+import { Calendar, CloudRain, Wind, Thermometer } from "lucide-react";
 import type { DailyData, HourData } from "@/types/meteo";
 
 interface PrevisioniGiornaliereProps {
@@ -75,14 +75,11 @@ export default function PrevisioniGiornaliere({
             <button
               key={idx}
               onClick={() => onSelectDay(idx)}
-              className={`
-                text-left rounded-2xl p-4 border-2 transition-all duration-200
-                ${
-                  isSelected
-                    ? "bg-emerald-900/40 border-emerald-500 shadow-lg"
-                    : "bg-slate-800/40 border-slate-700/40 hover:bg-slate-700/40 hover:border-slate-500"
-                }
-              `}
+              className={`text-left rounded-2xl p-4 border-2 transition-all duration-200 ${
+                isSelected
+                  ? "bg-emerald-900/40 border-emerald-500 shadow-lg"
+                  : "bg-slate-800/40 border-slate-700/40 hover:bg-slate-700/40 hover:border-slate-500"
+              }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className={`text-sm font-bold ${isSelected ? "text-emerald-300" : "text-white"}`}>
@@ -106,8 +103,7 @@ export default function PrevisioniGiornaliere({
                 </span>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 text-[11px```tsx
-">
+              <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-300">
                 <span className="flex items-center gap-1 text-sky-300">
                   <Wind className="w-3 h-3 shrink-0" />
                   {Math.round(day.windSpeedMax)} km/h
