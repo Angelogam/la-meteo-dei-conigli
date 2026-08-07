@@ -39,8 +39,9 @@ function getBarColor(speed: number): string {
 }
 
 function calcolaProfilo(dayData: HourData[], siteAlt: number) {
-  const hd = dayData.find(h => h.time.getHours() === 13) ||
-    dayData.find(h => h.time.getHours() >= 11 && h.time.getHours() <= 15) ||
+  const hd =
+    dayData.find((h) => h.time.getHours() === 13) ||
+    dayData.find((h) => h.time.getHours() >= 11 && h.time.getHours() <= 15) ||
     dayData[0];
 
   if (!hd) return null;
@@ -48,7 +49,7 @@ function calcolaProfilo(dayData: HourData[], siteAlt: number) {
   const surfaceSpeed = hd.windSpeed;
   const surfaceDir = hd.windDir;
   const surfaceTemp = hd.temperature;
-  const dewPoint = hd.dewPoint ?? (surfaceTemp - 8);
+  const dewPoint = hd.dewPoint ?? surfaceTemp - 8;
 
   const gradiente = 0.98;
   const zeroTermico = Math.round(Math.max(siteAlt + 200, siteAlt + surfaceTemp * 90 + (surfaceTemp - dewPoint) * 20));
@@ -58,7 +59,7 @@ function calcolaProfilo(dayData: HourData[], siteAlt: number) {
   const start = Math.floor(siteAlt / 250) * 250;
   for (let q = start; q <= 4000; q += 250) quote.push(q);
 
-  const righe = quote.map(q => {
+  const righe = quote.map((q) => {
     const deltaAlt = q - siteAlt;
     const temp = Math.round((surfaceTemp - (deltaAlt / 100) * gradiente) * 10) / 10;
     let speed: number;
@@ -74,7 +75,7 @@ function calcolaProfilo(dayData: HourData[], siteAlt: number) {
     return { quota: q, temp, speed, dir };
   });
 
-  const maxSpeed = Math.max(...righe.map(r => r.speed), 1);
+  const maxSpeed = Math.max(...righe.map((r) => r.speed), 1);
 
   return {
     gradiente,
@@ -93,15 +94,11 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
   const data = useMemo(() => calcolaProfilo(dayData, siteAlt), [dayData, siteAlt]);
 
   if (!data || data.righe.length === 0) {
-    return (
-      <div className="text-center py-8 text-slate-500 text-sm">
-        Dati insufficienti per il profilo verticale.
-      </div>
-    );
+    return <div className="text-center py-8 text-slate-500 text-sm">Dati insufficienti per il profilo verticale.</div>;
   }
 
   const windShearDiff = data.righe.length > 0
-    ? Math.max(...data.righe.map(r => r.speed)) - data.righe[0].speed
+    ? Math.max(...data.righe.map((r) => r.speed)) - data.righe[0].speed
     : 0;
   const windShearDesc = windShearDiff < 10
     ? "debole, termiche stabili"
@@ -116,28 +113,24 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
 
   return (
     <div className="space-y-3">
-      {/* 4 card riassuntive */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <div className="bg-slate-800/60 rounded-xl p-3 text-center">
           <div className="text-[10px] text-slate-500 flex items-center justify-center gap-1">
-            <TrendingUp className="w-3 h-3 text-amber-400" />
-            Gradiente termico
+            <TrendingUp className="w-3 h-3 text-amber-400" /> Gradiente termico
           </div>
           <div className="text-base font-bold text-white">{data.gradiente}°C/100m</div>
           <div className="text-[10px] text-slate-400">Adiabatico secco (stimato)</div>
         </div>
         <div className="bg-slate-800/60 rounded-xl p-3 text-center">
           <div className="text-[10px] text-slate-500 flex items-center justify-center gap-1">
-            <Thermometer className="w-3 h-3 text-amber-400" />
-            Temp. superficie
+            <Thermometer className="w-3 h-3 text-amber-400" /> Temp. superficie
           </div>
           <div className="text-base font-bold text-amber-300">{data.surfaceTemp}°C</div>
           <div className="text-[10px] text-slate-400">Dew point {data.dewPoint}°C</div>
         </div>
         <div className="bg-slate-800/60 rounded-xl p-3 text-center">
           <div className="text-[10px] text-slate-500 flex items-center justify-center gap-1">
-            <ArrowUp className="w-3 h-3 text-cyan-400" />
-            Zero termico
+            <ArrowUp className="w-3 h-3 text-cyan-400" /> Zero termico
           </div>
           <div className="text-base font-bold text-cyan-300">{data.zeroTermico}m</div>
           <div className="text-[10px] text-slate-400">
@@ -146,17 +139,15 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
         </div>
         <div className="bg-slate-800/60 rounded-xl p-3 text-center">
           <div className="text-[10px] text-slate-500 flex items-center justify-center gap-1">
-            <Gauge className="w-3 h-3 text-purple-400" />
-            Max vento
+            <Gauge className="w-3 h-3 text-purple-400" /> Max vento
           </div>
           <div className="text-base font-bold text-purple-300">{Math.round(data.maxSpeed)} km/h</div>
           <div className="text-[10px] text-slate-400">
-            a {data.righe.reduce((best, r) => r.speed > best.speed ? r : best, data.righe[0]).quota}m
+            a {data.righe.reduce((best, r) => (r.speed > best.speed ? r : best), data.righe[0]).quota}m
           </div>
         </div>
       </div>
 
-      {/* Riepilogo struttura verticale */}
       <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 space-y-2 text-xs">
         <div>
           <span className="text-slate-500">Vento al suolo</span>
@@ -180,7 +171,6 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
         </div>
       </div>
 
-      {/* Tabella profilo — SENZA colonna gradi, solo freccia + punto cardinale */}
       <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-700/30">
           <Wind className="w-4 h-4 text-cyan-400" />
@@ -202,19 +192,26 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
                 const isZero = Math.abs(r.quota - data.zeroTermico) < 200;
                 const isDecollo = Math.abs(r.quota - siteAlt) < 100;
                 return (
-                  <tr key={r.quota} className={`border-b border-slate-700/20 transition-colors ${isZero ? "bg-cyan-900/20" : isDecollo ? "bg-emerald-900/20" : "hover:bg-slate-700/30"}`}>
+                  <tr
+                    key={r.quota}
+                    className={`border-b border-slate-700/20 transition-colors ${isZero ? "bg-cyan-900/20" : isDecollo ? "bg-emerald-900/20" : "hover:bg-slate-700/30"}`}
+                  >
                     <td className="p-2 font-mono font-bold text-white whitespace-nowrap">
                       {r.quota}m
                       {isDecollo && <span className="text-[8px] text-emerald-400 ml-1">🪂</span>}
                       {isZero && <span className="text-[8px] text-cyan-400 ml-1">❄️</span>}
                     </td>
                     <td className={`p-2 font-mono whitespace-nowrap ${r.temp > 15 ? "text-amber-300" : r.temp > 5 ? "text-yellow-300" : "text-blue-300"}`}>
-                      {r.temp > 0 ? "+" : ""}{r.temp}°
+                      {r.temp > 0 ? "+" : ""}
+                      {r.temp}°
                     </td>
                     <td className="p-2">
                       <div className="flex items-center gap-2">
                         <div className="w-20 h-2 bg-slate-700/60 rounded-full overflow-hidden shrink-0">
-                          <div className={`h-full rounded-full ${getBarColor(r.speed)}`} style={{ width: `${Math.max(4, (r.speed / data.maxSpeed) * 100)}%` }} />
+                          <div
+                            className={`h-full rounded-full ${getBarColor(r.speed)}`}
+                            style={{ width: `${Math.max(4, (r.speed / data.maxSpeed) * 100)}%` }}
+                          />
                         </div>
                         <span className={`font-mono font-bold ${getSpeedColor(r.speed)}`}>
                           {Math.round(r.speed)} km/h
@@ -232,7 +229,6 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
         </div>
       </div>
 
-      {/* Legenda */}
       <div className="flex flex-wrap gap-2 text-[10px] text-slate-400">
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-emerald-400" /> ≤8</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-lime-400" /> 9-15</span>

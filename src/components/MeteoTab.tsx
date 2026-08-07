@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { CloudSun, MapPin, Calendar } from "lucide-react";
 
 interface MeteoTabProps {
@@ -32,7 +32,7 @@ export default function MeteoTab({
   liftedIndex,
   cin,
 }: MeteoTabProps) {
-  const dataGiorno = React.useMemo(() => {
+  const dataGiorno = useMemo(() => {
     if (dayData && dayData.length > 0) {
       return formatDateShort(dayData[0].time);
     }
@@ -58,7 +58,6 @@ export default function MeteoTab({
   const precipitation = currentData.precipitation;
   const dewPoint = currentData.dewPoint ?? (temp - (100 - (humidity ?? 50)) / 5);
   const weatherCode = currentData.weatherCode;
-  const uvIndex = currentData.uvIndex;
 
   const spread = temp - dewPoint;
   const cloudBase = Math.max(200, Math.min(3000, Math.round(spread * 125)));
@@ -69,7 +68,6 @@ export default function MeteoTab({
 
   return (
     <div className="space-y-4">
-      {/* Intestazione con nome decollo e data */}
       <div className="bg-slate-800/60 border border-emerald-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
         <MapPin className="w-5 h-5 text-emerald-400 shrink-0" />
         <div>
@@ -83,7 +81,6 @@ export default function MeteoTab({
         </div>
       </div>
 
-      {/* Griglia dati meteo */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
         <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 text-center">
           <div className="text-[10px] text-slate-500">Temperatura</div>
@@ -123,7 +120,6 @@ export default function MeteoTab({
         </div>
       </div>
 
-      {/* Indici stabilità */}
       {(cape != null || liftedIndex != null || cin != null) && (
         <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3">
           <div className="text-xs font-bold text-slate-300 mb-2">Indici di stabilità</div>

@@ -46,12 +46,12 @@ export default function Index() {
   const stabilityIndex = getStabilityIndex(
     currentData?.temperature ?? 20,
     currentData?.humidity ?? 50,
-    currentData?.cloudCover ?? 30,
+    currentData?.cloudCover ?? 30
   );
 
   const decolliList = useMemo(
     () => DECOLLI.map((d) => ({ nome: d.name, valle: d.valley, quota: d.altitude, direzione: d.exposure })),
-    [],
+    []
   );
 
   const nomeToId = useMemo(() => {
