@@ -76,11 +76,19 @@ export default function WeatherDashboard({
     const best = termichePerOra.reduce((best, t) => t.rateo > best.rateo ? t : best, termichePerOra[0]);
 
     let label = "";
-    if (score >= 8) label = "ECCELLENTE";
-    else if (score >= 6) label = "BUONA";
-    else if (score >= 4) label = "DISCRETA";
-    else if (score >= 2) label = "MEDIOCRE";
-    else label = "SCARSA";
+    if (hasThunder) {
+      label = "Rischio temporali ⚡";
+    } else if (score >= 8) {
+      label = "ECCELLENTE";
+    } else if (score >= 6) {
+      label = "BUONA";
+    } else if (score >= 4) {
+      label = "DISCRETA";
+    } else if (score >= 2) {
+      label = "MEDIOCRE";
+    } else {
+      label = "SCARSA";
+    }
 
     let thermalLabel = "";
     if (mediaRateo >= 3) thermalLabel = "Forte 🔥";
