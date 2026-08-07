@@ -13,31 +13,18 @@ import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
-import MeteoTesterPanel from "@/components/MeteoTesterPanel";
-import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
-import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { DECOLLI } from "@/data/decolli";
 import { getStabilityIndex } from "@/utils/weatherHelpers";
-import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
-import { Activity } from "lucide-react";
 
 export default function Index() {
-  useEffect(() => { avviaVerificaContinua(60000); }, []);
-
   const {
-    selectedId, setSelectedId, loading: weatherLoading, updating,
+    selectedId, setSelectedId, loading, updating,
     selectedDay, setSelectedDay, selectedHour, setSelectedHour,
     activeTab, setActiveTab, lastUpdate, countdown, site, dayData,
     currentData, thermalDelta, enrichedDaily, dateLabels, loadWeather,
     allHourlyData, activeModel, currentCape,
   } = useWeatherData();
-
-  const { tempoTrascorso } = useMeteoCompleto(
-    site?.lat ?? DECOLLI[0].lat,
-    site?.lon ?? DECOLLI[0].lon,
-    site?.altitude ?? DECOLLI[0].altitude,
-  );
 
   const stabilityIndex = getStabilityIndex(
     currentData?.temperature ?? 20,
@@ -56,7 +43,7 @@ export default function Index() {
     return m;
   }, []);
 
-  if (weatherLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col">
         <Header />
@@ -80,46 +67,107 @@ export default function Index() {
         <div className="flex flex-col lg:flex-row gap-6">
           <aside className="w-full lg:w-80 shrink-0 space-y-4">
             <UpdateTimer lastUpdate={lastUpdate} countdown={countdown} updating={updating} onRefresh={loadWeather} />
-            <div className="bg-slate-800/50 border border-emerald-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
-              <span className="text-xs text-emerald-300">{site?.name ?? "Decollo"} — Dati reali Open-Meteo</span>
-              <span className="text-[10px] text-slate-500 ml-auto">{tempoTrascorso}s</span>
-            </div>
             <DecolliCard
               decolli={decolliList}
               selectedId={selectedId}
-              onSelect={(item) => { const id = nomeToId[item.nome]; if (id) { setSelectedId(id); setSelectedHour(new Date().getHours()); } }}
+              onSelect={(item) => {
+                const id = nomeToId[item.nome];
+                if (id) {
+                  setSelectedId(id);
+                  setSelectedHour(new Date().getHours());
+                }
+              }}
               weatherMap={allHourlyData}
             />
           </aside>
+
           <div className="flex-1 min-w-0 space-y-6">
             {hasData && (
               <>
-                <SiteHeader name={site!.name} exposure={site!.exposure} valley={site!.valley} alt={site!.altitude} currentData={currentData} />
-                <PrevisioniGiornaliere enrichedDaily={enrichedDaily} dateLabels={dateLabels} currentData={currentData} dayData={dayData} site={{ name: site!.name, altitude: site!.altitude, exposure: site!.exposure }} selectedDay={selectedDay} onSelectDay={setSelectedDay} nomeDecollo={site!.name} />
-                <WeatherDashboard dayData={dayData} altitude={site!.altitude} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabels[selectedDay] ?? ""} />
+                <SiteHeader
+                  name={site!.name}
+                  exposure={site!.exposure}
+                  valley={site!.valley}
+                  alt={site!.altitude}
+                  currentData={currentData}
+                />
+
+                <PrevisioniGiornaliere
+                  enrichedDaily={enrichedDaily}
+                  dateLabels={dateLabels}
+                  currentData={currentData}
+                  dayData={dayData}
+                  site={{ name: site!.name, altitude: site!.altitude, exposure: site!.exposure }}
+                  selectedDay={selectedDay}
+                  onSelectDay={setSelectedDay}
+                  nomeDecollo={site!.name}
+                />
+
+                <WeatherDashboard
+                  dayData={dayData}
+                  altitude={site!.altitude}
+                  selectedHour={selectedHour}
+                  onHourSelect={setSelectedHour}
+                  dayLabel={dateLabels[selectedDay] ?? ""}
+                />
+
                 <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
                 {activeTab === "meteo" && (
-                  <MeteoTab currentData={currentData} dayData={dayData} site={{ alt: site!.altitude, name: site!.name }} thermalDelta={thermalDelta} stabilityIndex={stabilityIndex} modelName={activeModel} cape={currentCape?.cape} liftedIndex={currentCape?.liftedIndex} cin={currentCape?.cin} />
+                  <MeteoTab
+                    currentData={currentData}
+                    dayData={dayData}
+                    site={{ alt: site!.altitude, name: site!.name }}
+                    thermalDelta={thermalDelta}
+                    stabilityIndex={stabilityIndex}
+                    modelName={activeModel}
+                    cape={currentCape?.cape ?? null}
+                    liftedIndex={currentCape?.liftedIndex ?? null}
+                    cin={currentCape?.cin ?? null}
+                  />
                 )}
 
-                {activeTab === "venti" && <VentiInterpolatiTab lat={site!.lat} lon={site!.lon} quotaDecollo={site!.altitude} selectedDay={selectedDay} oraCorrente={selectedHour} onOraChange={setSelectedHour} siteName={site!.name} />}
-                {activeTab === "termiche" && <TermicheTab currentData={currentData} dayData={dayData} site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name }} />}
-                {activeTab === "analisi" && <AnalisiMeteo currentData={currentData} dayData={dayData} site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name, exposure: site!.exposure }} cape={currentCape?.cape} liftedIndex={currentCape?.liftedIndex} cin={currentCape?.cin} />}
+                {activeTab === "venti" && (
+                  <VentiInterpolatiTab
+                    lat={site!.lat}
+                    lon={site!.lon}
+                    quotaDecollo={site!.altitude}
+                    selectedDay={selectedDay}
+                    oraCorrente={selectedHour}
+                    onOraChange={setSelectedHour}
+                    siteName={site!.name}
+                  />
+                )}
+
+                {activeTab === "termiche" && (
+                  <TermicheTab
+                    currentData={currentData}
+                    dayData={dayData}
+                    site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name }}
+                  />
+                )}
+
+                {activeTab === "analisi" && (
+                  <AnalisiMeteo
+                    currentData={currentData}
+                    dayData={dayData}
+                    site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name, exposure: site!.exposure }}
+                    cape={currentCape?.cape ?? null}
+                    liftedIndex={currentCape?.liftedIndex ?? null}
+                    cin={currentCape?.cin ?? null}
+                  />
+                )}
               </>
             )}
             {!hasData && (
               <div className="text-center py-12 text-slate-400">
-                <p>Nessun dato meteo disponibile per {site?.name ?? "questo decollo"}. Verifica la connessione o riprova.</p>
+                <p>Nessun dato meteo disponibile per {site?.name ?? "questo decollo"}.</p>
               </div>
             )}
           </div>
         </div>
       </main>
       <Footer />
-      <MeteoTesterPanel />
-      <DiagnosticaPanel />
     </div>
   );
 }

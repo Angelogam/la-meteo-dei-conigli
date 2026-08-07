@@ -38,64 +38,64 @@ function getBarColor(speed: number): string {
   return "bg-red-400";
 }
 
+// Utility per test del componente
+export function testUtils() {
+  return { getWindArrow, getDirAbbrev, getSpeedColor, getBarColor };
+}
+
+function calcolaProfilo(dayData: HourData[], siteAlt: number) {
+  const hd = dayData.find(h => h.time.getHours() === 13) ||
+    dayData.find(h => h.time.getHours() >= 11 && h.time.getHours() <= 15) ||
+    dayData[0];
+
+  if (!hd) return null;
+
+  const surfaceSpeed = hd.windSpeed;
+  const surfaceDir = hd.windDir;
+  const surfaceTemp = hd.temperature;
+  const dewPoint = hd.dewPoint ?? (surfaceTemp - 8);
+
+  const gradiente = 0.98;
+  const zeroTermico = Math.round(Math.max(siteAlt + 200, siteAlt + surfaceTemp * 90 + (surfaceTemp - dewPoint) * 20));
+  const freezingLevel = hd.freezingLevel ?? zeroTermico;
+
+  const quote: number[] = [];
+  const start = Math.floor(siteAlt / 250) * 250;
+  for (let q = start; q <= 4000; q += 250) quote.push(q);
+
+  const righe = quote.map(q => {
+    const deltaAlt = q - siteAlt;
+    const temp = Math.round((surfaceTemp - (deltaAlt / 100) * gradiente) * 10) / 10;
+    let speed: number;
+    if (q <= siteAlt + 100) {
+      speed = Math.round(surfaceSpeed);
+    } else {
+      const h = Math.max(10, q);
+      speed = Math.round(Math.min(surfaceSpeed * Math.pow(h / 10, 0.143), surfaceSpeed * 1.5) * 10) / 10;
+    }
+    speed = Math.max(0.5, speed);
+    const rotazione = Math.round((q - siteAlt) / 250) * 2;
+    const dir = Math.round(((surfaceDir + rotazione) % 360 + 360) % 360);
+    return { quota: q, temp, speed, dir };
+  });
+
+  const maxSpeed = Math.max(...righe.map(r => r.speed), 1);
+
+  return {
+    gradiente,
+    zeroTermico,
+    freezingLevel,
+    righe,
+    maxSpeed,
+    surfaceTemp: Math.round(surfaceTemp),
+    dewPoint: Math.round(dewPoint),
+    surfaceSpeed: Math.round(surfaceSpeed),
+    surfaceDir: Math.round(surfaceDir),
+  };
+}
+
 export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: ProfiloVentoVerticaleProps) {
-  const data = useMemo(() => {
-    if (!dayData || dayData.length === 0) return null;
-
-    const hd = dayData.find(h => h.time.getHours() === 13) ||
-      dayData.find(h => h.time.getHours() >= 11 && h.time.getHours() <= 15) ||
-      dayData[0];
-
-    if (!hd) return null;
-
-    const surfaceSpeed = hd.windSpeed;
-    const surfaceDir = hd.windDir;
-    const surfaceTemp = hd.temperature;
-    const dewPoint = hd.dewPoint ?? (surfaceTemp - 8);
-
-    const gradiente = 0.98;
-    const gradoGradiente = "Adiabatico secco (stimato)";
-    const gradienteLabel = "Stabile";
-
-    const zeroTermico = Math.round(Math.max(siteAlt + 200, siteAlt + surfaceTemp * 90 + (surfaceTemp - dewPoint) * 20));
-    const freezingLevel = hd.freezingLevel ?? zeroTermico;
-
-    const quote: number[] = [];
-    const start = Math.floor(siteAlt / 250) * 250;
-    for (let q = start; q <= 4000; q += 250) quote.push(q);
-
-    const righe = quote.map(q => {
-      const deltaAlt = q - siteAlt;
-      const temp = Math.round((surfaceTemp - (deltaAlt / 100) * gradiente) * 10) / 10;
-      let speed: number;
-      if (q <= siteAlt + 100) {
-        speed = Math.round(surfaceSpeed);
-      } else {
-        const h = Math.max(10, q);
-        speed = Math.round(Math.min(surfaceSpeed * Math.pow(h / 10, 0.143), surfaceSpeed * 1.5) * 10) / 10;
-      }
-      speed = Math.max(0.5, speed);
-      const rotazione = Math.round((q - siteAlt) / 250) * 2;
-      const dir = Math.round(((surfaceDir + rotazione) % 360 + 360) % 360);
-      return { quota: q, temp, speed, dir };
-    });
-
-    const maxSpeed = Math.max(...righe.map(r => r.speed), 1);
-
-    return {
-      gradiente,
-      gradienteLabel,
-      gradoGradiente,
-      zeroTermico,
-      freezingLevel,
-      righe,
-      maxSpeed,
-      surfaceTemp: Math.round(surfaceTemp),
-      dewPoint: Math.round(dewPoint),
-      surfaceSpeed: Math.round(surfaceSpeed),
-      surfaceDir: Math.round(surfaceDir),
-    };
-  }, [dayData, siteAlt]);
+  const data = useMemo(() => calcolaProfilo(dayData, siteAlt), [dayData, siteAlt]);
 
   if (!data || data.righe.length === 0) {
     return (
@@ -104,11 +104,6 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
       </div>
     );
   }
-
-  // Calcola descrizioni per coerenza visiva
-  const gradienteDesc = data.gradienteLabel === "Stabile"
-    ? "Debole: vento omogeneo fino a 3000m, termiche stabili"
-    : "Vento cresce gradualmente in quota";
 
   const windShearDiff = data.righe.length > 0
     ? Math.max(...data.righe.map(r => r.speed)) - data.righe[0].speed
@@ -133,7 +128,7 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
             Gradiente termico
           </div>
           <div className="text-base font-bold text-white">{data.gradiente}°C/100m</div>
-          <div className="text-[10px] text-slate-400">{data.gradienteLabel} ({data.gradoGradiente})</div>
+          <div className="text-[10px] text-slate-400">Adiabatico secco (stimato)</div>
         </div>
         <div className="bg-slate-800/60 rounded-xl p-3 text-center">
           <div className="text-[10px] text-slate-500 flex items-center justify-center gap-1">
@@ -165,7 +160,7 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
         </div>
       </div>
 
-      {/* Riepilogo struttura verticale — coerenza colore con AnalisiApprofonditaCard */}
+      {/* Riepilogo struttura verticale */}
       <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 space-y-2 text-xs">
         <div>
           <span className="text-slate-500">Vento al suolo</span>
@@ -175,7 +170,9 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
         </div>
         <div>
           <span className="text-slate-500">Gradiente verticale</span>
-          <div className="text-white font-bold mt-0.5 capitalize">{gradienteDesc}</div>
+          <div className="text-white font-bold mt-0.5 capitalize">
+            {windShearDiff < 10 ? "Debole: vento omogeneo fino a 3000m, termiche stabili" : "Vento cresce gradualmente in quota"}
+          </div>
         </div>
         <div>
           <span className="text-slate-500">Wind shear verticale</span>
@@ -187,6 +184,7 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
         </div>
       </div>
 
+      {/* Tabella profilo — SENZA colonna gradi */}
       <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-700/30">
           <Wind className="w-4 h-4 text-cyan-400" />
@@ -201,7 +199,6 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
                 <th className="p-2 text-left w-20">Temp</th>
                 <th className="p-2 text-left">Vento</th>
                 <th className="p-2 text-left w-16">Dir</th>
-                <th className="p-2 text-left w-16">°</th>
               </tr>
             </thead>
             <tbody>
@@ -231,7 +228,6 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName }: Pr
                     <td className="p-2 font-mono text-sky-300 whitespace-nowrap">
                       {getWindArrow(r.dir)} {getDirAbbrev(r.dir)}
                     </td>
-                    <td className="p-2 text-slate-500 font-mono whitespace-nowrap">{Math.round(r.dir)}°</td>
                   </tr>
                 );
               })}
