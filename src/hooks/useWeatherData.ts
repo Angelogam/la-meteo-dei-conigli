@@ -90,6 +90,15 @@ export function useWeatherData() {
     const temps = dayHours.map(h => h.temperature).filter(t => t != null);
     const winds = dayHours.map(h => h.windSpeed).filter(w => w != null);
     const clouds = dayHours.map(h => h.cloudCover).filter(c => c != null);
+    const freezings = dayHours.map(h => h.freezingLevel).filter(f => f != null && f > 0);
+    const hums = dayHours.map(h => h.humidity).filter(h => h != null);
+    const gusts = dayHours.map(h => h.windGusts).filter(g => g != null);
+    const rainHours = dayHours
+      .filter(h => (h.precipitation ?? 0) > 0.1)
+      .map(h => ({ hour: new Date(h.time).getHours(), precip: h.precipitation }));
+    const thunderHours = dayHours
+      .filter(h => h.weatherCode >= 95)
+      .map(h => new Date(h.time).getHours());
 
     return {
       ...d,
@@ -99,6 +108,13 @@ export function useWeatherData() {
       windSpeed: Math.round(winds.reduce((s, w) => s + w, 0) / winds.length),
       cloudCover: Math.round(clouds.reduce((s, c) => s + c, 0) / clouds.length),
       weatherDescription: getWeatherDescription(d.weatherCode),
+      freezingLevelMin: freezings.length ? Math.round(Math.min(...freezings)) : undefined,
+      freezingLevelMax: freezings.length ? Math.round(Math.max(...freezings)) : undefined,
+      humidityMin: hums.length ? Math.round(Math.min(...hums)) : undefined,
+      humidityMax: hums.length ? Math.round(Math.max(...hums)) : undefined,
+      gustMaxHourly: gusts.length ? Math.round(Math.max(...gusts)) : undefined,
+      rainHours,
+      thunderHours,
     };
   });
 

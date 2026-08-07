@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Calendar, CloudRain, Wind, Thermometer } from "lucide-react";
+import { Calendar, CloudRain, Wind, Thermometer, Mountain, Droplets, Gauge, AlertTriangle } from "lucide-react";
 import type { DailyData, HourData } from "@/types/meteo";
 
 interface PrevisioniGiornaliereProps {
@@ -41,12 +41,17 @@ function getWeatherLabel(code: number): string {
   return "Sereno";
 }
 
+function formatHours(hours: number[]): string {
+  return hours.map(h => `${String(h).padStart(2, "0")}:00`).join(" · ");
+}
+
 export default function PrevisioniGiornaliere({
   enrichedDaily,
   dateLabels,
   selectedDay,
   onSelectDay,
   nomeDecollo,
+  site,
 }: PrevisioniGiornaliereProps) {
   if (!enrichedDaily || enrichedDaily.length === 0) {
     return (
@@ -64,6 +69,11 @@ export default function PrevisioniGiornaliere({
         <h3 className="text-base font-bold text-white">
           Previsioni · {nomeDecollo}
         </h3>
+        {site && (
+          <span className="text-[10px] text-slate-500 ml-auto">
+            Decollo {site.altitude} m · {site.exposure}
+          </span>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -108,11 +118,77 @@ export default function PrevisioniGiornaliere({
                   <Wind className="w-3 h-3 shrink-0" />
                   {Math.round(day.windSpeedMax)} km/h
                 </span>
+                {day.gustMaxHourly != null && day.gustMaxHourly > 0 && (
+                  <span className="flex items-center gap-1 text-red-300">
+                    <Gauge className="w-3 h-3 shrink-0" />
+                    raffiche {day.gustMaxHourly} km/h
+                  </span>
+                )}
                 <span className="flex items-center gap-1 text-blue-300">
                   <CloudRain className="w-3 h-3 shrink-0" />
                   {day.precipitationSum > 0 ? `${day.precipitationSum.toFixed(1)} mm` : "0 mm"}
                 </span>
               </div>
+
+              {/* Zero termico */}
+              {day.freezingLevelMax != null && day.freezingLevelMax > 0 && (
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-300">
+                  <span className="flex items-center gap-1 text-cyan-300">
+                    <Mountain className="w-3 h-3 shrink-0" />
+                    Zero termico
+                    <strong className="text-white">
+                      {day.freezingLevelMin === day.freezingLevelMax
+                        ? `${day.freezingLevelMax} m`
+                        : `${day.freezingLevelMin}–${day.freezingLevelMax} m`}
+                    </strong>
+                  </span>
+                  {site && (
+                    <span className="text-slate-500">
+                      {day.freezingLevelMax - site.altitude >= 0 ? "+" : ""}
+                      {day.freezingLevelMax - site.altitude} m dal decollo
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Probabilità precipitazioni */}
+              {(day.precipitationProbabilityMax ?? 0) > 0 && (
+                <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-blue-300">
+                  <CloudRain className="w-3 h-3 shrink-0" />
+                  <span>
+                    Prob. pioggia{" "}
+                    <strong className="text-sky-300">{day.precipitationProbabilityMax}%</strong>
+                  </span>
+                </div>
+              )}
+
+              {/* Ore di precipitazione */}
+              {day.rainHours && day.rainHours.length > 0 && (
+                <div className="mt-1.5 flex items-start gap-1.5 text-[11px] text-slate-300">
+                  <Droplets className="w-3 h-3 text-sky-300 shrink-0 mt-0.5" />
+                  <span>
+                    Pioggia{" "}
+                    <strong className="text-sky-300">
+                      {formatHours(day.rainHours.map(r => r.hour))}
+                    </strong>
+                    {day.rainHours.length === 1 ? " — " : " · "}
+                    {day.rainHours[0].precip.toFixed(1)} mm/h
+                  </span>
+                </div>
+              )}
+
+              {/* Temporali */}
+              {day.thunderHours && day.thunderHours.length > 0 && (
+                <div className="mt-1.5 flex items-start gap-1.5 text-[11px] text-orange-300">
+                  <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+                  <span>
+                    Temporali{" "}
+                    <strong className="text-orange-200">
+                      {formatHours(day.thunderHours)}
+                    </strong>
+                  </span>
+                </div>
+              )}
 
               {isSelected && (
                 <div className="mt-2 pt-2 border-t border-emerald-500/30 text-[10px] text-emerald-300 font-semibold">

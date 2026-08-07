@@ -60,4 +60,12 @@ export interface DailyData {
   windSpeed: number;
   cloudCover: number;
   weatherDescription: string;
+  // Campi arricchiti per le card (calcolati dal hook)
+  freezingLevelMin?: number;
+  freezingLevelMax?: number;
+  humidityMin?: number;
+  humidityMax?: number;
+  rainHours?: { hour: number; precip: number }[];
+  thunderHours?: number[];
+  gustMaxHourly?: number;
 }
