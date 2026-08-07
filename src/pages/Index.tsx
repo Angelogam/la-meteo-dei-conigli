@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
@@ -19,11 +19,28 @@ import { getStabilityIndex } from "@/utils/weatherHelpers";
 
 export default function Index() {
   const {
-    selectedId, setSelectedId, loading, updating,
-    selectedDay, setSelectedDay, selectedHour, setSelectedHour,
-    activeTab, setActiveTab, lastUpdate, countdown, site, dayData,
-    currentData, thermalDelta, enrichedDaily, dateLabels, loadWeather,
-    allHourlyData, activeModel, currentCape,
+    selectedId,
+    setSelectedId,
+    loading,
+    updating,
+    selectedDay,
+    setSelectedDay,
+    selectedHour,
+    setSelectedHour,
+    activeTab,
+    setActiveTab,
+    lastUpdate,
+    countdown,
+    site,
+    dayData,
+    currentData,
+    thermalDelta,
+    enrichedDaily,
+    dateLabels,
+    loadWeather,
+    allHourlyData,
+    activeModel,
+    currentCape,
   } = useWeatherData();
 
   const stabilityIndex = getStabilityIndex(
