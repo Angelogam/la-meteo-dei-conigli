@@ -95,7 +95,7 @@ export default function PrevisioniGiornaliere({
                 <span className={`text-sm font-bold ${isSelected ? "text-emerald-300" : "text-white"}`}>
                   {label}
                 </span>
-                <span className="text-2xl">{getWeatherEmoji(day.weatherCode)}</span>
+                <span className="text-5xl leading-none">{getWeatherEmoji(day.weatherCode)}</span>
               </div>
 
               <div className="text-[11px] text-slate-400 mb-2">

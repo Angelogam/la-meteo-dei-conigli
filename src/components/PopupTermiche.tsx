@@ -132,7 +132,7 @@ export default function PopupTermiche({ siteName, siteAltitude, hourlyData, onCl
                       }`}>
                         {String(h.time.getHours()).padStart(2, "0")}:00
                       </span>
-                      <span className="text-lg">{getWeatherEmoji(h.weatherCode)}</span>
+                      <span className="text-3xl">{getWeatherEmoji(h.weatherCode)}</span>
                     </div>
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-1 text-[10px] text-slate-300">

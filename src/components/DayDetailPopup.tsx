@@ -111,7 +111,7 @@ const DayDetailPopup = ({ dayData, daily, dayLabel, altitude, onClose, onHourSel
                     {h.time.getHours().toString().padStart(2, "0")}:00
                   </span>
                 </div>
-                <span className="text-lg shrink-0">{getWeatherEmoji(h.weatherCode)}</span>
+                <span className="text-3xl shrink-0">{getWeatherEmoji(h.weatherCode)}</span>
                 <div className="flex-1 grid grid-cols-3 gap-2 text-[11px] text-slate-300">
                   <span>{Math.round(h.temperature)}°C</span>
                   <span>{Math.round(h.windSpeed)} km/h</span>

@@ -66,7 +66,7 @@ const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour, onHourSelect 
                 </div>
 
                 {/* Icona meteo */}
-                <span className="text-lg shrink-0">{getWeatherEmoji(h.weatherCode)}</span>
+                <span className="text-3xl shrink-0">{getWeatherEmoji(h.weatherCode)}</span>
 
                 {/* Dati principali */}
                 <div className="flex items-center gap-2 text-[11px] text-slate-300 flex-1 min-w-0">
