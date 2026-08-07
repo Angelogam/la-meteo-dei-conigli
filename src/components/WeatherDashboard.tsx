@@ -41,8 +41,12 @@ export default function WeatherDashboard({
     });
 
     if (oreVolo.length === 0) return null;
-
-    const termichePerOra = oreVolo.map(h => ({
+    
+        // Check for rain or thunder in the day (9-19) to adjust score
+        const hasRain = oreVolo.some(h => (h.precipitation ?? 0) > 0.1); // > 0.1 mm/h
+        const hasThunder = oreVolo.some(h => h.weatherCode >= 95);
+    
+        const termichePerOra = oreVolo.map(h => ({
       ...calcolaTermiche(h, altitude),
       ora: h.time.getHours(),
     }));
@@ -63,6 +67,11 @@ export default function WeatherDashboard({
     else if (mediaRateo >= 0.2) score = 2;
     else if (mediaRateo > 0) score = 1;
     else score = 0;
+
+    // If there's rain or thunder, cap the score to avoid "Eccellente" when weather is poor
+    if (hasRain || hasThunder) {
+      if (score > 6) score = 6; // Max BUONA if rain/thunder
+    }
 
     const best = termichePerOra.reduce((best, t) => t.rateo > best.rateo ? t : best, termichePerOra[0]);
 
