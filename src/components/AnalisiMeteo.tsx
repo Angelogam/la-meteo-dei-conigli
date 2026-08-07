@@ -4,11 +4,11 @@ import React, { useMemo } from "react";
 import {
   Sun, Thermometer, Wind, Cloud, CloudRain, CloudLightning,
   TrendingUp, ShieldCheck, AlertTriangle, CheckCircle, Activity,
-  MapPin, Calendar, Sparkles, Zap, Layers, Clock, Eye, Droplets, Gauge
+  MapPin, Calendar, Sparkles, Zap, Layers, Clock, Eye, Droplets, Gauge,
 } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 import { calcolaAnalisiApprofondita } from "@/utils/analisiApprofondita";
-import AnalisiApprofonditaCard from "./AnalisiApprofonditaCard";
+import ProfiloVentoVerticale from "./ProfiloVentoVerticale";
 
 interface AnalisiMeteoProps {
   currentData: HourData | null;
@@ -193,9 +193,44 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
         </div>
       </div>
 
-      {/* ANALISI APPROFONDITA — sempre visibile, con sezioni pieghevoli e profilo vento verticale */}
+      {/* ANALISI APPROFONDITA — sezioni calcolate */}
       {analisiApprofondita && (
-        <AnalisiApprofonditaCard analisi={analisiApprofondita} siteName={site?.name || "Decollo"} dayData={dayData} />
+        <div className="space-y-4">
+          {/* Dati calcolati */}
+          <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Activity className="w-5 h-5 text-purple-400 shrink-0" />
+              <h3 className="text-base font-bold text-white">Analisi approfondita · {site?.name}</h3>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-slate-900/60 rounded-xl p-3 text-center">
+                <div className="text-[10px] text-slate-500">Top termiche</div>
+                <div className="text-lg font-bold text-orange-300">{analisiApprofondita.topTermiche}m</div>
+              </div>
+              <div className="bg-slate-900/60 rounded-xl p-3 text-center">
+                <div className="text-[10px] text-slate-500">Rateo medio</div>
+                <div className="text-lg font-bold text-amber-300">{analisiApprofondita.rateoMedio} m/s</div>
+              </div>
+              <div className="bg-slate-900/60 rounded-xl p-3 text-center">
+                <div className="text-[10px] text-slate-500">Thermal index</div>
+                <div className="text-lg font-bold text-cyan-300">{analisiApprofondita.thermalIndex}</div>
+              </div>
+              <div className="bg-slate-900/60 rounded-xl p-3 text-center">
+                <div className="text-[10px] text-slate-500">Punteggio</div>
+                <div className="text-lg font-bold" style={{ color: analisiApprofondita.punteggio >= 60 ? "#34d399" : analisiApprofondita.punteggio >= 40 ? "#fbbf24" : "#f87171" }}>
+                  {analisiApprofondita.punteggio}/100
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Profilo vento verticale */}
+          <ProfiloVentoVerticale
+            dayData={dayData}
+            siteAlt={site?.alt ?? 0}
+            siteName={site?.name}
+          />
+        </div>
       )}
 
       {/* Situazione generale (riepilogo rapido) */}
@@ -209,6 +244,7 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
           <p><span className="text-emerald-400 mr-2">&bull;</span> Umidità: {analisi.umiditaMedia}% — {getUmiditaDescrizione(analisi.umiditaMedia)}.</p>
           <p><span className="text-emerald-400 mr-2">&bull;</span> Vento: {analisi.ventoMedio} km/h da {analisi.ventoDirNome} ({analisi.ventoDirMedia}°).{analisi.ventoGustsMax > analisi.ventoMedio * 1.5 ? ` Raffiche ${analisi.ventoGustsMax} km/h.` : ""}</p>
           <p><span className="text-emerald-400 mr-2">&bull;</span> Cielo: {getCloudDescription(analisi.nuvoleMedia)} ({analisi.nuvoleMedia}%).{analisi.pioggiaTot === 0 ? " Nessuna pioggia." : ` Pioggia: ${analisi.pioggiaTot.toFixed(1)} mm.`}</p>
+          <p><span className="text-emerald-400 mr-2">&bull;</span> Pressione: {analisi.pressioneMedia} hPa — {getPressioneDescrizione(analisi.pressioneMedia)}.</p>
         </div>
       </div>
 
