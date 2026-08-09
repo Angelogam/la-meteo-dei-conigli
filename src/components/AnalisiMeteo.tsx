@@ -66,8 +66,9 @@ export default function AnalisiMeteo() {
   const {
     selectedId,
     site,
-    dayData,          // <-- this is the full daily data (not filtered)
-    selectedDay,      // <-- day we want to view (0 = today, 1 = tomorrow, …)
+    selectedDay,
+    dayData,          // full daily data for the selected day
+    currentData,      // current hour data
     lastUpdate,
   } = useWeatherData();
 
@@ -226,7 +227,7 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
       cloudBase - currentSite.altitude + 200
     )} metri sopra il suolo – non aspettarti di volare a 4000 metri con questa configurazione, perché l'umidità condensa presto.`;
     const zeroTermicoDesc = `Lo zero termico si trova a ${zeroTermico} m, valore ${zeroTermico > 4000 ? "alto" : "moderato"} che indica aria calda in quota, ma il forte contrasto tra bassi strati caldi e medi strati più freschi genera proprio l'instabilità che porta ai temporali.`;
-    const cinDesc = `Il CIN (energia di inibizione) è di ${CIN} J/kg, dal grafico sembra ${CIN <= 50 ? "basso o assente" : "moderato"}; quindi le termiche partiranno senza ostacoli già al mattina.`;
+    const cinDesc = `Il CIN (energia di inibizione) è di ${CIN} J/kg, dal grafico sembra ${CIN <= 50 ? "basso o assente" : "moderato"}; quindi le termiche partiranno senza ostacoli già al mattino.`;
     return `${liDesc} ${tempInnescoDesc} ${baseNubiDesc} ${zeroTermicoDesc} ${cinDesc}`;
   }, [LI, current?.temperature, current?.dewPoint, current?.humidity, current?.cloudCover, cloudBase, currentSite.altitude, zeroTermico, CIN, termicheOrarie]);
 
@@ -260,32 +261,16 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
     return testo;
   }, [inizioFinestra, fineFinestra, current]);
 
-  const riepilogo = useMemo(() => {
-    if (termicheOrarie.length === 0) {
-      return "Nessun dato disponibile per il riepilogo.";
+  // Compute the correct date label dynamically based on selectedDay
+  const dataReport = useMemo(() => {
+    if (!dayData || dayData.length === 0) {
+      // fallback to today if no data
+      const now = new Date();
+      return formatDateShort(now);
     }
-    return `Mattino con termiche crescenti fino a ${maxRateo.toFixed(
-      1
-    )} m/s, ottime tra le 11 e le 13 – Pomeriggio con rovesci che iniziano lievi alle ${String(
-      primaOraPioggia !== undefined ? primaOraPioggia : 14
-    ).padStart(2, "0")} e diventano forti (${totalePrecipitazione > 3 ? "3-6" : "0.5-2"} mm/h) tra le ${String(
-      primaOraPioggia !== undefined ? primaOraPioggia + 2 : 16
-    ).padStart(2, "0")} e le ${String(
-      ultimaOraPioggia !== undefined ? ultimaOraPioggia : 17
-    ).padStart(2, "0")} – Atterraggio obbligatorio entro le ${String(
-      fineFinestra
-    ).padStart(2, "0")}:${"30"} per evitare temporali pericolosi – Quota massima raggiungibile limitata dalla base nubi a ${cloudBase} m – LI di ${LI} K conferma alto rischio di temporali.`;
-  }, [maxRateo, primaOraPioggia, totalePrecipitazione, fineFinestra, cloudBase, LI]);
-
-  // Compute the correct date label from the first entry of dayData (which corresponds to the selected day)
-  const dataReport = dayData?.[0]?.time
-    ? formatDateShort(new Date(dayData[0].time))
-    : new Date().toLocaleDateString("it-IT", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
+    // dayData[0] corresponds to the selected day (filtered earlier)
+    return formatDateShort(new Date(dayData[0].time));
+  }, [dayData]);
 
   const oraAggiornamento = lastUpdate
     ? lastUpdate.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
