@@ -81,7 +81,7 @@ export default function AnalisiMeteo() {
       return null;
     }
     const currentHour = new Date().getHours();
-    return giorno.find((h) => h.time.getHours() === currentHour) ?? giorno[0];
+    return dayData.find((h) => h.time.getHours() === currentHour) ?? dayData[0];
   }, [currentSite, dayData]);
 
   // Compute termiche and precipitation arrays (safe for missing data)
@@ -89,18 +89,18 @@ export default function AnalisiMeteo() {
     if (!currentSite || !dayData || dayData.length === 0) {
       return [];
     }
-    return giorno.map((h) => {
+    return dayData.map((h) => {
       const ora = h.time.getHours();
-      const t = calcolaTermiche(h, sito.altitude);
+      const t = calcolaTermiche(h, currentSite.altitude);
       return { ora, rateo: t.rateo, base: t.base, top: t.top, precip: h.precipitation ?? 0, temp: h.temperature };
     });
-  }, [currentSite, dayData, sito.altitude]);
+  }, [currentSite, dayData]);
 
   const precipitazioneOraria = useMemo(() => {
     if (!currentSite || !dayData || dayData.length === 0) {
       return [];
     }
-    return giorno.map((h) => ({
+    return dayData.map((h) => ({
       ora: h.time.getHours(),
       mm: h.precipitation ?? 0,
     }));
@@ -123,8 +123,8 @@ export default function AnalisiMeteo() {
   const cloudBase = useMemo(() => {
     if (!current) return 0;
     const spread = current.temperature - (current.dewPoint ?? current.temperature - 8);
-    return Math.round(sito.altitude + spread * 125);
-  }, [current, sito.altitude]);
+    return Math.round(currentSite.altitude + spread * 125);
+  }, [current, currentSite.altitude]);
 
   // Stability index (from current data)
   const stability = useMemo(() => {
@@ -214,6 +214,8 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
       return "Dati non disponibili per l'analisi dell'emagramma.";
     }
     const liDesc = LI <= -6 ? "un valore che indica instabilità molto elevata, tipica di condizioni temporalesche – più il numero è negativo e più l'atmosfera è pronta a scatenare cumulonembi." : LI <= -4 ? "un valore che indica instabilità elevata, favorevole a sviluppi temporaleschi." : LI <= -2 ? "un valore che indica moderata instabilità, possibile sviluppo di cumuli." : LI <= 0 ? "un valore che indica leggera instabilità o neutralità." : "un valore che indica atmosfera stabile, scarsa probabilità di temporali.";
+    const oraInnesco = termicheOrarie.find((t) => t.rateo >= 0.3)?.ora;
+    const tempInnesco = termicheOrarie.find((t) => t.ora === oraInnesco)?.temp ?? current?.temperature ?? 0;
     const tempInnescoDesc = `La temperatura di innesco è di ${tempInnesco.toFixed(1)} °C, il che significa che le termiche si attiveranno spontaneamente quando il suolo raggiungerà questa temperatura, verosimilmente tra le ${String(
       oraInnesco !== undefined ? oraInnesco : 10
     ).padStart(2, "0")} e le ${String(
@@ -221,18 +223,15 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
     ).padStart(2, "0")}.`;
     const baseNubiDesc = `La base delle nubi (salita massima) è prevista a ${cloudBase} m, una quota relativamente bassa che limita il guadagno verticale a circa ${Math.max(
       0,
-      cloudBase - sito.altitude
+      cloudBase - currentSite.altitude
     )}-${Math.max(
       0,
-      cloudBase - sito.altitude + 200
+      cloudBase - currentSite.altitude + 200
     )} metri sopra il suolo – non aspettarti di volare a 4000 metri con questa configurazione, perché l'umidità condensa presto.`;
     const zeroTermicoDesc = `Lo zero termico si trova a ${zeroTermico} m, valore ${zeroTermico > 4000 ? "alto" : "moderato"} che indica aria calda in quota, ma il forte contrasto tra bassi strati caldi e medi strati più freschi genera proprio l'instabilità che porta ai temporali.`;
     const cinDesc = `Il CIN (energia di inibizione) è di ${CIN} J/kg, dal grafico sembra ${CIN <= 50 ? "basso o assente" : "moderato"}; quindi le termiche partiranno senza ostacoli già al mattino.`;
-    // Compute tempInnesco (first hour with termiche rateo >= 0.3)
-    const oraInnesco = termicheOrarie.find((t) => t.rateo >= 0.3)?.ora;
-    const tempInnesco = termicheOrarie.find((t) => t.ora === oraInnesco)?.temp ?? current?.temperature ?? 0;
     return `${liDesc} ${tempInnescoDesc} ${baseNubiDesc} ${zeroTermicoDesc} ${cinDesc}`;
-  }, [LI, current?.temperature, current?.dewPoint, current?.humidity, current?.cloudCover, sito.altitude, zeroTermico, CIN, termicheOrarie]);
+  }, [LI, current?.temperature, current?.dewPoint, current?.humidity, current?.cloudCover, cloudBase, currentSite.altitude, zeroTermico, CIN, termicheOrarie]);
 
   const interpretazione = useMemo(() => {
     if (!current) {
@@ -240,15 +239,15 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
     }
     let testo = "";
     if (LI <= -5) {
-      testo += `La giornata è tipicamente pre‑temporalesca, con riscaldamento diurno intenso che interagisce con aria umida in quota. L'alto zero termico e il LI molto negativo indicano che una volta innescata la convezione, questa si svilupperà rapidamente e in modo violento. `;
+      testo += `La giornata è tipicamente pre‑temporalesca, con riscaldamento diurno intenso che interagisce con aria umida in quota. L'alto zero termico e il LI molto negativo indicano che una volta innazata la convezione, questa si svilupperà rapidamente e in modo violento. `;
     } else {
       testo += `La giornata presenta condizioni di instabilità moderata, con possibilità di sviluppo di termiche organizzate. `;
     }
-    testo += `La morfologia alpina di ${sito.name} favorisce inoltre convergenze orografiche che possono anticipare o ritardare l'innesco dei temporali rispetto alle previsioni orarie, quindi il pilota deve basarsi anche sull'osservazione diretta del cielo e non solo sui modelli. I cumuli che si formeranno al mattino saranno inizialmente benigni e ben segnati, ma già dalle ${String(
+    testo += `La morfologia alpina di ${currentSite.name} favorisce inoltre convergenze orografiche che possono anticipare o ritardare l'innesco dei temporali rispetto alle previsioni orarie, quindi il pilota deve basarsi anche sull'osservazione diretta del cielo e non solo sui modelli. I cumuli che si formeranno al mattino saranno inizialmente benigni e ben segnati, ma già dalle ${String(
       primaOraPioggia !== undefined ? primaOraPioggia : 13
     ).padStart(2, "0")}:00 vanno monitorati con attenzione: se iniziano a crescere verticalmente assumendo forme a cavolfiore o a incudine, significa che il temporale è in fase di sviluppo e il rientro va anticipato.`;
     return testo;
-  }, [LI, zeroTermico, sito.name, primaOraPioggia, current]);
+  }, [LI, zeroTermico, currentSite.name, primaOraPioggia, current]);
 
   const consigli = useMemo(() => {
     if (!current) {
@@ -300,7 +299,7 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Activity className="w-5 h-5 text-purple-400 shrink-0" />
-          <h3 className="text-base font-bold text-white">Analisi approfondita · {sito.name}</h3>
+          <h3 className="text-base font-bold text-white">Analisi approfondita · {currentSite.name}</h3>
         </div>
         <span className="text-xs text-slate-400">Aggiornato {oraAggiornamento} UTC</span>
       </div>
@@ -308,8 +307,8 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
       {/* Main Report Card */}
       <div className="bg-slate-900/50 border border-slate-700/50 rounded-lg p-4">
         <p className="text-slate-100 text-sm font-mono whitespace-pre-line leading-relaxed">
-          🌤️ REPORT VOLO A VELA – {sito.name.toUpperCase()} – {dataReport} 🌤️
-          Quota partenza circa {sito.altitude} m s.l.m. – Dati da AROME + ICON‑EU elaborati da Alpium – Aggiornamento {oraAggiornamento} UTC
+          🌤️ REPORT VOLO A VELA – {currentSite.name.toUpperCase()} – {dataReport} 🌤️
+          Quota partenza circa {currentSite.altitude} m s.l.m. – Dati da AROME + ICON‑EU elaborati da Alpium – Aggiornamento {oraAggiornamento} UTC
 
           🧭 GIUDIZIO GENERALE: {giudizioScore}/10 – Giornata volabile ma con forte limitazione temporale a causa di temporali attesi dal primo pomeriggio. Buone termiche tra le 11 e le 13, ma dopo le 15 le condizioni diventano rapidamente critiche per pioggia e turbolenza. Finestra operativa sicura: decollo entro le {String(inizioFinestra).padStart(2, "0")}:00, rientro e atterraggio completati entro le {String(fineFinestra).padStart(2, "0")}:30 tassativo.
 
@@ -363,7 +362,7 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
             <span className="text-xs text-slate-400">BASE NUBI / ZERO TERMICO</span>
             <span className="text-sm font-bold text-white">{cloudBase} m / {zeroTermico} m</span>
           </div>
-          <p className="text-xs text-slate-300">Guadagno max: ~{Math.max(0, cloudBase - sito.altitude)} m sopra decollo</p>
+          <p className="text-xs text-slate-300">Guadagno max: ~{Math.max(0, cloudBase - currentSite.altitude)} m sopra decollo</p>
         </div>
 
         <div className="bg-slate-800/50 border border-slate-700/30 rounded-lg p-3">
