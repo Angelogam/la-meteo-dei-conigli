@@ -42,7 +42,7 @@ function getPressioneDescrizione(press: number): string {
 function getRischioBg(r: number): string {
   if (r >= 70) return "bg-red-900/30 border-red-500/40";
   if (r >= 40) return "bg-orange-900/30 border-orange-500/40";
-  if (r >= 15) return "bg-amber-900/30 border-amber-500/40";
+  if (r >= 15) return "bg-amber-900/30 border-orange-500/40";
   if (r >= 5) return "bg-yellow-900/20 border-yellow-500/30";
   return "bg-green-900/20 border-green-500/30";
 }
@@ -57,38 +57,34 @@ function getRischioBar(r: number): string {
   if (r >= 70) return "bg-red-500";
   if (r >= 40) return "bg-orange-500";
   if (r >= 15) return "bg-amber-500";
-  if (r >= 5) return "bg-green-500";
+  if (r >= 5) return "bg-yellow-500";
   return "bg-green-500";
 }
 
+/* ---------- MAIN COMPONENT ---------- */
 export default function AnalisiMeteo() {
   const {
     selectedId,
     site,
-    dayData,
-    selectedDay,
-    // dateLabels, // removed – we will compute label from dayData
+    dayData,          // <-- this is the full daily data (not filtered)
+    selectedDay,      // <-- day we want to view (0 = today, 1 = tomorrow, …)
     lastUpdate,
   } = useWeatherData();
 
-  // Determine current site and whether we have data
+  // Determine current site (selectedId takes precedence)
   const currentSite = selectedId ? DECOLLI.find((d) => d.id === selectedId) ?? site : site;
-  const hasData = !!currentSite && !!dayData && dayData.length > 0;
+  const hasData = !!currentSite && dayData?.length > 0;
 
   // Compute current hour data (safe for missing data)
   const current = useMemo(() => {
-    if (!currentSite || !dayData || dayData.length === 0) {
-      return null;
-    }
+    if (!currentSite || !dayData || dayData.length === 0) return null;
     const currentHour = new Date().getHours();
     return dayData.find((h) => h.time.getHours() === currentHour) ?? dayData[0];
   }, [currentSite, dayData]);
 
   // Compute termiche and precipitation arrays (safe for missing data)
   const termicheOrarie = useMemo(() => {
-    if (!currentSite || !dayData || dayData.length === 0) {
-      return [];
-    }
+    if (!currentSite || !dayData || dayData.length === 0) return [];
     return dayData.map((h) => {
       const ora = h.time.getHours();
       const t = calcolaTermiche(h, currentSite.altitude);
@@ -97,9 +93,7 @@ export default function AnalisiMeteo() {
   }, [currentSite, dayData]);
 
   const precipitazioneOraria = useMemo(() => {
-    if (!currentSite || !dayData || dayData.length === 0) {
-      return [];
-    }
+    if (!currentSite || !dayData || dayData.length === 0) return [];
     return dayData.map((h) => ({
       ora: h.time.getHours(),
       mm: h.precipitation ?? 0,
@@ -219,10 +213,10 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
     const tempInnesco = oraInnesco !== undefined ? termicheOrarie.find((t) => t.ora === oraInnesco)?.temp ?? current?.temperature ?? 0 : 0;
     const tempInnescoDesc = tempInnesco
       ? `La temperatura di innesco è di ${tempInnesco.toFixed(1)} °C, il che significa che le termiche si attiveranno spontaneamente quando il suolo raggiungerà questa temperatura, verosimilmente tra le ${String(
-        oraInnesco !== undefined ? oraInnesco : 10
-      ).padStart(2, "0")} e le ${String(
-        oraInnesco !== undefined ? oraInnesco + 1 : 11
-      ).padStart(2, "0")}.`
+          oraInnesco !== undefined ? oraInnesco : 10
+        ).padStart(2, "0")} e le ${String(
+          oraInnesco !== undefined ? oraInnesco + 1 : 11
+        ).padStart(2, "0")}.`
       : "";
     const baseNubiDesc = `La base delle nubi (salita massima) è prevista a ${cloudBase} m, una quota relativamente bassa che limita il guadagno verticale a circa ${Math.max(
       0,
@@ -286,9 +280,16 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
   // Compute the correct date label from the first entry of dayData (which corresponds to the selected day)
   const dataReport = dayData?.[0]?.time
     ? formatDateShort(new Date(dayData[0].time))
-    : "";
+    : new Date().toLocaleDateString("it-IT", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
 
-  const oraAggiornamento = lastUpdate ? lastUpdate.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+  const oraAggiornamento = lastUpdate
+    ? lastUpdate.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
+    : new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
 
   // If no data, show placeholder
   if (!hasData) {
