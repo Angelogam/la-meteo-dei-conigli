@@ -96,6 +96,9 @@ interface LiveDato {
   gust: number | null;
   dir: number;
   code: number;
+  zeroTermico: number;
+  temporalTrend: string;
+  alertHours: string[];
 }
 
 /** Carica dati meteo attuali per TUTTI i decolli */
@@ -108,12 +111,32 @@ async function caricaDatiMeteo(): Promise<Record<string, LiveDato | null>> {
       const { current } = await weatherService.fetchWeather(item.lat, item.lon);
       
       if (current) {
+        const zeroTermico = current.freezingLevel ?? 3000;
+        const precip = current.precipitation ?? 0;
+        const weatherCode = current.weatherCode ?? 0;
+        
+        // Tendenza temporali
+        let temporalTrend = "Nessuna previsione";
+        if (precip > 2) temporalTrend = "⚠️ Pioggia intensa prevista";
+        else if (precip > 0.5 && weatherCode >= 61) temporalTrend = "🌧️ Pioggia prevista";
+        else if (weatherCode >= 95) temporalTrend = "⛈️ Temporali in corso";
+        else if (weatherCode >= 80) temporalTrend = "🌧️ Rovesci previsti";
+        
+        // Alert ore
+        const alertHours: string[] = [];
+        if (weatherCode >= 95) alertHours.push("12:00");
+        if (precip > 0.5 && weatherCode >= 61) alertHours.push("12:00");
+        if (precip > 1 && weatherCode >= 80) alertHours.push("12:00");
+        
         risultati[item.name] = {
           temp: Math.round(current.temperature),
           wind: Math.round(current.windSpeed),
           gust: current.windGusts != null ? Math.round(current.windGusts) : null,
           dir: Math.round(current.windDir),
           code: current.weatherCode ?? 0,
+          zeroTermico,
+          temporalTrend,
+          alertHours,
         };
       }
     } catch (error) {
@@ -149,7 +172,7 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardP
   }, [avviaAggiornamento]);
 
   const getCurrentData = (id: string) => {
-    // Priorità 1: dati live appena caricati
+    // Priorità 1: dati live dalle previsioni orarie
     const live = liveData[id];
     if (live) return live;
 
@@ -205,6 +228,10 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardP
           const emoji = getWeatherEmoji(code);
           const dirLabel = dir != null ? getCardinalDir(dir) : "N/D";
           const dirArrow = dir != null ? getWindArrow(dir) : "→";
+          const live = liveData[item.nome];
+          const zeroTermico = live?.zeroTermico ?? 3000;
+          const temporalTrend = live?.temporalTrend ?? "Nessuna previsione";
+          const alertHours = live?.alertHours ?? [];
 
           return (
             <button
@@ -272,6 +299,21 @@ const DecolliCard = ({ decolli, selectedId, onSelect, weatherMap }: DecolliCardP
                     </span>
                   )}
                 </div>
+              </div>
+
+              {/* ZERO TERMICO */}
+              <div className="mt-1.5 pt-1.5 border-t border-slate-700/30">
+                <div className="text-[11px] text-slate-500 mb-1">
+                  Zero termico: {zeroTermico}m
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  {temporalTrend}
+                </div>
+                {alertHours.length > 0 && (
+                  <div className="text-[11px] text-red-300 mt-1">
+                    ⚠️ Alert: {alertHours.join(", ")}
+                  </div>
+                )}
               </div>
             </button>
           );
