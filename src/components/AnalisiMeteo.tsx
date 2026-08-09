@@ -214,8 +214,6 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
       return "Dati non disponibili per l'analisi dell'emagramma.";
     }
     const liDesc = LI <= -6 ? "un valore che indica instabilità molto elevata, tipica di condizioni temporalesche – più il numero è negativo e più l'atmosfera è pronta a scatenare cumulonembi." : LI <= -4 ? "un valore che indica instabilità elevata, favorevole a sviluppi temporaleschi." : LI <= -2 ? "un valore che indica moderata instabilità, possibile sviluppo di cumuli." : LI <= 0 ? "un valore che indica leggera instabilità o neutralità." : "un valore che indica atmosfera stabile, scarsa probabilità di temporali.";
-    const oraInnesco = termicheOrarie.find((t) => t.rateo >= 0.3)?.ora;
-    const tempInnesco = termicheOrarie.find((t) => t.ora === oraInnesco)?.temp ?? current?.temperature ?? 0;
     const tempInnescoDesc = `La temperatura di innesco è di ${tempInnesco.toFixed(1)} °C, il che significa che le termiche si attiveranno spontaneamente quando il suolo raggiungerà questa temperatura, verosimilmente tra le ${String(
       oraInnesco !== undefined ? oraInnesco : 10
     ).padStart(2, "0")} e le ${String(
@@ -230,6 +228,9 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
     )} metri sopra il suolo – non aspettarti di volare a 4000 metri con questa configurazione, perché l'umidità condensa presto.`;
     const zeroTermicoDesc = `Lo zero termico si trova a ${zeroTermico} m, valore ${zeroTermico > 4000 ? "alto" : "moderato"} che indica aria calda in quota, ma il forte contrasto tra bassi strati caldi e medi strati più freschi genera proprio l'instabilità che porta ai temporali.`;
     const cinDesc = `Il CIN (energia di inibizione) è di ${CIN} J/kg, dal grafico sembra ${CIN <= 50 ? "basso o assente" : "moderato"}; quindi le termiche partiranno senza ostacoli già al mattino.`;
+    // Compute tempInnesco (first hour with termiche rateo >= 0.3)
+    const oraInnesco = termicheOrarie.find((t) => t.rateo >= 0.3)?.ora;
+    const tempInnesco = termicheOrarie.find((t) => t.ora === oraInnesco)?.temp ?? current?.temperature ?? 0;
     return `${liDesc} ${tempInnescoDesc} ${baseNubiDesc} ${zeroTermicoDesc} ${cinDesc}`;
   }, [LI, current?.temperature, current?.dewPoint, current?.humidity, current?.cloudCover, cloudBase, currentSite.altitude, zeroTermico, CIN, termicheOrarie]);
 
@@ -239,7 +240,7 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
     }
     let testo = "";
     if (LI <= -5) {
-      testo += `La giornata è tipicamente pre‑temporalesca, con riscaldamento diurno intenso che interagisce con aria umida in quota. L'alto zero termico e il LI molto negativo indicano che una volta innazata la convezione, questa si svilupperà rapidamente e in modo violento. `;
+      testo += `La giornata è tipicamente pre‑temporalesca, con riscaldamento diurno intenso che interagisce con aria umida in quota. L'alto zero termico e il LI molto negativo indicano che una volta innescata la convezione, questa si svilupperà rapidamente e in modo violento. `;
     } else {
       testo += `La giornata presenta condizioni di instabilità moderata, con possibilità di sviluppo di termiche organizzate. `;
     }
@@ -352,7 +353,7 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
         <div className="bg-slate-800/50 border border-slate-700/30 rounded-lg p-3">
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs text-slate-400">LI (Lifted Index)</span>
-            <span className="text-sm font-bold text-white">{LI} K</span>
+            <span className="text-sm font-bold text-white">LI</span>
           </div>
           <p className="text-xs text-slate-300">{LI <= -4 ? "Alta instabilità – Rischio temporali" : LI <= -2 ? "Instabilità moderata" : "Atmosfera stabile"}</p>
         </div>
