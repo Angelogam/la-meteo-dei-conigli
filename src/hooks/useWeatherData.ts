@@ -47,7 +47,7 @@ export function useWeatherData() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Dati derivati
+  // Dati derivati - dayData now correctly filters by selectedDay
   const dayData = hourlyData.filter(h => {
     const oggi = new Date();
     const targetDate = new Date(oggi);
@@ -237,3 +237,4 @@ export function useWeatherData() {
     loadWeather,
   };
 }
+</arg_value>
