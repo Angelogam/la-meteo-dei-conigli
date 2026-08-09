@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useMemo } from "react";
 import { Activity, CloudSun, Wind, Flame, BrainCircuit, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { useWeatherData } from "@/hooks/useWeatherData";
@@ -110,7 +108,7 @@ export default function AnalisiMeteo() {
     .find((p) => p.mm > 0.1)?.ora;
 
   // Lifted Index and CIN (from current data, with fallbacks)
-  const LI = current?.liftedIndex !== null && current?.liftedIndex !== undefined ? current.liftedIndex : -4;
+  const LI = current?.liftedIndex !== null ? current.liftedIndex : -4;
   const CIN = current?.cin ?? 0;
 
   // Zero termico and cloud base (from current data)
@@ -261,6 +259,28 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
     return testo;
   }, [inizioFinestra, fineFinestra, current]);
 
+  // RIEPILOGO FINALE (missing variable)
+  const riepilogo = useMemo(() => {
+    return `Mattino con termiche crescenti fino a ${maxRateo.toFixed(
+      1
+    )} m/s, ottime tra le 11 e le 13 – Pomeriggio con rovesci che iniziano lievi alle ${String(
+      primaOraPioggia !== undefined ? primaOraPioggia : 14
+    ).padStart(2, "0")} e diventano forti (${totalePrecipitazione > 3 ? "3-6" : "0.5-2"} mm/h) tra le ${String(
+      primaOraPioggia !== undefined ? primaOraPioggia + 2 : 16
+    ).padStart(2, "0")} e le ${String(
+      ultimaOraPioggia !== undefined ? ultimaOraPioggia : 17
+    ).padStart(2, "0")} – Atterraggio obbligatorio entro le ${String(
+      fineFinestra
+    ).padStart(2, "0")}:${"30"} per evitare temporali pericolosi – Quota massima raggiungibile limitata dalla base nubi a ${cloudBase} m – LI di ${LI} K conferma alto rischio di temporali.`;
+  }, [
+    maxRateo,
+    primaOraPioggia,
+    totalePrecipitazione,
+    fineFinestra,
+    cloudBase,
+    LI,
+  ]);
+
   // Compute the correct date label dynamically based on selectedDay
   const dataReport = useMemo(() => {
     if (!dayData || dayData.length === 0) {
@@ -316,7 +336,7 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
           🛩️ CONSIGLI OPERATIVI PER IL PILOTA: {consigli}
 
           📌 RIEPILOGO FINALE IN BREVE: {riepilogo}
-
+          
           ⚠️ Avvertenza finale: questo report è basato su modelli numerici e ha valore di supporto alla pianificazione; non sostituisce il bollettino meteorologico ufficiale né l'osservazione diretta delle condizioni reali. La responsabilità della decisione di volare e della sicurezza in volo è sempre e solo del pilota. Detto questo, la giornata offre opportunità interessanti se affrontata con disciplina, prudenza e rispetto dei limiti temporali.
         </p>
       </div>
@@ -329,7 +349,7 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
             <span className={`text-sm font-bold ${getRischioText(giudizioScore * 10)}`}>{giudizioScore}/10</span>
           </div>
           <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
-            <div className={`h-full ${getRischioBar(giudizioScore * 10)} rounded-full transition-all duration-500`} style={{ width: `${giudizioScore * 10}%` }} />
+            <div className={`h-full ${getRischioBar(giudizioScore * 10)} rounded-full transition_all duration-500`} style={{ width: `${giudizioScore * 10}%` }} />
           </div>
           <p className="text-xs text-slate-300 mt-1">{giudizioLabel}</p>
         </div>
