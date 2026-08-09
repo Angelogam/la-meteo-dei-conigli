@@ -237,4 +237,3 @@ export function useWeatherData() {
     loadWeather,
   };
 }
-</arg_value>
