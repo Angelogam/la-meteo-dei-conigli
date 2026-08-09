@@ -57,7 +57,7 @@ function getRischioBar(r: number): string {
   if (r >= 70) return "bg-red-500";
   if (r >= 40) return "bg-orange-500";
   if (r >= 15) return "bg-amber-500";
-  if (r >= 5) return "bg-yellow-500";
+  if (r >= 5) return "bg-green-500";
   return "bg-green-500";
 }
 
@@ -67,7 +67,7 @@ export default function AnalisiMeteo() {
     site,
     dayData,
     selectedDay,
-    dateLabels,
+    // dateLabels, // removed – we will compute label from dayData
     lastUpdate,
   } = useWeatherData();
 
@@ -218,7 +218,11 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
     const oraInnesco = termicheOrarie.find((t) => t.rateo >= 0.3)?.ora;
     const tempInnesco = oraInnesco !== undefined ? termicheOrarie.find((t) => t.ora === oraInnesco)?.temp ?? current?.temperature ?? 0 : 0;
     const tempInnescoDesc = tempInnesco
-      ? `La temperatura di innesco è di ${tempInnesco.toFixed(1)} °C, il che significa che le termiche si attiveranno spontaneamente quando il suolo raggiungerà questa temperatura, verosimilmente tra le ${String(oraInnesco !== undefined ? oraInnesco : 10).padStart(2, "0")} e le ${String(oraInnesco !== undefined ? oraInnesco + 1 : 11).padStart(2, "0")}.`
+      ? `La temperatura di innesco è di ${tempInnesco.toFixed(1)} °C, il che significa che le termiche si attiveranno spontaneamente quando il suolo raggiungerà questa temperatura, verosimilmente tra le ${String(
+        oraInnesco !== undefined ? oraInnesco : 10
+      ).padStart(2, "0")} e le ${String(
+        oraInnesco !== undefined ? oraInnesco + 1 : 11
+      ).padStart(2, "0")}.`
       : "";
     const baseNubiDesc = `La base delle nubi (salita massima) è prevista a ${cloudBase} m, una quota relativamente bassa che limita il guadagno verticale a circa ${Math.max(
       0,
@@ -279,7 +283,11 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
     ).padStart(2, "0")}:${"30"} per evitare temporali pericolosi – Quota massima raggiungibile limitata dalla base nubi a ${cloudBase} m – LI di ${LI} K conferma alto rischio di temporali.`;
   }, [maxRateo, primaOraPioggia, totalePrecipitazione, fineFinestra, cloudBase, LI]);
 
-  const dataReport = dateLabels[selectedDay] ?? new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  // Compute the correct date label from the first entry of dayData (which corresponds to the selected day)
+  const dataReport = dayData?.[0]?.time
+    ? formatDateShort(new Date(dayData[0].time))
+    : "";
+
   const oraAggiornamento = lastUpdate ? lastUpdate.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
 
   // If no data, show placeholder
