@@ -1,1 +1,54 @@
-"import React, { useMemo } from \"react\";\n\n// ... existing imports ...\n\n// Define a local type that includes the extra `temp` field used later\ninterface TermicheOraria {\n  ora: number;\n  rateo: number;\n  base: number;\n  top: number;\n  precip: number;\n  temp: number; // <-- added to match usage\n}\n\n// ... existing code ...\n\n// When iterating over dayData, cast to HourData to satisfy TS, and use the extended type for temp access\n{\n  dayData.map((h) => {\n    const hTyped = h as HourData; // cast to satisfy TS\n    const ora = hTyped.time.getHours();\n    const t = calcolaTermiche(hTyped, sito.altitude);\n    // Use the extended type for the result array\n    return {\n      ora,\n      rateo: t.rateo,\n      base: t.base,\n      top: t.top,\n      precip: hTyped.precipitation ?? 0,\n      temp: hTyped.temperature, // <-- now allowed\n    } as TermicheOraria;\n  })\n}\n\n// Ensure useMemo is available (import already added at top)\n\n// Reorder variable declarations so they are defined before use\nconst analisiEmagramma = useMemo(() => {\n  if (!current) {\n    return \"Dati non disponibili per l'analisi dell'emagramma.\";\n  }\n  const liDesc = LI <= -6 ? \"un valore che indica instabilità molto elevata, tipica di condizioni temporalesche – più il numero è negativo e più l'atmosfera è pronta a scatenare cumulonembi.\" : LI <= -4 ? \"un valore che indica instabilità elevata, favorevole a sviluppi temporaleschi.\" : LI <= -2 ? \"un valore che indica moderata instabilità, possibile sviluppo di cumuli.\" : LI <= 0 ? \"un valore che indica leggera instabilità o neutralità.\" : \"un valore che indica atmosfera stabile, scarsa probabilità di temporali.\";\n  \n  // Compute oraInnesco and tempInnesco safely before using them\n  const oraInnesco = termicheOrarie.find((t) => t.rateo >= 0.3)?.ora;\n  const tempInnesco = oraInnesco !== undefined ? termicheOrarie.find((t) => t.ora === oraInnesco)?.temp ?? current?.temperature ?? 0 : 0;\n  \n  const tempInnescoDesc = tempInnesco\n    ? `La temperatura di innesco è di ${tempInnesco.toFixed(1)} °C, il che significa che le termiche si attiveranno spontaneamente quando il suolo raggiungerà questa temperatura, verosimilmente tra le ${String(oraInnesco !== undefined ? oraInnesco : 10).padStart(2, \"0\")} e le ${String(oraInnesco !== undefined ? oraInnesco + 1 : 11).padStart(2, \"0\")}.`\n    : \"\";\n  \n  const baseNubiDesc = `La base delle nubi (salita massima) è prevista a ${cloudBase} m, una quota relativamente bassa che limita il guadagno verticale a circa ${Math.max(0, cloudBase - currentSite.altitude)}–${Math.max(0, cloudBase - currentSite.altitude + 200)} metri sopra il suolo – non aspettarti di volare a 4000 metri con questa configurazione, perché l'umidità condensa presto.`;\n  const zeroTermicoDesc = `Lo zero termico si trova a ${zeroTermico} m, valore ${zeroTermico > 4000 ? \"alto\" : \"moderato\"} che indica aria calda in quota, ma il forte contrasto tra bassi strati caldi e medi strati più freschi genera proprio l'instabilità che porta ai temporali.`;\n  const cinDesc = `Il CIN (energia di inibizione) è di ${CIN} J/kg, dal grafico sembra ${CIN <= 50 ? \"basso o assente\" : \"moderato\"}; quindi le termiche partiranno senza ostacoli già al mattina.`;\n  \n  return `${liDesc} ${tempInnescoDesc} ${baseNubiDesc} ${zeroTermicoDesc} ${cinDesc}`;\n}, [LI, current?.temperature, current?.dewPoint, current?.humidity, current?.cloudCover, cloudBase, currentSite.altitude, zeroTermico, CIN, termicheOrarie]);\n\n// ... rest of the component ...\n\n// Ensure all useMemo calls have the import above\n\n// Add missing useMemo imports if any (they are already present at the top)\n
+"import React, { useMemo } from \"react\"; // Added useMemo import
+// ... existing imports ...
+
+// Define a proper type that matches what we're passing to calcolaTermiche
+interface ExtendedHourData extends HourData {
+  temp: number; // Adding the temp property we need
+}
+
+// ... existing code ...
+
+// Fix the type issue when mapping dayData
+const termicheOrarie = useMemo(() => {
+  if (!dayData || dayData.length === 0) return [];
+  return dayData.map((h) => {
+    const ora = h.time.getHours();
+    // Cast to ExtendedHourData to satisfy TypeScript
+    const hExtended = h as ExtendedHourData;
+    const t = calcolaTermiche(hExtended, sito.altitude);
+    return { 
+      ora, 
+      rateo: t.rateo, 
+      base: t.base, 
+      top: t.top, 
+      precip: h.precipitation ?? 0,
+      temp: hExtended.temperature // Add the temp property we need
+    };
+  });
+}, [dayData, sito.altitude]);
+
+// ... rest of the code ...
+
+// Fix the variable declaration order issue
+const analisiEmagramma = useMemo(() => {
+  if (!current) {
+    return \"Dati non disponibili per l'analisi dell'emagramma.\";
+  }
+  const liDesc = LI <= -6 ? \"un valore che indica instabilità molto elevata, tipica di condizioni temporalesche – più il numero è negativo e più l'atmosfera è pronta a scatenare cumulonembi.\" : LI <= -4 ? \"un valore che indica instabilità elevata, favorevole a sviluppi temporaleschi.\" : LI <= -2 ? \"un valore che indica moderata instabilità, possibile sviluppo di cumuli.\" : LI <= 0 ? \"un valore che indica leggera instabilità o neutralità.\" : \"un valore che indica atmosfera stabile, scarsa probabilità di temporali.\";
+  
+  // Compute oraInnesco and tempInnesco before using them
+  const oraInnesco = termicheOrarie.find((t) => t.rateo >= 0.3)?.ora;
+  const tempInnesco = oraInnesco !== undefined ? termicheOrarie.find((t) => t.ora === oraInnesco)?.temp ?? current?.temperature ?? 0 : 0;
+  
+  const tempInnescoDesc = tempInnesco
+    ? `La temperatura di innesco è di ${tempInnesco.toFixed(1)} °C, il che significa che le termiche si attiveranno spontaneamente quando il suolo raggiungerà questa temperatura, verosimilmente tra le ${String(oraInnesco !== undefined ? oraInnesco : 10).padStart(2, \"0\")} e le ${String(oraInnesco !== undefined ? oraInnesco + 1 : 11).padStart(2, \"0\")}.`
+    : \"\";
+  
+  const baseNubiDesc = `La base delle nubi (salita massima) è prevista a ${cloudBase} m, una quota relativamente bassa che limita il guadagno verticale a circa ${Math.max(0, cloudBase - currentSite.altitude)}–${Math.max(0, cloudBase - currentSite.altitude + 200)} metri sopra il suolo – non aspettarti di volare a 4000 metri con questa configurazione, perché l'umidità condensa presto.`;
+  const zeroTermicoDesc = `Lo zero termico si trova a ${zeroTermico} m, valore ${zeroTermico > 4000 ? \"alto\" : \"moderato\"} che indica aria calda in quota, ma il forte contrasto tra bassi strati caldi e medi strati più freschi genera proprio l'instabilità che porta ai temporali.`;
+  const cinDesc = `Il CIN (energia di inibizione) è di ${CIN} J/kg, dal grafico sembra ${CIN <= 50 ? \"basso o assente\" : \"moderato\"}; quindi le termiche partiranno senza ostacoli già al mattino.`;
+  
+  return `${liDesc} ${tempInnescoDesc} ${baseNubiDesc} ${zeroTermicoDesc} ${cinDesc}`;
+}, [LI, current?.temperature, current?.dewPoint, current?.humidity, current?.cloudCover, cloudBase, currentSite.altitude, zeroTermico, CIN, termicheOrarie]);
+
+// ... rest of the component ...
