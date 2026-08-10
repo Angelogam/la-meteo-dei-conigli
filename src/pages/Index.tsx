@@ -1,17 +1,17 @@
-"import { useEffect, useMemo, useState } from \"react\"; // Added useMemo and useState imports
+import { useEffect, useMemo, useState } from "react";
 import { useWeatherData } from "@/hooks/useWeatherData";
-import { Header } from \"@/components/Header\"; // Fixed named import
-import { Footer } from \"@/components/Footer\"; // Fixed named import
-import SiteHeader from \"@/components/SiteHeader\";
-import PrevisioniGiornaliere from \"@/components/PrevisioniGiornaliere\";
-import WeatherDashboard from \"@/components/WeatherDashboard\";
-import TabNav from \"@/components/TabNav\";
-import MeteoTab from \"@/components/MeteoTab\";
-import VentiInterpolatiTab from \"@/components/VentiInterpolatiTab\";
-import TermicheTab from \"@/components/TermicheTab\";
-import AnalisiMeteo from \"@/components/AnalisiMeteo\";
-import { DECOLLI } from \"@/data/decolli\"; // Added DECOLLI import
-import { calcolaTermiche } from \"@/utils/termiche\"; // Added calcolaTermiche import
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import SiteHeader from "@/components/SiteHeader";
+import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
+import WeatherDashboard from "@/components/WeatherDashboard";
+import TabNav from "@/components/TabNav";
+import MeteoTab from "@/components/MeteoTab";
+import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
+import TermicheTab from "@/components/TermicheTab";
+import AnalisiMeteo from "@/components/AnalisiMeteo";
+import { DECOLLI } from "@/data/decolli";
+import { calcolaTermiche } from "@/utils/termiche";
 
 const Index = () => {
   const {
@@ -27,21 +27,18 @@ const Index = () => {
     countdown,
     activeTab,
     setActiveTab,
-    lastUpdate,
-    countdown,
     activeModel,
     setActiveModel,
     site,
     dayData,
     currentData,
-    lastUpdate,
     thermalDelta,
     enrichedDaily,
     dateLabels,
     hourlyData,
     allHourlyData,
     currentCape,
-  } = useWeatherData(); // Includes selectedDay and setSelectedDay
+  } = useWeatherData();
 
   // Determine current site (selectedId takes precedence)
   const currentSite = selectedId ? DECOLLI.find((d) => d.id === selectedId) ?? site : site;
@@ -191,7 +188,7 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
     
     const baseNubiDesc = `La base delle nubi (salita massima) è prevista a ${cloudBase} m, una quota relativamente bassa che limita il guadagno verticale a circa ${Math.max(0, cloudBase - currentSite.altitude)}–${Math.max(0, cloudBase - currentSite.altitude + 200)} metri sopra il suolo – non aspettarti di volare a 4000 metri con questa configurazione, perche l'umidita condensa presto.`;
     const zeroTermicoDesc = `Lo zero termico si trova a ${zeroTermico} m, valore ${zeroTermico > 4000 ? "alto" : "moderato"} che indica aria calda in quota, ma il forte contrasto tra bassi strati caldi e medi strati piu freschi genera proprio l'instabilita che porta ai temporali.`;
-    const cinDesc = `Il CIN (energia di inibizione) e di ${CIN} J/kg, dal grafico sembra ${CIN <= 50 ? "basso o assente" : "moderato"}; quindi le termiche partiranno senza ostacoli gia al mattino.`;
+    const cinDesc = `Il CIN (energia di inibizione) e di ${CIN} J/kg, dal grafico sembra ${CIN <= 50 ? "basso o assente" : "moderato"}; quindi le termiche partiranno senza ostacoli gia al mattina.`;
     
     return `${liDesc} ${tempInnescoDesc} ${baseNubiDesc} ${zeroTermicoDesc} ${cinDesc}`;
   }, [LI, current?.temperature, current?.dewPoint, current?.humidity, current?.cloudCover, cloudBase, currentSite.altitude, zeroTermico, CIN, termicheOrarie]);
@@ -323,7 +320,7 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
                     site={{ alt: site!.altitude, name: site!.name }}
                     thermalDelta={thermalDelta}
                     stabilityIndex={stability}
-                    modelName="gfs_seamless"}
+                    modelName="gfs_seamless"
                     cape={currentCape?.cape ?? null}
                     liftedIndex={currentCape?.liftedIndex ?? null}
                     cin={currentCape?.cin ?? null}

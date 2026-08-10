@@ -1,65 +1,177 @@
-"import React, { useMemo } from \"react\"; // Added useMemo import
-// ... existing imports ...
+import React, { useMemo } from "react";
+import type { HourData } from "@/types/meteo";
+import { DECOLLI } from "@/data/decolli";
+import { calcolaTermiche } from "@/utils/termiche";
+import { getVoloStatus } from "@/utils/volo";
+import { Calendar, Activity } from "lucide-react";
 
-// Define a proper type that matches what we're passing to calcolaTermiche
-interface ExtendedHourData extends HourData {
-  temp: number; // Adding the temp property we need
+interface VoloReportCardProps {
+  currentData: HourData | null;
+  dayData: HourData[];
+  sito: { name: string; altitude: number; exposure: string; latitude: number; longitude: number };
+  termicheOrarie: { ora: number; rateo: number; base: number; top: number; precip: number; temp: number }[];
+  totalPrecipitation: number;
+  firstRainHour: number | null;
+  lastRainHour: number | null;
+  LI: number;
+  CIN: number;
+  zeroTermico: number;
+  cloudBase: number;
+  stability: { label: string; color: string };
+  maxRateo: number;
+  inizioFinestra: number;
+  fineFinestra: number;
+  andamentoTermiche: string;
+  precipitazioniTesto: string;
+  analisiEmagramma: string;
+  interpretazione: string;
+  consigli: string;
+  riepilogo: string;
 }
 
-// ... existing code ...
+export default function VoloReportCard({
+  currentData,
+  dayData,
+  sito,
+  termicheOrarie,
+  totalPrecipitation,
+  firstRainHour,
+  lastRainHour,
+  LI,
+  CIN,
+  zeroTermico,
+  cloudBase,
+  stability,
+  maxRateo,
+  inizioFinestra,
+  fineFinestra,
+  andamentoTermiche,
+  precipitazioniTesto,
+  analisiEmagramma,
+  interpretazione,
+  consigli,
+  riepilogo,
+}: VoloReportCardProps) {
+  // Calculate flight score
+  let giudizioScore = 5;
+  if (maxRateo >= 2) giudizioScore += 3;
+  else if (maxRateo >= 1) giudizioScore += 2;
+  else if (maxRateo >= 0.5) giudizioScore += 1;
+  if (totalPrecipitation === 0) giudizioScore += 2;
+  else if (totalPrecipitation < 1) giudizioScore += 1;
+  else if (totalPrecipitation < 3) giudizioScore -= 1;
+  else giudizioScore -= 2;
+  giudizioScore = Math.min(10, Math.max(0, giudizioScore));
+  const giudizioLabel =
+    giudizioScore >= 8 ? "Eccellente" : giudizioScore >= 6 ? "Buona" : giudizioScore >= 4 ? "Discreta" : giudizioScore >= 2 ? "Scarsa" : "Pessima";
 
-// Fix the type issue when mapping dayData
-const termicheOrarie = useMemo(() => {
-  if (!dayData || dayData.length === 0) return [];
-  return dayData.map((h) => {
-    const ora = h.time.getHours();
-    // Cast to ExtendedHourData to satisfy TypeScript
-    const hExtended = h as ExtendedHourData;
-    const t = calcolaTermiche(hExtended, sito.altitude);
-    return { 
-      ora, 
-      rateo: t.rateo, 
-      base: t.base, 
-      top: t.top, 
-      precip: h.precipitation ?? 0, 
-      temp: hExtended.temperature 
-    };
-  });
-}, [dayData, sito.altitude]);
+  return (
+    <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Activity className="w-5 h-5 text-purple-400 shrink-0" />
+          <h3 className="text-base font-bold text-white">Analisi approfondita · {sito.name}</h3>
+        </div>
+        <span className="text-xs text-slate-400">Aggiornato {new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })} UTC</span>
+      </div>
 
-// ... rest of the component ...
+      {/* Main Report Card */}
+      <div className="bg-slate-900/50 border border-slate-700/50 rounded-lg p-4">
+        <p className="text-slate-100 text-sm font-mono whitespace-pre-line leading-relaxed">
+          🌤️ REPORT VOLO A VELA – {sito.name.toUpperCase()} – {new Date().toLocaleDateString("it-IT", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })} 🌤️
+          Quota partenza circa {sito.altitude} m s.l.m. – Dati da AROME + ICON‑EU elaborati da Alpium – Aggiornamento {new Date().toLocaleTimeString("it-IT", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })} UTC
 
-// Reorder variable declarations to fix block-scoped variable errors
-const analisiEmagramma = useMemo(() => {
-  if (!current) {
-    return "Dati non disponibili per l'analisi dell'emagramma.";
-  }
-  const liDesc = LI <= -6 ? "un valore che indica instabilità molto elevata, tipica di condizioni temporalesche – piu il numero e negativo e piu l'atmosfera e pronta a scatenare cumulonembi." : LI <= -4 ? "un valore che indica instabilita elevata, favorevole a sviluppi temporaleschi." : LI <= -2 ? "un valore che indica moderata instabilita, possibile sviluppo di cumuli." : LI <= 0 ? "un valore che indica leggera instabilita o neutralita." : "un valore che indica atmosfera stabile, scarsa probabilita di temporali.";
-  
-  // Compute oraInnesco and tempInnesco before using them
-  const oraInnesco = termicheOrarie.find((t) => t.rateo >= 0.3)?.ora;
-  const tempInnesco = oraInnesco !== undefined ? termicheOrarie.find((t) => t.ora === oraInnesco)?.temp ?? current?.temperature ?? 0 : 0;
-  
-  const tempInnescoDesc = tempInnesco
-    ? `La temperatura di innesco è di ${tempInnesco.toFixed(1)} °C, il che significa che le termiche si attiveranno spontaneamente quando il suolo raggiungerà questa temperatura, verosimilmente tra le ${String(oraInnesco !== undefined ? oraInnesco : 10).padStart(2, "0")} e le ${String(oraInnesco !== undefined ? oraInnesco + 1 : 11).padStart(2, "0")}.`
-    : "";
-  
-  const baseNubiDesc = `La base delle nubi (salita massima) è prevista a ${cloudBase} m, una quota relativamente bassa che limita il guadagno verticale a circa ${Math.max(0, cloudBase - currentSite.altitude)}–${Math.max(0, cloudBase - currentSite.altitude + 200)} metri sopra il suolo – non aspettarti di volare a 4000 metri con questa configurazione, perche l'umidita condensa presto.`;
-  const zeroTermicoDesc = `Lo zero termico si trova a ${zeroTermico} m, valore ${zeroTermico > 4000 ? "alto" : "moderato"} che indica aria calda in quota, ma il forte contrasto tra bassi strati caldi e medi strati piu freschi genera proprio l'instabilita che porta ai temporali.`;
-  const cinDesc = `Il CIN (energia di inibizione) e di ${CIN} J/kg, dal grafico sembra ${CIN <= 50 ? "basso o assente" : "moderato"}; quindi le termiche partiranno senza ostacoli gia al mattino.`;
-  
-  return `${liDesc} ${tempInnescoDesc} ${baseNubiDesc} ${zeroTermicoDesc} ${cinDesc}`;
-}, [LI, current?.temperature, current?.dewPoint, current?.humidity, current?.cloudCover, cloudBase, currentSite.altitude, zeroTermico, CIN, termicheOrarie]);
+          🧭 GIUDIZIO GENERALE: {giudizioScore}/10 – Giornata volabile ma con forte limitazione temporale a causa di temporali attesi dal primo pomeriggio. Buone termiche tra le 11 e le 13, ma dopo le 15 le condizioni diventano rapidamente critiche per pioggia e turbolenza. Finestra operativa sicura: decollo entro le {String(inizioFinestra).padStart(2, "0")}:00, rientro e atterraggio completati entro le {String(fineFinestra).padStart(2, "0")}:30 tassativo.
 
-// ... rest of the component ...
+          🔥 ANDAMENTO TERMICHE ORARIO: {andamentoTermiche}
+
+          🌧️ PRECIPITAZIONI PREVISTE: {precipitazioniTesto}
+
+          📈 ANALISI DELL'EMAGRAMMA – PARAMETRI CHIAVE: {analisiEmagramma}
+
+          🧭 INTERPRETAZIONE COMPLESSIVA: {interpretazione}
+
+          🛩️ CONSIGLI OPERATIVI PER IL PILOTA: {consigli}
+
+          📌 RIEPILOGO FINALE IN BREVE: {riepilogo}
+          
+          ⚠️ Avvertenza finale: questo report è basato su modelli numerici e ha valore di supporto alla pianificazione; non sostituisce il bollettino meteorologico ufficiale né l'osservazione diretta delle condizioni reali. La responsabilità della decisione di volare e della sicurezza in volo è sempre e solo del pilota. Detto questo, la giornata offre opportunità interessanti se affrontata con disciplina, prudenza e rispetto dei limiti temporali.
+        </p>
+      </div>
+
+      {/* Quick Summary Cards */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className={`rounded-lg p-3 border ${getRischioBg(giudizioScore * 10)}`}>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-slate-400">GIUDIZIO GIORNATA</span>
+            <span className={`text-sm font-bold ${getRischioText(giudizioScore * 10)}`}>{giudizioScore}/10</span>
+          </div>
+          <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+            <div className={`h-full ${getRischioBar(giudizioScore * 10)} rounded-full transition_all duration-500`} style={{ width: `${giudizioScore * 10}%` }} />
+          </div>
+          <p className="text-xs text-slate-300">{giudizioLabel}</p>
+        </div>
+
+        <div className="bg-slate-800/50 border border-slate-700/30 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-slate-400">FINESTRA OPERATIVA</span>
+            <span className="text-sm font-bold text-white">{String(inizioFinestra).padStart(2, "0")}:00 – {String(fineFinestra).padStart(2, "0")}:30</span>
+          </div>
+          <p className="text-xs text-slate-300">Decollo entro {String(inizioFinestra).padStart(2, "0")}:00, atterraggio tassativo entro {String(fineFinestra).padStart(2, "0")}:30</p>
+        </div>
+
+        <div className="bg-slate-800/50 border border-slate-700/30 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-slate-400">LI (Lifted Index)</span>
+            <span className="text-sm font-bold text-white">LI</span>
+          </div>
+          <p className="text-xs text-slate-300">{LI <= -4 ? "Alta instabilità – Rischio temporali" : LI <= -2 ? "Instabilità moderata" : "Atmosfera stabile"}</p>
+        </div>
+
+        <div className="bg-slate-800/50 border border-slate-700/30 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-slate-400">BASE NUBI / ZERO TERMICO</span>
+            <span className="text-sm font-bold text-white">{cloudBase} m / {zeroTermico} m</span>
+          </div>
+          <p className="text-xs text-slate-300">Guadagno max: ~{Math.max(0, cloudBase - sito.altitude)} m sopra decollo</p>
+        </div>
+
+        <div className="bg-slate-800/50 border border-slate-700/30 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-slate-400">PRECIPITAZIONI TOTALI</span>
+            <span className="text-sm font-bold text-white">{totalPrecipitation.toFixed(1)} mm</span>
+          </div>
+          <p className="text-xs text-slate-300">Prima pioggia: {firstRainHour ? String(firstRainHour).padStart(2, "0") + ":00" : "Nessuna"}</p>
+        </div>
+
+        <div className="bg-slate-800/50 border border-slate-700/30 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-slate-400">TERMICHE MAX</span>
+            <span className="text-sm font-bold text-white">{maxRateo.toFixed(1)} m/s</span>
+          </div>
+          <p className="text-xs text-slate-300">Picco tra le 11-13, crollo dopo le 16</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Helper functions for risk display
 function getRischioBg(r: number): string {
   if (r >= 70) return "bg-red-900/30 border-red-500/40";
   if (r >= 40) return "bg-orange-900/30 border-orange-500/40";
   if (r >= 15) return "bg-amber-900/30 border-orange-500/40";
-  if (r >= 5) return "bg-yellow-500/20 border-yellow-500/30";
-  return "bg-green-500/20 border-green-500/30";
+  if (r >= 5) return "bg-yellow-900/20 border-yellow-500/30";
+  return "bg-green-900/20 border-green-500/30";
 }
 
 function getRischioText(r: number): string {
@@ -77,6 +189,3 @@ function getRischioBar(r: number): string {
   if (r >= 5) return "bg-yellow-500";
   return "bg-green-500";
 }
-
-// Import Activity icon
-import { Activity } from "lucide-react";
