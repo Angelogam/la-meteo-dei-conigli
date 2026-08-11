@@ -1,21 +1,3 @@
-<dyad-write path="src/components/Windgram.tsx" description="Aggiunge il windgram alla componente windgram" />
-
-**3. Aggiornamento `src/pages/Index.tsx`:**
-
-<dyad-write path="src/pages/Index.tsx" description="Aggiunge il windgram al componente principale" />
-
----
-
-**Riepilogo delle modifiche:**
-
-- **Nuovo file `src/utils/windgram.ts`**: Utility per generare il windgram con dati vento interpolati da Open-Meteo
-- **`VentiInterpolatiTab.tsx`**: Aggiunto `generateWindgramFull` per mostrare il windgram completo
-- **`Windgram.tsx`**: Aggiunto supporto per il windgram
-- **`Index.tsx`**: Aggiunto import e utilizzo del windgram
-
-Il windgram ora mostra il profilo vento a quote specifiche (decollo, 500m, 1000m, ..., 4000m) con velocità e direzione del vento, oltre alle raffiche.
-
-Vuoi che proceda con l'integrazione completa? 🚀<dyad-write path="src/components/VentiInterpolatiTab.tsx" description="Aggiunge il windgram alla tabella vento">
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -60,7 +42,15 @@ interface VentiInterpolatiTabProps {
   siteName?: string;
 }
 
-export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDay, oraCorrente = 12, onOraChange, siteName }: VentiInterpolatiTabProps) {
+export default function VentiInterpolatiTab({
+  lat,
+  lon,
+  quotaDecollo,
+  selectedDay,
+  oraCorrente = 12,
+  onOraChange,
+  siteName,
+}: VentiInterpolatiTabProps) {
   const [data, setData] = useState<VentiInterpolatiData | null>(null);
   const [windgramData, setWindgramData] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -78,27 +68,30 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
     setError(null);
 
     getVentiInterpolati(lat, lon, quotaDecollo, dayStr)
-      .then(result => {
+      .then((result) => {
         setData(result);
         setLoading(false);
         if (result.ventoOrario.length > 0) {
-          const closest = result.ventoOrario.reduce((prev, curr) =>
-            Math.abs(curr.ora - oraCorrente) < Math.abs(prev.ora - oraCorrente) ? curr : prev
+          const closest = result.ventoOrario.reduce(
+            (prev, curr) =>
+              Math.abs(curr.ora - oraCorrente) < Math.abs(prev.ora - oraCorrente)
+                ? curr
+                : prev
           );
           setOraSelezionata(closest.ora);
         }
       })
-      .catch(err => {
+      .catch((err) => {
         setError(err instanceof Error ? err.message : "Errore");
         setLoading(false);
       });
 
     // Fetch windgram data
     generateWindgramFull(lat, lon, quotaDecollo, dayStr)
-      .then(result => {
+      .then((result) => {
         setWindgramData(result);
       })
-      .catch(err => {
+      .catch((err) => {
         console.warn("Windgram data error:", err);
       });
   }, [lat, lon, quotaDecollo, selectedDay, oraCorrente]);
@@ -137,14 +130,17 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
   }
 
   // Dati dell'ora selezionata
-  const oraData = data.ventoOrario.find(v => v.ora === oraSelezionata) || data.ventoOrario[0];
+  const oraData = data.ventoOrario.find((v) => v.ora === oraSelezionata) || data.ventoOrario[0];
 
   // Quote visibili nel grafico (da quota decollo a 4000m ogni 250m)
   const quoteVisibili: number[] = [];
   for (let q = data.quotaDecollo; q <= 4000; q += 250) {
     quoteVisibili.push(q);
   }
-  const maxSpeed = Math.max(...quoteVisibili.map(q => oraData.quote[q]?.speed || 0), 1);
+  const maxSpeed = Math.max(
+    ...quoteVisibili.map((q) => oraData.quote[q]?.speed || 0),
+    1
+  );
 
   return (
     <div className="space-y-3">
@@ -152,7 +148,8 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
       {windgramData && windgramData.length > 0 && (
         <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4">
           <h4 className="text-base font-bold text-emerald-300 mb-3 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5" /> Windgram — {siteName || "Decollo"}
+            <TrendingUp className="w-5 h-5" />
+            <span>{siteName || "Decollo"}</span>
           </h4>
           <div className="space-y-1">
             {windgramData.map((entry) => {
@@ -160,12 +157,10 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
               return (
                 <div key={entry.quota} className="grid grid-cols-[3.5rem_1fr_5rem] gap-2 items-center py-0.5">
                   <span className="text-xs font-mono text-slate-500 text-right">{entry.quota}m</span>
-                  <div className="h-4 bg-slate-800/50 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${getSpeedBarColor(entry.speed)}`}
-                      style={{ width: `${wPerc}%` }}
-                    />
-                  </div>
+                  <div
+                    className="h-4 bg-slate-800/50 rounded-full overflow-hidden"
+                    style={{ width: `${wPerc}%` }}
+                  />
                   <div className="flex items-center gap-1 text-xs font-mono text-slate-300">
                     <span>{entry.speed}</span>
                     <span className="text-slate-500">km/h</span>
@@ -180,39 +175,39 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
 
       {/* Selezione oraria */}
       <div className="flex flex-wrap gap-1.5">
-        {data.ventoOrario.map(v => (
+        {data.ventoOrario.map((v) => (
           <button
             key={v.ora}
             onClick={() => {
               setOraSelezionata(v.ora);
               onOraChange?.(v.ora);
             }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-              v.ora === oraSelezionata
+            className={`
+              px-3 py-1.5 rounded-lg text-xs font-bold transition-all
+              border ${v.ora === oraSelezionata
                 ? "bg-emerald-600/30 border-emerald-400/50 text-emerald-200"
                 : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700/40"
-            }`}
-          >
-            {String(v.ora).padStart(2, "0")}:00
+            `}
+            >
+              {String(v.ora).padStart(2, "0")}:00
+            </button>
           </button>
         ))}
       </div>
 
       {/* Grafico vento per tutte le quote */}
       <div className="space-y-1">
-        {quoteVisibili.map(q => {
+        {quoteVisibili.map((q) => {
           const entry = oraData.quote[q];
           if (!entry) return null;
           const wPerc = Math.max(6, (entry.speed / Math.max(maxSpeed, 1)) * 100);
           return (
             <div key={q} className="grid grid-cols-[3.5rem_1fr_5rem] gap-2 items-center py-0.5">
               <span className="text-xs font-mono text-slate-500 text-right">{q}m</span>
-              <div className="h-4 bg-slate-800/50 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full ${getSpeedBarColor(entry.speed)}`}
-                  style={{ width: `${wPerc}%` }}
-                />
-              </div>
+              <div
+                className="h-4 bg-slate-800/50 rounded-full overflow-hidden"
+                style={{ width: `${wPerc}%` }}
+              />
               <div className="flex items-center gap-1 text-xs font-mono text-slate-300">
                 <span>{entry.speed}</span>
                 <span className="text-slate-500">km/h</span>
@@ -225,11 +220,26 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
 
       {/* Legenda colori velocità */}
       <div className="flex flex-wrap gap-2 text-[11px] text-slate-400">
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-emerald-400" /> ≤8</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-lime-400" /> 9-15</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-amber-400" /> 16-22</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-orange-400" /> 23-30</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-red-400" /> over 30</span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded-sm bg-emerald-400" />
+          ≤8
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded-sm bg-lime-400" />
+          9-15
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded-sm bg-amber-400" />
+          16-22
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded-sm bg-orange-400" />
+          23-30
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded-sm bg-red-400" />
+          over 30
+        </span>
       </div>
     </div>
   );

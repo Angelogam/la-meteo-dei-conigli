@@ -25,7 +25,13 @@ interface WindgramProps {
   selectedDay?: number;
 }
 
-export default function Windgram({ lat, lon, quotaDecollo, siteName, selectedDay = 0 }: WindgramProps) {
+export default function Windgram({
+  lat,
+  lon,
+  quotaDecollo,
+  siteName,
+  selectedDay = 0,
+}: WindgramProps) {
   const [windgramData, setWindgramData] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,11 +48,11 @@ export default function Windgram({ lat, lon, quotaDecollo, siteName, selectedDay
     setError(null);
 
     generateWindgramFull(lat, lon, quotaDecollo, dayStr)
-      .then(result => {
+      .then((result) => {
         setWindgramData(result);
         setLoading(false);
       })
-      .catch(err => {
+      .catch((err) => {
         setError(err instanceof Error ? err.message : "Errore");
         setLoading(false);
       });
@@ -80,7 +86,7 @@ export default function Windgram({ lat, lon, quotaDecollo, siteName, selectedDay
     );
   }
 
-  const maxSpeed = Math.max(...windgramData.map(e => e.speed), 1);
+  const maxSpeed = Math.max(...windgramData.map((e) => e.speed), 1);
 
   return (
     <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4">
@@ -99,12 +105,10 @@ export default function Windgram({ lat, lon, quotaDecollo, siteName, selectedDay
           return (
             <div key={entry.quota} className="grid grid-cols-[3.5rem_1fr_5rem] gap-2 items-center py-0.5">
               <span className="text-xs font-mono text-slate-500 text-right">{entry.quota}m</span>
-              <div className="h-4 bg-slate-800/50 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full ${getSpeedBarColor(entry.speed)}`}
-                  style={{ width: `${wPerc}%` }}
-                />
-              </div>
+              <div
+                className="h-4 bg-slate-800/50 rounded-full overflow-hidden"
+                style={{ width: `${wPerc}%` }}
+              />
               <div className="flex items-center gap-1 text-xs font-mono text-slate-300">
                 <span>{entry.speed}</span>
                 <span className="text-slate-500">km/h</span>
@@ -116,11 +120,26 @@ export default function Windgram({ lat, lon, quotaDecollo, siteName, selectedDay
       </div>
 
       <div className="flex flex-wrap gap-2 text-[10px] text-slate-400 mt-3">
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-400" /> ≤8</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-lime-400" /> 9-15</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-amber-400" /> 16-22</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-orange-400" /> 23-30</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-red-400" /> over 30</span>
+        <span className="flex items-center gap-1">
+          <span className="w-2.5 h-2.5 rounded-sm bg-emerald-400" />
+          ≤8
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2.5 h-2.5 rounded-sm bg-lime-400" />
+          9-15
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2.5 h-2.5 rounded-sm bg-amber-400" />
+          16-22
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2.5 h-2.5 rounded-sm bg-orange-400" />
+          23-30
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2.5 h-2.5 rounded-sm bg-red-400" />
+          over 30
+        </span>
       </div>
     </div>
   );

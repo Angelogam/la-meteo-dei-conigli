@@ -69,8 +69,17 @@ export async function fetchWindProfile(
         quota: ora,
         speed: speeds[i] ?? 0,
         dir: dirs[i] ?? 0,
-        dirName: ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][Math.round(((dirs[i] ?? 0) % 360) / 45) % 8],
-      });
+        dirName: [
+          "N",
+          "NE",
+          "E",
+          "SE",
+          "S",
+          "SW",
+          "W",
+          "NW",
+        ][Math.round(((dirs[i] ?? 0) % 360) / 45) % 8],
+      ]);
     }
   }
 
