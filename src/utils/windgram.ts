@@ -79,7 +79,7 @@ export async function fetchWindProfile(
           "W",
           "NW",
         ][Math.round(((dirs[i] ?? 0) % 360) / 45) % 8],
-      ]);
+      });
     }
   }
 

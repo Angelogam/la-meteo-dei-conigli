@@ -188,9 +188,8 @@ export default function VentiInterpolatiTab({
                 ? "bg-emerald-600/30 border-emerald-400/50 text-emerald-200"
                 : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700/40"
             `}
-            >
-              {String(v.ora).padStart(2, "0")}:00
-            </button>
+          >
+            {String(v.ora).padStart(2, "0")}:00
           </button>
         ))}
       </div>
