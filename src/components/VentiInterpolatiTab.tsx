@@ -13,14 +13,6 @@ function getSpeedColor(speed: number): string {
   return "text-red-400";
 }
 
-function getSpeedBarColor(speed: number): string {
-  if (speed <= 8) return "bg-emerald-400";
-  if (speed <= 15) return "bg-lime-400";
-  if (speed <= 22) return "bg-amber-400";
-  if (speed <= 30) return "bg-orange-400";
-  return "bg-red-400";
-}
-
 function getDirAbbrev(deg: number): string {
   const abbrevs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
   return abbrevs[Math.round(deg / 22.5) % 16] || "N";
