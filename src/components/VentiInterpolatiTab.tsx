@@ -3,6 +3,16 @@ import { Wind, Calendar, MapPin, TrendingUp } from "lucide-react";
 import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
 import { generateWindgramFull } from "@/utils/windgram";
 
+interface VentiInterpolatiTabProps {
+  lat: number;
+  lon: number;
+  quotaDecollo: number;
+  selectedDay: number;
+  oraCorrente?: number;
+  onOraChange?: (ora: number) => void;
+  siteName?: string;
+}
+
 function getSpeedColor(speed: number): string {
   if (speed <= 8) return "text-emerald-300";
   if (speed <= 15) return "text-lime-300";
