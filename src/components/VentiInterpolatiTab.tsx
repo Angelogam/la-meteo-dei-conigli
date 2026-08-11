@@ -146,13 +146,12 @@ export default function VentiInterpolatiTab({
           <div className="space-y-1">
             {windgramData.map((entry) => {
               const wPerc = Math.max(6, (entry.speed / Math.max(maxSpeed, 1)) * 100);
-              const widthStyle = { width: wPerc + "%" };
               return (
                 <div key={entry.quota} className="grid grid-cols-[3.5rem_1fr_5rem] gap-2 items-center py-0.5">
                   <span className="text-xs font-mono text-slate-500 text-right">{entry.quota}m</span>
                   <div
                     className="h-4 bg-slate-800/50 rounded-full overflow-hidden"
-                    style={widthStyle}
+                    style={{ width: `${wPerc}%` }}
                   />
                   <div className="flex items-center gap-1 text-xs font-mono text-slate-300">
                     <span>{entry.speed}</span>
@@ -193,13 +192,12 @@ export default function VentiInterpolatiTab({
           const entry = oraData.quote[q];
           if (!entry) return null;
           const wPerc = Math.max(6, (entry.speed / Math.max(maxSpeed, 1)) * 100);
-          const widthStyle = { width: wPerc + "%" };
           return (
             <div key={q} className="grid grid-cols-[3.5rem_1fr_5rem] gap-2 items-center py-0.5">
               <span className="text-xs font-mono text-slate-500 text-right">{q}m</span>
               <div
                 className="h-4 bg-slate-800/50 rounded-full overflow-hidden"
-                style={widthStyle}
+                style={{ width: `${wPerc}%` }}
               />
               <div className="flex items-center gap-1 text-xs font-mono text-slate-300">
                 <span>{entry.speed}</span>
