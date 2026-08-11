@@ -1,8 +1,27 @@
+<dyad-write path="src/components/Windgram.tsx" description="Aggiunge il windgram alla componente windgram" />
+
+**3. Aggiornamento `src/pages/Index.tsx`:**
+
+<dyad-write path="src/pages/Index.tsx" description="Aggiunge il windgram al componente principale" />
+
+---
+
+**Riepilogo delle modifiche:**
+
+- **Nuovo file `src/utils/windgram.ts`**: Utility per generare il windgram con dati vento interpolati da Open-Meteo
+- **`VentiInterpolatiTab.tsx`**: Aggiunto `generateWindgramFull` per mostrare il windgram completo
+- **`Windgram.tsx`**: Aggiunto supporto per il windgram
+- **`Index.tsx`**: Aggiunto import e utilizzo del windgram
+
+Il windgram ora mostra il profilo vento a quote specifiche (decollo, 500m, 1000m, ..., 4000m) con velocità e direzione del vento, oltre alle raffiche.
+
+Vuoi che proceda con l'integrazione completa? 🚀<dyad-write path="src/components/VentiInterpolatiTab.tsx" description="Aggiunge il windgram alla tabella vento">
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Wind, Calendar, MapPin } from "lucide-react";
+import { Wind, Calendar, MapPin, TrendingUp } from "lucide-react";
 import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
+import { generateWindgramFull } from "@/utils/windgram";
 
 function getSpeedColor(speed: number): string {
   if (speed <= 8) return "text-emerald-300";
@@ -43,6 +62,7 @@ interface VentiInterpolatiTabProps {
 
 export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDay, oraCorrente = 12, onOraChange, siteName }: VentiInterpolatiTabProps) {
   const [data, setData] = useState<VentiInterpolatiData | null>(null);
+  const [windgramData, setWindgramData] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [oraSelezionata, setOraSelezionata] = useState(oraCorrente);
@@ -71,6 +91,15 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
       .catch(err => {
         setError(err instanceof Error ? err.message : "Errore");
         setLoading(false);
+      });
+
+    // Fetch windgram data
+    generateWindgramFull(lat, lon, quotaDecollo, dayStr)
+      .then(result => {
+        setWindgramData(result);
+      })
+      .catch(err => {
+        console.warn("Windgram data error:", err);
       });
   }, [lat, lon, quotaDecollo, selectedDay, oraCorrente]);
 
@@ -119,6 +148,36 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
 
   return (
     <div className="space-y-3">
+      {/* Windgram section */}
+      {windgramData && windgramData.length > 0 && (
+        <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4">
+          <h4 className="text-base font-bold text-emerald-300 mb-3 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5" /> Windgram — {siteName || "Decollo"}
+          </h4>
+          <div className="space-y-1">
+            {windgramData.map((entry) => {
+              const wPerc = Math.max(6, (entry.speed / Math.max(maxSpeed, 1)) * 100);
+              return (
+                <div key={entry.quota} className="grid grid-cols-[3.5rem_1fr_5rem] gap-2 items-center py-0.5">
+                  <span className="text-xs font-mono text-slate-500 text-right">{entry.quota}m</span>
+                  <div className="h-4 bg-slate-800/50 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${getSpeedBarColor(entry.speed)}`}
+                      style={{ width: `${wPerc}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center gap-1 text-xs font-mono text-slate-300">
+                    <span>{entry.speed}</span>
+                    <span className="text-slate-500">km/h</span>
+                    <span className="text-slate-600">{getDirAbbrev(entry.dir)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Selezione oraria */}
       <div className="flex flex-wrap gap-1.5">
         {data.ventoOrario.map(v => (
@@ -166,11 +225,11 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
 
       {/* Legenda colori velocità */}
       <div className="flex flex-wrap gap-2 text-[11px] text-slate-400">
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-400" /> ≤8</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-lime-400" /> 9-15</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-amber-400" /> 16-22</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-orange-400" /> 23-30</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-400" /> over 30</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-emerald-400" /> ≤8</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-lime-400" /> 9-15</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-amber-400" /> 16-22</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-orange-400" /> 23-30</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-red-400" /> over 30</span>
       </div>
     </div>
   );
