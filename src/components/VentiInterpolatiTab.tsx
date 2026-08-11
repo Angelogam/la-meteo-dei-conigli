@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect, useState } from "react";
 import { Wind, Calendar, MapPin, TrendingUp } from "lucide-react";
 import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
@@ -22,16 +20,6 @@ function formatDateShort(date: Date): string {
   const d = date instanceof Date ? date : new Date(date);
   if (isNaN(d.getTime())) return "";
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
-}
-
-interface VentiInterpolatiTabProps {
-  lat: number;
-  lon: number;
-  quotaDecollo: number;
-  selectedDay: number;
-  oraCorrente?: number;
-  onOraChange?: (ora: number) => void;
-  siteName?: string;
 }
 
 export default function VentiInterpolatiTab({
@@ -151,7 +139,7 @@ export default function VentiInterpolatiTab({
                   <span className="text-xs font-mono text-slate-500 text-right">{entry.quota}m</span>
                   <div
                     className="h-4 bg-slate-800/50 rounded-full overflow-hidden"
-                    style={{ width: `${wPerc}%` }}
+                    style={{ width: wPerc + '%' }}
                   />
                   <div className="flex items-center gap-1 text-xs font-mono text-slate-300">
                     <span>{entry.speed}</span>
@@ -179,7 +167,8 @@ export default function VentiInterpolatiTab({
               border ${v.ora === oraSelezionata
                 ? "bg-emerald-600/30 border-emerald-400/50 text-emerald-200"
                 : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700/40"
-            `}
+              }
+            }
           >
             {String(v.ora).padStart(2, "0")}:00
           </button>
@@ -197,7 +186,7 @@ export default function VentiInterpolatiTab({
               <span className="text-xs font-mono text-slate-500 text-right">{q}m</span>
               <div
                 className="h-4 bg-slate-800/50 rounded-full overflow-hidden"
-                style={{ width: `${wPerc}%` }}
+                style={{ width: wPerc + '%' }}
               />
               <div className="flex items-center gap-1 text-xs font-mono text-slate-300">
                 <span>{entry.speed}</span>
