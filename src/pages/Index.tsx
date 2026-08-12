@@ -282,38 +282,73 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
                 <span className="text-lg font-bold text-emerald-300">Decolli</span>
                 <span className="text-sm text-slate-500 bg-slate-700/60 px-2 py-0.5 rounded-full ml-auto">{DECOLLI.length}</span>
               </div>
-              <div className="grid grid-cols-1 gap-2 px-4 pb-4">
-                {DECOLLI.map((decollo) => (
-                  <button
-                    key={decollo.id}
-                    onClick={() => setSelectedId(decollo.id)}
-                    className={`
-                      w-full text-left rounded-xl p-3 transition-all border-2
-                      ${
-                        selectedId === decollo.id
+              <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
+                {DECOLLI.map((decollo) => {
+                  const isSelected = selectedId === decollo.id;
+                  const hourly = allHourlyData?.[decollo.id];
+                  const hasData = hourly && hourly.length > 0;
+                  const temp = hasData ? Math.round(hourly[0].temperature) : null;
+                  const wind = hasData ? Math.round(hourly[0].windSpeed) : null;
+                  const dir = hasData ? Math.round(hourly[0].windDir) : null;
+                  const gust = hasData && hourly[0].windGusts > 0 ? Math.round(hourly[0].windGusts) : null;
+                  const code = hasData ? hourly[0].weatherCode : null;
+                  const dirArrow = dir != null ? ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"][Math.round(dir / 45) % 8] : "";
+                  const dirName = dir != null ? ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][Math.round(dir / 45) % 8] : "";
+                  const emoji = code != null ? 
+                    code === 0 ? "☀️" :
+                    code <= 2 ? "🌤️" :
+                    code <= 3 ? "☁️" :
+                    code <= 48 ? "🌫️" :
+                    code <= 57 ? "🌦️" :
+                    code <= 67 ? "🌧️" :
+                    code <= 77 ? "🌨️" :
+                    code <= 82 ? "🌦️" :
+                    code >= 95 ? "⛈️" :
+                    "☀️" : "—";
+
+                  return (
+                    <button
+                      key={decollo.id}
+                      onClick={() => setSelectedId(decollo.id)}
+                      className={`
+                        card w-full text-left p-4 transition-all border-2 cursor-pointer
+                        ${isSelected
                           ? "bg-emerald-900/50 border-emerald-500 shadow-lg"
                           : "bg-slate-800/40 border-slate-700/40 hover:bg-slate-700/50"
-                      }
-                    `}
-                  >
-                    <div className="text-sm font-bold text-white">{decollo.name}</div>
-                    <div className="text-xs text-slate-400 mt-0.5">
-                      {decollo.altitude}m • {decollo.exposure}
-                    </div>
-                    {allHourlyData?.[decollo.id]?.[0] && (
-                      <div className="flex items-center gap-2 mt-2 text-xs">
-                        <span className="text-2xl">
-                          {allHourlyData[decollo.id][0].weatherCode === 0 ? "☀️" :
-                           allHourlyData[decollo.id][0].weatherCode <= 2 ? "🌤️" :
-                           allHourlyData[decollo.id][0].weatherCode <= 3 ? "☁️" :
-                           "🌧️"}
-                        </span>
-                        <span className="font-bold text-amber-300">{Math.round(allHourlyData[decollo.id][0].temperature)}°C</span>
-                        <span className="text-slate-400">• {Math.round(allHourlyData[decollo.id][0].windSpeed)} km/h</span>
+                        }
+                      `}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="text-2xl mt-0.5 shrink-0">{emoji}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-base font-bold text-white mb-1 flex items-center gap-1">
+                            {decollo.name}
+                            {isSelected && <span className="w-4 h-4 text-emerald-400">✦</span>}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
+                            <span className="flex items-center gap-1"><span className="w-4 h-4 text-sky-400">⟳</span>{decollo.exposure}</span>
+                            <span className="flex items-center gap-1"><span className="w-4 h-4 text-amber-400">⛰️</span>{decollo.altitude}m</span>
+                            <span className="flex items-center gap-1"><span className="w-4 h-4 text-rose-400">📍</span>{decollo.valley}</span>
+                          </div>
+                          {hasData && temp != null && (
+                            <div className="flex items-center gap-4 mt-3 pt-2 border-t border-slate-700/30">
+                              <span className="flex items-center gap-1.5 text-base font-bold text-amber-300">
+                                <span className="w-5 h-5 text-amber-400">🌡️</span>{temp}°
+                              </span>
+                              <span className="flex items-center gap-1.5 text-base font-bold text-sky-300">
+                                <span className="w-5 h-5 text-sky-400">💨</span>{wind}
+                                <span className="text-slate-400 font-normal text-sm">{dirArrow}{dirName}</span>
+                              </span>
+                              {gust != null && gust > 0 && (
+                                <span className="text-sm text-red-300"><span className="w-4 h-4">📊</span>{gust}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </aside>
