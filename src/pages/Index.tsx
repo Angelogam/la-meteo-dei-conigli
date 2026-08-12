@@ -204,7 +204,7 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
     } else {
       testo += `La giornata presenta condizioni di instabilità moderata, con possibilità di sviluppo di termiche organizzate. `;
     }
-    testo += `La morfologia alpina di ${currentSite.name} favorisce inoltre convergenze orografiche che possono anticipare o ritardare l'innesco dei temporali rispetto alle previsioni orarie, quindi il pilota deve basarsi anche sull'osservazione diretta del cielo e non solo sui modelli. I cumuli che si formeranno al mattino saranno inizialmente benigni e ben segnati, ma già dalle ${String(
+    testo += `La morfologia alpina di ${currentSite.name} favorisce inoltre convergenze orografiche che possono anticipare o ritardare l'innesco dei temporali rispetto alle previsioni orarie, quindi il pilota deve basarsi anche sull'osservazione diretta del cielo e non solo sui modelli. I cumuli che siformeranno al mattino saranno inizialmente benigni e ben segnati, ma già dalle ${String(
       primaOraPioggia !== undefined ? primaOraPioggia : 13
     ).padStart(2, "0")}:00 vanno monitorati con attenzione: se iniziano a crescere verticalmente assumendo forme a cavolfiore o a incudine, significa che il temporale è in fase di sviluppo e il rientro va anticipato.`;
     return testo;
@@ -275,7 +275,7 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
       <Header />
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6">
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Sidebar - Decolli list */}
+          {/* Sidebar - Decolli list (single scrollable card) */}
           <aside className="w-full lg:w-80 space-y-4">
             <div className="card bg-slate-800/60 border border-emerald-500/30">
               <div className="flex items-center gap-2 px-4 py-3">
@@ -283,7 +283,7 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
                 <span className="text-sm text-slate-500 bg-slate-700/60 px-2 py-0.5 rounded-full ml-auto">{DECOLLI.length}</span>
               </div>
               <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
-                {DECOLLI.map((decollo) => {
+                {DECOLLI.map((decollo, index) => {
                   const isSelected = selectedId === decollo.id;
                   const hourly = allHourlyData?.[decollo.id];
                   const hasData = hourly && hourly.length > 0;
