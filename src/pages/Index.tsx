@@ -200,7 +200,7 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
     }
     let testo = "";
     if (LI <= -5) {
-      testo += `La giornata è tipicamente pre-temporalesca, con riscaldamento diurno intenso che interagisce con aria umida in quota. L'alto zero termico e il LI molto negativi indicano che una volta innescata la convezione, questa si svilupperà rapidamente e in modo violento. `;
+      testo += `La giornata è tipicamente pre-temporalesca, con riscaldamento diurno intenso che interagisce con aria umida in quota. L'alto zero termico e il LI molto negativi indicano che una volta innazata la convezione, questa si svilupperà rapidamente e in modo violento. `;
     } else {
       testo += `La giornata presenta condizioni di instabilità moderata, con possibilità di sviluppo di termiche organizzate. `;
     }
@@ -275,8 +275,50 @@ Dopo le 16 crollo verticale: ${seraMedia.toFixed(1)} m/s con solo ${Math.round(s
       <Header />
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6">
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* ... aside content ... */}
+          {/* Sidebar - Decolli list */}
+          <aside className="w-full lg:w-80 space-y-4">
+            <div className="card bg-slate-800/60 border border-emerald-500/30">
+              <div className="flex items-center gap-2 px-4 py-3">
+                <span className="text-lg font-bold text-emerald-300">Decolli</span>
+                <span className="text-sm text-slate-500 bg-slate-700/60 px-2 py-0.5 rounded-full ml-auto">{DECOLLI.length}</span>
+              </div>
+              <div className="grid grid-cols-1 gap-2 px-4 pb-4">
+                {DECOLLI.map((decollo) => (
+                  <button
+                    key={decollo.id}
+                    onClick={() => setSelectedId(decollo.id)}
+                    className={`
+                      w-full text-left rounded-xl p-3 transition-all border-2
+                      ${
+                        selectedId === decollo.id
+                          ? "bg-emerald-900/50 border-emerald-500 shadow-lg"
+                          : "bg-slate-800/40 border-slate-700/40 hover:bg-slate-700/50"
+                      }
+                    `}
+                  >
+                    <div className="text-sm font-bold text-white">{decollo.name}</div>
+                    <div className="text-xs text-slate-400 mt-0.5">
+                      {decollo.altitude}m • {decollo.exposure}
+                    </div>
+                    {allHourlyData?.[decollo.id]?.[0] && (
+                      <div className="flex items-center gap-2 mt-2 text-xs">
+                        <span className="text-2xl">
+                          {allHourlyData[decollo.id][0].weatherCode === 0 ? "☀️" :
+                           allHourlyData[decollo.id][0].weatherCode <= 2 ? "🌤️" :
+                           allHourlyData[decollo.id][0].weatherCode <= 3 ? "☁️" :
+                           "🌧️"}
+                        </span>
+                        <span className="font-bold text-amber-300">{Math.round(allHourlyData[decollo.id][0].temperature)}°C</span>
+                        <span className="text-slate-400">• {Math.round(allHourlyData[decollo.id][0].windSpeed)} km/h</span>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </aside>
 
+          {/* Main content */}
           <div className="flex-1 min-w-0 space-y-6">
             {hasData && (
               <>
