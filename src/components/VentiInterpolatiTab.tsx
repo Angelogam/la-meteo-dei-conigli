@@ -54,6 +54,7 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [oraSelezionata, setOraSelezionata] = useState(oraCorrente);
+  const [mostraTutti, setMostraTutti] = useState(false);
 
   useEffect(() => {
     if (!lat || !lon || !quotaDecollo) return;
@@ -92,22 +93,40 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
     return data.ventoOrario.find(v => v.ora === oraSelezionata) || data.ventoOrario[0] || null;
   }, [data, oraSelezionata]);
 
+  // Genera tutte le quote dal decollo ogni 250m fino a 4000m
   const quoteVisibili = useMemo(() => {
     if (!oraData) return [];
+
     const quote: { quota: number; speed: number; dir: number }[] = [];
-    for (const q of QUOTE_GRAFICO) {
+
+    // Genera step ogni 250m dal decollo arrotondato al 250 in giù fino a 4000m
+    const partenza = Math.floor(quotaDecollo / 250) * 250;
+    for (let q = partenza; q <= 4000; q += 250) {
       if (oraData.quote[q]) {
         quote.push({ quota: q, speed: oraData.quote[q].speed, dir: oraData.quote[q].dir });
       }
     }
+
+    // Assicura che la quota decollo esatta sia inclusa
     if (!quote.find(q => Math.abs(q.quota - quotaDecollo) < 100)) {
       const closest = Object.entries(oraData.quote)
         .map(([q, v]) => ({ quota: parseInt(q), ...v }))
         .sort((a, b) => Math.abs(a.quota - quotaDecollo) - Math.abs(b.quota - quotaDecollo))[0];
       if (closest) quote.push(closest);
     }
+
+    // Mostra solo i primi 8 se non è stato chiesto di mostrare tutto
+    if (!mostraTutti && quote.length > 8) {
+      // Mostra il decollo + step fino a ~2500m
+      const prime = quote.filter(q => q.quota <= 2500);
+      if (prime.length > 8) {
+        return prime.slice(0, 8);
+      }
+      return prime;
+    }
+
     return quote.sort((a, b) => a.quota - b.quota);
-  }, [oraData, quotaDecollo]);
+  }, [oraData, quotaDecollo, mostraTutti]);
 
   const maxSpeed = useMemo(() => Math.max(...quoteVisibili.map(q => q.speed), 1), [quoteVisibili]);
 
@@ -179,10 +198,10 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
           <h4 className="text-xs font-bold text-cyan-300 uppercase tracking-wider">
             Profilo verticale · {String(oraSelezionata).padStart(2, "0")}:00
           </h4>
-          <span className="text-[10px] text-slate-500 ml-auto">{quotaDecollo}m → 3000m</span>
+          <span className="text-[10px] text-slate-500 ml-auto">{quotaDecollo}m → 4000m · step 250m</span>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {quoteVisibili.map((q) => {
             const pct = Math.max(6, (q.speed / maxSpeed) * 100);
             const isDecollo = Math.abs(q.quota - quotaDecollo) < 150;
@@ -211,6 +230,23 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
             );
           })}
         </div>
+
+        {!mostraTutti && quoteVisibili.length >= 8 && (
+          <button
+            onClick={() => setMostraTutti(true)}
+            className="w-full mt-2 py-1.5 text-[10px] text-cyan-400 hover:text-cyan-300 border border-cyan-500/20 rounded-lg transition-colors"
+          >
+            Mostra tutte le quote fino a 4000m ▼
+          </button>
+        )}
+        {mostraTutti && (
+          <button
+            onClick={() => setMostraTutti(false)}
+            className="w-full mt-2 py-1.5 text-[10px] text-slate-400 hover:text-slate-300 border border-slate-600/20 rounded-lg transition-colors"
+          >
+            Riduci quote ▲
+          </button>
+        )}
 
         <div className="flex flex-wrap gap-2 text-[10px] text-slate-400 mt-3 pt-2 border-t border-slate-700/30">
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400" /> ≤8</span>
