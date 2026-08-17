@@ -14,7 +14,6 @@ interface LivelloVento {
   height: number;
   speedKmh: number;
   dir: number;
-  fonte: "api" | "stima";
 }
 
 const LIVELLI = [
@@ -30,6 +29,8 @@ const LIVELLI = [
   { height: 2500, speedKey: "wind_speed_2500m", dirKey: "wind_direction_2500m" },
   { height: 3000, speedKey: "wind_speed_3000m", dirKey: "wind_direction_3000m" },
 ];
+
+const ORE_LABEL = ["06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"];
 
 function getDirAbbrev(deg: number): string {
   if (deg == null) return "—";
@@ -52,7 +53,7 @@ function getBarColor(speedKmh: number): string {
 }
 
 export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: ProfiloVentoVerticaleProps) {
-  const [profiloReale, setProfiloReale] = useState<LivelloVento[]>([]);
+  const [datiOrari, setDatiOrari] = useState<{ ora: number; livelli: LivelloVento[] }[]>([]);
   const [loadingApi, setLoadingApi] = useState(false);
   const [errorApi, setErrorApi] = useState<string | null>(null);
   const [showRaw, setShowRaw] = useState(false);
@@ -68,8 +69,6 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
     setLoadingApi(true);
     setErrorApi(null);
 
-    // Richiediamo i dati in km/h direttamente dall'API
-    // Aggiungiamo models=ecmwf_ifs025 per avere i livelli in quota (300m, 600m, ecc.)
     const params = new URLSearchParams({
       latitude: lat.toString(),
       longitude: lon.toString(),
@@ -77,11 +76,10 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
       timezone: "Europe/Rome",
       forecast_days: "1",
       wind_speed_unit: "kmh",
-      models: "ecmwf_ifs025", // <-- Questo modello supporta tutti i livelli fino a 3000m
+      models: "ecmwf_ifs025",
     });
 
     const url = `https://api.open-meteo.com/v1/forecast?${params}`;
-    console.log("[ProfiloVento] Fetching:", url);
 
     fetch(url)
       .then(res => {
@@ -91,81 +89,41 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
       .then(json => {
         if (!attivo) return;
 
+        // Estrai TUTTE le ore
         const times: string[] = json.hourly?.time || [];
-        // Trova 13:00, poi 11-16
-        let idx = times.findIndex(t => {
-          const d = new Date(t);
-          return d.getHours() === 13;
-        });
-        if (idx === -1) {
-          for (let i = 11; i <= 16; i++) {
-            idx = times.findIndex(t => new Date(t).getHours() === i);
-            if (idx !== -1) break;
-          }
-        }
-        if (idx === -1) idx = 0;
+        // Array di tutte le ore valide (6-19)
+        const oreValide: { ora: number; livelli: LivelloVento[] }[] = [];
 
-        const livelliDaApi: LivelloVento[] = [];
-        const livelliStimati: LivelloVento[] = [];
+        let idxSalvato = -1;
 
-        LIVELLI.forEach(l => {
-          const speedRaw = Number(json.hourly?.[l.speedKey]?.[idx]);
-          const dirRaw = Number(json.hourly?.[l.dirKey]?.[idx]);
+        times.forEach((timeStr, idx) => {
+          const ora = new Date(timeStr).getHours();
+          if (ora >= 6 && ora <= 19) {
+            idxSalvato = idx;
 
-          if (speedRaw != null && !isNaN(speedRaw) && speedRaw >= 0) {
-            livelliDaApi.push({
-              height: l.height,
-              speedKmh: Math.round(speedRaw),
-              dir: Math.round(dirRaw),
-              fonte: "api",
+            const livelli: LivelloVento[] = LIVELLI.map(l => {
+              const speedRaw = Number(json.hourly?.[l.speedKey]?.[idx]);
+              const dirRaw = Number(json.hourly?.[l.dirKey]?.[idx]);
+              return {
+                height: l.height,
+                speedKmh: Math.round(speedRaw || 0),
+                dir: Math.round(dirRaw || 0),
+              };
             });
+
+            oreValide.push({ ora, livelli });
           }
         });
-
-        // Se non abbiamo tutti i livelli (es. solo fino a 180m),
-        // stimiamo quelli mancanti in modo realistico
-        if (livelliDaApi.length > 0) {
-          // Ordina per quota
-          const ordinati = [...livelliDaApi].sort((a, b) => a.height - b.height);
-          const ultimoLivello = ordinati[ordinati.length - 1];
-          const primoLivello = ordinati[0];
-
-          // Per ogni quota mancante, stima il vento usando il gradiente
-          const quoteMancanti = LIVELLI
-            .filter(l => l.height > ultimoLivello.height)
-            .map(l => l.height);
-
-          for (const q of quoteMancanti) {
-            // Stima: il vento aumenta di ~2-3 km/h ogni 100m sopra i 180m
-            const deltaQuota = q - ultimoLivello.height;
-            const aumentoKmh = Math.round(deltaQuota * 0.025); // ~2.5 km/h per 100m
-            const speedStimata = ultimoLivello.speedKmh + aumentoKmh;
-
-            // Rotazione direzione: ~2° a 250m
-            const rotazione = Math.round(deltaQuota / 250) * 2;
-            const dirStimata = (ultimoLivello.dir + rotazione) % 360;
-
-            livelliStimati.push({
-              height: q,
-              speedKmh: speedStimata,
-              dir: dirStimata,
-              fonte: "stima",
-            });
-          }
-        }
-
-        const tuttiLivelli = [...livelliDaApi, ...livelliStimati].sort((a, b) => a.height - b.height);
-
-        console.log("[ProfiloVento] Livelli da API:", livelliDaApi.length, "- Livelli stimati:", livelliStimati.length);
 
         setRawData(JSON.stringify({
-          ora: times[idx],
-          datiDaApi: livelliDaApi.map(l => ({ quota: l.height, km_h: l.speedKmh, gradi: l.dir })),
-          datiStimati: livelliStimati.map(l => ({ quota: l.height, km_h: l.speedKmh, gradi: l.dir, nota: "stima" })),
+          oreValide: oreValide.map(o => ({
+            ora: o.ora + ":00",
+            livelli: o.livelli.map(l => ({ quota: l.height, km_h: l.speedKmh, gradi: l.dir })),
+          })),
         }, null, 2));
 
-        if (tuttiLivelli.length > 0) {
-          setProfiloReale(tuttiLivelli);
+        if (oreValide.length > 0) {
+          setDatiOrari(oreValide);
           setLoadingApi(false);
         } else {
           throw new Error("Nessun dato vento disponibile");
@@ -173,70 +131,8 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
       })
       .catch(err => {
         if (!attivo) return;
-        // Se fallisce con ECMWF, prova con GFS
-        const paramsFallback = new URLSearchParams({
-          latitude: lat.toString(),
-          longitude: lon.toString(),
-          hourly: "wind_speed_10m,wind_direction_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m,wind_speed_300m,wind_direction_300m,wind_speed_600m,wind_direction_600m,wind_speed_1000m,wind_direction_1000m",
-          timezone: "Europe/Rome",
-          forecast_days: "1",
-          wind_speed_unit: "kmh",
-          models: "gfs_seamless",
-        });
-
-        fetch(`https://api.open-meteo.com/v1/forecast?${paramsFallback}`)
-          .then(res => res.json())
-          .then(json => {
-            if (!attivo) return;
-
-            const times: string[] = json.hourly?.time || [];
-            let idx = times.findIndex(t => new Date(t).getHours() === 13);
-            if (idx === -1) {
-              for (let i = 11; i <= 16; i++) {
-                idx = times.findIndex(t => new Date(t).getHours() === i);
-                if (idx !== -1) break;
-              }
-            }
-            if (idx === -1) idx = 0;
-
-            const livelliDaApi: LivelloVento[] = [];
-            LIVELLI.forEach(l => {
-              const speedRaw = Number(json.hourly?.[l.speedKey]?.[idx]);
-              if (speedRaw != null && !isNaN(speedRaw) && speedRaw >= 0) {
-                livelliDaApi.push({
-                  height: l.height,
-                  speedKmh: Math.round(speedRaw),
-                  dir: Math.round(Number(json.hourly?.[l.dirKey]?.[idx])),
-                  fonte: "api",
-                });
-              }
-            });
-
-            if (livelliDaApi.length > 0) {
-              const ordinati = [...livelliDaApi].sort((a, b) => a.height - b.height);
-              const ultimo = ordinati[ordinati.length - 1];
-              const stimati: LivelloVento[] = LIVELLI
-                .filter(l => l.height > ultimo.height)
-                .map(l => ({
-                  height: l.height,
-                  speedKmh: ultimo.speedKmh + Math.round((l.height - ultimo.height) * 0.025),
-                  dir: (ultimo.dir + Math.round((l.height - ultimo.height) / 250) * 2) % 360,
-                  fonte: "stima",
-                }));
-
-              const tutti = [...livelliDaApi, ...stimati].sort((a, b) => a.height - b.height);
-              setProfiloReale(tutti);
-              setLoadingApi(false);
-            } else {
-              setErrorApi("Nessun dato vento disponibile dal fallback");
-              setLoadingApi(false);
-            }
-          })
-          .catch(err2 => {
-            if (!attivo) return;
-            setErrorApi(err2 instanceof Error ? err2.message : "Errore fallback");
-            setLoadingApi(false);
-          });
+        setErrorApi(err instanceof Error ? err.message : "Errore caricamento dati");
+        setLoadingApi(false);
       });
 
     return () => {
@@ -253,7 +149,7 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
     );
   }
 
-  if (errorApi || profiloReale.length === 0) {
+  if (errorApi || datiOrari.length === 0) {
     return (
       <div className="flex items-center justify-center py-8 text-slate-400">
         <AlertCircle className="w-5 h-5 mr-2 text-amber-400" />
@@ -263,109 +159,74 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
     );
   }
 
-  const maxSpeed = Math.max(...profiloReale.map(l => l.speedKmh), 1);
-  const ventoDecollo = profiloReale.find(l => l.height <= siteAlt + 50) || profiloReale[0];
-  const ventoQuota = profiloReale[profiloReale.length - 1];
-
-  const righe = profiloReale.map(l => ({
-    quota: l.height,
-    speedKmh: l.speedKmh,
-    dir: l.dir,
-    fonte: l.fonte,
-    temp: 15 - ((l.height - siteAlt) / 100) * 0.98,
-  }));
-
-  const getInterpretazione = () => {
-    const windShear = ventoQuota.speedKmh - ventoDecollo.speedKmh;
-    if (windShear < 5) return "Vento quasi costante con quota - Eccellente per termiche stabili e prevedibili";
-    if (windShear < 15) return "Vento aumenta moderatamente con quota - Buone termiche, possibile leggera turbolenza in quota";
-    return "Vento aumenta significativamente con quota - Possibile turbolenza moderata, termiche irregolari";
-  };
-
-  const apiCount = profiloReale.filter(l => l.fonte === "api").length;
-  const stimaCount = profiloReale.filter(l => l.fonte === "stima").length;
+  // Prendi solo le quote da mostrare (fino a 2000m per non sovraccaricare)
+  const quoteDaMostrare = [10, 80, 300, 600, 1000, 1500, 2000];
+  const oraCorrente = new Date().getHours();
 
   return (
     <div className="space-y-4">
       {/* Indicatore */}
       <div className="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold bg-emerald-900/15 border-emerald-500/30 text-emerald-300">
         <Wind className="w-4 h-4" />
-        Profilo vento REALE da Open-Meteo ({apiCount} livelli API {stimaCount > 0 ? `+ ${stimaCount} stimati` : ""} · km/h)
+        Previsione vento oraria · {siteName || "Decollo"} · velocità in km/h
       </div>
 
-      {/* Metriche principali */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <div className="bg-slate-800/60 rounded-xl p-3 text-center">
-          <div className="text-[10px] text-slate-500">Vento al suolo</div>
-          <div className="text-base font-bold text-cyan-300">{ventoDecollo.speedKmh} km/h</div>
-          <div className="text-[10px] text-slate-400">
-            {getWindArrow(ventoDecollo.dir)} {getDirAbbrev(ventoDecollo.dir)} ({ventoDecollo.dir}°)
-          </div>
-        </div>
-        <div className="bg-slate-800/60 rounded-xl p-3 text-center">
-          <div className="text-[10px] text-slate-500">Vento a 3000m</div>
-          <div className="text-base font-bold text-purple-300">{ventoQuota.speedKmh} km/h</div>
-          <div className="text-[10px] text-slate-400">
-            {getWindArrow(ventoQuota.dir)} {getDirAbbrev(ventoQuota.dir)} ({ventoQuota.dir}°)
-          </div>
-        </div>
-        <div className="bg-slate-800/60 rounded-xl p-3 text-center">
-          <div className="text-[10px] text-slate-500">Differenza</div>
-          <div className="text-base font-bold text-white">{ventoQuota.speedKmh - ventoDecollo.speedKmh} km/h</div>
-          <div className="text-[10px] text-slate-400">Shear verticale</div>
-        </div>
-        <div className="bg-slate-800/60 rounded-xl p-3 text-center">
-          <div className="text-[10px] text-slate-500">Quota decollo</div>
-          <div className="text-base font-bold text-amber-300">{siteAlt}m</div>
-          <div className="text-[10px] text-slate-400">Altezza sito</div>
-        </div>
-      </div>
-
-      {/* Tabella profilo */}
+      {/* Tabella principale: ORE come righe, QUOTE come colonne */}
       <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-700/30">
           <Wind className="w-4 h-4 text-cyan-400" />
-          <span className="text-xs font-bold text-cyan-300">Profilo verticale · {siteName || "Decollo"}</span>
-          <span className="text-[10px] text-slate-500 ml-auto">
-            {siteAlt}m → 3000m (dati reali · km/h)
-          </span>
+          <span className="text-xs font-bold text-cyan-300">Vento per quota e ora</span>
+          <span className="text-[10px] text-slate-500 ml-auto">Quota decollo: {siteAlt}m</span>
         </div>
-        <div className="overflow-y-auto max-h-[400px]">
+
+        <div className="overflow-x-auto">
           <table className="w-full text-[11px]">
             <thead className="sticky top-0 bg-slate-900/90 z-10">
               <tr className="border-b border-slate-700/30 text-slate-500">
-                <th className="p-2 text-left w-14">Quota</th>
-                <th className="p-2 text-left w-16">Temp</th>
-                <th className="p-2 text-left">Vento</th>
-                <th className="p-2 text-left w-14">Dir</th>
-                <th className="p-2 text-left w-14">°</th>
+                <th className="p-2 text-left">Ora</th>
+                {quoteDaMostrare.map(q => (
+                  <th key={q} className="p-2 text-center font-mono">
+                    {q}m
+                    {q <= siteAlt && q + 200 >= siteAlt && <span className="text-emerald-400 ml-1">🪂</span>}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {righe.map(r => {
-                const isDecollo = Math.abs(r.quota - siteAlt) < 100;
+              {datiOrari.map((h) => {
+                const isCurrent = h.ora === oraCorrente;
                 return (
-                  <tr key={r.quota} className={`border-b border-slate-700/20 transition-colors hover:bg-slate-700/30 ${isDecollo ? "bg-emerald-900/20" : ""}`}>
-                    <td className="p-2 font-mono font-bold text-white whitespace-nowrap">
-                      {r.quota}m{isDecollo && <span className="text-[8px] text-emerald-400 ml-1">🪂</span>}
-                      {r.fonte === "stima" && <span className="text-[8px] text-amber-400 ml-1">~</span>}
-                    </td>
-                    <td className={`p-2 font-mono whitespace-nowrap ${r.temp > 15 ? "text-amber-300" : r.temp > 5 ? "text-yellow-300" : "text-cyan-300"}`}>
-                      {Math.round(r.temp * 10) / 10}°C
-                    </td>
-                    <td className="p-2 flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-slate-700/50 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${getBarColor(r.speedKmh)} ${r.fonte === "stima" ? "opacity-60 border border-dashed border-white/20" : ""}`}
-                          style={{ width: `${Math.min((r.speedKmh / maxSpeed) * 100, 100)}%` }}
-                        />
-                      </div>
-                      <span className={`font-mono text-white font-bold tabular-nums ${r.fonte === "stima" ? "text-amber-300" : ""}`}>
-                        {r.speedKmh} km/h
+                  <tr key={h.ora} className={`border-b border-slate-700/20 hover:bg-slate-700/30 ${isCurrent ? "bg-emerald-900/20" : ""}`}>
+                    {/* Ora */}
+                    <td className="p-2 text-center">
+                      <span className={`font-mono font-bold ${isCurrent ? "text-emerald-300" : "text-white"}`}>
+                        {String(h.ora).padStart(2, "0")}:00
                       </span>
+                      {isCurrent && <span className="text-[8px] text-emerald-400 block">ADESSO</span>}
                     </td>
-                    <td className="p-2 text-center text-white font-bold">{getWindArrow(r.dir)} {getDirAbbrev(r.dir)}</td>
-                    <td className="p-2 text-center text-white font-mono tabular-nums">{r.dir}°</td>
+
+                    {/* Quote */}
+                    {quoteDaMostrare.map(q => {
+                      const lvl = h.livelli.find(l => l.height === q);
+                      if (!lvl || lvl.speedKmh === 0) return <td key={q} className="p-2 text-center text-slate-600">—</td>;
+
+                      return (
+                        <td key={q} className="p-2">
+                          <div className="flex flex-col items-center">
+                            <span className={`font-mono font-bold tabular-nums ${getBarColor(lvl.speedKmh) === "bg-red-400" ? "text-red-300" : "text-white"}`}>
+                              {lvl.speedKmh}
+                            </span>
+                            <span className="text-[8px] text-slate-500 flex items-center gap-0.5">
+                              {getWindArrow(lvl.dir)} {getDirAbbrev(lvl.dir)}
+                            </span>
+                            {/* Barra mini */}
+                            <div className="w-full max-w-[40px] h-1 bg-slate-700/30 rounded-full mt-0.5 overflow-hidden">
+                              <div className={`h-full ${getBarColor(lvl.speedKmh)}`} style={{ width: `${Math.min((lvl.speedKmh / 50) * 100, 100)}%` }} />
+                            </div>
+                          </div>
+                        </td>
+                      );
+                    })}
                   </tr>
                 );
               })}
@@ -374,18 +235,44 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
         </div>
       </div>
 
-      {/* Nota se ci sono stime */}
-      {stimaCount > 0 && (
-        <div className="text-[10px] text-amber-400 bg-amber-900/10 border border-amber-500/20 rounded-xl px-3 py-2">
-          ⚠️ I livelli con ~ sono stimati (Open-Meteo non fornisce dati diretti oltre 180m con il modello base). Stima: +2.5 km/h ogni 100m di quota.
-        </div>
-      )}
+      {/* Legenda colori */}
+      <div className="flex flex-wrap gap-2 text-[10px] text-slate-400 px-2">
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400" /> ≤8 km/h</span>
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-lime-400" /> 9-15</span>
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-400" /> 16-22</span>
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-orange-400" /> 23-30</span>
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-400" /> 30+</span>
+      </div>
 
-      {/* Interpretazione */}
-      <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 space-y-2 text-xs">
-        <div className="text-slate-500">Interpretazione volo</div>
-        <div className="text-white font-bold mt-0.5">
-          {getInterpretazione()}
+      {/* Riepilogo velocità per quota (valori medi) */}
+      <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4">
+        <div className="text-xs font-bold text-cyan-300 mb-3 flex items-center gap-2">
+          <Wind className="w-4 h-4" />
+          Riepilogo vento per quota (media ore 9-19, km/h)
+        </div>
+        <div className="space-y-2">
+          {[10, 300, 600, 1000, 1500, 2000].map(q => {
+            const valori = datiOrari
+              .filter(h => h.ora >= 9)
+              .map(h => h.livelli.find(l => l.height === q)?.speedKmh || 0)
+              .filter(v => v > 0);
+            if (valori.length === 0) return null;
+            const media = Math.round(valori.reduce((s, v) => s + v, 0) / valori.length);
+            const max = Math.max(...valori);
+            const min = Math.min(...valori);
+
+            return (
+              <div key={q} className="grid grid-cols-[4rem_1fr_8rem] gap-2 items-center">
+                <span className="text-xs font-mono font-bold text-slate-300">{q}m</span>
+                <div className="h-4 bg-slate-700/30 rounded-full overflow-hidden">
+                  <div className={`h-full ${getBarColor(media)}`} style={{ width: `${Math.min((media / 50) * 100, 100)}%` }} />
+                </div>
+                <span className="text-xs font-mono font-bold text-white tabular-nums">
+                  {media} km/h <span className="text-[9px] text-slate-500 font-normal">({min}-{max})</span>
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
