@@ -3,20 +3,8 @@
 import React from "react";
 import { X, Wind, Thermometer, CloudRain, Droplets, Gauge } from "lucide-react";
 import type { HourData } from "@/types/meteo";
+import { wic, wd } from "@/utils/meteo";
 import { getVoloStatus } from "@/utils/volo";
-
-function getWeatherEmoji(code: number): string {
-  if (code >= 95) return "⛈️";
-  if (code >= 80) return "🌧️";
-  if (code >= 71) return "❄️";
-  if (code >= 61) return "🌧️";
-  if (code >= 51) return "🌦️";
-  if (code >= 45) return "🌫️";
-  if (code >= 20) return "☁️";
-  if (code >= 10) return "⛅";
-  if (code >= 5) return "🌤️";
-  return "☀️";
-}
 
 interface DayForecastPopupProps {
   data: HourData[];
@@ -66,7 +54,7 @@ const DayForecastPopup = ({ data, dayLabel, onClose, selectedHour, onHourSelect 
                 </div>
 
                 {/* Icona meteo */}
-                <span className="text-lg shrink-0">{getWeatherEmoji(h.weatherCode)}</span>
+                <span className="text-lg shrink-0">{wic(h.weatherCode, true)}</span>
 
                 {/* Dati principali */}
                 <div className="flex items-center gap-2 text-[11px] text-slate-300 flex-1 min-w-0">

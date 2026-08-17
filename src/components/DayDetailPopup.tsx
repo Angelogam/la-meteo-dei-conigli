@@ -3,6 +3,7 @@
 import React from "react";
 import { X, Thermometer, Wind, CloudRain, Droplets, Gauge, ArrowUp } from "lucide-react";
 import type { HourData } from "@/types/meteo";
+import { wic, wd, calcThermal } from "@/utils/meteo";
 
 interface DayDetailPopupProps {
   dayData: HourData[];
@@ -20,32 +21,6 @@ interface DayDetailPopupProps {
   altitude: number;
   onClose: () => void;
   onHourSelect: (hour: number) => void;
-}
-
-function getWeatherEmoji(code: number): string {
-  if (code >= 95) return "⛈️";
-  if (code >= 80) return "🌧️";
-  if (code >= 71) return "❄️";
-  if (code >= 61) return "🌧️";
-  if (code >= 51) return "🌦️";
-  if (code >= 45) return "🌫️";
-  if (code >= 20) return "☁️";
-  if (code >= 10) return "⛅";
-  if (code >= 5) return "🌤️";
-  return "☀️";
-}
-
-function calcCloudBase(weather: HourData): { cloudBase: number } {
-  const spread = weather.temperature - weather.dewPoint;
-  return { cloudBase: Math.max(200, Math.min(3000, Math.round(spread * 125))) };
-}
-
-function calcThermal(_dayData: HourData[], _altitude: number) {
-  const cloudBases = _dayData.map(h => calcCloudBase(h));
-  const avgBase = cloudBases.length > 0
-    ? Math.round(cloudBases.reduce((s, c) => s + c.cloudBase, 0) / cloudBases.length)
-    : 0;
-  return { cloudBase: avgBase };
 }
 
 const DayDetailPopup = ({ dayData, daily, dayLabel, altitude, onClose, onHourSelect }: DayDetailPopupProps) => {
@@ -111,7 +86,7 @@ const DayDetailPopup = ({ dayData, daily, dayLabel, altitude, onClose, onHourSel
                     {h.time.getHours().toString().padStart(2, "0")}:00
                   </span>
                 </div>
-                <span className="text-lg shrink-0">{getWeatherEmoji(h.weatherCode)}</span>
+                <span className="text-lg shrink-0">{wic(h.weatherCode, true)}</span>
                 <div className="flex-1 grid grid-cols-3 gap-2 text-[11px] text-slate-300">
                   <span>{Math.round(h.temperature)}°C</span>
                   <span>{Math.round(h.windSpeed)} km/h</span>
