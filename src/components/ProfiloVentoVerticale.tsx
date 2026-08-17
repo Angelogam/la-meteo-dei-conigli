@@ -12,7 +12,6 @@ interface ProfiloVentoVerticaleProps {
 
 interface LivelloVento {
   height: number;
-  speedMs: number;
   speedKmh: number;
   dir: number;
 }
@@ -43,11 +42,11 @@ function getWindArrow(deg: number): string {
   return arrows[Math.round(deg / 45) % 8];
 }
 
-function getBarColor(speedMs: number): string {
-  if (speedMs <= 2.2) return "bg-emerald-400";
-  if (speedMs <= 4.1) return "bg-lime-400";
-  if (speedMs <= 6.1) return "bg-amber-400";
-  if (speedMs <= 8.3) return "bg-orange-400";
+function getBarColor(speedKmh: number): string {
+  if (speedKmh <= 8) return "bg-emerald-400";
+  if (speedKmh <= 15) return "bg-lime-400";
+  if (speedKmh <= 22) return "bg-amber-400";
+  if (speedKmh <= 30) return "bg-orange-400";
   return "bg-red-400";
 }
 
@@ -68,12 +67,14 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
     setLoadingApi(true);
     setErrorApi(null);
 
+    // IMPORTANTE: richiediamo i dati in km/h direttamente all'API
     const params = new URLSearchParams({
       latitude: lat.toString(),
       longitude: lon.toString(),
       hourly: LIVELLI.flatMap(l => [l.speedKey, l.dirKey]).join(","),
       timezone: "Europe/Rome",
       forecast_days: "1",
+      wind_speed_unit: "kmh",  // <-- Forza Open-Meteo a restituire km/h
     });
 
     const url = `https://api.open-meteo.com/v1/forecast?${params}`;
@@ -100,22 +101,22 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
         }
         if (idx === -1) idx = 0;
 
+        // Ora i valori arrivano GIÀ in km/h grazie a wind_speed_unit=kmh
         const livelli: LivelloVento[] = LIVELLI
           .map(l => {
-            const speedMs = Number(json.hourly?.[l.speedKey]?.[idx]);
-            const dir = Number(json.hourly?.[l.dirKey]?.[idx]);
+            const speedKmh = Math.round(Number(json.hourly?.[l.speedKey]?.[idx]));
+            const dir = Math.round(Number(json.hourly?.[l.dirKey]?.[idx]));
             return {
               height: l.height,
-              speedMs: Math.round(speedMs * 10) / 10,
-              speedKmh: Math.round(speedMs * 3.6),
-              dir: Math.round(dir),
+              speedKmh,
+              dir,
             };
           })
-          .filter(l => l.speedMs >= 0);
+          .filter(l => l.speedKmh >= 0);
 
         setRawData(JSON.stringify({
           ora: times[idx],
-          livelli: livelli.map(l => ({ quota: l.height, m_s: l.speedMs, km_h: l.speedKmh, gradi: l.dir })),
+          livelli: livelli.map(l => ({ quota: l.height, km_h: l.speedKmh, gradi: l.dir })),
         }, null, 2));
 
         if (livelli.length > 0) {
@@ -155,22 +156,21 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
     );
   }
 
-  const maxSpeedMs = Math.max(...profiloReale.map(l => l.speedMs), 1);
+  const maxSpeed = Math.max(...profiloReale.map(l => l.speedKmh), 1);
   const ventoDecollo = profiloReale.find(l => l.height <= siteAlt + 50) || profiloReale[0];
   const ventoQuota = profiloReale[profiloReale.length - 1];
 
   const righe = profiloReale.map(l => ({
     quota: l.height,
-    speedMs: l.speedMs,
     speedKmh: l.speedKmh,
     dir: l.dir,
     temp: 15 - ((l.height - siteAlt) / 100) * 0.98,
   }));
 
   const getInterpretazione = () => {
-    const windShear = ventoQuota.speedMs - ventoDecollo.speedMs;
-    if (windShear < 1.4) return "Vento quasi costante con quota - Eccellente per termiche stabili e prevedibili";
-    if (windShear < 4.2) return "Vento aumenta moderatamente con quota - Buone termiche, possibile leggera turbolenza in quota";
+    const windShear = ventoQuota.speedKmh - ventoDecollo.speedKmh;
+    if (windShear < 5) return "Vento quasi costante con quota - Eccellente per termiche stabili e prevedibili";
+    if (windShear < 15) return "Vento aumenta moderatamente con quota - Buone termiche, possibile leggera turbolenza in quota";
     return "Vento aumenta significativamente con quota - Possibile turbolenza moderata, termiche irregolari";
   };
 
@@ -179,30 +179,28 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
       {/* Indicatore */}
       <div className="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold bg-emerald-900/15 border-emerald-500/30 text-emerald-300">
         <Wind className="w-4 h-4" />
-        Profilo vento REALE da Open-Meteo ({profiloReale.length} livelli · 10m–3000m)
+        Profilo vento REALE da Open-Meteo ({profiloReale.length} livelli · velocità in km/h)
       </div>
 
       {/* Metriche principali */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <div className="bg-slate-800/60 rounded-xl p-3 text-center">
           <div className="text-[10px] text-slate-500">Vento al suolo</div>
-          <div className="text-base font-bold text-cyan-300">{ventoDecollo.speedMs} m/s</div>
+          <div className="text-base font-bold text-cyan-300">{ventoDecollo.speedKmh} km/h</div>
           <div className="text-[10px] text-slate-400">
             {getWindArrow(ventoDecollo.dir)} {getDirAbbrev(ventoDecollo.dir)} ({ventoDecollo.dir}°)
           </div>
-          <div className="text-[10px] text-slate-500">({ventoDecollo.speedKmh} km/h)</div>
         </div>
         <div className="bg-slate-800/60 rounded-xl p-3 text-center">
           <div className="text-[10px] text-slate-500">Vento a 3000m</div>
-          <div className="text-base font-bold text-purple-300">{ventoQuota.speedMs} m/s</div>
+          <div className="text-base font-bold text-purple-300">{ventoQuota.speedKmh} km/h</div>
           <div className="text-[10px] text-slate-400">
             {getWindArrow(ventoQuota.dir)} {getDirAbbrev(ventoQuota.dir)} ({ventoQuota.dir}°)
           </div>
-          <div className="text-[10px] text-slate-500">({ventoQuota.speedKmh} km/h)</div>
         </div>
         <div className="bg-slate-800/60 rounded-xl p-3 text-center">
           <div className="text-[10px] text-slate-500">Differenza</div>
-          <div className="text-base font-bold text-white">{ventoQuota.speedMs - ventoDecollo.speedMs} m/s</div>
+          <div className="text-base font-bold text-white">{ventoQuota.speedKmh - ventoDecollo.speedKmh} km/h</div>
           <div className="text-[10px] text-slate-400">Shear verticale</div>
         </div>
         <div className="bg-slate-800/60 rounded-xl p-3 text-center">
@@ -218,7 +216,7 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
           <Wind className="w-4 h-4 text-cyan-400" />
           <span className="text-xs font-bold text-cyan-300">Profilo verticale · {siteName || "Decollo"}</span>
           <span className="text-[10px] text-slate-500 ml-auto">
-            {siteAlt}m → 3000m (dati reali Open-Meteo)
+            {siteAlt}m → 3000m (dati reali · km/h)
           </span>
         </div>
         <div className="overflow-y-auto max-h-[400px]">
@@ -246,14 +244,11 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
                     <td className="p-2 flex items-center gap-2">
                       <div className="flex-1 h-2 bg-slate-700/50 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${getBarColor(r.speedMs)}`}
-                          style={{ width: `${Math.min((r.speedMs / maxSpeedMs) * 100, 100)}%` }}
+                          className={`h-full rounded-full ${getBarColor(r.speedKmh)}`}
+                          style={{ width: `${Math.min((r.speedKmh / maxSpeed) * 100, 100)}%` }}
                         />
                       </div>
-                      <span className="font-mono text-white font-bold tabular-nums">
-                        {r.speedMs} m/s
-                      </span>
-                      <span className="text-slate-500 tabular-nums hidden sm:inline">({r.speedKmh} km/h)</span>
+                      <span className="font-mono text-white font-bold tabular-nums">{r.speedKmh} km/h</span>
                     </td>
                     <td className="p-2 text-center text-white font-bold">{getWindArrow(r.dir)} {getDirAbbrev(r.dir)}</td>
                     <td className="p-2 text-center text-white font-mono tabular-nums">{r.dir}°</td>
