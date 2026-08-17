@@ -2,10 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { Wind, Loader2, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
-import type { HourData } from "@/types/meteo";
 
 interface ProfiloVentoVerticaleProps {
-  dayData?: HourData[];
   siteAlt: number;
   siteName?: string;
   lat?: number;
@@ -14,7 +12,8 @@ interface ProfiloVentoVerticaleProps {
 
 interface LivelloVento {
   height: number;
-  speed: number;
+  speedMs: number;
+  speedKmh: number;
   dir: number;
 }
 
@@ -44,33 +43,21 @@ function getWindArrow(deg: number): string {
   return arrows[Math.round(deg / 45) % 8];
 }
 
-function getBarColor(speed: number): string {
-  if (speed <= 8) return "bg-emerald-400";
-  if (speed <= 15) return "bg-lime-400";
-  if (speed <= 22) return "bg-amber-400";
-  if (speed <= 30) return "bg-orange-400";
+function getBarColor(speedMs: number): string {
+  if (speedMs <= 2.2) return "bg-emerald-400";
+  if (speedMs <= 4.1) return "bg-lime-400";
+  if (speedMs <= 6.1) return "bg-amber-400";
+  if (speedMs <= 8.3) return "bg-orange-400";
   return "bg-red-400";
 }
 
-function msToKmh(ms: number): number {
-  return Math.round(ms * 3.6);
-}
-
-export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat, lon }: ProfiloVentoVerticaleProps) {
+export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: ProfiloVentoVerticaleProps) {
   const [profiloReale, setProfiloReale] = useState<LivelloVento[]>([]);
   const [loadingApi, setLoadingApi] = useState(false);
   const [errorApi, setErrorApi] = useState<string | null>(null);
   const [showRaw, setShowRaw] = useState(false);
   const [rawData, setRawData] = useState<string>("");
-  const [ultimoAggiornamento, setUltimoAggiornamento] = useState<string>("");
 
-  // Debug: mostra quanti dati ha dayData
-  useEffect(() => {
-    console.log("[ProfiloVentoVerticale] dayData length:", dayData?.length);
-    console.log("[ProfiloVentoVerticale] lat/lon:", lat, lon);
-  }, [dayData, lat, lon]);
-
-  // Fetch diretta all'API di Open-Meteo
   useEffect(() => {
     if (!lat || !lon) {
       setErrorApi("Coordinate non disponibili");
@@ -90,7 +77,6 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat,
     });
 
     const url = `https://api.open-meteo.com/v1/forecast?${params}`;
-    console.log("[ProfiloVentoVerticale] Fetching:", url);
 
     fetch(url)
       .then(res => {
@@ -101,13 +87,12 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat,
         if (!attivo) return;
 
         const times: string[] = json.hourly?.time || [];
-        // Trova l'ora 13:00 (picco termico)
+        // Trova 13:00, poi 11-16
         let idx = times.findIndex(t => {
           const d = new Date(t);
           return d.getHours() === 13;
         });
         if (idx === -1) {
-          // Se non trova 13:00, cerca tra 11-16
           for (let i = 11; i <= 16; i++) {
             idx = times.findIndex(t => new Date(t).getHours() === i);
             if (idx !== -1) break;
@@ -115,35 +100,27 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat,
         }
         if (idx === -1) idx = 0;
 
-        console.log("[ProfiloVentoVerticale] Ora selezionata:", times[idx], "idx:", idx);
-
         const livelli: LivelloVento[] = LIVELLI
           .map(l => {
-            const speedRaw = Number(json.hourly?.[l.speedKey]?.[idx]);
-            const dirRaw = Number(json.hourly?.[l.dirKey]?.[idx]);
-            console.log(`[ProfiloVentoVerticale] ${l.height}m: speed=${speedRaw} m/s, dir=${dirRaw}°`);
+            const speedMs = Number(json.hourly?.[l.speedKey]?.[idx]);
+            const dir = Number(json.hourly?.[l.dirKey]?.[idx]);
             return {
               height: l.height,
-              speed: msToKmh(speedRaw || 0),
-              dir: Math.round(dirRaw || 0),
+              speedMs: Math.round(speedMs * 10) / 10,
+              speedKmh: Math.round(speedMs * 3.6),
+              dir: Math.round(dir),
             };
           })
-          .filter(l => l.speed >= 0);
+          .filter(l => l.speedMs >= 0);
 
-        // Salva il raw JSON per debug
         setRawData(JSON.stringify({
           ora: times[idx],
-          livelli: livelli.map(l => ({ quota: l.height, kmh: l.speed, gradi: l.dir })),
-          times: times.slice(0, 24),
-          rawSpeed: json.hourly?.wind_speed_10m?.slice(0, 24),
-          rawDir: json.hourly?.wind_direction_10m?.slice(0, 24)
+          livelli: livelli.map(l => ({ quota: l.height, m_s: l.speedMs, km_h: l.speedKmh, gradi: l.dir })),
         }, null, 2));
-        setUltimoAggiornamento(new Date().toLocaleTimeString("it-IT"));
 
         if (livelli.length > 0) {
           setProfiloReale(livelli);
           setLoadingApi(false);
-          console.log("[ProfiloVentoVerticale] Profilo caricato!", livelli.length, "livelli");
         } else {
           throw new Error("Nessun dato vento disponibile");
         }
@@ -152,7 +129,6 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat,
         if (!attivo) return;
         setErrorApi(err instanceof Error ? err.message : "Errore caricamento dati");
         setLoadingApi(false);
-        console.error("[ProfiloVentoVerticale] Errore:", err);
       });
 
     return () => {
@@ -179,52 +155,54 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat,
     );
   }
 
-  const maxSpeed = Math.max(...profiloReale.map(l => l.speed), 1);
+  const maxSpeedMs = Math.max(...profiloReale.map(l => l.speedMs), 1);
   const ventoDecollo = profiloReale.find(l => l.height <= siteAlt + 50) || profiloReale[0];
   const ventoQuota = profiloReale[profiloReale.length - 1];
 
-  // Mostra TUTTI i dati reali direttamente dall'API
   const righe = profiloReale.map(l => ({
     quota: l.height,
-    speed: l.speed,
+    speedMs: l.speedMs,
+    speedKmh: l.speedKmh,
     dir: l.dir,
     temp: 15 - ((l.height - siteAlt) / 100) * 0.98,
   }));
 
   const getInterpretazione = () => {
-    const windShear = ventoQuota.speed - ventoDecollo.speed;
-    if (windShear < 5) return "Vento quasi costante con quota - Eccellente per termiche stabili e prevedibili";
-    if (windShear < 15) return "Vento aumenta moderatamente con quota - Buone termiche, possibile leggera turbolenza in quota";
+    const windShear = ventoQuota.speedMs - ventoDecollo.speedMs;
+    if (windShear < 1.4) return "Vento quasi costante con quota - Eccellente per termiche stabili e prevedibili";
+    if (windShear < 4.2) return "Vento aumenta moderatamente con quota - Buone termiche, possibile leggera turbolenza in quota";
     return "Vento aumenta significativamente con quota - Possibile turbolenza moderata, termiche irregolari";
   };
 
   return (
     <div className="space-y-4">
-      {/* Indicatore aggiornamento */}
+      {/* Indicatore */}
       <div className="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold bg-emerald-900/15 border-emerald-500/30 text-emerald-300">
         <Wind className="w-4 h-4" />
-        Profilo vento REALE da Open-Meteo ({profiloReale.length} livelli · aggiornato {ultimoAggiornamento})
+        Profilo vento REALE da Open-Meteo ({profiloReale.length} livelli · 10m–3000m)
       </div>
 
       {/* Metriche principali */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <div className="bg-slate-800/60 rounded-xl p-3 text-center">
           <div className="text-[10px] text-slate-500">Vento al suolo</div>
-          <div className="text-base font-bold text-cyan-300">{ventoDecollo.speed} km/h</div>
+          <div className="text-base font-bold text-cyan-300">{ventoDecollo.speedMs} m/s</div>
           <div className="text-[10px] text-slate-400">
             {getWindArrow(ventoDecollo.dir)} {getDirAbbrev(ventoDecollo.dir)} ({ventoDecollo.dir}°)
           </div>
+          <div className="text-[10px] text-slate-500">({ventoDecollo.speedKmh} km/h)</div>
         </div>
         <div className="bg-slate-800/60 rounded-xl p-3 text-center">
           <div className="text-[10px] text-slate-500">Vento a 3000m</div>
-          <div className="text-base font-bold text-purple-300">{ventoQuota.speed} km/h</div>
+          <div className="text-base font-bold text-purple-300">{ventoQuota.speedMs} m/s</div>
           <div className="text-[10px] text-slate-400">
             {getWindArrow(ventoQuota.dir)} {getDirAbbrev(ventoQuota.dir)} ({ventoQuota.dir}°)
           </div>
+          <div className="text-[10px] text-slate-500">({ventoQuota.speedKmh} km/h)</div>
         </div>
         <div className="bg-slate-800/60 rounded-xl p-3 text-center">
           <div className="text-[10px] text-slate-500">Differenza</div>
-          <div className="text-base font-bold text-white">{ventoQuota.speed - ventoDecollo.speed} km/h</div>
+          <div className="text-base font-bold text-white">{ventoQuota.speedMs - ventoDecollo.speedMs} m/s</div>
           <div className="text-[10px] text-slate-400">Shear verticale</div>
         </div>
         <div className="bg-slate-800/60 rounded-xl p-3 text-center">
@@ -268,11 +246,14 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat,
                     <td className="p-2 flex items-center gap-2">
                       <div className="flex-1 h-2 bg-slate-700/50 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${getBarColor(r.speed)}`}
-                          style={{ width: `${Math.min((r.speed / maxSpeed) * 100, 100)}%` }}
+                          className={`h-full rounded-full ${getBarColor(r.speedMs)}`}
+                          style={{ width: `${Math.min((r.speedMs / maxSpeedMs) * 100, 100)}%` }}
                         />
                       </div>
-                      <span className="font-mono text-white font-bold tabular-nums">{r.speed} km/h</span>
+                      <span className="font-mono text-white font-bold tabular-nums">
+                        {r.speedMs} m/s
+                      </span>
+                      <span className="text-slate-500 tabular-nums hidden sm:inline">({r.speedKmh} km/h)</span>
                     </td>
                     <td className="p-2 text-center text-white font-bold">{getWindArrow(r.dir)} {getDirAbbrev(r.dir)}</td>
                     <td className="p-2 text-center text-white font-mono tabular-nums">{r.dir}°</td>
@@ -292,7 +273,7 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat,
         </div>
       </div>
 
-      {/* Debug raw data (optional, hidden by default) */}
+      {/* Debug */}
       <button
         onClick={() => setShowRaw(!showRaw)}
         className="w-full text-xs text-slate-500 hover:text-slate-300 py-1 flex items-center justify-center gap-1"
