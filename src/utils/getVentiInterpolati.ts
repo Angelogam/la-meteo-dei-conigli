@@ -9,6 +9,59 @@ export interface VentiInterpolatiPerOra {
   ora: number;
   quote: Record<number, QuotaVento>;
   gust: number;
+  temp: number;
+}
+
+export interface VentiInterpolatiData {
+  giorno: string;
+  lat: number;
+  lon: number;
+  quotaDecollo: number;
+  ventoOrario: VentiInterpolatiPerOra[];
+}
+
+// Cache interna (3 minuti)
+const cacheVenti = new Map<string, { data: VentiInterpolatiData; ts: number }>();
+const CACHE_TTL = 3 * 60 * 1000;
+
+// Livelli di quota con le chiavi API corrispondenti
+const LIVELLI_QUOTA = [
+  { quota: 0, speedKey: "wind_speed_10m", dirKey: "wind_direction_10m" },
+  { quota: 760, speedKey: "wind_speed_925hPa", dirKey: "wind_direction_925hPa" },
+  { quota: 1450, speedKey: "wind_speed_850hPa", dirKey: "wind_direction_850hPa" },
+  { quota: 3000, speedKey: "wind_speed_700hPa", dirKey: "wind_direction_700hPa" },
+  { quota: 4000, speedKey: "wind_speed_600hPa", dirKey: "wind_direction_600hPa" },
+];
+
+/**
+ * Interpola linearmente tra due livelli per una quota data
+ */
+function interpolateVento(
+  quota: number,
+  sotto: { quota: number; speed: number; dir: number },
+  sopra: { quota: number; speed: number; dir: number }
+): { speed: number; dir: number } {
+  const ratio = (quota - sotto.quota) / (sopra.quota - sotto.quota);
+  
+  // Interpolazione velocità
+  const speed = sotto.speed + ratio * (sopra.speed - sotto.speed);
+  
+  // Interpolazione direzione (gestisce il wrap 360°)
+  let diffDir = sopra.dir - sotto.dir;
+  if (diffDir > 180) diffDir -= 360;
+  if (diffDir < -180) diffDir<dyad-write path="src/utils/getVentiInterpolati.ts" description="Aggiunta temperatura ai dati vento interpolati">
+"use client";
+
+export interface QuotaVento {
+  speed: number;
+  dir: number;
+}
+
+export interface VentiInterpolatiPerOra {
+  ora: number;
+  quote: Record<number, QuotaVento>;
+  gust: number;
+  temp: number;
 }
 
 export interface VentiInterpolatiData {
@@ -61,13 +114,14 @@ export async function getVentiInterpolati(lat: number, lon: number, quotaDecollo
     return cached.data;
   }
 
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_925hPa,wind_direction_925hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa,wind_speed_600hPa,wind_direction_600hPa&timezone=Europe/Rome&start_date=${day}&end_date=${day}`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_925hPa,wind_direction_925hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa,wind_speed_600hPa,wind_direction_600hPa&timezone=Europe/Rome&start_date=${day}&end_date=${day}`;
 
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
 
   const hours: string[] = data.hourly.time;
+  const temps: number[] = data.hourly.temperature_2m;
 
   // Genera tutte le quote dal decollo ogni 250m fino a 4000m
   const partenza = Math.floor(quotaDecollo / 250) * 250;
@@ -140,7 +194,7 @@ export async function getVentiInterpolati(lat: number, lon: number, quotaDecollo
         }
       });
 
-      ventoOrario.push({ ora, quote, gust: data.hourly.wind_gusts_10m[i] });
+      ventoOrario.push({ ora, quote, gust: data.hourly.wind_gusts_10m[i], temp: temps[i] });
     }
   }
 
