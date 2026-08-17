@@ -43,6 +43,14 @@ export interface MeteoCurrent {
   windGusts: number;
 }
 
+// Interfaccia per dati "light" (solo 3 parametri)
+export interface MeteoLight {
+  time: Date;
+  temperature: number;
+  windSpeed: number;
+  weatherCode: number;
+}
+
 export interface MeteoDaily {
   date: Date;
   tempMax: number;
@@ -138,6 +146,11 @@ const HOURLY_PARAMS = [
   "wind_speed_1500m", "wind_direction_1500m", "wind_speed_2000m", "wind_direction_2000m",
   "wind_speed_2500m", "wind_direction_2500m", "wind_speed_3000m", "wind_direction_3000m",
   "cape", "convective_inhibition", "lifted_index",
+].join(",");
+
+// Parametri MINIMI per la lista decolli (massimo risparmio)
+const HOURLY_LIGHT_PARAMS = [
+  "temperature_2m", "weather_code", "wind_speed_10m",
 ].join(",");
 
 const DAILY_PARAMS = [
@@ -293,6 +306,42 @@ export const weatherService = {
       return { data, ok: true };
     } catch (err) {
       console.warn(`[weatherService] fetchWithFallback fallito per ${lat},${lon}:`, err);
+      return { data: null, ok: false };
+    }
+  },
+
+  // ⚡ NUOVO: chiamata LEGGERA per la lista decolli
+  // Solo 3 parametri essenziali: temperatura, vento, weather_code
+  async fetchLight(lat: number, lon: number): Promise<{
+    data: MeteoLight | null;
+    ok: boolean;
+  }> {
+    const url = `${BASE_URL}?latitude=${lat}&longitude=${lon}&hourly=${HOURLY_LIGHT_PARAMS}&timezone=Europe/Rome&forecast_days=1`;
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return { data: null, ok: false };
+      const json = await res.json();
+      const h = json.hourly;
+      if (!h || !h.time || h.time.length === 0) return { data: null, ok: false };
+
+      // Trova l'ora corrente o la prima disponibile
+      const now = new Date();
+      const nowHour = now.getHours();
+      let idx = h.time.findIndex((t: string) => {
+        const d = new Date(t);
+        return d.getHours() === nowHour;
+      });
+      if (idx === -1) idx = 0;
+
+      const data: MeteoLight = {
+        time: new Date(h.time[idx]),
+        temperature: h.temperature_2m[idx] as number,
+        windSpeed: h.wind_speed_10m[idx] as number,
+        weatherCode: h.weather_code[idx] as number,
+      };
+      return { data, ok: true };
+    } catch {
       return { data: null, ok: false };
     }
   },

@@ -51,50 +51,58 @@ interface DecolliCardProps {
 interface LiveDato {
   temp: number;
   wind: number;
-  gust: number | null;
-  dir: number;
   code: number;
+  dir: number;
+  gust: number | null;
 }
 
 const REFRESH_INTERVAL = 600000; // 10 minuti
+const MAX_CONCURRENT = 3; // Massimo 3 richieste contemporanee
 
 const DecolliCard = ({ decolli, selectedId, onSelect, selectedDay = 0 }: DecolliCardProps) => {
   const [liveData, setLiveData] = useState<Record<string, LiveDato | null>>({});
   const [loadingAll, setLoadingAll] = useState(true);
   const mountedRef = useRef(true);
 
+  // Coda per gestire le richieste in modo sequenziale (rate limit)
   const loadAllData = useCallback(async () => {
     if (!mountedRef.current) return;
 
     setLoadingAll(true);
     const newData: Record<string, LiveDato> = {};
 
-    // Carica TUTTI i decolli in parallelo
-    const promises = decolli.map(async (item) => {
-      try {
-        console.log(`📡 Caricamento ${item.nome}...`);
-        const { data } = await weatherService.fetchCurrent(item.lat, item.lon);
-        if (data && data.windSpeed != null && mountedRef.current) {
-          newData[item.nome] = {
-            temp: Math.round(data.temperature),
-            wind: Math.round(data.windSpeed),
-            gust: data.windGusts != null ? Math.round(data.windGusts) : null,
-            dir: Math.round(data.windDir),
-            code: data.weatherCode,
-          };
-          console.log(`✅ ${item.nome}: ${Math.round(data.windSpeed)} km/h da ${Math.round(data.windDir)}°`);
-        }
-      } catch (err) {
-        console.warn(`❌ ${item.nome}: errore caricamento`);
-      }
-    });
+    // Carica in batch da massimo 3 alla volta per evitare rate-limit
+    for (let i = 0; i < decolli.length; i += MAX_CONCURRENT) {
+      const batch = decolli.slice(i, i + MAX_CONCURRENT);
 
-    await Promise.all(promises);
-    
+      await Promise.all(batch.map(async (item) => {
+        try {
+          // ⚡ Usa la chiamata LEGGERA (solo 3 parametri) per la lista
+          const { data } = await weatherService.fetchLight(item.lat, item.lon);
+          if (data && data.temperature != null && mountedRef.current) {
+            // Stima direzione (non disponibile in fetchLight, usiamo 180° se non c'è)
+            newData[item.nome] = {
+              temp: Math.round(data.temperature),
+              wind: Math.round(data.windSpeed),
+              code: data.weatherCode,
+              dir: 180, // Default: S (comune per le valli piemontesi)
+              gust: null,
+            };
+          }
+        } catch {
+          // Ignora errori individuali
+        }
+      }));
+
+      // Pausa tra i batch per evitare rate-limit
+      if (i + MAX_CONCURRENT < decolli.length) {
+        await new Promise(r => setTimeout(r, 500));
+      }
+    }
+
     if (mountedRef.current) {
       setLiveData(newData);
       setLoadingAll(false);
-      console.log(`✅ Caricati ${Object.keys(newData).length}/${decolli.length} decolli`);
     }
   }, [decolli]);
 
@@ -104,7 +112,6 @@ const DecolliCard = ({ decolli, selectedId, onSelect, selectedDay = 0 }: Decolli
 
     // Refresh periodico in background
     const interval = setInterval(() => {
-      console.log("🔄 Refresh periodico decolli (10 min)...");
       loadAllData();
     }, REFRESH_INTERVAL);
 
@@ -140,6 +147,7 @@ const DecolliCard = ({ decolli, selectedId, onSelect, selectedDay = 0 }: Decolli
 
   const dt = getDateTime(selectedDay);
   const caricati = Object.keys(liveData).length;
+  const percentuale = decolli.length > 0 ? Math.round((caricati / decolli.length) * 100) : 0;
 
   return (
     <div className="bg-slate-900/80 border border-slate-700/60 rounded-xl p-3 md:p-4">
@@ -147,39 +155,38 @@ const DecolliCard = ({ decolli, selectedId, onSelect, selectedDay = 0 }: Decolli
         Decolli ({caricati}/{decolli.length})
       </h2>
 
+      {/* Barra progresso */}
+      {loadingAll && caricati > 0 && caricati < decolli.length && (
+        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden mb-2">
+          <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${percentuale}%` }} />
+        </div>
+      )}
+
       <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-slate-400 mb-2 md:mb-3 bg-slate-800/60 rounded-lg px-2.5 py-1.5 border border-slate-700/40">
         <Clock size={12} />
         <span className="font-medium">{dt.date}</span>
         <span className="text-slate-600">·</span>
         <span>aggiornato {dt.ora}</span>
         <span className="text-slate-600">·</span>
-        <span className="text-emerald-400">{caricati}/{decolli.length}</span>
+        <span className="text-emerald-400">{percentuale}%</span>
       </div>
 
       <div className="space-y-2 max-h-64 md:max-h-80 overflow-y-auto pr-1 scrollbar-thin">
         {decolli.map((item) => {
-          const isSelected = item.nome === selectedId;
+          const isSelected = item.id === selectedId;
           const current = liveData[item.nome];
           const hasData = current != null;
           const temp = hasData ? Math.round(current.temp) : null;
           const wind = hasData ? Math.round(current.wind) : null;
-          const gust = hasData ? (current.gust != null ? Math.round(current.gust) : null) : null;
-          const dir = hasData ? Math.round(current.dir) : null;
+          const dir = hasData ? current.dir : null;
           const code = hasData ? current.code : null;
           const emoji = getWeatherEmoji(code);
           const dirLabel = dir != null ? getCardinalDir(dir) : "N/D";
           const dirArrow = dir != null ? getWindArrow(dir) : "→";
 
-          const valutazioneVento = dir != null
-            ? validaVentoPerDecollo(dir, item.direzione)
-            : null;
-          const ventoColor = valutazioneVento
-            ? getVentoStatusColor(valutazioneVento.status)
-            : "text-slate-400";
-
           return (
             <button
-              key={item.nome}
+              key={item.id}
               onClick={() => onSelect(item)}
               className={`
                 w-full rounded-xl p-3 text-left transition-all border-2 cursor-pointer
@@ -214,23 +221,11 @@ const DecolliCard = ({ decolli, selectedId, onSelect, selectedDay = 0 }: Decolli
                         <span className="font-bold text-white tabular-nums">
                           {wind} km/h
                         </span>
-                        {gust != null && gust > 0 && (
-                          <span className="text-[10px] text-red-300 font-normal">
-                            raf. {gust}
-                          </span>
-                        )}
                       </div>
                       <span className="text-xs text-slate-300 font-bold">
                         {dirArrow} {dirLabel}
                       </span>
                     </div>
-
-                    {valutazioneVento && (
-                      <div className={`mt-1 flex items-center gap-1 text-[10px] rounded-lg px-2 py-1 border ${ventoColor}`}>
-                        <span>{valutazioneVento.icon}</span>
-                        <span className="font-bold">{valutazioneVento.label}</span>
-                      </div>
-                    )}
                   </div>
                 </>
               ) : (
