@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Wind, Loader2, AlertCircle } from "lucide-react";
+import { Wind, Loader2, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import type { HourData } from "@/types/meteo";
 
 interface ProfiloVentoVerticaleProps {
+  dayData?: HourData[];
   siteAlt: number;
   siteName?: string;
   lat?: number;
@@ -36,6 +38,12 @@ function getDirAbbrev(deg: number): string {
   return dirs[Math.round(deg / 22.5) % 16];
 }
 
+function getWindArrow(deg: number): string {
+  if (deg == null) return "";
+  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
+  return arrows[Math.round(deg / 45) % 8];
+}
+
 function getBarColor(speed: number): string {
   if (speed <= 8) return "bg-emerald-400";
   if (speed <= 15) return "bg-lime-400";
@@ -48,52 +56,21 @@ function msToKmh(ms: number): number {
   return Math.round(ms * 3.6);
 }
 
-function interpolaProfilo(profilo: LivelloVento[], quota: number): { speed: number; dir: number } {
-  if (!profilo || profilo.length === 0) return { speed: 0, dir: 0 };
-
-  const ordinato = [...profilo].sort((a, b) => a.height - b.height);
-
-  if (quota <= ordinato[0].height) {
-    return { speed: ordinato[0].speed, dir: ordinato[0].dir };
-  }
-
-  const ultimo = ordinato[ordinato.length - 1];
-  if (quota >= ultimo.height) {
-    const alpha = 0.2;
-    const speedMs = ultimo.speed / 3.6;
-    const speedKmh = msToKmh(speedMs * Math.pow(quota / ultimo.height, alpha));
-    return { speed: speedKmh, dir: ultimo.dir };
-  }
-
-  for (let i = 0; i < ordinato.length - 1; i++) {
-    const a = ordinato[i];
-    const b = ordinato[i + 1];
-
-    if (quota >= a.height && quota <= b.height) {
-      const ratio = (quota - a.height) / (b.height - a.height);
-      
-      const speedAMs = a.speed / 3.6;
-      const speedBMs = b.speed / 3.6;
-      const speedMs = speedAMs + ratio * (speedBMs - speedAMs);
-      const speedKmh = msToKmh(speedMs);
-
-      let dDiff = b.dir - a.dir;
-      if (dDiff > 180) dDiff -= 360;
-      if (dDiff < -180) dDiff += 360;
-      const dir = ((a.dir + dDiff * ratio) % 360 + 360) % 360;
-
-      return { speed: speedKmh, dir };
-    }
-  }
-
-  return { speed: 0, dir: 0 };
-}
-
-export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: ProfiloVentoVerticaleProps) {
+export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat, lon }: ProfiloVentoVerticaleProps) {
   const [profiloReale, setProfiloReale] = useState<LivelloVento[]>([]);
   const [loadingApi, setLoadingApi] = useState(false);
   const [errorApi, setErrorApi] = useState<string | null>(null);
+  const [showRaw, setShowRaw] = useState(false);
+  const [rawData, setRawData] = useState<string>("");
+  const [ultimoAggiornamento, setUltimoAggiornamento] = useState<string>("");
 
+  // Debug: mostra quanti dati ha dayData
+  useEffect(() => {
+    console.log("[ProfiloVentoVerticale] dayData length:", dayData?.length);
+    console.log("[ProfiloVentoVerticale] lat/lon:", lat, lon);
+  }, [dayData, lat, lon]);
+
+  // Fetch diretta all'API di Open-Meteo
   useEffect(() => {
     if (!lat || !lon) {
       setErrorApi("Coordinate non disponibili");
@@ -112,33 +89,61 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
       forecast_days: "1",
     });
 
-    fetch(`https://api.open-meteo.com/v1/forecast?${params}`)
+    const url = `https://api.open-meteo.com/v1/forecast?${params}`;
+    console.log("[ProfiloVentoVerticale] Fetching:", url);
+
+    fetch(url)
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
       .then(json => {
         if (!attivo) return;
-        
+
         const times: string[] = json.hourly?.time || [];
-        // Find 13:00 local time
+        // Trova l'ora 13:00 (picco termico)
         let idx = times.findIndex(t => {
-          const d = new Date(t + ":00");
+          const d = new Date(t);
           return d.getHours() === 13;
         });
+        if (idx === -1) {
+          // Se non trova 13:00, cerca tra 11-16
+          for (let i = 11; i <= 16; i++) {
+            idx = times.findIndex(t => new Date(t).getHours() === i);
+            if (idx !== -1) break;
+          }
+        }
         if (idx === -1) idx = 0;
 
+        console.log("[ProfiloVentoVerticale] Ora selezionata:", times[idx], "idx:", idx);
+
         const livelli: LivelloVento[] = LIVELLI
-          .map(l => ({
-            height: l.height,
-            speed: msToKmh(Number(json.hourly?.[l.speedKey]?.[idx]) || 0),
-            dir: Math.round(Number(json.hourly?.[l.dirKey]?.[idx]) || 0),
-          }))
+          .map(l => {
+            const speedRaw = Number(json.hourly?.[l.speedKey]?.[idx]);
+            const dirRaw = Number(json.hourly?.[l.dirKey]?.[idx]);
+            console.log(`[ProfiloVentoVerticale] ${l.height}m: speed=${speedRaw} m/s, dir=${dirRaw}°`);
+            return {
+              height: l.height,
+              speed: msToKmh(speedRaw || 0),
+              dir: Math.round(dirRaw || 0),
+            };
+          })
           .filter(l => l.speed >= 0);
+
+        // Salva il raw JSON per debug
+        setRawData(JSON.stringify({
+          ora: times[idx],
+          livelli: livelli.map(l => ({ quota: l.height, kmh: l.speed, gradi: l.dir })),
+          times: times.slice(0, 24),
+          rawSpeed: json.hourly?.wind_speed_10m?.slice(0, 24),
+          rawDir: json.hourly?.wind_direction_10m?.slice(0, 24)
+        }, null, 2));
+        setUltimoAggiornamento(new Date().toLocaleTimeString("it-IT"));
 
         if (livelli.length > 0) {
           setProfiloReale(livelli);
           setLoadingApi(false);
+          console.log("[ProfiloVentoVerticale] Profilo caricato!", livelli.length, "livelli");
         } else {
           throw new Error("Nessun dato vento disponibile");
         }
@@ -147,6 +152,7 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
         if (!attivo) return;
         setErrorApi(err instanceof Error ? err.message : "Errore caricamento dati");
         setLoadingApi(false);
+        console.error("[ProfiloVentoVerticale] Errore:", err);
       });
 
     return () => {
@@ -168,6 +174,7 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
       <div className="flex items-center justify-center py-8 text-slate-400">
         <AlertCircle className="w-5 h-5 mr-2 text-amber-400" />
         {errorApi || "Nessun dato vento disponibile"}
+        <span className="text-[10px] text-slate-600 ml-2">Posizione: {lat?.toFixed(3)}, {lon?.toFixed(3)}</span>
       </div>
     );
   }
@@ -176,7 +183,7 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
   const ventoDecollo = profiloReale.find(l => l.height <= siteAlt + 50) || profiloReale[0];
   const ventoQuota = profiloReale[profiloReale.length - 1];
 
-  // Show ALL actual data points directly from the API
+  // Mostra TUTTI i dati reali direttamente dall'API
   const righe = profiloReale.map(l => ({
     quota: l.height,
     speed: l.speed,
@@ -193,38 +200,41 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
 
   return (
     <div className="space-y-4">
+      {/* Indicatore aggiornamento */}
       <div className="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold bg-emerald-900/15 border-emerald-500/30 text-emerald-300">
         <Wind className="w-4 h-4" />
-        Profilo vento REALE da Open-Meteo ({profiloReale.length} livelli: 10m–3000m)
+        Profilo vento REALE da Open-Meteo ({profiloReale.length} livelli · aggiornato {ultimoAggiornamento})
       </div>
 
+      {/* Metriche principali */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <div className="bg-slate-800/60 rounded-xl p-3 text-center">
           <div className="text-[10px] text-slate-500">Vento al suolo</div>
           <div className="text-base font-bold text-cyan-300">{ventoDecollo.speed} km/h</div>
           <div className="text-[10px] text-slate-400">
-            da {getDirAbbrev(ventoDecollo.dir)} ({ventoDecollo.dir}°)
+            {getWindArrow(ventoDecollo.dir)} {getDirAbbrev(ventoDecollo.dir)} ({ventoDecollo.dir}°)
           </div>
         </div>
         <div className="bg-slate-800/60 rounded-xl p-3 text-center">
           <div className="text-[10px] text-slate-500">Vento a 3000m</div>
           <div className="text-base font-bold text-purple-300">{ventoQuota.speed} km/h</div>
           <div className="text-[10px] text-slate-400">
-            da {getDirAbbrev(ventoQuota.dir)} ({ventoQuota.dir}°)
+            {getWindArrow(ventoQuota.dir)} {getDirAbbrev(ventoQuota.dir)} ({ventoQuota.dir}°)
           </div>
         </div>
         <div className="bg-slate-800/60 rounded-xl p-3 text-center">
-          <div className="text-[10px] text-slate-500">Gradiente termico</div>
-          <div className="text-base font-bold text-white">0.98°C/100m</div>
-          <div className="text-[10px] text-slate-400">Adiabatico secco</div>
+          <div className="text-[10px] text-slate-500">Differenza</div>
+          <div className="text-base font-bold text-white">{ventoQuota.speed - ventoDecollo.speed} km/h</div>
+          <div className="text-[10px] text-slate-400">Shear verticale</div>
         </div>
         <div className="bg-slate-800/60 rounded-xl p-3 text-center">
-          <div className="text-[10px] text-slate-500">Temp. superficie</div>
-          <div className="text-base font-bold text-amber-300">15°C</div>
-          <div className="text-[10px] text-slate-400">Stima standard</div>
+          <div className="text-[10px] text-slate-500">Quota decollo</div>
+          <div className="text-base font-bold text-amber-300">{siteAlt}m</div>
+          <div className="text-[10px] text-slate-400">Altezza sito</div>
         </div>
       </div>
 
+      {/* Tabella profilo */}
       <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-700/30">
           <Wind className="w-4 h-4 text-cyan-400" />
@@ -238,10 +248,10 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
             <thead className="sticky top-0 bg-slate-900/90 z-10">
               <tr className="border-b border-slate-700/30 text-slate-500">
                 <th className="p-2 text-left w-14">Quota</th>
-                <th className="p-2 text-left w-20">Temp</th>
+                <th className="p-2 text-left w-16">Temp</th>
                 <th className="p-2 text-left">Vento</th>
-                <th className="p-2 text-left w-16">Dir</th>
-                <th className="p-2 text-left w-16">°</th>
+                <th className="p-2 text-left w-14">Dir</th>
+                <th className="p-2 text-left w-14">°</th>
               </tr>
             </thead>
             <tbody>
@@ -264,8 +274,8 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
                       </div>
                       <span className="font-mono text-white font-bold tabular-nums">{r.speed} km/h</span>
                     </td>
-                    <td className="p-2 text-center text-white font-bold">{getDirAbbrev(r.dir)}</td>
-                    <td className="p-2 text-center text-white tabular-nums">{r.dir}°</td>
+                    <td className="p-2 text-center text-white font-bold">{getWindArrow(r.dir)} {getDirAbbrev(r.dir)}</td>
+                    <td className="p-2 text-center text-white font-mono tabular-nums">{r.dir}°</td>
                   </tr>
                 );
               })}
@@ -274,14 +284,27 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
         </div>
       </div>
 
+      {/* Interpretazione */}
       <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 space-y-2 text-xs">
-        <div className="flex items-center gap-2">
-          <div className="text-slate-500">Interpretazione volo</div>
-        </div>
+        <div className="text-slate-500">Interpretazione volo</div>
         <div className="text-white font-bold mt-0.5">
           {getInterpretazione()}
         </div>
       </div>
+
+      {/* Debug raw data (optional, hidden by default) */}
+      <button
+        onClick={() => setShowRaw(!showRaw)}
+        className="w-full text-xs text-slate-500 hover:text-slate-300 py-1 flex items-center justify-center gap-1"
+      >
+        {showRaw ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+        {showRaw ? "Nascondi dati raw" : "Mostra dati raw"}
+      </button>
+      {showRaw && rawData && (
+        <pre className="bg-slate-900/90 border border-slate-700/40 rounded-xl p-4 text-[10px] text-green-400 overflow-x-auto max-h-64">
+          {rawData}
+        </pre>
+      )}
     </div>
   );
 }
