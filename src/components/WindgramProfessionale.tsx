@@ -44,6 +44,12 @@ function getWindColorDark(dir: number): string {
   return "#dc2626"; // W scuro
 }
 
+// Genera freccia direzione
+function getDirArrow(deg: number): string {
+  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
+  return arrows[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
+}
+
 export default function WindgramProfessionale({
   dati,
   quotaDecollo,
@@ -141,13 +147,15 @@ export default function WindgramProfessionale({
         </span>
         <span className="mx-2 text-slate-600">|</span>
         <span className="text-slate-400">🪂 = decollo</span>
+        <span className="mx-2 text-slate-600">|</span>
+        <span className="text-slate-400">Numero = km/h</span>
       </div>
 
       {/* Scroll orizzontale */}
       <div className="overflow-x-auto">
         <div className="min-w-[600px] p-4">
           {/* Header ore */}
-          <div className="flex ml-24 mb-1">
+          <div className="flex ml-24 mb-2">
             <div className="flex-1 grid grid-cols-[repeat(10,1fr)] gap-0.5">
               {oreVisibili.map((ora) => (
                 <div key={ora} className="text-center text-[10px] font-bold text-slate-500">
@@ -158,7 +166,7 @@ export default function WindgramProfessionale({
           </div>
 
           {/* Griglia quote */}
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             {quoteVisibili.map((q) => {
               const isDecollo = Math.abs(q - quotaDecollo) < 100;
 
@@ -176,40 +184,43 @@ export default function WindgramProfessionale({
                   </div>
 
                   {/* Righe vento per ogni ora */}
-                  <div className="flex-1 grid grid-cols-[repeat(10,1fr)] gap-0.5 py-0.5">
+                  <div className="flex-1 grid grid-cols-[repeat(10,1fr)] gap-0.5">
                     {oreVisibili.map((ora) => {
                       const d = dati.find(x => x.ora === ora);
-                      if (!d) return <div key={ora} className="h-4 bg-slate-800/40 rounded" />;
+                      if (!d) return <div key={ora} className="h-6 bg-slate-800/40 rounded" />;
 
                       const v = d.quote[q];
-                      if (!v || !v.speed) return <div key={ora} className="h-4 bg-slate-800/40 rounded" />;
+                      if (!v || !v.speed) return <div key={ora} className="h-6 bg-slate-800/40 rounded" />;
 
                       const speed = v.speed;
                       const dir = v.dir;
                       const color = getWindColor(dir);
-                      const pct = Math.max(10, Math.min(100, (speed / maxSpeed) * 100));
+                      const pct = Math.max(8, Math.min(100, (speed / maxSpeed) * 100));
 
                       return (
                         <div
                           key={ora}
-                          className="relative h-4 rounded-sm overflow-hidden flex items-center"
+                          className="group relative h-6 rounded-sm overflow-hidden cursor-pointer"
                           style={{
-                            backgroundColor: `${color}15`,
+                            backgroundColor: `${color}10`,
                           }}
-                          title={`${q}m · ${String(ora).padStart(2, "0")}:00 · ${Math.round(speed)} km/h da ${Math.round(dir)}°`}
+                          title={`${q}m · ${String(ora).padStart(2, "0")}:00\nVento: ${Math.round(speed)} km/h da ${Math.round(dir)}° (${getDirArrow(dir)})\nRaffiche: ${Math.round(d.gust)} km/h`}
                         >
                           {/* Barra del vento */}
                           <div
-                            className="h-full rounded-sm"
+                            className={`h-full transition-all duration-200 ${
+                              Math.round(speed) > 29 ? "opacity-90" : "opacity-80"
+                            } group-hover:opacity-100`}
                             style={{
                               width: `${pct}%`,
                               backgroundColor: color,
                             }}
                           />
-                          {/* Valore numerico */}
+                          
+                          {/* Valore velocità (sopra la barra) */}
                           <span
-                            className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white"
-                            style={{ textShadow: "0 0 2px rgba(0,0,0,0.8)" }}
+                            className="absolute top-0 left-1/2 -translate-x-1/2 text-[8px] font-bold text-white"
+                            style={{ textShadow: "0 1px 2px rgba(0,0,0,0.9)" }}
                           >
                             {Math.round(speed)}
                           </span>
