@@ -1,11 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Wind, Loader2, AlertCircle, ArrowUp, Gauge } from "lucide-react";
-import type { HourData } from "@/types/meteo";
+import { Wind, Loader2, AlertCircle } from "lucide-react";
 
 interface ProfiloVentoVerticaleProps {
-  dayData?: HourData[];
   siteAlt: number;
   siteName?: string;
   lat?: number;
@@ -50,25 +48,6 @@ function msToKmh(ms: number): number {
   return Math.round(ms * 3.6);
 }
 
-function estraiProfiloReale(dayData: HourData[] | undefined): LivelloVento[] {
-  if (!dayData || dayData.length === 0) return [];
-
-  const hd = dayData.find(h => h.time.getHours() === 13) ||
-    dayData.find(h => h.time.getHours() >= 11 && h.time.getHours() <= 15) ||
-    dayData[0];
-
-  const profilo = hd.windProfile;
-  if (!Array.isArray(profilo) || profilo.length === 0) return [];
-
-  return profilo
-    .filter((l: any) => l && l.height != null && l.speed != null && l.dir != null)
-    .map((l: any) => ({
-      height: l.height,
-      speed: msToKmh(l.speed),
-      dir: l.dir
-    }));
-}
-
 function interpolaProfilo(profilo: LivelloVento[], quota: number): { speed: number; dir: number } {
   if (!profilo || profilo.length === 0) return { speed: 0, dir: 0 };
 
@@ -110,25 +89,14 @@ function interpolaProfilo(profilo: LivelloVento[], quota: number): { speed: numb
   return { speed: 0, dir: 0 };
 }
 
-export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat, lon }: ProfiloVentoVerticaleProps) {
+export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: ProfiloVentoVerticaleProps) {
   const [profiloReale, setProfiloReale] = useState<LivelloVento[]>([]);
   const [loadingApi, setLoadingApi] = useState(false);
   const [errorApi, setErrorApi] = useState<string | null>(null);
-  const [usandoApi, setUsandoApi] = useState(false);
 
   useEffect(() => {
-    const profiloDaDati = estraiProfiloReale(dayData);
-    if (profiloDaDati.length >= 3) {
-      setProfiloReale(profiloDaDati);
-      setUsandoApi(true);
-      setLoadingApi(false);
-      return;
-    }
-
     if (!lat || !lon) {
-      setLoadingApi(false);
       setErrorApi("Coordinate non disponibili");
-      setUsandoApi(false);
       return;
     }
 
@@ -151,8 +119,13 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat,
       })
       .then(json => {
         if (!attivo) return;
+        
         const times: string[] = json.hourly?.time || [];
-        let idx = times.findIndex(t => new Date(t + "Z").getHours() === 13);
+        // Find 13:00 local time
+        let idx = times.findIndex(t => {
+          const d = new Date(t + ":00");
+          return d.getHours() === 13;
+        });
         if (idx === -1) idx = 0;
 
         const livelli: LivelloVento[] = LIVELLI
@@ -163,21 +136,23 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat,
           }))
           .filter(l => l.speed >= 0);
 
-        setProfiloReale(livelli);
-        setUsandoApi(true);
-        setLoadingApi(false);
+        if (livelli.length > 0) {
+          setProfiloReale(livelli);
+          setLoadingApi(false);
+        } else {
+          throw new Error("Nessun dato vento disponibile");
+        }
       })
       .catch(err => {
         if (!attivo) return;
         setErrorApi(err instanceof Error ? err.message : "Errore caricamento dati");
         setLoadingApi(false);
-        setUsandoApi(false);
       });
 
     return () => {
       attivo = false;
     };
-  }, [dayData, lat, lon]);
+  }, [lat, lon]);
 
   if (loadingApi) {
     return (
@@ -201,29 +176,13 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat,
   const ventoDecollo = profiloReale.find(l => l.height <= siteAlt + 50) || profiloReale[0];
   const ventoQuota = profiloReale[profiloReale.length - 1];
 
-  const quote: number[] = [];
-  const partenza = Math.floor(siteAlt / 250) * 250;
-  for (let q = partenza; q <= 3000; q += 250) quote.push(q);
-  if (!quote.includes(siteAlt)) {
-    quote.push(siteAlt);
-    quote.sort((a, b) => a - b);
-  }
-
-  const righe = quote.map(q => {
-    const { speed, dir } = interpolaProfilo(profiloReale, q);
-    
-    let temp: number;
-    const hd = dayData?.find(h => h.time.getHours() === 13) || dayData?.[0];
-    if (hd) {
-      const tempDelta = ((q - siteAlt) / 100) * 0.98;
-      temp = Math.round((hd.temperature - tempDelta) * 10) / 10;
-    } else {
-      const tempDelta = ((q - siteAlt) / 100) * 0.98;
-      temp = Math.round((15 - tempDelta) * 10) / 10;
-    }
-    
-    return { quota: q, temp, speed, dir };
-  });
+  // Show ALL actual data points directly from the API
+  const righe = profiloReale.map(l => ({
+    quota: l.height,
+    speed: l.speed,
+    dir: l.dir,
+    temp: 15 - ((l.height - siteAlt) / 100) * 0.98,
+  }));
 
   const getInterpretazione = () => {
     const windShear = ventoQuota.speed - ventoDecollo.speed;
@@ -236,20 +195,10 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat,
     <div className="space-y-4">
       <div className="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold bg-emerald-900/15 border-emerald-500/30 text-emerald-300">
         <Wind className="w-4 h-4" />
-        Profilo vento REALE ({profiloReale.length} livelli: 10m–3000m)
+        Profilo vento REALE da Open-Meteo ({profiloReale.length} livelli: 10m–3000m)
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <div className="bg-slate-800/60 rounded-xl p-3 text-center">
-          <div className="text-[10px] text-slate-500">Gradiente termico</div>
-          <div className="text-base font-bold text-white">0.98°C/100m</div>
-          <div className="text-[10px] text-slate-400">Adiabatico secco</div>
-        </div>
-        <div className="bg-slate-800/60 rounded-xl p-3 text-center">
-          <div className="text-[10px] text-slate-500">Temp. superficie</div>
-          <div className="text-base font-bold text-amber-300">15°C</div>
-          <div className="text-[10px] text-slate-400">Stima standard</div>
-        </div>
         <div className="bg-slate-800/60 rounded-xl p-3 text-center">
           <div className="text-[10px] text-slate-500">Vento al suolo</div>
           <div className="text-base font-bold text-cyan-300">{ventoDecollo.speed} km/h</div>
@@ -264,6 +213,16 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat,
             da {getDirAbbrev(ventoQuota.dir)} ({ventoQuota.dir}°)
           </div>
         </div>
+        <div className="bg-slate-800/60 rounded-xl p-3 text-center">
+          <div className="text-[10px] text-slate-500">Gradiente termico</div>
+          <div className="text-base font-bold text-white">0.98°C/100m</div>
+          <div className="text-[10px] text-slate-400">Adiabatico secco</div>
+        </div>
+        <div className="bg-slate-800/60 rounded-xl p-3 text-center">
+          <div className="text-[10px] text-slate-500">Temp. superficie</div>
+          <div className="text-base font-bold text-amber-300">15°C</div>
+          <div className="text-[10px] text-slate-400">Stima standard</div>
+        </div>
       </div>
 
       <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl overflow-hidden">
@@ -271,7 +230,7 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat,
           <Wind className="w-4 h-4 text-cyan-400" />
           <span className="text-xs font-bold text-cyan-300">Profilo verticale · {siteName || "Decollo"}</span>
           <span className="text-[10px] text-slate-500 ml-auto">
-            {siteAlt}m → 3000m (dati reali interpolati)
+            {siteAlt}m → 3000m (dati reali Open-Meteo)
           </span>
         </div>
         <div className="overflow-y-auto max-h-[400px]">
@@ -294,7 +253,7 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat,
                       {r.quota}m{isDecollo && <span className="text-[8px] text-emerald-400 ml-1">🪂</span>}
                     </td>
                     <td className={`p-2 font-mono whitespace-nowrap ${r.temp > 15 ? "text-amber-300" : r.temp > 5 ? "text-yellow-300" : "text-cyan-300"}`}>
-                      {r.temp}°C
+                      {Math.round(r.temp * 10) / 10}°C
                     </td>
                     <td className="p-2 flex items-center gap-2">
                       <div className="flex-1 h-2 bg-slate-700/50 rounded-full overflow-hidden">
