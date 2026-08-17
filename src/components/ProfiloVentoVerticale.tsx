@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { Thermometer, Wind, ArrowUp, Gauge, TrendingUp, Loader2, AlertCircle } from "lucide-react";
+import type { HourData } from "@/types/meteo";
 
 interface ProfiloVentoVerticaleProps {
+  dayData?: HourData[];
   siteAlt: number;
   siteName?: string;
   lat?: number;
@@ -59,7 +61,25 @@ function getBarColor(speed: number): string {
   return "bg-red-400";
 }
 
-// Interpolates wind profile for any altitude
+// Estrae il profilo reale dai dati HourData (già processati da weatherService)
+function estraiProfiloReale(dayData: HourData[] | undefined): LivelloVento[] {
+  if (!dayData || dayData.length === 0) return [];
+
+  // Prendi l'ora più rappresentativa (13:00, il picco termico)
+  const hd = dayData.find(h => h.time.getHours() === 13) ||
+    dayData.find(h => h.time.getHours() >= 11 && h.time.getHours() <= 15) ||
+    dayData[0];
+
+  // Il campo windProfile è aggiunto da weatherService
+  const profilo = hd.windProfile;
+  if (!Array.isArray(profilo) || profilo.length === 0) return [];
+
+  return profilo
+    .filter((l: any) => l && l.height != null && l.speed != null && l.dir != null)
+    .map((l: any) => ({ height: l.height, speed: l.speed, dir: l.dir }));
+}
+
+// Interpola il profilo reale per una quota qualsiasi
 function interpolaProfilo(profilo: LivelloVento[], quota: number): { speed: number; dir: number } {
   if (!profilo || profilo.length === 0) return { speed: 0, dir: 0 };
 
@@ -101,15 +121,27 @@ function interpolaProfilo(profilo: LivelloVento[], quota: number): { speed: numb
   return { speed: 0, dir: 0 };
 }
 
-export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: ProfiloVentoVerticaleProps) {
+export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat, lon }: ProfiloVentoVerticaleProps) {
   const [profiloReale, setProfiloReale] = useState<LivelloVento[]>([]);
-  const [loadingApi, setLoadingApi] = useState(true);
+  const [loadingApi, setLoadingApi] = useState(false);
   const [errorApi, setErrorApi] = useState<string | null>(null);
+  const [usandoApi, setUsandoApi] = useState(false);
 
   useEffect(() => {
+    // Prima prova a usare i dati già disponibili da dayData
+    const profiloDaDati = estraiProfiloReale(dayData);
+    if (profiloDaDati.length >= 3) { // Abbastanza livelli per essere utile
+      setProfiloReale(profiloDaDati);
+      setUsandoApi(true);
+      setLoadingApi(false);
+      return;
+    }
+
+    // Se non abbiamo abbastanza dati da dayData e abbiamo coordinate, fai fetch diretto
     if (!lat || !lon) {
       setLoadingApi(false);
       setErrorApi("Coordinate non disponibili");
+      setUsandoApi(false);
       return;
     }
 
@@ -146,18 +178,20 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
           .filter(l => l.speed >= 0); // Allow 0 wind
 
         setProfiloReale(livelli);
+        setUsandoApi(true);
         setLoadingApi(false);
       })
       .catch(err => {
         if (!attivo) return;
         setErrorApi(err instanceof Error ? err.message : "Errore caricamento dati");
         setLoadingApi(false);
+        setUsandoApi(false);
       });
 
     return () => {
       attivo = false;
     };
-  }, [lat, lon]);
+  }, [dayData, lat, lon]);
 
   if (loadingApi) {
     return (
@@ -193,11 +227,79 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
 
   const righe = quote.map(q => {
     const { speed, dir } = interpolaProfilo(profiloReale, q);
-    // Temperature lapse rate: 0.98°C/100m (dry adiabatic)
-    const tempDelta = ((q - siteAlt) / 100) * 0.98;
-    const temp = Math.round((15 - tempDelta) * 10) / 10; // Assuming 15°C at sea level for simplicity
+    // Use actual temperature data if available, otherwise estimate
+    let temp: number;
     
-    return { quota: q, temp, speed, dir };
+    // Try to get temperature from dayData at this altitude
+    if (dayData && dayData.length > 0) {
+      // Find temperature at closest available altitude
+      const tempData: { height: number; temp: number }[] = [];
+      
+      // Add ground level temperature
+      const hd = dayData.find(h => h.time.getHours() === 13) ||
+        dayData.find(h => h.time.getHours() >= 11 && h.time.getHours() <= 15) ||
+        dayData[0];
+      
+      if (hd) {
+        tempData.push({ height: 0, temp: hd.temperature }); // Ground level
+        
+        // Add 80m and 120m if available
+        if (hd.temp80m !== undefined) {
+          tempData.push({ height: 80, temp: hd.temp80m });
+        }
+        if (hd.temp120m !== undefined) {
+          tempData.push({ height: 120, temp: hd.temp120m });
+        }
+        
+        // If we have at least two points, we can interpolate/extrapolate
+        if (tempData.length >= 2) {
+          // Sort by height
+          const sortedTempData = [...tempData].sort((a, b) => a.height - b.height);
+          
+          // Find the two points to interpolate between
+          let lower = sortedTempData[0];
+          let upper = sortedTempData[sortedTempData.length - 1];
+          
+          // Find the closest lower point
+          for (let i = 0; i < sortedTempData.length; i++) {
+            if (sortedTempData[i].height <= q) {
+              lower = sortedTempData[i];
+            } else {
+              break;
+            }
+          }
+          
+          // Find the closest upper point
+          for (let i = sortedTempData.length - 1; i >= 0; i--) {
+            if (sortedTempData[i].height >= q) {
+              upper = sortedTempData[i];
+            } else {
+              break;
+            }
+          }
+          
+          // If we have both lower and upper points, interpolate
+          if (lower.height !== upper.height) {
+            const ratio = (q - lower.height) / (upper.height - lower.height);
+            temp = lower.temp + ratio * (upper.temp - lower.temp);
+          } else {
+            // If heights are the same, use that temperature
+            temp = lower.temp;
+          }
+          
+          return { quota: q, temp: Math.round(temp * 10) / 10, speed, dir };
+        }
+      }
+    }
+    
+    // Fallback to standard lapse rate from site altitude
+    // Assume temperature at site altitude is approximately 15°C minus lapse rate * altitude/100
+    // This is a simplification - in reality we'd want the actual ground temp
+    const tempDelta = ((q - siteAlt) / 100) * 0.98;
+    const baseTemp = 15 - (siteAlt / 100) * 0.98; // Approximate sea level temp
+    temp = baseTemp - tempDelta;
+    
+    return { quota: q, temp: Math.round(temp * 10) / 10, speed, dir };
   });
 
   // Get interpretation text
@@ -211,9 +313,18 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
   return (
     <div className="space-y-4">
       {/* Data source badge */}
-      <div className="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold bg-emerald-900/15 border-emerald-500/30 text-emerald-300">
-        <Wind className="w-4 h-4" />
-        Profilo vento REALE da Open-Meteo ({profiloReale.length} livelli: 10m–3000m)
+      <div className="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold">
+        {usandoApi ? (
+          <>
+            <Wind className="w-4 h-4" />
+            Profilo vento REALE da {'dati meteo già caricati' /* usandoApi */} ({profiloReale.length} livelli: 10m–3000m)
+          </>
+        ) : (
+          <>
+            <Wind className="w-4 h-4" />
+            Profilo vento REALE da Open-Meteo ({profiloReale.length} livelli: 10m–3000m)
+          </>
+        )}
       </div>
 
       {/* Key metrics */}
@@ -262,7 +373,7 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
           <Wind className="w-4 h-4 text-cyan-400" />
           <span className="text-xs font-bold text-cyan-300">Profilo verticale · {siteName || "Decollo"}</span>
           <span className="text-[10px] text-slate-500 ml-auto">
-            {siteAlt}m → 3000m (dati reali interpolati)
+            {siteAlt}m → 3000m {usandoApi ? "(dati meteo già caricati)" : "(dati reali interpolati)"}
           </span>
         </div>
         <div className="overflow-y-auto max-h-[400px]">

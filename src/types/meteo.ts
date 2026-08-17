@@ -32,6 +32,10 @@ export interface HourData {
   liftedIndex: number;
   mixingRatio: number;
   virtualTemp: number;
+  // Additional fields from weatherService
+  windProfile?: { height: number; speed: number; dir: number }[];
+  temp80m?: number;
+  temp120m?: number;
 }
 
 export interface DailyData {
