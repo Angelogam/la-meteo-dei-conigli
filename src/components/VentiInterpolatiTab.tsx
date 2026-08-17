@@ -245,7 +245,7 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
                   setOraSelezionata(v.ora);
                   onOraChange?.(v.ora);
                 }}
-                className={`w-full grid grid-cols-[3rem_1fr_3rem_3rem] gap-2 px-4 py-2 text-xs transition-all text-left ${
+                className={`w-full grid grid-cols-[3rem_1fr_4.5rem_3.5rem] gap-2 px-4 py-2 text-xs transition-all text-left ${
                   isSelected ? "bg-blue-900/20" : "hover:bg-slate-700/30"
                 }`}
               >
@@ -263,8 +263,9 @@ export default function VentiInterpolatiTab({ lat, lon, quotaDecollo, selectedDa
                     {Math.round(ventoDecollo.speed)}
                   </span>
                 </div>
-                <span className="text-slate-400 text-center font-mono">
-                  {getDirArrow(ventoDecollo.dir)}
+                <span className="text-slate-300 text-center font-mono">
+                  <span className="font-bold">{getDirAbbrev(ventoDecollo.dir)}</span>
+                  <span className="text-slate-500 ml-0.5">{Math.round(ventoDecollo.dir)}°</span>
                 </span>
                 <span className="text-slate-500 text-right font-mono">
                   {Math.round(v.gust)}
