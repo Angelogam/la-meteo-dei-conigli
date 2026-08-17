@@ -131,21 +131,15 @@ export function analisiAvanzataCompleta(
     const temp80m = weather.temp80m ?? null;
     const temp120m = weather.temp120m ?? null;
 
-    // Usa la pressione dal current data come valore di default
     const pressure = current?.pressure ?? 1013;
 
-    // --- CALCOLI REALISTICI CON LIMITI FISICI ---
-
-    // CAPE realistico Alpi: 0-1500, usiamo una stima basata su spread e temperatura
     const spread = Math.max(0.3, Math.min(20, temp - dew));
     const estimatedCape = Math.min(1500, Math.round(spread * spread * 6 + (temp - 10) * 5));
     const capeValue = Math.min(1500, Math.max(0, estimatedCape));
 
-    // Wind shear
     const windShear = Math.round(Math.abs(windSpeed - windGusts) * 10) / 10;
 
-    // Gradiente termico verticale (valore realistico: 0.5-1.5 °C/100m)
-    let gradiente = 0.98; // default secco
+    let gradiente = 0.98;
     if (temp80m != null && temp80m > -50 && temp80m < 50) {
       gradiente = Math.min(1.5, Math.max(0.3, ((temp - temp80m) / 78) * 100));
     } else if (temp120m != null && temp120m > -50 && temp120m < 50) {
@@ -153,14 +147,11 @@ export function analisiAvanzataCompleta(
     }
     gradiente = Math.round(gradiente * 100) / 100;
 
-    // LCL = base nuvole
     const lclSopraSuolo = Math.min(2500, Math.max(50, Math.round(spread * 120)));
     const baseNuvole = Math.min(3500, altitude + lclSopraSuolo);
 
-    // Zero termico stimato
     const zeroTermico = Math.min(4800, Math.max(altitude + 200, Math.round(altitude + temp * 80 + spread * 30)));
 
-    // RATEO — max 5 m/s
     let rateoBase = Math.min(3, Math.max(0.05, spread * 0.25));
     if (windSpeed >= 5 && windSpeed <= 15) rateoBase += 0.5;
     if (cloudCover >= 15 && cloudCover <= 40) rateoBase += 0.3;
@@ -169,7 +160,6 @@ export function analisiAvanzataCompleta(
     if (windSpeed > 20) rateoBase *= 0.6;
     const rateo = Math.max(0, Math.min(5, Math.round(rateoBase * 10) / 10));
 
-    // Forza termica 0-10
     let forza = 0;
     if (capeValue > 800) forza += 3;
     else if (capeValue > 400) forza += 2;
@@ -181,13 +171,11 @@ export function analisiAvanzataCompleta(
     if (cloudCover >= 15 && cloudCover <= 40) forza += 0.5;
     const forzaTermica = Math.min(10, Math.max(0, Math.round(forza * 10) / 10));
 
-    // Top termico (max 4500m)
     const topTermico = Math.min(4500, Math.max(baseNuvole + 200, baseNuvole + Math.round(rateo * 300 + capeValue * 0.8)));
 
     const stabilita = calcolaStabilita(capeValue, Math.round((temp - (dew + 4)) * 10) / 10, gradiente);
     const turbolenza = calcolaTurbolenza(windSpeed, windGusts, windShear);
 
-    // Volo score 0-100
     let score = 0;
     score += Math.min(30, Math.round(rateo * 8));
     score += Math.min(20, Math.round((forzaTermica / 10) * 20));
@@ -207,10 +195,8 @@ export function analisiAvanzataCompleta(
 
     const { giudizio, descrizione } = calcolaGiudizioVolo(voloScore);
 
-    // Confidenza
     const confidenza = Math.min(1, Math.round((0.3 + (rateo / 5) * 0.4 + (forzaTermica / 10) * 0.3) * 100) / 100);
 
-    // Copertura nuvole testuale
     let coperturaTesto: string;
     if (cloudCover >= 80) coperturaTesto = "coperto";
     else if (cloudCover >= 60) coperturaTesto = "molto nuvoloso";

@@ -3,12 +3,14 @@
 import type { HourData } from "@/types/meteo";
 
 export interface AnalisiApprofondita {
+  // Dati base
   data: string;
   luogo: string;
   lat: number;
   lon: number;
   alt: number;
 
+  // Condizioni al suolo
   tempMax: number;
   tempMin: number;
   tempAttuale: number;
@@ -19,40 +21,48 @@ export interface AnalisiApprofondita {
   ventoDir: number;
   ventoDirNome: string;
 
+  // Struttura verticale
   pbl: number;
   thermalIndex: number;
   thermalIndexDesc: string;
   topTermiche: number;
   rateoMedio: number;
 
+  // Stabilità
   cape: number;
   capeDesc: string;
   liftedIndex: number;
   liDesc: string;
   cin: number;
 
+  // Gradiente vento
   gradienteVento: string;
   inversione: string;
   windShear: string;
 
+  // Visibilità e radiazione
   visibilita: number;
   radiazione: number;
   uvIndex: number;
 
+  // Nuvolosità
   nuvoleMedie: number;
   nuvoleBasse: number;
   nuvoleAlte: number;
 
+  // Rischio
   rischioTemporali: number;
   temporaliDesc: string;
 
+  // Slot orari migliori
   slotMigliori: string;
+
+  // Valutazione complessiva
   valutazione: string;
-  punteggio: number;
+  punteggio: number; // 0-100
 }
 
 function getWindDirName(deg: number): string {
-  if (deg == null) return "—";
   const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
   return dirs[Math.round(deg / 22.5) % 16];
 }
@@ -83,11 +93,15 @@ function getLIDesc(li: number): string {
 }
 
 function getPBL(pblRaw: number, temp: number, spread: number): number {
+  // Se il dato reale è disponibile e sensato, usalo
   if (pblRaw > 500 && pblRaw < 6000) return Math.round(pblRaw);
+  // Altrimenti stima dalla temperatura e spread
   return Math.round(Math.min(5000, Math.max(800, spread * 350 + temp * 50)));
 }
 
 function calcolaThermalIndex(omega: number, temp: number, alt: number): number {
+  // Stima semplificata dell'indice termico
+  // Più negativo = migliori termiche
   return Math.round((omega * 0.1 - (temp - 15) * 0.3 + alt * 0.001) * 10) / 10;
 }
 
@@ -104,6 +118,7 @@ export function calcolaAnalisiApprofondita(
   });
   if (oreValide.length < 3) return null;
 
+  // Prendi i dati reali dell'ora corrente (o l'ora di punta)
   const oraTarget = oraCorrente ?? 13;
   const hAttuale = oreValide.reduce((best, h) => {
     const hDiff = Math.abs(new Date(h.time).getHours() - oraTarget);
@@ -111,57 +126,75 @@ export function calcolaAnalisiApprofondita(
     return hDiff < bestDiff ? h : best;
   }, oreValide[0]);
 
+  // Temperature
   const tempMax = Math.round(Math.max(...oreValide.map(h => h.temperature)));
   const tempMin = Math.round(Math.min(...oreValide.map(h => h.temperature)));
   const tempAttuale = Math.round(hAttuale.temperature);
   const dewPoint = hAttuale.dewPoint ?? (tempAttuale - 10);
   const umidita = Math.round(hAttuale.humidity);
 
+  // Vento al suolo
   const ventoSuolo = Math.round(hAttuale.windSpeed);
   const rafficheSuolo = Math.round(hAttuale.windGusts || ventoSuolo * 1.5);
   const ventoDir = Math.round(hAttuale.windDir);
 
-  const pbl = getPBL(hAttuale.freezingLevel || 0, tempAttuale, tempAttuale - dewPoint);
+  // PBL - da dati o stimato
+  const pbl = getPBL(
+    hAttuale.freezingLevel || 0,
+    tempAttuale,
+    tempAttuale - dewPoint
+  );
 
+  // Thermal Index (TI) - stimato
+  // omega = vento verticale stimato da convergenza
   const omega = Math.max(0, (tempAttuale - dewPoint) * 0.5 - hAttuale.windSpeed * 0.1);
   const thermalIndex = calcolaThermalIndex(omega, tempAttuale, site.alt);
   const thermalIndexDesc = getThermalIndexDesc(thermalIndex);
 
+  // CAPE
   const cape = Math.round(Math.max(0, hAttuale.cape || (tempAttuale - dewPoint) * 40));
   const capeDesc = getCAPEDesc(cape);
 
+  // Lifted Index
   const liftedIndex = Math.round((hAttuale.liftedIndex ?? (tempAttuale - dewPoint - 5)) * 100) / 100;
   const liDesc = getLIDesc(liftedIndex);
 
+  // CIN
   const cin = Math.round(Math.max(0, hAttuale.cin || 200 - cape * 0.3));
 
+  // Top termiche
   const topTermiche = Math.round(Math.max(
     site.alt + 500,
     Math.min(pbl + 500, site.alt + (tempAttuale - dewPoint) * 250 + 500)
   ));
 
+  // Rateo medio
   const rateoMedio = Math.round(Math.min(4.5, Math.max(0.3,
     (tempAttuale - dewPoint) * 0.2 + (pbl > 3000 ? 0.5 : 0) + (thermalIndex < -6 ? 0.5 : 0)
   )) * 10) / 10;
 
+  // Gradiente vento (stimato dai dati alle varie quote)
   const ventoSuoloKmh = ventoSuolo;
   const ventoQuota = Math.round(hAttuale.windSpeed * 1.3 + 5);
   let gradienteVento = "debole";
   if (ventoQuota - ventoSuoloKmh > 20) gradienteVento = "moderato";
   if (ventoQuota - ventoSuoloKmh > 35) gradienteVento = "forte";
 
+  // Inversione termica (stimata)
   const inversione = (tempAttuale - tempMin > 12)
     ? "assente, buon rimescolamento"
     : (tempAttuale - tempMin > 8)
       ? "debole, non penalizza le termiche"
       : "presente, possibile capping";
 
+  // Wind shear
   const windShear = (rafficheSuolo - ventoSuolo < 8)
     ? "debole, termiche stabili"
     : (rafficheSuolo - ventoSuolo < 15)
       ? "moderato, termiche irregolari"
       : "forte, termiche turbolente";
 
+  // Nuvolosità
   const nuvoleMedie = Math.round(
     oreValide.reduce((s, h) => s + (h.cloudCoverMid || h.cloudCover * 0.3), 0) / oreValide.length
   );
@@ -172,10 +205,16 @@ export function calcolaAnalisiApprofondita(
     oreValide.reduce((s, h) => s + (h.cloudCoverHigh || h.cloudCover * 0.3), 0) / oreValide.length
   );
 
+  // Visibilità (in km)
   const visibilita = Math.round((hAttuale.visibility || 20000) / 1000);
+
+  // Radiazione solare
   const radiazione = Math.round(Math.max(0, hAttuale.radiation ?? 500));
+
+  // UV index
   const uvIndex = Math.round(hAttuale.uvIndex ?? 5);
 
+  // Rischio temporali
   const pioggiaTot = oreValide.reduce((s, h) => s + (h.precipitation || 0), 0);
   const oreTemporale = oreValide.filter(h => h.weatherCode >= 95 || h.weatherCode === 82).length;
   let rischioTemporali = 2;
@@ -195,6 +234,7 @@ export function calcolaAnalisiApprofondita(
     temporaliDesc = "rischio moderato: energia convettiva elevata";
   }
 
+  // Slot orari migliori
   let slotMigliori = "11:00 - 16:00";
   if (topTermiche > 3500 && rateoMedio > 2) {
     slotMigliori = "10:30 - 16:30 (termiche forti e regolari)";
@@ -202,6 +242,7 @@ export function calcolaAnalisiApprofondita(
     slotMigliori = "12:00 - 15:00 (finestra limitata)";
   }
 
+  // Punteggio
   let punteggio = 50;
   if (thermalIndex < -6) punteggio += 20;
   else if (thermalIndex < -3) punteggio += 10;
@@ -221,6 +262,7 @@ export function calcolaAnalisiApprofondita(
   if (visibilita > 30) punteggio += 5;
   if (topTermiche > 3000) punteggio += 10;
 
+  // Valutazione
   let valutazione = "";
   if (punteggio >= 80) {
     valutazione = "Condizioni eccellenti per il volo termico secco. Termiche forti e regolari, vento gestibile, visibilità ottima, assenza di rischi. Giornata da cross classico.";
@@ -236,7 +278,7 @@ export function calcolaAnalisiApprofondita(
 
   return {
     data: dayData[0]?.time?.toLocaleDateString("it-IT", {
-      weekday: "long", day: "numeric", month: "long", year: "numeric",
+      weekday: "long", day: "numeric", month: "long", year: "numeric"
     }) || "N/D",
     luogo: site.name || "Decollo",
     lat: site.lat || 0,

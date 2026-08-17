@@ -1,7 +1,10 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { CloudSun, MapPin, Calendar } from "lucide-react";
+import React from "react";
+import {
+  CloudSun, ArrowUp, TrendingUp,
+  Sun, Eye, AlertTriangle, Thermometer, Calendar, MapPin
+} from "lucide-react";
 
 interface MeteoTabProps {
   currentData: any;
@@ -10,9 +13,9 @@ interface MeteoTabProps {
   thermalDelta: number;
   stabilityIndex: { label: string; color: string };
   modelName?: string;
-  cape?: number | null;
-  liftedIndex?: number | null;
-  cin?: number | null;
+  cape?: number;
+  liftedIndex?: number;
+  cin?: number;
 }
 
 function formatDateShort(date: Date): string {
@@ -22,17 +25,9 @@ function formatDateShort(date: Date): string {
 }
 
 export default function MeteoTab({
-  currentData,
-  dayData,
-  site,
-  thermalDelta,
-  stabilityIndex,
-  modelName,
-  cape,
-  liftedIndex,
-  cin,
+  currentData, dayData, site, thermalDelta, stabilityIndex, modelName, cape, liftedIndex, cin
 }: MeteoTabProps) {
-  const dataGiorno = useMemo(() => {
+  const dataGiorno = React.useMemo(() => {
     if (dayData && dayData.length > 0) {
       return formatDateShort(dayData[0].time);
     }
@@ -58,9 +53,41 @@ export default function MeteoTab({
   const precipitation = currentData.precipitation;
   const dewPoint = currentData.dewPoint ?? (temp - (100 - (humidity ?? 50)) / 5);
   const weatherCode = currentData.weatherCode;
+  const temp80m = currentData.temp80m;
+  const temp120m = currentData.temp120m;
+  const uvIndex = currentData.uvIndex;
 
   const spread = temp - dewPoint;
   const cloudBase = Math.max(200, Math.min(3000, Math.round(spread * 125)));
+
+  let gradienteReale = 0.98;
+  let gradienteLabel = "Adiabatico secco";
+  if (temp80m != null) { gradienteReale = ((temp - temp80m) / 78) * 100; gradienteLabel = "Da T80m"; }
+  else if (temp120m != null) { gradienteReale = ((temp - temp120m) / 118) * 100; gradienteLabel = "Da T120m"; }
+
+  let forzaTermica = 0;
+  if (gradienteReale >= 1.2) forzaTermica += 3;
+  else if (gradienteReale >= 0.98) forzaTermica += 2;
+  else if (gradienteReale >= 0.7) forzaTermica += 1;
+  if (windSpeed >= 5 && windSpeed <= 15) forzaTermica += 2;
+  else if (windSpeed >= 3 && windSpeed < 5) forzaTermica += 1.5;
+  else if (windSpeed > 15 && windSpeed <= 22) forzaTermica += 1;
+  if (cloudCover >= 15 && cloudCover <= 45) forzaTermica += 2;
+  else if (cloudCover >= 5 && cloudCover < 15) forzaTermica += 1.5;
+  if (humidity >= 30 && humidity <= 50) forzaTermica += 1.5;
+  else if (humidity > 50 && humidity <= 65) forzaTermica += 1;
+  if (uvIndex != null) {
+    if (uvIndex >= 7) forzaTermica += 1;
+    else if (uvIndex >= 5) forzaTermica += 0.7;
+    else if (uvIndex >= 3) forzaTermica += 0.4;
+  }
+  forzaTermica = Math.min(10, Math.max(0, Math.round(forzaTermica * 10) / 10));
+  let rateoTermico = (forzaTermica / 10) * 4;
+  if (precipitation > 1) rateoTermico = 0;
+  rateoTermico = Math.round(rateoTermico * 10) / 10;
+  const topTermico = Math.min(5000, cloudBase + Math.round(forzaTermica * 250));
+  const raffiche = windGust ?? Math.round(windSpeed * 1.4);
+  const zeroTermico = Math.max(0, Math.round(site.alt + (temp / 0.0098) + 200));
 
   const dirCardinali = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   const dirLabel = dirCardinali[Math.round((windDir ?? 0) / 45) % 8];
@@ -68,6 +95,7 @@ export default function MeteoTab({
 
   return (
     <div className="space-y-4">
+      {/* Intestazione con nome decollo e data */}
       <div className="bg-slate-800/60 border border-emerald-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
         <MapPin className="w-5 h-5 text-emerald-400 shrink-0" />
         <div>
@@ -80,63 +108,6 @@ export default function MeteoTab({
           </div>
         </div>
       </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-        <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 text-center">
-          <div className="text-[10px] text-slate-500">Temperatura</div>
-          <div className="text-xl font-bold text-amber-300">{Math.round(temp)}°C</div>
-          <div className="text-[10px] text-slate-400">Percepita {Math.round(currentData.feelsLike ?? temp)}°C</div>
-        </div>
-        <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 text-center">
-          <div className="text-[10px] text-slate-500">Vento</div>
-          <div className="text-xl font-bold text-sky-300">{Math.round(windSpeed)} km/h</div>
-          <div className="text-[10px] text-slate-400">
-            {arrow} {dirLabel} · Raffiche {Math.round(windGust ?? 0)} km/h
-          </div>
-        </div>
-        <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 text-center">
-          <div className="text-[10px] text-slate-500">Umidità</div>
-          <div className="text-xl font-bold text-blue-300">{Math.round(humidity)}%</div>
-          <div className="text-[10px] text-slate-400">Dew point {Math.round(dewPoint)}°C</div>
-        </div>
-        <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 text-center">
-          <div className="text-[10px] text-slate-500">Nuvolosità</div>
-          <div className="text-xl font-bold text-slate-200">{Math.round(cloudCover)}%</div>
-          <div className="text-[10px] text-slate-400">Base nuvole ~{cloudBase}m</div>
-        </div>
-        <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 text-center">
-          <div className="text-[10px] text-slate-500">Pressione</div>
-          <div className="text-xl font-bold text-purple-300">{Math.round(pressure)} hPa</div>
-          <div className="text-[10px] text-slate-400">Delta termico {thermalDelta}°C</div>
-        </div>
-        <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 text-center">
-          <div className="text-[10px] text-slate-500">Pioggia</div>
-          <div className="text-xl font-bold text-blue-300">
-            {precipitation > 0 ? `${precipitation.toFixed(1)} mm` : "0 mm"}
-          </div>
-          <div className="text-[10px] text-slate-400">
-            {weatherCode >= 95 ? "⛈️ Temporale" : weatherCode >= 61 ? "🌧️ Pioggia" : "☀️ Secco"}
-          </div>
-        </div>
-      </div>
-
-      {(cape != null || liftedIndex != null || cin != null) && (
-        <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3">
-          <div className="text-xs font-bold text-slate-300 mb-2">Indici di stabilità</div>
-          <div className="flex flex-wrap gap-4 text-sm">
-            {cape != null && (
-              <span className="text-slate-300">CAPE: <strong className="text-purple-300">{Math.round(cape)} J/kg</strong></span>
-            )}
-            {liftedIndex != null && (
-              <span className="text-slate-300">LI: <strong className={liftedIndex < 0 ? "text-orange-300" : "text-green-300"}>{liftedIndex}°C</strong></span>
-            )}
-            {cin != null && (
-              <span className="text-slate-300">CIN: <strong className="text-red-300">{Math.round(cin)} J/kg</strong></span>
-            )}
-            <span className="text-slate-300">Stabilità: <strong style={{ color: stabilityIndex.color }}>{stabilityIndex.label}</strong></span>
-          </div>
-        </div>
-      )}
 
       <div className="text-center text-sm text-slate-600 border-t border-slate-700/30 pt-3">
         {site?.name} · Dati Open-Meteo · Modello: {modelName || "auto"}

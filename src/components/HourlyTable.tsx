@@ -124,7 +124,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                 `}
               >
                 <td className="p-2 font-bold text-white">{String(r.ora).padStart(2, "0")}:00</td>
-                <td className="p-2 text-3xl">{r.icona}</td>
+                <td className="p-2 text-lg">{r.icona}</td>
                 <td className="p-2 font-bold text-amber-300">{r.temperatura}</td>
                 <td className="p-2 text-sky-300">{r.vento} <span className="text-slate-500">({r.ventoTesto})</span></td>
                 <td className="p-2 text-blue-300">{r.direzione}</td>

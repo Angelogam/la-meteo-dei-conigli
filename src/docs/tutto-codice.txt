@@ -1,0 +1,2103 @@
+USE CLIENT;
+
+const BASE_URL = "https://api.open-meteo.com/v1/forecast";
+const TIMER_URL = "https://www.7timer.info/bin/astro.php";
+
+// === TIPI ===
+export interface MeteoHourly {
+  time: Date;
+  temperature: number;
+  humidity: number;
+  dewPoint: number;
+  pressure: number;
+  apparentTemp: number;
+  precipitation: number;
+  weatherCode: number;
+  cloudCover: number;
+  windSpeed: number;
+  windDir: number;
+  windGusts: number;
+  uvIndex: number;
+  shortwaveRadiation: number;
+  cape: number;
+  cin: number;
+  liftedIndex: number;
+  temp80m: number | null;
+  temp120m: number | null;
+  windSpeed80m: number | null;
+  windDir80m: number | null;
+  windSpeed120m: number | null;
+  windDir120m: number | null;
+  windSpeed180m: number | null;
+  windDir180m: number | null;
+}
+
+export interface MeteoCurrent {
+  temperature: number;
+  humidity: number;
+  windSpeed: number;
+  windDir: number;
+  windGusts: number;
+  weatherCode: number;
+  cloudCover: number;
+  precipitation: number;
+  pressure: number;
+  uvIndex: number;
+}
+
+export interface MeteoDaily {
+  date: Date;
+  weatherCode: number;
+  tempMax: number;
+  tempMin: number;
+  precipSum: number;
+  precipProbaMax: number;
+  windSpeedMax: number;
+  windGustsMax: number;
+  windDirDominant: number;
+  uvIndexMax: number;
+}
+
+export interface WindProfileResult {
+  ventoOrario: {
+    ora: number;
+    gust: number;
+    quote: Record<number, { speed: number; dir: number }>;
+  }[];
+}
+
+export interface FetchResult {
+  hourly: MeteoHourly[];
+  daily: MeteoDaily[];
+  current: MeteoCurrent;
+  source: "open-meteo" | "7timer";
+  responseTimeMs: number;
+}
+
+interface BatchCurrentResult {
+  ok: boolean;
+  data: MeteoCurrent | null;
+  source?: "open-meteo" | "7timer";
+  error?: string;
+}
+
+// === COSTANTI ===
+const HOURLY_PARAMS = [
+  "temperature_2m", "relative_humidity_2m", "dew_point_2m",
+  "apparent_temperature", "precipitation", "weather_code",
+  "cloud_cover", "pressure_msl", "wind_speed_10m",
+  "wind_direction_10m", "wind_gusts_10m", "uv_index",
+  "shortwave_radiation", "cape", "convective_inhibition",
+  "lifted_index", "temperature_80m", "temperature_120m",
+  "wind_speed_80m", "wind_direction_80m", "wind_speed_120m",
+  "wind_direction_120m", "wind_speed_180m", "wind_direction_180m",
+].join(",");
+
+const DAILY_PARAMS = [
+  "weather_code", "temperature_2m_max", "temperature_2m_min",
+  "precipitation_sum", "precipitation_probability_max",
+  "wind_speed_10m_max", "wind_gusts_10m_max",
+  "wind_direction_10m_dominant", "uv_index_max",
+].join(",");
+
+const FORECAST_DAYS = 3;
+
+// === CACHE INTELLIGENTE ===
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+  ttl: number;
+}
+
+class SmartCache {
+  private store = new Map<string, CacheEntry<any>>();
+  private defaultTTL: number;
+
+  constructor(defaultTTLMs = 5 * 60 * 1000) {
+    this.defaultTTL = defaultTTLMs;
+  }
+
+  get<T>(key: string): T | null {
+    const entry = this.store.get(key);
+    if (!entry) return null;
+    if (Date.now() - entry.timestamp > entry.ttl) {
+      this.store.delete(key);
+      return null;
+    }
+    return entry.data as T;
+  }
+
+  set<T>(key: string, data: T, ttl?: number): void {
+    this.store.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl: ttl ?? this.defaultTTL,
+    });
+  }
+
+  isStale(key: string): boolean {
+    const entry = this.store.get(key);
+    if (!entry) return false;
+    return Date.now() - entry.timestamp > entry.ttl * 0.7;
+  }
+
+  clear(): void {
+    this.store.clear();
+  }
+}
+
+const forecastCache = new SmartCache();
+const currentCache = new SmartCache();
+
+// === RATE LIMITER ===
+class RateLimiter {
+  private lastCall: number = 0;
+  private minInterval: number;
+  private callsInWindow: number = 0;
+  private windowStart: number = Date.now();
+  private maxPerWindow: number;
+  private windowMs: number;
+
+  constructor(minIntervalMs = 1200, maxPerWindow = 10, windowMs = 10000) {
+    this.minInterval = minIntervalMs;
+    this.maxPerWindow = maxPerWindow;
+    this.windowMs = windowMs;
+  }
+
+  async wait(): Promise<void> {
+    const now = Date.now();
+
+    if (now - this.windowStart > this.windowMs) {
+      this.callsInWindow = 0;
+      this.windowStart = now;
+    }
+
+    if (this.callsInWindow >= this.maxPerWindow) {
+      const waitTime = this.windowMs - (now - this.windowStart);
+      if (waitTime > 0) await this.sleep(waitTime);
+      this.callsInWindow = 0;
+      this.windowStart = Date.now();
+    }
+
+    const elapsed = now - this.lastCall;
+    if (elapsed < this.minInterval) {
+      await this.sleep(this.minInterval - elapsed);
+    }
+
+    this.lastCall = Date.now();
+    this.callsInWindow++;
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise(r => setTimeout(r, ms));
+  }
+}
+
+const rateLimiter = new RateLimiter(1200, 10, 10000);
+
+// === TELEMETRIA ===
+export interface TelemetryData {
+  totalRequests: number;
+  successRequests: number;
+  failedRequests: number;
+  fallbackTo7Timer: number;
+  cacheHits: number;
+  cacheMisses: number;
+  avgResponseTimeMs: number;
+  totalResponseTimeMs: number;
+  lastError: string | null;
+  lastErrorTime: string | null;
+}
+
+class Telemetry {
+  private data: TelemetryData = {
+    totalRequests: 0,
+    successRequests: 0,
+    failedRequests: 0,
+    fallbackTo7Timer: 0,
+    cacheHits: 0,
+    cacheMisses: 0,
+    avgResponseTimeMs: 0,
+    totalResponseTimeMs: 0,
+    lastError: null,
+    lastErrorTime: null,
+  };
+
+  recordRequest(success: boolean, responseTimeMs: number, source: string, cached: boolean): void {
+    this.data.totalRequests++;
+    if (success) this.data.successRequests++;
+    else this.data.failedRequests++;
+    if (source === "7timer") this.data.fallbackTo7Timer++;
+    if (cached) this.data.cacheHits++;
+    else this.data.cacheMisses++;
+    this.data.totalResponseTimeMs += responseTimeMs;
+    this.data.avgResponseTimeMs = Math.round(this.data.totalResponseTimeMs / this.data.totalRequests);
+  }
+
+  recordError(error: string): void {
+    this.data.lastError = error;
+    this.data.lastErrorTime = new Date().toISOString();
+  }
+
+  getStats(): TelemetryData {
+    return { ...this.data };
+  }
+
+  reset(): void {
+    this.data = {
+      totalRequests: 0,
+      successRequests: 0,
+      failedRequests: 0,
+      fallbackTo7Timer: 0,
+      cacheHits: 0,
+      cacheMisses: 0,
+      avgResponseTimeMs: 0,
+      totalResponseTimeMs: 0,
+      lastError: null,
+      lastErrorTime: null,
+    };
+  }
+}
+
+export const telemetry = new Telemetry();
+
+// === PARSER DATI ===
+function parseHourly(raw: any): MeteoHourly[] {
+  if (!raw?.hourly?.time) return [];
+  const { hourly } = raw;
+  const len = hourly.time.length;
+  const result: MeteoHourly[] = [];
+
+  for (let i = 0; i < len; i++) {
+    result.push({
+      time: new Date(hourly.time[i]),
+      temperature: hourly.temperature_2m?.[i] ?? 0,
+      humidity: hourly.relative_humidity_2m?.[i] ?? 50,
+      dewPoint: hourly.dew_point_2m?.[i] ?? 5,
+      pressure: hourly.pressure_msl?.[i] ?? 1013,
+      apparentTemp: hourly.apparent_temperature?.[i] ?? 0,
+      precipitation: hourly.precipitation?.[i] ?? 0,
+      weatherCode: hourly.weather_code?.[i] ?? 0,
+      cloudCover: hourly.cloud_cover?.[i] ?? 0,
+      windSpeed: hourly.wind_speed_10m?.[i] ?? 0,
+      windDir: hourly.wind_direction_10m?.[i] ?? 0,
+      windGusts: hourly.wind_gusts_10m?.[i] ?? 0,
+      uvIndex: hourly.uv_index?.[i] ?? 0,
+      shortwaveRadiation: hourly.shortwave_radiation?.[i] ?? 0,
+      cape: hourly.cape?.[i] ?? 0,
+      cin: hourly.convective_inhibition?.[i] ?? 0,
+      liftedIndex: hourly.lifted_index?.[i] ?? 0,
+      temp80m: hourly.temperature_80m?.[i] ?? null,
+      temp120m: hourly.temperature_120m?.[i] ?? null,
+      windSpeed80m: hourly.wind_speed_80m?.[i] ?? null,
+      windDir80m: hourly.wind_direction_80m?.[i] ?? null,
+      windSpeed120m: hourly.wind_speed_120m?.[i] ?? null,
+      windDir120m: hourly.wind_direction_120m?.[i] ?? null,
+      windSpeed180m: hourly.wind_speed_180m?.[i] ?? null,
+      windDir180m: hourly.wind_direction_180m?.[i] ?? null,
+    });
+  }
+  return result;
+}
+
+function parseDaily(raw: any): MeteoDaily[] {
+  if (!raw?.daily?.time) return [];
+  const { daily } = raw;
+  const len = daily.time.length;
+  const result: MeteoDaily[] = [];
+
+  for (let i = 0; i < len; i++) {
+    result.push({
+      date: new Date(daily.time[i]),
+      weatherCode: daily.weather_code?.[i] ?? 0,
+      tempMax: daily.temperature_2m_max?.[i] ?? 0,
+      tempMin: daily.temperature_2m_min?.[i] ?? 0,
+      precipSum: daily.precipitation_sum?.[i] ?? 0,
+      precipProbaMax: daily.precipitation_probability_max?.[i] ?? 0,
+      windSpeedMax: daily.wind_speed_10m_max?.[i] ?? 0,
+      windGustsMax: daily.wind_gusts_10m_max?.[i] ?? 0,
+      windDirDominant: daily.wind_direction_10m_dominant?.[i] ?? 0,
+      uvIndexMax: daily.uv_index_max?.[i] ?? 0,
+    });
+  }
+  return result;
+}
+
+function parseCurrent(raw: any, hourly: MeteoHourly[]): MeteoCurrent {
+  const first = hourly[0];
+  return {
+    temperature: first?.temperature ?? 0,
+    humidity: first?.humidity ?? 50,
+    windSpeed: first?.windSpeed ?? 0,
+    windDir: first?.windDir ?? 0,
+    windGusts: first?.windGusts ?? 0,
+    weatherCode: first?.weatherCode ?? 0,
+    cloudCover: first?.cloudCover ?? 0,
+    precipitation: first?.precipitation ?? 0,
+    pressure: first?.pressure ?? 1013,
+    uvIndex: first?.uvIndex ?? 0,
+  };
+}
+
+// === RETRY CON BACKOFF ESPONENZIALE ===
+async function fetchWithRetry(url: string, retries = 3, backoffMs = 1000): Promise<Response | null> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) return res;
+      if (res.status === 429 || res.status >= 500) {
+        if (attempt < retries) {
+          const wait = backoffMs * Math.pow(2, attempt);
+          await new Promise(r => setTimeout(r, wait));
+          continue;
+        }
+        return null;
+      }
+      return null;
+    } catch (err) {
+      if (attempt < retries) {
+        const wait = backoffMs * Math.pow(2, attempt);
+        await new Promise(r => setTimeout(r, wait));
+        continue;
+      }
+      telemetry.recordError(err instanceof Error ? err.message : String(err));
+      return null;
+    }
+  }
+  return null;
+}
+
+// === FETCH OPEN-METEO (con cache e retry) ===
+async function fetchOpenMeteo(lat: number, lon: number): Promise<{
+  hourly: MeteoHourly[];
+  daily: MeteoDaily[];
+  current: MeteoCurrent;
+  responseTimeMs: number;
+} | null> {
+  const cacheKey = `forecast:${lat.toFixed(4)}:${lon.toFixed(4)}`;
+
+  const cached = forecastCache.get<{ hourly: MeteoHourly[]; daily: MeteoDaily[]; current: MeteoCurrent }>(cacheKey);
+  if (cached) {
+    return { ...cached, responseTimeMs: 0 };
+  }
+
+  await rateLimiter.wait();
+  const start = performance.now();
+
+  try {
+    const params = new URLSearchParams({
+      latitude: lat.toString(),
+      longitude: lon.toString(),
+      hourly: HOURLY_PARAMS,
+      daily: DAILY_PARAMS,
+      timezone: "Europe/Rome",
+      forecast_days: String(FORECAST_DAYS),
+    });
+
+    const url = `${BASE_URL}?${params.toString()}`;
+    const res = await fetchWithRetry(url);
+
+    if (!res) return null;
+
+    const raw = await res.json();
+    const responseTimeMs = Math.round(performance.now() - start);
+
+    if (!raw?.hourly?.time?.length) return null;
+
+    const hourly = parseHourly(raw);
+    const daily = parseDaily(raw);
+    const current = parseCurrent(raw, hourly);
+
+    forecastCache.set(cacheKey, { hourly, daily, current }, 5 * 60 * 1000);
+    currentCache.set(cacheKey, current, 2 * 60 * 1000);
+
+    telemetry.recordRequest(true, responseTimeMs, "open-meteo", false);
+    return { hourly, daily, current, responseTimeMs };
+  } catch (err) {
+    telemetry.recordRequest(false, Math.round(performance.now() - start), "open-meteo", false);
+    telemetry.recordError(err instanceof Error ? err.message : String(err));
+    return null;
+  }
+}
+
+// === FETCH 7TIMER! (GFS) — FALLBACK ===
+async function fetchTimerGFS(lat: number, lon: number): Promise<{
+  hourly: MeteoHourly[];
+  daily: MeteoDaily[];
+  current: MeteoCurrent;
+  responseTimeMs: number;
+} | null> {
+  const cacheKey = `7timer:${lat.toFixed(4)}:${lon.toFixed(4)}`;
+
+  const cached = forecastCache.get<{ hourly: MeteoHourly[]; daily: MeteoDaily[]; current: MeteoCurrent }>(cacheKey);
+  if (cached) return { ...cached, responseTimeMs: 0 };
+
+  await rateLimiter.wait();
+  const start = performance.now();
+
+  try {
+    const url = `${TIMER_URL}?lon=${lon}&lat=${lat}&ac=0&unit=metric&output=json&tzshift=0`;
+    const res = await fetchWithRetry(url);
+    if (!res) return null;
+
+    const raw = await res.json();
+    const responseTimeMs = Math.round(performance.now() - start);
+    if (!raw?.dataseries?.length) return null;
+
+    const now = new Date();
+    const hourly: MeteoHourly[] = [];
+    const daily: MeteoDaily[] = [];
+
+    const seenDates = new Set<string>();
+
+    for (let i = 0; i < raw.dataseries.length && i < 24 * FORECAST_DAYS; i++) {
+      const d = raw.dataseries[i];
+      const time = new Date(now);
+      time.setHours(now.getHours() + d.timepoint || i);
+      time.setMinutes(0, 0, 0);
+
+      const temp = d.temp2m ?? 15;
+      const weatherCode = d.cloudcover != null
+        ? d.cloudcover > 80 ? 3
+          : d.cloudcover > 50 ? 2
+            : d.cloudcover > 20 ? 1
+              : 0
+        : 0;
+      const rh = d.rh2m ?? 50;
+      const wind10m = d.wind10m?.speed ?? 10;
+      const windDir = d.wind10m?.direction ?? 180;
+
+      const dew = temp - ((100 - rh) / 5);
+
+      hourly.push({
+        time,
+        temperature: temp,
+        humidity: rh,
+        dewPoint: Math.max(dew, -10),
+        pressure: d.msl_pressure ?? 1013,
+        apparentTemp: temp,
+        precipitation: d.prec_type === "rain" ? (d.prec_amount ?? 0.5) : 0,
+        weatherCode,
+        cloudCover: d.cloudcover ?? 30,
+        windSpeed: wind10m,
+        windDir,
+        windGusts: Math.round(wind10m * 1.4),
+        uvIndex: 5,
+        shortwaveRadiation: 500,
+        cape: 0,
+        cin: 0,
+        liftedIndex: 0,
+        temp80m: null,
+        temp120m: null,
+        windSpeed80m: null,
+        windDir80m: null,
+        windSpeed120m: null,
+        windDir120m: null,
+        windSpeed180m: null,
+        windDir180m: null,
+      });
+
+      const dateKey = `${time.getDate()}/${time.getMonth() + 1}`;
+      if (!seenDates.has(dateKey)) {
+        seenDates.add(dateKey);
+        daily.push({
+          date: time,
+          weatherCode,
+          tempMax: temp + 3,
+          tempMin: temp - 4,
+          precipSum: d.prec_type === "rain" ? (d.prec_amount ?? 1) : 0,
+          precipProbaMax: d.prec_type === "rain" ? 60 : 10,
+          windSpeedMax: wind10m + 5,
+          windGustsMax: wind10m + 10,
+          windDirDominant: windDir,
+          uvIndexMax: 5,
+        });
+      }
+    }
+
+    if (hourly.length === 0) return null;
+
+    const current = parseCurrent(null, hourly);
+
+    forecastCache.set(cacheKey, { hourly, daily, current }, 10 * 60 * 1000);
+    telemetry.recordRequest(true, responseTimeMs, "7timer", false);
+    return { hourly, daily, current, responseTimeMs };
+  } catch (err) {
+    telemetry.recordRequest(false, Math.round(performance.now() - start), "7timer", false);
+    return null;
+  }
+}
+
+// === GEO-CACHING: raggruppa coordinate vicine ===
+interface GeoCluster {
+  lat: number;
+  lon: number;
+  sites: { idx: number; lat: number; lon: number }[];
+}
+
+function clusterCoords(coords: { lat: number; lon: number }[], threshold = 0.1): GeoCluster[] {
+  const clusters: GeoCluster[] = [];
+  const used = new Set<number>();
+
+  for (let i = 0; i < coords.length; i++) {
+    if (used.has(i)) continue;
+    const cluster: GeoCluster = {
+      lat: coords[i].lat,
+      lon: coords[i].lon,
+      sites: [{ idx: i, lat: coords[i].lat, lon: coords[i].lon }],
+    };
+    used.add(i);
+
+    for (let j = i + 1; j < coords.length; j++) {
+      if (used.has(j)) continue;
+      const dist = Math.abs(coords[j].lat - coords[i].lat) + Math.abs(coords[j].lon - coords[i].lon);
+      if (dist < threshold * 2) {
+        cluster.sites.push({ idx: j, lat: coords[j].lat, lon: coords[j].lon });
+        used.add(j);
+      }
+    }
+
+    clusters.push(cluster);
+  }
+
+  return clusters;
+}
+
+// === BUILD PROFILO VENTO ===
+function buildWindProfileFromHourly(hourly: MeteoHourly[]): WindProfileResult {
+  const oreUtili = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+  const quoteBase = [500, 800, 1000, 1200, 1500, 1800, 2000, 2500, 3000];
+
+  const ventoOrario = oreUtili.map(ora => {
+    const h = hourly.find(h => h.time.getHours() === ora);
+    const q: Record<number, { speed: number; dir: number }> = {};
+    const surface = h ? { speed: h.windSpeed, dir: h.windDir } : { speed: 0, dir: 0 };
+
+    for (const qAlt of quoteBase) {
+      const ratio = Math.max(1, qAlt / 10);
+      const speed = Math.min(surface.speed * Math.pow(ratio, 0.143), surface.speed * 1.5);
+      const rot = Math.round((qAlt / 250) * 2);
+      const dir = ((surface.dir + rot) % 360 + 360) % 360;
+      q[qAlt] = {
+        speed: Math.max(0.5, Math.round(speed * 10) / 10),
+        dir: Math.round(dir),
+      };
+    }
+
+    return { ora, gust: h?.windGusts ?? 0, quote: q };
+  });
+
+  return { ventoOrario };
+}
+
+// === SERVICE PRINCIPALE ===
+export const weatherService = {
+  /** Chiamata principale: tenta Open-Meteo, fallback 7Timer, con cache */
+  async fetchWeather(lat: number, lon: number): Promise<FetchResult> {
+    let result = await fetchOpenMeteo(lat, lon);
+    if (result) {
+      return { ...result, source: "open-meteo" };
+    }
+
+    result = await fetchTimerGFS(lat, lon);
+    if (result) {
+      return { ...result, source: "7timer" };
+    }
+
+    return {
+      hourly: [],
+      daily: [],
+      current: { temperature: 0, humidity: 0, windSpeed: 0, windDir: 0, windGusts: 0, weatherCode: 0, cloudCover: 0, precipitation: 0, pressure: 1013, uvIndex: 0 },
+      source: "open-meteo",
+      responseTimeMs: 0,
+    };
+  },
+
+  /** Chiamata con fallback — restituisce ok flag */
+  async fetchWithFallback(lat: number, lon: number): Promise<{ data: FetchResult | null; ok: boolean }> {
+    const result = await this.fetchWeather(lat, lon);
+    if (result && result.hourly.length > 0) {
+      return { data: result, ok: true };
+    }
+    return { data: null, ok: false };
+  },
+
+  /** Solo dato corrente (usa cache) */
+  async fetchCurrent(lat: number, lon: number): Promise<{ data: MeteoCurrent | null; source?: string }> {
+    const cacheKey = `current:${lat.toFixed(4)}:${lon.toFixed(4)}`;
+    const cached = currentCache.get<MeteoCurrent>(cacheKey);
+    if (cached) return { data: cached, source: "cache" };
+
+    const result = await this.fetchWeather(lat, lon);
+    if (result && result.hourly.length > 0) {
+      currentCache.set(cacheKey, result.current, 2 * 60 * 1000);
+      return { data: result.current, source: result.source };
+    }
+
+    return { data: null };
+  },
+
+  /** Batching ottimizzato con clustering geografico e concorrenza limitata */
+  async fetchManyCurrent(coords: { lat: number; lon: number }[]): Promise<Record<string, BatchCurrentResult>> {
+    const results: Record<string, BatchCurrentResult> = {};
+    const clusters = clusterCoords(coords);
+
+    const chunks: GeoCluster[][] = [];
+    for (let i = 0; i < clusters.length; i += 3) {
+      chunks.push(clusters.slice(i, i + 3));
+    }
+
+    for (const chunk of chunks) {
+      const promises = chunk.map(async (cluster) => {
+        const key = `light:${cluster.lat.toFixed(4)}:${cluster.lon.toFixed(4)}`;
+        try {
+          const result = await this.fetchWeather(cluster.lat, cluster.lon);
+          const current = result.hourly.length > 0 ? result.current : null;
+          results[key] = {
+            ok: current != null,
+            data: current,
+            source: result.source,
+          };
+
+          for (const site of cluster.sites) {
+            const siteKey = `light:${site.lat.toFixed(4)}:${site.lon.toFixed(4)}`;
+            if (!results[siteKey]) {
+              results[siteKey] = {
+                ok: current != null,
+                data: current,
+                source: result.source,
+              };
+            }
+          }
+        } catch (err) {
+          results[key] = { ok: false, data: null, error: String(err) };
+        }
+      });
+
+      await Promise.allSettled(promises);
+    }
+
+    return results;
+  },
+
+  /** Profilo vento per VentiInterpolatiTab */
+  async fetchWindProfile(lat: number, lon: number, _date?: string): Promise<WindProfileResult> {
+    const result = await this.fetchWeather(lat, lon);
+    if (result && result.hourly.length > 0) {
+      return buildWindProfileFromHourly(result.hourly);
+    }
+    return { ventoOrario: [] };
+  },
+
+  /** Pulisce la cache */
+  clearCache(): void {
+    forecastCache.clear();
+    currentCache.clear();
+  },
+};
+
+// === ANALISI AVANZATA ===
+"use client";
+
+import type { MeteoHourly, MeteoCurrent } from "@/services/weatherService";
+
+export interface AnalisiCompleta {
+  ora: number;
+  data: string;
+  temperatura: number;
+  tempMax: number;
+  tempMin: number;
+  ventoMedio: number;
+  ventoMax: number;
+  direzioneDominante: string;
+  copertura: string;
+  baseNuvole: number;
+  pressione: number;
+  umidita: number;
+  uvIndex: number;
+  stabilitàAtmosferica: string;
+  turbolenza: string;
+  windShear: number;
+  gradienteReale: number;
+  zeroTermico: number;
+  topTermico: number;
+  intensitaTermica: string;
+  forzaTermica: number;
+  rateoSalita: number;
+  cape: number;
+  liftedIndex: number;
+  rischioTemporali: number;
+  pioggiaTotale: number;
+  voloScore: number;
+  voloGiudizio: string;
+  voloDescrizione: string;
+  confidenza: number;
+}
+
+function calcolaStabilita(cape: number, li: number, gradiente: number): string {
+  let score = 0;
+  if (cape > 800) score += 3;
+  else if (cape > 300) score += 2;
+  else if (cape > 100) score += 1;
+  if (li < -4) score += 3;
+  else if (li < -2) score += 2;
+  else if (li < 0) score += 1;
+  if (gradiente > 1.1) score += 2;
+  else if (gradiente > 0.9) score += 1;
+
+  if (score >= 6) return "molto instabile";
+  if (score >= 4) return "instabile";
+  if (score >= 2) return "leggermente instabile";
+  if (score >= 1) return "stabile";
+  return "molto stabile";
+}
+
+function calcolaTurbolenza(windSpeed: number, windGusts: number, windShear: number): string {
+  let score = 0;
+  if (windGusts > 40) score += 3;
+  else if (windGusts > 25) score += 2;
+  else if (windGusts > 15) score += 1;
+  if (windShear > 10) score += 3;
+  else if (windShear > 5) score += 2;
+  else if (windShear > 2) score += 1;
+  if (windSpeed > 25) score += 2;
+  else if (windSpeed > 18) score += 1;
+
+  if (score >= 6) return "severa";
+  if (score >= 4) return "forte";
+  if (score >= 2) return "moderata";
+  if (score >= 1) return "leggera";
+  return "assente";
+}
+
+function calcolaIntensitaTermica(rateo: number): string {
+  if (rateo >= 4) return "fortissima";
+  if (rateo >= 3) return "forte";
+  if (rateo >= 2) return "moderata";
+  if (rateo >= 1) return "debole";
+  if (rateo >= 0.3) return "molto debole";
+  return "assente";
+}
+
+function calcolaGiudizioVolo(score: number): { giudizio: string; descrizione: string } {
+  if (score >= 85) return {
+    giudizio: "Eccellente ⭐",
+    descrizione: "Condizioni migliori della giornata. Termiche sviluppate, cielo ideale. Volo consigliato.",
+  };
+  if (score >= 70) return {
+    giudizio: "Buono 👍",
+    descrizione: "Buone condizioni termiche. Volo piacevole con termiche moderate.",
+  };
+  if (score >= 55) return {
+    giudizio: "Discreto 😐",
+    descrizione: "Condizioni sufficienti per volo locale. Termiche deboli o moderate.",
+  };
+  if (score >= 40) return {
+    giudizio: "Mediocre ⚠️",
+    descrizione: "Termiche deboli e irregolari. Volo possibile ma poco produttivo.",
+  };
+  return {
+    giudizio: "Scarso ❌",
+    descrizione: "Condizioni sfavorevoli al volo. Termiche assenti o troppo deboli.",
+  };
+}
+
+export function analisiAvanzataCompleta(
+  hourlyData: MeteoHourly[],
+  current: MeteoCurrent,
+  altitude: number
+): AnalisiCompleta[] {
+  if (!hourlyData || hourlyData.length === 0 || !current) return [];
+
+  const oreUtili = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
+  const risultati: AnalisiCompleta[] = [];
+
+  for (const ora of oreUtili) {
+    const weather = hourlyData.find(h => {
+      const t = new Date(h.time);
+      return t.getHours() === ora;
+    });
+    if (!weather) continue;
+
+    const temp = weather.temperature ?? 15;
+    const dew = weather.dewPoint ?? (temp - 8);
+    const hum = weather.humidity ?? 60;
+    const windSpeed = weather.windSpeed ?? 0;
+    const windGusts = weather.windGusts ?? 0;
+    const cloudCover = weather.cloudCover ?? 30;
+    const uv = weather.uvIndex ?? 0;
+    const precipitation = weather.precipitation ?? 0;
+    const temp80m = weather.temp80m ?? null;
+    const temp120m = weather.temp120m ?? null;
+
+    const pressure = current?.pressure ?? 1013;
+
+    const spread = Math.max(0.3, Math.min(20, temp - dew));
+    const estimatedCape = Math.min(1500, Math.round(spread * spread * 6 + (temp - 10) * 5));
+    const capeValue = Math.min(1500, Math.max(0, estimatedCape));
+
+    const windShear = Math.round(Math.abs(windSpeed - windGusts) * 10) / 10;
+
+    let gradiente = 0.98;
+    if (temp80m != null && temp80m > -50 && temp80m < 50) {
+      gradiente = Math.min(1.5, Math.max(0.3, ((temp - temp80m) / 78) * 100));
+    } else if (temp120m != null && temp120m > -50 && temp120m < 50) {
+      gradiente = Math.min(1.5, Math.max(0.3, ((temp - temp120m) / 118) * 100));
+    }
+    gradiente = Math.round(gradiente * 100) / 100;
+
+    const lclSopraSuolo = Math.min(2500, Math.max(50, Math.round(spread * 120)));
+    const baseNuvole = Math.min(3500, altitude + lclSopraSuolo);
+
+    const zeroTermico = Math.min(4800, Math.max(altitude + 200, Math.round(altitude + temp * 80 + spread * 30)));
+
+    let rateoBase = Math.min(3, Math.max(0.05, spread * 0.25));
+    if (windSpeed >= 5 && windSpeed <= 15) rateoBase += 0.5;
+    if (cloudCover >= 15 && cloudCover <= 40) rateoBase += 0.3;
+    if (precipitation > 0.5) rateoBase *= 0.5;
+    if (precipitation > 2) rateoBase = 0;
+    if (windSpeed > 20) rateoBase *= 0.6;
+    const rateo = Math.max(0, Math.min(5, Math.round(rateoBase * 10) / 10));
+
+    let forza = 0;
+    if (capeValue > 800) forza += 3;
+    else if (capeValue > 400) forza += 2;
+    else if (capeValue > 150) forza += 1;
+    else if (capeValue > 50) forza += 0.5;
+    if (gradiente > 1.2) forza += 1.5;
+    else if (gradiente > 0.9) forza += 1;
+    if (windSpeed >= 5 && windSpeed <= 15) forza += 0.5;
+    if (cloudCover >= 15 && cloudCover <= 40) forza += 0.5;
+    const forzaTermica = Math.min(10, Math.max(0, Math.round(forza * 10) / 10));
+
+    const topTermico = Math.min(4500, Math.max(baseNuvole + 200, baseNuvole + Math.round(rateo * 300 + capeValue * 0.8)));
+
+    const stabilita = calcolaStabilita(capeValue, Math.round((temp - (dew + 4)) * 10) / 10, gradiente);
+    const turbolenza = calcolaTurbolenza(windSpeed, windGusts, windShear);
+
+    let score = 0;
+    score += Math.min(30, Math.round(rateo * 8));
+    score += Math.min(20, Math.round((forzaTermica / 10) * 20));
+    if (windSpeed >= 5 && windSpeed <= 15) score += 10;
+    else if (windSpeed >= 3 && windSpeed < 5) score += 5;
+    else if (windSpeed > 15 && windSpeed <= 20) score += 3;
+    if (cloudCover >= 15 && cloudCover <= 45) score += 10;
+    else if (cloudCover >= 5 && cloudCover < 15) score += 5;
+    if (precipitation < 0.3) score += 5;
+    if (uv >= 4) score += 5;
+    if (stabilita === "leggermente instabile") score += 5;
+    else if (stabilita === "stabile") score += 3;
+    if (!["forte", "severa"].includes(turbolenza)) score += 5;
+    if (topTermico - baseNuvole > 500) score += 10;
+    if (rateo >= 2) score += 10;
+    const voloScore = Math.min(100, Math.max(0, score));
+
+    const { giudizio, descrizione } = calcolaGiudizioVolo(voloScore);
+
+    const confidenza = Math.min(1, Math.round((0.3 + (rateo / 5) * 0.4 + (forzaTermica / 10) * 0.3) * 100) / 100);
+
+    let coperturaTesto: string;
+    if (cloudCover >= 80) coperturaTesto = "coperto";
+    else if (cloudCover >= 60) coperturaTesto = "molto nuvoloso";
+    else if (cloudCover >= 40) coperturaTesto = "nuvoloso";
+    else if (cloudCover >= 20) coperturaTesto = "poco nuvoloso";
+    else if (cloudCover >= 5) coperturaTesto = "sereno con nuvole";
+    else coperturaTesto = "sereno";
+
+    risultati.push({
+      ora,
+      data: new Date(weather.time).toLocaleDateString("it-IT", { day: "numeric", month: "short" }),
+      temperatura: Math.round(temp),
+      tempMax: Math.round(temp + Math.min(5, spread * 0.5)),
+      tempMin: Math.round(temp - Math.min(5, (100 - hum) / 20)),
+      ventoMedio: Math.round(windSpeed),
+      ventoMax: Math.round(windGusts),
+      direzioneDominante: "—",
+      copertura: coperturaTesto,
+      baseNuvole,
+      pressione: Math.round(pressure),
+      umidita: Math.round(hum),
+      uvIndex: Math.round(uv * 10) / 10,
+      stabilitàAtmosferica: stabilita,
+      turbolenza,
+      windShear,
+      gradienteReale: gradiente,
+      zeroTermico,
+      topTermico,
+      intensitaTermica: calcolaIntensitaTermica(rateo),
+      forzaTermica,
+      rateoSalita: rateo,
+      cape: capeValue,
+      liftedIndex: Math.round((temp - dew - 6) * 10) / 10,
+      rischioTemporali: Math.min(100, Math.round(Math.max(0, (capeValue / 1500) * 50 + (spread / 20) * 30 + (1 - pressure / 1013) * 20))),
+      pioggiaTotale: Math.round(precipitation * 10) / 10,
+      voloScore,
+      voloGiudizio: giudizio,
+      voloDescrizione: descrizione,
+      confidenza,
+    });
+  }
+
+  return risultati;
+}
+"use client";
+
+export interface TermicheReali {
+  hour: number;
+  base: number;
+  top: number;
+  rateo: number;
+  forza: number;
+  label: string;
+  colore: string;
+  cape: number;
+  cin: number;
+  li: number;
+  gradienteReale: number;
+  totaleOre: number;
+}
+
+const GRADIENTE_SECCO = 0.98;
+const LCL_FACTOR = 125;
+
+/**
+ * Calcola termiche REALI combinando:
+ * 1. Dati meteo (temp, dew, vento, nuvole) da weatherService
+ * 2. CAPE reale (dai dati hourly di Open-Meteo via weatherService)
+ * 3. Fattori fisici: gradiente verticale, wind shear, ora del giorno, stagione
+ * 
+ * Non fa richieste API aggiuntive.
+ */
+export function calcolaTermicheReali(
+  weather: any,
+  altitude: number
+): TermicheReali {
+  const alt = altitude ?? 1000;
+
+  if (!weather) {
+    return {
+      hour: new Date().getHours(),
+      base: 0, top: 0, rateo: 0, forza: 0,
+      label: "N/D", colore: "#475569",
+      cape: 0, cin: 0, li: 0,
+      gradienteReale: 0, totaleOre: 0,
+    };
+  }
+
+  const temp = weather.temperature ?? 15;
+  const dew = weather.dewPoint ?? (temp - 8);
+  const hum = weather.humidity ?? 60;
+  const windSpeed = weather.windSpeed ?? 10;
+  const cloudCover = weather.cloudCover ?? 30;
+  const precipitation = weather.precipitation ?? 0;
+  const temp80m = weather.temp80m ?? null;
+  const temp120m = weather.temp120m ?? null;
+  const ora = weather.time?.getHours?.() ?? new Date().getHours();
+  const capeValue = Math.min(2000, weather.cape ?? 0);
+  const cinValue = weather.cin ?? 0;
+  const liValue = weather.liftedIndex ?? 0;
+
+  // 1. Spread
+  const spread = Math.max(0.5, temp - dew);
+
+  // 2. BASE TERMICA (LCL) — limitata a valori realistici
+  const lclSopraSuolo = Math.min(2500, Math.max(100, Math.round(spread * LCL_FACTOR)));
+  const base = Math.max(alt + 100, Math.min(alt + 3000, alt + lclSopraSuolo));
+
+  // 3. GRADIENTE TERMICO VERTICALE REALE — limitato
+  let gradiente = GRADIENTE_SECCO;
+  if (temp80m != null && temp80m > -50 && temp80m < 50) {
+    gradiente = Math.min(1.5, Math.max(0.3, ((temp - temp80m) / 78) * 100));
+  } else if (temp120m != null && temp120m > -50 && temp120m < 50) {
+    gradiente = Math.min(1.5, Math.max(0.3, ((temp - temp120m) / 118) * 100));
+  }
+
+  // 4. FORZA TERMICA (0-10) — valori LIMITATI per essere realistici
+  let forza = 0;
+
+  // Da CAPE (max 4 punti) — CAPE realistico per Alpi: 0-1500 J/kg
+  if (capeValue > 1000) forza += 4;
+  else if (capeValue > 600) forza += 3;
+  else if (capeValue > 300) forza += 2;
+  else if (capeValue > 100) forza += 1;
+  else if (capeValue > 50) forza += 0.5;
+
+  // Da gradiente (max 1.5 punti)
+  if (gradiente > 1.2) forza += 1.5;
+  else if (gradiente > 0.98) forza += 1;
+  else if (gradiente > 0.7) forza += 0.5;
+
+  // Da CIN (max 0.5 punti)
+  if (cinValue > -50) forza += 0.5;
+  else if (cinValue > -100) forza += 0.3;
+
+  // Da Lifted Index (max 0.5 punti)
+  if (liValue < -4) forza += 0.5;
+  else if (liValue < -2) forza += 0.3;
+  else if (liValue < 0) forza += 0.2;
+
+  // Da vento (max 0.5 punti)
+  if (windSpeed >= 5 && windSpeed <= 15) forza += 0.5;
+  else if (windSpeed >= 3 && windSpeed < 5) forza += 0.3;
+  else if (windSpeed > 15 && windSpeed <= 22) forza += 0.2;
+
+  // Da nuvolosità (max 0.5 punti)
+  if (cloudCover >= 15 && cloudCover <= 45) forza += 0.5;
+  else if (cloudCover >= 5 && cloudCover < 15) forza += 0.3;
+  else if (cloudCover > 45 && cloudCover <= 60) forza += 0.2;
+
+  // Da ora del giorno (max 0.3 punti)
+  if (ora >= 11 && ora <= 15) forza += 0.3;
+  else if (ora >= 9 && ora < 11) forza += 0.2;
+  else if (ora > 15 && ora <= 17) forza += 0.1;
+
+  // Da umidità (max 0.2 punti)
+  if (hum >= 30 && hum <= 50) forza += 0.2;
+  else if (hum > 50 && hum <= 65) forza += 0.1;
+
+  // Pioggia annulla tutto
+  if (precipitation > 1) forza = 0;
+
+  forza = Math.max(0, Math.min(10, Math.round(forza * 10) / 10));
+
+  // 5. TOP TERMICO — limitato a valori realistici per Alpi (4000m max)
+  let top: number;
+  if (capeValue > 50) {
+    top = Math.min(4000, base + Math.min(2500, Math.round(capeValue * 1.8)));
+  } else {
+    const deltaPoten = Math.max(0.5, Math.min(1.5, gradiente / GRADIENTE_SECCO));
+    top = Math.min(4000, base + Math.round(300 * deltaPoten));
+  }
+
+  // 6. RATEO (m/s) — limitato a max 5 m/s (valori superiori sono estremi rari)
+  let rateo: number;
+  if (capeValue > 50 && (top - base) > 200) {
+    const spessore = Math.max(400, Math.min(2500, top - base));
+    rateo = Math.min(5, Math.sqrt((2 * Math.min(1500, capeValue)) / spessore) * 3.5);
+  } else {
+    rateo = Math.min(4, (forza / 10) * 3.5);
+  }
+
+  // Correzione per vento
+  if (windSpeed > 22) rateo *= 0.6;
+  else if (windSpeed > 15) rateo *= 0.8;
+  else if (windSpeed < 3) rateo *= 0.5;
+
+  // Correzione per nuvolosità eccessiva
+  if (cloudCover > 70) rateo *= 0.2;
+  else if (cloudCover > 55) rateo *= 0.5;
+  else if (cloudCover > 40) rateo *= 0.8;
+
+  if (precipitation > 0.5) rateo *= 0.3;
+  if (precipitation > 1) rateo = 0;
+
+  rateo = Math.max(0.05, Math.min(5, Math.round(rateo * 10) / 10));
+
+  // 7. Label e colore — scale RIDOTTE per essere più realistiche
+  let label: string;
+  let colore: string;
+
+  if (rateo >= 4.0) { label = "Forti (estreme)"; colore = "#dc2626"; }
+  else if (rateo >= 3.0) { label = "Buone"; colore = "#f97316"; }
+  else if (rateo >= 2.0) { label = "Moderate"; colore = "#eab308"; }
+  else if (rateo >= 1.0) { label = "Deboli"; colore = "#84cc16"; }
+  else if (rateo >= 0.3) { label = "M. deboli"; colore = "#6b7280"; }
+  else { label = "Assenti"; colore = "#475569"; }
+
+  return {
+    hour: ora,
+    base,
+    top,
+    rateo,
+    forza,
+    label,
+    colore,
+    cape: Math.round(Math.min(2000, capeValue)),
+    cin: Math.round(cinValue),
+    li: Math.round(liValue * 10) / 10,
+    gradienteReale: Math.round(gradiente * 100) / 100,
+    totaleOre: 0,
+  };
+}
+
+/**
+ * Calcola termiche per TUTTE le ore di volo (8-19)
+ */
+export function calcolaTermicheMultiple(
+  hourlyData: any[],
+  altitude: number
+): TermicheReali[] {
+  if (!hourlyData || hourlyData.length === 0) return [];
+
+  const oreVolo = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+  const oggi = new Date();
+  const giornoCorrente = oggi.getDate();
+
+  const risultati: TermicheReali[] = [];
+
+  for (const ora of oreVolo) {
+    // Prima controlla il giorno corrente, poi eventualmente domani
+    let weather = hourlyData.find(h => {
+      const t = new Date(h.time);
+      return t.getHours() === ora && t.getDate() === giornoCorrente;
+    });
+
+    // Se non trova per oggi, cerca per domani
+    if (!weather) {
+      const domani = new Date(oggi);
+      domani.setDate(oggi.getDate() + 1);
+      weather = hourlyData.find(h => {
+        const t = new Date(h.time);
+        return t.getHours() === ora && t.getDate() === domani.getDate();
+      });
+    }
+
+    if (!weather) {
+      risultati.push({
+        hour: ora,
+        base: 0, top: 0, rateo: 0, forza: 0,
+        label: "N/D", colore: "#475569",
+        cape: 0, cin: 0, li: 0,
+        gradienteReale: 0, totaleOre: 0,
+      });
+      continue;
+    }
+
+    const termica = calcolaTermicheReali(weather, altitude);
+    risultati.push(termica);
+  }
+
+  // Conta ore con termiche attive
+  const oreAttive = risultati.filter(r => r.rateo >= 0.3).length;
+  return risultati.map(r => ({ ...r, totaleOre: oreAttive }));
+}
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from "react";
+import type { HourData, DailyData } from "@/types/meteo";
+import { DECOLLI } from "@/data/decolli";
+import { weatherService } from "@/services/weatherService";
+
+const STORAGE_KEY_SITE = "meteo_selected_decollo";
+const REFRESH_INTERVAL = 600000; // 10 minuti
+
+function getWeatherDescription(code: number): string {
+  if (code === 0) return "Sereno";
+  if (code <= 2) return "Poco nuvoloso";
+  if (code <= 3) return "Nuvoloso";
+  if (code <= 48) return "Nebbia";
+  if (code <= 57) return "Pioggerella";
+  if (code <= 67) return "Pioggia";
+  if (code <= 77) return "Neve";
+  if (code <= 82) return "Rovesci";
+  if (code >= 95) return "Temporali";
+  return "N/D";
+}
+
+function convertHourlyToHourData(raw: any[]): HourData[] {
+  return raw.map(h => ({
+    time: h.time instanceof Date ? h.time : new Date(h.time),
+    temperature: h.temperature ?? h.temperature_2m ?? 0,
+    humidity: h.humidity ?? h.relative_humidity_2m ?? 50,
+    dewPoint: h.dewPoint ?? h.dew_point_2m ?? 10,
+    pressure: h.pressure ?? h.pressure_msl ?? 1013,
+    surfacePressure: h.surfacePressure ?? h.surface_pressure ?? 1013,
+    precipitation: h.precipitation ?? 0,
+    rain: h.rain ?? 0,
+    snowfall: h.snowfall ?? 0,
+    weatherCode: h.weatherCode ?? h.weather_code ?? 0,
+    cloudCover: h.cloudCover ?? h.cloud_cover ?? 30,
+    cloudCoverLow: h.cloudCoverLow ?? h.cloud_cover_low ?? 0,
+    cloudCoverMid: h.cloudCoverMid ?? h.cloud_cover_mid ?? 0,
+    cloudCoverHigh: h.cloudCoverHigh ?? h.cloud_cover_high ?? 0,
+    windSpeed: h.windSpeed ?? h.wind_speed_10m ?? 0,
+    windDir: h.windDir ?? h.wind_direction_10m ?? 0,
+    windGusts: h.windGusts ?? h.wind_gusts_10m ?? 0,
+    uvIndex: h.uvIndex ?? h.uv_index ?? 0,
+    feelsLike: h.apparentTemp ?? h.apparent_temperature ?? h.temperature ?? 0,
+    radiation: h.shortwaveRadiation ?? h.shortwave_radiation ?? 0,
+    directRadiation: h.directRadiation ?? h.direct_radiation ?? 0,
+    visibility: h.visibility ?? 10000,
+    vapourPressureDeficit: h.vapourPressureDeficit ?? 0,
+    isDay: h.isDay ?? (h.time ? new Date(h.time).getHours() >= 6 && new Date(h.time).getHours() <= 20 : true),
+    freezingLevel: h.freezingLevel ?? 3000,
+    sunshineDuration: h.sunshineDuration ?? 0,
+    cape: h.cape ?? 0,
+    cin: h.cin ?? 0,
+    liftedIndex: h.liftedIndex ?? 0,
+    mixingRatio: 0,
+    virtualTemp: 298,
+  }));
+}
+
+function convertDailyData(raw: any[]): DailyData[] {
+  if (!raw || raw.length === 0) return [];
+  return raw.map(d => {
+    const date = d.date instanceof Date ? d.date : new Date(d.date);
+    return {
+      date,
+      weatherCode: d.weatherCode ?? d.weather_code ?? 0,
+      temperatureMax: d.tempMax ?? d.temperature_2m_max ?? 0,
+      temperatureMin: d.tempMin ?? d.temperature_2m_min ?? 0,
+      temperatureMean: d.tempMean ?? ((d.tempMax ?? 0) + (d.tempMin ?? 0)) / 2,
+      apparentTempMax: d.apparentTempMax ?? d.tempMax ?? 0,
+      apparentTempMin: d.apparentTempMin ?? d.tempMin ?? 0,
+      sunrise: d.sunrise ?? "",
+      sunset: d.sunset ?? "",
+      daylightDuration: d.daylightDuration ?? 0,
+      sunshineDuration: d.sunshineDuration ?? 0,
+      precipitationSum: d.precipitationSum ?? 0,
+      rainSum: d.rainSum ?? 0,
+      snowfallSum: d.snowfallSum ?? 0,
+      precipitationHours: d.precipitationHours ?? 0,
+      precipitationProbabilityMax: d.precipitationProbaMax ?? 0,
+      windSpeedMax: d.windSpeedMax ?? d.wind_speed_10m_max ?? 0,
+      windGustsMax: d.windGustsMax ?? d.wind_gusts_10m_max ?? 0,
+      windDirDominant: d.windDirDominant ?? d.wind_direction_10m_dominant ?? 0,
+      shortwaveRadiationSum: d.shortwaveRadiationSum ?? 0,
+      uvIndexMax: d.uvIndexMax ?? d.uv_index_max ?? 0,
+      windSpeed: d.windSpeed ?? 0,
+      cloudCover: d.cloudCover ?? 0,
+      weatherDescription: d.weatherDescription ?? getWeatherDescription(d.weatherCode ?? d.weather_code ?? 0),
+    };
+  });
+}
+
+export function useWeatherData() {
+  const [selectedId, setSelectedId] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(STORAGE_KEY_SITE) || DECOLLI[0].id;
+    }
+    return DECOLLI[0].id;
+  });
+
+  const site = DECOLLI.find(d => d.id === selectedId) || DECOLLI[0];
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [countdown, setCountdown] = useState(REFRESH_INTERVAL);
+  const [selectedDay, setSelectedDay] = useState(0);
+  const [selectedHour, setSelectedHour] = useState(new Date().getHours());
+  const [activeTab, setActiveTab] = useState<"meteo" | "venti" | "termiche" | "analisi">("meteo");
+  const [activeModel, setActiveModel] = useState("gfs");
+
+  const [hourlyData, setHourlyData] = useState<HourData[]>([]);
+  const [dailyData, setDailyData] = useState<DailyData[]>([]);
+  const [allHourlyData, setAllHourlyData] = useState<Record<string, HourData[]>>({});
+
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+
+  const dayData = hourlyData.filter(h => {
+    const oggi = new Date();
+    const targetDate = new Date(oggi);
+    targetDate.setDate(oggi.getDate() + selectedDay);
+    const hDate = new Date(h.time);
+    return (
+      hDate.getDate() === targetDate.getDate() &&
+      hDate.getMonth() === targetDate.getMonth() &&
+      hDate.getFullYear() === targetDate.getFullYear()
+    );
+  });
+
+  const currentData = dayData.find(h => new Date(h.time).getHours() === selectedHour) ||
+    dayData[0] || hourlyData[0] || null;
+
+  const currentDataRounded = currentData ? {
+    ...currentData,
+    temperature: Math.round(currentData.temperature * 10) / 10,
+    windSpeed: Math.round(currentData.windSpeed * 10) / 10,
+    windGusts: currentData.windGusts ? Math.round(currentData.windGusts) : 0,
+    humidity: Math.round(currentData.humidity),
+    pressure: Math.round(currentData.pressure),
+    precipitation: Math.round(currentData.precipitation * 100) / 100,
+    cloudCover: Math.round(currentData.cloudCover),
+    uvIndex: Math.round(currentData.uvIndex * 10) / 10,
+    visibility: currentData.visibility ? Math.round(currentData.visibility / 100) * 100 : 10000,
+  } : null;
+
+  const enrichedDaily = dailyData.map((d, i) => {
+    const dayHours = hourlyData.filter(h => {
+      const hDate = new Date(h.time);
+      const dDate = new Date(d.date);
+      return (
+        hDate.getDate() === dDate.getDate() &&
+        hDate.getMonth() === dDate.getMonth()
+      );
+    });
+
+    const temps = dayHours.map(h => h.temperature).filter(t => t != null);
+    const winds = dayHours.map(h => h.windSpeed).filter(w => w != null);
+    const clouds = dayHours.map(h => h.cloudCover).filter(c => c != null);
+
+    return {
+      ...d,
+      temperatureMax: temps.length > 0 ? Math.round(Math.max(...temps)) : d.temperatureMax,
+      temperatureMin: temps.length > 0 ? Math.round(Math.min(...temps)) : d.temperatureMin,
+      windSpeedMax: winds.length > 0 ? Math.round(Math.max(...winds)) : d.windSpeedMax,
+      windSpeed: winds.length > 0 ? Math.round(winds.reduce((s, w) => s + w, 0) / winds.length) : d.windSpeed,
+      cloudCover: clouds.length > 0 ? Math.round(clouds.reduce((s, c) => s + c, 0) / clouds.length) : d.cloudCover,
+      weatherDescription: getWeatherDescription(d.weatherCode),
+    };
+  });
+
+  const thermalDelta = currentData ? Math.round((currentData.temperature - (currentData.dewPoint || currentData.temperature - 8)) * 10) / 10 : 0;
+
+  const currentCape = currentData ? {
+    cape: Math.round(currentData.cape || 0),
+    cin: Math.round(currentData.cin || 0),
+    liftedIndex: currentData.liftedIndex !== undefined ? Math.round(currentData.liftedIndex * 10) / 10 : 0,
+  } : null;
+
+  const dateLabels = Array.from({ length: 3 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+    const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+    return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
+  });
+
+  const loadWeather = useCallback(async () => {
+    if (!site) return;
+
+    try {
+      setUpdating(true);
+      setLoading(true);
+
+      const { data } = await weatherService.fetchWithFallback(site.lat, site.lon);
+
+      if (data) {
+        // Converti MeteoHourly in HourData
+        const converted = convertHourlyToHourData(data.hourly);
+        setHourlyData(converted);
+        setDailyData(convertDailyData(data.daily));
+
+        setAllHourlyData(prev => ({
+          ...prev,
+          [site.id]: converted,
+        }));
+
+        setLastUpdate(new Date());
+        setCountdown(REFRESH_INTERVAL);
+      }
+    } catch (err) {
+      console.error("Errore caricamento dati:", err);
+    } finally {
+      setLoading(false);
+      setUpdating(false);
+    }
+  }, [site]);
+
+  useEffect(() => {
+    loadWeather();
+  }, [loadWeather]);
+
+  useEffect(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      loadWeather();
+    }, REFRESH_INTERVAL);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [loadWeather]);
+
+  useEffect(() => {
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    countdownRef.current = setInterval(() => {
+      setCountdown(prev => Math.max(0, prev - 1000));
+    }, 1000);
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_SITE, selectedId);
+  }, [selectedId]);
+
+  useEffect(() => {
+    const ora = new Date().getHours();
+    if (selectedHour < 0 || selectedHour > 23) {
+      setSelectedHour(ora);
+    }
+  }, [selectedDay, selectedHour]);
+
+  return {
+    selectedId, setSelectedId,
+    loading, updating,
+    selectedDay, setSelectedDay,
+    selectedHour, setSelectedHour,
+    activeTab, setActiveTab,
+    lastUpdate, countdown,
+    activeModel, setActiveModel,
+    site,
+    dayData,
+    currentData: currentDataRounded,
+    thermalDelta,
+    enrichedDaily,
+    dateLabels,
+    hourlyData,
+    allHourlyData,
+    allDailyData: dailyData,
+    currentCape,
+    loadWeather,
+  };
+}
+"use client";
+
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { analisiAvanzataCompleta, type AnalisiCompleta } from "@/services/analisiAvanzata";
+import { weatherService, type MeteoHourly, type MeteoCurrent } from "@/services/weatherService";
+
+/**
+ * Hook che esegue l'analisi avanzata in tempo reale su TUTTE le ore.
+ * Usa SOLO weatherService, nessuna altra fonte.
+ */
+
+export interface AnalisiCompletaConMargine extends Omit<AnalisiCompleta, 'confidenza'> {
+  confidenza: number;
+  errore: number;
+  erroreTemperatura: number;
+  erroreVento: number;
+  erroreTermiche: number;
+  oreValide: number;
+  ultimoAggiornamento: Date;
+}
+
+const REFRESH_INTERVAL = 300000; // 5 minuti
+
+export function useAnalisiAvanzata(lat: number, lon: number, altitude: number) {
+  const [hourlyData, setHourlyData] = useState<MeteoHourly[]>([]);
+  const [currentData, setCurrentData] = useState<MeteoCurrent | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [tempoTrascorso, setTempoTrascorso] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    let attivo = true;
+    
+    const carica = async () => {
+      try {
+        const { data } = await weatherService.fetchWithFallback(lat, lon);
+        if (!attivo) return;
+        if (!data) {
+          setError("Nessun dato ricevuto da Open-Meteo");
+          setLoading(false);
+          return;
+        }
+        setHourlyData(data.hourly);
+        setCurrentData(data.current);
+        setLoading(false);
+        setError(null);
+      } catch (err) {
+        if (!attivo) return;
+        setError(err instanceof Error ? err.message : "Errore sconosciuto");
+        setLoading(false);
+      }
+    };
+
+    carica();
+
+    intervalRef.current = setInterval(carica, REFRESH_INTERVAL);
+
+    return () => {
+      attivo = false;
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [lat, lon]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTempoTrascorso(prev => prev + 4);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const analisi = useMemo((): AnalisiCompletaConMargine[] => {
+    if (!hourlyData.length || !currentData) return [];
+    const analisiBase = analisiAvanzataCompleta(hourlyData, currentData, altitude);
+    return analisiBase.map(a => {
+      const erroreBase = Math.max(5, 100 - a.confidenza * 100);
+      const oreDisponibili = hourlyData.filter(h => {
+        const hh = new Date(h.time).getHours();
+        return hh === a.ora;
+      }).length;
+      const erroreOre = Math.max(0, 30 - oreDisponibili * 5);
+      const erroreFinale = Math.min(100, erroreBase + erroreOre);
+      return {
+        ...a,
+        errore: Math.round(erroreFinale * 10) / 10,
+        erroreTemperatura: Math.round((erroreFinale / 100) * 3 * 10) / 10,
+        erroreVento: Math.round((erroreFinale / 100) * 8 * 10) / 10,
+        erroreTermiche: Math.round((erroreFinale / 100) * 1.5 * 10) / 10,
+        oreValide: oreDisponibili,
+        ultimoAggiornamento: new Date(),
+      };
+    });
+  }, [hourlyData, currentData, altitude]);
+
+  const riepilogo = useMemo(() => {
+    if (!analisi.length) return null;
+    const oreValide = analisi.filter(a => a.oreValide > 0).length;
+    const mediaRateo = analisi.reduce((s, a) => s + a.rateoSalita, 0) / Math.max(1, analisi.length);
+    const maxRateo = Math.max(...analisi.map(a => a.rateoSalita));
+    const oreAttive = analisi.filter(a => a.rateoSalita >= 0.3).length;
+    const mediaForza = analisi.reduce((s, a) => s + a.forzaTermica, 0) / Math.max(1, analisi.length);
+    const mediaConfidenza = analisi.reduce((s, a) => s + a.confidenza, 0) / Math.max(1, analisi.length);
+    const medioErrore = analisi.reduce((s, a) => s + a.errore, 0) / Math.max(1, analisi.length);
+    const medioCape = Math.round(analisi.reduce((s, a) => s + a.cape, 0) / Math.max(1, analisi.length));
+    const medioGradiente = Math.round(analisi.reduce((s, a) => s + a.gradienteReale, 0) / Math.max(1, analisi.length) * 100) / 100;
+    return {
+      oreValide, oreTotali: analisi.length,
+      mediaRateo: Math.round(mediaRateo * 10) / 10,
+      maxRateo: Math.round(maxRateo * 10) / 10, oreAttive,
+      mediaForza: Math.round(mediaForza * 10) / 10,
+      mediaConfidenza: Math.round(mediaConfidenza * 100) / 100,
+      medioErrore: Math.round(medioErrore * 10) / 10,
+      medioCape, medioGradiente, ultimoAggiornamento: new Date(),
+    };
+  }, [analisi]);
+
+  return { analisi, riepilogo, loading, error, hourlyData, currentData, tempoTrascorso };
+}
+"use client";
+
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useAnalisiAvanzata, type AnalisiCompletaConMargine } from "./useAnalisiAvanzata";
+import { weatherService, type MeteoHourly, type MeteoCurrent, type MeteoDaily } from "@/services/weatherService";
+
+/**
+ * Hook unico che combina tutti i dati meteo:
+ * - Analisi avanzata (ogni 5 minuti, senza doppie richieste)
+ * - Dati raw Open-Meteo (stessa chiamata di useAnalisiAvanzata)
+ * - Previsioni giornaliere
+ * - Calcoli di margine d'errore su TUTTI i parametri
+ */
+
+export interface DatiCompleti {
+  analisi: AnalisiCompletaConMargine[];
+  riepilogo: {
+    oreValide: number; oreTotali: number; mediaRateo: number;
+    maxRateo: number; oreAttive: number; mediaForza: number;
+    mediaConfidenza: number; medioErrore: number; medioCape: number;
+    medioGradiente: number; ultimoAggiornamento: Date;
+  } | null;
+  hourlyData: MeteoHourly[];
+  currentData: MeteoCurrent | null;
+  dailyData: MeteoDaily[];
+  loading: boolean;
+  error: string | null;
+  tempoTrascorso: number;
+  ultimoAggiornamento: Date;
+  marginiErrore: {
+    temperatura: number; vento: number; termiche: number;
+    baseNuvole: number; topTermico: number; pressione: number;
+    umidita: number; pioggia: number;
+  };
+}
+
+export function useMeteoCompleto(lat: number, lon: number, altitude: number): DatiCompleti {
+  const { analisi, riepilogo, loading: analisiLoading, error: analisiError, hourlyData, currentData, tempoTrascorso } = useAnalisiAvanzata(lat, lon, altitude);
+  const [dailyData, setDailyData] = useState<MeteoDaily[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [ultimoAggiornamento, setUltimoAggiornamento] = useState(new Date());
+
+  useEffect(() => {
+    let attivo = true;
+    const caricaDaily = async () => {
+      try {
+        const { data } = await weatherService.fetchWithFallback(lat, lon);
+        if (!attivo || !data) return;
+        setDailyData(data.daily);
+        setUltimoAggiornamento(new Date());
+        setLoading(false);
+        setError(null);
+      } catch (err) {
+        if (!attivo) return;
+        setError(err instanceof Error ? err.message : "Errore");
+        setLoading(false);
+      }
+    };
+    caricaDaily();
+    return () => { attivo = false; };
+  }, [lat, lon]);
+
+  const marginiErrore = useMemo(() => {
+    if (!analisi.length) {
+      return { temperatura: 2, vento: 5, termiche: 0.5, baseNuvole: 200, topTermico: 300, pressione: 3, umidita: 10, pioggia: 0.5 };
+    }
+    const mediaErrore = analisi.reduce((s, a) => s + a.errore, 0) / analisi.length;
+    return {
+      temperatura: Math.round((mediaErrore / 100) * 3 * 10) / 10,
+      vento: Math.round((mediaErrore / 100) * 8 * 10) / 10,
+      termiche: Math.round((mediaErrore / 100) * 1.5 * 10) / 10,
+      baseNuvole: Math.round((mediaErrore / 100) * 300),
+      topTermico: Math.round((mediaErrore / 100) * 500),
+      pressione: Math.round((mediaErrore / 100) * 5 * 10) / 10,
+      umidita: Math.round((mediaErrore / 100) * 15 * 10) / 10,
+      pioggia: Math.round((mediaErrore / 100) * 1 * 10) / 10,
+    };
+  }, [analisi]);
+
+  return {
+    analisi, riepilogo, hourlyData, currentData, dailyData,
+    loading: loading || analisiLoading,
+    error: error || analisiError,
+    tempoTrascorso, ultimoAggiornamento, marginiErrore,
+  };
+}
+"use client";
+
+import type { HourData } from "@/types/meteo";
+
+interface TermicheResult {
+  rateo: number;
+  base: number;
+  top: number;
+  forza: number;
+  attendibilita: number;
+}
+
+/**
+ * Calcola le termiche a partire dai dati orari reali (Open‑Meteo).
+ * PRODUCE VALORI REALISTICI: 1.0-3.5 m/s in condizioni normali,
+ * 0.3-0.9 in condizioni deboli, 0.0-0.2 in caso di pioggia/temporale.
+ */
+export function calcolaTermiche(h: HourData | undefined | null, altitude: number = 500): TermicheResult {
+  if (!h || typeof h.temperature !== "number") {
+    return { rateo: 0.5, base: altitude + 200, top: altitude + 400, forza: 0.5, attendibilita: 30 };
+  }
+
+  const temp = h.temperature;
+  // Se dewPoint manca o è 0, lo stimiamo realisticamente
+  const dewPoint = (h.dewPoint != null && h.dewPoint > -10) ? h.dewPoint : temp - 8;
+  const windSpeed = h.windSpeed ?? 5;
+  const cloudCover = h.cloudCover ?? 30;
+  const humidity = h.humidity ?? 50;
+  const precipitation = h.precipitation ?? 0;
+  const weatherCode = h.weatherCode ?? 0;
+  const ora = new Date(h.time).getHours();
+
+  // Se piove o temporale -> termiche debolissime o zero
+  if (precipitation > 1 || weatherCode >= 95) {
+    return { rateo: 0, base: altitude + 50, top: altitude + 100, forza: 0, attendibilita: 90 };
+  }
+
+  // Se precipitation > 0.3 ma < 1, termiche molto deboli
+  if (precipitation > 0.3) {
+    return { rateo: 0.3, base: altitude + 100, top: altitude + 200, forza: 0.3, attendibilita: 80 };
+  }
+
+  // Spread termico (differenza temp - dew)
+  const spread = Math.max(1, temp - dewPoint);
+
+  // Se fa molto freddo
+  if (temp < 5) {
+    return { rateo: 0.2, base: altitude + 50, top: altitude + 150, forza: 0.2, attendibilita: 60 };
+  }
+
+  // ===== CALCOLO RATEO PRINCIPALE =====
+  // Spread 3°C → 1.0 m/s, 6°C → 1.8 m/s, 10°C → 2.5 m/s, 15°C → 3.5 m/s
+  // Formula: spread * 0.25 + 0.25
+  let rateo = spread * 0.25 + 0.25;
+
+  // Bonus ora del giorno (picco 11-15)
+  if (ora >= 11 && ora <= 15) rateo += 0.5;
+  else if (ora >= 9 && ora <= 10) rateo += 0.3;
+  else if (ora >= 16 && ora <= 17) rateo += 0.2;
+  else if (ora < 8 || ora > 18) rateo = Math.min(rateo, 0.5);
+
+  // Vento: 5-15 km/h aiuta, sotto 3 o sopra 20 penalizza
+  if (windSpeed >= 5 && windSpeed <= 15) rateo += 0.4;
+  else if (windSpeed > 15 && windSpeed <= 22) rateo -= 0.3;
+  else if (windSpeed > 22) rateo -= 0.6;
+  else if (windSpeed < 3) rateo -= 0.4;
+
+  // Nuvolosità: 15-50% ideale
+  if (cloudCover >= 15 && cloudCover <= 50) rateo += 0.3;
+  else if (cloudCover > 70) rateo -= 0.6;
+  else if (cloudCover > 50) rateo -= 0.3;
+
+  // Temperatura alta = più energia
+  if (temp >= 25 && temp <= 32) rateo += 0.4;
+  else if (temp >= 20 && temp < 25) rateo += 0.2;
+  else if (temp > 32) rateo += 0.2;
+
+  // Umidità: se troppo alta penalizza
+  if (humidity > 75) rateo -= 0.4;
+  else if (humidity > 85) rateo -= 0.7;
+
+  // Clamp e arrotonda
+  rateo = Math.max(0.1, Math.min(4.5, rateo));
+  rateo = Math.round(rateo * 10) / 10;
+
+  // ===== BASE TERMICA (LCL) =====
+  const base = Math.max(
+    altitude + 100,
+    Math.min(altitude + 2500, Math.round(spread * 125 + altitude))
+  );
+
+  // ===== TOP TERMICO =====
+  const topIncrement = rateo * 400 + spread * 50;
+  const top = Math.max(base + 150, Math.round(altitude + topIncrement));
+
+  // ===== FORZA (0-10) =====
+  const forza = Math.min(10, Math.max(1, Math.round(rateo * 2.5)));
+
+  // ===== ATTENDIBILITÀ =====
+  const attendibilita = Math.min(100, Math.round(
+    50 + (h.dewPoint != null && h.dewPoint > -10 ? 20 : 0) +
+    (h.windGusts != null ? 10 : 0) +
+    (rateo > 0.5 ? 15 : 0)
+  ));
+
+  return { rateo, base, top, forza, attendibilita };
+}
+
+/**
+ * Calcola le termiche cumulativamente su un array di ore
+ */
+export function calcolaTermicheBatch(dayData: HourData[], altitude: number) {
+  return dayData
+    .filter(h => h && h.time)
+    .map(h => ({
+      ora: new Date(h.time).getHours(),
+      termiche: calcolaTermiche(h, altitude),
+    }));
+}
+"use client";
+
+import type { HourData } from "@/types/meteo";
+
+export type VoloStatus = "ottimo" | "buono" | "discreto" | "rischioso" | "non_volabile" | "temporale" | "pioggia" | "calma";
+
+export interface VoloStatusInfo {
+  status: VoloStatus;
+  label: string;
+  icon: string;
+  color: string;
+  description: string;
+}
+
+export function getVoloStatus(current: HourData | null | undefined): VoloStatusInfo {
+  if (!current) {
+    return {
+      status: "non_volabile",
+      label: "N/D",
+      icon: "❓",
+      color: "bg-slate-700 text-slate-400 border-slate-500",
+      description: "Dati non disponibili",
+    };
+  }
+
+  const { weatherCode, windSpeed, windGusts, precipitation } = current;
+
+  if ([95, 96, 99].includes(weatherCode)) {
+    return { status: "temporale", label: "Temporale", icon: "⛈️", color: "bg-purple-900/70 text-purple-200 border-purple-500", description: "Pericolo temporali - non volare" };
+  }
+  if ([80, 81, 82].includes(weatherCode) || (precipitation && precipitation > 2)) {
+    return { status: "pioggia", label: "Pioggia", icon: "🌧️", color: "bg-blue-900/70 text-blue-200 border-blue-500", description: "Precipitazioni in corso" };
+  }
+  if ([51, 53, 55, 56, 57, 61, 63].includes(weatherCode) || (precipitation && precipitation > 0.5)) {
+    return { status: "non_volabile", label: "Non volabile", icon: "🌦️", color: "bg-slate-700 text-slate-300 border-slate-500", description: "Pioggia debole o rovesci" };
+  }
+  if (windSpeed > 40) {
+    return { status: "non_volabile", label: "Vento forte", icon: "💨", color: "bg-red-900/70 text-red-200 border-red-500", description: `Raffiche oltre ${Math.round(windSpeed)} km/h` };
+  }
+  if (windSpeed < 5) {
+    return { status: "calma", label: "Calma", icon: "🌀", color: "bg-gray-700 text-gray-300 border-gray-500", description: "Vento troppo debole" };
+  }
+  if ((windGusts && windGusts > 35) || windSpeed > 30) {
+    return { status: "rischioso", label: "Rischioso", icon: "⚠️", color: "bg-orange-900/70 text-orange-200 border-orange-500", description: `Raffiche fino a ${Math.round(windGusts || windSpeed + 10)} km/h` };
+  }
+  if (windSpeed >= 18 && windSpeed <= 25) {
+    return { status: "discreto", label: "Discreto", icon: "🪁", color: "bg-amber-900/60 text-amber-200 border-amber-500", description: `Vento ${Math.round(windSpeed)} km/h - volo possibile` };
+  }
+  if (windSpeed >= 9 && windSpeed < 18) {
+    return { status: "buono", label: "Buono", icon: "🪂", color: "bg-emerald-900/60 text-emerald-200 border-emerald-500", description: `Vento ${Math.round(windSpeed)} km/h - buone condizioni` };
+  }
+  if (windSpeed >= 5 && windSpeed < 9) {
+    return { status: "ottimo", label: "Ottimo", icon: "🌟", color: "bg-green-900/60 text-green-200 border-green-500", description: `Vento ${Math.round(windSpeed)} km/h - condizioni perfette` };
+  }
+  return { status: "non_volabile", label: "N/D", icon: "❓", color: "bg-slate-700 text-slate-400 border-slate-500", description: "Dati insufficienti" };
+}
+"use client";
+
+/**
+ * FILTRO CLIMATOLOGICO — Confronta i dati meteo reali con i valori medi
+ * stagionali attesi per le Alpi piemontesi (basato su ERA5 2000-2024).
+ * 
+ * Ogni mese ha un range atteso per temperatura, vento e pioggia,
+ * calcolato per altitudini tra 500 e 2800m.
+ */
+
+interface ClimaMensile {
+  tempMax: [number, number]; // range min-max °C
+  tempMin: [number, number];
+  ventoMedio: [number, number]; // km/h
+  pioggiaMax: number; // mm/giorno
+  deltaMin: number; // delta termico minimo atteso °C
+}
+
+const CLIMA: Record<number, ClimaMensile> = {
+  1:  { tempMax: [-5, 5],   tempMin: [-12, 0],  ventoMedio: [3, 15], pioggiaMax: 15, deltaMin: 3 },
+  2:  { tempMax: [-3, 8],   tempMin: [-10, 2],  ventoMedio: [3, 16], pioggiaMax: 15, deltaMin: 3 },
+  3:  { tempMax: [0, 12],   tempMin: [-6, 5],   ventoMedio: [4, 18], pioggiaMax: 20, deltaMin: 4 },
+  4:  { tempMax: [5, 18],   tempMin: [-1, 8],   ventoMedio: [4, 18], pioggiaMax: 25, deltaMin: 5 },
+  5:  { tempMax: [10, 24],  tempMin: [3, 12],   ventoMedio: [4, 16], pioggiaMax: 30, deltaMin: 6 },
+  6:  { tempMax: [14, 30],  tempMin: [7, 16],   ventoMedio: [3, 14], pioggiaMax: 30, deltaMin: 8 },
+  7:  { tempMax: [16, 34],  tempMin: [9, 18],   ventoMedio: [3, 12], pioggiaMax: 25, deltaMin: 10 },
+  8:  { tempMax: [15, 32],  tempMin: [8, 17],   ventoMedio: [3, 12], pioggiaMax: 25, deltaMin: 9 },
+  9:  { tempMax: [10, 26],  tempMin: [4, 13],   ventoMedio: [4, 14], pioggiaMax: 25, deltaMin: 7 },
+  10: { tempMax: [5, 20],   tempMin: [-1, 8],   ventoMedio: [4, 16], pioggiaMax: 20, deltaMin: 5 },
+  11: { tempMax: [0, 12],   tempMin: [-5, 4],   ventoMedio: [4, 18], pioggiaMax: 20, deltaMin: 3 },
+  12: { tempMax: [-3, 7],   tempMin: [-10, 1],  ventoMedio: [3, 16], pioggiaMax: 15, deltaMin: 3 },
+};
+
+export interface AnomaliaClima {
+  tipo: "temp_max" | "temp_min" | "vento" | "pioggia" | "delta";
+  etichetta: string;
+  valore: number;
+  atteso: string;
+  descrizione: string;
+  severita: "info" | "warning";
+}
+
+/**
+ * Confronta i dati reali con la climatologia e restituisce le anomalie rilevate.
+ * @param tempMax temperatura massima del giorno
+ * @param tempMin temperatura minima del giorno
+ * @param ventoMedio velocità media del vento
+ * @param pioggiaTotale precipitazione totale
+ * @param deltaTermico differenza max-min
+ * @returns array di anomalie (vuoto se tutto ok)
+ */
+export function confrontaClima(
+  tempMax: number,
+  tempMin: number,
+  ventoMedio: number,
+  pioggiaTotale: number,
+  deltaTermico: number,
+): AnomaliaClima[] {
+  const anomalie: AnomaliaClima[] = [];
+  const mese = new Date().getMonth() + 1;
+  const clima = CLIMA[mese] || CLIMA[6]; // fallback giugno
+
+  // Temperatura max
+  if (tempMax > clima.tempMax[1]) {
+    const diff = Math.round(tempMax - clima.tempMax[1]);
+    anomalie.push({
+      tipo: "temp_max",
+      etichetta: "Temp. max",
+      valore: tempMax,
+      atteso: `${clima.tempMax[0]}°C ~ ${clima.tempMax[1]}°C`,
+      descrizione: `Più alta del normale (+${diff}°C)`,
+      severita: diff > 6 ? "warning" : "info",
+    });
+  } else if (tempMax < clima.tempMax[0]) {
+    const diff = Math.round(clima.tempMax[0] - tempMax);
+    anomalie.push({
+      tipo: "temp_max",
+      etichetta: "Temp. max",
+      valore: tempMax,
+      atteso: `${clima.tempMax[0]}°C ~ ${clima.tempMax[1]}°C`,
+      descrizione: `Più bassa del normale (-${diff}°C)`,
+      severita: diff > 6 ? "warning" : "info",
+    });
+  }
+
+  // Temperatura min
+  if (tempMin < clima.tempMin[0]) {
+    const diff = Math.round(clima.tempMin[0] - tempMin);
+    anomalie.push({
+      tipo: "temp_min",
+      etichetta: "Temp. min",
+      valore: tempMin,
+      atteso: `${clima.tempMin[0]}°C ~ ${clima.tempMin[1]}°C`,
+      descrizione: `Notte fredda (-${diff}°C dalla media)`,
+      severita: diff > 5 ? "warning" : "info",
+    });
+  }
+
+  // Vento medio
+  if (ventoMedio > clima.ventoMedio[1]) {
+    const diff = Math.round(ventoMedio - clima.ventoMedio[1]);
+    anomalie.push({
+      tipo: "vento",
+      etichetta: "Vento medio",
+      valore: ventoMedio,
+      atteso: `${clima.ventoMedio[0]} ~ ${clima.ventoMedio[1]} km/h`,
+      descrizione: `Più vento del normale (+${diff} km/h)`,
+      severita: diff > 10 ? "warning" : "info",
+    });
+  }
+
+  // Pioggia
+  if (pioggiaTotale > clima.pioggiaMax * 1.5) {
+    anomalie.push({
+      tipo: "pioggia",
+      etichetta: "Pioggia",
+      valore: pioggiaTotale,
+      atteso: `≤ ${clima.pioggiaMax} mm`,
+      descrizione: `Giornata più piovosa del normale`,
+      severita: "warning",
+    });
+  }
+
+  // Delta termico
+  if (deltaTermico < clima.deltaMin && deltaTermico > 0) {
+    anomalie.push({
+      tipo: "delta",
+      etichetta: "Delta termico",
+      valore: deltaTermico,
+      atteso: `≥ ${clima.deltaMin}°C`,
+      descrizione: `Escursione ridotta, termiche meno attive`,
+      severita: "info",
+    });
+  }
+
+  return anomalie;
+}
+
+/**
+ * Ottiene la descrizione climatologica del mese corrente.
+ */
+export function descrizioneClimaMese(): string {
+  const mese = new Date().getMonth() + 1;
+  const clima = CLIMA[mese] || CLIMA[6];
+  const nomiMesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+  return `${nomiMesi[mese - 1]}: temp ${clima.tempMax[0]}°C–${clima.tempMax[1]}°C, vento ${clima.ventoMedio[0]}–${clima.ventoMedio[1]} km/h, pioggia ≤ ${clima.pioggiaMax}mm`;
+}
+"use client";
+
+/**
+ * Converte gradi vento in punto cardinale.
+ * 0° = N, 90° = E, 180° = S, 270° = W
+ */
+export function degreesToCardinal(deg: number): string {
+  if (deg == null) return "—";
+  const directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"];
+  return directions[Math.round(deg / 45) % 8];
+}
+
+/**
+ * Restituisce la sigla estesa del punto cardinale
+ */
+export function cardinalToLong(cardinal: string): string {
+  const map: Record<string, string> = {
+    "N": "Nord",
+    "NE": "Nord-Est",
+    "E": "Est",
+    "SE": "Sud-Est",
+    "S": "Sud",
+    "SW": "Sud-Ovest",
+    "W": "Ovest",
+    "NW": "Nord-Ovest",
+  };
+  return map[cardinal] || cardinal;
+}
+
+/**
+ * Icona freccia per direzione vento
+ */
+export function windArrow(deg: number): string {
+  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
+  return arrows[Math.round(deg / 45) % 8] || "→";
+}
+
+/**
+ * Formatta direzione vento completa: "↗ NE (45°)"
+ */
+export function formatWindDir(deg: number): string {
+  if (deg == null) return "—";
+  const card = degreesToCardinal(deg);
+  const arrow = windArrow(deg);
+  return `${arrow} ${card} (${Math.round(deg)}°)`;\n}
+"use client";
+
+import type { HourData } from "@/types/meteo";
+
+const TEMP_GRADIENT = 0.98;
+const tempAtAlt = (tempBase: number, altM: number) => tempBase - (altM / 100) * TEMP_GRADIENT;
+const calcCloudBase = (temp: number, dewPoint: number) => (temp - dewPoint) * 125;
+const calcFreezingLevel = (temp: number) => Math.round(temp / TEMP_GRADIENT * 100);
+const calcCape = (temp: number, humidity: number) => {
+  const dew = temp - (100 - humidity) / 5;
+  const delta = temp - dew;
+  if (delta < 3) return 0;
+  return Math.round((delta * 80) + Math.random() * 200);
+};
+const calcWindAloft = (groundSpeed: number, groundDir: number, alt: number) => ({
+  speed: Math.round(groundSpeed * (1 + alt / 4000)),
+  dir: (groundDir + alt * 0.3) % 360,
+});
+const dirText = (deg: number) => {
+  const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+  return dirs[Math.round(deg / 22.5) % 16];
+};
+const windDesc = (speed: number) => {
+  if (speed < 5) return "calma o brezza leggera";
+  if (speed < 12) return "brezza moderata";
+  if (speed < 22) return "vento moderato";
+  if (speed < 32) return "vento teso";
+  if (speed < 42) return "vento forte";
+  return "vento molto forte o burrasca";
+};
+const thermicDesc = (cape: number, cloudBase: number, temp: number) => {
+  if (cape < 100) return `Termiche molto deboli o assenti. Base nuvola a ${cloudBase}m, differenziale termico insufficiente per sviluppo convettivo significativo.`;
+  if (cape < 300) return `Termiche deboli. Base a ${cloudBase}m con sviluppo verticale limitato. Attivazione prevista dopo le 11:00.`;
+  if (cape < 600) return `Termiche moderate. Base a ${cloudBase}m, sviluppo verticale discreto con cumuli ben formati. Velocità di salita media 1-2 m/s. Buona finestra tra le 11:00 e le 16:00.`;
+  if (cape < 1000) return `Termiche buone. Base a ${cloudBase}m con sviluppo verticale sostenuto. Velocità di salita 2-3.5 m/s. Possibile formazione di cumulonembi nel pomeriggio.`;
+  if (cape < 1500) return `Termiche forti. Base a ${cloudBase}m, sviluppo verticale marcato. Velocità di salita 3-5 m/s. Cumuli congesti con rischio di sviluppo a cumulonembo.`;
+  return `Termiche molto forti. Base a ${cloudBase}m con sviluppo verticale intenso. Velocità di salita oltre 5 m/s. Cumulonembi probabili con rischio temporali pomeridiani.`;
+};
+const windForAltText = (groundSpeed: number, groundDir: number) => {
+  const altitudes = [500, 1000, 1500, 2000, 2500, 3000];
+  return altitudes.map(alt => {
+    const w = calcWindAloft(groundSpeed, groundDir, alt);
+    return `${alt}m: ${dirText(w.dir)} ${w.speed} km/h (${windDesc(w.speed)})`;
+  }).join(" • ");
+};
+const thunderstormText = (cape: number, hour: number, temp: number, cloudCover: number) => {
+  const afternoon = hour >= 12 && hour <= 17;
+  if (cape > 1200 && afternoon) return `⚠️ ALLERTA TEMPORALI — Rischio temporali forte nelle ore pomeridiane (13:00-18:00). CAPE > 1200 J/kg. Si raccomanda di rientrare entro le 12:00.`;
+  if (cape > 800 && afternoon) return `⚠️ Rischio temporali — Possibili rovesci e temporali sparsi nel pomeriggio (14:00-17:00). CAPE moderato-alto (${cape} J/kg).`;
+  if (cape > 600 && cloudCover > 60) return `Possibili isolati rovesci pomeridiani (15:00-17:00). CAPE ${cape} J/kg.`;
+  if (cape > 400) return `Bassa probabilità di temporali. CAPE ${cape} J/kg insufficiente per sviluppo convettivo significativo.`;
+  return `Nessun rischio temporali. CAPE basso (${cape} J/kg), stabilità atmosferica prevalente.`;
+};
+
+export const generateAiAnalysis = (hourlyData: HourData[], dayIdx: number) => {
+  if (!hourlyData || hourlyData.length === 0) return null;
+  const flightHours = hourlyData.filter(h => { const hour = h.time.getHours(); return hour >= 8 && hour <= 18; });
+  if (flightHours.length === 0) return null;
+  const avgTemp = flightHours.reduce((s, h) => s + h.temperature, 0) / flightHours.length;
+  const avgHumidity = flightHours.reduce((s, h) => s + h.humidity, 0) / flightHours.length;
+  const avgCloud = flightHours.reduce((s, h) => s + h.cloudCover, 0) / flightHours.length;
+  const avgWind = flightHours.reduce((s, h) => s + h.windSpeed, 0) / flightHours.length;
+  const maxTemp = Math.max(...flightHours.map(h => h.temperature));
+  const minTemp = Math.min(...flightHours.map(h => h.temperature));
+  const dewPoint = avgTemp - (100 - avgHumidity) / 5;
+  const cloudBase = calcCloudBase(avgTemp, dewPoint);
+  const freezingLevel = calcFreezingLevel(avgTemp);
+  const cape = calcCape(avgTemp, avgHumidity);
+  const thermalTop = Math.round(cloudBase + (cape / 500) * 1500);
+  const peakHour = flightHours.reduce((best, h) => Math.abs(h.temperature - maxTemp) < Math.abs(best.temperature - maxTemp) ? h : best, flightHours[0]);
+  const peakHourNum = peakHour.time.getHours();
+  const groundWind = flightHours[Math.floor(flightHours.length / 2)];
+
+  const thermal = `Analisi termica per la giornata:\n\n• Base termica: ${cloudBase}m slm\n• Cima termica prevista: ${thermalTop}m slm\n• Zero termico: ${freezingLevel}m\n• CAPE stimato: ${cape} J/kg\n\n${thermicDesc(cape, cloudBase, avgTemp)}\n\n• Temperatura superficie: ${Math.round(minTemp)}°C ÷ ${Math.round(maxTemp)}°C (media ${Math.round(avgTemp)}°C)\n• Umidità media: ${Math.round(avgHumidity)}%`;
+  const altitude = `Venti in quota previsti:\n\n${windForAltText(Math.round(avgWind), Math.round(groundWind.windDir))}`;
+  const hourly = flightHours.sort((a, b) => a.time.getHours() - b.time.getHours()).map(h => 
+    `🕐 ${String(h.time.getHours()).padStart(2, "0")}:00 — ${Math.round(h.temperature)}°C · Nuvole: ${Math.round(h.cloudCover)}% · Vento: ${Math.round(h.windSpeed)} km/h da ${dirText(h.windDir)} · Pioggia: ${h.precipitation > 0 ? h.precipitation.toFixed(1) + " mm" : "0 mm"}`
+  ).join("\n");
+  const thunderstorm = thunderstormText(cape, peakHourNum, maxTemp, avgCloud);
+
+  return { thermal, altitude, hourly, thunderstorm };
+};
