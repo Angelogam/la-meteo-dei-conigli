@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { Wind, TrendingUp, Server } from "lucide-react";
 import { getVento, type VentoData } from "@/utils/getVento";
+import { interpretaProfiloVento } from "@/utils/windInterpretation";
+import InterpretazioneVentoCard from "@/components/InterpretazioneVentoCard";
 
 interface VentiTabProps {
   currentData: any;
@@ -12,6 +14,7 @@ interface VentiTabProps {
   lat?: number;
   lon?: number;
   selectedDay?: number;
+  quotaDecollo?: number;
 }
 
 function getWindArrow(deg: number): string {
@@ -24,19 +27,20 @@ function getWindDirName(deg: number): string {
   return dirs[Math.round(deg / 45) % 8] || "-";
 }
 
-export default function VentiTab({ currentData, dayData, hourlyData, targetHour = 12, lat, lon, selectedDay = 0 }: VentiTabProps) {
+export default function VentiTab({
+  currentData, dayData, hourlyData, targetHour = 12, lat, lon, selectedDay = 0, quotaDecollo = 1000
+}: VentiTabProps) {
   const [ventoData, setVentoData] = useState<VentoData | null>(null);
   const [loadingVento, setLoadingVento] = useState(false);
   const [errorVento, setErrorVento] = useState<string | null>(null);
 
-  // Calcola la data YYYY-MM-DD dal selectedDay
   useEffect(() => {
     if (!lat || !lon) return;
 
     const oggi = new Date();
     const targetDate = new Date(oggi);
     targetDate.setDate(oggi.getDate() + selectedDay);
-    const dayStr = targetDate.toISOString().split("T")[0]; // YYYY-MM-DD
+    const dayStr = targetDate.toISOString().split("T")[0];
 
     setLoadingVento(true);
     setErrorVento(null);
@@ -82,21 +86,33 @@ export default function VentiTab({ currentData, dayData, hourlyData, targetHour 
 
   const surfaceSpeed = currentData?.windSpeed ?? ventoData.ventoDecollo ?? 0;
   const surfaceDir = currentData?.windDir ?? 0;
-  const surfaceGust = currentData?.windGusts ?? ventoData.ventoAtterraggio ?? 0;
   const maxSpeed = Math.max(...ventoData.ventoOrario.map(v => v.speed), 1);
+
+  const livelliInterpretazione = ventoData.ventoOrario
+    .filter(v => v.ora >= 9 && v.ora <= 18)
+    .map(v => ({ quota: (v.ora - 8) * 300 + quotaDecollo, speed: v.speed, dir: v.dir }));
+
+  const interpretazione = interpretaProfiloVento(livelliInterpretazione, quotaDecollo);
+
+  const oggi = new Date();
+  const targetDate = new Date(oggi);
+  targetDate.setDate(oggi.getDate() + selectedDay);
+  const dataGiorno = targetDate.toLocaleDateString("it-IT", {
+    weekday: "long", day: "numeric", month: "long"
+  });
 
   return (
     <div className="space-y-4">
-      {/* Badge fonte dati */}
+      <InterpretazioneVentoCard interpretazione={interpretazione} />
+
       <div className="flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-bold bg-emerald-900/15 border-emerald-500/30 text-emerald-300">
         <Server className="w-4 h-4" />
-        Dati reali da Open-Meteo · {ventoData.giorno} · {ventoData.ventoOrario.length} ore
+        Dati reali da Open-Meteo · {dataGiorno} · {ventoData.ventoOrario.length} ore
       </div>
 
-      {/* Carte riassuntive vento in quota */}
       <div>
         <h4 className="text-base font-bold text-emerald-300 mb-3 flex items-center gap-2">
-          <Wind className="w-5 h-5" /> Vento orario · {ventoData.giorno}
+          <Wind className="w-5 h-5" /> Vento orario · {dataGiorno}
         </h4>
         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
           {ventoData.ventoOrario.map((v, i) => (
@@ -110,7 +126,6 @@ export default function VentiTab({ currentData, dayData, hourlyData, targetHour 
         </div>
       </div>
 
-      {/* Profilo vento verticale (barre) */}
       <div>
         <h4 className="text-base font-bold text-emerald-300 mb-3 flex items-center gap-2">
           <TrendingUp className="w-5 h-5" /> Intensità vento oraria
@@ -135,7 +150,6 @@ export default function VentiTab({ currentData, dayData, hourlyData, targetHour 
         </div>
       </div>
 
-      {/* Riepilogo decollo e atterraggio */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
           <div className="text-sm text-slate-400 uppercase font-bold mb-1">Vento decollo (ora 9:00)</div>
@@ -152,7 +166,7 @@ export default function VentiTab({ currentData, dayData, hourlyData, targetHour 
       </div>
 
       <div className="text-center text-sm text-slate-500 border-t border-slate-700/30 pt-3">
-        Coordinate: {lat?.toFixed(4)}, {lon?.toFixed(4)} · {ventoData.giorno}
+        Coordinate: {lat?.toFixed(4)}, {lon?.toFixed(4)} · {dataGiorno}
       </div>
     </div>
   );

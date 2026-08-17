@@ -11,15 +11,14 @@ export const Header = () => {
       <div className="absolute -left-12 -bottom-12 w-40 h-40 rounded-full bg-sky-500/5 blur-3xl" />
 
       <div className="relative max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-5">
-        <div className="flex items-center justify-center gap-3 md:gap-8">
-          {/* Decorazione sinistra - coniglio + parapendio */}
-          <div className="hidden sm:flex flex-col items-center gap-1.5">
+        <div className="flex items-center justify-center gap-2 md:gap-4">
+          {/* Coniglio sinistro - colorato */}
+          <div className="flex flex-col items-center gap-0.5">
             <div className="relative">
-              <div className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-orange-500/20 to-amber-500/10 border border-orange-400/30 flex items-center justify-center animate-hop subtle-shadow">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-orange-400/30 to-amber-400/20 border-2 border-orange-400/50 flex items-center justify-center animate-hop shadow-lg shadow-orange-500/20">
                 <span className="text-xl md:text-2xl drop-shadow-md">🐰</span>
               </div>
             </div>
-            <span className="text-lg md:text-xl animate-float drop-shadow-md">🪂</span>
           </div>
 
           {/* Titolo centrale */}
@@ -34,14 +33,13 @@ export const Header = () => {
             </p>
           </div>
 
-          {/* Decorazione destra - coniglio + parapendio */}
-          <div className="hidden sm:flex flex-col items-center gap-1.5">
+          {/* Coniglio destro - colorato */}
+          <div className="flex flex-col items-center gap-0.5">
             <div className="relative">
-              <div className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-sky-500/20 to-emerald-500/10 border border-sky-400/30 flex items-center justify-center animate-hop subtle-shadow" style={{ animationDelay: '0.3s' }}>
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-sky-400/30 to-emerald-400/20 border-2 border-sky-400/50 flex items-center justify-center animate-hop shadow-lg shadow-sky-500/20" style={{ animationDelay: '0.3s' }}>
                 <span className="text-xl md:text-2xl drop-shadow-md">🐰</span>
               </div>
             </div>
-            <span className="text-lg md:text-xl animate-float drop-shadow-md" style={{ animationDelay: '0.5s' }}>🪂</span>
           </div>
         </div>
       </div>

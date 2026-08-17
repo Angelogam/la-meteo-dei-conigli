@@ -2,117 +2,118 @@
 
 import type { HourData } from "@/types/meteo";
 
-export interface TermicheData {
+interface TermicheResult {
   rateo: number;
-  forza: number;
   base: number;
   top: number;
-  label: string;
-  colore: string;
-  gradienteReale: number;
+  forza: number;
+  attendibilita: number;
 }
 
 /**
- * Calcola le termiche per una data ora meteo.
- * BASE e TOP sono in metri sul livello del mare (slm).
- * 
- * Formula:
- * - LCL (base termica) = (temp - dew) × 125 + altitude (slm)
- * - TOP = base + spessore stimato da CAPE / gradiente
- * - RATEO = (forza / 10) × 4 (m/s)
+ * Calcola le termiche a partire dai dati orari reali (Open‑Meteo).
+ * PRODUCE VALORI REALISTICI: 1.0-3.5 m/s in condizioni normali,
+ * 0.3-0.9 in condizioni deboli, 0.0-0.2 in caso di pioggia/temporale.
  */
-export function calcolaTermiche(weather: HourData | any, altitude: number): TermicheData {
-  const alt = altitude ?? 1000;
-
-  if (!weather) {
-    return { rateo: 0, forza: 0, base: 0, top: 0, label: "N/D", colore: "#475569", gradienteReale: 0 };
+export function calcolaTermiche(h: HourData | undefined | null, altitude: number = 500): TermicheResult {
+  if (!h || typeof h.temperature !== "number") {
+    return { rateo: 0.5, base: altitude + 200, top: altitude + 400, forza: 0.5, attendibilita: 30 };
   }
 
-  const temp = weather.temperature ?? 15;
-  const dew = weather.dewPoint ?? (temp - 8);
-  const hum = weather.humidity ?? 60;
-  const windSpeed = weather.windSpeed ?? 10;
-  const cloudCover = weather.cloudCover ?? 30;
-  const precipitation = weather.precipitation ?? 0;
-  const temp80m = weather.temp80m ?? null;
-  const temp120m = weather.temp120m ?? null;
+  const temp = h.temperature;
+  // Se dewPoint manca o è 0, lo stimiamo realisticamente
+  const dewPoint = (h.dewPoint != null && h.dewPoint > -10) ? h.dewPoint : temp - 8;
+  const windSpeed = h.windSpeed ?? 5;
+  const cloudCover = h.cloudCover ?? 30;
+  const humidity = h.humidity ?? 50;
+  const precipitation = h.precipitation ?? 0;
+  const weatherCode = h.weatherCode ?? 0;
+  const ora = new Date(h.time).getHours();
 
-  // 1. Spread (differenza tra T e Td)
-  const spread = Math.max(0.5, temp - dew);
-
-  // 2. BASE TERMICA = LCL (sollevamento per convezione) IN METRI SUL LIVELLO DEL MARE
-  //    LCL (m sopra il suolo) = spread × 125
-  //    Quota assoluta = LCL + altitudine decollo
-  const lclSopraSuolo = Math.round(spread * 125);
-  const base = Math.max(alt + 100, Math.min(alt + 3000, alt + lclSopraSuolo));
-
-  // 3. GRADIENTE TERMICO VERTICALE REALE (da temperature_80m / 120m)
-  let gradiente = 0.98; // adiabatico secco default
-  if (temp80m != null) {
-    gradiente = ((temp - temp80m) / 78) * 100;
-  } else if (temp120m != null) {
-    gradiente = ((temp - temp120m) / 118) * 100;
+  // Se piove o temporale -> termiche debolissime o zero
+  if (precipitation > 1 || weatherCode >= 95) {
+    return { rateo: 0, base: altitude + 50, top: altitude + 100, forza: 0, attendibilita: 90 };
   }
 
-  // 4. FORZA TERMICA (0-10)
-  let forza = 0;
+  // Se precipitation > 0.3 ma < 1, termiche molto deboli
+  if (precipitation > 0.3) {
+    return { rateo: 0.3, base: altitude + 100, top: altitude + 200, forza: 0.3, attendibilita: 80 };
+  }
 
-  // Gradiente (max 3)
-  if (gradiente >= 1.2) forza += 3;
-  else if (gradiente >= 0.98) forza += 2;
-  else if (gradiente >= 0.7) forza += 1;
+  // Spread termico (differenza temp - dew)
+  const spread = Math.max(1, temp - dewPoint);
 
-  // Vento (max 2)
-  if (windSpeed >= 5 && windSpeed <= 15) forza += 2;
-  else if (windSpeed >= 3 && windSpeed < 5) forza += 1.5;
-  else if (windSpeed > 15 && windSpeed <= 22) forza += 1;
+  // Se fa molto freddo
+  if (temp < 5) {
+    return { rateo: 0.2, base: altitude + 50, top: altitude + 150, forza: 0.2, attendibilita: 60 };
+  }
 
-  // Nuvolosità (max 2)
-  if (cloudCover >= 15 && cloudCover <= 45) forza += 2;
-  else if (cloudCover >= 5 && cloudCover < 15) forza += 1.5;
+  // ===== CALCOLO RATEO PRINCIPALE =====
+  // Spread 3°C → 1.0 m/s, 6°C → 1.8 m/s, 10°C → 2.5 m/s, 15°C → 3.5 m/s
+  // Formula: spread * 0.25 + 0.25
+  let rateo = spread * 0.25 + 0.25;
 
-  // Umidità (max 1.5)
-  if (hum >= 30 && hum <= 50) forza += 1.5;
-  else if (hum > 50 && hum <= 65) forza += 1;
+  // Bonus ora del giorno (picco 11-15)
+  if (ora >= 11 && ora <= 15) rateo += 0.5;
+  else if (ora >= 9 && ora <= 10) rateo += 0.3;
+  else if (ora >= 16 && ora <= 17) rateo += 0.2;
+  else if (ora < 8 || ora > 18) rateo = Math.min(rateo, 0.5);
 
-  // Spread (max 1.5)
-  if (spread >= 10) forza += 1.5;
-  else if (spread >= 6) forza += 1;
-  else if (spread >= 3) forza += 0.5;
+  // Vento: 5-15 km/h aiuta, sotto 3 o sopra 20 penalizza
+  if (windSpeed >= 5 && windSpeed <= 15) rateo += 0.4;
+  else if (windSpeed > 15 && windSpeed <= 22) rateo -= 0.3;
+  else if (windSpeed > 22) rateo -= 0.6;
+  else if (windSpeed < 3) rateo -= 0.4;
 
-  // Pioggia annulla tutto
-  if (precipitation > 1) forza = 0;
+  // Nuvolosità: 15-50% ideale
+  if (cloudCover >= 15 && cloudCover <= 50) rateo += 0.3;
+  else if (cloudCover > 70) rateo -= 0.6;
+  else if (cloudCover > 50) rateo -= 0.3;
 
-  forza = Math.max(0, Math.min(10, Math.round(forza * 10) / 10));
+  // Temperatura alta = più energia
+  if (temp >= 25 && temp <= 32) rateo += 0.4;
+  else if (temp >= 20 && temp < 25) rateo += 0.2;
+  else if (temp > 32) rateo += 0.2;
 
-  // 5. TOP TERMICO (slm) = base + spessore stimato
-  //    Lo spessore dipende dalla forza: più forza = più spessore
-  const spessore = Math.round(forza * 250); // ~250m per punto di forza
-  const top = Math.min(alt + 5000, base + spessore);
+  // Umidità: se troppo alta penalizza
+  if (humidity > 75) rateo -= 0.4;
+  else if (humidity > 85) rateo -= 0.7;
 
-  // 6. RATEO (m/s)
-  let rateo = (forza / 10) * 4;
-  if (precipitation > 1) rateo = 0;
-  rateo = Math.max(0.05, Math.round(rateo * 10) / 10);
+  // Clamp e arrotonda
+  rateo = Math.max(0.1, Math.min(4.5, rateo));
+  rateo = Math.round(rateo * 10) / 10;
 
-  // 7. Label e colore
-  let label: string;
-  let colore: string;
+  // ===== BASE TERMICA (LCL) =====
+  const base = Math.max(
+    altitude + 100,
+    Math.min(altitude + 2500, Math.round(spread * 125 + altitude))
+  );
 
-  if (rateo >= 4.0) { label = "Forti"; colore = "#ef4444"; }
-  else if (rateo >= 3.0) { label = "Buone"; colore = "#f97316"; }
-  else if (rateo >= 2.0) { label = "Moderate"; colore = "#eab308"; }
-  else if (rateo >= 1.0) { label = "Deboli"; colore = "#84cc16"; }
-  else if (rateo >= 0.3) { label = "M. deboli"; colore = "#6b7280"; }
-  else { label = "Assenti"; colore = "#475569"; }
+  // ===== TOP TERMICO =====
+  const topIncrement = rateo * 400 + spread * 50;
+  const top = Math.max(base + 150, Math.round(altitude + topIncrement));
 
-  return {
-    rateo,
-    forza,
-    base,
-    top,
-    label,
-    colore,
-    gradienteReale: Math.round(gradiente * 100) / 100,
-  };
+  // ===== FORZA (0-10) =====
+  const forza = Math.min(10, Math.max(1, Math.round(rateo * 2.5)));
+
+  // ===== ATTENDIBILITÀ =====
+  const attendibilita = Math.min(100, Math.round(
+    50 + (h.dewPoint != null && h.dewPoint > -10 ? 20 : 0) +
+    (h.windGusts != null ? 10 : 0) +
+    (rateo > 0.5 ? 15 : 0)
+  ));
+
+  return { rateo, base, top, forza, attendibilita };
+}
+
+/**
+ * Calcola le termiche cumulativamente su un array di ore
+ */
+export function calcolaTermicheBatch(dayData: HourData[], altitude: number) {
+  return dayData
+    .filter(h => h && h.time)
+    .map(h => ({
+      ora: new Date(h.time).getHours(),
+      termiche: calcolaTermiche(h, altitude),
+    }));
 }

@@ -32,7 +32,7 @@ export default function TabNav({ activeTab, onTabChange }: TabNavProps) {
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
             className={`
-              relative flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg text-xs font-bold tracking-wide
+              relative flex items-center justify-center gap-1.5 px-1 py-2.5 rounded-lg text-xs font-bold tracking-wide
               transition-all duration-200 overflow-hidden
               ${
                 isActive
@@ -41,7 +41,6 @@ export default function TabNav({ activeTab, onTabChange }: TabNavProps) {
               }
             `}
           >
-            {/* Shimmer overlay */}
             {isActive && (
               <div className="absolute inset-0 animate-shimmer pointer-events-none" />
             )}
