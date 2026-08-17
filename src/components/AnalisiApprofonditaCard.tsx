@@ -2,9 +2,24 @@
 
 import React, { useState } from "react";
 import {
-  Sun, Thermometer, Wind, Cloud, Droplets, Eye, Zap,
-  TrendingUp, Activity, Shield, Layers, Map,
-  ChevronDown, ChevronUp, Clock, Gauge, AlertTriangle, CheckCircle,
+  Sun,
+  Thermometer,
+  Wind,
+  Cloud,
+  Droplets,
+  Eye,
+  Zap,
+  TrendingUp,
+  Activity,
+  Shield,
+  Layers,
+  Map,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Gauge,
+  AlertTriangle,
+  CheckCircle,
 } from "lucide-react";
 import type { AnalisiApprofondita } from "@/utils/analisiApprofondita";
 import ProfiloVentoVerticale from "./ProfiloVentoVerticale";
@@ -32,7 +47,12 @@ function getPunteggioTesto(p: number): string {
   return "text-red-300";
 }
 
-function Sezione({ titolo, icona, children, defaultOpen = true }: {
+function Sezione({
+  titolo,
+  icona,
+  children,
+  defaultOpen = true,
+}: {
   titolo: string;
   icona: React.ReactNode;
   children: React.ReactNode;
@@ -57,7 +77,11 @@ function Sezione({ titolo, icona, children, defaultOpen = true }: {
   );
 }
 
-export default function AnalisiApprofonditaCard({ analisi, siteName, dayData }: Props) {
+export default function AnalisiApprofonditaCard({
+  analisi,
+  siteName,
+  dayData,
+}: Props) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -98,7 +122,10 @@ export default function AnalisiApprofonditaCard({ analisi, siteName, dayData }: 
       </div>
 
       {/* Condizioni al suolo */}
-      <Sezione titolo="Condizioni al suolo" icona={<Thermometer className="w-4 h-4 text-orange-400" />}>
+      <Sezione
+        titolo="Condizioni al suolo"
+        icona={<Thermometer className="w-4 h-4 text-orange-400" />}
+      >
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="bg-slate-800/60 rounded-lg p-2">
             <span className="text-slate-500">Temperatura</span>
@@ -122,7 +149,11 @@ export default function AnalisiApprofonditaCard({ analisi, siteName, dayData }: 
       </Sezione>
 
       {/* Vento e struttura verticale */}
-      <Sezione titolo="Vento e struttura verticale" icona={<Wind className="w-4 h-4 text-cyan-400" />} defaultOpen={true}>
+      <Sezione
+        titolo="Vento e struttura verticale"
+        icona={<Wind className="w-4 h-4 text-cyan-400" />}
+        defaultOpen={true}
+      >
         <div className="grid grid-cols-2 gap-2 text-xs mb-3">
           <div className="bg-slate-800/60 rounded-lg p-2">
             <span className="text-slate-500">Vento al suolo</span>
@@ -137,40 +168,52 @@ export default function AnalisiApprofonditaCard({ analisi, siteName, dayData }: 
           <div className="col-span-2 bg-slate-800/60 rounded-lg p-2">
             <span className="text-slate-500">Gradiente verticale</span>
             <div className="text-white font-bold mt-0.5">
-              {analisi.gradienteVento === "debole" ? "Debole: vento omogeneo fino a 3000m, termiche stabili" :
-               analisi.gradienteVento === "moderato" ? "Moderato: vento cresce gradualmente in quota, termiche irregolari" :
-               "Forte: significativo aumento del vento in quota, possibile turbolenza"}
+              {analisi.gradienteVento === "debole"
+                ? "Debole: vento omogeneo fino a 3000m, termiche stabili"
+                : analisi.gradienteVento === "moderato"
+                  ? "Moderato: vento cresce gradualmente in quota, termiche irregolari"
+                  : "Forte: significativo aumento del vento in quota, possibile turbolenza"}
             </div>
           </div>
           <div className="col-span-2 bg-slate-800/60 rounded-lg p-2">
             <span className="text-slate-500">Wind shear verticale</span>
-            <div className="text-white font-bold mt-0.5 capitalize">{analisi.windShear}</div>
+            <div className="text-white font-bold mt-0.5 capitalize">
+              {analisi.windShear}
+            </div>
           </div>
           <div className="col-span-2 bg-slate-800/60 rounded-lg p-2">
             <span className="text-slate-500">Inversione termica</span>
-            <div className="text-white font-bold mt-0.5 capitalize">{analisi.inversione}</div>
+            <div className="text-white font-bold mt-0.5 capitalize">
+              {analisi.inversione}
+            </div>
           </div>
         </div>
 
         {dayData && dayData.length > 0 && (
           <ProfiloVentoVerticale
-            dayData={dayData}
             siteAlt={analisi.alt}
             siteName={siteName}
+            lat={analisi.lat}
+            lon={analisi.lon}
           />
         )}
       </Sezione>
 
       {/* Termiche */}
-      <Sezione titolo="Analisi termica" icona={<Activity className="w-4 h-4 text-amber-400" />}>
+      <Sezione
+        titolo="Analisi termica"
+        icona={<Activity className="w-4 h-4 text-amber-400" />}
+      >
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="col-span-2 bg-slate-800/60 rounded-lg p-2">
             <span className="text-slate-500">Altezza PBL (strato limite)</span>
             <div className="text-emerald-300 font-bold mt-0.5">
               {analisi.pbl.toLocaleString()} m
-              {analisi.pbl > 3000 ? " — Ottima: garantisce termiche sviluppate in verticale" :
-               analisi.pbl > 2000 ? " — Buona: termiche sufficienti" :
-               " — Limitata: termiche basse"}
+              {analisi.pbl > 3000
+                ? " — Ottima: garantisce termiche sviluppate in verticale"
+                : analisi.pbl > 2000
+                  ? " — Buona: termiche sufficienti"
+                  : " — Limitata: termiche basse"}
             </div>
           </div>
           <div className="col-span-2 bg-slate-800/60 rounded-lg p-2">
@@ -193,7 +236,10 @@ export default function AnalisiApprofonditaCard({ analisi, siteName, dayData }: 
       </Sezione>
 
       {/* Stabilità atmosferica */}
-      <Sezione titolo="Indici di stabilità" icona={<Shield className="w-4 h-4 text-purple-400" />}>
+      <Sezione
+        titolo="Indici di stabilità"
+        icona={<Shield className="w-4 h-4 text-purple-400" />}
+      >
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="bg-slate-800/60 rounded-lg p-2">
             <span className="text-slate-500">CAPE</span>
@@ -213,9 +259,11 @@ export default function AnalisiApprofonditaCard({ analisi, siteName, dayData }: 
             <span className="text-slate-500">CIN (energia di inibizione)</span>
             <div className="text-orange-300 font-bold mt-0.5">{analisi.cin} J/kg</div>
             <div className="text-[10px] text-slate-400 mt-0.5">
-              {analisi.cin < 50 ? "Assente: termiche partono facilmente" :
-               analisi.cin < 100 ? "Debole: possibile ritardo innesco" :
-               "Presente: potrebbe ritardare l'innesco"}
+              {analisi.cin < 50
+                ? "Assente: termiche partono facilmente"
+                : analisi.cin < 100
+                  ? "Debole: possibile ritardo innesco"
+                  : "Presente: potrebbe ritardare l'innesco"}
             </div>
           </div>
           <div className="bg-slate-800/60 rounded-lg p-2">
@@ -229,7 +277,10 @@ export default function AnalisiApprofonditaCard({ analisi, siteName, dayData }: 
       </Sezione>
 
       {/* Nuvolosità e visibilità */}
-      <Sezione titolo="Nuvolosità e visibilità" icona={<Cloud className="w-4 h-4 text-blue-400" />}>
+      <Sezione
+        titolo="Nuvolosità e visibilità"
+        icona={<Cloud className="w-4 h-4 text-blue-400" />}
+      >
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="bg-slate-800/60 rounded-lg p-2">
             <span className="text-slate-500">Nuvole basse</span>
@@ -251,7 +302,11 @@ export default function AnalisiApprofonditaCard({ analisi, siteName, dayData }: 
       </Sezione>
 
       {/* Slot orari */}
-      <Sezione titolo="Slot orari consigliati" icona={<Clock className="w-4 h-4 text-green-400" />} defaultOpen={true}>
+      <Sezione
+        titolo="Slot orari consigliati"
+        icona={<Clock className="w-4 h-4 text-green-400" />}
+        defaultOpen={true}
+      >
         <div className="bg-gradient-to-r from-emerald-900/30 to-green-900/20 border border-emerald-700/30 rounded-lg p-3">
           <div className="flex items-center gap-2 text-sm text-emerald-300 font-bold">
             <Zap className="w-4 h-4" />
@@ -262,66 +317,74 @@ export default function AnalisiApprofonditaCard({ analisi, siteName, dayData }: 
               ? "Termiche ben sviluppate per tutto l'arco della giornata. Le condizioni migliori si avranno nelle ore centrali con vento regolare e termiche attive."
               : analisi.rateoMedio > 1
                 ? "Finestra di volo nelle ore centrali. Valutare condizioni locali."
-                : "Slot limitato: attendere l'innesco termico nelle ore più calde."
-            }
+                : "Slot limitato: attendere l'innesco termico nelle ore più calde."}
           </div>
         </div>
       </Sezione>
 
       {/* Analisi completa */}
-      <Sezione titolo="Analisi completa" icona={<Layers className="w-4 h-4 text-slate-400" />} defaultOpen={true}>
+      <Sezione
+        titolo="Analisi completa"
+        icona={<Layers className="w-4 h-4 text-slate-400" />}
+        defaultOpen={true}
+      >
         <div className="text-xs text-slate-300 leading-relaxed space-y-2">
           <p>
             <span className="text-emerald-400 font-bold">☀️ Analisi termica e meteo</span> – {analisi.data} ({analisi.lat.toFixed(2)}°N, {analisi.lon.toFixed(2)}°E – {analisi.alt}m)
           </p>
           <p>
             La giornata si presenta con condizioni
-            {analisi.punteggio >= 80 ? " ideali" : analisi.punteggio >= 60 ? " favorevoli" : analisi.punteggio >= 40 ? " moderate" : " difficili"}
+            {analisi.punteggio >= 80
+              ? " ideali"
+              : analisi.punteggio >= 60
+                ? " favorevoli"
+                : analisi.punteggio >= 40
+                  ? " moderate"
+                  : " difficili"}
             {" "}per il volo libero.
             {analisi.tempAttuale > 30
               ? ` La temperatura è elevata (${analisi.tempAttuale}°C),`
-              : ` La temperatura è di ${analisi.tempAttuale}°C,`
-            }
-
+              : ` La temperatura è di ${analisi.tempAttuale}°C,`}
             {analisi.dewPoint < 10
               ? ` il punto di rugiada di ${analisi.dewPoint}°C indica aria secca e un'umidità del ${analisi.umidita}%.`
-              : ` il punto di rugiada di ${analisi.dewPoint}°C e un'umidità del ${analisi.umidita}%.`
-            }
+              : ` il punto di rugiada di ${analisi.dewPoint}°C e un'umidità del ${analisi.umidita}%.`}
           </p>
           <p>
             Il vento al suolo è{" "}
-            {analisi.ventoSuolo <= 3 ? "debole" : analisi.ventoSuolo <= 8 ? "moderato" : "vivace"},
-            {" "}{analisi.ventoSuolo} km/h da {analisi.ventoDirNome} con raffiche fino a {analisi.rafficheSuolo} km/h,
+            {analisi.ventoSuolo <= 3
+              ? "debole"
+              : analisi.ventoSuolo <= 8
+                ? "moderato"
+                : "vivace"},
+            {" "}
+            {analisi.ventoSuolo} km/h da {analisi.ventoDirNome} con raffiche fino a {analisi.rafficheSuolo} km/h,
             {analisi.rischioTemporali < 15
               ? " senza precipitazioni e con probabilità di temporali molto bassa, segno di atmosfera stabile."
-              : ` con probabilità di temporali del ${analisi.rischioTemporali}%.`
-            }
+              : ` con probabilità di temporali del ${analisi.rischioTemporali}%.`}
             {analisi.visibilita > 30
               ? ` Visibilità eccellente di circa ${analisi.visibilita} km.`
-              : ` Visibilità di ${analisi.visibilita} km.`
-            }
+              : ` Visibilità di ${analisi.visibilita} km.`}
           </p>
           <p>
             La struttura verticale mostra un'altezza dello strato limite (PBL) di circa {analisi.pbl.toLocaleString()} m,
             con correnti ascensionali convettive fino a {analisi.rateoMedio} m/s,
             {analisi.rateoMedio > 2
               ? " ottime per il volo termico."
-              : " sufficienti per il volo termico."
-            }
-            {' '}Il CAPE è di {analisi.cape} J/kg ({analisi.capeDesc}),
+              : " sufficienti per il volo termico."}
+            {" "}
+            Il CAPE è di {analisi.cape} J/kg ({analisi.capeDesc}),
             mentre il Lifted Index di {analisi.liftedIndex > 0 ? "+" : ""}{analisi.liftedIndex} ({analisi.liDesc}).
           </p>
           <p>
             Il gradiente del vento è {analisi.gradienteVento},
             {analisi.inversione.includes("assente") || analisi.inversione.includes("debole")
               ? " con inversione assente o debole, che non penalizza le termiche pomeridiane."
-              : " con inversione presente, che potrebbe limitare lo sviluppo verticale delle termiche."
-            }
-            {' '}L'indice termico (TI) di {analisi.thermalIndex} indica {analisi.thermalIndexDesc},
+              : " con inversione presente, che potrebbe limitare lo sviluppo verticale delle termiche."}
+            {" "}
+            L'indice termico (TI) di {analisi.thermalIndex} indica {analisi.thermalIndexDesc},
             {analisi.topTermiche > 3000
               ? ` con altezza massima delle termiche secche tra ${(analisi.topTermiche - 300).toLocaleString()} m e ${analisi.topTermiche.toLocaleString()} m.`
-              : ` con top termiche a ${analisi.topTermiche.toLocaleString()} m.`
-            }
+              : ` con top termiche a ${analisi.topTermiche.toLocaleString()} m.`}
           </p>
           <p className="text-emerald-400 font-bold">
             🪂 Valutazione: {analisi.valutazione}
@@ -352,11 +415,21 @@ export default function AnalisiApprofonditaCard({ analisi, siteName, dayData }: 
           </div>
           <h4 className="text-xs text-slate-400 font-bold mb-1">Parametri</h4>
           <div className="space-y-1">
-            <p><span className="text-slate-500">PBL:</span> Planetary Boundary Layer — lo strato limite atmosferico dove si sviluppano le termiche.</p>
-            <p><span className="text-slate-500">Thermal Index (TI):</span> Indica la forza delle termiche. Più negativo = più forti.</p>
-            <p><span className="text-slate-500">CAPE:</span> Convective Available Potential Energy — energia disponibile per la convezione.</p>
-            <p><span className="text-slate-500">Lifted Index (LI):</span> Stabilità atmosferica. Positivo = stabile, negativo = instabile.</p>
-            <p><span className="text-slate-500">CIN:</span> Convective Inhibition — energia che blocca l'innesco delle termiche.</p>
+            <p>
+              <span className="text-slate-500">PBL:</span> Planetary Boundary Layer — lo strato limite atmosferico dove si sviluppano le termiche.
+            </p>
+            <p>
+              <span className="text-slate-500">Thermal Index (TI):</span> Indica la forza delle termiche. Più negativo = più forti.
+            </p>
+            <p>
+              <span className="text-slate-500">CAPE:</span> Convective Available Potential Energy — energia disponibile per la convezione.
+            </p>
+            <p>
+              <span className="text-slate-500">Lifted Index (LI):</span> Stabilità atmosferica. Positivo = stabile, negativo = instabile.
+            </p>
+            <p>
+              <span className="text-slate-500">CIN:</span> Convective Inhibition — energia che blocca l'innesco delle termiche.
+            </p>
           </div>
         </div>
       )}
