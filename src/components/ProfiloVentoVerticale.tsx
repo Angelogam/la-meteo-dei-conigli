@@ -14,7 +14,7 @@ interface ProfiloVentoVerticaleProps {
 
 interface LivelloVento {
   height: number;
-  speed: number;
+  speed: number; // stored in km/h for consistency with display
   dir: number;
 }
 
@@ -61,6 +61,11 @@ function getBarColor(speed: number): string {
   return "bg-red-400";
 }
 
+// Converts m/s to km/h
+function msToKmh(ms: number): number {
+  return Math.round(ms * 3.6);
+}
+
 // Estrae il profilo reale dai dati HourData (già processati da weatherService)
 function estraiProfiloReale(dayData: HourData[] | undefined): LivelloVento[] {
   if (!dayData || dayData.length === 0) return [];
@@ -76,7 +81,12 @@ function estraiProfiloReale(dayData: HourData[] | undefined): LivelloVento[] {
 
   return profilo
     .filter((l: any) => l && l.height != null && l.speed != null && l.dir != null)
-    .map((l: any) => ({ height: l.height, speed: l.speed, dir: l.dir }));
+    .map((l: any) => ({
+      height: l.height,
+      // Convert from m/s to km/h for storage consistency
+      speed: msToKmh(l.speed),
+      dir: l.dir
+    }));
 }
 
 // Interpola il profilo reale per una quota qualsiasi
@@ -95,8 +105,10 @@ function interpolaProfilo(profilo: LivelloVento[], quota: number): { speed: numb
   const ultimo = ordinato[ordinato.length - 1];
   if (quota >= ultimo.height) {
     const alpha = 0.2; // Realistic exponent for troposphere
-    const speed = Math.round(ultimo.speed * Math.pow(quota / ultimo.height, alpha));
-    return { speed, dir: ultimo.dir };
+    // Convert back to m/s for calculation, then to km/h for result
+    const speedMs = ultimo.speed / 3.6;
+    const speedKmh = msToKmh(speedMs * Math.pow(quota / ultimo.height, alpha));
+    return { speed: speedKmh, dir: ultimo.dir };
   }
 
   // Linear interpolation between two closest levels
@@ -106,7 +118,12 @@ function interpolaProfilo(profilo: LivelloVento[], quota: number): { speed: numb
 
     if (quota >= a.height && quota <= b.height) {
       const ratio = (quota - a.height) / (b.height - a.height);
-      const speed = Math.round(a.speed + ratio * (b.speed - a.speed));
+      
+      // Convert to m/s for interpolation
+      const speedAMs = a.speed / 3.6;
+      const speedBMs = b.speed / 3.6;
+      const speedMs = speedAMs + ratio * (speedBMs - speedAMs);
+      const speedKmh = msToKmh(speedMs);
 
       // Handle wind direction wrapping (e.g. 350° -> 10°)
       let dDiff = b.dir - a.dir;
@@ -114,7 +131,7 @@ function interpolaProfilo(profilo: LivelloVento[], quota: number): { speed: numb
       if (dDiff < -180) dDiff += 360;
       const dir = ((a.dir + dDiff * ratio) % 360 + 360) % 360;
 
-      return { speed, dir };
+      return { speed: speedKmh, dir };
     }
   }
 
@@ -172,7 +189,8 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat,
         const livelli: LivelloVento[] = LIVELLI
           .map(l => ({
             height: l.height,
-            speed: Math.round(Number(json.hourly?.[l.speedKey]?.[idx]) || 0),
+            // Convert from m/s to km/h for storage
+            speed: msToKmh(Math.round(Number(json.hourly?.[l.speedKey]?.[idx]) || 0)),
             dir: Math.round(Number(json.hourly?.[l.dirKey]?.[idx]) || 0),
           }))
           .filter(l => l.speed >= 0); // Allow 0 wind
@@ -350,77 +368,5 @@ export default function ProfiloVentoVerticale({ dayData, siteAlt, siteName, lat,
             <ArrowUp className="w-3 h-3 text-cyan-400" />
             Vento al suolo
           </div>
-          <div className="text-base font-bold text-cyan-300">{ventoDecollo.speed} km/h</div>
-          <div className="text-[10px] text-slate-400">
-            da {getDirAbbrev(ventoDecollo.dir)} ({ventoDecollo.dir}°)
-          </div>
-        </div>
-        <div className="bg-slate-800/60 rounded-xl p-3 text-center">
-          <div className="text-[10px] text-slate-500 flex items-center justify-center gap-1">
-            <Gauge className="w-3 h-3 text-purple-400" />
-            Vento a 3000m
-          </div>
-          <div className="text-base font-bold text-purple-300">{ventoQuota.speed} km/h</div>
-          <div className="text-[10px] text-slate-400">
-            da {getDirAbbrev(ventoQuota.dir)} ({ventoQuota.dir}°)
-          </div>
-        </div>
-      </div>
-
-      {/* Vertical profile table */}
-      <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl overflow-hidden">
-        <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-700/30">
-          <Wind className="w-4 h-4 text-cyan-400" />
-          <span className="text-xs font-bold text-cyan-300">Profilo verticale · {siteName || "Decollo"}</span>
-          <span className="text-[10px] text-slate-500 ml-auto">
-            {siteAlt}m → 3000m {usandoApi ? "(dati meteo già caricati)" : "(dati reali interpolati)"}
-          </span>
-        </div>
-        <div className="overflow-y-auto max-h-[400px]">
-          <table className="w-full text-[11px]">
-            <thead className="sticky top-0 bg-slate-900/90 z-10">
-              <tr className="border-b border-slate-700/30 text-slate-500">
-                <th className="p-2 text-left w-14">Quota</th>
-                <th className="p-2 text-left w-20">Temp</th>
-                <th className="p-2 text-left">Vento</th>
-                <th className="p-2 text-left w-16">Dir</th>
-                <th className="p-2 text-left w-16">°</th>
-              </tr>
-            </thead>
-            <tbody>
-              {righe.map(r => {
-                const isDecollo = Math.abs(r.quota - siteAlt) < 100;
-                return (
-                  <tr key={r.quota} className={`border-b border-slate-700/20 transition-colors hover:bg-slate-700/30 ${isDecollo ? "bg-emerald-900/20" : ""}`}>
-                    <td className="p-2 font-mono font-bold text-white whitespace-nowrap">
-                      {r.quota}m{isDecollo && <span className="text-[8px] text-emerald-400 ml-1">🪂</span>}
-                    </td>
-                    <td className={`p-2 font-mono whitespace-nowrap ${r.temp > 15 ? "text-amber-300" : r.temp > 5 ? "text-yellow-300" : "text-cyan-300"}`}>
-                      {r.temp}°C
-                    </td>
-                    <td className="p-2 flex items-center gap-1">
-                      <div className={`w-3 h-3 rounded-full ${getBarColor(r.speed)}`} style={{ width: `${Math.min((r.speed / maxSpeed) * 100, 100)}%` }}></div>
-                      <span className="font-mono text-white">{r.speed} km/h</span>
-                    </td>
-                    <td className="p-2 text-center text-white">{getDirAbbrev(r.dir)}</td>
-                    <td className="p-2 text-center text-white">{r.dir}°</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Interpretation */}
-      <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 space-y-2 text-xs">
-        <div className="flex items-center gap-2">
-          <div className="text-slate-500">Interpretazione volo</div>
-        </div>
-        <div className="text-white font-bold mt-0.5">
-          {getInterpretazione()}
-        </div>
-      </div>
-    </div>
-  );
-}
+          <div className="text-base font-bold text-cyan-300\">{ventoDecollo.speed} km/h</div>
+          <div className=\"text-[10px] text-slate-400\">\n            da {getDirAbbrev(ventoDecollo.dir)} ({ventoDecollo.dir}°)\n          </div>\n        </div>\n        <div className=\"bg-slate-800/60 rounded-xl p-3 text-center\">\n          <div className=\"text-[10px] text-slate-500 flex items-center justify-center gap-1\">\n            <Gauge className=\"w-3 h-3 text-purple-400\" />\n            Vento a 3000m\n          </div>\n          <div className=\"text-base font-bold text-purple-300\">{ventoQuota.speed} km/h</div>\n          <div className=\"text-[10px] text-slate-400\">\n            da {getDirAbbrev(ventoQuota.dir)} ({ventoQuota.dir}°)\n          </div>\n        </div>\n      </div>\n\n      {/* Vertical profile table */}\n      <div className=\"bg-slate-800/40 border border-slate-700/40 rounded-xl overflow-hidden\">\n        <div className=\"flex items-center gap-2 px-4 py-2.5 border-b border-slate-700/30\">\n          <Wind className=\"w-4 h-4 text-cyan-400\" />\n          <span className=\"text-xs font-bold text-cyan-300\">Profilo verticale · {siteName || \"Decollo\"}</span>\n          <span className=\"text-[10px] text-slate-500 ml-auto\">\n            {siteAlt}m → 3000m {usandoApi ? \"(dati meteo già caricati)\" : \"(dati reali interpolati)\"}\n          </span>\n        </div>\n        <div className=\"overflow-y-auto max-h-[400px]\">\n          <table className=\"w-full text-[11px]\">\n            <thead className=\"sticky top-0 bg-slate-900/90 z-10\">\n              <tr className=\"border-b border-slate-700/30 text-slate-500\">\n                <th className=\"p-2 text-left w-14\">Quota</th>\n                <th className=\"p-2 text-left w-20\">Temp</th>\n                <th className=\"p-2 text-left\">Vento</th>\n                <th className=\"p-2 text-left w-16\">Dir</th>\n                <th className=\"p-2 text-left w-16\">°</th>\n              </tr>\n            </thead>\n            <tbody>\n              {righe.map(r => {\n                const isDecollo = Math.abs(r.quota - siteAlt) < 100;\n                return (\n                  <tr key={r.quota} className={`border-b border-slate-700/20 transition-colors hover:bg-slate-700/30 ${isDecollo ? \"bg-emerald-900/20\" : \"\"}`}>\n                    <td className=\"p-2 font-mono font-bold text-white whitespace-nowrap\">\n                      {r.quota}m{isDecollo && <span className=\"text-[8px] text-emerald-400 ml-1\">🪂</span>}\n                    </td>\n                    <td className={`p-2 font-mono whitespace-nowrap ${r.temp > 15 ? \"text-amber-300\" : r.temp > 5 ? \"text-yellow-300\" : \"text-cyan-300\"}`}>\n                      {r.temp}°C\n                    </td>\n                    <td className=\"p-2 flex items-center gap-1\">\n                      <div className={`w-3 h-3 rounded-full ${getBarColor(r.speed)}`} style={{ width: `${Math.min((r.speed / maxSpeed) * 100, 100)}%` }}></div>\n                      <span className=\"font-mono text-white\">{r.speed} km/h</span>\n                    </td>\n                    <td className=\"p-2 text-center text-white\">{getDirAbbrev(r.dir)}</td>\n                    <td className=\"p-2 text-center text-white\">{r.dir}°</td>\n                  </tr>\n                );\n              })}\n            </tbody>\n          </table>\n        </div>\n      </div>\n\n      {/* Interpretation */}\n      <div className=\"bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 space-y-2 text-xs\">\n        <div className=\"flex items-center gap-2\">\n          <div className=\"text-slate-500\">Interpretazione volo</div>\n        </div>\n        <div className=\"text-white font-bold mt-0.5\">\n          {getInterpretazione()}\n        </div>\n      </div>\n    </div>\n  );\n}"
