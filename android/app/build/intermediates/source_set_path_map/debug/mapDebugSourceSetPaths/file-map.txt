@@ -1,0 +1,31 @@
+com.example.dyadweather.app-lifecycle-process-2.6.1-0 C:\Users\avven\.gradle\caches\8.13\transforms\18cb59abf5b9ea148e4b652a291c94ed\transformed\lifecycle-process-2.6.1\res
+com.example.dyadweather.app-savedstate-1.2.1-1 C:\Users\avven\.gradle\caches\8.13\transforms\1f4a2c26680a21f726b19e5e821f5879\transformed\savedstate-1.2.1\res
+com.example.dyadweather.app-emoji2-views-helper-1.2.0-2 C:\Users\avven\.gradle\caches\8.13\transforms\24d32df1d454cb7049875138b0f787ba\transformed\emoji2-views-helper-1.2.0\res
+com.example.dyadweather.app-emoji2-1.2.0-3 C:\Users\avven\.gradle\caches\8.13\transforms\256e27cf54b803c6fd5338c75d40435f\transformed\emoji2-1.2.0\res
+com.example.dyadweather.app-core-splashscreen-1.0.1-4 C:\Users\avven\.gradle\caches\8.13\transforms\2815b892d977ef45d85b237252c42599\transformed\core-splashscreen-1.0.1\res
+com.example.dyadweather.app-activity-1.8.0-5 C:\Users\avven\.gradle\caches\8.13\transforms\2bd6d4cc5a08ab7401788479fb261474\transformed\activity-1.8.0\res
+com.example.dyadweather.app-profileinstaller-1.3.0-6 C:\Users\avven\.gradle\caches\8.13\transforms\51019d8af255745753c1423420dadea6\transformed\profileinstaller-1.3.0\res
+com.example.dyadweather.app-startup-runtime-1.1.1-7 C:\Users\avven\.gradle\caches\8.13\transforms\51fae6bf57f88c1f026f7e2aadc7d742\transformed\startup-runtime-1.1.1\res
+com.example.dyadweather.app-webkit-1.9.0-8 C:\Users\avven\.gradle\caches\8.13\transforms\53ba1bfb3a428f2baad6f299b0a73e02\transformed\webkit-1.9.0\res
+com.example.dyadweather.app-annotation-experimental-1.3.0-9 C:\Users\avven\.gradle\caches\8.13\transforms\5c10cd697cf0da546da3940d5f6815dd\transformed\annotation-experimental-1.3.0\res
+com.example.dyadweather.app-core-runtime-2.2.0-10 C:\Users\avven\.gradle\caches\8.13\transforms\63fef95610e0df08ca60a6b0d7dfc06a\transformed\core-runtime-2.2.0\res
+com.example.dyadweather.app-core-ktx-1.12.0-11 C:\Users\avven\.gradle\caches\8.13\transforms\6ca945217784a0542969db45c7135f66\transformed\core-ktx-1.12.0\res
+com.example.dyadweather.app-appcompat-1.6.1-12 C:\Users\avven\.gradle\caches\8.13\transforms\88062c993bbc7ee1f5153f2a2f487fed\transformed\appcompat-1.6.1\res
+com.example.dyadweather.app-appcompat-resources-1.6.1-13 C:\Users\avven\.gradle\caches\8.13\transforms\9c5c66911696813c130b398c885056ed\transformed\appcompat-resources-1.6.1\res
+com.example.dyadweather.app-lifecycle-viewmodel-savedstate-2.6.1-14 C:\Users\avven\.gradle\caches\8.13\transforms\ab21ad86abf12bbc4fa58c31d5687f69\transformed\lifecycle-viewmodel-savedstate-2.6.1\res
+com.example.dyadweather.app-lifecycle-runtime-2.6.1-15 C:\Users\avven\.gradle\caches\8.13\transforms\ac7d08d68415142ac52d79dc4fd864fe\transformed\lifecycle-runtime-2.6.1\res
+com.example.dyadweather.app-coordinatorlayout-1.2.0-16 C:\Users\avven\.gradle\caches\8.13\transforms\b73e02bdc931bf7c2e8889b574582fdc\transformed\coordinatorlayout-1.2.0\res
+com.example.dyadweather.app-core-1.12.0-17 C:\Users\avven\.gradle\caches\8.13\transforms\bcacf10760b31c1b6aad0c9b61f3e552\transformed\core-1.12.0\res
+com.example.dyadweather.app-fragment-1.6.2-18 C:\Users\avven\.gradle\caches\8.13\transforms\c8737d7ed7bef312afca29f5d23c8095\transformed\fragment-1.6.2\res
+com.example.dyadweather.app-lifecycle-livedata-core-2.6.1-19 C:\Users\avven\.gradle\caches\8.13\transforms\cea20204f0f56d4e21e2c182b54f951b\transformed\lifecycle-livedata-core-2.6.1\res
+com.example.dyadweather.app-lifecycle-livedata-2.6.1-20 C:\Users\avven\.gradle\caches\8.13\transforms\d9e1f4e11b94385b435869b6bc386211\transformed\lifecycle-livedata-2.6.1\res
+com.example.dyadweather.app-lifecycle-viewmodel-2.6.1-21 C:\Users\avven\.gradle\caches\8.13\transforms\dcd36655acecf561b1af28eee267b110\transformed\lifecycle-viewmodel-2.6.1\res
+com.example.dyadweather.app-pngs-22 C:\Users\avven\dyad-apps\METEO DEI CONIGLI\android\app\build\generated\res\pngs\debug
+com.example.dyadweather.app-resValues-23 C:\Users\avven\dyad-apps\METEO DEI CONIGLI\android\app\build\generated\res\resValues\debug
+com.example.dyadweather.app-packageDebugResources-24 C:\Users\avven\dyad-apps\METEO DEI CONIGLI\android\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.example.dyadweather.app-packageDebugResources-25 C:\Users\avven\dyad-apps\METEO DEI CONIGLI\android\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.example.dyadweather.app-debug-26 C:\Users\avven\dyad-apps\METEO DEI CONIGLI\android\app\build\intermediates\merged_res\debug\mergeDebugResources
+com.example.dyadweather.app-debug-27 C:\Users\avven\dyad-apps\METEO DEI CONIGLI\android\app\src\debug\res
+com.example.dyadweather.app-main-28 C:\Users\avven\dyad-apps\METEO DEI CONIGLI\android\app\src\main\res
+com.example.dyadweather.app-debug-29 C:\Users\avven\dyad-apps\METEO DEI CONIGLI\android\capacitor-cordova-android-plugins\build\intermediates\packaged_res\debug\packageDebugResources
+com.example.dyadweather.app-debug-30 C:\Users\avven\dyad-apps\METEO DEI CONIGLI\node_modules\.pnpm\@capacitor+android@6.2.1_@capacitor+core@6.2.1\node_modules\@capacitor\android\capacitor\build\intermediates\packaged_res\debug\packageDebugResources
