@@ -92,8 +92,8 @@ export async function getVentiInterpolati(lat: number, lon: number, quotaDecollo
       const livelliDisponibili: { quota: number; speed: number; dir: number }[] = [];
       
       LIVELLI_QUOTA.forEach(livello => {
-        const speedArr = data.hourly[l livello.speedKey];
-        const dirArr = data.hourly[l livello.dirKey];
+        const speedArr = data.hourly[livello.speedKey];
+        const dirArr = data.hourly[livello.dirKey];
         if (speedArr && dirArr && speedArr[i] != null && dirArr[i] != null) {
           livelliDisponibili.push({
             quota: livello.quota,
