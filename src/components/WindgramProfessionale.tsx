@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { Wind, TrendingUp, Calendar, MapPin, ChevronDown, ChevronUp } from "lucide-react";
+import React, { useMemo } from "react";
+import { Wind, Calendar, MapPin } from "lucide-react";
 
 interface LivelloVento {
   quota: number;
   speed: number;
   dir: number;
-  gust: number;
 }
 
 interface WindgramProfessionaleProps {
@@ -20,34 +19,29 @@ interface WindgramProfessionaleProps {
   quotaDecollo: number;
   siteName?: string;
   dataGiorno?: string;
-  oraSelezionata?: number;
-  onOraChange?: (ora: number) => void;
+  quotaMin?: number;
+  quotaMax?: number;
 }
 
-function getDirAbbrev(deg: number): string {
-  const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
-  return dirs[Math.round(deg / 22.5) % 16];
+// Genera colore in base alla direzione del vento
+function getWindColor(dir: number): string {
+  // 0° = N (blu), 90° = E (verde), 180° = S (arancio), 270° = W (rosso)
+  const normalized = ((dir % 360) + 360) % 360;
+  
+  // Paletta stile Alpium
+  if (normalized >= 315 || normalized < 45) return "#3b82f6"; // N - Blu
+  if (normalized >= 45 && normalized < 135) return "#22c55e"; // E - Verde
+  if (normalized >= 135 && normalized < 225) return "#f97316"; // S - Arancione
+  return "#ef4444"; // W - Rosso
 }
 
-function getDirArrow(deg: number): string {
-  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
-  return arrows[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
-}
-
-function getWindColor(speed: number): { bg: string; text: string } {
-  if (speed <= 8) return { bg: "bg-emerald-900/30", text: "text-emerald-300" };
-  if (speed <= 15) return { bg: "bg-lime-900/30", text: "text-lime-300" };
-  if (speed <= 22) return { bg: "bg-amber-900/30", text: "text-amber-300" };
-  if (speed <= 30) return { bg: "bg-orange-900/40", text: "text-orange-300" };
-  return { bg: "bg-red-900/40", text: "text-red-300" };
-}
-
-function getGustColor(speed: number): string {
-  if (speed <= 12) return "text-emerald-300";
-  if (speed <= 20) return "text-lime-300";
-  if (speed <= 28) return "text-amber-300";
-  if (speed <= 35) return "text-orange-300";
-  return "text-red-300";
+// Colore più scuro per raffiche
+function getWindColorDark(dir: number): string {
+  const normalized = ((dir % 360) + 360) % 360;
+  if (normalized >= 315 || normalized < 45) return "#1d4ed8"; // N scuro
+  if (normalized >= 45 && normalized < 135) return "#16a34a"; // E scuro
+  if (normalized >= 135 && normalized < 225) return "#ea580c"; // S scuro
+  return "#dc2626"; // W scuro
 }
 
 export default function WindgramProfessionale({
@@ -55,36 +49,45 @@ export default function WindgramProfessionale({
   quotaDecollo,
   siteName,
   dataGiorno,
-  oraSelezionata,
-  onOraChange,
+  quotaMin,
+  quotaMax,
 }: WindgramProfessionaleProps) {
-  const [mostraTemp, setMostraTemp] = useState(true);
-
-  // Genera tutte le quote dal decollo arrotondato al 250m fino a 4000m
+  // Quote da mostrare (dal decollo fino a 4000m, step 250m)
   const quoteVisibili = useMemo(() => {
-    if (!dati || dati.length === 0) return [];
-    
-    const partenza = Math.floor(quotaDecollo / 250) * 250;
+    const min = quotaMin ?? Math.floor(quotaDecollo / 250) * 250;
+    const max = quotaMax ?? 4000;
     const quote: number[] = [];
-    for (let q = partenza; q <= 4000; q += 250) {
+    for (let q = min; q <= max; q += 250) {
       quote.push(q);
     }
-    // Assicura che il decollo sia incluso
     if (!quote.includes(quotaDecollo)) {
       quote.push(quotaDecollo);
       quote.sort((a, b) => a - b);
     }
     return quote;
-  }, [quotaDecollo, dati]);
+  }, [quotaDecollo, quotaMin, quotaMax]);
 
-  // Trova l'ora selezionata
-  const oraData = useMemo(() => {
-    if (!dati || dati.length === 0) return null;
-    const target = dati.find(d => d.ora === oraSelezionata) || dati[0];
-    return target;
-  }, [dati, oraSelezionata]);
+  // Ore da mostrare (dai dati disponibili)
+  const oreVisibili = useMemo(() => {
+    if (!dati || dati.length === 0) return [];
+    return dati.map(d => d.ora).sort((a, b) => a - b);
+  }, [dati]);
 
-  if (!oraData || quoteVisibili.length === 0) {
+  // Calcola la velocità massima per normalizzare le barre
+  const maxSpeed = useMemo(() => {
+    if (!dati) return 40;
+    let max = 1;
+    for (const d of dati) {
+      for (const q of quoteVisibili) {
+        const v = d.quote[q];
+        if (v && v.speed > max) max = v.speed;
+      }
+      if (d.gust > max) max = d.gust;
+    }
+    return Math.max(max, 30); // minimo 30 per visualizzazione realistica
+  }, [dati, quoteVisibili]);
+
+  if (!dati || dati.length === 0 || quoteVisibili.length === 0) {
     return (
       <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-8 text-center">
         <Wind className="w-10 h-10 text-slate-600 mx-auto mb-3" />
@@ -93,172 +96,137 @@ export default function WindgramProfessionale({
     );
   }
 
-  const maxSpeed = Math.max(
-    ...quoteVisibili.map(q => oraData.quote[q]?.speed || 0),
-    ...dati.map(d => d.gust || 0),
-    1
-  );
-
   return (
-    <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl overflow-hidden">
+    <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl overflow-hidden">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between px-4 py-3 bg-slate-800/40 border-b border-slate-700/30">
+      <div className="flex items-center justify-between px-4 py-3 bg-slate-800/50 border-b border-slate-700/50">
         <div className="flex items-center gap-2">
           <Wind className="w-4 h-4 text-cyan-400" />
           <h3 className="text-sm font-bold text-white">Windgram</h3>
-          {siteName && (
-            <span className="text-xs text-slate-400 hidden md:inline">{siteName}</span>
-          )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 text-[10px] text-slate-500">
+          {siteName && (
+            <span className="flex items-center gap-1">
+              <MapPin className="w-3 h-3" />
+              {siteName}
+            </span>
+          )}
           {dataGiorno && (
-            <span className="text-[10px] text-slate-500 flex items-center gap-1">
+            <span className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               {dataGiorno}
             </span>
           )}
-          <button
-            onClick={() => setMostraTemp(!mostraTemp)}
-            className={`text-[10px] px-2 py-1 rounded-lg border transition-all ${
-              mostraTemp 
-                ? "bg-amber-900/30 border-amber-500/40 text-amber-300" 
-                : "bg-slate-800 border-slate-600 text-slate-400"
-            }`}
-          >
-            {mostraTemp ? "T° ON" : "T° OFF"}
-          </button>
         </div>
       </div>
 
-      {/* Selettore ora */}
-      <div className="flex gap-1 overflow-x-auto px-3 py-2 bg-slate-800/20 border-b border-slate-700/30">
-        {dati.map(d => (
-          <button
-            key={d.ora}
-            onClick={() => onOraChange?.(d.ora)}
-            className={`shrink-0 px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
-              d.ora === oraSelezionata
-                ? "bg-cyan-600/40 border border-cyan-400/50 text-cyan-200"
-                : "bg-slate-800/60 border border-slate-700/50 text-slate-400 hover:bg-slate-700/40"
-            }`}
-          >
-            {String(d.ora).padStart(2, "0")}:00
-          </button>
-        ))}
+      {/* Legenda colori */}
+      <div className="flex items-center gap-4 px-4 py-2 bg-slate-800/20 border-b border-slate-700/30 text-[10px]">
+        <span className="text-slate-400 font-semibold">Direzione:</span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#3b82f6" }} />
+          <span className="text-slate-300">N</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#22c55e" }} />
+          <span className="text-slate-300">E</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#f97316" }} />
+          <span className="text-slate-300">S</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#ef4444" }} />
+          <span className="text-slate-300">W</span>
+        </span>
+        <span className="mx-2 text-slate-600">|</span>
+        <span className="text-slate-400">🪂 = decollo</span>
       </div>
 
-      {/* Legenda */}
-      <div className="flex flex-wrap items-center gap-3 px-4 py-2 text-[9px] text-slate-500 bg-slate-800/20 border-b border-slate-700/30">
-        <span className="font-semibold text-slate-400">Velocità vento:</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/50" /> ≤8</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-lime-500/50" /> 9–15</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-amber-500/50" /> 16–22</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-orange-500/50" /> 23–30</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-red-500/50" /> >30</span>
-        <span className="mx-1 text-slate-700">|</span>
-        <span>🪂 = quota decollo</span>
-      </div>
-
-      {/* Tabella windgram */}
+      {/* Scroll orizzontale */}
       <div className="overflow-x-auto">
-        <table className="w-full text-xs md:text-sm">
-          <thead>
-            <tr className="text-[10px] text-slate-500 border-b border-slate-700/30 bg-slate-800/30">
-              <th className="px-3 py-2 text-left font-semibold w-20">Quota</th>
-              <th className="px-2 py-2 text-left font-semibold">Vento</th>
-              <th className="px-2 py-2 text-center font-semibold w-16">Raffiche</th>
-              <th className="px-2 py-2 text-center font-semibold w-16">Dir</th>
-              {mostraTemp && <th className="px-2 py-2 text-center font-semibold w-14">T°</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {quoteVisibili.map(q => {
-              const v = oraData.quote[q];
+        <div className="min-w-[600px] p-4">
+          {/* Header ore */}
+          <div className="flex ml-24 mb-1">
+            <div className="flex-1 grid grid-cols-[repeat(10,1fr)] gap-0.5">
+              {oreVisibili.map((ora) => (
+                <div key={ora} className="text-center text-[10px] font-bold text-slate-500">
+                  {String(ora).padStart(2, "0")}:00
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Griglia quote */}
+          <div className="space-y-0.5">
+            {quoteVisibili.map((q) => {
               const isDecollo = Math.abs(q - quotaDecollo) < 100;
-              const speed = v?.speed || 0;
-              const dir = v?.dir || 0;
-              const gust = oraData.gust;
-              const temp = oraData.temp;
-              const color = getWindColor(speed);
-              const pct = Math.max(8, (speed / maxSpeed) * 100);
 
               return (
-                <tr 
-                  key={q} 
-                  className={`border-b border-slate-800/50 transition-colors ${
-                    isDecollo 
-                      ? "bg-emerald-900/20 hover:bg-emerald-900/30" 
-                      : "hover:bg-slate-700/20"
+                <div
+                  key={q}
+                  className={`flex items-center rounded-lg ${
+                    isDecollo ? "bg-emerald-500/10" : "hover:bg-slate-800/30"
                   }`}
                 >
-                  {/* Quota */}
-                  <td className="px-3 py-2 font-mono text-slate-400 whitespace-nowrap">
-                    <span className="flex items-center gap-1">
-                      {isDecollo && <span className="text-emerald-400">🪂</span>}
-                      {q}m
-                    </span>
-                  </td>
+                  {/* Etichetta quota */}
+                  <div className="w-24 shrink-0 text-right pr-3 font-mono text-[10px] text-slate-500 relative">
+                    {isDecollo && <span className="absolute left-1 top-1/2 -translate-y-1/2">🪂</span>}
+                    {q}m
+                  </div>
 
-                  {/* Barra vento */}
-                  <td className="px-2 py-2">
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex-1 h-5 bg-slate-800/60 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full ${color.bg} transition-all`}
-                          style={{ width: `${pct}%` }}
+                  {/* Righe vento per ogni ora */}
+                  <div className="flex-1 grid grid-cols-[repeat(10,1fr)] gap-0.5 py-0.5">
+                    {oreVisibili.map((ora) => {
+                      const d = dati.find(x => x.ora === ora);
+                      if (!d) return <div key={ora} className="h-4 bg-slate-800/40 rounded" />;
+
+                      const v = d.quote[q];
+                      if (!v || !v.speed) return <div key={ora} className="h-4 bg-slate-800/40 rounded" />;
+
+                      const speed = v.speed;
+                      const dir = v.dir;
+                      const color = getWindColor(dir);
+                      const pct = Math.max(10, Math.min(100, (speed / maxSpeed) * 100));
+
+                      return (
+                        <div
+                          key={ora}
+                          className="relative h-4 rounded-sm overflow-hidden flex items-center"
+                          style={{
+                            backgroundColor: `${color}15`,
+                          }}
+                          title={`${q}m · ${String(ora).padStart(2, "0")}:00 · ${Math.round(speed)} km/h da ${Math.round(dir)}°`}
                         >
-                          <span className="absolute inset-0 flex items-center justify-end pr-2 text-[10px] font-bold text-white z-10">
-                            {speed >= 15 && Math.round(speed)}
+                          {/* Barra del vento */}
+                          <div
+                            className="h-full rounded-sm"
+                            style={{
+                              width: `${pct}%`,
+                              backgroundColor: color,
+                            }}
+                          />
+                          {/* Valore numerico */}
+                          <span
+                            className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white"
+                            style={{ textShadow: "0 0 2px rgba(0,0,0,0.8)" }}
+                          >
+                            {Math.round(speed)}
                           </span>
                         </div>
-                      </div>
-                      <span className={`font-mono font-bold tabular-nums ${color.text} shrink-0 w-10 text-right`}>
-                        {Math.round(speed)}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* Raffiche */}
-                  <td className="px-2 py-2 text-center">
-                    <span className={`font-mono font-bold ${getGustColor(gust)}`}>
-                      {Math.round(gust)}
-                    </span>
-                  </td>
-
-                  {/* Direzione */}
-                  <td className="px-2 py-2 text-center">
-                    <span className="font-mono text-slate-300 whitespace-nowrap">
-                      <span className="text-base mr-1">{getDirArrow(dir)}</span>
-                      <span className="font-bold">{getDirAbbrev(dir)}</span>
-                      <span className="text-[9px] text-slate-500 ml-0.5">({Math.round(dir)}°)</span>
-                    </span>
-                  </td>
-
-                  {/* Temperatura */}
-                  {mostraTemp && (
-                    <td className="px-2 py-2 text-center">
-                      <span className="font-mono text-amber-300 font-bold">
-                        {Math.round(temp)}°
-                      </span>
-                    </td>
-                  )}
-                </tr>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })}
-          </tbody>
-        </table>
-      </div>
+          </div>
 
-      {/* Footer info */}
-      <div className="px-4 py-2 bg-slate-800/20 border-t border-slate-700/30 text-[10px] text-slate-500 flex items-center justify-between">
-        <span className="flex items-center gap-1">
-          <TrendingUp className="w-3 h-3 text-cyan-400" />
-          Max {Math.round(maxSpeed)} km/h · Decollo {quotaDecollo}m
-        </span>
-        <span className="flex items-center gap-1">
-          <MapPin className="w-3 h-3" />
-          {siteName || "Windgram"}
-        </span>
+          {/* Footer: velocità massima */}
+          <div className="flex justify-end mt-2 text-[10px] text-slate-600">
+            Max: {Math.round(maxSpeed)} km/h
+          </div>
+        </div>
       </div>
     </div>
   );
