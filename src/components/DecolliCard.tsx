@@ -77,15 +77,14 @@ const DecolliCard = ({ decolli, selectedId, onSelect, selectedDay = 0 }: Decolli
 
       await Promise.all(batch.map(async (item) => {
         try {
-          // ⚡ Usa la chiamata LEGGERA (solo 3 parametri) per la lista
+          // ⚡ Usa la chiamata LEGGERA (solo 4 parametri) per la lista
           const { data } = await weatherService.fetchLight(item.lat, item.lon);
           if (data && data.temperature != null && mountedRef.current) {
-            // Stima direzione (non disponibile in fetchLight, usiamo 180° se non c'è)
             newData[item.nome] = {
               temp: Math.round(data.temperature),
               wind: Math.round(data.windSpeed),
               code: data.weatherCode,
-              dir: 180, // Default: S (comune per le valli piemontesi)
+              dir: data.windDir || 180, // Direzione vento reale con fallback a S
               gust: null,
             };
           }
@@ -184,6 +183,11 @@ const DecolliCard = ({ decolli, selectedId, onSelect, selectedDay = 0 }: Decolli
           const dirLabel = dir != null ? getCardinalDir(dir) : "N/D";
           const dirArrow = dir != null ? getWindArrow(dir) : "→";
 
+          // Valuta compatibilità vento/esposizione
+          const valutazione = hasData && dir != null
+            ? validaVentoPerDecollo(dir, item.direzione)
+            : null;
+
           return (
             <button
               key={item.id}
@@ -196,8 +200,13 @@ const DecolliCard = ({ decolli, selectedId, onSelect, selectedDay = 0 }: Decolli
                 }
               `}
             >
-              <div className="text-sm font-bold text-white truncate">
+              <div className="text-sm font-bold text-white truncate flex items-center gap-2">
                 {item.nome}
+                {valutazione && (
+                  <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full border ${getVentoStatusColor(valutazione.status)}`}>
+                    {valutazione.icon} {valutazione.status === "favorevole" ? "OK" : valutazione.status === "laterale" ? "LAT" : valutazione.status === "contrario" ? "CON" : "SOTTO"}
+                  </span>
+                )}
               </div>
 
               {hasData && temp != null ? (
@@ -223,7 +232,7 @@ const DecolliCard = ({ decolli, selectedId, onSelect, selectedDay = 0 }: Decolli
                         </span>
                       </div>
                       <span className="text-xs text-slate-300 font-bold">
-                        {dirArrow} {dirLabel}
+                        {dirArrow} {dirLabel} ({dir != null ? Math.round(dir) : ""}°)
                       </span>
                     </div>
                   </div>

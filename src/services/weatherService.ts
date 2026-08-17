@@ -43,11 +43,12 @@ export interface MeteoCurrent {
   windGusts: number;
 }
 
-// Interfaccia per dati "light" (solo 3 parametri)
+// Interfaccia per dati "light" (solo 4 parametri: temperatura, vento, direzione, meteo)
 export interface MeteoLight {
   time: Date;
   temperature: number;
   windSpeed: number;
+  windDir: number;
   weatherCode: number;
 }
 
@@ -148,9 +149,9 @@ const HOURLY_PARAMS = [
   "cape", "convective_inhibition", "lifted_index",
 ].join(",");
 
-// Parametri MINIMI per la lista decolli (massimo risparmio)
+// Parametri MINIMI per la lista decolli (massimo risparmio + direzione vento)
 const HOURLY_LIGHT_PARAMS = [
-  "temperature_2m", "weather_code", "wind_speed_10m",
+  "temperature_2m", "weather_code", "wind_speed_10m", "wind_direction_10m",
 ].join(",");
 
 const DAILY_PARAMS = [
@@ -311,7 +312,7 @@ export const weatherService = {
   },
 
   // ⚡ NUOVO: chiamata LEGGERA per la lista decolli
-  // Solo 3 parametri essenziali: temperatura, vento, weather_code
+  // Solo 4 parametri essenziali: temperatura, vento, direzione, weather_code
   async fetchLight(lat: number, lon: number): Promise<{
     data: MeteoLight | null;
     ok: boolean;
@@ -338,6 +339,7 @@ export const weatherService = {
         time: new Date(h.time[idx]),
         temperature: h.temperature_2m[idx] as number,
         windSpeed: h.wind_speed_10m[idx] as number,
+        windDir: h.wind_direction_10m[idx] as number,
         weatherCode: h.weather_code[idx] as number,
       };
       return { data, ok: true };
