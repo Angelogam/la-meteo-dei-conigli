@@ -1,3 +1,4 @@
+nel testo legenda">
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -403,7 +404,7 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat, lon }: P
         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-400" /> 16-22</span>
         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-orange-400" /> 23-30</span>
         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-400" /> 30-40</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> >40</span>
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> oltre 40</span>
         <span className="text-slate-500 ml-auto">km/h · API = reale · INT = interpolato</span>
       </div>
 
