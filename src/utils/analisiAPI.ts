@@ -1,12 +1,5 @@
 "use client";
 
-/**
- * ANALISI API METEO — Meteo dei Conigli
- * 
- * Questa utility analizza tutte le chiamate API usate dall'app
- * e produce un report dettagliato su come migliorare il servizio.
- */
-
 import { DECOLLI } from "@/data/decolli";
 import { weatherService } from "@/services/weatherService";
 
@@ -40,9 +33,9 @@ export interface AnalisiAPIResult {
     tempoMedioRisposta: number;
     cacheActive: boolean;
   };
-}
+};
 
-export function analizzaAPIMeteo(): AnalisiAPIResult {
+export function analisiAPIMeteo(): AnalisiAPIResult {
   const apiAttuali: AnalisiAPIResult["apiAttuali"] = [];
   const problemi: AnalisiAPIResult["problemiRilevati"] = [];
   const miglioramenti: AnalisiAPIResult["miglioramentiConsigliati"] = [];
@@ -83,37 +76,11 @@ export function analizzaAPIMeteo(): AnalisiAPIResult {
     uri: "https://geocoding-api.open-meteo.com/v1/search",
     uso: "NON utilizzata — permetterebbe ricerca per nome valle/locazione",
     parametriRichiesti: 3,
-    note: "Gratuita, permette di cercare decolli per nome o coordinate",
+    note: "Gratuita, permette di cercare decolli per nome città/coordinate",
     ottimizzazioni: [
       "Aggiungere una barra di ricerca per trovare decolli per nome città/valle",
       "Mostrare la distanza dall'utente usando geolocalizzazione",
       "Integrare con la lista decolli per ricerche rapide",
-    ],
-  });
-
-  // ✅ 4. API Aggiuntive per allerta in tempo reale
-  apiAttuali.push({
-    nome: "Open-Meteo Air Quality (consigliata)",
-    uri: "https://air-quality-api.open-meteo.com/v1/air-quality",
-    uso: "NON utilizzata — aggiungerebbe dati su inquinamento/polveri in quota",
-    parametriRichiesti: 5,
-    note: "Gratuita, utile per piloti sensibili a polveri sottili",
-    ottimizzazioni: [
-      "Aggiungere indicatore qualità aria per la stagione dei roghi",
-      "Integrare con colonna PM10/PM2.5 nei dati orari",
-    ],
-  });
-
-  // ✅ 5. API per nowcasting (previsioni a brevissimo termine)
-  apiAttuali.push({
-    nome: "Open-Meteo Nowcasting (consigliata)",
-    uri: "https://api.open-meteo.com/v1/forecast?forecast_hours=6",
-    uso: "NON utilizzata — darebbe previsioni a 6 ore con aggiornamento ogni 15 min",
-    parametriRichiesti: 10,
-    note: "Gratuita, perfetta per la finestra mattutina di volo",
-    ottimizzazioni: [
-      "Mostrare un badge 'NOWCAST' per le prossime 6 ore",
-      "Integrare con il refresh automatico ogni 15 minuti",
     ],
   });
 
@@ -126,9 +93,9 @@ export function analizzaAPIMeteo(): AnalisiAPIResult {
     note: "Gratuita, fondamentale per distinguere pioggia da neve in alta quota",
     ottimizzazioni: [
       "Aggiungere il tipo di precipitazione (rain/snow/graupel)",
-      "Mostrare icone diverse per pioggia/nevischio/neve in tabella oraria",
+      "Mostrare icone diverse per pioggia/neve in tabella oraria",
     ],
-  });
+  };
 
   // 🔍 PROBLEMI RILEVATI
   problemi.push({
@@ -146,9 +113,9 @@ export function analizzaAPIMeteo(): AnalisiAPIResult {
   });
 
   problemi.push({
-    severita: "medio",
+    severita: "importante",
     descrizione: "Nessun fallback API",
-    dettaglio: "Se Open-Meteo non risponde, l'app mostra solo errore. Nessun backup.",
+    dettaglio: "Se Open-Meteo non risponde, l'app mostra solo errore. Nessun fallback.",
     fixSuggerito: "Integrare 7Timer! come fallback automatico per i dati principali",
   });
 
@@ -183,7 +150,7 @@ export function analizzaAPIMeteo(): AnalisiAPIResult {
       4. Aggiungere filtri per esposizione/altitudine
     `,
     tempoStimato: "2-3 ore",
-  });
+  );
 
   miglioramenti.push({
     titolo: "Integrare nowcasting e allerta temporali",
@@ -204,7 +171,7 @@ export function analizzaAPIMeteo(): AnalisiAPIResult {
     implementazione: `
       1. Nuova chiamata 'light' con solo temperature_2m, wind_speed_10m, weather_code
       2. Solo al click sul decollo, caricare dati completi
-      3. Riusare i dati giornalieri per le card
+      3. Riutilizzare i dati giornalieri per le card
     `,
     tempoStimato: "1-2 ore",
   });
@@ -219,7 +186,7 @@ export function analizzaAPIMeteo(): AnalisiAPIResult {
       3. Mostrare in tabella oraria e popup
     `,
     tempoStimato: "1-2 ore",
-  });
+  };
 
   // Statistiche
   const totaleSiti = DECOLLI.length;
@@ -239,4 +206,3 @@ export function analizzaAPIMeteo(): AnalisiAPIResult {
       cacheActive: true,
     },
   };
-}
