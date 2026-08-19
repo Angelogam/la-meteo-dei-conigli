@@ -1,0 +1,39 @@
+DECOLLI - Meteo dei Conigli
+===========================
+Lista completa dei 24 decolli con coordinate GPS
+Generato automaticamente dal database dell'app
+
+Formato: NOME | LATITUDINE | LONGITUDINE | QUOTA (m) | VALLE | ESPOSIZIONE
+
+1. Malanotte | 44.25874571728482 | 7.794304664370852 | 1740 | Valle Ellero | S/SE
+2. Colle di Tenda | 44.15093973937469 | 7.569262924652476 | 1990 | Valle Roya/Vermenagna | S
+3. Boves | 44.32113720462757 | 7.544697617792515 | 900 | Cuneese | NE
+4. Monte Male – Dronero | 44.43163071064606 | 7.362886778152897 | 950 | Valle Maira | S
+5. Iretta | 44.49893744007536 | 7.382036612070795 | 1050 | Valle Maira | SO
+6. Pratoni di Val Mala | 44.50780117336976 | 7.346618978966227 | 1400 | Valle Maira | S
+7. Monte Birrone | 44.5398927839592 | 7.25293945830122 | 2131 | Valle Maira | S
+8. Colle dell'Agnello | 44.68282592463814 | 6.978200601250462 | 2748 | Valle Varaita | S
+9. Pian Munè – Seggiovia | 44.63861029121272 | 7.230889474766025 | 1870 | Valle Po | S/SW
+10. Pian Munè – Bric Lombatera | 44.65736521807557 | 7.260017009542715 | 1350 | Valle Po | S
+11. Martiniana Po | 44.60695265332723 | 7.38322612877631 | 1400 | Valle Po | NE
+12. Rucas alto | 44.74213930591463 | 7.220118689737356 | 1500 | Valle Infernotto | S/SE
+13. Montoso – decollo basso | 44.7643723437882 | 7.249757926713178 | 1250 | Valle Infernotto | SE
+14. Monte Vandalino | 44.83671231480542 | 7.173866924055591 | 2120 | Val Pellice | S/SE
+15. Pian dell'Alpe | 45.06396153999711 | 7.028266530872771 | 1990 | Val Chisone | S
+16. Roletto – Piggi | 44.93249288285819 | 7.310959031722244 | 820 | Pinerolese | S
+17. Piossasco – Monte S. Giorgio | 44.99671840144012 | 7.44800217882953 | 673 | Collina Torinese | S
+18. Truccetti | 45.07973511679036 | 7.342018342463826 | 900 | Canavese | S
+19. Val della Torre | 45.16262748864921 | 7.463716167415302 | 970 | Val della Torre | S
+20. Rocca Canavese – M. della Neve | 45.32757754837493 | 7.572793582322621 | 1100 | Canavese | S
+21. Santa Elisabetta | 45.4182733880574 | 7.641945041749434 | 1000 | Canavese | S
+22. Santa Elisabetta alto | 45.44019393073506 | 7.648025947229948 | 1400 | Canavese | S
+23. Monte Cavallaria | 45.51729363773779 | 7.798808327293107 | 1430 | Canavese | S
+24. Andrate | 45.55063933418272 | 7.880775591143394 | 1000 | Canavese | S
+
+---
+Totale: 24 decolli
+Quota minima: 673m (Piossasco)
+Quota massima: 2748m (Colle dell'Agnello)
+Coordinate coprono: Piemonte occidentale (Cuneese, Torinese, Canavese)
+---
+Puoi copiare questo testo o scaricare il file da: /decolli-lista.txt
