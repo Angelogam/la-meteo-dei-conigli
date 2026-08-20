@@ -101,10 +101,10 @@ export default function ProfessionalWindgram({
     };
   }, [latitude, longitude, dateStr]);
 
-  // Dimensioni SVG maggiorate per ospitare font più grandi ed evidenti
-  const width = 1060;
-  const height = 540;
-  const margin = { top: 68, right: 86, bottom: 64, left: 86 };
+  // Dimensioni SVG equilibrate
+  const width = 1080;
+  const height = 560;
+  const margin = { top: 68, right: 86, bottom: 76, left: 86 };
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
@@ -148,7 +148,7 @@ export default function ProfessionalWindgram({
       // Spread e base cumulo (LCL)
       const spread = Math.max(1, t - dew);
       const lcl = Math.round(spread * 125 + altitude);
-      const cloudBase = Math.min(2350, Math.max(altitude + 150, lcl));
+      const cloudBase = Math.min(2400, Math.max(altitude + 150, lcl));
 
       // Rateo termico
       let rateo = 0.5;
@@ -187,12 +187,14 @@ export default function ProfessionalWindgram({
   const getYFromAlt = (alt: number) => margin.top + plotH - ((alt - minAlt) / (maxAlt - minAlt)) * plotH;
   const getXFromHourIdx = (idx: number) => margin.left + (idx / (HOURS.length - 1)) * plotW;
 
-  // Renderizzatore Barbetta Vento Aeronautica Ufficiale Ingrandito
+  const groundY = getYFromAlt(altitude);
+
+  // Renderizzatore Barbetta Vento Aeronautica Ufficiale
   const renderWindBarb = (x: number, y: number, speedKmh: number, dirDeg: number, color: string = "#991b1b") => {
     if (speedKmh == null || isNaN(speedKmh)) return null;
     const knots = speedKmh * 0.539957;
     const angle = ((dirDeg - 90) * Math.PI) / 180;
-    const staffLen = 25;
+    const staffLen = 24;
     const endX = x + staffLen * Math.cos(angle);
     const endY = y + staffLen * Math.sin(angle);
 
@@ -222,10 +224,10 @@ export default function ProfessionalWindgram({
           key={`f10-${pos}`}
           x1={bx}
           y1={by}
-          x2={bx + 10.5 * Math.cos(barbAngle)}
-          y2={by + 10.5 * Math.sin(barbAngle)}
+          x2={bx + 10 * Math.cos(barbAngle)}
+          y2={by + 10 * Math.sin(barbAngle)}
           stroke={color}
-          strokeWidth="1.8"
+          strokeWidth="1.6"
           strokeLinecap="round"
         />
       );
@@ -242,10 +244,10 @@ export default function ProfessionalWindgram({
           key={`f5-${pos}`}
           x1={bx}
           y1={by}
-          x2={bx + 6 * Math.cos(barbAngle)}
-          y2={by + 6 * Math.sin(barbAngle)}
+          x2={bx + 5.5 * Math.cos(barbAngle)}
+          y2={by + 5.5 * Math.sin(barbAngle)}
           stroke={color}
-          strokeWidth="1.8"
+          strokeWidth="1.6"
           strokeLinecap="round"
         />
       );
@@ -253,43 +255,74 @@ export default function ProfessionalWindgram({
 
     return (
       <g key={`wb-${x}-${y}`} opacity="0.95">
-        <line x1={x} y1={y} x2={endX} y2={endY} stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+        <line x1={x} y1={y} x2={endX} y2={endY} stroke={color} strokeWidth="1.6" strokeLinecap="round" />
         {barbs}
       </g>
     );
   };
 
-  // Parapendio Icon Marker Ingrandito
+  // Parapendio Icon Marker migliorato e ben definito
   const renderParagliderCanopy = (x: number, y: number, label?: string) => {
     return (
-      <g key={`pg-${x}-${y}`} transform={`translate(${x}, ${y}) scale(1.15)`}>
-        <path
-          d="M -14,2 Q 0,-7 14,2"
-          fill="none"
-          stroke="#c026d3"
-          strokeWidth="2.8"
-          strokeLinecap="round"
-        />
-        <line x1="-11" y1="2" x2="0" y2="7.5" stroke="#c026d3" strokeWidth="1.1" opacity="0.8" />
-        <line x1="11" y1="2" x2="0" y2="7.5" stroke="#c026d3" strokeWidth="1.1" opacity="0.8" />
-        <circle cx="0" cy="8" r="1.8" fill="#a21caf" />
+      <g key={`pg-${x}-${y}`} transform={`translate(${x}, ${y})`}>
+        {/* Pilastro/Bandiera di riferimento sul suolo */}
+        <line x1="0" y1="0" x2="0" y2="-12" stroke="#a21caf" strokeWidth="1.5" strokeDasharray="2 2" opacity="0.7" />
+        
+        {/* Vela Parapendio ad arco aerodinamico */}
+        <g transform="translate(0, -18)">
+          {/* Calotta superiore colorata */}
+          <path
+            d="M -16,3 Q 0,-9 16,3 Q 8,0 0,0 Q -8,0 -16,3 Z"
+            fill="#d946ef"
+            stroke="#86198f"
+            strokeWidth="1.2"
+          />
+          {/* Centine / Dettagli vela */}
+          <line x1="-8" y1="-3" x2="-8" y2="1" stroke="#ffffff" strokeWidth="0.8" opacity="0.8" />
+          <line x1="0" y1="-5.5" x2="0" y2="0" stroke="#ffffff" strokeWidth="0.8" opacity="0.8" />
+          <line x1="8" y1="-3" x2="8" y2="1" stroke="#ffffff" strokeWidth="0.8" opacity="0.8" />
+
+          {/* Funicelle di sospensione */}
+          <line x1="-13" y1="3" x2="0" y2="10" stroke="#701a75" strokeWidth="0.8" opacity="0.75" />
+          <line x1="-5" y1="1" x2="0" y2="10" stroke="#701a75" strokeWidth="0.8" opacity="0.75" />
+          <line x1="5" y1="1" x2="0" y2="10" stroke="#701a75" strokeWidth="0.8" opacity="0.75" />
+          <line x1="13" y1="3" x2="0" y2="10" stroke="#701a75" strokeWidth="0.8" opacity="0.75" />
+
+          {/* Pilota / Selletta */}
+          <circle cx="0" cy="11" r="2.2" fill="#701a75" />
+        </g>
+
+        {/* Badge Quota Decollo separato e protetto da collisioni */}
         {label && (
-          <text x="0" y="21" fill="#701a75" fontSize="11" fontWeight="bold" textAnchor="middle">
-            {label}
-          </text>
+          <g transform="translate(0, 4)">
+            <rect
+              x="-24"
+              y="0"
+              width="48"
+              height="15"
+              rx="3"
+              fill="#ffffff"
+              stroke="#a21caf"
+              strokeWidth="0.9"
+              filter="drop-shadow(0 1px 2px rgba(0,0,0,0.15))"
+            />
+            <text x="0" y="11" fill="#701a75" fontSize="9.5" fontWeight="900" textAnchor="middle" fontMono="true">
+              {label}
+            </text>
+          </g>
         )}
       </g>
     );
   };
 
-  // Nuvola Cumuliforme Vettoriale Ingrandita
+  // Nuvola Cumuliforme Vettoriale Nitida
   const renderCumulusCloud = (x: number, y: number) => {
     return (
-      <g key={`cloud-${x}-${y}`} transform={`translate(${x}, ${y}) scale(1.1)`} opacity="0.95">
+      <g key={`cloud-${x}-${y}`} transform={`translate(${x}, ${y}) scale(1.05)`}>
         <path
-          d="M -16,3 A 6,6 0 0,1 -7,-4 A 9,9 0 0,1 7,-5 A 6,6 0 0,1 16,3 L -16,3 Z"
+          d="M -16,4 A 6,6 0 0,1 -8,-4 A 10,10 0 0,1 8,-5 A 6,6 0 0,1 16,4 L -16,4 Z"
           fill="#f8fafc"
-          stroke="#334155"
+          stroke="#475569"
           strokeWidth="1.5"
           strokeLinejoin="round"
         />
@@ -311,8 +344,6 @@ export default function ProfessionalWindgram({
       })
       .join(" ");
   }, [hourlyCalculations, altitude]);
-
-  const groundY = getYFromAlt(altitude);
 
   if (loading) {
     return (
@@ -385,7 +416,7 @@ export default function ProfessionalWindgram({
               </pattern>
             </defs>
 
-            {/* --- TABELLA SUPERIORE INGRANDITA (Testata Numerica) --- */}
+            {/* --- TABELLA SUPERIORE (Testata Numerica) --- */}
             <text x={margin.left + plotW / 2} y={18} fill="#334155" fontSize="13" fontWeight="800" textAnchor="middle">
               valore medio ascendenze (m/s)
             </text>
@@ -517,32 +548,55 @@ export default function ProfessionalWindgram({
             {/* --- LINEA TRATTEGGIATA NERA DEL TOP DELLO STRATO LIMITE (PBL) --- */}
             <path d={pblCurvePath} fill="none" stroke="#0f172a" strokeWidth="2.2" strokeDasharray="5 3" strokeLinecap="round" />
 
-            {/* --- NUVOLE DI CUMULO (LCL) + BADGE PERCENTUALE + BOX ASCENDENZE --- */}
+            {/* --- NUVOLE DI CUMULO (LCL) + BADGE PERCENTUALE + BOX ASCENDENZE SENZA SOVRAPPOSIZIONI --- */}
             {hourlyCalculations.map((h, i) => {
               const x = getXFromHourIdx(i);
-              const baseCloudY = getYFromAlt(h.cloudBase);
+              // Posizione Y calcolata con margine minimo di sicurezza dal suolo (groundY - 42px)
+              // per non toccare la linea del suolo o l'icona del parapendio!
+              const rawCloudY = getYFromAlt(h.cloudBase);
+              const safeCloudY = Math.min(rawCloudY, groundY - 44);
 
               if (i >= 3) {
                 return (
                   <g key={`bubble-thermic-${i}`}>
-                    {renderCumulusCloud(x, baseCloudY - 14)}
+                    {/* 1. Nuvola posizionata in cima */}
+                    {renderCumulusCloud(x, safeCloudY - 26)}
 
-                    {/* Badge Ovale Viola */}
-                    <g transform={`translate(${x}, ${baseCloudY - 1})`}>
-                      <rect x="-16" y="-9" width="32" height="18" rx="9" fill="#ffffff" stroke="#9333ea" strokeWidth="1.5" />
-                      <circle cx="0" cy="0" r="2.8" fill="#9333ea" />
-                      <text x="0" y="-11" fill="#581c87" fontSize="10.5" fontWeight="900" textAnchor="middle">
+                    {/* 2. Badge percentuale nitido e staccato dalla nuvola */}
+                    <g transform={`translate(${x}, ${safeCloudY - 14})`}>
+                      <rect
+                        x="-17"
+                        y="-7.5"
+                        width="34"
+                        height="15"
+                        rx="7.5"
+                        fill="#ffffff"
+                        stroke="#9333ea"
+                        strokeWidth="1.4"
+                        filter="drop-shadow(0 1px 2px rgba(0,0,0,0.1))"
+                      />
+                      <text x="0" y="4" fill="#581c87" fontSize="10" fontWeight="900" textAnchor="middle">
                         {i === 3 ? "22%" : i === 4 ? "35%" : i === 5 ? "22%" : i === 6 ? "21%" : i === 7 ? "12%" : i === 8 ? "6%" : "4%"}
                       </text>
                     </g>
 
-                    {/* Box Quota e Rateo */}
-                    <g transform={`translate(${x - 28}, ${baseCloudY + 11})`}>
-                      <rect x="0" y="0" width="56" height="26" rx="4" fill="#ffffff" stroke="#9333ea" strokeWidth="1.1" opacity="0.98" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.12))" />
-                      <text x="28" y="11" fill="#3b0764" fontSize="10.5" fontWeight="900" textAnchor="middle">
+                    {/* 3. Box Quota e Rateo chiaramente separato sotto */}
+                    <g transform={`translate(${x - 29}, ${safeCloudY + 2})`}>
+                      <rect
+                        x="0"
+                        y="0"
+                        width="58"
+                        height="26"
+                        rx="4"
+                        fill="#ffffff"
+                        stroke="#9333ea"
+                        strokeWidth="1.2"
+                        filter="drop-shadow(0 2px 4px rgba(0,0,0,0.12))"
+                      />
+                      <text x="29" y="11" fill="#3b0764" fontSize="10.5" fontWeight="900" textAnchor="middle">
                         {h.cloudBase} m
                       </text>
-                      <text x="28" y="22" fill="#15803d" fontSize="10.5" fontWeight="900" textAnchor="middle">
+                      <text x="29" y="22" fill="#15803d" fontSize="10.5" fontWeight="900" textAnchor="middle">
                         &uarr; {h.thermalAvg} m/s
                       </text>
                     </g>
@@ -552,31 +606,31 @@ export default function ProfessionalWindgram({
               return null;
             })}
 
-            {/* --- LINEA DEL SUOLO E PARAPENDII --- */}
-            <rect x={margin.left} y={groundY} width={plotW} height={margin.top + plotH - groundY} fill="#ca8a04" opacity="0.3" />
+            {/* --- LINEA DEL SUOLO E PARAPENDII BEN SEPARATI --- */}
+            <rect x={margin.left} y={groundY} width={plotW} height={margin.top + plotH - groundY} fill="#ca8a04" opacity="0.35" />
             <line x1={margin.left} y1={groundY} x2={margin.left + plotW} y2={groundY} stroke="#713f12" strokeWidth="2.8" />
 
-            {/* Icone Parapendio */}
-            {renderParagliderCanopy(getXFromHourIdx(0), groundY - 8, "1374 m")}
-            {renderParagliderCanopy(getXFromHourIdx(1), groundY - 8, "1378 m")}
-            {renderParagliderCanopy(getXFromHourIdx(2), groundY - 8, "1415 m")}
-            {renderParagliderCanopy(getXFromHourIdx(3), groundY - 8, "1515 m")}
-            {renderParagliderCanopy(getXFromHourIdx(8), groundY - 8, "1605 m")}
-            {renderParagliderCanopy(getXFromHourIdx(9.5), groundY - 8, "1517 m")}
+            {/* Icone Parapendio distanziate con grafica netta e ordinata */}
+            {renderParagliderCanopy(getXFromHourIdx(0), groundY - 2, "1374 m")}
+            {renderParagliderCanopy(getXFromHourIdx(1), groundY - 2, "1378 m")}
+            {renderParagliderCanopy(getXFromHourIdx(2), groundY - 2, "1415 m")}
+            {renderParagliderCanopy(getXFromHourIdx(3), groundY - 2, "1515 m")}
+            {renderParagliderCanopy(getXFromHourIdx(8), groundY - 2, "1605 m")}
+            {renderParagliderCanopy(getXFromHourIdx(10), groundY - 2, "1517 m")}
 
             {/* Bordo Esterno del Grafico */}
             <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#0f172a" strokeWidth="1.5" />
 
-            {/* --- ASSE X INFERIORE (Ore 08:00 - 18:00) INGRANDITO --- */}
+            {/* --- ASSE X INFERIORE (Ore 08:00 - 18:00) INGRANDITO E PULITO --- */}
             {HOURS.map((h, i) => {
               const x = getXFromHourIdx(i);
               return (
-                <g key={`hour-axis-${h}`} transform={`translate(${x}, ${margin.top + plotH + 19})`}>
+                <g key={`hour-axis-${h}`} transform={`translate(${x}, ${margin.top + plotH + 24})`}>
                   <text x="0" y="0" fill="#0f172a" fontSize="14" fontWeight="900" textAnchor="middle">
                     {String(h).padStart(2, "0")}:00
                   </text>
                   {hourlyCalculations[i] && (
-                    <text x="0" y="16" fill="#1e293b" fontSize="11.5" fontWeight="800" textAnchor="middle">
+                    <text x="0" y="16" fill="#1e293b" fontSize="11" fontWeight="800" textAnchor="middle">
                       &uarr; {hourlyCalculations[i].thermalAvg} m/s
                     </text>
                   )}
