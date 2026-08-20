@@ -307,10 +307,10 @@ export default function ProfessionalWindgram({
               y="0"
               width="48"
               height="15"
-              rx="3"
+              rx="7.5"
               fill="#ffffff"
               stroke="#a21caf"
-              strokeWidth="0.9"
+              strokeWidth="1.4"
               filter="drop-shadow(0 1px 2px rgba(0,0,0,0.15))"
             />
             <text x="0" y="11" fill="#701a75" fontSize="9.5" fontWeight="900" textAnchor="middle" fontFamily="monospace">
@@ -387,9 +387,11 @@ export default function ProfessionalWindgram({
           </div>
         </div>
 
-        <div className="text-xs sm:text-sm text-slate-300 bg-slate-900 border border-slate-800 px-3.5 py-1.5 rounded-lg flex items-center gap-2 font-medium">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-          AROME / ICON-EU &bull; 00:00 UTC
+        <div className="flex items-center gap-3">
+          <span className="text-xs sm:text-sm text-slate-300 bg-slate-900 border border-slate-800 px-3.5 py-1.5 rounded-lg flex items-center gap-2 font-medium">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+            AROME / ICON-EU &bull; 00:00 UTC
+          </span>
         </div>
       </div>
 
@@ -439,9 +441,6 @@ export default function ProfessionalWindgram({
                 <g key={`num-head-${i}`}>
                   <text x={x} y={35} fill="#0f172a" fontSize="14" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                     {h.thermalAvg > 0 ? h.thermalAvg.toFixed(1) : "0.5"}
-                  </text>
-                  <text x={x} y={54} fill={sunCol} fontSize="14" fontWeight="900" textAnchor="middle" fontFamily="monospace">
-                    {h.sunPct}
                   </text>
                 </g>
               );
@@ -535,7 +534,7 @@ export default function ProfessionalWindgram({
             {hourlyCalculations.map((h, i) => (
               <g key={`zt-icon-${i}`} transform={`translate(${getXFromHourIdx(i)}, ${getYFromAlt(h.zeroThermal)})`}>
                 <circle cx="0" cy="0" r="7.5" fill="#ffffff" stroke="#0284c7" strokeWidth="1.5" />
-                <text x="0" y="4" fontSize="11" textAnchor="middle" fill="#0284c7">❄</text>
+                <text x="0" y="4" fill="#0284c7" fontSize="11" textAnchor="middle">❄</text>
               </g>
             ))}
 
