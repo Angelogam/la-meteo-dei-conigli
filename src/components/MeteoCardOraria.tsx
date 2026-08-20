@@ -19,13 +19,11 @@ interface Props {
   };
 }
 
-const arrotonda = (n: number) => Math.round(n);
-
 const MeteoCardOraria: React.FC<Props> = ({ fascia, data }) => {
   if (!data) {
     return (
       <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-[#0f172a] border border-[#22c55e]/30 text-gray-400">
-        <p>⛅ Nessun dato disponibile per {fascia}</p>
+        <p className="text-base">⛅ Nessun dato per {fascia}</p>
       </div>
     );
   }
@@ -49,10 +47,6 @@ const MeteoCardOraria: React.FC<Props> = ({ fascia, data }) => {
   const pioggiaSignificativa = pioggia > 0.5;
   const voloOk = !pioggiaSignificativa && vento >= 5 && vento <= 20 && umidita < 90;
 
-  const cardBg = voloOk
-    ? "bg-gradient-to-b from-[#0f172a] to-[#1e293b] border-[#22c55e]/50"
-    : "bg-gradient-to-b from-[#1e293b] to-[#0f172a] border-red-500/40";
-
   const badgeClass = voloOk
     ? "text-[#22c55e] bg-[#22c55e]/10"
     : "text-red-400 bg-red-900/20";
@@ -60,44 +54,61 @@ const MeteoCardOraria: React.FC<Props> = ({ fascia, data }) => {
   const statusClass = voloOk ? "text-[#22c55e]" : "text-red-400";
 
   return (
-    <div className={`flex flex-col gap-3 p-4 rounded-xl border shadow-md transition-all duration-300 ${cardBg}`}>
+    <div className={`flex flex-col gap-3 p-4 rounded-xl border border-slate-700/30 transition-all ${cardBg}`}>
+      {/* Intestazione */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-white tracking-wide">{fascia}</h3>
+        <h3 className="text-lg font-semibold text-white">{fascia}</h3>
         <span className={`text-sm font-bold px-2 py-1 rounded-lg ${badgeClass}`}>
-          {voloOk ? arrotonda(score) / 10 : "0" / 10}
+          {voloOk ? `${arrotonda(score)}/10` : "0/10"}
         </span>
       </div>
 
-      <div className="flex items-center justify-between text-sm text-gray-300 bg-[#1e293b]/40 rounded-lg p-2">
-        <div>⭐ Miglior ora: <span className="text-[#22c55e] font-semibold">{migliorOra}</span></div>
-        <div>🔥 Picco termico: <span className="text-yellow-400 font-semibold">{arrotonda(piccoTermico)} m/s</span></div>
-      </div>
-
-      <div className="flex items-center justify-between text-sm font-semibold mt-2">
+      {/* Dati principali */}
+      <div className="flex items-center gap-2 text-sm text-gray-300 bg-[#1e293b]/40 rounded-lg p-2">
         <div className="flex items-center gap-2">
-          {pioggiaSignificativa ? "🌧️" : "☀️"} {pioggiaSignificativa ? "Pioggia" : "Secco"}
+          <span className="text-lg">{emojiMeteo(data.weatherCode)}</span>
+          <span className="text-slate-500">|</span>
+          <span className="text-lg font-bold text-amber-300">{temp}°C</span>
         </div>
         <div className="flex items-center gap-2">
-          💨 {arrotonda(vento)} km/h {direzione}
+          <span className="text-slate-500">Vento:</span>
+          <span className="text-sky-300">{vento} km/h</span>
         </div>
         <div className="flex items-center gap-2">
-          🌡️ {arrotonda(temp)}°C
+          <span className="text-slate-500">Direzione:</span>
+          <span className="text-blue-300">{direzione}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-slate-500">Base:</span>
+          <span className="text-amber-300">{base} m</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-slate-500">Top:</span>
+          <span className="text-red-400 font-bold">{top} m</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-slate-500">Umidità:</span>
+          <span className="text-blue-300">{umidita}%</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-slate-500">Pioggia:</span>
+          <span className="text-blue-300">{pioggia > 0 ? `${pioggia.toFixed(1)} mm` : "No"}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-slate-500">Pressione:</span>
+          <span className="text-red-400 font-bold">{pressione} hPa</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-300 mt-2">
-        <div>{pioggiaSignificativa ? "❌" : "✅"} Base <span className="text-red-400 font-semibold">{arrotonda(base)}m</span></div>
-        <div>{pioggiaSignificativa ? "❌" : "✅"} Top <span className="text-red-400 font-semibold">{arrotonda(top)}m</span></div>
-        <div>{pioggiaSignificativa ? "❌" : "✅"} Umidità <span className="text-red-400 font-semibold">{arrotonda(umidita)}%</span></div>
-        <div>{pioggiaSignificativa ? "❌" : "✅"} Pressione <span className="text-red-400 font-semibold">{arrotonda(pressione)} hPa</span></div>
+      {/* Stato volabilità */}
+      <div className="mt-2 text-sm font-semibold ${statusClass}">
+        {voloOk ? "✅ Ottimo per il decollo" : "⚠️ Attenzione: pioggia o vento fuori range"}
       </div>
 
-      <div className={`mt-2 text-sm font-semibold ${statusClass}`}>
-        {voloOk ? "✅ Condizioni buone per il volo" : "⚠️ Non ideale per decollare - Pioggia presente"}
-      </div>
-
-      <div className="mt-1 text-sm text-red-300 italic border-t border-red-700 pt-2">
-        {commentoVolo}
+      {/* Note */}
+      <div className="mt-2 flex items-start gap-2 bg-slate-900/40 rounded-xl px-3 py-2">
+        <span className="text-xs text-slate-300">Nota:</span>
+        <span className="text-slate-400">{commentoVolo}</span>
       </div>
     </div>
   );
