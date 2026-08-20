@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Calendar, TrendingUp, Clock, Thermometer, Star, CloudRain } from "lucide-react";
+import { Calendar, TrendingUp, Clock, Thermometer, CloudRain } from "lucide-react";
 
 interface FlightScoreProps {
   score: number;
@@ -14,6 +14,8 @@ interface FlightScoreProps {
   dayLabel?: string;
   isRaining?: boolean;
   hasThunderstorm?: boolean;
+  rainHours: number[];
+  thunderstormHours: number[];
 }
 
 export default function FlightScore({
@@ -27,29 +29,17 @@ export default function FlightScore({
   dayLabel,
   isRaining = false,
   hasThunderstorm = false,
+  rainHours,
+  thunderstormHours,
 }: FlightScoreProps) {
   
-  // Determine the visual style based on weather conditions
-  const isBadWeather = isRaining || hasThunderstorm;
-  
-  const scoreColor = isBadWeather 
-    ? "text-red-400" 
-    : score >= 8 ? "text-emerald-400" 
-    : score >= 6 ? "text-lime-400" 
-    : score >= 4 ? "text-amber-400" 
-    : "text-orange-400";
-
-  const badgeColor = isBadWeather
-    ? "bg-red-900/30 text-red-300 border border-red-500/40"
-    : score >= 8 ? "bg-emerald-900/30 text-emerald-300 border border-emerald-400/30"
-    : score >= 6 ? "bg-lime-900/30 text-lime-300 border border-lime-400/30"
-    : score >= 4 ? "bg-amber-900/30 text-amber-300 border border-amber-400/30"
-    : "bg-orange-900/30 text-orange-300 border border-orange-400/30";
+  // Determine if we have bad weather to show alerts
+  const hasBadWeather = isRaining || hasThunderstorm;
 
   return (
     <div className="card bg-slate-800/30 border border-slate-700/50 p-4 relative overflow-hidden">
-      {/* Rain/Thunderstorm Alert Overlay/Message */}
-      {isBadWeather && (
+      {/* Bad weather alert */}
+      {hasBadWeather && (
         <div className="absolute top-0 left-0 w-full bg-red-900/40 backdrop-blur-sm z-10 border-b border-red-500/30">
           <div className="flex items-center justify-center gap-2 py-1.5 px-3">
             {hasThunderstorm ? (
@@ -58,13 +48,15 @@ export default function FlightScore({
               <CloudRain className="w-4 h-4 text-blue-300" />
             )}
             <span className="text-xs font-bold text-white tracking-wide">
-              {hasThunderstorm ? "Temporali in corso - Voli sospesi" : "Pioggia - Valore 3 della giornata"}
+              {hasThunderstorm
+                ? `Temporali alle ore: ${thunderstormHours.map(h => String(h).padStart(2, "0"))}:00`
+                : `Pioggia alle ore: ${rainHours.map(h => String(h).padStart(2, "0"))}:00`}
             </span>
           </div>
         </div>
       )}
 
-      <div className={isBadWeather ? "pt-8" : ""}>
+      <div className={hasBadWeather ? "pt-8" : ""}>
         {/* Day label (if provided) */}
         {dayLabel && (
           <div className="flex items-center justify-center gap-1 text-xs text-slate-400 mb-3">
@@ -72,23 +64,23 @@ export default function FlightScore({
           </div>
         )}
 
-        {/* Score + badge */}
+        {/* Score + badge - only show if not bad weather? We'll show score but maybe low */}
         <div className="text-center mb-3">
           <div className="flex items-center justify-center gap-1 mb-1">
-            <Star className="w-4 h-4 text-yellow-400" />
-            <span className="text-xs text-slate-300 uppercase tracking-wider font-bold">Indice di Volo</span>
+            {/* Removed Star icon and "Indice di Volo" per request */}
+            <span className="text-xs text-slate-300 uppercase tracking-wider font-bold">Condizioni Volo</span>
           </div>
           <div className="flex items-center justify-center gap-3">
-            <span className={`text-5xl font-extrabold ${scoreColor} transition-all duration-300`}>
-              {isBadWeather ? "3" : score}
+            <span className={`text-5xl font-extrabold ${hasBadWeather ? "text-red-400" : score >= 8 ? "text-emerald-400" : score >= 6 ? "text-lime-400" : score >= 4 ? "text-amber-400" : "text-orange-400"} transition-all duration-300`}>
+              {hasBadWeather ? "3" : score}
             </span>
-            <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${badgeColor}`}>
-              {isBadWeather ? (hasThunderstorm ? "PERICOLO" : "PIOGGIA") : label}
+            <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${hasBadWeather ? "bg-red-900/30 text-red-300 border border-red-500/40" : score >= 8 ? "bg-emerald-900/30 text-emerald-300 border border-emerald-400/30" : score >= 6 ? "bg-lime-900/30 text-lime-300 border border-lime-400/30" : score >= 4 ? "bg-amber-900/30 text-amber-300 border border-amber-400/30" : "bg-orange-900/30 text-orange-300 border border-orange-400/30"}`}>
+              {hasBadWeather ? (hasThunderstorm ? "PERICOLO" : "PIOGGIA") : label}
             </span>
           </div>
         </div>
 
-        {/* Grid of additional info */}
+        {/* Grid of additional info - we can keep thermalLabel maybe */}
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="bg-slate-800/60 rounded-lg p-2.5 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-orange-400 shrink-0" />
@@ -98,14 +90,7 @@ export default function FlightScore({
             <Clock className="w-4 h-4 text-sky-400 shrink-0" />
             <span className="text-slate-300">{oreAttive}/{totaleOre} ore attive</span>
           </div>
-          <div className="bg-slate-800/60 rounded-lg p-2.5 flex items-center gap-2">
-            <Thermometer className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="text-slate-300">Miglior ora <strong className="text-white">{String(bestHour).padStart(2, "0")}:00</strong></span>
-          </div>
-          <div className="bg-slate-800/60 rounded-lg p-2.5 flex items-center gap-2">
-            <Star className="w-4 h-4 text-purple-400 shrink-0" />
-            <span className="text-slate-300">Picco <strong className="text-purple-300">{bestRateo.toFixed(1)} m/s</strong></span>
-          </div>
+          {/* Removed the Picco line per request */}
         </div>
       </div>
     </div>

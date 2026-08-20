@@ -98,24 +98,19 @@ export default function WeatherDashboard({
     return formatDate(data);
   }, [dayData]);
 
-  // Check if it's raining or has thunderstorms in the day data
-  const { isRaining, hasThunderstorm } = useMemo(() => {
-    let raining = false;
-    let thunderstorm = false;
-    
-    for (const h of dayData) {
-      // WMO weather codes for rain: 51-67 (drizzle, rain), 80-82 (rain showers)
-      // WMO weather codes for thunderstorm: 95-99
-      const code = h.weatherCode;
-      if (code >= 95 && code <= 99) {
-        thunderstorm = true;
-      }
-      if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82) || (h.precipitation && h.precipitation > 0)) {
-        raining = true;
-      }
-    }
-    
-    return { isRaining: raining, hasThunderstorm: thunderstorm };
+  // Calculate rain and thunderstorm hours
+  const rainHours = useMemo(() => {
+    return dayData
+      .filter(h => h.precipitation > 0)
+      .map(h => h.time.getHours())
+      .sort((a, b) => a - b);
+  }, [dayData]);
+
+  const thunderstormHours = useMemo(() => {
+    return dayData
+      .filter(h => h.weatherCode >= 95 && h.weatherCode <= 99)
+      .map(h => h.time.getHours())
+      .sort((a, b) => a - b);
   }, [dayData]);
 
   return (
@@ -131,8 +126,8 @@ export default function WeatherDashboard({
           totaleOre={flightScore.totaleOre}
           thermalLabel={flightScore.thermalLabel}
           dayLabel={dayLabel || oggi}
-          isRaining={isRaining}
-          hasThunderstorm={hasThunderstorm}
+          rainHours={rainHours}
+          thunderstormHours={thunderstormHours}
         />
       )}
 
