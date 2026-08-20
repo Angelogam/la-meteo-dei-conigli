@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Gradiente calotta parapendio -->
+    <linearGradient id="canopyGrad" x1="0%" y1="0%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="35%" stop-color="#fb923c" />
+      <stop offset="70%" stop-color="#ea580c" />
+      <stop offset="100%" stop-color="#dc2626" />
+    </linearGradient>
+    <linearGradient id="canopyHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#f97316" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  <!-- Parapendio calotta superiore -->
+  <g id="paraglider-wing">
+    <!-- Profilo ala principale -->
+    <path d="M 120 180 C 150 70, 362 70, 392 180 C 340 135, 172 135, 120 180 Z" fill="url(#canopyGrad)" stroke="#1e1e1e" stroke-width="8" stroke-linejoin="round" />
+    <!-- Bordo di attacco / riflesso -->
+    <path d="M 140 160 C 170 95, 342 95, 372 160 C 330 120, 182 120, 140 160 Z" fill="url(#canopyHighlight)" opacity="0.6" />
+    <!-- Bordo inferiore nero calotta -->
+    <path d="M 125 178 C 175 140, 337 140, 387 178" fill="none" stroke="#1e1e1e" stroke-width="6" stroke-linecap="round" />
+  </g>
+
+  <!-- Fascio funi del parapendio -->
+  <g id="lines" stroke="#1e1e1e" stroke-width="4" stroke-linecap="round" opacity="0.95">
+    <line x1="165" y1="145" x2="218" y2="280" />
+    <line x1="190" y1="130" x2="222" y2="280" />
+    <line x1="322" y1="130" x2="290" y2="280" />
+    <line x1="347" y1="145" x2="294" y2="280" />
+  </g>
+
+  <!-- Personaggio Coniglio -->
+  <g id="bunny">
+    <!-- Cinghie imbrago arancione -->
+    <path d="M 215 285 Q 212 320 220 345" stroke="#ea580c" stroke-width="10" stroke-linecap="round" fill="none" />
+    <path d="M 297 285 Q 300 320 292 345" stroke="#ea580c" stroke-width="10" stroke-linecap="round" fill="none" />
+
+    <!-- Orecchio Sinistro -->
+    <path d="M 216 230 C 195 190, 210 155, 232 170 C 248 185, 245 220, 235 240 Z" fill="#ffffff" stroke="#1e1e1e" stroke-width="7" stroke-linejoin="round" />
+    <path d="M 220 220 C 208 195, 218 172, 230 180 C 238 190, 238 215, 230 226 Z" fill="#fca5a5" />
+
+    <!-- Orecchio Destro -->
+    <path d="M 296 230 C 317 190, 302 155, 280 170 C 264 185, 267 220, 277 240 Z" fill="#ffffff" stroke="#1e1e1e" stroke-width="7" stroke-linejoin="round" />
+    <path d="M 292 220 C 304 195, 294 172, 282 180 C 274 190, 274 215, 282 226 Z" fill="#fca5a5" />
+
+    <!-- Coda pelosa -->
+    <circle cx="295" cy="335" r="15" fill="#ffffff" stroke="#1e1e1e" stroke-width="6" />
+
+    <!-- Corpo del coniglietto -->
+    <ellipse cx="256" cy="315" rx="38" ry="36" fill="#ffffff" stroke="#1e1e1e" stroke-width="7" />
+
+    <!-- Testa rotonda -->
+    <ellipse cx="256" cy="255" rx="44" ry="38" fill="#ffffff" stroke="#1e1e1e" stroke-width="7" />
+
+    <!-- Occhi neri e riflessi -->
+    <ellipse cx="236" cy="248" rx="6.5" ry="8.5" fill="#1e1e1e" />
+    <circle cx="234" cy="245" r="2.5" fill="#ffffff" />
+
+    <ellipse cx="276" cy="248" rx="6.5" ry="8.5" fill="#1e1e1e" />
+    <circle cx="274" cy="245" r="2.5" fill="#ffffff" />
+
+    <!-- Guancette rosa -->
+    <ellipse cx="225" cy="260" rx="6" ry="4" fill="#fca5a5" opacity="0.8" />
+    <ellipse cx="287" cy="260" rx="6" ry="4" fill="#fca5a5" opacity="0.8" />
+
+    <!-- Nasino e Bocca felice -->
+    <path d="M 252 258 Q 256 254 260 258 Z" fill="#1e1e1e" />
+    <path d="M 247 265 Q 256 280 265 265 Z" fill="#991b1b" stroke="#1e1e1e" stroke-width="3.5" />
+    <path d="M 252 272 Q 256 276 260 272" fill="#f87171" />
+
+    <!-- Zampe superiori (manine sulle cinghie) -->
+    <circle cx="204" cy="285" r="12" fill="#ffffff" stroke="#1e1e1e" stroke-width="6" />
+    <circle cx="308" cy="285" r="12" fill="#ffffff" stroke="#1e1e1e" stroke-width="6" />
+
+    <!-- Zampette inferiori con polpastrelli rosa -->
+    <g id="left-foot">
+      <ellipse cx="232" cy="342" rx="16" ry="20" fill="#ffffff" stroke="#1e1e1e" stroke-width="6" />
+      <ellipse cx="232" cy="347" rx="7" ry="9" fill="#fca5a5" />
+      <circle cx="225" cy="333" r="2.5" fill="#fca5a5" />
+      <circle cx="232" cy="331" r="2.5" fill="#fca5a5" />
+      <circle cx="239" cy="333" r="2.5" fill="#fca5a5" />
+    </g>
+
+    <g id="right-foot">
+      <ellipse cx="280" cy="342" rx="16" ry="20" fill="#ffffff" stroke="#1e1e1e" stroke-width="6" />
+      <ellipse cx="280" cy="347" rx="7" ry="9" fill="#fca5a5" />
+      <circle cx="273" cy="333" r="2.5" fill="#fca5a5" />
+      <circle cx="280" cy="331" r="2.5" fill="#fca5a5" />
+      <circle cx="287" cy="333" r="2.5" fill="#fca5a5" />
+    </g>
+  </g>
+
+  <!-- Testo Logo: MeteoConigli -->
+  <g id="logo-text" font-family="system-ui, -apple-system, 'Inter', sans-serif" font-weight="900" font-size="44" letter-spacing="-1">
+    <text x="256" y="425" text-anchor="middle">
+      <tspan fill="#f59e0b">Meteo</tspan><tspan fill="#ea580c">Conigli</tspan>
+    </text>
+  </g>
+</svg>

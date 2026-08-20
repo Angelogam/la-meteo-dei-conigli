@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <rect width="512" height="512" rx="110" fill="#ffffff" />
+  
+  <defs>
+    <linearGradient id="appCanopyGrad" x1="0%" y1="0%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="35%" stop-color="#fb923c" />
+      <stop offset="70%" stop-color="#ea580c" />
+      <stop offset="100%" stop-color="#dc2626" />
+    </linearGradient>
+    <linearGradient id="appCanopyHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#f97316" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  <!-- Parapendio calotta -->
+  <g id="wing">
+    <path d="M 100 170 C 135 45, 377 45, 412 170 C 352 118, 160 118, 100 170 Z" fill="url(#appCanopyGrad)" stroke="#1e1e1e" stroke-width="10" stroke-linejoin="round" />
+    <path d="M 125 145 C 160 75, 352 75, 387 145 C 342 102, 170 102, 125 145 Z" fill="url(#appCanopyHighlight)" opacity="0.6" />
+    <path d="M 106 168 C 165 125, 347 125, 406 168" fill="none" stroke="#1e1e1e" stroke-width="7" stroke-linecap="round" />
+  </g>
+
+  <!-- Funi -->
+  <g stroke="#1e1e1e" stroke-width="5" stroke-linecap="round">
+    <line x1="150" y1="130" x2="212" y2="280" />
+    <line x1="180" y1="110" x2="216" y2="280" />
+    <line x1="332" y1="110" x2="296" y2="280" />
+    <line x1="362" y1="130" x2="300" y2="280" />
+  </g>
+
+  <!-- Coniglio -->
+  <g id="bunny">
+    <!-- Cinghie imbrago -->
+    <path d="M 210 285 Q 206 325 215 355" stroke="#ea580c" stroke-width="12" stroke-linecap="round" fill="none" />
+    <path d="M 302 285 Q 306 325 297 355" stroke="#ea580c" stroke-width="12" stroke-linecap="round" fill="none" />
+
+    <!-- Orecchio SX -->
+    <path d="M 212 225 C 188 180, 205 140, 230 158 C 248 174, 245 212, 234 235 Z" fill="#ffffff" stroke="#1e1e1e" stroke-width="8" stroke-linejoin="round" />
+    <path d="M 216 215 C 202 188, 214 160, 228 170 C 236 180, 236 210, 228 222 Z" fill="#fca5a5" />
+
+    <!-- Orecchio DX -->
+    <path d="M 300 225 C 324 180, 307 140, 282 158 C 264 174, 267 212, 278 235 Z" fill="#ffffff" stroke="#1e1e1e" stroke-width="8" stroke-linejoin="round" />
+    <path d="M 296 215 C 310 188, 298 160, 284 170 C 276 180, 276 210, 284 222 Z" fill="#fca5a5" />
+
+    <!-- Coda -->
+    <circle cx="300" cy="345" r="17" fill="#ffffff" stroke="#1e1e1e" stroke-width="7" />
+
+    <!-- Corpo -->
+    <ellipse cx="256" cy="325" rx="44" ry="42" fill="#ffffff" stroke="#1e1e1e" stroke-width="8" />
+
+    <!-- Testa -->
+    <ellipse cx="256" cy="255" rx="50" ry="44" fill="#ffffff" stroke="#1e1e1e" stroke-width="8" />
+
+    <!-- Occhi neri e riflessi -->
+    <ellipse cx="233" cy="246" rx="7.5" ry="10" fill="#1e1e1e" />
+    <circle cx="231" cy="242" r="3" fill="#ffffff" />
+
+    <ellipse cx="279" cy="246" rx="7.5" ry="10" fill="#1e1e1e" />
+    <circle cx="277" cy="242" r="3" fill="#ffffff" />
+
+    <!-- Guancette rosa -->
+    <ellipse cx="220" cy="260" rx="7" ry="5" fill="#fca5a5" opacity="0.8" />
+    <ellipse cx="292" cy="260" rx="7" ry="5" fill="#fca5a5" opacity="0.8" />
+
+    <!-- Naso e Bocca -->
+    <path d="M 251 258 Q 256 254 261 258 Z" fill="#1e1e1e" />
+    <path d="M 245 266 Q 256 284 267 266 Z" fill="#991b1b" stroke="#1e1e1e" stroke-width="4" />
+    <path d="M 251 274 Q 256 279 261 274" fill="#f87171" />
+
+    <!-- Manine -->
+    <circle cx="196" cy="290" r="14" fill="#ffffff" stroke="#1e1e1e" stroke-width="7" />
+    <circle cx="316" cy="290" r="14" fill="#ffffff" stroke="#1e1e1e" stroke-width="7" />
+
+    <!-- Zampette -->
+    <g>
+      <ellipse cx="228" cy="355" rx="18" ry="23" fill="#ffffff" stroke="#1e1e1e" stroke-width="7" />
+      <ellipse cx="228" cy="361" rx="8" ry="10" fill="#fca5a5" />
+      <circle cx="220" cy="345" r="3" fill="#fca5a5" />
+      <circle cx="228" cy="343" r="3" fill="#fca5a5" />
+      <circle cx="236" cy="345" r="3" fill="#fca5a5" />
+    </g>
+
+    <g>
+      <ellipse cx="284" cy="355" rx="18" ry="23" fill="#ffffff" stroke="#1e1e1e" stroke-width="7" />
+      <ellipse cx="284" cy="361" rx="8" ry="10" fill="#fca5a5" />
+      <circle cx="276" cy="345" r="3" fill="#fca5a5" />
+      <circle cx="284" cy="343" r="3" fill="#fca5a5" />
+      <circle cx="292" cy="345" r="3" fill="#fca5a5" />
+    </g>
+  </g>
+
+  <!-- Testo "MeteoConigli" compatto in basso -->
+  <g font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="46" letter-spacing="-1.5">
+    <text x="256" y="455" text-anchor="middle">
+      <tspan fill="#f59e0b">Meteo</tspan><tspan fill="#ea580c">Conigli</tspan>
+    </text>
+  </g>
+</svg>
