@@ -3,7 +3,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
-import ApiTestRunner from "@/pages/ApiTestRunner";
+import ApiTestRunner from "./pages/ApiTestRunner";
 
 const App = () => {
   return (
