@@ -12,6 +12,7 @@ interface FlightScoreProps {
   totaleOre: number;
   thermalLabel: string;
   dayLabel?: string;
+  isRaining?: boolean; // New prop to indicate if it's raining
 }
 
 export default function FlightScore({
@@ -23,10 +24,19 @@ export default function FlightScore({
   totaleOre,
   thermalLabel,
   dayLabel,
+  isRaining = false,
 }: FlightScoreProps) {
   return (
     <div className="card bg-slate-800/30 border border-slate-700/50 p-4">
-      {/* Data */}
+      {/* Show special message when it's raining */}
+      {isRaining && (
+        <div className="flex items-center justify-center gap-1 text-xs text-slate-400 mb-3">
+          <Star className="w-3 h-3 text-yellow-400" />
+          <span className="text-slate-300">Valore 3 della giornata</span>
+        </div>
+      )}
+
+      {/* Original day label (if provided) */}
       {dayLabel && (
         <div className="flex items-center justify-center gap-1 text-xs text-slate-400 mb-3">
           <Calendar className="w-3 h-3 text-slate-500" />{dayLabel}
@@ -45,7 +55,7 @@ export default function FlightScore({
         </div>
       </div>
 
-      {/* Griglia */}
+      {/* Grid of additional info */}
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div className="bg-slate-800/60 rounded-lg p-2.5 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-orange-400 shrink-0" />
