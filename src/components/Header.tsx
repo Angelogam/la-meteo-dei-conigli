@@ -14,16 +14,16 @@ export const Header = () => {
 
       <div className="relative max-w-7xl mx-auto px-4 md:px-6 py-3.5 md:py-4">
         <div className="flex items-center justify-center gap-3 md:gap-5">
-          {/* Logo Mascotte MeteoConigli */}
+          {/* Logo Mascotte MeteoConigli (senza sfondo bianco) */}
           <div className="relative group shrink-0">
-            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white p-1 shadow-lg shadow-orange-500/20 border-2 border-orange-400/40 flex items-center justify-center transition-transform group-hover:scale-105">
+            <div className="w-14 h-14 md:w-16 md:h-16 flex items-center justify-center transition-transform group-hover:scale-105 drop-shadow-[0_4px_12px_rgba(234,88,12,0.25)]">
               <img
                 src="/logo.svg"
                 alt="Meteo dei Conigli Logo"
                 className="w-full h-full object-contain"
               />
             </div>
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-slate-950 flex items-center justify-center" title="Previsioni attive">
+            <div className="absolute 0 -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-slate-950 flex items-center justify-center" title="Previsioni attive">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
             </div>
           </div>
