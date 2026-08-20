@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect, useState, useMemo } from "react";
 import { RefreshCw, Wind, Calendar, Mountain, FileText, Check, Copy, AlertTriangle, ShieldCheck } from "lucide-react";
 import { generateReportMeteo, type GeneratedReport } from "@/utils/generateReportMeteo";
@@ -315,7 +313,7 @@ export default function ProfessionalWindgram({
               strokeWidth="0.9"
               filter="drop-shadow(0 1px 2px rgba(0,0,0,0.15))"
             />
-            <text x="0" y="11" fill="#701a75" fontSize="9.5" fontWeight="900" textAnchor="middle" fontMono="true">
+            <text x="0" y="11" fill="#701a75" fontSize="9.5" fontWeight="900" textAnchor="middle" fontFamily="monospace">
               {label}
             </text>
           </g>
@@ -439,10 +437,10 @@ export default function ProfessionalWindgram({
               const sunCol = h.sunPct < 25 ? "#b91c1c" : h.sunPct < 50 ? "#d97706" : h.sunPct < 90 ? "#b45309" : "#475569";
               return (
                 <g key={`num-head-${i}`}>
-                  <text x={x} y={35} fill="#0f172a" fontSize="14" fontWeight="900" textAnchor="middle" fontMono="true">
+                  <text x={x} y={35} fill="#0f172a" fontSize="14" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                     {h.thermalAvg > 0 ? h.thermalAvg.toFixed(1) : "0.5"}
                   </text>
-                  <text x={x} y={54} fill={sunCol} fontSize="14" fontWeight="900" textAnchor="middle" fontMono="true">
+                  <text x={x} y={54} fill={sunCol} fontSize="14" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                     {h.sunPct}
                   </text>
                 </g>
@@ -473,7 +471,7 @@ export default function ProfessionalWindgram({
             <line x1={getXFromHourIdx(0.8)} y1={margin.top} x2={getXFromHourIdx(0.8)} y2={getYFromAlt(5200)} stroke="#1d4ed8" strokeWidth="4" />
             <g transform={`translate(${getXFromHourIdx(0.8) - 20}, ${getYFromAlt(5200) + 2})`}>
               <rect x="0" y="0" width="40" height="16" rx="4" fill="#ffffff" stroke="#1d4ed8" strokeWidth="1.2" />
-              <text x="20" y="12" fill="#1e40af" fontSize="10" fontWeight="900" textAnchor="middle">6.7 mm</text>
+              <text x="20" y="12" fill="#1e40af" fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">6.7 mm</text>
             </g>
 
             {/* Watermark Alpium */}
@@ -544,7 +542,7 @@ export default function ProfessionalWindgram({
             {/* Badge Zero Termico */}
             <g transform={`translate(${margin.left + plotW - 116}, ${getYFromAlt(3663) - 12})`}>
               <rect x="0" y="0" width="110" height="23" rx="5" fill="#ffffff" stroke="#0284c7" strokeWidth="1.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.15))" />
-              <text x="55" y="16" fill="#0369a1" fontSize="12" fontWeight="900" textAnchor="middle">0 °C &bull; 3663 m</text>
+              <text x="55" y="16" fill="#0369a1" fontSize="12" fontWeight="900" textAnchor="middle" fontFamily="monospace">0 °C &bull; 3663 m</text>
             </g>
 
             {/* --- LINEA TOP PBL --- */}
@@ -573,7 +571,7 @@ export default function ProfessionalWindgram({
                         strokeWidth="1.4"
                         filter="drop-shadow(0 1px 2px rgba(0,0,0,0.1))"
                       />
-                      <text x="0" y="4" fill="#581c87" fontSize="10" fontWeight="900" textAnchor="middle">
+                      <text x="0" y="4" fill="#581c87" fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                         {i === 3 ? "22%" : i === 4 ? "35%" : i === 5 ? "22%" : i === 6 ? "21%" : i === 7 ? "12%" : i === 8 ? "6%" : "4%"}
                       </text>
                     </g>
@@ -590,10 +588,10 @@ export default function ProfessionalWindgram({
                         strokeWidth="1.2"
                         filter="drop-shadow(0 2px 4px rgba(0,0,0,0.12))"
                       />
-                      <text x="29" y="11" fill="#3b0764" fontSize="10.5" fontWeight="900" textAnchor="middle">
+                      <text x="29" y="11" fill="#3b0764" fontSize="10.5" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                         {h.cloudBase} m
                       </text>
-                      <text x="29" y="22" fill="#15803d" fontSize="10.5" fontWeight="900" textAnchor="middle">
+                      <text x="29" y="22" fill="#15803d" fontSize="10.5" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                         &uarr; {h.thermalAvg} m/s
                       </text>
                     </g>
@@ -626,7 +624,7 @@ export default function ProfessionalWindgram({
                     {String(h).padStart(2, "0")}:00
                   </text>
                   {hourlyCalculations[i] && (
-                    <text x="0" y="16" fill="#1e293b" fontSize="11" fontWeight="800" textAnchor="middle">
+                    <text x="0" y="16" fill="#1e293b" fontSize="11" fontWeight="800" textAnchor="middle" fontFamily="monospace">
                       &uarr; {hourlyCalculations[i].thermalAvg} m/s
                     </text>
                   )}
