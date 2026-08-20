@@ -46,24 +46,23 @@ const MeteoCardOraria: React.FC<Props> = ({ fascia, data }) => {
     commentoVolo,
   } = data;
 
-  const pioggiaOk = pioggia < 0.5;
-  const ventoOk = vento >= 5 && vento <= 20;
-  const umiditaOk = umidita < 90;
-  const voloOk = pioggiaOk && ventoOk && umiditaOk;
+  // Nuova logica: se piove oggi, condizioni non volabili
+  const pioggiaSignificativa = pioggia > 0.5;
+  const voloOk = !pioggiaSignificativa && vento >= 5 && vento <= 20 && umidita < 90;
 
   return (
     <div className={`flex flex-col gap-3 p-4 rounded-xl border shadow-md transition-all duration-300 ${
       voloOk
         ? "bg-gradient-to-b from-[#0f172a] to-[#1e293b] border-[#22c55e]/50"
-        : "bg-gradient-to-b from-[#1e293b] to-[#0f172a] border-red-500/40"
-    }`}>
-      {/* Header */}
+        : "bg-gradient-to-b from-[#1e293b] to-[#0f172a] border-red-500/40"`
+    }>
+      {/* Intestazione */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-white tracking-wide">{fascia}</h3>
         <span className={`text-sm font-bold px-2 py-1 rounded-lg ${
           voloOk ? "text-[#22c55e] bg-[#22c55e]/10" : "text-red-400 bg-red-900/20"
         }`}>
-          {arrotonda(score)}/10
+          {voloOk ? arrotonda(score)/10 : "0"/10}
         </span>
       </div>
 
@@ -76,7 +75,7 @@ const MeteoCardOraria: React.FC<Props> = ({ fascia, data }) => {
       {/* Sintesi visiva */}
       <div className="flex items-center justify-between text-sm font-semibold mt-2">
         <div className="flex items-center gap-2">
-          {pioggiaOk ? "☀️" : "🌧️"} {pioggiaOk ? "Secco" : "Pioggia"}
+          {pioggiaSignificativa ? "🌧️" : "☀️"} {pioggiaSignificativa ? "Pioggia" : "Secco"}
         </div>
         <div className="flex items-center gap-2">
           💨 {arrotonda(vento)} km/h {direzione}
@@ -88,21 +87,21 @@ const MeteoCardOraria: React.FC<Props> = ({ fascia, data }) => {
 
       {/* Dettagli tecnici */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-300 mt-2">
-        <div>🪂 Base <span className="text-[#22c55e] font-semibold">{arrotonda(base)}m</span></div>
-        <div>🏔️ Top <span className="text-[#22c55e] font-semibold">{arrotonda(top)}m</span></div>
-        <div>💧 Umidità <span className="font-semibold">{arrotonda(umidita)}%</span></div>
-        <div>📈 Pressione <span className="font-semibold">{arrotonda(pressione)} hPa</span></div>
+        <div>{pioggiaSignificativa ? "❌" : "✅"} Base <span className="text-red-400 font-semibold">{arrotonda(base)}m</span></div>
+        <div>{pioggiaSignificativa ? "❌" : "✅"} Top <span className="text-red-400 font-semibold">{arrotonda(top)}m</span></div>
+        <div>{pioggiaSignificativa ? "❌" : "✅"} Umidità <span className="text-red-400 font-semibold">{arrotonda(umidita)}%</span></div>
+        <div>{pioggiaSignificativa ? "❌" : "✅"} Pressione <span className="text-red-400 font-semibold">{arrotonda(pressione)} hPa</span></div>
       </div>
 
       {/* Stato volabilità */}
       <div className={`mt-2 text-sm font-semibold ${
         voloOk ? "text-[#22c55e]" : "text-red-400"
       }`}>
-        {voloOk ? "✅ Condizioni buone per il volo" : "⚠️ Non ideale per decollare"}
+        {voloOk ? "✅ Condizioni buone per il volo" : "⚠️ Non ideale per decollare - Pioggia presente"}
       </div>
 
       {/* Commento pratico */}
-      <div className="mt-1 text-sm text-gray-400 italic border-t border-gray-700 pt-2">
+      <div className="mt-1 text-sm text-red-300 italic border-t border-red-700 pt-2">
         {commentoVolo}
       </div>
     </div>
