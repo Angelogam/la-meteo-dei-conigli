@@ -32,10 +32,18 @@ export interface HourData {
   liftedIndex: number;
   mixingRatio: number;
   virtualTemp: number;
-  // Additional fields from weatherService
   windProfile?: { height: number; speed: number; dir: number }[];
   temp80m?: number;
   temp120m?: number;
+  apparentTemp?: number;
+  precipitationProba?: number;
+  evapotranspiration?: number;
+  et0?: number;
+  soilTemp?: number;
+  soilMoisture?: number;
+  diffuseRadiation?: number;
+  directNormalIrradiance?: number;
+  terrestrialRadiation?: number;
 }
 
 export interface DailyData {
@@ -60,7 +68,6 @@ export interface DailyData {
   windDirDominant: number;
   shortwaveRadiationSum: number;
   uvIndexMax: number;
-  // Campi arricchiti
   windSpeed: number;
   cloudCover: number;
   weatherDescription: string;
