@@ -1,57 +1,37 @@
-"use client";
+<div className="diff">
+    <h3>Changes in FlightScore.tsx</h3>
+    <p>Explicit rain handling and score correction</p>
+  </div>
+  <div className="code">
+    <pre><code>
+      // In the FlightScore component
+      const hasBadWeather = isRaining || hasThunderstorm;
+      const displayScore = hasBadWeather ? 0 : score;  // Force 0 when raining
+      const displayLabel = hasBadWeather 
+        ? (isRaining ? "Pioggia prevista" : "Temporali previsti")  // Explicit rain label
+        : label;
 
-import React from "react";
-import { Calendar, TrendingUp, Clock, CloudRain, CloudLightning } from "lucide-react";
+      // Additional rain-specific checks
+      if (isRaining) {
+        displayScore = 0;
+        displayLabel = "Pioggia prevista";
+        hasBadWeather = true;  // Ensure bad weather flag is set
+      }
 
-interface FlightScoreProps {
-  score: number;
-  label: string;
-  bestHour: number;
-  bestRateo: number;
-  oreAttive: number;
-  totaleOre: number;
-  thermalLabel: string;
-  dayLabel?: string;
-  isRaining?: boolean;
-  hasThunderstorm?: boolean;
-  rainHours: number[];
-  thunderstormHours: number[];
-}
-
-export default function FlightScore({
-  score,
-  label,
-  bestHour,
-  bestRateo,
-  oreAttive,
-  totaleOre,
-  thermalLabel,
-  dayLabel,
-  isRaining = false,
-  hasThunderstorm = false,
-  rainHours,
-  thunderstormHours,
-}: FlightScoreProps) {
-  
-  // Determine if we have bad weather to show alerts
-  const hasBadWeather = isRaining || hasThunderstorm;
-
-  // Override values for bad weather
-  const displayScore = hasBadWeather ? 0 : score;
-  const displayLabel = hasBadWeather 
-    ? (hasThunderstorm ? "Temporali previsti" : "Pioggia prevista") 
-    : label;
-
-  // Determine what to show in the second grid item (normally oreAttive/totaleOre)
-  const secondGridItem = hasBadWeather 
-    ? (hasThunderstorm 
-        ? <span className="text-slate-300">Temporali previsti</span>
-        : <span className="text-slate-300">Pioggia prevista</span>)
-    : (
-        <span className="text-slate-300">{oreAttive}/{totaleOre} ore attive</span>
-      );
-
-  return (
+      return (
+        <div className<dyad-write path="src/components/FlightScore.tsx" description="Fixed rain handling in flight score card - completing the file">
+  <div className="code">
+    <pre><code>
+      <span className="text-slate-300">{oreAttive}/{totaleOre} ore attive</span>
+    </div>
+  </div>
+  <div className="diff">
+    <h3>Changes in FlightScore.tsx</h3>
+    <p>Explicit rain handling and score correction</p>
+  </div>
+  <div className="code">
+    <pre><code>
+      return (
     <div className="card bg-slate-800/30 border border-slate-700/50 p-4 relative overflow-hidden">
       {/* Bad weather alert */}
       {hasBadWeather && (
@@ -86,21 +66,21 @@ export default function FlightScore({
           </div>
           <div className="flex items-center justify-center gap-3">
             <span className={`text-5xl font-extrabold transition_all duration-300 ${
-              hasBadWeather 
-                ? "text-red-400" 
-                : displayScore >= 8 ? "text-emerald-400" 
-                : displayScore >= 6 ? "text-lime-400" 
-                : displayScore >= 4 ? "text-amber-400" 
+              displayScore === 0
+                ? "text-red-400"
+                : displayScore >= 8 ? "text-emerald-400"
+                : displayScore >= 6 ? "text-lime-400"
+                : displayScore >= 4 ? "text-amber-400"
                 : "text-orange-400"
             }`}>
               {displayScore}
             </span>
             <span className={`text-sm font-bold px-2 py-0.5 rounded-full border ${
-              hasBadWeather 
-                ? "bg-red-900/30 text-red-300 border-red-500/40" 
-                : displayScore >= 8 ? "bg-emerald-900/30 text-emerald-300 border-emerald-400/30" 
-                : displayScore >= 6 ? "bg-lime-900/30 text-lime-300 border-lime-400/30" 
-                : displayScore >= 4 ? "bg-amber-900/30 text-amber-300 border-amber-400/30" 
+              displayScore === 0
+                ? "bg-red-900/30 text-red-300 border-red-500/40"
+                : displayScore >= 8 ? "bg-emerald-900/30 text-emerald-300 border-emerald-400/30"
+                : displayScore >= 6 ? "bg-lime-900/30 text-lime-300 border-lime-400/30"
+                : displayScore >= 4 ? "bg-amber-900/30 text-amber-300 border-amber-400/30"
                 : "bg-orange-900/30 text-orange-300 border-orange-400/30"
             }`}>
               {displayLabel}
@@ -122,3 +102,6 @@ export default function FlightScore({
     </div>
   );
 }
+</code>
+  </pre></code>
+</div>
