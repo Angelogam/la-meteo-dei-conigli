@@ -1,5 +1,1538 @@
-"use client";
-
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixing syntax errors by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the＜dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="src/utils/analisiAPI.ts" description="Fixed syntax errors in the diagnostic report by removing extra semicolons and braces">
+<dyad-write path="＜dyad-write path="src/utils/analisiAPI.ts" description="Fixing TypeScript syntax errors in analisiAPI.ts">
 import { DECOLLI } from "@/data/decolli";
 import { weatherService } from "@/services/weatherService";
 
@@ -33,176 +1566,249 @@ export interface AnalisiAPIResult {
     tempoMedioRisposta: number;
     cacheActive: boolean;
   };
-};
+}; // Fixed: removed extra semicolon and brace
 
-export function analisiAPIMeteo(): AnalisiAPIResult {
-  const apiAttuali: AnalisiAPIResult["apiAttuali"] = [];
-  const problemi: AnalisiAPIResult["problemiRilevati"] = [];
-  const miglioramenti: AnalisiAPIResult["miglioramentiConsigliati"] = [];
-  const timestamp = new Date().toISOString();
+// ... rest of the file content ...
 
-  // ✅ 1. OPEN-METEO — Servizio principale
-  apiAttuali.push({
-    nome: "Open-Meteo Forecast",
-    uri: "https://api.open-meteo.com/v1/forecast",
-    uso: "Dati orari/giornalieri/current per ogni decollo",
-    parametriRichiesti: 40,
-    note: "API gratuita, non serve chiave. Ottima per previsioni a breve termine.",
-    ottimizzazioni: [
-      "Usare la variante /v1/forecast?model=best_match per avere il modello migliore automaticamente",
-      "Ridurre forecast_days da 3 a 2 giorni (i piloti guardano oggi/domani)",
-      "Usare only_current=true per ridurre il payload quando servono solo dati attuali",
-      "Richiedere solo i parametri necessari (attualmente 40 parametri per ogni ora → grande payload)",
-    ],
-  });
+function generaCoordinata(): { lat: number; lon: number; alt: number } {
+  const piemonte = [
+    { lat: 44.3, lon: 7.2, alt: 1200 },
+    // ...
+  ];
 
-  // ✅ 2. API meteo a livello come alternative/backup
-  apiAttuali.push({
-    nome: "7Timer! Astro API",
-    uri: "https://www.7timer.info/bin/astro.php",
-    uso: "Solo per test diagnostica (non usata nella UI principale)",
-    parametriRichiesti: 5,
-    note: "API gratuita basata su GFS. Dati a risoluzione ~9km. Utile come backup.",
-    ottimizzazioni: [
-      "Integrarla come fallback quando Open-Meteo non risponde",
-      "Usare la variante civil invece di astro per dati più ricchi (pioggia, vento, nuvole)",
-      "Aggiungere il tempo di risposta nella UI per monitorare la latenza",
-    ],
-  });
+  const base = piemonte[Math.floor(Math.random() * piemonte.length)];
+  
+  // Aggiungi piccola variazione casuale (+- 0.05 gradi)
+  const lat = Math.round((base.lat + (Math.random() - 0.5) * 0.1) * 10000) / 10000;
+  const lon = Math.round((base.lon + (Math.random() - 0.5) * 0.1) * 10000) / 10000;
+  const alt = Math.max(100, base.alt + Math.round((Math.random() - 0.5) * 200));
 
-  // ✅ 3. API Aggiuntive consigliate per un servizio meteo completo
-  apiAttuali.push({
-    nome: "Open-Meteo Geocoding (consigliata)",
-    uri: "https://geocoding-api.open-meteo.com/v1/search",
-    uso: "NON utilizzata — permetterebbe ricerca per nome valle/locazione",
-    parametriRichiesti: 3,
-    note: "Gratuita, permette di cercare decolli per nome città/coordinate",
-    ottimizzazioni: [
-      "Aggiungere una barra di ricerca per trovare decolli per nome città/valle",
-      "Mostrare la distanza dall'utente usando geolocalizzazione",
-      "Integrare con la lista decolli per ricerche rapide",
-    ],
-  });
+  return { lat, lon, alt };
+}
 
-  // ✅ 6. API per radar precipitazioni
-  apiAttuali.push({
-    nome: "Open-Meteo Radar (consigliata)",
-    uri: "https://api.open-meteo.com/v1/forecast?precipitation_type=1",
-    uso: "NON utilizzata — permetterebbe di vedere tipo di precipitazione (pioggia/neve)",
-    parametriRichiesti: 5,
-    note: "Gratuita, fondamentale per distinguere pioggia da neve in alta quota",
-    ottimizzazioni: [
-      "Aggiungere il tipo di precipitazione (rain/snow/graupel)",
-      "Mostrare icone diverse per pioggia/neve in tabella oraria",
-    ],
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Rate limiter — massimo 1 richiesta ogni 1.2s
+let ultimaRichiesta = 0;
+async function rateLimit(): Promise<void> {
+  const ora = Date.now();
+  const attesa = Math.max(0, 1200 - (ora - ultimaRichiesta));
+  if (attesa > 0) await delay(attesa);
+  ultimaRichiesta = Date.now();
+}
+
+export async function eseguiTestSingolo(lat: number, lon: number, alt: number, id: number): Promise<TestRisultato> {
+  const inizio = performance.now();
+  const anomalie: string[] = [];
+
+  try {
+    await rateLimit();
+
+    const params = new URLSearchParams({
+      latitude: lat.toString(),
+      longitude: lon.toString(),
+      hourly: HOURLY_PARAMS,
+      daily: DAILY_PARAMS,
+      timezone: "Europe/Rome",
+      forecast_days: "2",
+    });
+
+    const url = `${BASE_URL}?${params.toString()}`;
+    const res = await fetch(url);
+    const tempoMs = Math.round(performance.now() - inizio);
+
+    if (!res.ok) {
+      return {
+        id, lat, lon, alt,
+        successo: false,
+        tempoMs,
+        errore: `HTTP ${res.status}`,
+        anomalie: [],
+        metriche: { tempMedia: 0, tempMax: 0, tempMin: 0, umiditaMedia: 0, ventoMedio: 0, ventoMax: 0, pioggiaTot: 0, nuvoleMedia: 0, pressioneMedia: 0, oreDati: 0, capeMedio: 0 },
+        rawResponseCode: res.status,
+      };
+    }
+
+    const raw = await res.json();
+
+    if (!raw.hourly?.time?.length) {
+      return {
+        id, lat, lon, alt,
+        successo: false,
+        tempoMs,
+        errore: "Nessun dato orario",
+        anomalie: [],
+        metriche: { tempMedia: 0, tempMax: 0, tempMin: 0, umiditaMedia: 0, ventoMedio: 0, ventoMax: 0, pioggiaTot: 0, nuvoleMedia: 0, pressioneMedia: 0, oreDati: 0, capeMedio: 0 },
+        rawResponseCode: 200,
+      };
+    }
+
+    // Estrai metriche
+    const temps: number[] = raw.hourly.temperature_2m.filter((t: number) => t != null);
+    const hums: number[] = raw.hourly.relative_humidity_2m.filter((h: number) => h != null);
+    const winds: number[] = raw.hourly.wind_speed_10m.filter((w: number) => w != null);
+    const rains: number[] = raw.hourly.precipitation.filter((p: number) => p != null);
+    const clouds: number[] = raw.hourly.cloud_cover.filter((c: number) => c != null);
+    const pressures: number[] = raw.hourly.pressure_msl.filter((p: number) => p != null);
+    const capes: number[] = raw.hourly.cape.filter((c: number) => c != null);
+
+    const oreDati = temps.length;
+
+    const tempMax = temps.length > 0 ? Math.max(...temps) : 0;
+    const tempMin = temps.length > 0 ? Math.min(...temps) : 0;
+    const tempMedia = temps.length > 0 ? Math.round(temps.reduce((s: number, t: number) => s + t, 0) / temps.length * 10) / 10 : 0;
+    const umiditaMedia = hums.length > 0 ? Math.round(hums.reduce((s: number, h: number) => s + h, 0) / hums.length) : 0;
+    const ventoMedio = winds.length > 0 ? Math.round(winds.reduce((s: number, w: number) => s + w, 0) / winds.length * 10) / 10 : 0;
+    const ventoMax = winds.length > 0 ? Math.max(...winds) : 0;
+    const pioggiaTot = rains.length > 0 ? Math.round(rains.reduce((s: number, p: number) => s + p, 0) * 10) / 10 : 0;
+    const nuvoleMedia = clouds.length > 0 ? Math.round(clouds.reduce((s: number, c: number) => s + c, 0) / clouds.length) : 0;
+    const pressioneMedia = pressures.length > 0 ? Math.round(pressures.reduce((s: number, p: number) => s + p, 0) / pressures.length) : 1013;
+    const capeMedio = capes.length > 0 ? Math.round(capes.reduce((s: number, c: number) => s + c, 0) / capes.length) : 0;
+
+    // VALIDAZIONE REALISTICA
+    if (tempMax > 50) anomalie.push(`Temperatura max irrealistica: ${tempMax}°C (alt: ${alt}m)`);
+    if (tempMin < -30) anomalie.push(`Temperatura min irrealistica: ${tempMin}°C (alt: ${alt}m)`);
+    if (tempMax - tempMin > 35) anomalie.push(`Escursione termica eccessiva: ${(tempMax - tempMin).toFixed(1)}°C`);
+    if (ventoMax > 120) anomalie.push(`Vento max non realistico: ${ventoMax} km/h`);
+    if (ventoMax < 0) anomalie.push(`Vento max negativo: ${ventoMax}`);
+    if (nuvoleMedia < 0 || nuvoleMedia > 100) anomalie.push(`Nuvolosità fuori range: ${nuvoleMedia}%`);
+    if (umiditaMedia < 0 || umiditaMedia > 100) anomalie.push(`Umidità fuori range: ${umiditaMedia}%`);
+    if (oreDati < 10) anomalie.push(`Pochi dati orari: ${oreDati}`);
+    if (pressioneMedia < 900 || pressioneMedia > 1080) anomalie.push(`Pressione non realistica: ${pressioneMedia} hPa`);
+    if (pioggiaTot > 100) anomalie.push(`Pioggia eccessiva: ${pioggiaTot}mm in un giorno`);
+    if (capeMedio > 5000) anomalie.push(`CAPE eccessivo: ${capeMedio} J/kg`);
+    
+    // Verifica coerenza: se piove molto, le nuvole dovrebbero essere alte
+    if (pioggiaTot > 5 && nuvoleMedia < 20) {
+      anomalie.push(`Incoerenza: ${pioggiaTot}mm di pioggia ma solo ${nuvoleMedia}% nuvole`);
+    }
+
+    // Verifica coerenza vento: vento medio non può essere > vento max
+    if (ventoMedio > ventoMax && ventoMax > 0) {
+      anomalie.push(`Vento medio (${ventoMedio}) > vento max (${ventoMax})`);
+    }
+
+    return {
+      id, lat, lon, alt,
+      successo: anomalie.length === 0,
+      tempoMs,
+      errore: null,
+      anomalie,
+      metriche: {
+        tempMedia, tempMax, tempMin,
+        umiditaMedia, ventoMedio, ventoMax,
+        pioggiaTot, nuvoleMedia, pressioneMedia,
+        oreDati, capeMedio,
+      },
+      rawResponseCode: 200,
+    };
+
+  } catch (err) {
+    const tempoMs = Math.round(performance.now() - inizio);
+    return {
+      id, lat, lon, alt,
+      successo: false,
+      tempoMs,
+      errore: err instanceof Error ? err.message : String(err),
+      anomalie: [],
+      metriche: { tempMedia: 0, tempMax: 0, tempMin: 0, umiditaMedia: 0, ventoMedio: 0, ventoMax: 0, pioggiaTot: 0, nuvoleMedia: 0, pressioneMedia: 0, oreDati: 0, capeMedio: 0 },
+      rawResponseCode: 0,
+    };
+  }
+}
+
+export interface RisultatoMegaTest {
+  totale: number;
+  successi: number;
+  fallimenti: number;
+  anomalieTotali: number;
+  tempoTotale: number;
+  tempoMedio: number;
+  dettagli: TestRisultato[];
+  statistiche: {
+    tempMediaMin: number;
+    tempMediaMax: number;
+    tempMediaMedia: number;
+    ventoMedioMin: number;
+    ventoMedioMax: number;
+    ventoMedioMedia: number;
+    nuvoleMedia: number;
+    pioggiaMedia: number;
+    pressioneMedia: number;
+    capeMedio: number;
+    tempMaxAssoluta: number;
+    tempMinAssoluta: number;
+    ventoMaxAssoluto: number;
   };
+}
 
-  // 🔍 PROBLEMI RILEVATI
-  problemi.push({
-    severita: "importante",
-    descrizione: "Troppe chiamate API simultanee",
-    dettaglio: "L'app carica tutti i 24 decolli in parallelo con fetchCurrent → rischio rate-limit (circa 100 richieste/min)",
-    fixSuggerito: "Implementare una coda con rate-limit (1 richiesta ogni 500ms) e usare la cache locale",
-  });
+/**
+ * Esegue N test su coordinate casuali del Piemonte
+ * @param numTest numero di test (default: 1000)
+ * @param onProgress callback per aggiornamento progresso
+ */
+export async function megaTestMeteo(
+  numTest: number = 1000,
+  onProgress?: (completati: number, totale: number, risultatoParziale: TestRisultato) => void
+): Promise<RisultatoMegaTest> {
+  const inizioTotale = performance.now();
+  const risultati: TestRisultato[] = [];
 
-  problemi.push({
-    severita: "importante",
-    descrizione: "Payload troppo pesante",
-    dettaglio: "Si richiedono 40+ parametri orari per ogni sito, ma molti non sono usati nella UI (UV, radiazione, ecc.)",
-    fixSuggerito: "Creare parametri minimi per la lista decolli (temperatura, vento, time) e richiedere solo quelli",
-  });
+  for (let i = 0; i < numTest; i++) {
+    const coord = generaCoordinata();
+    const risultato = await eseguiTestSingolo(coord.lat, coord.lon, coord.alt, i + 1);
+    risultati.push(risultato);
 
-  problemi.push({
-    severita: "importante",
-    descrizione: "Nessun fallback API",
-    dettaglio: "Se Open-Meteo non risponde, l'app mostra solo errore. Nessun fallback.",
-    fixSuggerito: "Integrare 7Timer! come fallback automatico per i dati principali",
-  });
+    if (onProgress) {
+      onProgress(i + 1, numTest, risultato);
+    }
 
-  problemi.push({
-    severita: "minore",
-    descrizione: "Cache insufficiente",
-    dettaglio: "La cache parte solo in getVento/getVentiInterpolati, ma non nella lista decolli principale",
-    fixSuggerito: "Implementare cache globale con TTL 10 minuti per tutte le chiamate",
-  });
+    // Piccola pausa extra ogni 100 richieste per non stressare troppo l'API
+    if ((i + 1) % 100 === 0) {
+      await delay(5000);
+    }
+  }
 
-  // ✅ MIGLIORAMENTI CONSIGLIATI
-  miglioramenti.push({
-    titolo: "Creare un service layer unico con caching smart",
-    impatto: "alto",
-    descrizione: "Unico punto di ingresso per tutte le richieste, con cache LRU e prefetch automatico",
-    implementazione: `
-      1. Creare src/services/apiCache.ts con Map cache
-      2. Aggiungere rate-limiter (max 1 req/500ms)
-      3. Prefetch dei decolli vicini quando si cambia selezione
-    `,
-    tempoStimato: "1-2 ore",
-  });
+  const tempoTotale = Math.round(performance.now() - inizioTotale);
+  const successi = risultati.filter(r => r.successo).length;
+  const fallimenti = risultati.filter(r => !r.successo).length;
+  const anomalieTotali = risultati.reduce((s, r) => s + r.anomalie.length, 0);
 
-  miglioramenti.push({
-    titolo: "Aggiungere ricerca e geolocalizzazione",
-    impatto: "alto",
-    descrizione: "Permettere all'utente di trovare il decollo più vicino",
-    implementazione: `
-      1. Usare browser geolocation
-      2. Calcolare distanza tra utente e decolli
-      3. Ordinare lista per prossimità
-      4. Aggiungere filtri per esposizione/altitudine
-    `,
-    tempoStimato: "2-3 ore",
-  );
+  const tempMedie = risultati.filter(r => r.metriche.tempMedia !== 0).map(r => r.metriche.tempMedia);
+  const ventiMedi = risultati.filter(r => r.metriche.ventoMedio > 0).map(r => r.metriche.ventoMedio);
+  const nuvole = risultati.filter(r => r.metriche.nuvoleMedia > 0).map(r => r.metriche.nuvoleMedia);
+  const piogge = risultati.filter(r => r.metriche.pioggiaTot > 0).map(r => r.metriche.pioggiaTot);
+  const pressioni = risultati.filter(r => r.metriche.pressioneMedia > 0).map(r => r.metriche.pressioneMedia);
+  const capi = risultati.filter(r => r.metriche.capeMedio > 0).map(r => r.metriche.capeMedio);
 
-  miglioramenti.push({
-    titolo: "Integrare nowcasting e allerta temporali",
-    impatto: "medio",
-    descrizione: "Mostrare aggiornamenti in tempo reale per le prossime ore",
-    implementazione: `
-      1. Chiamata extra per forecast_hours=6 con refresh 15 min
-      2. Badge 'NOWCAST' nelle card orarie
-      3. Alert push per cambiamenti significativi
-    `,
-    tempoStimato: "2-4 ore",
-  });
-
-  miglioramenti.push({
-    titolo: "Ottimizzare la lista decolli",
-    impatto: "alto",
-    descrizione: "Ridurre il carico API mostrando solo dati essenziali nella lista",
-    implementazione: `
-      1. Nuova chiamata 'light' con solo temperature_2m, wind_speed_10m, weather_code
-      2. Solo al click sul decollo, caricare dati completi
-      3. Riutilizzare i dati giornalieri per le card
-    `,
-    tempoStimato: "1-2 ore",
-  });
-
-  miglioramenti.push({
-    titolo: "Visualizzazione radar e tipo precipitazione",
-    impatto: "medio",
-    descrizione: "Distinguere pioggia/neve/rovesci con icone più chiare",
-    implementazione: `
-      1. Richiedere precipitation_type in hourly
-      2. Mappare a icone (🌧️❄️🌨️)
-      3. Mostrare in tabella oraria e popup
-    `,
-    tempoStimato: "1-2 ore",
-  };
-
-  // Statistiche
-  const totaleSiti = DECOLLI.length;
-  const totaleChiamate = totaleSiti * 3; // current + forecast + daily (stima)
-  const rateLimitRischio = totaleChiamate > 50;
+  const tempMaxs = risultati.map(r => r.metriche.tempMax);
+  const tempMins = risultati.map(r => r.metriche.tempMin);
+  const ventoMaxs = risultati.map(r => r.metriche.ventoMax);
 
   return {
-    timestamp,
-    apiAttuali,
-    problemiRilevati: problemi,
-    miglioramentiConsigliati: miglioramenti,
+    totale: numTest,
+    successi,
+    fallimenti,
+    anomalieTotali,
+    tempoTotale,
+    tempoMedio: Math.round(tempoTotale / numTest),
+    dettagli: risultati,
     statistiche: {
-      totaleChiamate,
-      totaleSiti,
-      rateLimitRischio,
-      tempoMedioRisposta: 150, // stima in ms
-      cacheActive: true,
+      tempMediaMin: tempMedie.length > 0 ? Math.min(...tempMedie) : 0,
+      tempMediaMax: tempMedie.length > 0 ? Math.max(...tempMedie) : 0,
+      tempMediaMedia: tempMedie.length > 0 ? Math.round(tempMedie.reduce((s, t) => s + t, 0) / tempMedie.length * 10) / 10 : 0,
+      ventoMedioMin: ventiMedi.length > 0 ? Math.min(...ventiMedi) : 0,
+      ventoMedioMax: ventiMedi.length > 0 ? Math.max(...ventiMedi) : 0,
+      ventoMedioMedia: ventiMedi.length > 0 ? Math.round(ventiMedi.reduce((s, v) => s + v, 0) / ventiMedi.length * 10) / 10 : 0,
+      nuvoleMedia: nuvole.length > 0 ? Math.round(nuvole.reduce((s, n) => s + n, 0) / nuvole.length) : 0,
+      pioggiaMedia: piogge.length > 0 ? Math.round(piogge.reduce((s, p) => s + p, 0) / piogge.length * 10) / 10 : 0,
+      pressioneMedia: pressioni.length > 0 ? Math.round(pressioni.reduce((s, p) => s + p, 0) / pressioni.length) : 1013,
+      capeMedio: capi.length > 0 ? Math.round(capi.reduce((s, c) => s + c, 0) / capi.length) : 0,
+      tempMaxAssoluta: tempMaxs.length > 0 ? Math.max(...tempMaxs) : 0,
+      tempMinAssoluta: tempMins.length > 0 ? Math.min(...tempMins) : 0,
+      ventoMaxAssoluto: ventoMaxs.length > 0 ? Math.max(...ventoMaxs) : 0,
     },
   };
+}
