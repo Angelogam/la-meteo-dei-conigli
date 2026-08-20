@@ -50,19 +50,22 @@ const MeteoCardOraria: React.FC<Props> = ({ fascia, data }) => {
   const pioggiaSignificativa = pioggia > 0.5;
   const voloOk = !pioggiaSignificativa && vento >= 5 && vento <= 20 && umidita < 90;
 
+  const scoreClass = voloOk ? "text-[#22c55e] bg-[#22c55e]/10" : "text-red-400 bg-red-900/20";
+  const scoreValue = voloOk ? `${arrotonda(score)}/10` : "0/10";
+  const statusClass = voloOk ? "text-[#22c55e]" : "text-red-400";
+  const statusText = voloOk ? "✅ Condizioni buone per il volo" : "⚠️ Non ideale per decollare - Pioggia presente";
+
   return (
     <div className={`flex flex-col gap-3 p-4 rounded-xl border shadow-md transition-all duration-300 ${
       voloOk
         ? "bg-gradient-to-b from-[#0f172a] to-[#1e293b] border-[#22c55e]/50"
-        : "bg-gradient-to-b from-[#1e293b] to-[#0f172a] border-red-500/40"`
-    }>
+        : "bg-gradient-to-b from-[#1e293b] to-[#0f172a] border-red-500/40"
+    }`}>
       {/* Intestazione */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-white tracking-wide">{fascia}</h3>
-        <span className={`text-sm font-bold px-2 py-1 rounded-lg ${
-          voloOk ? "text-[#22c55e] bg-[#22c55e]/10" : "text-red-400 bg-red-900/20"
-        }`}>
-          {voloOk ? arrotonda(score)/10 : "0"/10}
+        <span className={`text-sm font-bold px-2 py-1 rounded-lg ${scoreClass}`}>
+          {scoreValue}
         </span>
       </div>
 
@@ -94,10 +97,8 @@ const MeteoCardOraria: React.FC<Props> = ({ fascia, data }) => {
       </div>
 
       {/* Stato volabilità */}
-      <div className={`mt-2 text-sm font-semibold ${
-        voloOk ? "text-[#22c55e]" : "text-red-400"
-      }`}>
-        {voloOk ? "✅ Condizioni buone per il volo" : "⚠️ Non ideale per decollare - Pioggia presente"}
+      <div className={`mt-2 text-sm font-semibold ${statusClass}`}>
+        {statusText}
       </div>
 
       {/* Commento pratico */}
