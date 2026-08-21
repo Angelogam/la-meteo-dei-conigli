@@ -1,3 +1,5 @@
+<dyad-write path="android/app/build.gradle" description="Update build.gradle with applicationId, versionName, versionCode, and signing config for local release">
+<dyad-file path="android/app/build.gradle">
 apply plugin: 'com.android.application'
 
 android {
@@ -11,7 +13,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         aaptOptions {
