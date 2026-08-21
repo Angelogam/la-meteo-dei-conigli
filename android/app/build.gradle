@@ -19,13 +19,15 @@ android {
         }
     }
 
-    // Configurazione firma per APK release
+    // Configurazione firma locale per release (chiave generica)
     signingConfigs {
         release {
-            storeFile file("../meteo-conigli-release.keystore")
-            storePassword "test1234"
-            keyAlias "meteo-conigli"
-            keyPassword "test1234"
+            // Questo keystore deve essere creato una volta con:
+            // keytool -genkeypair -v -keystore release.keystore -alias release_key -keyalg RSA -keysize 2048 -validity 10000
+            storeFile file("release.keystore")
+            storePassword "android"
+            keyAlias "release_key"
+            keyPassword "android"
         }
     }
 
