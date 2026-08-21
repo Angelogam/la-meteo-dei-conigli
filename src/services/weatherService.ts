@@ -78,6 +78,7 @@ export interface MeteoDaily {
   windGustsMax: number;
   windDirDominant: number;
   shortwaveRadiationSum: number;
+  uvIndexMax: number;
 }
 
 export interface MeteoResponse {
@@ -95,6 +96,79 @@ export interface MeteoResponse {
   daily_units: Record<string, string>;
   daily: Record<string, (number | string)[]>;
 }
+
+const BASE_URL = "https://api.open-meteo.com/v1/forecast";
+
+const HOURLY_PARAMS = [
+  "temperature_2m",
+  "relative_humidity_2m",
+  "dew_point_2m",
+  "apparent_temperature",
+  "precipitation",
+  "precipitation_probability",
+  "weather_code",
+  "pressure_msl",
+  "surface_pressure",
+  "cloud_cover",
+  "cloud_cover_low",
+  "cloud_cover_mid",
+  "cloud_cover_high",
+  "wind_speed_10m",
+  "wind_direction_10m",
+  "wind_gusts_10m",
+  "uv_index",
+  "shortwave_radiation",
+  "direct_radiation",
+  "sunshine_duration",
+  "temperature_80m",
+  "temperature_120m",
+  "wind_speed_80m",
+  "wind_direction_80m",
+  "wind_speed_120m",
+  "wind_direction_120m",
+  "wind_speed_180m",
+  "wind_direction_180m",
+  "wind_speed_300m",
+  "wind_direction_300m",
+  "wind_speed_600m",
+  "wind_direction_600m",
+  "wind_speed_1000m",
+  "wind_direction_1000m",
+  "wind_speed_1500m",
+  "wind_direction_1500m",
+  "wind_speed_2000m",
+  "wind_direction_2000m",
+  "wind_speed_2500m",
+  "wind_direction_2500m",
+  "wind_speed_3000m",
+  "wind_direction_3000m",
+  "cape",
+  "convective_inhibition",
+  "lifted_index",
+].join(",");
+
+const DAILY_PARAMS = [
+  "weather_code",
+  "temperature_2m_max",
+  "temperature_2m_min",
+  "temperature_2m_mean",
+  "apparent_temperature_max",
+  "apparent_temperature_min",
+  "sunrise",
+  "sunset",
+  "daylight_duration",
+  "sunshine_duration",
+  "precipitation_sum",
+  "rain_sum",
+  "snowfall_sum",
+  "precipitation_hours",
+  "precipitation_probability_max",
+  "wind_speed_10m_max",
+  "wind_gusts_10m_max",
+  "wind_direction_10m_dominant",
+  "shortwave_radiation_sum",
+  "uv_index_max",
+].join(",");
 
 const BASE_URL = "https://api.open-meteo.com/v1/forecast";
 
@@ -162,18 +236,6 @@ const DAILY_PARAMS = [
   "wind_direction_10m_dominant",
   "shortwave_radiation_sum",
   "uv_index_max",
-].join(",");
-
-const HOURLY_LIGHT_PARAMS = [
-  "temperature_2m",
-  "relative_humidity_2m",
-  "precipitation",
-  "weather_code",
-  "cloud_cover",
-  "wind_speed_10m",
-  "wind_direction_10m",
-  "wind_gusts_10m",
-  "uv_index",
 ].join(",");
 
 function buildWindProfile(rawHourly: Record<string, (number | string)[]>, idx: number): { height: number; speed: number; dir: number }[] {
@@ -259,6 +321,13 @@ export const weatherService = {
           windProfile: buildWindProfile(json.hourly, i),
           feelsLike: json.hourly.apparent_temperature?.[i] ?? 0,
           apparentTemp: json.hourly.apparent_temperature?.[i] ?? 0,
+          showers: json.hourly.showers?.[i] ?? 0,
+          precipitationProbability: json.hourly.precipitation_probability?.[i] ?? 0,
+          evapotranspiration: json.hourly.et0_fao_evapotranspiration?.[i] ?? 0,
+          et0: json.hourly.et0_fao_evapotranspiration?.[i] ?? 0,
+          vapourPressureDeficit: 0,
+          soilTemp: 0,
+          soilMoisture: 0,
         });
       }
 
@@ -304,6 +373,7 @@ export const weatherService = {
           windGustsMax: json.daily.wind_gusts_10m_max[i] ?? 0,
           windDirDominant: json.daily.wind_direction_10m_dominant[i] ?? 0,
           shortwaveRadiationSum: json.daily.shortwave_radiation_sum[i] ?? 0,
+          uvIndexMax: json.daily.uv_index_max[i] ?? 0,
         });
       }
 
@@ -374,39 +444,29 @@ export const weatherService = {
         time: new Date(c.time),
         temperature: c.temperature_2m,
         humidity: c.relative_humidity_2m,
-        feelsLike: c.apparent_temperature,
         apparentTemp: c.apparent_temperature,
-        dewPoint: 0,
-        pressure: Number(c.pressure_msl) ?? 1013,
-        surfacePressure: Number(c.surface_pressure) ?? 1013,
         precipitation: c.precipitation,
         rain: c.rain,
         snowfall: c.snowfall,
         weatherCode: c.weather_code,
         cloudCover: c.cloud_cover,
+        pressure: c.pressure_msl,
+        surfacePressure: c.surface_pressure,
+        windSpeed: c.wind_speed_10m,
+        windDir: c.wind_direction_10m,
+        windGusts: c.wind_gusts_10m,
+        dewPoint: 0,
+        precipitationProba: 0,
         cloudCoverLow: 0,
         cloudCoverMid: 0,
         cloudCoverHigh: 0,
-        windSpeed: Number(c.wind_speed_10m) ?? 0,
-        windDir: Number(c.wind_direction_10m) ?? 0,
-        windGusts: Number(c.wind_gusts_10m) ?? 0,
-        radiation: 0,
-        directRadiation: 0,
-        uvIndex: 0,
-        visibility: 10000,
-        vapourPressureDeficit: 0,
-        isDay: c.is_day ?? 1,
-        freezingLevel: 3000,
-        sunshineDuration: 0,
-        cape: 0,
-        cin: 0,
-        liftedIndex: 0,
-        mixingRatio: 0,
-        virtualTemp: 0,
+        pressure: Number(c.pressure_msl) ?? 1013,
+        windSpeed: Number(Number(c.wind_speed_10m) ?? 0),
+        windDir: Number(Number(c.wind_direction_10m) ?? 0),
+        windGusts: Number(Number(c.wind_gusts_10m) ?? 0),
       };
       return { data, ok: true };
     } catch {
       return { data: null, ok: false };
     }
   }
-};
