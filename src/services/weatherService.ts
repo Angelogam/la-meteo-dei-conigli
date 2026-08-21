@@ -369,7 +369,7 @@ export const weatherService = {
     }
   },
 
-  fetchCurrent: async (lat: number, lon: number): Promise<{ data: HourData | null; ok: boolean }> {
+  fetchCurrent: async (lat: number, lon: number): Promise<{ data: HourData | null; ok: boolean }> => {
     const url = `${BASE_URL}?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=auto&forecast_days=1`;
 
     try {
