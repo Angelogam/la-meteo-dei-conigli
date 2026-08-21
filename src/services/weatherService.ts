@@ -11,7 +11,6 @@ export interface MeteoHourly {
   apparentTemp: number;
   precipitation: number;
   rain: number;
-  showers: number;
   snowfall: number;
   weatherCode: number;
   cloudCover: number;
@@ -79,7 +78,7 @@ export interface MeteoDaily {
   windGustsMax: number;
   windDirDominant: number;
   shortwaveRadiationSum: number;
-  et0Sum: number;
+  uvIndexMax: number;
 }
 
 export interface MeteoResponse {
@@ -126,6 +125,8 @@ const HOURLY_PARAMS = [
   "wind_speed_80m",
   "wind_direction_80m",
   "wind_speed_120m",
+  "wind_direction_80m",
+  "wind_speed_120m",
   "wind_direction_120m",
   "wind_speed_180m",
   "wind_direction_180m",
@@ -148,11 +149,72 @@ const HOURLY_PARAMS = [
   "lifted_index",
 ].join(",");
 
-const HOURLY_LIGHT_PARAMS = [
-  "temperature_2m",
+const DAILY_PARAMS = [
   "weather_code",
+  "temperature_2m_max",
+  "temperature_2m_min",
+  "temperature_2m_mean",
+  "apparent_temperature_max",
+  "apparent_temperature_min",
+  "sunrise",
+  "sunset",
+  "daylight_duration",
+  "sunshine_duration",
+  "precipitation_sum",
+  "rain_sum",
+  "snowfall_sum",
+  "precipitation_hours",
+  "precipitation_probability_max",
+  "wind_speed_10m_max",
+  "wind_gusts_10m_max",
+  "wind_direction_10m_dominant",
+  "shortwave_radiation_sum",
+  "uv_index_max",
+].join(",");
+
+const BASE_URL = "https://api.open-meteo.com/v1/forecast";
+
+const HOURLY_PARAMS = [
+  "temperature_2m",
+  "relative_humidity_2m",
+  "dew_point_2m",
+  "apparent_temperature",
+  "precipitation",
+  "precipitation_probability",
+  "weather_code",
+  "cloud_cover",
   "wind_speed_10m",
   "wind_direction_10m",
+  "wind_gusts_10m",
+  "uv_index",
+  "shortwave_radiation",
+  "direct_radiation",
+  "sunshine_duration",
+  "temperature_80m",
+  "temperature_120m",
+  "wind_speed_80m",
+  "wind_direction_80m",
+  "wind_speed_120m",
+  "wind_direction_120m",
+  "wind_speed_180m",
+  "wind_direction_180m",
+  "wind_speed_300m",
+  "wind_direction_300m",
+  "wind_speed_600m",
+  "wind_direction_600m",
+  "wind_speed_1000m",
+  "wind_direction_1000m",
+  "wind_speed_1500m",
+  "wind_direction_1500m",
+  "wind_speed_2000m",
+  "wind_direction_2000m",
+  "wind_speed_2500m",
+  "wind_direction_2500m",
+  "wind_speed_3000m",
+  "wind_direction_3000m",
+  "cape",
+  "convective_inhibition",
+  "lifted_index",
 ].join(",");
 
 const DAILY_PARAMS = [
@@ -183,7 +245,7 @@ function buildWindProfile(rawHourly: Record<string, (number | string)[]>, idx: n
   const levels = [
     { height: 80, speedKey: "wind_speed_80m", dirKey: "wind_direction_80m" },
     { height: 120, speedKey: "wind_speed_120m", dirKey: "wind_direction_120m" },
-    { height: 180, speedKey: "wind_speed_180m", dirKey: "wind_direction_180m" },
+    { height: 180, speedKey: "wind_speed_120m", dirKey: "wind_direction_120m" },
     { height: 300, speedKey: "wind_speed_300m", dirKey: "wind_direction_300m" },
     { height: 600, speedKey: "wind_speed_600m", dirKey: "wind_direction_600m" },
     { height: 1000, speedKey: "wind_speed_1000m", dirKey: "wind_direction_1000m" },
@@ -252,7 +314,7 @@ export const weatherService = {
         uvIndex: json.hourly.uv_index?.[i] ?? 0,
         capes: json.hourly.cape?.[i] ?? 0,
         cape: json.hourly.cape?.[i] ?? 0,
-        cin: json.hourly.convective_inhibition?.[i] ?? 0,
+        cin: json.hourly.cin?.[i] ?? 0,
         liftedIndex: json.hourly.lifted_index?.[i] ?? 0,
         temp80m: json.hourly.temperature_80m?.[i],
         temp120m: json.hourly.temperature_120m?.[i],
@@ -268,58 +330,11 @@ export const weatherService = {
         soilTemp: 0,
         soilMoisture: 0,
       });
+
+      return { hourly, current, daily, model: "auto" };
+    } catch (err) {
+      throw new Error(`Failed to fetch weather data: ${err instanceof Error ? err.message : err}`);
     }
-
-    const current: MeteoCurrent = {
-      time: new Date(json.current.time),
-      temperature: json.current.temperature_2m ?? 0,
-      humidity: json.current.relative_humidity_2m ?? 50,
-      apparentTemp: json.current.apparent_temperature ?? 0,
-      isDay: json.current.is_day ?? 1,
-      precipitation: json.current.precipitation ?? 0,
-      rain: json.current.rain ?? 0,
-      snowfall: json.current.snowfall ?? 0,
-      weatherCode: json.current.weather_code ?? 0,
-      cloudCover: json.current.cloud_cover ?? 0,
-      pressure: json.current.pressure_msl ?? 1013,
-      surfacePressure: json.current.surface_pressure ?? 1013,
-      windSpeed: json.current.wind_speed_10m ?? 0,
-      windDir: json.current.wind_direction_10m ?? 0,
-      windGusts: json.current.wind_gusts_10m ?? 0,
-    };
-
-    const daily: MeteoDaily[] = [];
-    const dailyLen = json.daily.time.length;
-    for (let i = 0; i < dailyLen; i++) {
-      daily.push({
-        date: new Date(json.daily.time[i]),
-        weatherCode: json.daily.weather_code[i] ?? 0,
-        temperatureMax: json.daily.temperature_2m_max[i] ?? 20,
-        temperatureMin: json.daily.temperature_2m_min[i] ?? 10,
-        temperatureMean: json.daily.temperature_2m_mean?.[i] ?? 15,
-        apparentTempMax: json.daily.apparent_temperature_max?.[i] ?? 20,
-        apparentTempMin: json.daily.apparent_temperature_min?.[i] ?? 10,
-        sunrise: json.daily.sunrise[i] ?? "",
-        sunset: json.daily.sunset[i] ?? "",
-        daylightDuration: json.daily.daylight_duration[i] ?? 0,
-        sunshineDuration: json.daily.sunshine_duration[i] ?? 0,
-        precipitationSum: json.daily.precipitation_sum[i] ?? 0,
-        rainSum: json.daily.rain_sum?.[i] ?? 0,
-        snowfallSum: json.daily.snowfall_sum?.[i] ?? 0,
-        precipitationHours: json.daily.precipitation_hours[i] ?? 0,
-        precipitationProbabilityMax: json.daily.precipitation_probability_max[i] ?? 0,
-        windSpeedMax: json.daily.wind_speed_10m_max[i] ?? 15,
-        windGustsMax: json.daily.wind_gusts_10m_max[i] ?? 25,
-        windDirDominant: json.daily.wind_direction_10m_dominant[i] ?? 0,
-        shortwaveRadiationSum: json.daily.shortwave_radiation_sum[i] ?? 0,
-        uvIndexMax: json.daily.uv_index_max[i] ?? 3,
-        windSpeed: Math.round((json.daily.wind_speed_10m_max[i] ?? 15) * 0.6),
-        cloudCover: 0,
-        weatherDescription: "",
-      });
-    }
-
-    return { hourly, current, daily, model: "auto" };
   },
 
   async fetchWithFallback(lat: number, lon: number): Promise<{
@@ -347,7 +362,7 @@ export const weatherService = {
       const json = await res.json();
       const h = json.hourly;
       if (!h || !h.time || h.time.length === 0) return { data: null, ok: false };
-
+      
       const now = new Date();
       const nowHour = now.getHours();
       let idx = h.time.findIndex((t: string) => {
@@ -369,7 +384,7 @@ export const weatherService = {
     }
   },
 
-  fetchCurrent: async (lat: number, lon: number): Promise<{ data: HourData | null; ok: boolean }> => {
+  async fetchCurrent(lat: number, lon: number): Promise<{ data: HourData | null; ok: boolean }> {
     const url = `${BASE_URL}?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=auto&forecast_days=1`;
 
     try {
@@ -386,12 +401,11 @@ export const weatherService = {
         apparentTemp: c.apparent_temperature,
         precipitation: c.precipitation,
         rain: c.rain,
-        showers: c.showers,
         snowfall: c.snowfall,
         weatherCode: c.weather_code,
+        cloudCover: c.cloud_cover,
         pressure: c.pressure_msl,
         surfacePressure: c.surface_pressure,
-        cloudCover: c.cloud_cover,
         windSpeed: c.wind_speed_10m,
         windDir: c.wind_direction_10m,
         windGusts: c.wind_gusts_10m,
@@ -400,25 +414,13 @@ export const weatherService = {
         cloudCoverLow: 0,
         cloudCoverMid: 0,
         cloudCoverHigh: 0,
-        evapotranspiration: 0,
-        et0: 0,
-        vapourPressureDeficit: 0,
-        soilTemp: 0,
-        soilMoisture: 0,
-        uvIndex: 0,
-        shortwaveRadiation: 0,
-        directRadiation: 0,
-        diffuseRadiation: 0,
-        directNormalIrradiance: 0,
-        terrestrialRadiation: 0,
-        sunshineDuration: 0,
-        windProfile: undefined,
-        temp80m: undefined,
-        temp120m: undefined,
+        pressure: Number(c.pressure_msl) ?? 1013,
+        windSpeed: Number(Number(c.wind_speed_10m) ?? 0),
+        windDir: Number(Number(c.wind_direction_10m) ?? 0),
+        windGusts: Number(Number(c.wind_gusts_10m) ?? 0),
       };
       return { data, ok: true };
     } catch {
       return { data: null, ok: false };
     }
-  },
-};
+  }
