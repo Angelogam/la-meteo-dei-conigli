@@ -1,11 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.example.dyadweather"
+    // Namespace corretto per il tuo progetto
+    namespace "com.meteodeiconigli.app"
+
     compileSdk rootProject.ext.compileSdkVersion
 
     defaultConfig {
-        applicationId "com.example.dyadweather"
+        applicationId "com.meteodeiconigli.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -24,7 +26,7 @@ android {
         }
     }
 
-    // 🔥 FORZA JAVA 17 PER TUTTO IL MODULO APP
+    // Java 17 corretto per Android (senza --release)
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17

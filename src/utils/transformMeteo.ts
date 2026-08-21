@@ -52,7 +52,7 @@ export function transformHourlyData(raw: RawMeteoResponse["hourly"]): HourData[]
   return result;
 }
 
-export function transformCurrentData(raw: RawMeteoResponse["current"]) {
+export function transformCurrentData(raw: RawMeteoResponse["current"]): MeteoCurrent {
   // Return type matches what consuming code expects — we don't export a CurrentData type
   return {
     time: new Date(raw.time),

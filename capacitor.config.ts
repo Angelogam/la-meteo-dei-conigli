@@ -4,6 +4,7 @@ const config: CapacitorConfig = {
   appId: 'com.meteodeiconigli.app',
   appName: 'Meteo dei Conigli',
   webDir: 'dist',
+  webRoot: '/',
   bundledWebRuntime: false,
   android: {
     allowMixedContent: true,
@@ -16,28 +17,19 @@ const config: CapacitorConfig = {
     statusBarColor: '#020617',
   },
   ios: {
-    contentInset: 'automatic',
-    scrollEnabled: true,
-    limitsNavigationsToAppBoundDomains: true,
-    preferredContentMode: 'mobile',
-  },
-  plugins: {
-    SplashScreen: {
-      launchShowDuration: 2000,
-      launchAutoHide: true,
-      backgroundColor: '#020617',
-      androidSplashResourceName: 'splash',
-      androidScaleType: 'CENTER_CROP',
-      showSpinner: false,
-    },
-    CapacitorHttp: {
-      enabled: true,
-    },
-  },
-  server: {
-    cleartext: true,
-    androidScheme: 'https',
-  },
-};
+    App/build
+    App/Pods
+    App/output
+    App/App/public
+    DerivedData
+    xcuserdata
 
-export default config;
+    # Cordova plugins for Capacitor
+    capacitor-cordova-ios-plugins
+
+    # Generated Config files
+    App/App/capacitor.config.json
+    App/App/config.xml
+
+  }
+}

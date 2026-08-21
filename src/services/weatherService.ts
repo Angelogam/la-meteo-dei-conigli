@@ -3,13 +3,19 @@ import { transformHourlyData, transformCurrentData, transformDailyData } from "@
 export interface MeteoHourly {
   time: Date;
   temperature: number;
+  feelsLike: number;
   humidity: number;
   dewPoint: number;
   apparentTemp: number;
-  precipitationProbability: number;
   precipitation: number;
+  rain: number;
+  showers: number;
+  snowfall: number;
   weatherCode: number;
   cloudCover: number;
+  cloudCoverLow: number;
+  cloudCoverMid: number;
+  cloudCoverHigh: number;
   windSpeed: number;
   windDir: number;
   windGusts: number;
@@ -129,6 +135,13 @@ export interface HourData {
   windProfile?: { height: number; speed: number; dir: number }[];
   temp80m?: number;
   temp120m?: number;
+  apparentTemp?: number;
+  precipitationProba?: number;
+  evapotranspiration?: number;
+  et0?: number;
+  vapourPressureDeficit?: number;
+  soilTemp?: number;
+  soilMoisture?: number;
 }
 
 const BASE_URL = "https://api.open-meteo.com/v1/forecast";
@@ -211,85 +224,82 @@ export const weatherService = {
     const res = await fetch(`${BASE_URL}?${params.toString()}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
 
-    const raw: MeteoResponse = await res.json();
-    const hourlyRaw = raw.hourly;
-    const dailyRaw = raw.daily;
-    const currentRaw = raw.current;
+    const raw: any = await res.json();
 
     const hourly: MeteoHourly[] = [];
-    const len = hourlyRaw.time.length;
+    const len = raw.hourly.time.length;
     for (let i = 0; i < len; i++) {
       hourly.push({
-        time: new Date(hourlyRaw.time[i]),
-        temperature: hourlyRaw.temperature_2m[i] as number,
-        humidity: hourlyRaw.relative_humidity_2m[i] as number,
-        dewPoint: (hourlyRaw.dew_point_2m?.[i] as number) ?? 10,
-        apparentTemp: hourlyRaw.apparent_temperature[i] as number,
-        precipitationProbability: (hourlyRaw.precipitation_probability?.[i] as number) ?? 0,
-        precipitation: hourlyRaw.precipitation[i] as number,
-        weatherCode: hourlyRaw.weather_code[i] as number,
-        cloudCover: hourlyRaw.cloud_cover[i] as number,
-        windSpeed: hourlyRaw.wind_speed_10m[i] as number,
-        windDir: hourlyRaw.wind_direction_10m[i] as number,
-        windGusts: (hourlyRaw.wind_gusts_10m?.[i] as number) ?? 0,
-        uvIndex: (hourlyRaw.uv_index?.[i] as number) ?? 0,
-        capes: (hourlyRaw.cape?.[i] as number) ?? 0,
-        cape: (hourlyRaw.cape?.[i] as number) ?? 0,
-        cin: (hourlyRaw.convective_inhibition?.[i] as number) ?? 0,
-        liftedIndex: (hourlyRaw.lifted_index?.[i] as number) ?? 0,
-        temp80m: (hourlyRaw.temperature_80m?.[i] as number) ?? undefined,
-        temp120m: (hourlyRaw.temperature_120m?.[i] as number) ?? undefined,
-        shortwaveRadiation: (hourlyRaw.shortwave_radiation?.[i] as number) ?? 0,
-        windProfile: buildWindProfile(hourlyRaw, i),
+        time: new Date(raw.hourly.time[i]),
+        temperature: (raw.hourly.temperature_2m[i] ?? 0) as number,
+        humidity: (raw.hourly.relative_humidity_2m[i] ?? 50) as number,
+        dewPoint: (raw.hourly.dew_point_2m?.[i] ?? 10) as number,
+        apparentTemp: (raw.hourly.apparent_temperature[i] ?? 0) as number,
+        precipitationProbability: (raw.hourly.precipitation_probability?.[i] ?? 0) as number,
+        precipitation: (raw.hourly.precipitation[i] ?? 0) as number,
+        weatherCode: (raw.hourly.weather_code[i] ?? 0) as number,
+        cloudCover: (raw.hourly.cloud_cover[i] ?? 0) as number,
+        windSpeed: (raw.hourly.wind_speed_10m[i] ?? 0) as number,
+        windDir: (raw.hourly.wind_direction_10m[i] ?? 0) as number,
+        windGusts: (raw.hourly.wind_gusts_10m?.[i] ?? 0) as number,
+        uvIndex: (raw.hourly.uv_index?.[i] ?? 0) as number,
+        capes: (raw.hourly.cape?.[i] ?? 0) as number,
+        cape: (raw.hourly.cape?.[i] ?? 0) as number,
+        cin: (raw.hourly.convective_inhibition?.[i] ?? 0) as number,
+        liftedIndex: (raw.hourly.lifted_index?.[i] ?? 0) as number,
+        temp80m: (raw.hourly.temperature_80m?.[i] as number) ?? undefined,
+        temp120m: (raw.hourly.temperature_120m?.[i] as number) ?? undefined,
+        shortwaveRadiation: (raw.hourly.shortwave_radiation?.[i] ?? 0) as number,
+        windProfile: buildWindProfile(raw.hourly, i),
       });
     }
 
     const current: MeteoCurrent = {
-      time: new Date(currentRaw.time),
-      temperature: currentRaw.temperature_2m as number,
-      humidity: currentRaw.relative_humidity_2m as number,
-      apparentTemp: currentRaw.apparent_temperature as number,
-      isDay: currentRaw.is_day as number,
-      precipitation: currentRaw.precipitation as number,
-      rain: currentRaw.rain as number,
-      showers: currentRaw.showers as number,
-      snowfall: currentRaw.snowfall as number,
-      weatherCode: currentRaw.weather_code as number,
-      cloudCover: currentRaw.cloud_cover as number,
-      pressure: currentRaw.pressure_msl as number,
-      surfacePressure: currentRaw.surface_pressure as number,
-      windSpeed: currentRaw.wind_speed_10m as number,
-      windDir: currentRaw.wind_direction_10m as number,
-      windGusts: currentRaw.wind_gusts_10m as number,
+      time: new Date(raw.current.time),
+      temperature: (raw.current.temperature_2m ?? 0) as number,
+      humidity: (raw.current.relative_humidity_2m ?? 50) as number,
+      apparentTemp: (raw.current.apparent_temperature ?? 0) as number,
+      isDay: (raw.current.is_day ?? 1) as number,
+      precipitation: (raw.current.precipitation ?? 0) as number,
+      rain: (raw.current.rain ?? 0) as number,
+      showers: (raw.current.showers ?? 0) as number,
+      snowfall: (raw.current.snowfall ?? 0) as number,
+      weatherCode: (raw.current.weather_code ?? 0) as number,
+      cloudCover: (raw.current.cloud_cover ?? 0) as number,
+      pressure: (raw.current.pressure_msl ?? 1013) as number,
+      surfacePressure: (raw.current.surface_pressure ?? 1013) as number,
+      windSpeed: (raw.current.wind_speed_10m ?? 0) as number,
+      windDir: (raw.current.wind_direction_10m ?? 0) as number,
+      windGusts: (raw.current.wind_gusts_10m ?? 0) as number,
     };
 
     const daily: MeteoDaily[] = [];
-    const dailyLen = dailyRaw.time.length;
+    const dailyLen = raw.daily.time.length;
     for (let i = 0; i < dailyLen; i++) {
       daily.push({
-        date: new Date(dailyRaw.time[i]),
-        tempMax: dailyRaw.temperature_2m_max[i] as number,
-        tempMin: dailyRaw.temperature_2m_min[i] as number,
-        apparentTempMax: dailyRaw.apparent_temperature_max[i] as number,
-        apparentTempMin: dailyRaw.apparent_temperature_min[i] as number,
-        sunrise: dailyRaw.sunrise[i] as string,
-        sunset: dailyRaw.sunset[i] as string,
-        daylightDuration: dailyRaw.daylight_duration[i] as number,
-        sunshineDuration: dailyRaw.sunshine_duration[i] as number,
-        uvIndexMax: dailyRaw.uv_index_max[i] as number,
-        uvIndexClearSkyMax: dailyRaw.uv_index_clear_sky_max[i] as number,
-        precipitationSum: dailyRaw.precipitation_sum[i] as number,
-        rainSum: dailyRaw.rain_sum[i] as number,
-        showersSum: dailyRaw.showers_sum[i] as number,
-        snowfallSum: dailyRaw.snowfall_sum[i] as number,
-        precipitationHours: dailyRaw.precipitation_hours[i] as number,
-        precipitationProbaMax: dailyRaw.precipitation_probability_max[i] as number,
-        weatherCode: dailyRaw.weather_code[i] as number,
-        windSpeedMax: dailyRaw.wind_speed_10m_max[i] as number,
-        windGustsMax: dailyRaw.wind_gusts_10m_max[i] as number,
-        windDirDominant: dailyRaw.wind_direction_10m_dominant[i] as number,
-        shortwaveRadiationSum: dailyRaw.shortwave_radiation_sum[i] as number,
-        et0Sum: dailyRaw.et0_fao_evapotranspiration[i] as number,
+        date: new Date(raw.daily.time[i]),
+        tempMax: (raw.daily.temperature_2m_max[i] ?? 0) as number,
+        tempMin: (raw.daily.temperature_2m_min[i] ?? 0) as number,
+        apparentTempMax: (raw.daily.apparent_temperature_max[i] ?? 0) as number,
+        apparentTempMin: (raw.daily.apparent_temperature_min[i] ?? 0) as number,
+        sunrise: (raw.daily.sunrise[i] ?? "") as string,
+        sunset: (raw.daily.sunset[i] ?? "") as string,
+        daylightDuration: (raw.daily.daylight_duration[i] ?? 0) as number,
+        sunshineDuration: (raw.daily.sunshine_duration[i] ?? 0) as number,
+        uvIndexMax: (raw.daily.uv_index_max[i] ?? 0) as number,
+        uvIndexClearSkyMax: (raw.daily.uv_index_clear_sky_max[i] ?? 0) as number,
+        precipitationSum: (raw.daily.precipitation_sum[i] ?? 0) as number,
+        rainSum: (raw.daily.rain_sum[i] ?? 0) as number,
+        showersSum: (raw.daily.showers_sum[i] ?? 0) as number,
+        snowfallSum: (raw.daily.snowfall_sum[i] ?? 0) as number,
+        precipitationHours: (raw.daily.precipitation_hours[i] ?? 0) as number,
+        precipitationProbaMax: (raw.daily.precipitation_probability_max[i] ?? 0) as number,
+        weatherCode: (raw.daily.weather_code[i] ?? 0) as number,
+        windSpeedMax: (raw.daily.wind_speed_10m_max[i] ?? 0) as number,
+        windGustsMax: (raw.daily.wind_gusts_10m_max[i] ?? 0) as number,
+        windDirDominant: (raw.daily.wind_direction_10m_dominant[i] ?? 0) as number,
+        shortwaveRadiationSum: (raw.daily.shortwave_radiation_sum[i] ?? 0) as number,
+        et0Sum: (raw.daily.et0_fao_evapotranspiration[i] ?? 0) as number,
       });
     }
 
@@ -332,10 +342,10 @@ export const weatherService = {
 
       const data: MeteoLight = {
         time: new Date(h.time[idx]),
-        temperature: h.temperature_2m[idx] as number,
-        windSpeed: h.wind_speed_10m[idx] as number,
-        windDir: h.wind_direction_10m[idx] as number,
-        weatherCode: h.weather_code[idx] as number,
+        temperature: (h.temperature_2m[idx] ?? 0) as number,
+        windSpeed: (h.wind_speed_10m[idx] ?? 0) as number,
+        windDir: (h.wind_direction_10m[idx] ?? 0) as number,
+        weatherCode: (h.weather_code[idx] ?? 0) as number,
       };
       return { data, ok: true };
     } catch {
