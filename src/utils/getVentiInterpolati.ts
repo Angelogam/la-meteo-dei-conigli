@@ -47,27 +47,6 @@ function interpolateVento(
   return { speed: Math.round(speed), dir: Math.round(dir) };
 }
 
-async function fetchWithRetry(url: string, retries = 2): Promise<Response> {
-  for (let i = 0; i <= retries; i++) {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
-      const res = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeout);
-      if (res.ok) return res;
-      if (res.status >= 500 && i < retries) {
-        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
-        continue;
-      }
-      return res;
-    } catch {
-      if (i === retries) throw new Error("Network error");
-      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
-    }
-  }
-  throw new Error("Max retries");
-}
-
 export async function getVentiInterpolati(
   lat: number,
   lon: number,
@@ -82,7 +61,7 @@ export async function getVentiInterpolati(
 
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_925hPa,wind_direction_925hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa,wind_speed_600hPa,wind_direction_600hPa&timezone=Europe/Rome&start_date=${day}&end_date=${day}`;
 
-  const res = await fetchWithRetry(url);
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
 
