@@ -18,14 +18,6 @@ export interface TermicheReali {
 const GRADIENTE_SECCO = 0.98;
 const LCL_FACTOR = 125;
 
-/**
- * Calcola termiche REALI combinando:
- * 1. Dati meteo (temp, dew, vento, nuvole) da weatherService
- * 2. CAPE reale (dai dati hourly di Open-Meteo via weatherService)
- * 3. Fattori fisici: gradiente verticale, wind shear, ora del giorno, stagione
- * 
- * Non fa richieste API aggiuntive.
- */
 export function calcolaTermicheReali(
   weather: any,
   altitude: number
@@ -55,14 +47,11 @@ export function calcolaTermicheReali(
   const cinValue = weather.cin ?? 0;
   const liValue = weather.liftedIndex ?? 0;
 
-  // 1. Spread
   const spread = Math.max(0.5, temp - dew);
 
-  // 2. BASE TERMICA (LCL) — limitata a valori realistici
   const lclSopraSuolo = Math.min(2500, Math.max(100, Math.round(spread * LCL_FACTOR)));
   const base = Math.max(alt + 100, Math.min(alt + 3000, alt + lclSopraSuolo));
 
-  // 3. GRADIENTE TERMICO VERTICALE REALE — limitato
   let gradiente = GRADIENTE_SECCO;
   if (temp80m != null && temp80m > -50 && temp80m < 50) {
     gradiente = Math.min(1.5, Math.max(0.3, ((temp - temp80m) / 78) * 100));
@@ -70,55 +59,44 @@ export function calcolaTermicheReali(
     gradiente = Math.min(1.5, Math.max(0.3, ((temp - temp120m) / 118) * 100));
   }
 
-  // 4. FORZA TERMICA (0-10) — valori LIMITATI per essere realistici
   let forza = 0;
 
-  // Da CAPE (max 4 punti) — CAPE realistico per Alpi: 0-1500 J/kg
   if (capeValue > 1000) forza += 4;
   else if (capeValue > 600) forza += 3;
   else if (capeValue > 300) forza += 2;
   else if (capeValue > 100) forza += 1;
   else if (capeValue > 50) forza += 0.5;
 
-  // Da gradiente (max 1.5 punti)
   if (gradiente > 1.2) forza += 1.5;
   else if (gradiente > 0.98) forza += 1;
   else if (gradiente > 0.7) forza += 0.5;
 
-  // Da CIN (max 0.5 punti)
   if (cinValue > -50) forza += 0.5;
   else if (cinValue > -100) forza += 0.3;
 
-  // Da Lifted Index (max 0.5 punti)
   if (liValue < -4) forza += 0.5;
   else if (liValue < -2) forza += 0.3;
   else if (liValue < 0) forza += 0.2;
 
-  // Da vento (max 0.5 punti)
   if (windSpeed >= 5 && windSpeed <= 15) forza += 0.5;
   else if (windSpeed >= 3 && windSpeed < 5) forza += 0.3;
   else if (windSpeed > 15 && windSpeed <= 22) forza += 0.2;
 
-  // Da nuvolosità (max 0.5 punti)
   if (cloudCover >= 15 && cloudCover <= 45) forza += 0.5;
   else if (cloudCover >= 5 && cloudCover < 15) forza += 0.3;
   else if (cloudCover > 45 && cloudCover <= 60) forza += 0.2;
 
-  // Da ora del giorno (max 0.3 punti)
   if (ora >= 11 && ora <= 15) forza += 0.3;
   else if (ora >= 9 && ora < 11) forza += 0.2;
   else if (ora > 15 && ora <= 17) forza += 0.1;
 
-  // Da umidità (max 0.2 punti)
   if (hum >= 30 && hum <= 50) forza += 0.2;
   else if (hum > 50 && hum <= 65) forza += 0.1;
 
-  // Pioggia annulla tutto
   if (precipitation > 1) forza = 0;
 
   forza = Math.max(0, Math.min(10, Math.round(forza * 10) / 10));
 
-  // 5. TOP TERMICO — limitato a valori realistici per Alpi (4000m max)
   let top: number;
   if (capeValue > 50) {
     top = Math.min(4000, base + Math.min(2500, Math.round(capeValue * 1.8)));
@@ -127,7 +105,6 @@ export function calcolaTermicheReali(
     top = Math.min(4000, base + Math.round(300 * deltaPoten));
   }
 
-  // 6. RATEO (m/s) — limitato a max 5 m/s (valori superiori sono estremi rari)
   let rateo: number;
   if (capeValue > 50 && (top - base) > 200) {
     const spessore = Math.max(400, Math.min(2500, top - base));
@@ -136,12 +113,10 @@ export function calcolaTermicheReali(
     rateo = Math.min(4, (forza / 10) * 3.5);
   }
 
-  // Correzione per vento
   if (windSpeed > 22) rateo *= 0.6;
   else if (windSpeed > 15) rateo *= 0.8;
   else if (windSpeed < 3) rateo *= 0.5;
 
-  // Correzione per nuvolosità eccessiva
   if (cloudCover > 70) rateo *= 0.2;
   else if (cloudCover > 55) rateo *= 0.5;
   else if (cloudCover > 40) rateo *= 0.8;
@@ -151,7 +126,6 @@ export function calcolaTermicheReali(
 
   rateo = Math.max(0.05, Math.min(5, Math.round(rateo * 10) / 10));
 
-  // 7. Label e colore — scale RIDOTTE per essere più realistiche
   let label: string;
   let colore: string;
 
@@ -178,9 +152,6 @@ export function calcolaTermicheReali(
   };
 }
 
-/**
- * Calcola termiche per TUTTE le ore di volo (8-19)
- */
 export function calcolaTermicheMultiple(
   hourlyData: any[],
   altitude: number
@@ -194,13 +165,11 @@ export function calcolaTermicheMultiple(
   const risultati: TermicheReali[] = [];
 
   for (const ora of oreVolo) {
-    // Prima controlla il giorno corrente, poi eventualmente domani
     let weather = hourlyData.find(h => {
       const t = new Date(h.time);
       return t.getHours() === ora && t.getDate() === giornoCorrente;
     });
 
-    // Se non trova per oggi, cerca per domani
     if (!weather) {
       const domani = new Date(oggi);
       domani.setDate(oggi.getDate() + 1);
@@ -225,7 +194,6 @@ export function calcolaTermicheMultiple(
     risultati.push(termica);
   }
 
-  // Conta ore con termiche attive
   const oreAttive = risultati.filter(r => r.rateo >= 0.3).length;
   return risultati.map(r => ({ ...r, totaleOre: oreAttive }));
 }

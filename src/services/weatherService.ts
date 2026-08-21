@@ -43,7 +43,6 @@ export interface MeteoCurrent {
   windGusts: number;
 }
 
-// Interfaccia per dati "light" (solo 4 parametri: temperatura, vento, direzione, meteo)
 export interface MeteoLight {
   time: Date;
   temperature: number;
@@ -149,7 +148,6 @@ const HOURLY_PARAMS = [
   "cape", "convective_inhibition", "lifted_index",
 ].join(",");
 
-// Parametri MINIMI per la lista decolli (massimo risparmio + direzione vento)
 const HOURLY_LIGHT_PARAMS = [
   "temperature_2m", "weather_code", "wind_speed_10m", "wind_direction_10m",
 ].join(",");
@@ -311,8 +309,6 @@ export const weatherService = {
     }
   },
 
-  // ⚡ NUOVO: chiamata LEGGERA per la lista decolli
-  // Solo 4 parametri essenziali: temperatura, vento, direzione, weather_code
   async fetchLight(lat: number, lon: number): Promise<{
     data: MeteoLight | null;
     ok: boolean;
@@ -326,7 +322,6 @@ export const weatherService = {
       const h = json.hourly;
       if (!h || !h.time || h.time.length === 0) return { data: null, ok: false };
 
-      // Trova l'ora corrente o la prima disponibile
       const now = new Date();
       const nowHour = now.getHours();
       let idx = h.time.findIndex((t: string) => {
