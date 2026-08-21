@@ -60,6 +60,10 @@ export interface AnalisiApprofondita {
   // Valutazione complessiva
   valutazione: string;
   punteggio: number; // 0-100
+  oreTemporale: number;
+  dettaglioTemporali: string;
+  puntiPositivi: string[];
+  puntiNegativi: string[];
 }
 
 function getWindDirName(deg: number): string {
@@ -93,22 +97,17 @@ function getLIDesc(li: number): string {
 }
 
 function getPBL(pblRaw: number, temp: number, spread: number): number {
-  // Se il dato reale è disponibile e sensato, usalo
   if (pblRaw > 500 && pblRaw < 6000) return Math.round(pblRaw);
-  // Altrimenti stima dalla temperatura e spread
   return Math.round(Math.min(5000, Math.max(800, spread * 350 + temp * 50)));
 }
 
 function calcolaThermalIndex(omega: number, temp: number, alt: number): number {
-  // Stima semplificata dell'indice termico
-  // Più negativo = migliori termiche
   return Math.round((omega * 0.1 - (temp - 15) * 0.3 + alt * 0.001) * 10) / 10;
 }
 
 export function calcolaAnalisiApprofondita(
   dayData: HourData[],
-  site: { alt: number; lat?: number; lon?: number; name?: string },
-  oraCorrente?: number
+  site: { alt: number; lat?: number; lon?: number; name?: string; exposure?: string }
 ): AnalisiApprofondita | null {
   if (!dayData || dayData.length < 3) return null;
 
@@ -119,7 +118,7 @@ export function calcolaAnalisiApprofondita(
   if (oreValide.length < 3) return null;
 
   // Prendi i dati reali dell'ora corrente (o l'ora di punta)
-  const oraTarget = oraCorrente ?? 13;
+  const oraTarget = 13;
   const hAttuale = oreValide.reduce((best, h) => {
     const hDiff = Math.abs(new Date(h.time).getHours() - oraTarget);
     const bestDiff = Math.abs(new Date(best.time).getHours() - oraTarget);
@@ -146,7 +145,6 @@ export function calcolaAnalisiApprofondita(
   );
 
   // Thermal Index (TI) - stimato
-  // omega = vento verticale stimato da convergenza
   const omega = Math.max(0, (tempAttuale - dewPoint) * 0.5 - hAttuale.windSpeed * 0.1);
   const thermalIndex = calcolaThermalIndex(omega, tempAttuale, site.alt);
   const thermalIndexDesc = getThermalIndexDesc(thermalIndex);
@@ -276,6 +274,25 @@ export function calcolaAnalisiApprofondita(
     valutazione = "Condizioni non favorevoli. Forti limitazioni: vento eccessivo, assenza di termiche o rischio temporali. Si sconsiglia il volo.";
   }
 
+  // Punti positivi e negativi
+  const puntiPositivi: string[] = [];
+  const puntiNegativi: string[] = [];
+
+  if (thermalIndex < -3) puntiPositivi.push("Thermal Index favorevole per termiche attive");
+  if (cape > 300) puntiPositivi.push("Buona energia convettiva (CAPE)");
+  if (ventoSuolo >= 3 && ventoSuolo <= 15) puntiPositivi.push("Vento al suolo ideale per decollo");
+  if (nuvoleMedie + nuvoleBasse + nuvoleAlte >= 15 && nuvoleMedie + nuvoleBasse + nuvoleAlte <= 50) puntiPositivi.push("Nuvolosità ottimale per sviluppo termico");
+  if (visibilita > 30) puntiPositivi.push("Visibilità eccellente");
+  if (topTermiche > 3000) puntiPositivi.push("Top termiche elevate");
+  if (rischioTemporali < 15) puntiPositivi.push("Basso rischio temporali");
+
+  if (thermalIndex >= 0) puntiNegativi.push("Thermal Index sfavorevole, termiche deboli o assenti");
+  if (cape < 100) puntiNegativi.push("CAPE molto basso, atmosfera stabile");
+  if (ventoSuolo < 3 || ventoSuolo > 22) puntiNegativi.push("Vento al suolo non ideale per decollo");
+  if (nuvoleMedie + nuvoleBasse + nuvoleAlte > 70) puntiNegativi.push("Cielo troppo coperto, termiche inibite");
+  if (rischioTemporali >= 40) puntiNegativi.push("Rischio temporali significativo");
+  if (pioggiaTot > 1) puntiNegativi.push("Precipitazioni previste");
+
   return {
     data: dayData[0]?.time?.toLocaleDateString("it-IT", {
       weekday: "long", day: "numeric", month: "long", year: "numeric"
@@ -325,5 +342,9 @@ export function calcolaAnalisiApprofondita(
     slotMigliori,
     valutazione,
     punteggio,
+    oreTemporale,
+    dettaglioTemporali: temporaliDesc,
+    puntiPositivi,
+    puntiNegativi,
   };
 }

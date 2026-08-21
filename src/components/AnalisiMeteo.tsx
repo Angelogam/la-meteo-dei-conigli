@@ -176,7 +176,7 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
       {/* Rischio temporali */}
       <div className={`rounded-2xl p-5 border-2 ${getRischioBg(rischioTemporali)}`}>
         <div className="flex items-center gap-3 mb-3">
-          {rischioTemporali >= 70 || analisiApprofondita?.oreTemporale ? (
+          {rischioTemporali >= 70 || (analisiApprofondita?.rischioTemporali && analisiApprofondita?.rischioTemporali > 0) ? (
             <CloudLightning className="w-8 h-8 text-red-400 shrink-0" />
           ) : rischioTemporali >= 15 ? (
             <CloudRain className="w-8 h-8 text-amber-400 shrink-0" />
@@ -211,7 +211,7 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
         </div>
         <div className="space-y-2 text-sm text-slate-300">
           <p>{analisiApprofondita?.valutazione || "Analisi in corso..."}</p>
-          {analisiApprofondita && analisiApprofondita.puntiPositivi.length > 0 && (
+          {analisiApprofondita && analisiApprofondita.puntiPositivi && analisiApprofondita.puntiPositivi.length > 0 && (
             <div className="mt-2">
               <div className="text-xs text-emerald-400 font-bold mb-1">Punti positivi:</div>
               {analisiApprofondita.puntiPositivi.map((p: string, i: number) => (
@@ -222,7 +222,7 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
               ))}
             </div>
           )}
-          {analisiApprofondita && analisiApprofondita.puntiNegativi.length > 0 && (
+          {analisiApprofondita && analisiApprofondita.puntiNegativi && analisiApprofondita.puntiNegativi.length > 0 && (
             <div className="mt-2">
               <div className="text-xs text-amber-400 font-bold mb-1">Criticità:</div>
               {analisiApprofondita.puntiNegativi.map((p: string, i: number) => (

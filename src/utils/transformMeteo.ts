@@ -1,6 +1,7 @@
 "use client";
 
 import type { HourData, DailyData } from "@/types/meteo";
+import type { MeteoCurrent } from "@/services/weatherService";
 
 interface RawMeteoResponse {
   hourly: Record<string, (number | string)[]>;
@@ -15,21 +16,21 @@ export function transformHourlyData(raw: RawMeteoResponse["hourly"]): HourData[]
   for (let i = 0; i < len; i++) {
     result.push({
       time: new Date(raw.time[i]),
-      temperature: raw.temperature_2m[i] as number,
-      humidity: raw.relative_humidity_2m[i] as number,
+      temperature: raw.temperature_2m[i] ?? 15,
+      humidity: raw.relative_humidity_2m[i] ?? 50,
       dewPoint: (raw.dew_point_2m?.[i] as number) ?? 10,
-      pressure: raw.pressure_msl[i] as number,
+      pressure: raw.pressure_msl[i] ?? 1013,
       surfacePressure: (raw.surface_pressure?.[i] as number) ?? 1013,
-      precipitation: raw.precipitation[i] as number,
+      precipitation: raw.precipitation[i] ?? 0,
       rain: (raw.rain?.[i] as number) ?? 0,
       snowfall: (raw.snowfall?.[i] as number) ?? 0,
-      weatherCode: raw.weather_code[i] as number,
-      cloudCover: raw.cloud_cover[i] as number,
+      weatherCode: raw.weather_code[i] ?? 0,
+      cloudCover: raw.cloud_cover[i] ?? 0,
       cloudCoverLow: (raw.cloud_cover_low?.[i] as number) ?? 0,
       cloudCoverMid: (raw.cloud_cover_mid?.[i] as number) ?? 0,
       cloudCoverHigh: (raw.cloud_cover_high?.[i] as number) ?? 0,
-      windSpeed: raw.wind_speed_10m[i] as number,
-      windDir: raw.wind_direction_10m[i] as number,
+      windSpeed: raw.wind_speed_10m[i] ?? 0,
+      windDir: raw.wind_direction_10m[i] ?? 0,
       windGusts: (raw.wind_gusts_10m?.[i] as number) ?? 0,
       uvIndex: (raw.uv_index?.[i] as number) ?? 0,
       // Campi aggiuntivi richiesti da HourData
@@ -37,7 +38,7 @@ export function transformHourlyData(raw: RawMeteoResponse["hourly"]): HourData[]
       radiation: (raw.shortwave_radiation?.[i] as number) ?? 0,
       directRadiation: (raw.direct_radiation?.[i] as number) ?? 0,
       visibility: (raw.visibility?.[i] as number) ?? 10000,
-      vapourPressureDeficit: (raw.vapour_pressure_deficit?.[i] as number) ?? 0,
+      vapourPressureDeficit: 0,
       isDay: (raw.is_day?.[i] as number) === 1,
       freezingLevel: (raw.freezing_level_height?.[i] as number) ?? 3000,
       sunshineDuration: (raw.sunshine_duration?.[i] as number) ?? 0,
@@ -53,11 +54,11 @@ export function transformHourlyData(raw: RawMeteoResponse["hourly"]): HourData[]
 }
 
 export function transformCurrentData(raw: RawMeteoResponse["current"]): MeteoCurrent {
-  // Return type matches what consuming code expects — we don't export a CurrentData type
   return {
     time: new Date(raw.time),
     temperature: raw.temperature_2m as number,
     humidity: raw.relative_humidity_2m as number,
+    apparentTemp: raw.apparent_temperature as number,
     isDay: raw.is_day as number,
     precipitation: raw.precipitation as number,
     rain: raw.rain as number,
