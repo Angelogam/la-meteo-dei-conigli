@@ -125,8 +125,6 @@ const HOURLY_PARAMS = [
   "wind_speed_80m",
   "wind_direction_80m",
   "wind_speed_120m",
-  "wind_direction_80m",
-  "wind_speed_120m",
   "wind_direction_120m",
   "wind_speed_180m",
   "wind_direction_180m",
@@ -245,7 +243,7 @@ function buildWindProfile(rawHourly: Record<string, (number | string)[]>, idx: n
   const levels = [
     { height: 80, speedKey: "wind_speed_80m", dirKey: "wind_direction_80m" },
     { height: 120, speedKey: "wind_speed_120m", dirKey: "wind_direction_120m" },
-    { height: 180, speedKey: "wind_speed_120m", dirKey: "wind_direction_120m" },
+    { height: 180, speedKey: "wind_speed_180m", dirKey: "wind_direction_180m" },
     { height: 300, speedKey: "wind_speed_300m", dirKey: "wind_direction_300m" },
     { height: 600, speedKey: "wind_speed_600m", dirKey: "wind_direction_600m" },
     { height: 1000, speedKey: "wind_speed_1000m", dirKey: "wind_direction_1000m" },
@@ -285,51 +283,99 @@ export const weatherService = {
       forecast_days: "3",
     });
 
-    const res = await fetch(`${BASE_URL}?${params.toString()}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    try {
+      const res = await fetch(`${BASE_URL}?${params.toString()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
 
-    const json: any = await res.json();
+      const json: any = await res.json();
 
-    const hourly: MeteoHourly[] = [];
-    const len = json.hourly.time.length;
-    for (let i = 0; i < len; i++) {
-      hourly.push({
-        time: new Date(json.hourly.time[i]),
-        temperature: json.hourly.temperature_2m[i] ?? 0,
-        humidity: json.hourly.relative_humidity_2m[i] ?? 50,
-        dewPoint: json.hourly.dew_point_2m?.[i] ?? 10,
-        pressure: json.hourly.pressure_msl[i] ?? 1013,
-        surfacePressure: json.hourly.surface_pressure?.[i] ?? 1013,
-        precipitation: json.hourly.precipitation[i] ?? 0,
-        rain: json.hourly.rain?.[i] ?? 0,
-        snowfall: json.hourly.snowfall?.[i] ?? 0,
-        weatherCode: json.hourly.weather_code[i] ?? 0,
-        cloudCover: json.hourly.cloud_cover[i] ?? 0,
-        cloudCoverLow: json.hourly.cloud_cover_low?.[i] ?? 0,
-        cloudCoverMid: json.hourly.cloud_cover_mid?.[i] ?? 0,
-        cloudCoverHigh: json.hourly.cloud_cover_high?.[i] ?? 0,
-        windSpeed: json.hourly.wind_speed_10m[i] ?? 0,
-        windDir: json.hourly.wind_direction_10m[i] ?? 0,
-        windGusts: json.hourly.wind_gusts_10m?.[i] ?? 0,
-        uvIndex: json.hourly.uv_index?.[i] ?? 0,
-        capes: json.hourly.cape?.[i] ?? 0,
-        cape: json.hourly.cape?.[i] ?? 0,
-        cin: json.hourly.cin?.[i] ?? 0,
-        liftedIndex: json.hourly.lifted_index?.[i] ?? 0,
-        temp80m: json.hourly.temperature_80m?.[i],
-        temp120m: json.hourly.temperature_120m?.[i],
-        shortwaveRadiation: json.hourly.shortwave_radiation?.[i] ?? 0,
-        windProfile: buildWindProfile(json.hourly, i),
-        feelsLike: json.hourly.apparent_temperature?.[i] ?? 0,
-        apparentTemp: json.hourly.apparent_temperature?.[i] ?? 0,
-        showers: json.hourly.showers?.[i] ?? 0,
-        precipitationProbability: json.hourly.precipitation_probability?.[i] ?? 0,
-        evapotranspiration: json.hourly.et0_fao_evapotranspiration?.[i] ?? 0,
-        et0: json.hourly.et0_fao_evapotranspiration?.[i] ?? 0,
-        vapourPressureDeficit: 0,
-        soilTemp: 0,
-        soilMoisture: 0,
-      });
+      const hourly: MeteoHourly[] = [];
+      const len = json.hourly.time.length;
+      for (let i = 0; i < len; i++) {
+        hourly.push({
+          time: new Date(json.hourly.time[i]),
+          temperature: json.hourly.temperature_2m[i] ?? 0,
+          humidity: json.hourly.relative_humidity_2m[i] ?? 50,
+          dewPoint: json.hourly.dew_point_2m?.[i] ?? 10,
+          pressure: json.hourly.pressure_msl[i] ?? 1013,
+          surfacePressure: json.hourly.surface_pressure?.[i] ?? 1013,
+          precipitation: json.hourly.precipitation[i] ?? 0,
+          rain: json.hourly.rain?.[i] ?? 0,
+          snowfall: json.hourly.snowfall?.[i] ?? 0,
+          weatherCode: json.hourly.weather_code[i] ?? 0,
+          cloudCover: json.hourly.cloud_cover[i] ?? 0,
+          cloudCoverLow: json.hourly.cloud_cover_low?.[i] ?? 0,
+          cloudCoverMid: json.hourly.cloud_cover_mid?.[i] ?? 0,
+          cloudCoverHigh: json.hourly.cloud_cover_high?.[i] ?? 0,
+          windSpeed: json.hourly.wind_speed_10m[i] ?? 0,
+          windDir: json.hourly.wind_direction_10m[i] ?? 0,
+          windGusts: json.hourly.wind_gusts_10m?.[i] ?? 0,
+          uvIndex: json.hourly.uv_index?.[i] ?? 0,
+          capes: json.hourly.cape?.[i] ?? 0,
+          cape: json.hourly.cape?.[i] ?? 0,
+          cin: json.hourly.cin?.[i] ?? 0,
+          liftedIndex: json.hourly.lifted_index?.[i] ?? 0,
+          temp80m: json.hourly.temperature_80m?.[i],
+          temp120m: json.hourly.temperature_120m?.[i],
+          shortwaveRadiation: json.hourly.shortwave_radiation?.[i] ?? 0,
+          windProfile: buildWindProfile(json.hourly, i),
+          feelsLike: json.hourly.apparent_temperature?.[i] ?? 0,
+          apparentTemp: json.hourly.apparent_temperature?.[i] ?? 0,
+          showers: json.hourly.showers?.[i] ?? 0,
+          precipitationProbability: json.hourly.precipitation_probability?.[i] ?? 0,
+          evapotranspiration: json.hourly.et0_fao_evapotranspiration?.[i] ?? 0,
+          et0: json.hourly.et0_fao_evapotranspiration?.[i] ?? 0,
+          vapourPressureDeficit: 0,
+          soilTemp: 0,
+          soilMoisture: 0,
+        });
+      }
+
+      const current: MeteoCurrent = {
+        time: new Date(json.current.time),
+        temperature: json.current.temperature_2m ?? 0,
+        humidity: json.current.relative_humidity_2m ?? 50,
+        apparentTemp: json.current.apparent_temperature ?? 0,
+        isDay: json.current.is_day ?? 1,
+        precipitation: json.current.precipitation ?? 0,
+        rain: json.current.rain ?? 0,
+        snowfall: json.current.snowfall ?? 0,
+        weatherCode: json.current.weather_code ?? 0,
+        cloudCover: json.current.cloud_cover ?? 0,
+        pressure: json.current.pressure_msl ?? 1013,
+        surfacePressure: json.current.surface_pressure ?? 1013,
+        windSpeed: json.current.wind_speed_10m ?? 0,
+        windDir: json.current.wind_direction_10m ?? 0,
+        windGusts: json.current.wind_gusts_10m ?? 0,
+      };
+
+      const daily: MeteoDaily[] = [];
+      const dailyLen = json.daily.time.length;
+      for (let i = 0; i < dailyLen; i++) {
+        daily.push({
+          date: new Date(json.daily.time[i]),
+          tempMax: json.daily.temperature_2m_max[i] ?? 0,
+          tempMin: json.daily.temperature_2m_min[i] ?? 0,
+          apparentTempMax: json.daily.apparent_temperature_max[i] ?? 0,
+          apparentTempMin: json.daily.apparent_temperature_min[i] ?? 0,
+          sunrise: json.daily.sunrise[i] ?? "",
+          sunset: json.daily.sunset[i] ?? "",
+          daylightDuration: json.daily.daylight_duration[i] ?? 0,
+          sunshineDuration: json.daily.sunshine_duration[i] ?? 0,
+          uvIndexMax: json.daily.uv_index_max[i] ?? 0,
+          uvIndexClearSkyMax: json.daily.uv_index_clear_sky_max[i] ?? 0,
+          precipitationSum: json.daily.precipitation_sum[i] ?? 0,
+          rainSum: json.daily.rain_sum[i] ?? 0,
+          snowfallSum: json.daily.snowfall_sum[i] ?? 0,
+          precipitationHours: json.daily.precipitation_hours[i] ?? 0,
+          precipitationProbabilityMax: json.daily.precipitation_probability_max[i] ?? 0,
+          windSpeedMax: json.daily.wind_speed_10m_max[i] ?? 0,
+          windGustsMax: json.daily.wind_gusts_10m_max[i] ?? 0,
+          windDirDominant: json.daily.wind_direction_10m_dominant[i] ?? 0,
+          shortwaveRadiationSum: json.daily.shortwave_radiation_sum[i] ?? 0,
+          uvIndexMax: json.daily.uv_index_max[i] ?? 0,
+        });
+      }
 
       return { hourly, current, daily, model: "auto" };
     } catch (err) {
