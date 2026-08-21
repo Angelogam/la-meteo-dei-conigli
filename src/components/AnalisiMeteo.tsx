@@ -31,32 +31,7 @@ function getWindDirName(deg: number): string {
   return dirs[Math.round(deg / 22.5) % 16];
 }
 
-// RIMOSSO: useMemo anomalieClima - non usato in modo efficace nel componente
-// const anomalieClima = useMemo(() => {
-//   if (!dayData || dayData.length === 0) return [];
-//   const oreGiorno = dayData.filter(h => {
-//     const hh = h.time.getHours();
-//     return hh >= 8 && hh <= 18;
-//   });
-//   if (oreGiorno.length < 3) return [];
-//
-//   const tempMax = Math.max(...oreGiorno.map(h => h.temperature));
-//   const tempMin = Math.min(...oreGiorno.map(h => h.temperature));
-//   const ventoMedio = oreGiorno.reduce((s, h) => s + h.windSpeed, 0) / oreGiorno.length;
-//   const pioggiaTot = oreGiorno.reduce((s, h) => s + (h.precipitation || 0), 0);
-//   const delta = Math.round((tempMax - tempMin) * 10) / 10;
-//
-//   return confrontaClima(tempMax, tempMin, Math.round(ventoMedio), pioggiaTot, delta);
-// }, [dayData]);
-
 export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
-  // const analisiApprofondita = useMemo(() => {
-  //   return calcolaAnalisiApprofondita(dayData, site);
-  // }, [dayData, site]);
-
-  // ... rest of component keeping existing functionality but without anomalieClima reference
-  // The component continues to work without the unused anomaly comparison
-
   if (!dayData || dayData.length < 3) {
     return (
       <div className="text-center py-12 text-slate-400 text-base">
@@ -82,13 +57,6 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
         </div>
       </div>
 
-      {/* Badge climatologico */ levero rimosso: {anomalieClima.length > 0 && <BadgeClima anomalie={anomalieClima} />}}
-
-      {/* ANALISI APPROFONDITA */}
-      {/* levero rimosso: {analisiApprofondita && (
-        <AnalisiApprofonditaCard analisi={analisiApprofondita} siteName={site?.name || "Decollo"} dayData={dayData} />
-      )}}
-
       {/* Situazione generale (riepilogo rapido) */}
       <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 rounded-2xl p-5">
         <div className="flex items-center gap-2 mb-4">
@@ -107,7 +75,7 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
       <div className={"rounded-2xl p-5 border-2 " + /* getRischioBg(analisi.rischioTemporali) */}>
         <div className="flex items-center gap-3 mb-3">
           { /* analisi.rischioTemporali >= 70 || analisi.oreTemporale > 0 ? ( */ <CloudLightning className="w-8 h-8 text-red-400 shrink-0" /> /* ) : analisi.rischioTemporali >= 15 ? ( */ <CloudRain className="w-8 h-8 text-amber-400 shrink-0" /> /* ) : ( */ <Cloud className="w-8 h-8 text-green-400 shrink-0" /> /* ) */
-          />
+          }
           <div className="min-w-0">
             <h3 className="text-base font-bold text-white">{site?.name} — Rischio temporali</h3>
             <p className={"text-sm font-medium " + /* getRischioText(analisi.rischioTemporali) */}>/* analisi.dettaglioTemporali */</p>
@@ -127,8 +95,18 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
         </div>
         <div className="space-y-2 text-sm text-slate-300">
           <p>{/* analisi.valutazione */}</p>
-          {/* { /* analisi.puntiPositivi.length > 0 && ( */ <div className="mt-2"> <div className="text-xs text-emerald-400 font-bold mb-1">Punti positivi:</div> {/* analisi.puntiPositivi.map((p, i) => ( */ <p key={i}><span className="text-emerald-400 mr-2">&bull;</span>{/* p */}</p> /* ) */ ) */ } </div> } */}
-          {/* { /* analisi.puntiNegativi.length > 0 && ( */ <div className="mt-2"> <div className="text-xs text-amber-400 font-bold mb-1">Criticità:</div> {/* analisi.puntiNegativi.map((p, i) => ( */ <p key={i}><span className="text-amber-400 mr-2">&bull;</span>{/* p */}</p> /* ) */ ) */ } </div> } </div>
+          <div className="mt-2">
+            <div className="text-xs text-emerald-400 font-bold mb-1">Punti positivi:</div>
+            {/* analisi.puntiPositivi.map((p, i) => (
+              <p key={i}><span className="text-emerald-400 mr-2">&bull;</span>{p}</p>
+            )) */}
+          </div>
+          <div className="mt-2">
+            <div className="text-xs text-amber-400 font-bold mb-1">Criticità:</div>
+            {/* analisi.puntiNegativi.map((p, i) => (
+              <p key={i}><span className="text-amber-400 mr-2">&bull;</span>{p}</p>
+            )) */}
+          </div>
         </div>
       </div>
     </div>
