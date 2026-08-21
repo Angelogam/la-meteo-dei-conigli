@@ -16,7 +16,6 @@ export function transformHourlyData(raw: RawMeteoResponse["hourly"]): HourData[]
     const timeStr = raw.time[i] as string;
     const time = new Date(timeStr);
     
-    // Safely parse numeric values, falling back to defaults
     const temperature = Number(raw.temperature_2m?.[i]) ?? 15;
     const humidity = Number(raw.relative_humidity_2m?.[i] ?? 50);
     const dewPoint = Number(raw.dew_point_2m?.[i] ?? 10);
@@ -34,21 +33,14 @@ export function transformHourlyData(raw: RawMeteoResponse["hourly"]): HourData[]
     const windDir = Number(raw.wind_direction_10m?.[i] ?? 0);
     const windGusts = Number(raw.wind_gusts_10m?.[i] ?? 0);
     const uvIndex = Number(raw.uv_index?.[i] ?? 0);
-    
-    // Additional fields that might be present but are not part of HourData
     const visibility = Number(raw.visibility?.[i] ?? 10000);
     const directRadiation = Number(raw.direct_radiation?.[i] ?? 0);
     const diffuseRadiation = Number(raw.diffuse_radiation?.[i] ?? 0);
-    const visibilityLow = visibility;
-    
-    // Additional fields that might be present but are not part of HourData
-    const directRadiationVal = Number(raw.direct_radiation?.[i] ?? 0);
-    const diffuseRadiationVal = Number(raw.diffuse_radiation?.[i] ?? 0);
-    const visibilityLowVal = visibility;
     
     result.push({
       time: new Date(timeStr),
       temperature: temperature,
+      feelsLike: 0,
       humidity: humidity,
       dewPoint: dewPoint,
       pressure: pressure,
@@ -65,18 +57,16 @@ export function transformHourlyData(raw: RawMeteoResponse["hourly"]): HourData[]
       windDir: windDir,
       windGusts: windGusts,
       uvIndex: uvIndex,
-      visibility: visibilityLowVal,
-      // Additional fields that are not part of HourData but might be present
-      directRadiation: directRadiationVal,
-      diffuseRadiation: diffuseRadiationVal,
-      visibility: visibilityLowVal,
+      visibility: visibility,
+      directRadiation: directRadiation,
+      diffuseRadiation: diffuseRadiation,
     });
   }
 
   return result;
 }
 
-export function transformCurrentData(raw: RawMeteoResponse["current"]): MeteoCurrent {
+export function transformCurrentData(raw: RawMeteoResponse["current"]): any {
   return {
     time: new Date(raw.time),
     temperature: Number(raw.temperature_2m) ?? 0,
@@ -94,3 +84,4 @@ export function transformCurrentData(raw: RawMeteoResponse["current"]): MeteoCur
     windDir: Number(Number(raw.wind_direction_10m) ?? 0),
     windGusts: Number(Number(raw.wind_gusts_10m) ?? 0),
   };
+}
