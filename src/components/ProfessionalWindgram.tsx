@@ -101,10 +101,10 @@ export default function ProfessionalWindgram({
     };
   }, [latitude, longitude, dateStr]);
 
-  // Dimensioni SVG
+  // Reduced dimensions for a more compact card
   const width = 1080;
-  const height = 560;
-  const margin = { top: 68, right: 86, bottom: 76, left: 86 };
+  const height = 480;
+  const margin = { top: 56, right: 76, bottom: 66, left: 76 };
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
@@ -372,7 +372,7 @@ export default function ProfessionalWindgram({
           </div>
           <div>
             <h3 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
-              Windgram Alpium &bull; {siteName}
+              Windgram &bull; {siteName}
             </h3>
             <div className="flex items-center gap-4 text-xs sm:text-sm text-slate-400">
               <span className="flex items-center gap-1.5">
@@ -472,21 +472,6 @@ export default function ProfessionalWindgram({
               <rect x="0" y="0" width="40" height="16" rx="4" fill="#ffffff" stroke="#1d4ed8" strokeWidth="1.2" />
               <text x="20" y="12" fill="#1e40af" fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">6.7 mm</text>
             </g>
-
-            {/* Watermark Alpium */}
-            <text
-              x={margin.left + plotW / 2}
-              y={margin.top + plotH / 2}
-              fill="#0f172a"
-              fontSize="52"
-              fontWeight="900"
-              letterSpacing="8"
-              opacity="0.04"
-              textAnchor="middle"
-              transform={`rotate(-20, ${margin.left + plotW / 2}, ${margin.top + plotH / 2})`}
-            >
-              ALPIUM
-            </text>
 
             {/* --- LINEE LIVELLI DI PRESSIONE ORIZZONTALI --- */}
             {PRESSURE_LEVELS.map((p) => {
@@ -662,7 +647,7 @@ export default function ProfessionalWindgram({
           </div>
 
           <div className="mt-7 text-center text-xs text-slate-600 font-mono">
-            Fonte: AROME 0-48 h + ICON-EU 0-120 h via Open-Meteo &bull; Diagnostica di volo a vela di Alpium
+            Fonte: AROME 0-48 h + ICON-EU 0-120 h via Open-Meteo &bull; Diagnostica di volo a vela
           </div>
         </div>
       </div>
