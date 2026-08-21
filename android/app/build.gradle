@@ -19,10 +19,26 @@ android {
         }
     }
 
+    // Configurazione firma per APK release
+    signingConfigs {
+        release {
+            storeFile file("../meteo-conigli-release.keystore")
+            storePassword "test1234"
+            keyAlias "meteo-conigli"
+            keyPassword "test1234"
+        }
+    }
+
     buildTypes {
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+
+        debug {
+            // Debug già configurato di default
         }
     }
 
