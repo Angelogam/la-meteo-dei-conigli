@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type { HourData, DailyData } from "@/types/meteo";
 import { DECOLLI } from "@/data/decolli";
-import { fetchAllWeatherData, fetchHourlyData } from "@/services/openMeteoService";
+import { weatherService } from "@/services/weatherService";
 
 const STORAGE_KEY_SITE = "meteo_selected_decollo";
 const REFRESH_INTERVAL = 600000; // 10 minuti
@@ -37,7 +37,8 @@ export function useWeatherData() {
   const [selectedDay, setSelectedDay] = useState(0);
   const [selectedHour, setSelectedHour] = useState(new Date().getHours());
   const [activeTab, setActiveTab] = useState<"meteo" | "venti" | "termiche" | "analisi">("meteo");
-  const [activeModel, setActiveModel] = useState("gfs");
+  const [activeModel, setActiveModel] = useState("auto");
+  const [cacheInfo, setCacheInfo] = useState<{ fromCache: boolean; entries: number }>({ fromCache: false, entries: 0 });
 
   // Dati grezzi da Open-Meteo
   const [hourlyData, setHourlyData] = useState<HourData[]>([]);
@@ -48,75 +49,93 @@ export function useWeatherData() {
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
   // Dati derivati
-  const dayData = hourlyData.filter(h => {
+  const dayData = useMemo(() => {
+    if (!hourlyData.length) return [];
     const oggi = new Date();
     const targetDate = new Date(oggi);
     targetDate.setDate(oggi.getDate() + selectedDay);
-    const hDate = new Date(h.time);
-    return (
-      hDate.getDate() === targetDate.getDate() &&
-      hDate.getMonth() === targetDate.getMonth() &&
-      hDate.getFullYear() === targetDate.getFullYear()
-    );
-  });
-
-  const currentData = dayData.find(h => new Date(h.time).getHours() === selectedHour) ||
-    dayData[0] || hourlyData[0] || null;
-
-  // Dati arrotondati per visualizzazione
-  const currentDataRounded = currentData ? {
-    ...currentData,
-    temperature: Math.round(currentData.temperature),
-    windSpeed: Math.round(currentData.windSpeed),
-    windGusts: currentData.windGusts ? Math.round(currentData.windGusts) : 0,
-    humidity: Math.round(currentData.humidity),
-    pressure: Math.round(currentData.pressure),
-    precipitation: Math.round(currentData.precipitation * 10) / 10,
-    cloudCover: Math.round(currentData.cloudCover),
-    uvIndex: Math.round(currentData.uvIndex),
-    visibility: currentData.visibility ? Math.round(currentData.visibility / 100) * 100 : 10000,
-  } : null;
-
-  const enrichedDaily = dailyData.map((d, i) => {
-    const dayHours = hourlyData.filter(h => {
+    return hourlyData.filter(h => {
       const hDate = new Date(h.time);
-      const dDate = new Date(d.date);
       return (
-        hDate.getDate() === dDate.getDate() &&
-        hDate.getMonth() === dDate.getMonth()
+        hDate.getDate() === targetDate.getDate() &&
+        hDate.getMonth() === targetDate.getMonth() &&
+        hDate.getFullYear() === targetDate.getFullYear()
       );
     });
+  }, [hourlyData, selectedDay]);
 
-    const temps = dayHours.map(h => h.temperature).filter(t => t != null);
-    const winds = dayHours.map(h => h.windSpeed).filter(w => w != null);
-    const clouds = dayHours.map(h => h.cloudCover).filter(c => c != null);
+  const currentData = useMemo(() => {
+    if (!dayData.length) return null;
+    return dayData.find(h => new Date(h.time).getHours() === selectedHour) ||
+      dayData[0] || hourlyData[0] || null;
+  }, [dayData, selectedHour, hourlyData]);
 
+  const currentDataRounded = useMemo(() => {
+    if (!currentData) return null;
     return {
-      ...d,
-      temperatureMax: Math.round(Math.max(...temps)),
-      temperatureMin: Math.round(Math.min(...temps)),
-      windSpeedMax: Math.round(Math.max(...winds)),
-      windSpeed: Math.round(winds.reduce((s, w) => s + w, 0) / winds.length),
-      cloudCover: Math.round(clouds.reduce((s, c) => s + c, 0) / clouds.length),
-      weatherDescription: getWeatherDescription(d.weatherCode),
+      ...currentData,
+      temperature: Math.round(currentData.temperature),
+      windSpeed: Math.round(currentData.windSpeed),
+      windGusts: currentData.windGusts ? Math.round(currentData.windGusts) : 0,
+      humidity: Math.round(currentData.humidity),
+      pressure: Math.round(currentData.pressure),
+      precipitation: Math.round(currentData.precipitation * 10) / 10,
+      cloudCover: Math.round(currentData.cloudCover),
+      uvIndex: Math.round(currentData.uvIndex),
+      visibility: currentData.visibility ? Math.round(currentData.visibility / 100) * 100 : 10000,
     };
-  });
+  }, [currentData]);
 
-  const thermalDelta = currentData ? Math.round((currentData.temperature - (currentData.dewPoint || 0)) * 10) / 10 : 0;
+  const enrichedDaily = useMemo(() => {
+    return dailyData.map((d, i) => {
+      const dayHours = hourlyData.filter(h => {
+        const hDate = new Date(h.time);
+        const dDate = new Date(d.date);
+        return (
+          hDate.getDate() === dDate.getDate() &&
+          hDate.getMonth() === dDate.getMonth()
+        );
+      });
 
-  const currentCape = currentData ? {
-    cape: Math.round(currentData.cape || 0),
-    cin: Math.round(currentData.cin || 0),
-    liftedIndex: currentData.liftedIndex !== undefined ? Math.round(currentData.liftedIndex * 10) / 10 : 0,
-  } : null;
+      const temps = dayHours.map(h => h.temperature).filter(t => t != null);
+      const winds = dayHours.map(h => h.windSpeed).filter(w => w != null);
+      const clouds = dayHours.map(h => h.cloudCover).filter(c => c != null);
 
-  const dateLabels = Array.from({ length: 3 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
-    const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
-    return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
-  });
+      return {
+        ...d,
+        temperatureMax: Math.round(Math.max(...temps)),
+        temperatureMin: Math.round(Math.min(...temps)),
+        windSpeedMax: Math.round(Math.max(...winds)),
+        windSpeed: Math.round(winds.reduce((s, w) => s + w, 0) / winds.length),
+        cloudCover: Math.round(clouds.reduce((s, c) => s + c, 0) / clouds.length),
+        weatherDescription: getWeatherDescription(d.weatherCode),
+      };
+    });
+  }, [dailyData, hourlyData]);
+
+  const thermalDelta = useMemo(() => {
+    if (!currentData) return 0;
+    return Math.round((currentData.temperature - (currentData.dewPoint || 0)) * 10) / 10;
+  }, [currentData]);
+
+  const currentCape = useMemo(() => {
+    if (!currentData) return null;
+    return {
+      cape: Math.round(currentData.cape || 0),
+      cin: Math.round(currentData.cin || 0),
+      liftedIndex: currentData.liftedIndex !== undefined ? Math.round(currentData.liftedIndex * 10) / 10 : 0,
+    };
+  }, [currentData]);
+
+  const dateLabels = useMemo(() => {
+    return Array.from({ length: 3 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const giorni = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
+      const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+      return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
+    });
+  }, []);
 
   const loadWeather = useCallback(async () => {
     if (!site) return;
@@ -125,21 +144,24 @@ export function useWeatherData() {
       setUpdating(true);
       setLoading(true);
 
-      const hourly = await fetchHourlyData(site.lat, site.lon, site.altitude);
-      const daily = await fetchAllWeatherData(site.lat, site.lon);
+      const { data: hourly, ok: hourlyOk, fromCache: hourlyCache } = await weatherService.fetchWeather(site.lat, site.lon);
+      const { data: daily, ok: dailyOk } = await weatherService.fetchAllWeatherData(site.lat, site.lon);
 
-      setHourlyData(hourly);
-      setDailyData(daily);
-
-      setAllHourlyData(prev => ({
-        ...prev,
-        [site.id]: hourly,
-      }));
+      if (hourlyOk && hourly) {
+        setHourlyData(hourly.hourly);
+        setDailyData(daily || []);
+        setAllHourlyData(prev => ({
+          ...prev,
+          [site.id]: hourly.hourly,
+        }));
+        setCacheInfo({ fromCache: hourlyCache, entries: hourly.hourly.length });
+      }
 
       setLastUpdate(new Date());
       setCountdown(REFRESH_INTERVAL);
     } catch (err) {
       console.error("Errore caricamento dati:", err);
+      setCacheInfo({ fromCache: false, entries: 0 });
     } finally {
       setLoading(false);
       setUpdating(false);
@@ -202,6 +224,7 @@ export function useWeatherData() {
     countdown,
     activeModel,
     setActiveModel,
+    cacheInfo,
 
     // Sito
     site,
