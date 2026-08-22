@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { Wind, AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
+import { Wind, AlertTriangle, CheckCircle, Loader2, Gauge } from "lucide-react";
 import { weatherService } from "@/services/weatherService";
 import { getVentoStatusColor } from "@/utils/validaVentoDecollo";
 import { getDirLabel, getDirArrow } from "@/utils/windDirections";
