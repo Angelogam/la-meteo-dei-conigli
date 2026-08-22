@@ -109,7 +109,7 @@ export default function VentiTab({
         </div>
 
         {/* Status Badge */}
-        <div className={`px-3 py-1 rounded-lg text-xs font-bold ${getVentoStatusColor(isFavourable ? "favorevole" : isSottovento ? "importante" : isContrario ? "rischioso" : "info")`}>
+        <div className={`px-3 py-1 rounded-lg text-xs font-bold ${getVentoStatusColor(isFavourable ? "favorevole" : isSottovento ? "importante" : isContrario ? "rischioso" : "info")}`}>
           {isFavourable ? "Ottimo" : isSottovento ? "Sottovento" : isContrario ? "Rischioso" : "Info"}
         </div>
       </div>
