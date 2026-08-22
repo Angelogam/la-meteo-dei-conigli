@@ -170,72 +170,11 @@ const DAILY_PARAMS = [
   "uv_index_max",
 ].join(",");
 
-const BASE_URL = "https://api.open-meteo.com/v1/forecast";
-
-const HOURLY_PARAMS = [
+const HOURLY_LIGHT_PARAMS = [
   "temperature_2m",
-  "relative_humidity_2m",
-  "dew_point_2m",
-  "apparent_temperature",
-  "precipitation",
-  "precipitation_probability",
-  "weather_code",
-  "cloud_cover",
   "wind_speed_10m",
   "wind_direction_10m",
-  "wind_gusts_10m",
-  "uv_index",
-  "shortwave_radiation",
-  "direct_radiation",
-  "sunshine_duration",
-  "temperature_80m",
-  "temperature_120m",
-  "wind_speed_80m",
-  "wind_direction_80m",
-  "wind_speed_120m",
-  "wind_direction_120m",
-  "wind_speed_180m",
-  "wind_direction_180m",
-  "wind_speed_300m",
-  "wind_direction_300m",
-  "wind_speed_600m",
-  "wind_direction_600m",
-  "wind_speed_1000m",
-  "wind_direction_1000m",
-  "wind_speed_1500m",
-  "wind_direction_1500m",
-  "wind_speed_2000m",
-  "wind_direction_2000m",
-  "wind_speed_2500m",
-  "wind_direction_2500m",
-  "wind_speed_3000m",
-  "wind_direction_3000m",
-  "cape",
-  "convective_inhibition",
-  "lifted_index",
-].join(",");
-
-const DAILY_PARAMS = [
   "weather_code",
-  "temperature_2m_max",
-  "temperature_2m_min",
-  "temperature_2m_mean",
-  "apparent_temperature_max",
-  "apparent_temperature_min",
-  "sunrise",
-  "sunset",
-  "daylight_duration",
-  "sunshine_duration",
-  "precipitation_sum",
-  "rain_sum",
-  "snowfall_sum",
-  "precipitation_hours",
-  "precipitation_probability_max",
-  "wind_speed_10m_max",
-  "wind_gusts_10m_max",
-  "wind_direction_10m_dominant",
-  "shortwave_radiation_sum",
-  "uv_index_max",
 ].join(",");
 
 function buildWindProfile(rawHourly: Record<string, (number | string)[]>, idx: number): { height: number; speed: number; dir: number }[] {
@@ -470,3 +409,4 @@ export const weatherService = {
       return { data: null, ok: false };
     }
   }
+};
