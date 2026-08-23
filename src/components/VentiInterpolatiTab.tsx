@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { Wind, Calendar, MapPin, TrendingUp, Compass } from "lucide-react";
+import { Wind, Calendar, MapPin, TrendingUp } from "lucide-react";
 import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
 import ProfessionalWindgram from "@/components/ProfessionalWindgram";
 
@@ -124,7 +124,7 @@ export default function VentiInterpolatiTab({
 
   return (
     <div className="space-y-6">
-      {/* Windgram Professionale integrato */}
+      {/* Windgram Professionale integrato con dati reali */}
       <ProfessionalWindgram
         latitude={lat}
         longitude={lon}
