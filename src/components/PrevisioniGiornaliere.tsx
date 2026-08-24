@@ -92,25 +92,29 @@ export default function PrevisioniGiornaliere({
               </div>
 
               {daily && (
-                <div className="space-y-1 text-xs">
-                  <div className="flex items-center justify-between">
+                <div className="space-y-1.5 text-xs">
+                  {/* Temperature row - with °C */}
+                  <div className="flex items-center justify-between text-sm">
                     <span className="text-amber-300 font-bold">
-                      {Math.round(daily.temperatureMax)}°
+                      {Math.round(daily.temperatureMax)}°C
                     </span>
                     <span className="text-sky-300 font-medium">
-                      {Math.round(daily.temperatureMin)}°
+                      {Math.round(daily.temperatureMin)}°C
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-700/40">
-                    <span className="flex items-center gap-0.5">
-                      <Wind className="w-3 h-3 text-slate-400" />
-                      {Math.round(daily.windSpeedMax)} km/h
+
+                  {/* Wind + Zero Termico row - prominent */}
+                  <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-700/40">
+                    <span className="flex items-center gap-1.5 text-slate-300">
+                      <Wind className="w-3.5 h-3.5 text-cyan-400" />
+                      <span className="font-medium">{Math.round(daily.windSpeedMax)} km/h</span>
                     </span>
-                    <span className="flex items-center gap-0.5 text-amber-300">
-                      <Mountain className="w-3 h-3" />
-                      {freezingLevel ? `${freezingLevel}m` : "--m"}
+                    <span className="flex items-center gap-1.5 text-amber-300 font-semibold bg-amber-900/30 px-2 py-0.5 rounded-lg border border-amber-500/30">
+                      <Mountain className="w-3.5 h-3.5" />
+                      <span>{freezingLevel ? `${freezingLevel}m` : "--m"}</span>
                     </span>
                   </div>
+
                   {daily.precipitationSum > 0 && (
                     <div className="text-rose-300 font-semibold flex items-center gap-0.5 text-[10px]">
                       <CloudRain className="w-3 h-3" />
