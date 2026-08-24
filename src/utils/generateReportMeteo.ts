@@ -45,23 +45,12 @@ export function generateReportMeteo({
   const freezes: number[] = hourlyData.freezing_level_height || [];
   const codes: number[] = hourlyData.weather_code || [];
 
-  // Filtra ore diurne 8:00 - 19:00 per la data target
-  const targetDateStr = dateObj.toISOString().split("T")[0];
+  // Filtra ore diurne 8:00 - 19:00
   const dayIndices: number[] = [];
   times.forEach((t, i) => {
-    if (t.startsWith(targetDateStr)) {
-      const hr = parseInt(t.split("T")[1].split(":")[0], 10);
-      if (hr >= 8 && hr <= 19) dayIndices.push(i);
-    }
+    const hr = parseInt(t.split("T")[1].split(":")[0], 10);
+    if (hr >= 8 && hr <= 19) dayIndices.push(i);
   });
-
-  // Se non trova per data precisa, fallback su tutte le ore nel range 8-19
-  if (dayIndices.length === 0) {
-    times.forEach((t, i) => {
-      const hr = parseInt(t.split("T")[1].split(":")[0], 10);
-      if (hr >= 8 && hr <= 19) dayIndices.push(i);
-    });
-  }
 
   if (dayIndices.length === 0) return null;
 
@@ -70,111 +59,115 @@ export function generateReportMeteo({
   const tempMin = Math.round(Math.min(...dayTemps));
   const tempMax = Math.round(Math.max(...dayTemps));
 
-  // Nuvole & Pioggia
-  const dayClouds = dayIndices.map((i) => clouds[i] ?? 50);
-  const avgCloud = Math.round(dayClouds.reduce((a, b) => a + b, 0) / dayClouds.length);
-
-  const dayPrecips = dayIndices.map((i) => precips[i] ?? 0);
-  const totPrecip = Math.round(dayPrecips.reduce((a, b) => a + b, 0) * 10) / 10;
-  const maxPrecipHour = Math.max(...dayPrecips);
-  const hasThunderstorm = dayIndices.some((i) => (codes[i] ?? 0) >= 95 || (codes[i] ?? 0) === 82);
-  const hasHeavyRain = totPrecip >= 1.5 || maxPrecipHour >= 0.6;
-  const hasLightRain = totPrecip > 0.1 || dayIndices.some((i) => (codes[i] ?? 0) >= 51 && (codes[i] ?? 0) <= 67);
-
   // CAPE & Stabilità
-  const dayCapes = dayIndices.map((i) => capes[i] ?? 200);
-  const maxCape = Math.round(Math.max(...dayCapes, 100));
+  const dayCapes = dayIndices.map((i) => capes[i] ?? 300);
+  const maxCape = Math.round(Math.max(...dayCapes, 150));
+  const avgCape = Math.round(dayCapes.reduce((a, b) => a + b, 0) / dayCapes.length);
 
-  // Stima Lifted Index
-  let liftedIndex = -1.0;
-  if (hasThunderstorm || maxCape > 1200) liftedIndex = -5.0;
-  else if (maxCape > 800) liftedIndex = -3.5;
-  else if (maxCape > 400) liftedIndex = -1.8;
-  else liftedIndex = 1.5;
+  // Stima Lifted Index da CAPE/Spread
+  let liftedIndex = -1.5;
+  if (maxCape > 1200) liftedIndex = -5.2;
+  else if (maxCape > 800) liftedIndex = -4.2;
+  else if (maxCape > 400) liftedIndex = -2.8;
+  else if (maxCape > 150) liftedIndex = -1.2;
+  else liftedIndex = 1.4;
 
   // Zero Termico
-  const dayFreezes = dayIndices.map((i) => freezes[i] ?? 3200).filter((f) => f > 0);
-  const avgFreeze = dayFreezes.length > 0 ? Math.round(dayFreezes.reduce((a, b) => a + b, 0) / dayFreezes.length) : 3200;
+  const dayFreezes = dayIndices.map((i) => freezes[i] ?? 3600).filter((f) => f > 0);
+  const avgFreeze = dayFreezes.length > 0 ? Math.round(dayFreezes.reduce((a, b) => a + b, 0) / dayFreezes.length) : 3600;
 
-  // Base Cumuli (LCL)
+  // Base Cumuli (LCL) media ore centrali
   const centralIndices = dayIndices.filter((i) => {
     const hr = parseInt(times[i].split("T")[1].split(":")[0], 10);
     return hr >= 11 && hr <= 16;
   });
   const avgSpread = centralIndices.length > 0
-    ? centralIndices.reduce((acc, i) => acc + Math.max(0.5, (temps[i] ?? 15) - (dews[i] ?? 12)), 0) / centralIndices.length
-    : 4;
+    ? centralIndices.reduce((acc, i) => acc + Math.max(1, (temps[i] ?? 18) - (dews[i] ?? 10)), 0) / centralIndices.length
+    : 8;
 
-  const baseCumuliMin = Math.round(altitude + Math.max(150, (avgSpread - 1.5) * 125));
-  const baseCumuliMax = Math.round(altitude + Math.max(300, (avgSpread + 1.5) * 125));
+  const baseCumuliMin = Math.round(altitude + Math.max(400, (avgSpread - 2) * 125));
+  const baseCumuliMax = Math.round(altitude + Math.max(700, (avgSpread + 2) * 125));
 
-  // Rateo salita realistico
-  let rateoMin = 0.2;
-  let rateoMax = 0.5;
+  // Innesco termico
+  let oraInnesco = "10:30";
+  const innescoIdx = dayIndices.find((i) => {
+    const hr = parseInt(times[i].split("T")[1].split(":")[0], 10);
+    return hr >= 10 && (temps[i] ?? 0) >= tempMin + 4;
+  });
+  if (innescoIdx != null) {
+    const hr = parseInt(times[innescoIdx].split("T")[1].split(":")[0], 10);
+    oraInnesco = `${String(hr).padStart(2, "0")}:00`;
+  }
 
-  if (hasThunderstorm || hasHeavyRain) {
-    rateoMin = 0.0;
-    rateoMax = 0.2;
-  } else if (hasLightRain || avgCloud > 80) {
-    rateoMin = 0.2;
-    rateoMax = 0.6;
-  } else if (maxCape > 800 && avgCloud < 60) {
-    rateoMin = 1.5;
-    rateoMax = 2.6;
-  } else if (maxCape > 400 && avgCloud < 70) {
+  // Rateo salita stimato
+  let rateoMin = 0.8;
+  let rateoMax = 1.4;
+  if (maxCape > 1000) {
+    rateoMin = 1.4;
+    rateoMax = 2.4;
+  } else if (maxCape > 500) {
     rateoMin = 1.0;
     rateoMax = 1.8;
   } else {
-    rateoMin = 0.5;
-    rateoMax = 1.0;
+    rateoMin = 0.6;
+    rateoMax = 1.1;
   }
 
-  // Vento
+  // Vento al suolo
   const dayWinds = dayIndices.map((i) => winds[i] ?? 8);
   const avgWindGround = Math.round(dayWinds.reduce((a, b) => a + b, 0) / dayWinds.length);
   const maxWindGround = Math.round(Math.max(...dayWinds));
   const mainWindDir = degToCardinal(dirs[dayIndices[Math.floor(dayIndices.length / 2)]] ?? 180);
 
-  const wind1500_2500 = Math.round(avgWindGround * 1.3 + 4);
+  // Venti alle quote
+  const wind1500_2500 = Math.round(avgWindGround * 1.5 + 4);
   const dir1500_2500 = degToCardinal((dirs[dayIndices[0]] ?? 180) + 15);
 
-  const wind2500_3500 = Math.round(avgWindGround * 2.0 + 8);
-  const dir2500_3500 = degToCardinal((dirs[dayIndices[0]] ?? 180) + 30);
+  const wind2500_3500 = Math.round(avgWindGround * 2.4 + 10);
+  const dir2500_3500 = degToCardinal((dirs[dayIndices[0]] ?? 180) + 35);
 
-  const windOver3500 = Math.round(avgWindGround * 2.8 + 14);
-  const dirOver3500 = degToCardinal((dirs[dayIndices[0]] ?? 180) + 45);
+  const windOver3500 = Math.round(avgWindGround * 3.2 + 18);
+  const dirOver3500 = degToCardinal((dirs[dayIndices[0]] ?? 180) + 50);
 
-  // Innesco termico
-  let oraInnesco = "Non previsto / Termiche inibite";
-  if (!hasHeavyRain && !hasThunderstorm && avgCloud < 85) {
-    oraInnesco = "11:30 - 12:00";
+  // Pioggia e Temporali
+  const dayPrecips = dayIndices.map((i) => precips[i] ?? 0);
+  const totPrecip = Math.round(dayPrecips.reduce((a, b) => a + b, 0) * 10) / 10;
+  const hasRain = totPrecip > 0.3;
+  const hasThunderstorm = dayIndices.some((i) => (codes[i] ?? 0) >= 95 || ((codes[i] ?? 0) >= 80 && maxCape > 800));
+
+  let rainProbText = "bassa (<10%)";
+  let probTemporali = "5–10%";
+  if (hasThunderstorm || (hasRain && maxCape > 900)) {
+    probTemporali = "40–55%";
+    rainProbText = "alta";
+  } else if (hasRain || maxCape > 600) {
+    probTemporali = "25–35%";
+    rainProbText = "moderata";
   }
 
-  // CALCOLO VOTO RIGOROSO
-  let score = 7;
-  let giudizioDesc = "";
+  // Finestra di lancio consigliata
+  const oraFine = hasThunderstorm || hasRain ? "12:30" : "16:00";
+  const finestraLancio = `${oraInnesco} e le ${oraFine}`;
+  const quotaSicura = Math.min(3200, baseCumuliMin);
 
+  // Giudizio e Voto
+  let score = 7;
+  let giudizioDesc = "giornata favorevole per il volo libero";
   if (hasThunderstorm) {
-    score = 0;
-    giudizioDesc = "NON VOLABILE ❌ — Rischio temporali e fulminazioni. Volo categoricamente vietato";
-  } else if (hasHeavyRain) {
-    score = 1;
-    giudizioDesc = "NON VOLABILE ❌ — Pioggia diffusa e cielo coperto. Nessuna condizione di sicurezza";
-  } else if (hasLightRain) {
-    score = 2;
-    giudizioDesc = "SCONSIGLIATO ⚠️ — Piogge/rovesci intermittenti e nubi basse. Si sconsiglia il decollo";
-  } else if (avgCloud >= 85) {
     score = 3;
-    giudizioDesc = "MOLTO LIMITATO ⚠️ — Copertura nuvolosa totale, termiche assenti o solo deboli planate";
-  } else if (maxWindGround > 28 || wind2500_3500 > 35) {
+    giudizioDesc = "giornata insidiosa con rischio temporali pomeridiani. Volare solo al mattino e rientrare presto";
+  } else if (hasRain || totPrecip > 1) {
     score = 4;
-    giudizioDesc = "DIFFICILE / CRITICO ⚠️ — Vento troppo sostenuto e raffiche; riservato a piloti esperti con vele adatte";
-  } else if (avgCloud <= 50 && maxCape > 600) {
+    giudizioDesc = "giornata instabile e umida con possibili rovesci. Volo locale con attenta osservazione";
+  } else if (wind2500_3500 > 35 || maxWindGround > 25) {
+    score = 5;
+    giudizioDesc = "vento sostenuto in quota con shear marcato. Riservata a piloti esperti";
+  } else if (maxCape > 600 && !hasRain) {
     score = 8;
-    giudizioDesc = "OTTIMA GIORNATA ✅ — Buona attività termica, aria limpida e convezione organizzata";
+    giudizioDesc = "ottima giornata termica con buon sostegno e quote elevate. Condizioni ideali per il volo";
   } else {
     score = 6;
-    giudizioDesc = "DISCRETO / BUONO ✅ — Condizioni tranquille per volo locale o planata serena";
+    giudizioDesc = "buona giornata di volo tranquillo, termiche moderate e atmosfera gestibile";
   }
 
   // Data formattata
@@ -184,62 +177,47 @@ export function generateReportMeteo({
 
   const titolo = `REPORT METEO ${siteName.toUpperCase()} – ${dataHeader}`;
 
-  // 1. Quadro Termico
-  let paragrafoTermico = "";
-  if (hasHeavyRain || hasThunderstorm) {
-    paragrafoTermico = `Giornata compromessa da perturbazione/instabilità bagnata. Temperature al suolo tra ${tempMin} °C e ${tempMax} °C con forte umidità e assenza di irraggiamento solare. Gradiente termico debole o invertito sotto le nubi. Lo zero termico è stimato a circa ${avgFreeze} m con base nubi molto bassa (spesso a ridosso del decollo, ${baseCumuliMin}–${baseCumuliMax} m). Termiche completamente azzerate (${rateoMin.toFixed(1)}–${rateoMax.toFixed(1)} m/s).`;
-  } else if (hasLightRain || avgCloud >= 80) {
-    paragrafoTermico = `Giornata uggiosa e prevalentemente coperta (${avgCloud}% nuvolosità media). Temperature contenute tra ${tempMin} °C e ${tempMax} °C con scarsa escursione. Gradiente termico modesto, zero termico a circa ${avgFreeze} m e base nubi compresa tra ${baseCumuliMin} e ${baseCumuliMax} m. Termiche molto deboli (${rateoMin.toFixed(1)}–${rateoMax.toFixed(1)} m/s) e discontinue a causa della mancanza di soleggiamento diretto.`;
-  } else {
-    paragrafoTermico = `Riscaldamento solare efficace con temperature al suolo previste tra ${tempMin} °C e ${tempMax} °C e gradiente termico vivace (~0.8–0.9 °C/100m). CAPE max di circa ${maxCape} J/kg con Lifted Index a ${liftedIndex.toFixed(1)} K. Lo zero termico si attesta a circa ${avgFreeze} m, base cumuli a ${baseCumuliMin}–${baseCumuliMax} m. Innesco previsto attorno alle ${oraInnesco} con salite termiche medie di ${rateoMin.toFixed(1)}–${rateoMax.toFixed(1)} m/s.`;
-  }
+  // Costruzione Paragrafi
+  const atmosferaTipo = hasThunderstorm
+    ? "instabile con marcata energia convettiva pomeridiana"
+    : maxCape > 800
+    ? "instabile con buona energia termica"
+    : hasRain
+    ? "umida e variabile con moderata attività termica"
+    : "generalmente stabile e favorevole per il volo termico";
 
-  // 2. Quadro Vento
-  const paragrafoVento = `Al suolo vento medio di ${avgWindGround} km/h (raffiche fino a ${maxWindGround} km/h) da ${mainWindDir}. Tra 1500 e 2500 m il flusso si attesta a circa ${wind1500_2500} km/h da ${dir1500_2500}. Tra 2500 e 3500 m il vento raggiunge circa ${wind2500_3500} km/h da ${dir2500_3500}${wind2500_3500 > 30 ? ", con shear marcato sui crinali sopravento" : ""}. Oltre 3500 m intensità sui ${windOver3500} km/h da ${dirOver3500}.`;
+  const paragrafoTermico = `Giornata ${atmosferaTipo}. Riscaldamento diurno previsto tra ${tempMin} °C e ${tempMax} °C al suolo, gradiente termico medio di circa 0.9 °C/100 m con atmosfera vivace. Il CAPE è stimato intorno a ${maxCape} J/kg con Lifted Index di ${liftedIndex.toFixed(1)} K, indice di termiche ${maxCape > 800 ? "robuste e ben organizzate" : "moderate e regolari"}. Lo zero termico si colloca a circa ${avgFreeze} m, con base cumuli tra ${baseCumuliMin} e ${baseCumuliMax} m. L'innesco termico è previsto verso le ${oraInnesco}, con salite medie di ${rateoMin.toFixed(1)}–${rateoMax.toFixed(1)} m/s e visibilità ${totPrecip > 2 ? "discreta" : "ottima"}.`;
 
-  // 3. Convezione & Instabilità
+  const paragrafoVento = `Sotto i 1500 m il vento resta ${avgWindGround < 12 ? "debole" : "moderato"}, ${avgWindGround}–${maxWindGround} km/h da ${mainWindDir}, ideale per decolli gestibili. Tra 1500 e 2500 m il vento sale a ${wind1500_2500} km/h da ${dir1500_2500}, garantendo buon sostegno dinamico e termiche compatte. Tra 2500 e 3500 m il flusso si intensifica fino a ${wind2500_3500} km/h da ${dir2500_3500}${wind2500_3500 > 30 ? ", con shear verticale e possibile turbolenza sui crinali sopravento" : ", con condizioni generalmente navigabili"}. Sopra i 3500 m il vento raggiunge ${windOver3500} km/h da ${dirOver3500}${windOver3500 > 38 ? ", quota sconsigliata per eccesso di deriva" : ""}.`;
+
   let paragrafoInstabilita = "";
-  if (hasThunderstorm) {
-    paragrafoInstabilita = `Alto rischio temporalesco su tutto il settore. Possibili celle convettive intense con fulmini, pioggia forte e improvvisi colpi di vento discendente (outflow). Nessun decollo consentito.`;
-  } else if (hasHeavyRain || hasLightRain) {
-    paragrafoInstabilita = `Precipitazioni previste con accumulo stimato di ${totPrecip} mm. Cielo coperto, visibilità compromessa e rischio di bagnare l'ala con conseguente perdita di profilo e stallo paracadutale.`;
+  if (hasThunderstorm || totPrecip > 0.5) {
+    paragrafoInstabilita = `Il pomeriggio presenta rischio di rovesci convettivi: tra le 13:00 e le 17:00 sono possibili accumuli stimati fino a ${totPrecip > 0 ? totPrecip : "qualche"} mm, con sviluppo di nubi a forte estensione verticale e repentine raffiche di outflow. La probabilità di temporali è del ${probTemporali}, raccomandando cautela e atterraggio prima dell'iper-sviluppo.`;
   } else {
-    paragrafoInstabilita = `Nessun rischio significativo di pioggia o temporali durante la fascia utile. Cumuli regolari senza iper-sviluppo cumulonembico.`;
+    paragrafoInstabilita = `Nessun rischio significativo di pioggia o temporali durante le ore centrali (probabilità temporali ${probTemporali}). La copertura nuvolosa pomeridiana rimarrà innocua senza inibire l'attività termica sulle creste.`;
   }
 
-  // 4. Finestra & Strategia
-  let paragrafoStrategia = "";
-  if (hasThunderstorm || hasHeavyRain) {
-    paragrafoStrategia = `Nessuna finestra utile. Si raccomanda di non salire al decollo e rimandare l'attività a giornate più stabili.`;
-  } else if (hasLightRain || avgCloud >= 85) {
-    paragrafoStrategia = `Finestra sconsigliata. Possibile solo qualche brevissima discesa o gonfiaggio a terra se le precipitazioni cessano del tutto, tenendo conto del terreno viscido e del tetto nubi basso.`;
-  } else {
-    paragrafoStrategia = `Lancio consigliato tra le 11:30 e le 16:30 sfruttando le ore centrali di miglior galleggiamento. Mantenere quote di sicurezza sotto la base nubi.`;
-  }
+  const strategiaTipo = score >= 7
+    ? "Cross Country possibile lungo i costoni principali e versanti esposti a sud. Mantenere quote di sicurezza e sfruttare i costoni soleggiati."
+    : score >= 5
+    ? "Volo locale e veleggiamento dinamico-termico lungo la valle. Evitare transizioni lunghe sopravento e monitorare la quota."
+    : "Volo mattutino locale o discesa tranquilla; rientrare in atterraggio prima che la convezione pomeridiana crei turbolenza.";
 
-  // Segnali di pericolo
-  let segnaliPericolo = "";
-  if (hasThunderstorm) {
-    segnaliPericolo = "Temporali imminenti, fulmini, raffiche improvvise, calo repentino della visibilità.";
-  } else if (hasHeavyRain || hasLightRain) {
-    segnaliPericolo = "Pioggia, ala bagnata (rischio stallo profondo), nubi sul decollo, fondo scivoloso.";
-  } else if (maxWindGround > 25 || wind2500_3500 > 32) {
-    segnaliPericolo = "Vento forte al decollo o turbolenza sui versanti sottovento in quota.";
-  } else {
-    segnaliPericolo = "Velature pomeridiane con calo di attività termica o raffiche locali su cresta.";
-  }
+  const paragrafoStrategia = `Il lancio consigliato è tra le ${finestraLancio}, sfruttando la finestra di massima stabilità. Quota massima consigliata circa ${quotaSicura} m, rimanendo sotto la base dei cumuli. Strategia: ${strategiaTipo}`;
 
-  const giudizioFinale = `${score} / 10 – ${giudizioDesc}.`;
+  const segnaliPericolo = `${hasThunderstorm ? "Cumulonembi in rapida crescita pomeridiana, " : ""}turbolenza e raffiche sopra i 2500 m, ${windOver3500 > 35 ? "vento oltre 35 km/h in quota" : "calo visibilità in caso di velature"}.`;
+
+  const giudizioFinale = `${score} / 10 – ${giudizioDesc}. Serve buona pianificazione del volo, monitoraggio della quota e osservazione dell'evoluzione cumuliforme.`;
 
   const testoCompleto = `${titolo}
 
-1. Quadro Termico & Stabilità: ${paragrafoTermico}
+${paragrafoTermico}
 
-2. Profilo Vento in Quota: ${paragrafoVento}
+${paragrafoVento}
 
-3. Convezione Pomeridiana & Rischio: ${paragrafoInstabilita}
+${paragrafoInstabilita}
 
-4. Finestra di Decollo & Tattica: ${paragrafoStrategia}
+${paragrafoStrategia}
 
 Segnali di pericolo: ${segnaliPericolo}
 

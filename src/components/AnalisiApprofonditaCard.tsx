@@ -213,7 +213,7 @@ export default function AnalisiApprofonditaCard({
                 ? " — Ottima: garantisce termiche sviluppate in verticale"
                 : analisi.pbl > 2000
                   ? " — Buona: termiche sufficienti"
-                  : " — Limitata: termiche basse o assenti"}
+                  : " — Limitata: termiche basse"}
             </div>
           </div>
           <div className="col-span-2 bg-slate-800/60 rounded-lg p-2">
@@ -258,6 +258,13 @@ export default function AnalisiApprofonditaCard({
           <div className="bg-slate-800/60 rounded-lg p-2">
             <span className="text-slate-500">CIN (energia di inibizione)</span>
             <div className="text-orange-300 font-bold mt-0.5">{analisi.cin} J/kg</div>
+            <div className="text-[10px] text-slate-400 mt-0.5">
+              {analisi.cin < 50
+                ? "Assente: termiche partono facilmente"
+                : analisi.cin < 100
+                  ? "Debole: possibile ritardo innesco"
+                  : "Presente: potrebbe ritardare l'innesco"}
+            </div>
           </div>
           <div className="bg-slate-800/60 rounded-lg p-2">
             <span className="text-slate-500">Rischio temporali</span>
@@ -307,13 +314,125 @@ export default function AnalisiApprofonditaCard({
           </div>
           <div className="text-xs text-slate-400 mt-1">
             {analisi.rateoMedio > 2
-              ? "Termiche ben sviluppate per tutto l'arco della giornata nelle ore centrali."
-              : analisi.rateoMedio > 0.6
-                ? "Finestra di volo limitata nelle ore centrali. Valutare condizioni locali."
-                : "Termiche inibite o debolissime: volo libero non produttivo o a rischio."}
+              ? "Termiche ben sviluppate per tutto l'arco della giornata. Le condizioni migliori si avranno nelle ore centrali con vento regolare e termiche attive."
+              : analisi.rateoMedio > 1
+                ? "Finestra di volo nelle ore centrali. Valutare condizioni locali."
+                : "Slot limitato: attendere l'innesco termico nelle ore più calde."}
           </div>
         </div>
       </Sezione>
+
+      {/* Analisi completa */}
+      <Sezione
+        titolo="Analisi completa"
+        icona={<Layers className="w-4 h-4 text-slate-400" />}
+        defaultOpen={true}
+      >
+        <div className="text-xs text-slate-300 leading-relaxed space-y-2">
+          <p>
+            <span className="text-emerald-400 font-bold">☀️ Analisi termica e meteo</span> – {analisi.data} ({analisi.lat.toFixed(2)}°N, {analisi.lon.toFixed(2)}°E – {analisi.alt}m)
+          </p>
+          <p>
+            La giornata si presenta con condizioni
+            {analisi.punteggio >= 80
+              ? " ideali"
+              : analisi.punteggio >= 60
+                ? " favorevoli"
+                : analisi.punteggio >= 40
+                  ? " moderate"
+                  : " difficili"}
+            {" "}per il volo libero.
+            {analisi.tempAttuale > 30
+              ? ` La temperatura è elevata (${analisi.tempAttuale}°C),`
+              : ` La temperatura è di ${analisi.tempAttuale}°C,`}
+            {analisi.dewPoint < 10
+              ? ` il punto di rugiada di ${analisi.dewPoint}°C indica aria secca e un'umidità del ${analisi.umidita}%.`
+              : ` il punto di rugiada di ${analisi.dewPoint}°C e un'umidità del ${analisi.umidita}%.`}
+          </p>
+          <p>
+            Il vento al suolo è{" "}
+            {analisi.ventoSuolo <= 3
+              ? "debole"
+              : analisi.ventoSuolo <= 8
+                ? "moderato"
+                : "vivace"},
+            {" "}
+            {analisi.ventoSuolo} km/h da {analisi.ventoDirNome} con raffiche fino a {analisi.rafficheSuolo} km/h,
+            {analisi.rischioTemporali < 15
+              ? " senza precipitazioni e con probabilità di temporali molto bassa, segno di atmosfera stabile."
+              : ` con probabilità di temporali del ${analisi.rischioTemporali}%.`}
+            {analisi.visibilita > 30
+              ? ` Visibilità eccellente di circa ${analisi.visibilita} km.`
+              : ` Visibilità di ${analisi.visibilita} km.`}
+          </p>
+          <p>
+            La struttura verticale mostra un'altezza dello strato limite (PBL) di circa {analisi.pbl.toLocaleString()} m,
+            con correnti ascensionali convettive fino a {analisi.rateoMedio} m/s,
+            {analisi.rateoMedio > 2
+              ? " ottime per il volo termico."
+              : " sufficienti per il volo termico."}
+            {" "}
+            Il CAPE è di {analisi.cape} J/kg ({analisi.capeDesc}),
+            mentre il Lifted Index di {analisi.liftedIndex > 0 ? "+" : ""}{analisi.liftedIndex} ({analisi.liDesc}).
+          </p>
+          <p>
+            Il gradiente del vento è {analisi.gradienteVento},
+            {analisi.inversione.includes("assente") || analisi.inversione.includes("debole")
+              ? " con inversione assente o debole, che non penalizza le termiche pomeridiane."
+              : " con inversione presente, che potrebbe limitare lo sviluppo verticale delle termiche."}
+            {" "}
+            L'indice termico (TI) di {analisi.thermalIndex} indica {analisi.thermalIndexDesc},
+            {analisi.topTermiche > 3000
+              ? ` con altezza massima delle termiche secche tra ${(analisi.topTermiche - 300).toLocaleString()} m e ${analisi.topTermiche.toLocaleString()} m.`
+              : ` con top termiche a ${analisi.topTermiche.toLocaleString()} m.`}
+          </p>
+          <p className="text-emerald-400 font-bold">
+            🪂 Valutazione: {analisi.valutazione}
+          </p>
+        </div>
+      </Sezione>
+
+      {/* Legenda */}
+      {!expanded && (
+        <button
+          onClick={() => setExpanded(true)}
+          className="w-full text-xs text-slate-500 hover:text-slate-300 py-2 flex items-center justify-center gap-1"
+        >
+          <Map className="w-3 h-3" />
+          Mostra legenda parametri
+        </button>
+      )}
+      {expanded && (
+        <div className="bg-slate-800/30 border border-slate-700/40 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <button
+              onClick={() => setExpanded(false)}
+              className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1"
+            >
+              <ChevronUp className="w-3 h-3" />
+              Nascondi legenda
+            </button>
+          </div>
+          <h4 className="text-xs text-slate-400 font-bold mb-1">Parametri</h4>
+          <div className="space-y-1">
+            <p>
+              <span className="text-slate-500">PBL:</span> Planetary Boundary Layer — lo strato limite atmosferico dove si sviluppano le termiche.
+            </p>
+            <p>
+              <span className="text-slate-500">Thermal Index (TI):</span> Indica la forza delle termiche. Più negativo = più forti.
+            </p>
+            <p>
+              <span className="text-slate-500">CAPE:</span> Convective Available Potential Energy — energia disponibile per la convezione.
+            </p>
+            <p>
+              <span className="text-slate-500">Lifted Index (LI):</span> Stabilità atmosferica. Positivo = stabile, negativo = instabile.
+            </p>
+            <p>
+              <span className="text-slate-500">CIN:</span> Convective Inhibition — energia che blocca l'innesco delle termiche.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
