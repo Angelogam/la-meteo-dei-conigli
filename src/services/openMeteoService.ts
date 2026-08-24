@@ -59,7 +59,7 @@ const CURRENT_PARAMS = [
 
 export interface MeteoCurrent {
   time: Date;
-  temperature: number;
+  temperature: number | null;
   humidity: number;
   dewPoint: number;
   precipitation: number;
@@ -74,7 +74,7 @@ export interface MeteoCurrent {
 
 export interface MeteoHourly {
   time: Date;
-  temperature: number;
+  temperature: number | null;
   humidity: number;
   dewPoint: number;
   precipitation: number;
@@ -98,8 +98,8 @@ export interface MeteoHourly {
 export interface MeteoDaily {
   date: Date;
   weatherCode: number;
-  tempMax: number;
-  tempMin: number;
+  tempMax: number | null;
+  tempMin: number | null;
   precipitationSum: number;
   precipitationProbabilityMax: number;
   windSpeedMax: number;
@@ -108,6 +108,13 @@ export interface MeteoDaily {
   uvIndexMax: number;
   sunrise: string;
   sunset: string;
+}
+
+/** Parsing sicuro temperatura: evita NaN, restituisce null se non valido */
+function safeParseTemp(value: unknown): number | null {
+  if (value === null || value === undefined) return null;
+  const parsed = parseFloat(String(value));
+  return isNaN(parsed) ? null : parsed;
 }
 
 async function fetchWithTimeout(url: string, timeoutMs: number = 8000): Promise<Response> {
@@ -136,11 +143,15 @@ export async function fetchMeteoCorrente(lat: number, lon: number): Promise<Mete
     const c = json.current;
     if (!c) return null;
 
+    const temp = safeParseTemp(c.temperature_2m);
+    const hum = c.relative_humidity_2m ?? 50;
+    const dew = safeParseTemp(c.dew_point_2m) ?? (temp !== null ? temp - (100 - hum) / 5 : null);
+
     return {
       time: new Date(c.time),
-      temperature: c.temperature_2m ?? 0,
-      humidity: c.relative_humidity_2m ?? 50,
-      dewPoint: c.dew_point_2m ?? (c.temperature_2m - (100 - (c.relative_humidity_2m ?? 50)) / 5),
+      temperature: temp,
+      humidity: hum,
+      dewPoint: dew ?? 0,
       precipitation: c.precipitation ?? 0,
       weatherCode: c.weather_code ?? 0,
       cloudCover: c.cloud_cover ?? 0,
@@ -148,7 +159,7 @@ export async function fetchMeteoCorrente(lat: number, lon: number): Promise<Mete
       windDir: c.wind_direction_10m ?? 0,
       windGusts: c.wind_gusts_10m ?? c.wind_speed_10m ?? 0,
       cape: c.cape ?? 0,
-      apparentTemp: c.apparent_temperature ?? c.temperature_2m ?? 0,
+      apparentTemp: safeParseTemp(c.apparent_temperature) ?? temp ?? 0,
     };
   } catch {
     return null;
@@ -178,9 +189,9 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number, altit
     // Current
     const current: MeteoCurrent | null = json.current ? {
       time: new Date(json.current.time),
-      temperature: json.current.temperature_2m ?? 0,
+      temperature: safeParseTemp(json.current.temperature_2m),
       humidity: json.current.relative_humidity_2m ?? 50,
-      dewPoint: json.current.dew_point_2m ?? 0,
+      dewPoint: safeParseTemp(json.current.dew_point_2m) ?? 0,
       precipitation: json.current.precipitation ?? 0,
       weatherCode: json.current.weather_code ?? 0,
       cloudCover: json.current.cloud_cover ?? 0,
@@ -188,22 +199,22 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number, altit
       windDir: json.current.wind_direction_10m ?? 0,
       windGusts: json.current.wind_gusts_10m ?? 0,
       cape: json.current.cape ?? 0,
-      apparentTemp: json.current.apparent_temperature ?? 0,
+      apparentTemp: safeParseTemp(json.current.apparent_temperature) ?? 0,
     } : null;
 
     // Hourly
     const hourly: MeteoHourly[] = [];
     const len = json.hourly?.time?.length || 0;
     for (let i = 0; i < len; i++) {
-      const t = json.hourly.temperature_2m[i] ?? 0;
+      const t = safeParseTemp(json.hourly.temperature_2m[i]);
       const h = json.hourly.relative_humidity_2m[i] ?? 50;
-      const dew = json.hourly.dew_point_2m?.[i] ?? (t - (100 - h) / 5);
+      const dew = safeParseTemp(json.hourly.dew_point_2m?.[i]) ?? (t !== null ? t - (100 - h) / 5 : null);
       
       hourly.push({
         time: new Date(json.hourly.time[i]),
         temperature: t,
         humidity: h,
-        dewPoint: dew,
+        dewPoint: dew ?? 0,
         precipitation: json.hourly.precipitation[i] ?? 0,
         precipitationProbability: json.hourly.precipitation_probability[i] ?? 0,
         weatherCode: json.hourly.weather_code[i] ?? 0,
@@ -230,8 +241,8 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number, altit
       daily.push({
         date: new Date(json.daily.time[i]),
         weatherCode: json.daily.weather_code[i] ?? 0,
-        tempMax: json.daily.temperature_2m_max[i] ?? 0,
-        tempMin: json.daily.temperature_2m_min[i] ?? 0,
+        tempMax: safeParseTemp(json.daily.temperature_2m_max[i]),
+        tempMin: safeParseTemp(json.daily.temperature_2m_min[i]),
         precipitationSum: json.daily.precipitation_sum[i] ?? 0,
         precipitationProbabilityMax: json.daily.precipitation_probability_max[i] ?? 0,
         windSpeedMax: json.daily.wind_speed_10m_max[i] ?? 0,

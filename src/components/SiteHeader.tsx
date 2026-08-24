@@ -70,24 +70,20 @@ export default function SiteHeader({
         </div>
         <div className="text-center min-w-0">
           <h2 className="text-xl md:text-2xl font-black text-white flex items-center justify-center gap-2 tracking-tight">
-            {/* site_name */}
             {site_name}
             <Sparkles className="w-3.5 h-3.5 text-orange-400 animate-twinkle shrink-0" />
           </h2>
           <div className="flex flex-wrap items-center justify-center gap-2 text-xs md:text-sm text-slate-400 mt-1">
-            {/* location_name */}
             <span className="flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded-full border border-slate-700/50">
               <MapPin className="w-3 h-3 text-rose-400" />
               {location_name}
             </span>
             <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0" />
-            {/* orientation */}
             <span className="flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded-full border border-slate-700/50">
               <Compass className="w-3 h-3 text-sky-400" />
               {orientation}
             </span>
             <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0" />
-            {/* elevation_m */}
             <span className="flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded-full border border-slate-700/50">
               <Mountain className="w-3 h-3 text-amber-400" />
               {elevation_m}m
@@ -116,7 +112,9 @@ export default function SiteHeader({
           </div>
           <div className="text-center relative z-10">
             <div className="text-2xl font-black text-white tabular-nums">
-              {Math.round(currentData.temperature)}°
+              {currentData.temperature !== null && currentData.temperature !== undefined 
+                ? `${Math.round(currentData.temperature)}°` 
+                : "--°"}
             </div>
             <div className="flex items-center justify-center gap-2 text-xs text-slate-400">
               <Wind className="w-3 h-3 text-sky-400" />

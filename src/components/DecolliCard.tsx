@@ -98,7 +98,7 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
               cloudNow: current.cloudCover,
               windSpeed: current.windSpeed,
               windDir: current.windDir,
-              temperature: current.temperature,
+              temperature: current.temperature ?? 0,
               cape: current.cape,
               weatherCode: current.weatherCode,
             });
@@ -108,20 +108,19 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
               windSpeed: current.windSpeed,
               windGusts: current.windGusts,
               windDir: current.windDir,
-              esposizione: item.orientation,        // CAMPO STATICO PROTETTO
-              temperature: current.temperature,
+              esposizione: item.orientation,
+              temperature: current.temperature ?? 0,
               dewPoint: current.dewPoint,
               cloudCover: current.cloudCover,
               precipitation: current.precipitation,
               weatherCode: current.weatherCode,
               cape: current.cape,
-              quota: item.elevation_m,              // CAMPO STATICO PROTETTO
+              quota: item.elevation_m,
             });
           }
 
           const dirLabel = hasData ? getCardinalDir(current!.windDir) : "N/D";
           const dirArrow = hasData ? getWindArrow(current!.windDir) : "→";
-          const emoji = hasData ? getWeatherEmoji(current!.weatherCode, current!.precipitation) : "📡";
 
           return (
             <button
@@ -139,13 +138,11 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
               <div className="flex items-start justify-between gap-2 mb-1.5">
                 <div className="min-w-0">
                   <div className="text-sm font-bold text-white truncate flex items-center gap-1.5">
-                    {/* site_name + location_name */}
                     <span>{item.site_name}</span>
                     <span className="text-slate-400">—</span>
                     <span className="text-slate-300">{item.location_name}</span>
                   </div>
                   <div className="text-[10px] text-slate-400 truncate">
-                    {/* orientation • elevation_m */}
                     {item.orientation} · {item.elevation_m}m
                   </div>
                 </div>
@@ -176,7 +173,7 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
                       {ICONA_STATO[statoMeteo]}
                       <span className="font-bold text-white capitalize">{statoMeteo}</span>
                       <span className="font-extrabold text-amber-300 tabular-nums">
-                        {Math.round(current!.temperature)}°C
+                        {current!.temperature !== null ? `${Math.round(current!.temperature)}°C` : "--°"}
                       </span>
                       {current!.precipitation > 0 && (
                         <span className="text-[10px] font-bold text-rose-300 bg-rose-950/60 px-1.5 py-0.2 rounded border border-rose-500/40">
@@ -242,17 +239,4 @@ function getCardinalDir(deg: number): string {
 function getWindArrow(deg: number): string {
   const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
   return arrows[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
-}
-
-function getWeatherEmoji(code: number | undefined | null, precip?: number): string {
-  if (precip && precip > 0.1) return "🌧️";
-  if (code == null) return "📡";
-  if (code >= 95) return "⛈️";
-  if (code >= 80) return "🌧️";
-  if (code >= 61) return "🌧️";
-  if (code >= 51) return "🌦️";
-  if (code >= 45) return "🌫️";
-  if (code >= 3) return "☁️";
-  if (code >= 1) return "🌤️";
-  return "☀️";
 }

@@ -58,7 +58,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
       return {
         ora,
         icona: iconaMeteo(h.weatherCode),
-        temperatura: Math.round(h.temperature) + "°C",
+        temperatura: h.temperature !== null && h.temperature !== undefined ? `${Math.round(h.temperature)}°C` : "--°",
         vento: Math.round(h.windSpeed) + " km/h",
         ventoTesto: ventoTesto(h.windSpeed),
         direzione: direzioneVento(h.windDir),
