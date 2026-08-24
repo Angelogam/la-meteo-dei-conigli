@@ -14,15 +14,15 @@ interface DecolloListProps {
 }
 
 function getWeatherEmoji(code: number): string {
-  if (code === 0) return "☀️";
-  if (code <= 2) return "🌤️";
-  if (code <= 3) return "☁️";
-  if (code <= 48) return "🌫️";
-  if (code <= 57) return "🌦️";
-  if (code <= 67) return "🌧️";
-  if (code <= 77) return "🌨️";
-  if (code <= 82) return "🌦️";
   if (code >= 95) return "⛈️";
+  if (code >= 80) return "🌧️";
+  if (code >= 71) return "❄️";
+  if (code >= 61) return "🌧️";
+  if (code >= 51) return "🌦️";
+  if (code >= 45) return "🌫️";
+  if (code >= 20) return "☁️";
+  if (code >= 10) return "⛅";
+  if (code >= 5) return "🌤️";
   return "☀️";
 }
 

@@ -69,14 +69,14 @@ export function useWeatherData() {
       windSpeed: currentData.windSpeed,
       windGusts: currentData.windGusts,
       windDir: currentData.windDir,
-      esposizione: site.orientation,      // CAMPO STATICO PROTETTO
+      esposizione: site.orientation,
       temperature: currentData.temperature,
       dewPoint: currentData.dewPoint,
       cloudCover: currentData.cloudCover,
       precipitation: currentData.precipitation,
       weatherCode: currentData.weatherCode,
       cape: currentData.cape,
-      quota: site.elevation_m,            // CAMPO STATICO PROTETTO
+      quota: site.elevation_m,
     });
   }, [currentData, site]);
 
@@ -133,6 +133,31 @@ export function useWeatherData() {
   }, []);
   useEffect(() => { localStorage.setItem(STORAGE_KEY_SITE, selectedId); }, [selectedId]);
 
+  // thermalDelta computed from current data
+  const thermalDelta = useMemo(() => {
+    if (!dayData.length) return 0;
+    const temps = dayData.map(h => h.temperature).filter(t => t != null);
+    if (temps.length < 2) return 0;
+    return Math.round((Math.max(...temps) - Math.min(...temps)) * 10) / 10;
+  }, [dayData]);
+
+  // currentCape from currentData
+  const currentCape = useMemo(() => ({
+    cape: currentData?.cape ?? 0,
+    cin: 0,
+    liftedIndex: 0,
+  }), [currentData]);
+
+  // activeModel from weather service
+  const activeModel = "Open-Meteo DWD/AROME";
+
+  // allHourlyData for compatibility
+  const allHourlyData = useMemo(() => {
+    const bySite: Record<string, MeteoHourly[]> = {};
+    bySite[site.id] = hourlyData;
+    return bySite;
+  }, [site.id, hourlyData]);
+
   return {
     selectedId, setSelectedId, loading, updating, lastUpdate, countdown,
     selectedDay, setSelectedDay, selectedHour, setSelectedHour,
@@ -140,5 +165,9 @@ export function useWeatherData() {
     dayData, currentData: currentHourData, statoMeteo, volabilita,
     enrichedDaily, dateLabels, hourlyData, dailyData,
     loadWeather,
+    thermalDelta,
+    currentCape,
+    activeModel,
+    allHourlyData,
   };
 }

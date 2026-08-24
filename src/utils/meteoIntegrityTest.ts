@@ -1,14 +1,5 @@
 "use client";
 
-/**
- * TEST DI INTEGRITÀ DEL CODEBASE METEO
- * Verifica che:
- * - nessun file faccia fetch diretto a Open-Meteo
- * - nessun file duplichi logiche
- * - nessun file bypassi weatherService
- * - nessun componente usi servizi sbagliati
- */
-
 import { weatherService } from "@/services/weatherService";
 import { calcolaTermiche } from "@/utils/termiche";
 import { DECOLLI } from "@/data/decolli";
@@ -27,7 +18,6 @@ export async function meteoIntegrityTest(): Promise<{
 }> {
   const results: TestResult[] = [];
 
-  // TEST 1: weatherService esiste
   results.push({
     name: "weatherService.fetchWeather esiste",
     passed: typeof weatherService.fetchWeather === "function",
@@ -36,7 +26,6 @@ export async function meteoIntegrityTest(): Promise<{
       : "❌ fetchWeather NON è una funzione",
   });
 
-  // TEST 2: weatherService restituisce dati validi
   try {
     const result = await weatherService.fetchWeather(DECOLLI[0].lat, DECOLLI[0].lon);
     const valid = result.hourly.length > 0 && result.daily.length > 0 && result.current != null;
@@ -55,7 +44,6 @@ export async function meteoIntegrityTest(): Promise<{
     });
   }
 
-  // TEST 3: calcolaTermiche funziona
   const mockData: HourData = {
     time: new Date(),
     temperature: 24,
@@ -98,7 +86,6 @@ export async function meteoIntegrityTest(): Promise<{
       : "❌ calcolaTermiche non produce risultati validi",
   });
 
-  // TEST 4: calcolaTermiche riconosce temporale
   const mockTempesta: HourData = {
     ...mockData,
     weatherCode: 95,
@@ -113,7 +100,6 @@ export async function meteoIntegrityTest(): Promise<{
       : `❌ Temporale non riconosciuto: rateo ${termicheTempesta.rateo} m/s`,
   });
 
-  // TEST 5: DECOLLI validi
   let decolliOk = 0;
   let decolliKo = 0;
   for (const d of DECOLLI) {

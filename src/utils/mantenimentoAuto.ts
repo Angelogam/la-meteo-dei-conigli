@@ -28,7 +28,6 @@ export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
   const errori: string[] = [];
   const warning: string[] = [];
 
-  // --- 1. Verifica decolli ---
   const decolliErrors: string[] = [];
   const ids = new Set<string>();
   let decolliConDati = 0;
@@ -43,7 +42,6 @@ export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
     else ids.add(d.id);
   }
 
-  // --- 2. Verifica API meteo ---
   const apiErrors: string[] = [];
   let apiOkCount = 0;
   let tempiRisposta: number[] = [];
@@ -78,7 +76,6 @@ export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
     }
   }
 
-  // --- 3. Verifica calcoli ---
   const calcErrors: string[] = [];
 
   const testCardinali = [
@@ -95,7 +92,6 @@ export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
     }
   }
 
-  // calcolaTermiche
   let termicheOk = true;
   const mockData: HourData = {
     time: new Date(),
@@ -137,7 +133,6 @@ export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
     calcErrors.push(`calcolaTermiche: risultato non valido (rateo=${termiche?.rateo}, base=${termiche?.base})`);
   }
 
-  // --- 4. Warning ---
   const warningDuplicati: string[] = [];
   const warningNomi: string[] = [];
 
@@ -145,7 +140,6 @@ export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
     warningNomi.push("Pochi decolli configurati");
   }
 
-  // --- 5. Compila report ---
   const mediaRisposta = tempiRisposta.length > 0
     ? Math.round(tempiRisposta.reduce((s, t) => s + t, 0) / tempiRisposta.length)
     : 0;
@@ -193,9 +187,6 @@ export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
   };
 }
 
-/**
- * Verifica continua: esegue diagnostica ogni N secondi e logga i risultati.
- */
 export function avviaVerificaContinua(intervalMs: number = 30000) {
   console.log("🚀 [Manutenzione Auto] Verifica continua attiva (ogni " + (intervalMs / 1000) + "s)");
 
@@ -216,6 +207,6 @@ export function avviaVerificaContinua(intervalMs: number = 30000) {
     }
   };
 
-  esegui(); // esegui subito
+  esegui();
   setInterval(esegui, intervalMs);
 }

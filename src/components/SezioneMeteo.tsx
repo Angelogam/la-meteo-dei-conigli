@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { DECOLLI } from "@/data/decolli";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import MeteoTab from "@/components/MeteoTab";
@@ -23,8 +23,8 @@ export default function SezioneMeteo() {
 
   if (!site) return null;
 
-  const siteAlt = { alt: site.altitude };
-  const siteFull = { alt: site.altitude, lat: site.lat, lon: site.lon, name: site.name, exposure: site.exposure };
+  const siteAlt = { alt: site.elevation_m };
+  const siteFull = { alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.name, exposure: site.exposure };
 
   return (
     <div className="space-y-3">

@@ -2,20 +2,27 @@
 
 export interface Decollo {
   id: string;
-  // Campi statici MAI sovrascritti durante aggiornamento meteo
-  site_name: string;       // Nome del decollo
-  location_name: string;   // Località/Valle
-  orientation: string;     // Direzione esposizione
-  elevation_m: number;     // Quota in metri
-  // Coordinate per API meteo
+  // New standardized fields
+  site_name: string;
+  location_name: string;
+  orientation: string;
+  elevation_m: number;
   lat: number;
   lon: number;
-  // Campo legacy per compatibilità
+  // Legacy fields for backward compatibility
   nome: string;
   valle: string;
   esposizione: string;
   quota: number;
   difficulity: number;
+  // Aliases used by various components
+  name: string;
+  valley: string;
+  exposure: string;
+  altitude: number;
+  alt: number;
+  esposizione: string;
+  quota: number;
 }
 
 export const DECOLLI: Decollo[] = [
@@ -32,6 +39,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S/SE",
     quota: 1740,
     difficulity: 2,
+    name: "Malanotte",
+    valley: "Valle Ellero",
+    exposure: "S/SE",
+    altitude: 1740,
+    alt: 1740,
   },
   {
     id: "colle-di-tenda",
@@ -46,6 +58,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S",
     quota: 1990,
     difficulity: 1,
+    name: "Colle di Tenda",
+    valley: "Valle Roya/Vermenagna",
+    exposure: "S",
+    altitude: 1990,
+    alt: 1990,
   },
   {
     id: "boves",
@@ -60,6 +77,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "NE",
     quota: 900,
     difficulity: 1,
+    name: "Boves",
+    valley: "Cuneese",
+    exposure: "NE",
+    altitude: 900,
+    alt: 900,
   },
   {
     id: "monte-male-dronero",
@@ -74,6 +96,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S",
     quota: 950,
     difficulity: 2,
+    name: "Monte Male – Dronero",
+    valley: "Valle Maira",
+    exposure: "S",
+    altitude: 950,
+    alt: 950,
   },
   {
     id: "iretta",
@@ -88,6 +115,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "SO",
     quota: 1050,
     difficulity: 1,
+    name: "Iretta",
+    valley: "Valle Maira",
+    exposure: "SO",
+    altitude: 1050,
+    alt: 1050,
   },
   {
     id: "pratoni-di-val-mala",
@@ -102,6 +134,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S",
     quota: 1400,
     difficulity: 1,
+    name: "Pratoni di Val Mala",
+    valley: "Valle Maira",
+    exposure: "S",
+    altitude: 1400,
+    alt: 1400,
   },
   {
     id: "monte-birrone",
@@ -116,6 +153,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S",
     quota: 2131,
     difficulity: 3,
+    name: "Monte Birrone",
+    valley: "Valle Maira",
+    exposure: "S",
+    altitude: 2131,
+    alt: 2131,
   },
   {
     id: "colle-dell-agnello",
@@ -130,6 +172,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S",
     quota: 2748,
     difficulity: 3,
+    name: "Colle dell'Agnello",
+    valley: "Valle Varaita",
+    exposure: "S",
+    altitude: 2748,
+    alt: 2748,
   },
   {
     id: "pian-mune-seggiovia",
@@ -144,6 +191,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S/SW",
     quota: 1870,
     difficulity: 1,
+    name: "Pian Munè – Seggiovia",
+    valley: "Valle Po",
+    exposure: "S/SW",
+    altitude: 1870,
+    alt: 1870,
   },
   {
     id: "pian-mune-bric-lombatera",
@@ -158,6 +210,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S",
     quota: 1350,
     difficulity: 1,
+    name: "Pian Munè – Bric Lombatera",
+    valley: "Valle Po",
+    exposure: "S",
+    altitude: 1350,
+    alt: 1350,
   },
   {
     id: "martiniana-po",
@@ -172,6 +229,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "NE",
     quota: 1400,
     difficulity: 1,
+    name: "Martiniana Po",
+    valley: "Valle Po",
+    exposure: "NE",
+    altitude: 1400,
+    alt: 1400,
   },
   {
     id: "rucas-alto",
@@ -186,6 +248,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S/SE",
     quota: 1500,
     difficulity: 1,
+    name: "Rucas Alto",
+    valley: "Valle Infernotto",
+    exposure: "S/SE",
+    altitude: 1500,
+    alt: 1500,
   },
   {
     id: "montoso-decollo-basso",
@@ -200,6 +267,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "SE",
     quota: 1250,
     difficulity: 1,
+    name: "Montoso – Decollo Basso",
+    valley: "Valle Infernotto",
+    exposure: "SE",
+    altitude: 1250,
+    alt: 1250,
   },
   {
     id: "monte-vandalino",
@@ -214,6 +286,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S/SE",
     quota: 2120,
     difficulity: 3,
+    name: "Monte Vandalino",
+    valley: "Val Pellice",
+    exposure: "S/SE",
+    altitude: 2120,
+    alt: 2120,
   },
   {
     id: "pian-dell-alpe",
@@ -228,6 +305,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S",
     quota: 1990,
     difficulity: 2,
+    name: "Pian dell'Alpe",
+    valley: "Val Chisone",
+    exposure: "S",
+    altitude: 1990,
+    alt: 1990,
   },
   {
     id: "roletto-piggi",
@@ -242,6 +324,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S",
     quota: 820,
     difficulity: 1,
+    name: "Roletto – Piggi",
+    valley: "Pinerolese",
+    exposure: "S",
+    altitude: 820,
+    alt: 820,
   },
   {
     id: "piossasco-monte-s-giorgio",
@@ -256,6 +343,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S",
     quota: 673,
     difficulity: 1,
+    name: "Piossasco – Monte S. Giorgio",
+    valley: "Collina Torinese",
+    exposure: "S",
+    altitude: 673,
+    alt: 673,
   },
   {
     id: "truccetti",
@@ -270,6 +362,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S",
     quota: 900,
     difficulity: 1,
+    name: "Truccetti",
+    valley: "Canavese",
+    exposure: "S",
+    altitude: 900,
+    alt: 900,
   },
   {
     id: "val-della-torre",
@@ -284,6 +381,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S",
     quota: 970,
     difficulity: 1,
+    name: "Val della Torre",
+    valley: "Val della Torre",
+    exposure: "S",
+    altitude: 970,
+    alt: 970,
   },
   {
     id: "rocca-canavese-m-della-neve",
@@ -298,6 +400,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S",
     quota: 1100,
     difficulity: 1,
+    name: "Rocca Canavese – M. della Neve",
+    valley: "Canavese",
+    exposure: "S",
+    altitude: 1100,
+    alt: 1100,
   },
   {
     id: "santa-elisabetta",
@@ -312,6 +419,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S",
     quota: 1000,
     difficulity: 1,
+    name: "Santa Elisabetta",
+    valley: "Canavese",
+    exposure: "S",
+    altitude: 1000,
+    alt: 1000,
   },
   {
     id: "santa-elisabetta-alto",
@@ -326,6 +438,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S",
     quota: 1400,
     difficulity: 1,
+    name: "Santa Elisabetta Alto",
+    valley: "Canavese",
+    exposure: "S",
+    altitude: 1400,
+    alt: 1400,
   },
   {
     id: "monte-cavallaria",
@@ -340,6 +457,11 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S",
     quota: 1430,
     difficulity: 1,
+    name: "Monte Cavallaria",
+    valley: "Canavese",
+    exposure: "S",
+    altitude: 1430,
+    alt: 1430,
   },
   {
     id: "andrate",
@@ -354,21 +476,24 @@ export const DECOLLI: Decollo[] = [
     esposizione: "S",
     quota: 1000,
     difficulity: 1,
+    name: "Andrate",
+    valley: "Canavese",
+    exposure: "S",
+    altitude: 1000,
+    alt: 1000,
   },
 ];
 
-// Mappa per lookup rapido
 export const DECOLLO_MAP = Object.fromEntries(DECOLLI.map(d => [d.id, d]));
 export const DECOLLO_IDS = DECOLLI.map(d => d.id);
 
-// Verifica integrità: 24 decolli
 if (typeof window !== "undefined") {
   console.log(`✅ Decolli caricati: ${DECOLLI.length}/24`);
-  console.table(DECOLLI.map(d => ({ 
-    id: d.id, 
-    site_name: d.site_name, 
-    location_name: d.location_name, 
-    orientation: d.orientation, 
-    elevation_m: d.elevation_m 
+  console.table(DECOLLI.map(d => ({
+    id: d.id,
+    site_name: d.site_name,
+    location_name: d.location_name,
+    orientation: d.orientation,
+    elevation_m: d.elevation_m
   })));
 }

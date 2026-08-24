@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { DECOLLI } from "@/data/decolli";
-import { weatherService } from "@/services/weatherService";
+import { weatherService } from "@/services/openMeteoService";
 import { validaVentoPerDecollo, getVentoStatusColor } from "@/utils/validaVentoDecollo";
 import {
   Play,
@@ -106,7 +106,6 @@ export default function MeteoQuickTest() {
       setRisultatiVento([...risultati]);
       setProgress(Math.round(((i + 1) / siti.length) * 100));
 
-      // Delay per non sovraccaricare API
       if (i < siti.length - 1) {
         await new Promise(r => setTimeout(r, 1500));
       }
@@ -145,17 +144,14 @@ export default function MeteoQuickTest() {
         {!running && risultatiVento.length === 0 && <Play className="w-5 h-5 text-sky-400 shrink-0" />}
       </button>
 
-      {/* Barra di progresso durante la scansione */}
       {running && (
         <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
           <div className="h-full bg-sky-500 transition-all duration-500" style={{ width: `${progress}%` }} />
         </div>
       )}
 
-      {/* Card risultati — con pulsante Chiudi */}
       {summary && (
         <div className="bg-sky-900/20 border border-sky-500/30 rounded-xl p-3 relative">
-          {/* Pulsante Chiudi */}
           <button
             onClick={resetTest}
             className="absolute top-2 right-2 p-1 rounded-lg hover:bg-sky-800/50 border border-sky-500/30 text-sky-400"
@@ -165,7 +161,6 @@ export default function MeteoQuickTest() {
 
           <div className="text-sky-300 text-sm font-bold mb-2 pr-8">{summary}</div>
 
-          {/* Report raggruppato per status */}
           {(() => {
             const sottovento = risultatiVento.filter(r => r.status === "sottovento");
             const contrari = risultatiVento.filter(r => r.status === "contrario");
@@ -174,7 +169,6 @@ export default function MeteoQuickTest() {
 
             return (
               <div className="space-y-2">
-                {/* SOTTOVENTO — ROSSO */}
                 {sottovento.length > 0 && (
                   <details>
                     <summary className="text-xs text-red-300 font-bold cursor-pointer hover:text-red-200">
@@ -193,7 +187,6 @@ export default function MeteoQuickTest() {
                   </details>
                 )}
 
-                {/* CONTRARI — ARANCIONE */}
                 {contrari.length > 0 && (
                   <details>
                     <summary className="text-xs text-orange-300 font-bold cursor-pointer hover:text-orange-200">
@@ -212,7 +205,6 @@ export default function MeteoQuickTest() {
                   </details>
                 )}
 
-                {/* LATERALI — GIALLO */}
                 {laterali.length > 0 && (
                   <details>
                     <summary className="text-xs text-amber-300 font-bold cursor-pointer hover:text-amber-200">
@@ -231,7 +223,6 @@ export default function MeteoQuickTest() {
                   </details>
                 )}
 
-                {/* FAVOREVOLI — VERDE */}
                 {favorevoli.length > 0 && (
                   <details>
                     <summary className="text-xs text-emerald-300 font-bold cursor-pointer hover:text-emerald-200">

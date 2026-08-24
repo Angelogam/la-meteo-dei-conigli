@@ -215,6 +215,13 @@ export const weatherService = {
   },
 
   /**
+   * Alias for fetchLight - used by some components
+   */
+  async fetchCurrent(lat: number, lon: number): Promise<{ data: MeteoLight | null; ok: boolean }> {
+    return this.fetchLight(lat, lon);
+  },
+
+  /**
    * Previsione completa a 3 giorni da Open-Meteo per il decollo selezionato
    */
   async fetchWeather(lat: number, lon: number): Promise<{

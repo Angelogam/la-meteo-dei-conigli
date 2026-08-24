@@ -6,6 +6,7 @@ import { weatherService } from "@/services/openMeteoService";
 import { calcolaStatoMeteo, type StatoMeteo, calcolaPrecipProssimeOre } from "@/utils/statoMeteo";
 import { calcolaIndiceVolabilita, type RisultatoVolabilita } from "@/utils/indiceVolabilita";
 import { DECOLLI, type Decollo } from "@/data/decolli";
+import type { MeteoCurrent } from "@/services/openMeteoService";
 
 const ICONA_STATO: Record<string, React.ReactNode> = {
   sereno: <Sun className="w-4 h-4 text-amber-400" />,

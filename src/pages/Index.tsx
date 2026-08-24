@@ -45,7 +45,6 @@ export default function Index() {
     currentData?.cloudCover ?? 30,
   );
 
-  // Lista decolli con campi statici protetti per DecolliCard
   const decolliList = useMemo(
     () => DECOLLI.map((d) => ({ 
       id: d.id, 
@@ -98,7 +97,6 @@ export default function Index() {
           <div className="flex-1 min-w-0 space-y-6">
             {hasData && (
               <>
-                {/* SiteHeader usa campi statici protetti */}
                 <SiteHeader 
                   site_name={site!.site_name}
                   location_name={site!.location_name}

@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { DECOLLI } from "@/data/decolli";
 import { CheckCircle, XCircle, AlertTriangle, Loader2, Bug, Activity, Clock, TrendingUp } from "lucide-react";
 
-// Valori climatologici attesi per decolli piemontesi (basati su ERA5 2000-2024)
 const CLIMA_MENSILE: Record<number, { tempMax: [number, number]; ventoMedio: [number, number]; pioggiaMax: number; deltaMin: number }> = {
   1:  { tempMax: [-5, 5],   ventoMedio: [3, 15], pioggiaMax: 15, deltaMin: 3 },
   2:  { tempMax: [-3, 8],   ventoMedio: [3, 16], pioggiaMax: 15, deltaMin: 3 },
@@ -44,7 +43,6 @@ interface EsitoValidazione {
   anomalie: string[];
 }
 
-// Metriche cumulabili
 let totalSiti = 0;
 let okSiti = 0;
 let totalWarning = 0;
@@ -67,7 +65,7 @@ export default function ValidazionePrevisioni() {
       const mese = oggi.getMonth() + 1;
       const clima = CLIMA_MENSILE[mese] || CLIMA_MENSILE[6];
 
-      const giorniDaTestare = [1, 2]; // Domani e dopodomani
+      const giorniDaTestare = [1, 2];
       const totale = giorniDaTestare.length * DECOLLI.length;
       setProgresso({ corrente: 0, totale });
 
@@ -132,12 +130,10 @@ export default function ValidazionePrevisioni() {
               umiditaMedia: hums.length > 0 ? Math.round(hums.reduce((s: number, v: number) => s + (v || 0), 0) / hums.length) : -1,
             };
 
-            // VALIDAZIONE CLIMATOLOGICA
             const errori: string[] = [];
             const warning: string[] = [];
             const anomalie: string[] = [];
 
-            // Controlli base
             if (metriche.tempMax > 50 || metriche.tempMax < -30) errori.push(`Temp max non realistica: ${metriche.tempMax}°C`);
             if (metriche.tempMin > metriche.tempMax && metriche.tempMin > -800) errori.push(`Temp min (${metriche.tempMin}°C) > temp max (${metriche.tempMax}°C)`);
             if (metriche.ventoMax > 80) errori.push(`Vento max non realistico: ${metriche.ventoMax} km/h`);
@@ -146,7 +142,6 @@ export default function ValidazionePrevisioni() {
             if (metriche.oreConDati < 6) errori.push(`Solo ${metriche.oreConDati} ore di dati su 12 attese`);
             if (metriche.pioggiaTot > 80) errori.push(`Pioggia totale eccessiva: ${metriche.pioggiaTot} mm`);
 
-            // Confronto climatologico per mese
             const rangeTemp = clima.tempMax;
             const rangeVento = clima.ventoMedio;
             const maxPioggia = clima.pioggiaMax;
@@ -198,7 +193,6 @@ export default function ValidazionePrevisioni() {
             });
           }
 
-          // Delay 2s tra ogni sito
           await new Promise(r => setTimeout(r, 2000));
         }
       }
@@ -252,7 +246,6 @@ export default function ValidazionePrevisioni() {
 
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-950/98 flex flex-col overflow-hidden">
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50 bg-slate-900/80 shrink-0">
         <div className="flex items-center gap-3">
           <Bug className="w-5 h-5 text-emerald-400" />
@@ -268,10 +261,9 @@ export default function ValidazionePrevisioni() {
         </div>
       </div>
 
-      {/* Risultati */}
       <div className="flex-1 overflow-auto p-3 space-y-1.5">
         {risultati.map((r, i) => (
-          <div key={i} className={`rounded-xl p-3 border text-xs ${
+          <div <div key={i} className={`rounded-xl p-3 border text-xs ${
             r.ok && r.climatologiaOk
               ? "bg-slate-800/40 border-slate-700/30"
               : !r.ok
@@ -294,7 +286,6 @@ export default function ValidazionePrevisioni() {
               <span className="text-slate-500">{r.data}</span>
             </div>
 
-            {/* Metriche in una riga */}
             <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5 mb-1.5">
               <div className="bg-slate-900/60 rounded-lg px-2 py-1 text-center"><div className="text-slate-500">Max</div><div className="font-bold text-amber-300">{r.metriche.tempMax}°</div></div>
               <div className="bg-slate-900/60 rounded-lg px-2 py-1 text-center"><div className="text-slate-500">Min</div><div className="font-bold text-blue-300">{r.metriche.tempMin}°</div></div>
@@ -306,7 +297,6 @@ export default function ValidazionePrevisioni() {
               <div className="bg-slate-900/60 rounded-lg px-2 py-1 text-center"><div className="text-slate-500">Clima</div>{r.climatologiaOk ? <div className="font-bold text-green-300">✅</div> : <div className="font-bold text-amber-300">⚠️</div>}</div>
             </div>
 
-            {/* Anomalie */}
             {r.anomalie.length > 0 && (
               <div className="text-[10px] text-amber-400 space-y-0.5 mt-1">
                 {r.anomalie.map((a, j) => (

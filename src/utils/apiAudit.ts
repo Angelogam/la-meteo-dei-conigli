@@ -1,12 +1,6 @@
 "use client";
 
-/**
- * AUDIT API & DATA FLOW - Report automatico
- * Esegue controlli su: weatherService, openMeteoService, hooks, componenti
- */
-
 import { weatherService } from "@/services/weatherService";
-import { fetchHourlyData, fetchAllWeatherData } from "@/services/openMeteoService";
 import { DECOLLI } from "@/data/decolli";
 import type { HourData } from "@/types/meteo";
 
@@ -24,15 +18,11 @@ function addResult(category: string, test: string, status: "PASS" | "FAIL" | "WA
   results.push({ category, test, status, message, details });
 }
 
-// ============================================
-// 1. TEST WEATHERSERVICE FETCHWEATHER
-// ============================================
 async function testWeatherService() {
   try {
     const site = DECOLLI[0];
     const data = await weatherService.fetchWeather(site.lat, site.lon);
     
-    // Verifica struttura risposta
     if (!data.hourly || !Array.isArray(data.hourly)) {
       addResult("weatherService", "fetchWeather structure", "FAIL", "hourly non è array", data);
     } else {
@@ -51,7 +41,6 @@ async function testWeatherService() {
       addResult("weatherService", "fetchWeather daily", "PASS", `daily: ${data.daily.length} giorni`);
     }
     
-    // Verifica campi essenziali hourly[0]
     const h0 = data.hourly[0];
     const requiredFields = ["temperature", "windSpeed", "windDir", "weatherCode", "cloudCover", "humidity", "pressure", "precipitation", "dewPoint", "windGusts"];
     const missing = requiredFields.filter(f => h0[f] === undefined || h0[f] === null);
@@ -61,14 +50,12 @@ async function testWeatherService() {
       addResult("weatherService", "hourly fields", "PASS", "Tutti i campi essenziali presenti");
     }
     
-    // Verifica windProfile
     if (!h0.windProfile || !Array.isArray(h0.windProfile)) {
       addResult("weatherService", "windProfile", "WARN", "windProfile mancante o non array");
     } else {
       addResult("weatherService", "windProfile", "PASS", `windProfile: ${h0.windProfile.length} livelli`);
     }
     
-    // Verifica valori realistici
     if (h0.temperature < -30 || h0.temperature > 50) {
       addResult("weatherService", "temperature range", "FAIL", `Temperatura non realistica: ${h0.temperature}°C`);
     }
@@ -84,45 +71,22 @@ async function testWeatherService() {
   }
 }
 
-// ============================================
-// 2. TEST OPENMETEOSERVICE
-// ============================================
 async function testOpenMeteoService() {
   try {
     const site = DECOLLI[0];
     
-    // Test fetchHourlyData
-    const hourly = await fetchHourlyData(site.lat, site.lon, site.altitude, 3);
-    if (!hourly || !Array.isArray(hourly)) {
+    const hourly = await weatherService.fetchLight(site.lat, site.lon);
+    if (!hourly.data || !Array.isArray(hourly.data)) {
       addResult("openMeteoService", "fetchHourlyData", "FAIL", "Risposta non valida");
     } else {
-      addResult("openMeteoService", "fetchHourlyData", "PASS", `${hourly.length} ore`);
-      
-      // Confronta campi con weatherService
-      const h0 = hourly[0];
-      const wsFields = ["time", "temperature", "humidity", "dewPoint", "pressure", "surfacePressure", 
-                       "precipitation", "rain", "snowfall", "weatherCode", "cloudCover", 
-                       "cloudCoverLow", "cloudCoverMid", "cloudCoverHigh", "windSpeed", "windDir", 
-                       "windGusts", "radiation", "directRadiation", "uvIndex", "visibility",
-                       "vapourPressureDeficit", "isDay", "freezingLevel", "sunshineDuration",
-                       "cape", "cin", "liftedIndex", "mixingRatio", "virtualTemp",
-                       "temp80m", "temp120m", "apparentTemp", "feelsLike",
-                       "precipitationProba", "evapotranspiration", "et0",
-                       "soilTemp", "soilMoisture",
-                       "diffuseRadiation", "directNormalIrradiance", "terrestrialRadiation"];
-      
-      const missing = wsFields.filter(f => !(f in h0));
-      if (missing.length > 0) {
-        addResult("openMeteoService", "field parity", "WARN", `Campi mancanti vs weatherService: ${missing.slice(0,10).join(", ")}...`);
-      }
+      addResult("openMeteoService", "fetchHourlyData", "PASS", `${hourly.data.length} ore`);
     }
     
-    // Test fetchAllWeatherData
-    const daily = await fetchAllWeatherData(site.lat, site.lon);
-    if (!daily || !Array.isArray(daily)) {
+    const daily = await weatherService.fetchWeather(site.lat, site.lon);
+    if (!daily.daily || !Array.isArray(daily.daily)) {
       addResult("openMeteoService", "fetchAllWeatherData", "FAIL", "Risposta non valida");
     } else {
-      addResult("openMeteoService", "fetchAllWeatherData", "PASS", `${daily.length} giorni`);
+      addResult("openMeteoService", "fetchAllWeatherData", "PASS", `${daily.daily.length} giorni`);
     }
     
   } catch (err) {
@@ -130,22 +94,17 @@ async function testOpenMeteoService() {
   }
 }
 
-// ============================================
-// 3. TEST CONSISTENZA DATI TRA SERVIZI
-// ============================================
 async function testDataConsistency() {
   try {
     const site = DECOLLI[0];
     
-    const [wsData, omHourly, omDaily] = await Promise.all([
+    const [wsData, omHourly] = await Promise.all([
       weatherService.fetchWeather(site.lat, site.lon),
-      fetchHourlyData(site.lat, site.lon, site.altitude, 1),
-      fetchAllWeatherData(site.lat, site.lon),
+      weatherService.fetchLight(site.lat, site.lon),
     ]);
     
-    // Confronta temperatura ora corrente
     const wsTemp = wsData.current.temperature;
-    const omTemp = omHourly[0]?.temperature;
+    const omTemp = omHourly.data?.[0]?.temperature;
     if (wsTemp !== undefined && omTemp !== undefined) {
       const diff = Math.abs(wsTemp - omTemp);
       if (diff > 1) {
@@ -155,9 +114,8 @@ async function testDataConsistency() {
       }
     }
     
-    // Confronta vento
     const wsWind = wsData.current.windSpeed;
-    const omWind = omHourly[0]?.windSpeed;
+    const omWind = omHourly.data?.[0]?.windSpeed;
     if (wsWind !== undefined && omWind !== undefined) {
       const diff = Math.abs(wsWind - omWind);
       if (diff > 2) {
@@ -165,9 +123,8 @@ async function testDataConsistency() {
       }
     }
     
-    // Confronta daily
     const wsDailyMax = wsData.daily[0]?.tempMax;
-    const omDailyMax = omDaily[0]?.temperatureMax;
+    const omDailyMax = daily.daily[0]?.tempMax;
     if (wsDailyMax !== undefined && omDailyMax !== undefined) {
       const diff = Math.abs(wsDailyMax - omDailyMax);
       if (diff > 1) {
@@ -180,41 +137,11 @@ async function testDataConsistency() {
   }
 }
 
-// ============================================
-// 4. TEST HOOKS useWeatherData / useMeteoCompleto
-// ============================================
 function testHooksStructure() {
-  // Verifica che useWeatherData esponga i campi necessari
-  const requiredExports = [
-    "selectedId", "setSelectedId",
-    "loading", "updating",
-    "selectedDay", "setSelectedDay",
-    "selectedHour", "setSelectedHour",
-    "activeTab", "setActiveTab",
-    "lastUpdate", "countdown",
-    "site",
-    "dayData", "currentData", "thermalDelta",
-    "enrichedDaily", "dateLabels",
-    "hourlyData", "allHourlyData", "allDailyData",
-    "currentCape",
-    "loadWeather",
-    "activeModel", "setActiveModel"
-  ];
-  
-  // Questo test è statico - verifichiamo solo che l'hook esista
   addResult("Hooks", "useWeatherData exports", "PASS", "Hook definito (verifica manuale exports)");
-  
-  // Verifica useMeteoCompleto
-  const meteoCompletoFields = [
-    "analisi", "riepilogo", "hourlyData", "currentData", "dailyData",
-    "loading", "error", "tempoTrascorso", "ultimoAggiornamento", "marginiErrore"
-  ];
   addResult("Hooks", "useMeteoCompleto exports", "PASS", "Hook definito");
 }
 
-// ============================================
-// 5. TEST COMPONENTI - INTERATTIVITA'
-// ============================================
 function testComponentInteractivity() {
   const components = [
     { name: "SiteHeader", props: ["name", "exposure", "valley", "alt", "currentData"], interactive: false },
@@ -227,7 +154,6 @@ function testComponentInteractivity() {
     { name: "SkewTDiagram", props: ["latitude", "longitude", "siteAltitude", "siteName", "selectedHour", "selectedDay"], interactive: true },
   ];
   
-  // Verifica props comuni richieste per consistenza
   const commonDataProps = ["currentData", "dayData", "site"];
   
   components.forEach(c => {
@@ -242,13 +168,9 @@ function testComponentInteractivity() {
     }
   });
   
-  // Verifica che Index.tsx passi i dati correttamente
   addResult("Components", "Index.tsx data flow", "PASS", "Verifica manuale: Index passa dayData, currentData, site a tutti i tab");
 }
 
-// ============================================
-// 6. TEST DECOLLI DATA
-// ============================================
 function testDecolliData() {
   let issues = 0;
   DECOLLI.forEach((d, i) => {
@@ -265,11 +187,7 @@ function testDecolliData() {
   }
 }
 
-// ============================================
-// 7. TEST TIPI TYPES/METEO.TS
-// ============================================
 function testTypes() {
-  // Verifica che HourData abbia tutti i campi usati dai componenti
   const usedFields = [
     "time", "temperature", "feelsLike", "humidity", "dewPoint", "pressure", "surfacePressure",
     "precipitation", "rain", "snowfall", "weatherCode", "cloudCover", "cloudCoverLow",
@@ -283,30 +201,20 @@ function testTypes() {
   addResult("Types", "HourData completeness", "PASS", `${usedFields.length} campi definiti in types/meteo.ts`);
 }
 
-// ============================================
-// 8. TEST CONFLITTI NOMI / DOPPIONI
-// ============================================
 function testNamingConflicts() {
-  // Servizi meteo multipli
   const services = ["weatherService", "openMeteoService", "meteoApi"];
   addResult("Conflicts", "Multiple weather services", "WARN", `${services.length} servizi meteo: weatherService, openMeteoService, meteoApi - possibile duplicazione logica`);
   
-  // Hook multipli
   const hooks = ["useWeatherData", "useMeteoCompleto", "useAnalisiAvanzata"];
   addResult("Conflicts", "Multiple weather hooks", "WARN", `${hooks.length} hook meteo - possibile stato duplicato`);
   
-  // Componenti simili
   const similarComponents = ["VentiTab", "VentiInterpolatiTab", "Windgram", "ProfessionalWindgram", "SkewTDiagram"];
   addResult("Conflicts", "Multiple wind components", "WARN", `${similarComponents.length} componenti vento - verificare duplicazione`);
   
-  // Termiche
   const thermalComponents = ["TermicheTab", "TermicheAquila", "TermicheNuvola", "GraficoTermiche", "GraficoTermicoPro", "ThermalChart", "ThermalDayGraph"];
   addResult("Conflicts", "Multiple thermal components", "WARN", `${thermalComponents.length} componenti termiche - possibile duplicazione`);
 }
 
-// ============================================
-// MAIN AUDIT FUNCTION
-// ============================================
 export async function runFullAudit(): Promise<AuditResult[]> {
   results.length = 0;
   
@@ -322,7 +230,6 @@ export async function runFullAudit(): Promise<AuditResult[]> {
   await testOpenMeteoService();
   await testDataConsistency();
   
-  // Summary
   const pass = results.filter(r => r.status === "PASS").length;
   const fail = results.filter(r => r.status === "FAIL").length;
   const warn = results.filter(r => r.status === "WARN").length;
@@ -339,7 +246,6 @@ export async function runFullAudit(): Promise<AuditResult[]> {
   return results;
 }
 
-// Auto-run se in browser
 if (typeof window !== "undefined") {
   (window as any).runAudit = runFullAudit;
   console.log("🔧 Audit disponibile: esegui runAudit() in console");

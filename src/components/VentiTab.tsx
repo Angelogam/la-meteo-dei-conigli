@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { Wind, AlertTriangle, CheckCircle, Loader2, Gauge } from "lucide-react";
-import { weatherService } from "@/services/weatherService";
+import { weatherService } from "@/services/openMeteoService";
 import { getVentoStatusColor } from "@/utils/validaVentoDecollo";
 import { degreesToCardinal, windArrow } from "@/utils/windDirections";
 
@@ -93,7 +93,6 @@ export default function VentiTab({
 
   return (
     <div className="space-y-3">
-      {/* Wind Direction and Speed */}
       <div className="flex items-center gap-3">
         <div className="shrink-0 mt-0.5 text-3xl">
           {directionArrow}
@@ -109,13 +108,11 @@ export default function VentiTab({
           </div>
         </div>
 
-        {/* Status Badge */}
         <div className={`px-3 py-1 rounded-lg text-xs font-bold ${getVentoStatusColor(isFavourable ? "favorevole" : isSottovento ? "importante" : isContrario ? "rischioso" : "info")}`}>
           {isFavourable ? "Ottimo" : isSottovento ? "Sottovento" : isContrario ? "Rischioso" : "Info"}
         </div>
       </div>
 
-      {/* Additional wind details */}
       <div className="flex flex-col text-sm text-slate-300">
         <div className="flex items-center gap-1">
           <Wind className="w-3 h-3 text-blue-400" />

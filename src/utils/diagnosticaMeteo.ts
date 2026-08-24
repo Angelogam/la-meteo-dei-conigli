@@ -67,7 +67,6 @@ export async function diagnosticaMeteoCompleta(): Promise<ReportConflittoMeteo> 
   let sommaNuvole = 0;
   let countNuvole = 0;
 
-  // Test su primi siti di riferimento
   const campione = DECOLLI.slice(0, 4);
 
   for (const decollo of campione) {
@@ -147,7 +146,6 @@ export async function diagnosticaMeteoCompleta(): Promise<ReportConflittoMeteo> 
   statistiche.apiMediaRisposta = campione.length > 0 ? Math.round(sommaTempi / campione.length) : 0;
   statistiche.nuvoleMedia = countNuvole > 0 ? Math.round(sommaNuvole / countNuvole) : 0;
 
-  // Test Calcoli
   const cardTest: { in: number; atteso: string }[] = [
     { in: 0, atteso: "N" },
     { in: 90, atteso: "E" },

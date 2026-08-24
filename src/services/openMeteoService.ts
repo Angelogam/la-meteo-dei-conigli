@@ -4,7 +4,6 @@ import type { HourData, DailyData } from "@/types/meteo";
 
 const OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast";
 
-// Parametri orari completi per parapendio
 const HOURLY_PARAMS = [
   "temperature_2m",
   "relative_humidity_2m",
@@ -27,7 +26,6 @@ const HOURLY_PARAMS = [
   "visibility",
 ].join(",");
 
-// Parametri giornalieri
 const DAILY_PARAMS = [
   "weather_code",
   "temperature_2m_max",
@@ -42,7 +40,6 @@ const DAILY_PARAMS = [
   "sunset",
 ].join(",");
 
-// Parametri correnti
 const CURRENT_PARAMS = [
   "temperature_2m",
   "relative_humidity_2m",
@@ -93,6 +90,30 @@ export interface MeteoHourly {
   directRadiation: number;
   uvIndex: number;
   visibility: number;
+  // Add missing fields for HourData compatibility
+  feelsLike: number;
+  pressure: number;
+  surfacePressure: number;
+  rain: number;
+  snowfall: number;
+  vapourPressureDeficit: number;
+  isDay: boolean;
+  freezingLevel: number;
+  sunshineDuration: number;
+  mixingRatio: number;
+  virtualTemp: number;
+  windProfile?: { height: number; speed: number; dir: number }[];
+  temp80m?: number;
+  temp120m?: number;
+  apparentTemp?: number;
+  precipitationProba?: number;
+  evapotranspiration?: number;
+  et0?: number;
+  soilTemp?: number;
+  soilMoisture?: number;
+  diffuseRadiation?: number;
+  directNormalIrradiance?: number;
+  terrestrialRadiation?: number;
 }
 
 export interface MeteoDaily {
@@ -108,6 +129,19 @@ export interface MeteoDaily {
   uvIndexMax: number;
   sunrise: string;
   sunset: string;
+  // Add missing fields for DailyData compatibility
+  temperatureMax: number;
+  temperatureMin: number;
+  temperatureMean: number;
+  apparentTempMax: number;
+  apparentTempMin: number;
+  daylightDuration: number;
+  sunshineDuration: number;
+  rainSum: number;
+  snowfallSum: number;
+  precipitationHours: number;
+  shortwaveRadiationSum: number;
+  freezingLevel?: number;
 }
 
 /** Parsing sicuro temperatura: evita NaN, restituisce null se non valido */
@@ -231,6 +265,30 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number, altit
         directRadiation: json.hourly.direct_radiation?.[i] ?? 0,
         uvIndex: json.hourly.uv_index?.[i] ?? 0,
         visibility: json.hourly.visibility?.[i] ?? 10000,
+        // Add missing fields for HourData compatibility
+        feelsLike: t ?? 0,
+        pressure: 1013,
+        surfacePressure: 1013,
+        rain: 0,
+        snowfall: 0,
+        vapourPressureDeficit: 0,
+        isDay: true,
+        freezingLevel: 3000,
+        sunshineDuration: 0,
+        mixingRatio: 0,
+        virtualTemp: 0,
+        windProfile: undefined,
+        temp80m: undefined,
+        temp120m: undefined,
+        apparentTemp: t ?? 0,
+        precipitationProba: 0,
+        evapotranspiration: 0,
+        et0: 0,
+        soilTemp: 0,
+        soilMoisture: 0,
+        diffuseRadiation: 0,
+        directNormalIrradiance: 0,
+        terrestrialRadiation: 0,
       });
     }
 
@@ -251,6 +309,19 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number, altit
         uvIndexMax: json.daily.uv_index_max[i] ?? 0,
         sunrise: json.daily.sunrise[i] ?? "",
         sunset: json.daily.sunset[i] ?? "",
+        // Add missing fields for DailyData compatibility
+        temperatureMax: safeParseTemp(json.daily.temperature_2m_max[i]) ?? 0,
+        temperatureMin: safeParseTemp(json.daily.temperature_2m_min[i]) ?? 0,
+        temperatureMean: 0,
+        apparentTempMax: 0,
+        apparentTempMin: 0,
+        daylightDuration: 0,
+        sunshineDuration: 0,
+        rainSum: 0,
+        snowfallSum: 0,
+        precipitationHours: 0,
+        shortwaveRadiationSum: 0,
+        freezingLevel: undefined,
       });
     }
 
@@ -260,7 +331,7 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number, altit
   }
 }
 
-// Export compatibile per import esistenti: weatherService.fetchMeteoCorrente, weatherService.fetchPrevisioniGiornaliere
+// Export compatibile per import esistenti
 export const weatherService = {
   fetchMeteoCorrente,
   fetchPrevisioniGiornaliere,

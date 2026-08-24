@@ -93,7 +93,6 @@ export default function PrevisioniGiornaliere({
 
               {daily && (
                 <div className="space-y-1.5 text-xs">
-                  {/* Temperature row - only values with °C */}
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-amber-300 font-bold">
                       {Math.round(daily.temperatureMax)}°C
@@ -103,7 +102,6 @@ export default function PrevisioniGiornaliere({
                     </span>
                   </div>
 
-                  {/* Wind + Zero Termico row - only values */}
                   <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-700/40">
                     <span className="flex items-center gap-1.5 text-slate-300">
                       <Wind className="w-3.5 h-3.5 text-cyan-400" />
