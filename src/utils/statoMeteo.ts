@@ -1,4 +1,3 @@
-0.1mm o cloud > 80%.">
 "use client";
 
 export type StatoMeteo = "sereno" | "variabile" | "nuvoloso" | "pioggia" | "temporale" | "offline";
