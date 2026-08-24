@@ -78,7 +78,6 @@ export interface MeteoDaily {
   windGustsMax: number;
   windDirDominant: number;
   shortwaveRadiationSum: number;
-  uvIndexMax: number;
 }
 
 export interface MeteoResponse {
@@ -312,7 +311,6 @@ export const weatherService = {
           windGustsMax: json.daily.wind_gusts_10m_max[i] ?? 0,
           windDirDominant: json.daily.wind_direction_10m_dominant[i] ?? 0,
           shortwaveRadiationSum: json.daily.shortwave_radiation_sum[i] ?? 0,
-          uvIndexMax: json.daily.uv_index_max[i] ?? 0,
         });
       }
 
@@ -389,20 +387,30 @@ export const weatherService = {
         snowfall: c.snowfall,
         weatherCode: c.weather_code,
         cloudCover: c.cloud_cover,
-        pressure: c.pressure_msl,
-        surfacePressure: c.surface_pressure,
-        windSpeed: c.wind_speed_10m,
-        windDir: c.wind_direction_10m,
-        windGusts: c.wind_gusts_10m,
+        pressure: Number(c.pressure_msl) ?? 1013,
+        surfacePressure: Number(c.surface_pressure) ?? 1013,
+        windSpeed: Number(Number(c.wind_speed_10m) ?? 0),
+        windDir: Number(Number(c.wind_direction_10m) ?? 0),
+        windGusts: Number(Number(c.wind_gusts_10m) ?? 0),
         dewPoint: 0,
         precipitationProba: 0,
         cloudCoverLow: 0,
         cloudCoverMid: 0,
         cloudCoverHigh: 0,
-        pressure: Number(c.pressure_msl) ?? 1013,
-        windSpeed: Number(Number(c.wind_speed_10m) ?? 0),
-        windDir: Number(Number(c.wind_direction_10m) ?? 0),
-        windGusts: Number(Number(c.wind_gusts_10m) ?? 0),
+        feelsLike: c.apparent_temperature ?? 0,
+        radiation: 0,
+        directRadiation: 0,
+        uvIndex: 0,
+        visibility: 10000,
+        vapourPressureDeficit: 0,
+        isDay: c.is_day ?? 1,
+        freezingLevel: 3000,
+        sunshineDuration: 0,
+        cape: 0,
+        cin: 0,
+        liftedIndex: 0,
+        mixingRatio: 0,
+        virtualTemp: 0,
       };
       return { data, ok: true };
     } catch {

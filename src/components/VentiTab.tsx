@@ -4,7 +4,15 @@ import React, { useEffect, useState, useMemo } from "react";
 import { Wind, AlertTriangle, CheckCircle, Loader2, Gauge } from "lucide-react";
 import { weatherService } from "@/services/weatherService";
 import { getVentoStatusColor } from "@/utils/validaVentoDecollo";
-import { getDirLabel, getDirArrow } from "@/utils/windDirections";
+import { degreesToCardinal, windArrow } from "@/utils/windDirections";
+
+interface VentiTabProps {
+  currentData: any;
+  dayData: any[];
+  site: { lat: number; lon: number; alt: number; name: string; exposure: string };
+  selectedDay: number;
+  onSelect: (id: string) => void;
+}
 
 export default function VentiTab({
   currentData,
@@ -12,14 +20,7 @@ export default function VentiTab({
   site,
   selectedDay,
   onSelect,
-}: {
-  currentData: any;
-  dayData: any[];
-  site: { lat: number; lon: number; alt: number; name: string; exposure: string };
-  selectedDay: number;
-  onSelect: (id: string) => void;
-}) {
-  // Fetch wind data for the selected site and day
+}: VentiTabProps) {
   const [windInfo, setVentoData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,8 +40,8 @@ export default function VentiTab({
           speed: windSpeed,
           dir: windDir,
           gust: windGusts,
-          directionLabel: getDirLabel(windDir),
-          directionArrow: getDirArrow(windDir),
+          directionLabel: degreesToCardinal(windDir),
+          directionArrow: windArrow(windDir),
           isFavourable: windSpeed >= 5 && windSpeed <= 15,
           isLaterale: false,
           isSottovento: false,
@@ -87,8 +88,8 @@ export default function VentiTab({
   const isSottovento = false;
   const isContrario = false;
 
-  const dirName = getDirLabel(dir);
-  const dirArrow = getDirArrow(dir);
+  const dirName = degreesToCardinal(dir);
+  const dirArrow = windArrow(dir);
 
   return (
     <div className="space-y-3">

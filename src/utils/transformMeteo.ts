@@ -36,10 +36,7 @@ export function transformHourlyData(raw: RawMeteoResponse["hourly"]): HourData[]
     const visibility = Number(raw.visibility?.[i] ?? 10000);
     const directRadiation = Number(raw.direct_radiation?.[i] ?? 0);
     const diffuseRadiation = Number(raw.diffuse_radiation?.[i] ?? 0);
-    const visibilityLow = visibility;
-    const directRadiationVal = directRadiation;
-    const diffuseRadiationVal = diffuseRadiation;
-    const visibilityLowVal = visibilityLow;
+    const shortwaveRadiation = Number(raw.shortwave_radiation?.[i] ?? 0);
 
     result.push({
       time: new Date(timeStr),
@@ -60,14 +57,54 @@ export function transformHourlyData(raw: RawMeteoResponse["hourly"]): HourData[]
       windDir: windDir,
       windGusts: windGusts,
       uvIndex: uvIndex,
-      visibility: visibilityLowVal,
-      directRadiation: directRadiationVal,
-      diffuseRadiation: diffuseRadiationVal,
-      visibility: visibilityLowVal,
+      visibility: visibility,
+      directRadiation: directRadiation,
+      diffuseRadiation: diffuseRadiation,
+      shortwaveRadiation: shortwaveRadiation,
+      feelsLike: temperature,
+      radiation: shortwaveRadiation,
+      vapourPressureDeficit: 0,
+      isDay: 1,
+      freezingLevel: 3000,
+      sunshineDuration: 0,
+      cape: 0,
+      cin: 0,
+      liftedIndex: 0,
+      mixingRatio: 0,
+      virtualTemp: 0,
+      windProfile: undefined,
+      temp80m: undefined,
+      temp120m: undefined,
+      apparentTemp: temperature,
+      precipitationProba: 0,
+      evapotranspiration: 0,
+      et0: 0,
+      soilTemp: 0,
+      soilMoisture: 0,
+      directNormalIrradiance: 0,
+      terrestrialRadiation: 0,
     });
   }
 
   return result;
+}
+
+export interface MeteoCurrent {
+  time: Date;
+  temperature: number;
+  humidity: number;
+  apparentTemp: number;
+  isDay: number;
+  precipitation: number;
+  rain: number;
+  snowfall: number;
+  weatherCode: number;
+  cloudCover: number;
+  pressure: number;
+  surfacePressure: number;
+  windSpeed: number;
+  windDir: number;
+  windGusts: number;
 }
 
 export function transformCurrentData(raw: RawMeteoResponse["current"]): MeteoCurrent {

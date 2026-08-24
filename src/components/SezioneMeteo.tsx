@@ -18,9 +18,9 @@ export default function SezioneMeteo() {
     activeTab, setActiveTab,
     currentCape,
     activeModel,
+    site,
   } = useWeatherData();
 
-  const site = DECOLLI.find(d => d.id === selectedId);
   if (!site) return null;
 
   const siteAlt = { alt: site.altitude };
@@ -79,7 +79,13 @@ export default function SezioneMeteo() {
         />
       )}
       {activeTab === "venti" && (
-        <VentiTab currentData={currentData} dayData={dayData} />
+        <VentiTab
+          currentData={currentData}
+          dayData={dayData}
+          site={siteFull}
+          selectedDay={selectedDay}
+          onSelect={() => {}}
+        />
       )}
       {activeTab === "termiche" && (
         <TermicheTab currentData={currentData} dayData={dayData} site={siteFull} />
