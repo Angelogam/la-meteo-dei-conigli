@@ -17,10 +17,9 @@ import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { DECOLLI } from "@/data/decolli";
-import { weatherService } from "@/services/weatherService";
 import { getStabilityIndex } from "@/utils/weatherHelpers";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
-import { Activity, Server, Radar } from "lucide-react";
+import { Activity } from "lucide-react";
 
 export default function Index() {
   useEffect(() => { avviaVerificaContinua(60000); }, []);
@@ -30,7 +29,7 @@ export default function Index() {
     selectedDay, setSelectedDay, selectedHour, setSelectedHour,
     activeTab, setActiveTab, lastUpdate, countdown, site, dayData,
     currentData, thermalDelta, enrichedDaily, dateLabels, loadWeather,
-    allHourlyData, activeModel, currentCape,
+    activeModel, currentCape,
   } = useWeatherData();
 
   const { tempoTrascorso } = useMeteoCompleto(
@@ -82,7 +81,7 @@ export default function Index() {
             <UpdateTimer lastUpdate={lastUpdate} countdown={countdown} updating={updating} onRefresh={loadWeather} />
             <div className="bg-slate-800/50 border border-emerald-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
               <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
-              <span className="text-xs text-emerald-300">{site?.name ?? "Decollo"} — Dati reali Open-Meteo</span>
+              <span className="text-xs text-emerald-300 truncate">{site?.name ?? "Decollo"} — Dati reali Open-Meteo</span>
               <span className="text-[10px] text-slate-500 ml-auto">{tempoTrascorso}s</span>
             </div>
             <DecolliCard
@@ -95,18 +94,75 @@ export default function Index() {
           <div className="flex-1 min-w-0 space-y-6">
             {hasData && (
               <>
-                <SiteHeader name={site!.name} exposure={site!.exposure} valley={site!.valley} alt={site!.altitude} currentData={currentData} />
-                <PrevisioniGiornaliere enrichedDaily={enrichedDaily} dateLabels={dateLabels} currentData={currentData} dayData={dayData} site={{ name: site!.name, altitude: site!.altitude, exposure: site!.exposure }} selectedDay={selectedDay} onSelectDay={setSelectedDay} nomeDecollo={site!.name} />
-                <WeatherDashboard dayData={dayData} altitude={site!.altitude} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabels[selectedDay] ?? ""} />
+                <SiteHeader
+                  name={site!.name}
+                  exposure={site!.exposure}
+                  valley={site!.valley}
+                  alt={site!.altitude}
+                  currentData={currentData}
+                  selectedHour={selectedHour}
+                />
+                <PrevisioniGiornaliere
+                  enrichedDaily={enrichedDaily}
+                  dateLabels={dateLabels}
+                  currentData={currentData}
+                  dayData={dayData}
+                  site={{ name: site!.name, altitude: site!.altitude, exposure: site!.exposure }}
+                  selectedDay={selectedDay}
+                  onSelectDay={setSelectedDay}
+                  nomeDecollo={site!.name}
+                />
+                <WeatherDashboard
+                  dayData={dayData}
+                  altitude={site!.altitude}
+                  selectedHour={selectedHour}
+                  onHourSelect={setSelectedHour}
+                  dayLabel={dateLabels[selectedDay] ?? ""}
+                />
                 <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
                 {activeTab === "meteo" && (
-                  <MeteoTab currentData={currentData} dayData={dayData} site={{ alt: site!.altitude, name: site!.name }} thermalDelta={thermalDelta} stabilityIndex={stabilityIndex} modelName={activeModel} cape={currentCape?.cape} liftedIndex={currentCape?.liftedIndex} cin={currentCape?.cin} />
+                  <MeteoTab
+                    currentData={currentData}
+                    dayData={dayData}
+                    site={{ alt: site!.altitude, name: site!.name }}
+                    thermalDelta={thermalDelta}
+                    stabilityIndex={stabilityIndex}
+                    modelName={activeModel}
+                    cape={currentCape?.cape}
+                    liftedIndex={currentCape?.liftedIndex}
+                    cin={currentCape?.cin}
+                  />
                 )}
 
-                {activeTab === "venti" && <VentiInterpolatiTab lat={site!.lat} lon={site!.lon} quotaDecollo={site!.altitude} selectedDay={selectedDay} oraCorrente={selectedHour} onOraChange={setSelectedHour} siteName={site!.name} />}
-                {activeTab === "termiche" && <TermicheTab currentData={currentData} dayData={dayData} site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name }} />}
-                {activeTab === "analisi" && <AnalisiMeteo currentData={currentData} dayData={dayData} site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name, exposure: site!.exposure }} cape={currentCape?.cape} liftedIndex={currentCape?.liftedIndex} cin={currentCape?.cin} />}
+                {activeTab === "venti" && (
+                  <VentiInterpolatiTab
+                    lat={site!.lat}
+                    lon={site!.lon}
+                    quotaDecollo={site!.altitude}
+                    selectedDay={selectedDay}
+                    oraCorrente={selectedHour}
+                    onOraChange={setSelectedHour}
+                    siteName={site!.name}
+                  />
+                )}
+                {activeTab === "termiche" && (
+                  <TermicheTab
+                    currentData={currentData}
+                    dayData={dayData}
+                    site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name }}
+                  />
+                )}
+                {activeTab === "analisi" && (
+                  <AnalisiMeteo
+                    currentData={currentData}
+                    dayData={dayData}
+                    site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name, exposure: site!.exposure }}
+                    cape={currentCape?.cape}
+                    liftedIndex={currentCape?.liftedIndex}
+                    cin={currentCape?.cin}
+                  />
+                )}
               </>
             )}
             {!hasData && (
