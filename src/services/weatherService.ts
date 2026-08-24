@@ -32,6 +32,10 @@ export interface MeteoHourly {
   pressure: number;
   surfacePressure: number;
   precipitationProbability: number;
+  et0?: number;
+  vapourPressureDeficit?: number;
+  soilTemp?: number;
+  soilMoisture?: number;
 }
 
 export interface MeteoCurrent {
@@ -263,7 +267,6 @@ export const weatherService = {
           feelsLike: json.hourly.apparent_temperature?.[i] ?? 0,
           apparentTemp: json.hourly.apparent_temperature?.[i] ?? 0,
           precipitationProbability: json.hourly.precipitation_probability?.[i] ?? 0,
-          evapotranspiration: json.hourly.et0_fao_evapotranspiration?.[i] ?? 0,
           et0: json.hourly.et0_fao_evapotranspiration?.[i] ?? 0,
           vapourPressureDeficit: 0,
           soilTemp: 0,
@@ -405,7 +408,7 @@ export const weatherService = {
         uvIndex: 0,
         visibility: 10000,
         vapourPressureDeficit: 0,
-        isDay: c.is_day ?? 1,
+        isDay: (c.is_day ?? 1) === 1,
         freezingLevel: 3000,
         sunshineDuration: 0,
         cape: 0,
