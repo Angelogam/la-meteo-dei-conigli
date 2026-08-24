@@ -31,6 +31,7 @@ export interface MeteoHourly {
   windProfile?: { height: number; speed: number; dir: number }[];
   pressure: number;
   surfacePressure: number;
+  precipitationProbability: number;
 }
 
 export interface MeteoCurrent {
