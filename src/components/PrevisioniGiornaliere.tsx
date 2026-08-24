@@ -2,10 +2,11 @@
 
 import React from "react";
 import type { HourData, DailyData } from "@/types/meteo";
+import type { MeteoDaily } from "@/services/openMeteoService";
 import { CloudRain, Sun, Cloud, Wind, Thermometer, Calendar, Mountain } from "lucide-react";
 
 interface PrevisioniGiornaliereProps {
-  enrichedDaily: DailyData[];
+  enrichedDaily: MeteoDaily[];
   dateLabels: string[];
   currentData: HourData | null;
   dayData: HourData[];
@@ -28,7 +29,7 @@ function getWeatherEmoji(code: number): string {
   return "☀️";
 }
 
-function getFreezingLevel(daily: DailyData): number | null {
+function getFreezingLevel(daily: MeteoDaily): number | null {
   if (daily.freezingLevel !== undefined && daily.freezingLevel !== null) {
     return Math.round(daily.freezingLevel);
   }
