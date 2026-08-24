@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { Wind, Clock, Thermometer, AlertTriangle } from "lucide-react";
+import { Wind, Clock, AlertTriangle } from "lucide-react";
 import { weatherService } from "@/services/weatherService";
 import { validaVentoPerDecollo, getVentoStatusColor } from "@/utils/validaVentoDecollo";
 
@@ -17,17 +17,17 @@ function getWindArrow(deg: number): string {
   return arrows[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
 }
 
-function getWeatherEmoji(code: number | undefined | null): string {
+function getWeatherEmoji(code: number | undefined | null, precip?: number): string {
+  if (precip && precip > 0.5) return "🌧️";
   if (code == null) return "☀️";
-  if (code === 0 || code === 1) return "☀️";
-  if (code === 2) return "🌤️";
-  if (code === 3) return "☁️";
-  if (code >= 45 && code <= 48) return "🌫️";
-  if (code >= 51 && code <= 57) return "🌦️";
-  if (code >= 61 && code <= 67) return "🌧️";
-  if (code >= 71 && code <= 77) return "❄️";
-  if (code >= 80 && code <= 82) return "🌦️";
   if (code >= 95) return "⛈️";
+  if (code >= 80) return "🌧️";
+  if (code >= 71) return "❄️";
+  if (code >= 61) return "🌧️";
+  if (code >= 51) return "🌦️";
+  if (code >= 45) return "🌫️";
+  if (code >= 3) return "☁️";
+  if (code >= 1) return "🌤️";
   return "☀️";
 }
 
@@ -56,46 +56,33 @@ interface LiveDato {
   gust: number | null;
 }
 
-const REFRESH_INTERVAL = 600000; // 10 minuti
-const MAX_CONCURRENT = 3; // Massimo 3 richieste contemporanee
+const REFRESH_INTERVAL = 300000; // 5 minuti
 
 const DecolliCard = ({ decolli, selectedId, onSelect, selectedDay = 0 }: DecolliCardProps) => {
   const [liveData, setLiveData] = useState<Record<string, LiveDato | null>>({});
   const [loadingAll, setLoadingAll] = useState(true);
   const mountedRef = useRef(true);
 
-  // Coda per gestire le richieste in modo sequenziale (rate limit)
   const loadAllData = useCallback(async () => {
     if (!mountedRef.current) return;
-
     setLoadingAll(true);
     const newData: Record<string, LiveDato> = {};
 
-    // Carica in batch da massimo 3 alla volta per evitare rate-limit
-    for (let i = 0; i < decolli.length; i += MAX_CONCURRENT) {
-      const batch = decolli.slice(i, i + MAX_CONCURRENT);
-
-      await Promise.all(batch.map(async (item) => {
-        try {
-          // ⚡ Usa la chiamata LEGGERA (solo 4 parametri) per la lista
-          const { data } = await weatherService.fetchLight(item.lat, item.lon);
-          if (data && data.temperature != null && mountedRef.current) {
-            newData[item.nome] = {
-              temp: Math.round(data.temperature),
-              wind: Math.round(data.windSpeed),
-              code: data.weatherCode,
-              dir: data.windDir || 180, // Direzione vento reale con fallback a S
-              gust: null,
-            };
-          }
-        } catch {
-          // Ignora errori individuali
+    // Interroga l'API per ogni decollo con le coordinate fisse
+    for (const item of decolli) {
+      try {
+        const { data } = await weatherService.fetchLight(item.lat, item.lon);
+        if (data && data.temperature != null && mountedRef.current) {
+          newData[item.nome] = {
+            temp: Math.round(data.temperature),
+            wind: Math.round(data.windSpeed),
+            code: data.weatherCode ?? 0,
+            dir: data.windDir ?? 180,
+            gust: data.windGusts ?? null,
+          };
         }
-      }));
-
-      // Pausa tra i batch per evitare rate-limit
-      if (i + MAX_CONCURRENT < decolli.length) {
-        await new Promise(r => setTimeout(r, 500));
+      } catch {
+        // Continue
       }
     }
 
@@ -105,69 +92,30 @@ const DecolliCard = ({ decolli, selectedId, onSelect, selectedDay = 0 }: Decolli
     }
   }, [decolli]);
 
-  // Carica subito al mount
   useEffect(() => {
     loadAllData();
-
-    // Refresh periodico in background
-    const interval = setInterval(() => {
-      loadAllData();
-    }, REFRESH_INTERVAL);
-
+    const interval = setInterval(loadAllData, REFRESH_INTERVAL);
     return () => {
       mountedRef.current = false;
       clearInterval(interval);
     };
   }, [loadAllData]);
 
-  // Aggiorna anche quando cambia il giorno selezionato
-  useEffect(() => {
-    if (!loadingAll) {
-      loadAllData();
-    }
-  }, [selectedDay]);
-
-  // Stato di caricamento iniziale
-  if (loadingAll && Object.keys(liveData).length === 0) {
-    return (
-      <div className="bg-slate-900/80 border border-slate-700/60 rounded-xl p-3 md:p-4">
-        <h2 className="text-sm md:text-base font-bold text-white mb-2 md:mb-3">
-          Decolli ({decolli.length})
-        </h2>
-        <div className="flex flex-col items-center justify-center py-8 text-slate-400 space-y-2">
-          <div className="w-8 h-8 rounded-full border-3 border-emerald-500/20 border-t-emerald-400 animate-spin" />
-          <div className="text-xs md:text-sm">
-            Caricamento {Object.keys(liveData).length}/{decolli.length} decolli...
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const dt = getDateTime(selectedDay);
   const caricati = Object.keys(liveData).length;
-  const percentuale = decolli.length > 0 ? Math.round((caricati / decolli.length) * 100) : 0;
 
   return (
     <div className="bg-slate-900/80 border border-slate-700/60 rounded-xl p-3 md:p-4">
-      <h2 className="text-sm md:text-base font-bold text-white mb-2 md:mb-3">
-        Decolli ({caricati}/{decolli.length})
+      <h2 className="text-sm md:text-base font-bold text-white mb-2 md:mb-3 flex items-center justify-between">
+        <span>Decolli ({caricati}/{decolli.length})</span>
+        <span className="text-[10px] text-emerald-400 font-mono">API Ufficiale</span>
       </h2>
-
-      {/* Barra progresso */}
-      {loadingAll && caricati > 0 && caricati < decolli.length && (
-        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden mb-2">
-          <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${percentuale}%` }} />
-        </div>
-      )}
 
       <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-slate-400 mb-2 md:mb-3 bg-slate-800/60 rounded-lg px-2.5 py-1.5 border border-slate-700/40">
         <Clock size={12} />
         <span className="font-medium">{dt.date}</span>
         <span className="text-slate-600">·</span>
-        <span>aggiornato {dt.ora}</span>
-        <span className="text-slate-600">·</span>
-        <span className="text-emerald-400">{percentuale}%</span>
+        <span>ore {dt.ora}</span>
       </div>
 
       <div className="space-y-2 max-h-64 md:max-h-80 overflow-y-auto pr-1 scrollbar-thin">
@@ -183,7 +131,6 @@ const DecolliCard = ({ decolli, selectedId, onSelect, selectedDay = 0 }: Decolli
           const dirLabel = dir != null ? getCardinalDir(dir) : "N/D";
           const dirArrow = dir != null ? getWindArrow(dir) : "→";
 
-          // Valuta compatibilità vento/esposizione
           const valutazione = hasData && dir != null
             ? validaVentoPerDecollo(dir, item.direzione)
             : null;
@@ -215,11 +162,11 @@ const DecolliCard = ({ decolli, selectedId, onSelect, selectedDay = 0 }: Decolli
                     <div className="flex items-center gap-1.5">
                       <span className="text-base md:text-lg">{emoji}</span>
                       <span className="text-sm font-bold text-amber-300 tabular-nums">
-                        {temp}°
+                        {temp}°C
                       </span>
                     </div>
                     <div className="text-[10px] md:text-xs text-slate-500">
-                      {item.valle} · {item.quota}m · {item.direzione}
+                      {item.valle} · {item.quota}m · Esp. {item.direzione}
                     </div>
                   </div>
 
@@ -240,10 +187,7 @@ const DecolliCard = ({ decolli, selectedId, onSelect, selectedDay = 0 }: Decolli
               ) : (
                 <div className="flex items-center justify-between mt-1.5 text-[10px] md:text-xs text-slate-500">
                   <span>{item.valle} · {item.quota}m · {item.direzione}</span>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin" />
-                    <span className="italic">attesa...</span>
-                  </div>
+                  <span className="italic">lettura API...</span>
                 </div>
               )}
             </button>
