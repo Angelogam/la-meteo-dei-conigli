@@ -21,8 +21,6 @@ export interface Decollo {
   exposure: string;
   altitude: number;
   alt: number;
-  esposizione: string;
-  quota: number;
 }
 
 export const DECOLLI: Decollo[] = [

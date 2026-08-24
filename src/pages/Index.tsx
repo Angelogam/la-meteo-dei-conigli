@@ -45,19 +45,6 @@ export default function Index() {
     currentData?.cloudCover ?? 30,
   );
 
-  const decolliList = useMemo(
-    () => DECOLLI.map((d) => ({ 
-      id: d.id, 
-      site_name: d.site_name,
-      location_name: d.location_name,
-      orientation: d.orientation,
-      elevation_m: d.elevation_m,
-      lat: d.lat, 
-      lon: d.lon 
-    })),
-    [],
-  );
-
   if (weatherLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col">
@@ -88,7 +75,7 @@ export default function Index() {
               <span className="text-[10px] text-slate-500 ml-auto">{tempoTrascorso}s</span>
             </div>
             <DecolliCard
-              decolli={decolliList}
+              decolli={DECOLLI}
               selectedId={selectedId}
               selectedDay={selectedDay}
               onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}

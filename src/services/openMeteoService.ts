@@ -114,6 +114,9 @@ export interface MeteoHourly {
   diffuseRadiation?: number;
   directNormalIrradiance?: number;
   terrestrialRadiation?: number;
+  // Missing fields for HourData
+  radiation: number;
+  cin: number;
 }
 
 export interface MeteoDaily {
@@ -142,6 +145,7 @@ export interface MeteoDaily {
   precipitationHours: number;
   shortwaveRadiationSum: number;
   freezingLevel?: number;
+  weatherDescription?: string;
 }
 
 /** Parsing sicuro temperatura: evita NaN, restituisce null se non valido */
@@ -289,6 +293,9 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number, altit
         diffuseRadiation: 0,
         directNormalIrradiance: 0,
         terrestrialRadiation: 0,
+        // Missing fields for HourData
+        radiation: json.hourly.shortwave_radiation?.[i] ?? 0,
+        cin: json.hourly.convective_inhibition?.[i] ?? 0,
       });
     }
 
@@ -322,6 +329,7 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number, altit
         precipitationHours: 0,
         shortwaveRadiationSum: 0,
         freezingLevel: undefined,
+        weatherDescription: undefined,
       });
     }
 
@@ -335,4 +343,6 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number, altit
 export const weatherService = {
   fetchMeteoCorrente,
   fetchPrevisioniGiornaliere,
+  // Alias for backward compatibility
+  fetchCurrent: fetchMeteoCorrente,
 };

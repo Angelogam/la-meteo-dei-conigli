@@ -98,9 +98,10 @@ async function testDataConsistency() {
   try {
     const site = DECOLLI[0];
     
-    const [wsData, omHourly] = await Promise.all([
+    const [wsData, omHourly, omDaily] = await Promise.all([
       weatherService.fetchWeather(site.lat, site.lon),
       weatherService.fetchLight(site.lat, site.lon),
+      weatherService.fetchWeather(site.lat, site.lon),
     ]);
     
     const wsTemp = wsData.current.temperature;
@@ -124,7 +125,7 @@ async function testDataConsistency() {
     }
     
     const wsDailyMax = wsData.daily[0]?.tempMax;
-    const omDailyMax = daily.daily[0]?.tempMax;
+    const omDailyMax = omDaily.daily[0]?.tempMax;
     if (wsDailyMax !== undefined && omDailyMax !== undefined) {
       const diff = Math.abs(wsDailyMax - omDailyMax);
       if (diff > 1) {
