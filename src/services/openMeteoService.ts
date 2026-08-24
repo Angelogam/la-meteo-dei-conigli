@@ -2,17 +2,16 @@
 
 import type { HourData, DailyData } from "@/types/meteo";
 
-const OPEN_METEO_HOURLY = [
+const OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast";
+
+// Parametri orari completi per parapendio
+const HOURLY_PARAMS = [
   "temperature_2m",
   "relative_humidity_2m",
   "dew_point_2m",
-  "apparent_temperature",
   "precipitation",
-  "rain",
-  "snowfall",
+  "precipitation_probability",
   "weather_code",
-  "pressure_msl",
-  "surface_pressure",
   "cloud_cover",
   "cloud_cover_low",
   "cloud_cover_mid",
@@ -20,199 +19,232 @@ const OPEN_METEO_HOURLY = [
   "wind_speed_10m",
   "wind_direction_10m",
   "wind_gusts_10m",
+  "cape",
+  "lifted_index",
   "shortwave_radiation",
+  "direct_radiation",
   "uv_index",
   "visibility",
-  "is_day",
-  "freezing_level_height",
-  "sunshine_duration",
-  "temperature_80m",
-  "temperature_120m",
-  "wind_speed_80m",
-  "wind_direction_80m",
-  "wind_speed_120m",
-  "wind_direction_120m",
-  "wind_speed_180m",
-  "wind_direction_180m",
-  "cape",
-  "convective_inhibition",
-  "lifted_index",
 ].join(",");
 
-const OPEN_METEO_DAILY = [
+// Parametri giornalieri
+const DAILY_PARAMS = [
   "weather_code",
   "temperature_2m_max",
   "temperature_2m_min",
-  "temperature_2m_mean",
-  "apparent_temperature_max",
-  "apparent_temperature_min",
-  "sunrise",
-  "sunset",
-  "daylight_duration",
-  "sunshine_duration",
   "precipitation_sum",
-  "rain_sum",
-  "snowfall_sum",
-  "precipitation_hours",
   "precipitation_probability_max",
   "wind_speed_10m_max",
   "wind_gusts_10m_max",
   "wind_direction_10m_dominant",
-  "shortwave_radiation_sum",
   "uv_index_max",
+  "sunrise",
+  "sunset",
 ].join(",");
 
-export async function fetchHourlyData(
-  lat: number,
-  lon: number,
-  altitude: number,
-  forecastDays: number = 3,
-): Promise<HourData[]> {
-  const baseUrl = "https://api.open-meteo.com/v1/forecast";
+// Parametri correnti
+const CURRENT_PARAMS = [
+  "temperature_2m",
+  "relative_humidity_2m",
+  "dew_point_2m",
+  "precipitation",
+  "weather_code",
+  "cloud_cover",
+  "wind_speed_10m",
+  "wind_direction_10m",
+  "wind_gusts_10m",
+  "cape",
+  "apparent_temperature",
+].join(",");
 
+export interface MeteoCurrent {
+  time: Date;
+  temperature: number;
+  humidity: number;
+  dewPoint: number;
+  precipitation: number;
+  weatherCode: number;
+  cloudCover: number;
+  windSpeed: number;
+  windDir: number;
+  windGusts: number;
+  cape: number;
+  apparentTemp: number;
+}
+
+export interface MeteoHourly {
+  time: Date;
+  temperature: number;
+  humidity: number;
+  dewPoint: number;
+  precipitation: number;
+  precipitationProbability: number;
+  weatherCode: number;
+  cloudCover: number;
+  cloudCoverLow: number;
+  cloudCoverMid: number;
+  cloudCoverHigh: number;
+  windSpeed: number;
+  windDir: number;
+  windGusts: number;
+  cape: number;
+  liftedIndex: number;
+  shortwaveRadiation: number;
+  directRadiation: number;
+  uvIndex: number;
+  visibility: number;
+}
+
+export interface MeteoDaily {
+  date: Date;
+  weatherCode: number;
+  tempMax: number;
+  tempMin: number;
+  precipitationSum: number;
+  precipitationProbabilityMax: number;
+  windSpeedMax: number;
+  windGustsMax: number;
+  windDirDominant: number;
+  uvIndexMax: number;
+  sunrise: string;
+  sunset: string;
+}
+
+async function fetchWithTimeout(url: string, timeoutMs: number = 8000): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export async function fetchMeteoCorrente(lat: number, lon: number): Promise<MeteoCurrent | null> {
   const params = new URLSearchParams({
     latitude: lat.toString(),
     longitude: lon.toString(),
-    hourly: OPEN_METEO_HOURLY,
-    daily: OPEN_METEO_DAILY,
+    current: CURRENT_PARAMS,
     timezone: "Europe/Rome",
-    forecast_days: forecastDays.toString(),
+    forecast_days: "1",
   });
 
-  const url = `${baseUrl}?${params.toString()}`;
-
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Open-Meteo error: ${res.status} ${res.statusText}`);
-  }
-
-  const json = await res.json();
-
-  if (!json.hourly || !json.hourly.time) {
-    throw new Error("No hourly data received from Open-Meteo");
-  }
-
-  const hourly = json.hourly;
-  const times: string[] = hourly.time;
-  const temps: number[] = hourly.temperature_2m || [];
-  const hums: number[] = hourly.relative_humidity_2m || [];
-  const dews: number[] = hourly.dew_point_2m || [];
-  const feels: number[] = hourly.apparent_temperature || [];
-  const preps: number[] = hourly.precipitation || [];
-  const rains: number[] = hourly.rain || [];
-  const snows: number[] = hourly.snowfall || [];
-  const codes: number[] = hourly.weather_code || [];
-  const psl: number[] = hourly.pressure_msl || [];
-  const sp: number[] = hourly.surface_pressure || [];
-  const clouds: number[] = hourly.cloud_cover || [];
-  const cloudsLow: number[] = hourly.cloud_cover_low || [];
-  const cloudsMid: number[] = hourly.cloud_cover_mid || [];
-  const cloudsHigh: number[] = hourly.cloud_cover_high || [];
-  const winds: number[] = hourly.wind_speed_10m || [];
-  const dirs: number[] = hourly.wind_direction_10m || [];
-  const gusts: number[] = hourly.wind_gusts_10m || [];
-  const rad: number[] = hourly.shortwave_radiation || [];
-  const uv: number[] = hourly.uv_index || [];
-  const vis: number[] = hourly.visibility || [];
-  const isDay: number[] = hourly.is_day || [];
-  const freeze: number[] = hourly.freezing_level_height || [];
-  const sunshine: number[] = hourly.sunshine_duration || [];
-  const capes: number[] = hourly.cape || [];
-  const cins: number[] = hourly.convective_inhibition || [];
-  const lis: number[] = hourly.lifted_index || [];
-  const t80: number[] = hourly.temperature_80m || [];
-  const t120: number[] = hourly.temperature_120m || [];
-
-  return times.map((timeStr, i) => {
-    const temp = temps[i] ?? 15;
-    const hum = hums[i] ?? 50;
-    const dew = dews[i] ?? (temp - 8);
-    const tempK = temp + 273.15;
-    const capeVal = capes[i] ?? Math.max(0, (temp - dew) * 35);
-    const cinVal = cins[i] ?? Math.max(0, 150 - capeVal * 0.5);
-    const liVal = lis[i] ?? (temp - dew - 6);
-
-    const eSat = 611 * Math.exp((17.67 * temp) / (temp + 243.5));
-    const e = (hum / 100) * eSat;
-    const mixingRatio = 0.622 * e / ((sp[i] ?? 1013) - e);
-    const virtualTempK = tempK * (1 + 0.608 * mixingRatio);
+  try {
+    const res = await fetchWithTimeout(`${OPEN_METEO_BASE}?${params.toString()}`);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const c = json.current;
+    if (!c) return null;
 
     return {
-      time: new Date(timeStr),
-      temperature: temp,
-      feelsLike: feels[i] ?? temp,
-      apparentTemp: feels[i] ?? temp,
-      humidity: hum,
-      dewPoint: dew,
-      pressure: psl[i] ?? 1013,
-      surfacePressure: sp[i] ?? 1013,
-      precipitation: preps[i] ?? 0,
-      rain: rains[i] ?? 0,
-      snowfall: snows[i] ?? 0,
-      weatherCode: codes[i] ?? 0,
-      cloudCover: clouds[i] ?? 0,
-      cloudCoverLow: cloudsLow[i] ?? 0,
-      cloudCoverMid: cloudsMid[i] ?? 0,
-      cloudCoverHigh: cloudsHigh[i] ?? 0,
-      windSpeed: winds[i] ?? 0,
-      windDir: dirs[i] ?? 0,
-      windGusts: gusts[i] ?? (winds[i] ? winds[i] * 1.3 : 0),
-      radiation: rad[i] ?? 0,
-      directRadiation: rad[i] ? rad[i] * 0.7 : 0,
-      uvIndex: uv[i] ?? 0,
-      visibility: vis[i] ?? 10000,
-      vapourPressureDeficit: 0,
-      isDay: isDay[i] === 1,
-      freezingLevel: freeze[i] ?? 3000,
-      sunshineDuration: sunshine[i] ?? 0,
-      cape: Math.round(capeVal),
-      cin: Math.round(cinVal),
-      liftedIndex: Math.round(liVal * 10) / 10,
-      mixingRatio,
-      virtualTemp: virtualTempK,
-      temp80m: t80[i],
-      temp120m: t120[i],
+      time: new Date(c.time),
+      temperature: c.temperature_2m ?? 0,
+      humidity: c.relative_humidity_2m ?? 50,
+      dewPoint: c.dew_point_2m ?? (c.temperature_2m - (100 - (c.relative_humidity_2m ?? 50)) / 5),
+      precipitation: c.precipitation ?? 0,
+      weatherCode: c.weather_code ?? 0,
+      cloudCover: c.cloud_cover ?? 0,
+      windSpeed: c.wind_speed_10m ?? 0,
+      windDir: c.wind_direction_10m ?? 0,
+      windGusts: c.wind_gusts_10m ?? c.wind_speed_10m ?? 0,
+      cape: c.cape ?? 0,
+      apparentTemp: c.apparent_temperature ?? c.temperature_2m ?? 0,
     };
-  });
+  } catch {
+    return null;
+  }
 }
 
-export async function fetchAllWeatherData(
-  lat: number,
-  lon: number,
-): Promise<DailyData[]> {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=${OPEN_METEO_DAILY}&timezone=Europe/Rome&forecast_days=3`;
+export async function fetchPrevisioniGiornaliere(lat: number, lon: number, altitude: number = 1000): Promise<{
+  hourly: MeteoHourly[];
+  daily: MeteoDaily[];
+  current: MeteoCurrent | null;
+}> {
+  const params = new URLSearchParams({
+    latitude: lat.toString(),
+    longitude: lon.toString(),
+    hourly: HOURLY_PARAMS,
+    daily: DAILY_PARAMS,
+    current: CURRENT_PARAMS,
+    timezone: "Europe/Rome",
+    forecast_days: "3",
+  });
 
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Open-Meteo daily error: ${res.status}`);
-  const json = await res.json();
+  try {
+    const res = await fetchWithTimeout(`${OPEN_METEO_BASE}?${params.toString()}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
 
-  if (!json.daily || !json.daily.time) return [];
+    // Current
+    const current: MeteoCurrent | null = json.current ? {
+      time: new Date(json.current.time),
+      temperature: json.current.temperature_2m ?? 0,
+      humidity: json.current.relative_humidity_2m ?? 50,
+      dewPoint: json.current.dew_point_2m ?? 0,
+      precipitation: json.current.precipitation ?? 0,
+      weatherCode: json.current.weather_code ?? 0,
+      cloudCover: json.current.cloud_cover ?? 0,
+      windSpeed: json.current.wind_speed_10m ?? 0,
+      windDir: json.current.wind_direction_10m ?? 0,
+      windGusts: json.current.wind_gusts_10m ?? 0,
+      cape: json.current.cape ?? 0,
+      apparentTemp: json.current.apparent_temperature ?? 0,
+    } : null;
 
-  const daily = json.daily;
-  return daily.time.map((dateStr: string, i: number) => ({
-    date: new Date(dateStr + "T12:00:00Z"),
-    weatherCode: daily.weather_code?.[i] ?? 0,
-    temperatureMax: daily.temperature_2m_max?.[i] ?? 20,
-    temperatureMin: daily.temperature_2m_min?.[i] ?? 10,
-    temperatureMean: daily.temperature_2m_mean?.[i] ?? 15,
-    apparentTempMax: daily.apparent_temperature_max?.[i] ?? 20,
-    apparentTempMin: daily.apparent_temperature_min?.[i] ?? 10,
-    sunrise: daily.sunrise?.[i] ?? "",
-    sunset: daily.sunset?.[i] ?? "",
-    daylightDuration: daily.daylight_duration?.[i] ?? 0,
-    sunshineDuration: daily.sunshine_duration?.[i] ?? 0,
-    precipitationSum: daily.precipitation_sum?.[i] ?? 0,
-    rainSum: daily.rain_sum?.[i] ?? 0,
-    snowfallSum: daily.snowfall_sum?.[i] ?? 0,
-    precipitationHours: daily.precipitation_hours?.[i] ?? 0,
-    precipitationProbabilityMax: daily.precipitation_probability_max?.[i] ?? 0,
-    windSpeedMax: daily.wind_speed_10m_max?.[i] ?? 15,
-    windGustsMax: daily.wind_gusts_10m_max?.[i] ?? 25,
-    windDirDominant: daily.wind_direction_10m_dominant?.[i] ?? 0,
-    shortwaveRadiationSum: daily.shortwave_radiation_sum?.[i] ?? 0,
-    uvIndexMax: daily.uv_index_max?.[i] ?? 3,
-    windSpeed: Math.round((daily.wind_speed_10m_max?.[i] ?? 15) * 0.6),
-    cloudCover: 0,
-    weatherDescription: "",
-  }));
+    // Hourly
+    const hourly: MeteoHourly[] = [];
+    const len = json.hourly?.time?.length || 0;
+    for (let i = 0; i < len; i++) {
+      const t = json.hourly.temperature_2m[i] ?? 0;
+      const h = json.hourly.relative_humidity_2m[i] ?? 50;
+      const dew = json.hourly.dew_point_2m?.[i] ?? (t - (100 - h) / 5);
+      
+      hourly.push({
+        time: new Date(json.hourly.time[i]),
+        temperature: t,
+        humidity: h,
+        dewPoint: dew,
+        precipitation: json.hourly.precipitation[i] ?? 0,
+        precipitationProbability: json.hourly.precipitation_probability[i] ?? 0,
+        weatherCode: json.hourly.weather_code[i] ?? 0,
+        cloudCover: json.hourly.cloud_cover[i] ?? 0,
+        cloudCoverLow: json.hourly.cloud_cover_low?.[i] ?? 0,
+        cloudCoverMid: json.hourly.cloud_cover_mid?.[i] ?? 0,
+        cloudCoverHigh: json.hourly.cloud_cover_high?.[i] ?? 0,
+        windSpeed: json.hourly.wind_speed_10m[i] ?? 0,
+        windDir: json.hourly.wind_direction_10m[i] ?? 0,
+        windGusts: json.hourly.wind_gusts_10m?.[i] ?? 0,
+        cape: json.hourly.cape?.[i] ?? 0,
+        liftedIndex: json.hourly.lifted_index?.[i] ?? 0,
+        shortwaveRadiation: json.hourly.shortwave_radiation?.[i] ?? 0,
+        directRadiation: json.hourly.direct_radiation?.[i] ?? 0,
+        uvIndex: json.hourly.uv_index?.[i] ?? 0,
+        visibility: json.hourly.visibility?.[i] ?? 10000,
+      });
+    }
+
+    // Daily
+    const daily: MeteoDaily[] = [];
+    const dailyLen = json.daily?.time?.length || 0;
+    for (let i = 0; i < dailyLen; i++) {
+      daily.push({
+        date: new Date(json.daily.time[i]),
+        weatherCode: json.daily.weather_code[i] ?? 0,
+        tempMax: json.daily.temperature_2m_max[i] ?? 0,
+        tempMin: json.daily.temperature_2m_min[i] ?? 0,
+        precipitationSum: json.daily.precipitation_sum[i] ?? 0,
+        precipitationProbabilityMax: json.daily.precipitation_probability_max[i] ?? 0,
+        windSpeedMax: json.daily.wind_speed_10m_max[i] ?? 0,
+        windGustsMax: json.daily.wind_gusts_10m_max[i] ?? 0,
+        windDirDominant: json.daily.wind_direction_10m_dominant[i] ?? 0,
+        uvIndexMax: json.daily.uv_index_max[i] ?? 0,
+        sunrise: json.daily.sunrise[i] ?? "",
+        sunset: json.daily.sunset[i] ?? "",
+      });
+    }
+
+    return { hourly, daily, current };
+  } catch {
+    return { hourly: [], daily: [], current: null };
+  }
 }

@@ -1,209 +1,194 @@
 "use client";
 
-export interface ParametriVolo {
-  windSpeed: number;        // km/h
+export interface ParametriVolabilita {
+  windSpeed: number;        // km/h (al suolo)
   windGusts?: number;       // km/h
-  windDir: number;          // gradi 0-360
-  exposure: string;         // esposizione decollo es. "S", "SE", "NE"
+  windDir: number;          // gradi 0-360 (da dove viene il vento)
+  esposizione: string;      // orientamento decollo: "N", "NE", "E", "SE", "S", "SW", "W", "NW", "S/SE", "S/SW", etc.
   temperature: number;      // °C
   dewPoint: number;         // °C
   cloudCover: number;       // %
   precipitation: number;    // mm
-  weatherCode: number;      // WMO code
+  weatherCode?: number;     // WMO
   cape?: number;            // J/kg
-  altitude: number;         // Quota decollo (m)
+  liftedIndex?: number;     // LI
+  quota: number;            // metri slm
 }
 
 export interface RisultatoVolabilita {
-  indice: number;           // 1 (Perfetto) a 10 (Pericoloso)
-  giudizio: string;         // "Condizioni Perfette", "Ottimo", "Buono", "Attenzione", "Sconsigliato", "Pericoloso"
-  coloreTesto: string;      // Classe Tailwind testo
-  coloreBg: string;         // Classe Tailwind sfondo badge
-  coloreBordo: string;      // Classe Tailwind bordo
-  coloreHex: string;        // Colore Hex puro (da verde #10b981 a rosso #ef4444)
-  baseNubiM: number;        // Quota base cumuli in metri slm
-  rateoTermicoMs: number;   // Stima rateo termico m/s
-  motivi: string[];
+  indice: number;           // 1 (Perfetto) ... 10 (Pericoloso)
+  label: string;            // "Perfetto", "Ottimo", "Buono", "Discreto", "Impegnativo", "Rischioso", "Sconsigliato", "Pericoloso"
+  coloreTesto: string;      // Tailwind text color
+  coloreBg: string;         // Tailwind bg color
+  coloreBordo: string;      // Tailwind border color
+  baseNubiM: number;        // Quota base cumuli (m slm)
+  rateoTermicoMs: number;   // m/s stimato
+  motivi: string[];         // Dettaglio per debug/utente
+  windRelativo: "frontale" | "diagonale" | "laterale" | "di_coda" | "sconosciuto";
 }
 
-function exposureToDeg(exposure: string): number {
-  const map: Record<string, number> = {
-    "N": 0, "NNE": 22.5, "N/NE": 22.5, "NE": 45, "ENE": 67.5, "E/NE": 67.5,
-    "E": 90, "ESE": 112.5, "E/SE": 112.5, "SE": 135, "SSE": 157.5, "S/SE": 157.5,
-    "S": 180, "SSW": 202.5, "S/SW": 202.5, "SW": 225, "WSW": 247.5, "W/SW": 247.5, "O/SW": 247.5,
-    "W": 270, "O": 270, "WNW": 292.5, "O/NW": 292.5, "NW": 315, "NNW": 337.5, "N/NW": 337.5,
+function esposizioneToGradi(esposizione: string): number {
+  const m: Record<string, number> = {
+    "N": 0, "NNE": 22.5, "NE": 45, "ENE": 67.5,
+    "E": 90, "ESE": 112.5, "SE": 135, "SSE": 157.5,
+    "S": 180, "SSW": 202.5, "SW": 225, "WSW": 247.5,
+    "W": 270, "WNW": 292.5, "NW": 315, "NNW": 337.5,
+    "S/SE": 157.5, "S/SW": 202.5, "N/NE": 22.5, "N/NW": 337.5,
+    "E/NE": 67.5, "E/SE": 112.5, "W/NW": 292.5, "W/SW": 247.5,
   };
-  const clean = exposure.trim().toUpperCase().replace(/\s+/g, "");
-  return map[clean] ?? 180;
+  const clean = esposizione.trim().toUpperCase().replace(/\s+/g, "");
+  return m[clean] ?? 180;
 }
 
-export function calcolaIndiceVolabilita(p: ParametriVolo): RisultatoVolabilita {
+function diffAngolare(a: number, b: number): number {
+  let d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
+function windRelativoLabel(windDir: number, esposizione: string): "frontale" | "diagonale" | "laterale" | "di_coda" | "sconosciuto" {
+  const expDeg = esposizioneToGradi(esposizione);
+  // Vento VIENE DA windDir, decollo guarda VERSO esposizione
+  // Se vento da S (180°) e decollo guarda S (180°) → vento frontale (headwind) = BUONO
+  // Differenza tra provenienza vento e direzione decollo
+  const diff = diffAngolare(windDir, expDeg);
+  if (diff <= 45) return "frontale";      // headwind - ottimo
+  if (diff <= 90) return "diagonale";     // crosswind leggero - ok
+  if (diff <= 135) return "laterale";     // crosswind forte - attenzione
+  return "di_coda";                        // tailwind - PERICOLOSO
+}
+
+export function calcolaIndiceVolabilita(p: ParametriVolabilita): RisultatoVolabilita {
   const motivi: string[] = [];
 
-  // Calcolo Base Nubi (LCL: formula Espy: quota + spread * 125m)
+  // 1. BASE NUBI (LCL semplificato: quota + spread * 125)
   const spread = Math.max(0.5, p.temperature - p.dewPoint);
-  const baseNubiM = Math.round(p.altitude + spread * 125);
+  const baseNubiM = Math.round(p.quota + spread * 125);
 
-  // Stima rateo termico (m/s)
-  let rateoTermico = Math.max(0, spread * 0.22 + (p.cape ? Math.min(1.2, p.cape / 900) : 0.3));
-  if (p.precipitation > 0.5 || p.weatherCode >= 51) rateoTermico = 0;
-  if (p.cloudCover > 80) rateoTermico *= 0.3;
+  // 2. RATEO TERMICO stimato
+  let rateoTermico = Math.max(0, spread * 0.22 + (p.cape ? Math.min(1.5, p.cape / 800) : 0.3));
+  if (p.precipitation > 0.3 || (p.weatherCode !== undefined && p.weatherCode >= 51)) rateoTermico = 0;
+  if (p.cloudCover > 85) rateoTermico *= 0.25;
   rateoTermico = Math.round(rateoTermico * 10) / 10;
 
-  // 1. CONDIZIONI BLOCCANTI / PERICOLOSE (Ritorna 10/10)
-  if (p.weatherCode >= 95 || (p.cape && p.cape > 1500 && p.precipitation > 0.5)) {
+  // 3. CONDIZIONI BLOCCANTI → indice >= 8
+  // Temporale / fulmini
+  if (p.weatherCode !== undefined && (p.weatherCode === 95 || p.weatherCode === 96 || p.weatherCode === 99)) {
     return {
-      indice: 10,
-      giudizio: "Temporale / Pericoloso",
-      coloreTesto: "text-red-400",
-      coloreBg: "bg-red-950/80",
-      coloreBordo: "border-red-600",
-      coloreHex: "#dc2626",
-      baseNubiM,
-      rateoTermicoMs: 0,
-      motivi: ["Temporale o rischio fulmini in atto"],
+      indice: 10, label: "Pericoloso", coloreTesto: "text-red-400", coloreBg: "bg-red-950/80", coloreBordo: "border-red-600",
+      baseNubiM, rateoTermicoMs: 0, motivi: ["Temporale in atto (WMO 95/96/99)"], windRelativo: "sconosciuto"
+    };
+  }
+  if (p.cape !== undefined && p.cape > 1500 && p.precipitation > 0.5) {
+    return {
+      indice: 9, label: "Rischioso", coloreTesto: "text-red-400", coloreBg: "bg-red-950/80", coloreBordo: "border-red-600",
+      baseNubiM, rateoTermicoMs: 0, motivi: [`CAPE estremo (${p.cape} J/kg) + pioggia`], windRelativo: "sconosciuto"
     };
   }
 
-  if (p.precipitation > 1.5) {
+  // Pioggia significativa
+  if (p.precipitation > 1.0) {
     return {
-      indice: 10,
-      giudizio: "Pioggia / Non volabile",
-      coloreTesto: "text-red-400",
-      coloreBg: "bg-red-950/80",
-      coloreBordo: "border-red-600",
-      coloreHex: "#dc2626",
-      baseNubiM,
-      rateoTermicoMs: 0,
-      motivi: [`Pioggia battente (${p.precipitation.toFixed(1)} mm)`],
+      indice: 9, label: "Non volabile - Pioggia", coloreTesto: "text-red-400", coloreBg: "bg-red-950/80", coloreBordo: "border-red-600",
+      baseNubiM, rateoTermicoMs: 0, motivi: [`Pioggia ${p.precipitation.toFixed(1)} mm`], windRelativo: "sconosciuto"
+    };
+  }
+  if (p.precipitation > 0.2) {
+    return {
+      indice: 8, label: "Sconsigliato - Pioviggine", coloreTesto: "text-orange-400", coloreBg: "bg-orange-950/80", coloreBordo: "border-orange-600",
+      baseNubiM, rateoTermicoMs: rateoTermico, motivi: ["Pioviggine in corso"], windRelativo: "sconosciuto"
     };
   }
 
-  if (p.windSpeed > 32 || (p.windGusts && p.windGusts > 40)) {
+  // Vento troppo forte
+  if (p.windSpeed > 30 || (p.windGusts !== undefined && p.windGusts > 40)) {
     return {
-      indice: 10,
-      giudizio: "Vento troppo forte",
-      coloreTesto: "text-red-400",
-      coloreBg: "bg-red-950/80",
-      coloreBordo: "border-red-600",
-      coloreHex: "#dc2626",
-      baseNubiM,
-      rateoTermicoMs: 0,
-      motivi: [`Vento a ${Math.round(p.windSpeed)} km/h con raffiche a ${Math.round(p.windGusts || p.windSpeed)} km/h`],
+      indice: 9, label: "Pericoloso - Vento forte", coloreTesto: "text-red-400", coloreBg: "bg-red-950/80", coloreBordo: "border-red-600",
+      baseNubiM, rateoTermicoMs: 0, motivi: [`Vento ${Math.round(p.windSpeed)} km/h, raffiche ${Math.round(p.windGusts || 0)} km/h`], windRelativo: "sconosciuto"
     };
   }
 
-  // 2. CALCOLO PROGRESSIVO PUNTEGGIO (1 = Perfetto, 10 = Pericoloso)
+  // 4. CALCOLO PROGRESSIVO (1 = perfetto)
   let punteggio = 1.0;
 
-  // A. VENTO AL SUOLO (Ideale 7-15 km/h)
+  // A. VENTO AL SUOLO (ideale 8-16 km/h)
   if (p.windSpeed < 3) {
-    punteggio += 1.5;
-    motivi.push("Vento quasi nullo (decollo a corsa)");
-  } else if (p.windSpeed >= 5 && p.windSpeed <= 14) {
-    // Vento perfetto: +0
-  } else if (p.windSpeed > 14 && p.windSpeed <= 20) {
-    punteggio += 1.5;
-    motivi.push("Vento moderato");
+    punteggio += 1.5; motivi.push("Vento quasi nullo (decollo a corsa)");
+  } else if (p.windSpeed >= 5 && p.windSpeed <= 15) {
+    // ideale: +0
+  } else if (p.windSpeed > 15 && p.windSpeed <= 20) {
+    punteggio += 1.5; motivi.push("Vento moderato-sostenuto");
   } else if (p.windSpeed > 20 && p.windSpeed <= 26) {
-    punteggio += 3.5;
-    motivi.push("Vento sostenuto, attenzione in quota");
+    punteggio += 3.5; motivi.push("Vento sostenuto, impegnativo");
   } else {
-    punteggio += 5.5;
-    motivi.push("Vento forte al limite");
+    punteggio += 5.5; motivi.push("Vento forte al limite");
   }
 
-  // Raffiche (gusts)
-  if (p.windGusts && p.windGusts > p.windSpeed + 12) {
-    punteggio += 2.0;
-    motivi.push(`Raffiche irregolari (+${Math.round(p.windGusts - p.windSpeed)} km/h)`);
+  // Raffiche eccessive
+  if (p.windGusts !== undefined && p.windGusts > p.windSpeed + 10) {
+    punteggio += 2.0; motivi.push(`Raffiche irregolari (+${Math.round(p.windGusts - p.windSpeed)} km/h)`);
   }
 
-  // B. DIREZIONE RISPETTO ALL'ESPOSIZIONE DEL DECOLLO
-  const expDeg = exposureToDeg(p.exposure);
-  let diffDir = Math.abs(p.windDir - expDeg);
-  if (diffDir > 180) diffDir = 360 - diffDir;
-
-  if (diffDir <= 35) {
-    // Perfettamente frontale / sopravvento: +0
-  } else if (diffDir <= 70) {
-    punteggio += 1.0;
-    motivi.push("Vento leggermente diagonale");
-  } else if (diffDir <= 110) {
-    punteggio += 3.0;
-    motivi.push("Vento traversone al decollo");
-  } else {
-    punteggio += 5.5;
-    motivi.push("SOTTOVENTO / Vento alle spalle");
+  // B. DIREZIONE VENTO vs ESPOSIZIONE DECOLLO
+  const rel = windRelativoLabel(p.windDir, p.esposizione);
+  if (rel === "frontale") {
+    // +0 - ideale
+  } else if (rel === "diagonale") {
+    punteggio += 0.5; motivi.push("Vento diagonale favorevole");
+  } else if (rel === "laterale") {
+    punteggio += 2.5; motivi.push("Vento laterale (crosswind forte)");
+  } else if (rel === "di_coda") {
+    punteggio += 5.0; motivi.push("VENTO DI CODA / SOTTOVENTO - PERICOLOSO");
   }
 
-  // C. NUVOLOSITÀ E PIOGGERELLA
-  if (p.precipitation > 0.2) {
-    punteggio += 3.5;
-    motivi.push("Pioviggine debole in corso");
-  } else if (p.cloudCover > 85) {
-    punteggio += 1.5;
-    motivi.push("Cielo molto coperto, termiche deboli");
+  // C. NUVOLOSITÀ
+  if (p.cloudCover > 90) {
+    punteggio += 2.0; motivi.push("Cielo coperto > 90%");
+  } else if (p.cloudCover > 70) {
+    punteggio += 1.0; motivi.push("Molto nuvoloso");
   } else if (p.cloudCover >= 15 && p.cloudCover <= 55) {
-    // Cumuli ideali: nessun malus
+    // cumuli ideali: nessun malus
   }
 
-  // D. BASE NUBI SOTTO IL DECOLLO (Nebbia / nube bassa)
-  if (baseNubiM <= p.altitude + 80) {
-    punteggio += 4.5;
-    motivi.push("Base nubi bassa / possibile nebbia sul decollo");
+  // D. BASE NUBI BASSA (nebbia / nubi basse sul decollo)
+  if (baseNubiM <= p.quota + 100) {
+    punteggio += 3.0; motivi.push(`Base nubi bassa (${baseNubiM}m vs decollo ${p.quota}m)`);
   }
 
-  // Normalizza tra 1 e 10
+  // E. INSTABILITÀ / TURBOLENZA (CAPE, Lifted Index)
+  if (p.cape !== undefined && p.cape > 1200) {
+    punteggio += 1.5; motivi.push(`CAPE alto (${p.cape} J/kg) - turbolenza probabile`);
+  }
+  if (p.liftedIndex !== undefined && p.liftedIndex < -4) {
+    punteggio += 1.0; motivi.push(`Lifted Index ${p.liftedIndex} - instabilità marcata`);
+  }
+
+  // Normalizza 1-10
   const indiceFinale = Math.max(1, Math.min(10, Math.round(punteggio)));
 
-  let giudizio = "Condizioni Perfette";
-  let coloreTesto = "text-emerald-400";
-  let coloreBg = "bg-emerald-950/70";
-  let coloreBordo = "border-emerald-500/60";
-  let coloreHex = "#10b981";
+  // Label e colori
+  let label = "";
+  let coloreTesto = "";
+  let coloreBg = "";
+  let coloreBordo = "";
 
-  if (indiceFinale === 1 || indiceFinale === 2) {
-    giudizio = "Perfetto";
-    coloreTesto = "text-emerald-400";
-    coloreBg = "bg-emerald-950/70";
-    coloreBordo = "border-emerald-500/60";
-    coloreHex = "#10b981";
-  } else if (indiceFinale === 3 || indiceFinale === 4) {
-    giudizio = "Buono";
-    coloreTesto = "text-lime-400";
-    coloreBg = "bg-lime-950/70";
-    coloreBordo = "border-lime-500/60";
-    coloreHex = "#84cc16";
-  } else if (indiceFinale === 5 || indiceFinale === 6) {
-    giudizio = "Discreto";
-    coloreTesto = "text-yellow-400";
-    coloreBg = "bg-yellow-950/70";
-    coloreBordo = "border-yellow-500/60";
-    coloreHex = "#eab308";
-  } else if (indiceFinale === 7 || indiceFinale === 8) {
-    giudizio = "Impegnativo";
-    coloreTesto = "text-orange-400";
-    coloreBg = "bg-orange-950/70";
-    coloreBordo = "border-orange-500/60";
-    coloreHex = "#f97316";
-  } else {
-    giudizio = "Sconsigliato / Pericoloso";
-    coloreTesto = "text-red-400";
-    coloreBg = "bg-red-950/80";
-    coloreBordo = "border-red-500/70";
-    coloreHex = "#ef4444";
-  }
+  if (indiceFinale <= 2) { label = "Perfetto"; coloreTesto = "text-emerald-400"; coloreBg = "bg-emerald-950/80"; coloreBordo = "border-emerald-500/60"; }
+  else if (indiceFinale <= 3) { label = "Ottimo"; coloreTesto = "text-emerald-300"; coloreBg = "bg-emerald-950/70"; coloreBordo = "border-emerald-500/50"; }
+  else if (indiceFinale <= 4) { label = "Buono"; coloreTesto = "text-lime-400"; coloreBg = "bg-lime-950/70"; coloreBordo = "border-lime-500/50"; }
+  else if (indiceFinale <= 5) { label = "Discreto"; coloreTesto = "text-yellow-400"; coloreBg = "bg-yellow-950/70"; coloreBordo = "border-yellow-500/50"; }
+  else if (indiceFinale <= 6) { label = "Impegnativo"; coloreTesto = "text-amber-400"; coloreBg = "bg-amber-950/70"; coloreBordo = "border-amber-500/50"; }
+  else if (indiceFinale <= 7) { label = "Difficile"; coloreTesto = "text-orange-400"; coloreBg = "bg-orange-950/80"; coloreBordo = "border-orange-500/60"; }
+  else if (indiceFinale <= 8) { label = "Rischioso"; coloreTesto = "text-orange-300"; coloreBg = "bg-orange-950/80"; coloreBordo = "border-orange-600"; }
+  else { label = "Sconsigliato"; coloreTesto = "text-red-400"; coloreBg = "bg-red-950/80"; coloreBordo = "border-red-500/70"; }
 
   return {
     indice: indiceFinale,
-    giudizio,
+    label,
     coloreTesto,
     coloreBg,
     coloreBordo,
-    coloreHex,
     baseNubiM,
     rateoTermicoMs: rateoTermico,
     motivi,
+    windRelativo: rel,
   };
 }

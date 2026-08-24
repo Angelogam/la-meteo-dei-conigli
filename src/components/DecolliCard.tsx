@@ -1,42 +1,29 @@
 "use client";
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { Wind, Clock, Layers, Navigation } from "lucide-react";
-import { weatherService, type MeteoLight } from "@/services/weatherService";
+import { Wind, Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, Zap } from "lucide-react";
+import { weatherService, type MeteoCurrent } from "@/services/openMeteoService";
+import { calcolaStatoMeteo, type StatoMeteo, calcolaPrecipProssimeOre } from "@/utils/statoMeteo";
 import { calcolaIndiceVolabilita, type RisultatoVolabilita } from "@/utils/indiceVolabilita";
+import { DECOLLI } from "@/data/decolli";
 
-function getCardinalDir(deg: number): string {
-  if (deg == null) return "N/D";
-  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-  return dirs[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
-}
+const ICONA_STATO: Record<string, React.ReactNode> = {
+  sereno: <Sun className="w-4 h-4 text-amber-400" />,
+  variabile: <Cloud className="w-4 h-4 text-amber-300" />,
+  nuvoloso: <Cloud className="w-4 h-4 text-slate-400" />,
+  pioggia: <CloudRain className="w-4 h-4 text-blue-400" />,
+  temporale: <Zap className="w-4 h-4 text-purple-400" />,
+  offline: <AlertTriangle className="w-4 h-4 text-slate-500" />,
+};
 
-function getWindArrow(deg: number): string {
-  if (deg == null) return "→";
-  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
-  return arrows[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
-}
-
-function getWeatherEmoji(code: number | undefined | null, precip?: number): string {
-  if (precip && precip > 0.5) return "🌧️";
-  if (code == null) return "☀️";
-  if (code >= 95) return "⛈️";
-  if (code >= 80) return "🌧️";
-  if (code >= 71) return "❄️";
-  if (code >= 61) return "🌧️";
-  if (code >= 51) return "🌦️";
-  if (code >= 45) return "🌫️";
-  if (code >= 3) return "☁️";
-  if (code >= 1) return "🌤️";
-  return "☀️";
-}
+const REFRESH_INTERVAL_MS = 900000; // 15 minuti esatti
 
 interface DecolloItem {
   id: string;
   nome: string;
   valle: string;
   quota: number;
-  direzione: string;
+  esposizione: string;
   lat: number;
   lon: number;
 }
@@ -48,27 +35,24 @@ interface DecolliCardProps {
   selectedDay?: number;
 }
 
-// 15 minuti = 900.000 ms
-const REFRESH_INTERVAL_MS = 900000;
-
 export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay = 0 }: DecolliCardProps) {
-  const [liveData, setLiveData] = useState<Record<string, MeteoLight | null>>({});
+  const [liveData, setLiveData] = useState<Record<string, MeteoCurrent | null>>({});
   const [loadingAll, setLoadingAll] = useState(true);
   const mountedRef = useRef(true);
 
   const loadAllData = useCallback(async () => {
     if (!mountedRef.current) return;
     setLoadingAll(true);
-    const newData: Record<string, MeteoLight> = {};
+    const newData: Record<string, MeteoCurrent> = {};
 
     for (const item of decolli) {
       try {
-        const { data } = await weatherService.fetchLight(item.lat, item.lon);
-        if (data && mountedRef.current) {
-          newData[item.id] = data;
+        const current = await weatherService.fetchMeteoCorrente(item.lat, item.lon);
+        if (current && mountedRef.current) {
+          newData[item.id] = current;
         }
       } catch {
-        // Nessun dato inventato: rimane vuoto se l'API non risponde
+        // Nessun dato inventato
       }
     }
 
@@ -82,34 +66,28 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
     mountedRef.current = true;
     loadAllData();
     const interval = setInterval(loadAllData, REFRESH_INTERVAL_MS);
-    return () => {
-      mountedRef.current = false;
-      clearInterval(interval);
-    };
+    return () => { mountedRef.current = false; clearInterval(interval); };
   }, [loadAllData]);
 
   const dt = getDateTime(selectedDay);
-  const caricati = Object.keys(liveData).length;
+  const caricati = Object.keys(liveData).filter(k => liveData[k] != null).length;
 
   return (
     <div className="bg-slate-900/90 border border-slate-700/60 rounded-2xl p-3 md:p-4 shadow-xl">
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Navigation className="w-4 h-4 text-emerald-400" />
-          <h2 className="text-sm md:text-base font-bold text-white">
-            Decolli ({caricati}/{decolli.length})
-          </h2>
-        </div>
+        <h2 className="text-sm md:text-base font-bold text-white flex items-center gap-2">
+          Decolli ({caricati}/{decolli.length})
+        </h2>
         <span className="text-[10px] text-emerald-300 bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded-full font-mono">
           Open-Meteo 15m
         </span>
       </div>
 
-      <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mb-3 bg-slate-800/60 rounded-xl px-2.5 py-1.5 border border-slate-700/40">
-        <Clock size={12} className="text-slate-400" />
+      <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-slate-400 mb-3 bg-slate-800/60 rounded-xl px-2.5 py-1.5 border border-slate-700/40">
+        <Clock size={12} />
         <span className="font-medium">{dt.date}</span>
-        <span className="text-slate-600">&bull;</span>
-        <span>agg. ogni 15 min</span>
+        <span className="text-slate-600">·</span>
+        <span>aggiornamento ogni 15 min</span>
       </div>
 
       <div className="space-y-2.5 max-h-80 md:max-h-96 overflow-y-auto pr-1 scrollbar-thin">
@@ -118,26 +96,43 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
           const current = liveData[item.id];
           const hasData = current != null;
 
+          let statoMeteo: StatoMeteo = "offline";
           let volabilita: RisultatoVolabilita | null = null;
+
           if (hasData) {
+            // Calcola precipitazione prossime 6 ore (serve hourly, qui usiamo current + stima conservativa)
+            const precipNext = current.precipitation; // conservativo: se piove ora, piove anche dopo
+
+            const statoResult = calcolaStatoMeteo({
+              precipNow: current.precipitation,
+              precipNextHours: precipNext,
+              cloudNow: current.cloudCover,
+              windSpeed: current.windSpeed,
+              windDir: current.windDir,
+              temperature: current.temperature,
+              cape: current.cape,
+              weatherCode: current.weatherCode,
+            });
+            statoMeteo = statoResult.stato;
+
             volabilita = calcolaIndiceVolabilita({
               windSpeed: current.windSpeed,
               windGusts: current.windGusts,
               windDir: current.windDir,
-              exposure: item.direzione,
+              esposizione: item.esposizione,
               temperature: current.temperature,
               dewPoint: current.dewPoint,
               cloudCover: current.cloudCover,
               precipitation: current.precipitation,
               weatherCode: current.weatherCode,
               cape: current.cape,
-              altitude: item.quota,
+              quota: item.quota,
             });
           }
 
-          const emoji = hasData ? getWeatherEmoji(current.weatherCode, current.precipitation) : "☀️";
-          const dirLabel = hasData ? getCardinalDir(current.windDir) : "N/D";
-          const dirArrow = hasData ? getWindArrow(current.windDir) : "→";
+          const dirLabel = hasData ? getCardinalDir(current!.windDir) : "N/D";
+          const dirArrow = hasData ? getWindArrow(current!.windDir) : "→";
+          const emoji = hasData ? getWeatherEmoji(current!.weatherCode, current!.precipitation) : "📡";
 
           return (
             <button
@@ -151,80 +146,81 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
                 }
               `}
             >
-              {/* Header card decollo */}
+              {/* Header */}
               <div className="flex items-start justify-between gap-2 mb-1.5">
                 <div className="min-w-0">
                   <div className="text-sm font-bold text-white truncate flex items-center gap-1.5">
-                    <span>{item.nome}</span>
+                    {item.nome}
                   </div>
                   <div className="text-[10px] text-slate-400 truncate">
-                    {item.valle} &bull; {item.quota}m &bull; Esp. {item.direzione}
+                    {item.valle} · {item.quota}m · Esp. {item.esposizione}
                   </div>
                 </div>
 
-                {/* Badge Indice di Volabilità 1-10 con Scala Colore Verde -> Rosso */}
+                {/* Badge Indice Volabilità */}
                 {volabilita && (
                   <div className="flex flex-col items-end shrink-0">
                     <div
                       className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-black ${volabilita.coloreBg} ${volabilita.coloreTesto} ${volabilita.coloreBordo}`}
-                      title={`Indice Volabilità: ${volabilita.indice}/10 (${volabilita.giudizio})`}
+                      title={`Indice: ${volabilita.indice}/10 (${volabilita.label}) - ${volabilita.windRelativo}`}
                     >
                       <span className="text-[9px]">Indice:</span>
                       <span className="text-xs">{volabilita.indice}</span>
                       <span className="text-[9px] opacity-70">/10</span>
                     </div>
                     <span className={`text-[9px] font-semibold mt-0.5 ${volabilita.coloreTesto}`}>
-                      {volabilita.giudizio}
+                      {volabilita.label}
                     </span>
                   </div>
                 )}
               </div>
 
-              {/* Dati meteo reali sincronizzati */}
+              {/* Dati Meteo Reali */}
               {hasData ? (
                 <div className="mt-2 pt-2 border-t border-slate-700/40 space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
-                    {/* Meteo icona & Temperatura */}
                     <div className="flex items-center gap-1.5">
-                      <span className="text-base">{emoji}</span>
+                      {ICONA_STATO[statoMeteo]}
+                      <span className="font-bold text-white capitalize">{statoMeteo}</span>
                       <span className="font-extrabold text-amber-300 tabular-nums">
-                        {Math.round(current.temperature)}°C
+                        {Math.round(current!.temperature)}°C
                       </span>
-                      {current.precipitation > 0 && (
+                      {current!.precipitation > 0 && (
                         <span className="text-[10px] font-bold text-rose-300 bg-rose-950/60 px-1.5 py-0.2 rounded border border-rose-500/40">
-                          {current.precipitation.toFixed(1)}mm
+                          {current!.precipitation.toFixed(1)}mm
                         </span>
                       )}
                     </div>
 
-                    {/* Vento e direzione */}
                     <div className="flex items-center gap-1 text-slate-200">
                       <Wind size={13} className="text-cyan-400 shrink-0" />
-                      <span className="font-bold tabular-nums">
-                        {Math.round(current.windSpeed)} km/h
+                      <span className="font-bold tabular-nums text-white">
+                        {Math.round(current!.windSpeed)} km/h
                       </span>
                       <span className="text-slate-400 font-mono text-[11px]">
-                        {dirArrow} {dirLabel} ({Math.round(current.windDir)}°)
+                        {dirArrow} {dirLabel} ({Math.round(current!.windDir)}°)
                       </span>
                     </div>
                   </div>
 
-                  {/* Base nubi e termiche stimate reali */}
-                  {volabilita && (
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1">
-                      <span className="flex items-center gap-1">
-                        <Layers size={11} className="text-purple-400" />
-                        <span>Base nubi: <strong className="text-purple-200">{volabilita.baseNubiM}m</strong></span>
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1">
+                    <span className="flex items-center gap-1">
+                      <Layers size={11} className="text-purple-400" />
+                      <span>Base nubi: <strong className="text-purple-200">{volabilita?.baseNubiM}m</strong></span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      Termiche: <strong className="text-amber-200">↑ {volabilita?.rateoTermicoMs} m/s</strong>
+                    </span>
+                    {volabilita && volabilita.windRelativo !== "frontale" && volabilita.windRelativo !== "sconosciuto" && (
+                      <span className="flex items-center gap-1 text-amber-300">
+                        Vento: <strong>{volabilita.windRelativo}</strong>
                       </span>
-                      <span>
-                        Termiche: <strong className="text-amber-200">↑ {volabilita.rateoTermicoMs} m/s</strong>
-                      </span>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="text-[11px] text-slate-500 italic mt-1 pt-1 border-t border-slate-700/30 flex items-center justify-between">
-                  <span>lettura API Open-Meteo...</span>
+                  <span>Lettura API Open-Meteo...</span>
                   <span className="w-2 h-2 rounded-full bg-slate-600 animate-ping" />
                 </div>
               )}
@@ -240,11 +236,30 @@ function getDateTime(selectedDay: number): { date: string; ora: string } {
   const oggi = new Date();
   const target = new Date(oggi);
   target.setDate(oggi.getDate() + selectedDay);
-
   const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
   const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+  return { date: `${giorni[target.getDay()]} ${target.getDate()} ${mesi[target.getMonth()]}`, ora: oggi.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) };
+}
 
-  const date = `${giorni[target.getDay()]} ${target.getDate()} ${mesi[target.getMonth()]}`;
-  const ora = oggi.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
-  return { date, ora };
+function getCardinalDir(deg: number): string {
+  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  return dirs[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
+}
+
+function getWindArrow(deg: number): string {
+  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
+  return arrows[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
+}
+
+function getWeatherEmoji(code: number | undefined | null, precip?: number): string {
+  if (precip && precip > 0.1) return "🌧️";
+  if (code == null) return "📡";
+  if (code >= 95) return "⛈️";
+  if (code >= 80) return "🌧️";
+  if (code >= 61) return "🌧️";
+  if (code >= 51) return "🌦️";
+  if (code >= 45) return "🌫️";
+  if (code >= 3) return "☁️";
+  if (code >= 1) return "🌤️";
+  return "☀️";
 }
