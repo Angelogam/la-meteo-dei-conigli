@@ -29,12 +29,12 @@ export default function VentiTab({
     let mounted = true;
     const fetchVento = async () => {
       try {
-        const { data } = await weatherService.fetchCurrent(site.lat, site.lon);
+        const current = await weatherService.fetchCurrent(site.lat, site.lon);
         if (!mounted) return;
         
-        const windSpeed = data.windSpeed || 0;
-        const windDir = data.windDir || 0;
-        const windGusts = data.windGusts || 0;
+        const windSpeed = current.windSpeed || 0;
+        const windDir = current.windDir || 0;
+        const windGusts = current.windGusts || 0;
         
         setVentoData({
           speed: windSpeed,

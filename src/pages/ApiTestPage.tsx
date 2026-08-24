@@ -15,8 +15,8 @@ export default function ApiTestPage() {
     const site = DECOLLI[0];
 
     weatherService.fetchCurrent(site.lat, site.lon)
-      .then(data => {
-        setOmStatus({ ok: true, rt: 0, temp: Math.round(data.data?.temperature ?? 0) });
+      .then(current => {
+        setOmStatus({ ok: true, rt: 0, temp: Math.round(current?.temperature ?? 0) });
         setLoadingOM(false);
       })
       .catch(() => {

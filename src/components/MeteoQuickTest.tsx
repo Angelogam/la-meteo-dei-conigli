@@ -58,9 +58,9 @@ export default function MeteoQuickTest() {
     for (let i = 0; i < siti.length; i++) {
       const d = siti[i];
       try {
-        const { data } = await weatherService.fetchCurrent(d.lat, d.lon);
-        if (data) {
-          const valutazione = validaVentoPerDecollo(data.windDir, d.exposure);
+        const current = await weatherService.fetchCurrent(d.lat, d.lon);
+        if (current) {
+          const valutazione = validaVentoPerDecollo(current.windDir, d.exposure);
           const colorClass = getVentoStatusColor(valutazione.status);
           const isOk = valutazione.status === "favorevole" || valutazione.status === "laterale";
 
@@ -74,9 +74,9 @@ export default function MeteoQuickTest() {
             esposizione: d.exposure,
             altitudine: d.altitude,
             ok: isOk,
-            windSpeed: Math.round(data.windSpeed),
-            windDir: Math.round(data.windDir),
-            dirLabel: getDirName(data.windDir),
+            windSpeed: Math.round(current.windSpeed),
+            windDir: Math.round(current.windDir),
+            dirLabel: getDirName(current.windDir),
             valutazione: `${valutazione.label} — ${valutazione.descrizione}`,
             label: valutazione.label,
             icon: valutazione.icon,
