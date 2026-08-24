@@ -29,6 +29,8 @@ export interface MeteoHourly {
   temp120m?: number;
   shortwaveRadiation: number;
   windProfile?: { height: number; speed: number; dir: number }[];
+  pressure: number;
+  surfacePressure: number;
 }
 
 export interface MeteoCurrent {
