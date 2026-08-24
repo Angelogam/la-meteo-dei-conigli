@@ -263,11 +263,6 @@ export const weatherService = {
           feelsLike: json.hourly.apparent_temperature?.[i] ?? 0,
           apparentTemp: json.hourly.apparent_temperature?.[i] ?? 0,
           precipitationProbability: json.hourly.precipitation_probability?.[i] ?? 0,
-          evapotranspiration: json.hourly.et0_fao_evapotranspiration?.[i] ?? 0,
-          et0: json.hourly.et0_fao_evapotranspiration?.[i] ?? 0,
-          vapourPressureDeficit: 0,
-          soilTemp: 0,
-          soilMoisture: 0,
         });
       }
 

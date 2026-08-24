@@ -64,7 +64,7 @@ export function transformHourlyData(raw: RawMeteoResponse["hourly"]): HourData[]
       feelsLike: temperature,
       radiation: shortwaveRadiation,
       vapourPressureDeficit: 0,
-      isDay: 1,
+      isDay: true,
       freezingLevel: 3000,
       sunshineDuration: 0,
       cape: 0,
