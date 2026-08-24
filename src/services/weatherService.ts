@@ -210,24 +210,17 @@ export const weatherService = {
       current: "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m",
       timezone: "Europe/Rome",
       forecast_days: "3",
+      // Critical: ensure we get correct daily data aligned with local dates
+      daily_temperature_unit: "celsius",
       wind_speed_unit: "kmh",
       precipitation_unit: "mm",
-      temperature_unit: "celsius",
     });
 
     try {
       const res = await fetch(`${BASE_URL}?${params.toString()}`);
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`HTTP ${res.status}: ${errorText}`);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
 
       const json: any = await res.json();
-
-      // Validate response structure
-      if (!json.hourly || !json.hourly.time || !json.daily || !json.daily.time) {
-        throw new Error("Invalid response structure from Open-Meteo");
-      }
 
       const hourly: MeteoHourly[] = [];
       const len = json.hourly.time.length;
@@ -290,13 +283,8 @@ export const weatherService = {
       const daily: MeteoDaily[] = [];
       const dailyLen = json.daily.time.length;
       for (let i = 0; i < dailyLen; i++) {
-        // Open-Meteo returns dates in local timezone (YYYY-MM-DD), parse as local date
-        const dateStr = json.daily.time[i];
-        const [year, month, day] = dateStr.split("-").map(Number);
-        const date = new Date(year, month - 1, day, 12, 0, 0);
-        
         daily.push({
-          date,
+          date: new Date(json.daily.time[i] + "T12:00:00"),
           tempMax: json.daily.temperature_2m_max[i] ?? 0,
           tempMin: json.daily.temperature_2m_min[i] ?? 0,
           apparentTempMax: json.daily.apparent_temperature_max[i] ?? 0,
@@ -321,7 +309,6 @@ export const weatherService = {
 
       return { hourly, current, daily, model: "auto" };
     } catch (err) {
-      console.error("[weatherService] fetchWeather error:", err);
       throw new Error(`Failed to fetch weather data: ${err instanceof Error ? err.message : err}`);
     }
   },
@@ -368,8 +355,7 @@ export const weatherService = {
         weatherCode: h.weather_code[idx] ?? 0,
       };
       return { data, ok: true };
-    } catch (err) {
-      console.error("[weatherService] fetchLight error:", err);
+    } catch {
       return { data: null, ok: false };
     }
   },
@@ -420,8 +406,7 @@ export const weatherService = {
         virtualTemp: 0,
       };
       return { data, ok: true };
-    } catch (err) {
-      console.error("[weatherService] fetchCurrent error:", err);
+    } catch {
       return { data: null, ok: false };
     }
   }
