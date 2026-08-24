@@ -263,7 +263,7 @@ export default function ValidazionePrevisioni() {
 
       <div className="flex-1 overflow-auto p-3 space-y-1.5">
         {risultati.map((r, i) => (
-          <div <div key={i} className={`rounded-xl p-3 border text-xs ${
+          <div key={i} className={`rounded-xl p-3 border text-xs ${
             r.ok && r.climatologiaOk
               ? "bg-slate-800/40 border-slate-700/30"
               : !r.ok
