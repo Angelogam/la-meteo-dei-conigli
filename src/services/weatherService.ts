@@ -5,10 +5,10 @@ import type { HourData } from "@/types/meteo";
 export interface MeteoHourly {
   time: Date;
   temperature: number;
-  feelsLike: number;
   humidity: number;
   dewPoint: number;
-  apparentTemp: number;
+  pressure: number;
+  surfacePressure: number;
   precipitation: number;
   rain: number;
   snowfall: number;
@@ -21,7 +21,6 @@ export interface MeteoHourly {
   windDir: number;
   windGusts: number;
   uvIndex: number;
-  capes: number;
   cape: number;
   cin: number;
   liftedIndex: number;
@@ -29,9 +28,14 @@ export interface MeteoHourly {
   temp120m?: number;
   shortwaveRadiation: number;
   windProfile?: { height: number; speed: number; dir: number }[];
-  pressure: number;
-  surfacePressure: number;
+  feelsLike: number;
+  apparentTemp: number;
   precipitationProbability: number;
+  visibility: number;
+  isDay: number;
+  freezingLevel: number;
+  sunshineDuration: number;
+  directRadiation: number;
 }
 
 export interface MeteoCurrent {
@@ -81,22 +85,6 @@ export interface MeteoDaily {
   windGustsMax: number;
   windDirDominant: number;
   shortwaveRadiationSum: number;
-}
-
-export interface MeteoResponse {
-  latitude: number;
-  longitude: number;
-  generationtime_ms: number;
-  utc_offset_seconds: number;
-  timezone: string;
-  timezone_abbreviation: string;
-  elevation: number;
-  current_units: Record<string, string>;
-  current: Record<string, number | string>;
-  hourly_units: Record<string, string>;
-  hourly: Record<string, (number | string)[]>;
-  daily_units: Record<string, string>;
-  daily: Record<string, (number | string)[]>;
 }
 
 const BASE_URL = "https://api.open-meteo.com/v1/forecast";
@@ -222,6 +210,10 @@ export const weatherService = {
       current: "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m",
       timezone: "Europe/Rome",
       forecast_days: "3",
+      // Critical: ensure we get correct daily data aligned with local dates
+      daily_temperature_unit: "celsius",
+      wind_speed_unit: "kmh",
+      precipitation_unit: "mm",
     });
 
     try {
@@ -252,7 +244,6 @@ export const weatherService = {
           windDir: json.hourly.wind_direction_10m[i] ?? 0,
           windGusts: json.hourly.wind_gusts_10m?.[i] ?? 0,
           uvIndex: json.hourly.uv_index?.[i] ?? 0,
-          capes: json.hourly.cape?.[i] ?? 0,
           cape: json.hourly.cape?.[i] ?? 0,
           cin: json.hourly.cin?.[i] ?? 0,
           liftedIndex: json.hourly.lifted_index?.[i] ?? 0,
@@ -263,6 +254,11 @@ export const weatherService = {
           feelsLike: json.hourly.apparent_temperature?.[i] ?? 0,
           apparentTemp: json.hourly.apparent_temperature?.[i] ?? 0,
           precipitationProbability: json.hourly.precipitation_probability?.[i] ?? 0,
+          visibility: 10000,
+          isDay: json.hourly.is_day?.[i] ?? 1,
+          freezingLevel: json.hourly.freezing_level_height?.[i] ?? 3000,
+          sunshineDuration: json.hourly.sunshine_duration?.[i] ?? 0,
+          directRadiation: json.hourly.direct_radiation?.[i] ?? 0,
         });
       }
 
@@ -288,7 +284,7 @@ export const weatherService = {
       const dailyLen = json.daily.time.length;
       for (let i = 0; i < dailyLen; i++) {
         daily.push({
-          date: new Date(json.daily.time[i]),
+          date: new Date(json.daily.time[i] + "T12:00:00"),
           tempMax: json.daily.temperature_2m_max[i] ?? 0,
           tempMin: json.daily.temperature_2m_min[i] ?? 0,
           apparentTempMax: json.daily.apparent_temperature_max[i] ?? 0,

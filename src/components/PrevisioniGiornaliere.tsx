@@ -44,7 +44,7 @@ export default function PrevisioniGiornaliere({
           <span className="font-semibold text-slate-300">
             Previsioni 3 giorni · {nomeDecollo}
           </span>
-          <span>Open-Meteo GFS</span>
+          <span>Open-Meteo AROME/ICON</span>
         </div>
       )}
 
@@ -53,7 +53,6 @@ export default function PrevisioniGiornaliere({
           const daily = enrichedDaily[idx];
           const isActive = selectedDay === idx;
           const label = dateLabels[idx] || tabName;
-          const isRainy = daily && daily.precipitationSum > 0.5;
 
           return (
             <button
@@ -63,7 +62,7 @@ export default function PrevisioniGiornaliere({
                 isActive
                   ? "border-emerald-400 bg-emerald-950/40 shadow-lg shadow-emerald-900/20"
                   : "border-slate-700/50 bg-slate-800/40 hover:border-slate-600 hover:bg-slate-800/70"
-              } ${isRainy ? "border-rose-500/40" : ""}`}
+              }`}
             >
               <div className="flex items-center justify-between gap-1 mb-1">
                 <span className="text-xs font-bold text-white truncate">
