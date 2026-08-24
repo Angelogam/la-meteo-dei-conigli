@@ -12,10 +12,12 @@ import {
 import type { HourData } from "@/types/meteo";
 
 interface SiteHeaderProps {
-  name: string;
-  exposure: string;
-  valley: string;
-  alt: number;
+  // Campi statici protetti dal dataset locale
+  site_name: string;
+  location_name: string;
+  orientation: string;
+  elevation_m: number;
+  // Dati meteo dinamici
   currentData: HourData | null;
 }
 
@@ -47,10 +49,10 @@ function getWeatherIcon(code: number): string {
 }
 
 export default function SiteHeader({
-  name,
-  exposure,
-  valley,
-  alt,
+  site_name,
+  location_name,
+  orientation,
+  elevation_m,
   currentData,
 }: SiteHeaderProps) {
   const weatherCode = currentData?.weatherCode ?? 0;
@@ -68,23 +70,27 @@ export default function SiteHeader({
         </div>
         <div className="text-center min-w-0">
           <h2 className="text-xl md:text-2xl font-black text-white flex items-center justify-center gap-2 tracking-tight">
-            {name}
+            {/* site_name */}
+            {site_name}
             <Sparkles className="w-3.5 h-3.5 text-orange-400 animate-twinkle shrink-0" />
           </h2>
           <div className="flex flex-wrap items-center justify-center gap-2 text-xs md:text-sm text-slate-400 mt-1">
+            {/* location_name */}
             <span className="flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded-full border border-slate-700/50">
               <MapPin className="w-3 h-3 text-rose-400" />
-              {valley}
+              {location_name}
             </span>
             <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0" />
+            {/* orientation */}
             <span className="flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded-full border border-slate-700/50">
               <Compass className="w-3 h-3 text-sky-400" />
-              {exposure}
+              {orientation}
             </span>
             <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0" />
+            {/* elevation_m */}
             <span className="flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded-full border border-slate-700/50">
               <Mountain className="w-3 h-3 text-amber-400" />
-              {alt}m
+              {elevation_m}m
             </span>
           </div>
         </div>

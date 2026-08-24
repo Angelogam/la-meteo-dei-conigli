@@ -16,7 +16,9 @@ export function useWeatherData() {
     return DECOLLI[0].id;
   });
 
+  // Site selezionato con campi statici protetti
   const site = DECOLLI.find(d => d.id === selectedId) || DECOLLI[0];
+  
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
@@ -44,7 +46,7 @@ export function useWeatherData() {
 
   const currentHourData = dayData.find(h => new Date(h.time).getHours() === selectedHour) || dayData[0] || null;
 
-  // Stato meteo rigoroso per decollo selezionato (usa dati correnti)
+  // Stato meteo rigoroso per decollo selezionato (usa dati correnti + campi statici protetti)
   const statoMeteo = useMemo((): StatoMeteo => {
     if (!currentData) return "offline";
     const precipNext = calcolaPrecipProssimeOre(hourlyData, 6);
@@ -60,21 +62,21 @@ export function useWeatherData() {
     }).stato;
   }, [currentData, hourlyData]);
 
-  // Indice volabilità per decollo selezionato
+  // Indice volabilità per decollo selezionato (usa campi statici protetti: orientation, elevation_m)
   const volabilita = useMemo((): RisultatoVolabilita | null => {
     if (!currentData || !site) return null;
     return calcolaIndiceVolabilita({
       windSpeed: currentData.windSpeed,
       windGusts: currentData.windGusts,
       windDir: currentData.windDir,
-      esposizione: site.esposizione,
+      esposizione: site.orientation,      // CAMPO STATICO PROTETTO
       temperature: currentData.temperature,
       dewPoint: currentData.dewPoint,
       cloudCover: currentData.cloudCover,
       precipitation: currentData.precipitation,
       weatherCode: currentData.weatherCode,
       cape: currentData.cape,
-      quota: site.quota,
+      quota: site.elevation_m,            // CAMPO STATICO PROTETTO
     });
   }, [currentData, site]);
 
@@ -108,7 +110,7 @@ export function useWeatherData() {
     if (!site) return;
     setUpdating(true); setLoading(true);
     try {
-      const { hourly, daily, current } = await fetchPrevisioniGiornaliere(site.lat, site.lon, site.quota);
+      const { hourly, daily, current } = await fetchPrevisioniGiornaliere(site.lat, site.lon, site.elevation_m);
       setHourlyData(hourly);
       setDailyData(daily);
       setCurrentData(current);

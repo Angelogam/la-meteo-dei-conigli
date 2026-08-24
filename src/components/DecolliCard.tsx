@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Wind, Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, Zap } from "lucide-react";
-import { weatherService, type MeteoCurrent } from "@/services/openMeteoService";
+import { weatherService } from "@/services/openMeteoService";
 import { calcolaStatoMeteo, type StatoMeteo, calcolaPrecipProssimeOre } from "@/utils/statoMeteo";
 import { calcolaIndiceVolabilita, type RisultatoVolabilita } from "@/utils/indiceVolabilita";
-import { DECOLLI } from "@/data/decolli";
+import { DECOLLI, type Decollo } from "@/data/decolli";
 
 const ICONA_STATO: Record<string, React.ReactNode> = {
   sereno: <Sun className="w-4 h-4 text-amber-400" />,
@@ -18,20 +18,10 @@ const ICONA_STATO: Record<string, React.ReactNode> = {
 
 const REFRESH_INTERVAL_MS = 900000; // 15 minuti esatti
 
-interface DecolloItem {
-  id: string;
-  nome: string;
-  valle: string;
-  quota: number;
-  esposizione: string;
-  lat: number;
-  lon: number;
-}
-
 interface DecolliCardProps {
-  decolli: DecolloItem[];
+  decolli: Decollo[];
   selectedId: string;
-  onSelect: (item: DecolloItem) => void;
+  onSelect: (item: Decollo) => void;
   selectedDay?: number;
 }
 
@@ -52,7 +42,7 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
           newData[item.id] = current;
         }
       } catch {
-        // Nessun dato inventato
+        // Nessun dato inventato - lascia null
       }
     }
 
@@ -100,8 +90,7 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
           let volabilita: RisultatoVolabilita | null = null;
 
           if (hasData) {
-            // Calcola precipitazione prossime 6 ore (serve hourly, qui usiamo current + stima conservativa)
-            const precipNext = current.precipitation; // conservativo: se piove ora, piove anche dopo
+            const precipNext = current.precipitation;
 
             const statoResult = calcolaStatoMeteo({
               precipNow: current.precipitation,
@@ -119,14 +108,14 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
               windSpeed: current.windSpeed,
               windGusts: current.windGusts,
               windDir: current.windDir,
-              esposizione: item.esposizione,
+              esposizione: item.orientation,        // CAMPO STATICO PROTETTO
               temperature: current.temperature,
               dewPoint: current.dewPoint,
               cloudCover: current.cloudCover,
               precipitation: current.precipitation,
               weatherCode: current.weatherCode,
               cape: current.cape,
-              quota: item.quota,
+              quota: item.elevation_m,              // CAMPO STATICO PROTETTO
             });
           }
 
@@ -146,14 +135,18 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
                 }
               `}
             >
-              {/* Header */}
+              {/* Header con CAMPI STATICI PROTETTI */}
               <div className="flex items-start justify-between gap-2 mb-1.5">
                 <div className="min-w-0">
                   <div className="text-sm font-bold text-white truncate flex items-center gap-1.5">
-                    {item.nome}
+                    {/* site_name + location_name */}
+                    <span>{item.site_name}</span>
+                    <span className="text-slate-400">—</span>
+                    <span className="text-slate-300">{item.location_name}</span>
                   </div>
                   <div className="text-[10px] text-slate-400 truncate">
-                    {item.valle} · {item.quota}m · Esp. {item.esposizione}
+                    {/* orientation • elevation_m */}
+                    {item.orientation} · {item.elevation_m}m
                   </div>
                 </div>
 
@@ -175,7 +168,7 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
                 )}
               </div>
 
-              {/* Dati Meteo Reali */}
+              {/* Dati Meteo Reali (solo campi dinamici) */}
               {hasData ? (
                 <div className="mt-2 pt-2 border-t border-slate-700/40 space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
