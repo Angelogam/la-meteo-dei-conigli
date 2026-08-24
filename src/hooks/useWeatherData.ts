@@ -6,7 +6,8 @@ import { DECOLLI } from "@/data/decolli";
 import { fetchAllWeatherData, fetchHourlyData } from "@/services/openMeteoService";
 
 const STORAGE_KEY_SITE = "meteo_selected_decollo";
-const REFRESH_INTERVAL = 600000; // 10 minuti
+// 15 minuti esatti = 900.000 ms
+const REFRESH_INTERVAL = 900000;
 
 function getWeatherDescription(code: number): string {
   if (code === 0) return "Sereno";
@@ -37,7 +38,7 @@ export function useWeatherData() {
   const [selectedDay, setSelectedDay] = useState(0);
   const [selectedHour, setSelectedHour] = useState(new Date().getHours());
   const [activeTab, setActiveTab] = useState<"meteo" | "venti" | "termiche" | "analisi">("meteo");
-  const [activeModel, setActiveModel] = useState("gfs");
+  const [activeModel, setActiveModel] = useState("Open-Meteo DWD/AROME");
 
   // Dati grezzi da Open-Meteo
   const [hourlyData, setHourlyData] = useState<HourData[]>([]);
@@ -47,7 +48,7 @@ export function useWeatherData() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Dati derivati
+  // Dati derivati per il giorno selezionato
   const dayData = hourlyData.filter(h => {
     const oggi = new Date();
     const targetDate = new Date(oggi);
@@ -77,7 +78,7 @@ export function useWeatherData() {
     visibility: currentData.visibility ? Math.round(currentData.visibility / 100) * 100 : 10000,
   } : null;
 
-  const enrichedDaily = dailyData.map((d, i) => {
+  const enrichedDaily = dailyData.map((d) => {
     const dayHours = hourlyData.filter(h => {
       const hDate = new Date(h.time);
       const dDate = new Date(d.date);
@@ -93,11 +94,11 @@ export function useWeatherData() {
 
     return {
       ...d,
-      temperatureMax: Math.round(Math.max(...temps)),
-      temperatureMin: Math.round(Math.min(...temps)),
-      windSpeedMax: Math.round(Math.max(...winds)),
-      windSpeed: Math.round(winds.reduce((s, w) => s + w, 0) / winds.length),
-      cloudCover: Math.round(clouds.reduce((s, c) => s + c, 0) / clouds.length),
+      temperatureMax: temps.length > 0 ? Math.round(Math.max(...temps)) : d.temperatureMax,
+      temperatureMin: temps.length > 0 ? Math.round(Math.min(...temps)) : d.temperatureMin,
+      windSpeedMax: winds.length > 0 ? Math.round(Math.max(...winds)) : d.windSpeedMax,
+      windSpeed: winds.length > 0 ? Math.round(winds.reduce((s, w) => s + w, 0) / winds.length) : d.windSpeed,
+      cloudCover: clouds.length > 0 ? Math.round(clouds.reduce((s, c) => s + c, 0) / clouds.length) : d.cloudCover,
       weatherDescription: getWeatherDescription(d.weatherCode),
     };
   });
@@ -139,19 +140,19 @@ export function useWeatherData() {
       setLastUpdate(new Date());
       setCountdown(REFRESH_INTERVAL);
     } catch (err) {
-      console.error("Errore caricamento dati:", err);
+      console.error("Errore caricamento dati Open-Meteo:", err);
     } finally {
       setLoading(false);
       setUpdating(false);
     }
   }, [site]);
 
-  // Carica appena il sito cambia
+  // Carica al cambio del sito
   useEffect(() => {
     loadWeather();
   }, [loadWeather]);
 
-  // Auto-refresh
+  // Auto-refresh ogni 15 minuti
   useEffect(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = setInterval(() => {
@@ -162,7 +163,7 @@ export function useWeatherData() {
     };
   }, [loadWeather]);
 
-  // Countdown
+  // Countdown timer
   useEffect(() => {
     if (countdownRef.current) clearInterval(countdownRef.current);
     countdownRef.current = setInterval(() => {
@@ -173,21 +174,12 @@ export function useWeatherData() {
     };
   }, []);
 
-  // Salva selezione
+  // Salva selezione nel LocalStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_SITE, selectedId);
   }, [selectedId]);
 
-  // Se cambia giorno, resetta ora se necessario
-  useEffect(() => {
-    const ora = new Date().getHours();
-    if (selectedHour < 0 || selectedHour > 23) {
-      setSelectedHour(ora);
-    }
-  }, [selectedDay, selectedHour]);
-
   return {
-    // State
     selectedId,
     setSelectedId,
     loading,
@@ -202,11 +194,7 @@ export function useWeatherData() {
     countdown,
     activeModel,
     setActiveModel,
-
-    // Sito
     site,
-
-    // Dati
     dayData,
     currentData: currentDataRounded,
     thermalDelta,
@@ -216,8 +204,6 @@ export function useWeatherData() {
     allHourlyData,
     allDailyData: dailyData,
     currentCape,
-
-    // Azioni
     loadWeather,
   };
 }

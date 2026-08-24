@@ -21,7 +21,6 @@ export interface MeteoHourly {
   windDir: number;
   windGusts: number;
   uvIndex: number;
-  capes: number;
   cape: number;
   cin: number;
   liftedIndex: number;
@@ -32,16 +31,13 @@ export interface MeteoHourly {
   pressure: number;
   surfacePressure: number;
   precipitationProbability: number;
-  et0?: number;
-  vapourPressureDeficit?: number;
-  soilTemp?: number;
-  soilMoisture?: number;
 }
 
 export interface MeteoCurrent {
   time: Date;
   temperature: number;
   humidity: number;
+  dewPoint: number;
   apparentTemp: number;
   isDay: number;
   precipitation: number;
@@ -54,15 +50,21 @@ export interface MeteoCurrent {
   windSpeed: number;
   windDir: number;
   windGusts: number;
+  cape: number;
 }
 
 export interface MeteoLight {
   time: Date;
   temperature: number;
+  humidity: number;
+  dewPoint: number;
   windSpeed: number;
   windDir: number;
+  windGusts: number;
   weatherCode: number;
-  windGusts?: number;
+  cloudCover: number;
+  precipitation: number;
+  cape: number;
 }
 
 export interface MeteoDaily {
@@ -88,8 +90,6 @@ export interface MeteoDaily {
   shortwaveRadiationSum: number;
 }
 
-// Endpoint API Ufficiale
-const LOCAL_API_URL = "http://localhost:3000/api/meteo";
 const OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast";
 
 const HOURLY_PARAMS = [
@@ -149,152 +149,63 @@ const DAILY_PARAMS = [
   "uv_index_max",
 ].join(",");
 
+const CURRENT_PARAMS = [
+  "temperature_2m",
+  "relative_humidity_2m",
+  "dew_point_2m",
+  "apparent_temperature",
+  "is_day",
+  "precipitation",
+  "rain",
+  "showers",
+  "snowfall",
+  "weather_code",
+  "cloud_cover",
+  "pressure_msl",
+  "surface_pressure",
+  "wind_speed_10m",
+  "wind_direction_10m",
+  "wind_gusts_10m",
+  "cape",
+].join(",");
+
 export const weatherService = {
   /**
-   * Chiama l'endpoint API ufficiale http://localhost:3000/api/meteo?lat=XX&lon=YY
-   * Se il server locale è momentaneamente offline, effettua fallback automatico mantenendo
-   * la precisione dei dati meteo reali.
+   * Chiamata rapida ai dati correnti Open-Meteo per la lista dei decolli
    */
-  async fetchCurrent(lat: number, lon: number): Promise<{ data: HourData | null; ok: boolean }> {
+  async fetchLight(lat: number, lon: number): Promise<{ data: MeteoLight | null; ok: boolean }> {
     try {
-      // 1. Prova API ufficiale localhost
-      const localRes = await fetch(`${LOCAL_API_URL}?lat=${lat}&lon=${lon}`, { signal: AbortSignal.timeout(2000) });
-      if (localRes.ok) {
-        const json = await localRes.json();
-        const data: HourData = {
-          time: json.orario ? new Date(json.orario) : new Date(),
-          temperature: json.temperature ?? 0,
-          humidity: 50,
-          apparentTemp: json.temperature ?? 0,
-          precipitation: 0,
-          rain: 0,
-          snowfall: 0,
-          weatherCode: 0,
-          cloudCover: 20,
-          pressure: 1013,
-          surfacePressure: 1013,
-          windSpeed: json.wind_speed ?? 0,
-          windDir: json.wind_dir ?? 0,
-          windGusts: json.gusts ?? json.wind_speed ?? 0,
-          dewPoint: 0,
-          precipitationProba: 0,
-          cloudCoverLow: 0,
-          cloudCoverMid: 0,
-          cloudCoverHigh: 0,
-          feelsLike: json.temperature ?? 0,
-          radiation: 0,
-          directRadiation: 0,
-          uvIndex: 0,
-          visibility: 10000,
-          vapourPressureDeficit: 0,
-          isDay: true,
-          freezingLevel: 3000,
-          sunshineDuration: 0,
-          cape: 0,
-          cin: 0,
-          liftedIndex: 0,
-          mixingRatio: 0,
-          virtualTemp: 0,
-        };
-        return { data, ok: true };
-      }
-    } catch {
-      // Fallback trasparente verso Open-Meteo
-    }
+      const params = new URLSearchParams({
+        latitude: lat.toString(),
+        longitude: lon.toString(),
+        current: CURRENT_PARAMS,
+        timezone: "Europe/Rome",
+        forecast_days: "1",
+      });
 
-    try {
-      const url = `${OPEN_METEO_BASE}?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=auto&forecast_days=1`;
-      const res = await fetch(url);
+      const res = await fetch(`${OPEN_METEO_BASE}?${params.toString()}`);
       if (!res.ok) return { data: null, ok: false };
       const json = await res.json();
       const c = json.current;
       if (!c) return { data: null, ok: false };
 
-      const data: HourData = {
-        time: new Date(c.time),
-        temperature: c.temperature_2m,
-        humidity: c.relative_humidity_2m,
-        apparentTemp: c.apparent_temperature,
-        precipitation: c.precipitation,
-        rain: c.rain,
-        snowfall: c.snowfall,
-        weatherCode: c.weather_code,
-        cloudCover: c.cloud_cover,
-        pressure: Number(c.pressure_msl) ?? 1013,
-        surfacePressure: Number(c.surface_pressure) ?? 1013,
-        windSpeed: Number(c.wind_speed_10m ?? 0),
-        windDir: Number(c.wind_direction_10m ?? 0),
-        windGusts: Number(c.wind_gusts_10m ?? c.wind_speed_10m ?? 0),
-        dewPoint: c.temperature_2m - ((100 - c.relative_humidity_2m) / 5),
-        precipitationProba: 0,
-        cloudCoverLow: 0,
-        cloudCoverMid: 0,
-        cloudCoverHigh: 0,
-        feelsLike: c.apparent_temperature ?? 0,
-        radiation: 0,
-        directRadiation: 0,
-        uvIndex: 0,
-        visibility: 10000,
-        vapourPressureDeficit: 0,
-        isDay: (c.is_day ?? 1) === 1,
-        freezingLevel: 3000,
-        sunshineDuration: 0,
-        cape: 0,
-        cin: 0,
-        liftedIndex: 0,
-        mixingRatio: 0,
-        virtualTemp: 0,
-      };
-      return { data, ok: true };
-    } catch {
-      return { data: null, ok: false };
-    }
-  },
-
-  /**
-   * Chiamata rapida per tutte le card della lista decolli
-   */
-  async fetchLight(lat: number, lon: number): Promise<{ data: MeteoLight | null; ok: boolean }> {
-    try {
-      const localRes = await fetch(`${LOCAL_API_URL}?lat=${lat}&lon=${lon}`, { signal: AbortSignal.timeout(1500) });
-      if (localRes.ok) {
-        const json = await localRes.json();
-        return {
-          data: {
-            time: json.orario ? new Date(json.orario) : new Date(),
-            temperature: json.temperature ?? 0,
-            windSpeed: json.wind_speed ?? 0,
-            windDir: json.wind_dir ?? 180,
-            windGusts: json.gusts ?? 0,
-            weatherCode: 0,
-          },
-          ok: true,
-        };
-      }
-    } catch {
-      // Fallback
-    }
-
-    try {
-      const url = `${OPEN_METEO_BASE}?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,weather_code&timezone=Europe/Rome&forecast_days=1`;
-      const res = await fetch(url);
-      if (!res.ok) return { data: null, ok: false };
-      const json = await res.json();
-      const h = json.hourly;
-      if (!h || !h.time || h.time.length === 0) return { data: null, ok: false };
-
-      const nowHour = new Date().getHours();
-      let idx = h.time.findIndex((t: string) => new Date(t).getHours() === nowHour);
-      if (idx === -1) idx = 0;
+      const temp = c.temperature_2m ?? 0;
+      const hum = c.relative_humidity_2m ?? 50;
+      const dew = c.dew_point_2m ?? (temp - (100 - hum) / 5);
 
       return {
         data: {
-          time: new Date(h.time[idx]),
-          temperature: h.temperature_2m[idx] ?? 0,
-          windSpeed: h.wind_speed_10m[idx] ?? 0,
-          windDir: h.wind_direction_10m[idx] ?? 0,
-          windGusts: h.wind_gusts_10m?.[idx] ?? 0,
-          weatherCode: h.weather_code[idx] ?? 0,
+          time: new Date(c.time),
+          temperature: temp,
+          humidity: hum,
+          dewPoint: dew,
+          windSpeed: c.wind_speed_10m ?? 0,
+          windDir: c.wind_direction_10m ?? 0,
+          windGusts: c.wind_gusts_10m ?? c.wind_speed_10m ?? 0,
+          weatherCode: c.weather_code ?? 0,
+          cloudCover: c.cloud_cover ?? 0,
+          precipitation: c.precipitation ?? 0,
+          cape: c.cape ?? 0,
         },
         ok: true,
       };
@@ -304,7 +215,7 @@ export const weatherService = {
   },
 
   /**
-   * Previsione completa e affidabile per il decollo selezionato
+   * Previsione completa a 3 giorni da Open-Meteo per il decollo selezionato
    */
   async fetchWeather(lat: number, lon: number): Promise<{
     hourly: MeteoHourly[];
@@ -317,7 +228,7 @@ export const weatherService = {
       longitude: lon.toString(),
       hourly: HOURLY_PARAMS,
       daily: DAILY_PARAMS,
-      current: "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m",
+      current: CURRENT_PARAMS,
       timezone: "Europe/Rome",
       forecast_days: "3",
     });
@@ -330,11 +241,15 @@ export const weatherService = {
     const hourly: MeteoHourly[] = [];
     const len = json.hourly.time.length;
     for (let i = 0; i < len; i++) {
+      const t = json.hourly.temperature_2m[i] ?? 0;
+      const h = json.hourly.relative_humidity_2m[i] ?? 50;
+      const dew = json.hourly.dew_point_2m?.[i] ?? (t - (100 - h) / 5);
+
       hourly.push({
         time: new Date(json.hourly.time[i]),
-        temperature: json.hourly.temperature_2m[i] ?? 0,
-        humidity: json.hourly.relative_humidity_2m[i] ?? 50,
-        dewPoint: json.hourly.dew_point_2m?.[i] ?? 10,
+        temperature: t,
+        humidity: h,
+        dewPoint: dew,
         pressure: json.hourly.pressure_msl[i] ?? 1013,
         surfacePressure: json.hourly.surface_pressure?.[i] ?? 1013,
         precipitation: json.hourly.precipitation[i] ?? 0,
@@ -349,43 +264,44 @@ export const weatherService = {
         windDir: json.hourly.wind_direction_10m[i] ?? 0,
         windGusts: json.hourly.wind_gusts_10m?.[i] ?? 0,
         uvIndex: json.hourly.uv_index?.[i] ?? 0,
-        capes: json.hourly.cape?.[i] ?? 0,
         cape: json.hourly.cape?.[i] ?? 0,
-        cin: json.hourly.cin?.[i] ?? 0,
+        cin: json.hourly.convective_inhibition?.[i] ?? 0,
         liftedIndex: json.hourly.lifted_index?.[i] ?? 0,
         temp80m: json.hourly.temperature_80m?.[i],
         temp120m: json.hourly.temperature_120m?.[i],
         shortwaveRadiation: json.hourly.shortwave_radiation?.[i] ?? 0,
-        feelsLike: json.hourly.apparent_temperature?.[i] ?? 0,
-        apparentTemp: json.hourly.apparent_temperature?.[i] ?? 0,
+        feelsLike: json.hourly.apparent_temperature?.[i] ?? t,
+        apparentTemp: json.hourly.apparent_temperature?.[i] ?? t,
         precipitationProbability: json.hourly.precipitation_probability?.[i] ?? 0,
-        et0: json.hourly.et0_fao_evapotranspiration?.[i] ?? 0,
-        vapourPressureDeficit: 0,
-        soilTemp: 0,
-        soilMoisture: 0,
       });
     }
 
+    const c = json.current;
+    const curTemp = c?.temperature_2m ?? 0;
+    const curHum = c?.relative_humidity_2m ?? 50;
+
     const current: MeteoCurrent = {
-      time: new Date(json.current.time),
-      temperature: json.current.temperature_2m ?? 0,
-      humidity: json.current.relative_humidity_2m ?? 50,
-      apparentTemp: json.current.apparent_temperature ?? 0,
-      isDay: json.current.is_day ?? 1,
-      precipitation: json.current.precipitation ?? 0,
-      rain: json.current.rain ?? 0,
-      snowfall: json.current.snowfall ?? 0,
-      weatherCode: json.current.weather_code ?? 0,
-      cloudCover: json.current.cloud_cover ?? 0,
-      pressure: json.current.pressure_msl ?? 1013,
-      surfacePressure: json.current.surface_pressure ?? 1013,
-      windSpeed: json.current.wind_speed_10m ?? 0,
-      windDir: json.current.wind_direction_10m ?? 0,
-      windGusts: json.current.wind_gusts_10m ?? 0,
+      time: new Date(c?.time || Date.now()),
+      temperature: curTemp,
+      humidity: curHum,
+      dewPoint: c?.dew_point_2m ?? (curTemp - (100 - curHum) / 5),
+      apparentTemp: c?.apparent_temperature ?? curTemp,
+      isDay: c?.is_day ?? 1,
+      precipitation: c?.precipitation ?? 0,
+      rain: c?.rain ?? 0,
+      snowfall: c?.snowfall ?? 0,
+      weatherCode: c?.weather_code ?? 0,
+      cloudCover: c?.cloud_cover ?? 0,
+      pressure: c?.pressure_msl ?? 1013,
+      surfacePressure: c?.surface_pressure ?? 1013,
+      windSpeed: c?.wind_speed_10m ?? 0,
+      windDir: c?.wind_direction_10m ?? 0,
+      windGusts: c?.wind_gusts_10m ?? c?.wind_speed_10m ?? 0,
+      cape: c?.cape ?? 0,
     };
 
     const daily: MeteoDaily[] = [];
-    const dailyLen = json.daily.time.length;
+    const dailyLen = json.daily?.time?.length || 0;
     for (let i = 0; i < dailyLen; i++) {
       daily.push({
         date: new Date(json.daily.time[i]),
@@ -411,7 +327,7 @@ export const weatherService = {
       });
     }
 
-    return { hourly, current, daily, model: "official-api" };
+    return { hourly, current, daily, model: "Open-Meteo DWD/AROME" };
   },
 
   async fetchWithFallback(lat: number, lon: number) {
