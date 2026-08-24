@@ -248,3 +248,9 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number, altit
     return { hourly: [], daily: [], current: null };
   }
 }
+
+// Export compatibile per import esistenti: weatherService.fetchMeteoCorrente, weatherService.fetchPrevisioniGiornaliere
+export const weatherService = {
+  fetchMeteoCorrente,
+  fetchPrevisioniGiornaliere,
+};
