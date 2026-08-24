@@ -42,7 +42,7 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* === DIAGRAMMA AEROLOGICO (Skew-T) === */}
+      {/* === DIAGRAMMA AEROLOGICO (Skew-T) STILE ALPIUM === */}
       <SkewTDiagram
         latitude={site.lat}
         longitude={site.lon}
