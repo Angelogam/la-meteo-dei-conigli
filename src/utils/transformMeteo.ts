@@ -60,7 +60,6 @@ export function transformHourlyData(raw: RawMeteoResponse["hourly"]): HourData[]
       visibility: visibility,
       directRadiation: directRadiation,
       diffuseRadiation: diffuseRadiation,
-      shortwaveRadiation: shortwaveRadiation,
       feelsLike: temperature,
       radiation: shortwaveRadiation,
       vapourPressureDeficit: 0,
