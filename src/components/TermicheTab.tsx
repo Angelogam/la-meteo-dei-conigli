@@ -4,6 +4,7 @@ import React, { useMemo } from "react";
 import { HourData } from "@/types/meteo";
 import { calcolaTermiche } from "@/utils/termiche";
 import { Thermometer, Wind, Cloud, Droplets, Sun, TrendingUp, AlertTriangle } from "lucide-react";
+import SkewTDiagram from "@/components/SkewTDiagram";
 
 interface TermicheTabProps {
   currentData: HourData | null;
@@ -41,6 +42,16 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* === DIAGRAMMA AEROLOGICO (Skew-T) === */}
+      <SkewTDiagram
+        latitude={site.lat}
+        longitude={site.lon}
+        siteAltitude={site.alt}
+        siteName={site.name}
+        selectedHour={12}
+        selectedDay={0}
+      />
+
       {/* Riepilogo */}
       <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5">
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
