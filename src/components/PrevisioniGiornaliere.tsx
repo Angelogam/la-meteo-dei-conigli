@@ -2,7 +2,7 @@
 
 import React from "react";
 import type { HourData, DailyData } from "@/types/meteo";
-import { CloudRain, Sun, Cloud, Wind, Thermometer, Calendar } from "lucide-react";
+import { CloudRain, Sun, Cloud, Wind, Thermometer, Calendar, Mountain } from "lucide-react";
 
 interface PrevisioniGiornaliereProps {
   enrichedDaily: DailyData[];
@@ -26,6 +26,18 @@ function getWeatherEmoji(code: number): string {
   if (code >= 10) return "⛅";
   if (code >= 5) return "🌤️";
   return "☀️";
+}
+
+function getFreezingLevel(daily: DailyData): number | null {
+  if (daily.freezingLevel !== undefined && daily.freezingLevel !== null) {
+    return Math.round(daily.freezingLevel);
+  }
+  if (daily.temperatureMin !== undefined && daily.temperatureMax !== undefined) {
+    const avgTemp = (daily.temperatureMin + daily.temperatureMax) / 2;
+    const estimated = Math.round(3000 - (avgTemp * 150));
+    return Math.max(500, Math.min(5000, estimated));
+  }
+  return null;
 }
 
 export default function PrevisioniGiornaliere({
@@ -54,6 +66,7 @@ export default function PrevisioniGiornaliere({
           const isActive = selectedDay === idx;
           const label = dateLabels[idx] || tabName;
           const isRainy = daily && daily.precipitationSum > 0.5;
+          const freezingLevel = daily ? getFreezingLevel(daily) : null;
 
           return (
             <button
@@ -93,15 +106,17 @@ export default function PrevisioniGiornaliere({
                       <Wind className="w-3 h-3 text-slate-400" />
                       {Math.round(daily.windSpeedMax)} km/h
                     </span>
-                    {daily.precipitationSum > 0 ? (
-                      <span className="text-rose-300 font-semibold flex items-center gap-0.5">
-                        <CloudRain className="w-3 h-3" />
-                        {daily.precipitationSum.toFixed(1)}mm
-                      </span>
-                    ) : (
-                      <span className="text-emerald-400">0mm</span>
-                    )}
+                    <span className="flex items-center gap-0.5 text-amber-300">
+                      <Mountain className="w-3 h-3" />
+                      {freezingLevel ? `${freezingLevel}m` : "--m"}
+                    </span>
                   </div>
+                  {daily.precipitationSum > 0 && (
+                    <div className="text-rose-300 font-semibold flex items-center gap-0.5 text-[10px]">
+                      <CloudRain className="w-3 h-3" />
+                      {daily.precipitationSum.toFixed(1)}mm
+                    </div>
+                  )}
                 </div>
               )}
             </button>
