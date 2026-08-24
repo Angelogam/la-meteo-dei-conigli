@@ -1,3 +1,4 @@
+">
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
@@ -15,7 +16,6 @@ import {
 interface HourlyForecast {
   hour: number;
   date: Date;
-  // Superficie
   temp: number;
   dewPoint: number;
   humidity: number;
@@ -33,17 +33,14 @@ interface HourlyForecast {
   cin: number;
   liftedIndex: number;
   freezingLevel: number;
-  // Quota (calcolati)
   wind1500: { speed: number; dir: number };
   wind2000: { speed: number; dir: number };
   wind2500: { speed: number; dir: number };
   wind3000: { speed: number; dir: number };
-  // Termiche
   thermalBase: number;
   thermalTop: number;
   climbRate: number;
   thermalQuality: "excellent" | "good" | "moderate" | "weak" | "none";
-  // Volo
   flightRating: 0 | 1 | 2 | 3 | 4 | 5;
   flightLabel: string;
 }
@@ -64,7 +61,6 @@ const DEFAULT_SITE: SiteConfig = {
   exposure: "S"
 };
 
-// Codici WMO -> Icona + Descrizione
 function getWeatherInfo(code: number, precip: number, cloud: number) {
   if (code >= 95) return { icon: "⛈️", label: "Temporale", color: "text-purple-400", danger: true };
   if (code >= 80) return { icon: "🌧️", label: "Rovesci", color: "text-blue-400", rain: true };
@@ -88,10 +84,6 @@ function getDirName(dir: number): string {
   return dirs[Math.round(((dir % 360) + 360) % 360 / 22.5) % 16];
 }
 
-// ============================================
-// CALCOLI AEROLOGICI REALI
-// ============================================
-
 function calculateThermals(
   temp: number, 
   dewPoint: number, 
@@ -102,7 +94,6 @@ function calculateThermals(
   weatherCode: number,
   siteAlt: number
 ) {
-  // Se piove o temporale -> niente termiche
   if (precipitation > 0.5 || weatherCode >= 95) {
     return {
       base: siteAlt + 100,
@@ -114,11 +105,9 @@ function calculateThermals(
 
   const spread = Math.max(0.5, temp - dewPoint);
   
-  // Base cumuli (LCL)
   const lclHeight = Math.round(spread * 125);
   const thermalBase = Math.max(siteAlt + 150, Math.min(siteAlt + 3000, siteAlt + lclHeight));
 
-  // Top termico basato su CAPE e gradiente
   let thermalTop = thermalBase + 300;
   if (cape > 1000) thermalTop = thermalBase + Math.min(2500, cape * 1.5);
   else if (cape > 500) thermalTop = thermalBase + Math.min(2000, cape * 1.2);
@@ -127,7 +116,6 @@ function calculateThermals(
   
   thermalTop = Math.min(4500, thermalTop);
 
-  // Rateo di salita (m/s)
   let climbRate = 0;
   if (cape > 50 && (thermalTop - thermalBase) > 200) {
     const depth = thermalTop - thermalBase;
@@ -136,7 +124,6 @@ function calculateThermals(
     climbRate = Math.min(3, spread * 0.25);
   }
 
-  // Penalizzazioni
   if (windSpeed > 20) climbRate *= 0.6;
   else if (windSpeed > 15) climbRate *= 0.8;
   if (cloudCover > 70) climbRate *= 0.3;
@@ -163,22 +150,18 @@ function calculateFlightRating(
   climbRate: number,
   cape: number
 ): { rating: 0|1|2|3|4|5; label: string } {
-  // Pericolo assoluto
   if (weatherCode >= 95) return { rating: 0, label: "⛈️ TEMPORALE" };
   if (precipitation > 2) return { rating: 0, label: "🌧️ PIOGGIA FORTE" };
   if (windSpeed > 30 || windGust > 40) return { rating: 0, label: "💨 VENTO PERICOLOSO" };
   
-  // Sconsigliato
   if (precipitation > 0.5) return { rating: 1, label: "🌦️ PIOGGIA" };
   if (windSpeed > 25 || windGust > 35) return { rating: 1, label: "💨 VENTO FORTE" };
   if (cloudCover > 90) return { rating: 1, label: "☁️ COPERTO" };
   
-  // Marginale
   if (windSpeed > 20 || windGust > 30) return { rating: 2, label: "⚠️ MARGINALE" };
   if (cloudCover > 75) return { rating: 2, label: "☁️ MOLTO NUVOLOSO" };
   if (climbRate < 0.5) return { rating: 2, label: "🌡️ TERMICHE DEBOLI" };
   
-  // Buono
   if (climbRate >= 2 && windSpeed <= 15 && precipitation === 0) return { rating: 4, label: "🪂 OTTIMO" };
   if (climbRate >= 1.5 && windSpeed <= 18) return { rating: 4, label: "🪂 BUONO" };
   if (climbRate >= 1 && windSpeed <= 20) return { rating: 3, label: "✅ DISCRETO" };
@@ -204,7 +187,6 @@ function interpolateWindAtAltitude(
 
   if (levels.length < 2) return { speed: surfaceWind, dir: surfaceDir };
 
-  // Trova i due livelli che racchiudono l'altitudine target
   for (let i = 0; i < levels.length - 1; i++) {
     if (levels[i].alt <= targetAlt && levels[i + 1].alt >= targetAlt) {
       const ratio = (targetAlt - levels[i].alt) / (levels[i + 1].alt - levels[i].alt);
@@ -219,7 +201,6 @@ function interpolateWindAtAltitude(
     }
   }
 
-  // Sopra l'ultimo livello -> estrapola
   const last = levels[levels.length - 1];
   const prev = levels[levels.length - 2];
   const gradSpeed = (last.speed - prev.speed) / (last.alt - prev.alt);
@@ -234,13 +215,9 @@ function interpolateWindAtAltitude(
   };
 }
 
-// ============================================
-// COMPONENTE PRINCIPALE
-// ============================================
-
 interface AlpiumBriefingProps {
   site?: SiteConfig;
-  selectedDay?: number; // 0=oggi, 1=domani, 2=dopodomani
+  selectedDay?: number;
 }
 
 export default function AlpiumBriefing({ 
@@ -290,9 +267,6 @@ export default function AlpiumBriefing({
     return () => { mounted = false; };
   }, [site.lat, site.lon, dateStr]);
 
-  // ============================================
-  // ELABORAZIONE DATI ORARI
-  // ============================================
   const forecasts = useMemo((): HourlyForecast[] => {
     if (!data?.hourly?.time) return [];
     
@@ -322,7 +296,6 @@ export default function AlpiumBriefing({
       const liftedIndex = h.lifted_index[idx] ?? 0;
       const freezingLevel = h.freezing_level_height[idx] ?? (site.altitude + 2000);
 
-      // Venti in quota da dati reali
       const level850 = h.wind_speed_850hPa?.[idx] != null ? { speed: h.wind_speed_850hPa[idx], dir: h.wind_direction_850hPa[idx] } : null;
       const level700 = h.wind_speed_700hPa?.[idx] != null ? { speed: h.wind_speed_700hPa[idx], dir: h.wind_direction_700hPa[idx] } : null;
       const level600 = h.wind_speed_600hPa?.[idx] != null ? { speed: h.wind_speed_600hPa[idx], dir: h.wind_direction_600hPa[idx] } : null;
@@ -333,12 +306,8 @@ export default function AlpiumBriefing({
       const wind2500 = interpolateWindAtAltitude(windSpeed, windDir, level850, level700, level600, level500, 2500);
       const wind3000 = interpolateWindAtAltitude(windSpeed, windDir, level850, level700, level600, level500, 3000);
 
-      // Termiche
       const thermals = calculateThermals(temp, dewPoint, windSpeed, cloudCover, cape, precipitation, weatherCode, site.altitude);
-      
-      // Rating volo
       const flight = calculateFlightRating(windSpeed, windGust, precipitation, weatherCode, cloudCover, thermals.climbRate, cape);
-
       const weather = getWeatherInfo(weatherCode, precipitation, cloudCover);
 
       results.push({
@@ -359,9 +328,6 @@ export default function AlpiumBriefing({
     return results;
   }, [data, site.altitude]);
 
-  // ============================================
-  // RENDER
-  // ============================================
   if (loading) {
     return (
       <div className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-8 flex flex-col items-center gap-4">
@@ -389,7 +355,6 @@ export default function AlpiumBriefing({
 
   return (
     <div className="space-y-6">
-      {/* ===== HEADER ===== */}
       <div className="bg-gradient-to-r from-slate-900 to-slate-800 border border-emerald-500/30 rounded-2xl p-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -411,7 +376,6 @@ export default function AlpiumBriefing({
         </div>
       </div>
 
-      {/* ===== TABELLA ORARIA DETTAGLIATA (stile Alpium) ===== */}
       <div className="bg-slate-900/50 border border-slate-700/50 rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs font-mono">
@@ -457,7 +421,6 @@ export default function AlpiumBriefing({
                     <td className="p-2 font-bold text-amber-300">{Math.round(f.temp)}°</td>
                     <td className="p-2 text-slate-300">{f.humidity}%</td>
                     
-                    {/* Vento suolo */}
                     <td className="p-2">
                       <div className="flex items-center gap-1 text-sky-300">
                         <span className="font-bold">{f.windSpeed}</span>
@@ -469,7 +432,6 @@ export default function AlpiumBriefing({
                       </div>
                     </td>
                     
-                    {/* Venti quota */}
                     <td className="p-2 text-sky-300 text-[11px]">
                       {f.wind1500.speed} {getWindArrow(f.wind1500.dir)}{getDirName(f.wind1500.dir)}
                     </td>
@@ -483,7 +445,6 @@ export default function AlpiumBriefing({
                       {f.wind3000.speed} {getWindArrow(f.wind3000.dir)}{getDirName(f.wind3000.dir)}
                     </td>
                     
-                    {/* Termiche */}
                     <td className="p-2 font-bold text-emerald-300">{f.thermalBase}m</td>
                     <td className="p-2 font-bold text-purple-300">{f.thermalTop}m</td>
                     <td className="p-2">
@@ -497,7 +458,6 @@ export default function AlpiumBriefing({
                       </span>
                     </td>
                     
-                    {/* Nuvole */}
                     <td className="p-2 text-slate-300">
                       {f.cloudCover}% 
                       <span className="text-[9px] text-slate-500">
@@ -505,7 +465,6 @@ export default function AlpiumBriefing({
                       </span>
                     </td>
                     
-                    {/* Pioggia */}
                     <td className="p-2">
                       {f.precipitation > 0 ? (
                         <span className="text-blue-400 font-bold">{f.precipitation.toFixed(1)}mm</span>
@@ -514,7 +473,6 @@ export default function AlpiumBriefing({
                       )}
                     </td>
                     
-                    {/* Rating volo */}
                     <td className="p-2">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${
                         f.flightRating === 0 ? "bg-red-900/40 text-red-300 border-red-500" :
@@ -535,7 +493,6 @@ export default function AlpiumBriefing({
         </div>
       </div>
 
-      {/* ===== WINDGRAM VERTICALE PROFESSIONALE ===== */}
       <AlpiumWindgram 
         forecasts={forecasts} 
         siteAlt={site.altitude} 
@@ -543,7 +500,6 @@ export default function AlpiumBriefing({
         dateStr={dateStr}
       />
 
-      {/* ===== ANALISI TESTUALE DETTAGLIATA ===== */}
       <AlpiumAnalysis 
         forecasts={forecasts} 
         site={site}
@@ -554,18 +510,7 @@ export default function AlpiumBriefing({
   );
 }
 
-// ============================================
-// WINDGRAM VERTICALE (stile Alpium/RASP)
-// ============================================
-
-interface WindgramProps {
-  forecasts: HourlyForecast[];
-  siteAlt: number;
-  siteName: string;
-  dateStr: string;
-}
-
-function AlpiumWindgram({ forecasts, siteAlt, siteName, dateStr }: WindgramProps) {
+function AlpiumWindgram({ forecasts, siteAlt, siteName, dateStr }: { forecasts: HourlyForecast[]; siteAlt: number; siteName: string; dateStr: string }) {
   const [selectedHour, setSelectedHour] = useState(12);
   
   const f = forecasts.find(x => x.hour === selectedHour) || forecasts[0];
@@ -582,14 +527,12 @@ function AlpiumWindgram({ forecasts, siteAlt, siteName, dateStr }: WindgramProps
   const yFromAlt = (alt: number) => margin.top + plotH - ((Math.min(maxAlt, Math.max(minAlt, alt)) - minAlt) / (maxAlt - minAlt)) * plotH;
   const xFromHour = (idx: number) => margin.left + (idx / 11) * plotW;
 
-  // Livelli isobarici per griglia
   const levels = [
     { hpa: 500, alt: 5800 }, { hpa: 600, alt: 4400 }, 
     { hpa: 700, alt: 3100 }, { hpa: 800, alt: 1950 }, 
     { hpa: 850, alt: 1450 }, { hpa: 925, alt: 760 }
   ];
 
-  // Barbette vento
   const renderBarb = (x: number, y: number, speed: number, dir: number) => {
     if (speed < 1) return null;
     const knots = speed * 0.539957;
@@ -597,7 +540,7 @@ function AlpiumWindgram({ forecasts, siteAlt, siteName, dateStr }: WindgramProps
     const len = 16;
     const ex = x + len * Math.cos(angle);
     const ey = y + len * Math.sin(angle);
-    const color = "#d946ef"; // viola RASP
+    const color = "#d946ef";
     
     const barbs = [];
     let rem = Math.round(knots / 5) * 5;
@@ -629,7 +572,6 @@ function AlpiumWindgram({ forecasts, siteAlt, siteName, dateStr }: WindgramProps
 
   return (
     <div className="bg-white rounded-2xl border border-slate-300 shadow-xl p-4 space-y-4">
-      {/* Header windgram */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-200">
         <div>
           <h3 className="text-lg font-bold text-slate-900 lowercase">{siteName.toLowerCase()}</h3>
@@ -652,13 +594,10 @@ function AlpiumWindgram({ forecasts, siteAlt, siteName, dateStr }: WindgramProps
         </div>
       </div>
 
-      {/* SVG Windgram */}
       <div className="overflow-x-auto">
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto min-w-[700px]" style={{ shapeRendering: "geometricPrecision" }}>
-          {/* Sfondo grigio chiaro quota */}
           <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#e2e8f0" opacity="0.6"/>
           
-          {/* Griglia livelli isobarici */}
           {levels.map(l => {
             const y = yFromAlt(l.alt);
             return (
@@ -670,12 +609,10 @@ function AlpiumWindgram({ forecasts, siteAlt, siteName, dateStr }: WindgramProps
             );
           })}
           
-          {/* Linee verticali orarie */}
           {forecasts.map((h, i) => (
             <line key={`vl-${h.hour}`} x1={xFromHour(i)} y1={margin.top} x2={xFromHour(i)} y2={margin.top+plotH} stroke="#94a3b8" strokeWidth="0.5" strokeDasharray="2 3" opacity="0.4"/>
           ))}
           
-          {/* Barbette vento per ora selezionata */}
           {[
             { alt: 1500, w: f.wind1500 },
             { alt: 2000, w: f.wind2000 },
@@ -684,7 +621,6 @@ function AlpiumWindgram({ forecasts, siteAlt, siteName, dateStr }: WindgramProps
             { alt: siteAlt, w: { speed: f.windSpeed, dir: f.windDir } }
           ].map(({ alt, w }) => renderBarb(margin.left + plotW/2, yFromAlt(alt), w.speed, w.dir))}
           
-          {/* Zero termico - linea blu tratteggiata con fiocchi */}
           <polyline 
             points={forecasts.map((h, i) => `${xFromHour(i)},${yFromAlt(h.freezingLevel)}`).join(" ")} 
             fill="none" stroke="#0284c7" strokeWidth="2" strokeDasharray="6 3" strokeLinecap="round"
@@ -696,7 +632,6 @@ function AlpiumWindgram({ forecasts, siteAlt, siteName, dateStr }: WindgramProps
             </g>
           ))}
           
-          {/* Top termico - curva viola con parapendio */}
           <path 
             d={forecasts.map((h, i) => `${i===0?"M":"L"} ${xFromHour(i)},${yFromAlt(h.thermalTop)}`).join(" ")} 
             fill="none" stroke="#9333ea" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
@@ -710,7 +645,6 @@ function AlpiumWindgram({ forecasts, siteAlt, siteName, dateStr }: WindgramProps
             </g>
           ))}
           
-          {/* Base cumuli - nuvolette con % */}
           {forecasts.map((h, i) => {
             const cloudY = yFromAlt(h.thermalBase + 200);
             const isRain = h.precipitation > 0.2;
@@ -725,7 +659,6 @@ function AlpiumWindgram({ forecasts, siteAlt, siteName, dateStr }: WindgramProps
             );
           })}
           
-          {/* Badge quota base + rateo */}
           {forecasts.map((h, i) => (
             <g key={`badge-${h.hour}`} transform={`translate(${xFromHour(i)}, ${yFromAlt(h.thermalTop) + 10})`}>
               <rect x="-24" y="0" width="48" height="24" rx="4" fill="white" stroke="#ea580c" strokeWidth="1.2" filter="drop-shadow(0 1px 3px rgba(0,0,0,0.1))"/>
@@ -736,7 +669,6 @@ function AlpiumWindgram({ forecasts, siteAlt, siteName, dateStr }: WindgramProps
             </g>
           ))}
           
-          {/* Assi orari */}
           {forecasts.map((h, i) => (
             <text key={`lbl-${h.hour}`} x={xFromHour(i)} y={margin.top+plotH+20} fill="#1e293b" fontSize="11" fontWeight="800" textAnchor="middle" fontFamily="monospace">
               {String(h.hour).padStart(2, "0")}:00
@@ -747,12 +679,11 @@ function AlpiumWindgram({ forecasts, siteAlt, siteName, dateStr }: WindgramProps
         </svg>
       </div>
 
-      {/* Scala stabilità */}
       <div className="pt-2 border-t border-slate-200">
         <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
-          <span>Stabile ←</span>
-          <span className="font-mono">ΔT/100m</span>
-          <span>→ Instabile</span>
+          <span>Stabile &larr;</span>
+          <span className="font-mono">&Delta;T/100m</span>
+          <span>&rarr; Instabile</span>
         </div>
         <div className="h-3 rounded flex overflow-hidden border border-slate-400">
           {[
@@ -771,18 +702,7 @@ function AlpiumWindgram({ forecasts, siteAlt, siteName, dateStr }: WindgramProps
   );
 }
 
-// ============================================
-// ANALISI TESTUALE STILE ALPIUM
-// ============================================
-
-interface AnalysisProps {
-  forecasts: HourlyForecast[];
-  site: SiteConfig;
-  dateStr: string;
-  dayLabel: string;
-}
-
-function AlpiumAnalysis({ forecasts, site, dateStr, dayLabel }: AnalysisProps) {
+function AlpiumAnalysis({ forecasts, site, dateStr, dayLabel }: { forecasts: HourlyForecast[]; site: SiteConfig; dateStr: string; dayLabel: string }) {
   const f12 = forecasts.find(x => x.hour === 12) || forecasts[0];
   const f15 = forecasts.find(x => x.hour === 15) || forecasts[0];
   
@@ -800,7 +720,6 @@ function AlpiumAnalysis({ forecasts, site, dateStr, dayLabel }: AnalysisProps) {
   const maxCape = Math.max(...forecasts.map(f => f.cape));
   const minLI = Math.min(...forecasts.map(f => f.liftedIndex));
 
-  // Vento dominante
   const dirs = forecasts.map(f => f.windDir);
   const sinSum = dirs.reduce((s, d) => s + Math.sin(d * Math.PI/180), 0);
   const cosSum = dirs.reduce((s, d) => s + Math.cos(d * Math.PI/180), 0);
@@ -813,7 +732,6 @@ function AlpiumAnalysis({ forecasts, site, dateStr, dayLabel }: AnalysisProps) {
         Analisi Meteorologica Dettagliata — {dayLabel}
       </h3>
 
-      {/* 1. Quadro Termico */}
       <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 space-y-2">
         <h4 className="text-sm font-bold text-amber-300 flex items-center gap-2">
           <Thermometer className="w-4 h-4" /> 1. Quadro Termico & Stabilità
@@ -833,7 +751,6 @@ function AlpiumAnalysis({ forecasts, site, dateStr, dayLabel }: AnalysisProps) {
         </p>
       </div>
 
-      {/* 2. Profilo Vento */}
       <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 space-y-2">
         <h4 className="text-sm font-bold text-cyan-300 flex items-center gap-2">
           <Wind className="w-4 h-4" /> 2. Profilo Vento Verticale
@@ -854,7 +771,6 @@ function AlpiumAnalysis({ forecasts, site, dateStr, dayLabel }: AnalysisProps) {
         </p>
       </div>
 
-      {/* 3. Nuvolosità & Precipitazioni */}
       <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 space-y-2">
         <h4 className="text-sm font-bold text-blue-300 flex items-center gap-2">
           <Cloud className="w-4 h-4" /> 3. Nuvolosità & Precipitazioni
@@ -874,7 +790,6 @@ function AlpiumAnalysis({ forecasts, site, dateStr, dayLabel }: AnalysisProps) {
         </p>
       </div>
 
-      {/* 4. Finestra di Volo & Strategia */}
       <div className="bg-gradient-to-r from-emerald-900/30 to-emerald-800/20 border border-emerald-500/40 rounded-xl p-4 space-y-2">
         <h4 className="text-sm font-bold text-emerald-300 flex items-center gap-2">
           <ArrowUp className="w-4 h-4" /> 4. Finestra di Volo & Strategia Tattica
@@ -893,7 +808,7 @@ function AlpiumAnalysis({ forecasts, site, dateStr, dayLabel }: AnalysisProps) {
             <p className="font-bold text-amber-300 mb-1">⚠️ Attenzioni</p>
             <ul className="space-y-1 text-[11px]">
               {maxWind > 20 && <li>• Vento sostenuto: decollo solo se allineato a {site.exposure}</li>}
-              {maxGust > 30 && <li>• Raffiche >30 km/h: turbolenza in quota e atterraggio</li>}
+              {maxGust > 30 && <li>• Raffiche {'>'}30 km/h: turbolenza in quota e atterraggio</li>}
               {avgCloud > 70 && <li>• Cielo molto coperto: termiche ritardate/deboli</li>}
               {f12.liftedIndex < -4 && <li>• Atmosfera instabile: monitorare sviluppo cumulonembi</li>}
               {totalRain > 0 && <li>• Pioggia: terreno viscido, ala bagnata = pericolo stallo</li>}
@@ -903,7 +818,6 @@ function AlpiumAnalysis({ forecasts, site, dateStr, dayLabel }: AnalysisProps) {
         </div>
       </div>
 
-      {/* 5. Dati Tecnici Grezzi */}
       <details className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
         <summary className="text-xs font-bold text-slate-400 cursor-pointer flex items-center gap-2">
           <Info className="w-4 h-4" />
