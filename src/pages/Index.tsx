@@ -7,19 +7,12 @@ import DecolliCard from "@/components/DecolliCard";
 import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
-import WeatherDashboard from "@/components/WeatherDashboard";
 import TabNav from "@/components/TabNav";
-import MeteoTab from "@/components/MeteoTab";
-import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
-import TermicheTab from "@/components/TermicheTab";
-import AnalisiMeteo from "@/components/AnalisiMeteo";
-import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
-import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { DECOLLI } from "@/data/decolli";
-import { getStabilityIndex } from "@/utils/weatherHelpers";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
 import { Activity } from "lucide-react";
+import AlpiumBriefing from "@/components/AlpiumBriefing";
 
 export default function Index() {
   useEffect(() => { avviaVerificaContinua(60000); }, []);
@@ -31,18 +24,6 @@ export default function Index() {
     currentData, thermalDelta, enrichedDaily, dateLabels, loadWeather,
     activeModel, currentCape,
   } = useWeatherData();
-
-  const { tempoTrascorso } = useMeteoCompleto(
-    site?.lat ?? DECOLLI[0].lat,
-    site?.lon ?? DECOLLI[0].lon,
-    site?.altitude ?? DECOLLI[0].altitude,
-  );
-
-  const stabilityIndex = getStabilityIndex(
-    currentData?.temperature ?? 20,
-    currentData?.humidity ?? 50,
-    currentData?.cloudCover ?? 30,
-  );
 
   const decolliList = useMemo(
     () => DECOLLI.map((d) => ({ id: d.id, nome: d.name, valle: d.valley, quota: d.altitude, direzione: d.exposure, lat: d.lat, lon: d.lon })),
@@ -71,6 +52,7 @@ export default function Index() {
   }
 
   const hasData = Boolean(site && currentData && dayData.length > 0);
+  const siteConfig = site ? { name: site.name, lat: site.lat, lon: site.lon, altitude: site.altitude, exposure: site.exposure } : null;
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
@@ -81,8 +63,8 @@ export default function Index() {
             <UpdateTimer lastUpdate={lastUpdate} countdown={countdown} updating={updating} onRefresh={loadWeather} />
             <div className="bg-slate-800/50 border border-emerald-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
               <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
-              <span className="text-xs text-emerald-300 truncate">{site?.name ?? "Decollo"} — Dati reali Open-Meteo</span>
-              <span className="text-[10px] text-slate-500 ml-auto">{tempoTrascorso}s</span>
+              <span className="text-xs text-emerald-300 truncate">{site?.name ?? "Decollo"} — Briefing Alpium</span>
+              <span className="text-[10px] text-slate-500 ml-auto">Open-Meteo</span>
             </div>
             <DecolliCard
               decolli={decolliList}
@@ -92,7 +74,7 @@ export default function Index() {
             />
           </aside>
           <div className="flex-1 min-w-0 space-y-6">
-            {hasData && (
+            {hasData && siteConfig && (
               <>
                 <SiteHeader
                   name={site!.name}
@@ -112,57 +94,12 @@ export default function Index() {
                   onSelectDay={setSelectedDay}
                   nomeDecollo={site!.name}
                 />
-                <WeatherDashboard
-                  dayData={dayData}
-                  altitude={site!.altitude}
-                  selectedHour={selectedHour}
-                  onHourSelect={setSelectedHour}
-                  dayLabel={dateLabels[selectedDay] ?? ""}
+                
+                {/* NUOVO BRIEFING COMPLETO STILE ALPIUM */}
+                <AlpiumBriefing 
+                  site={siteConfig} 
+                  selectedDay={selectedDay} 
                 />
-                <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
-
-                {activeTab === "meteo" && (
-                  <MeteoTab
-                    currentData={currentData}
-                    dayData={dayData}
-                    site={{ alt: site!.altitude, name: site!.name }}
-                    thermalDelta={thermalDelta}
-                    stabilityIndex={stabilityIndex}
-                    modelName={activeModel}
-                    cape={currentCape?.cape}
-                    liftedIndex={currentCape?.liftedIndex}
-                    cin={currentCape?.cin}
-                  />
-                )}
-
-                {activeTab === "venti" && (
-                  <VentiInterpolatiTab
-                    lat={site!.lat}
-                    lon={site!.lon}
-                    quotaDecollo={site!.altitude}
-                    selectedDay={selectedDay}
-                    oraCorrente={selectedHour}
-                    onOraChange={setSelectedHour}
-                    siteName={site!.name}
-                  />
-                )}
-                {activeTab === "termiche" && (
-                  <TermicheTab
-                    currentData={currentData}
-                    dayData={dayData}
-                    site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name }}
-                  />
-                )}
-                {activeTab === "analisi" && (
-                  <AnalisiMeteo
-                    currentData={currentData}
-                    dayData={dayData}
-                    site={{ alt: site!.altitude, lat: site!.lat, lon: site!.lon, name: site!.name, exposure: site!.exposure }}
-                    cape={currentCape?.cape}
-                    liftedIndex={currentCape?.liftedIndex}
-                    cin={currentCape?.cin}
-                  />
-                )}
               </>
             )}
             {!hasData && (
@@ -174,7 +111,6 @@ export default function Index() {
         </div>
       </main>
       <Footer />
-      <DiagnosticaPanel />
     </div>
   );
 }
