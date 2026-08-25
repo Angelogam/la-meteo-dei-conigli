@@ -3,7 +3,6 @@
 import React, { useMemo } from "react";
 import type { HourData } from "@/types/meteo";
 import { Mountain, Wind } from "lucide-react";
-import { calcolaTermiche } from "@/utils/termiche";
 
 interface WindgramMatrixProps {
   dayData: HourData[];
@@ -11,14 +10,14 @@ interface WindgramMatrixProps {
   altitude: number;
   selectedHour?: number;
   onHourSelect?: (hour: number) => void;
-  selectedDay?: number; // 0=oggi, 1=domani, 2=dopodomani
-  dateLabel?: string; // Es. "DOMENICA 31 AGOSTO"
+  selectedDay?: number;
+  dateLabel?: string;
 }
 
 // Ore mostrate nel grafico (estese 8:00 - 19:00)
 const DISPLAY_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 
-// Colore freccia e numero in base alla velocità (km/h) identico a SoaringMET
+// Colore freccia e numero in base alla velocità (km/h) - scala SoaringMET
 function getWindArrowColor(speed: number): { fill: string; stroke: string; text: string } {
   if (speed <= 4) return { fill: "#0284c7", stroke: "#0369a1", text: "#0284c7" };
   if (speed <= 8) return { fill: "#0d9488", stroke: "#0f766e", text: "#0d9488" };
@@ -51,7 +50,7 @@ function WindArrowIcon({ deg, color }: { deg: number; color: { fill: string; str
   );
 }
 
-// Icona nuvola cumulo con percentuale - MOLTO PIÙ SCURA E VISIBILE
+// Icona nuvola cumulo con percentuale
 function CloudIcon({ cloudCover }: { cloudCover: number }) {
   return (
     <div className="flex flex-col items-center gap-0.5">
@@ -67,25 +66,108 @@ function CloudIcon({ cloudCover }: { cloudCover: number }) {
   );
 }
 
-// Interpolazione lineare tra due livelli - CORRETTA
-function interpolateWind(
-  alt: number,
-  lower: { alt: number; speed: number; dir: number } | null,
-  upper: { alt: number; speed: number; dir: number } | null
+/**
+ * ALGORITMO VENTI REALI - Interpola i venti dai livelli di pressione Open-Meteo
+ * Livelli reali: 925hPa (~750m), 850hPa (~1450m), 700hPa (~3100m), 500hPa (~5600m)
+ * Più superficie 10m (ground level)
+ */
+function interpolateWindAtAltitude(
+  targetAlt: number,
+  realLevels: { alt: number; speed: number; dir: number }[]
 ): { speed: number; dir: number } | null {
-  if (!lower && !upper) return null;
-  if (!lower) return { speed: Math.round(upper!.speed), dir: Math.round(upper!.dir) };
-  if (!upper) return { speed: Math.round(lower.speed), dir: Math.round(lower.dir) };
+  if (realLevels.length === 0) return null;
+  if (realLevels.length === 1) return { speed: Math.round(realLevels[0].speed), dir: Math.round(realLevels[0].dir) };
+
+  // Ordina per quota CRESCENTE
+  const sorted = [...realLevels].sort((a, b) => a.alt - b.alt);
+
+  // Se targetAlt è sotto il livello più basso -> usa il più basso
+  if (targetAlt <= sorted[0].alt) {
+    return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
+  }
+
+  // Se targetAlt è sopra il livello più alto -> estrapola con gradiente
+  if (targetAlt >= sorted[sorted.length - 1].alt) {
+    const top = sorted[sorted.length - 1];
+    const below = sorted[sorted.length - 2];
+    const altDiff = top.alt - below.alt;
+    const speedDiff = top.speed - below.speed;
+    const dirDiff = top.dir - below.dir;
+    
+    const ratio = (targetAlt - top.alt) / Math.max(1, altDiff);
+    const speed = Math.max(0, top.speed + speedDiff * ratio * 0.5); // smorza estrapolazione
+    let dir = top.dir + dirDiff * ratio * 0.5;
+    dir = ((dir % 360) + 360) % 360;
+    
+    return { speed: Math.round(speed), dir: Math.round(dir) };
+  }
+
+  // Trova i due livelli che racchiudono targetAlt
+  for (let i = 0; i < sorted.length - 1; i++) {
+    if (sorted[i].alt <= targetAlt && sorted[i + 1].alt >= targetAlt) {
+      const lower = sorted[i];
+      const upper = sorted[i + 1];
+      
+      const ratio = (targetAlt - lower.alt) / (upper.alt - lower.alt);
+      const speed = lower.speed + ratio * (upper.speed - lower.speed);
+      
+      // Interpola direzione (gestisce passaggio 360->0)
+      let diffDir = upper.dir - lower.dir;
+      if (diffDir > 180) diffDir -= 360;
+      if (diffDir < -180) diffDir += 360;
+      let dir = lower.dir + diffDir * ratio;
+      dir = ((dir % 360) + 360) % 360;
+      
+      return { speed: Math.round(speed), dir: Math.round(dir) };
+    }
+  }
+
+  return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
+}
+
+/**
+ * Costruisce i livelli reali di vento per un'ora specifica dai dati Open-Meteo
+ */
+function buildRealWindLevels(h: HourData, siteAltitude: number): { alt: number; speed: number; dir: number }[] {
+  const levels: { alt: number; speed: number; dir: number }[] = [];
+
+  // 1. Superficie (10m AGL) - quota = altitudine sito - 10m circa
+  if (h.windSpeed !== undefined && h.windDir !== undefined) {
+    levels.push({ 
+      alt: Math.max(0, siteAltitude - 10), 
+      speed: h.windSpeed, 
+      dir: h.windDir 
+    });
+  }
+
+  // 2. Livelli di pressione REALI da Open-Meteo - quote standard atmosphere
+  // 925 hPa ≈ 750m
+  if (h.windSpeed925 !== undefined && h.windDir925 !== undefined && h.windSpeed925 !== null && h.windDir925 !== null) {
+    levels.push({ alt: 750, speed: h.windSpeed925, dir: h.windDir925 });
+  }
   
-  const ratio = (alt - lower.alt) / (upper.alt - lower.alt);
-  const speed = lower.speed + ratio * (upper.speed - lower.speed);
+  // 850 hPa ≈ 1450m
+  if (h.windSpeed850 !== undefined && h.windDir850 !== undefined && h.windSpeed850 !== null && h.windDir850 !== null) {
+    levels.push({ alt: 1450, speed: h.windSpeed850, dir: h.windDir850 });
+  }
   
-  let diffDir = upper.dir - lower.dir;
-  if (diffDir > 180) diffDir -= 360;
-  if (diffDir < -180) diffDir += 360;
-  const dir = ((lower.dir + diffDir * ratio) % 360 + 360) % 360;
+  // 700 hPa ≈ 3100m
+  if (h.windSpeed700 !== undefined && h.windDir700 !== undefined && h.windSpeed700 !== null && h.windDir700 !== null) {
+    levels.push({ alt: 3100, speed: h.windSpeed700, dir: h.windDir700 });
+  }
   
-  return { speed: Math.round(speed), dir: Math.round(dir) };
+  // 500 hPa ≈ 5600m
+  if (h.windSpeed500 !== undefined && h.windDir500 !== undefined && h.windSpeed500 !== null && h.windDir500 !== null) {
+    levels.push({ alt: 5600, speed: h.windSpeed500, dir: h.windDir500 });
+  }
+
+  // 300 hPa ≈ 9000m (opzionale)
+  if (h.windSpeed300 !== undefined && h.windDir300 !== undefined && h.windSpeed300 !== null && h.windDir300 !== null) {
+    levels.push({ alt: 9000, speed: h.windSpeed300, dir: h.windDir300 });
+  }
+
+  // Ordina per quota CRESCENTE
+  return levels.sort((a, b) => a.alt - b.alt);
 }
 
 export default function WindgramMatrix({
@@ -114,14 +196,14 @@ export default function WindgramMatrix({
     const h = hourlyMap.get(12);
     if (!h) return false;
     return !!(
-      h.windSpeed925 !== undefined && h.windDir925 !== undefined ||
-      h.windSpeed850 !== undefined && h.windDir850 !== undefined ||
-      h.windSpeed700 !== undefined && h.windDir700 !== undefined ||
-      h.windSpeed500 !== undefined && h.windDir500 !== undefined
+      (h.windSpeed925 !== undefined && h.windSpeed925 !== null) ||
+      (h.windSpeed850 !== undefined && h.windSpeed850 !== null) ||
+      (h.windSpeed700 !== undefined && h.windSpeed700 !== null) ||
+      (h.windSpeed500 !== undefined && h.windSpeed500 !== null)
     );
   }, [hourlyMap]);
 
-  // STEP 250m - Quota base decollo arrotondata per difetto
+  // STEP 250m - Quota base decollo arrotondata per difetto al multiplo di 250
   const baseStep = 250;
   const baseDecolloFloor = Math.floor(altitude / baseStep) * baseStep;
   const maxAlt = 4000; // MAX 4000m per visualizzazione
@@ -147,18 +229,16 @@ export default function WindgramMatrix({
     DISPLAY_HOURS.forEach((hr) => {
       const h = hourlyMap.get(hr);
       if (h) {
-        const t = calcolaTermiche(h, altitude);
         const spread = Math.max(1, h.temperature - (h.dewPoint ?? (h.temperature - 8)));
         const lcl = Math.round(altitude + spread * 125);
         data[hr] = {
-          top: t.top,
-          base: t.base,
-          rateo: t.rateo,
+          top: Math.min(3500, altitude + Math.max(500, spread * 100)),
+          base: Math.max(altitude + 100, lcl),
+          rateo: Math.max(0.1, spread * 0.15),
           cloudBase: Math.min(lcl, 3500),
           cloudCover: h.cloudCover ?? 30,
         };
       } else {
-        // Fallback se manca l'ora
         data[hr] = {
           top: altitude + 800,
           base: altitude + 200,
@@ -195,7 +275,7 @@ export default function WindgramMatrix({
     return "transparent";
   };
 
-  // Costruisce i dati vento REALI per ogni ora e quota (interpolati dai livelli di pressione)
+  // COSTRUISCE DATI VENTO REALI per ogni ora e quota usando l'algoritmo di interpolazione
   const windDataByHourAlt = useMemo(() => {
     const result: Record<number, Record<number, { speed: number; dir: number }>> = {};
     
@@ -205,30 +285,8 @@ export default function WindgramMatrix({
       
       if (!h) return;
 
-      // Raccolta livelli reali disponibili per quest'ora
-      const realLevels: { alt: number; speed: number; dir: number }[] = [];
-      
-      // Superficie (10m) - USA DATI REALI
-      if (h.windSpeed !== undefined && h.windDir !== undefined) {
-        realLevels.push({ alt: Math.max(0, altitude - 50), speed: h.windSpeed, dir: h.windDir });
-      }
-      
-      // Livelli di pressione reali Open-Meteo - ORDINE CORRETTO per quota
-      if (h.windSpeed925 !== undefined && h.windDir925 !== undefined) {
-        realLevels.push({ alt: 750, speed: h.windSpeed925, dir: h.windDir925 });
-      }
-      if (h.windSpeed850 !== undefined && h.windDir850 !== undefined) {
-        realLevels.push({ alt: 1450, speed: h.windSpeed850, dir: h.windDir850 });
-      }
-      if (h.windSpeed700 !== undefined && h.windDir700 !== undefined) {
-        realLevels.push({ alt: 3100, speed: h.windSpeed700, dir: h.windDir700 });
-      }
-      if (h.windSpeed500 !== undefined && h.windDir500 !== undefined) {
-        realLevels.push({ alt: 5600, speed: h.windSpeed500, dir: h.windDir500 });
-      }
-      
-      // Ordina per quota CRESCENTE
-      realLevels.sort((a, b) => a.alt - b.alt);
+      // Costruisce livelli REALI per quest'ora
+      const realLevels = buildRealWindLevels(h, altitude);
       
       if (realLevels.length === 0) return;
       
@@ -245,39 +303,6 @@ export default function WindgramMatrix({
     
     return result;
   }, [hourlyMap, activeAltitudes, altitude]);
-
-  // Funzione helper per interpolazione
-  function interpolateWindAtAltitude(
-    targetAlt: number,
-    levels: { alt: number; speed: number; dir: number }[]
-  ): { speed: number; dir: number } | null {
-    if (levels.length === 0) return null;
-    if (levels.length === 1) return { speed: Math.round(levels[0].speed), dir: Math.round(levels[0].dir) };
-    
-    // Trova i due livelli che racchiudono targetAlt
-    let lower = levels[0];
-    let upper = levels[levels.length - 1];
-    
-    for (let i = 0; i < levels.length - 1; i++) {
-      if (levels[i].alt <= targetAlt && levels[i + 1].alt >= targetAlt) {
-        lower = levels[i];
-        upper = levels[i + 1];
-        break;
-      }
-    }
-    
-    // Se targetAlt è sotto il livello più basso
-    if (targetAlt < levels[0].alt) {
-      return { speed: Math.round(levels[0].speed), dir: Math.round(levels[0].dir) };
-    }
-    
-    // Se targetAlt è sopra il livello più alto
-    if (targetAlt > levels[levels.length - 1].alt) {
-      return { speed: Math.round(levels[levels.length - 1].speed), dir: Math.round(levels[levels.length - 1].dir) };
-    }
-    
-    return interpolateWind(targetAlt, lower, upper);
-  }
 
   // Per ogni ora, trova la riga (quota) più vicina alla cloud base
   const cloudBaseRow = useMemo(() => {
@@ -303,12 +328,12 @@ export default function WindgramMatrix({
   const dataSourceBadge = hasRealPressureData ? (
     <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold flex items-center gap-1">
       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-      Dati reali Open-Meteo (925/850/700/500 hPa)
+      Dati REALI Open-Meteo (925/850/700/500 hPa)
     </span>
   ) : (
     <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-bold flex items-center gap-1">
       <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-      Estrapolato da superficie (mancano livelli pressione)
+      Solo superficie - mancano livelli pressione
     </span>
   );
 
@@ -405,7 +430,6 @@ export default function WindgramMatrix({
                   >
                     <div className="flex flex-col items-center gap-0.5">
                       <span>{hr}h</span>
-                      {/* Mostra temperatura in header ora */}
                       <span className="text-[10px] font-normal text-slate-500">
                         {(() => {
                           const h = hourlyMap.get(hr);
@@ -420,17 +444,21 @@ export default function WindgramMatrix({
             <tbody>
               {activeAltitudes.map((alt, rowIdx) => {
                 const isMajorLevel = alt % 500 === 0;
+                const isDecolloLevel = alt === baseDecolloFloor;
                 return (
-                  <tr key={`tr-${alt}`} className={`border-b border-slate-100 transition-colors ${isMajorLevel ? "font-bold" : ""}`}>
+                  <tr key={`tr-${alt}`} className={`border-b border-slate-100 transition-colors ${isMajorLevel ? "font-bold" : ""} ${isDecolloLevel ? "bg-emerald-50" : ""}`}>
                     {/* Colonna quota a SINISTRA */}
                     <td
                       className={`py-1.5 px-3 text-left font-bold sticky left-0 z-10 border-r border-slate-200 text-[11px] ${
                         isMajorLevel
                           ? "bg-slate-100 text-slate-900"
-                          : "bg-slate-50 text-slate-700"
+                          : isDecolloLevel
+                            ? "bg-emerald-50 text-emerald-900"
+                            : "bg-slate-50 text-slate-700"
                       }`}
                     >
                       {alt}
+                      {isDecolloLevel && <span className="text-emerald-600 ml-1 text-[9px]">DECOLLO</span>}
                     </td>
                     {DISPLAY_HOURS.map((hr) => {
                       const w = windDataByHourAlt[hr]?.[alt];
