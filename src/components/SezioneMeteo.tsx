@@ -23,9 +23,6 @@ export default function SezioneMeteo() {
 
   if (!site) return null;
 
-  const siteAlt = { alt: site.elevation_m };
-  const siteFull = { alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.name, exposure: site.exposure };
-
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 bg-slate-800/40 rounded-2xl p-1 border border-slate-700/30">
@@ -69,7 +66,7 @@ export default function SezioneMeteo() {
         <MeteoTab
           currentData={currentData}
           dayData={dayData}
-          site={siteAlt}
+          site={{ alt: site.elevation_m }}
           thermalDelta={thermalDelta}
           stabilityIndex={{ label: "Stabile", color: "#4fc3f7" }}
           modelName={activeModel}
@@ -80,18 +77,18 @@ export default function SezioneMeteo() {
       )}
       {activeTab === "venti" && (
         <VentiTab
-          currentData={currentData}
-          dayData={dayData}
-          site={siteFull}
+          lat={site.lat}
+          lon={site.lon}
+          quotaDecollo={site.elevation_m}
           selectedDay={selectedDay}
-          onSelect={() => {}}
+          siteName={site.name}
         />
       )}
       {activeTab === "termiche" && (
-        <TermicheTab currentData={currentData} dayData={dayData} site={siteFull} />
+        <TermicheTab currentData={currentData} dayData={dayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.name }} />
       )}
       {activeTab === "analisi" && (
-        <AnalisiTab currentData={currentData} dayData={dayData} site={siteFull} />
+        <AnalisiTab currentData={currentData} dayData={dayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.name, exposure: site.exposure }} />
       )}
     </div>
   );

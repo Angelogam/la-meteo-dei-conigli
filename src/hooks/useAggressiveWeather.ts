@@ -1,10 +1,23 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { getAllAggressiveWeather, DECOLLI_AGGRESSIVI, type AggressiveWeatherResult, type DecolloConfig } from "@/services/aggressiveWeather";
+import { getAllAggressiveWeather, DECOLLI_AGGRESSIVI } from "@/services/aggressiveWeather";
 import { DECOLLI } from "@/data/decolli";
 
-const REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minuti
+interface AggressiveWeatherResult {
+  temp: string;
+  rain: string;
+  cloud: string;
+  wind: string;
+  stato: string;
+  baseNubi: string;
+  termiche: string;
+  indice: number;
+  indiceLabel: string;
+  fonte: string;
+}
+
+const REFRESH_INTERVAL = 15 * 60 * 1000;
 
 export function useAggressiveWeather() {
   const [weatherData, setWeatherData] = useState<Map<string, AggressiveWeatherResult>>(new Map());
@@ -13,7 +26,6 @@ export function useAggressiveWeather() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Mappa i decolli esistenti con i nuovi dati aggressivi
   const mergedDecolli = useMemo(() => {
     return DECOLLI.map(d => {
       const aggressive = weatherData.get(d.name);
@@ -45,7 +57,6 @@ export function useAggressiveWeather() {
     return () => clearInterval(interval);
   }, [loadWeather]);
 
-  // Trova il decollo selezionato con dati aggressivi
   const getSelectedDecollo = useCallback((selectedId: string) => {
     return mergedDecolli.find(d => d.id === selectedId);
   }, [mergedDecolli]);

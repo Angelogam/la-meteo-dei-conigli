@@ -3,7 +3,7 @@
 import React, { useMemo } from "react";
 import { HourData } from "@/types/meteo";
 import { calcolaTermiche } from "@/utils/termiche";
-import { Thermometer, Wind, Cloud, Droplets, Sun, TrendingUp, AlertTriangle } from "lucide-react";
+import { Thermometer, Wind, Cloud, Droplets, Sun, TrendingUp, AlertTriangle, MapPin } from "lucide-react";
 import SkewTDiagram from "@/components/SkewTDiagram";
 
 interface TermicheTabProps {
@@ -42,7 +42,6 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Intestazione con nome decollo */}
       <div className="bg-slate-800/60 border border-emerald-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
         <MapPin className="w-5 h-5 text-emerald-400 shrink-0" />
         <div>
@@ -51,7 +50,6 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
         </div>
       </div>
 
-      {/* === DIAGRAMMA AEROLOGICO (Skew-T) STILE ALPIUM === */}
       <SkewTDiagram
         latitude={site.lat}
         longitude={site.lon}
@@ -61,7 +59,6 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
         selectedDay={0}
       />
 
-      {/* Riepilogo */}
       <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5">
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
           <Thermometer className="w-5 h-5 text-orange-400" />
@@ -89,7 +86,6 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
         </div>
       </div>
 
-      {/* Tabella oraria dettagliata */}
       <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-700/30">
           <TrendingUp className="w-4 h-4 text-orange-400" />

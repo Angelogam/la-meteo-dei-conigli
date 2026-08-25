@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { getAllMeteoDecolliAggressivo, type MeteoDecollo } from "@/services/threeSourceWeather";
+import { getAllMeteoDecolliAggressivo } from "@/services/threeSourceWeather";
+import type { MeteoDecollo } from "@/services/threeSourceWeather";
 import { DECOLLI } from "@/data/decolli";
 
-const REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minuti
+export type { MeteoDecollo };
+
+const REFRESH_INTERVAL = 15 * 60 * 1000;
 
 export function useThreeSourceWeather() {
   const [weatherData, setWeatherData] = useState<Map<string, MeteoDecollo>>(new Map());
