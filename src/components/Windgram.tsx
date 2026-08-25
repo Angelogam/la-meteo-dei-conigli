@@ -18,8 +18,8 @@ function getWindDirName(deg: number): string {
 }
 
 function getWindArrow(deg: number): string {
-  if (deg == null) return "→";
-  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
+  if (deg == null) return "\u2192";
+  const arrows = ["\u2191", "\u2197", "\u2192", "\u2198", "\u2193", "\u2199", "\u2190", "\u2196"];
   return arrows[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
 }
 
@@ -45,11 +45,11 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
     if (!dayData || dayData.length === 0) return [];
     
     return dayData
-      .filter(h => {
+      .filter((h) => {
         const ora = new Date(h.time).getHours();
         return ora >= 8 && ora <= 19;
       })
-      .map(h => {
+      .map((h) => {
         const ora = new Date(h.time).getHours();
         const speed = h.windSpeed ?? 0;
         const dir = h.windDir ?? 0;
@@ -80,12 +80,12 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
 
   const stats = useMemo(() => {
     if (oreVolo.length === 0) return null;
-    const speeds = oreVolo.map(o => o.speed);
+    const speeds = oreVolo.map((o) => o.speed);
     const avgSpeed = speeds.reduce((a, b) => a + b, 0) / speeds.length;
     const maxSpeed = Math.max(...speeds);
     const minSpeed = Math.min(...speeds);
     const dominantDir = oreVolo
-      .map(o => o.dirName)
+      .map((o) => o.dirName)
       .reduce((acc, dir) => {
         acc[dir] = (acc[dir] || 0) + 1;
         return acc;
@@ -100,7 +100,7 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
       <div className="bg-slate-900/80 border border-slate-700/60 rounded-2xl p-6 shadow-xl">
         <div className="flex items-center gap-3 mb-4">
           <Wind className="w-6 h-6 text-emerald-400" />
-          <h3 className="text-white font-bold text-lg">Windgram — {siteName}</h3>
+          <h3 className="text-white font-bold text-lg">Windgram &mdash; {siteName}</h3>
         </div>
         <div className="text-center py-8">
           <Mountain className="w-12 h-12 text-slate-600 mx-auto mb-3" />
@@ -111,8 +111,8 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
     );
   }
 
-  const maxSpeed = Math.max(...oreVolo.map(o => o.speed), 1);
-  const maxGust = Math.max(...oreVolo.map(o => o.gust), 1);
+  const maxSpeed = Math.max(...oreVolo.map((o) => o.speed), 1);
+  const maxGust = Math.max(...oreVolo.map((o) => o.gust), 1);
 
   return (
     <div className="bg-slate-900/80 border border-slate-700/60 rounded-2xl p-4 sm:p-6 shadow-xl">
@@ -123,13 +123,13 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
             <Wind className="w-5 h-5 text-cyan-400" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white">Windgram — {siteName}</h3>
+            <h3 className="text-lg font-bold text-white">Windgram &mdash; {siteName}</h3>
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <MapPin className="w-3 h-3" />
               <span>{altitude}m slm</span>
-              <span className="text-slate-600">·</span>
+              <span className="text-slate-600">&middot;</span>
               <Calendar className="w-3 h-3" />
-              <span>Ore 8:00–19:00</span>
+              <span>Ore 8:00&ndash;19:00</span>
             </div>
           </div>
         </div>
@@ -171,16 +171,16 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
                   <div className="text-xs font-bold text-white">{String(o.ora).padStart(2, "0")}:00</div>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-cyan-300">{o.speed} km/h</span>
-                    <span className="text-slate-500">·</span>
+                    <span className="text-slate-500">&middot;</span>
                     <span className="text-orange-300">raf. {o.gust}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-blue-300">{o.arrow} {o.dirName}</span>
-                    <span className="text-slate-500">·</span>
-                    <span className="text-amber-300">{o.temp}°C</span>
+                    <span className="text-slate-500">&middot;</span>
+                    <span className="text-amber-300">{o.temp}&deg;C</span>
                   </div>
                   <div className="text-[10px] text-slate-400 mt-0.5">
-                    Nuvole {o.cloud}% · Base {o.cloudBase}m
+                    Nuvole {o.cloud}% &middot; Base {o.cloudBase}m
                   </div>
                 </div>
 
@@ -228,7 +228,7 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
           })}
         </div>
 
-        {/* Legenda colori - using < and > entities */}
+        {/* Legenda colori - using < and > entities for JSX safety */}
         <div className="flex flex-wrap items-center justify-center gap-3 mt-4 pt-3 border-t border-slate-700/30">
           <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
             <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#22c55e" }} />
@@ -236,15 +236,15 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
           </div>
           <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
             <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#84cc16" }} />
-            <span>5–12</span>
+            <span>5&ndash;12</span>
           </div>
           <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
             <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#eab308" }} />
-            <span>12–20</span>
+            <span>12&ndash;20</span>
           </div>
           <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
             <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#f97316" }} />
-            <span>20–28</span>
+            <span>20&ndash;28</span>
           </div>
           <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
             <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#ef4444" }} />
@@ -287,13 +287,13 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
                   <span className="font-bold" style={{ color: o.color }}>{o.speed} km/h</span>
                 </td>
                 <td className="py-2 px-3 text-orange-300">
-                  {o.gust > o.speed ? `${o.gust} km/h` : "—"}
+                  {o.gust > o.speed ? `${o.gust} km/h` : "\u2014"}
                 </td>
                 <td className="py-2 px-3 text-blue-300">
-                  {o.arrow} {o.dirName} ({Math.round(o.dir)}°)
+                  {o.arrow} {o.dirName} ({Math.round(o.dir)}&deg;)
                 </td>
                 <td className="py-2 px-3 text-slate-300">{o.cloud}%</td>
-                <td className="py-2 px-3 text-amber-300">{Math.round(o.temp)}°C</td>
+                <td className="py-2 px-3 text-amber-300">{Math.round(o.temp)}&deg;C</td>
                 <td className="py-2 pl-3 text-purple-300">{o.cloudBase}m</td>
                 <td className="py-2 pl-3">
                   <span 
