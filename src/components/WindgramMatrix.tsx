@@ -68,17 +68,14 @@ function CloudIcon({ cloudCover }: { cloudCover: number }) {
 
 /**
  * ALGORITMO VENTI REALI - Interpola i venti dai livelli di pressione Open-Meteo
- * Livelli reali con quote standard atmosphere (metri slm):
- * - Superficie 10m: quota sito
- * - 1000 hPa: ~100m (spesso ~superficie)
- * - 925 hPa: ~750m
- * - 850 hPa: ~1450m
- * - 700 hPa: ~3000m
- * - 600 hPa: ~4200m
- * - 500 hPa: ~5500m
- * - 300 hPa: ~9000m
- * 
- * NOTA: Open-Meteo restituisce i venti in km/h
+ * Quote reali dei livelli hPa (International Standard Atmosphere):
+ * - 1000 hPa: ~110m
+ * - 925 hPa: ~760m
+ * - 850 hPa: ~1457m
+ * - 700 hPa: ~3012m
+ * - 600 hPa: ~4206m
+ * - 500 hPa: ~5574m
+ * - 300 hPa: ~9164m
  */
 function interpolateWindAtAltitude(
   targetAlt: number,
@@ -87,15 +84,12 @@ function interpolateWindAtAltitude(
   if (realLevels.length === 0) return null;
   if (realLevels.length === 1) return { speed: Math.round(realLevels[0].speed), dir: Math.round(realLevels[0].dir) };
 
-  // Ordina per quota CRESCENTE
   const sorted = [...realLevels].sort((a, b) => a.alt - b.alt);
 
-  // Se targetAlt è sotto il livello più basso -> usa il più basso
   if (targetAlt <= sorted[0].alt) {
     return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
   }
 
-  // Se targetAlt è sopra il livello più alto -> estrapola con gradiente smorzato
   if (targetAlt >= sorted[sorted.length - 1].alt) {
     const top = sorted[sorted.length - 1];
     const below = sorted[sorted.length - 2];
@@ -104,7 +98,6 @@ function interpolateWindAtAltitude(
     const dirDiff = top.dir - below.dir;
     
     const ratio = (targetAlt - top.alt) / Math.max(1, altDiff);
-    // Smorza l'estrapolazione per evitare venti irrealistici
     const speed = Math.max(0, top.speed + speedDiff * ratio * 0.3);
     let dir = top.dir + dirDiff * ratio * 0.3;
     dir = ((dir % 360) + 360) % 360;
@@ -112,7 +105,6 @@ function interpolateWindAtAltitude(
     return { speed: Math.round(speed), dir: Math.round(dir) };
   }
 
-  // Trova i due livelli che racchiudono targetAlt
   for (let i = 0; i < sorted.length - 1; i++) {
     if (sorted[i].alt <= targetAlt && sorted[i + 1].alt >= targetAlt) {
       const lower = sorted[i];
@@ -121,7 +113,6 @@ function interpolateWindAtAltitude(
       const ratio = (targetAlt - lower.alt) / (upper.alt - lower.alt);
       const speed = lower.speed + ratio * (upper.speed - lower.speed);
       
-      // Interpola direzione (gestisce passaggio 360->0)
       let diffDir = upper.dir - lower.dir;
       if (diffDir > 180) diffDir -= 360;
       if (diffDir < -180) diffDir += 360;
@@ -143,7 +134,6 @@ function buildRealWindLevels(h: HourData, siteAltitude: number): { alt: number; 
   const levels: { alt: number; speed: number; dir: number }[] = [];
 
   // 1. Superficie (10m AGL) - quota = altitudine sito
-  // Open-Meteo wind_speed_10m è in km/h
   if (h.windSpeed !== undefined && h.windDir !== undefined && 
       h.windSpeed !== null && h.windDir !== null) {
     levels.push({ 
@@ -153,17 +143,15 @@ function buildRealWindLevels(h: HourData, siteAltitude: number): { alt: number; 
     });
   }
 
-  // 2. Livelli di pressione REALI da Open-Meteo - quote standard atmosphere
-  // Mappatura: livello hPa -> quota approssimativa (metri slm)
-  // NOTA: Open-Meteo li restituisce in km/h
+  // 2. Livelli di pressione REALI da Open-Meteo - quote International Standard Atmosphere
   const pressureLevels = [
-    { key: 'windSpeed1000', dirKey: 'windDir1000', alt: 100 },     // 1000 hPa ~ 100m
-    { key: 'windSpeed925', dirKey: 'windDir925', alt: 750 },       // 925 hPa ~ 750m
-    { key: 'windSpeed850', dirKey: 'windDir850', alt: 1450 },      // 850 hPa ~ 1450m
-    { key: 'windSpeed700', dirKey: 'windDir700', alt: 3000 },      // 700 hPa ~ 3000m
-    { key: 'windSpeed600', dirKey: 'windDir600', alt: 4200 },      // 600 hPa ~ 4200m
-    { key: 'windSpeed500', dirKey: 'windDir500', alt: 5500 },      // 500 hPa ~ 5500m
-    { key: 'windSpeed300', dirKey: 'windDir300', alt: 9000 },      // 300 hPa ~ 9000m
+    { key: 'windSpeed1000', dirKey: 'windDir1000', alt: 110 },     // 1000 hPa ~ 110m
+    { key: 'windSpeed925', dirKey: 'windDir925', alt: 760 },       // 925 hPa ~ 760m
+    { key: 'windSpeed850', dirKey: 'windDir850', alt: 1457 },      // 850 hPa ~ 1457m
+    { key: 'windSpeed700', dirKey: 'windDir700', alt: 3012 },      // 700 hPa ~ 3012m
+    { key: 'windSpeed600', dirKey: 'windDir600', alt: 4206 },      // 600 hPa ~ 4206m
+    { key: 'windSpeed500', dirKey: 'windDir500', alt: 5574 },      // 500 hPa ~ 5574m
+    { key: 'windSpeed300', dirKey: 'windDir300', alt: 9164 },      // 300 hPa ~ 9164m
   ];
 
   for (const pl of pressureLevels) {
@@ -197,7 +185,6 @@ export default function WindgramMatrix({
   selectedDay = 0,
   dateLabel = "",
 }: WindgramMatrixProps) {
-  // Mappa dati orari da Open-Meteo FILTRATI PER IL GIORNO SELEZIONATO
   const hourlyMap = useMemo(() => {
     const map = new Map<number, HourData>();
     if (dayData && dayData.length > 0) {
@@ -209,7 +196,6 @@ export default function WindgramMatrix({
     return map;
   }, [dayData]);
 
-  // Verifica se abbiamo dati reali ai livelli di pressione
   const hasRealPressureData = useMemo(() => {
     const h = hourlyMap.get(12);
     if (!h) return false;
@@ -222,12 +208,10 @@ export default function WindgramMatrix({
     );
   }, [hourlyMap]);
 
-  // STEP 250m - Quota base decollo arrotondata per difetto al multiplo di 250
   const baseStep = 250;
   const baseDecolloFloor = Math.floor(altitude / baseStep) * baseStep;
-  const maxAlt = 4000; // MAX 4000m per visualizzazione
+  const maxAlt = 4000;
 
-  // Quote attive: dalla quota decollo arrotondata fino a 4000m (invertite: 4000 in alto, decollo in basso)
   const activeAltitudes = useMemo(() => {
     const altitudes: number[] = [];
     for (let alt = maxAlt; alt >= baseDecolloFloor; alt -= baseStep) {
@@ -236,7 +220,6 @@ export default function WindgramMatrix({
     return altitudes;
   }, [baseDecolloFloor, maxAlt]);
 
-  // Calcolo convezione / profilo termico per ogni ora + BASE CUMULI (LCL)
   const hourThermalData = useMemo(() => {
     const data: Record<number, { 
       top: number; 
@@ -270,7 +253,6 @@ export default function WindgramMatrix({
     return data;
   }, [hourlyMap, altitude]);
 
-  // Calcolo colore di sfondo della cella (campana termica SoaringMET)
   const getThermalBgColor = (alt: number, hr: number): string => {
     const thermal = hourThermalData[hr];
     if (!thermal) return "transparent";
@@ -294,7 +276,6 @@ export default function WindgramMatrix({
     return "transparent";
   };
 
-  // COSTRUISCE DATI VENTO REALI per ogni ora e quota usando l'algoritmo di interpolazione
   const windDataByHourAlt = useMemo(() => {
     const result: Record<number, Record<number, { speed: number; dir: number }>> = {};
     
@@ -304,12 +285,10 @@ export default function WindgramMatrix({
       
       if (!h) return;
 
-      // Costruisce livelli REALI per quest'ora
       const realLevels = buildRealWindLevels(h, altitude);
       
       if (realLevels.length === 0) return;
       
-      // Interpola per ogni quota attiva
       activeAltitudes.forEach((alt) => {
         if (alt > 4000) return;
         
@@ -323,7 +302,6 @@ export default function WindgramMatrix({
     return result;
   }, [hourlyMap, activeAltitudes, altitude]);
 
-  // Per ogni ora, trova la riga (quota) più vicina alla cloud base
   const cloudBaseRow = useMemo(() => {
     const map: Record<number, number> = {};
     DISPLAY_HOURS.forEach((hr) => {
@@ -343,7 +321,6 @@ export default function WindgramMatrix({
     return map;
   }, [hourThermalData, activeAltitudes]);
 
-  // Badge indicatore fonte dati
   const dataSourceBadge = hasRealPressureData ? (
     <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold flex items-center gap-1">
       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -356,7 +333,6 @@ export default function WindgramMatrix({
     </span>
   );
 
-  // Formatta data per header
   const headerDate = dateLabel || (() => {
     const d = new Date();
     d.setDate(d.getDate() + selectedDay);
@@ -369,7 +345,6 @@ export default function WindgramMatrix({
     <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
       <div className="w-full bg-[#f8fafc] text-slate-900 border border-slate-200/80 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
         
-        {/* Header con DATA GIORNATA */}
         <div className="p-4 sm:p-5 pb-3">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2.5">
@@ -392,7 +367,6 @@ export default function WindgramMatrix({
           <div className="flex items-center justify-between gap-2 mb-2">
             {dataSourceBadge}
             
-            {/* Legenda Vento */}
             <div className="flex items-center gap-2 text-[11px] overflow-x-auto pb-1 font-sans shrink-0">
               <div className="text-slate-500 font-bold uppercase text-[10px] leading-tight shrink-0 mr-1">
                 VENTO<br />(KM/H):
@@ -409,12 +383,12 @@ export default function WindgramMatrix({
           </div>
         </div>
 
-        {/* Tabella Windgram - Quote a SINISTRA, 4000m in alto, decollo in basso */}
         <div className="overflow-x-auto border-t border-b border-slate-200 bg-white relative">
-          {/* RIGA NUVOLE SOPRA L'HEADER - nuvole alla base cumuli per ogni ora */}
+          {/* RIGA NUVOLE SOPRA L'HEADER - allineata con le colonne ore */}
           <div className="absolute top-0 left-0 right-0 -translate-y-1/2 z-50 pointer-events-none">
-            <div className="flex overflow-x-auto">
-              <div className="w-16 flex-shrink-0" /> {/* Spazio colonna quote */}
+            <div className="flex">
+              {/* Spazio colonna quote - stessa larghezza della colonna quote (48px = w-12) */}
+              <div className="w-12 flex-shrink-0" />
               {DISPLAY_HOURS.map((hr) => {
                 const thermal = hourThermalData[hr];
                 if (!thermal) return <div key={hr} className="w-14 flex-shrink-0" />;
@@ -423,7 +397,7 @@ export default function WindgramMatrix({
                   return <div key={hr} className="w-14 flex-shrink-0" />;
                 }
                 return (
-                  <div key={hr} className="w-14 flex-shrink-0 relative">
+                  <div key={hr} className="w-14 flex-shrink-0 relative flex justify-center">
                     <CloudIcon cloudCover={thermal.cloudCover} />
                   </div>
                 );
@@ -434,8 +408,9 @@ export default function WindgramMatrix({
           <table className="w-full text-center border-collapse text-xs">
             <thead>
               <tr className="border-b border-slate-200 text-slate-700 bg-slate-100/90 font-bold">
-                <th className="py-2.5 px-3 text-left w-16 sticky left-0 z-20 bg-slate-100 border-r border-slate-200 text-slate-800">
-                  Quota (m)
+                {/* Colonna quota ristretta */}
+                <th className="py-2.5 px-1 text-center w-12 sticky left-0 z-20 bg-slate-100 border-r border-slate-200 text-slate-800 text-[11px]">
+                  Quota
                 </th>
                 {DISPLAY_HOURS.map((hr) => (
                   <th
@@ -466,9 +441,9 @@ export default function WindgramMatrix({
                 const isDecolloLevel = alt === baseDecolloFloor;
                 return (
                   <tr key={`tr-${alt}`} className={`border-b border-slate-100 transition-colors ${isMajorLevel ? "font-bold" : ""} ${isDecolloLevel ? "bg-emerald-50" : ""}`}>
-                    {/* Colonna quota a SINISTRA */}
+                    {/* Colonna quota a SINISTRA - ristretta, centrata, niente più 'DECOLLO' che sfora */}
                     <td
-                      className={`py-1.5 px-3 text-left font-bold sticky left-0 z-10 border-r border-slate-200 text-[11px] ${
+                      className={`py-1.5 px-1 text-center font-bold sticky left-0 z-10 border-r border-slate-200 text-[11px] tabular-nums whitespace-nowrap ${
                         isMajorLevel
                           ? "bg-slate-100 text-slate-900"
                           : isDecolloLevel
@@ -477,7 +452,6 @@ export default function WindgramMatrix({
                       }`}
                     >
                       {alt}
-                      {isDecolloLevel && <span className="text-emerald-600 ml-1 text-[9px]">DECOLLO</span>}
                     </td>
                     {DISPLAY_HOURS.map((hr) => {
                       const w = windDataByHourAlt[hr]?.[alt];
@@ -519,7 +493,6 @@ export default function WindgramMatrix({
           </table>
         </div>
 
-        {/* Legenda inferiore */}
         <div className="p-4 sm:p-5 pt-3 bg-slate-50 border-t border-slate-100 text-xs text-slate-600">
           <div className="flex flex-wrap items-center gap-4 sm:gap-6 mb-2.5">
             <div className="flex items-center gap-2">
