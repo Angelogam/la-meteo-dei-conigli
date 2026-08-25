@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
@@ -31,7 +31,7 @@ export default function Index() {
     selectedDay, setSelectedDay, selectedHour, setSelectedHour,
     activeTab, setActiveTab, lastUpdate, countdown, site, dayData,
     currentData, thermalDelta, enrichedDaily, dateLabels, loadWeather,
-    allHourlyData, activeModel, currentCape,
+    activeModel, currentCape,
   } = useWeatherData();
 
   const { mergedDecolli, loading: aggressiveLoading, lastUpdate: aggressiveLastUpdate } = useThreeSourceWeather();
@@ -98,12 +98,13 @@ export default function Index() {
                 />
                 <PrevisioniGiornaliere enrichedDaily={enrichedDaily} dateLabels={dateLabels} currentData={currentData} dayData={dayData} site={{ name: site!.site_name, altitude: site!.elevation_m, exposure: site!.orientation }} selectedDay={selectedDay} onSelectDay={setSelectedDay} nomeDecollo={site!.site_name} />
                 
-                {/* Windgram integrato sotto le previsioni giornaliere */}
+                {/* Windgram Matrice a Quote & Ore (SoaringMET style) */}
                 <Windgram 
                   dayData={dayData} 
                   siteName={site!.site_name} 
                   altitude={site!.elevation_m}
                   selectedHour={selectedHour}
+                  onHourSelect={setSelectedHour}
                 />
                 
                 <WeatherDashboard dayData={dayData} altitude={site!.elevation_m} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabels[selectedDay] ?? ""} siteName={site!.site_name} />
