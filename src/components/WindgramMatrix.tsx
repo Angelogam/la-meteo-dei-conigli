@@ -53,8 +53,9 @@ function CloudIcon({ cloudCover }: { cloudCover: number }) {
 
 /**
  * Estrae i venti REALI da Open-Meteo per un'ora specifica.
- * Ordine di priorità: quote specifiche (1000-3000m) > livelli hPa > suolo
- * Questi sono dati diretti della griglia, NON interpolazioni.
+ * Usa prima i livelli di pressione hPa (925/850/700/600/500/300),
+ * poi i venti a quote specifiche (1000/1500/2000/2500/3000m) se disponibili.
+ * Questi ultimi sono dati diretti della griglia di previsione, non interpolazioni.
  */
 function buildRealWindLevels(h: HourData, siteAltitude: number): { alt: number; speed: number; dir: number }[] {
   const levels: { alt: number; speed: number; dir: number }[] = [];
@@ -62,11 +63,33 @@ function buildRealWindLevels(h: HourData, siteAltitude: number): { alt: number; 
   // 1. Vento al suolo (10m) - quota = altitudine sito
   if (h.windSpeed !== undefined && h.windDir !== undefined &&
       h.windSpeed !== null && h.windDir !== null) {
-    levels.push({ alt: siteAltitude, speed: Math.max(0, Number(h.windSpeed)), dir: Number(h.windDir) });
+    levels.push({ alt: siteAltitude, speed: Number(h.windSpeed), dir: Number(h.windDir) });
   }
 
-  // 2. Venti a quote specifiche REALI da Open-Meteo (i dati più affidabili)
-  // Questi sono misurati direttamente dalla griglia del modello
+  // 2. Livelli di pressione hPa REALI da Open-Meteo
+  // Conversione ISA standard: hPa → quota approssimativa
+  const pressureLevels = [
+    { key: "1000", alt: 110 },
+    { key: "925",  alt: 760 },
+    { key: "850",  alt: 1457 },
+    { key: "700",  alt: 3012 },
+    { key: "600",  alt: 4206 },
+    { key: "500",  alt: 5574 },
+    { key: "300",  alt: 9164 },
+  ];
+
+  for (const pl of pressureLevels) {
+    const speed = (h as any)[`windSpeed${pl.key}`];
+    const dir = (h as any)[`windDir${pl.key}`];
+    if (speed !== undefined && dir !== undefined &&
+        speed !== null && dir !== null &&
+        !isNaN(Number(speed)) && !isNaN(Number(dir))) {
+      levels.push({ alt: pl.alt, speed: Number(speed), dir: Number(dir) });
+    }
+  }
+
+  // 3. Venti REALI a quote specifiche (dati diretti Open-Meteo, non interpolati)
+  // Questi sono i più affidibili perché misurati direttamente dalla griglia
   const altitudeWinds = [
     { key: "1000", alt: 1000 },
     { key: "1500", alt: 1500 },
@@ -81,52 +104,22 @@ function buildRealWindLevels(h: HourData, siteAltitude: number): { alt: number; 
     if (speed !== undefined && dir !== undefined &&
         speed !== null && dir !== null &&
         !isNaN(Number(speed)) && !isNaN(Number(dir))) {
-      // Validazione fisica: vento a 1500m non può essere > 3x vento al suolo in condizioni normali
-      const groundSpeed = levels.length > 0 ? levels[levels.length-1].speed : 10;
-      const cappedSpeed = Math.min(speed, groundSpeed * 3);
-      levels.push({ alt: aw.alt, speed: Math.max(0, cappedSpeed), dir: Number(dir) });
+      levels.push({ alt: aw.alt, speed: Number(speed), dir: Number(dir) });
     }
   }
 
-  // 3. Livelli di pressione hPa (conversioni ISA standard)
-  // Usati solo se i dati a quota non sono sufficienti
-  const pressureLevels = [
-    { key: "925", alt: 760 },
-    { key: "850", alt: 1457 },
-    { key: "700", alt: 3012 },
-    { key: "600", alt: 4206 },
-    { key: "500", alt: 5574 },
-  ];
-
-  for (const pl of pressureLevels) {
-    const speed = (h as any)[`windSpeed${pl.key}`];
-    const dir = (h as any)[`windDir${pl.key}`];
-    if (speed !== undefined && dir !== undefined &&
-        speed !== null && dir !== null &&
-        !isNaN(Number(speed)) && !isNaN(Number(dir))) {
-      // Conversione ISA: velocità aumenta di ~2.5% ogni 100m in salita in condizioni standard
-      // Ma limitiamo a non più di 2x il vento al suolo per evitare valori irrealistici
-      const groundSpeed = levels.length > 0 ? levels[levels.length-1].speed : 10;
-      const isaSpeed = speed; // Open-Meteo già fornisce valori ISA-corretti
-      levels.push({ alt: pl.alt, speed: Math.max(0, isaSpeed), dir: Number(dir) });
-    }
-  }
-
-  // Ordina per quota CRESCENTE e rimuovi duplicati
+  // Ordina per quota CRESCENTE e rimuovi duplicati (stessa quota)
   const unique = new Map<number, { alt: number; speed: number; dir: number }>();
   for (const l of levels) {
-    // Mantieni il primo valore per quota (solitamente il più realistico)
     if (!unique.has(l.alt)) unique.set(l.alt, l);
   }
   return Array.from(unique.values()).sort((a, b) => a.alt - b.alt);
 }
 
 /**
- * Interpola il vento a una quota target.
- * Se i dati reali arrivano a 3000m, per 4000m usiamo:
- * - Stesso vento di 3000m (conservativo) OPPURE
- * - Vento di 3000m + 10% per i prossimi 1000m (massimo fisico)
- * Mai più di 20% di aumento nei primi 1000m sopra i dati reali.
+ * Interpola linearmente il vento a una qualsiasi quota intermedia
+ * a partire dai livelli reali Open-Meteo.
+ * NON applica limiti conservativi: usa i valori reali del modello.
  */
 function interpolateWindAtAltitude(
   targetAlt: number,
@@ -134,54 +127,39 @@ function interpolateWindAtAltitude(
 ): { speed: number; dir: number } | null {
   if (realLevels.length === 0) return null;
   if (realLevels.length === 1) {
-    // Solo un dato reale: mantienilo o leggero aumento
-    const base = realLevels[0];
-    if (targetAlt <= base.alt * 1.2) {
-      return { speed: Math.round(base.speed), dir: Math.round(base.dir) };
-    }
-    // Aumento massimo 20% per 1000m sopra l'ultimo dato
-    const maxIncrease = base.speed * 0.2;
-    const newSpeed = Math.min(base.speed + maxIncrease, base.speed * 1.2);
-    return { speed: Math.round(newSpeed), dir: Math.round(base.dir) };
+    return { speed: Math.round(realLevels[0].speed), dir: Math.round(realLevels[0].dir) };
   }
 
   const sorted = [...realLevels].sort((a, b) => a.alt - b.alt);
 
-  // Trova il livello più vicino sotto il target
-  let lower = sorted[0];
-  let upper = sorted[sorted.length - 1];
-  let found = false;
+  if (targetAlt <= sorted[0].alt) {
+    return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
+  }
+
+  if (targetAlt >= sorted[sorted.length - 1].alt) {
+    const top = sorted[sorted.length - 1];
+    return { speed: Math.round(top.speed), dir: Math.round(top.dir) };
+  }
 
   for (let i = 0; i < sorted.length - 1; i++) {
     if (sorted[i].alt <= targetAlt && sorted[i + 1].alt >= targetAlt) {
-      lower = sorted[i];
-      upper = sorted[i + 1];
-      found = true;
-      break;
+      const lower = sorted[i];
+      const upper = sorted[i + 1];
+
+      const ratio = (targetAlt - lower.alt) / (upper.alt - lower.alt);
+      const speed = lower.speed + ratio * (upper.speed - lower.speed);
+
+      let diffDir = upper.dir - lower.dir;
+      if (diffDir > 180) diffDir -= 360;
+      if (diffDir < -180) diffDir += 360;
+      let dir = lower.dir + diffDir * ratio;
+      dir = ((dir % 360) + 360) % 360;
+
+      return { speed: Math.round(speed), dir: Math.round(dir) };
     }
   }
 
-  if (!found) {
-    // Target sopra l'ultimo dato: aumento conservativo
-    const base = sorted[sorted.length - 1];
-    const maxIncrease = base.speed * 0.15; // Solo 15% max
-    const newSpeed = Math.min(base.speed + maxIncrease, base.speed * 1.15);
-    return { speed: Math.round(newSpeed), dir: Math.round(base.dir) };
-  }
-
-  // Interpolazione lineare tra due punti reali
-  const ratio = (targetAlt - lower.alt) / (upper.alt - lower.alt);
-  const speed = lower.speed + ratio * (upper.speed - lower.speed);
-
-  // Limite fisico: il vento non può aumentare più di ~15% ogni 1000m in condizioni normali
-  const altitudeDiff = upper.alt - lower.alt;
-  const maxAllowedIncrease = (altitudeDiff / 1000) * 0.15 * lower.speed;
-  const cappedSpeed = Math.min(speed, lower.speed + maxAllowedIncrease);
-
-  let dir = lower.dir + ratio * (upper.dir - lower.dir);
-  dir = ((dir % 360) + 360) % 360;
-
-  return { speed: Math.round(cappedSpeed), dir: Math.round(dir) };
+  return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
 }
 
 export default function WindgramMatrix({
@@ -223,7 +201,10 @@ export default function WindgramMatrix({
     if (!h) return false;
     return !!(
       (h.windSpeed925 !== undefined && h.windSpeed925 !== null) ||
-      (h.windSpeed850 !== undefined && h.windSpeed850 !== null)
+      (h.windSpeed850 !== undefined && h.windSpeed850 !== null) ||
+      (h.windSpeed700 !== undefined && h.windSpeed700 !== null) ||
+      (h.windSpeed600 !== undefined && h.windSpeed600 !== null) ||
+      (h.windSpeed500 !== undefined && h.windSpeed500 !== null)
     );
   }, [hourlyMap]);
 
@@ -286,7 +267,8 @@ export default function WindgramMatrix({
 
   /**
    * Calcola il vento per ogni cella (ora, altitudine)
-   * Usa dati reali Open-Meteo dove disponibili, interpolazione conservativa sopra.
+   * Usa dati reali Open-Meteo dove disponibili, interpolazione lineare tra punti reali.
+   * NON applica limiti conservativi: mostra i valori reali del modello.
    */
   const windDataByHourAlt = useMemo(() => {
     const result: Record<number, Record<number, { speed: number; dir: number }>> = {};
