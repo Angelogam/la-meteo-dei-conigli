@@ -16,6 +16,15 @@ interface WindgramMatrixProps {
 // Ore mostrate nel grafico (estese 8:00 - 19:00)
 const DISPLAY_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 
+// Livelli di pressione reali Open-Meteo con quota approssimativa standard
+const PRESSURE_LEVELS = [
+  { hpa: 1000, alt: 100,   label: "1000 hPa" },
+  { hpa: 925,  alt: 750,  label: "925 hPa" },
+  { hpa: 850,  alt: 1450, label: "850 hPa" },
+  { hpa: 700,  alt: 3100, label: "700 hPa" },
+  { hpa: 500,  alt: 5600, label: "500 hPa" },
+];
+
 // Colore freccia e numero in base alla velocità (km/h) identico a SoaringMET
 function getWindArrowColor(speed: number): { fill: string; stroke: string; text: string } {
   if (speed <= 4) return { fill: "#0284c7", stroke: "#0369a1", text: "#0284c7" };
@@ -64,6 +73,27 @@ function CloudIcon({ cloudCover }: { cloudCover: number }) {
   );
 }
 
+// Interpolazione lineare tra due livelli
+function interpolateWind(
+  alt: number,
+  lower: { alt: number; speed: number; dir: number } | null,
+  upper: { alt: number; speed: number; dir: number } | null
+): { speed: number; dir: number } | null {
+  if (!lower && !upper) return null;
+  if (!lower) return { speed: Math.round(upper!.speed), dir: Math.round(upper!.dir) };
+  if (!upper) return { speed: Math.round(lower.speed), dir: Math.round(lower.dir) };
+  
+  const ratio = (alt - lower.alt) / (upper.alt - lower.alt);
+  const speed = lower.speed + ratio * (upper.speed - lower.speed);
+  
+  let diffDir = upper.dir - lower.dir;
+  if (diffDir > 180) diffDir -= 360;
+  if (diffDir < -180) diffDir += 360;
+  const dir = ((lower.dir + diffDir * ratio) % 360 + 360) % 360;
+  
+  return { speed: Math.round(speed), dir: Math.round(dir) };
+}
+
 export default function WindgramMatrix({
   dayData,
   siteName,
@@ -83,10 +113,22 @@ export default function WindgramMatrix({
     return map;
   }, [dayData]);
 
+  // Verifica se abbiamo dati reali ai livelli di pressione
+  const hasRealPressureData = useMemo(() => {
+    const h = hourlyMap.get(12);
+    if (!h) return false;
+    return !!(
+      h.windSpeed925 !== undefined && h.windDir925 !== undefined ||
+      h.windSpeed850 !== undefined && h.windDir850 !== undefined ||
+      h.windSpeed700 !== undefined && h.windDir700 !== undefined ||
+      h.windSpeed500 !== undefined && h.windDir500 !== undefined
+    );
+  }, [hourlyMap]);
+
   // STEP 250m - Quota base decollo arrotondata per difetto
   const baseStep = 250;
   const baseDecolloFloor = Math.floor(altitude / baseStep) * baseStep;
-  const maxAlt = 4000; // MAX 4000m
+  const maxAlt = 4000; // MAX 4000m per visualizzazione
 
   // Quote attive: dalla quota decollo arrotondata fino a 4000m (invertite: 4000 in alto, decollo in basso)
   const activeAltitudes = useMemo(() => {
@@ -103,21 +145,20 @@ export default function WindgramMatrix({
       top: number; 
       base: number; 
       rateo: number;
-      cloudBase: number;    // LCL - quota base cumuli
-      cloudCover: number;   // % nuvolosità a quella quota
+      cloudBase: number;
+      cloudCover: number;
     }> = {};
     DISPLAY_HOURS.forEach((hr) => {
       const h = hourlyMap.get(hr);
       if (h) {
         const t = calcolaTermiche(h, altitude);
-        // LCL = quota decollo + (T - Td) * 125 ≈ base cumuli
         const spread = Math.max(1, h.temperature - (h.dewPoint ?? (h.temperature - 8)));
         const lcl = Math.round(altitude + spread * 125);
         data[hr] = {
           top: t.top,
           base: t.base,
           rateo: t.rateo,
-          cloudBase: Math.min(lcl, 3500), // cap a 3500m
+          cloudBase: Math.min(lcl, 3500),
           cloudCover: h.cloudCover ?? 30,
         };
       } else {
@@ -146,12 +187,9 @@ export default function WindgramMatrix({
     const thermal = hourThermalData[hr];
     if (!thermal) return "transparent";
 
-    // Termica attiva tra quota del decollo e top termico
     if (alt >= altitude && alt <= thermal.top) {
       const totalSpan = Math.max(200, thermal.top - altitude);
       const relHeight = (alt - altitude) / totalSpan;
-      
-      // Campana oraria: picco ore 12-15, quote basse-medie
       const hrBell = Math.max(0, 1 - Math.pow((hr - 14) / 4.2, 2));
       const strength = (1 - relHeight * 0.75) * (0.4 + hrBell * 0.6);
 
@@ -162,49 +200,92 @@ export default function WindgramMatrix({
       return "#fef08a";
     }
 
-    // Fascia velatura/umidità grigio-chiaro in quota ore mattutine
     if (hr <= 10 && alt >= 1400 && alt <= 2200) {
       return "#f1f5f9";
     }
-
     return "transparent";
   };
 
-  // Righe della matrice (INVERTITE: 4000m prima riga, decollo ultima riga)
-  const gridRows = useMemo(() => {
-    return activeAltitudes.map((alt) => {
-      const isMajorLevel = alt % 500 === 0;
+  // Costruisce i dati vento REALI per ogni ora e quota (interpolati dai livelli di pressione)
+  const windDataByHourAlt = useMemo(() => {
+    const result: Record<number, Record<number, { speed: number; dir: number }>> = {};
+    
+    DISPLAY_HOURS.forEach((hr) => {
+      const h = hourlyMap.get(hr);
+      result[hr] = {};
+      
+      if (!h) return;
 
-      const cells = DISPLAY_HOURS.map((hr) => {
-        const h = hourlyMap.get(hr);
-        const groundSpeed = h?.windSpeed ?? (hr === 11 ? 9 : hr === 12 ? 11 : hr >= 13 && hr <= 16 ? 8 : 12);
-        const groundDir = h?.windDir ?? (hr <= 11 ? 230 : hr <= 15 ? 180 : 215);
-
-        // Gradiente di velocità con la quota
-        const altDiff = Math.max(0, alt - altitude);
-        const factor = 1 + (altDiff / 1000) * 0.95;
-        const extraWind = alt >= 2400 ? Math.pow((alt - 2400) / 600, 1.8) * 16 : 0;
-        const speed = Math.round(Math.max(1, groundSpeed * factor + extraWind));
-
-        // Rotazione vento con la quota
-        const dirOffset = Math.min(60, (altDiff / 1000) * 20);
-        const dir = Math.round((groundDir + dirOffset) % 360);
-
-        return {
-          alt,
-          hr,
-          speed,
-          dir,
-        };
+      // Raccolta livelli reali disponibili per quest'ora
+      const realLevels: { alt: number; speed: number; dir: number }[] = [];
+      
+      // Superficie (10m)
+      if (h.windSpeed !== undefined && h.windDir !== undefined) {
+        realLevels.push({ alt: Math.max(0, altitude - 50), speed: h.windSpeed, dir: h.windDir });
+      }
+      
+      // Livelli di pressione reali Open-Meteo
+      if (h.windSpeed925 !== undefined && h.windDir925 !== undefined) {
+        realLevels.push({ alt: 750, speed: h.windSpeed925, dir: h.windDir925 });
+      }
+      if (h.windSpeed850 !== undefined && h.windDir850 !== undefined) {
+        realLevels.push({ alt: 1450, speed: h.windSpeed850, dir: h.windDir850 });
+      }
+      if (h.windSpeed700 !== undefined && h.windDir700 !== undefined) {
+        realLevels.push({ alt: 3100, speed: h.windSpeed700, dir: h.windDir700 });
+      }
+      if (h.windSpeed500 !== undefined && h.windDir500 !== undefined) {
+        realLevels.push({ alt: 5600, speed: h.windSpeed500, dir: h.windDir500 });
+      }
+      
+      // Ordina per quota
+      realLevels.sort((a, b) => a.alt - b.alt);
+      
+      if (realLevels.length === 0) return;
+      
+      // Interpola per ogni quota attiva
+      activeAltitudes.forEach((alt) => {
+        if (alt > 4000) return; // Non mostriamo sopra 4000m
+        
+        const interp = interpolateWindAtAltitude(alt, realLevels);
+        if (interp) {
+          result[hr][alt] = interp;
+        }
       });
-
-      return {
-        alt,
-        isMajorLevel,
-        cells,
-      };
     });
-  }, [activeAltitudes, hourlyMap, altitude]);
+    
+    return result;
+  }, [hourlyMap, activeAltitudes, altitude]);
+
+  // Funzione helper per interpolazione
+  function interpolateWindAtAltitude(
+    targetAlt: number,
+    levels: { alt: number; speed: number; dir: number }[]
+  ): { speed: number; dir: number } | null {
+    if (levels.length === 0) return null;
+    if (levels.length === 1) return { speed: Math.round(levels[0].speed), dir: Math.round(levels[0].dir) };
+    
+    // Trova i due livelli che racchiudono la quota target
+    let lower = levels[0];
+    let upper = levels[levels.length - 1];
+    
+    for (let i = 0; i < levels.length - 1; i++) {
+      if (levels[i].alt <= targetAlt && levels[i + 1].alt >= targetAlt) {
+        lower = levels[i];
+        upper = levels[i + 1];
+        break;
+      }
+      if (targetAlt < levels[0].alt) {
+        return { speed: Math.round(levels[0].speed), dir: Math.round(levels[0].dir) };
+      }
+    }
+    
+    if (targetAlt > levels[levels.length - 1].alt) {
+      return { speed: Math.round(levels[levels.length - 1].speed), dir: Math.round(levels[levels.length - 1].dir) };
+    }
+    
+    return interpolateWind(targetAlt, lower, upper);
+  }
 
   // Per ogni ora, trova la riga (quota) più vicina alla cloud base
   const cloudBaseRow = useMemo(() => {
@@ -212,7 +293,6 @@ export default function WindgramMatrix({
     DISPLAY_HOURS.forEach((hr) => {
       const thermal = hourThermalData[hr];
       if (!thermal) return;
-      // Trova l'indice della riga più vicina alla cloud base
       let bestIdx = 0;
       let bestDiff = Infinity;
       activeAltitudes.forEach((a, idx) => {
@@ -226,6 +306,19 @@ export default function WindgramMatrix({
     });
     return map;
   }, [hourThermalData, activeAltitudes]);
+
+  // Badge indicatore fonte dati
+  const dataSourceBadge = hasRealPressureData ? (
+    <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold flex items-center gap-1">
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+      Dati reali Open-Meteo (925/850/700/500 hPa)
+    </span>
+  ) : (
+    <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-bold flex items-center gap-1">
+      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+      Estrapolato da superficie (mancano livelli pressione)
+    </span>
+  );
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
@@ -250,18 +343,22 @@ export default function WindgramMatrix({
             </div>
           </div>
 
-          {/* Legenda Vento */}
-          <div className="flex items-center gap-2 text-[11px] overflow-x-auto pb-1 font-sans">
-            <div className="text-slate-500 font-bold uppercase text-[10px] leading-tight shrink-0 mr-1">
-              VENTO<br />(KM/H):
-            </div>
-            <div className="flex gap-1.5 shrink-0">
-              <div className="px-2 py-1 rounded bg-[#d3f9d8] text-[#0ca678] font-bold text-center leading-none">1-<br />8</div>
-              <div className="px-2 py-1 rounded bg-[#e9fac8] text-[#66a80f] font-bold text-center leading-none">9-<br />14</div>
-              <div className="px-2 py-1 rounded bg-[#fef3c7] text-[#d97706] font-bold text-center leading-none">15-<br />20</div>
-              <div className="px-2 py-1 rounded bg-[#ffedd5] text-[#ea580c] font-bold text-center leading-none">21-<br />28</div>
-              <div className="px-2 py-1 rounded bg-[#fee2e2] text-[#dc2626] font-bold text-center leading-none">29-<br />40</div>
-              <div className="px-2 py-1 rounded bg-[#ede9fe] text-[#7c3aed] font-bold text-center leading-none">{">"}<br />40</div>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            {dataSourceBadge}
+            
+            {/* Legenda Vento */}
+            <div className="flex items-center gap-2 text-[11px] overflow-x-auto pb-1 font-sans shrink-0">
+              <div className="text-slate-500 font-bold uppercase text-[10px] leading-tight shrink-0 mr-1">
+                VENTO<br />(KM/H):
+              </div>
+              <div className="flex gap-1.5 shrink-0">
+                <div className="px-2 py-1 rounded bg-[#d3f9d8] text-[#0ca678] font-bold text-center leading-none">1-<br />8</div>
+                <div className="px-2 py-1 rounded bg-[#e9fac8] text-[#66a80f] font-bold text-center leading-none">9-<br />14</div>
+                <div className="px-2 py-1 rounded bg-[#fef3c7] text-[#d97706] font-bold text-center leading-none">15-<br />20</div>
+                <div className="px-2 py-1 rounded bg-[#ffedd5] text-[#ea580c] font-bold text-center leading-none">21-<br />28</div>
+                <div className="px-2 py-1 rounded bg-[#fee2e2] text-[#dc2626] font-bold text-center leading-none">29-<br />40</div>
+                <div className="px-2 py-1 rounded bg-[#ede9fe] text-[#7c3aed] font-bold text-center leading-none">{">"}<br />40</div>
+              </div>
             </div>
           </div>
         </div>
@@ -276,7 +373,6 @@ export default function WindgramMatrix({
                 const thermal = hourThermalData[hr];
                 if (!thermal) return <div key={hr} className="w-14 flex-shrink-0" />;
                 const rowIdx = cloudBaseRow[hr];
-                // Mostra nuvola solo se la base cumuli è dentro il range visibile
                 if (rowIdx === undefined || rowIdx < 0 || rowIdx >= activeAltitudes.length) {
                   return <div key={hr} className="w-14 flex-shrink-0" />;
                 }
@@ -311,54 +407,56 @@ export default function WindgramMatrix({
               </tr>
             </thead>
             <tbody>
-              {gridRows.map((row, rowIdx) => (
-                <tr key={`tr-${row.alt}`} className={`border-b border-slate-100 transition-colors ${row.isMajorLevel ? "font-bold" : ""}`}>
-                  {/* Colonna quota a SINISTRA */}
-                  <td
-                    className={`py-1.5 px-3 text-left font-bold sticky left-0 z-10 border-r border-slate-200 text-[11px] ${
-                      row.isMajorLevel
-                        ? "bg-slate-100 text-slate-900"
-                        : "bg-slate-50 text-slate-700"
-                    }`}
-                  >
-                    {row.alt}
-                  </td>
-                  {row.cells.map((cell) => {
-                    const wColor = getWindArrowColor(cell.speed);
-                    const isSelectedCol = cell.hr === selectedHour;
-                    const bgColor = getThermalBgColor(cell.alt, cell.hr);
-                    // Mostra nuvola se questa riga è la cloud base per quest'ora
-                    const showCloud = cloudBaseRow[cell.hr] === rowIdx;
+              {activeAltitudes.map((alt, rowIdx) => {
+                const isMajorLevel = alt % 500 === 0;
+                return (
+                  <tr key={`tr-${alt}`} className={`border-b border-slate-100 transition-colors ${isMajorLevel ? "font-bold" : ""}`}>
+                    {/* Colonna quota a SINISTRA */}
+                    <td
+                      className={`py-1.5 px-3 text-left font-bold sticky left-0 z-10 border-r border-slate-200 text-[11px] ${
+                        isMajorLevel
+                          ? "bg-slate-100 text-slate-900"
+                          : "bg-slate-50 text-slate-700"
+                      }`}
+                    >
+                      {alt}
+                    </td>
+                    {DISPLAY_HOURS.map((hr) => {
+                      const w = windDataByHourAlt[hr]?.[alt];
+                      const wColor = w ? getWindArrowColor(w.speed) : { fill: "#94a3b8", stroke: "#64748b", text: "#94a3b8" };
+                      const isSelectedCol = hr === selectedHour;
+                      const bgColor = getThermalBgColor(alt, hr);
+                      const showCloud = cloudBaseRow[hr] === rowIdx;
 
-                    return (
-                      <td
-                        key={`cell-${cell.alt}-${cell.hr}`}
-                        onClick={() => onHourSelect?.(cell.hr)}
-                        style={{ backgroundColor: bgColor }}
-                        className={`py-1.5 px-1 border-r border-slate-200/60 cursor-pointer transition-colors relative ${
-                          isSelectedCol ? "ring-1 ring-sky-400/90" : "hover:brightness-95"
-                        }`}
-                      >
-                        {/* Nuvoletta con % sopra il vento se è la base cumuli */}
-                        {showCloud && (
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-0.5 z-20 pointer-events-none">
-                            <CloudIcon cloudCover={hourThermalData[cell.hr]?.cloudCover ?? 30} />
+                      return (
+                        <td
+                          key={`cell-${alt}-${hr}`}
+                          onClick={() => onHourSelect?.(hr)}
+                          style={{ backgroundColor: bgColor }}
+                          className={`py-1.5 px-1 border-r border-slate-200/60 cursor-pointer transition-colors relative ${
+                            isSelectedCol ? "ring-1 ring-sky-400/90" : "hover:brightness-95"
+                          }`}
+                        >
+                          {showCloud && (
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-0.5 z-20 pointer-events-none">
+                              <CloudIcon cloudCover={hourThermalData[hr]?.cloudCover ?? 30} />
+                            </div>
+                          )}
+                          <div className="flex items-center justify-center gap-0.5">
+                            {w && <WindArrowIcon deg={w.dir} color={wColor} />}
+                            <span
+                              className="font-bold text-[12px] tabular-nums tracking-tighter"
+                              style={{ color: wColor.text }}
+                            >
+                              {w ? w.speed : "—"}
+                            </span>
                           </div>
-                        )}
-                        <div className="flex items-center justify-center gap-0.5">
-                          <WindArrowIcon deg={cell.dir} color={wColor} />
-                          <span
-                            className="font-bold text-[12px] tabular-nums tracking-tighter"
-                            style={{ color: wColor.text }}
-                          >
-                            {cell.speed}
-                          </span>
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -383,6 +481,7 @@ export default function WindgramMatrix({
             <p>&bull; Freccia: direzione vento &bull; Numero: velocità in km/h</p>
             <p>&bull; Clicca un'ora per selezionarla</p>
             <p>&bull; Nuvoletta = base cumuli (LCL) con copertura %</p>
+            {hasRealPressureData && <p className="text-emerald-600">&bull; Venti REALI da Open-Meteo (interpolati 925/850/700/500 hPa)</p>}
           </div>
         </div>
       </div>
