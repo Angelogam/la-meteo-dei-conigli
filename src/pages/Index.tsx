@@ -13,6 +13,7 @@ import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
+import WindgramPro from "@/components/WindgramPro";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
@@ -33,7 +34,6 @@ export default function Index() {
     allHourlyData, activeModel, currentCape,
   } = useWeatherData();
 
-  // Hook meteo 3-fonti per TUTTI i 24 decolli
   const { mergedDecolli, loading: aggressiveLoading, lastUpdate: aggressiveLastUpdate } = useThreeSourceWeather();
 
   const { tempoTrascorso } = useMeteoCompleto(
@@ -97,6 +97,14 @@ export default function Index() {
                   currentData={currentData} 
                 />
                 <PrevisioniGiornaliere enrichedDaily={enrichedDaily} dateLabels={dateLabels} currentData={currentData} dayData={dayData} site={{ name: site!.site_name, altitude: site!.elevation_m, exposure: site!.orientation }} selectedDay={selectedDay} onSelectDay={setSelectedDay} nomeDecollo={site!.site_name} />
+                
+                {/* Windgram PRO integrato sotto le previsioni giornaliere */}
+                <WindgramPro 
+                  lat={site!.lat} 
+                  lon={site!.lon} 
+                  siteName={site!.site_name} 
+                />
+                
                 <WeatherDashboard dayData={dayData} altitude={site!.elevation_m} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabels[selectedDay] ?? ""} siteName={site!.site_name} />
                 <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
