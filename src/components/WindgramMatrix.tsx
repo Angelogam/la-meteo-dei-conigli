@@ -1,4 +1,3 @@
-' con '>' nel JSX per evitare l'errore di parsing">
 "use client";
 
 import React, { useState, useMemo } from "react";
