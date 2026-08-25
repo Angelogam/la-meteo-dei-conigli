@@ -528,6 +528,3 @@ export default function WindgramMatrix({
     </div>
   );
 }
-
-// Ore mostrate nel grafico (estese 8:00 - 19:00)
-const DISPLAY_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
