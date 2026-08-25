@@ -1,4 +1,3 @@
-40 con espressione stringa esplicita in WindgramMatrix">
 "use client";
 
 import React, { useState, useMemo } from "react";
