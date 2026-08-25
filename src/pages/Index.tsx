@@ -16,11 +16,11 @@ import AnalisiMeteo from "@/components/AnalisiMeteo";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
+import { useAggressiveWeather } from "@/hooks/useAggressiveWeather";
 import { DECOLLI } from "@/data/decolli";
-import { weatherService } from "@/services/weatherService";
 import { getStabilityIndex } from "@/utils/weatherHelpers";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
-import { Activity, Server, Radar } from "lucide-react";
+import { Activity } from "lucide-react";
 
 export default function Index() {
   useEffect(() => { avviaVerificaContinua(60000); }, []);
@@ -32,6 +32,9 @@ export default function Index() {
     currentData, thermalDelta, enrichedDaily, dateLabels, loadWeather,
     allHourlyData, activeModel, currentCape,
   } = useWeatherData();
+
+  // Hook meteo aggressivo per TUTTI i 24 decolli
+  const { mergedDecolli, loading: aggressiveLoading, lastUpdate: aggressiveLastUpdate } = useAggressiveWeather();
 
   const { tempoTrascorso } = useMeteoCompleto(
     site?.lat ?? DECOLLI[0].lat,
@@ -45,7 +48,7 @@ export default function Index() {
     currentData?.cloudCover ?? 30,
   );
 
-  if (weatherLoading) {
+  if (weatherLoading || aggressiveLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col">
         <Header />
@@ -68,14 +71,14 @@ export default function Index() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6">
         <div className="flex flex-col lg:flex-row gap-6">
           <aside className="w-full lg:w-80 shrink-0 space-y-4">
-            <UpdateTimer lastUpdate={lastUpdate} countdown={countdown} updating={updating} onRefresh={loadWeather} />
+            <UpdateTimer lastUpdate={aggressiveLastUpdate ?? lastUpdate} countdown={countdown} updating={updating} onRefresh={loadWeather} />
             <div className="bg-slate-800/50 border border-emerald-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
               <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
-              <span className="text-xs text-emerald-300">{site?.site_name ?? "Decollo"} — Dati reali Open-Meteo</span>
+              <span className="text-xs text-emerald-300">{site?.site_name ?? "Decollo"} — Dati reali Open-Meteo + OpenWeather</span>
               <span className="text-[10px] text-slate-500 ml-auto">{tempoTrascorso}s</span>
             </div>
             <DecolliCard
-              decolli={DECOLLI}
+              decolli={mergedDecolli}
               selectedId={selectedId}
               selectedDay={selectedDay}
               onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}
