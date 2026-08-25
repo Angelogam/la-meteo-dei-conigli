@@ -217,7 +217,7 @@ export default function TomorrowWindgram({ decollo }: TomorrowWindgramProps) {
               <rect x={x - xStep / 2} y={y - yStep / 2} width={xStep} height={yStep} fill="#fff" opacity={cloudAlpha} />
               {!isNaN(speed) && !isNaN(dir) && (
                 <>
-                  <line x1={x} y1={y} x2={x2} y2={y2} stroke="#ecf0f1" strokeWidth={1.3} />
+                  <line x1={x} y1={y} x2={x2} y2={y2} stroke="#ecf0f1" strokeWidth={1.3} strokeLinecap="round" />
                   <circle cx={x} cy={y} r={1.7} fill="#ecf0f1" />
                 </>
               )}
@@ -256,7 +256,7 @@ export default function TomorrowWindgram({ decollo }: TomorrowWindgramProps) {
       <div className="flex items-center gap-6 mt-4 text-xs text-slate-400 flex-wrap">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded" style={{ background: "linear-gradient(90deg, #2ecc71, #f1c40f, #e67e22, #e74c3c)" }} />
-          <span>Vento: verde ≤5 · giallo ≤10 · arancio ≤20 · rosso >20 km/h</span>
+          <span>Vento: verde ≤5 · giallo ≤10 · arancio ≤20 · rosso > 20 km/h</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-white/80 border border-slate-500" />
