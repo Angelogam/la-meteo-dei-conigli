@@ -1,4 +1,3 @@
-' character with > in WindgramMatrix.tsx">
 "use client";
 
 import React, { useMemo } from "react";
@@ -191,7 +190,7 @@ export default function WindgramMatrix({
                 29-<br />40
               </div>
               <div className="px-2 py-1 rounded bg-[#f3d9fa] text-[#7048e8] font-bold text-center leading-none">
-                ><br />40
+                {">"}<br />40
               </div>
             </div>
           </div>
