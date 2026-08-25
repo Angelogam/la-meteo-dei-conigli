@@ -124,6 +124,33 @@ const HOURLY_PARAMS = [
   "cape",
   "convective_inhibition",
   "lifted_index",
+  // Pressure level winds - REAL altitude data from Open-Meteo
+  "wind_speed_925hPa",
+  "wind_direction_925hPa",
+  "wind_speed_850hPa",
+  "wind_direction_850hPa",
+  "wind_speed_700hPa",
+  "wind_direction_700hPa",
+  "wind_speed_500hPa",
+  "wind_direction_500hPa",
+  "wind_speed_600hPa",
+  "wind_direction_600hPa",
+  "wind_speed_300hPa",
+  "wind_direction_300hPa",
+  "wind_speed_250hPa",
+  "wind_direction_250hPa",
+  "wind_speed_200hPa",
+  "wind_direction_200hPa",
+  "wind_speed_1000hPa",
+  "wind_direction_1000hPa",
+  "wind_speed_1500hPa",
+  "wind_direction_1500hPa",
+  "wind_speed_2000hPa",
+  "wind_direction_2000hPa",
+  "wind_speed_2500hPa",
+  "wind_direction_2500hPa",
+  "wind_speed_3000hPa",
+  "wind_direction_3000hPa",
 ].join(",");
 
 const DAILY_PARAMS = [
@@ -223,6 +250,7 @@ export const weatherService = {
 
   /**
    * Previsione completa a 3 giorni da Open-Meteo per il decollo selezionato
+   * Include venti REALI ai livelli di pressione (925, 850, 700, 500, 300 hPa)
    */
   async fetchWeather(lat: number, lon: number): Promise<{
     hourly: MeteoHourly[];
@@ -280,6 +308,33 @@ export const weatherService = {
         feelsLike: json.hourly.apparent_temperature?.[i] ?? t,
         apparentTemp: json.hourly.apparent_temperature?.[i] ?? t,
         precipitationProbability: json.hourly.precipitation_probability?.[i] ?? 0,
+        // Pressure level winds - REAL DATA from Open-Meteo
+        windSpeed925: json.hourly.wind_speed_925hPa?.[i],
+        windDir925: json.hourly.wind_direction_925hPa?.[i],
+        windSpeed850: json.hourly.wind_speed_850hPa?.[i],
+        windDir850: json.hourly.wind_direction_850hPa?.[i],
+        windSpeed700: json.hourly.wind_speed_700hPa?.[i],
+        windDir700: json.hourly.wind_direction_700hPa?.[i],
+        windSpeed500: json.hourly.wind_speed_500hPa?.[i],
+        windDir500: json.hourly.wind_direction_500hPa?.[i],
+        windSpeed600: json.hourly.wind_speed_600hPa?.[i],
+        windDir600: json.hourly.wind_direction_600hPa?.[i],
+        windSpeed300: json.hourly.wind_speed_300hPa?.[i],
+        windDir300: json.hourly.wind_direction_300hPa?.[i],
+        windSpeed250: json.hourly.wind_speed_250hPa?.[i],
+        windDir250: json.hourly.wind_direction_250hPa?.[i],
+        windSpeed200: json.hourly.wind_speed_200hPa?.[i],
+        windDir200: json.hourly.wind_direction_200hPa?.[i],
+        windSpeed1000: json.hourly.wind_speed_1000hPa?.[i],
+        windDir1000: json.hourly.wind_direction_1000hPa?.[i],
+        windSpeed1500: json.hourly.wind_speed_1500hPa?.[i],
+        windDir1500: json.hourly.wind_direction_1500hPa?.[i],
+        windSpeed2000: json.hourly.wind_speed_2000hPa?.[i],
+        windDir2000: json.hourly.wind_direction_2000hPa?.[i],
+        windSpeed2500: json.hourly.wind_speed_2500hPa?.[i],
+        windDir2500: json.hourly.wind_direction_2500hPa?.[i],
+        windSpeed3000: json.hourly.wind_speed_3000hPa?.[i],
+        windDir3000: json.hourly.wind_direction_3000hPa?.[i],
       });
     }
 
@@ -334,7 +389,7 @@ export const weatherService = {
       });
     }
 
-    return { hourly, current, daily, model: "Open-Meteo DWD/AROME" };
+    return { hourly, current, daily, model: "Open-Meteo DWD/AROME/ICON" };
   },
 
   async fetchWithFallback(lat: number, lon: number) {
