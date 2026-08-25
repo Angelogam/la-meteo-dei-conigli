@@ -11,19 +11,12 @@ interface WindgramMatrixProps {
   altitude: number;
   selectedHour?: number;
   onHourSelect?: (hour: number) => void;
+  selectedDay?: number; // 0=oggi, 1=domani, 2=dopodomani
+  dateLabel?: string; // Es. "DOMENICA 31 AGOSTO"
 }
 
 // Ore mostrate nel grafico (estese 8:00 - 19:00)
 const DISPLAY_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
-
-// Livelli di pressione reali Open-Meteo con quota approssimativa standard
-const PRESSURE_LEVELS = [
-  { hpa: 1000, alt: 100,   label: "1000 hPa" },
-  { hpa: 925,  alt: 750,  label: "925 hPa" },
-  { hpa: 850,  alt: 1450, label: "850 hPa" },
-  { hpa: 700,  alt: 3100, label: "700 hPa" },
-  { hpa: 500,  alt: 5600, label: "500 hPa" },
-];
 
 // Colore freccia e numero in base alla velocità (km/h) identico a SoaringMET
 function getWindArrowColor(speed: number): { fill: string; stroke: string; text: string } {
@@ -100,8 +93,10 @@ export default function WindgramMatrix({
   altitude,
   selectedHour = 13,
   onHourSelect,
+  selectedDay = 0,
+  dateLabel = "",
 }: WindgramMatrixProps) {
-  // Mappa dati orari da Open-Meteo
+  // Mappa dati orari da Open-Meteo FILTRATI PER IL GIORNO SELEZIONATO
   const hourlyMap = useMemo(() => {
     const map = new Map<number, HourData>();
     if (dayData && dayData.length > 0) {
@@ -162,19 +157,12 @@ export default function WindgramMatrix({
           cloudCover: h.cloudCover ?? 30,
         };
       } else {
-        const temp = 16 + (hr >= 12 && hr <= 15 ? 7 : hr >= 11 && hr <= 17 ? 4 : 1);
-        const dew = temp - 8;
-        const spread = Math.max(1, temp - dew);
-        const base = Math.max(altitude, Math.round(altitude + spread * 85));
-        const lcl = Math.round(altitude + spread * 125);
-        const bellFactor = Math.max(0, 1 - Math.pow((hr - 14) / 4, 2));
-        const top = Math.min(3500, Math.round(base + bellFactor * 1100));
-        const rateo = Math.max(0.3, bellFactor * 2.4);
+        // Fallback se manca l'ora
         data[hr] = {
-          top,
-          base,
-          rateo,
-          cloudBase: Math.min(lcl, 3500),
+          top: altitude + 800,
+          base: altitude + 200,
+          rateo: 0.5,
+          cloudBase: altitude + 600,
           cloudCover: 30,
         };
       }
@@ -245,7 +233,7 @@ export default function WindgramMatrix({
       
       // Interpola per ogni quota attiva
       activeAltitudes.forEach((alt) => {
-        if (alt > 4000) return; // Non mostriamo sopra 4000m
+        if (alt > 4000) return;
         
         const interp = interpolateWindAtAltitude(alt, realLevels);
         if (interp) {
@@ -265,7 +253,6 @@ export default function WindgramMatrix({
     if (levels.length === 0) return null;
     if (levels.length === 1) return { speed: Math.round(levels[0].speed), dir: Math.round(levels[0].dir) };
     
-    // Trova i due livelli che racchiudono la quota target
     let lower = levels[0];
     let upper = levels[levels.length - 1];
     
@@ -320,11 +307,20 @@ export default function WindgramMatrix({
     </span>
   );
 
+  // Formatta data per header
+  const headerDate = dateLabel || (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + selectedDay);
+    const giorni = ["DOMENICA", "LUNEDÌ", "MARTEDÌ", "MERCOLEDÌ", "GIOVEDÌ", "VENERDÌ", "SABATO"];
+    const mesi = ["GENNAIO", "FEBBRAIO", "MARZO", "APRILE", "MAGGIO", "GIUGNO", "LUGLIO", "AGOSTO", "SETTEMBRE", "OTTOBRE", "NOVEMBRE", "DICEMBRE"];
+    return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
+  })();
+
   return (
     <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
       <div className="w-full bg-[#f8fafc] text-slate-900 border border-slate-200/80 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
         
-        {/* Header */}
+        {/* Header con DATA GIORNATA */}
         <div className="p-4 sm:p-5 pb-3">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2.5">
@@ -335,6 +331,7 @@ export default function WindgramMatrix({
                 <h3 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
                   Windgram &mdash; <span className="text-sky-600">{siteName}</span>
                 </h3>
+                <p className="text-sm text-sky-700 font-semibold mt-0.5">{headerDate}</p>
               </div>
             </div>
             <div className="flex items-center gap-1.5 bg-sky-100/70 border border-sky-200/80 px-3 py-1.5 rounded-full text-xs font-semibold text-sky-900">
@@ -401,7 +398,16 @@ export default function WindgramMatrix({
                         : "hover:bg-slate-200/60 text-slate-800"
                     }`}
                   >
-                    {hr}h
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span>{hr}h</span>
+                      {/* Mostra temperatura in header ora */}
+                      <span className="text-[10px] font-normal text-slate-500">
+                        {(() => {
+                          const h = hourlyMap.get(hr);
+                          return h ? `${Math.round(h.temperature)}°` : "—";
+                        })()}
+                      </span>
+                    </div>
                   </th>
                 ))}
               </tr>

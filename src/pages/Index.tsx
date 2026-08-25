@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
@@ -50,6 +50,31 @@ export default function Index() {
 
   const isLoading = weatherLoading || aggressiveLoading;
 
+  // Filtra dayData per il giorno selezionato
+  const filteredDayData = useMemo(() => {
+    if (!dayData || dayData.length === 0) return [];
+    const oggi = new Date();
+    const target = new Date(oggi);
+    target.setDate(oggi.getDate() + selectedDay);
+    return dayData.filter(h => {
+      const d = new Date(h.time);
+      return d.getDate() === target.getDate() && 
+             d.getMonth() === target.getMonth() && 
+             d.getFullYear() === target.getFullYear();
+    });
+  }, [dayData, selectedDay]);
+
+  // Label data per header (es. "SABATO 30 AGOSTO")
+  const dateLabel = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + selectedDay);
+    const giorni = ["DOMENICA", "LUNEDÌ", "MARTEDÌ", "MERCOLEDÌ", "GIOVEDÌ", "VENERDÌ", "SABATO"];
+    const mesi = ["GENNAIO", "FEBBRAIO", "MARZO", "APRILE", "MAGGIO", "GIUGNO", "LUGLIO", "AGOSTO", "SETTEMBRE", "OTTOBRE", "NOVEMBRE", "DICEMBRE"];
+    return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
+  }, [selectedDay]);
+
+  const hasData = Boolean(site && currentData && dayData.length > 0);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col">
@@ -64,8 +89,6 @@ export default function Index() {
       </div>
     );
   }
-
-  const hasData = Boolean(site && currentData && dayData.length > 0);
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
@@ -98,25 +121,38 @@ export default function Index() {
                 />
                 <PrevisioniGiornaliere enrichedDaily={enrichedDaily} dateLabels={dateLabels} currentData={currentData} dayData={dayData} site={{ name: site!.site_name, altitude: site!.elevation_m, exposure: site!.orientation }} selectedDay={selectedDay} onSelectDay={setSelectedDay} nomeDecollo={site!.site_name} />
                 
-                {/* Windgram Matrice a Quote & Ore (SoaringMET style) */}
-                <Windgram 
-                  dayData={dayData} 
-                  siteName={site!.site_name} 
-                  altitude={site!.elevation_m}
-                  selectedHour={selectedHour}
-                  onHourSelect={setSelectedHour}
-                />
+                {/* Windgram Matrice a Quote & Ore (SoaringMET style) - DATI GIORNO SELEZIONATO */}
+                <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                      <Wind className="w-5 h-5 text-emerald-400" />
+                      Windgram Quote × Ore — {dateLabel}
+                    </h3>
+                    <span className="text-xs text-emerald-300 bg-emerald-900/30 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                      {site!.elevation_m}m → 4000m
+                    </span>
+                  </div>
+                  <Windgram 
+                    dayData={filteredDayData} 
+                    siteName={site!.site_name} 
+                    altitude={site!.elevation_m}
+                    selectedHour={selectedHour}
+                    onHourSelect={setSelectedHour}
+                    selectedDay={selectedDay}
+                    dateLabel={dateLabel}
+                  />
+                </div>
                 
-                <WeatherDashboard dayData={dayData} altitude={site!.elevation_m} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabels[selectedDay] ?? ""} siteName={site!.site_name} />
+                <WeatherDashboard dayData={filteredDayData} altitude={site!.elevation_m} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabel} siteName={site!.site_name} />
                 <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
                 {activeTab === "meteo" && (
-                  <MeteoTab currentData={currentData} dayData={dayData} site={{ alt: site!.elevation_m, name: site!.site_name }} thermalDelta={thermalDelta} stabilityIndex={stabilityIndex} modelName={activeModel} cape={currentCape?.cape} liftedIndex={currentCape?.liftedIndex} cin={currentCape?.cin} />
+                  <MeteoTab currentData={currentData} dayData={filteredDayData} site={{ alt: site!.elevation_m, name: site!.site_name }} thermalDelta={thermalDelta} stabilityIndex={stabilityIndex} modelName={activeModel} cape={currentCape?.cape} liftedIndex={currentCape?.liftedIndex} cin={currentCape?.cin} />
                 )}
 
                 {activeTab === "venti" && <VentiInterpolatiTab lat={site!.lat} lon={site!.lon} quotaDecollo={site!.elevation_m} selectedDay={selectedDay} oraCorrente={selectedHour} onOraChange={setSelectedHour} siteName={site!.site_name} />}
-                {activeTab === "termiche" && <TermicheTab currentData={currentData} dayData={dayData} site={{ alt: site!.elevation_m, lat: site!.lat, lon: site!.lon, name: site!.site_name }} />}
-                {activeTab === "analisi" && <AnalisiMeteo currentData={currentData} dayData={dayData} site={{ alt: site!.elevation_m, lat: site!.lat, lon: site!.lon, name: site!.site_name, exposure: site!.orientation }} cape={currentCape?.cape} liftedIndex={currentCape?.liftedIndex} cin={currentCape?.cin} />}
+                {activeTab === "termiche" && <TermicheTab currentData={currentData} dayData={filteredDayData} site={{ alt: site!.elevation_m, lat: site!.lat, lon: site!.lon, name: site!.site_name }} />}
+                {activeTab === "analisi" && <AnalisiMeteo currentData={currentData} dayData={filteredDayData} site={{ alt: site!.elevation_m, lat: site!.lat, lon: site!.lon, name: site!.site_name, exposure: site!.orientation }} cape={currentCape?.cape} liftedIndex={currentCape?.liftedIndex} cin={currentCape?.cin} />}
               </>
             )}
             {!hasData && (
