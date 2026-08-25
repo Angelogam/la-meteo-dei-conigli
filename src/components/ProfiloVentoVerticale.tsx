@@ -1,4 +1,4 @@
-characters">
+characters in JSX text content">
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
