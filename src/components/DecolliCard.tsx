@@ -1,12 +1,16 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React from "react";
 import { Wind, Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, Zap } from "lucide-react";
-import { weatherService } from "@/services/openMeteoService";
-import { calcolaStatoMeteo, type StatoMeteo, calcolaPrecipProssimeOre } from "@/utils/statoMeteo";
-import { calcolaIndiceVolabilita, type RisultatoVolabilita } from "@/utils/indiceVolabilita";
-import { DECOLLI, type Decollo } from "@/data/decolli";
-import type { MeteoCurrent } from "@/services/openMeteoService";
+import type { Decollo } from "@/data/decolli";
+import { validaVentoPerDecollo, getVentoStatusColor } from "@/utils/validaVentoDecollo";
+
+interface DecolliCardProps {
+  decolli: (Decollo & { aggressiveWeather?: any })[];
+  selectedId: string;
+  onSelect: (item: Decollo) => void;
+  selectedDay?: number;
+}
 
 const ICONA_STATO: Record<string, React.ReactNode> = {
   sereno: <Sun className="w-4 h-4 text-amber-400" />,
@@ -14,63 +18,21 @@ const ICONA_STATO: Record<string, React.ReactNode> = {
   nuvoloso: <Cloud className="w-4 h-4 text-slate-400" />,
   pioggia: <CloudRain className="w-4 h-4 text-blue-400" />,
   temporale: <Zap className="w-4 h-4 text-purple-400" />,
+  coperto: <Cloud className="w-4 h-4 text-slate-400" />,
   offline: <AlertTriangle className="w-4 h-4 text-slate-500" />,
 };
 
-const REFRESH_INTERVAL_MS = 900000; // 15 minuti esatti
-
-interface DecolliCardProps {
-  decolli: Decollo[];
-  selectedId: string;
-  onSelect: (item: Decollo) => void;
-  selectedDay?: number;
-}
-
 export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay = 0 }: DecolliCardProps) {
-  const [liveData, setLiveData] = useState<Record<string, MeteoCurrent | null>>({});
-  const [loadingAll, setLoadingAll] = useState(true);
-  const mountedRef = useRef(true);
-
-  const loadAllData = useCallback(async () => {
-    if (!mountedRef.current) return;
-    setLoadingAll(true);
-    const newData: Record<string, MeteoCurrent> = {};
-
-    for (const item of decolli) {
-      try {
-        const current = await weatherService.fetchMeteoCorrente(item.lat, item.lon);
-        if (current && mountedRef.current) {
-          newData[item.id] = current;
-        }
-      } catch {
-        // Nessun dato inventato - lascia null
-      }
-    }
-
-    if (mountedRef.current) {
-      setLiveData(newData);
-      setLoadingAll(false);
-    }
-  }, [decolli]);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    loadAllData();
-    const interval = setInterval(loadAllData, REFRESH_INTERVAL_MS);
-    return () => { mountedRef.current = false; clearInterval(interval); };
-  }, [loadAllData]);
-
   const dt = getDateTime(selectedDay);
-  const caricati = Object.keys(liveData).filter(k => liveData[k] != null).length;
 
   return (
     <div className="bg-slate-900/90 border border-slate-700/60 rounded-2xl p-3 md:p-4 shadow-xl">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-sm md:text-base font-bold text-white flex items-center gap-2">
-          Decolli ({caricati}/{decolli.length})
+          Decolli
         </h2>
         <span className="text-[10px] text-emerald-300 bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded-full font-mono">
-          Open-Meteo 15m
+          Ibrido Aggressivo 15m
         </span>
       </div>
 
@@ -84,44 +46,32 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
       <div className="space-y-2.5 max-h-80 md:max-h-96 overflow-y-auto pr-1 scrollbar-thin">
         {decolli.map((item) => {
           const isSelected = item.id === selectedId;
-          const current = liveData[item.id];
-          const hasData = current != null;
+          const aggressive = item.aggressiveWeather;
+          const hasAggressive = aggressive != null;
 
-          let statoMeteo: StatoMeteo = "offline";
-          let volabilita: RisultatoVolabilita | null = null;
+          // Usa dati aggressivi se disponibili, altrimenti fallback
+          const stato = hasAggressive ? aggressive.stato.toLowerCase() : "offline";
+          const temp = hasAggressive ? aggressive.temp : "--";
+          const rain = hasAggressive ? aggressive.rain : "--";
+          const cloud = hasAggressive ? aggressive.cloud : "--";
+          const wind = hasAggressive ? aggressive.wind : "--";
+          const baseNubi = hasAggressive ? aggressive.baseNubi : "--";
+          const termiche = hasAggressive ? aggressive.termiche : "--";
+          const indice = hasAggressive ? aggressive.indice : 10;
+          const indiceLabel = hasAggressive ? aggressive.indiceLabel : "Sconsigliato";
 
-          if (hasData) {
-            const precipNext = current.precipitation;
+          const dirLabel = hasAggressive ? getCardinalDir(parseFloat(aggressive.wind)) : "N/D";
+          const dirArrow = hasAggressive ? getWindArrow(parseFloat(aggressive.wind)) : "→";
 
-            const statoResult = calcolaStatoMeteo({
-              precipNow: current.precipitation,
-              precipNextHours: precipNext,
-              cloudNow: current.cloudCover,
-              windSpeed: current.windSpeed,
-              windDir: current.windDir,
-              temperature: current.temperature ?? 0,
-              cape: current.cape,
-              weatherCode: current.weatherCode,
-            });
-            statoMeteo = statoResult.stato;
-
-            volabilita = calcolaIndiceVolabilita({
-              windSpeed: current.windSpeed,
-              windGusts: current.windGusts,
-              windDir: current.windDir,
-              esposizione: item.orientation,
-              temperature: current.temperature ?? 0,
-              dewPoint: current.dewPoint,
-              cloudCover: current.cloudCover,
-              precipitation: current.precipitation,
-              weatherCode: current.weatherCode,
-              cape: current.cape,
-              quota: item.elevation_m,
-            });
-          }
-
-          const dirLabel = hasData ? getCardinalDir(current!.windDir) : "N/D";
-          const dirArrow = hasData ? getWindArrow(current!.windDir) : "→";
+          // Colore indice
+          const indiceColor = indice <= 3 ? "text-emerald-400" : 
+                              indice <= 5 ? "text-lime-400" : 
+                              indice <= 7 ? "text-amber-400" : 
+                              indice <= 8 ? "text-orange-400" : "text-red-400";
+          const indiceBg = indice <= 3 ? "bg-emerald-950/60 border-emerald-500/40" : 
+                           indice <= 5 ? "bg-lime-950/60 border-lime-500/40" : 
+                           indice <= 7 ? "bg-amber-950/60 border-amber-500/40" : 
+                           indice <= 8 ? "bg-orange-950/60 border-orange-500/40" : "bg-red-950/60 border-red-500/40";
 
           return (
             <button
@@ -135,86 +85,57 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
                 }
               `}
             >
-              {/* Header con CAMPI STATICI PROTETTI */}
+              {/* Header */}
               <div className="flex items-start justify-between gap-2 mb-1.5">
                 <div className="min-w-0">
                   <div className="text-sm font-bold text-white truncate flex items-center gap-1.5">
-                    <span>{item.site_name}</span>
+                    <span>{item.site_name || item.name}</span>
                     <span className="text-slate-400">—</span>
-                    <span className="text-slate-300">{item.location_name}</span>
+                    <span className="text-slate-300">{item.location_name || item.valley}</span>
                   </div>
                   <div className="text-[10px] text-slate-400 truncate">
-                    {item.orientation} · {item.elevation_m}m
+                    {item.orientation || item.exposure} · {item.elevation_m || item.altitude}m
                   </div>
                 </div>
 
-                {/* Badge Indice Volabilità */}
-                {volabilita && (
-                  <div className="flex flex-col items-end shrink-0">
-                    <div
-                      className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-black ${volabilita.coloreBg} ${volabilita.coloreTesto} ${volabilita.coloreBordo}`}
-                      title={`Indice: ${volabilita.indice}/10 (${volabilita.label}) - ${volabilita.windRelativo}`}
-                    >
-                      <span className="text-[9px]">Indice:</span>
-                      <span className="text-xs">{volabilita.indice}</span>
-                      <span className="text-[9px] opacity-70">/10</span>
-                    </div>
-                    <span className={`text-[9px] font-semibold mt-0.5 ${volabilita.coloreTesto}`}>
-                      {volabilita.label}
-                    </span>
-                  </div>
-                )}
+                {/* Badge Indice Volabilità Aggressivo */}
+                <div className={`flex items-center gap-1 px-2 py-1 rounded-full border text-[11px] font-black ${indiceBg} ${indiceColor}`}>
+                  <span>{indice}</span>
+                  <span className="opacity-70">/10</span>
+                </div>
               </div>
 
-              {/* Dati Meteo Reali (solo campi dinamici) */}
-              {hasData ? (
-                <div className="mt-2 pt-2 border-t border-slate-700/40 space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1.5">
-                      {ICONA_STATO[statoMeteo]}
-                      <span className="font-bold text-white capitalize">{statoMeteo}</span>
-                      <span className="font-extrabold text-amber-300 tabular-nums">
-                        {current!.temperature !== null ? `${Math.round(current!.temperature)}°C` : "--°"}
-                      </span>
-                      {current!.precipitation > 0 && (
-                        <span className="text-[10px] font-bold text-rose-300 bg-rose-950/60 px-1.5 py-0.2 rounded border border-rose-500/40">
-                          {current!.precipitation.toFixed(1)}mm
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-1 text-slate-200">
-                      <Wind size={13} className="text-cyan-400 shrink-0" />
-                      <span className="font-bold tabular-nums text-white">
-                        {Math.round(current!.windSpeed)} km/h
-                      </span>
-                      <span className="text-slate-400 font-mono text-[11px]">
-                        {dirArrow} {dirLabel} ({Math.round(current!.windDir)}°)
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1">
-                    <span className="flex items-center gap-1">
-                      <Layers size={11} className="text-purple-400" />
-                      <span>Base nubi: <strong className="text-purple-200">{volabilita?.baseNubiM}m</strong></span>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      Termiche: <strong className="text-amber-200">↑ {volabilita?.rateoTermicoMs} m/s</strong>
-                    </span>
-                    {volabilita && volabilita.windRelativo !== "frontale" && volabilita.windRelativo !== "sconosciuto" && (
-                      <span className="flex items-center gap-1 text-amber-300">
-                        Vento: <strong>{volabilita.windRelativo}</strong>
+              {/* Dati Meteo Aggressivi */}
+              <div className="mt-2 pt-2 border-t border-slate-700/40 space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5">
+                    {ICONA_STATO[stato] || ICONA_STATO.offline}
+                    <span className="font-bold text-white capitalize">{aggressive?.stato || "N/D"}</span>
+                    <span className="font-extrabold text-amber-300 tabular-nums">{temp}°C</span>
+                    {parseFloat(rain) > 0 && (
+                      <span className="text-[10px] font-bold text-rose-300 bg-rose-950/60 px-1.5 py-0.2 rounded border border-rose-500/40">
+                        {rain}mm
                       </span>
                     )}
                   </div>
+
+                  <div className="flex items-center gap-1 text-slate-200">
+                    <Wind size={13} className="text-cyan-400 shrink-0" />
+                    <span className="font-bold tabular-nums text-white">{wind} km/h</span>
+                    <span className="text-slate-400 font-mono text-[11px]">{dirArrow} {dirLabel}</span>
+                  </div>
                 </div>
-              ) : (
-                <div className="text-[11px] text-slate-500 italic mt-1 pt-1 border-t border-slate-700/30 flex items-center justify-between">
-                  <span>Lettura API Open-Meteo...</span>
-                  <span className="w-2 h-2 rounded-full bg-slate-600 animate-ping" />
+
+                <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1">
+                  <span className="flex items-center gap-1">
+                    <Layers size={11} className="text-purple-400" />
+                    <span>Base nubi: <strong className="text-purple-200">{baseNubi}</strong></span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    Termiche: <strong className="text-amber-200">{termiche}</strong>
+                  </span>
                 </div>
-              )}
+              </div>
             </button>
           );
         })}
