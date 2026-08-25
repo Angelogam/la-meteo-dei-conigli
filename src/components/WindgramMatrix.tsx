@@ -51,22 +51,23 @@ function WindArrowIcon({ deg, color }: { deg: number; color: { fill: string; str
   );
 }
 
-// Icona nuvola cumulo con percentuale
+// Icona nuvola cumulo con percentuale - MOLTO PIÙ SCURA E VISIBILE
 function CloudIcon({ cloudCover }: { cloudCover: number }) {
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <svg width="20" height="14" viewBox="0 0 40 28" className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
-        <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="currentColor" fillOpacity="0.95"/>
-        <ellipse cx="18" cy="14" rx="6" ry="4" fill="currentColor" fillOpacity="0.7"/>
+      <svg width="22" height="16" viewBox="0 0 40 28" className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+        <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#1e293b" fillOpacity="1"/>
+        <ellipse cx="18" cy="14" rx="6" ry="4" fill="#334155" fillOpacity="1"/>
+        <ellipse cx="14" cy="12" rx="4" ry="3" fill="#0f172a" fillOpacity="0.6"/>
       </svg>
-      <span className="text-[9px] font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
+      <span className="text-[9px] font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,1)] bg-black/60 px-1 rounded">
         {cloudCover}%
       </span>
     </div>
   );
 }
 
-// Interpolazione lineare tra due livelli
+// Interpolazione lineare tra due livelli - CORRETTA
 function interpolateWind(
   alt: number,
   lower: { alt: number; speed: number; dir: number } | null,
@@ -207,12 +208,12 @@ export default function WindgramMatrix({
       // Raccolta livelli reali disponibili per quest'ora
       const realLevels: { alt: number; speed: number; dir: number }[] = [];
       
-      // Superficie (10m)
+      // Superficie (10m) - USA DATI REALI
       if (h.windSpeed !== undefined && h.windDir !== undefined) {
         realLevels.push({ alt: Math.max(0, altitude - 50), speed: h.windSpeed, dir: h.windDir });
       }
       
-      // Livelli di pressione reali Open-Meteo
+      // Livelli di pressione reali Open-Meteo - ORDINE CORRETTO per quota
       if (h.windSpeed925 !== undefined && h.windDir925 !== undefined) {
         realLevels.push({ alt: 750, speed: h.windSpeed925, dir: h.windDir925 });
       }
@@ -226,7 +227,7 @@ export default function WindgramMatrix({
         realLevels.push({ alt: 5600, speed: h.windSpeed500, dir: h.windDir500 });
       }
       
-      // Ordina per quota
+      // Ordina per quota CRESCENTE
       realLevels.sort((a, b) => a.alt - b.alt);
       
       if (realLevels.length === 0) return;
@@ -253,6 +254,7 @@ export default function WindgramMatrix({
     if (levels.length === 0) return null;
     if (levels.length === 1) return { speed: Math.round(levels[0].speed), dir: Math.round(levels[0].dir) };
     
+    // Trova i due livelli che racchiudono targetAlt
     let lower = levels[0];
     let upper = levels[levels.length - 1];
     
@@ -262,11 +264,14 @@ export default function WindgramMatrix({
         upper = levels[i + 1];
         break;
       }
-      if (targetAlt < levels[0].alt) {
-        return { speed: Math.round(levels[0].speed), dir: Math.round(levels[0].dir) };
-      }
     }
     
+    // Se targetAlt è sotto il livello più basso
+    if (targetAlt < levels[0].alt) {
+      return { speed: Math.round(levels[0].speed), dir: Math.round(levels[0].dir) };
+    }
+    
+    // Se targetAlt è sopra il livello più alto
     if (targetAlt > levels[levels.length - 1].alt) {
       return { speed: Math.round(levels[levels.length - 1].speed), dir: Math.round(levels[levels.length - 1].dir) };
     }
