@@ -1,4 +1,4 @@
-characters in JSX legend text">
+with > in JSX text to fix TS1382 errors">
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -66,11 +66,11 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
     const fetchWindProfile = async () => {
       try {
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m,wind_speed_925hPa,wind_direction_925hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa,wind_speed_600hPa,wind_direction_600hPa,wind_speed_500hPa,wind_direction_500hPa,temperature_2m,temperature_80m,temperature_120m,cloud_cover,precipitation,freezing_level_height,cape,lifted_index,convective_inhibition&timezone=Europe/Rome&forecast_days=2`;
-        
+
         const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
-        
+
         if (mounted) {
           setData(json);
           setLoading(false);
@@ -165,8 +165,8 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
   if (levels.length >= 2) {
     const sorted = [...levels].sort((a, b) => a.alt - b.alt);
     for (let i = 1; i < sorted.length; i++) {
-      const dAlt = sorted[i].alt - sorted[i-1].alt;
-      const dSpeed = Math.abs(sorted[i].speed - sorted[i-1].speed);
+      const dAlt = sorted[i].alt - sorted[i - 1].alt;
+      const dSpeed = Math.abs(sorted[i].speed - sorted[i - 1].speed);
       if (dAlt > 0) {
         const shear = dSpeed / (dAlt / 100);
         if (shear > shearMax) shearMax = shear;
@@ -175,8 +175,8 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
     // Gradiente medio
     let gradTot = 0, coppie = 0;
     for (let i = 1; i < sorted.length; i++) {
-      const dq = sorted[i].alt - sorted[i-1].alt;
-      const dv = sorted[i].speed - sorted[i-1].speed;
+      const dq = sorted[i].alt - sorted[i - 1].alt;
+      const dv = sorted[i].speed - sorted[i - 1].speed;
       if (dq > 0) { gradTot += dv / dq; coppie++; }
     }
     gradienteVento = coppie > 0 ? gradTot / coppie : 0;
@@ -262,8 +262,8 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
                   const isSurface = i === 0;
                   let shear = 0;
                   if (i > 0) {
-                    const dAlt = l.alt - levels[i-1].alt;
-                    const dSpeed = Math.abs(l.speed - levels[i-1].speed);
+                    const dAlt = l.alt - levels[i - 1].alt;
+                    const dSpeed = Math.abs(l.speed - levels[i - 1].speed);
                     if (dAlt > 0) shear = dSpeed / (dAlt / 100);
                   }
                   return (
@@ -291,8 +291,8 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
 
           {/* Legenda shear */}
           <div className="text-[10px] text-slate-500 flex items-center gap-4">
-            <span>Shear: <span className="text-emerald-300">≤2</span> debole · <span className="text-amber-300">2-5</span> moderato · <span className="text-red-300">>5</span> forte</span>
-            <span>Gradiente: <span className="text-emerald-300">≤0.3</span> omogeneo · <span className="text-amber-300">>0.5</span> marcato</span>
+            <span>Shear: <span className="text-emerald-300">≤2</span> debole · <span className="text-amber-300">2-5</span> moderato · <span className="text-red-300">{">"}5</span> forte</span>
+            <span>Gradiente: <span className="text-emerald-300">≤0.3</span> omogeneo · <span className="text-amber-300">{">"}0.5</span> marcato</span>
           </div>
         </div>
       )}
