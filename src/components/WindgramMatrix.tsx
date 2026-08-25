@@ -326,12 +326,7 @@ export default function WindgramMatrix({
       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
       Dati REALI Open-Meteo (925/850/700/500/600/1000/300 hPa)
     </span>
-  ) : (
-    <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-bold flex items-center gap-1">
-      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-      Solo superficie - mancano livelli pressione
-    </span>
-  );
+  ) : null;
 
   const headerDate = dateLabel || (() => {
     const d = new Date();
@@ -366,20 +361,6 @@ export default function WindgramMatrix({
 
           <div className="flex items-center justify-between gap-2 mb-2">
             {dataSourceBadge}
-            
-            <div className="flex items-center gap-2 text-[11px] overflow-x-auto pb-1 font-sans shrink-0">
-              <div className="text-slate-500 font-bold uppercase text-[10px] leading-tight shrink-0 mr-1">
-                VENTO<br />(KM/H):
-              </div>
-              <div className="flex gap-1.5 shrink-0">
-                <div className="px-2 py-1 rounded bg-[#d3f9d8] text-[#0ca678] font-bold text-center leading-none">1-<br />8</div>
-                <div className="px-2 py-1 rounded bg-[#e9fac8] text-[#66a80f] font-bold text-center leading-none">9-<br />14</div>
-                <div className="px-2 py-1 rounded bg-[#fef3c7] text-[#d97706] font-bold text-center leading-none">15-<br />20</div>
-                <div className="px-2 py-1 rounded bg-[#ffedd5] text-[#ea580c] font-bold text-center leading-none">21-<br />28</div>
-                <div className="px-2 py-1 rounded bg-[#fee2e2] text-[#dc2626] font-bold text-center leading-none">29-<br />40</div>
-                <div className="px-2 py-1 rounded bg-[#ede9fe] text-[#7c3aed] font-bold text-center leading-none">{">"}<br />40</div>
-              </div>
-            </div>
           </div>
         </div>
 
