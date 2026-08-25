@@ -1,4 +1,3 @@
-in JSX">
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -108,9 +107,7 @@ export default function TomorrowWindgram({ decollo }: TomorrowWindgramProps) {
         if (mounted) setLoading(false);
       }
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [decollo.lat, decollo.lon]);
 
   if (loading) {
@@ -141,7 +138,6 @@ export default function TomorrowWindgram({ decollo }: TomorrowWindgramProps) {
 
   const times = Array.from(new Set(data.map((d) => d.time))).sort();
   const levels = Array.from(new Set(data.map((d) => d.level))).sort((a, b) => a - b);
-
   const width = 900;
   const height = 520;
   const paddingLeft = 70;
