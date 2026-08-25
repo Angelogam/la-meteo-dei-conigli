@@ -49,6 +49,21 @@ function WindArrowIcon({ deg, color }: { deg: number; color: { fill: string; str
   );
 }
 
+// Icona nuvola cumulo con percentuale
+function CloudIcon({ cloudCover }: { cloudCover: number }) {
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <svg width="20" height="14" viewBox="0 0 40 28" className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
+        <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="currentColor" fillOpacity="0.95"/>
+        <ellipse cx="18" cy="14" rx="6" ry="4" fill="currentColor" fillOpacity="0.7"/>
+      </svg>
+      <span className="text-[9px] font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
+        {cloudCover}%
+      </span>
+    </div>
+  );
+}
+
 export default function WindgramMatrix({
   dayData,
   siteName,
@@ -82,27 +97,45 @@ export default function WindgramMatrix({
     return altitudes;
   }, [baseDecolloFloor, maxAlt]);
 
-  // Calcolo convezione / profilo termico per ogni ora
+  // Calcolo convezione / profilo termico per ogni ora + BASE CUMULI (LCL)
   const hourThermalData = useMemo(() => {
-    const data: Record<number, { top: number; base: number; rateo: number }> = {};
+    const data: Record<number, { 
+      top: number; 
+      base: number; 
+      rateo: number;
+      cloudBase: number;    // LCL - quota base cumuli
+      cloudCover: number;   // % nuvolosità a quella quota
+    }> = {};
     DISPLAY_HOURS.forEach((hr) => {
       const h = hourlyMap.get(hr);
       if (h) {
         const t = calcolaTermiche(h, altitude);
+        // LCL = quota decollo + (T - Td) * 125 ≈ base cumuli
+        const spread = Math.max(1, h.temperature - (h.dewPoint ?? (h.temperature - 8)));
+        const lcl = Math.round(altitude + spread * 125);
         data[hr] = {
           top: t.top,
           base: t.base,
           rateo: t.rateo,
+          cloudBase: Math.min(lcl, 3500), // cap a 3500m
+          cloudCover: h.cloudCover ?? 30,
         };
       } else {
         const temp = 16 + (hr >= 12 && hr <= 15 ? 7 : hr >= 11 && hr <= 17 ? 4 : 1);
         const dew = temp - 8;
         const spread = Math.max(1, temp - dew);
         const base = Math.max(altitude, Math.round(altitude + spread * 85));
+        const lcl = Math.round(altitude + spread * 125);
         const bellFactor = Math.max(0, 1 - Math.pow((hr - 14) / 4, 2));
-        const top = Math.min(3500, Math.round(base + bellFactor * 1100)); // fino a 3500m
+        const top = Math.min(3500, Math.round(base + bellFactor * 1100));
         const rateo = Math.max(0.3, bellFactor * 2.4);
-        data[hr] = { top, base, rateo };
+        data[hr] = {
+          top,
+          base,
+          rateo,
+          cloudBase: Math.min(lcl, 3500),
+          cloudCover: 30,
+        };
       }
     });
     return data;
@@ -173,6 +206,27 @@ export default function WindgramMatrix({
     });
   }, [activeAltitudes, hourlyMap, altitude]);
 
+  // Per ogni ora, trova la riga (quota) più vicina alla cloud base
+  const cloudBaseRow = useMemo(() => {
+    const map: Record<number, number> = {};
+    DISPLAY_HOURS.forEach((hr) => {
+      const thermal = hourThermalData[hr];
+      if (!thermal) return;
+      // Trova l'indice della riga più vicina alla cloud base
+      let bestIdx = 0;
+      let bestDiff = Infinity;
+      activeAltitudes.forEach((a, idx) => {
+        const diff = Math.abs(a - thermal.cloudBase);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          bestIdx = idx;
+        }
+      });
+      map[hr] = bestIdx;
+    });
+    return map;
+  }, [hourThermalData, activeAltitudes]);
+
   return (
     <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
       <div className="w-full bg-[#f8fafc] text-slate-900 border border-slate-200/80 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
@@ -213,7 +267,28 @@ export default function WindgramMatrix({
         </div>
 
         {/* Tabella Windgram - Quote a SINISTRA, 4000m in alto, decollo in basso */}
-        <div className="overflow-x-auto border-t border-b border-slate-200 bg-white">
+        <div className="overflow-x-auto border-t border-b border-slate-200 bg-white relative">
+          {/* RIGA NUVOLE SOPRA L'HEADER - nuvole alla base cumuli per ogni ora */}
+          <div className="absolute top-0 left-0 right-0 -translate-y-1/2 z-50 pointer-events-none">
+            <div className="flex overflow-x-auto">
+              <div className="w-16 flex-shrink-0" /> {/* Spazio colonna quote */}
+              {DISPLAY_HOURS.map((hr) => {
+                const thermal = hourThermalData[hr];
+                if (!thermal) return <div key={hr} className="w-14 flex-shrink-0" />;
+                const rowIdx = cloudBaseRow[hr];
+                // Mostra nuvola solo se la base cumuli è dentro il range visibile
+                if (rowIdx === undefined || rowIdx < 0 || rowIdx >= activeAltitudes.length) {
+                  return <div key={hr} className="w-14 flex-shrink-0" />;
+                }
+                return (
+                  <div key={hr} className="w-14 flex-shrink-0 relative">
+                    <CloudIcon cloudCover={thermal.cloudCover} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           <table className="w-full text-center border-collapse text-xs">
             <thead>
               <tr className="border-b border-slate-200 text-slate-700 bg-slate-100/90 font-bold">
@@ -236,7 +311,7 @@ export default function WindgramMatrix({
               </tr>
             </thead>
             <tbody>
-              {gridRows.map((row) => (
+              {gridRows.map((row, rowIdx) => (
                 <tr key={`tr-${row.alt}`} className={`border-b border-slate-100 transition-colors ${row.isMajorLevel ? "font-bold" : ""}`}>
                   {/* Colonna quota a SINISTRA */}
                   <td
@@ -252,16 +327,24 @@ export default function WindgramMatrix({
                     const wColor = getWindArrowColor(cell.speed);
                     const isSelectedCol = cell.hr === selectedHour;
                     const bgColor = getThermalBgColor(cell.alt, cell.hr);
+                    // Mostra nuvola se questa riga è la cloud base per quest'ora
+                    const showCloud = cloudBaseRow[cell.hr] === rowIdx;
 
                     return (
                       <td
                         key={`cell-${cell.alt}-${cell.hr}`}
                         onClick={() => onHourSelect?.(cell.hr)}
                         style={{ backgroundColor: bgColor }}
-                        className={`py-1.5 px-1 border-r border-slate-200/60 cursor-pointer transition-colors ${
+                        className={`py-1.5 px-1 border-r border-slate-200/60 cursor-pointer transition-colors relative ${
                           isSelectedCol ? "ring-1 ring-sky-400/90" : "hover:brightness-95"
                         }`}
                       >
+                        {/* Nuvoletta con % sopra il vento se è la base cumuli */}
+                        {showCloud && (
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-0.5 z-20 pointer-events-none">
+                            <CloudIcon cloudCover={hourThermalData[cell.hr]?.cloudCover ?? 30} />
+                          </div>
+                        )}
                         <div className="flex items-center justify-center gap-0.5">
                           <WindArrowIcon deg={cell.dir} color={wColor} />
                           <span
@@ -291,10 +374,15 @@ export default function WindgramMatrix({
               <span className="w-3.5 h-3.5 rounded bg-[#fde68a] border border-amber-400" />
               <span className="font-medium text-slate-700">Livello Decollo ({altitude}m)</span>
             </div>
+            <div className="flex items-center gap-2">
+              <CloudIcon cloudCover={50} />
+              <span className="font-medium text-slate-700">Base cumuli + % nuvolosità</span>
+            </div>
           </div>
           <div className="text-[11px] text-slate-500 font-mono space-y-0.5">
             <p>&bull; Freccia: direzione vento &bull; Numero: velocità in km/h</p>
             <p>&bull; Clicca un'ora per selezionarla</p>
+            <p>&bull; Nuvoletta = base cumuli (LCL) con copertura %</p>
           </div>
         </div>
       </div>
