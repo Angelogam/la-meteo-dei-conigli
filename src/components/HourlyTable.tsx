@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import type { HourData } from "@/types/meteo";
 import { calcolaTermiche } from "@/utils/termiche";
 import { getVoloStatus } from "@/utils/volo";
-import { Calendar } from "lucide-react";
+import { Calendar, MapPin } from "lucide-react";
 
 interface HourlyTableProps {
   dayData: HourData[];
@@ -12,9 +12,9 @@ interface HourlyTableProps {
   selectedHour: number;
   onHourSelect: (hour: number) => void;
   dayLabel?: string;
+  siteName?: string;
 }
 
-/** Icona meteo in base al codice WMO */
 function iconaMeteo(code: number): string {
   if (code >= 95) return "⛈️";
   if (code >= 80) return "🌧️";
@@ -28,7 +28,6 @@ function iconaMeteo(code: number): string {
   return "☀️";
 }
 
-/** Descrizione vento */
 function ventoTesto(speed: number): string {
   if (speed < 3) return "Calma";
   if (speed < 8) return "Leggero";
@@ -38,13 +37,12 @@ function ventoTesto(speed: number): string {
   return "Molto forte";
 }
 
-/** Direzione vento in italiano */
 function direzioneVento(deg: number): string {
   const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   return dirs[Math.round(deg / 45) % 8];
 }
 
-export default function HourlyTable({ dayData, altitude, selectedHour, onHourSelect, dayLabel }: HourlyTableProps) {
+export default function HourlyTable({ dayData, altitude, selectedHour, onHourSelect, dayLabel, siteName }: HourlyTableProps) {
   const rows = useMemo(() => {
     const ore = Array.from({ length: 11 }, (_, i) => i + 9);
     return ore.map((ora) => {
@@ -91,7 +89,15 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
   return (
     <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/30">
-        <h3 className="text-base font-bold text-slate-200">Previsioni orarie</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-base font-bold text-slate-200">Previsioni orarie</h3>
+          {siteName && (
+            <span className="flex items-center gap-1 text-xs text-emerald-300 bg-emerald-900/30 px-2 py-0.5 rounded-full border border-emerald-500/30">
+              <MapPin className="w-3 h-3" />
+              {siteName}
+            </span>
+          )}
+        </div>
         <span className="text-xs text-slate-400 flex items-center gap-1">
           <Calendar className="w-3 h-3" />{dataLabel}
         </span>
