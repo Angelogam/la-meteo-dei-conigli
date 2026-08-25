@@ -1,133 +1,257 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Wind, AlertTriangle, CheckCircle, Loader2, Gauge } from "lucide-react";
-import { weatherService } from "@/services/openMeteoService";
-import { getVentoStatusColor } from "@/utils/validaVentoDecollo";
-import { degreesToCardinal, windArrow } from "@/utils/windDirections";
+import React, { useEffect, useState, useMemo } from "react";
+import { Wind, Calendar, MapPin, TrendingUp, Cloud, AlertTriangle, Loader2 } from "lucide-react";
+import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
+import ProfessionalWindgram from "@/components/ProfessionalWindgram";
+import TomorrowWindgram from "@/components/TomorrowWindgram";
+
+function getSpeedColor(speed: number): string {
+  if (speed <= 8) return "text-emerald-300";
+  if (speed <= 15) return "text-lime-300";
+  if (speed <= 22) return "text-amber-300";
+  if (speed <= 30) return "text-orange-300";
+  return "text-red-400";
+}
+
+function getSpeedBarColor(speed: number): string {
+  if (speed <= 8) return "bg-emerald-400";
+  if (speed <= 15) return "bg-lime-400";
+  if (speed <= 22) return "bg-amber-400";
+  if (speed <= 30) return "bg-orange-400";
+  return "bg-red-400";
+}
+
+function getDirAbbrev(deg: number): string {
+  const abbrevs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+  return abbrevs[Math.round(deg / 22.5) % 16] || "N";
+}
+
+function getDirArrow(deg: number): string {
+  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
+  return arrows[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
+}
+
+function formatDateShort(date: Date): string {
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return "";
+  const giorni = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
+  return `${giorni[d.getDay()]} ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
 
 interface VentiTabProps {
-  currentData: any;
-  dayData: any[];
-  site: { lat: number; lon: number; alt: number; name: string; exposure: string };
+  lat: number;
+  lon: number;
+  quotaDecollo: number;
   selectedDay: number;
-  onSelect: (id: string) => void;
+  oraCorrente?: number;
+  onOraChange?: (ora: number) => void;
+  siteName?: string;
 }
 
 export default function VentiTab({
-  currentData,
-  dayData,
-  site,
+  lat,
+  lon,
+  quotaDecollo,
   selectedDay,
-  onSelect,
+  oraCorrente = 12,
+  onOraChange,
+  siteName,
 }: VentiTabProps) {
-  const [windInfo, setVentoData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<VentiInterpolatiData | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [oraSelezionata, setOraSelezionata] = useState(oraCorrente);
+  const [activeWindTab, setActiveWindTab] = useState<"openmeteo" | "tomorrow">("openmeteo");
+
+  const decolloForTomorrow = useMemo(() => ({
+    name: siteName || "Decollo",
+    lat, lon,
+    elevation: quotaDecollo
+  }), [siteName, lat, lon, quotaDecollo]);
 
   useEffect(() => {
-    let mounted = true;
-    const fetchVento = async () => {
-      try {
-        const current = await weatherService.fetchCurrent(site.lat, site.lon);
-        if (!mounted) return;
-        
-        const windSpeed = current.windSpeed || 0;
-        const windDir = current.windDir || 0;
-        const windGusts = current.windGusts || 0;
-        
-        setVentoData({
-          speed: windSpeed,
-          dir: windDir,
-          gust: windGusts,
-          directionLabel: degreesToCardinal(windDir),
-          directionArrow: windArrow(windDir),
-          isFavourable: windSpeed >= 5 && windSpeed <= 15,
-          isLaterale: false,
-          isSottovento: false,
-        });
-      } catch (err) {
-        if (mounted) setError(err instanceof Error ? err.message : "Errore");
-      } finally {
-        if (mounted) setLoading(false);
+    if (!lat || !lon || !quotaDecollo) return;
+    const oggi = new Date();
+    const targetDate = new Date(oggi);
+    targetDate.setDate(oggi.getDate() + selectedDay);
+    const dayStr = targetDate.toISOString().split("T")[0];
+
+    setLoading(true);
+    setError(null);
+
+    getVentiInterpolati(lat, lon, quotaDecollo, dayStr)
+      .then((result) => {
+        setData(result);
+        setLoading(false);
+        if (result.ventoOrario.length > 0) {
+          const closest = result.ventoOrario.reduce((prev, curr) =>
+            Math.abs(curr.ora - oraCorrente) < Math.abs(prev.ora - oraCorrente) ? curr : prev
+          );
+          setOraSelezionata(closest.ora);
+        }
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "Errore");
+        setLoading(false);
+      });
+  }, [lat, lon, quotaDecollo, selectedDay, oraCorrente]);
+
+  const oggi = new Date();
+  const targetDate = new Date(oggi);
+  targetDate.setDate(oggi.getDate() + selectedDay);
+  const dataGiorno = formatDateShort(targetDate);
+
+  const oraData = useMemo(() => {
+    if (!data) return null;
+    return data.ventoOrario.find((v) => v.ora === oraSelezionata) || data.ventoOrario[0] || null;
+  }, [data, oraSelezionata]);
+
+  const quoteVisibili = useMemo(() => {
+    if (!oraData) return [];
+
+    const quote: { quota: number; speed: number; dir: number }[] = [];
+    const partenza = Math.floor(quotaDecollo / 250) * 250;
+    for (let q = partenza; q <= 4000; q += 250) {
+      if (oraData.quote[q]) {
+        quote.push({ quota: q, speed: oraData.quote[q].speed, dir: oraData.quote[q].dir });
       }
-    };
+    }
 
-    fetchVento();
-    return () => { mounted = false; };
-  }, [site.lat, site.lon, selectedDay]);
+    if (!quote.find((q) => Math.abs(q.quota - quotaDecollo) < 150)) {
+      const closest = Object.entries(oraData.quote)
+        .map(([q, v]) => ({ quota: parseInt(q), ...v }))
+        .sort((a, b) => Math.abs(a.quota - quotaDecollo) - Math.abs(b.quota - quotaDecollo))[0];
+      if (closest) quote.push(closest);
+    }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8 text-slate-400">
-        <div className="w-8 h-8 rounded-full border-2 border-emerald-500/30 animate-spin">
-          <Loader2 className="w-4 h-4 text-emerald-400" />
-        </div>
-        <span className="text-sm font-medium text-slate-300">Caricamento dati vento...</span>
-      </div>
-    );
-  }
+    return quote.sort((a, b) => a.quota - b.quota);
+  }, [oraData, quotaDecollo]);
 
-  if (error) {
-    return (
-      <div className="text-center text-red-400">
-        <AlertTriangle className="w-8 h-8 mr-2" />
-        <span className="text-sm font-medium">Errore: {error}</span>
-      </div>
-    );
-  }
-
-  const { speed, dir, gust, dirLabel, directionArrow } = windInfo || {
-    speed: 0,
-    dir: 0,
-    gust: 0,
-    dirLabel: "N/D",
-    directionArrow: "↑",
-  };
-  const isFavourable = speed >= 5 && speed <= 15;
-  const isSottovento = false;
-  const isContrario = false;
-
-  const dirName = degreesToCardinal(dir);
-  const dirArrow = windArrow(dir);
+  const maxSpeed = useMemo(() => Math.max(...quoteVisibili.map((q) => q.speed), 1), [quoteVisibili]);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <div className="shrink-0 mt-0.5 text-3xl">
-          {directionArrow}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-sm font-bold text-white">
-              {site.name} — {dirLabel}
-            </h3>
-            <span className="text-xs font-bold text-white">
-              {Math.round(speed)} km/h da {dirLabel}
-            </span>
-          </div>
-        </div>
-
-        <div className={`px-3 py-1 rounded-lg text-xs font-bold ${getVentoStatusColor(isFavourable ? "favorevole" : isSottovento ? "importante" : isContrario ? "rischioso" : "info")}`}>
-          {isFavourable ? "Ottimo" : isSottovento ? "Sottovento" : isContrario ? "Rischioso" : "Info"}
+    <div className="space-y-6">
+      {/* Selettore sorgente vento */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-slate-500">Fonte:</span>
+        <div className="flex bg-slate-800/50 rounded-lg p-1 border border-slate-700/50">
+          <button
+            onClick={() => setActiveWindTab("openmeteo")}
+            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+              activeWindTab === "openmeteo"
+                ? "bg-emerald-600/30 text-emerald-300 shadow-sm"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            Open-Meteo
+          </button>
+          <button
+            onClick={() => setActiveWindTab("tomorrow")}
+            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+              activeWindTab === "tomorrow"
+                ? "bg-purple-600/30 text-purple-300 shadow-sm"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            Tomorrow.io
+          </button>
         </div>
       </div>
 
-      <div className="flex flex-col text-sm text-slate-300">
-        <div className="flex items-center gap-1">
-          <Wind className="w-3 h-3 text-blue-400" />
-          <span>{Math.round(speed)} km/h</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="text-slate-500">Direzione: {dirLabel}</span>
-        </div>
-        {gust > 0 && (
-          <div className="flex items-center gap-1">
-            <Gauge className="w-4 h-4 text-red-300" />
-            <span className="font-bold text-red-200">{gust} km/h</span>
+      {/* Windgram Professionale Open-Meteo */}
+      {activeWindTab === "openmeteo" && (
+        <>
+          <ProfessionalWindgram
+            latitude={lat}
+            longitude={lon}
+            altitude={quotaDecollo}
+            siteName={siteName}
+            selectedDay={selectedDay}
+          />
+
+          <div className="bg-slate-800/60 border border-blue-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
+            <MapPin className="w-5 h-5 text-blue-400 shrink-0" />
+            <div>
+              <div className="text-sm font-bold text-white">{siteName || "Decollo"} — Venti in quota dettagliati</div>
+              <div className="text-[10px] text-slate-400 flex items-center gap-2">
+                <Calendar className="w-3 h-3" />
+                <span>{dataGiorno}</span>
+                <span className="text-slate-600">·</span>
+                <span>Decollo {quotaDecollo}m</span>
+              </div>
+            </div>
           </div>
-        )}
-      </div>
+
+          {data && (
+            <>
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+                {data.ventoOrario.map((v) => (
+                  <button
+                    key={v.ora}
+                    onClick={() => {
+                      setOraSelezionata(v.ora);
+                      onOraChange?.(v.ora);
+                    }}
+                    className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                      v.ora === oraSelezionata
+                        ? "bg-blue-600/30 border-blue-400/50 text-blue-200"
+                        : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700/40"
+                    }`}
+                  >
+                    {String(v.ora).padStart(2, "0")}:00
+                  </button>
+                ))}
+              </div>
+
+              <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp className="w-4 h-4 text-cyan-400" />
+                  <h4 className="text-xs font-bold text-cyan-300 uppercase tracking-wider">
+                    Profilo verticale · {String(oraSelezionata).padStart(2, "0")}:00
+                  </h4>
+                  <span className="text-[10px] text-slate-500 ml-auto">{quotaDecollo}m → 4000m · step 250m</span>
+                </div>
+
+                <div className="space-y-1">
+                  {quoteVisibili.map((q) => {
+                    const pct = Math.max(6, (q.speed / maxSpeed) * 100);
+                    const isDecollo = Math.abs(q.quota - quotaDecollo) < 150;
+                    return (
+                      <div key={q.quota} className="grid grid-cols-[3.5rem_1fr_4.5rem] gap-2 items-center">
+                        <span className="text-[10px] md:text-xs font-mono text-slate-500 text-right">
+                          {q.quota}m
+                          {isDecollo && <span className="text-emerald-400 ml-0.5">🪂</span>}
+                        </span>
+                        <div className="h-4 md:h-5 bg-slate-800/60 rounded-full overflow-hidden relative">
+                          <div
+                            className={`h-full rounded-full ${getSpeedBarColor(q.speed)} transition-all`}
+                            style={{ width: `${pct}%` }}
+                          >
+                            <span className="absolute inset-0 flex items-center justify-end pr-2 text-[9px] md:text-[10px] text-white font-bold">
+                              {q.speed >= 15 && Math.round(q.speed)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 text-[10px] md:text-xs font-mono">
+                          <span className={getSpeedColor(q.speed)}>{Math.round(q.speed)}</span>
+                          <span className="text-slate-500">km/h</span>
+                          <span className="text-slate-400">{getDirArrow(q.dir)}{getDirAbbrev(q.dir)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+      {/* Windgram Tomorrow.io */}
+      {activeWindTab === "tomorrow" && (
+        <TomorrowWindgram decollo={decolloForTomorrow} />
+      )}
     </div>
   );
 }
