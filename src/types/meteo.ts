@@ -44,6 +44,33 @@ export interface HourData {
   diffuseRadiation?: number;
   directNormalIrradiance?: number;
   terrestrialRadiation?: number;
+  // Pressure level wind data (real altitude winds from Open-Meteo)
+  windSpeed925?: number;
+  windDir925?: number;
+  windSpeed850?: number;
+  windDir850?: number;
+  windSpeed700?: number;
+  windDir700?: number;
+  windSpeed500?: number;
+  windDir500?: number;
+  windSpeed600?: number;
+  windDir600?: number;
+  windSpeed300?: number;
+  windDir300?: number;
+  windSpeed250?: number;
+  windDir250?: number;
+  windSpeed200?: number;
+  windDir200?: number;
+  windSpeed1000?: number;
+  windDir1000?: number;
+  windSpeed1500?: number;
+  windDir1500?: number;
+  windSpeed2000?: number;
+  windDir2000?: number;
+  windSpeed2500?: number;
+  windDir2500?: number;
+  windSpeed3000?: number;
+  windDir3000?: number;
 }
 
 export interface DailyData {
