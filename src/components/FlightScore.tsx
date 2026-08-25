@@ -7,6 +7,7 @@ import {
   CloudRain,
   CloudLightning,
   Clock,
+  MapPin,
 } from "lucide-react";
 
 interface FlightScoreProps {
@@ -18,6 +19,7 @@ interface FlightScoreProps {
   totaleOre: number;
   thermalLabel: string;
   dayLabel?: string;
+  siteName?: string;
   rainHours?: number[];
   thunderstormHours?: number[];
 }
@@ -31,6 +33,7 @@ export default function FlightScore({
   totaleOre,
   thermalLabel,
   dayLabel,
+  siteName,
   rainHours = [],
   thunderstormHours = [],
 }: FlightScoreProps) {
@@ -38,7 +41,6 @@ export default function FlightScore({
   const hasThunderstorm = thunderstormHours.length > 0;
   const hasBadWeather = isRaining || hasThunderstorm;
 
-  // In caso di pioggia o temporale, il punteggio viene azzerato/reso sfavorevole
   const displayScore = hasBadWeather ? 0 : score;
   const displayLabel = hasThunderstorm
     ? "Temporale"
@@ -71,13 +73,23 @@ export default function FlightScore({
       )}
 
       <div className={hasBadWeather ? "pt-7" : ""}>
-        {/* Etichetta giorno */}
-        {dayLabel && (
-          <div className="flex items-center justify-center gap-1.5 text-xs text-slate-400 mb-2">
-            <Calendar className="w-3.5 h-3.5 text-slate-400" />
-            <span>{dayLabel}</span>
+        {/* Intestazione con nome decollo e giorno */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            {siteName && (
+              <span className="flex items-center gap-1.5 text-sm font-bold text-emerald-300 bg-emerald-900/30 px-2.5 py-1 rounded-full border border-emerald-500/30">
+                <MapPin className="w-3.5 h-3.5" />
+                {siteName}
+              </span>
+            )}
+            {dayLabel && (
+              <span className="flex items-center gap-1.5 text-xs text-slate-400">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                {dayLabel}
+              </span>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Punteggio + Badge */}
         <div className="text-center mb-4">
