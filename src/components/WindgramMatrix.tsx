@@ -17,16 +17,16 @@ interface WindgramMatrixProps {
 const DISPLAY_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 
 // Colore freccia e numero in base alla velocità (km/h) identico a SoaringMET
-function getWindArrowColor(speed: number): { fill: string; stroke: string } {
-  if (speed <= 4) return { fill: "#0284c7", stroke: "#0369a1" };
-  if (speed <= 8) return { fill: "#0d9488", stroke: "#0f766e" };
-  if (speed <= 13) return { fill: "#16a34a", stroke: "#15803d" };
-  if (speed <= 18) return { fill: "#65a30d", stroke: "#4d7c0f" };
-  if (speed <= 24) return { fill: "#eab308", stroke: "#ca8a04" };
-  if (speed <= 30) return { fill: "#f97316", stroke: "#ea580c" };
-  if (speed <= 42) return { fill: "#dc2626", stroke: "#b91c1c" };
-  if (speed <= 58) return { fill: "#991b1b", stroke: "#7f1d1d" };
-  return { fill: "#86198f", stroke: "#701a75" };
+function getWindArrowColor(speed: number): { fill: string; stroke: string; text: string } {
+  if (speed <= 4) return { fill: "#0284c7", stroke: "#0369a1", text: "#0284c7" };
+  if (speed <= 8) return { fill: "#0d9488", stroke: "#0f766e", text: "#0d9488" };
+  if (speed <= 13) return { fill: "#16a34a", stroke: "#15803d", text: "#16a34a" };
+  if (speed <= 18) return { fill: "#65a30d", stroke: "#4d7c0f", text: "#65a30d" };
+  if (speed <= 24) return { fill: "#eab308", stroke: "#ca8a04", text: "#ca8a04" };
+  if (speed <= 30) return { fill: "#f97316", stroke: "#ea580c", text: "#ea580c" };
+  if (speed <= 42) return { fill: "#dc2626", stroke: "#b91c1c", text: "#dc2626" };
+  if (speed <= 58) return { fill: "#991b1b", stroke: "#7f1d1d", text: "#991b1b" };
+  return { fill: "#86198f", stroke: "#701a75", text: "#86198f" };
 }
 
 // Freccia sagomata identica al windgram originale
@@ -109,7 +109,7 @@ export default function WindgramMatrix({
   }, [hourlyMap, altitude]);
 
   // Calcolo colore di sfondo della cella (campana termica SoaringMET)
-  const getThermalBgColor = (alt: number, hr: number) => {
+  const getThermalBgColor = (alt: number, hr: number): string => {
     const thermal = hourThermalData[hr];
     if (!thermal) return "transparent";
 
@@ -122,11 +122,11 @@ export default function WindgramMatrix({
       const hrBell = Math.max(0, 1 - Math.pow((hr - 14) / 4.2, 2));
       const strength = (1 - relHeight * 0.75) * (0.4 + hrBell * 0.6);
 
-      if (strength > 0.72) return "#f97316"; // Arancione forte
-      if (strength > 0.55) return "#fb923c"; // Arancione medio
-      if (strength > 0.40) return "#fbbf24"; // Ambra
-      if (strength > 0.22) return "#fde047"; // Giallo acceso
-      return "#fef08a"; // Giallo chiaro sfumato
+      if (strength > 0.72) return "#f97316";
+      if (strength > 0.55) return "#fb923c";
+      if (strength > 0.40) return "#fbbf24";
+      if (strength > 0.22) return "#fde047";
+      return "#fef08a";
     }
 
     // Fascia velatura/umidità grigio-chiaro in quota ore mattutine
@@ -250,13 +250,13 @@ export default function WindgramMatrix({
                   {row.cells.map((cell) => {
                     const wColor = getWindArrowColor(cell.speed);
                     const isSelectedCol = cell.hr === selectedHour;
-                    const cellStyle = getThermalBgColor(cell.alt, cell.hr);
+                    const bgColor = getThermalBgColor(cell.alt, cell.hr);
 
                     return (
                       <td
                         key={`cell-${cell.alt}-${cell.hr}`}
                         onClick={() => onHourSelect?.(cell.hr)}
-                        style={cellStyle}
+                        style={{ backgroundColor: bgColor }}
                         className={`py-1.5 px-1 border-r border-slate-200/60 cursor-pointer transition-colors ${
                           isSelectedCol ? "ring-1 ring-sky-400/90" : "hover:brightness-95"
                         }`}
