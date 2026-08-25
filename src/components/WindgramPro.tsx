@@ -232,19 +232,19 @@ export default function WindgramPro({ lat, lon, siteName }: WindgramProProps) {
       <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-400">
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-sm" style={{backgroundColor:"#2ecc71"}}></span>
-          <span><5 km/h</span>
+          <span>{"<"} 5 km/h</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-sm" style={{backgroundColor:"#f1c40f"}}></span>
-          <span>5-10 km/h</span>
+          <span>5–10 km/h</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-sm" style={{backgroundColor:"#e67e22"}}></span>
-          <span>10-20 km/h</span>
+          <span>10–20 km/h</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-sm" style={{backgroundColor:"#e74c3c"}}></span>
-          <span>>20 km/h</span>
+          <span>{">"} 20 km/h</span>
         </div>
         <div className="ml-auto flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-sm bg-white/80 border border-slate-500"></span>
