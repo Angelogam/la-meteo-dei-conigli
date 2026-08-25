@@ -34,8 +34,6 @@ function getWindColor(speed: number): { text: string; bg?: string } {
 
 // Simbolo freccia freccia rotata in base alla direzione di provenienza
 function WindArrow({ deg, color }: { deg: number; color: string }) {
-  // deg è la direzione da cui proviene il vento.
-  // La freccia punta verso dove va il vento: rotazione = deg + 180 (o deg in base al sistema)
   return (
     <svg
       width="14"
