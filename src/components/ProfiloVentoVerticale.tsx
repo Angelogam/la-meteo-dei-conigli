@@ -1,4 +1,4 @@
-with > in JSX text to fix TS1382 errors">
+with > in JSX text content for shear and gradient legend">
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -291,8 +291,8 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
 
           {/* Legenda shear */}
           <div className="text-[10px] text-slate-500 flex items-center gap-4">
-            <span>Shear: <span className="text-emerald-300">≤2</span> debole · <span className="text-amber-300">2-5</span> moderato · <span className="text-red-300">{">"}5</span> forte</span>
-            <span>Gradiente: <span className="text-emerald-300">≤0.3</span> omogeneo · <span className="text-amber-300">{">"}0.5</span> marcato</span>
+            <span>Shear: <span className="text-emerald-300">≤2</span> debole · <span className="text-amber-300">2-5</span> moderato · <span className="text-red-300">>5</span> forte</span>
+            <span>Gradiente: <span className="text-emerald-300">≤0.3</span> omogeneo · <span className="text-amber-300">>0.5</span> marcato</span>
           </div>
         </div>
       )}
