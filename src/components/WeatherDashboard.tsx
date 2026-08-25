@@ -15,6 +15,7 @@ interface WeatherDashboardProps {
   groundSpeed?: number;
   groundDir?: number;
   dayLabel?: string;
+  siteName?: string;
 }
 
 function formatDate(date: Date): string {
@@ -31,6 +32,7 @@ export default function WeatherDashboard({
   selectedHour,
   onHourSelect,
   dayLabel,
+  siteName,
 }: WeatherDashboardProps) {
   const flightScore = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
@@ -150,6 +152,7 @@ export default function WeatherDashboard({
           totaleOre={flightScore.totaleOre}
           thermalLabel={flightScore.thermalLabel}
           dayLabel={dayLabel || oggi}
+          siteName={siteName}
           rainHours={rainHours}
           thunderstormHours={thunderstormHours}
         />
@@ -161,6 +164,7 @@ export default function WeatherDashboard({
         selectedHour={selectedHour}
         onHourSelect={onHourSelect}
         dayLabel={dayLabel}
+        siteName={siteName}
       />
     </div>
   );

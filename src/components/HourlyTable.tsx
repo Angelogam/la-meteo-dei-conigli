@@ -51,7 +51,9 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
       const t = calcolaTermiche(h, altitude);
       const v = getVoloStatus(h);
       const now = new Date();
-      const isAdesso = ora === now.getHours();
+      // Ora locale italiana (Europe/Rome) - i dati Open-Meteo sono già in timezone Europe/Rome
+      const oraCorrente = now.getHours();
+      const isAdesso = ora === oraCorrente;
       
       return {
         ora,
@@ -126,7 +128,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                 className={`
                   border-b border-slate-700/20 cursor-pointer transition-colors
                   ${r.ora === selectedHour ? "bg-emerald-900/30 border-emerald-500" : "hover:bg-slate-700/30"}
-                  ${r.isAdesso ? "bg-emerald-900/15" : ""}
+                  ${r.isAdesso ? "bg-emerald-900/15 ring-1 ring-emerald-500/50" : ""}
                 `}
               >
                 <td className="p-2 font-bold text-white">{String(r.ora).padStart(2, "0")}:00</td>

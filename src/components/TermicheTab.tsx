@@ -42,6 +42,15 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* Intestazione con nome decollo */}
+      <div className="bg-slate-800/60 border border-emerald-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
+        <MapPin className="w-5 h-5 text-emerald-400 shrink-0" />
+        <div>
+          <div className="text-sm font-bold text-white">{site.name}</div>
+          <div className="text-[10px] text-slate-400">{site.alt}m · Dati Open-Meteo</div>
+        </div>
+      </div>
+
       {/* === DIAGRAMMA AEROLOGICO (Skew-T) STILE ALPIUM === */}
       <SkewTDiagram
         latitude={site.lat}
