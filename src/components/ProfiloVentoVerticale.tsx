@@ -1,4 +1,4 @@
-with > in JSX text content for shear and gradient legend">
+characters">
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
