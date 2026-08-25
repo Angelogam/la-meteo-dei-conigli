@@ -228,7 +228,7 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
           })}
         </div>
 
-        {/* Legenda colori */}
+        {/* Legenda colori - using < and > entities */}
         <div className="flex flex-wrap items-center justify-center gap-3 mt-4 pt-3 border-t border-slate-700/30">
           <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
             <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#22c55e" }} />
