@@ -1,3 +1,4 @@
+40 con espressione stringa esplicita in WindgramMatrix">
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -176,7 +177,7 @@ export default function WindgramMatrix({
           <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">15-20</span>
           <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 font-bold">21-28</span>
           <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 font-bold">29-40</span>
-          <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-900 font-bold">>40</span>
+          <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-900 font-bold">{"> 40"}</span>
         </div>
       </div>
 
