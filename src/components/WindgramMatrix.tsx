@@ -1,20 +1,17 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import type { HourData } from "@/types/meteo";
 import { Mountain, Wind } from "lucide-react";
 
 interface WindgramMatrixProps {
-  dayData?: HourData[];
+  dayData: HourData[];
   siteName: string;
   altitude: number;
   selectedHour?: number;
   onHourSelect?: (hour: number) => void;
   selectedDay?: number;
   dateLabel?: string;
-  /** Coordinate del sito - usate per la fetch Open-Meteo se dayData non è fornito */
-  lat?: number;
-  lon?: number;
 }
 
 // Ore mostrate nel grafico (estese 8:00 - 19:00)
@@ -179,86 +176,6 @@ function buildRealWindLevels(h: HourData, siteAltitude: number): { alt: number; 
   return Array.from(unique.values()).sort((a, b) => a.alt - b.alt);
 }
 
-/**
- * Fetch diretta da Open-Meteo Forecast API
- * Ritorna i dati orari del giorno richiesto
- */
-async function fetchOpenMeteoDay(
-  lat: number,
-  lon: number,
-  siteAltitude: number,
-  dayOffset: number
-): Promise<HourData[]> {
-  const today = new Date();
-  const target = new Date(today);
-  target.setDate(today.getDate() + dayOffset);
-  const dateStr = target.toISOString().slice(0, 10);
-
-  const url = new URL("https://api.open-meteo.com/v1/forecast");
-  url.searchParams.set("latitude", lat.toString());
-  url.searchParams.set("longitude", lon.toString());
-  url.searchParams.set("hourly", [
-    "temperature_2m",
-    "dew_point_2m",
-    "cloud_cover",
-    "wind_speed_10m",
-    "wind_direction_10m",
-    "wind_speed_1000hPa",
-    "wind_direction_1000hPa",
-    "wind_speed_925hPa",
-    "wind_direction_925hPa",
-    "wind_speed_850hPa",
-    "wind_direction_850hPa",
-    "wind_speed_700hPa",
-    "wind_direction_700hPa",
-    "wind_speed_600hPa",
-    "wind_direction_600hPa",
-    "wind_speed_500hPa",
-    "wind_direction_500hPa",
-    "wind_speed_300hPa",
-    "wind_direction_300hPa",
-  ].join(","));
-  url.searchParams.set("wind_speed_unit", "kmh");
-  url.searchParams.set("start_date", dateStr);
-  url.searchParams.set("end_date", dateStr);
-  url.searchParams.set("timezone", "auto");
-
-  const res = await fetch(url.toString());
-  if (!res.ok) {
-    throw new Error(`Open-Meteo error: ${res.status}`);
-  }
-  const data = await res.json();
-  const h = data.hourly;
-  if (!h?.time) return [];
-
-  const out: HourData[] = [];
-  for (let i = 0; i < h.time.length; i++) {
-    out.push({
-      time: h.time[i],
-      temperature: h.temperature_2m?.[i] ?? 0,
-      dewPoint: h.dew_point_2m?.[i] ?? 0,
-      cloudCover: h.cloud_cover?.[i] ?? 0,
-      windSpeed: h.wind_speed_10m?.[i] ?? 0,
-      windDir: h.wind_direction_10m?.[i] ?? 0,
-      windSpeed1000: h.wind_speed_1000hPa?.[i],
-      windDir1000: h.wind_direction_1000hPa?.[i],
-      windSpeed925: h.wind_speed_925hPa?.[i],
-      windDir925: h.wind_direction_925hPa?.[i],
-      windSpeed850: h.wind_speed_850hPa?.[i],
-      windDir850: h.wind_direction_850hPa?.[i],
-      windSpeed700: h.wind_speed_700hPa?.[i],
-      windDir700: h.wind_direction_700hPa?.[i],
-      windSpeed600: h.wind_speed_600hPa?.[i],
-      windDir600: h.wind_direction_600hPa?.[i],
-      windSpeed500: h.wind_speed_500hPa?.[i],
-      windDir500: h.wind_direction_500hPa?.[i],
-      windSpeed300: h.wind_speed_300hPa?.[i],
-      windDir300: h.wind_direction_300hPa?.[i],
-    } as HourData);
-  }
-  return out;
-}
-
 export default function WindgramMatrix({
   dayData,
   siteName,
@@ -267,61 +184,17 @@ export default function WindgramMatrix({
   onHourSelect,
   selectedDay = 0,
   dateLabel = "",
-  lat,
-  lon,
 }: WindgramMatrixProps) {
-  // Se dayData non è fornito ma abbiamo coordinate, fetch da Open-Meteo
-  const [fetchedDayData, setFetchedDayData] = useState<HourData[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Se dayData è passato come prop, non fare fetch
-    if (dayData && dayData.length > 0) {
-      setFetchedDayData(null);
-      return;
-    }
-    if (lat === undefined || lon === undefined) {
-      setFetchedDayData(null);
-      return;
-    }
-
-    let cancelled = false;
-    setLoading(true);
-    setFetchError(null);
-
-    fetchOpenMeteoDay(lat, lon, altitude, selectedDay)
-      .then((data) => {
-        if (cancelled) return;
-        setFetchedDayData(data);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        console.error("Open-Meteo fetch error:", err);
-        setFetchError(err instanceof Error ? err.message : "Errore fetch");
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [dayData, lat, lon, selectedDay, altitude]);
-
-  const effectiveDayData = dayData && dayData.length > 0 ? dayData : fetchedDayData;
-
   const hourlyMap = useMemo(() => {
     const map = new Map<number, HourData>();
-    if (effectiveDayData && effectiveDayData.length > 0) {
-      effectiveDayData.forEach((h) => {
+    if (dayData && dayData.length > 0) {
+      dayData.forEach((h) => {
         const d = new Date(h.time);
         map.set(d.getHours(), h);
       });
     }
     return map;
-  }, [effectiveDayData]);
+  }, [dayData]);
 
   const hasRealPressureData = useMemo(() => {
     const h = hourlyMap.get(12);
@@ -487,19 +360,7 @@ export default function WindgramMatrix({
           </div>
 
           <div className="flex items-center justify-between gap-2 mb-2">
-            {loading ? (
-              <span className="px-2 py-0.5 rounded bg-sky-100 text-sky-700 text-[10px] font-bold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
-                Caricamento dati Open-Meteo…
-              </span>
-            ) : fetchError ? (
-              <span className="px-2 py-0.5 rounded bg-red-100 text-red-700 text-[10px] font-bold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                Errore: {fetchError}
-              </span>
-            ) : (
-              dataSourceBadge
-            )}
+            {dataSourceBadge}
           </div>
         </div>
 
