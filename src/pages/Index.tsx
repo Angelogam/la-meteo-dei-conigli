@@ -13,7 +13,7 @@ import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
-import WindgramPro from "@/components/WindgramPro";
+import Windgram from "@/components/Windgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
@@ -98,11 +98,12 @@ export default function Index() {
                 />
                 <PrevisioniGiornaliere enrichedDaily={enrichedDaily} dateLabels={dateLabels} currentData={currentData} dayData={dayData} site={{ name: site!.site_name, altitude: site!.elevation_m, exposure: site!.orientation }} selectedDay={selectedDay} onSelectDay={setSelectedDay} nomeDecollo={site!.site_name} />
                 
-                {/* Windgram PRO integrato sotto le previsioni giornaliere */}
-                <WindgramPro 
-                  lat={site!.lat} 
-                  lon={site!.lon} 
+                {/* Windgram integrato sotto le previsioni giornaliere */}
+                <Windgram 
+                  dayData={dayData} 
                   siteName={site!.site_name} 
+                  altitude={site!.elevation_m}
+                  selectedHour={selectedHour}
                 />
                 
                 <WeatherDashboard dayData={dayData} altitude={site!.elevation_m} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabels[selectedDay] ?? ""} siteName={site!.site_name} />
