@@ -116,7 +116,6 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
 
   return (
     <div className="bg-slate-900/80 border border-slate-700/60 rounded-2xl p-4 sm:p-6 shadow-xl">
-      {/* Header */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/30 to-blue-500/20 border border-cyan-400/40 flex items-center justify-center">
@@ -134,7 +133,6 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
           </div>
         </div>
         
-        {/* Stats rapidi */}
         {stats && (
           <div className="flex items-center gap-3 text-xs">
             <div className="bg-slate-800/60 rounded-lg px-3 py-1.5 border border-slate-700/50">
@@ -153,9 +151,7 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
         )}
       </div>
 
-      {/* Grafico vento */}
       <div className="relative">
-        {/* Linea di riferimento base */}
         <div className="absolute left-0 right-0 top-1/2 h-px bg-slate-700/30" />
         
         <div className="flex items-end justify-between gap-1 sm:gap-2 h-48 sm:h-56">
@@ -166,7 +162,6 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
             
             return (
               <div key={o.ora} className="flex-1 flex flex-col items-center group relative h-full justify-end">
-                {/* Tooltip */}
                 <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-600 rounded-lg px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none whitespace-nowrap">
                   <div className="text-xs font-bold text-white">{String(o.ora).padStart(2, "0")}:00</div>
                   <div className="flex items-center gap-2 mt-1">
@@ -184,7 +179,6 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
                   </div>
                 </div>
 
-                {/* Barra vento */}
                 <div 
                   className="w-full max-w-[28px] sm:max-w-[36px] rounded-t-lg transition-all duration-300 relative overflow-hidden"
                   style={{ 
@@ -193,7 +187,6 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
                     boxShadow: isPeak ? `0 0 12px ${o.color}66` : "none"
                   }}
                 >
-                  {/* Barra raffiche */}
                   {o.gust > o.speed && (
                     <div 
                       className="absolute left-0 right-0 bottom-0 rounded-t-lg border-t-2 border-dashed"
@@ -206,7 +199,6 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
                   )}
                 </div>
 
-                {/* Valore speed */}
                 <div 
                   className="text-[10px] sm:text-xs font-bold mt-1 tabular-nums"
                   style={{ color: o.color }}
@@ -214,12 +206,10 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
                   {o.speed}
                 </div>
 
-                {/* Icona direzione */}
                 <div className="text-sm mt-0.5" style={{ color: o.color }}>
                   {o.arrow}
                 </div>
 
-                {/* Ora */}
                 <div className="text-[9px] sm:text-[10px] text-slate-500 mt-1 font-mono">
                   {String(o.ora).padStart(2, "0")}
                 </div>
@@ -228,7 +218,6 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
           })}
         </div>
 
-        {/* Legenda colori - using < and > entities for JSX safety */}
         <div className="flex flex-wrap items-center justify-center gap-3 mt-4 pt-3 border-t border-slate-700/30">
           <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
             <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#22c55e" }} />
@@ -257,7 +246,6 @@ export default function Windgram({ dayData, siteName, altitude, selectedHour }: 
         </div>
       </div>
 
-      {/* Tabella dettagli oraria */}
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-xs">
           <thead>

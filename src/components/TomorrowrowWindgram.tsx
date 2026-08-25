@@ -26,19 +26,11 @@ interface TomorrowWindgramProps {
 
 async function fetchTomorrowWindgram(lat: number, lon: number): Promise<WindPoint[]> {
   const levels = ["surface", "100m", "300m", "500m", "800m", "1000m", "1500m", "2000m", "2500m", "3000m"];
-
-  const url =
-    `https://api.tomorrow.io/v4/timelines?location=${lat},${lon}` +
-    `&fields=windSpeed,windDirection,temperature,cloudCover` +
-    `&timesteps=1h&levels=${levels.join(",")}` +
-    `&units=metric&apikey=${TOMORROW_API_KEY}`;
-
+  const url = `https://api.tomorrow.io/v4/timelines?location=${lat},${lon}&fields=windSpeed,windDirection,temperature,cloudCover&timesteps=1h&levels=${levels.join(",")}&units=metric&apikey=${TOMORROW_API_KEY}`;
   const res = await fetch(url);
   const data = await res.json();
-
   const intervals = data.data?.timelines?.[0]?.intervals ?? [];
   const result: WindPoint[] = [];
-
   for (const interval of intervals) {
     const time = interval.startTime;
     const v = interval.values || {};
@@ -74,35 +66,12 @@ function getWindArrow(deg: number): string {
   return arrows[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
 }
 
-function computeThermalBase(points: WindPoint[]): number | null {
-  const byLevel: Record<number, WindPoint[]> = {};
-  for (const p of points) {
-    if (!byLevel[p.level]) byLevel[p.level] = [];
-    byLevel[p.level].push(p);
-  }
-  const levels = Object.keys(byLevel).map(Number).sort((a, b) => a - b);
-  for (const l of levels) {
-    const arr = byLevel[l];
-    const t = arr.reduce((s, p) => s + p.temperature, 0) / arr.length;
-    const c = arr.reduce((s, p) => s + p.cloudCover, 0) / arr.length;
-    if (t >= 15 && c <= 60 && l >= 300) return l;
-  }
-  return null;
-}
-
 const ParapendioIcon = ({ x, y }: { x: number; y: number }) => (
   <g transform={`translate(${x},${y})`}>
     <path d="M -15,-4 C -12,-16 12,-16 15,-4 C 10,-8 -10,-8 -15,-4 Z" fill="#c084fc" stroke="#7e22ce" strokeWidth={1.8} />
     <line x1="-12" y1="-5" x2="0" y2="0" stroke="#7e22ce" strokeWidth={1} />
     <line x1="12" y1="-5" x2="0" y2="0" stroke="#7e22ce" strokeWidth={1} />
     <circle cx="0" cy="0" r="3.5" fill="#ffffff" stroke="#7e22ce" strokeWidth={2} />
-  </g>
-);
-
-const SnowflakeIcon = ({ x, y }: { x: number; y: number }) => (
-  <g transform={`translate(${x}, ${y})`}>
-    <circle cx="0" cy="0" r="7.5" fill="#ffffff" stroke="#0284c7" strokeWidth={1.8} />
-    <text x="0" y="3.5" fill="#0284c7" fontSize="10" fontWeight="900" textAnchor="middle">{"\u2744"}</text>
   </g>
 );
 
@@ -134,7 +103,6 @@ export default function Tomorrowwindgram({ decollo, selectedDay = 0 }: TomorrowW
     };
   }, [decollo.lat, decollo.lon]);
 
-  // Filter data for selected day
   const filteredData = useMemo(() => {
     if (!data.length) return [];
     const today = new Date();
@@ -154,15 +122,25 @@ export default function Tomorrowwindgram({ decollo, selectedDay = 0 }: TomorrowW
     return Array.from(new Set(filteredData.map((p) => p.level))).sort((a, b) => a - b);
   }, [filteredData]);
 
-  // Calculate zero degree level (freezing level)
   const zeroThermal = useMemo(() => {
     if (!filteredData.length) return null;
     const surfacePoints = filteredData.filter((p) => p.level === 0);
     if (!surfacePoints.length) return null;
     const avgSurfaceTemp = surfacePoints.reduce((s, p) => s + p.temperature, 0) / surfacePoints.length;
-    // Approximate freezing level: surface temp / lapse rate (0.0065C/m) + surface elevation
     return Math.round(decollo.elevation + avgSurfaceTemp / 0.0065);
   }, [filteredData, decollo.elevation]);
+
+  const dateObj = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + selectedDay);
+    return d;
+  }, [selectedDay]);
+
+  const formattedDateTitle = useMemo(() => {
+    const days = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
+    const months = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
+    return `${days[dateObj.getDay()]} ${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+  }, [dateObj]);
 
   if (loading) {
     return (
@@ -188,17 +166,14 @@ export default function Tomorrowwindgram({ decollo, selectedDay = 0 }: TomorrowW
     );
   }
 
-  // SVG Dimensions
   const width = 1000;
   const height = 350;
   const padL = 60;
   const padR = 20;
   const padT = 30;
   const padB = 40;
-
   const plotW = width - padL - padR;
   const plotH = height - padT - padB;
-
   const minAlt = Math.max(0, decollo.elevation - 200);
   const maxAlt = 6000;
 
@@ -211,7 +186,6 @@ export default function Tomorrowwindgram({ decollo, selectedDay = 0 }: TomorrowW
     return padL + (idx / Math.max(1, times.length - 1)) * plotW;
   };
 
-  // Standard pressure levels for labels
   const PRESSURE_LEVELS = [
     { hpa: 500, alt: 5800 },
     { hpa: 550, alt: 5000 },
@@ -225,20 +199,6 @@ export default function Tomorrowwindgram({ decollo, selectedDay = 0 }: TomorrowW
 
   const ALT_TICKS = [6000, 5500, 5000, 4500, 4000, 3500, 3000, 2500, 2000, 1500];
 
-  // Format date for title
-  const dateObj = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + selectedDay);
-    return d;
-  }, [selectedDay]);
-
-  const formattedDateTitle = useMemo(() => {
-    const days = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
-    const months = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
-    return `${days[dateObj.getDay()]} ${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
-  }, [dateObj]);
-
-  // Render wind barb (standard meteorological symbol)
   const renderWindBarb = (x: number, y: number, speedKmh: number, dirDeg: number) => {
     if (speedKmh == null || isNaN(speedKmh) || speedKmh < 1) return null;
     const knots = speedKmh * 0.539957;
@@ -253,7 +213,6 @@ export default function Tomorrowwindgram({ decollo, selectedDay = 0 }: TomorrowW
     let rem = Math.round(knots / 5) * 5;
     let pos = 1.0;
 
-    // Pennant 50 knots
     while (rem >= 50 && pos >= 0.3) {
       const bx = x + pos * (endX - x);
       const by = y + pos * (endY - y);
@@ -270,7 +229,6 @@ export default function Tomorrowwindgram({ decollo, selectedDay = 0 }: TomorrowW
       pos -= 0.28;
     }
 
-    // Full barbs 10 knots
     while (rem >= 10 && pos >= 0.2) {
       const bx = x + pos * (endX - x);
       const by = y + pos * (endY - y);
@@ -290,7 +248,6 @@ export default function Tomorrowwindgram({ decollo, selectedDay = 0 }: TomorrowW
       pos -= 0.18;
     }
 
-    // Half barb 5 knots
     if (rem >= 5 && pos >= 0.2) {
       const bx = x + pos * (endX - x);
       const by = y + pos * (endY - y);
@@ -316,26 +273,10 @@ export default function Tomorrowwindgram({ decollo, selectedDay = 0 }: TomorrowW
     );
   };
 
-  // Zero thermal path
   const zeroThermalPath = useMemo(() => {
     if (!zeroThermal || times.length === 0) return "";
     return times.map((_, i) => `${getXFromHourIdx(i)},${getYFromAlt(zeroThermal)}`).join(" ");
   }, [zeroThermal, times]);
-
-  // Thermal top curve
-  const thermalTopCurve = useMemo(() => {
-    if (times.length === 0) return "";
-    return times
-      .map((_, i) => {
-        const surfaceData = filteredData.find((p) => p.time === times[i] && p.level === 0);
-        if (!surfaceData) return "";
-        const spread = Math.max(1, surfaceData.temperature - (surfaceData.temperature - (100 - surfaceData.cloudCover) / 5));
-        const cloudBase = Math.round(decollo.elevation + spread * 125);
-        const thermalTop = Math.min(3600, cloudBase + Math.min(700, 1.5 * 220));
-        return `${i === 0 ? "M" : "L"} ${getXFromHourIdx(i)},${getYFromAlt(thermalTop)}`;
-      })
-      .join(" ");
-  }, [times, filteredData, decollo.elevation]);
 
   const avgZeroThermal = zeroThermal || 4381;
 
@@ -347,48 +288,26 @@ export default function Tomorrowwindgram({ decollo, selectedDay = 0 }: TomorrowW
       </h3>
 
       <div className="overflow-x-auto">
-        <svg
-          width={width}
-          height={height}
-          style={{ background: "#2c3e50", borderRadius: "8px" }}
-          className="max-w-full"
-        >
-          {/* Background stability zones - Alpium style palette */}
+        <svg width={width} height={height} style={{ background: "#2c3e50", borderRadius: "8px" }} className="max-w-full">
           <rect x={padL} y={padT} width={plotW} height={plotH} fill="#a3e635" />
 
-          {/* Pressure levels & altitude grid */}
           {PRESSURE_LEVELS.map((lvl) => {
             const y = getYFromAlt(lvl.alt);
             return (
               <g key={`grid-lvl-${lvl.hpa}`}>
-                <line
-                  x1={padL}
-                  y1={y}
-                  x2={padL + plotW}
-                  y2={y}
-                  stroke="#1e293b"
-                  strokeWidth="0.8"
-                  strokeDasharray="2 3"
-                  opacity="0.4"
-                />
+                <line x1={padL} y1={y} x2={padL + plotW} y2={y} stroke="#1e293b" strokeWidth="0.8" strokeDasharray="2 3" opacity="0.4" />
                 <text x={padL - 12} y={y + 4} fill="#0f172a" fontSize="11" fontWeight="800" textAnchor="end">
                   {lvl.hpa} hPa
                 </text>
               </g>
             );
           })}
+
           {ALT_TICKS.map((alt) => {
             const y = getYFromAlt(alt);
             return (
               <g key={`grid-alt-${alt}`}>
-                <line
-                  x1={padL + plotW}
-                  y1={y}
-                  x2={padL + plotW + 5}
-                  y2={y}
-                  stroke="#0f172a"
-                  strokeWidth="1.2"
-                />
+                <line x1={padL + plotW} y1={y} x2={padL + plotW + 5} y2={y} stroke="#0f172a" strokeWidth="1.2" />
                 <text x={padL + plotW + 10} y={y + 4} fill="#0f172a" fontSize="11" fontWeight="700" textAnchor="start">
                   {alt} m
                 </text>
@@ -396,25 +315,13 @@ export default function Tomorrowwindgram({ decollo, selectedDay = 0 }: TomorrowW
             );
           })}
 
-          {/* Vertical hour lines */}
           {times.map((_, i) => {
             const x = getXFromHourIdx(i);
             return (
-              <line
-                key={`vline-${i}`}
-                x1={x}
-                y1={padT}
-                x2={x}
-                y2={padT + plotH}
-                stroke="#1e293b"
-                strokeWidth="0.8"
-                strokeDasharray="2 3"
-                opacity="0.3"
-              />
+              <line key={`vline-${i}`} x1={x} y1={padT} x2={x} y2={padT + plotH} stroke="#1e293b" strokeWidth="0.8" strokeDasharray="2 3" opacity="0.3" />
             );
           })}
 
-          {/* Wind barbs at each level for each hour */}
           {times.map((t, i) => {
             const x = getXFromHourIdx(i);
             return (
@@ -429,19 +336,10 @@ export default function Tomorrowwindgram({ decollo, selectedDay = 0 }: TomorrowW
             );
           })}
 
-          {/* Zero thermal line */}
           {zeroThermalPath && (
-            <polyline
-              points={zeroThermalPath}
-              fill="none"
-              stroke="#0284c7"
-              strokeWidth="2.5"
-              strokeDasharray="6 4"
-              strokeLinecap="round"
-            />
+            <polyline points={zeroThermalPath} fill="none" stroke="#0284c7" strokeWidth="2.5" strokeDasharray="6 4" strokeLinecap="round" />
           )}
 
-          {/* Paraglider icons at thermal top */}
           {times.map((_, i) => {
             const surfaceData = filteredData.find((p) => p.time === times[i] && p.level === 0);
             if (!surfaceData) return null;
@@ -453,7 +351,6 @@ export default function Tomorrowwindgram({ decollo, selectedDay = 0 }: TomorrowW
             return <ParapendioIcon key={`pg-${i}`} x={x} y={y} />;
           })}
 
-          {/* Cumulus clouds */}
           {times.map((t, i) => {
             if (i === 0 || i === times.length - 1) return null;
             const surfaceData = filteredData.find((p) => p.time === t && p.level === 0);
@@ -472,40 +369,20 @@ export default function Tomorrowwindgram({ decollo, selectedDay = 0 }: TomorrowW
             );
           })}
 
-          {/* X-axis hour labels */}
           {times.map((t, i) => {
             const x = getXFromHourIdx(i);
             const hh = new Date(t).getHours();
             return (
-              <text
-                key={`label-hour-${hh}`}
-                x={x}
-                y={padT + plotH + 22}
-                fill="#0f172a"
-                fontSize="11.5"
-                fontWeight="800"
-                textAnchor="middle"
-                fontFamily="monospace"
-              >
+              <text key={`label-hour-${hh}`} x={x} y={padT + plotH + 22} fill="#0f172a" fontSize="11.5" fontWeight="800" textAnchor="middle" fontFamily="monospace">
                 {String(hh).padStart(2, "0")}:00
               </text>
             );
           })}
 
-          {/* Plot border */}
-          <rect
-            x={padL}
-            y={padT}
-            width={plotW}
-            height={plotH}
-            fill="none"
-            stroke="#0f172a"
-            strokeWidth="1.4"
-          />
+          <rect x={padL} y={padT} width={plotW} height={plotH} fill="none" stroke="#0f172a" strokeWidth="1.4" />
         </svg>
       </div>
 
-      {/* Legend */}
       <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-400">
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#2ecc71" }} />
