@@ -21,7 +21,7 @@ import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 import { DECOLLI } from "@/data/decolli";
 import { getStabilityIndex } from "@/utils/weatherHelpers";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
-import { Activity } from "lucide-react";
+import { Activity, Wind } from "lucide-react";
 
 export default function Index() {
   useEffect(() => { avviaVerificaContinua(60000); }, []);
