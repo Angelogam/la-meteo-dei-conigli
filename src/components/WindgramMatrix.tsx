@@ -71,16 +71,16 @@ export default function WindgramMatrix({
   // Quota base decollo arrotondata per difetto a step 100m
   const baseStep = 100;
   const baseDecolloFloor = Math.floor(altitude / baseStep) * baseStep;
-  const maxAlt = 3000;
+  const maxAlt = 4000; // MAX 4000m
 
-  // Quote attive: dalla quota decollo arrotondata fino a 3000m
+  // Quote attive: dalla quota decollo arrotondata fino a 4000m (invertite: 4000 in alto, decollo in basso)
   const activeAltitudes = useMemo(() => {
     const altitudes: number[] = [];
-    for (let alt = baseDecolloFloor; alt <= maxAlt; alt += baseStep) {
+    for (let alt = maxAlt; alt >= baseDecolloFloor; alt -= baseStep) {
       altitudes.push(alt);
     }
     return altitudes;
-  }, [baseDecolloFloor]);
+  }, [baseDecolloFloor, maxAlt]);
 
   // Calcolo convezione / profilo termico per ogni ora
   const hourThermalData = useMemo(() => {
@@ -100,7 +100,7 @@ export default function WindgramMatrix({
         const spread = Math.max(1, temp - dew);
         const base = Math.max(altitude, Math.round(altitude + spread * 85));
         const bellFactor = Math.max(0, 1 - Math.pow((hr - 14) / 4, 2));
-        const top = Math.min(2600, Math.round(base + bellFactor * 1100));
+        const top = Math.min(3500, Math.round(base + bellFactor * 1100)); // fino a 3500m
         const rateo = Math.max(0.3, bellFactor * 2.4);
         data[hr] = { top, base, rateo };
       }
@@ -137,7 +137,7 @@ export default function WindgramMatrix({
     return "transparent";
   };
 
-  // Righe della matrice (solo quote sopra il decollo)
+  // Righe della matrice (INVERTITE: 4000m prima riga, decollo ultima riga)
   const gridRows = useMemo(() => {
     return activeAltitudes.map((alt) => {
       const isMajorLevel = alt % 500 === 0;
@@ -212,13 +212,13 @@ export default function WindgramMatrix({
           </div>
         </div>
 
-        {/* Tabella Windgram */}
+        {/* Tabella Windgram - Quote a SINISTRA, 4000m in alto, decollo in basso */}
         <div className="overflow-x-auto border-t border-b border-slate-200 bg-white">
           <table className="w-full text-center border-collapse text-xs">
             <thead>
               <tr className="border-b border-slate-200 text-slate-700 bg-slate-100/90 font-bold">
                 <th className="py-2.5 px-3 text-left w-16 sticky left-0 z-20 bg-slate-100 border-r border-slate-200 text-slate-800">
-                  Quota
+                  Quota (m)
                 </th>
                 {DISPLAY_HOURS.map((hr) => (
                   <th
@@ -238,6 +238,7 @@ export default function WindgramMatrix({
             <tbody>
               {gridRows.map((row) => (
                 <tr key={`tr-${row.alt}`} className={`border-b border-slate-100 transition-colors ${row.isMajorLevel ? "font-bold" : ""}`}>
+                  {/* Colonna quota a SINISTRA */}
                   <td
                     className={`py-1.5 px-3 text-left font-bold sticky left-0 z-10 border-r border-slate-200 text-[11px] ${
                       row.isMajorLevel
