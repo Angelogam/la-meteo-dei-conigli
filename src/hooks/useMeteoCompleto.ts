@@ -3,12 +3,14 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useAnalisiAvanzata, type AnalisiCompletaConMargine } from "./useAnalisiAvanzata";
 import { weatherService, type MeteoHourly, type MeteoCurrent, type MeteoDaily } from "@/services/weatherService";
+import { useThreeSourceWeather, type MeteoDecollo } from "./useThreeSourceWeather";
 
 /**
  * Hook unico che combina tutti i dati meteo:
  * - Analisi avanzata (ogni 5 minuti, senza doppie richieste)
  * - Dati raw Open-Meteo (stessa chiamata di useAnalisiAvanzata)
  * - Previsioni giornaliere
+ * - Motore 3-fonti per validazione incrociata
  * - Calcoli di margine d'errore su TUTTI i parametri
  */
 
@@ -32,6 +34,10 @@ export interface DatiCompleti {
     baseNuvole: number; topTermico: number; pressione: number;
     umidita: number; pioggia: number;
   };
+  // Nuovo: dati 3-fonti per validazione
+  threeSourceData: Map<string, MeteoDecollo>;
+  threeSourceLoading: boolean;
+  threeSourceError: string | null;
 }
 
 export function useMeteoCompleto(lat: number, lon: number, altitude: number): DatiCompleti {
@@ -40,6 +46,13 @@ export function useMeteoCompleto(lat: number, lon: number, altitude: number): Da
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ultimoAggiornamento, setUltimoAggiornamento] = useState(new Date());
+
+  // Hook 3-fonti
+  const { 
+    weatherData: threeSourceData, 
+    loading: threeSourceLoading, 
+    error: threeSourceError 
+  } = useThreeSourceWeather();
 
   useEffect(() => {
     let attivo = true;
@@ -83,5 +96,8 @@ export function useMeteoCompleto(lat: number, lon: number, altitude: number): Da
     loading: loading || analisiLoading,
     error: error || analisiError,
     tempoTrascorso, ultimoAggiornamento, marginiErrore,
+    threeSourceData,
+    threeSourceLoading,
+    threeSourceError
   };
 }

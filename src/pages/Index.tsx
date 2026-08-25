@@ -16,7 +16,7 @@ import AnalisiMeteo from "@/components/AnalisiMeteo";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
-import { useAggressiveWeather } from "@/hooks/useAggressiveWeather";
+import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 import { DECOLLI } from "@/data/decolli";
 import { getStabilityIndex } from "@/utils/weatherHelpers";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
@@ -33,8 +33,8 @@ export default function Index() {
     allHourlyData, activeModel, currentCape,
   } = useWeatherData();
 
-  // Hook meteo aggressivo per TUTTI i 24 decolli
-  const { mergedDecolli, loading: aggressiveLoading, lastUpdate: aggressiveLastUpdate } = useAggressiveWeather();
+  // Hook meteo 3-fonti per TUTTI i 24 decolli
+  const { mergedDecolli, loading: aggressiveLoading, lastUpdate: aggressiveLastUpdate } = useThreeSourceWeather();
 
   const { tempoTrascorso } = useMeteoCompleto(
     site?.lat ?? DECOLLI[0].lat,
@@ -48,7 +48,9 @@ export default function Index() {
     currentData?.cloudCover ?? 30,
   );
 
-  if (weatherLoading || aggressiveLoading) {
+  const isLoading = weatherLoading || aggressiveLoading;
+
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col">
         <Header />
@@ -74,7 +76,7 @@ export default function Index() {
             <UpdateTimer lastUpdate={aggressiveLastUpdate ?? lastUpdate} countdown={countdown} updating={updating} onRefresh={loadWeather} />
             <div className="bg-slate-800/50 border border-emerald-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
               <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
-              <span className="text-xs text-emerald-300">{site?.site_name ?? "Decollo"} — Dati reali Open-Meteo + OpenWeather</span>
+              <span className="text-xs text-emerald-300">{site?.site_name ?? "Decollo"} — Dati reali Open-Meteo + 3 Fonti</span>
               <span className="text-[10px] text-slate-500 ml-auto">{tempoTrascorso}s</span>
             </div>
             <DecolliCard
@@ -95,7 +97,7 @@ export default function Index() {
                   currentData={currentData} 
                 />
                 <PrevisioniGiornaliere enrichedDaily={enrichedDaily} dateLabels={dateLabels} currentData={currentData} dayData={dayData} site={{ name: site!.site_name, altitude: site!.elevation_m, exposure: site!.orientation }} selectedDay={selectedDay} onSelectDay={setSelectedDay} nomeDecollo={site!.site_name} />
-                <WeatherDashboard dayData={dayData} altitude={site!.elevation_m} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabels[selectedDay] ?? ""} />
+                <WeatherDashboard dayData={dayData} altitude={site!.elevation_m} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabels[selectedDay] ?? ""} siteName={site!.site_name} />
                 <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
                 {activeTab === "meteo" && (
