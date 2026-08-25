@@ -53,7 +53,7 @@ export default function Index() {
   // Filtra dayData per il giorno selezionato
   const filteredDayData = useMemo(() => {
     if (!dayData || dayData.length === 0) return [];
-    const oggi = new Date();
+    constoggi = new Date();
     const target = new Date(oggi);
     target.setDate(oggi.getDate() + selectedDay);
     return dayData.filter(h => {
@@ -68,8 +68,8 @@ export default function Index() {
   const dateLabel = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + selectedDay);
-    const giorni = ["DOMENICA", "LUNEDÌ", "MARTEDÌ", "MERCOLEDÌ", "GIOVEDÌ", "VENERDÌ", "SABATO"];
-    const mesi = ["GENNAIO", "FEBBRAIO", "MARZO", "APRILE", "MAGGIO", "GIUGNO", "LUGLIO", "AGOSTO", "SETTEMBRE", "OTTOBRE", "NOVEMBRE", "DICEMBRE"];
+    const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+    const mesi = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
     return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
   }, [selectedDay]);
 
@@ -143,6 +143,27 @@ export default function Index() {
                   />
                 </div>
                 
+                {/* Profilo Verticale - SINCRONIZZATO CON Windgram */}
+                <div className="bg-slate-800/30 border border-emerald-500/30 rounded-2xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                      <Wind className="w-5 h-5 text-emerald-400" />
+                      Profilo Verticale — {dateLabel}
+                    </h3>
+                    <span className="text-xs text-emerald-300 bg-emerald-900/30 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                      {site!.elevation_m}m → 4000m
+                    </span>
+                  </div>
+                  <ProfiloVentoVerticale
+                    siteAlt={site!.elevation_m}
+                    siteName={site!.site_name}
+                    lat={site!.lat}
+                    lon={site!.lon}
+                    selectedHour={selectedHour}
+                    onHourSelect={setSelectedHour}
+                  />
+                </div>
+                
                 <WeatherDashboard dayData={filteredDayData} altitude={site!.elevation_m} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabel} siteName={site!.site_name} />
                 <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
@@ -161,7 +182,7 @@ export default function Index() {
               </div>
             )}
           </div>
-        </div>
+        </main>
       </main>
       <Footer />
       <DiagnosticaPanel />

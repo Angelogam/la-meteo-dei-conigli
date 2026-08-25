@@ -8,9 +8,11 @@ interface ProfiloVentoVerticaleProps {
   siteName?: string;
   lat?: number;
   lon?: number;
+  selectedHour?: number;  // NEW: receive selected hour from parent
+  onHourSelect?: (hour: number) => void;  // NEW: callback to parent
 }
 
-export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587, lon = 7.7943 }: ProfiloVentoVerticaleProps) {
+export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587, lon = 7.7943, selectedHour, onHourSelect }: ProfiloVentoVerticaleProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,6 +24,13 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
           Profilo vento verticale {siteName ? `· ${siteName}` : ""}
         </h4>
       </div>
+
+      {/* Show current hour indicator */}
+      {selectedHour !== undefined && (
+        <div className="text-sm text-cyan-300 mb-2">
+          Ora selezionata: {selectedHour}h
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-8 text-slate-400">
