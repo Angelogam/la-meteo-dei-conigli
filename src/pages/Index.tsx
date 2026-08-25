@@ -53,7 +53,7 @@ export default function Index() {
   // Filtra dayData per il giorno selezionato
   const filteredDayData = useMemo(() => {
     if (!dayData || dayData.length === 0) return [];
-    constoggi = new Date();
+    const oggi = new Date();
     const target = new Date(oggi);
     target.setDate(oggi.getDate() + selectedDay);
     return dayData.filter(h => {
@@ -182,7 +182,7 @@ export default function Index() {
               </div>
             )}
           </div>
-        </main>
+        </div>
       </main>
       <Footer />
       <DiagnosticaPanel />
