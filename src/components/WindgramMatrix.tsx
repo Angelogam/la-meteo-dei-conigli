@@ -68,8 +68,17 @@ function CloudIcon({ cloudCover }: { cloudCover: number }) {
 
 /**
  * ALGORITMO VENTI REALI - Interpola i venti dai livelli di pressione Open-Meteo
- * Livelli reali: 925hPa (~750m), 850hPa (~1450m), 700hPa (~3100m), 500hPa (~5600m)
- * Più superficie 10m (ground level)
+ * Livelli reali con quote standard atmosphere (metri slm):
+ * - Superficie 10m: quota sito
+ * - 1000 hPa: ~100m (spesso ~superficie)
+ * - 925 hPa: ~750m
+ * - 850 hPa: ~1450m
+ * - 700 hPa: ~3000m
+ * - 600 hPa: ~4200m
+ * - 500 hPa: ~5500m
+ * - 300 hPa: ~9000m
+ * 
+ * NOTA: Open-Meteo restituisce i venti in km/h
  */
 function interpolateWindAtAltitude(
   targetAlt: number,
@@ -86,7 +95,7 @@ function interpolateWindAtAltitude(
     return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
   }
 
-  // Se targetAlt è sopra il livello più alto -> estrapola con gradiente
+  // Se targetAlt è sopra il livello più alto -> estrapola con gradiente smorzato
   if (targetAlt >= sorted[sorted.length - 1].alt) {
     const top = sorted[sorted.length - 1];
     const below = sorted[sorted.length - 2];
@@ -95,8 +104,9 @@ function interpolateWindAtAltitude(
     const dirDiff = top.dir - below.dir;
     
     const ratio = (targetAlt - top.alt) / Math.max(1, altDiff);
-    const speed = Math.max(0, top.speed + speedDiff * ratio * 0.5); // smorza estrapolazione
-    let dir = top.dir + dirDiff * ratio * 0.5;
+    // Smorza l'estrapolazione per evitare venti irrealistici
+    const speed = Math.max(0, top.speed + speedDiff * ratio * 0.3);
+    let dir = top.dir + dirDiff * ratio * 0.3;
     dir = ((dir % 360) + 360) % 360;
     
     return { speed: Math.round(speed), dir: Math.round(dir) };
@@ -127,47 +137,55 @@ function interpolateWindAtAltitude(
 
 /**
  * Costruisce i livelli reali di vento per un'ora specifica dai dati Open-Meteo
+ * Open-Meteo restituisce i venti in km/h
  */
 function buildRealWindLevels(h: HourData, siteAltitude: number): { alt: number; speed: number; dir: number }[] {
   const levels: { alt: number; speed: number; dir: number }[] = [];
 
-  // 1. Superficie (10m AGL) - quota = altitudine sito - 10m circa
-  if (h.windSpeed !== undefined && h.windDir !== undefined) {
+  // 1. Superficie (10m AGL) - quota = altitudine sito
+  // Open-Meteo wind_speed_10m è in km/h
+  if (h.windSpeed !== undefined && h.windDir !== undefined && 
+      h.windSpeed !== null && h.windDir !== null) {
     levels.push({ 
-      alt: Math.max(0, siteAltitude - 10), 
-      speed: h.windSpeed, 
-      dir: h.windDir 
+      alt: siteAltitude, 
+      speed: Number(h.windSpeed), 
+      dir: Number(h.windDir) 
     });
   }
 
   // 2. Livelli di pressione REALI da Open-Meteo - quote standard atmosphere
-  // 925 hPa ≈ 750m
-  if (h.windSpeed925 !== undefined && h.windDir925 !== undefined && h.windSpeed925 !== null && h.windDir925 !== null) {
-    levels.push({ alt: 750, speed: h.windSpeed925, dir: h.windDir925 });
-  }
-  
-  // 850 hPa ≈ 1450m
-  if (h.windSpeed850 !== undefined && h.windDir850 !== undefined && h.windSpeed850 !== null && h.windDir850 !== null) {
-    levels.push({ alt: 1450, speed: h.windSpeed850, dir: h.windDir850 });
-  }
-  
-  // 700 hPa ≈ 3100m
-  if (h.windSpeed700 !== undefined && h.windDir700 !== undefined && h.windSpeed700 !== null && h.windDir700 !== null) {
-    levels.push({ alt: 3100, speed: h.windSpeed700, dir: h.windDir700 });
-  }
-  
-  // 500 hPa ≈ 5600m
-  if (h.windSpeed500 !== undefined && h.windDir500 !== undefined && h.windSpeed500 !== null && h.windDir500 !== null) {
-    levels.push({ alt: 5600, speed: h.windSpeed500, dir: h.windDir500 });
+  // Mappatura: livello hPa -> quota approssimativa (metri slm)
+  // NOTA: Open-Meteo li restituisce in km/h
+  const pressureLevels = [
+    { key: 'windSpeed1000', dirKey: 'windDir1000', alt: 100 },     // 1000 hPa ~ 100m
+    { key: 'windSpeed925', dirKey: 'windDir925', alt: 750 },       // 925 hPa ~ 750m
+    { key: 'windSpeed850', dirKey: 'windDir850', alt: 1450 },      // 850 hPa ~ 1450m
+    { key: 'windSpeed700', dirKey: 'windDir700', alt: 3000 },      // 700 hPa ~ 3000m
+    { key: 'windSpeed600', dirKey: 'windDir600', alt: 4200 },      // 600 hPa ~ 4200m
+    { key: 'windSpeed500', dirKey: 'windDir500', alt: 5500 },      // 500 hPa ~ 5500m
+    { key: 'windSpeed300', dirKey: 'windDir300', alt: 9000 },      // 300 hPa ~ 9000m
+  ];
+
+  for (const pl of pressureLevels) {
+    const speed = (h as any)[pl.key];
+    const dir = (h as any)[pl.dirKey];
+    if (speed !== undefined && dir !== undefined && 
+        speed !== null && dir !== null && 
+        !isNaN(Number(speed)) && !isNaN(Number(dir))) {
+      levels.push({ 
+        alt: pl.alt, 
+        speed: Number(speed), 
+        dir: Number(dir) 
+      });
+    }
   }
 
-  // 300 hPa ≈ 9000m (opzionale)
-  if (h.windSpeed300 !== undefined && h.windDir300 !== undefined && h.windSpeed300 !== null && h.windDir300 !== null) {
-    levels.push({ alt: 9000, speed: h.windSpeed300, dir: h.windDir300 });
+  // Ordina per quota CRESCENTE e rimuovi duplicati (stessa quota)
+  const unique = new Map<number, { alt: number; speed: number; dir: number }>();
+  for (const l of levels) {
+    if (!unique.has(l.alt)) unique.set(l.alt, l);
   }
-
-  // Ordina per quota CRESCENTE
-  return levels.sort((a, b) => a.alt - b.alt);
+  return Array.from(unique.values()).sort((a, b) => a.alt - b.alt);
 }
 
 export default function WindgramMatrix({
@@ -180,7 +198,6 @@ export default function WindgramMatrix({
   dateLabel = "",
 }: WindgramMatrixProps) {
   // Mappa dati orari da Open-Meteo FILTRATI PER IL GIORNO SELEZIONATO
-  // Ora usa il dayData già filtrato (che è già filtrato per il giorno corretto in Index.tsx)
   const hourlyMap = useMemo(() => {
     const map = new Map<number, HourData>();
     if (dayData && dayData.length > 0) {
@@ -200,7 +217,8 @@ export default function WindgramMatrix({
       (h.windSpeed925 !== undefined && h.windSpeed925 !== null) ||
       (h.windSpeed850 !== undefined && h.windSpeed850 !== null) ||
       (h.windSpeed700 !== undefined && h.windSpeed700 !== null) ||
-      (h.windSpeed500 !== undefined && h.windSpeed500 !== null)
+      (h.windSpeed500 !== undefined && h.windSpeed500 !== null) ||
+      (h.windSpeed600 !== undefined && h.windSpeed600 !== null)
     );
   }, [hourlyMap]);
 
@@ -329,7 +347,7 @@ export default function WindgramMatrix({
   const dataSourceBadge = hasRealPressureData ? (
     <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold flex items-center gap-1">
       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-      Dati REALI Open-Meteo (925/850/700/500 hPa)
+      Dati REALI Open-Meteo (925/850/700/500/600/1000/300 hPa)
     </span>
   ) : (
     <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-bold flex items-center gap-1">
@@ -521,7 +539,7 @@ export default function WindgramMatrix({
             <p>&bull; Freccia: direzione vento &bull; Numero: velocità in km/h</p>
             <p>&bull; Clicca un'ora per selezionarla</p>
             <p>&bull; Nuvoletta = base cumuli (LCL) con copertura %</p>
-            {hasRealPressureData && <p className="text-emerald-600">&bull; Venti REALI da Open-Meteo (interpolati 925/850/700/500 hPa)</p>}
+            {hasRealPressureData && <p className="text-emerald-600">&bull; Venti REALI da Open-Meteo (interpolati 1000/925/850/700/600/500/300 hPa)</p>}
           </div>
         </div>
       </div>
