@@ -10,6 +10,8 @@ interface WindgramProps {
   altitude: number;
   selectedHour?: number;
   onHourSelect?: (hour: number) => void;
+  selectedDay?: number;
+  dateLabel?: string;
 }
 
 export default function Windgram({
@@ -18,6 +20,8 @@ export default function Windgram({
   altitude,
   selectedHour = 13,
   onHourSelect,
+  selectedDay = 0,
+  dateLabel = "",
 }: WindgramProps) {
   return (
     <div className="w-full">
@@ -27,6 +31,8 @@ export default function Windgram({
         altitude={altitude}
         selectedHour={selectedHour}
         onHourSelect={onHourSelect}
+        selectedDay={selectedDay}
+        dateLabel={dateLabel}
       />
     </div>
   );
