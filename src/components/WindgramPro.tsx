@@ -69,7 +69,7 @@ function computeThermalBase(points: WindPoint[]): number | null {
   return null;
 }
 
-const ParapendioIcon = ({x,y}:{x:number,y:number}) => (
+const ParapendioIcon = ({x,y}:{x:number;y:number}) => (
   <g transform={`translate(${x},${y})`}>
     <path d="M -10 0 Q 0 -10 10 0" stroke="#fff" fill="none" strokeWidth={2}/>
     <line x1={-5} y1={0} x2={-2} y2={8} stroke="#fff" strokeWidth={1.5}/>
