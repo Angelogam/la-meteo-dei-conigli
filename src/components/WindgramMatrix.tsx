@@ -68,8 +68,8 @@ export default function WindgramMatrix({
     return map;
   }, [dayData]);
 
-  // Quota base decollo arrotondata per difetto a step 100m
-  const baseStep = 100;
+  // STEP 250m - Quota base decollo arrotondata per difetto
+  const baseStep = 250;
   const baseDecolloFloor = Math.floor(altitude / baseStep) * baseStep;
   const maxAlt = 4000; // MAX 4000m
 
