@@ -1,8 +1,8 @@
-characters in JSX text content">
+characters">
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Wind, Loader2, AlertCircle, ChevronDown, ChevronUp, RefreshCw, Mountain, Cloud, Sun, TrendingUp } from "lucide-react";
+import { Wind, Loader2, AlertTriangle, ChevronDown, ChevronUp, RefreshCw, Mountain, Cloud, Sun, TrendingUp } from "lucide-react";
 
 interface ProfiloVentoVerticaleProps {
   siteAlt: number;
@@ -150,7 +150,7 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
     return (
       <div className="bg-slate-800/40 border border-red-500/30 rounded-xl p-4">
         <div className="flex items-center gap-2 text-red-400">
-          <AlertCircle className="w-4 h-4" />
+          <AlertTriangle className="w-4 h-4" />
           <span className="text-sm">{error || "Nessun dato vento disponibile"}</span>
         </div>
       </div>
@@ -236,10 +236,10 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
             <span className={`px-2 py-1 rounded bg-slate-900/50 border ${gradienteVento > 0.5 ? "border-amber-500/40 text-amber-300" : "border-emerald-500/40 text-emerald-300"}`}>
               Gradiente: {gradienteVento > 0 ? "+" : ""}{gradienteVento.toFixed(3)} km/h/m
             </span>
-            <span className={`px-2 py-1 rounded bg-slate-900/50 border ${cape > 1000 ? "border-red-500/40 text-red-300" : cape > 500 ? "border-amber-500/40 text-amber-300" : "border-emerald-500/40 text-emerald-300"}`}>
+            <span className={`px-2 py-1 rounded bg-slate-900/50 border ${cape > 1000 ? "border-red-500/40 text-red-300" : cape > 500 ? "border-amber-500/40 text-amber-300" : "border-emerald-500/40 text-emerald-300`}>
               CAPE: {Math.round(cape)} J/kg
             </span>
-            <span className={`px-2 py-1 rounded bg-slate-900/50 border ${cloud > 70 ? "border-amber-500/40 text-amber-300" : "border-emerald-500/40 text-emerald-300"}`}>
+            <span className={`px-2 py-1 rounded bg-slate-900/50 border ${cloud > 70 ? "border-amber-500/40 text-amber-300" : "border-emerald-500/40 text-emerald-300`}>
               Nuvole: {Math.round(cloud)}%
             </span>
           </div>
@@ -291,8 +291,8 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
 
           {/* Legenda shear */}
           <div className="text-[10px] text-slate-500 flex items-center gap-4">
-            <span>Shear: <span className="text-emerald-300">≤2</span> debole · <span className="text-amber-300">2-5</span> moderato · <span className="text-red-300">>5</span> forte</span>
-            <span>Gradiente: <span className="text-emerald-300">≤0.3</span> omogeneo · <span className="text-amber-300">>0.5</span> marcato</span>
+            <span>Shear: <span className="text-emerald-300"><=2</span> debole · <span className="text-amber-300">2-5</span> moderato · <span className="text-red-300">>5</span> forte</span>
+            <span>Gradiente: <span className="text-emerald-300"><=0.3</span> omogeneo · <span className="text-amber-300">>0.5</span> marcato</span>
           </div>
         </div>
       )}
