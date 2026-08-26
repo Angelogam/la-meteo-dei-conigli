@@ -1,8 +1,7 @@
-characters">
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Wind, Loader2, AlertTriangle, ChevronDown, ChevronUp, RefreshCw, Mountain, Cloud, Sun, TrendingUp } from "lucide-react";
+import { Wind, Loader2, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 
 interface ProfiloVentoVerticaleProps {
   siteAlt: number;
@@ -12,19 +11,6 @@ interface ProfiloVentoVerticaleProps {
   selectedHour?: number;
   onHourSelect?: (hour: number) => void;
 }
-
-const PRESSURE_LEVELS = [
-  { hpa: 500, alt: 5800, label: "500 hPa" },
-  { hpa: 550, alt: 5000, label: "550 hPa" },
-  { hpa: 600, alt: 4400, label: "600 hPa" },
-  { hpa: 650, alt: 3750, label: "650 hPa" },
-  { hpa: 700, alt: 3100, label: "700 hPa" },
-  { hpa: 750, alt: 2500, label: "750 hPa" },
-  { hpa: 800, alt: 1950, label: "800 hPa" },
-  { hpa: 850, alt: 1450, label: "850 hPa" },
-];
-
-const ALT_TICKS = [6000, 5500, 5000, 4500, 4000, 3500, 3000, 2500, 2000, 1500];
 
 function getWindArrow(deg: number): string {
   const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
@@ -52,7 +38,7 @@ function getSpeedBarColor(speed: number): string {
   return "bg-red-400";
 }
 
-export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587, lon = 7.7943, selectedHour = 12, onHourSelect }: ProfiloVentoVerticaleProps) {
+export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587, lon = 7.7943, selectedHour = 12 }: ProfiloVentoVerticaleProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +73,6 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
     return () => { mounted = false; };
   }, [lat, lon]);
 
-  // Estrae i dati per l'ora selezionata
   const hourData = useMemo(() => {
     if (!data?.hourly?.time) return null;
     const times: string[] = data.hourly.time;
@@ -98,11 +83,9 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
     const t = h.temperature_2m[idx] ?? 15;
     const dew = h.dew_point_2m?.[idx] ?? (t - 8);
     const cloud = h.cloud_cover?.[idx] ?? 30;
-    const precip = h.precipitation?.[idx] ?? 0;
     const freeze = h.freezing_level_height?.[idx] ?? (siteAlt + (t / 0.0098) * 100);
     const cape = h.cape?.[idx] ?? 0;
 
-    // Venti reali per livello
     const levels = [
       { hpa: "surface", alt: siteAlt, speed: h.wind_speed_10m[idx], dir: h.wind_direction_10m[idx], gust: h.wind_gusts_10m[idx] },
       { hpa: "80m", alt: siteAlt + 80, speed: h.wind_speed_80m[idx], dir: h.wind_direction_80m[idx] },
@@ -115,23 +98,18 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
       { hpa: "500hPa", alt: 5800, speed: h.wind_speed_500hPa[idx], dir: h.wind_direction_500hPa[idx] },
     ].filter(l => l.speed != null && !isNaN(l.speed) && l.dir != null && !isNaN(l.dir));
 
-    // Calcola base termica (LCL)
     const spread = Math.max(1, t - dew);
     const cloudBase = Math.round(siteAlt + spread * 125);
-    const thermalTop = Math.min(3600, cloudBase + Math.min(700, 1.5 * 220));
 
     return {
       hour: selectedHour,
       temp: t,
       dew: dew,
       cloud: cloud,
-      precip: precip,
       freeze: Math.round(freeze),
       cape: cape,
       levels,
       cloudBase,
-      thermalTop,
-      spread,
     };
   }, [data, selectedHour, siteAlt]);
 
@@ -157,9 +135,8 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
     );
   }
 
-  const { hour, temp, cloud, precip, freeze, cape, levels, cloudBase, thermalTop, spread } = hourData;
+  const { hour, temp, cloud, freeze, cape, levels, cloudBase } = hourData;
 
-  // Calcola shear e gradiente
   let shearMax = 0;
   let gradienteVento = 0;
   if (levels.length >= 2) {
@@ -172,7 +149,6 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
         if (shear > shearMax) shearMax = shear;
       }
     }
-    // Gradiente medio
     let gradTot = 0, coppie = 0;
     for (let i = 1; i < sorted.length; i++) {
       const dq = sorted[i].alt - sorted[i - 1].alt;
@@ -187,7 +163,6 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
 
   return (
     <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl overflow-hidden">
-      {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between p-3 hover:bg-slate-700/30 transition-colors"
@@ -208,7 +183,6 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
 
       {expanded && (
         <div className="px-3 pb-3 space-y-3 border-t border-slate-700/30 pt-3">
-          {/* Sintesi condizioni */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
             <div className="bg-slate-900/50 rounded-lg p-2">
               <div className="text-slate-500">Temp / Dew</div>
@@ -228,7 +202,6 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
             </div>
           </div>
 
-          {/* Indicatori shear e gradiente */}
           <div className="flex flex-wrap gap-2 text-xs">
             <span className={`px-2 py-1 rounded bg-slate-900/50 border ${shearMax > 5 ? "border-red-500/40 text-red-300" : shearMax > 2 ? "border-amber-500/40 text-amber-300" : "border-emerald-500/40 text-emerald-300"}`}>
               Shear max: {shearMax.toFixed(1)} km/h/100m
@@ -236,15 +209,14 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
             <span className={`px-2 py-1 rounded bg-slate-900/50 border ${gradienteVento > 0.5 ? "border-amber-500/40 text-amber-300" : "border-emerald-500/40 text-emerald-300"}`}>
               Gradiente: {gradienteVento > 0 ? "+" : ""}{gradienteVento.toFixed(3)} km/h/m
             </span>
-            <span className={`px-2 py-1 rounded bg-slate-900/50 border ${cape > 1000 ? "border-red-500/40 text-red-300" : cape > 500 ? "border-amber-500/40 text-amber-300" : "border-emerald-500/40 text-emerald-300`}>
+            <span className={`px-2 py-1 rounded bg-slate-900/50 border ${cape > 1000 ? "border-red-500/40 text-red-300" : cape > 500 ? "border-amber-500/40 text-amber-300" : "border-emerald-500/40 text-emerald-300"}`}>
               CAPE: {Math.round(cape)} J/kg
             </span>
-            <span className={`px-2 py-1 rounded bg-slate-900/50 border ${cloud > 70 ? "border-amber-500/40 text-amber-300" : "border-emerald-500/40 text-emerald-300`}>
+            <span className={`px-2 py-1 rounded bg-slate-900/50 border ${cloud > 70 ? "border-amber-500/40 text-amber-300" : "border-emerald-500/40 text-emerald-300"}`}>
               Nuvole: {Math.round(cloud)}%
             </span>
           </div>
 
-          {/* Tabella profilo verticale */}
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -272,7 +244,7 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
                       <td className="p-2 text-slate-400">{l.hpa}</td>
                       <td className="p-2">
                         <div className="flex items-center gap-1">
-                          <span className={getSpeedColor(l.speed)} font-bold>{Math.round(l.speed)}</span>
+                          <span className={getSpeedColor(l.speed)}>{Math.round(l.speed)}</span>
                           <span className="text-slate-500">km/h</span>
                           <div className="h-3 w-full bg-slate-700 rounded-full overflow-hidden">
                             <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (l.speed / 50) * 100)}%`, backgroundColor: getSpeedBarColor(l.speed) }} />
@@ -289,7 +261,6 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
             </table>
           </div>
 
-          {/* Legenda shear */}
           <div className="text-[10px] text-slate-500 flex items-center gap-4">
             <span>Shear: <span className="text-emerald-300"><=2</span> debole · <span className="text-amber-300">2-5</span> moderato · <span className="text-red-300">>5</span> forte</span>
             <span>Gradiente: <span className="text-emerald-300"><=0.3</span> omogeneo · <span className="text-amber-300">>0.5</span> marcato</span>
