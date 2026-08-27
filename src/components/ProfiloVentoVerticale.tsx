@@ -96,6 +96,11 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
   const windDirSurface = levels[0]?.dir ?? 0;
   const windSpeedSurface = levels[0]?.speed ?? 0;
 
+  // ORDINA LIVELLI PER QUOTA DECRESCENTE: quota più alta in ALTO (prima riga), superficie in BASSO (ultima riga)
+  const sortedLevels = useMemo(() => {
+    return [...levels].sort((a, b) => b.alt - a.alt); // DESC: 3000m, 2500m, ..., 10m
+  }, [levels]);
+
   return (
     <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl overflow-hidden">
       <button
@@ -165,14 +170,16 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
                 </tr>
               </thead>
               <tbody>
-                {levels.map((l, i) => {
-                  const isSurface = i === 0;
+                {sortedLevels.map((l, i) => {
+                  // Shear calcolato rispetto al livello SOTTO (quota inferiore = riga successiva)
                   let shear = 0;
-                  if (i > 0) {
-                    const dAlt = l.alt - levels[i - 1].alt;
-                    const dSpeed = Math.abs(l.speed - levels[i - 1].speed);
+                  if (i < sortedLevels.length - 1) {
+                    const lowerLevel = sortedLevels[i + 1];
+                    const dAlt = l.alt - lowerLevel.alt;
+                    const dSpeed = Math.abs(l.speed - lowerLevel.speed);
                     if (dAlt > 0) shear = dSpeed / (dAlt / 100);
                   }
+                  const isSurface = l.alt <= 100; // 10m, 80m circa
                   return (
                     <tr key={l.hpa} className={`border-b border-slate-700/20 ${isSurface ? "bg-emerald-900/20" : ""}`}>
                       <td className="p-2 font-mono font-bold text-white">{l.alt}m</td>
@@ -188,7 +195,7 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
                       </td>
                       <td className="p-2 font-mono text-sky-300">{getWindArrow(l.dir)} {getDirAbbrev(l.dir)}</td>
                       <td className="p-2 text-slate-400">{l.gust ? Math.round(l.gust) : "—"} km/h</td>
-                      <td className="p-2">{i > 0 ? `${shear.toFixed(1)} km/h/100m` : "—"}</td>
+                      <td className="p-2">{i < sortedLevels.length - 1 ? `${shear.toFixed(1)} km/h/100m` : "—"}</td>
                     </tr>
                   );
                 })}

@@ -99,12 +99,14 @@ export default function WindgramMatrix({
   const baseDecolloFloor = Math.floor(altitude / baseStep) * baseStep;
   const maxAlt = 4000;
 
+  // SCALA QUOTE: 4000m in ALTO (prima riga), quota decollo in BASSO (ultima riga)
+  // Ordine decrescente: index 0 = 4000m (top visivo), ultimo index = decollo (bottom visivo)
   const activeAltitudes = useMemo(() => {
     const altitudes: number[] = [];
     for (let alt = maxAlt; alt >= baseDecolloFloor; alt -= baseStep) {
       altitudes.push(alt);
     }
-    return altitudes;
+    return altitudes; // [4000, 3750, 3500, ..., decollo] - 4000 è index 0 (top)
   }, [baseDecolloFloor, maxAlt]);
 
   // CALCOLO TERMICHE CORRETTO - Ciclo diurno realistico
@@ -166,13 +168,13 @@ export default function WindgramMatrix({
       const relHeight = (alt - altitude) / totalSpan;
       const hrBell = Math.max(0, 1 - Math.pow((hr - 13) / 4.5, 2));
       const strength = (1 - relHeight * 0.75) * (0.3 + hrBell * 0.7);
-      if (strength > 0.72) return "#f97316";      // arancio forte
-      if (strength > 0.55) return "#fb923c";      // arancio medio
-      if (strength > 0.40) return "#fbbf24";      // giallo arancio
-      if (strength > 0.22) return "#fde047";      // giallo chiaro
-      return "#fef08a";                           // giallo pallido
+      if (strength > 0.72) return "#f97316";
+      if (strength > 0.55) return "#fb923c";
+      if (strength > 0.40) return "#fbbf24";
+      if (strength > 0.22) return "#fde047";
+      return "#fef08a";
     }
-    if (hr <= 10 && alt >= 1400 && alt <= 2200) return "#f1f5f9"; // pre-termico mattina
+    if (hr <= 10 && alt >= 1400 && alt <= 2200) return "#f1f5f9";
     return "transparent";
   };
 
@@ -282,7 +284,7 @@ export default function WindgramMatrix({
           </div>
         </div>
 
-        {/* Tabella Windgram */}
+        {/* Tabella Windgram - Scala quote: 4000m TOP (prima riga), decollo BOTTOM (ultima riga) */}
         <div className="overflow-x-auto border-t border-b border-slate-200 bg-white">
           <table className="w-full text-center border-collapse text-xs">
             <thead>
@@ -353,7 +355,7 @@ export default function WindgramMatrix({
           </table>
         </div>
 
-        {/* LEGENDA PROFESSIONALE - Come nell'immagine di riferimento */}
+        {/* LEGENDA PROFESSIONALE */}
         <div className="p-4 bg-slate-50 border-t border-slate-100">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
             <div className="flex items-center gap-3 flex-wrap">
