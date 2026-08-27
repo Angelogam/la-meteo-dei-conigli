@@ -138,6 +138,8 @@ export default function Index() {
                     onHourSelect={setSelectedHour}
                     selectedDay={selectedDay}
                     dateLabel={dateLabel}
+                    lat={site!.lat}
+                    lon={site!.lon}
                   />
                 </div>
                 

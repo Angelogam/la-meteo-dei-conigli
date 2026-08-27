@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { Wind, Loader2, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
+import { useWindProfile } from "@/hooks/useWindProfile";
 
 interface ProfiloVentoVerticaleProps {
   siteAlt: number;
@@ -39,79 +40,13 @@ function getSpeedBarColor(speed: number): string {
 }
 
 export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587, lon = 7.7943, selectedHour = 12 }: ProfiloVentoVerticaleProps) {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, loading, error, interpolateAtAltitude } = useWindProfile({
+    lat,
+    lon,
+    siteAlt,
+    selectedHour,
+  });
   const [expanded, setExpanded] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    setError(null);
-
-    const fetchWindProfile = async () => {
-      try {
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m,wind_speed_925hPa,wind_direction_925hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa,wind_speed_600hPa,wind_direction_600hPa,wind_speed_500hPa,wind_direction_500hPa,temperature_2m,temperature_80m,temperature_120m,cloud_cover,precipitation,freezing_level_height,cape,lifted_index,convective_inhibition&timezone=Europe/Rome&forecast_days=2`;
-
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-
-        if (mounted) {
-          setData(json);
-          setLoading(false);
-        }
-      } catch (err) {
-        if (mounted) {
-          setError(err instanceof Error ? err.message : "Errore caricamento profilo vento");
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchWindProfile();
-    return () => { mounted = false; };
-  }, [lat, lon]);
-
-  const hourData = useMemo(() => {
-    if (!data?.hourly?.time) return null;
-    const times: string[] = data.hourly.time;
-    const idx = times.findIndex((t) => parseInt(t.split("T")[1].split(":")[0], 10) === selectedHour);
-    if (idx === -1) return null;
-
-    const h = data.hourly;
-    const t = h.temperature_2m[idx] ?? 15;
-    const dew = h.dew_point_2m?.[idx] ?? (t - 8);
-    const cloud = h.cloud_cover?.[idx] ?? 30;
-    const freeze = h.freezing_level_height?.[idx] ?? (siteAlt + (t / 0.0098) * 100);
-    const cape = h.cape?.[idx] ?? 0;
-
-    const levels = [
-      { hpa: "surface", alt: siteAlt, speed: h.wind_speed_10m[idx], dir: h.wind_direction_10m[idx], gust: h.wind_gusts_10m[idx] },
-      { hpa: "80m", alt: siteAlt + 80, speed: h.wind_speed_80m[idx], dir: h.wind_direction_80m[idx] },
-      { hpa: "120m", alt: siteAlt + 120, speed: h.wind_speed_120m[idx], dir: h.wind_direction_120m[idx] },
-      { hpa: "180m", alt: siteAlt + 180, speed: h.wind_speed_180m[idx], dir: h.wind_direction_180m[idx] },
-      { hpa: "925hPa", alt: 760, speed: h.wind_speed_925hPa[idx], dir: h.wind_direction_925hPa[idx] },
-      { hpa: "850hPa", alt: 1450, speed: h.wind_speed_850hPa[idx], dir: h.wind_direction_850hPa[idx] },
-      { hpa: "700hPa", alt: 3100, speed: h.wind_speed_700hPa[idx], dir: h.wind_direction_700hPa[idx] },
-      { hpa: "600hPa", alt: 4400, speed: h.wind_speed_600hPa[idx], dir: h.wind_direction_600hPa[idx] },
-      { hpa: "500hPa", alt: 5800, speed: h.wind_speed_500hPa[idx], dir: h.wind_direction_500hPa[idx] },
-    ].filter(l => l.speed != null && !isNaN(l.speed) && l.dir != null && !isNaN(l.dir));
-
-    const spread = Math.max(1, t - dew);
-    const cloudBase = Math.round(siteAlt + spread * 125);
-
-    return {
-      hour: selectedHour,
-      temp: t,
-      dew: dew,
-      cloud: cloud,
-      freeze: Math.round(freeze),
-      cape: cape,
-      levels,
-      cloudBase,
-    };
-  }, [data, selectedHour, siteAlt]);
 
   if (loading) {
     return (
@@ -124,7 +59,7 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
     );
   }
 
-  if (error || !hourData) {
+  if (error || !data) {
     return (
       <div className="bg-slate-800/40 border border-red-500/30 rounded-xl p-4">
         <div className="flex items-center gap-2 text-red-400">
@@ -135,7 +70,7 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
     );
   }
 
-  const { hour, temp, dew, cloud, freeze, cape, levels, cloudBase } = hourData;
+  const { hour, temp, dew, cloud, freeze, cape, levels, cloudBase } = data;
 
   let shearMax = 0;
   let gradienteVento = 0;

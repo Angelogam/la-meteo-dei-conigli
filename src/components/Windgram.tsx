@@ -12,6 +12,8 @@ interface WindgramProps {
   onHourSelect?: (hour: number) => void;
   selectedDay?: number;
   dateLabel?: string;
+  lat?: number;
+  lon?: number;
 }
 
 export default function Windgram({
@@ -22,6 +24,8 @@ export default function Windgram({
   onHourSelect,
   selectedDay = 0,
   dateLabel = "",
+  lat,
+  lon,
 }: WindgramProps) {
   return (
     <div className="w-full">
@@ -33,6 +37,8 @@ export default function Windgram({
         onHourSelect={onHourSelect}
         selectedDay={selectedDay}
         dateLabel={dateLabel}
+        lat={lat}
+        lon={lon}
       />
     </div>
   );

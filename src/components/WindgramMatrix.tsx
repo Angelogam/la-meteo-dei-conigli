@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useMemo, useEffect, useState } from "react";
+import React, { useMemo, useState } from "react";
 import type { HourData } from "@/types/meteo";
 import { Mountain, Wind } from "lucide-react";
+import { useWindProfile } from "@/hooks/useWindProfile";
 
 interface WindgramMatrixProps {
   dayData: HourData[];
@@ -12,6 +13,8 @@ interface WindgramMatrixProps {
   onHourSelect?: (hour: number) => void;
   selectedDay?: number;
   dateLabel?: string;
+  lat?: number;
+  lon?: number;
 }
 
 const DISPLAY_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
@@ -51,117 +54,6 @@ function CloudIcon({ cloudCover }: { cloudCover: number }) {
   );
 }
 
-/**
- * Estrae i venti REALI da Open-Meteo per un'ora specifica.
- * Usa prima i livelli di pressione hPa (925/850/700/600/500/300),
- * poi i venti a quote specifiche (1000/1500/2000/2500/3000m) se disponibili.
- * Questi ultimi sono dati diretti della griglia di previsione, non interpolazioni.
- */
-function buildRealWindLevels(h: HourData, siteAltitude: number): { alt: number; speed: number; dir: number }[] {
-  const levels: { alt: number; speed: number; dir: number }[] = [];
-
-  // 1. Vento al suolo (10m) - quota = altitudine sito
-  if (h.windSpeed !== undefined && h.windDir !== undefined &&
-      h.windSpeed !== null && h.windDir !== null) {
-    levels.push({ alt: siteAltitude, speed: Number(h.windSpeed), dir: Number(h.windDir) });
-  }
-
-  // 2. Livelli di pressione hPa REALI da Open-Meteo
-  // Conversione ISA standard: hPa → quota approssimativa
-  const pressureLevels = [
-    { key: "1000", alt: 110 },
-    { key: "925",  alt: 760 },
-    { key: "850",  alt: 1457 },
-    { key: "700",  alt: 3012 },
-    { key: "600",  alt: 4206 },
-    { key: "500",  alt: 5574 },
-    { key: "300",  alt: 9164 },
-  ];
-
-  for (const pl of pressureLevels) {
-    const speed = (h as any)[`windSpeed${pl.key}`];
-    const dir = (h as any)[`windDir${pl.key}`];
-    if (speed !== undefined && dir !== undefined &&
-        speed !== null && dir !== null &&
-        !isNaN(Number(speed)) && !isNaN(Number(dir))) {
-      levels.push({ alt: pl.alt, speed: Number(speed), dir: Number(dir) });
-    }
-  }
-
-  // 3. Venti REALI a quote specifiche (dati diretti Open-Meteo, non interpolati)
-  // Questi sono i più affidibili perché misurati direttamente dalla griglia
-  const altitudeWinds = [
-    { key: "1000", alt: 1000 },
-    { key: "1500", alt: 1500 },
-    { key: "2000", alt: 2000 },
-    { key: "2500", alt: 2500 },
-    { key: "3000", alt: 3000 },
-  ];
-
-  for (const aw of altitudeWinds) {
-    const speed = (h as any)[`windSpeed${aw.key}`];
-    const dir = (h as any)[`windDir${aw.key}`];
-    if (speed !== undefined && dir !== undefined &&
-        speed !== null && dir !== null &&
-        !isNaN(Number(speed)) && !isNaN(Number(dir))) {
-      levels.push({ alt: aw.alt, speed: Number(speed), dir: Number(dir) });
-    }
-  }
-
-  // Ordina per quota CRESCENTE e rimuovi duplicati (stessa quota)
-  const unique = new Map<number, { alt: number; speed: number; dir: number }>();
-  for (const l of levels) {
-    if (!unique.has(l.alt)) unique.set(l.alt, l);
-  }
-  return Array.from(unique.values()).sort((a, b) => a.alt - b.alt);
-}
-
-/**
- * Interpola linearmente il vento a una qualsiasi quota intermedia
- * a partire dai livelli reali Open-Meteo.
- * NON applica limiti conservativi: usa i valori reali del modello.
- */
-function interpolateWindAtAltitude(
-  targetAlt: number,
-  realLevels: { alt: number; speed: number; dir: number }[]
-): { speed: number; dir: number } | null {
-  if (realLevels.length === 0) return null;
-  if (realLevels.length === 1) {
-    return { speed: Math.round(realLevels[0].speed), dir: Math.round(realLevels[0].dir) };
-  }
-
-  const sorted = [...realLevels].sort((a, b) => a.alt - b.alt);
-
-  if (targetAlt <= sorted[0].alt) {
-    return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
-  }
-
-  if (targetAlt >= sorted[sorted.length - 1].alt) {
-    const top = sorted[sorted.length - 1];
-    return { speed: Math.round(top.speed), dir: Math.round(top.dir) };
-  }
-
-  for (let i = 0; i < sorted.length - 1; i++) {
-    if (sorted[i].alt <= targetAlt && sorted[i + 1].alt >= targetAlt) {
-      const lower = sorted[i];
-      const upper = sorted[i + 1];
-
-      const ratio = (targetAlt - lower.alt) / (upper.alt - lower.alt);
-      const speed = lower.speed + ratio * (upper.speed - lower.speed);
-
-      let diffDir = upper.dir - lower.dir;
-      if (diffDir > 180) diffDir -= 360;
-      if (diffDir < -180) diffDir += 360;
-      let dir = lower.dir + diffDir * ratio;
-      dir = ((dir % 360) + 360) % 360;
-
-      return { speed: Math.round(speed), dir: Math.round(dir) };
-    }
-  }
-
-  return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
-}
-
 export default function WindgramMatrix({
   dayData,
   siteName,
@@ -170,7 +62,16 @@ export default function WindgramMatrix({
   onHourSelect,
   selectedDay = 0,
   dateLabel = "",
+  lat = 44.2587,
+  lon = 7.7943,
 }: WindgramMatrixProps) {
+  const { data: windProfile, loading: profileLoading, error: profileError, interpolateAtAltitude } = useWindProfile({
+    lat,
+    lon,
+    siteAlt: altitude,
+    selectedHour,
+  });
+
   const hourlyMap = useMemo(() => {
     const map = new Map<number, HourData>();
     if (dayData && dayData.length > 0) {
@@ -182,31 +83,15 @@ export default function WindgramMatrix({
     return map;
   }, [dayData]);
 
-  // Verifica se abbiamo dati REALI di quota Open-Meteo (1000m-3000m)
+  // Verifica se abbiamo dati REALI di quota Open-Meteo (1000m-3000m) dal profilo condiviso
   const hasRealAltitudeData = useMemo(() => {
-    const h = hourlyMap.get(12);
-    if (!h) return false;
-    return !!(
-      (h.windSpeed1000 !== undefined && h.windSpeed1000 !== null) ||
-      (h.windSpeed1500 !== undefined && h.windSpeed1500 !== null) ||
-      (h.windSpeed2000 !== undefined && h.windSpeed2000 !== null) ||
-      (h.windSpeed2500 !== undefined && h.windSpeed2500 !== null) ||
-      (h.windSpeed3000 !== undefined && h.windSpeed3000 !== null)
-    );
-  }, [hourlyMap]);
+    return windProfile?.levels.some(l => l.alt >= 1000 && l.alt <= 3000) ?? false;
+  }, [windProfile]);
 
   // Verifica livelli hPa
   const hasRealPressureData = useMemo(() => {
-    const h = hourlyMap.get(12);
-    if (!h) return false;
-    return !!(
-      (h.windSpeed925 !== undefined && h.windSpeed925 !== null) ||
-      (h.windSpeed850 !== undefined && h.windSpeed850 !== null) ||
-      (h.windSpeed700 !== undefined && h.windSpeed700 !== null) ||
-      (h.windSpeed600 !== undefined && h.windSpeed600 !== null) ||
-      (h.windSpeed500 !== undefined && h.windSpeed500 !== null)
-    );
-  }, [hourlyMap]);
+    return windProfile?.levels.some(l => l.hpa !== "surface" && l.hpa !== "80m" && l.hpa !== "120m" && l.hpa !== "180m") ?? false;
+  }, [windProfile]);
 
   const baseStep = 250;
   const baseDecolloFloor = Math.floor(altitude / baseStep) * baseStep;
@@ -266,9 +151,8 @@ export default function WindgramMatrix({
   };
 
   /**
-   * Calcola il vento per ogni cella (ora, altitudine)
-   * Usa dati reali Open-Meteo dove disponibili, interpolazione lineare tra punti reali.
-   * NON applica limiti conservativi: mostra i valori reali del modello.
+   * USA LA STESSA FUNZIONE DI INTERPOLAZIONE DEL PROFILO CONDIVISO
+   * Dati reali Open-Meteo -> interpolazione lineare
    */
   const windDataByHourAlt = useMemo(() => {
     const result: Record<number, Record<number, { speed: number; dir: number }>> = {};
@@ -276,18 +160,21 @@ export default function WindgramMatrix({
       const h = hourlyMap.get(hr);
       result[hr] = {};
       if (!h) return;
-      const realLevels = buildRealWindLevels(h, altitude);
-      if (realLevels.length === 0) return;
-      activeAltitudes.forEach((alt) => {
-        if (alt > 4000) return;
-        const interp = interpolateWindAtAltitude(alt, realLevels);
-        if (interp) {
-          result[hr][alt] = { speed: Math.round(interp.speed), dir: Math.round(interp.dir) };
-        }
-      });
+      
+      // Usa i dati del profilo condiviso per OGNI ora
+      // L'interpolazione usa i livelli reali del profilo vento
+      if (windProfile?.levels && windProfile.levels.length > 0) {
+        activeAltitudes.forEach((alt) => {
+          if (alt > 4000) return;
+          const interp = interpolateAtAltitude(alt);
+          if (interp) {
+            result[hr][alt] = { speed: Math.round(interp.speed), dir: Math.round(interp.dir) };
+          }
+        });
+      }
     });
     return result;
-  }, [hourlyMap, activeAltitudes, altitude]);
+  }, [hourlyMap, activeAltitudes, altitude, windProfile, interpolateAtAltitude]);
 
   const cloudBaseRow = useMemo(() => {
     const map: Record<number, number> = {};
@@ -328,6 +215,33 @@ export default function WindgramMatrix({
     const mesi = ["GENNAIO","FEBBRAIO","MARZO","APRILE","MAGGIO","GIUGNO","LUGLIO","AGOSTO","SETTEMBRE","OTTOBRE","NOVEMBRE","DICEMBRE"];
     return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
   })();
+
+  if (profileLoading) {
+    return (
+      <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
+        <div className="w-full bg-[#f8fafc] text-slate-900 border border-slate-200/80 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
+          <div className="p-4 sm:p-5 pb-3 flex items-center justify-center gap-3">
+            <div className="w-6 h-6 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" />
+            <span className="text-sm font-bold text-slate-700">Caricamento windgram...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (profileError) {
+    return (
+      <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
+        <div className="w-full bg-[#f8fafc] text-slate-900 border border-red-500/40 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
+          <div className="p-4 sm:p-5 pb-3 text-center text-red-500">
+            <AlertTriangle className="w-8 h-8 mx-auto mb-2" />
+            <p className="font-bold">Errore caricamento windgram</p>
+            <p className="text-sm">{profileError}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
@@ -461,7 +375,7 @@ export default function WindgramMatrix({
             <p>&bull; Freccia: direzione vento &bull; Numero: velocità in km/h</p>
             <p>&bull; Clicca un'ora per selezionarla</p>
             <p>&bull; Nuvoletta = base cumuli (LCL) con copertura %</p>
-            {hasRealAltitudeData && <p className="text-emerald-600">&bull; Venti REALI Open-Meteo a quote 1000-3000m + livelli hPa</p>}
+            {hasRealAltitudeData && <p className="text-emerald-600">&bull; Venti REALI Open-Meteo a quote 1000-3000m + livelli hPa (stesso profilo verticale)</p>}
             {hasRealPressureData && <p className="text-sky-600">&bull; Conversione ISA standard per livelli hPa</p>}
             {!hasRealAltitudeData && !hasRealPressureData && <p className="text-red-500">&bull; Dati stimati con modello conservativo (4000m basato su ultimo dato reale + max 15%/1000m)</p>}
           </div>
