@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import type { HourData } from "@/types/meteo";
 import { Mountain, Wind } from "lucide-react";
-import { useWindProfile } from "@/hooks/useWindProfile";
+import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
 
 interface WindgramMatrixProps {
   dayData: HourData[];
@@ -62,11 +62,12 @@ export default function WindgramMatrix({
   lat = 44.2587,
   lon = 7.7943,
 }: WindgramMatrixProps) {
-  const { data: windProfile, loading: profileLoading, error: profileError, interpolateAtAltitude } = useWindProfile({
+  const { data: windProfileMap, loading: profileLoading, error: profileError, interpolateAtAltitude } = useMultiHourWindProfile({
     lat,
     lon,
     siteAlt: altitude,
-    selectedHour,
+    selectedDay,
+    hours: DISPLAY_HOURS,
   });
 
   const hourlyMap = useMemo(() => {
@@ -81,12 +82,18 @@ export default function WindgramMatrix({
   }, [dayData]);
 
   const hasRealAltitudeData = useMemo(() => {
-    return windProfile?.levels.some(l => l.alt >= 1000 && l.alt <= 3000) ?? false;
-  }, [windProfile]);
+    for (const hourData of windProfileMap.values()) {
+      if (hourData.levels.some(l => l.alt >= 1000 && l.alt <= 3000)) return true;
+    }
+    return false;
+  }, [windProfileMap]);
 
   const hasRealPressureData = useMemo(() => {
-    return windProfile?.levels.some(l => l.hpa !== "surface" && l.hpa !== "80m" && l.hpa !== "120m" && l.hpa !== "180m") ?? false;
-  }, [windProfile]);
+    for (const hourData of windProfileMap.values()) {
+      if (hourData.levels.some(l => l.hpa !== "10m" && l.hpa !== "80m" && l.hpa !== "120m" && l.hpa !== "180m")) return true;
+    }
+    return false;
+  }, [windProfileMap]);
 
   const baseStep = 250;
   const baseDecolloFloor = Math.floor(altitude / baseStep) * baseStep;
@@ -148,22 +155,17 @@ export default function WindgramMatrix({
   const windDataByHourAlt = useMemo(() => {
     const result: Record<number, Record<number, { speed: number; dir: number }>> = {};
     DISPLAY_HOURS.forEach((hr) => {
-      const h = hourlyMap.get(hr);
       result[hr] = {};
-      if (!h) return;
-      
-      if (windProfile?.levels && windProfile.levels.length > 0) {
-        activeAltitudes.forEach((alt) => {
-          if (alt > 4000) return;
-          const interp = interpolateAtAltitude(alt);
-          if (interp) {
-            result[hr][alt] = { speed: Math.round(interp.speed), dir: Math.round(interp.dir) };
-          }
-        });
-      }
+      activeAltitudes.forEach((alt) => {
+        if (alt > 4000) return;
+        const interp = interpolateAtAltitude(hr, alt);
+        if (interp) {
+          result[hr][alt] = { speed: Math.round(interp.speed), dir: Math.round(interp.dir) };
+        }
+      });
     });
     return result;
-  }, [hourlyMap, activeAltitudes, altitude, windProfile, interpolateAtAltitude]);
+  }, [activeAltitudes, altitude, windProfileMap, interpolateAtAltitude]);
 
   const cloudBaseRow = useMemo(() => {
     const map: Record<number, number> = {};
