@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 interface WindLevel {
   hpa: string;
@@ -37,6 +37,7 @@ export function useMultiHourWindProfile({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch data - ALWAYS called, no early returns
   useEffect(() => {
     let mounted = true;
     setLoading(true);
@@ -49,7 +50,6 @@ export function useMultiHourWindProfile({
         targetDate.setDate(today.getDate() + selectedDay);
         const dayStr = targetDate.toISOString().split("T")[0];
 
-        // Fetch ALL pressure levels for the entire day
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m,wind_speed_925hPa,wind_direction_925hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa,wind_speed_600hPa,wind_direction_600hPa,wind_speed_500hPa,wind_direction_500hPa,temperature_2m,temperature_80m,temperature_120m,dew_point_2m,cloud_cover,precipitation,freezing_level_height,cape,lifted_index,convective_inhibition&timezone=Europe/Rome&start_date=${dayStr}&end_date=${dayStr}`;
 
         const res = await fetch(url);
@@ -125,7 +125,7 @@ export function useMultiHourWindProfile({
     return () => { mounted = false; };
   }, [lat, lon, siteAlt, selectedDay, hours.join(",")]);
 
-  // Interpolation function for a specific hour
+  // Interpolation function - defined OUTSIDE useEffect, always available
   const interpolateAtAltitude = useCallback((hour: number, targetAlt: number) => {
     const hourData = data.get(hour);
     if (!hourData?.levels || hourData.levels.length === 0) return null;
@@ -135,16 +135,13 @@ export function useMultiHourWindProfile({
 
     const sorted = [...hourData.levels].sort((a, b) => a.alt - b.alt);
 
-    // If target altitude is BELOW the lowest real data point, use lowest
     if (targetAlt <= sorted[0].alt) {
       return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
     }
-    // If target altitude is ABOVE the highest real data point, return null (NO EXTRAPOLATION)
     if (targetAlt >= sorted[sorted.length - 1].alt) {
       return null; // NO EXTRAPOLATION
     }
 
-    // Interpolate between two real data points
     for (let i = 0; i < sorted.length - 1; i++) {
       if (sorted[i].alt <= targetAlt && sorted[i + 1].alt >= targetAlt) {
         const lower = sorted[i];
@@ -162,5 +159,6 @@ export function useMultiHourWindProfile({
     return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
   }, [data]);
 
+  // Return consistent shape - ALWAYS return the same values
   return { data, loading, error, interpolateAtAltitude };
 }
