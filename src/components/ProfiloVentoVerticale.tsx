@@ -13,7 +13,7 @@ interface ProfiloVentoVerticaleProps {
 }
 
 function getWindArrow(deg: number): string {
-  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
+  const arrows = ["\u2191", "\u2197", "\u2192", "\u2198", "\u2193", "\u2199", "\u2190", "\u2196"];
   return arrows[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
 }
 
@@ -170,7 +170,7 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
         <div className="flex items-center gap-2">
           <Wind className="w-4 h-4 text-cyan-400" />
           <h4 className="text-sm font-bold text-white">
-            Profilo vento verticale {siteName ? `· ${siteName}` : ""}
+            Profilo vento verticale {siteName ? `\u00B7 ${siteName}` : ""}
           </h4>
           <span className="text-xs text-slate-400 bg-slate-700/50 px-2 py-0.5 rounded">
             {String(hour).padStart(2, "0")}:00
@@ -215,7 +215,7 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
             <span className={`px-2 py-1 rounded bg-slate-900/50 border ${cloud > 70 ? "border-amber-500/40 text-amber-300" : "border-emerald-500/40 text-emerald-300"}`}>
               Nuvole: {Math.round(cloud)}%
             </span>
-          </div>
+          </span>
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
@@ -252,8 +252,8 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
                         </div>
                       </td>
                       <td className="p-2 font-mono text-sky-300">{getWindArrow(l.dir)} {getDirAbbrev(l.dir)}</td>
-                      <td className="p-2 text-slate-400">{l.gust ? Math.round(l.gust) : "—"} km/h</td>
-                      <td className="p-2">{i > 0 ? `${shear.toFixed(1)} km/h/100m` : "—"}</td>
+                      <td className="p-2 text-slate-400">{l.gust ? Math.round(l.gust) : "\u2014"} km/h</td>
+                      <td className="p-2">{i > 0 ? `${shear.toFixed(1)} km/h/100m` : "\u2014"}</td>
                     </tr>
                   );
                 })}
@@ -262,8 +262,8 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
           </div>
 
           <div className="text-[10px] text-slate-500 flex items-center gap-4">
-            <span>Shear: <span className="text-emerald-300">{'\u22642'}</span> debole · <span className="text-amber-300">2-5</span> moderato · <span className="text-red-300">{'\u22655'}</span> forte</span>
-            <span>Gradiente: <span className="text-emerald-300">{'\u22640.3'}</span> omogeneo · <span className="text-amber-300">{'\u22650.5'}</span> marcato</span>
+            <span>Shear: <span className="text-emerald-300">{\u22642}</span> debole \u00B7 <span className="text-amber-300">2-5</span> moderato \u00B7 <span className="text-red-300">{\u22655}</span> forte</span>
+            <span>Gradiente: <span className="text-emerald-300">{\u22640.3}</span> omogeneo \u00B7 <span className="text-amber-300">{\u22650.5}</span> marcato</span>
           </div>
         </div>
       )}
