@@ -258,26 +258,7 @@ export default function WindgramMatrix({
           </div>
         </div>
 
-        <div className="overflow-x-auto border-t border-b border-slate-200 bg-white relative">
-          <div className="absolute top-0 left-0 right-0 -translate-y-1/2 z-50 pointer-events-none">
-            <div className="flex">
-              <div className="w-12 flex-shrink-0" />
-              {DISPLAY_HOURS.map((hr) => {
-                const thermal = hourThermalData[hr];
-                if (!thermal) return <div key={hr} className="w-14 flex-shrink-0" />;
-                const rowIdx = cloudBaseRow[hr];
-                if (rowIdx === undefined || rowIdx < 0 || rowIdx >= activeAltitudes.length) {
-                  return <div key={hr} className="w-14 flex-shrink-0" />;
-                }
-                return (
-                  <div key={hr} className="w-14 flex-shrink-0 relative flex justify-center">
-                    <CloudIcon cloudCover={thermal.cloudCover} />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
+        <div className="overflow-x-auto border-t border-b border-slate-200 bg-white">
           <table className="w-full text-center border-collapse text-xs">
             <thead>
               <tr className="border-b border-slate-200 text-slate-700 bg-slate-100/90 font-bold">
