@@ -83,12 +83,10 @@ export default function WindgramMatrix({
     return map;
   }, [dayData]);
 
-  // Verifica se abbiamo dati REALI di quota Open-Meteo (1000m-3000m) dal profilo condiviso
   const hasRealAltitudeData = useMemo(() => {
     return windProfile?.levels.some(l => l.alt >= 1000 && l.alt <= 3000) ?? false;
   }, [windProfile]);
 
-  // Verifica livelli hPa
   const hasRealPressureData = useMemo(() => {
     return windProfile?.levels.some(l => l.hpa !== "surface" && l.hpa !== "80m" && l.hpa !== "120m" && l.hpa !== "180m") ?? false;
   }, [windProfile]);
@@ -150,10 +148,6 @@ export default function WindgramMatrix({
     return "transparent";
   };
 
-  /**
-   * USA LA STESSA FUNZIONE DI INTERPOLAZIONE DEL PROFILO CONDIVISO
-   * Dati reali Open-Meteo -> interpolazione lineare
-   */
   const windDataByHourAlt = useMemo(() => {
     const result: Record<number, Record<number, { speed: number; dir: number }>> = {};
     DISPLAY_HOURS.forEach((hr) => {
@@ -161,8 +155,6 @@ export default function WindgramMatrix({
       result[hr] = {};
       if (!h) return;
       
-      // Usa i dati del profilo condiviso per OGNI ora
-      // L'interpolazione usa i livelli reali del profilo vento
       if (windProfile?.levels && windProfile.levels.length > 0) {
         activeAltitudes.forEach((alt) => {
           if (alt > 4000) return;
@@ -194,17 +186,17 @@ export default function WindgramMatrix({
   const dataSourceBadge = hasRealAltitudeData ? (
     <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold flex items-center gap-1">
       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-      Dati REALI quote 1000-3000m Open-Meteo
+      Dati REALI quote 1000-3000m
     </span>
   ) : hasRealPressureData ? (
     <span className="px-2 py-0.5 rounded bg-sky-100 text-sky-700 text-[10px] font-bold flex items-center gap-1">
       <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
-      Dati pressione hPa + quote Open-Meteo
+      Dati hPa Open-Meteo
     </span>
   ) : (
     <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px] font-bold flex items-center gap-1">
       <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-      Dati stimati (modello conservativo)
+      Dati stimati
     </span>
   );
 
@@ -234,7 +226,6 @@ export default function WindgramMatrix({
       <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
         <div className="w-full bg-[#f8fafc] text-slate-900 border border-red-500/40 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
           <div className="p-4 sm:p-5 pb-3 text-center text-red-500">
-            <AlertTriangle className="w-8 h-8 mx-auto mb-2" />
             <p className="font-bold">Errore caricamento windgram</p>
             <p className="text-sm">{profileError}</p>
           </div>
@@ -356,28 +347,27 @@ export default function WindgramMatrix({
           </table>
         </div>
 
-        <div className="p-4 sm:p-5 pt-3 bg-slate-50 border-t border-slate-100 text-xs text-slate-600">
-          <div className="flex flex-wrap items-center gap-4 sm:gap-6 mb-2.5">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-3.5 rounded bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500 border border-orange-400/60" />
-              <span className="font-medium text-slate-700">Fascia termica (intensità e dissolvenza)</span>
+        <div className="p-3 bg-slate-50 border-t border-slate-100 text-xs text-slate-600 flex flex-wrap items-center gap-4 justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-2.5 rounded bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500 border border-orange-400/60" />
+              <span className="text-slate-600 font-medium">Termica</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded bg-[#fde68a] border border-amber-400" />
-              <span className="font-medium text-slate-700">Livello Decollo ({altitude}m)</span>
+            <div className="flex items-center gap-1">
+              <span className="w-3 h-2.5 rounded bg-[#fde68a] border border-amber-400" />
+              <span className="text-slate-600 font-medium">Decollo</span>
             </div>
-            <div className="flex items-center gap-2">
-              <CloudIcon cloudCover={50} />
-              <span className="font-medium text-slate-700">Base cumuli + % nuvolosità</span>
+            <div className="flex items-center gap-1">
+              <svg width="14" height="10" viewBox="0 0 40 28" className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#1e293b" fillOpacity="1"/>
+                <ellipse cx="18" cy="14" rx="6" ry="4" fill="#334155" fillOpacity="1"/>
+                <ellipse cx="14" cy="12" rx="4" ry="3" fill="#0f172a" fillOpacity="0.6"/>
+              </svg>
+              <span className="text-slate-600 font-medium">Base cumuli</span>
             </div>
           </div>
-          <div className="text-[11px] text-slate-500 font-mono space-y-0.5">
-            <p>&bull; Freccia: direzione vento &bull; Numero: velocità in km/h</p>
-            <p>&bull; Clicca un'ora per selezionarla</p>
-            <p>&bull; Nuvoletta = base cumuli (LCL) con copertura %</p>
-            {hasRealAltitudeData && <p className="text-emerald-600">&bull; Venti REALI Open-Meteo a quote 1000-3000m + livelli hPa (stesso profilo verticale)</p>}
-            {hasRealPressureData && <p className="text-sky-600">&bull; Conversione ISA standard per livelli hPa</p>}
-            {!hasRealAltitudeData && !hasRealPressureData && <p className="text-red-500">&bull; Dati stimati con modello conservativo (4000m basato su ultimo dato reale + max 15%/1000m)</p>}
+          <div className="flex items-center gap-2 text-slate-500">
+            <span className="text-[10px] font-mono">Freccia = dir. vento · Numero = km/h</span>
           </div>
         </div>
       </div>
