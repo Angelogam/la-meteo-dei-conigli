@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 interface WindLevel {
   hpa: string;
@@ -30,6 +30,44 @@ interface UseMultiHourWindProfileProps {
   hours?: number[];
 }
 
+/**
+ * Pure interpolation function - no hooks, no dependencies
+ */
+function interpolateWindAtAltitude(
+  levels: WindLevel[] | undefined,
+  targetAlt: number
+): { speed: number; dir: number } | null {
+  if (!levels || levels.length === 0) return null;
+  if (levels.length === 1) {
+    return { speed: Math.round(levels[0].speed), dir: Math.round(levels[0].dir) };
+  }
+
+  const sorted = [...levels].sort((a, b) => a.alt - b.alt);
+
+  if (targetAlt <= sorted[0].alt) {
+    return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
+  }
+  if (targetAlt >= sorted[sorted.length - 1].alt) {
+    return null; // NO EXTRAPOLATION
+  }
+
+  for (let i = 0; i < sorted.length - 1; i++) {
+    if (sorted[i].alt <= targetAlt && sorted[i + 1].alt >= targetAlt) {
+      const lower = sorted[i];
+      const upper = sorted[i + 1];
+      const ratio = (targetAlt - lower.alt) / (upper.alt - lower.alt);
+      const speed = lower.speed + ratio * (upper.speed - lower.speed);
+      let diffDir = upper.dir - lower.dir;
+      if (diffDir > 180) diffDir -= 360;
+      if (diffDir < -180) diffDir += 360;
+      let dir = lower.dir + diffDir * ratio;
+      dir = ((dir % 360) + 360) % 360;
+      return { speed: Math.round(speed), dir: Math.round(dir) };
+    }
+    return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
+  }
+}
+
 export function useMultiHourWindProfile({ 
   lat, lon, siteAlt, selectedDay, hours = [8,9,10,11,12,13,14,15,16,17,18] 
 }: UseMultiHourWindProfileProps) {
@@ -37,7 +75,9 @@ export function useMultiHourWindProfile({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch data - ALWAYS called, no early returns
+  // Stable key for the effect deps
+  const hoursKey = hours.join(",");
+
   useEffect(() => {
     let mounted = true;
     setLoading(true);
@@ -123,42 +163,16 @@ export function useMultiHourWindProfile({
 
     fetchAllHours();
     return () => { mounted = false; };
-  }, [lat, lon, siteAlt, selectedDay, hours.join(",")]);
+  }, [lat, lon, siteAlt, selectedDay, hoursKey]);
 
-  // Interpolation function - defined OUTSIDE useEffect, always available
-  const interpolateAtAltitude = useCallback((hour: number, targetAlt: number) => {
-    const hourData = data.get(hour);
-    if (!hourData?.levels || hourData.levels.length === 0) return null;
-    if (hourData.levels.length === 1) {
-      return { speed: Math.round(hourData.levels[0].speed), dir: Math.round(hourData.levels[0].dir) };
-    }
+  // Return stable interpolation function that uses pure function
+  const interpolateAtAltitude = useMemo(
+    () => (hour: number, targetAlt: number) => {
+      const hourData = data.get(hour);
+      return interpolateWindAtAltitude(hourData?.levels, targetAlt);
+    },
+    [data]
+  );
 
-    const sorted = [...hourData.levels].sort((a, b) => a.alt - b.alt);
-
-    if (targetAlt <= sorted[0].alt) {
-      return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
-    }
-    if (targetAlt >= sorted[sorted.length - 1].alt) {
-      return null; // NO EXTRAPOLATION
-    }
-
-    for (let i = 0; i < sorted.length - 1; i++) {
-      if (sorted[i].alt <= targetAlt && sorted[i + 1].alt >= targetAlt) {
-        const lower = sorted[i];
-        const upper = sorted[i + 1];
-        const ratio = (targetAlt - lower.alt) / (upper.alt - lower.alt);
-        const speed = lower.speed + ratio * (upper.speed - lower.speed);
-        let diffDir = upper.dir - lower.dir;
-        if (diffDir > 180) diffDir -= 360;
-        if (diffDir < -180) diffDir += 360;
-        let dir = lower.dir + diffDir * ratio;
-        dir = ((dir % 360) + 360) % 360;
-        return { speed: Math.round(speed), dir: Math.round(dir) };
-      }
-    }
-    return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
-  }, [data]);
-
-  // Return consistent shape - ALWAYS return the same values
   return { data, loading, error, interpolateAtAltitude };
 }
