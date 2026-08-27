@@ -19,7 +19,7 @@ interface WindProfileData {
   cape: number;
   levels: WindLevel[];
   cloudBase: number;
-  maxRealAltitude: number; // highest altitude with real data
+  maxRealAltitude: number;
 }
 
 interface UseWindProfileProps {
@@ -42,13 +42,12 @@ export function useWindProfile({ lat, lon, siteAlt, selectedHour, selectedDay = 
 
     const fetchWindProfile = async () => {
       try {
-        // Calculate target date
         const today = new Date();
         const targetDate = new Date(today);
         targetDate.setDate(today.getDate() + selectedDay);
         const dayStr = targetDate.toISOString().split("T")[0];
 
-        // Use same params as ProfessionalWindgram - real Open-Meteo pressure levels
+        // Fetch ALL pressure levels from Open-Meteo - covers up to 500hPa (~5800m)
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m,wind_speed_925hPa,wind_direction_925hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa,wind_speed_600hPa,wind_direction_600hPa,wind_speed_500hPa,wind_direction_500hPa,temperature_2m,temperature_80m,temperature_120m,cloud_cover,precipitation,freezing_level_height,cape,lifted_index,convective_inhibition&timezone=Europe/Rome&start_date=${dayStr}&end_date=${dayStr}`;
 
         const res = await fetch(url);
@@ -72,7 +71,8 @@ export function useWindProfile({ lat, lon, siteAlt, selectedHour, selectedDay = 
           const freeze = h.freezing_level_height?.[idx] ?? (siteAlt + (t / 0.0098) * 100);
           const cape = h.cape?.[idx] ?? 0;
 
-          // Real pressure levels from Open-Meteo with their approximate altitudes
+          // Real pressure levels from Open-Meteo with their standard altitudes
+          // These are the ACTUAL pressure levels Open-Meteo provides
           const pressureLevels = [
             { hpa: "10m", alt: siteAlt, speed: h.wind_speed_10m[idx], dir: h.wind_direction_10m[idx], gust: h.wind_gusts_10m[idx] },
             { hpa: "80m", alt: siteAlt + 80, speed: h.wind_speed_80m[idx], dir: h.wind_direction_80m[idx] },
@@ -85,10 +85,16 @@ export function useWindProfile({ lat, lon, siteAlt, selectedHour, selectedDay = 
             { hpa: "500hPa", alt: 5800, speed: h.wind_speed_500hPa[idx], dir: h.wind_direction_500hPa[idx] },
           ];
 
-          // Filter only levels with REAL data
+          // Filter only levels with REAL data (not null/NaN)
           const realLevels = pressureLevels.filter(l => 
             l.speed != null && !isNaN(l.speed) && l.dir != null && !isNaN(l.dir)
           );
+
+          // Log which levels are available for debugging
+          if (realLevels.length > 0) {
+            console.log(`[useWindProfile] Real wind levels for ${siteAlt}m at ${selectedHour}:00:`, 
+              realLevels.map(l => `${l.hpa}=${l.alt}m: ${l.speed}km/h ${l.dir}°`).join(", "));
+          }
 
           // Find maximum altitude with real data
           const maxRealAltitude = realLevels.length > 0 
@@ -123,7 +129,7 @@ export function useWindProfile({ lat, lon, siteAlt, selectedHour, selectedDay = 
     return () => { mounted = false; };
   }, [lat, lon, siteAlt, selectedHour, selectedDay]);
 
-  // Interpolation function - ONLY between real data points, NO extrapolation
+  // Interpolation function - ONLY between real data points, NO extrapolation above highest real level
   const interpolateAtAltitude = useCallback((targetAlt: number) => {
     if (!data?.levels || data.levels.length === 0) return null;
     if (data.levels.length === 1) {
@@ -136,7 +142,7 @@ export function useWindProfile({ lat, lon, siteAlt, selectedHour, selectedDay = 
     if (targetAlt <= sorted[0].alt) {
       return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
     }
-    // If target altitude is ABOVE the highest real data point, return null (no extrapolation!)
+    // If target altitude is ABOVE the highest real data point, return null (NO EXTRAPOLATION)
     if (targetAlt >= sorted[sorted.length - 1].alt) {
       return null; // NO EXTRAPOLATION - return null for altitudes above real data
     }
