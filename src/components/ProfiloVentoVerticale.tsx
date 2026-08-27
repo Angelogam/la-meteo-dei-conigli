@@ -215,7 +215,7 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
             <span className={`px-2 py-1 rounded bg-slate-900/50 border ${cloud > 70 ? "border-amber-500/40 text-amber-300" : "border-emerald-500/40 text-emerald-300"}`}>
               Nuvole: {Math.round(cloud)}%
             </span>
-          </span>
+          </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
