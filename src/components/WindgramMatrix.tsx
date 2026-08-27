@@ -20,15 +20,15 @@ interface WindgramMatrixProps {
 const DISPLAY_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 
 function getWindArrowColor(speed: number): { fill: string; stroke: string; text: string } {
-  if (speed <= 4) return { fill: "#0284c7", stroke: "#0369a1", text: "#0284c7" };
-  if (speed <= 8) return { fill: "#0d9488", stroke: "#0f766e", text: "#0d9488" };
-  if (speed <= 13) return { fill: "#16a34a", stroke: "#15803d", text: "#16a34a" };
-  if (speed <= 18) return { fill: "#65a30d", stroke: "#4d7c0f", text: "#65a30d" };
+  if (speed <= 4) return { fill: "#0ea5e9", stroke: "#0284c7", text: "#0ea5e9" };
+  if (speed <= 8) return { fill: "#14b8a6", stroke: "#0d9488", text: "#14b8a6" };
+  if (speed <= 13) return { fill: "#22c55e", stroke: "#16a34a", text: "#22c55e" };
+  if (speed <= 18) return { fill: "#84cc16", stroke: "#65a30d", text: "#84cc16" };
   if (speed <= 24) return { fill: "#eab308", stroke: "#ca8a04", text: "#eab308" };
   if (speed <= 30) return { fill: "#f97316", stroke: "#ea580c", text: "#f97316" };
-  if (speed <= 42) return { fill: "#dc2626", stroke: "#b91c1c", text: "#dc2626" };
-  if (speed <= 58) return { fill: "#991b1b", stroke: "#7f1d1d", text: "#991b1b" };
-  return { fill: "#86198f", stroke: "#701a75", text: "#86198f" };
+  if (speed <= 42) return { fill: "#ef4444", stroke: "#dc2626", text: "#ef4444" };
+  if (speed <= 58) return { fill: "#b91c1c", stroke: "#991b1b", text: "#b91c1c" };
+  return { fill: "#a855f7", stroke: "#9333ea", text: "#a855f7" };
 }
 
 function WindArrowIcon({ deg, color }: { deg: number; color: { fill: string; stroke: string } }) {
@@ -43,9 +43,9 @@ function CloudIcon({ cloudCover }: { cloudCover: number }) {
   return (
     <div className="pointer-events-none" style={{ opacity: 0.95 }}>
       <svg width="20" height="14" viewBox="0 0 40 28" style={{ filter: "drop-shadow(0 -1px 2px rgba(0,0,0,0.5))" }}>
-        <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#2d3748" fillOpacity="0.95"/>
-        <ellipse cx="18" cy="14" rx="6" ry="4" fill="#374151" fillOpacity="0.85"/>
-        <ellipse cx="14" cy="12" rx="4" ry="3" fill="#4a5568" fillOpacity="0.8"/>
+        <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#374151" fillOpacity="0.95"/>
+        <ellipse cx="18" cy="14" rx="6" ry="4" fill="#4b5563" fillOpacity="0.85"/>
+        <ellipse cx="14" cy="12" rx="4" ry="3" fill="#6b7280" fillOpacity="0.8"/>
       </svg>
     </div>
   );
@@ -107,15 +107,13 @@ export default function WindgramMatrix({
     return altitudes;
   }, [baseDecolloFloor, maxAlt]);
 
-  // CORRETTO: Calcolo termiche con ciclo diurno realistico
-  // Picco alle 12-14:00, minimo alle 8:00
+  // CORRETTO: Calcolo termiche con ciclo diurno realistico - picco 13:00
   const hourThermalData = useMemo(() => {
     const data: Record<number, {
       top: number; base: number; rateo: number;
       cloudBase: number; cloudCover: number;
     }> = {};
 
-    // Trova temperatura massima del giorno per scalare
     let tempMax = 20;
     let tempMin = 10;
     DISPLAY_HOURS.forEach((hr) => {
@@ -134,45 +132,24 @@ export default function WindgramMatrix({
         const spread = Math.max(1, h.temperature - h.dewPoint);
         const lcl = Math.round(altitude + spread * 125);
         
-        // FATTORE DIURNO: 0 all'alba (8), 1 a mezzogiorno (12-13), decresce pomeriggio
-        // Modello sinusoidale realistico per il ciclo diurno
+        // Fattore diurno: picco 13:00, zero alle 8 e 18
         let diurnalFactor = 0;
         if (hr >= 8 && hr <= 19) {
-          // Picco solare alle 13:00 (1pm ora locale)
           const hoursFromPeak = Math.abs(hr - 13);
           if (hoursFromPeak <= 5) {
-            // Curva a campana: max a 13, zero a 8 e 18
             diurnalFactor = Math.max(0, Math.cos((hoursFromPeak / 5) * (Math.PI / 2)));
           }
         }
         
-        // Termiche reali: 
-        // - Base segue LCL (lifting condensation level) 
-        // - Top = base + sviluppo proporzionale a riscaldamento diurno
-        // - Rateo proporzionale a irraggiamento solare
-        
-        // Sviluppo termico max realistico: 800-1500m sopra base
-        const maxThermalDepth = 600 + dailyAmplitude * 60; // 600-1500m
+        const maxThermalDepth = 600 + dailyAmplitude * 60;
         const thermalDepth = maxThermalDepth * diurnalFactor;
-        
         const base = Math.max(altitude + 100, lcl);
         const top = Math.min(3500, base + thermalDepth);
-        
-        // Rateo salita: 0.1-3.5 m/s proporzionale a fattore diurno
         const rateo = 0.1 + 3.4 * diurnalFactor;
         
-        data[hr] = {
-          top,
-          base,
-          rateo,
-          cloudBase: Math.min(lcl, 3500),
-          cloudCover: h.cloudCover ?? 30,
-        };
+        data[hr] = { top, base, rateo, cloudBase: Math.min(lcl, 3500), cloudCover: h.cloudCover ?? 30 };
       } else {
-        data[hr] = {
-          top: altitude + 100, base: altitude + 50, rateo: 0.1,
-          cloudBase: altitude + 600, cloudCover: 30,
-        };
+        data[hr] = { top: altitude + 100, base: altitude + 50, rateo: 0.1, cloudBase: altitude + 600, cloudCover: 30 };
       }
     });
     return data;
@@ -254,7 +231,7 @@ export default function WindgramMatrix({
   if (profileLoading) {
     return (
       <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
-        <div className="w-full bg-[#f8fafc] text-slate-900 border border-slate-200/80 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
+        <div className="w-full bg-white text-slate-900 border border-slate-200/80 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
           <div className="p-4 sm:p-5 pb-3 flex items-center justify-center gap-3">
             <div className="w-6 h-6 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" />
             <span className="text-sm font-bold text-slate-700">Caricamento windgram...</span>
@@ -267,7 +244,7 @@ export default function WindgramMatrix({
   if (profileError) {
     return (
       <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
-        <div className="w-full bg-[#f8fafc] text-slate-900 border border-red-500/40 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
+        <div className="w-full bg-white text-slate-900 border border-red-500/40 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
           <div className="p-4 sm:p-5 pb-3 text-center text-red-500">
             <p className="font-bold">Errore caricamento windgram</p>
             <p className="text-sm">{profileError}</p>
@@ -279,7 +256,7 @@ export default function WindgramMatrix({
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
-      <div className="w-full bg-[#f8fafc] text-slate-900 border border-slate-200/80 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
+      <div className="w-full bg-white text-slate-900 border border-slate-200/80 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
         <div className="p-4 sm:p-5 pb-3">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2.5">
