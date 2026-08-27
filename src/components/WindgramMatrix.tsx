@@ -41,13 +41,13 @@ function WindArrowIcon({ deg, color }: { deg: number; color: { fill: string; str
 
 function CloudIcon({ cloudCover }: { cloudCover: number }) {
   return (
-    <div className="flex flex-col items-center gap-0.5">
-      <svg width="22" height="16" viewBox="0 0 40 28" className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-        <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#1e293b" fillOpacity="1"/>
-        <ellipse cx="18" cy="14" rx="6" ry="4" fill="#334155" fillOpacity="1"/>
-        <ellipse cx="14" cy="12" rx="4" ry="3" fill="#0f172a" fillOpacity="0.6"/>
+    <div className="flex flex-col items-center gap-0.5" style={{ opacity: 0.75 }}>
+      <svg width="22" height="16" viewBox="0 0 40 28" className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
+        <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#334155" fillOpacity="0.7"/>
+        <ellipse cx="18" cy="14" rx="6" ry="4" fill="#475569" fillOpacity="0.6"/>
+        <ellipse cx="14" cy="12" rx="4" ry="3" fill="#64748b" fillOpacity="0.5"/>
       </svg>
-      <span className="text-[9px] font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,1)] bg-black/60 px-1 rounded">
+      <span className="text-[8px] font-bold text-slate-700 bg-white/80 px-1 rounded shadow-sm">
         {cloudCover}%
       </span>
     </div>
@@ -339,10 +339,10 @@ export default function WindgramMatrix({
               <span className="text-slate-600 font-medium">Decollo</span>
             </div>
             <div className="flex items-center gap-1">
-              <svg width="14" height="10" viewBox="0 0 40 28" className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-                <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#1e293b" fillOpacity="1"/>
-                <ellipse cx="18" cy="14" rx="6" ry="4" fill="#334155" fillOpacity="1"/>
-                <ellipse cx="14" cy="12" rx="4" ry="3" fill="#0f172a" fillOpacity="0.6"/>
+              <svg width="14" height="10" viewBox="0 0 40 28" className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]" style={{ opacity: 0.75 }}>
+                <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#334155" fillOpacity="0.7"/>
+                <ellipse cx="18" cy="14" rx="6" ry="4" fill="#475569" fillOpacity="0.6"/>
+                <ellipse cx="14" cy="12" rx="4" ry="3" fill="#64748b" fillOpacity="0.5"/>
               </svg>
               <span className="text-slate-600 font-medium">Base cumuli</span>
             </div>
