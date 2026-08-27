@@ -41,11 +41,11 @@ function WindArrowIcon({ deg, color }: { deg: number; color: { fill: string; str
 
 function CloudIcon({ cloudCover }: { cloudCover: number }) {
   return (
-    <div className="pointer-events-none" style={{ opacity: 0.9 }}>
-      <svg width="18" height="12" viewBox="0 0 40 28" style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))" }}>
-        <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#374151" fillOpacity="0.8"/>
-        <ellipse cx="18" cy="14" rx="6" ry="4" fill="#4b5563" fillOpacity="0.7"/>
-        <ellipse cx="14" cy="12" rx="4" ry="3" fill="#6b7280" fillOpacity="0.6"/>
+    <div className="pointer-events-none" style={{ opacity: 0.95 }}>
+      <svg width="20" height="14" viewBox="0 0 40 28" style={{ filter: "drop-shadow(0 -1px 2px rgba(0,0,0,0.5))" }}>
+        <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#2d3748" fillOpacity="0.95"/>
+        <ellipse cx="18" cy="14" rx="6" ry="4" fill="#374151" fillOpacity="0.85"/>
+        <ellipse cx="14" cy="12" rx="4" ry="3" fill="#4a5568" fillOpacity="0.8"/>
       </svg>
     </div>
   );
@@ -304,17 +304,17 @@ export default function WindgramMatrix({
                             isSelectedCol ? "ring-1 ring-sky-400/90" : "hover:brightness-95"
                           }`}
                         >
-                          <div className="flex items-center justify-center gap-0.5 h-full">
+                          <div className="flex items-center justify-center gap-0.5 h-full relative">
                             {w && <WindArrowIcon deg={w.dir} color={wColor} />}
-                            <span className="font-bold text-[12px] tabular-nums tracking-tighter" style={{ color: wColor.text }} title={w ? `Open-Meteo: ${w.speed} km/h da ${w.dir}°` : "N/D"}>
+                            <span className="font-bold text-[12px] tabular-nums tracking-tighter relative z-10" style={{ color: wColor.text }} title={w ? `Open-Meteo: ${w.speed} km/h da ${w.dir}°` : "N/D"}>
                               {w ? w.speed : "—"}
                             </span>
+                            {showCloud && (
+                              <div className="absolute bottom-[calc(100%+2px)] left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                                <CloudIcon cloudCover={hourThermalData[hr]?.cloudCover ?? 30} />
+                              </div>
+                            )}
                           </div>
-                          {showCloud && (
-                            <div className="absolute top-[-10px] left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-                              <CloudIcon cloudCover={hourThermalData[hr]?.cloudCover ?? 30} />
-                            </div>
-                          )}
                         </td>
                       );
                     })}
