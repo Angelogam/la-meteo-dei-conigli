@@ -135,7 +135,7 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
     );
   }
 
-  const { hour, temp, cloud, freeze, cape, levels, cloudBase } = hourData;
+  const { hour, temp, dew, cloud, freeze, cape, levels, cloudBase } = hourData;
 
   let shearMax = 0;
   let gradienteVento = 0;
