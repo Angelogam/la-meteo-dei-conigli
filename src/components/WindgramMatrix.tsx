@@ -107,15 +107,14 @@ export default function WindgramMatrix({
     return altitudes;
   }, [baseDecolloFloor, maxAlt]);
 
-  // CORRETTO: Calcolo termiche con ciclo diurno realistico
-  // Picco alle 12-14:00, minimo alle 8:00
+  // CALCOLO TERMICHE CORRETTO - Ciclo diurno realistico
+  // Picco 12-14:00, minimo alle 8:00
   const hourThermalData = useMemo(() => {
     const data: Record<number, {
       top: number; base: number; rateo: number;
       cloudBase: number; cloudCover: number;
     }> = {};
 
-    // Trova temperatura massima del giorno per scalare
     let tempMax = 20;
     let tempMin = 10;
     DISPLAY_HOURS.forEach((hr) => {
@@ -134,45 +133,26 @@ export default function WindgramMatrix({
         const spread = Math.max(1, h.temperature - h.dewPoint);
         const lcl = Math.round(altitude + spread * 125);
         
-        // FATTORE DIURNO: 0 all'alba (8), 1 a mezzogiorno (12-13), decresce pomeriggio
-        // Modello sinusoidale realistico per il ciclo diurno
+        // FATTORE DIURNO REALISTICO: picco a 13:00, zero a 8:00 e 18:00
         let diurnalFactor = 0;
-        if (hr >= 8 && hr <= 19) {
-          // Picco solare alle 13:00 (1pm ora locale)
+        if (hr >= 8 && hr <= 18) {
           const hoursFromPeak = Math.abs(hr - 13);
           if (hoursFromPeak <= 5) {
-            // Curva a campana: max a 13, zero a 8 e 18
             diurnalFactor = Math.max(0, Math.cos((hoursFromPeak / 5) * (Math.PI / 2)));
           }
         }
         
-        // Termiche reali: 
-        // - Base segue LCL (lifting condensation level) 
-        // - Top = base + sviluppo proporzionale a riscaldamento diurno
-        // - Rateo proporzionale a irraggiamento solare
-        
-        // Sviluppo termico max realistico: 800-1500m sopra base
-        const maxThermalDepth = 600 + dailyAmplitude * 60; // 600-1500m
+        // Sviluppo termico max: 800-1500m sopra base
+        const maxThermalDepth = 600 + dailyAmplitude * 60;
         const thermalDepth = maxThermalDepth * diurnalFactor;
         
         const base = Math.max(altitude + 100, lcl);
         const top = Math.min(3500, base + thermalDepth);
-        
-        // Rateo salita: 0.1-3.5 m/s proporzionale a fattore diurno
         const rateo = 0.1 + 3.4 * diurnalFactor;
         
-        data[hr] = {
-          top,
-          base,
-          rateo,
-          cloudBase: Math.min(lcl, 3500),
-          cloudCover: h.cloudCover ?? 30,
-        };
+        data[hr] = { top, base, rateo, cloudBase: Math.min(lcl, 3500), cloudCover: h.cloudCover ?? 30 };
       } else {
-        data[hr] = {
-          top: altitude + 100, base: altitude + 50, rateo: 0.1,
-          cloudBase: altitude + 600, cloudCover: 30,
-        };
+        data[hr] = { top: altitude + 100, base: altitude + 50, rateo: 0.1, cloudBase: altitude + 600, cloudCover: 30 };
       }
     });
     return data;
@@ -186,13 +166,13 @@ export default function WindgramMatrix({
       const relHeight = (alt - altitude) / totalSpan;
       const hrBell = Math.max(0, 1 - Math.pow((hr - 13) / 4.5, 2));
       const strength = (1 - relHeight * 0.75) * (0.3 + hrBell * 0.7);
-      if (strength > 0.72) return "#f97316";
-      if (strength > 0.55) return "#fb923c";
-      if (strength > 0.40) return "#fbbf24";
-      if (strength > 0.22) return "#fde047";
-      return "#fef08a";
+      if (strength > 0.72) return "#f97316";      // arancio forte
+      if (strength > 0.55) return "#fb923c";      // arancio medio
+      if (strength > 0.40) return "#fbbf24";      // giallo arancio
+      if (strength > 0.22) return "#fde047";      // giallo chiaro
+      return "#fef08a";                           // giallo pallido
     }
-    if (hr <= 10 && alt >= 1400 && alt <= 2200) return "#f1f5f9";
+    if (hr <= 10 && alt >= 1400 && alt <= 2200) return "#f1f5f9"; // pre-termico mattina
     return "transparent";
   };
 
@@ -254,7 +234,7 @@ export default function WindgramMatrix({
   if (profileLoading) {
     return (
       <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
-        <div className="w-full bg-[#f8fafc] text-slate-900 border border-slate-200/80 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
+        <div className="w-full bg-white text-slate-900 border border-slate-200/80 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
           <div className="p-4 sm:p-5 pb-3 flex items-center justify-center gap-3">
             <div className="w-6 h-6 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" />
             <span className="text-sm font-bold text-slate-700">Caricamento windgram...</span>
@@ -267,7 +247,7 @@ export default function WindgramMatrix({
   if (profileError) {
     return (
       <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
-        <div className="w-full bg-[#f8fafc] text-slate-900 border border-red-500/40 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
+        <div className="w-full bg-white text-slate-900 border border-red-500/40 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
           <div className="p-4 sm:p-5 pb-3 text-center text-red-500">
             <p className="font-bold">Errore caricamento windgram</p>
             <p className="text-sm">{profileError}</p>
@@ -279,7 +259,8 @@ export default function WindgramMatrix({
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
-      <div className="w-full bg-[#f8fafc] text-slate-900 border border-slate-200/80 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
+      <div className="w-full bg-white text-slate-900 border border-slate-200/80 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
+        {/* Header */}
         <div className="p-4 sm:p-5 pb-3">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2.5">
@@ -301,6 +282,7 @@ export default function WindgramMatrix({
           </div>
         </div>
 
+        {/* Tabella Windgram */}
         <div className="overflow-x-auto border-t border-b border-slate-200 bg-white">
           <table className="w-full text-center border-collapse text-xs">
             <thead>
@@ -371,27 +353,73 @@ export default function WindgramMatrix({
           </table>
         </div>
 
-        <div className="p-3 bg-slate-50 border-t border-slate-100 text-xs text-slate-600 flex flex-wrap items-center gap-4 justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-2.5 rounded bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500 border border-orange-400/60" />
-              <span className="text-slate-600 font-medium">Termica</span>
+        {/* LEGENDA PROFESSIONALE - Come nell'immagine di riferimento */}
+        <div className="p-4 bg-slate-50 border-t border-slate-100">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-2.5 rounded bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500 border border-orange-400/60" />
+                <span className="text-slate-700 font-medium text-xs">Termica attiva</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-2.5 rounded bg-[#fde68a] border border-amber-400" />
+                <span className="text-slate-700 font-medium text-xs">Quota decollo</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <svg width="14" height="10" viewBox="0 0 40 28" className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]" style={{ opacity: 0.6 }}>
+                  <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#64748b" fillOpacity="0.5"/>
+                  <ellipse cx="18" cy="14" rx="6" ry="4" fill="#94a3b8" fillOpacity="0.4"/>
+                  <ellipse cx="14" cy="12" rx="4" ry="3" fill="#cbd5e1" fillOpacity="0.3"/>
+                </svg>
+                <span className="text-slate-700 font-medium text-xs">Base cumuli</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <span className="w-3 h-2.5 rounded bg-[#fde68a] border border-amber-400" />
-              <span className="text-slate-600 font-medium">Decollo</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <svg width="14" height="10" viewBox="0 0 40 28" className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]" style={{ opacity: 0.6 }}>
-                <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#64748b" fillOpacity="0.5"/>
-                <ellipse cx="18" cy="14" rx="6" ry="4" fill="#94a3b8" fillOpacity="0.4"/>
-                <ellipse cx="14" cy="12" rx="4" ry="3" fill="#cbd5e1" fillOpacity="0.3"/>
-              </svg>
-              <span className="text-slate-600 font-medium">Base cumuli</span>
+            <div className="flex items-center gap-2 text-slate-500">
+              <span className="text-[10px] font-mono">Freccia = dir. vento · Numero = km/h</span>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-slate-500">
-            <span className="text-[10px] font-mono">Freccia = dir. vento · Numero = km/h</span>
+
+          {/* Scala venti */}
+          <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-slate-200">
+            <span className="text-xs text-slate-600 font-medium">Scala venti (km/h):</span>
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#0284c7" }} />
+                <span className="text-[10px] text-slate-600">≤4</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#0d9488" }} />
+                <span className="text-[10px] text-slate-600">5-8</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#16a34a" }} />
+                <span className="text-[10px] text-slate-600">9-13</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#65a30d" }} />
+                <span className="text-[10px] text-slate-600">14-18</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#eab308" }} />
+                <span className="text-[10px] text-slate-600">19-24</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#f97316" }} />
+                <span className="text-[10px] text-slate-600">25-30</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#dc2626" }} />
+                <span className="text-[10px] text-slate-600">31-42</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#991b1b" }} />
+                <span className="text-[10px] text-slate-600">43-58</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#86198f" }} />
+                <span className="text-[10px] text-slate-600">≥59</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
