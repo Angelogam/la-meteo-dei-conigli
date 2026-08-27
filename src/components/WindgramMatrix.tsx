@@ -41,15 +41,12 @@ function WindArrowIcon({ deg, color }: { deg: number; color: { fill: string; str
 
 function CloudIcon({ cloudCover }: { cloudCover: number }) {
   return (
-    <div className="flex flex-col items-center gap-0.5" style={{ opacity: 0.75 }}>
-      <svg width="22" height="16" viewBox="0 0 40 28" className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
-        <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#334155" fillOpacity="0.7"/>
-        <ellipse cx="18" cy="14" rx="6" ry="4" fill="#475569" fillOpacity="0.6"/>
-        <ellipse cx="14" cy="12" rx="4" ry="3" fill="#64748b" fillOpacity="0.5"/>
+    <div className="pointer-events-none" style={{ opacity: 0.6 }}>
+      <svg width="14" height="10" viewBox="0 0 40 28" style={{ filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.2))" }}>
+        <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#64748b" fillOpacity="0.5"/>
+        <ellipse cx="18" cy="14" rx="6" ry="4" fill="#94a3b8" fillOpacity="0.4"/>
+        <ellipse cx="14" cy="12" rx="4" ry="3" fill="#cbd5e1" fillOpacity="0.3"/>
       </svg>
-      <span className="text-[8px] font-bold text-slate-700 bg-white/80 px-1 rounded shadow-sm">
-        {cloudCover}%
-      </span>
     </div>
   );
 }
@@ -308,7 +305,7 @@ export default function WindgramMatrix({
                           }`}
                         >
                           {showCloud && (
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-0.5 z-20 pointer-events-none">
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full mb-0.5 z-10 pointer-events-none">
                               <CloudIcon cloudCover={hourThermalData[hr]?.cloudCover ?? 30} />
                             </div>
                           )}
@@ -339,10 +336,10 @@ export default function WindgramMatrix({
               <span className="text-slate-600 font-medium">Decollo</span>
             </div>
             <div className="flex items-center gap-1">
-              <svg width="14" height="10" viewBox="0 0 40 28" className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]" style={{ opacity: 0.75 }}>
-                <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#334155" fillOpacity="0.7"/>
-                <ellipse cx="18" cy="14" rx="6" ry="4" fill="#475569" fillOpacity="0.6"/>
-                <ellipse cx="14" cy="12" rx="4" ry="3" fill="#64748b" fillOpacity="0.5"/>
+              <svg width="14" height="10" viewBox="0 0 40 28" className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]" style={{ opacity: 0.6 }}>
+                <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#64748b" fillOpacity="0.5"/>
+                <ellipse cx="18" cy="14" rx="6" ry="4" fill="#94a3b8" fillOpacity="0.4"/>
+                <ellipse cx="14" cy="12" rx="4" ry="3" fill="#cbd5e1" fillOpacity="0.3"/>
               </svg>
               <span className="text-slate-600 font-medium">Base cumuli</span>
             </div>
