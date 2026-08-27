@@ -1,8 +1,3 @@
-characters">
-"use client";
-
-import React, { useState, useEffect, useMemo } from "react";
-import { Wind, Loader2, AlertTriangle, ChevronDown, ChevronUp } from "lized.<dyad-write path="src/components/ProfiloVentoVerticale.tsx" description="Fix all 5 TypeScript compile-time errors - clean file start and escape > characters">
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
