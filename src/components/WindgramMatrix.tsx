@@ -107,26 +107,70 @@ export default function WindgramMatrix({
     return altitudes;
   }, [baseDecolloFloor, maxAlt]);
 
+  // CORRETTO: Calcolo termiche con ciclo diurno realistico
+  // Picco alle 12-14:00, minimo alle 8:00
   const hourThermalData = useMemo(() => {
     const data: Record<number, {
       top: number; base: number; rateo: number;
       cloudBase: number; cloudCover: number;
     }> = {};
+
+    // Trova temperatura massima del giorno per scalare
+    let tempMax = 20;
+    let tempMin = 10;
     DISPLAY_HOURS.forEach((hr) => {
       const h = hourlyMap.get(hr);
-      if (h) {
-        const spread = Math.max(1, h.temperature - (h.dewPoint ?? (h.temperature - 8)));
+      if (h && h.temperature != null) {
+        tempMax = Math.max(tempMax, h.temperature);
+        tempMin = Math.min(tempMin, h.temperature);
+      }
+    });
+    const dailyAmplitude = Math.max(5, tempMax - tempMin);
+
+    DISPLAY_HOURS.forEach((hr) => {
+      const h = hourlyMap.get(hr);
+      
+      if (h && h.temperature != null && h.dewPoint != null) {
+        const spread = Math.max(1, h.temperature - h.dewPoint);
         const lcl = Math.round(altitude + spread * 125);
+        
+        // FATTORE DIURNO: 0 all'alba (8), 1 a mezzogiorno (12-13), decresce pomeriggio
+        // Modello sinusoidale realistico per il ciclo diurno
+        let diurnalFactor = 0;
+        if (hr >= 8 && hr <= 19) {
+          // Picco solare alle 13:00 (1pm ora locale)
+          const hoursFromPeak = Math.abs(hr - 13);
+          if (hoursFromPeak <= 5) {
+            // Curva a campana: max a 13, zero a 8 e 18
+            diurnalFactor = Math.max(0, Math.cos((hoursFromPeak / 5) * (Math.PI / 2)));
+          }
+        }
+        
+        // Termiche reali: 
+        // - Base segue LCL (lifting condensation level) 
+        // - Top = base + sviluppo proporzionale a riscaldamento diurno
+        // - Rateo proporzionale a irraggiamento solare
+        
+        // Sviluppo termico max realistico: 800-1500m sopra base
+        const maxThermalDepth = 600 + dailyAmplitude * 60; // 600-1500m
+        const thermalDepth = maxThermalDepth * diurnalFactor;
+        
+        const base = Math.max(altitude + 100, lcl);
+        const top = Math.min(3500, base + thermalDepth);
+        
+        // Rateo salita: 0.1-3.5 m/s proporzionale a fattore diurno
+        const rateo = 0.1 + 3.4 * diurnalFactor;
+        
         data[hr] = {
-          top: Math.min(3500, altitude + Math.max(500, spread * 100)),
-          base: Math.max(altitude + 100, lcl),
-          rateo: Math.max(0.1, spread * 0.15),
+          top,
+          base,
+          rateo,
           cloudBase: Math.min(lcl, 3500),
           cloudCover: h.cloudCover ?? 30,
         };
       } else {
         data[hr] = {
-          top: altitude + 800, base: altitude + 200, rateo: 0.5,
+          top: altitude + 100, base: altitude + 50, rateo: 0.1,
           cloudBase: altitude + 600, cloudCover: 30,
         };
       }
@@ -140,8 +184,8 @@ export default function WindgramMatrix({
     if (alt >= altitude && alt <= thermal.top) {
       const totalSpan = Math.max(200, thermal.top - altitude);
       const relHeight = (alt - altitude) / totalSpan;
-      const hrBell = Math.max(0, 1 - Math.pow((hr - 14) / 4.2, 2));
-      const strength = (1 - relHeight * 0.75) * (0.4 + hrBell * 0.6);
+      const hrBell = Math.max(0, 1 - Math.pow((hr - 13) / 4.5, 2));
+      const strength = (1 - relHeight * 0.75) * (0.3 + hrBell * 0.7);
       if (strength > 0.72) return "#f97316";
       if (strength > 0.55) return "#fb923c";
       if (strength > 0.40) return "#fbbf24";
