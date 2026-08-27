@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 
 interface WindLevel {
   hpa: string;
@@ -27,8 +27,12 @@ interface UseMultiHourWindProfileProps {
   lon: number;
   siteAlt: number;
   selectedDay: number;
-  hours?: number[];
+  hours?: readonly number[];
 }
+
+// Stable constant for default hours - same reference every render
+const DEFAULT_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] as const;
+const DEFAULT_HOURS_KEY = "8,9,10,11,12,13,14,15,16,17,18";
 
 /**
  * Pure interpolation function - no hooks, no dependencies
@@ -69,17 +73,23 @@ function interpolateWindAtAltitude(
 }
 
 export function useMultiHourWindProfile({ 
-  lat, lon, siteAlt, selectedDay, hours = [8,9,10,11,12,13,14,15,16,17,18] 
+  lat, lon, siteAlt, selectedDay, hours = DEFAULT_HOURS 
 }: UseMultiHourWindProfileProps) {
   const [data, setData] = useState<Map<number, HourWindData>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Stable key for the effect deps
-  const hoursKey = hours.join(",");
+  // Use stable key - if hours is DEFAULT_HOURS, use constant key
+  const hoursKey = useMemo(
+    () => (hours === DEFAULT_HOURS ? DEFAULT_HOURS_KEY : hours.join(",")),
+    [hours]
+  );
+
+  // Track if component is mounted to avoid state updates after unmount
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    let mounted = true;
+    mountedRef.current = true;
     setLoading(true);
     setError(null);
 
@@ -96,7 +106,7 @@ export function useMultiHourWindProfile({
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
 
-        if (!mounted) return;
+        if (!mountedRef.current) return;
 
         const times: string[] = json.hourly.time;
         const h = json.hourly;
@@ -149,12 +159,12 @@ export function useMultiHourWindProfile({
           });
         });
 
-        if (mounted) {
+        if (mountedRef.current) {
           setData(hourDataMap);
           setLoading(false);
         }
       } catch (err) {
-        if (mounted) {
+        if (mountedRef.current) {
           setError(err instanceof Error ? err.message : "Errore caricamento profilo vento multi-ora");
           setLoading(false);
         }
@@ -162,10 +172,10 @@ export function useMultiHourWindProfile({
     };
 
     fetchAllHours();
-    return () => { mounted = false; };
+    return () => { mountedRef.current = false; };
   }, [lat, lon, siteAlt, selectedDay, hoursKey]);
 
-  // Return stable interpolation function that uses pure function
+  // Stable interpolation function using useRef to avoid recreation
   const interpolateAtAltitude = useMemo(
     () => (hour: number, targetAlt: number) => {
       const hourData = data.get(hour);
