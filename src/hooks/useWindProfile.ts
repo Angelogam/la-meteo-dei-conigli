@@ -19,6 +19,7 @@ interface WindProfileData {
   cape: number;
   levels: WindLevel[];
   cloudBase: number;
+  maxRealAltitude: number; // highest altitude with real data
 }
 
 interface UseWindProfileProps {
@@ -26,9 +27,10 @@ interface UseWindProfileProps {
   lon: number;
   siteAlt: number;
   selectedHour: number;
+  selectedDay?: number;
 }
 
-export function useWindProfile({ lat, lon, siteAlt, selectedHour }: UseWindProfileProps) {
+export function useWindProfile({ lat, lon, siteAlt, selectedHour, selectedDay = 0 }: UseWindProfileProps) {
   const [data, setData] = useState<WindProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,8 +42,14 @@ export function useWindProfile({ lat, lon, siteAlt, selectedHour }: UseWindProfi
 
     const fetchWindProfile = async () => {
       try {
-        // Stessi parametri di ProfiloVentoVerticale - dati REALI Open-Meteo
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m,wind_speed_925hPa,wind_direction_925hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa,wind_speed_600hPa,wind_direction_600hPa,wind_speed_500hPa,wind_direction_500hPa,temperature_2m,temperature_80m,temperature_120m,cloud_cover,precipitation,freezing_level_height,cape,lifted_index,convective_inhibition&timezone=Europe/Rome&forecast_days=2`;
+        // Calculate target date
+        const today = new Date();
+        const targetDate = new Date(today);
+        targetDate.setDate(today.getDate() + selectedDay);
+        const dayStr = targetDate.toISOString().split("T")[0];
+
+        // Use same params as ProfessionalWindgram - real Open-Meteo pressure levels
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m,wind_speed_925hPa,wind_direction_925hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa,wind_speed_600hPa,wind_direction_600hPa,wind_speed_500hPa,wind_direction_500hPa,temperature_2m,temperature_80m,temperature_120m,cloud_cover,precipitation,freezing_level_height,cape,lifted_index,convective_inhibition&timezone=Europe/Rome&start_date=${dayStr}&end_date=${dayStr}`;
 
         const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -64,9 +72,9 @@ export function useWindProfile({ lat, lon, siteAlt, selectedHour }: UseWindProfi
           const freeze = h.freezing_level_height?.[idx] ?? (siteAlt + (t / 0.0098) * 100);
           const cape = h.cape?.[idx] ?? 0;
 
-          // Stessi livelli di ProfiloVentoVerticale - DATI REALI
-          const levels: WindLevel[] = [
-            { hpa: "surface", alt: siteAlt, speed: h.wind_speed_10m[idx], dir: h.wind_direction_10m[idx], gust: h.wind_gusts_10m[idx] },
+          // Real pressure levels from Open-Meteo with their approximate altitudes
+          const pressureLevels = [
+            { hpa: "10m", alt: siteAlt, speed: h.wind_speed_10m[idx], dir: h.wind_direction_10m[idx], gust: h.wind_gusts_10m[idx] },
             { hpa: "80m", alt: siteAlt + 80, speed: h.wind_speed_80m[idx], dir: h.wind_direction_80m[idx] },
             { hpa: "120m", alt: siteAlt + 120, speed: h.wind_speed_120m[idx], dir: h.wind_direction_120m[idx] },
             { hpa: "180m", alt: siteAlt + 180, speed: h.wind_speed_180m[idx], dir: h.wind_direction_180m[idx] },
@@ -75,7 +83,17 @@ export function useWindProfile({ lat, lon, siteAlt, selectedHour }: UseWindProfi
             { hpa: "700hPa", alt: 3100, speed: h.wind_speed_700hPa[idx], dir: h.wind_direction_700hPa[idx] },
             { hpa: "600hPa", alt: 4400, speed: h.wind_speed_600hPa[idx], dir: h.wind_direction_600hPa[idx] },
             { hpa: "500hPa", alt: 5800, speed: h.wind_speed_500hPa[idx], dir: h.wind_direction_500hPa[idx] },
-          ].filter(l => l.speed != null && !isNaN(l.speed) && l.dir != null && !isNaN(l.dir));
+          ];
+
+          // Filter only levels with REAL data
+          const realLevels = pressureLevels.filter(l => 
+            l.speed != null && !isNaN(l.speed) && l.dir != null && !isNaN(l.dir)
+          );
+
+          // Find maximum altitude with real data
+          const maxRealAltitude = realLevels.length > 0 
+            ? Math.max(...realLevels.map(l => l.alt)) 
+            : siteAlt;
 
           const spread = Math.max(1, t - dew);
           const cloudBase = Math.round(siteAlt + spread * 125);
@@ -87,8 +105,9 @@ export function useWindProfile({ lat, lon, siteAlt, selectedHour }: UseWindProfi
             cloud: cloud,
             freeze: Math.round(freeze),
             cape: cape,
-            levels,
+            levels: realLevels,
             cloudBase,
+            maxRealAltitude,
           });
           setLoading(false);
         }
@@ -102,9 +121,9 @@ export function useWindProfile({ lat, lon, siteAlt, selectedHour }: UseWindProfi
 
     fetchWindProfile();
     return () => { mounted = false; };
-  }, [lat, lon, siteAlt, selectedHour]);
+  }, [lat, lon, siteAlt, selectedHour, selectedDay]);
 
-  // Funzione di interpolazione lineare tra livelli reali (stessa logica di WindgramMatrix)
+  // Interpolation function - ONLY between real data points, NO extrapolation
   const interpolateAtAltitude = useCallback((targetAlt: number) => {
     if (!data?.levels || data.levels.length === 0) return null;
     if (data.levels.length === 1) {
@@ -113,14 +132,16 @@ export function useWindProfile({ lat, lon, siteAlt, selectedHour }: UseWindProfi
 
     const sorted = [...data.levels].sort((a, b) => a.alt - b.alt);
 
+    // If target altitude is BELOW the lowest real data point, use lowest
     if (targetAlt <= sorted[0].alt) {
       return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
     }
+    // If target altitude is ABOVE the highest real data point, return null (no extrapolation!)
     if (targetAlt >= sorted[sorted.length - 1].alt) {
-      const top = sorted[sorted.length - 1];
-      return { speed: Math.round(top.speed), dir: Math.round(top.dir) };
+      return null; // NO EXTRAPOLATION - return null for altitudes above real data
     }
 
+    // Interpolate between two real data points
     for (let i = 0; i < sorted.length - 1; i++) {
       if (sorted[i].alt <= targetAlt && sorted[i + 1].alt >= targetAlt) {
         const lower = sorted[i];
@@ -138,5 +159,5 @@ export function useWindProfile({ lat, lon, siteAlt, selectedHour }: UseWindProfi
     return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
   }, [data]);
 
-  return { data, loading, error, interpolateAtAltitude };
+  return { data, loading, error, interpolateAtAltitude, maxRealAltitude: data?.maxRealAltitude ?? siteAlt };
 }
