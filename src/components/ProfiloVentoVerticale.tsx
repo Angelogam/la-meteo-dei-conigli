@@ -239,10 +239,7 @@ export default function ProfiloVentoVerticale({
 
   return (
     <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl overflow-hidden">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-3 hover:bg-slate-700/30 transition-colors"
-      >
+      <div className="flex items-center justify-between p-3 hover:bg-slate-700/30 transition-colors cursor-pointer" onClick={() => setExpanded(!expanded)}>
         <div className="flex items-center gap-2">
           <Wind className="w-4 h-4 text-cyan-400" />
           <h4 className="text-sm font-bold text-white">
@@ -258,7 +255,7 @@ export default function ProfiloVentoVerticale({
         <div className="flex items-center gap-2">
           {expanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
         </div>
-      </button>
+      </div>
 
       {expanded && (
         <div className="px-3 pb-3 space-y-3 border-t border-slate-700/30 pt-3">
