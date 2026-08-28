@@ -51,45 +51,6 @@ function CloudIcon({ cloudCover }: { cloudCover: number }) {
   );
 }
 
-// Smooth harmonic interpolation for cloud base
-function smoothCloudBase(hour: number, cloudBaseData: Record<number, number>): number {
-  const hours = Object.keys(cloudBaseData).map(Number).sort((a, b) => a - b);
-  
-  if (hours.length === 0) return 1500;
-  if (hour <= hours[0]) return cloudBaseData[hours[0]];
-  if (hour >= hours[hours.length - 1]) return cloudBaseData[hours[hours.length - 1]];
-  
-  let left = hours[0], right = hours[hours.length - 1];
-  for (let i = 0; i < hours.length - 1; i++) {
-    if (hour >= hours[i] && hour <= hours[i + 1]) {
-      left = hours[i];
-      right = hours[i + 1];
-      break;
-    }
-  }
-  
-  const t = (hour - left) / (right - left);
-  const p0 = hours.length > 2 ? hours[hours.indexOf(left) - 1] || left : left;
-  const p3 = hours.length > 2 ? hours[hours.indexOf(right) + 1] || right : right;
-  
-  const y0 = cloudBaseData[p0] || cloudBaseData[left];
-  const y1 = cloudBaseData[left];
-  const y2 = cloudBaseData[right];
-  const y3 = cloudBaseData[p3] || cloudBaseData[right];
-  
-  const t2 = t * t;
-  const t3 = t2 * t;
-  
-  const m0 = (y2 - y0) / 2;
-  const m1 = (y3 - y1) / 2;
-  
-  const result = (2 * y1 - 2 * y2 + m0 + m1) * t3 
-               + (-3 * y1 + 3 * y2 - 2 * m0 - m1) * t2 
-               + m0 * t + y1;
-  
-  return Math.max(500, Math.min(4000, result));
-}
-
 export default function WindgramMatrix({
   dayData,
   siteName,
@@ -101,6 +62,7 @@ export default function WindgramMatrix({
   lat = 44.2587,
   lon = 7.7943,
 }: WindgramMatrixProps) {
+  // HOOKS FIRST - must be called unconditionally at top level
   const { data: windProfileMap, loading: profileLoading, error: profileError, interpolateAtAltitude } = useMultiHourWindProfile({
     lat,
     lon,
@@ -145,26 +107,6 @@ export default function WindgramMatrix({
     return altitudes;
   }, [baseDecolloFloor, maxAlt]);
 
-  // Cloud base data per hour
-  const cloudBasePerHour = useMemo(() => {
-    const data: Record<number, number> = {};
-    DISPLAY_HOURS.forEach((hr) => {
-      const h = hourlyMap.get(hr);
-      if (h && h.temperature != null && h.dewPoint != null) {
-        const spread = Math.max(1, h.temperature - h.dewPoint);
-        const lcl = Math.round(altitude + spread * 125);
-        data[hr] = Math.min(3500, Math.max(altitude + 100, lcl));
-      } else {
-        data[hr] = altitude + 600;
-      }
-    });
-    return data;
-  }, [hourlyMap, altitude]);
-
-  const getCloudBaseAtHour = (hr: number): number => {
-    return smoothCloudBase(hr, cloudBasePerHour);
-  };
-
   const hourThermalData = useMemo(() => {
     const data: Record<number, {
       top: number; base: number; rateo: number;
@@ -184,9 +126,11 @@ export default function WindgramMatrix({
 
     DISPLAY_HOURS.forEach((hr) => {
       const h = hourlyMap.get(hr);
-      const cloudBase = getCloudBaseAtHour(hr);
       
       if (h && h.temperature != null && h.dewPoint != null) {
+        const spread = Math.max(1, h.temperature - h.dewPoint);
+        const lcl = Math.round(altitude + spread * 125);
+        
         let diurnalFactor = 0;
         if (hr >= 8 && hr <= 18) {
           const hoursFromPeak = Math.abs(hr - 13);
@@ -198,29 +142,29 @@ export default function WindgramMatrix({
         const maxThermalDepth = 600 + dailyAmplitude * 60;
         const thermalDepth = maxThermalDepth * diurnalFactor;
         
-        const base = Math.max(altitude + 100, cloudBase);
+        const base = Math.max(altitude + 100, lcl);
         const top = Math.min(3500, base + thermalDepth);
         const rateo = 0.1 + 3.4 * diurnalFactor;
         
-        data[hr] = { top, base, rateo, cloudBase, cloudCover: h.cloudCover ?? 30 };
+        data[hr] = { top, base, rateo, cloudBase: Math.min(lcl, 3500), cloudCover: h.cloudCover ?? 30 };
       } else {
-        data[hr] = { top: altitude + 100, base: altitude + 50, rateo: 0.1, cloudBase, cloudCover: 30 };
+        data[hr] = { top: altitude + 100, base: altitude + 50, rateo: 0.1, cloudBase: altitude + 600, cloudCover: 30 };
       }
     });
     return data;
-  }, [hourlyMap, altitude, cloudBasePerHour]);
+  }, [hourlyMap, altitude]);
 
-  // Yellow thermal fill from decollo up to cloud base
+  // Calcola sfondo: GIALLO SOLO dal decollo alla base del cumulo, MAI oltre
   const getThermalBgColor = (alt: number, hr: number): string => {
     const thermal = hourThermalData[hr];
     if (!thermal) return "transparent";
-    
+    // GIALLO: dal decollo fino alla cloudBase (ESCLUSO) - non si estende oltre
     if (alt >= altitude && alt < thermal.cloudBase) {
+      // Invertito: 0 al decollo (in basso), 1 alla cloudBase (in alto)
       const totalSpan = Math.max(200, thermal.cloudBase - altitude);
       const relHeight = (alt - altitude) / totalSpan;
       const hrBell = Math.max(0, 1 - Math.pow((hr - 13) / 4.5, 2));
       const strength = (1 - relHeight * 0.75) * (0.3 + hrBell * 0.7);
-      
       if (strength > 0.72) return "#f97316";
       if (strength > 0.55) return "#fb923c";
       if (strength > 0.40) return "#fbbf24";
@@ -230,7 +174,6 @@ export default function WindgramMatrix({
     return "transparent";
   };
 
-  // Wind data interpolated from real Open-Meteo pressure levels
   const windDataByHourAlt = useMemo(() => {
     const result: Record<number, Record<number, { speed: number; dir: number }>> = {};
     DISPLAY_HOURS.forEach((hr) => {
@@ -239,32 +182,33 @@ export default function WindgramMatrix({
         if (alt > 4000) return;
         const interp = interpolateAtAltitude(hr, alt);
         if (interp) {
-          result[hr][alt] = { speed: interp.speed, dir: interp.dir };
+          result[hr][alt] = { speed: Math.round(interp.speed), dir: Math.round(interp.dir) };
         }
       });
     });
     return result;
   }, [activeAltitudes, altitude, windProfileMap, interpolateAtAltitude]);
 
-  // Cloud position per hour
-  const cloudPositionPerHour = useMemo(() => {
-    const positions: Record<number, { rowIdx: number; exactAlt: number }> = {};
+  // Cloud base row: la nuvola è posizionata ESATTAMENTE alla riga corrispondente alla cloudBase
+  const cloudBaseRow = useMemo(() => {
+    const map: Record<number, number> = {};
     DISPLAY_HOURS.forEach((hr) => {
-      const cloudBase = getCloudBaseAtHour(hr);
+      const thermal = hourThermalData[hr];
+      if (!thermal) return;
       let bestIdx = 0, bestDiff = Infinity;
       activeAltitudes.forEach((a, idx) => {
-        const diff = Math.abs(a - cloudBase);
+        const diff = Math.abs(a - thermal.cloudBase);
         if (diff < bestDiff) { bestDiff = diff; bestIdx = idx; }
       });
-      positions[hr] = { rowIdx: bestIdx, exactAlt: cloudBase };
+      map[hr] = bestIdx;
     });
-    return positions;
-  }, [activeAltitudes, cloudBasePerHour]);
+    return map;
+  }, [hourThermalData, activeAltitudes]);
 
   const dataSourceBadge = hasRealAltitudeData ? (
     <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold flex items-center gap-1">
       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-      Dati REALI Open-Meteo (quote 760-5800m)
+      Dati REALI quote 1000-3000m
     </span>
   ) : hasRealPressureData ? (
     <span className="px-2 py-0.5 rounded bg-sky-100 text-sky-700 text-[10px] font-bold flex items-center gap-1">
@@ -274,7 +218,7 @@ export default function WindgramMatrix({
   ) : (
     <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px] font-bold flex items-center gap-1">
       <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-      Nessun dato disponibile
+      Dati stimati
     </span>
   );
 
@@ -286,26 +230,27 @@ export default function WindgramMatrix({
     return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
   })();
 
+  // EARLY RETURNS AFTER ALL HOOKS
   if (profileLoading) {
     return (
       <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
         <div className="w-full bg-white text-slate-900 border border-slate-200/80 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
           <div className="p-4 sm:p-5 pb-3 flex items-center justify-center gap-3">
             <div className="w-6 h-6 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" />
-            <span className="text-sm font-bold text-slate-700">Caricamento windgram da Open-Meteo...</span>
+            <span className="text-sm font-bold text-slate-700">Caricamento windgram...</span>
           </div>
         </div>
       </div>
     );
   }
 
-  if (profileError || windProfileMap.size === 0) {
+  if (profileError) {
     return (
       <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
         <div className="w-full bg-white text-slate-900 border border-red-500/40 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
           <div className="p-4 sm:p-5 pb-3 text-center text-red-500">
             <p className="font-bold">Errore caricamento windgram</p>
-            <p className="text-sm">{profileError || "Nessun dato Open-Meteo disponibile"}</p>
+            <p className="text-sm">{profileError}</p>
           </div>
         </div>
       </div>
@@ -315,6 +260,7 @@ export default function WindgramMatrix({
   return (
     <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
       <div className="w-full bg-white text-slate-900 border border-slate-200/80 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
+        {/* Header */}
         <div className="p-4 sm:p-5 pb-3">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2.5">
@@ -336,6 +282,7 @@ export default function WindgramMatrix({
           </div>
         </div>
 
+        {/* Tabella Windgram - Scala quote: 4000m TOP (prima riga), decollo BOTTOM (ultima riga) */}
         <div className="overflow-x-auto border-t border-b border-slate-200 bg-white">
           <table className="w-full text-center border-collapse text-xs">
             <thead>
@@ -375,8 +322,7 @@ export default function WindgramMatrix({
                       const wColor = w ? getWindArrowColor(w.speed) : { fill: "#94a3b8", stroke: "#64748b", text: "#94a3b8" };
                       const isSelectedCol = hr === selectedHour;
                       const bgColor = getThermalBgColor(alt, hr);
-                      const cloudPos = cloudPositionPerHour[hr];
-                      const showCloud = cloudPos.rowIdx === rowIdx;
+                      const showCloud = cloudBaseRow[hr] === rowIdx;
                       return (
                         <td
                           key={`cell-${alt}-${hr}`}
@@ -407,6 +353,7 @@ export default function WindgramMatrix({
           </table>
         </div>
 
+        {/* LEGENDA PROFESSIONALE */}
         <div className="p-4 bg-slate-50 border-t border-slate-100">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
             <div className="flex items-center gap-3 flex-wrap">
@@ -432,6 +379,7 @@ export default function WindgramMatrix({
             </div>
           </div>
 
+          {/* Scala venti */}
           <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-slate-200">
             <span className="text-xs text-slate-600 font-medium">Scala venti (km/h):</span>
             <div className="flex items-center gap-1.5">
