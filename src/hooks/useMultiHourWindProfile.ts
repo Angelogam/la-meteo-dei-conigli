@@ -24,6 +24,7 @@ interface HourWindData {
 
 const DEFAULT_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] as const;
 
+// Interpolazione lineare con gestione direzione vento
 function interpolateWindAtAltitude(
   levels: WindLevel[] | undefined,
   targetAlt: number
@@ -39,7 +40,9 @@ function interpolateWindAtAltitude(
     return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
   }
   if (targetAlt >= sorted[sorted.length - 1].alt) {
-    return null;
+    // Estendi l'ultimo dato reale (non inventare)
+    const last = sorted[sorted.length - 1];
+    return { speed: Math.round(last.speed), dir: Math.round(last.dir) };
   }
 
   for (let i = 0; i < sorted.length - 1; i++) {
@@ -89,6 +92,7 @@ export function useMultiHourWindProfile({
         targetDate.setDate(today.getDate() + selectedDay);
         const dayStr = targetDate.toISOString().split("T")[0];
 
+        // Fetch REAL Open-Meteo data with all pressure levels
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m,wind_speed_925hPa,wind_direction_925hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa,wind_speed_600hPa,wind_direction_600hPa,wind_speed_500hPa,wind_direction_500hPa,temperature_2m,temperature_80m,temperature_120m,dew_point_2m,cloud_cover,precipitation,freezing_level_height,cape,lifted_index,convective_inhibition&timezone=Europe/Rome&start_date=${dayStr}&end_date=${dayStr}`;
 
         const res = await fetch(url);
@@ -100,52 +104,58 @@ export function useMultiHourWindProfile({
         const times: string[] = json.hourly.time;
         const h = json.hourly;
 
+        if (!times || times.length === 0) {
+          throw new Error("Nessun dato orario ricevuto da Open-Meteo");
+        }
+
         const hourDataMap = new Map<number, HourWindData>();
 
         DEFAULT_HOURS.forEach((targetHour) => {
           const idx = times.findIndex((t) => parseInt(t.split("T")[1].split(":")[0], 10) === targetHour);
           if (idx === -1) return;
 
-          const t = h.temperature_2m[idx] ?? 15;
+          const t = h.temperature_2m?.[idx] ?? 15;
           const dew = h.dew_point_2m?.[idx] ?? (t - 8);
           const cloud = h.cloud_cover?.[idx] ?? 30;
           const freeze = h.freezing_level_height?.[idx] ?? (siteAlt + (t / 0.0098) * 100);
           const cape = h.cape?.[idx] ?? 0;
 
-          const pressureLevels = [
-            { hpa: "10m", alt: siteAlt, speed: h.wind_speed_10m[idx], dir: h.wind_direction_10m[idx], gust: h.wind_gusts_10m[idx] },
-            { hpa: "80m", alt: siteAlt + 80, speed: h.wind_speed_80m[idx], dir: h.wind_direction_80m[idx] },
-            { hpa: "120m", alt: siteAlt + 120, speed: h.wind_speed_120m[idx], dir: h.wind_direction_120m[idx] },
-            { hpa: "180m", alt: siteAlt + 180, speed: h.wind_speed_180m[idx], dir: h.wind_direction_180m[idx] },
-            { hpa: "925hPa", alt: 760, speed: h.wind_speed_925hPa[idx], dir: h.wind_direction_925hPa[idx] },
-            { hpa: "850hPa", alt: 1450, speed: h.wind_speed_850hPa[idx], dir: h.wind_direction_850hPa[idx] },
-            { hpa: "700hPa", alt: 3100, speed: h.wind_speed_700hPa[idx], dir: h.wind_direction_700hPa[idx] },
-            { hpa: "600hPa", alt: 4400, speed: h.wind_speed_600hPa[idx], dir: h.wind_direction_600hPa[idx] },
-            { hpa: "500hPa", alt: 5800, speed: h.wind_speed_500hPa[idx], dir: h.wind_direction_500hPa[idx] },
+          // Real pressure levels from Open-Meteo with their standard altitudes
+          const pressureLevels: WindLevel[] = [
+            { hpa: "10m", alt: siteAlt, speed: h.wind_speed_10m?.[idx] ?? NaN, dir: h.wind_direction_10m?.[idx] ?? NaN, gust: h.wind_gusts_10m?.[idx] },
+            { hpa: "80m", alt: siteAlt + 80, speed: h.wind_speed_80m?.[idx] ?? NaN, dir: h.wind_direction_80m?.[idx] ?? NaN },
+            { hpa: "120m", alt: siteAlt + 120, speed: h.wind_speed_120m?.[idx] ?? NaN, dir: h.wind_direction_120m?.[idx] ?? NaN },
+            { hpa: "180m", alt: siteAlt + 180, speed: h.wind_speed_180m?.[idx] ?? NaN, dir: h.wind_direction_180m?.[idx] ?? NaN },
+            { hpa: "925hPa", alt: 760, speed: h.wind_speed_925hPa?.[idx] ?? NaN, dir: h.wind_direction_925hPa?.[idx] ?? NaN },
+            { hpa: "850hPa", alt: 1450, speed: h.wind_speed_850hPa?.[idx] ?? NaN, dir: h.wind_direction_850hPa?.[idx] ?? NaN },
+            { hpa: "700hPa", alt: 3100, speed: h.wind_speed_700hPa?.[idx] ?? NaN, dir: h.wind_direction_700hPa?.[idx] ?? NaN },
+            { hpa: "600hPa", alt: 4400, speed: h.wind_speed_600hPa?.[idx] ?? NaN, dir: h.wind_direction_600hPa?.[idx] ?? NaN },
+            { hpa: "500hPa", alt: 5800, speed: h.wind_speed_500hPa?.[idx] ?? NaN, dir: h.wind_direction_500hPa?.[idx] ?? NaN },
           ];
 
+          // Filter only levels with REAL data
           const realLevels = pressureLevels.filter(l => 
-            l.speed != null && !isNaN(l.speed) && l.dir != null && !isNaN(l.dir)
+            typeof l.speed === 'number' && !isNaN(l.speed) && l.speed > 0 &&
+            typeof l.dir === 'number' && !isNaN(l.dir) && l.dir >= 0 && l.dir <= 360
           );
 
-          const maxRealAltitude = realLevels.length > 0 
-            ? Math.max(...realLevels.map(l => l.alt)) 
-            : siteAlt;
+          if (realLevels.length > 0) {
+            const maxRealAltitude = Math.max(...realLevels.map(l => l.alt));
+            const spread = Math.max(1, t - dew);
+            const cloudBase = Math.round(siteAlt + spread * 125);
 
-          const spread = Math.max(1, t - dew);
-          const cloudBase = Math.round(siteAlt + spread * 125);
-
-          hourDataMap.set(targetHour, {
-            hour: targetHour,
-            temp: t,
-            dew: dew,
-            cloud: cloud,
-            freeze: Math.round(freeze),
-            cape: cape,
-            levels: realLevels,
-            cloudBase,
-            maxRealAltitude,
-          });
+            hourDataMap.set(targetHour, {
+              hour: targetHour,
+              temp: t,
+              dew: dew,
+              cloud: cloud,
+              freeze: Math.round(freeze),
+              cape: cape,
+              levels: realLevels,
+              cloudBase,
+              maxRealAltitude,
+            });
+          }
         });
 
         if (mountedRef.current) {
@@ -164,7 +174,7 @@ export function useMultiHourWindProfile({
     return () => { mountedRef.current = false; };
   }, [lat, lon, siteAlt, selectedDay]);
 
-  // Stable interpolation function - defined inline, uses ref
+  // Stable interpolation function
   const interpolateAtAltitude = (hour: number, targetAlt: number) => {
     const hourData = dataRef.current.get(hour);
     return interpolateWindAtAltitude(hourData?.levels, targetAlt);
