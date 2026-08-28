@@ -381,36 +381,6 @@ export default function SkewTDiagram({
           plotted {dateStr} 00:00 UTC &middot; model ground {Math.round(siteAltitude + 5)} m &middot; SRTM {Math.round(siteAltitude)} m
         </p>
       </div>
-
-      {/* SCALA GRADIENTE INFERIORE DELTA T / 100 m IDENTICA AD ALPIUM */}
-      <div className="mt-4 pt-3 border-t border-slate-300 flex flex-col items-center">
-        <div className="w-full max-w-2xl px-2">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
-            <span>Stabile &larr;</span>
-            <span className="text-slate-900 font-extrabold text-sm">&Delta;T / 100 m</span>
-            <span>&rarr; Instabile</span>
-          </div>
-
-          {/* Barra Continua Segmentata a 9 Colori */}
-          <div className="w-full h-4 rounded-sm flex overflow-hidden border border-slate-400">
-            {STABILITY_SCALE.map((item, idx) => (
-              <div key={idx} className="flex-1 h-full" style={{ backgroundColor: item.color }} />
-            ))}
-          </div>
-
-          {/* Etichette Valori Sotto la Barra */}
-          <div className="flex justify-between text-[10px] sm:text-xs font-mono font-bold text-slate-700 mt-1 px-1">
-            {STABILITY_SCALE.map((item, idx) => (
-              <span key={idx}>{item.val.toFixed(2)}</span>
-            ))}
-          </div>
-
-          {/* Didascalia Fonte Dati */}
-          <div className="text-center text-[10px] text-slate-500 font-mono mt-3">
-            Fonte: AROME 0-48 h + ICON-EU 0-120 h via Open-Meteo &middot; Diagnostica di volo a vela di Alpium
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
