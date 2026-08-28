@@ -22,17 +22,8 @@ interface HourWindData {
   maxRealAltitude: number;
 }
 
-interface UseMultiHourWindProfileProps {
-  lat: number;
-  lon: number;
-  siteAlt: number;
-  selectedDay: number;
-  hours?: readonly number[];
-}
-
-// Stable constant for default hours - same reference every render
-const DEFAULT_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] as const;
-const DEFAULT_HOURS_KEY = "8,9,10,11,12,13,14,15,16,17,18";
+// Stable constant defined at module level - same reference everywhere
+const DEFAULT_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] as const;
 
 /**
  * Pure interpolation function - no hooks, no dependencies
@@ -68,25 +59,30 @@ function interpolateWindAtAltitude(
       dir = ((dir % 360) + 360) % 360;
       return { speed: Math.round(speed), dir: Math.round(dir) };
     }
-    return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
   }
+  return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
+}
+
+interface UseMultiHourWindProfileProps {
+  lat: number;
+  lon: number;
+  siteAlt: number;
+  selectedDay: number;
+  // Use default hours by default - no need to pass array
 }
 
 export function useMultiHourWindProfile({ 
-  lat, lon, siteAlt, selectedDay, hours = DEFAULT_HOURS 
+  lat, lon, siteAlt, selectedDay
 }: UseMultiHourWindProfileProps) {
   const [data, setData] = useState<Map<number, HourWindData>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Use stable key - if hours is DEFAULT_HOURS, use constant key
-  const hoursKey = useMemo(
-    () => (hours === DEFAULT_HOURS ? DEFAULT_HOURS_KEY : hours.join(",")),
-    [hours]
-  );
-
   // Track if component is mounted to avoid state updates after unmount
   const mountedRef = useRef(true);
+
+  // Stable hours key - always use the module-level constant
+  const hoursKey = DEFAULT_HOURS.join(",");
 
   useEffect(() => {
     mountedRef.current = true;
@@ -113,7 +109,8 @@ export function useMultiHourWindProfile({
 
         const hourDataMap = new Map<number, HourWindData>();
 
-        hours.forEach((targetHour) => {
+        // Use the module-level constant directly - no prop dependency
+        DEFAULT_HOURS.forEach((targetHour) => {
           const idx = times.findIndex((t) => parseInt(t.split("T")[1].split(":")[0], 10) === targetHour);
           if (idx === -1) return;
 
@@ -175,7 +172,7 @@ export function useMultiHourWindProfile({
     return () => { mountedRef.current = false; };
   }, [lat, lon, siteAlt, selectedDay, hoursKey]);
 
-  // Stable interpolation function using useRef to avoid recreation
+  // Stable interpolation function
   const interpolateAtAltitude = useMemo(
     () => (hour: number, targetAlt: number) => {
       const hourData = data.get(hour);
