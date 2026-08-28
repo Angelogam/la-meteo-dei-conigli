@@ -16,6 +16,7 @@ import AnalisiMeteo from "@/components/AnalisiMeteo";
 import Windgram from "@/components/Windgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import ProfiloVentoVerticale from "@/components/ProfiloVentoVerticale";
+import SkewTDiagram from "@/components/SkewTDiagram";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
@@ -199,6 +200,16 @@ export default function Index() {
                     />
                   </div>
                 </div>
+
+                {/* SkewTDiagram — aggiornato al giorno di previsione selezionato */}
+                <SkewTDiagram
+                  latitude={site.lat}
+                  longitude={site.lon}
+                  siteAltitude={site.elevation_m}
+                  siteName={site.site_name}
+                  selectedHour={selectedHour}
+                  selectedDay={selectedDay}
+                />
 
                 <WeatherDashboard
                   dayData={filteredDayData}
