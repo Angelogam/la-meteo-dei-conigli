@@ -17,7 +17,8 @@ interface WindgramMatrixProps {
   lon?: number;
 }
 
-const DISPLAY_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+// Stable constant - defined OUTSIDE component
+const DISPLAY_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] as const;
 
 function getWindArrowColor(speed: number): { fill: string; stroke: string; text: string } {
   if (speed <= 4) return { fill: "#0284c7", stroke: "#0369a1", text: "#0284c7" };
@@ -67,7 +68,7 @@ export default function WindgramMatrix({
     lon,
     siteAlt: altitude,
     selectedDay,
-    hours: DISPLAY_HOURS,
+    hours: DISPLAY_HOURS, // Use stable constant reference
   });
 
   const hourlyMap = useMemo(() => {
@@ -100,17 +101,15 @@ export default function WindgramMatrix({
   const maxAlt = 4000;
 
   // SCALA QUOTE: 4000m in ALTO (prima riga), quota decollo in BASSO (ultima riga)
-  // Ordine decrescente: index 0 = 4000m (top visivo), ultimo index = decollo (bottom visivo)
   const activeAltitudes = useMemo(() => {
     const altitudes: number[] = [];
     for (let alt = maxAlt; alt >= baseDecolloFloor; alt -= baseStep) {
       altitudes.push(alt);
     }
-    return altitudes; // [4000, 3750, 3500, ..., decollo] - 4000 è index 0 (top)
+    return altitudes;
   }, [baseDecolloFloor, maxAlt]);
 
   // CALCOLO TERMICHE CORRETTO - Ciclo diurno realistico
-  // Picco 12-14:00, minimo alle 8:00
   const hourThermalData = useMemo(() => {
     const data: Record<number, {
       top: number; base: number; rateo: number;
@@ -135,7 +134,6 @@ export default function WindgramMatrix({
         const spread = Math.max(1, h.temperature - h.dewPoint);
         const lcl = Math.round(altitude + spread * 125);
         
-        // FATTORE DIURNO REALISTICO: picco a 13:00, zero a 8:00 e 18:00
         let diurnalFactor = 0;
         if (hr >= 8 && hr <= 18) {
           const hoursFromPeak = Math.abs(hr - 13);
@@ -144,7 +142,6 @@ export default function WindgramMatrix({
           }
         }
         
-        // Sviluppo termico max: 800-1500m sopra base
         const maxThermalDepth = 600 + dailyAmplitude * 60;
         const thermalDepth = maxThermalDepth * diurnalFactor;
         
