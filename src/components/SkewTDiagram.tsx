@@ -360,6 +360,16 @@ export default function SkewTDiagram({
     );
   }
 
+  if (error) {
+    return (
+      <div className="bg-slate-900 border border-rose-500/40 rounded-3xl p-6 text-center text-rose-300">
+        <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-rose-400" />
+        <p className="font-bold text-white">Impossibile caricare i dati Open-Meteo</p>
+        <p className="text-xs text-slate-400 mt-1">{error}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full overflow-x-auto">
       {/* Titolo Principale in Alto */}
