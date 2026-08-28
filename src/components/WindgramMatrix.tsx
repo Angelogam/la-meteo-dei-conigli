@@ -154,11 +154,14 @@ export default function WindgramMatrix({
     return data;
   }, [hourlyMap, altitude]);
 
+  // Calcola sfondo: GIALLO SOLO dal decollo alla base del cumulo, MAI oltre
   const getThermalBgColor = (alt: number, hr: number): string => {
     const thermal = hourThermalData[hr];
     if (!thermal) return "transparent";
-    if (alt >= altitude && alt <= thermal.top) {
-      const totalSpan = Math.max(200, thermal.top - altitude);
+    // GIALLO: dal decollo fino alla cloudBase (ESCLUSO) - non si estende oltre
+    if (alt >= altitude && alt < thermal.cloudBase) {
+      // Invertito: 0 al decollo (in basso), 1 alla cloudBase (in alto)
+      const totalSpan = Math.max(200, thermal.cloudBase - altitude);
       const relHeight = (alt - altitude) / totalSpan;
       const hrBell = Math.max(0, 1 - Math.pow((hr - 13) / 4.5, 2));
       const strength = (1 - relHeight * 0.75) * (0.3 + hrBell * 0.7);
@@ -168,7 +171,6 @@ export default function WindgramMatrix({
       if (strength > 0.22) return "#fde047";
       return "#fef08a";
     }
-    if (hr <= 10 && alt >= 1400 && alt <= 2200) return "#f1f5f9";
     return "transparent";
   };
 
@@ -187,6 +189,7 @@ export default function WindgramMatrix({
     return result;
   }, [activeAltitudes, altitude, windProfileMap, interpolateAtAltitude]);
 
+  // Cloud base row: la nuvola è posizionata ESATTAMENTE alla riga corrispondente alla cloudBase
   const cloudBaseRow = useMemo(() => {
     const map: Record<number, number> = {};
     DISPLAY_HOURS.forEach((hr) => {
@@ -356,7 +359,7 @@ export default function WindgramMatrix({
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-2.5 rounded bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500 border border-orange-400/60" />
-                <span className="text-slate-700 font-medium text-xs">Termica attiva</span>
+                <span className="text-slate-700 font-medium text-xs">Termica attiva (fino a base cumuli)</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-3 h-2.5 rounded bg-[#fde68a] border border-amber-400" />
@@ -368,7 +371,7 @@ export default function WindgramMatrix({
                   <ellipse cx="18" cy="14" rx="6" ry="4" fill="#94a3b8" fillOpacity="0.4"/>
                   <ellipse cx="14" cy="12" rx="4" ry="3" fill="#cbd5e1" fillOpacity="0.3"/>
                 </svg>
-                <span className="text-slate-700 font-medium text-xs">Base cumuli</span>
+                <span className="text-slate-700 font-medium text-xs">Base cumuli (sopra il giallo)</span>
               </div>
             </div>
             <div className="flex items-center gap-2 text-slate-500">
