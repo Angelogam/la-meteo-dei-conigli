@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface WindLevel {
   hpa: string;
@@ -22,12 +22,8 @@ interface HourWindData {
   maxRealAltitude: number;
 }
 
-// Stable constant defined at module level - same reference everywhere
 const DEFAULT_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] as const;
 
-/**
- * Pure interpolation function - no hooks, no dependencies
- */
 function interpolateWindAtAltitude(
   levels: WindLevel[] | undefined,
   targetAlt: number
@@ -43,7 +39,7 @@ function interpolateWindAtAltitude(
     return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
   }
   if (targetAlt >= sorted[sorted.length - 1].alt) {
-    return null; // NO EXTRAPOLATION
+    return null;
   }
 
   for (let i = 0; i < sorted.length - 1; i++) {
@@ -77,10 +73,7 @@ export function useMultiHourWindProfile({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Track if component is mounted to avoid state updates after unmount
   const mountedRef = useRef(true);
-  
-  // Store latest data in ref for stable interpolation function
   const dataRef = useRef(data);
   dataRef.current = data;
 
@@ -109,7 +102,6 @@ export function useMultiHourWindProfile({
 
         const hourDataMap = new Map<number, HourWindData>();
 
-        // Use the module-level constant directly - no prop dependency
         DEFAULT_HOURS.forEach((targetHour) => {
           const idx = times.findIndex((t) => parseInt(t.split("T")[1].split(":")[0], 10) === targetHour);
           if (idx === -1) return;
@@ -172,14 +164,11 @@ export function useMultiHourWindProfile({
     return () => { mountedRef.current = false; };
   }, [lat, lon, siteAlt, selectedDay]);
 
-  // Stable interpolation function using ref - never changes between renders
-  const interpolateAtAltitude = useCallback(
-    (hour: number, targetAlt: number) => {
-      const hourData = dataRef.current.get(hour);
-      return interpolateWindAtAltitude(hourData?.levels, targetAlt);
-    },
-    [] // Empty deps - uses ref, never recreated
-  );
+  // Stable interpolation function - defined inline, uses ref
+  const interpolateAtAltitude = (hour: number, targetAlt: number) => {
+    const hourData = dataRef.current.get(hour);
+    return interpolateWindAtAltitude(hourData?.levels, targetAlt);
+  };
 
   return { data, loading, error, interpolateAtAltitude };
 }
