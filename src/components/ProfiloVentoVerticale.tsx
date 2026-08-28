@@ -59,15 +59,7 @@ function calcShear(higher: { alt: number; speed: number }, lower: { alt: number;
   return Math.abs(higher.speed - lower.speed) / (dAlt / 100);
 }
 
-/** Trova il livello reale più vicino in quota */
-function findClosestLevel<T extends { alt: number }>(levels: T[], targetAlt: number): T | null {
-  if (!levels.length) return null;
-  return levels.reduce((best, l) =>
-    Math.abs(l.alt - targetAlt) < Math.abs(best.alt - targetAlt) ? l : best
-  , levels[0]);
-}
-
-/** Trova interpolazione lineare tra due livelli reali (in quota) */
+/** Interpolazione lineare tra due livelli reali (in quota) */
 function interpolateBetween(
   lower: { alt: number; speed: number; dir: number; gust?: number },
   upper: { alt: number; speed: number; dir: number; gust?: number },
@@ -80,7 +72,6 @@ function interpolateBetween(
   const ratio = (targetAlt - lower.alt) / dAlt;
   const speed = lower.speed + ratio * (upper.speed - lower.speed);
 
-  // Interpolazione direzione con gestione wrap 0-360
   let diffDir = upper.dir - lower.dir;
   if (diffDir > 180) diffDir -= 360;
   if (diffDir < -180) diffDir += 360;
@@ -95,15 +86,12 @@ function interpolateBetween(
   return { speed, dir, gust };
 }
 
-/** Dato calcolato per una riga della tabella */
 interface RowData {
   alt: number;
   speed: number;
   dir: number;
   gust: number | null;
   source: "real" | "interpolated" | "below-lowest" | "above-highest";
-  baseLevel: { alt: number; speed: number; dir: number; gust?: number } | null;
-  upperLevel: { alt: number; speed: number; dir: number; gust?: number } | null;
 }
 
 export default function ProfiloVentoVerticale({
@@ -115,7 +103,6 @@ export default function ProfiloVentoVerticale({
   onHourSelect,
   selectedDay = 0,
 }: ProfiloVentoVerticaleProps) {
-  // HOOKS FIRST - unconditional
   const { data, loading, error } = useWindProfile({
     lat,
     lon,
@@ -125,10 +112,8 @@ export default function ProfiloVentoVerticale({
   });
   const [expanded, setExpanded] = useState(true);
 
-  // Costruisci step di quote dalla quota decollo (arrotondata al multiplo di 250) fino a 4000m
   const altitudes = useMemo(() => buildAltitudes(siteAlt), [siteAlt]);
 
-  // Genera righe della tabella: per ogni quota, calcola vento (reale o interpolato)
   const rows = useMemo<RowData[]>(() => {
     if (!data?.levels || data.levels.length === 0) return [];
 
@@ -137,7 +122,6 @@ export default function ProfiloVentoVerticale({
     const maxAlt = sortedLevels[sortedLevels.length - 1].alt;
 
     return altitudes.map((targetAlt) => {
-      // Caso 1: quota coincide esattamente con un livello reale
       const exact = sortedLevels.find((l) => l.alt === targetAlt);
       if (exact) {
         return {
@@ -146,12 +130,9 @@ export default function ProfiloVentoVerticale({
           dir: Math.round(exact.dir),
           gust: exact.gust != null ? Math.round(exact.gust) : null,
           source: "real" as const,
-          baseLevel: null,
-          upperLevel: null,
         };
       }
 
-      // Caso 2: targetAlt è SOTTO il livello reale più basso -> usa quel livello
       if (targetAlt < minAlt) {
         const lower = sortedLevels[0];
         return {
@@ -160,12 +141,9 @@ export default function ProfiloVentoVerticale({
           dir: Math.round(lower.dir),
           gust: lower.gust != null ? Math.round(lower.gust) : null,
           source: "below-lowest" as const,
-          baseLevel: null,
-          upperLevel: null,
         };
       }
 
-      // Caso 3: targetAlt è SOPRA il livello reale più alto -> N/D
       if (targetAlt > maxAlt) {
         return {
           alt: targetAlt,
@@ -173,12 +151,9 @@ export default function ProfiloVentoVerticale({
           dir: 0,
           gust: null,
           source: "above-highest" as const,
-          baseLevel: null,
-          upperLevel: null,
         };
       }
 
-      // Caso 4: interpolazione lineare tra due livelli reali
       const lower = [...sortedLevels].reverse().find((l) => l.alt < targetAlt);
       const upper = sortedLevels.find((l) => l.alt > targetAlt);
 
@@ -190,8 +165,6 @@ export default function ProfiloVentoVerticale({
           dir: Math.round(interp.dir),
           gust: interp.gust != null ? Math.round(interp.gust) : null,
           source: "interpolated" as const,
-          baseLevel: lower,
-          upperLevel: upper,
         };
       }
 
@@ -201,13 +174,19 @@ export default function ProfiloVentoVerticale({
         dir: 0,
         gust: null,
         source: "above-highest" as const,
-        baseLevel: null,
-        upperLevel: null,
       };
     });
   }, [data?.levels, altitudes]);
 
-  // EARLY RETURNS AFTER ALL HOOKS
+  // ALL HOOKS MUST BE BEFORE ANY EARLY RETURN
+  const rowsAsc = useMemo(() => [...rows].sort((a, b) => a.alt - b.alt), [rows]);
+  const shears = useMemo(() => {
+    return rowsAsc.map((row, i) => {
+      if (i === 0) return 0;
+      return calcShear(row, rowsAsc[i - 1]);
+    });
+  }, [rowsAsc]);
+
   if (loading) {
     return (
       <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4">
@@ -232,16 +211,6 @@ export default function ProfiloVentoVerticale({
 
   const { hour, temp, dew, cloud, freeze, cape, cloudBase, levels } = data;
 
-  // Calcola shear su tutte le righe (in ordine di quota crescente)
-  const rowsAsc = useMemo(() => [...rows].sort((a, b) => a.alt - b.alt), [rows]);
-  const shears = useMemo(() => {
-    return rowsAsc.map((row, i) => {
-      if (i === 0) return 0;
-      return calcShear(row, rowsAsc[i - 1]);
-    });
-  }, [rowsAsc]);
-
-  // Calcola shear max e gradiente
   let shearMax = 0;
   shears.forEach((s) => {
     if (s > shearMax) shearMax = s;
@@ -265,7 +234,6 @@ export default function ProfiloVentoVerticale({
   const windDirSurface = levels[0]?.dir ?? 0;
   const windSpeedSurface = levels[0]?.speed ?? 0;
 
-  // Format quota con etichetta decollo
   const decolloBase = Math.floor(siteAlt / 250) * 250;
   const isDecolloRow = (alt: number) => alt === decolloBase;
 
@@ -341,10 +309,8 @@ export default function ProfiloVentoVerticale({
                 </tr>
               </thead>
               <tbody>
-                {/* Righe in ordine decrescente di quota: dal top (4000m) al decollo */}
                 {[...rowsAsc].reverse().map((row) => {
                   const isDecollo = isDecolloRow(row.alt);
-                  // Calcola shear rispetto alla riga sopra (in quota più alta)
                   const idxAsc = rowsAsc.findIndex((r) => r.alt === row.alt);
                   const shear = idxAsc > 0 ? shears[idxAsc] : 0;
                   const sourceLabel =
