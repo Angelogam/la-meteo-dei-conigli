@@ -22,7 +22,6 @@ import {
   CheckCircle,
 } from "lucide-react";
 import type { AnalisiApprofondita } from "@/utils/analisiApprofondita";
-import ProfiloVentoVerticale from "./ProfiloVentoVerticale";
 import type { HourData } from "@/types/meteo";
 
 interface Props {
@@ -177,15 +176,6 @@ export default function AnalisiApprofonditaCard({
             </div>
           </div>
         </div>
-
-        {dayData && dayData.length > 0 && (
-          <ProfiloVentoVerticale
-            siteAlt={analisi.alt}
-            siteName={siteName}
-            lat={analisi.lat}
-            lon={analisi.lon}
-          />
-        )}
       </Sezione>
 
       {/* Termiche */}
