@@ -68,7 +68,6 @@ export default function WindgramMatrix({
     lon,
     siteAlt: altitude,
     selectedDay,
-    hours: DISPLAY_HOURS, // Use stable constant reference
   });
 
   const hourlyMap = useMemo(() => {
