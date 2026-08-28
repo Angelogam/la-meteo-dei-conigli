@@ -13,7 +13,6 @@ import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
-import Windgram from "@/components/Windgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import ProfiloVentoVerticale from "@/components/ProfiloVentoVerticale";
 import { useWeatherData } from "@/hooks/useWeatherData";
@@ -119,29 +118,6 @@ export default function Index() {
                   currentData={currentData} 
                 />
                 <PrevisioniGiornaliere enrichedDaily={enrichedDaily} dateLabels={dateLabels} currentData={currentData} dayData={dayData} site={{ name: site!.site_name, altitude: site!.elevation_m, exposure: site!.orientation }} selectedDay={selectedDay} onSelectDay={setSelectedDay} nomeDecollo={site!.site_name} />
-                
-                <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-base font-bold text-white flex items-center gap-2">
-                      <Wind className="w-5 h-5 text-emerald-400" />
-                      Windgram Quote × Ore — {dateLabel}
-                    </h3>
-                    <span className="text-xs text-emerald-300 bg-emerald-900/30 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                      {site!.elevation_m}m → 4000m
-                    </span>
-                  </div>
-                  <Windgram 
-                    dayData={filteredDayData} 
-                    siteName={site!.site_name} 
-                    altitude={site!.elevation_m}
-                    selectedHour={selectedHour}
-                    onHourSelect={setSelectedHour}
-                    selectedDay={selectedDay}
-                    dateLabel={dateLabel}
-                    lat={site!.lat}
-                    lon={site!.lon}
-                  />
-                </div>
                 
                 <div className="bg-slate-800/30 border border-emerald-500/30 rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-3">
