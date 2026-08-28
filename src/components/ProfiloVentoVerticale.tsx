@@ -11,6 +11,7 @@ interface ProfiloVentoVerticaleProps {
   lon?: number;
   selectedHour?: number;
   onHourSelect?: (hour: number) => void;
+  selectedDay?: number;
 }
 
 function getWindArrow(deg: number): string {
@@ -39,17 +40,26 @@ function getSpeedBarColor(speed: number): string {
   return "bg-red-400";
 }
 
-export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587, lon = 7.7943, selectedHour = 12 }: ProfiloVentoVerticaleProps) {
+export default function ProfiloVentoVerticale({
+  siteAlt,
+  siteName,
+  lat = 44.2587,
+  lon = 7.7943,
+  selectedHour = 12,
+  onHourSelect,
+  selectedDay = 0,
+}: ProfiloVentoVerticaleProps) {
   // HOOKS FIRST - unconditional
   const { data, loading, error } = useWindProfile({
     lat,
     lon,
     siteAlt,
     selectedHour,
+    selectedDay,
   });
   const [expanded, setExpanded] = useState(true);
 
-  // ORDINA LIVELLI PER QUOTA DECRESCENTE: quota più alta in ALTO (prima riga), superficie in BASSO (ultima riga)
+  // ORDINA LIVELLI PER QUOTA DECRESCENTE
   const sortedLevels = useMemo(() => {
     if (!data?.levels) return [];
     return [...data.levels].sort((a, b) => b.alt - a.alt);
@@ -174,7 +184,6 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
               </thead>
               <tbody>
                 {sortedLevels.map((l, i) => {
-                  // Shear calcolato rispetto al livello SOTTO (quota inferiore = riga successiva)
                   let shear = 0;
                   if (i < sortedLevels.length - 1) {
                     const lowerLevel = sortedLevels[i + 1];
@@ -182,9 +191,9 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
                     const dSpeed = Math.abs(l.speed - lowerLevel.speed);
                     if (dAlt > 0) shear = dSpeed / (dAlt / 100);
                   }
-                  const isSurface = l.alt <= 100; // 10m, 80m circa
+                  const isSurface = l.alt <= 100;
                   return (
-                    <tr key={l.hpa} className={`border-b border-slate-700/20 ${isSurface ? "bg-emerald-900/20" : ""}`}>
+                    <tr key={`${l.hpa}-${i}`} className={`border-b border-slate-700/20 ${isSurface ? "bg-emerald-900/20" : ""}`}>
                       <td className="p-2 font-mono font-bold text-white">{l.alt}m</td>
                       <td className="p-2 text-slate-400">{l.hpa}</td>
                       <td className="p-2">

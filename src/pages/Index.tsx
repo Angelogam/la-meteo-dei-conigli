@@ -195,6 +195,7 @@ export default function Index() {
                       lon={site.lon}
                       selectedHour={selectedHour}
                       onHourSelect={setSelectedHour}
+                      selectedDay={selectedDay}
                     />
                   </div>
                 </div>
