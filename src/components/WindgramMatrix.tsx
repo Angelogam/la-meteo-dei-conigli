@@ -17,7 +17,6 @@ interface WindgramMatrixProps {
   lon?: number;
 }
 
-// Stable constant - defined OUTSIDE component
 const DISPLAY_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] as const;
 
 function getWindArrowColor(speed: number): { fill: string; stroke: string; text: string } {
@@ -63,6 +62,7 @@ export default function WindgramMatrix({
   lat = 44.2587,
   lon = 7.7943,
 }: WindgramMatrixProps) {
+  // HOOKS FIRST - must be called unconditionally at top level
   const { data: windProfileMap, loading: profileLoading, error: profileError, interpolateAtAltitude } = useMultiHourWindProfile({
     lat,
     lon,
@@ -99,7 +99,6 @@ export default function WindgramMatrix({
   const baseDecolloFloor = Math.floor(altitude / baseStep) * baseStep;
   const maxAlt = 4000;
 
-  // SCALA QUOTE: 4000m in ALTO (prima riga), quota decollo in BASSO (ultima riga)
   const activeAltitudes = useMemo(() => {
     const altitudes: number[] = [];
     for (let alt = maxAlt; alt >= baseDecolloFloor; alt -= baseStep) {
@@ -108,7 +107,6 @@ export default function WindgramMatrix({
     return altitudes;
   }, [baseDecolloFloor, maxAlt]);
 
-  // CALCOLO TERMICHE CORRETTO - Ciclo diurno realistico
   const hourThermalData = useMemo(() => {
     const data: Record<number, {
       top: number; base: number; rateo: number;
@@ -229,6 +227,7 @@ export default function WindgramMatrix({
     return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
   })();
 
+  // EARLY RETURNS AFTER ALL HOOKS
   if (profileLoading) {
     return (
       <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
