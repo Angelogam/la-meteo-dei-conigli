@@ -8,6 +8,9 @@ import {
   CloudLightning,
   Clock,
   MapPin,
+  Sun,
+  Cloud,
+  Wind,
 } from "lucide-react";
 
 interface FlightScoreProps {
@@ -22,6 +25,11 @@ interface FlightScoreProps {
   siteName?: string;
   rainHours?: number[];
   thunderstormHours?: number[];
+  fogHours?: number[];
+  lightRainHours?: number[];
+  cloudCover?: number;
+  windSpeed?: number;
+  sunHours?: number[];
 }
 
 export default function FlightScore({
@@ -36,6 +44,11 @@ export default function FlightScore({
   siteName,
   rainHours = [],
   thunderstormHours = [],
+  fogHours = [],
+  lightRainHours = [],
+  cloudCover,
+  windSpeed,
+  sunHours = [],
 }: FlightScoreProps) {
   const isRaining = rainHours.length > 0;
   const hasThunderstorm = thunderstormHours.length > 0;
@@ -47,6 +60,12 @@ export default function FlightScore({
     : isRaining
     ? "Pioggia"
     : label;
+
+  const hasFog = fogHours.length > 0;
+  const hasLightRain = lightRainHours.length > 0;
+  const isCloudy = cloudCover !== undefined && cloudCover >= 40;
+  const isWindy = windSpeed !== undefined && windSpeed > 30;
+  const isSunny = sunHours.length > 0 && !hasBadWeather;
 
   return (
     <div className="card bg-slate-800/40 border border-slate-700/50 p-4 relative overflow-hidden rounded-2xl">
@@ -149,7 +168,80 @@ export default function FlightScore({
             </span>
           </div>
         </div>
+
+        {/* Icone condizioni meteo dinamiche */}
+        {(isSunny || isCloudy || hasFog || hasLightRain || isRaining || hasThunderstorm || isWindy) && (
+          <div className="flex items-center justify-center gap-4 mt-3 pt-3 border-t border-slate-700/30 flex-wrap">
+            {isSunny && (
+              <div className="flex flex-col items-center gap-0.5 group relative cursor-default">
+                <Sun className="w-5 h-5 text-amber-400 animate-pulse" />
+                <span className="text-[9px] text-slate-500 mt-0.5">Sole</span>
+              </div>
+            )}
+
+            {isCloudy && !hasFog && (
+              <div className="flex flex-col items-center gap-0.5 group relative cursor-default">
+                <Cloud className="w-5 h-5 text-slate-400" />
+                <span className="text-[9px] text-slate-500 mt-0.5">
+                  {cloudCover !== undefined && cloudCover < 70
+                    ? "Medio nuvoloso"
+                    : "Nuvole"}
+                </span>
+              </div>
+            )}
+
+            {hasFog && (
+              <div className="flex flex-col items-center gap-0.5 group relative cursor-default">
+                <Cloud className="w-5 h-5 text-slate-300 opacity-60" />
+                <span className="text-[9px] text-slate-500 mt-0.5">Nebbia</span>
+              </div>
+            )}
+
+            {hasLightRain && (
+              <div className="flex flex-col items-center gap-0.5 group relative cursor-default">
+                <CloudRain className="w-5 h-5 text-blue-400 opacity-60" />
+                <span className="text-[9px] text-slate-500 mt-0.5">Pioggia leggera</span>
+              </div>
+            )}
+
+            {isRaining && !hasLightRain && (
+              <div className="flex flex-col items-center gap-0.5 group relative cursor-default">
+                <CloudRain className="w-5 h-5 text-cyan-400" />
+                <span className="text-[9px] text-slate-500 mt-0.5">Pioggia</span>
+              </div>
+            )}
+
+            {hasThunderstorm && (
+              <div className="flex flex-col items-center gap-0.5 group relative cursor-default">
+                <CloudLightning className="w-5 h-5 text-purple-400 animate-pulse" />
+                <span className="text-[9px] text-slate-500 mt-0.5">Temporali</span>
+              </div>
+            )}
+
+            {isWindy && (
+              <div className="flex flex-col items-center gap-0.5 group relative cursor-default">
+                <Wind
+                  className="w-5 h-5 text-cyan-300"
+                  style={{
+                    animation:
+                      windSpeed > 50 ? "wind-bounce 0.8s ease-in-out infinite" : undefined,
+                  }}
+                />
+                <span className="text-[9px] text-slate-500 mt-0.5">
+                  Vento {windSpeed} km/h
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      <style>{`
+        @keyframes wind-bounce {
+          0%, 100% { transform: translateX(0); }
+          50% { transform: translateX(4px); }
+        }
+      `}</style>
     </div>
   );
 }
