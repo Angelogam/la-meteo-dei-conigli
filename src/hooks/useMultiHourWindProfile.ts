@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 
 interface WindLevel {
   hpa: string;
@@ -79,6 +79,10 @@ export function useMultiHourWindProfile({
 
   // Track if component is mounted to avoid state updates after unmount
   const mountedRef = useRef(true);
+  
+  // Store latest data in ref for stable interpolation function
+  const dataRef = useRef(data);
+  dataRef.current = data;
 
   useEffect(() => {
     mountedRef.current = true;
@@ -166,15 +170,15 @@ export function useMultiHourWindProfile({
 
     fetchAllHours();
     return () => { mountedRef.current = false; };
-  }, [lat, lon, siteAlt, selectedDay]); // Removed hoursKey - DEFAULT_HOURS is a stable constant
+  }, [lat, lon, siteAlt, selectedDay]);
 
-  // Stable interpolation function
-  const interpolateAtAltitude = useMemo(
-    () => (hour: number, targetAlt: number) => {
-      const hourData = data.get(hour);
+  // Stable interpolation function using ref - never changes between renders
+  const interpolateAtAltitude = useCallback(
+    (hour: number, targetAlt: number) => {
+      const hourData = dataRef.current.get(hour);
       return interpolateWindAtAltitude(hourData?.levels, targetAlt);
     },
-    [data]
+    [] // Empty deps - uses ref, never recreated
   );
 
   return { data, loading, error, interpolateAtAltitude };
