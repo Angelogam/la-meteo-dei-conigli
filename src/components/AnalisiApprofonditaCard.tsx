@@ -134,7 +134,7 @@ interface StabilityAnalysis {
 }
 
 interface FlyabilityResult {
-  score: number; // 0-100
+  score: number;
   label: "NON VOLABILE" | "SCONSIGLIATO" | "IMPEGNATIVO" | "BUONO" | "OTTIMO" | "ECCELLENTE";
   color: string;
   bg: string;
@@ -150,7 +150,7 @@ function degToDir(deg: number): string {
 }
 
 function windArrow(deg: number): string {
-  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
+  const arrows = ["\u2191", "\u2197", "\u2192", "\u2198", "\u2193", "\u2199", "\u2190", "\u2196"];
   return arrows[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
 }
 
@@ -328,27 +328,25 @@ function evaluateFlyability(
 
   let score = 50;
 
-  // --- BLOCCANTI ASSOLUTI ---
   const hasThunderstorm = dayData.some(h => (h.weatherCode >= 95 && h.weatherCode <= 99) || h.weatherCode === 82);
   const hasRain = dayData.some(h => (h.precipitation ?? 0) > 1);
   const hasLightRain = dayData.some(h => (h.precipitation ?? 0) > 0.3);
 
   if (hasThunderstorm) {
-    noFlyReasons.push("⛈️ TEMPORALI PREVISTI - Pericolo fulmini, grandine, outflow violenti");
-    return { score: 0, label: "NON VOLABILE", color: "text-red-400", bg: "bg-red-950/80", reasons: [], warnings: [], noFlyReasons, window: { start: "—", end: "—", quality: "Nessuna" } };
+    noFlyReasons.push("\u26C8\uFE0F TEMPORALI PREVISTI - Pericolo fulmini, grandine, outflow violenti");
+    return { score: 0, label: "NON VOLABILE", color: "text-red-400", bg: "bg-red-950/80", reasons: [], warnings: [], noFlyReasons, window: { start: "\u2014", end: "\u2014", quality: "Nessuna" } };
   }
 
   if (hasRain) {
-    noFlyReasons.push("🌧️ PIOGGIA SIGNIFICATIVA - Ali bagnate, visibilità ridotta, rischio stallo");
-    return { score: 0, label: "NON VOLABILE", color: "text-red-400", bg: "bg-red-950/80", reasons: [], warnings: [], noFlyReasons, window: { start: "—", end: "—", quality: "Nessuna" } };
+    noFlyReasons.push("\uD83C\uDFC7\uFE0F PIOGGIA SIGNIFICATIVA - Ali bagnate, visibilit\u00E0 ridotta, rischio stallo");
+    return { score: 0, label: "NON VOLABILE", color: "text-red-400", bg: "bg-red-950/80", reasons: [], warnings: [], noFlyReasons, window: { start: "\u2014", end: "\u2014", quality: "Nessuna" } };
   }
 
   if (hasLightRain) {
-    warnings.push("🌦️ Pioviggine sparsa possibile - Monitorare evoluzione");
+    warnings.push("\uD83C\uDFC6\uFE0F Pioviggine sparsa possibile - Monitorare evoluzione");
     score -= 15;
   }
 
-  // --- VENTO AL DECOLLO ---
   const groundWind = windProfile[0];
   const windDirDiff = Math.abs(groundWind.dir - (() => {
     const expMap: Record<string, number> = { "N": 0, "NE": 45, "E": 90, "SE": 135, "S": 180, "SW": 225, "W": 270, "NW": 315, "S/SE": 157, "S/SW": 202, "N/NE": 22, "N/NW": 337, "E/NE": 67, "E/SE": 112, "W/NW": 292, "W/SW": 247 };
@@ -357,114 +355,108 @@ function evaluateFlyability(
   const windDiff = windDirDiff > 180 ? 360 - windDirDiff : windDirDiff;
 
   if (groundWind.speed < 2) {
-    noFlyReasons.push("🌀 VENTO QUASI NULLO - Decollo a corsa impossibile, rischio stallo in apertura");
+    noFlyReasons.push("\uD83D\uDCA1 VENTO QUASI NULLO - Decollo a corsa impossibile, rischio stallo in apertura");
     score -= 25;
   } else if (groundWind.speed <= 5) {
-    warnings.push("🍃 Vento debole - Decollo tecnico, richiede corsa lunga");
+    warnings.push("\uD83C\uDF83 Vento debole - Decollo tecnico, richiede corsa lunga");
     score -= 5;
   } else if (groundWind.speed <= 15) {
-    reasons.push("✅ Vento ideale per decollo");
+    reasons.push("\u2705 Vento ideale per decollo");
     score += 10;
   } else if (groundWind.speed <= 22) {
-    warnings.push("⚠️ Vento sostenuto - Decollo impegnativo, richiede esperienza");
+    warnings.push("\u26A0\uFE0F Vento sostenuto - Decollo impegnativo, richiede esperienza");
     score -= 5;
   } else if (groundWind.speed <= 30) {
-    noFlyReasons.push("💨 VENTO FORTE - Decollo pericoloso per piloti non esperti");
+    noFlyReasons.push("\uD83D\uDCA8 VENTO FORTE - Decollo pericoloso per piloti non esperti");
     score -= 20;
   } else {
-    noFlyReasons.push("💨 VENTO MOLTO FORTE - Decollo sconsigliato a chiunque");
+    noFlyReasons.push("\uD83D\uDCA8 VENTO MOLTO FORTE - Decollo sconsigliato a chiunque");
     score -= 35;
   }
 
   if (windDiff <= 30) {
-    reasons.push("✅ Vento frontale all'esposizione");
+    reasons.push("\u2705 Vento frontale all'esposizione");
   } else if (windDiff <= 60) {
-    reasons.push("✅ Vento diagonale favorevole");
+    reasons.push("\u2705 Vento diagonale favorevole");
   } else if (windDiff <= 90) {
-    warnings.push("⚠️ Vento laterale - Attenzione in apertura");
+    warnings.push("\u26A0\uFE0F Vento laterale - Attenzione in apertura");
     score -= 5;
   } else if (windDiff <= 135) {
-    warnings.push("⚠️ Vento diagonale contrario - Decollo difficile");
+    warnings.push("\u26A0\uFE0F Vento diagonale contrario - Decollo difficile");
     score -= 10;
   } else {
-    noFlyReasons.push("🚫 VENTO DI CODA / SOTTOVENTO - PERICOLOSO");
+    noFlyReasons.push("\uD83D\uDEAB VENTO DI CODA / SOTTOVENTO - PERICOLOSO");
     score -= 30;
   }
 
-  // --- RAFFICHE ---
   if (groundWind.gust && groundWind.gust > groundWind.speed + 10) {
-    warnings.push(`🌬️ Raffiche irregolari (+${groundWind.gust - groundWind.speed} km/h) - Turbolenza meccanica probabile`);
+    warnings.push(`\uD83C\uDF2C\uFE0F Raffiche irregolari (+${groundWind.gust - groundWind.speed} km/h) - Turbolenza meccanica probabile`);
     score -= 10;
   }
 
-  // --- VENTO IN QUOTA ---
   const maxAltWind = windProfile.reduce((max, w) => w.speed > max.speed ? w : max, windProfile[0]);
   if (maxAltWind.speed > 40) {
-    noFlyReasons.push(`💨 Vento estremo in quota (${maxAltWind.speed} km/h a ${maxAltWind.altitude}m) - Deriva e turbolenza severa`);
+    noFlyReasons.push(`\uD83D\uDCA8 Vento estremo in quota (${maxAltWind.speed} km/h a ${maxAltWind.altitude}m) - Deriva e turbolenza severa`);
     score -= 25;
   } else if (maxAltWind.speed > 30) {
-    warnings.push(`⚠️ Vento forte in quota (${maxAltWind.speed} km/h a ${maxAltWind.altitude}m) - Attenzione sopra i 2500m`);
+    warnings.push(`\u26A0\uFE0F Vento forte in quota (${maxAltWind.speed} km/h a ${maxAltWind.altitude}m) - Attenzione sopra i 2500m`);
     score -= 10;
   } else if (maxAltWind.speed > 22) {
-    warnings.push(`🌬️ Vento sostenuto in quota (${maxAltWind.speed} km/h a ${maxAltWind.altitude}m)`);
+    warnings.push(`\uD83C\uDF2C\uFE0F Vento sostenuto in quota (${maxAltWind.speed} km/h a ${maxAltWind.altitude}m)`);
     score -= 5;
   }
 
-  // Wind shear check
   for (let i = 1; i < windProfile.length; i++) {
     const shear = Math.abs(windProfile[i].speed - windProfile[i - 1].speed);
     const dz = (windProfile[i].altitude - windProfile[i - 1].altitude) / 100;
     if (shear / dz > 8) {
-      warnings.push(`⚠️ Wind shear forte tra ${windProfile[i - 1].altitude}m e ${windProfile[i].altitude}m (${shear} km/h per ${dz * 100}m)`);
+      warnings.push(`\u26A0\uFE0F Wind shear forte tra ${windProfile[i - 1].altitude}m e ${windProfile[i].altitude}m (${shear} km/h per ${dz * 100}m)`);
       score -= 5;
       break;
     }
   }
 
-  // --- TERMICHE ---
   if (thermal.rate >= 3) {
-    reasons.push(`🔥 Termiche ${thermal.strength} (${thermal.rate} m/s medi, picco ${thermal.rate + 1} m/s)`);
+    reasons.push(`\uD83D\uDD25 Termiche ${thermal.strength} (${thermal.rate} m/s medi, picco ${thermal.rate + 1} m/s)`);
     score += 20;
   } else if (thermal.rate >= 2) {
-    reasons.push(`🪂 Termiche ${thermal.strength} (${thermal.rate} m/s)`);
+    reasons.push(`\uD83E\uDD82 Termiche ${thermal.strength} (${thermal.rate} m/s)`);
     score += 15;
   } else if (thermal.rate >= 1) {
-    reasons.push(`🌤️ Termiche ${thermal.strength} (${thermal.rate} m/s)`);
+    reasons.push(`\uD83C\uDF24\uFE0F Termiche ${thermal.strength} (${thermal.rate} m/s)`);
     score += 8;
   } else if (thermal.rate >= 0.3) {
-    warnings.push(`🌥️ Termiche ${thermal.strength} (${thermal.rate} m/s) - Volo locale breve`);
+    warnings.push(`\uD83C\uDF25\uFE0F Termiche ${thermal.strength} (${thermal.rate} m/s) - Volo locale breve`);
     score += 2;
   } else {
-    noFlyReasons.push("❄️ Termiche assenti - Volo impossibile");
+    noFlyReasons.push("\u2744\uFE0F Termiche assenti - Volo impossibile");
     score -= 20;
   }
 
   if (thermal.base <= altitude + 150) {
-    warnings.push(`☁️ Base cumuli molto bassa (${thermal.base}m) - Rischio ingresso in nube`);
+    warnings.push(`\u2601\uFE0F Base cumuli molto bassa (${thermal.base}m) - Rischio ingresso in nube`);
     score -= 10;
   }
 
-  // --- STABILITÀ ---
   if (stability.thunderRisk === "estremo" || stability.thunderRisk === "alto") {
-    noFlyReasons.push(`⛈️ Rischio temporali ${stability.thunderRisk} (CAPE ${stability.cape} J/kg, LI ${stability.liftedIndex})`);
+    noFlyReasons.push(`\u26C8\uFE0F Rischio temporali ${stability.thunderRisk} (CAPE ${stability.cape} J/kg, LI ${stability.liftedIndex})`);
     score -= 30;
   } else if (stability.thunderRisk === "moderato") {
-    warnings.push(`⚠️ Rischio temporali moderato (CAPE ${stability.cape} J/kg) - Rientro entro 14:00`);
+    warnings.push(`\u26A0\uFE0F Rischio temporali moderato (CAPE ${stability.cape} J/kg) - Rientro entro 14:00`);
     score -= 10;
   } else if (stability.thunderRisk === "basso") {
-    reasons.push(`✅ Basso rischio temporali (CAPE ${stability.cape} J/kg)`);
+    reasons.push(`\u2705 Basso rischio temporali (CAPE ${stability.cape} J/kg)`);
     score += 5;
   } else {
-    reasons.push("✅ Atmosfera stabile, nessun rischio temporali");
+    reasons.push("\u2705 Atmosfera stabile, nessun rischio temporali");
     score += 5;
   }
 
   if (stability.state === "molto instabile") {
-    warnings.push("⚠️ Atmosfera molto instabile - Sviluppo rapido cumulonembi");
+    warnings.push("\u26A0\uFE0F Atmosfera molto instabile - Sviluppo rapido cumulonembi");
     score -= 10;
   }
 
-  // --- NUVOLOSITÀ ---
   const avgCloud = dayData.filter(h => {
     const hr = new Date(h.time).getHours();
     return hr >= 10 && hr <= 16;
@@ -474,23 +466,21 @@ function evaluateFlyability(
   }).length);
 
   if (avgCloud > 80) {
-    warnings.push("☁️ Cielo molto coperto - Termiche inibite");
+    warnings.push("\u2601\uFE0F Cielo molto coperto - Termiche inibite");
     score -= 15;
   } else if (avgCloud > 60) {
-    warnings.push("☁️ Cielo nuvoloso - Finestre di sole limitate");
+    warnings.push("\u2601\uFE0F Cielo nuvoloso - Finestre di sole limitate");
     score -= 8;
   } else if (avgCloud >= 20 && avgCloud <= 50) {
-    reasons.push("✅ Nuvolosità ideale per sviluppo termico");
+    reasons.push("\u2705 Nuvolosit\u00E0 ideale per sviluppo termico");
     score += 5;
   }
 
-  // --- ZERO TERMICO ---
   const freezingLevel = calcFreezingLevel(currentData?.temperature ?? 15, altitude);
   if (freezingLevel < altitude + 1500) {
-    warnings.push(`❄️ Zero termico basso (${freezingLevel}m) - Ghiaccio possibile in quota`);
+    warnings.push(`\u2744\uFE0F Zero termico basso (${freezingLevel}m) - Ghiaccio possibile in quota`);
   }
 
-  // --- FINESTRA DI VOLO ---
   const triggerHour = parseInt(thermal.triggerTime.split(":")[0]);
   let endHour = 17;
   if (stability.thunderRisk === "alto" || stability.thunderRisk === "estremo") endHour = 13;
@@ -499,7 +489,6 @@ function evaluateFlyability(
 
   const windowQuality = score >= 70 ? "Eccellente" : score >= 55 ? "Buona" : score >= 40 ? "Discreta" : "Limitata";
 
-  // Normalizza score
   const finalScore = Math.max(0, Math.min(100, Math.round(score)));
 
   let label: FlyabilityResult["label"];
@@ -538,7 +527,6 @@ export default function AnalisiApprofonditaCard({
 }: Props) {
   const [expanded, setExpanded] = React.useState(false);
 
-  // Calcoli derivati dai dati REALI
   const thermal = useMemo(() => analyzeThermals(dayData, site?.alt ?? 1000, currentData), [dayData, site?.alt, currentData]);
   const stability = useMemo(() => analyzeStability(dayData, currentData), [dayData, currentData]);
   const windProfile = useMemo(() => buildWindProfile(currentData, site?.alt ?? 1000), [currentData, site?.alt]);
@@ -557,7 +545,7 @@ export default function AnalisiApprofonditaCard({
   const dataGiorno = useMemo(() => {
     if (dayData && dayData.length > 0) {
       const d = dayData[0].time;
-      const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+      const giorni = ["Domenica", "Luned\u00EC", "Marted\u00EC", "Mercoled\u00EC", "Gioved\u00EC", "Venerd\u00EC", "Sabato"];
       const mesi = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
       return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]} ${d.getFullYear()}`;
     }
@@ -587,31 +575,29 @@ export default function AnalisiApprofonditaCard({
                 <BadgeStato label={flyability.label} color={flyability.color} bg={flyability.bg.replace("bg-", "bg-").replace("/80", "/50").replace("/70", "/40")} />
               </div>
               <div className="text-xs text-slate-300 mt-0.5">
-                {dataGiorno} · Quota decollo {site?.alt ?? 0}m · Esposizione {site?.exposure ?? "N/D"}
+                {dataGiorno} \u00B7 Quota decollo {site?.alt ?? 0}m \u00B7 Esposizione {site?.exposure ?? "N/D"}
               </div>
             </div>
           </div>
           <div className="text-right shrink-0">
             <div className="text-3xl font-extrabold tabular-nums {flyability.color}">{flyability.score}/100</div>
-            <div className="text-xs text-slate-400">Punteggio Volabilità</div>
+            <div className="text-xs text-slate-400">Punteggio Volabilit\u00E0</div>
           </div>
         </div>
 
-        {/* Finestra di volo */}
         <div className="bg-black/20 rounded-xl p-3 mb-3">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-amber-400" />
-              <span className="font-bold text-amber-300">Finestra: {flyability.window.start} – {flyability.window.end}</span>
+              <span className="font-bold text-amber-300">Finestra: {flyability.window.start} \u2013 {flyability.window.end}</span>
             </div>
             <span className={`text-xs font-bold px-2 py-0.5 rounded ${flyability.window.quality === "Eccellente" ? "text-emerald-300 bg-emerald-900/50" : flyability.window.quality === "Buona" ? "text-lime-300 bg-lime-900/50" : flyability.window.quality === "Discreta" ? "text-amber-300 bg-amber-900/50" : "text-orange-300 bg-orange-900/50"}`}>
               {flyability.window.quality}
             </span>
           </div>
-          <div className="text-xs text-slate-400 mt-1">Innesco termico stimato: {thermal.triggerTime} · Durata utile: {thermal.duration}</div>
+          <div className="text-xs text-slate-400 mt-1">Innesco termico stimato: {thermal.triggerTime} \u00B7 Durata utile: {thermal.duration}</div>
         </div>
 
-        {/* Motivi NO-FLY in evidenza */}
         {flyability.noFlyReasons.length > 0 && (
           <div className="bg-red-950/60 border border-red-500/40 rounded-xl p-3">
             <div className="flex items-center gap-2 text-red-300 font-bold mb-2">
@@ -620,13 +606,12 @@ export default function AnalisiApprofonditaCard({
             </div>
             <ul className="space-y-1 text-sm text-red-200">
               {flyability.noFlyReasons.map((r, i) => (
-                <li key={i} className="flex items-start gap-2">• {r}</li>
+                <li key={i} className="flex items-start gap-2">\u2022 {r}</li>
               ))}
             </ul>
           </div>
         )}
 
-        {/* Warning */}
         {flyability.warnings.length > 0 && flyability.noFlyReasons.length === 0 && (
           <div className="bg-amber-950/50 border border-amber-500/40 rounded-xl p-3">
             <div className="flex items-center gap-2 text-amber-300 font-bold mb-2">
@@ -635,13 +620,12 @@ export default function AnalisiApprofonditaCard({
             </div>
             <ul className="space-y-1 text-sm text-amber-200">
               {flyability.warnings.map((w, i) => (
-                <li key={i} className="flex items-start gap-2">• {w}</li>
+                <li key={i} className="flex items-start gap-2">\u2022 {w}</li>
               ))}
             </ul>
           </div>
         )}
 
-        {/* Punti positivi */}
         {flyability.reasons.length > 0 && (
           <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-xl p-3">
             <div className="flex items-center gap-2 text-emerald-300 font-bold mb-2">
@@ -650,7 +634,7 @@ export default function AnalisiApprofonditaCard({
             </div>
             <ul className="space-y-1 text-sm text-emerald-200">
               {flyability.reasons.map((r, i) => (
-                <li key={i} className="flex items-start gap-2">✓ {r}</li>
+                <li key={i} className="flex items-start gap-2">\u2713 {r}</li>
               ))}
             </ul>
           </div>
@@ -682,7 +666,7 @@ export default function AnalisiApprofonditaCard({
                 ? "Zero termico molto alto: nessun rischio ghiaccio fino a quote elevate. Volo in sicurezza fino al top termiche."
                 : freezingLevel - (site?.alt ?? 0) > 1500
                   ? `Zero termico a quota media: prestare attenzione sopra i ${freezingLevel - 500}m. Possibile formazione di ghiaccio su ali e linee in quota.`
-                  : `⚠️ Zero termico basso: rischio ghiaccio già a ${freezingLevel}m. Volo sconsigliato sopra i ${freezingLevel - 300}m.`
+                  : `\u26A0\uFE0F Zero termico basso: rischio ghiaccio gi\u00E0 a ${freezingLevel}m. Volo sconsigliato sopra i ${freezingLevel - 300}m.`
               }
             </p>
           </div>
@@ -691,7 +675,7 @@ export default function AnalisiApprofonditaCard({
 
       {/* ===== PROFILO VENTO VERTICALE FINO A 4000m ===== */}
       <Sezione
-        titolo="Profilo Vento Verticale (Decollo → 4000m)"
+        titolo="Profilo Vento Verticale (Decollo \u2192 4000m)"
         icona={<Wind className="w-4 h-4 text-sky-400" />}
         badge={<BadgeStato label={`${windProfile.length} livelli`} color="text-sky-300" bg="bg-sky-900/30"} />
       >
@@ -716,24 +700,24 @@ export default function AnalisiApprofonditaCard({
                 let evalText = "";
                 let evalColor = "text-slate-400";
                 if (isDecollo) {
-                  if (w.speed >= 5 && w.speed <= 15) { evalText = "✅ Ideale"; evalColor = "text-emerald-300"; }
-                  else if (w.speed < 5) { evalText = "🌀 Debole"; evalColor = "text-amber-300"; }
-                  else if (w.speed <= 22) { evalText = "⚠️ Sostenuto"; evalColor = "text-orange-300"; }
-                  else { evalText = "🚫 Forte"; evalColor = "text-red-300"; }
-                } else if (w.speed > 40) { evalText = "🚫 Estremo"; evalColor = "text-red-300"; }
-                else if (w.speed > 30) { evalText = "⚠️ Forte"; evalColor = "text-orange-300"; }
-                else if (w.speed > 22) { evalText = "🌬️ Sostenuto"; evalColor = "text-amber-300"; }
-                else { evalText = "✅ Gestibile"; evalColor = "text-emerald-300"; }
+                  if (w.speed >= 5 && w.speed <= 15) { evalText = "\u2705 Ideale"; evalColor = "text-emerald-300"; }
+                  else if (w.speed < 5) { evalText = "\uD83D\uDCA1 Debole"; evalColor = "text-amber-300"; }
+                  else if (w.speed <= 22) { evalText = "\u26A0\uFE0F Sostenuto"; evalColor = "text-orange-300"; }
+                  else { evalText = "\uD83D\uDEAB Forte"; evalColor = "text-red-300"; }
+                } else if (w.speed > 40) { evalText = "\uD83D\uDEAB Estremo"; evalColor = "text-red-300"; }
+                else if (w.speed > 30) { evalText = "\u26A0\uFE0F Forte"; evalColor = "text-orange-300"; }
+                else if (w.speed > 22) { evalText = "\uD83C\uDF2C\uFE0F Sostenuto"; evalColor = "text-amber-300"; }
+                else { evalText = "\u2705 Gestibile"; evalColor = "text-emerald-300"; }
 
                 return (
                   <tr key={w.altitude} className={`border-b border-slate-700/30 ${isDecollo ? "bg-emerald-900/20" : ""}`}>
                     <td className="p-2 font-bold text-white {isDecollo ? 'text-emerald-300' : ''}">{w.altitude}m {isDecollo && <span className="text-[9px] text-emerald-300 ml-1">DECOLLO</span>}</td>
                     <td className="p-2 font-bold text-sky-300">{w.speed} km/h</td>
-                    <td className="p-2 text-slate-300 flex items-center gap-1"><span>{windArrow(w.dir)}</span> {w.dirName} ({w.dir}°)</td>
+                    <td className="p-2 text-slate-300 flex items-center gap-1"><span>{windArrow(w.dir)}</span> {w.dirName} ({w.dir}\u00B0)</td>
                     <td className="p-2 text-amber-300">{w.gust} km/h</td>
                     <td className="p-2 {evalColor}">{evalText}</td>
                     <td className="p-2 {shearRate > 5 ? 'text-red-300' : shearRate > 3 ? 'text-amber-300' : 'text-slate-400'}">
-                      {i > 0 ? `${shearRate.toFixed(1)} km/h/100m` : "—"}
+                      {i > 0 ? `${shearRate.toFixed(1)} km/h/100m` : "\u2014"}
                     </td>
                   </tr>
                 );
@@ -754,10 +738,10 @@ export default function AnalisiApprofonditaCard({
             a 4000m: <strong>{windProfile.find(w => w.altitude >= site!.alt + 4000)?.speed ?? "N/D"} km/h</strong>.
           </p>
           {windProfile.some(w => w.speed > 30) && (
-            <p className="text-orange-300 font-bold">⚠️ Vento forte in quota: deriva rapida, turbolenza sopra creste, atterraggio tecnico.</p>
+            <p className="text-orange-300 font-bold">\u26A0\uFE0F Vento forte in quota: deriva rapida, turbolenza sopra creste, atterraggio tecnico.</p>
           )}
           {windProfile.some((w, i) => i > 0 && Math.abs(w.speed - windProfile[i - 1].speed) / ((w.altitude - windProfile[i - 1].altitude) / 100) > 8) && (
-            <p className="text-red-300 font-bold">🚨 Wind shear verticale rilevato: termiche inclinate/spezzate, volo turbolento.</p>
+            <p className="text-red-300 font-bold">\uD83D\uDEA8 Wind shear verticale rilevato: termiche inclinate/spezzate, volo turbolento.</p>
           )}
         </div>
       </Sezione>
@@ -794,25 +778,25 @@ export default function AnalisiApprofonditaCard({
           <p className="font-bold text-white">Sviluppo termico previsto:</p>
           <p>
             Le termiche inizieranno ad attivarsi intorno alle <strong>{thermal.triggerTime}</strong> con il riscaldamento dei versanti esposti a {site?.exposure}.
-            Il rateo di salita medio sarà di <strong>{thermal.rate} m/s</strong> (<strong>{thermal.strength}</strong>),
+            Il rateo di salita medio sar\u00E0 di <strong>{thermal.rate} m/s</strong> (<strong>{thermal.strength}</strong>),
             con picchi fino a <strong>{Math.min(5, thermal.rate + 1.5).toFixed(1)} m/s</strong> nelle ore centrali (12:00-15:00).
           </p>
           <p>
-            La base dei cumuli si formerà a <strong>{thermal.base}m</strong> (LCL calcolato da spread T-Td medio).
-            Il top termico raggiungerà <strong>{thermal.top}m</strong>, offrendo un dislivello sfruttabile di <strong>{thermal.top - thermal.base}m</strong>.
+            La base dei cumuli si former\u00E0 a <strong>{thermal.base}m</strong> (LCL calcolato da spread T-Td medio).
+            Il top termico raggiunger\u00E0 <strong>{thermal.top}m</strong>, offrendo un dislivello sfruttabile di <strong>{thermal.top - thermal.base}m</strong>.
           </p>
           {thermal.base <= (site?.alt ?? 0) + 200 && (
-            <p className="text-red-300 font-bold">⚠️ ATTENZIONE: Base cumuli molto vicina al decollo ({thermal.base}m vs {site?.alt}m). Rischio ingresso in nube immediato.</p>
+            <p className="text-red-300 font-bold">\u26A0\uFE0F ATTENZIONE: Base cumuli molto vicina al decollo ({thermal.base}m vs {site?.alt}m). Rischio ingresso in nube immediato.</p>
           )}
           {thermal.rate < 0.5 && (
-            <p className="text-amber-300 font-bold">⚠️ Termiche deboli: volo solo in dinamica o pendio, cross difficile.</p>
+            <p className="text-amber-300 font-bold">\u26A0\uFE0F Termiche deboli: volo solo in dinamica o pendio, cross difficile.</p>
           )}
         </div>
       </Sezione>
 
-      {/* ===== STABILITÀ E RISCHIO TEMPORALI ===== */}
+      {/* ===== STABILIT\u00C0 E RISCHIO TEMPORALI ===== */}
       <Sezione
-        titolo="Stabilità Atmosferica e Rischio Temporali"
+        titolo="Stabilit\u00E0 Atmosferica e Rischio Temporali"
         icona={<Shield className="w-4 h-4 text-purple-400"} />
       >
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -840,15 +824,15 @@ export default function AnalisiApprofonditaCard({
         </div>
 
         <div className="bg-slate-800/40 rounded-lg p-3 text-xs text-slate-300 space-y-1">
-          <p className="font-bold text-white">Analisi stabilità:</p>
+          <p className="font-bold text-white">Analisi stabilit\u00E0:</p>
           <p>
             L'atmosfera risulta <strong>{stability.state}</strong> (LI: {stability.liftedIndex > 0 ? "+" : ""}{stability.liftedIndex}).
             {stability.liftedIndex < -4
-              ? " Instabilità marcata: sviluppo rapido di cumulonembi, temporali probabili nel pomeriggio."
+              ? " Instabilit\u00E0 marcata: sviluppo rapido di cumulonembi, temporali probabili nel pomeriggio."
               : stability.liftedIndex < -2
-                ? " Instabilità moderata: cumuli congesti possibili, monitorare evoluzione."
+                ? " Instabilit\u00E0 moderata: cumuli congesti possibili, monitorare evoluzione."
                 : stability.liftedIndex < 0
-                  ? " Leggera instabilità: cumuli pomeridiani benigni."
+                  ? " Leggera instabilit\u00E0: cumuli pomeridiani benigni."
                   : " Atmosfera stabile: termiche deboli o assenti, cielo sereno."}
           </p>
           <p>
@@ -873,7 +857,7 @@ export default function AnalisiApprofonditaCard({
           </p>
           {stability.thunderRisk !== "nessuno" && (
             <p className={stability.thunderRisk === "alto" || stability.thunderRisk === "estremo" ? "text-red-300 font-bold" : "text-amber-300 font-bold"}>
-              ⛈️ RISCHIO TEMPORALI: {stability.thunderRisk.toUpperCase()} – {stability.thunderRisk === "estremo" ? "Volo assolutamente sconsigliato" : stability.thunderRisk === "alto" ? "Rientro tassativo entro le 13:00" : stability.thunderRisk === "moderato" ? "Rientro entro le 14:30, monitorare radar" : "Basso rischio, vigilanza standard"}.
+              \u26C8\uFE0F RISCHIO TEMPORALI: {stability.thunderRisk.toUpperCase()} \u2013 {stability.thunderRisk === "estremo" ? "Volo assolutamente sconsigliato" : stability.thunderRisk === "alto" ? "Rientro tassativo entro le 13:00" : stability.thunderRisk === "moderato" ? "Rientro entro le 14:30, monitorare radar" : "Basso rischio, vigilanza standard"}.
             </p>
           )}
         </div>
@@ -885,17 +869,17 @@ export default function AnalisiApprofonditaCard({
         icona={<Thermometer className="w-4 h-4 text-orange-400"} />
       >
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Riga label="Temperatura" value={analisi?.tempAttuale ?? currentData?.temperature ?? "N/D"} unit="°C" color="text-amber-300" />
-          <Riga label="Min / Max" value={`${analisi?.tempMin ?? "?"} / ${analisi?.tempMax ?? "?"}`} unit="°C" />
-          <Riga label="Punto rugiada" value={analisi?.dewPoint ?? currentData?.dewPoint ?? "N/D"} unit="°C" color="text-cyan-300" />
-          <Riga label="Umidità" value={analisi?.umidita ?? currentData?.humidity ?? "N/D"} unit="%" color="text-blue-300" />
+          <Riga label="Temperatura" value={analisi?.tempAttuale ?? currentData?.temperature ?? "N/D"} unit="\u00B0C" color="text-amber-300" />
+          <Riga label="Min / Max" value={`${analisi?.tempMin ?? "?"} / ${analisi?.tempMax ?? "?"}`} unit="\u00B0C" />
+          <Riga label="Punto rugiada" value={analisi?.dewPoint ?? currentData?.dewPoint ?? "N/D"} unit="\u00B0C" color="text-cyan-300" />
+          <Riga label="Umidit\u00E0" value={analisi?.umidita ?? currentData?.humidity ?? "N/D"} unit="%" color="text-blue-300" />
           <Riga label="Pressione" value={currentData?.pressure ?? "N/D"} unit="hPa" />
           <Riga label="Vento" value={currentData?.windSpeed ?? "N/D"} unit="km/h" color="text-sky-300" />
-          <Riga label="Direzione" value={`${windArrow(currentData?.windDir ?? 0)} ${degToDir(currentData?.windDir ?? 0)} (${currentData?.windDir ?? "?"}°)`} />
+          <Riga label="Direzione" value={`${windArrow(currentData?.windDir ?? 0)} ${degToDir(currentData?.windDir ?? 0)} (${currentData?.windDir ?? "?"}\u00B0)`} />
           <Riga label="Raffiche" value={currentData?.windGusts ?? "N/D"} unit="km/h" color="text-amber-300" warn={(currentData?.windGusts ?? 0) > (currentData?.windSpeed ?? 0) + 10} />
-          <Riga label="Nuvolosità" value={currentData?.cloudCover ?? "N/D"} unit="%" color="text-slate-300" />
+          <Riga label="Nuvolosit\u00E0" value={currentData?.cloudCover ?? "N/D"} unit="%" color="text-slate-300" />
           <Riga label="Precipitazioni" value={currentData?.precipitation ?? 0} unit="mm/h" color={currentData?.precipitation && currentData.precipitation > 0 ? "text-blue-300" : "text-green-300"} warn={currentData?.precipitation && currentData.precipitation > 0.5} />
-          <Riga label="Visibilità" value={currentData?.visibility ? Math.round(currentData.visibility / 1000) : "N/D"} unit="km" color="text-emerald-300" />
+          <Riga label="Visibilit\u00E0" value={currentData?.visibility ? Math.round(currentData.visibility / 1000) : "N/D"} unit="km" color="text-emerald-300" />
           <Riga label="UV Index" value={currentData?.uvIndex ?? "N/D"} color={currentData?.uvIndex && currentData.uvIndex > 6 ? "text-red-300" : currentData?.uvIndex && currentData.uvIndex > 3 ? "text-amber-300" : "text-green-300"} />
         </div>
       </Sezione>
@@ -907,14 +891,14 @@ export default function AnalisiApprofonditaCard({
       >
         <div className="bg-slate-900/40 border border-slate-700/30 rounded-xl p-4 text-sm text-slate-300 leading-relaxed space-y-3 font-mono text-[12px]">
           <p className="text-white font-bold border-b border-slate-700/50 pb-2">
-            BOLLETTINO METEO {siteName.toUpperCase()} – {dataGiorno.toUpperCase()}
+            BOLLETTINO METEO {siteName.toUpperCase()} \u2013 {dataGiorno.toUpperCase()}
           </p>
 
           <p>
-            <span className="text-amber-300">1. QUADRO TERMICO E STABILITÀ:</span>
+            <span className="text-amber-300">1. QUADRO TERMICO E STABILIT\u00C0:</span>
             Giornata con condizioni {flyability.score >= 70 ? "favorevoli" : flyability.score >= 40 ? "moderate" : "difficili"} per il volo libero.
-            Temperatura al suolo: {analisi?.tempAttuale ?? currentData?.temperature ?? "N/D"}°C (min {analisi?.tempMin ?? "?"}°C / max {analisi?.tempMax ?? "?"}°C).
-            Punto di rugiada: {analisi?.dewPoint ?? currentData?.dewPoint ?? "N/D"}°C → spread {Math.round((analisi?.tempAttuale ?? currentData?.temperature ?? 15) - (analisi?.dewPoint ?? currentData?.dewPoint ?? 8))}°C.
+            Temperatura al suolo: {analisi?.tempAttuale ?? currentData?.temperature ?? "N/D"}\u00B0C (min {analisi?.tempMin ?? "?"}\u00B0C / max {analisi?.tempMax ?? "?"}\u00B0C).
+            Punto di rugiada: {analisi?.dewPoint ?? currentData?.dewPoint ?? "N/D"}\u00B0C \u2192 spread {Math.round((analisi?.tempAttuale ?? currentData?.temperature ?? 15) - (analisi?.dewPoint ?? currentData?.dewPoint ?? 8))}\u00B0C.
             Zero termico a <strong>{freezingLevel}m</strong> (margine {freezingLevel - (site?.alt ?? 0)}m sopra decollo).
             CAPE: <strong>{stability.cape} J/kg</strong> ({stability.cape > 1000 ? "alto" : stability.cape > 300 ? "moderato" : "basso"}),
             Lifted Index: <strong>{stability.liftedIndex > 0 ? "+" : ""}{stability.liftedIndex}</strong> ({stability.state}).
@@ -939,19 +923,19 @@ export default function AnalisiApprofonditaCard({
             Base cumuli (LCL): <strong>{thermal.base}m</strong> slm.
             Top termiche: <strong>{thermal.top}m</strong> slm (dislivello {thermal.top - thermal.base}m).
             Rateo medio: <strong>{thermal.rate} m/s</strong> ({thermal.strength}).
-            Finestra utile: <strong>{thermal.triggerTime} – {flyability.window.end}</strong> ({flyability.window.quality}).
+            Finestra utile: <strong>{thermal.triggerTime} \u2013 {flyability.window.end}</strong> ({flyability.window.quality}).
             {thermal.base <= (site?.alt ?? 0) + 200 ? " <span className='text-red-300'>Base cumuli critica: rischio ingresso in nube immediato.</span>" : ""}
           </p>
 
           <p>
-            <span className="text-sky-300">4. NUVOLOSITÀ E PRECIPITAZIONI:</span>
+            <span className="text-sky-300">4. NUVOLOSIT\u00C0 E PRECIPITAZIONI:</span>
             Copertura media ore centrali: <strong>{Math.round(dayData.filter(h => { const hr = new Date(h.time).getHours(); return hr >= 10 && hr <= 16; }).reduce((s, h) => s + (h.cloudCover ?? 0), 0) / Math.max(1, dayData.filter(h => { const hr = new Date(h.time).getHours(); return hr >= 10 && hr <= 16; }).length))}%</strong>.
             {dayData.some(h => (h.precipitation ?? 0) > 0) ? ` <span className='text-blue-300'>Precipitazioni previste: ${dayData.filter(h => (h.precipitation ?? 0) > 0).reduce((s, h) => s + (h.precipitation ?? 0), 0).toFixed(1)}mm totali.</span>` : " Nessuna precipitazione prevista."}
             {dayData.some(h => (h.weatherCode >= 95 && h.weatherCode <= 99)) && " <span className='text-red-300 font-bold'>TEMPORALI PREVISTI (codice WMO 95-99).</span>"}
           </p>
 
           <p className="text-emerald-300 font-bold border-t border-slate-700/50 pt-2">
-            🪂 GIUDIZIO FINALE: {flyability.label} ({flyability.score}/100) – {flyability.noFlyReasons.length > 0 ? "Volo NON consigliato" : flyability.score >= 70 ? "Volo CONSIGLIATO" : flyability.score >= 40 ? "Volo CON PRUDENZA" : "Volo SCONSIGLIATO"}.
+            \uD83E\uDD82 GIUDIZIO FINALE: {flyability.label} ({flyability.score}/100) \u2013 {flyability.noFlyReasons.length > 0 ? "Volo NON consigliato" : flyability.score >= 70 ? "Volo CONSIGLIATO" : flyability.score >= 40 ? "Volo CON PRUDENZA" : "Volo SCONSIGLIATO"}.
             {flyability.noFlyReasons.length > 0 && ` Motivi: ${flyability.noFlyReasons.join("; ")}`}
           </p>
         </div>
@@ -980,13 +964,13 @@ export default function AnalisiApprofonditaCard({
           </div>
           <h4 className="text-xs text-slate-400 font-bold mb-2">Legenda Parametri Aerologici</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-slate-300">
-            <div><span className="text-slate-500">CAPE:</span> Convective Available Potential Energy – energia per convezione. >1000 J/kg = temporali probabili.</div>
-            <div><span className="text-slate-500">Lifted Index (LI):</span> Stabilità. <0 = instabile, <-4 = molto instabile, >3 = molto stabile.</div>
-            <div><span className="text-slate-500">CIN:</span> Convective Inhibition – energia che blocca l'innesco. >100 J/kg = innesco difficile.</div>
-            <div><span className="text-slate-500">LCL / Base cumuli:</span> Livello di condensazione. Base = quota + (T-Td)×125m.</div>
-            <div><span className="text-slate-500">Zero termico:</span> Quota dove T=0°C. Calcolato: quota + T/0.0065.</div>
+            <div><span className="text-slate-500">CAPE:</span> Convective Available Potential Energy \u2013 energia per convezione. >1000 J/kg = temporali probabili.</div>
+            <div><span className="text-slate-500">Lifted Index (LI):</span> Stabilit\u00E0. <0 = instabile, <-4 = molto instabile, >3 = molto stabile.</div>
+            <div><span className="text-slate-500">CIN:</span> Convective Inhibition \u2013 energia che blocca l'innesco. >100 J/kg = innesco difficile.</div>
+            <div><span className="text-slate-500">LCL / Base cumuli:</span> Livello di condensazione. Base = quota + (T-Td)\u00D7125m.</div>
+            <div><span className="text-slate-500">Zero termico:</span> Quota dove T=0\u00B0C. Calcolato: quota + T/0.0065.</div>
             <div><span className="text-slate-500">Wind shear:</span> Variazione vento con quota. >5 km/h per 100m = turbolenza termiche.</div>
-            <div><span className="text-slate-500">Rateo salita:</span> Velocità verticale termica. >2 m/s = ottimo, 1-2 = buono, <0.5 = debole.</div>
+            <div><span className="text-slate-500">Rateo salita:</span> Velocit\u00E0 verticale termica. >2 m/s = ottimo, 1-2 = buono, <0.5 = debole.</div>
             <div><span className="text-slate-500">Vento frontale/laterale/coda:</span> Rispetto a esposizione decollo. Frontale = ideale, coda = pericoloso.</div>
             <div><span className="text-slate-500">Raffiche:</span> Vento istantaneo. Delta >10 km/h vs media = turbolenza meccanica.</div>
             <div><span className="text-slate-500">K-Index / Total Totals:</span> Indici temporali. K>30 o TT>50 = alto rischio.</div>
