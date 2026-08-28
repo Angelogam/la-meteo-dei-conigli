@@ -69,13 +69,12 @@ const isValid = (v: Numeric): v is number =>
 const mean = (arr: number[]): number | null => 
   arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
 
-// Calcola confidenza in base al numero di dati disponibili e alla loro varianza
+// Calcola confidenza in base al numero di dati disponibili
 function computeConfidence(values: Numeric[], maxCount: number): number {
   const validVals = values.filter(isValid);
   const count = validVals.length;
   if (count === 0) return 0;
   const base = count / maxCount; // 0..1
-  // Riduci confidenza se c'è alta varianza (opzionale)
   return Math.min(1, base * 1.2); // leggero boost
 }
 
@@ -89,11 +88,11 @@ export function fromOpenMeteo(json: any): RawPoint[] {
     return json.hourly.time.map((t: string, i: number) => ({
       time: t,
       temp: json.hourly.temperature_2m?.[i] ?? null,
-      wind: json.hourly.windspeed_10m?.[i] ?? null,
-      dir: json.hourly.winddirection_10m?.[i] ?? null,
-      gust: json.hourly.gusts_10m?.[i] ?? null,
-      cloudBase: json.hourly.cloudbase?.[i] ?? null,
-      cloudCover: json.hourly.cloudcover?.[i] ?? null,
+      wind: json.hourly.wind_speed_10m?.[i] ?? null,
+      dir: json.hourly.wind_direction_10m?.[i] ?? null,
+      gust: json.hourly.wind_gusts_10m?.[i] ?? null,
+      cloudBase: json.hourly.cloud_base?.[i] ?? null,
+      cloudCover: json.hourly.cloud_cover?.[i] ?? null,
       rain: json.hourly.rain?.[i] ?? null,
       thermal: json.hourly.thermal_strength?.[i] ?? null,
       source: 'openmeteo',
@@ -294,7 +293,6 @@ export function buildReport(site: Site, forecast: UnifiedForecast): string {
 
   // Scegli il punto centrale (o più vicino all'ora corrente)
   const now = new Date();
-  const target = now.toISOString().slice(0, 16);
   let closest = points[0];
   let minDiff = Infinity;
   for (const p of points) {
@@ -337,7 +335,7 @@ export async function fetchAllSources(site: Site): Promise<{
   const params = new URLSearchParams({
     latitude: site.latitude.toString(),
     longitude: site.longitude.toString(),
-    hourly: 'temperature_2m,windspeed_10m,winddirection_10m,gusts_10m,cloudbase,cloudcover,rain,thermal_strength',
+    hourly: 'temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_base,cloud_cover,rain,thermal_strength',
     timezone: site.timeZone,
     forecast_days: '2',
   });
@@ -347,8 +345,6 @@ export async function fetchAllSources(site: Site): Promise<{
   // Qui puoi integrare le tue chiamate reali
   const [omRes, owRes, tmRes] = await Promise.allSettled([
     fetch(omUrl).then(r => r.json()),
-    // fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${site.latitude}&lon=${site.longitude}&appid=YOUR_KEY`).then(r => r.json()),
-    // fetch(`https://api.tomorrow.io/v4/timelines?location=${site.latitude},${site.longitude}&fields=temperature,windSpeed,windDirection,windGust,cloudBase,cloudCover,rainIntensity,thermalUpdraft&timesteps=1h&apikey=YOUR_KEY`).then(r => r.json()),
     Promise.resolve(null), // placeholder
     Promise.resolve(null), // placeholder
   ]);
