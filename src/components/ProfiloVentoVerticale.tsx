@@ -41,7 +41,7 @@ function getSpeedBarColor(speed: number): string {
 
 export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587, lon = 7.7943, selectedHour = 12 }: ProfiloVentoVerticaleProps) {
   // HOOKS FIRST - unconditional
-  const { data, loading, error, interpolateAtAltitude } = useWindProfile({
+  const { data, loading, error } = useWindProfile({
     lat,
     lon,
     siteAlt,
@@ -49,7 +49,13 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
   });
   const [expanded, setExpanded] = useState(true);
 
-  // EARLY RETURNS AFTER HOOKS
+  // ORDINA LIVELLI PER QUOTA DECRESCENTE: quota più alta in ALTO (prima riga), superficie in BASSO (ultima riga)
+  const sortedLevels = useMemo(() => {
+    if (!data?.levels) return [];
+    return [...data.levels].sort((a, b) => b.alt - a.alt);
+  }, [data?.levels]);
+
+  // EARLY RETURNS AFTER ALL HOOKS
   if (loading) {
     return (
       <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4">
@@ -97,11 +103,6 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
 
   const windDirSurface = levels[0]?.dir ?? 0;
   const windSpeedSurface = levels[0]?.speed ?? 0;
-
-  // ORDINA LIVELLI PER QUOTA DECRESCENTE: quota più alta in ALTO (prima riga), superficie in BASSO (ultima riga)
-  const sortedLevels = useMemo(() => {
-    return [...levels].sort((a, b) => b.alt - a.alt); // DESC: 3000m, 2500m, ..., 10m
-  }, [levels]);
 
   return (
     <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl overflow-hidden">
