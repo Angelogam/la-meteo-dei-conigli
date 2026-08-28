@@ -68,7 +68,6 @@ interface UseMultiHourWindProfileProps {
   lon: number;
   siteAlt: number;
   selectedDay: number;
-  // Use default hours by default - no need to pass array
 }
 
 export function useMultiHourWindProfile({ 
@@ -80,9 +79,6 @@ export function useMultiHourWindProfile({
 
   // Track if component is mounted to avoid state updates after unmount
   const mountedRef = useRef(true);
-
-  // Stable hours key - always use the module-level constant
-  const hoursKey = DEFAULT_HOURS.join(",");
 
   useEffect(() => {
     mountedRef.current = true;
@@ -170,7 +166,7 @@ export function useMultiHourWindProfile({
 
     fetchAllHours();
     return () => { mountedRef.current = false; };
-  }, [lat, lon, siteAlt, selectedDay, hoursKey]);
+  }, [lat, lon, siteAlt, selectedDay]); // Removed hoursKey - DEFAULT_HOURS is a stable constant
 
   // Stable interpolation function
   const interpolateAtAltitude = useMemo(
