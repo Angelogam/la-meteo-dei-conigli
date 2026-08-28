@@ -40,6 +40,72 @@ function getSpeedBarColor(speed: number): string {
   return "bg-red-400";
 }
 
+/** Genera step di 250m dalla quota decollo (arrotondata giù al multiplo di 250) fino a 4000m */
+function buildAltitudes(siteAlt: number): number[] {
+  const STEP = 250;
+  const MAX_ALT = 4000;
+  const base = Math.floor(siteAlt / STEP) * STEP;
+  const arr: number[] = [];
+  for (let alt = base; alt <= MAX_ALT; alt += STEP) {
+    arr.push(alt);
+  }
+  return arr;
+}
+
+/** Calcola shear (km/h ogni 100m) tra due livelli */
+function calcShear(higher: { alt: number; speed: number }, lower: { alt: number; speed: number }): number {
+  const dAlt = higher.alt - lower.alt;
+  if (dAlt <= 0) return 0;
+  return Math.abs(higher.speed - lower.speed) / (dAlt / 100);
+}
+
+/** Trova il livello reale più vicino in quota */
+function findClosestLevel<T extends { alt: number }>(levels: T[], targetAlt: number): T | null {
+  if (!levels.length) return null;
+  return levels.reduce((best, l) =>
+    Math.abs(l.alt - targetAlt) < Math.abs(best.alt - targetAlt) ? l : best
+  , levels[0]);
+}
+
+/** Trova interpolazione lineare tra due livelli reali (in quota) */
+function interpolateBetween(
+  lower: { alt: number; speed: number; dir: number; gust?: number },
+  upper: { alt: number; speed: number; dir: number; gust?: number },
+  targetAlt: number
+) {
+  const dAlt = upper.alt - lower.alt;
+  if (dAlt <= 0) {
+    return { speed: lower.speed, dir: lower.dir, gust: lower.gust };
+  }
+  const ratio = (targetAlt - lower.alt) / dAlt;
+  const speed = lower.speed + ratio * (upper.speed - lower.speed);
+
+  // Interpolazione direzione con gestione wrap 0-360
+  let diffDir = upper.dir - lower.dir;
+  if (diffDir > 180) diffDir -= 360;
+  if (diffDir < -180) diffDir += 360;
+  let dir = lower.dir + diffDir * ratio;
+  dir = ((dir % 360) + 360) % 360;
+
+  const gust =
+    lower.gust != null && upper.gust != null
+      ? lower.gust + ratio * (upper.gust - lower.gust)
+      : lower.gust ?? upper.gust;
+
+  return { speed, dir, gust };
+}
+
+/** Dato calcolato per una riga della tabella */
+interface RowData {
+  alt: number;
+  speed: number;
+  dir: number;
+  gust: number | null;
+  source: "real" | "interpolated" | "below-lowest" | "above-highest";
+  baseLevel: { alt: number; speed: number; dir: number; gust?: number } | null;
+  upperLevel: { alt: number; speed: number; dir: number; gust?: number } | null;
+}
+
 export default function ProfiloVentoVerticale({
   siteAlt,
   siteName,
@@ -59,11 +125,87 @@ export default function ProfiloVentoVerticale({
   });
   const [expanded, setExpanded] = useState(true);
 
-  // ORDINA LIVELLI PER QUOTA DECRESCENTE
-  const sortedLevels = useMemo(() => {
-    if (!data?.levels) return [];
-    return [...data.levels].sort((a, b) => b.alt - a.alt);
-  }, [data?.levels]);
+  // Costruisci step di quote dalla quota decollo (arrotondata al multiplo di 250) fino a 4000m
+  const altitudes = useMemo(() => buildAltitudes(siteAlt), [siteAlt]);
+
+  // Genera righe della tabella: per ogni quota, calcola vento (reale o interpolato)
+  const rows = useMemo<RowData[]>(() => {
+    if (!data?.levels || data.levels.length === 0) return [];
+
+    const sortedLevels = [...data.levels].sort((a, b) => a.alt - b.alt);
+    const minAlt = sortedLevels[0].alt;
+    const maxAlt = sortedLevels[sortedLevels.length - 1].alt;
+
+    return altitudes.map((targetAlt) => {
+      // Caso 1: quota coincide esattamente con un livello reale
+      const exact = sortedLevels.find((l) => l.alt === targetAlt);
+      if (exact) {
+        return {
+          alt: targetAlt,
+          speed: Math.round(exact.speed),
+          dir: Math.round(exact.dir),
+          gust: exact.gust != null ? Math.round(exact.gust) : null,
+          source: "real" as const,
+          baseLevel: null,
+          upperLevel: null,
+        };
+      }
+
+      // Caso 2: targetAlt è SOTTO il livello reale più basso -> usa quel livello
+      if (targetAlt < minAlt) {
+        const lower = sortedLevels[0];
+        return {
+          alt: targetAlt,
+          speed: Math.round(lower.speed),
+          dir: Math.round(lower.dir),
+          gust: lower.gust != null ? Math.round(lower.gust) : null,
+          source: "below-lowest" as const,
+          baseLevel: null,
+          upperLevel: null,
+        };
+      }
+
+      // Caso 3: targetAlt è SOPRA il livello reale più alto -> N/D
+      if (targetAlt > maxAlt) {
+        return {
+          alt: targetAlt,
+          speed: 0,
+          dir: 0,
+          gust: null,
+          source: "above-highest" as const,
+          baseLevel: null,
+          upperLevel: null,
+        };
+      }
+
+      // Caso 4: interpolazione lineare tra due livelli reali
+      const lower = [...sortedLevels].reverse().find((l) => l.alt < targetAlt);
+      const upper = sortedLevels.find((l) => l.alt > targetAlt);
+
+      if (lower && upper) {
+        const interp = interpolateBetween(lower, upper, targetAlt);
+        return {
+          alt: targetAlt,
+          speed: Math.round(interp.speed),
+          dir: Math.round(interp.dir),
+          gust: interp.gust != null ? Math.round(interp.gust) : null,
+          source: "interpolated" as const,
+          baseLevel: lower,
+          upperLevel: upper,
+        };
+      }
+
+      return {
+        alt: targetAlt,
+        speed: 0,
+        dir: 0,
+        gust: null,
+        source: "above-highest" as const,
+        baseLevel: null,
+        upperLevel: null,
+      };
+    });
+  }, [data?.levels, altitudes]);
 
   // EARLY RETURNS AFTER ALL HOOKS
   if (loading) {
@@ -88,31 +230,44 @@ export default function ProfiloVentoVerticale({
     );
   }
 
-  const { hour, temp, dew, cloud, freeze, cape, levels, cloudBase } = data;
+  const { hour, temp, dew, cloud, freeze, cape, cloudBase, levels } = data;
 
+  // Calcola shear su tutte le righe (in ordine di quota crescente)
+  const rowsAsc = useMemo(() => [...rows].sort((a, b) => a.alt - b.alt), [rows]);
+  const shears = useMemo(() => {
+    return rowsAsc.map((row, i) => {
+      if (i === 0) return 0;
+      return calcShear(row, rowsAsc[i - 1]);
+    });
+  }, [rowsAsc]);
+
+  // Calcola shear max e gradiente
   let shearMax = 0;
+  shears.forEach((s) => {
+    if (s > shearMax) shearMax = s;
+  });
+
   let gradienteVento = 0;
   if (levels.length >= 2) {
     const sorted = [...levels].sort((a, b) => a.alt - b.alt);
-    for (let i = 1; i < sorted.length; i++) {
-      const dAlt = sorted[i].alt - sorted[i - 1].alt;
-      const dSpeed = Math.abs(sorted[i].speed - sorted[i - 1].speed);
-      if (dAlt > 0) {
-        const shear = dSpeed / (dAlt / 100);
-        if (shear > shearMax) shearMax = shear;
-      }
-    }
     let gradTot = 0, coppie = 0;
     for (let i = 1; i < sorted.length; i++) {
       const dq = sorted[i].alt - sorted[i - 1].alt;
       const dv = sorted[i].speed - sorted[i - 1].speed;
-      if (dq > 0) { gradTot += dv / dq; coppie++; }
+      if (dq > 0) {
+        gradTot += dv / dq;
+        coppie++;
+      }
     }
     gradienteVento = coppie > 0 ? gradTot / coppie : 0;
   }
 
   const windDirSurface = levels[0]?.dir ?? 0;
   const windSpeedSurface = levels[0]?.speed ?? 0;
+
+  // Format quota con etichetta decollo
+  const decolloBase = Math.floor(siteAlt / 250) * 250;
+  const isDecolloRow = (alt: number) => alt === decolloBase;
 
   return (
     <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl overflow-hidden">
@@ -127,6 +282,9 @@ export default function ProfiloVentoVerticale({
           </h4>
           <span className="text-xs text-slate-400 bg-slate-700/50 px-2 py-0.5 rounded">
             {String(hour).padStart(2, "0")}:00
+          </span>
+          <span className="text-[10px] text-slate-500">
+            step 250m · {decolloBase}m → 4000m
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -175,7 +333,7 @@ export default function ProfiloVentoVerticale({
               <thead>
                 <tr className="border-b border-slate-700/30 text-slate-500">
                   <th className="p-2 text-left">Quota</th>
-                  <th className="p-2 text-left">Livello</th>
+                  <th className="p-2 text-left">Fonte</th>
                   <th className="p-2 text-left">Vento</th>
                   <th className="p-2 text-left">Dir</th>
                   <th className="p-2 text-left">Raffiche</th>
@@ -183,31 +341,60 @@ export default function ProfiloVentoVerticale({
                 </tr>
               </thead>
               <tbody>
-                {sortedLevels.map((l, i) => {
-                  let shear = 0;
-                  if (i < sortedLevels.length - 1) {
-                    const lowerLevel = sortedLevels[i + 1];
-                    const dAlt = l.alt - lowerLevel.alt;
-                    const dSpeed = Math.abs(l.speed - lowerLevel.speed);
-                    if (dAlt > 0) shear = dSpeed / (dAlt / 100);
-                  }
-                  const isSurface = l.alt <= 100;
+                {/* Righe in ordine decrescente di quota: dal top (4000m) al decollo */}
+                {[...rowsAsc].reverse().map((row) => {
+                  const isDecollo = isDecolloRow(row.alt);
+                  // Calcola shear rispetto alla riga sopra (in quota più alta)
+                  const idxAsc = rowsAsc.findIndex((r) => r.alt === row.alt);
+                  const shear = idxAsc > 0 ? shears[idxAsc] : 0;
+                  const sourceLabel =
+                    row.source === "real" ? "📍 Open-Meteo" :
+                    row.source === "interpolated" ? "🔄 Interp." :
+                    row.source === "below-lowest" ? "⬇ Sotto" :
+                    "—";
+                  const sourceColor =
+                    row.source === "real" ? "text-emerald-300" :
+                    row.source === "interpolated" ? "text-sky-300" :
+                    "text-slate-500";
                   return (
-                    <tr key={`${l.hpa}-${i}`} className={`border-b border-slate-700/20 ${isSurface ? "bg-emerald-900/20" : ""}`}>
-                      <td className="p-2 font-mono font-bold text-white">{l.alt}m</td>
-                      <td className="p-2 text-slate-400">{l.hpa}</td>
-                      <td className="p-2">
-                        <div className="flex items-center gap-1">
-                          <span className={getSpeedColor(l.speed)}>{Math.round(l.speed)}</span>
-                          <span className="text-slate-500">km/h</span>
-                          <div className="h-3 w-full bg-slate-700 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (l.speed / 50) * 100)}%`, backgroundColor: getSpeedBarColor(l.speed) }} />
-                          </div>
-                        </div>
+                    <tr
+                      key={`row-${row.alt}`}
+                      className={`border-b border-slate-700/20 ${isDecollo ? "bg-emerald-900/30 border-l-2 border-l-emerald-400" : ""}`}
+                    >
+                      <td className="p-2 font-mono font-bold text-white whitespace-nowrap">
+                        {row.alt}m{isDecollo && " 🪂"}
                       </td>
-                      <td className="p-2 font-mono text-sky-300">{getWindArrow(l.dir)} {getDirAbbrev(l.dir)}</td>
-                      <td className="p-2 text-slate-400">{l.gust ? Math.round(l.gust) : "—"} km/h</td>
-                      <td className="p-2">{i < sortedLevels.length - 1 ? `${shear.toFixed(1)} km/h/100m` : "—"}</td>
+                      <td className={`p-2 text-[10px] ${sourceColor}`}>{sourceLabel}</td>
+                      <td className="p-2">
+                        {row.source === "above-highest" ? (
+                          <span className="text-slate-500 text-[10px]">—</span>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <span className={getSpeedColor(row.speed)}>{row.speed}</span>
+                            <span className="text-slate-500">km/h</span>
+                            <div className="h-3 w-full bg-slate-700 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all"
+                                style={{
+                                  width: `${Math.min(100, (row.speed / 50) * 100)}%`,
+                                  backgroundColor: getSpeedBarColor(row.speed),
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-2 font-mono text-sky-300">
+                        {row.source === "above-highest" ? "—" : (
+                          <>{getWindArrow(row.dir)} {getDirAbbrev(row.dir)}</>
+                        )}
+                      </td>
+                      <td className="p-2 text-slate-400">
+                        {row.gust != null ? `${row.gust} km/h` : "—"}
+                      </td>
+                      <td className="p-2 text-[10px] text-slate-400">
+                        {idxAsc > 0 && row.source !== "above-highest" ? `${shear.toFixed(1)} km/h/100m` : "—"}
+                      </td>
                     </tr>
                   );
                 })}
@@ -215,9 +402,10 @@ export default function ProfiloVentoVerticale({
             </table>
           </div>
 
-          <div className="text-[10px] text-slate-500 flex items-center gap-4">
+          <div className="text-[10px] text-slate-500 flex flex-wrap items-center gap-x-4 gap-y-1">
+            <span>📍 = dato reale Open-Meteo (10m, 80m, 120m, 180m, 925/850/700/600/500 hPa)</span>
+            <span>🔄 = interpolazione lineare tra due livelli reali</span>
             <span>Shear: <span className="text-emerald-300">≤2</span> debole · <span className="text-amber-300">2-5</span> moderato · <span className="text-red-300">≥5</span> forte</span>
-            <span>Gradiente: <span className="text-emerald-300">≤0.3</span> omogeneo · <span className="text-amber-300">≥0.5</span> marcato</span>
           </div>
         </div>
       )}
