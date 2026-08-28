@@ -40,6 +40,7 @@ function getSpeedBarColor(speed: number): string {
 }
 
 export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587, lon = 7.7943, selectedHour = 12 }: ProfiloVentoVerticaleProps) {
+  // HOOKS FIRST - unconditional
   const { data, loading, error, interpolateAtAltitude } = useWindProfile({
     lat,
     lon,
@@ -48,6 +49,7 @@ export default function ProfiloVentoVerticale({ siteAlt, siteName, lat = 44.2587
   });
   const [expanded, setExpanded] = useState(true);
 
+  // EARLY RETURNS AFTER HOOKS
   if (loading) {
     return (
       <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4">
