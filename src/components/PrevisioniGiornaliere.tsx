@@ -108,10 +108,6 @@ export default function PrevisioniGiornaliere({
                       <Wind className="w-3.5 h-3.5 text-cyan-400" />
                       <span className="font-medium">{Math.round(daily.windSpeedMax)} km/h</span>
                     </span>
-                    <span className="flex items-center gap-1.5 text-amber-300 font-semibold bg-amber-900/30 px-2 py-0.5 rounded-lg border border-amber-500/30">
-                      <Mountain className="w-3.5 h-3.5" />
-                      <span>{freezingLevel ? `${freezingLevel}m` : "--m"}</span>
-                    </span>
                   </div>
 
                   {daily.precipitationSum > 0 && (
