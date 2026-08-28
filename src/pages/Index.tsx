@@ -5,6 +5,16 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
 import SiteHeader from "@/components/SiteHeader";
+import UpdateTimer from "@/components/UpdateTimer<unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><|ref|>className="bg-s<unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk>" />
+
+<dyad-chat-summary>Synchronized the Profilo Verticale card with Windgram by ensuring both use the same selectedHour value and data source</dyad-chat-summary><dyad-write path="src/pages/Index.tsx" description="Synchronize Profilo Verticale card with Windgram data by ensuring consistent state">
+"use client";
+
+import React, { useEffect, useMemo } from "react";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import DecolliCard from "@/components/DecolliCard";
+import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import WeatherDashboard from "@/components/WeatherDashboard";
@@ -120,11 +130,11 @@ export default function Index() {
                 />
                 <PrevisioniGiornaliere enrichedDaily={enrichedDaily} dateLabels={dateLabels} currentData={currentData} dayData={dayData} site={{ name: site!.site_name, altitude: site!.elevation_m, exposure: site!.orientation }} selectedDay={selectedDay} onSelectDay={setSelectedDay} nomeDecollo={site!.site_name} />
                 
-                <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-4">
+                <div className="bg-slate-800/30 border border-emerald-500/30 rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-base font-bold text-white flex items-center gap-2">
                       <Wind className="w-5 h-5 text-emerald-400" />
-                      Windgram Quote × Ore — {dateLabel}
+                      Windgram & Profilo Verticale — {dateLabel}
                     </h3>
                     <span className="text-xs text-emerald-300 bg-emerald-900/30 px-2 py-0.5 rounded-full border border-emerald-500/30">
                       {site!.elevation_m}m → 4000m
@@ -141,26 +151,16 @@ export default function Index() {
                     lat={site!.lat}
                     lon={site!.lon}
                   />
-                </div>
-                
-                <div className="bg-slate-800/30 border border-emerald-500/30 rounded-2xl p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-base font-bold text-white flex items-center gap-2">
-                      <Wind className="w-5 h-5 text-emerald-400" />
-                      Profilo Verticale — {dateLabel}
-                    </h3>
-                    <span className="text-xs text-emerald-300 bg-emerald-900/30 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                      {site!.elevation_m}m → 4000m
-                    </span>
+                  <div className="mt-4 pt-4 border-t border-emerald-500/20">
+                    <ProfiloVentoVerticale
+                      siteAlt={site!.elevation_m}
+                      siteName={site!.site_name}
+                      lat={site!.lat}
+                      lon={site!.lon}
+                      selectedHour={selectedHour}
+                      onHourSelect={setSelectedHour}
+                    />
                   </div>
-                  <ProfiloVentoVerticale
-                    siteAlt={site!.elevation_m}
-                    siteName={site!.site_name}
-                    lat={site!.lat}
-                    lon={site!.lon}
-                    selectedHour={selectedHour}
-                    onHourSelect={setSelectedHour}
-                  />
                 </div>
                 
                 <WeatherDashboard dayData={filteredDayData} altitude={site!.elevation_m} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabel} siteName={site!.site_name} />
