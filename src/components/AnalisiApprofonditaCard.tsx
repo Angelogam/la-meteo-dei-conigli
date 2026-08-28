@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import {
   Sun,
   Thermometer,
@@ -51,28 +51,18 @@ function Sezione({
   titolo,
   icona,
   children,
-  defaultOpen = true,
 }: {
   titolo: string;
   icona: React.ReactNode;
   children: React.ReactNode;
-  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
-
   return (
     <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl overflow-hidden">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-700/30 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          {icona}
-          <span className="text-sm font-bold text-white">{titolo}</span>
-        </div>
-        {open ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-      </button>
-      {open && <div className="px-4 pb-4 space-y-2">{children}</div>}
+      <div className="flex items-center gap-2 px-4 py-3">
+        {icona}
+        <span className="text-sm font-bold text-white">{titolo}</span>
+      </div>
+      <div className="px-4 pb-4 space-y-2">{children}</div>
     </div>
   );
 }
@@ -82,7 +72,7 @@ export default function AnalisiApprofonditaCard({
   siteName,
   dayData,
 }: Props) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = React.useState(false);
 
   return (
     <div className="space-y-3">
@@ -152,7 +142,6 @@ export default function AnalisiApprofonditaCard({
       <Sezione
         titolo="Vento e struttura verticale"
         icona={<Wind className="w-4 h-4 text-cyan-400" />}
-        defaultOpen={true}
       >
         <div className="grid grid-cols-2 gap-2 text-xs mb-3">
           <div className="bg-slate-800/60 rounded-lg p-2">
@@ -305,7 +294,6 @@ export default function AnalisiApprofonditaCard({
       <Sezione
         titolo="Slot orari consigliati"
         icona={<Clock className="w-4 h-4 text-green-400" />}
-        defaultOpen={true}
       >
         <div className="bg-gradient-to-r from-emerald-900/30 to-green-900/20 border border-emerald-700/30 rounded-lg p-3">
           <div className="flex items-center gap-2 text-sm text-emerald-300 font-bold">
@@ -326,7 +314,6 @@ export default function AnalisiApprofonditaCard({
       <Sezione
         titolo="Analisi completa"
         icona={<Layers className="w-4 h-4 text-slate-400" />}
-        defaultOpen={true}
       >
         <div className="text-xs text-slate-300 leading-relaxed space-y-2">
           <p>
