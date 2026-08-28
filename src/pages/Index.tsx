@@ -15,7 +15,6 @@ import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
 import Windgram from "@/components/Windgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
-import ProfiloVentoVerticale from "@/components/ProfiloVentoVerticale";
 import SkewTDiagram from "@/components/SkewTDiagram";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
@@ -166,12 +165,12 @@ export default function Index() {
                   nomeDecollo={site.site_name}
                 />
 
-                {/* Card unificata: Windgram + Profilo Verticale con stato condiviso */}
+                {/* Card unificata: Windgram con stato condiviso */}
                 <div className="bg-slate-800/30 border border-emerald-500/30 rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-base font-bold text-white flex items-center gap-2">
                       <Wind className="w-5 h-5 text-emerald-400" />
-                      Windgram & Profilo Verticale — {dateLabel}
+                      Windgram — {dateLabel}
                     </h3>
                     <span className="text-xs text-emerald-300 bg-emerald-900/30 px-2 py-0.5 rounded-full border border-emerald-500/30">
                       {site.elevation_m}m → 4000m
@@ -188,17 +187,6 @@ export default function Index() {
                     lat={site.lat}
                     lon={site.lon}
                   />
-                  <div className="mt-4 pt-4 border-t border-emerald-500/20">
-                    <ProfiloVentoVerticale
-                      siteAlt={site.elevation_m}
-                      siteName={site.site_name}
-                      lat={site.lat}
-                      lon={site.lon}
-                      selectedHour={selectedHour}
-                      onHourSelect={setSelectedHour}
-                      selectedDay={selectedDay}
-                    />
-                  </div>
                 </div>
 
                 {/* SkewTDiagram — aggiornato al giorno di previsione selezionato */}
