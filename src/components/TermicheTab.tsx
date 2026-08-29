@@ -78,10 +78,13 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
       />
 
       <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5">
-        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+        <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
           <Thermometer className="w-5 h-5 text-orange-400" />
           Previsione termiche — {site.name}
         </h3>
+        {formattedDateTitle && (
+          <p className="text-xs text-slate-500 mb-4">{formattedDateTitle}</p>
+        )}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-slate-900/60 rounded-xl p-3 text-center">
             <p className="text-xs text-slate-400 mb-1">Media termiche</p>
@@ -108,6 +111,9 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
         <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-700/30">
           <TrendingUp className="w-4 h-4 text-orange-400" />
           <span className="text-sm font-bold text-slate-200">Dettaglio orario termiche</span>
+          {formattedDateTitle && (
+            <span className="text-xs text-slate-500 ml-auto">{formattedDateTitle}</span>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
