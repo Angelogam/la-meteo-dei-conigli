@@ -1,173 +1,196 @@
-"use client";
-
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import type { HourData, DailyData } from "@/types/meteo";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import { fetchPrevisioniGiornaliere } from "@/services/openMeteoService";
 import { DECOLLI } from "@/data/decolli";
-import { fetchPrevisioniGiornaliere, type MeteoCurrent, type MeteoHourly, type MeteoDaily } from "@/services/openMeteoService";
-import { calcolaStatoMeteo, calcolaPrecipProssimeOre, type StatoMeteo } from "@/utils/statoMeteo";
-import { calcolaIndiceVolabilita, type RisultatoVolabilita } from "@/utils/indiceVolabilita";
-
-const STORAGE_KEY_SITE = "meteo_selected_decollo";
-const REFRESH_INTERVAL = 900000; // 15 minuti esatti
 
 export function useWeatherData() {
-  const [selectedId, setSelectedId] = useState<string>(() => {
-    if (typeof window !== "undefined") return localStorage.getItem(STORAGE_KEY_SITE) || DECOLLI[0].id;
-    return DECOLLI[0].id;
-  });
-
-  // Site selezionato con campi statici protetti
-  const site = DECOLLI.find(d => d.id === selectedId) || DECOLLI[0];
-  
+  const [selectedId, setSelectedId] = useState(DECOLLI[0].id);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  const [countdown, setCountdown] = useState(REFRESH_INTERVAL);
+  const [site, setSite] = useState<any>(null);
+  const [dayData, setDayData] = useState<any[]>([]);
+  const [allHourlyData, setAllHourlyData] = useState<Record<number, any[]>>({});
+  const [activeModel, setActiveModel] = useState("Open-Meteo Best Match");
+  const [currentCape, setCurrentCape] = useState<any>(null);
   const [selectedDay, setSelectedDay] = useState(0);
   const [selectedHour, setSelectedHour] = useState(new Date().getHours());
-  const [activeTab, setActiveTab] = useState<"meteo" | "venti" | "termiche" | "analisi">("meteo");
+  const [activeTab, setActiveTab] = useState("meteo");
+  const [countdown, setCountdown] = useState(900);
+  const loadingRef = useRef(false);
+  const lastFetchRef = useRef<string>("");
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const [hourlyData, setHourlyData] = useState<MeteoHourly[]>([]);
-  const [dailyData, setDailyData] = useState<MeteoDaily[]>([]);
-  const [currentData, setCurrentData] = useState<MeteoCurrent | null>(null);
+  const loadWeather = useCallback(async (id?: string, force = false) => {
+    const targetId = id ?? selectedId;
+    if (!targetId) return;
+    if (loadingRef.current) return;
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+    const cacheKey = `${targetId}_${new Date().toDateString()}`;
+    if (!force && lastFetchRef.current === cacheKey && dayData.length > 0) {
+      return;
+    }
 
-  // Dati derivati per giorno selezionato
-  const dayData = useMemo(() => {
-    const oggi = new Date();
-    const target = new Date(oggi); target.setDate(oggi.getDate() + selectedDay);
-    return hourlyData.filter(h => {
-      const d = new Date(h.time);
-      return d.getDate() === target.getDate() && d.getMonth() === target.getMonth() && d.getFullYear() === target.getFullYear();
-    });
-  }, [hourlyData, selectedDay]);
+    loadingRef.current = true;
+    if (dayData.length > 0) {
+      setUpdating(true);
+    } else {
+      setLoading(true);
+    }
 
-  const currentHourData = dayData.find(h => new Date(h.time).getHours() === selectedHour) || dayData[0] || null;
-
-  // Stato meteo rigoroso per decollo selezionato (usa dati correnti + campi statici protetti)
-  const statoMeteo = useMemo((): StatoMeteo => {
-    if (!currentData) return "offline";
-    const precipNext = calcolaPrecipProssimeOre(hourlyData, 6);
-    return calcolaStatoMeteo({
-      precipNow: currentData.precipitation,
-      precipNextHours: precipNext,
-      cloudNow: currentData.cloudCover,
-      windSpeed: currentData.windSpeed,
-      windDir: currentData.windDir,
-      temperature: currentData.temperature,
-      cape: currentData.cape,
-      weatherCode: currentData.weatherCode,
-    }).stato;
-  }, [currentData, hourlyData]);
-
-  // Indice volabilità per decollo selezionato (usa campi statici protetti: orientation, elevation_m)
-  const volabilita = useMemo((): RisultatoVolabilita | null => {
-    if (!currentData || !site) return null;
-    return calcolaIndiceVolabilita({
-      windSpeed: currentData.windSpeed,
-      windGusts: currentData.windGusts,
-      windDir: currentData.windDir,
-      esposizione: site.orientation,
-      temperature: currentData.temperature,
-      dewPoint: currentData.dewPoint,
-      cloudCover: currentData.cloudCover,
-      precipitation: currentData.precipitation,
-      weatherCode: currentData.weatherCode,
-      cape: currentData.cape,
-      quota: site.elevation_m,
-    });
-  }, [currentData, site]);
-
-  // Daily arricchite
-  const enrichedDaily = useMemo(() => dailyData.map(d => {
-    const dayH = hourlyData.filter(h => {
-      const hd = new Date(h.time), dd = new Date(d.date);
-      return hd.getDate() === dd.getDate() && hd.getMonth() === dd.getMonth();
-    });
-    const temps = dayH.map(h => h.temperature).filter(t => t != null);
-    const winds = dayH.map(h => h.windSpeed).filter(w => w != null);
-    const clouds = dayH.map(h => h.cloudCover).filter(c => c != null);
-    return {
-      ...d,
-      tempMax: temps.length ? Math.round(Math.max(...temps)) : d.tempMax,
-      tempMin: temps.length ? Math.round(Math.min(...temps)) : d.tempMin,
-      windSpeedMax: winds.length ? Math.round(Math.max(...winds)) : d.windSpeedMax,
-      windSpeed: winds.length ? Math.round(winds.reduce((a,b)=>a+b,0)/winds.length) : 0,
-      cloudCover: clouds.length ? Math.round(clouds.reduce((a,b)=>a+b,0)/clouds.length) : 0,
-    };
-  }), [dailyData, hourlyData]);
-
-  const dateLabels = useMemo(() => Array.from({length:3}, (_,i)=> {
-    const d = new Date(); d.setDate(d.getDate()+i);
-    const g = ["Domenica","Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
-    const m = ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"];
-    return `${g[d.getDay()]} ${d.getDate()} ${m[d.getMonth()]}`;
-  }), []);
-
-  const loadWeather = useCallback(async () => {
-    if (!site) return;
-    setUpdating(true); setLoading(true);
     try {
-      const { hourly, daily, current } = await fetchPrevisioniGiornaliere(site.lat, site.lon, site.elevation_m);
-      setHourlyData(hourly);
-      setDailyData(daily);
-      setCurrentData(current);
-      setLastUpdate(new Date());
-      setCountdown(REFRESH_INTERVAL);
-    } catch (e) { console.error("Open-Meteo error:", e); }
-    finally { setLoading(false); setUpdating(false); }
-  }, [site]);
+      const decollo = DECOLLI.find((d) => d.id === targetId) ?? DECOLLI[0];
+      setSite(decollo);
 
-  useEffect(() => { loadWeather(); }, [loadWeather]);
+      const data = await fetchPrevisioniGiornaliere(
+        decollo.lat,
+        decollo.lon,
+        decollo.elevation_m
+      );
+
+      if (data && data.hourly) {
+        const times: string[] = data.hourly.time || [];
+        const hourlyData = times.map((t, i) => ({
+          time: t,
+          temperature: data.hourly.temperature_2m?.[i],
+          humidity: data.hourly.relative_humidity_2m?.[i],
+          dewPoint: data.hourly.dew_point_2m?.[i],
+          cloudCover: data.hourly.cloud_cover?.[i],
+          precipitation: data.hourly.precipitation?.[i],
+          windSpeed10m: data.hourly.wind_speed_10m?.[i],
+          windDirection10m: data.hourly.wind_direction_10m?.[i],
+          windSpeed80m: data.hourly.wind_speed_80m?.[i],
+          windDirection80m: data.hourly.wind_direction_80m?.[i],
+          windGusts10m: data.hourly.wind_gusts_10m?.[i],
+          pressure: data.hourly.surface_pressure?.[i],
+          cape: data.hourly.cape?.[i],
+          liftedIndex: data.hourly.lifted_index?.[i],
+          cin: data.hourly.convective_inhibition?.[i],
+          freezingLevel: data.hourly.freezing_level_height?.[i],
+          shortwaveRadiation: data.hourly.shortwave_radiation?.[i],
+        }));
+
+        setAllHourlyData({ 0: hourlyData });
+
+        const oggi = new Date();
+        const todayKey = `${oggi.getFullYear()}-${oggi.getMonth()}-${oggi.getDate()}`;
+        const filtered = hourlyData.filter((h) => {
+          const d = new Date(h.time);
+          const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+          return key === todayKey;
+        });
+        setDayData(filtered.length > 0 ? filtered : hourlyData.slice(0, 24));
+        setLastUpdate(new Date());
+        lastFetchRef.current = cacheKey;
+        setCountdown(900);
+      }
+    } catch (err) {
+      console.error("[useWeatherData] fetch error:", err);
+    } finally {
+      loadingRef.current = false;
+      setLoading(false);
+      setUpdating(false);
+    }
+  }, [selectedId, dayData.length]);
+
+  // Auto-load on mount and when selectedId changes
   useEffect(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(loadWeather, REFRESH_INTERVAL);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [loadWeather]);
+    loadWeather();
+  }, [selectedId]);
+
+  // Countdown timer
   useEffect(() => {
     if (countdownRef.current) clearInterval(countdownRef.current);
-    countdownRef.current = setInterval(() => setCountdown(p => Math.max(0, p - 1000)), 1000);
-    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
+    countdownRef.current = setInterval(() => {
+      setCountdown((c) => (c > 0 ? c - 1 : 900));
+    }, 1000);
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
   }, []);
-  useEffect(() => { localStorage.setItem(STORAGE_KEY_SITE, selectedId); }, [selectedId]);
 
-  // thermalDelta computed from current data
-  const thermalDelta = useMemo(() => {
-    if (!dayData.length) return 0;
-    const temps = dayData.map(h => h.temperature).filter(t => t != null);
-    if (temps.length < 2) return 0;
-    return Math.round((Math.max(...temps) - Math.min(...temps)) * 10) / 10;
+  // Reset countdown when lastUpdate changes
+  useEffect(() => {
+    if (lastUpdate) setCountdown(900);
+  }, [lastUpdate]);
+
+  const currentData = useMemo(() => {
+    if (!dayData.length) return null;
+    const now = new Date();
+    const currentHour = now.getHours();
+    return dayData.find((h) => {
+      const d = new Date(h.time);
+      return d.getHours() === currentHour;
+    }) ?? dayData[Math.min(currentHour, dayData.length - 1)];
   }, [dayData]);
 
-  // currentCape from currentData
-  const currentCape = useMemo(() => ({
-    cape: currentData?.cape ?? 0,
-    cin: 0,
-    liftedIndex: 0,
-  }), [currentData]);
+  const thermalDelta = useMemo(() => {
+    if (!dayData.length) return 0;
+    const temps = dayData
+      .map((h) => h.temperature)
+      .filter((t): t is number => typeof t === "number" && !isNaN(t));
+    if (temps.length < 2) return 0;
+    return Math.max(...temps) - Math.min(...temps);
+  }, [dayData]);
 
-  // activeModel from weather service
-  const activeModel = "Open-Meteo DWD/AROME";
+  const enrichedDaily = useMemo(() => {
+    if (!Object.keys(allHourlyData).length) return [];
+    const allData = Object.values(allHourlyData).flat();
+    if (!allData.length) return [];
 
-  // allHourlyData for compatibility
-  const allHourlyData = useMemo(() => {
-    const bySite: Record<string, MeteoHourly[]> = {};
-    bySite[site.id] = hourlyData;
-    return bySite;
-  }, [site.id, hourlyData]);
+    const byDay = new Map<string, any[]>();
+    allData.forEach((h) => {
+      const d = new Date(h.time);
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      if (!byDay.has(key)) byDay.set(key, []);
+      byDay.get(key)!.push(h);
+    });
+
+    return Array.from(byDay.entries()).slice(0, 5).map(([key, hours]) => {
+      const temps = hours.map((h) => h.temperature).filter((t): t is number => typeof t === "number");
+      const winds = hours.map((h) => h.windSpeed10m).filter((w): w is number => typeof w === "number");
+      const rains = hours.map((h) => h.precipitation).filter((r): r is number => typeof r === "number");
+      return {
+        key,
+        date: hours[0]?.time,
+        tempMax: temps.length ? Math.max(...temps) : null,
+        tempMin: temps.length ? Math.min(...temps) : null,
+        windMax: winds.length ? Math.max(...winds) : null,
+        rainSum: rains.length ? rains.reduce((a, b) => a + b, 0) : 0,
+        hours,
+      };
+    });
+  }, [allHourlyData]);
+
+  const dateLabels = useMemo(() => {
+    const giorni = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
+    return enrichedDaily.map((d) => {
+      const dt = new Date(d.date);
+      return `${giorni[dt.getDay()]} ${dt.getDate()}`;
+    });
+  }, [enrichedDaily]);
 
   return {
-    selectedId, setSelectedId, loading, updating, lastUpdate, countdown,
-    selectedDay, setSelectedDay, selectedHour, setSelectedHour,
-    activeTab, setActiveTab, site,
-    dayData, currentData: currentHourData, statoMeteo, volabilita,
-    enrichedDaily, dateLabels, hourlyData, dailyData,
-    loadWeather,
+    selectedId,
+    setSelectedId,
+    loading,
+    updating,
+    lastUpdate,
+    countdown,
+    site,
+    dayData,
+    currentData,
     thermalDelta,
-    currentCape,
+    enrichedDaily,
+    dateLabels,
+    loadWeather: (id?: string) => loadWeather(id, true),
     activeModel,
+    currentCape,
     allHourlyData,
+    selectedDay,
+    setSelectedDay,
+    selectedHour,
+    setSelectedHour,
+    activeTab,
+    setActiveTab,
   };
 }
