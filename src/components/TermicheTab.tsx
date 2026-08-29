@@ -31,10 +31,10 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
     
     // Get the first data point's date
     const firstDate = new Date(dayData[0].time);
-    const days = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
-    const months = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
+    const days = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"];
+    const months = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
     
-    return `${days[firstDate.getDay()]} ${String(firstDate.getDate()).padStart(2, "0")} ${months[firstDate.getMonth()]}`;
+    return `${days[firstDate.getDay()]} ${firstDate.getDate()} ${months[firstDate.getMonth()]}`;
   }, [dayData]);
 
   const maxRateo = useMemo(() => Math.max(...oreConDati.map(o => o!.rateo), 0.1), [oreConDati]);
