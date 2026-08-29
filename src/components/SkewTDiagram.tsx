@@ -371,7 +371,7 @@ export default function SkewTDiagram({
     <div className="w-full overflow-x-auto">
       {/* Titolo Principale in Alto */}
       <div className="text-center pb-2">
-        <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight lowercase">
+        <h2 className="text-xl sm:text-2xl tracking-tight">
           {siteName.toLowerCase()} &middot; {formattedDateTitle.toLowerCase()}
         </h2>
         <p className="text-[11px] sm:text-xs text-slate-500 font-mono tracking-wide mt-0.5">
