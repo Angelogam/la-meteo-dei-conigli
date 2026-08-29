@@ -166,11 +166,8 @@ export default function SkewTDiagram({
 
   const dateStr = useMemo(() => dateObj.toISOString().split("T")[0], [dateObj]);
 
-  const formattedDateTitle = useMemo(() => {
-    const days = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
-    const months = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
-    return `${days[dateObj.getDay()]} ${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
-  }, [dateObj]);
+  // Rimosso: formattedDateTitle since user wants to eliminate the date display text
+  // The date calculation is still maintained internally but not displayed in the header
 
   useEffect(() => {
     let isMounted = true;
@@ -366,10 +363,10 @@ export default function SkewTDiagram({
 
   return (
     <div className="w-full overflow-x-auto">
-      {/* Titolo Principale in Alto */}
+      {/* Titolo Principale in Alto - SOLO nome sito, senza data */}
       <div className="text-center pb-2">
         <h2 className="text-xl sm:text-2xl tracking-tight">
-          {siteName} &middot; {formattedDateTitle}
+          {siteName}
         </h2>
       </div>
     </div>
