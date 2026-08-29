@@ -226,7 +226,7 @@ export default function WindgramMatrix({
     const d = new Date();
     d.setDate(d.getDate() + selectedDay);
     const giorni = ["DOMENICA","LUNEDÌ","MARTEDÌ","MERCOLEDÌ","GIOVEDÌ","VENERDÌ","SABATO"];
-    const mesi = ["GENNAIO","FEBBRAIO","MARZO","APRILE","MAGGIO","GIUGNO","LUGLIO","AGOSTO","SETTEMBRE","OTTOBRE","NOVEMBRE","DICEMBRE"];
+    const mesi = ["GEN","FEB","MAR","APR","MAG","GIU","LUG","AGO","SET","OTT","NOV","DIC"];
     return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
   })();
 
@@ -265,12 +265,7 @@ export default function WindgramMatrix({
           <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2.5">
               <div className="p-2 rounded-xl bg-sky-100 text-sky-600"><Wind className="w-6 h-6" /></div>
-              <div>
-                <h3 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
-                  Windgram &mdash; <span className="text-sky-600">{siteName}</span>
-                </h3>
-                <p className="text-sm text-sky-700 font-semibold mt-0.5">{headerDate}</p>
-              </div>
+              {/* Site name and date removed as requested */}
             </div>
             <div className="flex items-center gap-1.5 bg-sky-100/70 border border-sky-200/80 px-3 py-1.5 rounded-full text-xs font-semibold text-sky-900">
               <Mountain className="w-3.5 h-3.5 text-amber-600" />
@@ -414,10 +409,6 @@ export default function WindgramMatrix({
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#991b1b" }} />
                 <span className="text-[10px] text-slate-600">43-58</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#86198f" }} />
-                <span className="text-[10px] text-slate-600">≥59</span>
               </div>
             </div>
           </div>
