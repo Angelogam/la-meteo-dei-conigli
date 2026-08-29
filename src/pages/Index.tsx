@@ -23,12 +23,10 @@ import { DECOLLI } from "@/data/decolli";
 import { getStabilityIndex } from "@/utils/weatherHelpers";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
 import { Activity, Wind } from "lucide-react";
+import { GroqValidationProvider, useGroqValidationContext } from "@/context/GroqValidationContext";
 
-export default function Index() {
-  useEffect(() => {
-    avviaVerificaContinua(60000);
-  }, []);
-
+function IndexContent() {
+  const { validateAll, loading: groqLoading } = useGroqValidationContext();
   const {
     selectedId,
     setSelectedId,
@@ -51,6 +49,7 @@ export default function Index() {
     loadWeather,
     activeModel,
     currentCape,
+    allHourlyData,
   } = useWeatherData();
 
   const { mergedDecolli, loading: aggressiveLoading, lastUpdate: aggressiveLastUpdate } = useThreeSourceWeather();
@@ -96,6 +95,13 @@ export default function Index() {
   }, [selectedDay]);
 
   const hasData = Boolean(site && currentData && dayData.length > 0);
+
+  // Trigger automatico validazione Groq quando arrivano i dati meteo
+  useEffect(() => {
+    if (site && allHourlyData && Object.keys(allHourlyData).length > 0) {
+      validateAll(allHourlyData);
+    }
+  }, [allHourlyData, site, validateAll]);
 
   if (isLoading) {
     return (
@@ -165,7 +171,6 @@ export default function Index() {
                   nomeDecollo={site.site_name}
                 />
 
-                {/* Card unificata: Windgram con stato condiviso */}
                 <div className="bg-slate-800/30 border border-emerald-500/30 rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -189,7 +194,6 @@ export default function Index() {
                   />
                 </div>
 
-                {/* SkewTDiagram — aggiornato al giorno di previsione selezionato */}
                 <SkewTDiagram
                   latitude={site.lat}
                   longitude={site.lon}
@@ -264,5 +268,17 @@ export default function Index() {
       <Footer />
       <DiagnosticaPanel />
     </div>
+  );
+}
+
+export default function Index() {
+  useEffect(() => {
+    avviaVerificaContinua(60000);
+  }, []);
+
+  return (
+    <GroqValidationProvider>
+      <IndexContent />
+    </GroqValidationProvider>
   );
 }

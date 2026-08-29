@@ -9,6 +9,8 @@ import { calcolaAnalisiApprofondita } from "@/utils/analisiApprofondita";
 import AnalisiApprofonditaCard from "./AnalisiApprofonditaCard";
 import BadgeClima from "@/components/BadgeClima";
 import { confrontaClima } from "@/utils/climatologia";
+import { useGroqValidationContext } from "@/context/GroqValidationContext";
+import GroqBadge from "@/components/GroqBadge";
 
 interface AnalisiMeteoProps {
   currentData: HourData | null;
@@ -32,6 +34,9 @@ function getWindDirName(deg: number): string {
 }
 
 export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
+  const { getValidation } = useGroqValidationContext();
+  const validation = site?.name ? getValidation(site.name.toLowerCase().replace(/\s+/g, "-")) : null;
+
   const analisiApprofondita = useMemo(() => {
     return calcolaAnalisiApprofondita(dayData, site);
   }, [dayData, site]);
@@ -69,7 +74,6 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
     );
   }
 
-  // Calcola metriche reali dai dati
   const oreGiorno = dayData.filter(h => {
     const hh = h.time.getHours();
     return hh >= 8 && hh <= 18;
@@ -86,7 +90,6 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
   const pioggiaTot = Math.round(oreGiorno.reduce((s, h) => s + (h.precipitation || 0), 0) * 10) / 10;
   const nuvoleMedia = Math.round(oreGiorno.reduce((s, h) => s + h.cloudCover, 0) / oreGiorno.length);
 
-  // Rischio temporali
   const rischioTemporali = analisiApprofondita?.rischioTemporali || 0;
   const getRischioBg = (val: number) => {
     if (val >= 70) return "bg-red-900/30 border-red-500/40";
@@ -123,7 +126,6 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
 
   return (
     <div className="space-y-4">
-      {/* Intestazione decollo e data */}
       <div className="bg-slate-800/60 border border-purple-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
         <MapPin className="w-5 h-5 text-purple-400 shrink-0" />
         <div>
@@ -135,17 +137,15 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
             <span>{site?.alt || 0}m · Esposizione {site?.exposure || "N/D"}</span>
           </div>
         </div>
+        {validation && <GroqBadge result={validation} />}
       </div>
 
-      {/* Badge climatologico */}
       {anomalieClima.length > 0 && <BadgeClima anomalie={anomalieClima} />}
 
-      {/* ANALISI APPROFONDITA */}
       {analisiApprofondita && (
         <AnalisiApprofonditaCard analisi={analisiApprofondita} siteName={site?.name || "Decollo"} dayData={dayData} />
       )}
 
-      {/* Situazione generale (riepilogo rapido) */}
       <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 border-2 border-slate-700/30 rounded-2xl p-5">
         <div className="flex items-center gap-2 mb-4">
           <Sun className="w-6 h-6 text-orange-400 shrink-0" />
@@ -173,7 +173,6 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
         </div>
       </div>
 
-      {/* Rischio temporali */}
       <div className={`rounded-2xl p-5 border-2 ${getRischioBg(rischioTemporali)}`}>
         <div className="flex items-center gap-3 mb-3">
           {rischioTemporali >= 70 || (analisiApprofondita?.rischioTemporali && analisiApprofondita?.rischioTemporali > 0) ? (
@@ -203,7 +202,6 @@ export default function AnalisiMeteo({ dayData, site }: AnalisiMeteoProps) {
         </div>
       </div>
 
-      {/* Interpretazione */}
       <div className="bg-gradient-to-br from-green-900/20 to-emerald-900/10 border-2 border-green-700/30 rounded-2xl p-5">
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-6 h-6 text-green-400 shrink-0" />

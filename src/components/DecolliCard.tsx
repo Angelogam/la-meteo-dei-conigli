@@ -4,6 +4,8 @@ import React from "react";
 import { Wind, Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, Zap } from "lucide-react";
 import type { Decollo } from "@/data/decolli";
 import { validaVentoPerDecollo, getVentoStatusColor } from "@/utils/validaVentoDecollo";
+import { useGroqValidationContext } from "@/context/GroqValidationContext";
+import GroqBadge from "@/components/GroqBadge";
 
 interface DecolliCardProps {
   decolli: (Decollo & { aggressiveWeather?: any })[];
@@ -23,6 +25,7 @@ const ICONA_STATO: Record<string, React.ReactNode> = {
 };
 
 export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay = 0 }: DecolliCardProps) {
+  const { getValidation } = useGroqValidationContext();
   const dt = getDateTime(selectedDay);
 
   return (
@@ -49,7 +52,6 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
           const aggressive = item.aggressiveWeather;
           const hasAggressive = aggressive != null;
 
-          // Usa dati aggressivi se disponibili, altrimenti fallback
           const stato = hasAggressive ? aggressive.stato.toLowerCase() : "offline";
           const temp = hasAggressive ? aggressive.temp : "--";
           const rain = hasAggressive ? aggressive.rain : "--";
@@ -63,7 +65,6 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
           const dirLabel = hasAggressive ? getCardinalDir(parseFloat(aggressive.wind)) : "N/D";
           const dirArrow = hasAggressive ? getWindArrow(parseFloat(aggressive.wind)) : "→";
 
-          // Colore indice
           const indiceColor = indice <= 3 ? "text-emerald-400" : 
                               indice <= 5 ? "text-lime-400" : 
                               indice <= 7 ? "text-amber-400" : 
@@ -72,6 +73,8 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
                            indice <= 5 ? "bg-lime-950/60 border-lime-500/40" : 
                            indice <= 7 ? "bg-amber-950/60 border-amber-500/40" : 
                            indice <= 8 ? "bg-orange-950/60 border-orange-500/40" : "bg-red-950/60 border-red-500/40";
+
+          const validation = getValidation(item.id);
 
           return (
             <button
@@ -98,10 +101,12 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
                   </div>
                 </div>
 
-                {/* Badge Indice Volabilità Aggressivo */}
-                <div className={`flex items-center gap-1 px-2 py-1 rounded-full border text-[11px] font-black ${indiceBg} ${indiceColor}`}>
-                  <span>{indice}</span>
-                  <span className="opacity-70">/10</span>
+                <div className="flex items-center gap-2">
+                  {validation && <GroqBadge result={validation} />}
+                  <div className={`flex items-center gap-1 px-2 py-1 rounded-full border text-[11px] font-black ${indiceBg} ${indiceColor}`}>
+                    <span>{indice}</span>
+                    <span className="opacity-70">/10</span>
+                  </div>
                 </div>
               </div>
 

@@ -5,6 +5,8 @@ import type { HourData } from "@/types/meteo";
 import HourlyTable from "@/components/HourlyTable";
 import FlightScore from "@/components/FlightScore";
 import { calcolaTermiche } from "@/utils/termiche";
+import { useGroqValidationContext } from "@/context/GroqValidationContext";
+import GroqBadge from "@/components/GroqBadge";
 
 interface WeatherDashboardProps {
   dayData: HourData[];
@@ -34,6 +36,9 @@ export default function WeatherDashboard({
   dayLabel,
   siteName,
 }: WeatherDashboardProps) {
+  const { getValidation } = useGroqValidationContext();
+  const validation = siteName ? getValidation(siteName.toLowerCase().replace(/\s+/g, "-")) : null;
+
   const flightScore = useMemo(() => {
     if (!dayData || dayData.length === 0) return null;
 
@@ -44,7 +49,6 @@ export default function WeatherDashboard({
 
     if (oreVolo.length === 0) return null;
 
-    // Controllo maltempo e pioggia
     const pioggiaTot = oreVolo.reduce((s, h) => s + (h.precipitation || 0), 0);
     const oreConPioggia = oreVolo.filter(h => (h.precipitation || 0) > 0.3).length;
     const haTemporali = oreVolo.some(h => (h.weatherCode >= 95 && h.weatherCode <= 99) || h.weatherCode === 82);
@@ -64,7 +68,6 @@ export default function WeatherDashboard({
     let label = "";
     let thermalLabel = "";
 
-    // SE C'È PIOGGIA O TEMPORALE: IL VOLO È NEGATO
     if (haTemporali) {
       score = 0;
       label = "TEMPORALE";
@@ -82,7 +85,6 @@ export default function WeatherDashboard({
       label = "VENTO FORTE";
       thermalLabel = "Raffiche critiche 💨";
     } else {
-      // Condizioni asciutte
       if (mediaRateo >= 3) score = 9;
       else if (mediaRateo >= 2.5) score = 8;
       else if (mediaRateo >= 2) score = 7;
@@ -142,6 +144,12 @@ export default function WeatherDashboard({
 
   return (
     <div className="space-y-4">
+      {validation && (
+        <div className="flex justify-center">
+          <GroqBadge result={validation} />
+        </div>
+      )}
+
       {flightScore && (
         <FlightScore
           score={flightScore.score}
