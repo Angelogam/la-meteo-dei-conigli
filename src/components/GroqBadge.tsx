@@ -22,7 +22,7 @@ export default function GroqBadge({ result, loading, error }: GroqBadgeProps) {
     return (
       <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/40">
         <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
-        <span className="text-xs text-slate-400">Validazione Groq...</span>
+        <span className="text-xs text-slate-400">Validazione AI...</span>
       </div>
     );
   }
@@ -31,7 +31,7 @@ export default function GroqBadge({ result, loading, error }: GroqBadgeProps) {
     return (
       <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-900/20 border border-red-500/30">
         <XCircle className="w-4 h-4 text-red-400" />
-        <span className="text-xs text-red-300">Groq non disponibile</span>
+        <span className="text-xs text-red-300">AI non disponibile</span>
       </div>
     );
   }

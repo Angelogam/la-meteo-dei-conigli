@@ -3,7 +3,6 @@
 import React from "react";
 import { Wind, Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, Zap } from "lucide-react";
 import type { Decollo } from "@/data/decolli";
-import { validaVentoPerDecollo, getVentoStatusColor } from "@/utils/validaVentoDecollo";
 import { useGroqValidationContext } from "@/context/GroqValidationContext";
 import GroqBadge from "@/components/GroqBadge";
 
@@ -88,7 +87,6 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
                 }
               `}
             >
-              {/* Header */}
               <div className="flex items-start justify-between gap-2 mb-1.5">
                 <div className="min-w-0">
                   <div className="text-sm font-bold text-white truncate flex items-center gap-1.5">
@@ -110,7 +108,6 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
                 </div>
               </div>
 
-              {/* Dati Meteo Aggressivi */}
               <div className="mt-2 pt-2 border-t border-slate-700/40 space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-1.5">
