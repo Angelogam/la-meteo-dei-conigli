@@ -155,6 +155,7 @@ export default function SkewTDiagram({
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // FIX: Calcola la data corretta sommando selectedDay a OGGI (non a domani)
   const dateObj = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + selectedDay);
