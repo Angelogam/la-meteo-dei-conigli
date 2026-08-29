@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import type { HourData } from "@/types/meteo";
 import { Mountain, Wind } from "lucide-react";
-import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
+import { useWindgramContext } from "@/context/WindgramContext";
 
 interface WindgramMatrixProps {
   dayData: HourData[];
@@ -51,6 +51,38 @@ function CloudIcon({ cloudCover }: { cloudCover: number }) {
   );
 }
 
+function interpolateWindAtAltitude(levels: any[] | undefined, targetAlt: number): { speed: number; dir: number } | null {
+  if (!levels || levels.length === 0) return null;
+  if (levels.length === 1) {
+    return { speed: Math.round(levels[0].speed), dir: Math.round(levels[0].dir) };
+  }
+
+  const sorted = [...levels].sort((a, b) => a.alt - b.alt);
+
+  if (targetAlt <= sorted[0].alt) {
+    return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
+  }
+  if (targetAlt >= sorted[sorted.length - 1].alt) {
+    return null;
+  }
+
+  for (let i = 0; i < sorted.length - 1; i++) {
+    if (sorted[i].alt <= targetAlt && sorted[i + 1].alt >= targetAlt) {
+      const lower = sorted[i];
+      const upper = sorted[i + 1];
+      const ratio = (targetAlt - lower.alt) / (upper.alt - lower.alt);
+      const speed = lower.speed + ratio * (upper.speed - lower.speed);
+      let diffDir = upper.dir - lower.dir;
+      if (diffDir > 180) diffDir -= 360;
+      if (diffDir < -180) diffDir += 360;
+      let dir = lower.dir + diffDir * ratio;
+      dir = ((dir % 360) + 360) % 360;
+      return { speed: Math.round(speed), dir: Math.round(dir) };
+    }
+  }
+  return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
+}
+
 export default function WindgramMatrix({
   dayData,
   siteName,
@@ -62,13 +94,15 @@ export default function WindgramMatrix({
   lat = 44.2587,
   lon = 7.7943,
 }: WindgramMatrixProps) {
-  // HOOKS FIRST - must be called unconditionally at top level
-  const { data: windProfileMap, loading: profileLoading, error: profileError, interpolateAtAltitude } = useMultiHourWindProfile({
-    lat,
-    lon,
-    siteAlt: altitude,
-    selectedDay,
-  });
+  // Use shared windgram context for real wind data
+  const { windData: windProfileMap, loading: profileLoading, error: profileError, refreshWindData } = useWindgramContext();
+
+  // Refresh data when lat/lon/altitude/selectedDay change
+  React.useEffect(() => {
+    if (lat && lon && altitude !== undefined) {
+      refreshWindData(lat, lon, altitude, selectedDay);
+    }
+  }, [lat, lon, altitude, selectedDay, refreshWindData]);
 
   const hourlyMap = useMemo(() => {
     const map = new Map<number, HourData>();
@@ -82,6 +116,7 @@ export default function WindgramMatrix({
   }, [dayData]);
 
   const hasRealAltitudeData = useMemo(() => {
+    if (!windProfileMap) return false;
     for (const hourData of windProfileMap.values()) {
       if (hourData.levels.some(l => l.alt >= 1000 && l.alt <= 3000)) return true;
     }
@@ -89,6 +124,7 @@ export default function WindgramMatrix({
   }, [windProfileMap]);
 
   const hasRealPressureData = useMemo(() => {
+    if (!windProfileMap) return false;
     for (const hourData of windProfileMap.values()) {
       if (hourData.levels.some(l => l.hpa !== "10m" && l.hpa !== "80m" && l.hpa !== "120m" && l.hpa !== "180m")) return true;
     }
@@ -180,14 +216,15 @@ export default function WindgramMatrix({
       result[hr] = {};
       activeAltitudes.forEach((alt) => {
         if (alt > 4000) return;
-        const interp = interpolateAtAltitude(hr, alt);
+        const hourData = windProfileMap?.get(hr);
+        const interp = interpolateWindAtAltitude(hourData?.levels, alt);
         if (interp) {
           result[hr][alt] = { speed: Math.round(interp.speed), dir: Math.round(interp.dir) };
         }
       });
     });
     return result;
-  }, [activeAltitudes, altitude, windProfileMap, interpolateAtAltitude]);
+  }, [activeAltitudes, altitude, windProfileMap]);
 
   // Cloud base row: la nuvola è posizionata ESATTAMENTE alla riga corrispondente alla cloudBase
   const cloudBaseRow = useMemo(() => {

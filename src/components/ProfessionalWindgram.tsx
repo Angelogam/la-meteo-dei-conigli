@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { RefreshCw, Wind, Calendar, Mountain, FileText, Check, Copy, AlertTriangle, ShieldCheck } from "lucide-react";
 import { generateReportMeteo, type GeneratedReport } from "@/utils/generateReportMeteo";
+import { useWindgramContext } from "@/context/WindgramContext";
 
 interface WindgramProps {
   latitude: number;
@@ -64,6 +65,9 @@ export default function ProfessionalWindgram({
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
+  
+  // Use shared context to provide wind data to other components
+  const { refreshWindData, loading: contextLoading, error: contextError } = useWindgramContext();
 
   const dateObj = useMemo(() => {
     const d = new Date();
@@ -83,6 +87,9 @@ export default function ProfessionalWindgram({
     let isMounted = true;
     setLoading(true);
     setError(null);
+
+    // Provide wind data to shared context for other components
+    refreshWindData(latitude, longitude, altitude, selectedDay);
 
     const fetchMeteo = async () => {
       const hourlyParams = [
@@ -145,7 +152,7 @@ export default function ProfessionalWindgram({
     return () => {
       isMounted = false;
     };
-  }, [latitude, longitude, dateStr]);
+  }, [latitude, longitude, dateStr, altitude, selectedDay, refreshWindData]);
 
   // Dimensioni SVG ad altissima fedeltà
   const width = 1000;
@@ -374,7 +381,7 @@ export default function ProfessionalWindgram({
     return Math.round(sum / hourlyData.length);
   }, [hourlyData]);
 
-  if (loading) {
+  if (loading || contextLoading) {
     return (
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-10 flex flex-col items-center justify-center text-slate-300 shadow-2xl">
         <RefreshCw className="w-9 h-9 text-emerald-400 animate-spin mb-3" />
@@ -384,12 +391,12 @@ export default function ProfessionalWindgram({
     );
   }
 
-  if (error) {
+  if (error || contextError) {
     return (
       <div className="bg-slate-900 border border-rose-500/40 rounded-3xl p-6 text-center text-rose-300">
         <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-rose-400" />
         <p className="font-bold text-white">Impossibile caricare i dati Open-Meteo</p>
-        <p className="text-xs text-slate-400 mt-1">{error}</p>
+        <p className="text-xs text-slate-400 mt-1">{error || contextError}</p>
       </div>
     );
   }
