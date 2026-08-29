@@ -163,18 +163,6 @@ export default function SkewTDiagram({
 
   const dateStr = useMemo(() => dateObj.toISOString().split("T")[0], [dateObj]);
 
-  const formattedDateTitle = useMemo(() => {
-    if (selectedDay === 1) {
-      // Show actual date when tomorrow is selected
-      const days = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
-      const months = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
-      return `${days[dateObj.getDay()]} ${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
-    }
-    const days = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
-    const months = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
-    return `${days[dateObj.getDay()]} ${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
-  }, [dateObj, selectedDay]);
-
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
@@ -372,11 +360,8 @@ export default function SkewTDiagram({
       {/* Titolo Principale in Alto */}
       <div className="text-center pb-2">
         <h2 className="text-xl sm:text-2xl tracking-tight">
-          {siteName.toLowerCase()} &middot; {formattedDateTitle.toLowerCase()}
+          {siteName} &middot; {formattedDateTitle}
         </h2>
-        <p className="text-[11px] sm:text-xs text-slate-500 font-mono tracking-wide mt-0.5">
-          plotted {dateStr} 00:00 UTC &middot; model ground {Math.round(siteAltitude + 5)} m &middot; SRTM {Math.round(siteAltitude)} m
-        </p>
       </div>
     </div>
   );
