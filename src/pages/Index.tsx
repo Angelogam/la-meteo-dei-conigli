@@ -13,7 +13,7 @@ import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
 import Windgram from "@/components/Windgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
-import SkewTDiagram from "@/components/SkewTDiagram";
+import ProfessionalWindgram from "@/components/ProfessionalWindgram";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
@@ -50,7 +50,7 @@ function IndexContent() {
     allHourlyData,
   } = useWeatherData();
 
-  const { mergedDecolli, loading: aggressiveLoading, lastUpdate: aggressiveLastUpdate } = useThreeSourceWeather();
+  const { mergedDecolli, lastUpdate: aggressiveLastUpdate } = useThreeSourceWeather();
   const { tempoTrascorso } = useMeteoCompleto(
     site?.lat ?? DECOLLI[0].lat,
     site?.lon ?? DECOLLI[0].lon,
@@ -63,7 +63,8 @@ function IndexContent() {
     currentData?.cloudCover ?? 30
   );
 
-  const isLoading = weatherLoading || aggressiveLoading;
+  // Only block on weather loading, not on aggressive 3-source loading
+  const isLoading = weatherLoading;
 
   const filteredDayData = useMemo(() => {
     if (!dayData || dayData.length === 0) return [];
@@ -91,7 +92,7 @@ function IndexContent() {
     return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
   }, [selectedDay]);
 
-  const hasData = Boolean(site && currentData && dayData.length > 0);
+  const hasData = Boolean(site && dayData.length > 0);
 
   useEffect(() => {
     if (site && allHourlyData && Object.keys(allHourlyData).length > 0) {
@@ -190,12 +191,11 @@ function IndexContent() {
                   />
                 </div>
 
-                <SkewTDiagram
+                <ProfessionalWindgram
                   latitude={site.lat}
                   longitude={site.lon}
-                  siteAltitude={site.elevation_m}
+                  altitude={site.elevation_m}
                   siteName={site.site_name}
-                  selectedHour={selectedHour}
                   selectedDay={selectedDay}
                 />
 
@@ -254,8 +254,10 @@ function IndexContent() {
               </>
             )}
             {!hasData && (
-              <div className="text-center py-12 text-slate-400">
-                <p>Nessun dato meteo disponibile per {site?.site_name ?? "questo decollo"}. Verifica la connessione o riprova.</p>
+              <div className="text-center py-12 text-slate-400 bg-slate-900/60 border border-slate-700/50 rounded-2xl">
+                <Wind className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                <p className="text-sm">Caricamento dati meteo per {site?.site_name ?? "questo decollo"}...</p>
+                <p className="text-xs text-slate-500 mt-2">Se il problema persiste, verifica la connessione o riprova.</p>
               </div>
             )}
           </div>
