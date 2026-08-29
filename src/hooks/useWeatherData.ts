@@ -19,6 +19,7 @@ export function useWeatherData() {
   const loadingRef = useRef(false);
   const lastFetchRef = useRef<string>("");
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mountedRef = useRef(false);
 
   const loadWeather = useCallback(async (id?: string, force = false) => {
     const targetId = id ?? selectedId;
@@ -92,9 +93,17 @@ export function useWeatherData() {
     }
   }, [selectedId, dayData.length]);
 
-  // Auto-load on mount and when selectedId changes
+  // Auto-load on mount
   useEffect(() => {
+    mountedRef.current = true;
     loadWeather();
+  }, []);
+
+  // Also load when selectedId changes
+  useEffect(() => {
+    if (mountedRef.current) {
+      loadWeather();
+    }
   }, [selectedId]);
 
   // Countdown timer
