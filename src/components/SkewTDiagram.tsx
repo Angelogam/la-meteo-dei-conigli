@@ -149,16 +149,18 @@ function getStabilityColor(deltaT: number): string {
 
 export default function SkewTDiagram({
   latitude, longitude, siteAltitude, siteName,
-  selectedHour = 12, selectedDay = 1
+  selectedHour = 12, selectedDay = 0
 }: SkewTDiagramProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // FIX: Calcola la data corretta sommando selectedDay a OGGI (non a domani)
+  // FIX: Calcola la data corretta sommando selectedDay a OGGI
+  // selectedDay=0 significa oggi, 1 significa domani, -1 ieri, ecc.
   const dateObj = useMemo(() => {
     const d = new Date();
-    d.setDate(d.getDate() + selectedDay);
+    const targetDay = d.getDate() + (selectedDay || 0);
+    d.setDate(targetDay);
     return d;
   }, [selectedDay]);
 
