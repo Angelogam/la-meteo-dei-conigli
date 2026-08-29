@@ -1,8 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = "llama-3.3-70b-versatile";
+const OPENROUTER_API_KEY = process.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY;
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+const MODELS = {
+  fast: "meta-llama/llama-3.1-8b-instruct:free",
+  faster: "google/gemma-2-9b-it:free",
+  coding: "deepseek/deepseek-coder-v2-lite-instruct:free",
+  coding2: "qwen/qwen-2.5-coder-32b-instruct:free",
+  quality: "qwen/qwen-2.5-7b-instruct:free",
+  quality2: "mistralai/mistral-nemo:free",
+  reasoning: "nvidia/nemotron-3-ultra:free",
+  reasoning2: "gryphe/mythomax-l2-13b:free",
+  italian: "qwen/qwen-2.5-7b-instruct:free",
+  italian2: "techsini/llama-3-taide-lx-8b-chat:free",
+  balanced: "meta-llama/llama-3.1-70b-instruct:free",
+};
+
+const MODEL = MODELS.coding;
 
 function buildPrompt(data: any, decollo: any): string {
   const h = data?.hourly?.[0] || data?.current || {};
@@ -46,28 +61,36 @@ REGOLE:
 }
 
 export async function POST(req: NextRequest) {
-  if (!GROQ_API_KEY) {
-    return NextResponse.json({ success: false, error: "GROQ_API_KEY mancante" }, { status: 500 });
+  if (!OPENROUTER_API_KEY) {
+    return NextResponse.json(
+      { success: false, error: "OPENROUTER_API_KEY mancante nelle variabili d'ambiente" },
+      { status: 500 }
+    );
   }
 
   try {
     const { data, decollo } = await req.json();
     if (!data || !decollo) {
-      return NextResponse.json({ success: false, error: "Parametri mancanti" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "Parametri mancanti: data e decollo richiesti" },
+        { status: 400 }
+      );
     }
 
     const prompt = buildPrompt(data, decollo);
 
-    const res = await fetch(GROQ_URL, {
+    const res = await fetch(OPENROUTER_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${GROQ_API_KEY}`,
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "HTTP-Referer": "https://meteo-dei-conigli.dyad.sh",
+        "X-Title": "Meteo dei Conigli - Validazione Meteo",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: MODEL,
         messages: [
-          { role: "system", content: "Sei un meteorologo esperto per volo libero. Rispondi SOLO JSON." },
+          { role: "system", content: "Sei un meteorologo esperto per volo libero. Rispondi SOLO con JSON valido seguendo le regole fornite." },
           { role: "user", content: prompt },
         ],
         temperature: 0.1,
@@ -77,18 +100,54 @@ export async function POST(req: NextRequest) {
     });
 
     if (!res.ok) {
-      const err = await res.text();
-      return NextResponse.json({ success: false, error: `Groq ${res.status}: ${err}` }, { status: 502 });
+      const errText = await res.text();
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `OpenRouter API Error ${res.status}: ${errText.substring(0, 200)}` 
+        },
+        { status: 502 }
+      );
     }
 
     const json = await res.json();
     const content = json.choices?.[0]?.message?.content;
-    if (!content) return NextResponse.json({ success: false, error: "Risposta vuota" }, { status: 502 });
+    
+    if (!content) {
+      return NextResponse.json(
+        { success: false, error: "Risposta vuota dal modello AI" },
+        { status: 502 }
+      );
+    }
 
-    const validazione = JSON.parse(content);
-    return NextResponse.json({ success: true, validazione });
+    try {
+      const validazione = JSON.parse(content);
+      
+      if (typeof validazione.valid !== "boolean" ||
+          typeof validazione.score !== "number" ||
+          !["Ottimo", "Buono", "Discreto", "Rischioso", "Non volabile"].includes(validazione.giudizio) ||
+          !Array.isArray(validazione.motivi) ||
+          typeof validazione.alert !== "string" ||
+          typeof validazione.finestra_volo !== "string" ||
+          typeof validazione.quota_max_consigliata !== "number") {
+        return NextResponse.json(
+          { success: false, error: "Formato risposta AI non valido" },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({ success: true, validazione });
+    } catch (parseError) {
+      return NextResponse.json(
+        { success: false, error: "Impossibile parsare la risposta JSON dall'AI" },
+        { status: 500 }
+      );
+    }
 
   } catch (e: any) {
-    return NextResponse.json({ success: false, error: String(e) }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: `Errore interno: ${e.message || String(e)}` },
+      { status: 500 }
+    );
   }
 }
