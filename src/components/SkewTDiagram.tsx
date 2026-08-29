@@ -163,6 +163,12 @@ export default function SkewTDiagram({
 
   const dateStr = useMemo(() => dateObj.toISOString().split("T")[0], [dateObj]);
 
+  const formattedDateTitle = useMemo(() => {
+    const days = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
+    const months = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
+    return `${days[dateObj.getDay()]} ${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
+  }, [dateObj]);
+
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
