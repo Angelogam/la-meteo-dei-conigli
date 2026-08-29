@@ -165,7 +165,10 @@ export default function SkewTDiagram({
 
   const formattedDateTitle = useMemo(() => {
     if (selectedDay === 1) {
-      return "domani";
+      // Show actual date when tomorrow is selected
+      const days = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
+      const months = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
+      return `${days[dateObj.getDay()]} ${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
     }
     const days = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
     const months = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
