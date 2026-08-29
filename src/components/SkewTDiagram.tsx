@@ -68,15 +68,6 @@ const STABILITY_SCALE = [
   { val: 1.20, color: "#c92e1e" },  // rosso scuro
 ];
 
-/** Restituisce i giorni da aggiungere oggi per raggiungere il prossimo sabato */
-function daysUntilNextSaturday(): number {
-  const today = new Date();
-  const day = today.getDay(); // 0=dom, 6=sab
-  let days = (6 - day + 7) % 7;
-  if (days === 0) days = 7; // se oggi è sabato, prendi il prossimo
-  return days;
-}
-
 function pToY(p: number): number {
   const logP = Math.log(p);
   return M.top + PH * (logP - Math.log(P_TOP)) / (Math.log(P_BOTTOM) - Math.log(P_TOP));
@@ -158,7 +149,7 @@ function getStabilityColor(deltaT: number): string {
 
 export default function SkewTDiagram({
   latitude, longitude, siteAltitude, siteName,
-  selectedHour = 12, selectedDay = daysUntilNextSaturday()
+  selectedHour = 12, selectedDay = 1
 }: SkewTDiagramProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -173,10 +164,13 @@ export default function SkewTDiagram({
   const dateStr = useMemo(() => dateObj.toISOString().split("T")[0], [dateObj]);
 
   const formattedDateTitle = useMemo(() => {
+    if (selectedDay === 1) {
+      return "domani";
+    }
     const days = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
     const months = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
     return `${days[dateObj.getDay()]} ${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
-  }, [dateObj]);
+  }, [dateObj, selectedDay]);
 
   useEffect(() => {
     let isMounted = true;
