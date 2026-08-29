@@ -639,7 +639,7 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {/* BARBETTE DEL VENTO ISOARICHE (Vettori di vento Open-Meteo) */}
+            {/* BARBETTE DEL VENTI ISOARICHE (Vettori di vento Open-Meteo) */}
             {hourlyData.map((calc, i) => {
               const x = getXFromHourIdx(i);
               return (
@@ -828,7 +828,7 @@ export default function ProfessionalWindgram({
         </div>
       </div>
 
-      {/* BOLLETTINO E REPORT METEOROLOGICO DI SUPPORTO */}
+      {/* BOLLETTINO E REPORT METEOROLOGICO DI SUPPORTE */}
       {reportGenerato && (
         <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border-2 border-emerald-500/40 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-4 text-slate-200">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">

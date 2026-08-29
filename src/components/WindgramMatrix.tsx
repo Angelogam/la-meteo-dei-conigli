@@ -349,7 +349,7 @@ export default function WindgramMatrix({
         </div>
 
         {/* LEGENDA PROFESSIONALE */}
-        <div className="p-4 bg-slate-50 border-t border-slate-100">
+        <div className="p-4 bg-slate-50 border-t border-slate-200">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-1.5">
