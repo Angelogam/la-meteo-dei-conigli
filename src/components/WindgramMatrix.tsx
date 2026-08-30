@@ -210,6 +210,7 @@ export default function WindgramMatrix({
     return "transparent";
   };
 
+  // Usa i dati reali dal windProfileMap
   const windDataByHourAlt = useMemo(() => {
     const result: Record<number, Record<number, { speed: number; dir: number }>> = {};
     DISPLAY_HOURS.forEach((hr) => {
@@ -302,7 +303,10 @@ export default function WindgramMatrix({
           <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2.5">
               <div className="p-2 rounded-xl bg-sky-100 text-sky-600"><Wind className="w-6 h-6" /></div>
-              {/* Site name and date removed as requested */}
+              <div>
+                <h3 className="font-bold text-lg text-slate-900">{siteName}</h3>
+                <p className="text-xs text-slate-500">{headerDate}</p>
+              </div>
             </div>
             <div className="flex items-center gap-1.5 bg-sky-100/70 border border-sky-200/80 px-3 py-1.5 rounded-full text-xs font-semibold text-sky-900">
               <Mountain className="w-3.5 h-3.5 text-amber-600" />
@@ -360,7 +364,7 @@ export default function WindgramMatrix({
                           key={`cell-${alt}-${hr}`}
                           onClick={() => onHourSelect?.(hr)}
                           style={{ backgroundColor: bgColor }}
-                          className={`py-1.5 px-1 border-r border-slate-200/60 cursor-pointer transition-colors relative ${
+                          className={`py-1.5 px-1 border-r border-slate-200 cursor-pointer transition-colors relative ${
                             isSelectedCol ? "ring-1 ring-sky-400/90" : "hover:brightness-95"
                           }`}
                         >

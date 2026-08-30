@@ -1,20 +1,20 @@
 "use client";
 
+import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "@/pages/Index";
-import NotFound from "@/pages/NotFound";
-import ApiTestRunner from "./pages/ApiTestRunner";
+import { WindgramProvider } from "@/context/WindgramContext";
 
-const App = () => {
+function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/test-api" element={<ApiTestRunner />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+    <WindgramProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+        </Routes>
+      </BrowserRouter>
+    </WindgramProvider>
   );
-};
+}
 
 export default App;
