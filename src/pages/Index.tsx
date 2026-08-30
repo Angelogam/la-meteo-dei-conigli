@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useMemo } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -21,10 +23,12 @@ import { DECOLLI } from "@/data/decolli";
 import { getStabilityIndex } from "@/utils/weatherHelpers";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
 import { Activity, Wind } from "lucide-react";
-import { GroqValidationProvider, useGroqValidationContext } from "@/context/GroqValidationContext";
 
-function IndexContent() {
-  const { validateAll, loading: groqLoading } = useGroqValidationContext();
+export default function Index() {
+  useEffect(() => {
+    avviaVerificaContinua(60000);
+  }, []);
+
   const {
     selectedId,
     setSelectedId,
@@ -47,10 +51,10 @@ function IndexContent() {
     loadWeather,
     activeModel,
     currentCape,
-    allHourlyData,
   } = useWeatherData();
 
   const { mergedDecolli, loading: aggressiveLoading, lastUpdate: aggressiveLastUpdate } = useThreeSourceWeather();
+
   const { tempoTrascorso } = useMeteoCompleto(
     site?.lat ?? DECOLLI[0].lat,
     site?.lon ?? DECOLLI[0].lon,
@@ -92,12 +96,6 @@ function IndexContent() {
   }, [selectedDay]);
 
   const hasData = Boolean(site && currentData && dayData.length > 0);
-
-  useEffect(() => {
-    if (site && allHourlyData && Object.keys(allHourlyData).length > 0) {
-      validateAll(allHourlyData);
-    }
-  }, [allHourlyData, site, validateAll]);
 
   if (isLoading) {
     return (
@@ -167,6 +165,7 @@ function IndexContent() {
                   nomeDecollo={site.site_name}
                 />
 
+                {/* Card unificata: Windgram con stato condiviso */}
                 <div className="bg-slate-800/30 border border-emerald-500/30 rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -190,6 +189,7 @@ function IndexContent() {
                   />
                 </div>
 
+                {/* SkewTDiagram — aggiornato al giorno di previsione selezionato */}
                 <SkewTDiagram
                   latitude={site.lat}
                   longitude={site.lon}
@@ -264,17 +264,5 @@ function IndexContent() {
       <Footer />
       <DiagnosticaPanel />
     </div>
-  );
-}
-
-export default function Index() {
-  useEffect(() => {
-    avviaVerificaContinua(60000);
-  }, []);
-
-  return (
-    <GroqValidationProvider>
-      <IndexContent />
-    </GroqValidationProvider>
   );
 }

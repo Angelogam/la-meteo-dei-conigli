@@ -10,14 +10,14 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { HourData } from "@/types/meteo";
-import { useGroqValidationContext } from "@/context/GroqValidationContext";
-import GroqBadge from "@/components/GroqBadge";
 
 interface SiteHeaderProps {
+  // Campi statici protetti dal dataset locale
   site_name: string;
   location_name: string;
   orientation: string;
   elevation_m: number;
+  // Dati meteo dinamici
   currentData: HourData | null;
 }
 
@@ -55,9 +55,6 @@ export default function SiteHeader({
   elevation_m,
   currentData,
 }: SiteHeaderProps) {
-  const { getValidation } = useGroqValidationContext();
-  const validation = getValidation(site_name?.toLowerCase().replace(/\s+/g, "-") || "");
-  
   const weatherCode = currentData?.weatherCode ?? 0;
   const label = getWeatherLabel(weatherCode);
   const isOvercast = weatherCode >= 20 && weatherCode < 61;
@@ -127,11 +124,6 @@ export default function SiteHeader({
           <div className="text-xs text-slate-300 font-bold whitespace-nowrap">
             {label}
           </div>
-          {validation && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <GroqBadge result={validation} />
-            </div>
-          )}
         </div>
       )}
     </div>

@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import type { HourData } from "@/types/meteo";
 import { Mountain, Wind } from "lucide-react";
-import { useWindgramContext } from "@/context/WindgramContext";
+import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
 
 interface WindgramMatrixProps {
   dayData: HourData[];
@@ -51,38 +51,6 @@ function CloudIcon({ cloudCover }: { cloudCover: number }) {
   );
 }
 
-function interpolateWindAtAltitude(levels: any[] | undefined, targetAlt: number): { speed: number; dir: number } | null {
-  if (!levels || levels.length === 0) return null;
-  if (levels.length === 1) {
-    return { speed: Math.round(levels[0].speed), dir: Math.round(levels[0].dir) };
-  }
-
-  const sorted = [...levels].sort((a, b) => a.alt - b.alt);
-
-  if (targetAlt <= sorted[0].alt) {
-    return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
-  }
-  if (targetAlt >= sorted[sorted.length - 1].alt) {
-    return null;
-  }
-
-  for (let i = 0; i < sorted.length - 1; i++) {
-    if (sorted[i].alt <= targetAlt && sorted[i + 1].alt >= targetAlt) {
-      const lower = sorted[i];
-      const upper = sorted[i + 1];
-      const ratio = (targetAlt - lower.alt) / (upper.alt - lower.alt);
-      const speed = lower.speed + ratio * (upper.speed - lower.speed);
-      let diffDir = upper.dir - lower.dir;
-      if (diffDir > 180) diffDir -= 360;
-      if (diffDir < -180) diffDir += 360;
-      let dir = lower.dir + diffDir * ratio;
-      dir = ((dir % 360) + 360) % 360;
-      return { speed: Math.round(speed), dir: Math.round(dir) };
-    }
-  }
-  return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
-}
-
 export default function WindgramMatrix({
   dayData,
   siteName,
@@ -94,15 +62,13 @@ export default function WindgramMatrix({
   lat = 44.2587,
   lon = 7.7943,
 }: WindgramMatrixProps) {
-  // Use shared windgram context for real wind data
-  const { windData: windProfileMap, loading: profileLoading, error: profileError, refreshWindData } = useWindgramContext();
-
-  // Refresh data when lat/lon/altitude/selectedDay change
-  React.useEffect(() => {
-    if (lat && lon && altitude !== undefined) {
-      refreshWindData(lat, lon, altitude, selectedDay);
-    }
-  }, [lat, lon, altitude, selectedDay, refreshWindData]);
+  // HOOKS FIRST - must be called unconditionally at top level
+  const { data: windProfileMap, loading: profileLoading, error: profileError, interpolateAtAltitude } = useMultiHourWindProfile({
+    lat,
+    lon,
+    siteAlt: altitude,
+    selectedDay,
+  });
 
   const hourlyMap = useMemo(() => {
     const map = new Map<number, HourData>();
@@ -116,7 +82,6 @@ export default function WindgramMatrix({
   }, [dayData]);
 
   const hasRealAltitudeData = useMemo(() => {
-    if (!windProfileMap) return false;
     for (const hourData of windProfileMap.values()) {
       if (hourData.levels.some(l => l.alt >= 1000 && l.alt <= 3000)) return true;
     }
@@ -124,7 +89,6 @@ export default function WindgramMatrix({
   }, [windProfileMap]);
 
   const hasRealPressureData = useMemo(() => {
-    if (!windProfileMap) return false;
     for (const hourData of windProfileMap.values()) {
       if (hourData.levels.some(l => l.hpa !== "10m" && l.hpa !== "80m" && l.hpa !== "120m" && l.hpa !== "180m")) return true;
     }
@@ -216,15 +180,14 @@ export default function WindgramMatrix({
       result[hr] = {};
       activeAltitudes.forEach((alt) => {
         if (alt > 4000) return;
-        const hourData = windProfileMap?.get(hr);
-        const interp = interpolateWindAtAltitude(hourData?.levels, alt);
+        const interp = interpolateAtAltitude(hr, alt);
         if (interp) {
           result[hr][alt] = { speed: Math.round(interp.speed), dir: Math.round(interp.dir) };
         }
       });
     });
     return result;
-  }, [activeAltitudes, altitude, windProfileMap]);
+  }, [activeAltitudes, altitude, windProfileMap, interpolateAtAltitude]);
 
   // Cloud base row: la nuvola è posizionata ESATTAMENTE alla riga corrispondente alla cloudBase
   const cloudBaseRow = useMemo(() => {
@@ -263,7 +226,7 @@ export default function WindgramMatrix({
     const d = new Date();
     d.setDate(d.getDate() + selectedDay);
     const giorni = ["DOMENICA","LUNEDÌ","MARTEDÌ","MERCOLEDÌ","GIOVEDÌ","VENERDÌ","SABATO"];
-    const mesi = ["GEN","FEB","MAR","APR","MAG","GIU","LUG","AGO","SET","OTT","NOV","DIC"];
+    const mesi = ["GENNAIO","FEBBRAIO","MARZO","APRILE","MAGGIO","GIUGNO","LUGLIO","AGOSTO","SETTEMBRE","OTTOBRE","NOVEMBRE","DICEMBRE"];
     return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
   })();
 
@@ -302,7 +265,12 @@ export default function WindgramMatrix({
           <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2.5">
               <div className="p-2 rounded-xl bg-sky-100 text-sky-600"><Wind className="w-6 h-6" /></div>
-              {/* Site name and date removed as requested */}
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
+                  Windgram &mdash; <span className="text-sky-600">{siteName}</span>
+                </h3>
+                <p className="text-sm text-sky-700 font-semibold mt-0.5">{headerDate}</p>
+              </div>
             </div>
             <div className="flex items-center gap-1.5 bg-sky-100/70 border border-sky-200/80 px-3 py-1.5 rounded-full text-xs font-semibold text-sky-900">
               <Mountain className="w-3.5 h-3.5 text-amber-600" />
@@ -386,7 +354,7 @@ export default function WindgramMatrix({
         </div>
 
         {/* LEGENDA PROFESSIONALE */}
-        <div className="p-4 bg-slate-50 border-t border-slate-200">
+        <div className="p-4 bg-slate-50 border-t border-slate-100">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-1.5">
@@ -446,6 +414,10 @@ export default function WindgramMatrix({
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#991b1b" }} />
                 <span className="text-[10px] text-slate-600">43-58</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#86198f" }} />
+                <span className="text-[10px] text-slate-600">≥59</span>
               </div>
             </div>
           </div>

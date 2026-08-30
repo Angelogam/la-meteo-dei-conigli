@@ -68,6 +68,15 @@ const STABILITY_SCALE = [
   { val: 1.20, color: "#c92e1e" },  // rosso scuro
 ];
 
+/** Restituisce i giorni da aggiungere oggi per raggiungere il prossimo sabato */
+function daysUntilNextSaturday(): number {
+  const today = new Date();
+  const day = today.getDay(); // 0=dom, 6=sab
+  let days = (6 - day + 7) % 7;
+  if (days === 0) days = 7; // se oggi è sabato, prendi il prossimo
+  return days;
+}
+
 function pToY(p: number): number {
   const logP = Math.log(p);
   return M.top + PH * (logP - Math.log(P_TOP)) / (Math.log(P_BOTTOM) - Math.log(P_TOP));
@@ -149,25 +158,25 @@ function getStabilityColor(deltaT: number): string {
 
 export default function SkewTDiagram({
   latitude, longitude, siteAltitude, siteName,
-  selectedHour = 12, selectedDay = 0
+  selectedHour = 12, selectedDay = daysUntilNextSaturday()
 }: SkewTDiagramProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // FIX: Calcola la data corretta sommando selectedDay a OGGI
-  // selectedDay=0 significa oggi, 1 significa domani, -1 ieri, ecc.
   const dateObj = useMemo(() => {
     const d = new Date();
-    const targetDay = d.getDate() + (selectedDay || 0);
-    d.setDate(targetDay);
+    d.setDate(d.getDate() + selectedDay);
     return d;
   }, [selectedDay]);
 
   const dateStr = useMemo(() => dateObj.toISOString().split("T")[0], [dateObj]);
 
-  // Rimosso: formattedDateTitle since user wants to eliminate the date display text
-  // The date calculation is still maintained internally but not displayed in the header
+  const formattedDateTitle = useMemo(() => {
+    const days = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
+    const months = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
+    return `${days[dateObj.getDay()]} ${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
+  }, [dateObj]);
 
   useEffect(() => {
     let isMounted = true;
@@ -363,11 +372,14 @@ export default function SkewTDiagram({
 
   return (
     <div className="w-full overflow-x-auto">
-      {/* Titolo Principale in Alto - SOLO nome sito, senza data */}
+      {/* Titolo Principale in Alto */}
       <div className="text-center pb-2">
-        <h2 className="text-xl sm:text-2xl tracking-tight">
-          {siteName}
+        <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight lowercase">
+          {siteName.toLowerCase()} &middot; {formattedDateTitle.toLowerCase()}
         </h2>
+        <p className="text-[11px] sm:text-xs text-slate-500 font-mono tracking-wide mt-0.5">
+          plotted {dateStr} 00:00 UTC &middot; model ground {Math.round(siteAltitude + 5)} m &middot; SRTM {Math.round(siteAltitude)} m
+        </p>
       </div>
     </div>
   );
