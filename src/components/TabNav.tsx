@@ -8,7 +8,7 @@ import {
   BrainCircuit,
 } from "lucide-react";
 
-type Tab = "meteo" | "venti" | "termiche" | "analisi";
+export type Tab = "meteo" | "venti" | "termiche" | "analisi";
 
 interface TabNavProps {
   activeTab: Tab;

@@ -6,7 +6,7 @@ import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import WeatherDashboard from "@/components/WeatherDashboard";
-import TabNav from "@/components/TabNav";
+import TabNav, { Tab } from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
