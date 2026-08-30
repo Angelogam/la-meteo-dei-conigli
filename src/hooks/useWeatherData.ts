@@ -50,26 +50,26 @@ export function useWeatherData() {
         decollo.elevation_m
       );
 
-      if (data && data.hourly && data.hourly.time && data.hourly.time.length > 0) {
-        const times: string[] = data.hourly.time;
-        const hourlyData = times.map((t, i) => ({
-          time: t,
-          temperature: data.hourly.temperature_2m?.[i],
-          humidity: data.hourly.relative_humidity_2m?.[i],
-          dewPoint: data.hourly.dew_point_2m?.[i],
-          cloudCover: data.hourly.cloud_cover?.[i],
-          precipitation: data.hourly.precipitation?.[i],
-          windSpeed10m: data.hourly.wind_speed_10m?.[i],
-          windDirection10m: data.hourly.wind_direction_10m?.[i],
-          windSpeed80m: data.hourly.wind_speed_80m?.[i],
-          windDirection80m: data.hourly.wind_direction_80m?.[i],
-          windGusts10m: data.hourly.wind_gusts_10m?.[i],
-          pressure: data.hourly.surface_pressure?.[i],
-          cape: data.hourly.cape?.[i],
-          liftedIndex: data.hourly.lifted_index?.[i],
-          cin: data.hourly.convective_inhibition?.[i],
-          freezingLevel: data.hourly.freezing_level_height?.[i],
-          shortwaveRadiation: data.hourly.shortwave_radiation?.[i],
+      // data.hourly is an array of MeteoHourly objects, not an object with .time
+      if (data && data.hourly && Array.isArray(data.hourly) && data.hourly.length > 0) {
+        const hourlyData = data.hourly.map((h: any, i: number) => ({
+          time: h.time,
+          temperature: h.temperature,
+          humidity: h.humidity,
+          dewPoint: h.dewPoint,
+          cloudCover: h.cloudCover,
+          precipitation: h.precipitation,
+          windSpeed10m: h.windSpeed,
+          windDirection10m: h.windDir,
+          windSpeed80m: h.windSpeed80m,
+          windDirection80m: h.windDirection80m,
+          windGusts10m: h.windGusts,
+          pressure: h.pressure,
+          cape: h.cape,
+          liftedIndex: h.liftedIndex,
+          cin: h.cin,
+          freezingLevel: h.freezingLevel,
+          shortwaveRadiation: h.shortwaveRadiation,
         }));
 
         setAllHourlyData({ 0: hourlyData });
