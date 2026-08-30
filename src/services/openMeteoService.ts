@@ -400,7 +400,6 @@ export const weatherService = {
         temp80m: json.hourly.temperature_80m?.[i],
         temp120m: json.hourly.temperature_120m?.[i],
         shortwaveRadiation: json.hourly.shortwave_radiation?.[i] ?? 0,
-        feelsLike: json.hourly.apparent_temperature?.[i] ?? t,
         apparentTemp: json.hourly.apparent_temperature?.[i] ?? t,
         precipitationProbability: json.hourly.precipitation_probability?.[i] ?? 0,
         windSpeed925: json.hourly.wind_speed_925hPa?.[i],

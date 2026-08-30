@@ -52,17 +52,17 @@ export function useWeatherData() {
         decollo.elevation_m
       );
 
-      // data.hourly is an array of MeteoHourly objects, not an object with .time
-      if (data && data.hourly && Array.isArray(data.hourly) && data.hourly.length > 0) {
-        const hourlyData = data.hourly.map((h: any, i: number) => ({
+      // data is already an array of hourly objects from fetchPrevisioniGiornaliere
+      if (data && Array.isArray(data) && data.length > 0) {
+        const hourlyData = data.map((h: any, i: number) => ({
           time: h.time,
           temperature: h.temperature,
           humidity: h.humidity,
           dewPoint: h.dewPoint,
           cloudCover: h.cloudCover,
           precipitation: h.precipitation,
-          windSpeed10m: h.windSpeed,
-          windDirection10m: h.windDir,
+          windSpeed10m: h.windSpeed10m,
+          windDirection10m: h.windDirection10m,
           windSpeed80m: h.windSpeed80m,
           windDirection80m: h.windDirection80m,
           windGusts10m: h.windGusts,
