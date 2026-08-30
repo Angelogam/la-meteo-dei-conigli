@@ -2,63 +2,63 @@ import axios from "axios";
 
 export interface OpenMeteoHourly {
   time: string[];
-  temperature: number[];
-  humidity: number[];
-  dewPoint: number[];
-  cloudCover: number[];
+  temperature_2m: number[];
+  relative_humidity_2m: number[];
+  dew_point_2m: number[];
+  cloud_cover: number[];
   precipitation: number[];
-  windSpeed: number[];
-  windDir: number[];
-  windSpeed80m?: number[];
-  windDirection80m?: number[];
-  windSpeed120m?: number[];
-  windDirection120m?: number[];
-  windSpeed180m?: number[];
-  windDirection180m?: number[];
-  windSpeed240m?: number[];
-  windDirection240m?: number[];
-  windSpeed300m?: number[];
-  windDirection300m?: number[];
-  windSpeed400m?: number[];
-  windDirection400m?: number[];
-  windSpeed500m?: number[];
-  windDirection500m?: number[];
-  windSpeed600m?: number[];
-  windDirection600m?: number[];
-  windSpeed700m?: number[];
-  windDirection700m?: number[];
-  windSpeed800m?: number[];
-  windDirection800m?: number[];
-  windSpeed900m?: number[];
-  windDirection900m?: number[];
-  windSpeed1000m?: number[];
-  windDirection1000m?: number[];
-  windSpeed1200m?: number[];
-  windDirection1200m?: number[];
-  windSpeed1400m?: number[];
-  windDirection1400m?: number[];
-  windSpeed1600m?: number[];
-  windDirection1600m?: number[];
-  windSpeed1800m?: number[];
-  windDirection1800m?: number[];
-  windSpeed2000m?: number[];
-  windDirection2000m?: number[];
-  windSpeed2500m?: number[];
-  windDirection2500m?: number[];
-  windSpeed3000m?: number[];
-  windDirection3000m?: number[];
-  windSpeed3500m?: number[];
-  windDirection3500m?: number[];
-  windSpeed4000m?: number[];
-  windDirection4000m?: number[];
-  windGusts?: number[];
-  pressure: number[];
+  wind_speed_10m: number[];
+  wind_direction_10m: number[];
+  wind_speed_80m?: number[];
+  wind_direction_80m?: number[];
+  wind_speed_120m?: number[];
+  wind_direction_120m?: number[];
+  wind_speed_180m?: number[];
+  wind_direction_180m?: number[];
+  wind_speed_240m?: number[];
+  wind_direction_240m?: number[];
+  wind_speed_300m?: number[];
+  wind_direction_300m?: number[];
+  wind_speed_400m?: number[];
+  wind_direction_400m?: number[];
+  wind_speed_500m?: number[];
+  wind_direction_500m?: number[];
+  wind_speed_600m?: number[];
+  wind_direction_600m?: number[];
+  wind_speed_700m?: number[];
+  wind_direction_700m?: number[];
+  wind_speed_800m?: number[];
+  wind_direction_800m?: number[];
+  wind_speed_900m?: number[];
+  wind_direction_900m?: number[];
+  wind_speed_1000m?: number[];
+  wind_direction_1000m?: number[];
+  wind_speed_1200m?: number[];
+  wind_direction_1200m?: number[];
+  wind_speed_1400m?: number[];
+  wind_direction_1400m?: number[];
+  wind_speed_1600m?: number[];
+  wind_direction_1600m?: number[];
+  wind_speed_1800m?: number[];
+  wind_direction_1800m?: number[];
+  wind_speed_2000m?: number[];
+  wind_direction_2000m?: number[];
+  wind_speed_2500m?: number[];
+  wind_direction_2500m?: number[];
+  wind_speed_3000m?: number[];
+  wind_direction_3000m?: number[];
+  wind_speed_3500m?: number[];
+  wind_direction_3500m?: number[];
+  wind_speed_4000m?: number[];
+  wind_direction_4000m?: number[];
+  wind_gusts_10m?: number[];
+  pressure_msl: number[];
   cape?: number[];
-  liftedIndex?: number[];
-  cin?: number[];
-  freezingLevel?: number[];
-  shortwaveRadiation?: number[];
-  weatherCode?: number[];
+  lifted_index?: number[];
+  convective_inhibition?: number[];
+  freezing_level_height?: number[];
+  shortwave_radiation?: number[];
+  weather_code?: number[];
 }
 
 export interface OpenMeteoResponse {
@@ -531,71 +531,71 @@ export async function fetchWindProfile(
       
       const levels: WindProfileLevel[] = [];
       
-      if (data.hourly.windSpeed && data.hourly.windSpeed[i] != null) {
-        levels.push({ alt: 10, speed: data.hourly.windSpeed[i], dir: data.hourly.windDir?.[i] ?? 0, hpa: "10m" });
+      if (data.hourly.wind_speed_10m && data.hourly.wind_speed_10m[i] != null) {
+        levels.push({ alt: 10, speed: data.hourly.wind_speed_10m[i], dir: data.hourly.wind_direction_10m?.[i] ?? 0, hpa: "10m" });
       }
-      if (data.hourly.windSpeed80m && data.hourly.windSpeed80m[i] != null) {
-        levels.push({ alt: 80, speed: data.hourly.windSpeed80m[i], dir: data.hourly.windDirection80m?.[i] ?? 0, hpa: "80m" });
+      if (data.hourly.wind_speed_80m && data.hourly.wind_speed_80m[i] != null) {
+        levels.push({ alt: 80, speed: data.hourly.wind_speed_80m[i], dir: data.hourly.wind_direction_80m?.[i] ?? 0, hpa: "80m" });
       }
-      if (data.hourly.windSpeed120m && data.hourly.windSpeed120m[i] != null) {
-        levels.push({ alt: 120, speed: data.hourly.windSpeed120m[i], dir: data.hourly.windDirection120m?.[i] ?? 0, hpa: "120m" });
+      if (data.hourly.wind_speed_120m && data.hourly.wind_speed_120m[i] != null) {
+        levels.push({ alt: 120, speed: data.hourly.wind_speed_120m[i], dir: data.hourly.wind_direction_120m?.[i] ?? 0, hpa: "120m" });
       }
-      if (data.hourly.windSpeed180m && data.hourly.windSpeed180m[i] != null) {
-        levels.push({ alt: 180, speed: data.hourly.windSpeed180m[i], dir: data.hourly.windDirection180m?.[i] ?? 0, hpa: "180m" });
+      if (data.hourly.wind_speed_180m && data.hourly.wind_speed_180m[i] != null) {
+        levels.push({ alt: 180, speed: data.hourly.wind_speed_180m[i], dir: data.hourly.wind_direction_180m?.[i] ?? 0, hpa: "180m" });
       }
-      if (data.hourly.windSpeed240m && data.hourly.windSpeed240m[i] != null) {
-        levels.push({ alt: 240, speed: data.hourly.windSpeed240m[i], dir: data.hourly.windDirection240m?.[i] ?? 0, hpa: "240m" });
+      if (data.hourly.wind_speed_240m && data.hourly.wind_speed_240m[i] != null) {
+        levels.push({ alt: 240, speed: data.hourly.wind_speed_240m[i], dir: data.hourly.wind_direction_240m?.[i] ?? 0, hpa: "240m" });
       }
-      if (data.hourly.windSpeed300m && data.hourly.windSpeed300m[i] != null) {
-        levels.push({ alt: 300, speed: data.hourly.windSpeed300m[i], dir: data.hourly.windDirection300m?.[i] ?? 0, hpa: "300m" });
+      if (data.hourly.wind_speed_300m && data.hourly.wind_speed_300m[i] != null) {
+        levels.push({ alt: 300, speed: data.hourly.wind_speed_300m[i], dir: data.hourly.wind_direction_300m?.[i] ?? 0, hpa: "300m" });
       }
-      if (data.hourly.windSpeed400m && data.hourly.windSpeed400m[i] != null) {
-        levels.push({ alt: 400, speed: data.hourly.windSpeed400m[i], dir: data.hourly.windDirection400m?.[i] ?? 0, hpa: "400m" });
+      if (data.hourly.wind_speed_400m && data.hourly.wind_speed_400m[i] != null) {
+        levels.push({ alt: 400, speed: data.hourly.wind_speed_400m[i], dir: data.hourly.wind_direction_400m?.[i] ?? 0, hpa: "400m" });
       }
-      if (data.hourly.windSpeed500m && data.hourly.windSpeed500m[i] != null) {
-        levels.push({ alt: 500, speed: data.hourly.windSpeed500m[i], dir: data.hourly.windDirection500m?.[i] ?? 0, hpa: "500m" });
+      if (data.hourly.wind_speed_500m && data.hourly.wind_speed_500m[i] != null) {
+        levels.push({ alt: 500, speed: data.hourly.wind_speed_500m[i], dir: data.hourly.wind_direction_500m?.[i] ?? 0, hpa: "500m" });
       }
-      if (data.hourly.windSpeed600m && data.hourly.windSpeed600m[i] != null) {
-        levels.push({ alt: 600, speed: data.hourly.windSpeed600m[i], dir: data.hourly.windDirection600m?.[i] ?? 0, hpa: "600m" });
+      if (data.hourly.wind_speed_600m && data.hourly.wind_speed_600m[i] != null) {
+        levels.push({ alt: 600, speed: data.hourly.wind_speed_600m[i], dir: data.hourly.wind_direction_600m?.[i] ?? 0, hpa: "600m" });
       }
-      if (data.hourly.windSpeed700m && data.hourly.windSpeed700m[i] != null) {
-        levels.push({ alt: 700, speed: data.hourly.windSpeed700m[i], dir: data.hourly.windDirection700m?.[i] ?? 0, hpa: "700m" });
+      if (data.hourly.wind_speed_700m && data.hourly.wind_speed_700m[i] != null) {
+        levels.push({ alt: 700, speed: data.hourly.wind_speed_700m[i], dir: data.hourly.wind_direction_700m?.[i] ?? 0, hpa: "700m" });
       }
-      if (data.hourly.windSpeed800m && data.hourly.windSpeed800m[i] != null) {
-        levels.push({ alt: 800, speed: data.hourly.windSpeed800m[i], dir: data.hourly.windDirection800m?.[i] ?? 0, hpa: "800m" });
+      if (data.hourly.wind_speed_800m && data.hourly.wind_speed_800m[i] != null) {
+        levels.push({ alt: 800, speed: data.hourly.wind_speed_800m[i], dir: data.hourly.wind_direction_800m?.[i] ?? 0, hpa: "800m" });
       }
-      if (data.hourly.windSpeed900m && data.hourly.windSpeed900m[i] != null) {
-        levels.push({ alt: 900, speed: data.hourly.windSpeed900m[i], dir: data.hourly.windDirection900m?.[i] ?? 0, hpa: "900m" });
+      if (data.hourly.wind_speed_900m && data.hourly.wind_speed_900m[i] != null) {
+        levels.push({ alt: 900, speed: data.hourly.wind_speed_900m[i], dir: data.hourly.wind_direction_900m?.[i] ?? 0, hpa: "900m" });
       }
-      if (data.hourly.windSpeed1000m && data.hourly.windSpeed1000m[i] != null) {
-        levels.push({ alt: 1000, speed: data.hourly.windSpeed1000m[i], dir: data.hourly.windDirection1000m?.[i] ?? 0, hpa: "1000m" });
+      if (data.hourly.wind_speed_1000m && data.hourly.wind_speed_1000m[i] != null) {
+        levels.push({ alt: 1000, speed: data.hourly.wind_speed_1000m[i], dir: data.hourly.wind_direction_1000m?.[i] ?? 0, hpa: "1000m" });
       }
-      if (data.hourly.windSpeed1200m && data.hourly.windSpeed1200m[i] != null) {
-        levels.push({ alt: 1200, speed: data.hourly.windSpeed1200m[i], dir: data.hourly.windDirection1200m?.[i] ?? 0, hpa: "1200m" });
+      if (data.hourly.wind_speed_1200m && data.hourly.wind_speed_1200m[i] != null) {
+        levels.push({ alt: 1200, speed: data.hourly.wind_speed_1200m[i], dir: data.hourly.wind_direction_1200m?.[i] ?? 0, hpa: "1200m" });
       }
-      if (data.hourly.windSpeed1400m && data.hourly.windSpeed1400m[i] != null) {
-        levels.push({ alt: 1400, speed: data.hourly.windSpeed1400m[i], dir: data.hourly.windDirection1400m?.[i] ?? 0, hpa: "1400m" });
+      if (data.hourly.wind_speed_1400m && data.hourly.wind_speed_1400m[i] != null) {
+        levels.push({ alt: 1400, speed: data.hourly.wind_speed_1400m[i], dir: data.hourly.wind_direction_1400m?.[i] ?? 0, hpa: "1400m" });
       }
-      if (data.hourly.windSpeed1600m && data.hourly.windSpeed1600m[i] != null) {
-        levels.push({ alt: 1600, speed: data.hourly.windSpeed1600m[i], dir: data.hourly.windDirection1600m?.[i] ?? 0, hpa: "1600m" });
+      if (data.hourly.wind_speed_1600m && data.hourly.wind_speed_1600m[i] != null) {
+        levels.push({ alt: 1600, speed: data.hourly.wind_speed_1600m[i], dir: data.hourly.wind_direction_1600m?.[i] ?? 0, hpa: "1600m" });
       }
-      if (data.hourly.windSpeed1800m && data.hourly.windSpeed1800m[i] != null) {
-        levels.push({ alt: 1800, speed: data.hourly.windSpeed1800m[i], dir: data.hourly.windDirection1800m?.[i] ?? 0, hpa: "1800m" });
+      if (data.hourly.wind_speed_1800m && data.hourly.wind_speed_1800m[i] != null) {
+        levels.push({ alt: 1800, speed: data.hourly.wind_speed_1800m[i], dir: data.hourly.wind_direction_1800m?.[i] ?? 0, hpa: "1800m" });
       }
-      if (data.hourly.windSpeed2000m && data.hourly.windSpeed2000m[i] != null) {
-        levels.push({ alt: 2000, speed: data.hourly.windSpeed2000m[i], dir: data.hourly.windDirection2000m?.[i] ?? 0, hpa: "2000m" });
+      if (data.hourly.wind_speed_2000m && data.hourly.wind_speed_2000m[i] != null) {
+        levels.push({ alt: 2000, speed: data.hourly.wind_speed_2000m[i], dir: data.hourly.wind_direction_2000m?.[i] ?? 0, hpa: "2000m" });
       }
-      if (data.hourly.windSpeed2500m && data.hourly.windSpeed2500m[i] != null) {
-        levels.push({ alt: 2500, speed: data.hourly.windSpeed2500m[i], dir: data.hourly.windDirection2500m?.[i] ?? 0, hpa: "2500m" });
+      if (data.hourly.wind_speed_2500m && data.hourly.wind_speed_2500m[i] != null) {
+        levels.push({ alt: 2500, speed: data.hourly.wind_speed_2500m[i], dir: data.hourly.wind_direction_2500m?.[i] ?? 0, hpa: "2500m" });
       }
-      if (data.hourly.windSpeed3000m && data.hourly.windSpeed3000m[i] != null) {
-        levels.push({ alt: 3000, speed: data.hourly.windSpeed3000m[i], dir: data.hourly.windDirection3000m?.[i] ?? 0, hpa: "3000m" });
+      if (data.hourly.wind_speed_3000m && data.hourly.wind_speed_3000m[i] != null) {
+        levels.push({ alt: 3000, speed: data.hourly.wind_speed_3000m[i], dir: data.hourly.wind_direction_3000m?.[i] ?? 0, hpa: "3000m" });
       }
-      if (data.hourly.windSpeed3500m && data.hourly.windSpeed3500m[i] != null) {
-        levels.push({ alt: 3500, speed: data.hourly.windSpeed3500m[i], dir: data.hourly.windDirection3500m?.[i] ?? 0, hpa: "3500m" });
+      if (data.hourly.wind_speed_3500m && data.hourly.wind_speed_3500m[i] != null) {
+        levels.push({ alt: 3500, speed: data.hourly.wind_speed_3500m[i], dir: data.hourly.wind_direction_3500m?.[i] ?? 0, hpa: "3500m" });
       }
-      if (data.hourly.windSpeed4000m && data.hourly.windSpeed4000m[i] != null) {
-        levels.push({ alt: 4000, speed: data.hourly.windSpeed4000m[i], dir: data.hourly.windDirection4000m?.[i] ?? 0, hpa: "4000m" });
+      if (data.hourly.wind_speed_4000m && data.hourly.wind_speed_4000m[i] != null) {
+        levels.push({ alt: 4000, speed: data.hourly.wind_speed_4000m[i], dir: data.hourly.wind_direction_4000m?.[i] ?? 0, hpa: "4000m" });
       }
       
       if (levels.length > 0) {
