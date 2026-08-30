@@ -239,6 +239,7 @@ export default function Index() {
                     currentData={currentData}
                     dayData={filteredDayData}
                     site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name }}
+                    selectedDay={selectedDay}
                   />
                 )}
                 {activeTab === "analisi" && (
