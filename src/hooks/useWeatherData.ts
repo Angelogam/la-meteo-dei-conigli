@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { fetchPrevisioniGiornaliere } from "@/services/openMeteoService";
 import { DECOLLI } from "@/data/decolli";
 
+export type Tab = "meteo" | "venti" | "termiche" | "analisi";
+
 export function useWeatherData() {
   const [selectedId, setSelectedId] = useState(DECOLLI[0].id);
   const [loading, setLoading] = useState(true);
@@ -14,7 +16,7 @@ export function useWeatherData() {
   const [currentCape, setCurrentCape] = useState<any>(null);
   const [selectedDay, setSelectedDay] = useState(0);
   const [selectedHour, setSelectedHour] = useState(new Date().getHours());
-  const [activeTab, setActiveTab] = useState("meteo");
+  const [activeTab, setActiveTab] = useState<Tab>("meteo");
   const [countdown, setCountdown] = useState(900);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const loadingRef = useRef(false);
