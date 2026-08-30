@@ -16,6 +16,7 @@ export function useWeatherData() {
   const [selectedHour, setSelectedHour] = useState(new Date().getHours());
   const [activeTab, setActiveTab] = useState("meteo");
   const [countdown, setCountdown] = useState(900);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const loadingRef = useRef(false);
   const lastFetchRef = useRef<string>("");
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -37,6 +38,7 @@ export function useWeatherData() {
     } else {
       setLoading(true);
     }
+    setFetchError(null);
 
     try {
       const decollo = DECOLLI.find((d) => d.id === targetId) ?? DECOLLI[0];
@@ -48,8 +50,8 @@ export function useWeatherData() {
         decollo.elevation_m
       );
 
-      if (data && data.hourly) {
-        const times: string[] = data.hourly.time || [];
+      if (data && data.hourly && data.hourly.time && data.hourly.time.length > 0) {
+        const times: string[] = data.hourly.time;
         const hourlyData = times.map((t, i) => ({
           time: t,
           temperature: data.hourly.temperature_2m?.[i],
@@ -83,9 +85,12 @@ export function useWeatherData() {
         setLastUpdate(new Date());
         lastFetchRef.current = cacheKey;
         setCountdown(900);
+      } else {
+        setFetchError("Nessun dato ricevuto da Open-Meteo");
       }
     } catch (err) {
       console.error("[useWeatherData] fetch error:", err);
+      setFetchError(err instanceof Error ? err.message : "Errore di rete");
     } finally {
       loadingRef.current = false;
       setLoading(false);
@@ -201,5 +206,6 @@ export function useWeatherData() {
     setSelectedHour,
     activeTab,
     setActiveTab,
+    fetchError,
   };
 }

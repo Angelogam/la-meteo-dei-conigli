@@ -90,7 +90,6 @@ export interface MeteoHourly {
   directRadiation: number;
   uvIndex: number;
   visibility: number;
-  // Add missing fields for HourData compatibility
   feelsLike: number;
   pressure: number;
   surfacePressure: number;
@@ -114,7 +113,6 @@ export interface MeteoHourly {
   diffuseRadiation?: number;
   directNormalIrradiance?: number;
   terrestrialRadiation?: number;
-  // Missing fields for HourData
   radiation: number;
   cin: number;
 }
@@ -132,7 +130,6 @@ export interface MeteoDaily {
   uvIndexMax: number;
   sunrise: string;
   sunset: string;
-  // Add missing fields for DailyData compatibility
   temperatureMax: number;
   temperatureMin: number;
   temperatureMean: number;
@@ -148,14 +145,13 @@ export interface MeteoDaily {
   weatherDescription?: string;
 }
 
-/** Parsing sicuro temperatura: evita NaN, restituisce null se non valido */
 function safeParseTemp(value: unknown): number | null {
   if (value === null || value === undefined) return null;
   const parsed = parseFloat(String(value));
   return isNaN(parsed) ? null : parsed;
 }
 
-async function fetchWithTimeout(url: string, timeoutMs: number = 8000): Promise<Response> {
+async function fetchWithTimeout(url: string, timeoutMs: number = 10000): Promise<Response> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -219,130 +215,129 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number, altit
     forecast_days: "3",
   });
 
-  try {
-    const res = await fetchWithTimeout(`${OPEN_METEO_BASE}?${params.toString()}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
+  const url = `${OPEN_METEO_BASE}?${params.toString()}`;
+  console.log("[openMeteoService] Fetching:", url.substring(0, 120) + "...");
 
-    // Current
-    const current: MeteoCurrent | null = json.current ? {
-      time: new Date(json.current.time),
-      temperature: safeParseTemp(json.current.temperature_2m),
-      humidity: json.current.relative_humidity_2m ?? 50,
-      dewPoint: safeParseTemp(json.current.dew_point_2m) ?? 0,
-      precipitation: json.current.precipitation ?? 0,
-      weatherCode: json.current.weather_code ?? 0,
-      cloudCover: json.current.cloud_cover ?? 0,
-      windSpeed: json.current.wind_speed_10m ?? 0,
-      windDir: json.current.wind_direction_10m ?? 0,
-      windGusts: json.current.wind_gusts_10m ?? 0,
-      cape: json.current.cape ?? 0,
-      apparentTemp: safeParseTemp(json.current.apparent_temperature) ?? 0,
-    } : null;
+  const res = await fetchWithTimeout(url);
 
-    // Hourly
-    const hourly: MeteoHourly[] = [];
-    const len = json.hourly?.time?.length || 0;
-    for (let i = 0; i < len; i++) {
-      const t = safeParseTemp(json.hourly.temperature_2m[i]);
-      const h = json.hourly.relative_humidity_2m[i] ?? 50;
-      const dew = safeParseTemp(json.hourly.dew_point_2m?.[i]) ?? (t !== null ? t - (100 - h) / 5 : null);
-      
-      hourly.push({
-        time: new Date(json.hourly.time[i]),
-        temperature: t,
-        humidity: h,
-        dewPoint: dew ?? 0,
-        precipitation: json.hourly.precipitation[i] ?? 0,
-        precipitationProbability: json.hourly.precipitation_probability[i] ?? 0,
-        weatherCode: json.hourly.weather_code[i] ?? 0,
-        cloudCover: json.hourly.cloud_cover[i] ?? 0,
-        cloudCoverLow: json.hourly.cloud_cover_low?.[i] ?? 0,
-        cloudCoverMid: json.hourly.cloud_cover_mid?.[i] ?? 0,
-        cloudCoverHigh: json.hourly.cloud_cover_high?.[i] ?? 0,
-        windSpeed: json.hourly.wind_speed_10m[i] ?? 0,
-        windDir: json.hourly.wind_direction_10m[i] ?? 0,
-        windGusts: json.hourly.wind_gusts_10m?.[i] ?? 0,
-        cape: json.hourly.cape?.[i] ?? 0,
-        liftedIndex: json.hourly.lifted_index?.[i] ?? 0,
-        shortwaveRadiation: json.hourly.shortwave_radiation?.[i] ?? 0,
-        directRadiation: json.hourly.direct_radiation?.[i] ?? 0,
-        uvIndex: json.hourly.uv_index?.[i] ?? 0,
-        visibility: json.hourly.visibility?.[i] ?? 10000,
-        // Add missing fields for HourData compatibility
-        feelsLike: t ?? 0,
-        pressure: 1013,
-        surfacePressure: 1013,
-        rain: 0,
-        snowfall: 0,
-        vapourPressureDeficit: 0,
-        isDay: true,
-        freezingLevel: 3000,
-        sunshineDuration: 0,
-        mixingRatio: 0,
-        virtualTemp: 0,
-        windProfile: undefined,
-        temp80m: undefined,
-        temp120m: undefined,
-        apparentTemp: t ?? 0,
-        precipitationProba: 0,
-        evapotranspiration: 0,
-        et0: 0,
-        soilTemp: 0,
-        soilMoisture: 0,
-        diffuseRadiation: 0,
-        directNormalIrradiance: 0,
-        terrestrialRadiation: 0,
-        // Missing fields for HourData
-        radiation: json.hourly.shortwave_radiation?.[i] ?? 0,
-        cin: json.hourly.convective_inhibition?.[i] ?? 0,
-      });
-    }
-
-    // Daily
-    const daily: MeteoDaily[] = [];
-    const dailyLen = json.daily?.time?.length || 0;
-    for (let i = 0; i < dailyLen; i++) {
-      daily.push({
-        date: new Date(json.daily.time[i]),
-        weatherCode: json.daily.weather_code[i] ?? 0,
-        tempMax: safeParseTemp(json.daily.temperature_2m_max[i]),
-        tempMin: safeParseTemp(json.daily.temperature_2m_min[i]),
-        precipitationSum: json.daily.precipitation_sum[i] ?? 0,
-        precipitationProbabilityMax: json.daily.precipitation_probability_max[i] ?? 0,
-        windSpeedMax: json.daily.wind_speed_10m_max[i] ?? 0,
-        windGustsMax: json.daily.wind_gusts_10m_max[i] ?? 0,
-        windDirDominant: json.daily.wind_direction_10m_dominant[i] ?? 0,
-        uvIndexMax: json.daily.uv_index_max[i] ?? 0,
-        sunrise: json.daily.sunrise[i] ?? "",
-        sunset: json.daily.sunset[i] ?? "",
-        // Add missing fields for DailyData compatibility
-        temperatureMax: safeParseTemp(json.daily.temperature_2m_max[i]) ?? 0,
-        temperatureMin: safeParseTemp(json.daily.temperature_2m_min[i]) ?? 0,
-        temperatureMean: 0,
-        apparentTempMax: 0,
-        apparentTempMin: 0,
-        daylightDuration: 0,
-        sunshineDuration: 0,
-        rainSum: 0,
-        snowfallSum: 0,
-        precipitationHours: 0,
-        shortwaveRadiationSum: 0,
-        freezingLevel: undefined,
-        weatherDescription: undefined,
-      });
-    }
-
-    return { hourly, daily, current };
-  } catch {
-    return { hourly: [], daily: [], current: null };
+  if (!res.ok) {
+    throw new Error(`Open-Meteo HTTP ${res.status}: ${res.statusText}`);
   }
+
+  const json = await res.json();
+
+  if (!json.hourly || !json.hourly.time || json.hourly.time.length === 0) {
+    throw new Error("Open-Meteo: risposta senza dati orari");
+  }
+
+  const current: MeteoCurrent | null = json.current ? {
+    time: new Date(json.current.time),
+    temperature: safeParseTemp(json.current.temperature_2m),
+    humidity: json.current.relative_humidity_2m ?? 50,
+    dewPoint: safeParseTemp(json.current.dew_point_2m) ?? 0,
+    precipitation: json.current.precipitation ?? 0,
+    weatherCode: json.current.weather_code ?? 0,
+    cloudCover: json.current.cloud_cover ?? 0,
+    windSpeed: json.current.wind_speed_10m ?? 0,
+    windDir: json.current.wind_direction_10m ?? 0,
+    windGusts: json.current.wind_gusts_10m ?? 0,
+    cape: json.current.cape ?? 0,
+    apparentTemp: safeParseTemp(json.current.apparent_temperature) ?? 0,
+  } : null;
+
+  const hourly: MeteoHourly[] = [];
+  const len = json.hourly.time.length;
+  for (let i = 0; i < len; i++) {
+    const t = safeParseTemp(json.hourly.temperature_2m[i]);
+    const h = json.hourly.relative_humidity_2m[i] ?? 50;
+    const dew = safeParseTemp(json.hourly.dew_point_2m?.[i]) ?? (t !== null ? t - (100 - h) / 5 : null);
+
+    hourly.push({
+      time: new Date(json.hourly.time[i]),
+      temperature: t,
+      humidity: h,
+      dewPoint: dew ?? 0,
+      precipitation: json.hourly.precipitation[i] ?? 0,
+      precipitationProbability: json.hourly.precipitation_probability[i] ?? 0,
+      weatherCode: json.hourly.weather_code[i] ?? 0,
+      cloudCover: json.hourly.cloud_cover[i] ?? 0,
+      cloudCoverLow: json.hourly.cloud_cover_low?.[i] ?? 0,
+      cloudCoverMid: json.hourly.cloud_cover_mid?.[i] ?? 0,
+      cloudCoverHigh: json.hourly.cloud_cover_high?.[i] ?? 0,
+      windSpeed: json.hourly.wind_speed_10m[i] ?? 0,
+      windDir: json.hourly.wind_direction_10m[i] ?? 0,
+      windGusts: json.hourly.wind_gusts_10m?.[i] ?? 0,
+      cape: json.hourly.cape?.[i] ?? 0,
+      liftedIndex: json.hourly.lifted_index?.[i] ?? 0,
+      shortwaveRadiation: json.hourly.shortwave_radiation?.[i] ?? 0,
+      directRadiation: json.hourly.direct_radiation?.[i] ?? 0,
+      uvIndex: json.hourly.uv_index?.[i] ?? 0,
+      visibility: json.hourly.visibility?.[i] ?? 10000,
+      feelsLike: t ?? 0,
+      pressure: 1013,
+      surfacePressure: 1013,
+      rain: 0,
+      snowfall: 0,
+      vapourPressureDeficit: 0,
+      isDay: true,
+      freezingLevel: 3000,
+      sunshineDuration: 0,
+      mixingRatio: 0,
+      virtualTemp: 0,
+      windProfile: undefined,
+      temp80m: undefined,
+      temp120m: undefined,
+      apparentTemp: t ?? 0,
+      precipitationProba: 0,
+      evapotranspiration: 0,
+      et0: 0,
+      soilTemp: 0,
+      soilMoisture: 0,
+      diffuseRadiation: 0,
+      directNormalIrradiance: 0,
+      terrestrialRadiation: 0,
+      radiation: json.hourly.shortwave_radiation?.[i] ?? 0,
+      cin: json.hourly.convective_inhibition?.[i] ?? 0,
+    });
+  }
+
+  const daily: MeteoDaily[] = [];
+  const dailyLen = json.daily?.time?.length || 0;
+  for (let i = 0; i < dailyLen; i++) {
+    daily.push({
+      date: new Date(json.daily.time[i]),
+      weatherCode: json.daily.weather_code[i] ?? 0,
+      tempMax: safeParseTemp(json.daily.temperature_2m_max[i]),
+      tempMin: safeParseTemp(json.daily.temperature_2m_min[i]),
+      precipitationSum: json.daily.precipitation_sum[i] ?? 0,
+      precipitationProbabilityMax: json.daily.precipitation_probability_max[i] ?? 0,
+      windSpeedMax: json.daily.wind_speed_10m_max[i] ?? 0,
+      windGustsMax: json.daily.wind_gusts_10m_max[i] ?? 0,
+      windDirDominant: json.daily.wind_direction_10m_dominant[i] ?? 0,
+      uvIndexMax: json.daily.uv_index_max[i] ?? 0,
+      sunrise: json.daily.sunrise[i] ?? "",
+      sunset: json.daily.sunset[i] ?? "",
+      temperatureMax: safeParseTemp(json.daily.temperature_2m_max[i]) ?? 0,
+      temperatureMin: safeParseTemp(json.daily.temperature_2m_min[i]) ?? 0,
+      temperatureMean: 0,
+      apparentTempMax: 0,
+      apparentTempMin: 0,
+      daylightDuration: 0,
+      sunshineDuration: 0,
+      rainSum: 0,
+      snowfallSum: 0,
+      precipitationHours: 0,
+      shortwaveRadiationSum: 0,
+      freezingLevel: undefined,
+      weatherDescription: undefined,
+    });
+  }
+
+  return { hourly, daily, current };
 }
 
-// Export compatibile per import esistenti
 export const weatherService = {
   fetchMeteoCorrente,
   fetchPrevisioniGiornaliere,
-  // Alias for backward compatibility
   fetchCurrent: fetchMeteoCorrente,
 };
