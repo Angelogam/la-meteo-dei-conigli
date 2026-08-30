@@ -28,6 +28,7 @@ interface SkewTDiagramProps {
   siteName: string;
   selectedHour?: number;
   selectedDay?: number;
+  onDateChange?: (date: Date, formatted: string) => void;
 }
 
 const W = 1000;
@@ -55,25 +56,23 @@ const PRESSURE_LEVELS = [
 
 const ALT_TICKS = [6000, 5500, 5000, 4500, 4000, 3500, 3000, 2500, 2000, 1500];
 
-// Scala colori stabilità Alpium (-0.20 -> 1.20)
 const STABILITY_SCALE = [
-  { val: -0.20, color: "#8a5bb8" }, // viola
-  { val: 0.00, color: "#4f7fd9" },  // blu
-  { val: 0.16, color: "#45b3cd" },  // azzurro ciano
-  { val: 0.32, color: "#4ec099" },  // verde acqua
-  { val: 0.48, color: "#8bc953" },  // verde chiaro
-  { val: 0.65, color: "#d8c728" },  // giallo verde
-  { val: 0.82, color: "#eeb319" },  // giallo oro
-  { val: 0.98, color: "#e86c1f" },  // arancione
-  { val: 1.20, color: "#c92e1e" },  // rosso scuro
+  { val: -0.20, color: "#8a5bb8" },
+  { val: 0.00, color: "#4f7fd9" },
+  { val: 0.16, color: "#45b3cd" },
+  { val: 0.32, color: "#4ec099" },
+  { val: 0.48, color: "#8bc953" },
+  { val: 0.65, color: "#d8c728" },
+  { val: 0.82, color: "#eeb319" },
+  { val: 0.98, color: "#e86c1f" },
+  { val: 1.20, color: "#c92e1e" },
 ];
 
-/** Restituisce i giorni da aggiungere oggi per raggiungere il prossimo sabato */
 function daysUntilNextSaturday(): number {
   const today = new Date();
-  const day = today.getDay(); // 0=dom, 6=sab
+  const day = today.getDay();
   let days = (6 - day + 7) % 7;
-  if (days === 0) days = 7; // se oggi è sabato, prendi il prossimo
+  if (days === 0) days = 7;
   return days;
 }
 
@@ -105,7 +104,6 @@ function renderWindBarb(x: number, y: number, speedKmh: number, dirDeg: number):
   let rem = Math.round(knots / 5) * 5;
   let pos = 1.0;
 
-  // Pennacchio 50 nodi
   while (rem >= 50 && pos >= 0.3) {
     const bx = x + pos * (endX - x);
     const by = y + pos * (endY - y);
@@ -116,7 +114,6 @@ function renderWindBarb(x: number, y: number, speedKmh: number, dirDeg: number):
     pos -= 0.28;
   }
 
-  // Alette 10 nodi
   while (rem >= 10 && pos >= 0.2) {
     const bx = x + pos * (endX - x);
     const by = y + pos * (endY - y);
@@ -127,7 +124,6 @@ function renderWindBarb(x: number, y: number, speedKmh: number, dirDeg: number):
     pos -= 0.18;
   }
 
-  // Alette 5 nodi
   if (rem >= 5 && pos >= 0.2) {
     const bx = x + pos * (endX - x);
     const by = y + pos * (endY - y);
@@ -158,7 +154,8 @@ function getStabilityColor(deltaT: number): string {
 
 export default function SkewTDiagram({
   latitude, longitude, siteAltitude, siteName,
-  selectedHour = 12, selectedDay = daysUntilNextSaturday()
+  selectedHour = 12, selectedDay = daysUntilNextSaturday(),
+  onDateChange
 }: SkewTDiagramProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -177,6 +174,20 @@ export default function SkewTDiagram({
     const months = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
     return `${days[dateObj.getDay()]} ${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
   }, [dateObj]);
+
+  const fullDateStr = useMemo(() => dateObj.toLocaleDateString("it-IT", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }), [dateObj]);
+
+  // Notify parent of date change for sync across components
+  useMemo(() => {
+    if (onDateChange) {
+      onDateChange(dateObj, formattedDateTitle);
+    }
+  }, [dateObj, formattedDateTitle, onDateChange]);
 
   useEffect(() => {
     let isMounted = true;
@@ -372,13 +383,17 @@ export default function SkewTDiagram({
 
   return (
     <div className="w-full overflow-x-auto">
-      {/* Titolo Principale in Alto */}
+      {/* Titolo Principale in Alto con data selezionata */}
       <div className="text-center pb-2">
         <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight lowercase">
           {siteName.toLowerCase()} &middot; {formattedDateTitle.toLowerCase()}
         </h2>
         <p className="text-[11px] sm:text-xs text-slate-500 font-mono tracking-wide mt-0.5">
           plotted {dateStr} 00:00 UTC &middot; model ground {Math.round(siteAltitude + 5)} m &middot; SRTM {Math.round(siteAltitude)} m
+        </p>
+        {/* Full date for accessibility/clarity */}
+        <p className="text-[10px] text-slate-600 mt-1" aria-live="polite">
+          {fullDateStr}
         </p>
       </div>
     </div>
