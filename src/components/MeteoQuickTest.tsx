@@ -58,9 +58,8 @@ export default function MeteoQuickTest() {
     for (let i = 0; i < siti.length; i++) {
       const d = siti[i];
       try {
-        const result = await weatherService.fetchCurrent(d.lat, d.lon);
-        if (result.ok && result.data) {
-          const current = result.data;
+        const current = await weatherService.fetchCurrent(d.lat, d.lon);
+        if (current) {
           const valutazione = validaVentoPerDecollo(current.windDir, d.exposure);
           const colorClass = getVentoStatusColor(valutazione.status);
           const isOk = valutazione.status === "favorevole" || valutazione.status === "laterale";

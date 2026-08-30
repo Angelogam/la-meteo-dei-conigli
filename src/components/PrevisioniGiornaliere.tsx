@@ -1,19 +1,15 @@
+"use client";
+
 import React from "react";
-import {
-  CloudRain,
-  Sun,
-  Cloud,
-  Wind,
-  Thermometer,
-  Calendar,
-  Mountain,
-} from "lucide-react";
+import type { HourData, DailyData } from "@/types/meteo";
+import type { MeteoDaily } from "@/services/openMeteoService";
+import { CloudRain, Sun, Cloud, Wind, Thermometer, Calendar, Mountain } from "lucide-react";
 
 interface PrevisioniGiornaliereProps {
-  enrichedDaily: any[];
+  enrichedDaily: MeteoDaily[];
   dateLabels: string[];
-  currentData: any;
-  dayData: any[];
+  currentData: HourData | null;
+  dayData: HourData[];
   site: { name: string; altitude: number; exposure: string };
   selectedDay: number;
   onSelectDay: (dayIdx: number) => void;
@@ -33,33 +29,16 @@ function getWeatherEmoji(code: number): string {
   return "☀️";
 }
 
-function safeNumber(val: any): number {
-  if (val == null || val === undefined || isNaN(val)) return 0;
-  return Number(val);
-}
-
-function safeRound(val: any): string {
-  const n = safeNumber(val);
-  return n.toFixed(0);
-}
-
-// Calcola il weather code predominante per il giorno
-function getDayWeatherCode(hours: any[]): number {
-  if (!hours || hours.length === 0) return 0;
-  // Prendi il weather code più frequente nelle ore diurne (6-18)
-  const dayHours = hours.filter(h => {
-    const hour = new Date(h.time).getHours();
-    return hour >= 6 && hour <= 18;
-  });
-  const relevantHours = dayHours.length > 0 ? dayHours : hours;
-  
-  const codes = relevantHours.map(h => h.weatherCode ?? 0).filter(c => c != null);
-  if (codes.length === 0) return 0;
-  
-  // Restituisci il codice più frequente
-  const freq = new Map<number, number>();
-  codes.forEach(c => freq.set(c, (freq.get(c) || 0) + 1));
-  return Array.from(freq.entries()).sort((a, b) => b[1] - a[1])[0][0];
+function getFreezingLevel(daily: MeteoDaily): number | null {
+  if (daily.freezingLevel !== undefined && daily.freezingLevel !== null) {
+    return Math.round(daily.freezingLevel);
+  }
+  if (daily.temperatureMin !== undefined && daily.temperatureMax !== undefined) {
+    const avgTemp = (daily.temperatureMin + daily.temperatureMax) / 2;
+    const estimated = Math.round(3000 - (avgTemp * 150));
+    return Math.max(500, Math.min(5000, estimated));
+  }
+  return null;
 }
 
 export default function PrevisioniGiornaliere({
@@ -87,14 +66,8 @@ export default function PrevisioniGiornaliere({
           const daily = enrichedDaily[idx];
           const isActive = selectedDay === idx;
           const label = dateLabels[idx] || tabName;
-          
-          // Usa i nomi di proprietà corretti da enrichedDaily
-          const tempMax = daily ? safeRound(daily.tempMax) : "--";
-          const tempMin = daily ? safeRound(daily.tempMin) : "--";
-          const ventoMax = daily ? safeRound(daily.windMax) : "--";
-          const pioggia = daily ? daily.rainSum : 0;
-          const weatherCode = daily ? getDayWeatherCode(daily.hours) : 0;
-          const isRainy = pioggia > 0.5;
+          const isRainy = daily && daily.precipitationSum > 0.5;
+          const freezingLevel = daily ? getFreezingLevel(daily) : null;
 
           return (
             <button
@@ -111,7 +84,7 @@ export default function PrevisioniGiornaliere({
                   {tabName}
                 </span>
                 <span className="text-lg">
-                  {daily ? getWeatherEmoji(weatherCode) : "☀️"}
+                  {daily ? getWeatherEmoji(daily.weatherCode) : "☀️"}
                 </span>
               </div>
 
@@ -123,24 +96,24 @@ export default function PrevisioniGiornaliere({
                 <div className="space-y-1.5 text-xs">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-amber-300 font-bold">
-                      {tempMax}°C
+                      {Math.round(daily.temperatureMax)}°C
                     </span>
                     <span className="text-sky-300 font-medium">
-                      {tempMin}°C
+                      {Math.round(daily.temperatureMin)}°C
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-700/40">
                     <span className="flex items-center gap-1.5 text-slate-300">
                       <Wind className="w-3.5 h-3.5 text-cyan-400" />
-                      <span className="font-medium">{ventoMax} km/h</span>
+                      <span className="font-medium">{Math.round(daily.windSpeedMax)} km/h</span>
                     </span>
                   </div>
 
-                  {pioggia > 0 && (
+                  {daily.precipitationSum > 0 && (
                     <div className="text-rose-300 font-semibold flex items-center gap-0.5 text-[10px]">
                       <CloudRain className="w-3 h-3" />
-                      {pioggia.toFixed(1)}mm
+                      {daily.precipitationSum.toFixed(1)}mm
                     </div>
                   )}
                 </div>

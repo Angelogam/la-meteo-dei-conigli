@@ -6,21 +6,21 @@ import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import WeatherDashboard from "@/components/WeatherDashboard";
-import TabNav, { Tab } from "@/components/TabNav";
+import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
 import Windgram from "@/components/Windgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
-import ProfessionalWindgram from "@/components/ProfessionalWindgram";
+import SkewTDiagram from "@/components/SkewTDiagram";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 import { DECOLLI } from "@/data/decolli";
 import { getStabilityIndex } from "@/utils/weatherHelpers";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
-import { Activity, Wind, AlertCircle, RefreshCw } from "lucide-react";
+import { Activity, Wind } from "lucide-react";
 import { GroqValidationProvider, useGroqValidationContext } from "@/context/GroqValidationContext";
 
 function IndexContent() {
@@ -48,10 +48,9 @@ function IndexContent() {
     activeModel,
     currentCape,
     allHourlyData,
-    fetchError,
   } = useWeatherData();
 
-  const { mergedDecolli, lastUpdate: aggressiveLastUpdate } = useThreeSourceWeather();
+  const { mergedDecolli, loading: aggressiveLoading, lastUpdate: aggressiveLastUpdate } = useThreeSourceWeather();
   const { tempoTrascorso } = useMeteoCompleto(
     site?.lat ?? DECOLLI[0].lat,
     site?.lon ?? DECOLLI[0].lon,
@@ -64,8 +63,7 @@ function IndexContent() {
     currentData?.cloudCover ?? 30
   );
 
-  const isLoading = weatherLoading;
-  const hasData = Boolean(site && dayData.length > 0);
+  const isLoading = weatherLoading || aggressiveLoading;
 
   const filteredDayData = useMemo(() => {
     if (!dayData || dayData.length === 0) return [];
@@ -92,6 +90,8 @@ function IndexContent() {
     ];
     return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
   }, [selectedDay]);
+
+  const hasData = Boolean(site && currentData && dayData.length > 0);
 
   useEffect(() => {
     if (site && allHourlyData && Object.keys(allHourlyData).length > 0) {
@@ -147,21 +147,6 @@ function IndexContent() {
           </aside>
 
           <div className="flex-1 min-w-0 space-y-6">
-            {fetchError && !hasData && (
-              <div className="bg-rose-950/40 border-2 border-rose-500/50 rounded-2xl p-6 text-center">
-                <AlertCircle className="w-10 h-10 text-rose-400 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-rose-200 mb-1">Errore di connessione</h3>
-                <p className="text-sm text-rose-300/80 mb-4">{fetchError}</p>
-                <button
-                  onClick={() => loadWeather()}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-all shadow-lg shadow-emerald-500/20"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Riprova
-                </button>
-              </div>
-            )}
-
             {hasData && site && (
               <>
                 <SiteHeader
@@ -205,11 +190,12 @@ function IndexContent() {
                   />
                 </div>
 
-                <ProfessionalWindgram
+                <SkewTDiagram
                   latitude={site.lat}
                   longitude={site.lon}
-                  altitude={site.elevation_m}
+                  siteAltitude={site.elevation_m}
                   siteName={site.site_name}
+                  selectedHour={selectedHour}
                   selectedDay={selectedDay}
                 />
 
@@ -267,10 +253,9 @@ function IndexContent() {
                 )}
               </>
             )}
-            {!hasData && !fetchError && !isLoading && (
-              <div className="text-center py-12 text-slate-400 bg-slate-900/60 border border-slate-700/50 rounded-2xl">
-                <Wind className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                <p className="text-sm">In attesa di dati per {site?.site_name ?? "questo decollo"}...</p>
+            {!hasData && (
+              <div className="text-center py-12 text-slate-400">
+                <p>Nessun dato meteo disponibile per {site?.site_name ?? "questo decollo"}. Verifica la connessione o riprova.</p>
               </div>
             )}
           </div>
