@@ -3,16 +3,36 @@
 import React, { useMemo } from "react";
 import { HourData } from "@/types/meteo";
 import { calcolaTermiche } from "@/utils/termiche";
-import { Thermometer, Wind, Cloud, Droplets, Sun, TrendingUp, AlertTriangle, MapPin } from "lucide-react";
+import { Thermometer, Wind, Cloud, Droplets, Sun, TrendingUp, AlertTriangle, MapPin, Calendar } from "lucide-react";
 import SkewTDiagram from "@/components/SkewTDiagram";
 
 interface TermicheTabProps {
   currentData: HourData | null;
   dayData: HourData[];
   site: { alt: number; lat: number; lon: number; name: string };
+  selectedDay?: number;
 }
 
-export default function TermicheTab({ dayData, site }: TermicheTabProps) {
+export default function TermicheTab({ dayData, site, selectedDay = 0 }: TermicheTabProps) {
+  const selectedDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + selectedDay);
+    return d;
+  }, [selectedDay]);
+
+  const formattedDate = useMemo(() => {
+    const days = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
+    const months = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
+    return `${days[selectedDate.getDay()]} ${selectedDate.getDate()} ${months[selectedDate.getMonth()]}`;
+  }, [selectedDate]);
+
+  const fullDateStr = useMemo(() => selectedDate.toLocaleDateString("it-IT", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }), [selectedDate]);
+
   const oreConDati = useMemo(() => {
     const ore = Array.from({ length: 14 }, (_, i) => i + 8);
     return ore
@@ -56,14 +76,15 @@ export default function TermicheTab({ dayData, site }: TermicheTabProps) {
         siteAltitude={site.alt}
         siteName={site.name}
         selectedHour={12}
-        selectedDay={0}
+        selectedDay={selectedDay}
       />
 
       <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5">
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <Thermometer className="w-5 h-5 text-orange-400" />
-          Previsione termiche — {site.name}
+          <Calendar className="w-5 h-5 text-orange-400" />
+          Previsione termiche — {site.name} · {formattedDate}
         </h3>
+        <p className="text-[10px] text-slate-500 mb-4">{fullDateStr}</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-slate-900/60 rounded-xl p-3 text-center">
             <p className="text-xs text-slate-400 mb-1">Media termiche</p>
