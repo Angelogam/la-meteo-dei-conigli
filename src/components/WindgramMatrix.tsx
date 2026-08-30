@@ -5,18 +5,6 @@ import type { HourData } from "@/types/meteo";
 import { Mountain, Wind } from "lucide-react";
 import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
 
-interface WindgramMatrixProps {
-  dayData: HourData[];
-  siteName: string;
-  altitude: number;
-  selectedHour?: number;
-  onHourSelect?: (hour: number) => void;
-  selectedDay?: number;
-  dateLabel?: string;
-  lat?: number;
-  lon?: number;
-}
-
 const DISPLAY_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] as const;
 
 function getWindArrowColor(speed: number): { fill: string; stroke: string; text: string } {
@@ -61,7 +49,17 @@ export default function WindgramMatrix({
   dateLabel = "",
   lat = 44.2587,
   lon = 7.7943,
-}: WindgramMatrixProps) {
+}: {
+  dayData: HourData[];
+  siteName: string;
+  altitude: number;
+  selectedHour?: number;
+  onHourSelect?: (hour: number) => void;
+  selectedDay?: number;
+  dateLabel?: string;
+  lat?: number;
+  lon?: number;
+}) {
   // HOOKS FIRST - must be called unconditionally at top level
   const { data: windProfileMap, loading: profileLoading, error: profileError, interpolateAtAltitude } = useMultiHourWindProfile({
     lat,
@@ -148,10 +146,24 @@ export default function WindgramMatrix({
         
         data[hr] = { top, base, rateo, cloudBase: Math.min(lcl, 3500), cloudCover: h.cloudCover ?? 30 };
       } else {
-        data[hr] = { top: altitude + 100, base: altitude + 50, rateo: 0.1, cloudBase: altitude + 600, cloudCover: 30 };
+        // Instead of hardcoded fallback, we leave it undefined and handle later
+        // For now, we'll skip this hour in the UI by not adding to data
+        // But to avoid changing the structure, we'll set to null and filter later
+        return null;
       }
     });
-    return data;
+    // Filter out nulls
+    const filtered: Record<number, {
+      top: number; base: number; rateo: number;
+      cloudBase: number; cloudCover: number;
+    }> = {};
+    Object.keys(data).forEach(key => {
+      const val = data[key as unknown as number];
+      if (val != null) {
+        filtered[Number(key)] = val;
+      }
+    });
+    return filtered;
   }, [hourlyMap, altitude]);
 
   // Calcola sfondo: GIALLO SOLO dal decollo alla base del cumulo, MAI oltre
@@ -272,71 +284,67 @@ export default function WindgramMatrix({
                 <p className="text-sm text-sky-700 font-semibold mt-0.5">{headerDate}</p>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 bg-sky-100/70 border border-sky-200/80 px-3 py-1.5 rounded-full text-xs font-semibold text-sky-900">
-              <Mountain className="w-3.5 h-3.5 text-amber-600" />
-              <span>Decollo {altitude}m slm</span>
+            <div className="flex items-center justify-between gap-2 mb-2">
+              {dataSourceBadge}
             </div>
           </div>
-          <div className="flex items-center justify-between gap-2 mb-2">
-            {dataSourceBadge}
-          </div>
-        </div>
 
-        {/* Tabella Windgram - Scala quote: 4000m TOP (prima riga), decollo BOTTOM (ultima riga) */}
-        <div className="overflow-x-auto border-t border-b border-slate-200 bg-white">
-          <table className="w-full text-center border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-slate-200 text-slate-700 bg-slate-100/90 font-bold">
-                <th className="py-2.5 px-1 text-center w-12 sticky left-0 z-20 bg-slate-100 border-r border-slate-200 text-slate-800 text-[11px]">Quota</th>
-                {DISPLAY_HOURS.map((hr) => (
-                  <th
-                    key={`th-${hr}`}
-                    onClick={() => onHourSelect?.(hr)}
-                    className={`py-2.5 px-2 font-bold cursor-pointer transition-colors border-r border-slate-200/60 ${
-                      hr === selectedHour ? "bg-sky-100 text-sky-900 ring-1 ring-sky-400" : "hover:bg-slate-200/60 text-slate-800"
-                    }`}
-                  >
-                    <div className="flex flex-col items-center gap-0.5">
-                      <span>{hr}h</span>
-                      <span className="text-[10px] font-normal text-slate-500">
-                        {(() => { const h = hourlyMap.get(hr); return h ? `${Math.round(h.temperature)}°` : "—"; })()}
-                      </span>
+          {/* Tabella Windgram - Scala quote: 4000m TOP (prima riga), decollo BOTTOM (ultima riga) */}
+          <div className="overflow-x-auto border-t border-b border-slate-200 bg-white">
+            <table className="w-full text-center border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-700 bg-slate-100/90 font-bold">
+                  <th className="py-2.5 px-1 text-center w-12 sticky left-0 z-20 bg-slate-100 border-r border-slate-200 text-slate-800 text-[11px]">Quota</th>
+                  {DISPLAY_HOURS.map((hr) => (
+                    <th
+                      key={`th-${hr}`}
+                      onClick={() => onHourSelect?.(hr)}
+                      className={`py-2.5 px-2 font-bold cursor-pointer transition-colors border-r border-slate-200/60 ${
+                        hr === selectedHour ? "bg-sky-100 text-sky-900 ring-1 ring-sky-400" : "hover:bg-slate-200/60 text-slate-800"
+                      }`}
+                    >
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span>{hr}h</span>
+                        <span className="text-[10px] font-normal text-slate-500">
+                          {(() => { const h = hourlyMap.get(hr); return h ? `${Math.round(h.temperature)}°` : "—"; })()}
+                        </span>
+                      </div>
                     </div>
                   </th>
-                ))}
+                )}
               </tr>
-            </thead>
-            <tbody>
-              {activeAltitudes.map((alt, rowIdx) => {
-                const isMajorLevel = alt % 500 === 0;
-                const isDecolloLevel = alt === baseDecolloFloor;
-                return (
-                  <tr key={`tr-${alt}`} className={`border-b border-slate-100 transition-colors ${isMajorLevel ? "font-bold" : ""} ${isDecolloLevel ? "bg-emerald-50" : ""}`}>
-                    <td className={`py-1.5 px-1 text-center font-bold sticky left-0 z-10 border-r border-slate-200 text-[11px] tabular-nums whitespace-nowrap ${
-                      isMajorLevel ? "bg-slate-100 text-slate-900" : isDecolloLevel ? "bg-emerald-50 text-emerald-900" : "bg-slate-50 text-slate-700"
-                    }`}>
-                      {alt}
-                    </td>
-                    {DISPLAY_HOURS.map((hr) => {
-                      const w = windDataByHourAlt[hr]?.[alt];
-                      const wColor = w ? getWindArrowColor(w.speed) : { fill: "#94a3b8", stroke: "#64748b", text: "#94a3b8" };
-                      const isSelectedCol = hr === selectedHour;
-                      const bgColor = getThermalBgColor(alt, hr);
-                      const showCloud = cloudBaseRow[hr] === rowIdx;
-                      return (
-                        <td
-                          key={`cell-${alt}-${hr}`}
-                          onClick={() => onHourSelect?.(hr)}
-                          style={{ backgroundColor: bgColor }}
-                          className={`py-1.5 px-1 border-r border-slate-200/60 cursor-pointer transition-colors relative ${
-                            isSelectedCol ? "ring-1 ring-sky-400/90" : "hover:brightness-95"
-                          }`}
-                        >
-                          <div className="flex items-center justify-center gap-0.5 h-full relative">
-                            {w && <WindArrowIcon deg={w.dir} color={wColor} />}
-                            <span className="font-bold text-[12px] tabular-nums tracking-tighter relative z-10" style={{ color: wColor.text }} title={w ? `Open-Meteo: ${w.speed} km/h da ${w.dir}°` : "N/D"}>
-                              {w ? w.speed : "—"}
-                            </span>
+              </thead>
+              <tbody>
+                {activeAltitudes.map((alt, rowIdx) => {
+                  const isMajorLevel = alt % 500 === 0;
+                  const isDecolloLevel = alt === baseDecolloFloor;
+                  return (
+                    <tr key={`tr-${alt}`} className={`border-b border-slate-100 transition-colors ${isMajorLevel ? "font-bold" : ""} ${isDecolloLevel ? "bg-emerald-50" : ""}`}>
+                      <td className={`py-1.5 px-1 text-center font-bold sticky left-0 z-10 border-r border-slate-200 text-[11px] tabular-nums whitespace-nowrap ${
+                        isMajorLevel ? "bg-slate-100 text-slate-900" : isDecolloLevel ? "bg-emerald-50 text-emerald-900" : "bg-slate-50 text-slate-700"
+                      }`}>
+                        {alt}
+                      </td>
+                      {DISPLAY_HOURS.map((hr) => {
+                        const w = windDataByHourAlt[hr]?.[alt];
+                        const wColor = w ? getWindArrowColor(w.speed) : { fill: "#94a3b8", stroke: "#64748b", text: "#94a3b8" };
+                        const isSelectedCol = hr === selectedHour;
+                        const bgColor = getThermalBgColor(alt, hr);
+                        const showCloud = cloudBaseRow[hr] === rowIdx;
+                        return (
+                          <td
+                            key={`cell-${alt}-${hr}`}
+                            onClick={() => onHourSelect?.(hr)}
+                            style={{ backgroundColor: bgColor }}
+                            className={`py-1.5 px-1 border-r border-slate-200/60 cursor-pointer transition-colors relative ${
+                              isSelectedCol ? "ring-1 ring-sky-400/90" : "hover:brightness-95"
+                            }`}
+                          >
+                            <div className="flex items-center justify-center gap-0.5 h-full relative">
+                              {w && <WindArrowIcon deg={w.dir} color={wColor} />}
+                              <span className="font-bold text-[12px] tabular-nums tracking-tighter relative z-10" style={{ color: wColor.text }} title={w ? `Open-Meteo: ${w.speed} km/h da ${w.dir}°` : "N/D"}>
+                                {w ? w.speed : "—"}
+                              </span>
                             {showCloud && (
                               <div className="absolute bottom-[calc(100%+2px)] left-1/2 -translate-x-1/2 z-20 pointer-events-none">
                                 <CloudIcon cloudCover={hourThermalData[hr]?.cloudCover ?? 30} />
@@ -344,80 +352,76 @@ export default function WindgramMatrix({
                             )}
                           </div>
                         </td>
-                      );
-                    })}
+                      );})
+                    }
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {/* LEGENDA PROFESSIONALE */}
-        <div className="p-4 bg-slate-50 border-t border-slate-100">
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-2.5 rounded bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500 border border-orange-400/60" />
-                <span className="text-slate-700 font-medium text-xs">Termica attiva (fino a base cumuli)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-2.5 rounded bg-[#fde68a] border border-amber-400" />
-                <span className="text-slate-700 font-medium text-xs">Quota decollo</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <svg width="14" height="10" viewBox="0 0 40 28" className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]" style={{ opacity: 0.6 }}>
-                  <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#64748b" fillOpacity="0.5"/>
-                  <ellipse cx="18" cy="14" rx="6" ry="4" fill="#94a3b8" fillOpacity="0.4"/>
-                  <ellipse cx="14" cy="12" rx="4" ry="3" fill="#cbd5e1" fillOpacity="0.3"/>
-                </svg>
-                <span className="text-slate-700 font-medium text-xs">Base cumuli (sopra il giallo)</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 text-slate-500">
-              <span className="text-[10px] font-mono">Freccia = dir. vento · Numero = km/h</span>
-            </div>
+                )}
+              </tbody>
+            </table>
           </div>
 
-          {/* Scala venti */}
-          <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-slate-200">
-            <span className="text-xs text-slate-600 font-medium">Scala venti (km/h):</span>
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#0284c7" }} />
-                <span className="text-[10px] text-slate-600">≤4</span>
+          {/* LEGENDA PROFESSIONALE */}
+          <div className="p-4 bg-slate-50 border-t border-slate-100">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-2.5 rounded bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500 border border-orange-400/60" />
+                  <span className="text-slate-700 font-medium text-xs">Termica attiva (fino a base cumuli)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3 h-2.5 rounded bg-[#fde68a] border border-amber-400" />
+                  <span className="text-slate-700 font-medium text-xs">Quota decollo</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <svg width="14" height="10" viewBox="0 0 40 28" className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]" style={{ opacity: 0.6 }}>
+                    <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#64748b" fillOpacity="0.5"/>
+                    <ellipse cx="18" cy="14" rx="6" ry="4" fill="#94a3b8" fillOpacity="0.4"/>
+                    <ellipse cx="14" cy="12" rx="4" ry="3" fill="#cbd5e1" fillOpacity="0.3"/>
+                  </svg>
+                  <span className="text-slate-700 font-medium text-xs">Base cumuli (sopra il giallo)</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#0d9488" }} />
-                <span className="text-[10px] text-slate-600">5-8</span>
+              <div className="flex items-center gap-2 text-slate-500">
+                <span className="text-[10px] font-mono">Freccia = dir. vento · Numero = km/h</span>
               </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#16a34a" }} />
-                <span className="text-[10px] text-slate-600">9-13</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#65a30d" }} />
-                <span className="text-[10px] text-slate-600">14-18</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#eab308" }} />
-                <span className="text-[10px] text-slate-600">19-24</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#f97316" }} />
-                <span className="text-[10px] text-slate-600">25-30</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#dc2626" }} />
-                <span className="text-[10px] text-slate-600">31-42</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#991b1b" }} />
-                <span className="text-[10px] text-slate-600">43-58</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#86198f" }} />
-                <span className="text-[10px] text-slate-600">≥59</span>
+            </div>
+
+            {/* Scala venti */}
+            <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-slate-200">
+              <span className="text-xs text-slate-600 font-medium">Scala venti (km/h):</span>
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#0284c7" }} />
+                  <span className="text-[10px] text-slate-600">≤4</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#0d9488" }} />
+                  <span className="text-[10px] text-slate-600">5-8</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#16a34a" }} />
+                  <span className="text-[10px] text-slate-600">9-13</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#65a30d" }} />
+                  <span className="text-[10px] text-slate-600">14-18</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#eab308" }} />
+                  <span className="text-[10px] text-slate-600">19-24</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#dc2626" }} />
+                  <span className="text-[10px] text-slate-600">25-30</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#991b1b" }} />
+                  <span className="text-[10px] text-slate-600">43-58</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#86198f" }} />
+                  <span className="text-[10px] text-slate-600">≥59</span>
+                </div>
               </div>
             </div>
           </div>
