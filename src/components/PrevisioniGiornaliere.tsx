@@ -43,6 +43,25 @@ function safeRound(val: any): string {
   return n.toFixed(0);
 }
 
+// Calcola il weather code predominante per il giorno
+function getDayWeatherCode(hours: any[]): number {
+  if (!hours || hours.length === 0) return 0;
+  // Prendi il weather code più frequente nelle ore diurne (6-18)
+  const dayHours = hours.filter(h => {
+    const hour = new Date(h.time).getHours();
+    return hour >= 6 && hour <= 18;
+  });
+  const relevantHours = dayHours.length > 0 ? dayHours : hours;
+  
+  const codes = relevantHours.map(h => h.weatherCode ?? 0).filter(c => c != null);
+  if (codes.length === 0) return 0;
+  
+  // Restituisci il codice più frequente
+  const freq = new Map<number, number>();
+  codes.forEach(c => freq.set(c, (freq.get(c) || 0) + 1));
+  return Array.from(freq.entries()).sort((a, b) => b[1] - a[1])[0][0];
+}
+
 export default function PrevisioniGiornaliere({
   enrichedDaily,
   dateLabels,
@@ -68,11 +87,14 @@ export default function PrevisioniGiornaliere({
           const daily = enrichedDaily[idx];
           const isActive = selectedDay === idx;
           const label = dateLabels[idx] || tabName;
-          const isRainy = daily && daily.rainSum > 0.5;
-          const tempMax = daily ? safeRound(daily.temperatureMax) : "--";
-          const tempMin = daily ? safeRound(daily.temperatureMin) : "--";
-          const ventoMax = daily ? safeRound(daily.windSpeedMax) : "--";
+          
+          // Usa i nomi di proprietà corretti da enrichedDaily
+          const tempMax = daily ? safeRound(daily.tempMax) : "--";
+          const tempMin = daily ? safeRound(daily.tempMin) : "--";
+          const ventoMax = daily ? safeRound(daily.windMax) : "--";
           const pioggia = daily ? daily.rainSum : 0;
+          const weatherCode = daily ? getDayWeatherCode(daily.hours) : 0;
+          const isRainy = pioggia > 0.5;
 
           return (
             <button
@@ -89,7 +111,7 @@ export default function PrevisioniGiornaliere({
                   {tabName}
                 </span>
                 <span className="text-lg">
-                  {daily ? getWeatherEmoji(daily.weatherCode) : "☀️"}
+                  {daily ? getWeatherEmoji(weatherCode) : "☀️"}
                 </span>
               </div>
 
