@@ -469,93 +469,71 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {/* SFONDO DINAMICO & ZONE DI STABILITÀ (Palette Alpium) */}
-            {/* Base Verde/Gialla Generale */}
+            {/* SFONDO DINAMICO & ZONE DI STABILITÀ (Palette Alpium Rovesciata)
+                Regole:
+                - BASSO (al suolo): VERDE (aria stabile)
+                - QUOTE BASSE (2500-3400m): GIALLO/ARANCIO (aria instabile)
+                - ZONE INTERMEDIE: ARANCIO/ROSSO (nucleo caldo)
+                - QUOTA: BLU/VIOLA (stabile in quota)
+            */}
+
+            {/* 1. SFONDO BASE TERRESTRE - VERDE (aria stabile al suolo) */}
             <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#a3e635" />
 
-            {/* Fascia Superiore 500-600 hPa Gialla/Verde */}
+            {/* 2. FASCIA INSTABILE BASSA QUOTE (2500-3400m) - GIALLO/ARANCIO
+                   Si tratta di "miscele di masse d'aria instabili" alle basse quote */}
             <path
-              d={`M ${margin.left},${getYFromAlt(5800)} 
-                  Q ${margin.left + plotW * 0.3},${getYFromAlt(6000)} ${margin.left + plotW * 0.5},${getYFromAlt(5700)} 
-                  T ${margin.left + plotW},${getYFromAlt(5600)} 
-                  L ${margin.left + plotW},${margin.top} L ${margin.left},${margin.top} Z`}
+              d={`M ${margin.left},${getYFromAlt(3400)}
+                  Q ${margin.left + plotW * 0.25},${getYFromAlt(3500)} ${margin.left + plotW * 0.5},${getYFromAlt(3000)}
+                  L ${margin.left + plotW},${getYFromAlt(3000)}
+                  L ${margin.left + plotW},${getYFromAlt(2700)}
+                  Q ${margin.left + plotW * 0.5},${getYFromAlt(2700)} ${margin.left},${getYFromAlt(3100)} Z`}
               fill="#eab308"
-              opacity="0.85"
+              opacity="0.95"
             />
 
-            {/* Bolle Calde / Fasce Termiche centrali a 650-700 hPa */}
+            {/* 3. NUCLEO CALDO ARANCIO/ROSSO (quote 1800-2300m) - Massima instabilità */}
             <path
-              d={`M ${margin.left + plotW * 0.22},${getYFromAlt(4900)} 
-                  Q ${margin.left + plotW * 0.35},${getYFromAlt(5200)} ${margin.left + plotW * 0.45},${getYFromAlt(4800)} 
+              d={`M ${margin.left + plotW * 0.55},${getYFromAlt(1900)}
+                  Q ${margin.left + plotW * 0.65},${getYFromAlt(2000)} ${margin.left + plotW * 0.82},${getYFromAlt(1850)}
+                  Q ${margin.left + plotW * 0.70},${getYFromAlt(1700)} ${margin.left + plotW * 0.55},${getYFromAlt(1900)} Z`}
+              fill="#dc2626"
+              opacity="0.9"
+            />
+
+            {/* 4. NUCLEI GIALLO-ARANCIO INTERMEDI (quote 3500-5000m) - Bolle calde */}
+            <path
+              d={`M ${margin.left + plotW * 0.22},${getYFromAlt(4900)}
+                  Q ${margin.left + plotW * 0.35},${getYFromAlt(5200)} ${margin.left + plotW * 0.45},${getYFromAlt(4800)}
                   Q ${margin.left + plotW * 0.35},${getYFromAlt(4500)} ${margin.left + plotW * 0.22},${getYFromAlt(4900)} Z`}
               fill="#facc15"
               opacity="0.9"
             />
 
             <path
-              d={`M ${margin.left + plotW * 0.55},${getYFromAlt(3900)} 
-                  Q ${margin.left + plotW * 0.65},${getYFromAlt(4000)} ${margin.left + plotW * 0.75},${getYFromAlt(3700)} 
+              d={`M ${margin.left + plotW * 0.55},${getYFromAlt(3900)}
+                  Q ${margin.left + plotW * 0.65},${getYFromAlt(4000)} ${margin.left + plotW * 0.75},${getYFromAlt(3700)}
                   Q ${margin.left + plotW * 0.65},${getYFromAlt(3500)} ${margin.left + plotW * 0.55},${getYFromAlt(3900)} Z`}
               fill="#facc15"
               opacity="0.8"
             />
 
             <path
-              d={`M ${margin.left + plotW * 0.78},${getYFromAlt(3600)} 
-                  Q ${margin.left + plotW * 0.88},${getYFromAlt(3700)} ${margin.left + plotW * 0.98},${getYFromAlt(3400)} 
+              d={`M ${margin.left + plotW * 0.78},${getYFromAlt(3600)}
+                  Q ${margin.left + plotW * 0.88},${getYFromAlt(3700)} ${margin.left + plotW * 0.98},${getYFromAlt(3400)}
                   Q ${margin.left + plotW * 0.88},${getYFromAlt(3300)} ${margin.left + plotW * 0.78},${getYFromAlt(3600)} Z`}
               fill="#facc15"
               opacity="0.85"
             />
 
-            {/* Fasce Inferiori Stabilità (Azzurro / Blu / Viola a 700-750 hPa) */}
+            {/* 5. FASCIA SUPERIORE STABILE (500-550 hPa) - BLU/VIOLA (ritorna stabile in quota) */}
             <path
-              d={`M ${margin.left},${getYFromAlt(3400)} 
-                  Q ${margin.left + plotW * 0.25},${getYFromAlt(3500)} ${margin.left + plotW * 0.5},${getYFromAlt(3000)} 
-                  L ${margin.left + plotW},${getYFromAlt(3000)} 
-                  L ${margin.left + plotW},${getYFromAlt(2700)} 
-                  Q ${margin.left + plotW * 0.5},${getYFromAlt(2700)} ${margin.left},${getYFromAlt(3100)} Z`}
-              fill="#38bdf8"
-              opacity="0.8"
-            />
-
-            <path
-              d={`M ${margin.left},${getYFromAlt(3100)} 
-                  Q ${margin.left + plotW * 0.25},${getYFromAlt(3200)} ${margin.left + plotW * 0.45},${getYFromAlt(2800)} 
-                  L ${margin.left + plotW * 0.45},${getYFromAlt(2650)} 
-                  Q ${margin.left + plotW * 0.2},${getYFromAlt(2950)} ${margin.left},${getYFromAlt(2800)} Z`}
+              d={`M ${margin.left},${getYFromAlt(5800)}
+                  Q ${margin.left + plotW * 0.3},${getYFromAlt(6000)} ${margin.left + plotW * 0.5},${getYFromAlt(5700)}
+                  T ${margin.left + plotW},${getYFromAlt(5600)}
+                  L ${margin.left + plotW},${margin.top} L ${margin.left},${margin.top} Z`}
               fill="#6366f1"
               opacity="0.75"
-            />
-
-            {/* Base Calda Termica al Suolo (Arancio / Rosso 750-850 hPa) */}
-            {hourlyData.map((h, i) => {
-              if (i >= hourlyData.length - 1) return null;
-              const x1 = getXFromHourIdx(i);
-              const x2 = getXFromHourIdx(i + 1);
-              const w = x2 - x1;
-              const col = getStabilityColor(h.deltaT);
-
-              return (
-                <rect
-                  key={`ground-col-${i}`}
-                  x={x1}
-                  y={getYFromAlt(2300)}
-                  width={w}
-                  height={margin.top + plotH - getYFromAlt(2300)}
-                  fill={col}
-                  opacity="0.8"
-                />
-              );
-            })}
-
-            {/* Nuclei Caldi Arancioni/Rossi di Picco Termico al Suolo */}
-            <path
-              d={`M ${margin.left + plotW * 0.55},${getYFromAlt(1900)} 
-                  Q ${margin.left + plotW * 0.65},${getYFromAlt(2000)} ${margin.left + plotW * 0.82},${getYFromAlt(1850)} 
-                  Q ${margin.left + plotW * 0.70},${getYFromAlt(1700)} ${margin.left + plotW * 0.55},${getYFromAlt(1900)} Z`}
-              fill="#dc2626"
-              opacity="0.9"
             />
 
             {/* Area con Tratteggio Reticolare (Cross-Hatching) nelle ore centrali convettive */}
