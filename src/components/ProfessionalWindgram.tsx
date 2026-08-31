@@ -282,9 +282,9 @@ export default function ProfessionalWindgram({
     if (speedKmh == null || isNaN(speedKmh) || speedKmh < 1) return null;
     const knots = speedKmh * 0.539957;
     // Open-Meteo: direzione in gradi DA DOVE viene il vento (convenzione meteorologica standard)
-    // La barbetta punta DOVE VA il vento (direzione opposta = dirDeg + 180°)
-    // deg=270 (vento da ovest) → barbetta punta a EST (destra) = verso dove va il vento
-    const angle = ((dirDeg + 90) * Math.PI) / 180;
+    // La barbetta punta nella direzione DA DOVE viene il vento
+    // deg=270 (vento da ovest) → barbetta deve puntare a OVEST (sinistra)
+    const angle = ((dirDeg - 90) * Math.PI) / 180;
     const staffLen = 22;
     const endX = x + staffLen * Math.cos(angle);
     const endY = y + staffLen * Math.sin(angle);
