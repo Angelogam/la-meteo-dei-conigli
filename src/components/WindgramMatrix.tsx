@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useMemo, useState } from "react";
 import type { HourData } from "@/types/meteo";
 import { Mountain, Wind } from "lucide-react";
@@ -146,9 +144,6 @@ export default function WindgramMatrix({
         
         data[hr] = { top, base, rateo, cloudBase: Math.min(lcl, 3500), cloudCover: h.cloudCover ?? 30 };
       } else {
-        // Instead of hardcoded fallback, we leave it undefined and handle later
-        // For now, we'll skip this hour in the UI by not adding to data
-        // But to avoid changing the structure, we'll set to null and filter later
         return null;
       }
     });
@@ -309,10 +304,9 @@ export default function WindgramMatrix({
                           {(() => { const h = hourlyMap.get(hr); return h ? `${Math.round(h.temperature)}°` : "—"; })()}
                         </span>
                       </div>
-                    </div>
-                  </th>
-                )}
-              </tr>
+                    </th>
+                  ))}
+                </tr>
               </thead>
               <tbody>
                 {activeAltitudes.map((alt, rowIdx) => {
