@@ -19,10 +19,12 @@ function getWindArrowColor(speed: number): { fill: string; stroke: string; text:
 
 function WindArrowIcon({ deg, color }: { deg: number; color: { fill: string; stroke: string } }) {
   // Open-Meteo: direzione in gradi DA DOVE viene il vento (convenzione meteorologica)
-  // La freccia punta nella direzione DA DOVE viene il vento
-  // 0°=Nord, 90°=Est, 180°=Sud, 270°=Ovest
+  // Es: deg=270 (vento da ovest) → la freccia deve puntare a OVEST (sinistra)
+  // Il path SVG di base punta verso l'alto (nord), quindi per vento da ovest (270°)
+  // dobbiamo ruotare di 270+180 = 90° (ovest guarda a sinistra)
+  const arrowDeg = (deg + 180) % 360;
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" className="shrink-0" style={{ transform: `rotate(${deg}deg)` }}>
+    <svg width="14" height="14" viewBox="0 0 24 24" className="shrink-0" style={{ transform: `rotate(${arrowDeg}deg)` }}>
       <path d="M12 2L17 10H13.5V22H10.5V10H7L12 2Z" fill={color.fill} stroke={color.stroke} strokeWidth="1" />
     </svg>
   );
