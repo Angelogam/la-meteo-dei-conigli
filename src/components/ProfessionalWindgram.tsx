@@ -278,16 +278,12 @@ export default function ProfessionalWindgram({
   };
 
   // Disegno barbetta identica al riferimento originale Alpium
-  const renderWindBarb = (x: number, y: number, speedKmh: number, dirDeg: number, alt?: number) => {
+  const renderWindBarb = (x: number, y: number, speedKmh: number, dirDeg: number) => {
     if (speedKmh == null || isNaN(speedKmh) || speedKmh < 1) return null;
     const knots = speedKmh * 0.539957;
-    // Angolo in radianti (direzione in cui soffia il vento - OPPOSITA' alla convenzione meteorologica)
-    // Per altitudini > 2500m, invertiamo la direzione per mostrare vento da ovest (punta a ovest)
-    let windDir = dirDeg;
-    if (alt && alt > 2500) {
-      windDir = (windDir + 180) % 360; // Invertiamo per mostrare direzione opposta
-    }
-    const angle = ((windDir - 90) * Math.PI) / 180;
+    // Open-Meteo: direzione in gradi DA DOVE viene il vento (convenzione meteorologica standard)
+    // La barbetta punta nella direzione DA DOVE viene il vento
+    const angle = ((dirDeg - 90) * Math.PI) / 180;
     const staffLen = 22;
     const endX = x + staffLen * Math.cos(angle);
     const endY = y + staffLen * Math.sin(angle);
@@ -654,7 +650,7 @@ export default function ProfessionalWindgram({
                 <g key={`col-barbs-${i}`}>
                   {calc.levelWinds.map((wLvl) => {
                     const y = getYFromAlt(wLvl.alt);
-                    return renderWindBarb(x, y, wLvl.speed, wLvl.dir, wLvl.alt);
+                    return renderWindBarb(x, y, wLvl.speed, wLvl.dir);
                   })}
                 </g>
               );

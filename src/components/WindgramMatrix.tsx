@@ -17,17 +17,12 @@ function getWindArrowColor(speed: number): { fill: string; stroke: string; text:
   return { fill: "#86198f", stroke: "#701a75", text: "#86198f" };
 }
 
-function WindArrowIcon({ deg, color, alt }: { deg: number; color: { fill: string; stroke: string }; alt?: number }) {
-  // Wind direction from Open-Meteo is degrees FROM which wind is coming (meteorological convention)
-  // Arrow should point TO where wind is blowing (opposite direction = deg + 180°)
-  // Per altitudini > 2500m, invertiamo la direzione per mostrare vento da ovest (punta a ovest)
-  let windDir = deg;
-  if (alt && alt > 2500) {
-    windDir = (windDir + 180) % 360; // Invertiamo per mostrare direzione opposta
-  }
-  const arrowDeg = (windDir + 180) % 360;
+function WindArrowIcon({ deg, color }: { deg: number; color: { fill: string; stroke: string } }) {
+  // Open-Meteo: direzione in gradi DA DOVE viene il vento (convenzione meteorologica)
+  // La freccia punta nella direzione DA DOVE viene il vento
+  // 0°=Nord, 90°=Est, 180°=Sud, 270°=Ovest
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" className="shrink-0" style={{ transform: `rotate(${arrowDeg}deg)` }}>
+    <svg width="14" height="14" viewBox="0 0 24 24" className="shrink-0" style={{ transform: `rotate(${deg}deg)` }}>
       <path d="M12 2L17 10H13.5V22H10.5V10H7L12 2Z" fill={color.fill} stroke={color.stroke} strokeWidth="1" />
     </svg>
   );
@@ -357,7 +352,7 @@ export default function WindgramMatrix({
                             }`}
                           >
                             <div className="flex items-center justify-center gap-0.5 h-full relative">
-                              {w && <WindArrowIcon deg={w.dir} color={wColor} alt={alt} />}
+                              {w && <WindArrowIcon deg={w.dir} color={wColor} />}
                               <span
                                 className="font-bold text-[12px] tabular-nums tracking-tighter relative z-10"
                                 style={{ color: wColor.text }}
