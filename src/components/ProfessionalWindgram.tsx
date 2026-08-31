@@ -281,8 +281,8 @@ export default function ProfessionalWindgram({
   const renderWindBarb = (x: number, y: number, speedKmh: number, dirDeg: number) => {
     if (speedKmh == null || isNaN(speedKmh) || speedKmh < 1) return null;
     const knots = speedKmh * 0.539957;
-    // Angolo in radianti (direzione di provenienza)
-    const angle = ((dirDeg - 90) * Math.PI) / 180;
+    // Angolo in radianti (direzione in cui soffia il vento - OPPOSITA' alla convenzione meteorologica)
+    const angle = (((dirDeg + 180) % 360) - 90) * Math.PI / 180;
     const staffLen = 22;
     const endX = x + staffLen * Math.cos(angle);
     const endY = y + staffLen * Math.sin(angle);
@@ -293,14 +293,17 @@ export default function ProfessionalWindgram({
     const elements = [];
     let rem = Math.round(knots / 5) * 5;
     let pos = 1.0;
+    // Direzione in cui soffia il vento: ribaltata di 180° rispetto alla convenzione met.
     const barbAngle = angle + (115 * Math.PI) / 180;
+    // Le piume devono stare sul lato destro del gambo, quindi ribaltiamo l'angolo
+    const featherAngle = barbAngle + Math.PI;
 
     // Pennacchio 50 nodi
     while (rem >= 50 && pos >= 0.3) {
       const bx = x + pos * (endX - x);
       const by = y + pos * (endY - y);
       const p1 = `${bx},${by}`;
-      const p2 = `${bx + 11 * Math.cos(barbAngle)},${by + 11 * Math.sin(barbAngle)}`;
+      const p2 = `${bx + 11 * Math.cos(featherAngle)},${by + 11 * Math.sin(featherAngle)}`;
       const p3 = `${bx + 5.5 * Math.cos(angle)},${by + 5.5 * Math.sin(angle)}`;
       elements.push(<polygon key={`p50-${x}-${y}-${pos}`} points={`${p1} ${p2} ${p3}`} fill={barbColor} stroke={barbColor} strokeWidth="1" />);
       rem -= 50;
@@ -316,8 +319,8 @@ export default function ProfessionalWindgram({
           key={`l10-${x}-${y}-${pos}`}
           x1={bx}
           y1={by}
-          x2={bx + 10 * Math.cos(barbAngle)}
-          y2={by + 10 * Math.sin(barbAngle)}
+          x2={bx + 10 * Math.cos(featherAngle)}
+          y2={by + 10 * Math.sin(featherAngle)}
           stroke={barbColor}
           strokeWidth="1.6"
           strokeLinecap="round"
@@ -336,8 +339,8 @@ export default function ProfessionalWindgram({
           key={`l5-${x}-${y}-${pos}`}
           x1={bx}
           y1={by}
-          x2={bx + 5.5 * Math.cos(barbAngle)}
-          y2={by + 5.5 * Math.sin(barbAngle)}
+          x2={bx + 5.5 * Math.cos(featherAngle)}
+          y2={by + 5.5 * Math.sin(featherAngle)}
           stroke={barbColor}
           strokeWidth="1.6"
           strokeLinecap="round"
