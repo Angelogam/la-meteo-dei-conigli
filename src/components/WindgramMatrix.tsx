@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useMemo, useState } from "react";
 import type { HourData } from "@/types/meteo";
 import { Mountain, Wind } from "lucide-react";
@@ -20,11 +18,10 @@ function getWindArrowColor(speed: number): { fill: string; stroke: string; text:
 }
 
 function WindArrowIcon({ deg, color }: { deg: number; color: { fill: string; stroke: string } }) {
-  // Wind direction in meteorology is FROM where wind blows.
-  // Arrow should point TO where wind goes (opposite direction = deg + 180°)
-  const arrowDeg = (deg + 180) % 360;
+  // Wind direction from Open-Meteo is degrees FROM which wind is coming (meteorological convention)
+  // Arrow should point in that same direction to show where wind is coming FROM
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" className="shrink-0" style={{ transform: `rotate(${arrowDeg}deg)` }}>
+    <svg width="14" height="14" viewBox="0 0 24 24" className="shrink-0" style={{ transform: `rotate(${deg}deg)` }}>
       <path d="M12 2L17 10H13.5V22H10.5V10H7L12 2Z" fill={color.fill} stroke={color.stroke} strokeWidth="1" />
     </svg>
   );
