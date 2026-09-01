@@ -141,7 +141,9 @@ function WindBarb({
   high?: boolean; // true = in quota (linea rossa), false = sotto (linea blu)
 }) {
   // direction = provenienza in gradi (0=N, 90=E)
-  const rad = ((direction + 180) * Math.PI) / 180;
+  // La barbetta punta VERSO la direzione di provenienza del vento
+  // (la coda rimane nel punto di misura, la punta indica da dove soffia)
+  const rad = (direction * Math.PI) / 180;
   const len = 18;
   const x2 = cx + Math.sin(rad) * len;
   const y2 = cy - Math.cos(rad) * len;
@@ -154,8 +156,10 @@ function WindBarb({
   let tPos = 0.55; // posizione normalizzata lungo il gambo
   const ux = (x2 - cx) / len;
   const uy = (y2 - cy) / len;
-  const px = -uy;
-  const py = ux;
+  // Piume sul lato SINISTRO rispetto alla direzione del vento
+  // (perpendicolare ruotata di 90° in senso antiorario)
+  const px = uy;
+  const py = -ux;
   for (let i = 0; i < Math.min(3, totalHalfFlags); i++) {
     const t = tPos - i * 0.18;
     const bx = cx + ux * (len * t);
