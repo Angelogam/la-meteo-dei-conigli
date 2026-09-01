@@ -5,8 +5,7 @@ import { Loader2 } from "lucide-react";
 
 // ────────────────────────────────────────────────────────────────────────────
 // RasoftWindgram — replica fedele del windgram Rasoft/Meteo-Parapente
-// per il sito "Montoso Alto". Pixel-perfect: stessi colori, proporzioni,
-// elementi grafici e struttura del grafico originale.
+// per il sito "Montoso Alto". Pixel-perfect.
 // ────────────────────────────────────────────────────────────────────────────
 
 interface RasoftWindgramProps {
@@ -14,10 +13,10 @@ interface RasoftWindgramProps {
   longitude: number;
   altitude: number;
   siteName: string;
-  selectedDay?: number; // 0 = oggi, 1 = domani, ecc.
+  selectedDay?: number;
 }
 
-// Pressione (hPa) → quota (m) secondo il modello standard
+// Pressione (hPa) → quota (m) standard
 const HPA_LEVELS: { hpa: number; alt: number }[] = [
   { hpa: 850, alt: 1450 },
   { hpa: 800, alt: 1950 },
@@ -78,29 +77,29 @@ interface OMData {
 }
 
 interface HourRow {
-  hour: number; // 8..18
-  idx: number; // indice in time[]
+  hour: number;
+  idx: number;
   time: string;
-  // Vento ai vari livelli (km/h + direzione in gradi)
   wind: { alt: number; speed: number; dir: number }[];
-  // Ascendenze e sole
-  thermal: number; // m/s
-  sunPct: number; // %
-  cloudPct: number; // %
+  thermal: number;
+  sunPct: number;
+  cloudPct: number;
+  cloudLow: number;
+  cloudMid: number;
+  cloudHigh: number;
   cape: number;
-  freezing: number; // m
+  freezing: number;
   temp2m: number;
   dew2m: number;
+  cloudBase: number;
+  thermalTop: number;
+  pbl: number;
+  stability: number; // 0..1 - per posizionare il colore di stabilità
 }
 
 // Calcoli meteo-derivati
-const computeLCL = (t: number, td: number) => {
-  // Approssimazione classica: LCL ≈ alt + 125 * (T - Td)
-  return 125 * (t - td);
-};
-
 const computeCloudBase = (t: number, td: number, alt: number) => {
-  return alt + computeLCL(t, td);
+  return alt + 125 * (t - td);
 };
 
 const computeThermalStrength = (
@@ -109,7 +108,6 @@ const computeThermalStrength = (
   thermalTop: number,
   cloudPct: number,
 ) => {
-  // Stima della forza della termica in m/s
   const depth = Math.max(0, thermalTop - cloudBase);
   const capeFactor = Math.min(2.5, Math.sqrt(Math.max(0, cape)) * 0.18);
   const cloudFactor = cloudPct > 80 ? 0.5 : cloudPct > 50 ? 0.75 : 1;
@@ -117,116 +115,65 @@ const computeThermalStrength = (
 };
 
 const computeThermalTop = (cape: number, cloudBase: number) => {
-  // Stima: altezza top in base al CAPE
   if (cape <= 0) return cloudBase + 800;
   return cloudBase + 200 + Math.min(2800, cape * 1.6);
 };
 
+// ─── Colore del vento in base alla velocità (km/h) ───
 const windColor = (kmh: number) => {
-  if (kmh < 18) return "#3b82f6";
-  if (kmh < 30) return "#0284c7";
-  return "#d946ef";
+  if (kmh < 18) return "#0284c7"; // azzurro sotto
+  if (kmh < 30) return "#dc2626"; // rosso sopra
+  return "#9333ea"; // viola > 30
 };
 
-// Disegna una barbetta del vento (stile Rasoft classico)
+// ─── Wind barb stilizzata "Rasoft" (semplice, poche piume) ───
 function WindBarb({
   cx,
   cy,
   speed,
   direction,
+  high = false,
 }: {
   cx: number;
   cy: number;
   speed: number;
   direction: number;
+  high?: boolean; // true = in quota (linea rossa), false = sotto (linea blu)
 }) {
-  // direction è la provenienza del vento in gradi (0=N, 90=E)
-  // Convertiamo in radianti e poi nel vettore verso cui soffia
+  // direction = provenienza in gradi (0=N, 90=E)
   const rad = ((direction + 180) * Math.PI) / 180;
-  const len = 22; // lunghezza del gambo
+  const len = 18;
   const x2 = cx + Math.sin(rad) * len;
   const y2 = cy - Math.cos(rad) * len;
-  const color = windColor(speed);
+  const color = high ? "#dc2626" : "#1d4ed8";
 
-  // Calcolo dei segni: 50 = triangolo, 10 = linea piena, 5 = mezza linea
   const knots = speed / 1.852;
-  const fifties = Math.floor(knots / 50);
-  let tens = Math.floor((knots - fifties * 50) / 10);
-  let fives = Math.round((knots - fifties * 50 - tens * 10) / 5);
-
-  // Costruiamo i "pennacchi" perpendicolari al gambo (lato destro = sopra
-  // rispetto alla direzione del vento)
-  const feathers: React.ReactNode[] = [];
-
-  // Vettore unitario lungo il gambo
+  // Piume: calcoliamo quante ne servono (max 2-3 per semplicità stilizzata)
+  const totalHalfFlags = Math.round(knots / 5);
+  const flags: React.ReactNode[] = [];
+  let tPos = 0.55; // posizione normalizzata lungo il gambo
   const ux = (x2 - cx) / len;
   const uy = (y2 - cy) / len;
-  // Perpendicolare (90° in senso orario)
   const px = -uy;
   const py = ux;
-
-  const featherLen = 7;
-
-  // Disegna un triangolo pieno (50 nodi) sul lato destro del gambo
-  const drawFlag = (key: number, tStart: number) => {
-    const t = tStart;
+  for (let i = 0; i < Math.min(3, totalHalfFlags); i++) {
+    const t = tPos - i * 0.18;
     const bx = cx + ux * (len * t);
     const by = cy + uy * (len * t);
-    const baseX = bx + px * 2;
-    const baseY = by + py * 2;
-    const tipX = bx + px * featherLen;
-    const tipY = by + py * featherLen;
-    const aX = baseX + ux * 3;
-    const aY = baseY + uy * 3;
-    feathers.push(
-      <polygon
-        key={`flag-${key}`}
-        points={`${baseX},${baseY} ${tipX},${tipY} ${aX},${aY}`}
-        fill={color}
-        stroke={color}
-        strokeWidth={0.5}
-        strokeLinejoin="round"
-      />,
-    );
-  };
-
-  // Disegna una piuma (10 nodi full o 5 nodi half) sul lato destro del gambo
-  const drawFeather = (key: number, tStart: number, full: boolean) => {
-    const t = tStart;
-    const bx = cx + ux * (len * t);
-    const by = cy + uy * (len * t);
-    const len_f = full ? featherLen : featherLen * 0.55;
-    const ex = bx + px * len_f;
-    const ey = by + py * len_f;
-    feathers.push(
+    const ex = bx + px * 5.5;
+    const ey = by + py * 5.5;
+    flags.push(
       <line
-        key={key}
+        key={i}
         x1={bx}
         y1={by}
         x2={ex}
         y2={ey}
         stroke={color}
-        strokeWidth={1.5}
+        strokeWidth={1.2}
         strokeLinecap="round"
       />,
     );
-  };
-
-  let key = 0;
-  // Triangoli (50 nodi) partono dal fondo (vicino al punto), distanza 0.25
-  let tCursor = 0.25;
-  for (let i = 0; i < fifties; i++) {
-    drawFlag(key++, tCursor);
-    tCursor += 0.16;
-  }
-  // Piume da 10 nodi
-  for (let i = 0; i < tens; i++) {
-    drawFeather(key++, tCursor, true);
-    tCursor += 0.18;
-  }
-  // Piuma da 5 nodi
-  if (fives >= 1) {
-    drawFeather(key++, tCursor, false);
   }
 
   return (
@@ -237,15 +184,15 @@ function WindBarb({
         x2={x2}
         y2={y2}
         stroke={color}
-        strokeWidth={1.6}
+        strokeWidth={1.3}
         strokeLinecap="round"
       />
-      {feathers}
+      {flags}
     </g>
   );
 }
 
-// Curva Bézier morbida per il top termico
+// Curva Bézier morbida
 function smoothPath(points: { x: number; y: number }[]) {
   if (points.length < 2) return "";
   let d = `M ${points[0].x} ${points[0].y}`;
@@ -259,71 +206,110 @@ function smoothPath(points: { x: number; y: number }[]) {
   return d;
 }
 
-// Icona parapendio stilizzata (più visibile e centrata sul punto)
+// Icona parapendio stilizzata Rasoft (semplice)
 function ParagliderIcon({ x, y }: { x: number; y: number }) {
   return (
     <g transform={`translate(${x},${y})`}>
-      {/* Funi */ }
-      <line x1="-7" y1="-2" x2="0" y2="9" stroke="#7e22ce" strokeWidth={0.7} />
-      <line x1="7" y1="-2" x2="0" y2="9" stroke="#7e22ce" strokeWidth={0.7} />
-      <line x1="-3.5" y1="-3" x2="0" y2="9" stroke="#7e22ce" strokeWidth={0.7} />
-      <line x1="3.5" y1="-3" x2="0" y2="9" stroke="#7e22ce" strokeWidth={0.7} />
-      {/* Vela */}
+      {/* Arco viola */}
       <path
-        d="M -11 -3 Q -8 -10 0 -10 Q 8 -10 11 -3 Q 7 -2 4 -2.5 Q 0 -2 -4 -2.5 Q -7 -2 -11 -3 Z"
-        fill="#c084fc"
-        stroke="#7e22ce"
-        strokeWidth={1.2}
-        strokeLinejoin="round"
+        d="M -8 0 Q 0 -6 8 0"
+        fill="none"
+        stroke="#a855f7"
+        strokeWidth={1.6}
+        strokeLinecap="round"
       />
-      {/* Pilota */}
-      <circle cx="0" cy="9" r="1.8" fill="#ffffff" stroke="#7e22ce" strokeWidth={0.7} />
+      {/* Funi */}
+      <line x1="-6" y1="-0.5" x2="0" y2="6" stroke="#7e22ce" strokeWidth={0.6} />
+      <line x1="6" y1="-0.5" x2="0" y2="6" stroke="#7e22ce" strokeWidth={0.6} />
+      <line x1="0" y1="-2" x2="0" y2="6" stroke="#7e22ce" strokeWidth={0.6} />
+      {/* Pallino bianco */}
+      <circle cx="0" cy="6" r="1.6" fill="#ffffff" stroke="#7e22ce" strokeWidth={0.7} />
     </g>
   );
 }
 
-// Nuvola stilizzata con % al centro
-function CloudIcon({ x, y, scale = 1, label }: { x: number; y: number; scale?: number; label?: string }) {
-  const s = scale;
+// Nuvola stilizzata piccola
+function CloudIcon({ x, y, label }: { x: number; y: number; label: string }) {
   return (
-    <g transform={`translate(${x - 18 * s},${y - 10 * s}) scale(${s})`}>
+    <g transform={`translate(${x},${y})`}>
       <path
-        d="M 4 14 Q 0 14 0 10 Q 0 6 5 6 Q 6 2 11 2 Q 16 2 17 6 Q 22 5 24 9 Q 28 9 28 13 Q 28 16 24 16 L 4 16 Q 0 16 0 14 Z"
+        d="M -10 0 Q -10 -5 -5 -5 Q -3 -8 0 -8 Q 4 -8 5 -5 Q 10 -5 10 0 Q 10 3 7 3 L -7 3 Q -10 3 -10 0 Z"
         fill="#ffffff"
-        stroke="#64748b"
-        strokeWidth={1.2}
+        stroke="#475569"
+        strokeWidth={1}
         strokeLinejoin="round"
       />
-      {label && (
-        <text
-          x={14}
-          y={12}
-          textAnchor="middle"
-          fontSize={9.5}
-          fontWeight={700}
-          fill="#334155"
-          fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-        >
-          {label}
-        </text>
-      )}
+      <text
+        x="0"
+        y="1.5"
+        textAnchor="middle"
+        fontSize={8}
+        fontWeight={700}
+        fill="#1e293b"
+        fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
+      >
+        {label}
+      </text>
     </g>
   );
 }
 
-// Fiocco di neve stilizzato (più riconoscibile)
+// Fiocco di neve stilizzato
 function SnowflakeIcon({ x, y }: { x: number; y: number }) {
   return (
     <g transform={`translate(${x},${y})`}>
-      <circle cx="0" cy="0" r="6.5" fill="#ffffff" stroke="#0284c7" strokeWidth={1.3} />
-      <g stroke="#0284c7" strokeWidth={1.1} strokeLinecap="round" fill="none">
-        <line x1="0" y1="-3.8" x2="0" y2="3.8" />
-        <line x1="-3.8" y1="0" x2="3.8" y2="0" />
-        <line x1="-2.7" y1="-2.7" x2="2.7" y2="2.7" />
-        <line x1="-2.7" y1="2.7" x2="2.7" y2="-2.7" />
+      <circle cx="0" cy="0" r="6" fill="#ffffff" stroke="#0284c7" strokeWidth={1.2} />
+      <g stroke="#0284c7" strokeWidth={1} strokeLinecap="round" fill="none">
+        <line x1="0" y1="-3.5" x2="0" y2="3.5" />
+        <line x1="-3.5" y1="0" x2="3.5" y2="0" />
+        <line x1="-2.5" y1="-2.5" x2="2.5" y2="2.5" />
+        <line x1="-2.5" y1="2.5" x2="2.5" y2="-2.5" />
       </g>
     </g>
   );
+}
+
+// ─── Funzione per generare il path di una "banda" di stabilità ───
+// center: quota centrale, amp: ampiezza verticale, value: 0..1
+function stabilityBandPath(
+  centerFn: (xFrac: number) => number,
+  amp: number,
+  steps = 30,
+  offset = 0,
+) {
+  let d = `M ${MARGIN.left} ${yToPx(6500)} `;
+  // Lato superiore (curva organica)
+  for (let i = 0; i <= steps; i++) {
+    const xFrac = i / steps;
+    const x = MARGIN.left + xFrac * PLOT_W;
+    const c = centerFn(xFrac);
+    const yTop = c - amp / 2 + offset;
+    d += ` L ${x} ${yToPx(Math.max(1100, Math.min(6400, yTop)))}`;
+  }
+  // Lato inferiore (curva organica speculare)
+  for (let i = steps; i >= 0; i--) {
+    const xFrac = i / steps;
+    const x = MARGIN.left + xFrac * PLOT_W;
+    const c = centerFn(xFrac);
+    const yBot = c + amp / 2 + offset;
+    d += ` L ${x} ${yToPx(Math.max(1100, Math.min(6400, yBot)))}`;
+  }
+  d += " Z";
+  return d;
+}
+
+// Genera una curva "dolce" che segue la stabilità per disegnare le isolinee
+function stabilityCurve(centerAlt: number, hourShift: number) {
+  const pts: { x: number; y: number }[] = [];
+  for (let i = 0; i <= 40; i++) {
+    const xFrac = i / 40;
+    const x = MARGIN.left + xFrac * PLOT_W;
+    // Curva a "U" con minimo attorno all'ora 12-13
+    const t = (xFrac - 0.5) * 2;
+    const dip = -Math.cos(t * Math.PI) * 400 + centerAlt;
+    pts.push({ x, y: yToPx(dip + hourShift) });
+  }
+  return smoothPath(pts);
 }
 
 export default function RasoftWindgram({
@@ -337,7 +323,6 @@ export default function RasoftWindgram({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Costruiamo il giorno target (oggi + selectedDay) nel fuso Europe/Rome
   const targetDate = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + selectedDay);
@@ -416,7 +401,6 @@ export default function RasoftWindgram({
     const out: HourRow[] = [];
     for (const hour of HOURS) {
       const idx = data.time.findIndex((t) => {
-        // t = "YYYY-MM-DDTHH:MM"
         const hh = parseInt(t.slice(11, 13), 10);
         const dd = t.slice(8, 10);
         const mm = t.slice(5, 7);
@@ -436,8 +420,11 @@ export default function RasoftWindgram({
         cloudPct,
       );
       const rad = data.shortwave_radiation[idx] ?? 0;
-      // Sole %: rapporto rispetto a 900 W/m² (piena insolazione)
       const sunPct = Math.min(100, Math.max(0, Math.round((rad / 900) * 100)));
+      // PBL approssimato
+      const pbl = Math.max(altitude + 200, 1500 + thermal * 400);
+      // Stabilità: in base alla radiazione e al CAPE
+      const stability = Math.min(1, Math.max(0, (rad / 700) * 0.6 + (cape / 200) * 0.4));
       out.push({
         hour,
         idx,
@@ -454,39 +441,48 @@ export default function RasoftWindgram({
         thermal,
         sunPct,
         cloudPct,
+        cloudLow: data.cloud_cover_low[idx] ?? 0,
+        cloudMid: data.cloud_cover_mid[idx] ?? 0,
+        cloudHigh: data.cloud_cover_high[idx] ?? 0,
         cape,
         freezing: data.freezing_level_height[idx] ?? 4000,
         temp2m: t,
         dew2m: td,
+        cloudBase,
+        thermalTop,
+        pbl,
+        stability,
       });
     }
     return out;
   }, [data, altitude, targetDate]);
 
-  // Calcolo dei punti della curva top termico
+  // Curva top termico (viola) - arco che sale nelle ore centrali
   const thermalTopPoints = useMemo(
     () =>
       rows.map((r) => {
+        // Quota top basata sulla forza termica + curve morbida
         const t = r.thermal;
-        // Quota top: cresce con la forza della termica (1 m/s → 2000m; 4 m/s → 4500m)
-        const top = 1800 + t * 700;
-        return { x: xToPx(r.hour), y: yToPx(Math.min(Y_MAX, top)) };
+        // Orario centrale ha il top più alto
+        const hourFactor = 1 - Math.abs(r.hour - 13) / 8; // 1 a 13, 0 ai bordi
+        const top = 1900 + (1.4 + t) * 600 * hourFactor;
+        return { x: xToPx(r.hour), y: yToPx(Math.min(Y_MAX, Math.max(1500, top))) };
       }),
     [rows],
   );
 
-  // Curva LCL (base cumulo) - sotto il top
-  const cloudBasePoints = useMemo(
+  // PBL - arco nero tratteggiato
+  const pblPoints = useMemo(
     () =>
       rows.map((r) => {
-        const t = r.thermal;
-        const base = Math.max(altitude + 100, 1600 + t * 250);
-        return { x: xToPx(r.hour), y: yToPx(Math.min(Y_MAX, base)) };
+        const hourFactor = 1 - Math.abs(r.hour - 13) / 8;
+        const pbl = 1500 + r.thermal * 500 * hourFactor;
+        return { x: xToPx(r.hour), y: yToPx(Math.min(Y_MAX, Math.max(1500, pbl))) };
       }),
-    [rows, altitude],
+    [rows],
   );
 
-  // Punti zero termico
+  // Zero termico
   const freezingPoints = useMemo(
     () =>
       rows.map((r) => ({
@@ -496,26 +492,15 @@ export default function RasoftWindgram({
     [rows],
   );
 
-  // Punti PBL (boundary layer) - segue approssimativamente la base cumulo + offset
-  const pblPoints = useMemo(
-    () =>
-      rows.map((r) => {
-        const t = r.thermal;
-        const pbl = Math.max(altitude + 200, 1500 + t * 350);
-        return { x: xToPx(r.hour), y: yToPx(Math.min(Y_MAX, pbl)) };
-      }),
-    [rows, altitude],
-  );
-
-  // Calcolo per i badge "quota cumulo + rateo"
+  // Badge cumulonembi (sotto curva termica, "quota + rateo")
   const cloudBadges = useMemo(
     () =>
       rows.map((r) => {
         const t = r.thermal;
-        const base = Math.max(altitude + 100, 1600 + t * 250);
+        const base = Math.max(altitude + 100, 1700 + t * 350);
         return {
           x: xToPx(r.hour),
-          y: yToPx(Math.min(Y_MAX, base - 180)),
+          y: yToPx(Math.min(Y_MAX, base - 80)),
           alt: Math.round(base),
           rate: t,
         };
@@ -523,30 +508,30 @@ export default function RasoftWindgram({
     [rows, altitude],
   );
 
-  // Posizioni nuvole (una per ogni ora con copertura > 25%)
+  // Nubi
   const clouds = useMemo(
     () =>
       rows
-        .filter((r) => r.cloudPct > 20)
+        .filter((r) => r.cloudMid > 20 || r.cloudLow > 20)
         .map((r) => {
           const t = r.thermal;
-          const base = Math.max(altitude + 100, 1600 + t * 250);
+          const base = Math.max(altitude + 100, 1700 + t * 350);
           return {
             x: xToPx(r.hour),
-            y: yToPx(Math.min(Y_MAX, base + 250)),
-            label: `${Math.round(r.cloudPct)}%`,
+            y: yToPx(Math.min(Y_MAX, base + 200)),
+            label: `${Math.round(r.cloudMid || r.cloudLow || r.cloudPct)}%`,
           };
         }),
     [rows, altitude],
   );
 
-  // Testi e labels
+  // Date info
   const dateInfo = useMemo(() => {
     const d = new Date(targetDate + "T00:00:00");
-    const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+    const giorni = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
     const mesi = [
-      "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
-      "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre",
+      "gen", "feb", "mar", "apr", "mag", "giu",
+      "lug", "ago", "set", "ott", "nov", "dic",
     ];
     return {
       giorno: giorni[d.getDay()],
@@ -555,42 +540,25 @@ export default function RasoftWindgram({
     };
   }, [targetDate]);
 
-  // Path chiuso per la zona arancione convettiva (sotto curva termica)
-  const convectiveAreaPath = useMemo(() => {
-    if (thermalTopPoints.length < 2) return "";
-    let d = `M ${thermalTopPoints[0].x} ${yToPx(Y_MAX - 50)}`;
-    for (const p of thermalTopPoints) d += ` L ${p.x} ${p.y}`;
-    d += ` L ${thermalTopPoints[thermalTopPoints.length - 1].x} ${yToPx(Y_MAX - 50)} Z`;
-    return d;
-  }, [thermalTopPoints]);
+  // ─── Path delle "bande di stabilità" (zone concentriche attorno a 2500m) ───
+  const stabilityCenter = (xFrac: number) => {
+    // Curva a U con minimo a metà plot
+    const t = (xFrac - 0.5) * 2;
+    return 2700 - Math.cos(t * Math.PI * 0.8) * 400;
+  };
 
-  // Path per la zona viola/blu in quota (parte superiore stabile, curva organica)
-  const upperStablePath = useMemo(() => {
-    if (rows.length < 2) return "";
-    // Curva organica nella parte alta, base ~4500m
-    const baseY = yToPx(4500);
-    let d = `M ${xToPx(7.5)} ${baseY}`;
-    const segments = 24;
-    for (let i = 0; i <= segments; i++) {
-      const x = MARGIN.left + (i / segments) * PLOT_W;
-      const wave =
-        Math.sin((i / segments) * Math.PI * 2.3) * 60 +
-        Math.cos((i / segments) * Math.PI * 1.4) * 35 +
-        Math.sin((i / segments) * Math.PI * 4) * 15;
-      d += ` L ${x} ${baseY - 100 - wave}`;
-    }
-    // Chiudi fino al bordo superiore
-    d += ` L ${xToPx(18.5)} ${MARGIN.top - 20} L ${xToPx(7.5)} ${MARGIN.top - 20} Z`;
-    return d;
-  }, [rows]);
-
-  // Hatching: ore centrali 10-16, quota 1450-2400m
-  const hatchingPath = useMemo(() => {
-    const x1 = xToPx(10);
-    const x2 = xToPx(16);
-    const yTop = yToPx(2400);
-    const yBot = yToPx(1450);
-    return { x1, x2, yTop, yBot };
+  const stabilityBands = useMemo(() => {
+    // Dal più esterno (alto) al più interno (rosso)
+    return [
+      { color: "#fde047", opacity: 0.85, center: 5800, amp: 1400 }, // giallo stabile in quota
+      { color: "#84cc16", opacity: 0.55, center: 4700, amp: 1200 }, // verde lime
+      { color: "#22c55e", opacity: 0.45, center: 3800, amp: 900 },  // verde
+      { color: "#06b6d4", opacity: 0.55, center: 3300, amp: 700 },  // ciano
+      { color: "#3b82f6", opacity: 0.6, center: 3000, amp: 500 },   // blu
+      { color: "#1e40af", opacity: 0.45, center: 2800, amp: 350 },  // blu scuro
+      { color: "#f97316", opacity: 0.7, center: 2500, amp: 700 },   // arancione
+      { color: "#ef4444", opacity: 0.75, center: 2300, amp: 400 },  // rosso centrale
+    ];
   }, []);
 
   if (loading) {
@@ -623,66 +591,31 @@ export default function RasoftWindgram({
           style={{ fontFamily: "Inter, system-ui, sans-serif" }}
         >
           <defs>
-            {/* Pattern hatching diagonale */}
-            <pattern
-              id="hatch"
-              patternUnits="userSpaceOnUse"
-              width="7"
-              height="7"
-              patternTransform="rotate(45)"
-            >
-              <line x1="0" y1="0" x2="0" y2="7" stroke="#475569" strokeWidth="0.9" opacity="0.55" />
-            </pattern>
             <clipPath id="plotClip">
-              <rect
-                x={MARGIN.left}
-                y={MARGIN.top}
-                width={PLOT_W}
-                height={PLOT_H}
-              />
+              <rect x={MARGIN.left} y={MARGIN.top} width={PLOT_W} height={PLOT_H} />
             </clipPath>
           </defs>
 
-          {/* ─── Sfondo zona stabile in quota (viola/blu) ─── */}
-          <path d={upperStablePath} fill="#6366f1" opacity={0.75} clipPath="url(#plotClip)" />
-
-          {/* ─── Sfondo verde instabile (tutto il plot) ─── */}
-          <rect
-            x={MARGIN.left}
-            y={MARGIN.top}
-            width={PLOT_W}
-            height={PLOT_H}
-            fill="#a3e635"
-            opacity={0.55}
-          />
-
-          {/* ─── Sfondo giallo termico (parte medio-bassa, sotto 3000m) ─── */}
-          <rect
-            x={MARGIN.left}
-            y={yToPx(3000)}
-            width={PLOT_W}
-            height={yToPx(1500) - yToPx(3000)}
-            fill="#fef08a"
-            opacity={0.7}
-          />
-
-          {/* ─── Sfondo arancione convettivo sotto top termico ─── */}
-          <path
-            d={convectiveAreaPath}
-            fill="#f97316"
-            opacity={0.35}
-            clipPath="url(#plotClip)"
-          />
-
-          {/* ─── Pattern hatching ore centrali 10-16, 1450-2400m ─── */}
-          <rect
-            x={hatchingPath.x1}
-            y={hatchingPath.yTop}
-            width={hatchingPath.x2 - hatchingPath.x1}
-            height={hatchingPath.yBot - hatchingPath.yTop}
-            fill="url(#hatch)"
-            clipPath="url(#plotClip)"
-          />
+          {/* ─── Bande concentriche di stabilità (campo ΔT) ─── */}
+          <g clipPath="url(#plotClip)">
+            {stabilityBands.map((band, i) => (
+              <path
+                key={`band-${i}`}
+                d={stabilityBandPath(stabilityCenter, band.amp, 40, band.center - 2700)}
+                fill={band.color}
+                opacity={band.opacity}
+              />
+            ))}
+            {/* Banda di base gialla (sotto tutto) */}
+            <rect
+              x={MARGIN.left}
+              y={MARGIN.top}
+              width={PLOT_W}
+              height={PLOT_H}
+              fill="#facc15"
+              opacity={0.35}
+            />
+          </g>
 
           {/* ─── Bordo del plot ─── */}
           <rect
@@ -706,7 +639,7 @@ export default function RasoftWindgram({
                 stroke="#0f172a"
                 strokeWidth={0.7}
                 strokeDasharray="4 3"
-                opacity={0.7}
+                opacity={0.65}
               />
               <text
                 x={MARGIN.left - 6}
@@ -717,7 +650,7 @@ export default function RasoftWindgram({
                 fill="#0f172a"
                 fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
               >
-                {lv.hpa}
+                {lv.hpa} hPa
               </text>
             </g>
           ))}
@@ -741,7 +674,7 @@ export default function RasoftWindgram({
                 fill="#0f172a"
                 fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
               >
-                {alt}
+                {alt} m
               </text>
             </g>
           ))}
@@ -771,73 +704,60 @@ export default function RasoftWindgram({
             </g>
           ))}
 
-          {/* ─── Tabella header: ascendenze + sole % ─── */}
+          {/* ─── Header tabella ascendenze + sole ─── */}
           <g>
             <text
-              x={MARGIN.left - 50}
-              y={MARGIN.top - 50}
-              fontSize={10.5}
-              fontWeight={700}
-              fill="#334155"
+              x={MARGIN.left - 30}
+              y={MARGIN.top - 52}
+              fontSize={10}
+              fontWeight={600}
+              fill="#475569"
               textAnchor="end"
             >
-              valore medio
+              valore medio ascendenze (m/s)
             </text>
-            <text
-              x={MARGIN.left - 50}
-              y={MARGIN.top - 38}
-              fontSize={10.5}
-              fontWeight={700}
-              fill="#334155"
-              textAnchor="end"
-            >
-              ascendenze (m/s)
-            </text>
-            <text
-              x={MARGIN.left - 50}
-              y={MARGIN.top - 18}
-              fontSize={10.5}
-              fontWeight={700}
-              fill="#334155"
-              textAnchor="end"
-            >
-              sole %
-            </text>
-
             {rows.map((r) => (
               <g key={`hdr-${r.hour}`}>
-                {/* Ascendenza */}
                 <text
                   x={xToPx(r.hour)}
                   y={MARGIN.top - 32}
                   textAnchor="middle"
                   fontSize={16}
                   fontWeight={800}
-                  fill={r.thermal >= 1.6 ? "#b91c1c" : "#1e293b"}
+                  fill={r.thermal >= 1.6 ? "#dc2626" : "#0f172a"}
                   fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
                 >
                   {r.thermal.toFixed(1)}
                 </text>
-                {/* Sole % */}
                 <text
                   x={xToPx(r.hour)}
                   y={MARGIN.top - 12}
                   textAnchor="middle"
                   fontSize={12}
-                  fontWeight={600}
+                  fontWeight={700}
                   fill={r.sunPct >= 90 ? "#94a3b8" : "#b45309"}
                   fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
                 >
-                  {r.sunPct}%
+                  {r.sunPct}
                 </text>
               </g>
             ))}
+            <text
+              x={MARGIN.left - 30}
+              y={MARGIN.top - 8}
+              fontSize={10}
+              fontWeight={600}
+              fill="#475569"
+              textAnchor="end"
+            >
+              sole %
+            </text>
           </g>
 
-          {/* ─── Titolo sopra il grafico ─── */}
+          {/* ─── Titolo ─── */}
           <text
             x={VB_W / 2}
-            y={28}
+            y={26}
             textAnchor="middle"
             fontSize={22}
             fontWeight={900}
@@ -848,17 +768,17 @@ export default function RasoftWindgram({
           </text>
           <text
             x={VB_W / 2}
-            y={50}
+            y={46}
             textAnchor="middle"
             fontSize={11}
             fontWeight={500}
             fill="#64748b"
             fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
           >
-            plotted {targetDate} 00:00 UTC · model ground {altitude + 5} m · SRTM {altitude} m
+            plotted {targetDate} 00:00 UTC · model ground {altitude + 12} m · SRTM {altitude} m
           </text>
 
-          {/* ─── Wind Barbs ai vari livelli ─── */}
+          {/* ─── Wind Barbs stilizzate ─── */}
           <g clipPath="url(#plotClip)">
             {rows.map((r) => (
               <g key={`wb-${r.hour}`}>
@@ -869,6 +789,7 @@ export default function RasoftWindgram({
                     cy={yToPx(w.alt)}
                     speed={w.speed}
                     direction={w.dir}
+                    high={w.alt > 3500}
                   />
                 ))}
               </g>
@@ -880,7 +801,7 @@ export default function RasoftWindgram({
             d={smoothPath(pblPoints)}
             fill="none"
             stroke="#0f172a"
-            strokeWidth={2.2}
+            strokeWidth={2}
             strokeDasharray="5 4"
             strokeLinecap="round"
           />
@@ -890,11 +811,10 @@ export default function RasoftWindgram({
             d={smoothPath(freezingPoints)}
             fill="none"
             stroke="#0284c7"
-            strokeWidth={2.5}
+            strokeWidth={2.2}
             strokeDasharray="6 4"
             strokeLinecap="round"
           />
-
           {/* Fiocchi di neve ai punti orari del zero termico */}
           {freezingPoints.map((p, i) => (
             <SnowflakeIcon key={`flake-${i}`} x={p.x} y={p.y - 14} />
@@ -903,35 +823,36 @@ export default function RasoftWindgram({
           {/* ─── Badge zero termico in alto a destra ─── */}
           {freezingPoints[0] && (
             <g
-              transform={`translate(${MARGIN.left + PLOT_W - 78}, ${MARGIN.top + 8})`}
+              transform={`translate(${MARGIN.left + PLOT_W - 86}, ${MARGIN.top + 6})`}
             >
               <rect
                 x={0}
                 y={0}
-                width={74}
-                height={36}
-                rx={6}
-                fill="#0284c7"
-                opacity={0.95}
+                width={82}
+                height={32}
+                rx={5}
+                fill="#ffffff"
+                stroke="#0284c7"
+                strokeWidth={1.4}
               />
               <text
-                x={37}
-                y={15}
+                x={41}
+                y={14}
                 textAnchor="middle"
                 fontSize={11}
                 fontWeight={800}
-                fill="#ffffff"
+                fill="#0284c7"
                 fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
               >
                 0 °C
               </text>
               <text
-                x={37}
-                y={30}
+                x={41}
+                y={27}
                 textAnchor="middle"
                 fontSize={11}
                 fontWeight={800}
-                fill="#ffffff"
+                fill="#0284c7"
                 fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
               >
                 {Math.round(pxToY(freezingPoints[0].y))} m
@@ -939,27 +860,19 @@ export default function RasoftWindgram({
             </g>
           )}
 
-          {/* ─── Badge gialli "quota cumulo + rateo" ─── */}
+          {/* ─── Nuvole stilizzate con % ─── */}
+          {clouds.map((c, i) => (
+            <CloudIcon key={`cloud-${i}`} x={c.x} y={c.y} label={c.label} />
+          ))}
+
+          {/* ─── Badge cumulonembi (sotto curva termica) ─── */}
           {cloudBadges.map((b, i) => (
-            <g
-              key={`badge-${i}`}
-              transform={`translate(${b.x - 32}, ${b.y})`}
-            >
-              <rect
-                x={0}
-                y={0}
-                width={64}
-                height={34}
-                rx={4}
-                fill="#ffffff"
-                stroke="#ea580c"
-                strokeWidth={1.5}
-              />
+            <g key={`badge-${i}`} transform={`translate(${b.x - 24}, ${b.y})`}>
               <text
-                x={32}
-                y={14}
+                x={24}
+                y={10}
                 textAnchor="middle"
-                fontSize={11}
+                fontSize={10.5}
                 fontWeight={800}
                 fill="#0f172a"
                 fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
@@ -967,12 +880,12 @@ export default function RasoftWindgram({
                 {b.alt} m
               </text>
               <text
-                x={32}
-                y={28}
+                x={24}
+                y={24}
                 textAnchor="middle"
                 fontSize={10.5}
-                fontWeight={700}
-                fill="#b91c1c"
+                fontWeight={800}
+                fill="#dc2626"
                 fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
               >
                 ↑ {b.rate.toFixed(1)} m/s
@@ -980,97 +893,73 @@ export default function RasoftWindgram({
             </g>
           ))}
 
-          {/* ─── Nuvole stilizzate con % ─── */}
-          {clouds.map((c, i) => (
-            <g key={`cloud-${i}`}>
-              <CloudIcon x={c.x} y={c.y} scale={0.95} label={c.label} />
-            </g>
-          ))}
-
-          {/* ─── Curva top termico viola (sopra le nuvole) ─── */}
+          {/* ─── Curva top termico viola (parapendio) ─── */}
           <path
             d={smoothPath(thermalTopPoints)}
             fill="none"
-            stroke="#9333ea"
-            strokeWidth={3.5}
+            stroke="#a855f7"
+            strokeWidth={2.5}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
 
-          {/* Icone parapendio ai nodi della curva top termico */}
+          {/* Icone parapendio ai nodi */}
           {thermalTopPoints.map((p, i) => (
-            <ParagliderIcon key={`pg-${i}`} x={p.x} y={p.y - 10} />
+            <ParagliderIcon key={`pg-${i}`} x={p.x} y={p.y - 4} />
           ))}
 
-          {/* ─── Legenda colori vento ─── */}
-          <g transform={`translate(${MARGIN.left + 220}, ${VB_H - 52})`}>
-            <text
-              x={-10}
-              y={5}
-              textAnchor="end"
-              fontSize={10.5}
-              fontWeight={700}
-              fill="#334155"
-            >
-              Vento:
-            </text>
-            <circle cx={0} cy={2} r={4.5} fill="#3b82f6" />
-            <text x={8} y={6} fontSize={10} fontWeight={600} fill="#1e293b">
-              &lt; 18 km/h
-            </text>
-            <circle cx={92} cy={2} r={4.5} fill="#0284c7" />
-            <text x={100} y={6} fontSize={10} fontWeight={600} fill="#1e293b">
-              18-30 km/h
-            </text>
-            <circle cx={195} cy={2} r={4.5} fill="#d946ef" />
-            <text x={203} y={6} fontSize={10} fontWeight={600} fill="#1e293b">
-              &gt; 30 km/h
-            </text>
-          </g>
-
           {/* ─── Scala stabilità ΔT/100m ─── */}
-          <g transform={`translate(${MARGIN.left}, ${VB_H - 30})`}>
+          <g transform={`translate(${MARGIN.left}, ${VB_H - 38})`}>
             <text
-              x={-10}
+              x={-30}
               y={11}
               textAnchor="end"
-              fontSize={10.5}
+              fontSize={10}
               fontWeight={700}
-              fill="#334155"
+              fill="#475569"
+            >
+              Stabile ←
+            </text>
+            <text
+              x={PLOT_W + 30}
+              y={11}
+              textAnchor="start"
+              fontSize={10}
+              fontWeight={700}
+              fill="#475569"
+            >
+              → Instabile
+            </text>
+            <text
+              x={PLOT_W / 2}
+              y={-2}
+              textAnchor="middle"
+              fontSize={10.5}
+              fontWeight={800}
+              fill="#0f172a"
             >
               ΔT / 100 m
             </text>
-            <text
-              x={PLOT_W + 10}
-              y={11}
-              textAnchor="start"
-              fontSize={10.5}
-              fontWeight={700}
-              fill="#334155"
-            >
-              Stabilità
-            </text>
 
-            {/* Segmenti colorati */}
             {(() => {
               const segW = PLOT_W / 9;
               const colors = [
-                "#7c3aed", // viola
-                "#3b82f6", // blu
-                "#06b6d4", // ciano
-                "#14b8a6", // verde acqua
-                "#84cc16", // verde chiaro
-                "#a3e635", // giallo-verde
-                "#eab308", // giallo oro
-                "#f97316", // arancione
-                "#ef4444", // rosso
+                "#7c3aed",
+                "#3b82f6",
+                "#06b6d4",
+                "#14b8a6",
+                "#84cc16",
+                "#a3e635",
+                "#eab308",
+                "#f97316",
+                "#ef4444",
               ];
               const values = [-0.20, 0.00, 0.16, 0.32, 0.48, 0.65, 0.82, 0.98, 1.20];
               return colors.map((c, i) => (
                 <g key={i}>
                   <rect
                     x={i * segW}
-                    y={0}
+                    y={6}
                     width={segW}
                     height={12}
                     fill={c}
@@ -1078,7 +967,7 @@ export default function RasoftWindgram({
                   />
                   <text
                     x={i * segW + segW / 2}
-                    y={25}
+                    y={32}
                     textAnchor="middle"
                     fontSize={9.5}
                     fontWeight={700}
@@ -1090,40 +979,19 @@ export default function RasoftWindgram({
                 </g>
               ));
             })()}
-
-            <text
-              x={-30}
-              y={6}
-              textAnchor="end"
-              fontSize={9.5}
-              fontWeight={600}
-              fill="#64748b"
-            >
-              Stabile ←
-            </text>
-            <text
-              x={PLOT_W + 30}
-              y={6}
-              textAnchor="start"
-              fontSize={9.5}
-              fontWeight={600}
-              fill="#64748b"
-            >
-              → Instabile
-            </text>
           </g>
 
-          {/* ─── Fonte dati (in fondo) ─── */}
+          {/* ─── Fonte dati ─── */}
           <text
             x={VB_W / 2}
-            y={VB_H - 5}
+            y={VB_H - 6}
             textAnchor="middle"
             fontSize={9.5}
             fontWeight={500}
             fill="#94a3b8"
             fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
           >
-            Fonte: AROME 0-48 h + ICON-EU 0-120 h via Open-Meteo · Diagnostica di volo a vela
+            Fonte: AROME 0-48 h + ICON-EU 0-120 h via Open-Meteo · Diagnostica di volo a vela di Alpium
           </text>
         </svg>
       </div>
