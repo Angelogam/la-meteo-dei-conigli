@@ -14,6 +14,7 @@ import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
 import Windgram from "@/components/Windgram";
+import RasoftWindgram from "@/components/RasoftWindgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import SkewTDiagram from "@/components/SkewTDiagram";
 import { useWeatherData } from "@/hooks/useWeatherData";
@@ -188,6 +189,17 @@ export default function Index() {
                     lon={site.lon}
                   />
                 </div>
+
+                {/* Windgram Rasoft Montoso Alto */}
+                {site.id === "montoso-decollo-basso" && (
+                  <RasoftWindgram
+                    latitude={site.lat}
+                    longitude={site.lon}
+                    altitude={site.elevation_m}
+                    siteName="Montoso Alto"
+                    selectedDay={selectedDay}
+                  />
+                )}
 
                 {/* SkewTDiagram — aggiornato al giorno di previsione selezionato */}
                 <SkewTDiagram
