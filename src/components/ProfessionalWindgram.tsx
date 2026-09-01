@@ -41,6 +41,9 @@ const STABILITY_SCALE = [
   { val: 1.20, color: "#c92e1e" },  // rosso scuro
 ];
 
+// Percentuali per curve di livello termico
+const THERMAL_PERCENTAGES = [5, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100];
+
 function getStabilityColor(deltaT: number): string {
   if (deltaT <= -0.1) return STABILITY_SCALE[0].color;
   if (deltaT <= 0.08) return STABILITY_SCALE[1].color;
@@ -188,6 +191,8 @@ export default function ProfessionalWindgram({
           cloudBase: altitude + 800,
           cloudPct: 5,
           deltaT: 0.75,
+          tempAt80m: 15,
+          tempAt120m: 12,
           levelWinds: LEVELS.map((l) => ({ ...l, speed: 12, dir: 240 })),
         };
       }
@@ -254,6 +259,8 @@ export default function ProfessionalWindgram({
         cloudBase,
         cloudPct,
         deltaT,
+        tempAt80m: t80 ?? Math.round(t - 3),
+        tempAt120m: t120 ?? Math.round(t - 6),
         levelWinds,
       };
     });
@@ -379,6 +386,69 @@ export default function ProfessionalWindgram({
     return Math.round(sum / hourlyData.length);
   }, [hourlyData]);
 
+  // Curva di livello percentuale per termiche (es. ↑5%, ↑10%, etc.)
+  const getThermalLevelCurve = (percent: number) => {
+    if (hourlyData.length === 0) return "";
+    return hourlyData
+      .map((h, i) => {
+        const targetAlt = h.cloudBase + (h.thermalTop - h.cloudBase) * (percent / 100);
+        return `${i === 0 ? "M" : "L"} ${getXFromHourIdx(i)},${getYFromAlt(targetAlt)}`;
+      })
+      .join(" ");
+  };
+
+  // Isoterme (linee di temperatura)
+  const getIsothermPath = (temp: number) => {
+    if (hourlyData.length === 0) return "";
+    return hourlyData
+      .map((h, i) => {
+        // Interpolazione lineare tra livelli
+        const temps = [h.tempGround, h.tempAt80m, h.tempAt120m];
+        const alts = [h.tempGround, 800, 1200];
+        // Trova l'altezza dove la temperatura è uguale a temp
+        let targetAlt = h.tempGround;
+        for (let j = 0; j < temps.length - 1; j++) {
+          if ((temps[j] >= temp && temps[j + 1] <= temp) || (temps[j] <= temp && temps[j + 1] >= temp)) {
+            const ratio = (temp - temps[j]) / (temps[j + 1] - temps[j]);
+            targetAlt = h.cloudBase + (alts[j + 1] - alts[j]) * ratio;
+            break;
+          }
+        }
+        return `${i === 0 ? "M" : "L"} ${getXFromHourIdx(i)},${getYFromAlt(targetAlt)}`;
+      })
+      .join(" ");
+  };
+
+  // Zona instabile: area rossa/arancione sotto la curva termica (thermalTop)
+  const unstableZonePath = useMemo(() => {
+    if (hourlyData.length === 0) return "";
+    const points: string[] = [];
+    hourlyData.forEach((h, i) => {
+      const x = getXFromHourIdx(i);
+      const y = getYFromAlt(h.thermalTop);
+      if (i === 0) points.push(`M ${x},${y}`);
+      else points.push(`L ${x},${y}`);
+    });
+    // Chiudi il percorso verso il basso
+    points.push(`L ${getXFromHourIdx(HOURS.length - 1)},${margin.top + plotH}`);
+    points.push(`L ${margin.left},${margin.top + plotH}`);
+    points.push(`Z`);
+    return points.join(" ");
+  }, [hourlyData]);
+
+  // DeltaT strip at ground level
+  const deltaTStripPath = useMemo(() => {
+    if (hourlyData.length === 0) return "";
+    const points: string[] = [];
+    hourlyData.forEach((h, i) => {
+      const x = getXFromHourIdx(i);
+      const y = getYFromAlt(altitude);
+      if (i === 0) points.push(`M ${x},${y}`);
+      else points.push(`L ${x},${y}`);
+    });
+    return points.join(" ");
+  }, [hourlyData]);
+
   if (loading) {
     return (
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-10 flex flex-col items-center justify-center text-slate-300 shadow-2xl">
@@ -414,6 +484,32 @@ export default function ProfessionalWindgram({
           </p>
         </div>
 
+        {/* TABELLA IN ALTO: Ascendenza media e Sole %} */}
+        <div className="bg-slate-50 rounded-xl p-3 mb-3 border border-slate-200">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-2">
+            <span className="flex items-center gap-1.5">
+              <Mountain className="w-3.5 h-3.5 text-emerald-500" />
+              Ascendenza media
+            </span>
+            <span className="flex items-center gap-1.5">
+              <SunIcon className="w-3.5 h-3.5 text-amber-500" />
+              Sole %
+            </span>
+          </div>
+          <div className="grid grid-cols-11 gap-px">
+            {hourlyData.map((h, i) => (
+              <div key={i} className="text-center">
+                <div className="font-black text-sm" style={{ color: h.thermalAvg >= 1.6 ? "#b91c1c" : "#0f172a" }}>
+                  {h.thermalAvg.toFixed(1)}
+                </div>
+                <div className="text-xs" style={{ color: h.sunPct >= 90 ? "#94a3b8" : "#b45309" }}>
+                  {h.sunPct}%
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* SVG Windgram Completo */}
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 pb-1">
           <svg
@@ -429,106 +525,17 @@ export default function ProfessionalWindgram({
               </pattern>
             </defs>
 
-            {/* HEADER METRICHE: Valore Medio Ascendenze & Sole % */}
-            <text x={margin.left + plotW / 2} y={32} fill="#64748b" fontSize="12" fontWeight="700" textAnchor="middle">
-              valore medio ascendenze (m/s)
-            </text>
+            {/* 1. SFONDO BASE TERRESTRE - GIALLO/CHIARO (aria instabile al suolo) */}
+            <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#fef08a" />
 
-            <text x={margin.left - 12} y={75} fill="#a16207" fontSize="11" fontWeight="800" textAnchor="end">
-              sole %
-            </text>
+            {/* 2. ZONA INSTABILE ROSSA/ARANCIONE sotto thermalTop */}
+            {unstableZonePath && (
+              <path d={unstableZonePath} fill="#f97316" opacity="0.85" />
+            )}
 
-            {hourlyData.map((h, i) => {
-              const x = getXFromHourIdx(i);
-              const isStrong = h.thermalAvg >= 1.6;
-              return (
-                <g key={`head-col-${i}`}>
-                  <text
-                    x={x}
-                    y={52}
-                    fill={isStrong ? "#b91c1c" : "#1e293b"}
-                    fontSize="16"
-                    fontWeight="900"
-                    textAnchor="middle"
-                    fontFamily="monospace"
-                  >
-                    {h.thermalAvg.toFixed(1)}
-                  </text>
-                  <text
-                    x={x}
-                    y={75}
-                    fill={h.sunPct >= 90 ? "#94a3b8" : "#b45309"}
-                    fontSize="12"
-                    fontWeight="800"
-                    textAnchor="middle"
-                    fontFamily="monospace"
-                  >
-                    {h.sunPct}
-                  </text>
-                </g>
-              );
-            })}
-
-            {/* SFONDO DINAMICO & ZONE DI STABILITÀ (Palette Alpium Rovesciata)
-                Regole:
-                - BASSO (al suolo): VERDE (aria stabile)
-                - QUOTE BASSE (2500-3400m): GIALLO/ARANCIO (aria instabile)
-                - ZONE INTERMEDIE: ARANCIO/ROSSO (nucleo caldo)
-                - QUOTA: BLU/VIOLA (stabile in quota)
-            */}
-
-            {/* 1. SFONDO BASE TERRESTRE - VERDE (aria stabile al suolo) */}
-            <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#a3e635" />
-
-            {/* 2. FASCIA INSTABILE BASSA QUOTE (2500-3400m) - GIALLO/ARANCIO
-                   Si tratta di "miscele di masse d'aria instabili" alle basse quote */}
+            {/* 3. AREA STABILE IN QUOTA - BLU/VIOLA */}
             <path
-              d={`M ${margin.left},${getYFromAlt(3400)}
-                  Q ${margin.left + plotW * 0.25},${getYFromAlt(3500)} ${margin.left + plotW * 0.5},${getYFromAlt(3000)}
-                  L ${margin.left + plotW},${getYFromAlt(3000)}
-                  L ${margin.left + plotW},${getYFromAlt(2700)}
-                  Q ${margin.left + plotW * 0.5},${getYFromAlt(2700)} ${margin.left},${getYFromAlt(3100)} Z`}
-              fill="#eab308"
-              opacity="0.95"
-            />
-
-            {/* 3. NUCLEO CALDO ARANCIO/ROSSO (quote 1800-2300m) - Massima instabilità */}
-            <path
-              d={`M ${margin.left + plotW * 0.55},${getYFromAlt(1900)}
-                  Q ${margin.left + plotW * 0.65},${getYFromAlt(2000)} ${margin.left + plotW * 0.82},${getYFromAlt(1850)}
-                  Q ${margin.left + plotW * 0.70},${getYFromAlt(1700)} ${margin.left + plotW * 0.55},${getYFromAlt(1900)} Z`}
-              fill="#dc2626"
-              opacity="0.9"
-            />
-
-            {/* 4. NUCLEI GIALLO-ARANCIO INTERMEDI (quote 3500-5000m) - Bolle calde */}
-            <path
-              d={`M ${margin.left + plotW * 0.22},${getYFromAlt(4900)}
-                  Q ${margin.left + plotW * 0.35},${getYFromAlt(5200)} ${margin.left + plotW * 0.45},${getYFromAlt(4800)}
-                  Q ${margin.left + plotW * 0.35},${getYFromAlt(4500)} ${margin.left + plotW * 0.22},${getYFromAlt(4900)} Z`}
-              fill="#facc15"
-              opacity="0.9"
-            />
-
-            <path
-              d={`M ${margin.left + plotW * 0.55},${getYFromAlt(3900)}
-                  Q ${margin.left + plotW * 0.65},${getYFromAlt(4000)} ${margin.left + plotW * 0.75},${getYFromAlt(3700)}
-                  Q ${margin.left + plotW * 0.65},${getYFromAlt(3500)} ${margin.left + plotW * 0.55},${getYFromAlt(3900)} Z`}
-              fill="#facc15"
-              opacity="0.8"
-            />
-
-            <path
-              d={`M ${margin.left + plotW * 0.78},${getYFromAlt(3600)}
-                  Q ${margin.left + plotW * 0.88},${getYFromAlt(3700)} ${margin.left + plotW * 0.98},${getYFromAlt(3400)}
-                  Q ${margin.left + plotW * 0.88},${getYFromAlt(3300)} ${margin.left + plotW * 0.78},${getYFromAlt(3600)} Z`}
-              fill="#facc15"
-              opacity="0.85"
-            />
-
-            {/* 5. FASCIA SUPERIORE STABILE (500-550 hPa) - BLU/VIOLA (ritorna stabile in quota) */}
-            <path
-              d={`M ${margin.left},${getYFromAlt(5800)}
+              d={`M ${margin.left},${getYFromAlt(5000)}
                   Q ${margin.left + plotW * 0.3},${getYFromAlt(6000)} ${margin.left + plotW * 0.5},${getYFromAlt(5700)}
                   T ${margin.left + plotW},${getYFromAlt(5600)}
                   L ${margin.left + plotW},${margin.top} L ${margin.left},${margin.top} Z`}
@@ -536,7 +543,36 @@ export default function ProfessionalWindgram({
               opacity="0.75"
             />
 
-            {/* Area con Tratteggio Reticolare (Cross-Hatching) nelle ore centrali convettive */}
+            {/* 4. Isoterme tratteggiate (linee di temperatura) */}
+            {[-5, 0, 5, 10, 15, 20].map((temp) => (
+              <path
+                key={`isotherm-${temp}`}
+                d={getIsothermPath(temp)}
+                fill="none"
+                stroke="#94a3b8"
+                strokeWidth="1.2"
+                strokeDasharray="4 3"
+                opacity="0.6"
+              />
+            ))}
+
+            {/* 5. Curve di livello percentuale termico (↑5%, ↑10%, ..., ↑100%) */}
+            {THERMAL_PERCENTAGES.map((pct) => (
+              <path
+                key={`thermal-level-${pct}`}
+                d={getThermalLevelCurve(pct)}
+                fill="none"
+                stroke={pct === 100 ? "#9333ea" : pct >= 50 ? "#a855f7" : pct >= 25 ? "#3b82f6" : "#0ea5e9"}
+                strokeWidth={pct === 100 ? 2.5 : 1.5}
+                strokeLinecap="round"
+                opacity="0.8"
+              />
+            ))}
+
+            {/* 6. DeltaT Strip at ground level (color gradient) */}
+            <rect x={margin.left} y={getYFromAlt(altitude) - 12} width={plotW} height="24" fill="url(#deltaTGradient)" />
+
+            {/* 7. Area con Tratteggio Reticolare nelle ore centrali convettive */}
             <path
               d={`M ${getXFromHourIdx(2)},${getYFromAlt(1450)} 
                   L ${getXFromHourIdx(2)},${getYFromAlt(2100)} 
@@ -545,21 +581,6 @@ export default function ProfessionalWindgram({
                   L ${getXFromHourIdx(10)},${getYFromAlt(1450)} Z`}
               fill="url(#thermalHatch)"
             />
-
-            {/* Watermark Alpium Discreto Centrale */}
-            <text
-              x={margin.left + plotW * 0.48}
-              y={getYFromAlt(3500)}
-              fill="#0f172a"
-              opacity="0.08"
-              fontSize="68"
-              fontWeight="900"
-              textAnchor="middle"
-              letterSpacing="6"
-              transform={`rotate(-15, ${margin.left + plotW * 0.48}, ${getYFromAlt(3500)})`}
-            >
-              ALPIUM
-            </text>
 
             {/* LINEE ORIZZONTALI LIVELLI ISOBARICI & QUOTE */}
             {LEVELS.map((lvl) => {
@@ -783,6 +804,13 @@ export default function ProfessionalWindgram({
         {/* SCALA GRADIENTE INFERIORE DELTA T / 100 m IDENTICA AD ALPIUM */}
         <div className="mt-4 pt-3 border-t border-slate-200 flex flex-col items-center">
           <div className="w-full max-w-2xl px-2">
+            <defs>
+              <linearGradient id="deltaTGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                {STABILITY_SCALE.map((item, idx) => (
+                  <stop key={idx} offset={idx / (STABILITY_SCALE.length - 1)} stopColor={item.color} />
+                ))}
+              </linearGradient>
+            </defs>
             <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
               <span>Stabile &larr;</span>
               <span className="text-slate-900 font-extrabold text-sm">&Delta;T / 100 m</span>
@@ -895,5 +923,24 @@ export default function ProfessionalWindgram({
         </div>
       )}
     </div>
+  );
+}
+
+// Componente icona sole
+function SunIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="5" />
+      <line x1="12" y1="2" x2="12" y2="4" />
+      <line x1="12" y1="20" x2="12" y2="22" />
+      <line x1="4.93" y1="4.93" x2="6.5" y2="6.5" />
+      <line x1="17.1" y1="17.1" x2="18.36" y2="18.36" />
+      <line x1="19.07" y1="4.93" x2="17.5" y2="6.5" />
+      <line x1="4.93" y1="19.07" x2="6.5" y2="17.5" />
+      <line x1="12" y1="4" x2="12" y2="2" />
+      <line x1="12" y1="22" x2="12" y2="24" />
+      <line x1="4.22" y1="12" x2="5.64" y2="12" />
+      <line x1="18.36" y1="12" x2="19.78" y2="12" />
+    </svg>
   );
 }
