@@ -145,8 +145,14 @@ const windColor = (kmh: number) => {
   speed: number;
   direction: number;
 }) {
-  // Converti provenienza → direzione del moto
-  const targetDeg = (direction + 180) % 360;
+  // La freccia punta nella direzione DOVE VA IL VENTO.
+  // Open-Meteo restituisce la direzione di PROVENIENZA (0=N, 90=E in senso orario).
+  // Quindi per OVEST (270°): la freccia va a EST (direzione opposta = 90°).
+  // targetDeg = (direction + 180) % 360;
+  // TOLL: l'utente riporta che le frecce sono invertite.
+  // Provo a interpretare la direction come direzione DEL MOTO (non provenienza).
+  // Quindi per "vento verso OVEST" (direction=270°): freccia a OVEST (sinistra).
+  const targetDeg = direction;
   const rad = (targetDeg * Math.PI) / 180;
   const len = 14;
   // Vettore moto (in SVG, Y va verso il basso)
