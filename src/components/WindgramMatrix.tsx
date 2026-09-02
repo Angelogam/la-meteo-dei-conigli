@@ -169,17 +169,35 @@ export default function WindgramMatrix({
   const getThermalBgColor = (alt: number, hr: number): string => {
     const thermal = hourThermalData[hr];
     if (!thermal) return "transparent";
-    if (alt >= altitude && alt < thermal.cloudBase) {
-      const totalSpan = Math.max(200, thermal.cloudBase - altitude);
-      const relHeight = (alt - altitude) / totalSpan;
-      const hrBell = Math.max(0, 1 - Math.pow((hr - 13) / 4.5, 2));
-      const strength = (1 - relHeight * 0.75) * (0.3 + hrBell * 0.7);
-      if (strength > 0.72) return "#f97316";
-      if (strength > 0.55) return "#fb923c";
-      if (strength > 0.40) return "#fbbf24";
-      if (strength > 0.22) return "#fde047";
-      return "#fef08a";
-    }
+    // Curva sinusoidale dell'ora del giorno:
+    // - hr=8-9h: 0 (termica appena nata, quasi assente)
+    // - hr=13h: 1 (picco termico)
+    // - hr=18-19h: 0 (termica morente)
+    // Usiamo una sinusoide "smoothstep" che parte da 0 alle 8, sale a 1 alle 13, scende a 0 alle 18.
+    const dayPhase = (hr - 13) / 5; // -1 alle 8h, 0 alle 13h, +1 alle 18h
+    if (dayPhase < -1 || dayPhase > 1) return "transparent";
+    const diurnal = Math.cos((dayPhase * Math.PI) / 2); // 0 ai bordi, 1 al picco, curva morbida
+    if (diurnal < 0.05) return "transparent";
+
+    // L'altezza della termica dipende anche dal sinusoidal factor:
+    // - al mattino: parte dal suolo, sale poco
+    // - al picco: arriva fino a cloudBase
+    // - alla sera: collassa a terra
+    const cloudCeil = Math.max(altitude + 250, thermal.cloudBase);
+    const thermalTop = altitude + (cloudCeil - altitude) * diurnal;
+    if (alt < altitude || alt > thermalTop) return "transparent";
+
+    // Altezza relativa dentro la termica: 0 = al suolo, 1 = al top
+    const span = Math.max(200, thermalTop - altitude);
+    const relHeight = (alt - altitude) / span;
+
+    // Forza colore: più intenso vicino al suolo + dipende dalla fase diurna
+    const strength = (1 - relHeight * 0.7) * diurnal;
+    if (strength > 0.78) return "#f97316";
+    if (strength > 0.62) return "#fb923c";
+    if (strength > 0.46) return "#fbbf24";
+    if (strength > 0.30) return "#fde047";
+    if (strength > 0.15) return "#fef08a";
     return "transparent";
   };
 
@@ -203,10 +221,16 @@ export default function WindgramMatrix({
     DISPLAY_HOURS.forEach((hr) => {
       const thermal = hourThermalData[hr];
       if (!thermal) return;
+      // Top termico sinusoidale: la nuvola appare dove termina il giallo.
+      const dayPhase = (hr - 13) / 5;
+      if (dayPhase < -1 || dayPhase > 1) return;
+      const diurnal = Math.cos((dayPhase * Math.PI) / 2);
+      const cloudCeil = Math.max(altitude + 250, thermal.cloudBase);
+      const thermalTop = altitude + (cloudCeil - altitude) * diurnal;
       let bestIdx = 0;
       let bestDiff = Infinity;
       activeAltitudes.forEach((a, idx) => {
-        const diff = Math.abs(a - thermal.cloudBase);
+        const diff = Math.abs(a - thermalTop);
         if (diff < bestDiff) {
           bestDiff = diff;
           bestIdx = idx;
@@ -215,7 +239,7 @@ export default function WindgramMatrix({
       map[hr] = bestIdx;
     });
     return map;
-  }, [hourThermalData, activeAltitudes]);
+  }, [hourThermalData, activeAltitudes, altitude]);
 
   const dataSourceBadge = hasRealAltitudeData ? (
     <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold flex items-center gap-1">
