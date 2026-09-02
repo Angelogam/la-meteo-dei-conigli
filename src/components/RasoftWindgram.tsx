@@ -141,11 +141,11 @@ function WindBarb({
   high?: boolean; // true = in quota (linea rossa), false = sotto (linea blu)
 }) {
   // direction = provenienza in gradi (0=N, 90=E, 180=S, 270=W)
-  // Convenzione: la coda è nel punto di misura, la punta indica
-  // la direzione DOVE VA il vento (verso la quale soffia).
-  // Quindi per vento da OVEST (270°), la coda è a sinistra e la
-  // punta va a destra (vento che va da sinistra verso destra).
-  const rad = ((direction + 180) * Math.PI) / 180;
+  // Convenzione WMO: la coda è nel punto di misura, la punta indica
+  // la DIREZIONE DI PROVENIENZA del vento (da dove soffia).
+  // Quindi per OVEST (270°): la punta va a OVEST (a sinistra).
+  // Per SUD-EST (135°): la punta va a SUD-EST (in basso a destra).
+  const rad = (direction * Math.PI) / 180;
   const len = 18;
   const x2 = cx + Math.sin(rad) * len;
   const y2 = cy - Math.cos(rad) * len;
@@ -158,10 +158,10 @@ function WindBarb({
   let tPos = 0.55; // posizione normalizzata lungo il gambo
   const ux = (x2 - cx) / len;
   const uy = (y2 - cy) / len;
-  // Piume sul lato SINISTRO rispetto alla direzione del moto del vento
-  // (perpendicolare ruotata di 90° in senso antiorario rispetto al moto)
-  const px = uy;
-  const py = -ux;
+  // Piume sul lato SINISTRO rispetto alla direzione di provenienza
+  // (perpendicolare ruotata di 90° in senso antiorario)
+  const px = -uy;
+  const py = ux;
   for (let i = 0; i < Math.min(3, totalHalfFlags); i++) {
     const t = tPos - i * 0.18;
     const bx = cx + ux * (len * t);
