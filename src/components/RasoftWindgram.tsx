@@ -130,8 +130,11 @@ const windColor = (kmh: number) => {
 
 // ─── Freccia del vento stilizzata (meteo-parapente style) ───
 // direction = provenienza in gradi da Open-Meteo (0=N, 90=E, 180=S, 270=W)
-// La freccia punta nella direzione DOVE VA il vento (opposta alla provenienza).
-function WindArrow({
+  // Convenzione meteo-parapente.com: la freccia punta nella direzione
+  // DI PROVENIENZA (da dove soffia il vento).
+  // Quindi per OVEST (270°): la freccia punta a OVEST (a sinistra).
+  // Per SUD-EST (135°): la freccia punta a SUD-EST (in basso a destra).
+  function WindArrow({
   cx,
   cy,
   speed,
@@ -142,8 +145,8 @@ function WindArrow({
   speed: number;
   direction: number;
 }) {
-  // Converti provenienza → direzione del moto
-  const targetDeg = (direction + 180) % 360;
+  // La freccia punta nella direzione di provenienza (non invertita)
+  const targetDeg = direction;
   const rad = (targetDeg * Math.PI) / 180;
   const len = 14;
   // Vettore moto (in SVG, Y va verso il basso)
