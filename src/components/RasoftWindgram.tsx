@@ -141,27 +141,27 @@ function WindBarb({
   high?: boolean; // true = in quota (linea rossa), false = sotto (linea blu)
 }) {
   // direction = provenienza in gradi (0=N, 90=E, 180=S, 270=W)
-  // Convenzione WMO: la coda è nel punto di misura, la punta indica
-  // la DIREZIONE DI PROVENIENZA del vento (da dove soffia).
-  // Quindi per OVEST (270°): la punta va a OVEST (a sinistra).
-  // Per SUD-EST (135°): la punta va a SUD-EST (in basso a destra).
-  const rad = (direction * Math.PI) / 180;
-  const len = 18;
-  const x2 = cx + Math.sin(rad) * len;
-  const y2 = cy - Math.cos(rad) * len;
-  const color = high ? "#dc2626" : "#1d4ed8";
-
-  const knots = speed / 1.852;
-  // Piume: calcoliamo quante ne servono (max 2-3 per semplicità stilizzata)
-  const totalHalfFlags = Math.round(knots / 5);
-  const flags: React.ReactNode[] = [];
-  let tPos = 0.55; // posizione normalizzata lungo il gambo
-  const ux = (x2 - cx) / len;
-  const uy = (y2 - cy) / len;
-  // Piume sul lato SINISTRO rispetto alla direzione di provenienza
-  // (perpendicolare ruotata di 90° in senso antiorario)
-  const px = -uy;
-  const py = ux;
+    // Convenzione WMO: la coda è nel punto di misura, la punta indica
+    // la DIREZIONE DI PROVENIENZA del vento (da dove soffia).
+    // Quindi per OVEST (270°): la punta va a OVEST (a sinistra).
+    // Per SUD-EST (135°): la punta va a SUD-EST (in basso a destra).
+    const rad = (direction * Math.PI) / 180;
+    const len = 18;
+    const x2 = cx + Math.sin(rad) * len;
+    const y2 = cy - Math.cos(rad) * len;
+    const color = high ? "#dc2626" : "#1d4ed8";
+  
+    const knots = speed / 1.852;
+    // Piume: calcoliamo quante ne servono (max 2-3 per semplicità stilizzata)
+    const totalHalfFlags = Math.round(knots / 5);
+    const flags: React.ReactNode[] = [];
+    let tPos = 0.55; // posizione normalizzata lungo il gambo
+    const ux = (x2 - cx) / len;
+    const uy = (y2 - cy) / len;
+    // Piume sul lato SINISTRO rispetto alla direzione di provenienza.
+    // In SVG con Y verso il basso, la rotazione antiorario è (x,y) → (y,-x).
+    const px = uy;
+    const py = -ux;
   for (let i = 0; i < Math.min(3, totalHalfFlags); i++) {
     const t = tPos - i * 0.18;
     const bx = cx + ux * (len * t);
