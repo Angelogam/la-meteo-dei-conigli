@@ -121,82 +121,80 @@ const computeThermalTop = (cape: number, cloudBase: number) => {
 
 // ─── Colore del vento in base alla velocità (km/h) ───
 const windColor = (kmh: number) => {
-  if (kmh < 18) return "#0284c7"; // azzurro sotto
-  if (kmh < 30) return "#dc2626"; // rosso sopra
-  return "#9333ea"; // viola > 30
+  if (kmh < 5) return "#0ea5e9"; // azzurro molto debole
+  if (kmh < 15) return "#22c55e"; // verde debole
+  if (kmh < 25) return "#eab308"; // giallo medio
+  if (kmh < 35) return "#f97316"; // arancione forte
+  return "#dc2626"; // rosso molto forte
 };
 
-// ─── Wind barb stilizzata "Rasoft" (semplice, poche piume) ───
-function WindBarb({
+// ─── Freccia del vento stilizzata (meteo-parapente style) ───
+// direction = provenienza in gradi da Open-Meteo (0=N, 90=E, 180=S, 270=W)
+// La freccia punta nella direzione DOVE VA il vento (opposta alla provenienza).
+function WindArrow({
   cx,
   cy,
   speed,
   direction,
-  high = false,
 }: {
   cx: number;
   cy: number;
   speed: number;
   direction: number;
-  high?: boolean; // true = in quota (linea rossa), false = sotto (linea blu)
 }) {
-  // direction = provenienza in gradi (0=N, 90=E, 180=S, 270=W)
-    // Convenzione WMO: la coda è nel punto di misura, la punta indica
-    // la DIREZIONE DI PROVENIENZA del vento (da dove soffia).
-    // Quindi per OVEST (270°): la punta va a OVEST (a sinistra).
-    // Per SUD-EST (135°): la punta va a SUD-EST (in basso a destra).
-    const rad = (direction * Math.PI) / 180;
-    const len = 18;
-    const x2 = cx + Math.sin(rad) * len;
-    const y2 = cy - Math.cos(rad) * len;
-    const color = high ? "#dc2626" : "#1d4ed8";
-  
-    const knots = speed / 1.852;
-    // Piume: calcoliamo quante ne servono (max 2-3 per semplicità stilizzata)
-    const totalHalfFlags = Math.round(knots / 5);
-    const flags: React.ReactNode[] = [];
-    let tPos = 0.55; // posizione normalizzata lungo il gambo
-    const ux = (x2 - cx) / len;
-    const uy = (y2 - cy) / len;
-    // Piume sul lato SINISTRO rispetto alla direzione di provenienza.
-    // In SVG con Y verso il basso, la rotazione antiorario è (x,y) → (y,-x).
-    const px = uy;
-    const py = -ux;
-  for (let i = 0; i < Math.min(3, totalHalfFlags); i++) {
-    const t = tPos - i * 0.18;
-    const bx = cx + ux * (len * t);
-    const by = cy + uy * (len * t);
-    const ex = bx + px * 5.5;
-    const ey = by + py * 5.5;
-    flags.push(
-      <line
-        key={i}
-        x1={bx}
-        y1={by}
-        x2={ex}
-        y2={ey}
-        stroke={color}
-        strokeWidth={1.2}
-        strokeLinecap="round"
-      />,
-    );
-  }
+  // Converti provenienza → direzione del moto
+  const targetDeg = (direction + 180) % 360;
+  const rad = (targetDeg * Math.PI) / 180;
+  const len = 14;
+  // Vettore moto (in SVG, Y va verso il basso)
+  const dx = Math.sin(rad) * len;
+  const dy = -Math.cos(rad) * len;
+
+  // Coda della freccia (punto di misura)
+  const tx = cx - dx;
+  const ty = cy - dy;
+  // Punta della freccia (direzione del moto)
+  const px = cx + dx;
+  const py = cy + dy;
+
+  const color = windColor(speed);
+
+  // Angolo per le ali della punta
+  const wingLen = 5;
+  const wingAngle = 0.6; // radianti (~34°)
+  // Vettore perpendicolare
+  const perpX = Math.cos(rad) * wingLen;
+  const perpY = Math.sin(rad) * wingLen;
+
+  // Ali della freccia
+  const a1x = px - dx * 0.45 + perpX * Math.sin(wingAngle);
+  const a1y = py - dy * 0.45 - perpY * Math.sin(wingAngle);
+  const a2x = px - dx * 0.45 - perpX * Math.sin(wingAngle);
+  const a2y = py - dy * 0.45 + perpY * Math.sin(wingAngle);
 
   return (
     <g>
+      {/* Gambo */}
       <line
-        x1={cx}
-        y1={cy}
-        x2={x2}
-        y2={y2}
+        x1={tx}
+        y1={ty}
+        x2={px}
+        y2={py}
         stroke={color}
-        strokeWidth={1.3}
+        strokeWidth={1.4}
         strokeLinecap="round"
       />
-      {flags}
+      {/* Punta triangolo */}
+      <polygon
+        points={`${px},${py} ${a1x},${a1y} ${a2x},${a2y}`}
+        fill={color}
+        stroke={color}
+        strokeWidth={0.5}
+        strokeLinejoin="round"
+      />
     </g>
-  );
-}
+      );
+    }
 
 // Curva Bézier morbida
 function smoothPath(points: { x: number; y: number }[]) {
@@ -784,23 +782,22 @@ export default function RasoftWindgram({
             plotted {targetDate} 00:00 UTC · model ground {altitude + 12} m · SRTM {altitude} m
           </text>
 
-          {/* ─── Wind Barbs stilizzate ─── */}
-          <g clipPath="url(#plotClip)">
-            {rows.map((r) => (
-              <g key={`wb-${r.hour}`}>
-                {r.wind.map((w, i) => (
-                  <WindBarb
-                    key={`wb-${r.hour}-${i}`}
-                    cx={xToPx(r.hour)}
-                    cy={yToPx(w.alt)}
-                    speed={w.speed}
-                    direction={w.dir}
-                    high={w.alt > 3500}
-                  />
-                ))}
-              </g>
-            ))}
-          </g>
+          {/* ─── Freccie del vento (meteo-parapente style) ─── */}
+                    <g clipPath="url(#plotClip)">
+                      {rows.map((r) => (
+                        <g key={`wb-${r.hour}`}>
+                          {r.wind.map((w, i) => (
+                            <WindArrow
+                              key={`wb-${r.hour}-${i}`}
+                              cx={xToPx(r.hour)}
+                              cy={yToPx(w.alt)}
+                              speed={w.speed}
+                              direction={w.dir}
+                            />
+                          ))}
+                        </g>
+                      ))}
+                    </g>
 
           {/* ─── PBL (boundary layer) tratteggiata nera ─── */}
           <path
