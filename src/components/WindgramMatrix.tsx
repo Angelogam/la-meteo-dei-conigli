@@ -18,15 +18,15 @@ function getWindArrowColor(speed: number): { fill: string; stroke: string; text:
 }
 
 function WindArrowIcon({ deg, color }: { deg: number; color: { fill: string; stroke: string } }) {
-  // Open-Meteo: direction in degrees FROM WHERE the wind comes (meteorological convention)
-  // deg=0: north wind → from north → arrow points NORTH (up)
-  // deg=90: east wind → from east → arrow points EAST (right)
-  // deg=180: south wind → from south → arrow points SOUTH (down)
-  // deg=270: west wind → from west → arrow points WEST (left)
-  // 
-  // SVG arrow path points UP by default, so rotate by deg to point in correct direction
+  // Open-Meteo returns wind direction as PROVENANCE (meteorological convention):
+  //   deg=0: wind from North → arrow should point SOUTH (down) to show motion direction
+  //   deg=90: wind from East  → arrow should point WEST (left)
+  //   deg=180: wind from South → arrow should point NORTH (up)
+  //   deg=270: wind from West  → arrow should point EAST (right)
+  // We add 180° to convert provenance → motion direction.
+  const targetDeg = (deg + 180) % 360;
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" className="shrink-0" style={{ transform: `rotate(${deg}deg)` }}>
+    <svg width="14" height="14" viewBox="0 0 24 24" className="shrink-0" style={{ transform: `rotate(${targetDeg}deg)` }}>
       <path d="M12 2L17 10H13.5V22H10.5V10H7L12 2Z" fill={color.fill} stroke={color.stroke} strokeWidth="1" />
     </svg>
   );
