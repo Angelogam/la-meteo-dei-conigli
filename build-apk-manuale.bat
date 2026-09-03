@@ -8,11 +8,11 @@ echo     METEO DEI CONIGLI - BUILD APK
 echo ============================================================
 echo.
 
-echo [1/6] Pulizia cache precedenti...
+echo [1/6] Pulizia cache...
 if exist "dist" rd /s /q "dist" 2>nul
-if exist "node_modules\.cache" rd /s /q "node_modules\.cache" 2>nul
-if exist ".vite" rd /s /q ".vite" 2>nul
+if exist "android" rd /s /q "android" 2>nul
 if exist ".capacitor" rd /s /q ".capacitor" 2>nul
+if exist "node_modules\.cache" rd /s /q "node_modules\.cache" 2>nul
 echo OK
 echo.
 
@@ -46,18 +46,34 @@ if errorlevel 1 (
 echo OK
 echo.
 
-echo [5/6] Preparo Android...
-if exist "android" (
-    echo La cartella android esiste, sincronizzo...
-    call npx cap sync android
-) else (
-    echo Creo la cartella android...
-    call npx cap add android
+REM Verifica che dist esiste
+if not exist "dist\index.html" (
+    echo ERRORE: dist\index.html non trovato dopo il build!
+    pause
+    exit /b 1
+)
+
+echo [5/6] Aggiungo Android...
+call npx cap add android
+if errorlevel 1 (
+    echo ERRORE: cap add android fallito!
+    pause
+    exit /b 1
 )
 echo OK
 echo.
 
-echo [6/6] Build APK (richiede 5-10 minuti)...
+echo [5b/6] Sincronizzo (potrebbe richiedere tempo)...
+call npx cap sync android
+if errorlevel 1 (
+    echo ERRORE: cap sync fallito!
+    pause
+    exit /b 1
+)
+echo OK
+echo.
+
+echo [6/6] Build APK (10-15 minuti)...
 cd android
 call gradlew assembleDebug --no-daemon
 if errorlevel 1 (
