@@ -69,6 +69,8 @@ export interface MeteoCurrent {
   windGusts: number;
   cape: number;
   apparentTemp: number;
+  liftedIndex?: number;
+  cin?: number;
 }
 
 export interface MeteoHourly {
