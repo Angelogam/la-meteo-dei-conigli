@@ -9,7 +9,8 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "generate-icons": "node generate-icons.cjs"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.1",
