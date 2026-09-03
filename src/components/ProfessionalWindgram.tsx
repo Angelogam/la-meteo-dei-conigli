@@ -525,42 +525,23 @@ export default function ProfessionalWindgram({
               </pattern>
             </defs>
 
-            {/* 1. HEATMAP ΔT/100m - continua dall'alto (blu stabile) al basso (rosso instabile) */}
-                        {(() => {
-                          const cellW = plotW / HOURS.length;
-                          const cellH = 40; // pixel per ogni livello di quota
-                          const rows = Math.ceil(plotH / cellH);
-                          const cells: JSX.Element[] = [];
-                          for (let r = 0; r < rows; r++) {
-                            const y = margin.top + r * cellH;
-                            if (y > margin.top + plotH) break;
-                            const altAtCell = minAlt + (1 - (y - margin.top) / plotH) * (maxAlt - minAlt);
-                            for (let c = 0; c < HOURS.length; c++) {
-                              const x = margin.left + c * cellW;
-                              const h = hourlyData[c];
-                              if (!h) continue;
-                              // ΔT decade: stabile in quota, instabile in basso
-                              // Il valore base al suolo è preso da h.deltaT (instabile),
-                              // in quota l'aria è stabilmente stratificata (ΔT ≈ -0.2).
-                              const relAlt = (altAtCell - minAlt) / (maxAlt - minAlt); // 0=basso, 1=alto
-                              const baseAtAlt = h.deltaT * (1 - relAlt) + (-0.2) * relAlt;
-                              const cellDeltaT = Math.max(-0.2, Math.min(1.2, baseAtAlt));
-                              const color = getStabilityColor(cellDeltaT);
-                              cells.push(
-                                <rect
-                                  key={`hm-${r}-${c}`}
-                                  x={x}
-                                  y={y}
-                                  width={cellW}
-                                  height={cellH}
-                                  fill={color}
-                                  stroke="none"
-                                />
-                              );
-                            }
-                          }
-                          return cells;
-                        })()}
+            {/* 1. SFONDO BASE TERRESTRE - GIALLO/CHIARO (aria instabile al suolo) */}
+            <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#fef08a" />
+
+            {/* 2. ZONA INSTABILE ROSSA/ARANCIONE sotto thermalTop */}
+            {unstableZonePath && (
+              <path d={unstableZonePath} fill="#f97316" opacity="0.85" />
+            )}
+
+            {/* 3. AREA STABILE IN QUOTA - BLU/VIOLA */}
+            <path
+              d={`M ${margin.left},${getYFromAlt(5000)}
+                  Q ${margin.left + plotW * 0.3},${getYFromAlt(6000)} ${margin.left + plotW * 0.5},${getYFromAlt(5700)}
+                  T ${margin.left + plotW},${getYFromAlt(5600)}
+                  L ${margin.left + plotW},${margin.top} L ${margin.left},${margin.top} Z`}
+              fill="#6366f1"
+              opacity="0.75"
+            />
 
             {/* 4. Isoterme tratteggiate (linee di temperatura) */}
             {[-5, 0, 5, 10, 15, 20].map((temp) => (
