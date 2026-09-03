@@ -104,7 +104,7 @@ export default function WindgramMatrix({
     return false;
   }, [windProfileMap]);
 
-  const baseStep = 250;
+  const baseStep = 500;
   const baseDecolloFloor = Math.floor(altitude / baseStep) * baseStep;
   const maxAlt = 4000;
 
@@ -314,46 +314,44 @@ export default function WindgramMatrix({
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
-      <div className="w-full bg-white text-slate-900 border border-slate-200/80 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
-        <div className="p-4 sm:p-5 pb-3">
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-sky-100 text-sky-600">
-                <Wind className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
-                  Windgram &mdash; <span className="text-sky-600">{siteName}</span>
-                </h3>
-                <p className="text-sm text-sky-700 font-semibold mt-0.5">{headerDate}</p>
-              </div>
-            </div>
+    <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-1.5 sm:p-2 rounded-2xl">
+      <div className="w-full bg-white text-slate-900 border border-slate-200/80 rounded-2xl shadow-2xl overflow-hidden font-sans select-none">
+        <div className="p-2 sm:p-3 pb-2">
             <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-sky-100 text-sky-600">
+                  <Wind className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold tracking-tight text-slate-900">
+                    Windgram <span className="text-sky-600">{siteName}</span>
+                  </h3>
+                  <p className="text-[10px] text-sky-700 font-semibold">{headerDate}</p>
+                </div>
+              </div>
               {dataSourceBadge}
             </div>
-          </div>
 
           <div className="overflow-x-auto border-t border-b border-slate-200 bg-white">
             <table className="w-full text-center border-collapse text-xs">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-700 bg-slate-100/90 font-bold">
-                  <th className="py-2.5 px-1 text-center w-12 sticky left-0 z-20 bg-slate-100 border-r border-slate-200 text-slate-800 text-[11px]">
+                  <th className="py-1 px-1 text-center w-10 sticky left-0 z-20 bg-slate-100 border-r border-slate-200 text-slate-800 text-[10px]">
                     Quota
                   </th>
                   {DISPLAY_HOURS.map((hr) => (
                     <th
                       key={`th-${hr}`}
                       onClick={() => onHourSelect?.(hr)}
-                      className={`py-2.5 px-2 font-bold cursor-pointer transition-colors border-r border-slate-200/60 ${
+                      className={`py-1 px-1 font-bold cursor-pointer transition-colors border-r border-slate-200/60 ${
                         hr === selectedHour
                           ? "bg-sky-100 text-sky-900 ring-1 ring-sky-400"
                           : "hover:bg-slate-200/60 text-slate-800"
                       }`}
                     >
-                      <div className="flex flex-col items-center gap-0.5">
-                        <span>{hr}h</span>
-                        <span className="text-[10px] font-normal text-slate-500">
+                      <div className="flex flex-col items-center gap-0">
+                        <span className="text-[10px]">{hr}h</span>
+                        <span className="text-[8px] font-normal text-slate-500 leading-none">
                           {getHourTemperature(hourlyMap, hr)}
                         </span>
                       </div>
@@ -373,7 +371,7 @@ export default function WindgramMatrix({
                       } ${isDecolloLevel ? "bg-emerald-50" : ""}`}
                     >
                       <td
-                        className={`py-1.5 px-1 text-center font-bold sticky left-0 z-10 border-r border-slate-200 text-[11px] tabular-nums whitespace-nowrap ${
+                        className={`py-0.5 px-1 text-center font-bold sticky left-0 z-10 border-r border-slate-200 text-[9px] tabular-nums whitespace-nowrap ${
                           isMajorLevel
                             ? "bg-slate-100 text-slate-900"
                             : isDecolloLevel
@@ -398,14 +396,14 @@ export default function WindgramMatrix({
                             style={{
                               backgroundColor: bg.kind === "none" ? "transparent" : bg.color,
                             }}
-                            className={`py-1.5 px-1 border-r border-slate-200/60 cursor-pointer transition-colors relative ${
+                            className={`py-0.5 px-0.5 border-r border-slate-200/60 cursor-pointer transition-colors relative ${
                               isSelectedCol ? "ring-1 ring-sky-400/90" : "hover:brightness-95"
                             }`}
                           >
-                            <div className="flex items-center justify-center gap-0.5 h-full relative">
+                            <div className="flex items-center justify-center gap-0 h-full relative">
                               {w && <WindArrowIcon deg={w.dir} color={wColor} />}
                               <span
-                                className="font-bold text-[12px] tabular-nums tracking-tighter relative z-10"
+                                className="font-bold text-[10px] tabular-nums tracking-tighter relative z-10 leading-none"
                                 style={{ color: wColor.text }}
                                 title={w ? `Open-Meteo: ${w.speed} km/h from ${w.dir}°` : "N/D"}
                               >
@@ -427,71 +425,57 @@ export default function WindgramMatrix({
             </table>
           </div>
 
-          <div className="p-4 bg-slate-50 border-t border-slate-100">
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-2.5 rounded bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500 border border-orange-400/60" />
-                  <span className="text-slate-700 font-medium text-xs">Termica attiva (fino a base cumuli)</span>
+          <div className="p-2 bg-slate-50 border-t border-slate-100">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1">
+                  <div className="w-2.5 h-2 rounded bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500 border border-orange-400/60" />
+                  <span className="text-slate-700 font-medium text-[9px]">Termica</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-2.5 rounded bg-gradient-to-b from-[#b5d5e4] via-[#82b1cc] to-[#6a9cba] border border-[#6a9cba]/60" />
-                  <span className="text-slate-700 font-medium text-xs">Aria stabile (sopra cumuli)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <svg
-                    width="14"
-                    height="10"
-                    viewBox="0 0 40 28"
-                    className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]"
-                    style={{ opacity: 0.6 }}
-                  >
-                    <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#64748b" fillOpacity="0.5" />
-                    <ellipse cx="18" cy="14" rx="6" ry="4" fill="#94a3b8" fillOpacity="0.4" />
-                    <ellipse cx="14" cy="12" rx="4" ry="3" fill="#cbd5e1" fillOpacity="0.3" />
-                  </svg>
-                  <span className="text-slate-700 font-medium text-xs">Base cumuli</span>
+                <div className="flex items-center gap-1">
+                  <div className="w-2.5 h-2 rounded bg-gradient-to-b from-[#b5d5e4] via-[#82b1cc] to-[#6a9cba] border border-[#6a9cba]/60" />
+                  <span className="text-slate-700 font-medium text-[9px]">Stabile</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-slate-500">
-                <span className="text-[10px] font-mono">Freccia = dir. vento · Numero = km/h</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[8px] font-mono text-slate-500">Freccia=dir · Numero=km/h</span>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-slate-200">
-              <span className="text-xs text-slate-600 font-medium">Scala venti (km/h):</span>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#0284c7" }} />
-                  <span className="text-[10px] text-slate-600">≤4</span>
+            <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-slate-200">
+              <span className="text-[9px] text-slate-600 font-medium">km/h:</span>
+              <div className="flex items-center gap-1 flex-wrap">
+                <div className="flex items-center gap-0.5">
+                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: "#0284c7" }} />
+                  <span className="text-[8px] text-slate-600">≤4</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#0d9488" }} />
-                  <span className="text-[10px] text-slate-600">5-8</span>
+                <div className="flex items-center gap-0.5">
+                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: "#0d9488" }} />
+                  <span className="text-[8px] text-slate-600">5-8</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#16a34a" }} />
-                  <span className="text-[10px] text-slate-600">9-13</span>
+                <div className="flex items-center gap-0.5">
+                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: "#16a34a" }} />
+                  <span className="text-[8px] text-slate-600">9-13</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#65a30d" }} />
-                  <span className="text-[10px] text-slate-600">14-18</span>
+                <div className="flex items-center gap-0.5">
+                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: "#65a30d" }} />
+                  <span className="text-[8px] text-slate-600">14-18</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#eab308" }} />
-                  <span className="text-[10px] text-slate-600">19-24</span>
+                <div className="flex items-center gap-0.5">
+                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: "#eab308" }} />
+                  <span className="text-[8px] text-slate-600">19-24</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#dc2626" }} />
-                  <span className="text-[10px] text-slate-600">25-30</span>
+                <div className="flex items-center gap-0.5">
+                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: "#dc2626" }} />
+                  <span className="text-[8px] text-slate-600">25-30</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#991b1b" }} />
-                  <span className="text-[10px] text-slate-600">43-58</span>
+                <div className="flex items-center gap-0.5">
+                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: "#991b1b" }} />
+                  <span className="text-[8px] text-slate-600">43-58</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#86198f" }} />
-                  <span className="text-[10px] text-slate-600">≥59</span>
+                <div className="flex items-center gap-0.5">
+                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: "#86198f" }} />
+                  <span className="text-[8px] text-slate-600">≥59</span>
                 </div>
               </div>
             </div>
