@@ -1,121 +1,92 @@
 @echo off
 chcp 65001 >nul
-title 🐰 Meteo dei Conigli - Build APK
+title Meteo dei Conigli - Build APK
 
 echo.
-echo ╔══════════════════════════════════════════════════════════════╗
-echo ║          🐰 METEO DEI CONIGLI - BUILD APK 🐰               ║
-echo ╚══════════════════════════════════════════════════════════════╝
+echo ============================================================
+echo     METEO DEI CONIGLI - BUILD APK
+echo ============================================================
 echo.
 
-REM ============================================================
-REM 1. Verifica che npm sia disponibile
-REM ============================================================
-echo [1/7] Verifica npm...
-where npm >nul 2>&1
-if errorlevel 1 (
-    echo ❌ ERRORE: npm non trovato! Installa Node.js da https://nodejs.org
-    pause
-    exit /b 1
-)
-echo ✅ npm trovato
-
-REM ============================================================
-REM 2. Pulisci cartelle vecchie
-REM ============================================================
-echo.
-echo [2/7] Pulisci cartelle vecchie...
+REM 1. Pulisci cartelle vecchie
+echo [1/7] Pulisco cartelle vecchie...
 if exist android (
-    echo    - Rimuovo cartella android\...
+    echo     - Rimuovo android\
     rmdir /s /q android
 )
 if exist dist (
-    echo    - Rimuovo cartella dist\...
+    echo     - Rimuovo dist\
     rmdir /s /q dist
 )
-echo ✅ Pulizia completata
+echo OK - Pulizia completata
 
-REM ============================================================
-REM 3. Installa dipendenze npm
-REM ============================================================
+REM 2. Installa dipendenze npm
 echo.
-echo [3/7] Installo dipendenze npm...
+echo [2/7] Installo dipendenze npm...
 call npm install
 if errorlevel 1 (
-    echo ❌ ERRORE: npm install fallito!
+    echo ERRORE: npm install fallito!
     pause
     exit /b 1
 )
-echo ✅ Dipendenze installate
+echo OK - Dipendenze installate
 
-REM ============================================================
-REM 4. Genera icone
-REM ============================================================
+REM 3. Genera icone
 echo.
-echo [4/7] Genero icone...
+echo [3/7] Genero icone...
 call npm run generate-icons
-if errorlevel 1 (
-    echo ⚠️ ATTENZIONE: generate-icons potrebbe aver fallito (continuo...)
-)
-echo ✅ Icone generate
+echo OK - Icone generate
 
-REM ============================================================
-REM 5. Build web app
-REM ============================================================
+REM 4. Build web app
 echo.
-echo [5/7] Build web app (npm run build)...
+echo [4/7] Build web app...
 call npm run build
 if errorlevel 1 (
-    echo ❌ ERRORE: build fallito!
+    echo ERRORE: build fallito!
     pause
     exit /b 1
 )
-echo ✅ Web app costruita
+echo OK - Web app costruita
 
-REM ============================================================
-REM 6. Aggiungi Android e sincronizza
-REM ============================================================
+REM 5. Aggiungi Android
 echo.
-echo [6/7] Aggiungo Android e sincronizzo...
+echo [5/7] Aggiungo Android...
 call npx cap add android
 if errorlevel 1 (
-    echo ❌ ERRORE: cap add android fallito!
+    echo ERRORE: cap add android fallito!
     pause
     exit /b 1
 )
+echo OK - Android aggiunto
 
-call npx cap sync android
-if errorlevel 1 (
-    echo ⚠️ ATTENZIONE: cap sync potrebbe aver avuto problemi (continuo...)
-)
-echo ✅ Android aggiunto e sincronizzato
-
-REM ============================================================
-REM 7. Build APK
-REM ============================================================
+REM 6. Sincronizza
 echo.
-echo [7/7] Build APK Android...
+echo [6/7] Sincronizzo...
+call npx cap sync android
+echo OK - Sincronizzato
+
+REM 7. Build APK
+echo.
+echo [7/7] Build APK...
 cd android
 call gradlew assembleDebug
 cd ..
 
-REM ============================================================
 REM Verifica APK
-REM ============================================================
 echo.
-echo ═══════════════════════════════════════════════════════════════
+echo ============================================================
 if exist "android\app\build\outputs\apk\debug\app-debug.apk" (
-    echo ✅✅✅ APK CREATA CON SUCCESSO! ✅✅✅
+    echo SUCCESSO! APK CREATA!
     echo.
-    echo 📱 File APK:
-    echo    android\app\build\outputs\apk\debug\app-debug.apk
+    echo File APK:
+    echo android\app\build\outputs\apk\debug\app-debug.apk
     echo.
-    echo 💡 Copia questo file sul telefono e installalo!
+    echo Copia questo file sul telefono e installalo!
 ) else (
-    echo ❌ ERRORE: APK non trovata!
-    echo    Controlla i messaggi di errore sopra.
+    echo ERRORE: APK non trovata!
+    echo Controlla i messaggi di errore sopra.
 )
-echo ═══════════════════════════════════════════════════════════════
+echo ============================================================
 echo.
 
 pause
