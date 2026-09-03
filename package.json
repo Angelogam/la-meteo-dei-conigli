@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test:e2e": "playwright test",
-    "generate-icons": "node generate-icons.cjs"
+    "generate-icons": "node generate-icons.cjs",
+    "test": "playwright test --config playwright-dyad.config.ts"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.1",
