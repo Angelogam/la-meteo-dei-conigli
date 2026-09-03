@@ -6,15 +6,15 @@ import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
 const DISPLAY_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] as const;
 
 function getWindArrowColor(speed: number): { fill: string; stroke: string; text: string } {
-  if (speed <= 4) return { fill: "#0284c7", stroke: "#0369a1", text: "#0284c7" };
-  if (speed <= 8) return { fill: "#0d9488", stroke: "#0f766e", text: "#0d9488" };
-  if (speed <= 13) return { fill: "#16a34a", stroke: "#15803d", text: "#16a34a" };
-  if (speed <= 18) return { fill: "#65a30d", stroke: "#4d7c0f", text: "#65a30d" };
-  if (speed <= 24) return { fill: "#eab308", stroke: "#ca8a04", text: "#eab308" };
-  if (speed <= 30) return { fill: "#f97316", stroke: "#ea580c", text: "#f97316" };
-  if (speed <= 42) return { fill: "#dc2626", stroke: "#b91c1c", text: "#dc2626" };
-  if (speed <= 58) return { fill: "#991b1b", stroke: "#7f1d1d", text: "#991b1b" };
-  return { fill: "#86198f", stroke: "#701a75", text: "#86198f" };
+  if (speed <= 4) return { fill: "#0369a1", stroke: "#0c4a6e", text: "#0c4a6e" };
+  if (speed <= 8) return { fill: "#0f766e", stroke: "#115e59", text: "#115e59" };
+  if (speed <= 13) return { fill: "#15803d", stroke: "#166534", text: "#166534" };
+  if (speed <= 18) return { fill: "#4d7c0f", stroke: "#3f6212", text: "#3f6212" };
+  if (speed <= 24) return { fill: "#ca8a04", stroke: "#a16207", text: "#a16207" };
+  if (speed <= 30) return { fill: "#ea580c", stroke: "#c2410c", text: "#c2410c" };
+  if (speed <= 42) return { fill: "#b91c1c", stroke: "#991b1b", text: "#991b1b" };
+  if (speed <= 58) return { fill: "#7f1d1d", stroke: "#450a0a", text: "#450a0a" };
+  return { fill: "#701a75", stroke: "#581c87", text: "#581c87" };
 }
 
 function WindArrowIcon({ deg, color }: { deg: number; color: { fill: string; stroke: string } }) {
@@ -26,8 +26,8 @@ function WindArrowIcon({ deg, color }: { deg: number; color: { fill: string; str
   // We add 180° to convert provenance → motion direction.
   const targetDeg = (deg + 180) % 360;
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" className="shrink-0" style={{ transform: `rotate(${targetDeg}deg)` }}>
-      <path d="M12 2L17 10H13.5V22H10.5V10H7L12 2Z" fill={color.fill} stroke={color.stroke} strokeWidth="1" />
+    <svg width="16" height="16" viewBox="0 0 24 24" className="shrink-0" style={{ transform: `rotate(${targetDeg}deg)`, filter: "drop-shadow(0 0 1px rgba(255,255,255,0.8))" }}>
+      <path d="M12 2L17 10H13.5V22H10.5V10H7L12 2Z" fill={color.fill} stroke={color.stroke} strokeWidth="1.5" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -106,7 +106,7 @@ export default function WindgramMatrix({
     return false;
   }, [windProfileMap]);
 
-  const baseStep = 500;
+  const baseStep = 250;
   const baseDecolloFloor = Math.floor(altitude / baseStep) * baseStep;
   const maxAlt = 4000;
 
@@ -331,9 +331,9 @@ export default function WindgramMatrix({
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-1.5 sm:p-2 rounded-2xl">
+    <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-3 rounded-2xl">
       <div className="w-full bg-white text-slate-900 border border-slate-200/80 rounded-2xl shadow-2xl overflow-hidden font-sans select-none">
-        <div className="p-2 sm:p-3 pb-2">
+        <div className="p-2 sm:p-3 pb-1">
             <div className="flex items-center justify-between gap-2 mb-2">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-sky-100 text-sky-600">
@@ -354,7 +354,7 @@ export default function WindgramMatrix({
               <thead>
                 <tr className="border-b border-slate-200 text-slate-700 bg-slate-200 font-bold">
                   <th
-                    className="py-1 px-1 text-center w-10 sticky left-0 z-40 bg-slate-300 border-r border-slate-400 text-slate-900 text-[10px]"
+                    className="py-1.5 px-1.5 text-center w-12 sticky left-0 z-40 bg-slate-300 border-r border-slate-400 text-slate-900 text-[11px]"
                     style={{ boxShadow: "2px 0 4px rgba(0,0,0,0.15)" }}
                   >
                     Quota
@@ -363,15 +363,15 @@ export default function WindgramMatrix({
                     <th
                       key={`th-${hr}`}
                       onClick={() => onHourSelect?.(hr)}
-                      className={`py-1 px-1 font-bold cursor-pointer transition-colors border-r border-slate-200/60 ${
+                      className={`py-1.5 px-1.5 font-bold cursor-pointer transition-colors border-r border-slate-200/60 ${
                         hr === selectedHour
                           ? "bg-sky-100 text-sky-900 ring-1 ring-sky-400"
                           : "hover:bg-slate-200/60 text-slate-800"
                       }`}
                     >
                       <div className="flex flex-col items-center gap-0">
-                        <span className="text-[10px]">{hr}h</span>
-                        <span className="text-[8px] font-normal text-slate-500 leading-none">
+                        <span className="text-[11px]">{hr}h</span>
+                        <span className="text-[9px] font-normal text-slate-500 leading-none">
                           {getHourTemperature(hourlyMap, hr)}
                         </span>
                       </div>
@@ -426,11 +426,14 @@ export default function WindgramMatrix({
                                 <CloudIcon cloudCover={hourThermalData[hr]?.cloudCover ?? 50} />
                               </div>
                             )}
-                            <div className="flex items-center justify-center gap-0 h-full relative">
+                            <div className="flex items-center justify-center gap-0.5 h-full relative">
                               {w && <WindArrowIcon deg={w.dir} color={wColor} />}
                               <span
-                                className="font-bold text-[10px] tabular-nums tracking-tighter relative z-10 leading-none"
-                                style={{ color: wColor.text }}
+                                className="font-extrabold text-[12px] tabular-nums tracking-tight relative z-10 leading-none"
+                                style={{
+                                  color: wColor.text,
+                                  textShadow: "0 0 3px rgba(255,255,255,0.9), 0 1px 1px rgba(0,0,0,0.3)"
+                                }}
                                 title={w ? `Open-Meteo: ${w.speed} km/h from ${w.dir}°` : "N/D"}
                               >
                                 {w ? w.speed : "—"}
