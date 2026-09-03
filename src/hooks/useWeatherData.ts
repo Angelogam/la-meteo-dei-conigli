@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type { HourData, DailyData } from "@/types/meteo";
 import { DECOLLI } from "@/data/decolli";
 import { fetchPrevisioniGiornaliere, type MeteoCurrent, type MeteoHourly, type MeteoDaily } from "@/services/openMeteoService";
-import { calcolaStatoMeteo, calcolaPrecipProssimeOre, type StatoMeteo } from "@/utils/statoMeteo";
+import { calcolaStatoMeteo, calcolaPrecipProssimeOre, type StatoMeteo, type StatoMeteoResult } from "@/utils/statoMeteo";
 import { calcolaIndiceVolabilita, type RisultatoVolabilita } from "@/utils/indiceVolabilita";
 
 const STORAGE_KEY_SITE = "meteo_selected_decollo";
@@ -220,8 +220,8 @@ export function useWeatherData() {
   }, []);
 
   // Stato meteo
-  const statoMeteo = useMemo((): StatoMeteo => {
-    if (!currentData) return "offline";
+  const statoMeteo = useMemo((): StatoMeteo | null => {
+    if (!currentData) return null;
     const precipNext = calcolaPrecipProssimeOre(hourlyData, 6);
     return calcolaStatoMeteo({
       precipNow: currentData.precipitation,
@@ -328,5 +328,7 @@ export function useWeatherData() {
     dailyData,
     statoMeteo,
     volabilita,
+    activeModel: "Open-Meteo" as const,
+    currentCape: currentData ? { cape: currentData.cape ?? 0, liftedIndex: currentData.liftedIndex ?? 0, cin: currentData.cin ?? 0 } : null,
   };
 }

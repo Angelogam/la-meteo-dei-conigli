@@ -2,12 +2,13 @@
 
 import React, { useMemo } from "react";
 import { HourData } from "@/types/meteo";
+import type { MeteoCurrent } from "@/services/openMeteoService";
 import { calcolaTermiche } from "@/utils/termiche";
 import { Thermometer, Wind, Cloud, Droplets, Sun, TrendingUp, AlertTriangle, MapPin, Calendar } from "lucide-react";
 import SkewTDiagram from "@/components/SkewTDiagram";
 
 interface TermicheTabProps {
-  currentData: HourData | null;
+  currentData: HourData | MeteoCurrent | null;
   dayData: HourData[];
   site: { alt: number; lat: number; lon: number; name: string };
   selectedDay?: number;

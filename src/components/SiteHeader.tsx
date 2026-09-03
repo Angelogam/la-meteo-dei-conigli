@@ -10,6 +10,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { HourData } from "@/types/meteo";
+import type { MeteoCurrent } from "@/services/openMeteoService";
 
 interface SiteHeaderProps {
   // Campi statici protetti dal dataset locale
@@ -18,7 +19,7 @@ interface SiteHeaderProps {
   orientation: string;
   elevation_m: number;
   // Dati meteo dinamici
-  currentData: HourData | null;
+  currentData: HourData | MeteoCurrent | null;
 }
 
 function getWeatherLabel(weatherCode: number): string {

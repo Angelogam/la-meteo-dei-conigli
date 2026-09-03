@@ -50,9 +50,12 @@ export default function Index() {
     enrichedDaily,
     dateLabels,
     loadWeather,
-    activeModel,
-    currentCape,
   } = useWeatherData();
+  
+  const { currentCape, activeModel } = useMemo(() => ({
+    currentCape: currentData ? { cape: currentData.cape ?? 0, liftedIndex: currentData.liftedIndex ?? 0, cin: currentData.cin ?? 0 } : null,
+    activeModel: "Open-Meteo" as const,
+  }), [currentData]);
 
   const { mergedDecolli, loading: aggressiveLoading, lastUpdate: aggressiveLastUpdate } = useThreeSourceWeather();
 

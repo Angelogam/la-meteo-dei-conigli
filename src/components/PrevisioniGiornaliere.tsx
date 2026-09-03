@@ -2,13 +2,13 @@
 
 import React from "react";
 import type { HourData, DailyData } from "@/types/meteo";
-import type { MeteoDaily } from "@/services/openMeteoService";
+import type { MeteoDaily, MeteoCurrent } from "@/services/openMeteoService";
 import { CloudRain, Sun, Cloud, Wind, Thermometer, Calendar, Mountain } from "lucide-react";
 
 interface PrevisioniGiornaliereProps {
   enrichedDaily: MeteoDaily[];
   dateLabels: string[];
-  currentData: HourData | null;
+  currentData: HourData | MeteoCurrent | null;
   dayData: HourData[];
   site: { name: string; altitude: number; exposure: string };
   selectedDay: number;

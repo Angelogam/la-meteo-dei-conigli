@@ -3,10 +3,11 @@
 import React, { useMemo } from "react";
 import { Sun, Calendar } from "lucide-react";
 import type { HourData } from "@/types/meteo";
+import type { MeteoCurrent } from "@/services/openMeteoService";
 import { calcolaTermiche } from "@/utils/termiche";
 
 interface AnalisiTabProps {
-  currentData: HourData | null;
+  currentData: HourData | MeteoCurrent | null;
   dayData: HourData[];
   site: { alt: number; lat?: number; lon?: number; name?: string; exposure?: string };
 }

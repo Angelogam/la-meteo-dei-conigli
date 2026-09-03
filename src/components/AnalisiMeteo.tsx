@@ -5,13 +5,14 @@ import {
   MapPin, Calendar, Sparkles, Zap, Layers, Clock, Eye, Droplets, Gauge
 } from "lucide-react";
 import type { HourData } from "@/types/meteo";
+import type { MeteoCurrent } from "@/services/openMeteoService";
 import { calcolaAnalisiApprofondita } from "@/utils/analisiApprofondita";
 import AnalisiApprofonditaCard from "./AnalisiApprofonditaCard";
 import BadgeClima from "@/components/BadgeClima";
 import { confrontaClima } from "@/utils/climatologia";
 
 interface AnalisiMeteoProps {
-  currentData: HourData | null;
+  currentData: HourData | MeteoCurrent | null;
   dayData: HourData[];
   site: { alt: number; lat?: number; lon?: number; name?: string; exposure?: string };
   cape?: number | null;

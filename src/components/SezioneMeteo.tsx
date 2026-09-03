@@ -16,10 +16,13 @@ export default function SezioneMeteo() {
     thermalDelta,
     selectedDay, setSelectedDay,
     activeTab, setActiveTab,
-    currentCape,
-    activeModel,
     site,
   } = useWeatherData();
+  
+  const { currentCape, activeModel } = useMemo(() => ({
+    currentCape: currentData ? { cape: currentData.cape ?? 0, liftedIndex: currentData.liftedIndex ?? 0, cin: currentData.cin ?? 0 } : null,
+    activeModel: "Open-Meteo" as const,
+  }), [currentData]);
 
   if (!site) return null;
 
