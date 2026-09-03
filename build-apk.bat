@@ -11,8 +11,16 @@ echo.
 REM 1. Pulisci cartelle vecchie
 echo [1/7] Pulisco cartelle vecchie...
 if exist android (
-    echo     - Rimuovo android\
-    rmdir /s /q android 2>nul
+    echo     - Rimuovo android\ (con contenuto)
+    rmdir /s /q android
+    if exist android (
+        echo     ERRORE: impossibile rimuovere android\
+        echo     Provo a chiudere processi...
+        taskkill /F /IM gradle.exe 2>nul
+        taskkill /F /IM java.exe 2>nul
+        timeout /t 3 /nobreak >nul
+        rmdir /s /q android
+    )
 )
 if exist dist (
     echo     - Rimuovo dist\
@@ -59,6 +67,11 @@ echo OK - Web app costruita
 REM 5. Aggiungi Android
 echo.
 echo [5/7] Aggiungo Android...
+if exist android (
+    echo     ATTENZIONE: android esiste ancora, lo rimuovo...
+    rmdir /s /q android
+    timeout /t 2 /nobreak >nul
+)
 call npx cap add android
 if errorlevel 1 (
     echo ERRORE: cap add android fallito!
