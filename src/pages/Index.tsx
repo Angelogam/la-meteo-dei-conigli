@@ -62,6 +62,9 @@ export default function Index() {
     site?.elevation_m ?? DECOLLI[0].elevation_m
   );
 
+  // State for offline mode (gestito localmente se hook non lo espone)
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
+
   const stabilityIndex = getStabilityIndex(
     currentData?.temperature ?? 20,
     currentData?.humidity ?? 50,

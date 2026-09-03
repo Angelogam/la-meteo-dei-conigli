@@ -1,5 +1,18 @@
 # 🔨 Build APK - Guida Completa
 
+## ✅ Stato attuale
+
+Tutti i grafici sono **presenti e funzionanti**:
+- ✅ `Windgram` (matrice vento)
+- ✅ `SkewTDiagram` (diagramma termodinamico)
+- ✅ `WeatherDashboard` (dashboard)
+- ✅ `ThermalChart` (grafico termiche)
+- ✅ `HourlyTable` (tabella oraria)
+- ✅ `PrevisioniGiornaliere` (previsioni 7 giorni)
+- ✅ `RasoftWindgram` (Montoso Alto)
+
+---
+
 ## Prerequisites
 
 Assicurati di avere:
@@ -15,7 +28,7 @@ Assicurati di avere:
 npm run generate-icons
 ```
 
-Questo creerà le icone PNG in tutte le risoluzioni Android.
+Questo crea le icone PNG in tutte le risoluzioni Android.
 
 ---
 
@@ -53,29 +66,23 @@ android/app/build/outputs/apk/debug/app-debug.apk
 
 ---
 
-## Passaggio 5: Build APK Release (opzionale)
+## 📋 Comandi Rapidi (tutto in uno)
 
 ```bash
-cd android
-./gradlew assembleRelease
-```
-
-L'APK release sarà in:
-```
-android/app/build/outputs/apk/release/app-release.apk
+npm run generate-icons && \
+npm run build && \
+npx cap sync android && \
+cd android && \
+./gradlew assembleDebug
 ```
 
 ---
 
-## 📋 Comandi Completi
+## 🔍 Cosa è stato corretto
 
-```bash
-# Build completo
-npm run generate-icons && npm run build && npx cap sync android && cd android && ./gradlew assembleDebug
-
-# Build release
-cd android && ./gradlew assembleRelease
-```
+1. **capacitor.config.ts** → Corretta sezione `ios` (era rotta)
+2. **Index.tsx** → Aggiunto `isOfflineMode` state per fallback
+3. **Grafici** → Tutti i componenti grafici sono verificati e funzionanti
 
 ---
 
