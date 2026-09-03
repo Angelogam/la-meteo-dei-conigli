@@ -335,8 +335,8 @@ export default function WindgramMatrix({
           <div className="overflow-x-auto border-t border-b border-slate-200 bg-white">
             <table className="w-full text-center border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-700 bg-slate-100/90 font-bold">
-                  <th className="py-1 px-1 text-center w-10 sticky left-0 z-20 bg-slate-100 border-r border-slate-200 text-slate-800 text-[10px]">
+                <tr className="border-b border-slate-200 text-slate-700 bg-slate-100 font-bold">
+                  <th className="py-1 px-1 text-center w-10 sticky left-0 z-20 bg-slate-200 border-r border-slate-300 text-slate-800 text-[10px]">
                     Quota
                   </th>
                   {DISPLAY_HOURS.map((hr) => (
@@ -371,12 +371,12 @@ export default function WindgramMatrix({
                       } ${isDecolloLevel ? "bg-emerald-50" : ""}`}
                     >
                       <td
-                        className={`py-0.5 px-1 text-center font-bold sticky left-0 z-10 border-r border-slate-200 text-[9px] tabular-nums whitespace-nowrap ${
+                        className={`py-0.5 px-1 text-center font-bold sticky left-0 z-10 border-r border-slate-300 text-[9px] tabular-nums whitespace-nowrap ${
                           isMajorLevel
-                            ? "bg-slate-100 text-slate-900"
+                            ? "bg-slate-200 text-slate-900"
                             : isDecolloLevel
-                            ? "bg-emerald-50 text-emerald-900"
-                            : "bg-slate-50 text-slate-700"
+                            ? "bg-emerald-100 text-emerald-900"
+                            : "bg-slate-100 text-slate-700"
                         }`}
                       >
                         {alt}
@@ -425,15 +425,15 @@ export default function WindgramMatrix({
             </table>
           </div>
 
-          <div className="p-2 bg-slate-50 border-t border-slate-100">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+          <div className="p-1.5 bg-slate-50 border-t border-slate-100">
+            <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-1">
-                  <div className="w-2.5 h-2 rounded bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500 border border-orange-400/60" />
+                  <div className="w-2.5 h-1.5 rounded bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500 border border-orange-400/60" />
                   <span className="text-slate-700 font-medium text-[9px]">Termica</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-2.5 h-2 rounded bg-gradient-to-b from-[#b5d5e4] via-[#82b1cc] to-[#6a9cba] border border-[#6a9cba]/60" />
+                  <div className="w-2.5 h-1.5 rounded bg-gradient-to-b from-[#b5d5e4] via-[#82b1cc] to-[#6a9cba] border border-[#6a9cba]/60" />
                   <span className="text-slate-700 font-medium text-[9px]">Stabile</span>
                 </div>
               </div>
@@ -442,40 +442,40 @@ export default function WindgramMatrix({
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-slate-200">
-              <span className="text-[9px] text-slate-600 font-medium">km/h:</span>
+            <div className="flex flex-wrap items-center gap-1 pt-1 border-t border-slate-200">
+              <span className="text-[8px] text-slate-600 font-medium">km/h:</span>
               <div className="flex items-center gap-1 flex-wrap">
                 <div className="flex items-center gap-0.5">
-                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: "#0284c7" }} />
-                  <span className="text-[8px] text-slate-600">≤4</span>
+                  <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: "#0284c7" }} />
+                  <span className="text-[7px] text-slate-600">≤4</span>
                 </div>
                 <div className="flex items-center gap-0.5">
-                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: "#0d9488" }} />
-                  <span className="text-[8px] text-slate-600">5-8</span>
+                  <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: "#0d9488" }} />
+                  <span className="text-[7px] text-slate-600">5-8</span>
                 </div>
                 <div className="flex items-center gap-0.5">
-                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: "#16a34a" }} />
-                  <span className="text-[8px] text-slate-600">9-13</span>
+                  <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: "#16a34a" }} />
+                  <span className="text-[7px] text-slate-600">9-13</span>
                 </div>
                 <div className="flex items-center gap-0.5">
-                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: "#65a30d" }} />
-                  <span className="text-[8px] text-slate-600">14-18</span>
+                  <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: "#65a30d" }} />
+                  <span className="text-[7px] text-slate-600">14-18</span>
                 </div>
                 <div className="flex items-center gap-0.5">
-                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: "#eab308" }} />
-                  <span className="text-[8px] text-slate-600">19-24</span>
+                  <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: "#eab308" }} />
+                  <span className="text-[7px] text-slate-600">19-24</span>
                 </div>
                 <div className="flex items-center gap-0.5">
-                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: "#dc2626" }} />
-                  <span className="text-[8px] text-slate-600">25-30</span>
+                  <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: "#dc2626" }} />
+                  <span className="text-[7px] text-slate-600">25-30</span>
                 </div>
                 <div className="flex items-center gap-0.5">
-                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: "#991b1b" }} />
-                  <span className="text-[8px] text-slate-600">43-58</span>
+                  <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: "#991b1b" }} />
+                  <span className="text-[7px] text-slate-600">43-58</span>
                 </div>
                 <div className="flex items-center gap-0.5">
-                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: "#86198f" }} />
-                  <span className="text-[8px] text-slate-600">≥59</span>
+                  <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: "#86198f" }} />
+                  <span className="text-[7px] text-slate-600">≥59</span>
                 </div>
               </div>
             </div>
