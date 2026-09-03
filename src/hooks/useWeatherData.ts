@@ -220,7 +220,7 @@ export function useWeatherData() {
   }, []);
 
   // Stato meteo
-  const statoMeteo = useMemo((): StatoMeteo | null => {
+  const statoMeteo = useMemo((): StatoMeteoResult | null => {
     if (!currentData) return null;
     const precipNext = calcolaPrecipProssimeOre(hourlyData, 6);
     return calcolaStatoMeteo({

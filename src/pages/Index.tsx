@@ -176,12 +176,12 @@ export default function Index() {
                   location_name={site.location_name}
                   orientation={site.orientation}
                   elevation_m={site.elevation_m}
-                  currentData={currentData}
+                  currentData={currentData as any}
                 />
                 <PrevisioniGiornaliere
                   enrichedDaily={enrichedDaily}
                   dateLabels={dateLabels}
-                  currentData={currentData}
+                  currentData={currentData as any}
                   dayData={dayData}
                   site={{ name: site.site_name, altitude: site.elevation_m, exposure: site.orientation }}
                   selectedDay={selectedDay}
@@ -271,7 +271,7 @@ export default function Index() {
                 )}
                 {activeTab === "termiche" && (
                   <TermicheTab
-                    currentData={currentData}
+                    currentData={currentData as any}
                     dayData={filteredDayData}
                     site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name }}
                     selectedDay={selectedDay}
@@ -279,7 +279,7 @@ export default function Index() {
                 )}
                 {activeTab === "analisi" && (
                   <AnalisiMeteo
-                    currentData={currentData}
+                    currentData={currentData as any}
                     dayData={filteredDayData}
                     site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name, exposure: site.orientation }}
                     cape={currentCape?.cape}

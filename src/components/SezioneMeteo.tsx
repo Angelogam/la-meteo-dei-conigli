@@ -88,10 +88,10 @@ export default function SezioneMeteo() {
         />
       )}
       {activeTab === "termiche" && (
-        <TermicheTab currentData={currentData} dayData={dayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.name }} />
+        <TermicheTab currentData={currentData as any} dayData={dayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.name }} />
       )}
       {activeTab === "analisi" && (
-        <AnalisiTab currentData={currentData} dayData={dayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.name, exposure: site.exposure }} />
+        <AnalisiTab currentData={currentData as any} dayData={dayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.name, exposure: site.exposure }} />
       )}
     </div>
   );
