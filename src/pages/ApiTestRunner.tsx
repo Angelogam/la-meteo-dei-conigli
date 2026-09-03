@@ -528,10 +528,10 @@ export default function ApiTestRunner() {
                           <div className="flex items-center gap-2 mb-1">
                             <Thermometer className="w-4 h-4 text-amber-400" />
                             <span className="text-amber-400 font-bold">
-                              {test.data.temperature}°C
+                              {String(test.data.temperature)}°C
                             </span>
                             {test.data.unit && (
-                              <span className="text-slate-400 text-sm">{test.data.unit}</span>
+                              <span className="text-slate-400 text-sm">{String(test.data.unit)}</span>
                             )}
                           </div>
                         )}
@@ -539,33 +539,33 @@ export default function ApiTestRunner() {
                           <div className="flex items-center gap-2 mb-1">
                             <Wind className="w-4 h-4 text-cyan-400" />
                             <span className="text-cyan-400">
-                              {test.data.windSpeed} km/h
-                              {test.data.windDir != null && ` • ${test.data.windDir}°`}
+                              {String(test.data.windSpeed)} km/h
+                              {test.data.windDir != null && ` • ${String(test.data.windDir)}°`}
                             </span>
                           </div>
                         )}
                         {test.data.humidity != null && (
                           <div className="flex items-center gap-2 mb-1">
                             <Droplets className="w-4 h-4 text-blue-400" />
-                            <span className="text-blue-400">{test.data.humidity}%</span>
+                            <span className="text-blue-400">{String(test.data.humidity)}%</span>
                           </div>
                         )}
                         {test.data.description && (
                           <div className="flex items-center gap-2 mt-2">
                             {getWeatherIcon(test.data.code as number)}
                             <span className="text-slate-300">
-                              {test.data.description as string}
+                              {String(test.data.description)}
                             </span>
                           </div>
                         )}
                         {test.data.hoursCount != null && (
                           <p className="text-sm text-slate-400 mt-2">
-                            📅 {test.data.hoursCount} ore • {test.data.firstHour} → {test.data.lastHour}
+                            📅 {String(test.data.hoursCount)} ore • {String(test.data.firstHour)} → {String(test.data.lastHour)}
                           </p>
                         )}
                         {test.data.daysCount != null && (
                           <p className="text-sm text-slate-400 mt-2">
-                            📆 {test.data.daysCount} giorni • {test.data.firstDay} → {test.data.lastDay}
+                            📆 {String(test.data.daysCount)} giorni • {String(test.data.firstDay)} → {String(test.data.lastDay)}
                           </p>
                         )}
                       </div>
