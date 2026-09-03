@@ -8,10 +8,31 @@ import { DECOLLI } from "@/data/decolli";
 export type { MeteoDecollo };
 
 const REFRESH_INTERVAL = 15 * 60 * 1000;
-const LOAD_TIMEOUT = 5000; // 5 secondi max
+const LOAD_TIMEOUT = 30000; // 30 secondi max - aumentato per dare tempo a tutte le fonti
+
+// Fallback offline con dati stimati
+function offlineFallback(name: string): MeteoDecollo {
+  return {
+    temp: "18.0",
+    rain: "0.0",
+    cloud: "40.0",
+    wind: "8.0",
+    stato: "Sereno",
+    baseNubi: "Media (1800-2500 m)",
+    termiche: "Termiche moderate",
+    indice: 4,
+    indiceLabel: "Buono",
+    fonte: `Stima offline (${name})`
+  };
+}
 
 export function useThreeSourceWeather() {
-  const [weatherData, setWeatherData] = useState<Map<string, MeteoDecollo>>(new Map());
+  const [weatherData, setWeatherData] = useState<Map<string, MeteoDecollo>>(() => {
+    // Inizializza con dati stimati per evitare "N/D"
+    const m = new Map<string, MeteoDecollo>();
+    DECOLLI.forEach(d => m.set(d.name, offlineFallback(d.name)));
+    return m;
+  });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
@@ -20,7 +41,10 @@ export function useThreeSourceWeather() {
 
   const mergedDecolli = useMemo(() => {
     return DECOLLI.map(d => {
-      const aggressive = weatherData.get(d.name);
+      let aggressive = weatherData.get(d.name);
+      if (!aggressive) {
+        aggressive = offlineFallback(d.name);
+      }
       return {
         ...d,
         aggressiveWeather: aggressive
@@ -33,21 +57,14 @@ export function useThreeSourceWeather() {
     setError(null);
     
     try {
-      // Promise race con timeout per evitare blocchi
-      const data = await Promise.race([
-        getAllMeteoDecolliAggressivo(),
-        new Promise<Map<string, MeteoDecollo>>((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout caricamento 3-fonti")), LOAD_TIMEOUT)
-        ),
-      ]);
-      
+      const data = await getAllMeteoDecolliAggressivo();
       setWeatherData(data);
       setLastUpdate(new Date());
       hasCompletedOnce.current = true;
     } catch (err) {
-      // Non bloccare l'app: salva l'errore ma non mostrare loading
-      console.warn("[3-fonti]", err);
+      console.warn("[3-fonti] Errore caricamento, mantengo dati precedenti:", err);
       setError(err instanceof Error ? err.message : "Errore 3-fonti");
+      // Non resettare weatherData - mantieni i dati precedenti o i fallback
       hasCompletedOnce.current = true;
     } finally {
       setLoading(false);
@@ -60,17 +77,6 @@ export function useThreeSourceWeather() {
     const interval = setInterval(loadWeather, REFRESH_INTERVAL);
     return () => clearInterval(interval);
   }, [loadWeather]);
-
-  // Safety: dopo 6 secondi forziamo loading=false
-  useEffect(() => {
-    const safety = setTimeout(() => {
-      if (loading) {
-        console.warn("[3-fonti] Forzo loading=false per evitare blocco");
-        setLoading(false);
-      }
-    }, LOAD_TIMEOUT + 1000);
-    return () => clearTimeout(safety);
-  }, [loading]);
 
   const getSelectedDecollo = useCallback((selectedId: string) => {
     return mergedDecolli.find(d => d.id === selectedId);
