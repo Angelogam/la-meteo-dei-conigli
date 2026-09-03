@@ -12,18 +12,26 @@ REM 1. Pulisci cartelle vecchie
 echo [1/7] Pulisco cartelle vecchie...
 if exist android (
     echo     - Rimuovo android\
-    rmdir /s /q android
+    rmdir /s /q android 2>nul
 )
 if exist dist (
     echo     - Rimuovo dist\
-    rmdir /s /q dist
+    rmdir /s /q dist 2>nul
+)
+if exist node_modules (
+    echo     - Rimuovo node_modules\
+    rmdir /s /q node_modules 2>nul
+)
+if exist package-lock.json (
+    echo     - Rimuovo package-lock.json
+    del /f package-lock.json 2>nul
 )
 echo OK - Pulizia completata
 
 REM 2. Installa dipendenze npm
 echo.
-echo [2/7] Installo dipendenze npm...
-call npm install
+echo [2/7] Installo dipendenze npm (con legacy-peer-deps)...
+call npm install --legacy-peer-deps
 if errorlevel 1 (
     echo ERRORE: npm install fallito!
     pause
