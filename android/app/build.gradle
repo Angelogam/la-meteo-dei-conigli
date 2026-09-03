@@ -1,9 +1,6 @@
-<dyad-write path="android/app/build.gradle" description="Update build.gradle with applicationId, versionName, versionCode, and signing config for local release">
-<dyad-file path="android/app/build.gradle">
 apply plugin: 'com.android.application'
 
 android {
-    // Namespace corretto per il tuo progetto
     namespace "com.meteodeiconigli.app"
 
     compileSdk rootProject.ext.compileSdkVersion
@@ -21,11 +18,8 @@ android {
         }
     }
 
-    // Configurazione firma locale per release (chiave generica)
     signingConfigs {
         release {
-            // Questo keystore deve essere creato una volta con:
-            // keytool -genkeypair -v -keystore release.keystore -alias release_key -keyalg RSA -keysize 2048 -validity 10000
             storeFile file("release.keystore")
             storePassword "android"
             keyAlias "release_key"
@@ -42,11 +36,10 @@ android {
         }
 
         debug {
-            // Debug già configurato di default
+            minifyEnabled false
         }
     }
 
-    // Java 17 corretto per Android (senza --release)
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
