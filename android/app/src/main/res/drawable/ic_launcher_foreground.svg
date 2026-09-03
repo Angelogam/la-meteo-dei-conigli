@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background circle with gradient -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0EA5E9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0284C7;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="rabbitGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F1F5F9;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="512" height="512" fill="url(#bgGrad)"/>
+  
+  <!-- Cloud behind rabbit -->
+  <g opacity="0.3">
+    <ellipse cx="120" cy="350" rx="60" ry="20" fill="white"/>
+    <ellipse cx="392" cy="340" rx="55" ry="18" fill="white"/>
+  </g>
+  
+  <!-- Sun rays (decorative) -->
+  <g opacity="0.2" stroke="white" stroke-width="4" stroke-linecap="round">
+    <line x1="80" y1="80" x2="100" y2="100"/>
+    <line x1="432" y1="80" x2="412" y2="100"/>
+    <line x1="256" y1="40" x2="256" y2="60"/>
+  </g>
+  
+  <!-- Rabbit Body -->
+  <g transform="translate(256, 320)">
+    <!-- Body (oval) -->
+    <ellipse cx="0" cy="0" rx="85" ry="75" fill="url(#rabbitGrad)" stroke="#94A3B8" stroke-width="3"/>
+    
+    <!-- Head -->
+    <circle cx="0" cy="-90" r="60" fill="url(#rabbitGrad)" stroke="#94A3B8" stroke-width="3"/>
+    
+    <!-- Left ear (long) -->
+    <ellipse cx="-30" cy="-180" rx="18" ry="55" fill="url(#rabbitGrad)" stroke="#94A3B8" stroke-width="3" transform="rotate(-15, -30, -180)"/>
+    <ellipse cx="-30" cy="-180" rx="10" ry="40" fill="#FCA5A5" transform="rotate(-15, -30, -180)"/>
+    
+    <!-- Right ear (long) -->
+    <ellipse cx="30" cy="-180" rx="18" ry="55" fill="url(#rabbitGrad)" stroke="#94A3B8" stroke-width="3" transform="rotate(15, 30, -180)"/>
+    <ellipse cx="30" cy="-180" rx="10" ry="40" fill="#FCA5A5" transform="rotate(15, 30, -180)"/>
+    
+    <!-- Eyes -->
+    <circle cx="-20" cy="-95" r="8" fill="#0F172A"/>
+    <circle cx="20" cy="-95" r="8" fill="#0F172A"/>
+    <circle cx="-17" cy="-97" r="3" fill="white"/>
+    <circle cx="23" cy="-97" r="3" fill="white"/>
+    
+    <!-- Nose -->
+    <ellipse cx="0" cy="-75" rx="6" ry="4" fill="#F472B6"/>
+    
+    <!-- Mouth -->
+    <path d="M -8,-70 Q 0,-65 8,-70" stroke="#0F172A" stroke-width="2" fill="none" stroke-linecap="round"/>
+    
+    <!-- Whiskers -->
+    <line x1="-50" y1="-75" x2="-25" y2="-72" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="-50" y1="-68" x2="-25" y2="-68" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="50" y1="-75" x2="25" y2="-72" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="50" y1="-68" x2="25" y2="-68" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"/>
+    
+    <!-- Cheeks (pink blush) -->
+    <circle cx="-35" cy="-78" r="8" fill="#FCA5A5" opacity="0.6"/>
+    <circle cx="35" cy="-78" r="8" fill="#FCA5A5" opacity="0.6"/>
+    
+    <!-- Feet -->
+    <ellipse cx="-35" cy="65" rx="20" ry="15" fill="url(#rabbitGrad)" stroke="#94A3B8" stroke-width="3"/>
+    <ellipse cx="35" cy="65" rx="20" ry="15" fill="url(#rabbitGrad)" stroke="#94A3B8" stroke-width="3"/>
+    
+    <!-- Tail (fluffy) -->
+    <circle cx="75" cy="20" r="18" fill="url(#rabbitGrad)" stroke="#94A3B8" stroke-width="3"/>
+    
+    <!-- Belly (lighter) -->
+    <ellipse cx="0" cy="10" rx="50" ry="45" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+  
+  <!-- Text: "Meteo dei Conigli" -->
+  <g transform="translate(256, 470)">
+    <rect x="-140" y="-22" width="280" height="44" rx="22" fill="#0F172A" opacity="0.85"/>
+    <text x="0" y="6" 
+          font-family="Arial, sans-serif" 
+          font-size="22" 
+          font-weight="bold" 
+          text-anchor="middle" 
+          fill="white">
+      Meteo dei Conigli
+    </text>
+  </g>
+</svg>
