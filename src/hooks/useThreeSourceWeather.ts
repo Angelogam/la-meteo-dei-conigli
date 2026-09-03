@@ -8,7 +8,7 @@ import { DECOLLI } from "@/data/decolli";
 export type { MeteoDecollo };
 
 const REFRESH_INTERVAL = 15 * 60 * 1000;
-const LOAD_TIMEOUT = 60000; // 60 secondi max per tutte le fonti
+const LOAD_TIMEOUT = 5000; // 5 secondi max
 
 export function useThreeSourceWeather() {
   const [weatherData, setWeatherData] = useState<Map<string, MeteoDecollo>>(new Map());
