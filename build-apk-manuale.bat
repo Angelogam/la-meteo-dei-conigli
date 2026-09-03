@@ -8,16 +8,6 @@ echo     METEO DEI CONIGLI - BUILD APK
 echo ============================================================
 echo.
 
-REM Verifica che la cartella android esista
-if not exist "android" (
-    echo ERRORE: la cartella android NON esiste!
-    echo Devi prima crearla manualmente. Apri il terminale come Amministratore:
-    echo   cd C:\Users\avven\dyad-apps\la-meteo-dei-conigli
-    echo   npx cap add android
-    pause
-    exit /b 1
-)
-
 echo [1/5] Pulizia cache...
 if exist "dist" rd /s /q "dist" 2>nul
 if exist "node_modules\.cache" rd /s /q "node_modules\.cache" 2>nul
@@ -34,10 +24,16 @@ if errorlevel 1 (
 echo OK
 echo.
 
-echo [3/5] Sincronizzo Android...
-call npx cap sync android
+echo [3/5] Preparo Android...
+if not exist "android" (
+    echo Creo cartella android...
+    call npx cap add android
+) else (
+    echo Android esiste, sincronizzo...
+    call npx cap sync android
+)
 if errorlevel 1 (
-    echo ERRORE: cap sync fallito!
+    echo ERRORE!
     pause
     exit /b 1
 )
@@ -57,11 +53,10 @@ cd ..
 echo OK
 echo.
 
-echo [5/5] Verifica...
+echo [5/5] Fatto!
 echo ============================================================
 if exist "android\app\build\outputs\apk\debug\app-debug.apk" (
-    echo SUCCESSO! APK CREATA!
-    echo File: android\app\build\outputs\apk\debug\app-debug.apk
+    echo SUCCESSO! APK: android\app\build\outputs\apk\debug\app-debug.apk
 ) else (
     echo ERRORE: APK non trovata!
 )
