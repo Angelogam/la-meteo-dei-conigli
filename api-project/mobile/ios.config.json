@@ -1,0 +1,20 @@
+{
+  "platform": "iOS",
+  "bundle_id": "com.meteodeiconigli.app",
+  "display_name": "Meteo dei Conigli",
+  "deployment_target": "iOS 13.0",
+  "capabilities": [
+    "network",
+    "geolocation"
+  ],
+  "api": {
+    "base_url": "http://localhost:3000",
+    "endpoints": {
+      "test": "/api/meteo/test",
+      "meteo": "/api/meteo"
+    }
+  },
+  "permissions": {
+    "NSLocationWhenInUseUsageDescription": "Meteo dei Conigli usa la posizione per mostrare le previsioni meteo del sito di decollo più vicino."
+  }
+}

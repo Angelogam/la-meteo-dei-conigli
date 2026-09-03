@@ -1,0 +1,29 @@
+{
+  "platform": "Android",
+  "package_name": "com.meteodeiconigli.app",
+  "display_name": "Meteo dei Conigli",
+  "min_sdk": 22,
+  "target_sdk": 34,
+  "config_version": 1,
+  "capabilities": [
+    "network",
+    "geolocation"
+  ],
+  "api": {
+    "base_url": "http://localhost:3000",
+    "endpoints": {
+      "test": "/api/meteo/test",
+      "meteo": "/api/meteo"
+    }
+  },
+  "permissions": [
+    "android.permission.INTERNET",
+    "android.permission.ACCESS_NETWORK_STATE",
+    "android.permission.ACCESS_FINE_LOCATION",
+    "android.permission.ACCESS_COARSE_LOCATION"
+  ],
+  "network_security_config": {
+    "cleartext_traffic_permitted": true,
+    "domains": ["localhost", "10.0.2.2", "api.meteodeiconigli.app"]
+  }
+}

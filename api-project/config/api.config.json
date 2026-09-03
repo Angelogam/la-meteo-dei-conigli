@@ -1,0 +1,36 @@
+{
+  "name": "Meteo dei Conigli API",
+  "version": "1.0.0",
+  "description": "API backend per l'app Meteo dei Conigli",
+  "server": {
+    "host": "0.0.0.0",
+    "port": 3000,
+    "env": "production"
+  },
+  "endpoints": {
+    "test": {
+      "path": "/api/meteo/test",
+      "method": "GET",
+      "description": "Endpoint di test con dati hardcoded"
+    },
+    "meteo": {
+      "path": "/api/meteo",
+      "method": "GET",
+      "description": "Recupera dati meteo reali da Open-Meteo",
+      "params": {
+        "lat": "Latitude (required, -90 to 90)",
+        "lon": "Longitude (required, -180 to 180)"
+      }
+    }
+  },
+  "upstream": {
+    "openMeteo": {
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "timeout": 8000
+    }
+  },
+  "cors": {
+    "enabled": true,
+    "origins": "*"
+  }
+}
