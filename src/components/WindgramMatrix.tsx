@@ -166,39 +166,60 @@ export default function WindgramMatrix({
     return data;
   }, [hourlyMap, altitude]);
 
-  const getThermalBgColor = (alt: number, hr: number): string => {
-    const thermal = hourThermalData[hr];
-    if (!thermal) return "transparent";
-    // Curva sinusoidale dell'ora del giorno:
-    // - hr=8-9h: 0 (termica appena nata, quasi assente)
-    // - hr=13h: 1 (picco termico)
-    // - hr=18-19h: 0 (termica morente)
-    // Usiamo una sinusoide "smoothstep" che parte da 0 alle 8, sale a 1 alle 13, scende a 0 alle 18.
-    const dayPhase = (hr - 13) / 5; // -1 alle 8h, 0 alle 13h, +1 alle 18h
-    if (dayPhase < -1 || dayPhase > 1) return "transparent";
-    const diurnal = Math.cos((dayPhase * Math.PI) / 2); // 0 ai bordi, 1 al picco, curva morbida
-    if (diurnal < 0.05) return "transparent";
+  type CellBg =
+    | { kind: "none" }
+    | { kind: "thermal"; color: string }
+    | { kind: "stable"; color: string };
 
-    // L'altezza della termica dipende anche dal sinusoidal factor:
-    // - al mattino: parte dal suolo, sale poco
-    // - al picco: arriva fino a cloudBase
-    // - alla sera: collassa a terra
+  const getThermalBgColor = (alt: number, hr: number): CellBg => {
+    const thermal = hourThermalData[hr];
+    if (!thermal) return { kind: "none" };
+    // Curva sinusoidale dell'ora del giorno (modello Alpium/Rasoft):
+    //   hr=8h: 0 (termica appena nata)
+    //   hr=13h: 1 (picco termico)
+    //   hr=18h: 0 (termica morente)
+    const dayPhase = (hr - 13) / 5; // -1 alle 8h, 0 alle 13h, +1 alle 18h
+    if (dayPhase < -1 || dayPhase > 1) return { kind: "none" };
+    const diurnal = Math.cos((dayPhase * Math.PI) / 2); // 0 ai bordi, 1 al picco
+    if (diurnal < 0.05) return { kind: "none" };
+
+    // Top della termica (in cima finisce il giallo, inizia il blu stabile)
     const cloudCeil = Math.max(altitude + 250, thermal.cloudBase);
     const thermalTop = altitude + (cloudCeil - altitude) * diurnal;
-    if (alt < altitude || alt > thermalTop) return "transparent";
+    if (alt < altitude) return { kind: "none" };
 
-    // Altezza relativa dentro la termica: 0 = al suolo, 1 = al top
-    const span = Math.max(200, thermalTop - altitude);
-    const relHeight = (alt - altitude) / span;
+    // --- ZONA BLU "aria stabile (sopra cumuli)" ---
+    // Si estende dal top della termica verso l'alto.
+    // Spessore: ~500m ai bordi, ~1000m al picco (come nel modello Alpium)
+    const stableBandThickness = 500 + diurnal * 500;
+    const stableTop = Math.min(thermalTop + stableBandThickness, 4000);
 
-    // Forza colore: più intenso vicino al suolo + dipende dalla fase diurna
-    const strength = (1 - relHeight * 0.7) * diurnal;
-    if (strength > 0.78) return "#f97316";
-    if (strength > 0.62) return "#fb923c";
-    if (strength > 0.46) return "#fbbf24";
-    if (strength > 0.30) return "#fde047";
-    if (strength > 0.15) return "#fef08a";
-    return "transparent";
+    if (alt > thermalTop && alt <= stableTop) {
+      const stableRel = (alt - thermalTop) / stableBandThickness;
+      // Colori steel-blue come il modello Alpium/Rucas:
+      //   Basso (vicino cumuli) → più scuro
+      //   Alto → più chiaro/sfumato
+      if (stableRel < 0.25) return { kind: "stable", color: "#6a9cba" }; // steel blue scuro
+      if (stableRel < 0.5) return { kind: "stable", color: "#82b1cc" };  // steel blue medio
+      if (stableRel < 0.75) return { kind: "stable", color: "#9dc4d9" }; // steel blue chiaro
+      return { kind: "stable", color: "#b5d5e4" };                       // steel blue leggero
+    }
+    if (alt > stableTop) return { kind: "none" };
+
+    // --- ZONA GIALLA/ARANCIO "termica attiva (fino a base cumuli)" ---
+    if (alt >= altitude && alt <= thermalTop) {
+      const span = Math.max(200, thermalTop - altitude);
+      const relHeight = (alt - altitude) / span;
+      // Forza colore: più intenso vicino al suolo, sfuma verso l'alto
+      const strength = (1 - relHeight * 0.7) * diurnal;
+      if (strength > 0.78) return { kind: "thermal", color: "#f97316" }; // arancio intenso
+      if (strength > 0.62) return { kind: "thermal", color: "#fb923c" }; // arancio
+      if (strength > 0.46) return { kind: "thermal", color: "#fbbf24" }; // ambra
+      if (strength > 0.30) return { kind: "thermal", color: "#fde047" }; // giallo vivo
+      if (strength > 0.15) return { kind: "thermal", color: "#fef08a" }; // giallo chiaro
+      return { kind: "none" };
+    }
+    return { kind: "none" };
   };
 
   const windDataByHourAlt = useMemo(() => {
@@ -368,13 +389,15 @@ export default function WindgramMatrix({
                           ? getWindArrowColor(w.speed)
                           : { fill: "#94a3b8", stroke: "#64748b", text: "#94a3b8" };
                         const isSelectedCol = hr === selectedHour;
-                        const bgColor = getThermalBgColor(alt, hr);
+                        const bg = getThermalBgColor(alt, hr);
                         const showCloud = cloudBaseRow[hr] === rowIdx;
                         return (
                           <td
                             key={`cell-${alt}-${hr}`}
                             onClick={() => onHourSelect?.(hr)}
-                            style={{ backgroundColor: bgColor }}
+                            style={{
+                              backgroundColor: bg.kind === "none" ? "transparent" : bg.color,
+                            }}
                             className={`py-1.5 px-1 border-r border-slate-200/60 cursor-pointer transition-colors relative ${
                               isSelectedCol ? "ring-1 ring-sky-400/90" : "hover:brightness-95"
                             }`}
@@ -412,8 +435,8 @@ export default function WindgramMatrix({
                   <span className="text-slate-700 font-medium text-xs">Termica attiva (fino a base cumuli)</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-2.5 rounded bg-[#fde68a] border border-amber-400" />
-                  <span className="text-slate-700 font-medium text-xs">Quota decollo</span>
+                  <div className="w-3 h-2.5 rounded bg-gradient-to-b from-[#b5d5e4] via-[#82b1cc] to-[#6a9cba] border border-[#6a9cba]/60" />
+                  <span className="text-slate-700 font-medium text-xs">Aria stabile (sopra cumuli)</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <svg
@@ -427,7 +450,7 @@ export default function WindgramMatrix({
                     <ellipse cx="18" cy="14" rx="6" ry="4" fill="#94a3b8" fillOpacity="0.4" />
                     <ellipse cx="14" cy="12" rx="4" ry="3" fill="#cbd5e1" fillOpacity="0.3" />
                   </svg>
-                  <span className="text-slate-700 font-medium text-xs">Base cumuli (sopra il giallo)</span>
+                  <span className="text-slate-700 font-medium text-xs">Base cumuli</span>
                 </div>
               </div>
               <div className="flex items-center gap-2 text-slate-500">
