@@ -236,18 +236,22 @@ export function useWeatherData() {
 
   // Indice volabilità
   const volabilita = useMemo((): RisultatoVolabilita | null => {
-    if (!currentData || !currentHourData) return null;
+    if (!currentData) return null;
     return calcolaIndiceVolabilita({
       windSpeed: currentData.windSpeed,
       windDir: currentData.windDir,
-      gusts: currentData.windGusts,
+      windGusts: currentData.windGusts,
+      esposizione: site?.exposure ?? site?.orientation ?? "S",
       temperature: currentData.temperature,
-      humidity: currentData.humidity,
+      dewPoint: currentData.dewPoint ?? currentData.temperature - 5,
       cloudCover: currentData.cloudCover,
+      precipitation: currentData.precipitation ?? 0,
+      weatherCode: currentData.weatherCode,
       cape: currentData.cape,
-      termicoBase: currentHourData.freezingLevel,
+      liftedIndex: currentData.liftedIndex,
+      quota: site?.elevation_m ?? 1000,
     });
-  }, [currentData, currentHourData]);
+  }, [currentData, site]);
 
   // Dati giornalieri arricchiti
   const enrichedDaily = useMemo(() => {

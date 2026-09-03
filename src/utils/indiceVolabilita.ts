@@ -27,16 +27,21 @@ export interface RisultatoVolabilita {
   windRelativo: "frontale" | "diagonale" | "laterale" | "di_coda" | "sconosciuto";
 }
 
-function esposizioneToGradi(esposizione: string): number {
+function esposizioneToGradi(esposizione: string | undefined | null): number {
   const m: Record<string, number> = {
     "N": 0, "NNE": 22.5, "NE": 45, "ENE": 67.5,
     "E": 90, "ESE": 112.5, "SE": 135, "SSE": 157.5,
     "S": 180, "SSW": 202.5, "SW": 225, "WSW": 247.5,
     "W": 270, "WNW": 292.5, "NW": 315, "NNW": 337.5,
+    "SO": 225, // Sud-Ovest (alias italiano)
+    "NO": 315, // Nord-Ovest (alias italiano)
     "S/SE": 157.5, "S/SW": 202.5, "N/NE": 22.5, "N/NW": 337.5,
     "E/NE": 67.5, "E/SE": 112.5, "W/NW": 292.5, "W/SW": 247.5,
+    "SE/S": 157.5, "SW/S": 202.5,
+    "SO/S": 202.5, "NE/N": 22.5,
   };
-  const clean = esposizione.trim().toUpperCase().replace(/\s+/g, "");
+  if (!esposizione) return 180; // default: Sud
+  const clean = esposizione.trim().toUpperCase().replace(/\s+/g, "").replace(/\//g, "/");
   return m[clean] ?? 180;
 }
 
