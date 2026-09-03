@@ -33,12 +33,14 @@ function WindArrowIcon({ deg, color }: { deg: number; color: { fill: string; str
 }
 
 function CloudIcon({ cloudCover }: { cloudCover: number }) {
+  // Colore basato su cloud cover: più grigio scuro = più coperto
+  const darkness = Math.max(0.5, Math.min(0.95, cloudCover / 100 + 0.4));
   return (
-    <div className="pointer-events-none" style={{ opacity: 0.95 }}>
-      <svg width="20" height="14" viewBox="0 0 40 28" style={{ filter: "drop-shadow(0 -1px 2px rgba(0,0,0,0.5))" }}>
-        <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#2d3748" fillOpacity="0.95" />
-        <ellipse cx="18" cy="14" rx="6" ry="4" fill="#374151" fillOpacity="0.85" />
-        <ellipse cx="14" cy="12" rx="4" ry="3" fill="#4a5568" fillOpacity="0.8" />
+    <div className="pointer-events-none" style={{ opacity: 0.92 }}>
+      <svg width="16" height="10" viewBox="0 0 40 28" style={{ filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.3))" }}>
+        <path d="M8 20 Q8 12 14 12 Q18 8 24 10 Q30 8 34 14 Q38 18 32 20 L8 20 Z" fill="#475569" fillOpacity={darkness} />
+        <ellipse cx="18" cy="14" rx="6" ry="4" fill="#64748b" fillOpacity={darkness * 0.9} />
+        <ellipse cx="14" cy="12" rx="4" ry="3" fill="#94a3b8" fillOpacity={darkness * 0.8} />
       </svg>
     </div>
   );
@@ -237,21 +239,36 @@ export default function WindgramMatrix({
     return result;
   }, [activeAltitudes, interpolateAtAltitude]);
 
+  // Calcola la riga delle nuvole con curva sinusoidale obbligatoria
   const cloudBaseRow = useMemo(() => {
     const map: Record<number, number> = {};
     DISPLAY_HOURS.forEach((hr) => {
-      const thermal = hourThermalData[hr];
-      if (!thermal) return;
-      // Top termico sinusoidale: la nuvola appare dove termina il giallo.
+      // Curva sinusoidale: 8h=basso, 13h=alto, 18h=basso
       const dayPhase = (hr - 13) / 5;
-      if (dayPhase < -1 || dayPhase > 1) return;
+      if (dayPhase < -1 || dayPhase > 1) {
+        map[hr] = -1; // Fuori range = nessuna nuvola
+        return;
+      }
       const diurnal = Math.cos((dayPhase * Math.PI) / 2);
-      const cloudCeil = Math.max(altitude + 250, thermal.cloudBase);
-      const thermalTop = altitude + (cloudCeil - altitude) * diurnal;
+      
+      // Cloud ceiling basato su dati reali o fallback sinusoidale
+      let cloudCeil: number;
+      const thermal = hourThermalData[hr];
+      if (thermal) {
+        const cloudBaseValue = parseFloat(String(thermal.cloudBase));
+        cloudCeil = isNaN(cloudBaseValue)
+          ? altitude + 2500 * diurnal  // Fallback: curva pura
+          : Math.max(altitude + 250, cloudBaseValue);
+      } else {
+        // Nessun dato termico: usa curva sinusoidale pura tra 1000m e 3000m
+        cloudCeil = altitude + 2000 * diurnal;
+      }
+      
+      // Trova la riga più vicina al cloud ceiling
       let bestIdx = 0;
       let bestDiff = Infinity;
       activeAltitudes.forEach((a, idx) => {
-        const diff = Math.abs(a - thermalTop);
+        const diff = Math.abs(a - cloudCeil);
         if (diff < bestDiff) {
           bestDiff = diff;
           bestIdx = idx;
@@ -404,6 +421,11 @@ export default function WindgramMatrix({
                               isSelectedCol ? "ring-1 ring-sky-400/90" : "hover:brightness-95"
                             }`}
                           >
+                            {showCloud && (
+                              <div className="absolute -top-1 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
+                                <CloudIcon cloudCover={hourThermalData[hr]?.cloudCover ?? 50} />
+                              </div>
+                            )}
                             <div className="flex items-center justify-center gap-0 h-full relative">
                               {w && <WindArrowIcon deg={w.dir} color={wColor} />}
                               <span
@@ -413,11 +435,6 @@ export default function WindgramMatrix({
                               >
                                 {w ? w.speed : "—"}
                               </span>
-                              {showCloud && (
-                                <div className="absolute bottom-[calc(100%+2px)] left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-                                  <CloudIcon cloudCover={hourThermalData[hr]?.cloudCover ?? 30} />
-                                </div>
-                              )}
                             </div>
                           </td>
                         );
