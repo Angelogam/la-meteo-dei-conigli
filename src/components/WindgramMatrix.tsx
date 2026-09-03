@@ -335,8 +335,11 @@ export default function WindgramMatrix({
           <div className="overflow-x-auto border-t border-b border-slate-200 bg-white">
             <table className="w-full text-center border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-700 bg-slate-100 font-bold">
-                  <th className="py-1 px-1 text-center w-10 sticky left-0 z-20 bg-slate-200 border-r border-slate-300 text-slate-800 text-[10px]">
+                <tr className="border-b border-slate-200 text-slate-700 bg-slate-200 font-bold">
+                  <th
+                    className="py-1 px-1 text-center w-10 sticky left-0 z-40 bg-slate-300 border-r border-slate-400 text-slate-900 text-[10px]"
+                    style={{ boxShadow: "2px 0 4px rgba(0,0,0,0.15)" }}
+                  >
                     Quota
                   </th>
                   {DISPLAY_HOURS.map((hr) => (
@@ -371,13 +374,14 @@ export default function WindgramMatrix({
                       } ${isDecolloLevel ? "bg-emerald-50" : ""}`}
                     >
                       <td
-                        className={`py-0.5 px-1 text-center font-bold sticky left-0 z-10 border-r border-slate-300 text-[9px] tabular-nums whitespace-nowrap ${
+                        className={`py-0.5 px-1 text-center font-bold sticky left-0 z-30 border-r border-slate-400 text-[9px] tabular-nums whitespace-nowrap ${
                           isMajorLevel
-                            ? "bg-slate-200 text-slate-900"
+                            ? "bg-slate-300 text-slate-900"
                             : isDecolloLevel
-                            ? "bg-emerald-100 text-emerald-900"
-                            : "bg-slate-100 text-slate-700"
+                            ? "bg-emerald-200 text-emerald-900"
+                            : "bg-slate-200 text-slate-700"
                         }`}
+                        style={{ boxShadow: "2px 0 4px rgba(0,0,0,0.15)" }}
                       >
                         {alt}
                       </td>
