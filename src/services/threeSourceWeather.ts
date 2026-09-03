@@ -244,7 +244,9 @@ export async function getAllMeteoDecolliAggressivo(): Promise<Map<string, MeteoD
         elevation: d.elevation_m
       });
       results.set(d.name, weather);
-    } catch {
+      console.log(`[3-fonti] ${d.name}: OK`);
+    } catch (err) {
+      console.warn(`[3-fonti] ${d.name}: ERRORE`, err);
       results.set(d.name, {
         temp: "--", rain: "--", cloud: "--", wind: "--",
         stato: "Errore", baseNubi: "--", termiche: "--",
