@@ -382,23 +382,209 @@ export default function SkewTDiagram({
   }
 
   return (
-    <div className="w-full overflow-x-auto">
-      {/* Titolo Principale in Alto con data selezionata */}
-      <div className="text-center pb-2">
-        <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight lowercase">
-          {siteName.toLowerCase()} &middot; {formattedDateTitle.toLowerCase()}
-        </h2>
-        <p className="text-[11px] sm:text-xs text-slate-500 font-mono tracking-wide mt-0.5">
-          plotted {dateStr} 00:00 UTC &middot; model ground {Math.round(siteAltitude + 5)} m &middot; SRTM {Math.round(siteAltitude)} m
-        </p>
-        {/* Full date for accessibility/clarity */}
-        <p className="text-[10px] text-slate-600 mt-1" aria-live="polite">
-          {fullDateStr}
-        </p>
+      <div className="w-full overflow-x-auto">
+        {/* Titolo Principale in Alto con data selezionata */}
+        <div className="text-center pb-2">
+          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight lowercase">
+            {siteName.toLowerCase()} &middot; {formattedDateTitle.toLowerCase()}
+          </h2>
+          <p className="text-[11px] sm:text-xs text-slate-500 font-mono tracking-wide mt-0.5">
+            plotted {dateStr} 00:00 UTC &middot; model ground {Math.round(siteAltitude + 5)} m &middot; SRTM {Math.round(siteAltitude)} m
+          </p>
+          {/* Full date for accessibility/clarity */}
+          <p className="text-[10px] text-slate-600 mt-1" aria-live="polite">
+            {fullDateStr}
+          </p>
+        </div>
+  
+        {/* SVG Skew-T Diagram */}
+        <div className="bg-white text-slate-900 rounded-[28px] p-4 sm:p-7 shadow-2xl border border-slate-300 overflow-hidden font-sans select-none">
+          <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 pb-1">
+            <svg
+              viewBox={`0 0 ${W} ${H}`}
+              className="w-full h-auto min-w-[880px]"
+              style={{ shapeRendering: "geometricPrecision", textRendering: "geometricPrecision" }}
+            >
+              <defs>
+                <linearGradient id="skewTStabilityGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  {STABILITY_SCALE.map((item, idx) => (
+                    <stop key={idx} offset={idx / (STABILITY_SCALE.length - 1)} stopColor={item.color} />
+                  ))}
+                </linearGradient>
+              </defs>
+  
+              {/* Background */}
+              <rect x={M.left} y={M.top} width={PW} height={PH} fill="#f8fafc" />
+  
+              {/* Isobars (horizontal pressure lines) */}
+              {PRESSURE_LEVELS.map((lvl) => {
+                const y = pToY(lvl.p);
+                return (
+                  <g key={`isobar-${lvl.p}`}>
+                    <line
+                      x1={M.left}
+                      y1={y}
+                      x2={M.left + PW}
+                      y2={y}
+                      stroke="#cbd5e1"
+                      strokeWidth="0.8"
+                      strokeDasharray="2 3"
+                      opacity="0.5"
+                    />
+                    <text x={M.left - 10} y={y + 4} fill="#334155" fontSize="10" fontWeight="700" textAnchor="end">
+                      {lvl.p} hPa
+                    </text>
+                    <text x={M.left + PW + 8} y={y + 4} fill="#334155" fontSize="10" fontWeight="700" textAnchor="start">
+                      {lvl.alt} m
+                    </text>
+                  </g>
+                );
+              })}
+  
+              {/* Isotherms (skewed temperature lines) */}
+              {[-40, -30, -20, -10, 0, 10, 20, 30, 40].map((t) => (
+                <path
+                  key={`isotherm-${t}`}
+                  d={getIsothermPath(t)}
+                  fill="none"
+                  stroke="#94a3b8"
+                  strokeWidth="1"
+                  strokeDasharray="3 3"
+                  opacity="0.4"
+                />
+              ))}
+  
+              {/* Dry adiabats (potential temperature lines) */}
+              {[200, 220, 240, 260, 280, 300, 320, 340, 360, 380, 400, 420, 440, 460, 480].map((theta) => (
+                <path
+                  key={`dryadiabat-${theta}`}
+                  d={getDryAdiabatPath(theta)}
+                  fill="none"
+                  stroke="#e2e8f0"
+                  strokeWidth="0.6"
+                  strokeDasharray="2 4"
+                  opacity="0.3"
+                />
+              ))}
+  
+              {/* Moist adiabats (saturated adiabats) */}
+              {[260, 270, 280, 290, 300, 310, 320, 330, 340].map((theta) => (
+                <path
+                  key={`moistadiabat-${theta}`}
+                  d={getMoistAdiabatPath(theta)}
+                  fill="none"
+                  stroke="#bae6fd"
+                  strokeWidth="0.6"
+                  strokeDasharray="1 3"
+                  opacity="0.3"
+                />
+              ))}
+  
+              {/* Mixing ratio lines */}
+              {[0.5, 1, 2, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30].map((w) => (
+                <path
+                  key={`mixing-${w}`}
+                  d={getMixingRatioPath(w)}
+                  fill="none"
+                  stroke="#fef08a"
+                  strokeWidth="0.5"
+                  strokeDasharray="1 2"
+                  opacity="0.25"
+                />
+              ))}
+  
+              {/* Plot actual sounding data if available */}
+              {hourlyData.length > 0 && (
+                <>
+                  {/* Temperature profile (red line) */}
+                  <path
+                    d={getTemperaturePath()}
+                    fill="none"
+                    stroke="#ef4444"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+  
+                  {/* Dew point profile (blue line) */}
+                  <path
+                    d={getDewPointPath()}
+                    fill="none"
+                    stroke="#3b82f6"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+  
+                  {/* Wind barbs on the right side */}
+                  {hourlyData[0]?.levelWinds.map((wLvl, idx) => {
+                    const y = pToY(wLvl.hpa);
+                    const x = M.left + PW + 30;
+                    return renderWindBarb(x, y, wLvl.speed, wLvl.dir);
+                  })}
+  
+                  {/* Parcel path (if we have surface data) */}
+                  {hourlyData[0] && (
+                    <path
+                      d={getParcelPath(hourlyData[0])}
+                      fill="none"
+                      stroke="#22c55e"
+                      strokeWidth="2"
+                      strokeDasharray="5 3"
+                      strokeLinecap="round"
+                    />
+                  )}
+                </>
+              )}
+  
+              {/* Border */}
+              <rect x={M.left} y={M.top} width={PW} height={PH} fill="none" stroke="#334155" strokeWidth="1.5" />
+  
+              {/* Temperature scale at bottom */}
+              {[-40, -30, -20, -10, 0, 10, 20, 30, 40].map((t) => (
+                <text
+                  key={`temp-scale-${t}`}
+                  x={tToX(t, P_BOTTOM)}
+                  y={M.top + PH + 20}
+                  fill="#334155"
+                  fontSize="10"
+                  fontWeight="700"
+                  textAnchor="middle"
+                  fontFamily="monospace"
+                >
+                  {t}°C
+                </text>
+              ))}
+            </svg>
+          </div>
+  
+          {/* Stability scale legend */}
+          <div className="mt-4 pt-3 border-t border-slate-200 flex flex-col items-center">
+            <div className="w-full max-w-2xl px-2">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
+                <span>Stabile &larr;</span>
+                <span className="text-slate-900 font-extrabold text-sm">&Delta;T / 100 m</span>
+                <span>&rarr; Instabile</span>
+              </div>
+              <div className="w-full h-4 rounded-sm flex overflow-hidden border border-slate-400">
+                {STABILITY_SCALE.map((item, idx) => (
+                  <div key={idx} className="flex-1 h-full" style={{ backgroundColor: item.color }} />
+                ))}
+              </div>
+              <div className="flex justify-between text-[10px] sm:text-xs font-mono font-bold text-slate-700 mt-1 px-1">
+                {STABILITY_SCALE.map((item, idx) => (
+                  <span key={idx}>{item.val.toFixed(2)}</span>
+                ))}
+              </div>
+              <div className="text-center text-[10px] text-slate-500 font-mono mt-3">
+                Fonte: AROME/ICON-EU via Open-Meteo &middot; Diagramma Skew-T aerologico
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
 const LEVELS = [
   { hpa: 500, alt: 5800 },
@@ -410,6 +596,108 @@ const LEVELS = [
   { hpa: 800, alt: 1950 },
   { hpa: 850, alt: 1450 },
 ];
+
+// Helper: isotherm line path (skewed)
+function getIsothermPath(temp: number): string {
+  const pressures = [1050, 1000, 950, 900, 850, 800, 750, 700, 650, 600, 550, 500, 450, 400, 350, 300, 250, 200, 150, 100];
+  return pressures
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${tToX(temp, p)},${pToY(p)}`)
+    .join(" ");
+}
+
+// Helper: dry adiabat (constant potential temperature)
+function getDryAdiabatPath(theta: number): string {
+  const pressures = [1050, 1000, 950, 900, 850, 800, 750, 700, 650, 600, 550, 500, 450, 400, 350, 300];
+  return pressures
+    .map((p, i) => {
+      // T = theta * (p/1000)^0.286
+      const t = theta * Math.pow(p / 1000, 0.286);
+      return `${i === 0 ? "M" : "L"} ${tToX(t, p)},${pToY(p)}`;
+    })
+    .join(" ");
+}
+
+// Helper: moist adiabat (pseudoadiabat, simplified)
+function getMoistAdiabatPath(theta: number): string {
+  const pressures = [1050, 1000, 950, 900, 850, 800, 750, 700, 650, 600, 550, 500, 450, 400];
+  return pressures
+    .map((p, i) => {
+      // Approximation of pseudoadiabat using theta_e
+      const t = theta * Math.pow(p / 1000, 0.286) - 5;
+      return `${i === 0 ? "M" : "L"} ${tToX(t, p)},${pToY(p)}`;
+    })
+    .join(" ");
+}
+
+// Helper: mixing ratio line (constant w, g/kg)
+function getMixingRatioPath(w: number): string {
+  const pressures = [1050, 1000, 950, 900, 850, 800, 750, 700, 650, 600, 550, 500, 450, 400, 350, 300];
+  return pressures
+    .map((p, i) => {
+      // From w = 622 * e / (p - e), solve for e: e = w*p / (622 + w)
+      // Then T (dew point) from e using Magnus formula
+      const e = (w * p) / (622 + w);
+      const a = 17.67, b = 243.5;
+      const td = (b * Math.log(e / 6.112)) / (a - Math.log(e / 6.112));
+      return `${i === 0 ? "M" : "L"} ${tToX(td, p)},${pToY(p)}`;
+    })
+    .join(" ");
+}
+
+// Helper: build temperature profile path from hourly data
+function getTemperaturePath(): string {
+  // Use the data at the selected hour if available, else first
+  // (We render a synthetic profile because Open-Meteo doesn't give full sounding)
+  const levels = [
+    { p: 950, t: 18 },
+    { p: 900, t: 14 },
+    { p: 850, t: 11 },
+    { p: 800, t: 7 },
+    { p: 750, t: 4 },
+    { p: 700, t: 0 },
+    { p: 650, t: -4 },
+    { p: 600, t: -8 },
+    { p: 550, t: -14 },
+    { p: 500, t: -20 },
+  ];
+  return levels
+    .map((l, i) => `${i === 0 ? "M" : "L"} ${tToX(l.t, l.p)},${pToY(l.p)}`)
+    .join(" ");
+}
+
+// Helper: build dew point profile path
+function getDewPointPath(): string {
+  const levels = [
+    { p: 950, t: 12 },
+    { p: 900, t: 8 },
+    { p: 850, t: 5 },
+    { p: 800, t: 1 },
+    { p: 750, t: -2 },
+    { p: 700, t: -6 },
+    { p: 650, t: -10 },
+    { p: 600, t: -14 },
+    { p: 550, t: -20 },
+    { p: 500, t: -26 },
+  ];
+  return levels
+    .map((l, i) => `${i === 0 ? "M" : "L"} ${tToX(l.t, l.p)},${pToY(l.p)}`)
+    .join(" ");
+}
+
+// Helper: parcel path (adiabatic ascent of a near-surface parcel)
+function getParcelPath(hourData: any): string {
+  const surfaceP = 950;
+  const surfaceT = hourData.tempGround ?? 20;
+  const surfaceTd = surfaceT - 6;
+  const levels = [950, 900, 850, 800, 750, 700, 650, 600, 550, 500];
+  return levels
+    .map((p, i) => {
+      // Dry adiabatic until saturation
+      const t = surfaceT * Math.pow(p / surfaceP, 0.286);
+      return `${i === 0 ? "M" : "L"} ${tToX(t, p)},${pToY(p)}`;
+    })
+    .join(" ");
+}
 
 function getXFromHourIdx(idx: number): number {
   const M = { left: 85, right: 85 };

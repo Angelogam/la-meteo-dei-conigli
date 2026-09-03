@@ -11,9 +11,11 @@ interface TermicheTabProps {
   dayData: HourData[];
   site: { alt: number; lat: number; lon: number; name: string };
   selectedDay?: number;
+  selectedHour?: number;
+  onHourSelect?: (hour: number) => void;
 }
 
-export default function TermicheTab({ dayData, site, selectedDay = 0 }: TermicheTabProps) {
+export default function TermicheTab({ dayData, site, selectedDay = 0, selectedHour = 13, onHourSelect }: TermicheTabProps) {
   const selectedDate = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + selectedDay);
@@ -71,13 +73,13 @@ export default function TermicheTab({ dayData, site, selectedDay = 0 }: Termiche
       </div>
 
       <SkewTDiagram
-        latitude={site.lat}
-        longitude={site.lon}
-        siteAltitude={site.alt}
-        siteName={site.name}
-        selectedHour={12}
-        selectedDay={selectedDay}
-      />
+              latitude={site.lat}
+              longitude={site.lon}
+              siteAltitude={site.alt}
+              siteName={site.name}
+              selectedHour={selectedHour}
+              selectedDay={selectedDay}
+            />
 
       <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5">
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
