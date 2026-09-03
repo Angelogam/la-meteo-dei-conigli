@@ -10,16 +10,32 @@ echo.
 
 REM 1. Pulisci cartelle vecchie
 echo [1/7] Pulisco cartelle vecchie...
+echo     - Chiudo processi gradle/java...
+taskkill /F /IM gradle.exe 2>nul
+taskkill /F /IM java.exe 2>nul
+taskkill /F /IM javaw.exe 2>nul
+taskkill /F /IM kotlinc.exe 2>nul
+timeout /t 3 /nobreak >nul
+
 if exist android (
-    echo     - Rimuovo android\ (con contenuto)
-    rmdir /s /q android
+    echo     - Rimuovo android\...
+    rd /s /q "android" 2>nul
     if exist android (
-        echo     ERRORE: impossibile rimuovere android\
-        echo     Provo a chiudere processi...
-        taskkill /F /IM gradle.exe 2>nul
-        taskkill /F /IM java.exe 2>nul
-        timeout /t 3 /nobreak >nul
-        rmdir /s /q android
+        echo     - Provo con PowerShell...
+        powershell -Command "Remove-Item -Path 'android' -Recurse -Force -ErrorAction SilentlyContinue" 2>nul
+    )
+    if exist android (
+        echo     - Provo con attrib e del...
+        attrib -r -s -h "android" /s /d 2>nul
+        rd /s /q "android" 2>nul
+    )
+    if exist android (
+        echo.
+        echo     ERRORE CRITICO: impossibile rimuovere android\
+        echo     Chiudi TUTTE le finestre di Esplora File e riprova!
+        echo     Oppure elimina la cartella android\ manualmente.
+        pause
+        exit /b 1
     )
 )
 if exist dist (
