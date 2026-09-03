@@ -169,56 +169,71 @@ export default function WindgramMatrix({
   type CellBg =
     | { kind: "none" }
     | { kind: "thermal"; color: string }
-    | { kind: "stable"; color: string };
+    | { kind: "stableLow"; color: string }    // blu chiaro "aria stabile sopra cumuli"
+    | { kind: "mixing"; color: string }        // grigio-azzurro "rimescolamento"
+    | { kind: "stableHigh"; color: string };  // blu scuro "aria ferma"
 
+  // Bande verticali modello Alpium (dal basso verso l'alto):
+  //   1) Termica attiva (arancione/giallo) — fino a base cumuli
+  //   2) [riga nuvola] — icona cumuliforme
+  //   3) Aria stabile sopra i cumuli (azzurro) — ~500m sopra nuvola
+  //   4) Rimescolamento (grigio-azzurro) — ~500m
+  //   5) Aria ferma / inversione (blu scuro) — fino al top
   const getThermalBgColor = (alt: number, hr: number): CellBg => {
     const thermal = hourThermalData[hr];
     if (!thermal) return { kind: "none" };
-    // Curva sinusoidale dell'ora del giorno (modello Alpium/Rasoft):
-    //   hr=8h: 0 (termica appena nata)
-    //   hr=13h: 1 (picco termico)
-    //   hr=18h: 0 (termica morente)
-    const dayPhase = (hr - 13) / 5; // -1 alle 8h, 0 alle 13h, +1 alle 18h
+    // Fattore diurno sinusoidale 8-18h
+    const dayPhase = (hr - 13) / 5;
     if (dayPhase < -1 || dayPhase > 1) return { kind: "none" };
-    const diurnal = Math.cos((dayPhase * Math.PI) / 2); // 0 ai bordi, 1 al picco
+    const diurnal = Math.cos((dayPhase * Math.PI) / 2);
     if (diurnal < 0.05) return { kind: "none" };
 
-    // Top della termica (in cima finisce il giallo, inizia il blu stabile)
+    // Quote di riferimento per le bande
     const cloudCeil = Math.max(altitude + 250, thermal.cloudBase);
-    const thermalTop = altitude + (cloudCeil - altitude) * diurnal;
+    const thermalTop = altitude + (cloudCeil - altitude) * diurnal; // base cumuli (top termica)
     if (alt < altitude) return { kind: "none" };
 
-    // --- ZONA BLU "aria stabile (sopra cumuli)" ---
-    // Si estende dal top della termica verso l'alto.
-    // Spessore: ~500m ai bordi, ~1000m al picco (come nel modello Alpium)
-    const stableBandThickness = 500 + diurnal * 500;
-    const stableTop = Math.min(thermalTop + stableBandThickness, 4000);
+    // Bande fisse sopra la nuvola (modello Alpium):
+    //   - Aria stabile (sopra cumuli): +500m
+    //   - Rimescolamento: +500..1000m
+    //   - Aria ferma: da +1000m in su
+    const stableLowTop = Math.min(thermalTop + 500, 4000);
+    const mixingTop = Math.min(thermalTop + 1000, 4000);
 
-    if (alt > thermalTop && alt <= stableTop) {
-      const stableRel = (alt - thermalTop) / stableBandThickness;
-      // Colori steel-blue come il modello Alpium/Rucas:
-      //   Basso (vicino cumuli) → più scuro
-      //   Alto → più chiaro/sfumato
-      if (stableRel < 0.25) return { kind: "stable", color: "#6a9cba" }; // steel blue scuro
-      if (stableRel < 0.5) return { kind: "stable", color: "#82b1cc" };  // steel blue medio
-      if (stableRel < 0.75) return { kind: "stable", color: "#9dc4d9" }; // steel blue chiaro
-      return { kind: "stable", color: "#b5d5e4" };                       // steel blue leggero
-    }
-    if (alt > stableTop) return { kind: "none" };
-
-    // --- ZONA GIALLA/ARANCIO "termica attiva (fino a base cumuli)" ---
+    // --- 1) TERMICA ATTIVA (giallo/arancio) ---
     if (alt >= altitude && alt <= thermalTop) {
       const span = Math.max(200, thermalTop - altitude);
       const relHeight = (alt - altitude) / span;
-      // Forza colore: più intenso vicino al suolo, sfuma verso l'alto
       const strength = (1 - relHeight * 0.7) * diurnal;
-      if (strength > 0.78) return { kind: "thermal", color: "#f97316" }; // arancio intenso
-      if (strength > 0.62) return { kind: "thermal", color: "#fb923c" }; // arancio
-      if (strength > 0.46) return { kind: "thermal", color: "#fbbf24" }; // ambra
-      if (strength > 0.30) return { kind: "thermal", color: "#fde047" }; // giallo vivo
-      if (strength > 0.15) return { kind: "thermal", color: "#fef08a" }; // giallo chiaro
+      if (strength > 0.78) return { kind: "thermal", color: "#f97316" };
+      if (strength > 0.62) return { kind: "thermal", color: "#fb923c" };
+      if (strength > 0.46) return { kind: "thermal", color: "#fbbf24" };
+      if (strength > 0.30) return { kind: "thermal", color: "#fde047" };
+      if (strength > 0.15) return { kind: "thermal", color: "#fef08a" };
       return { kind: "none" };
     }
+
+    // --- 3) ARIA STABILE sopra i cumuli (azzurro) ---
+    if (alt > thermalTop && alt <= stableLowTop) {
+      // sfumatura: scuro vicino ai cumuli, più chiaro salendo
+      const rel = (alt - thermalTop) / 500;
+      if (rel < 0.34) return { kind: "stableLow", color: "#6a9ec8" };
+      if (rel < 0.67) return { kind: "stableLow", color: "#84b3d2" };
+      return { kind: "stableLow", color: "#9dc5dc" };
+    }
+
+    // --- 4) RIMESCOLAMENTO (grigio-azzurro con texture "W") ---
+    if (alt > stableLowTop && alt <= mixingTop) {
+      const rel = (alt - stableLowTop) / 500;
+      if (rel < 0.5) return { kind: "mixing", color: "#a8b8c4" };
+      return { kind: "mixing", color: "#94a8b8" };
+    }
+
+    // --- 5) ARIA FERMA / inversione (blu scuro) ---
+    if (alt > mixingTop) {
+      return { kind: "stableHigh", color: "#4a6f8a" };
+    }
+
     return { kind: "none" };
   };
 
@@ -391,12 +406,17 @@ export default function WindgramMatrix({
                         const isSelectedCol = hr === selectedHour;
                         const bg = getThermalBgColor(alt, hr);
                         const showCloud = cloudBaseRow[hr] === rowIdx;
+                        // Pattern "W" per la zona di rimescolamento
+                        const isMixing = bg.kind === "mixing";
                         return (
                           <td
                             key={`cell-${alt}-${hr}`}
                             onClick={() => onHourSelect?.(hr)}
                             style={{
                               backgroundColor: bg.kind === "none" ? "transparent" : bg.color,
+                              backgroundImage: isMixing
+                                ? "repeating-linear-gradient(45deg, rgba(255,255,255,0.18) 0px, rgba(255,255,255,0.18) 2px, transparent 2px, transparent 6px)"
+                                : undefined,
                             }}
                             className={`py-1.5 px-1 border-r border-slate-200/60 cursor-pointer transition-colors relative ${
                               isSelectedCol ? "ring-1 ring-sky-400/90" : "hover:brightness-95"
