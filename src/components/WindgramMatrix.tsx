@@ -331,19 +331,19 @@ export default function WindgramMatrix({
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-3 rounded-2xl">
+    <div className="w-full max-w-3xl mx-auto bg-slate-900/60 p-3 sm:p-4 rounded-2xl">
       <div className="w-full bg-white text-slate-900 border border-slate-200/80 rounded-2xl shadow-2xl overflow-hidden font-sans select-none">
-        <div className="p-2 sm:p-3 pb-1">
-            <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="p-3 sm:p-4 pb-1">
+            <div className="flex items-center justify-between gap-3 mb-2">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-sky-100 text-sky-600">
-                  <Wind className="w-4 h-4" />
+                <div className="p-2 rounded-lg bg-sky-100 text-sky-600">
+                  <Wind className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold tracking-tight text-slate-900">
+                  <h3 className="text-base font-bold tracking-tight text-slate-900">
                     Windgram <span className="text-sky-600">{siteName}</span>
                   </h3>
-                  <p className="text-[10px] text-sky-700 font-semibold">{headerDate}</p>
+                  <p className="text-xs text-sky-700 font-semibold">{headerDate}</p>
                 </div>
               </div>
               {dataSourceBadge}
@@ -354,7 +354,7 @@ export default function WindgramMatrix({
               <thead>
                 <tr className="border-b border-slate-200 text-slate-700 bg-slate-200 font-bold">
                   <th
-                    className="py-1.5 px-1.5 text-center w-12 sticky left-0 z-40 bg-slate-300 border-r border-slate-400 text-slate-900 text-[11px]"
+                    className="py-2 px-2 text-center w-14 sticky left-0 z-40 bg-slate-300 border-r border-slate-400 text-slate-900 text-xs"
                     style={{ boxShadow: "2px 0 4px rgba(0,0,0,0.15)" }}
                   >
                     Quota
@@ -363,15 +363,15 @@ export default function WindgramMatrix({
                     <th
                       key={`th-${hr}`}
                       onClick={() => onHourSelect?.(hr)}
-                      className={`py-1.5 px-1.5 font-bold cursor-pointer transition-colors border-r border-slate-200/60 ${
+                      className={`py-2 px-2 font-bold cursor-pointer transition-colors border-r border-slate-200/60 ${
                         hr === selectedHour
                           ? "bg-sky-100 text-sky-900 ring-1 ring-sky-400"
                           : "hover:bg-slate-200/60 text-slate-800"
                       }`}
                     >
-                      <div className="flex flex-col items-center gap-0">
-                        <span className="text-[11px]">{hr}h</span>
-                        <span className="text-[9px] font-normal text-slate-500 leading-none">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-xs">{hr}h</span>
+                        <span className="text-[10px] font-normal text-slate-500 leading-none">
                           {getHourTemperature(hourlyMap, hr)}
                         </span>
                       </div>
@@ -391,7 +391,7 @@ export default function WindgramMatrix({
                       } ${isDecolloLevel ? "bg-emerald-50" : ""}`}
                     >
                       <td
-                        className={`py-0.5 px-1 text-center font-bold sticky left-0 z-30 border-r border-slate-400 text-[9px] tabular-nums whitespace-nowrap ${
+                        className={`py-1 px-1.5 text-center font-bold sticky left-0 z-30 border-r border-slate-400 text-[10px] tabular-nums whitespace-nowrap ${
                           isMajorLevel
                             ? "bg-slate-300 text-slate-900"
                             : isDecolloLevel
@@ -417,7 +417,7 @@ export default function WindgramMatrix({
                             style={{
                               backgroundColor: bg.kind === "none" ? "transparent" : bg.color,
                             }}
-                            className={`py-0.5 px-0.5 border-r border-slate-200/60 cursor-pointer transition-colors relative ${
+                            className={`py-1 px-1 border-r border-slate-200/60 cursor-pointer transition-colors relative ${
                               isSelectedCol ? "ring-1 ring-sky-400/90" : "hover:brightness-95"
                             }`}
                           >
