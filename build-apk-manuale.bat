@@ -1,51 +1,14 @@
 @echo off
 chcp 65001 >nul
-title Meteo dei Conigli - Build APK (Manuale)
+title Meteo dei Conigli - Build APK
 
 echo.
 echo ============================================================
-echo     METEO DEI CONIGLI - BUILD APK (Manuale)
+echo     METEO DEI CONIGLI - BUILD APK
 echo ============================================================
 echo.
 
-echo Pulizia COMPLETA di cartelle Android e cache...
-echo.
-
-REM Forza chiusura processi che potrebbero bloccare i file
-taskkill /F /IM java.exe 2>nul
-taskkill /F /IM gradle.exe 2>nul
-
-REM Rimozione AGGRESSIVA cartella android (in tutte le posizioni possibili)
-if exist "android" (
-    echo Rimuovo android\...
-    attrib -r -h -s "android" /S /D 2>nul
-    rd /s /q "android" 2>nul
-)
-if exist ".\android" (
-    echo Rimuovo .\android\...
-    rd /s /q ".\android" 2>nul
-)
-if exist "C:\Users\avven\dyad-apps\la-meteo-dei-conigli\android" (
-    echo Rimuovo percorso assoluto...
-    rd /s /q "C:\Users\avven\dyad-apps\la-meteo-dei-conigli\android" 2>nul
-)
-
-REM Verifica finale
-if exist "android" (
-    echo.
-    echo ERRORE: impossibile eliminare la cartella android!
-    echo Prova a:
-    echo   1. Chiudere VS Code / Esplora File
-    echo   2. Apri CMD come Amministratore
-    echo   3. Esegui: rd /s /q "C:\Users\avven\dyad-apps\la-meteo-dei-conigli\android"
-    pause
-    exit /b 1
-)
-
-echo OK cartella android rimossa!
-echo.
-
-echo [1/6] Pulizia cache e build precedenti...
+echo [1/6] Pulizia cache precedenti...
 if exist "dist" rd /s /q "dist" 2>nul
 if exist "node_modules\.cache" rd /s /q "node_modules\.cache" 2>nul
 if exist ".vite" rd /s /q ".vite" 2>nul
@@ -83,19 +46,14 @@ if errorlevel 1 (
 echo OK
 echo.
 
-echo [5/6] Aggiungo Android...
-call npx cap add android
-if errorlevel 1 (
-    echo ERRORE: cap add android fallito!
-    echo La cartella android potrebbe essere bloccata da un altro processo.
-    pause
-    exit /b 1
+echo [5/6] Preparo Android...
+if exist "android" (
+    echo La cartella android esiste, sincronizzo...
+    call npx cap sync android
+) else (
+    echo Creo la cartella android...
+    call npx cap add android
 )
-echo OK
-echo.
-
-echo [5b/6] Sincronizzo...
-call npx cap sync android
 echo OK
 echo.
 
