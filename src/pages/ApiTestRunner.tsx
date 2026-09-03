@@ -26,12 +26,31 @@ import {
   FileJson,
 } from "lucide-react";
 
+interface TestData {
+  temperature?: number;
+  humidity?: number;
+  windSpeed?: number;
+  windDir?: number;
+  windGusts?: number;
+  weatherCode?: number;
+  code?: number;
+  description?: string;
+  unit?: string;
+  range?: string;
+  hoursCount?: number;
+  firstHour?: string;
+  lastHour?: string;
+  daysCount?: number;
+  firstDay?: string;
+  lastDay?: string;
+}
+
 interface ApiTestResult {
   name: string;
   status: "pending" | "loading" | "success" | "error";
   statusCode?: number;
   responseTime?: number;
-  data?: Record<string, unknown>;
+  data?: TestData;
   error?: string;
   timestamp?: string;
 }
