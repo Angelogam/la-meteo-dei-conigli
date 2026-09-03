@@ -4,17 +4,24 @@
   "display_name": "Meteo dei Conigli",
   "deployment_target": "iOS 13.0",
   "capabilities": [
-    "network",
-    "geolocation"
+    "network"
   ],
+  "icon": {
+    "source": "pasted-image-2026-09-03T15-59-30-391Z.png"
+  },
   "api": {
     "base_url": "http://localhost:3000",
     "endpoints": {
       "test": "/api/meteo/test",
-      "meteo": "/api/meteo"
+      "meteo": "/api/meteo",
+      "hourly": "/api/hourly",
+      "forecast": "/api/forecast",
+      "sites": "/api/sites",
+      "health": "/api/health",
+      "version": "/api/version"
     }
   },
   "permissions": {
-    "NSLocationWhenInUseUsageDescription": "Meteo dei Conigli usa la posizione per mostrare le previsioni meteo del sito di decollo più vicino."
+    "NSLocationWhenInUseUsageDescription": "Non richiesto (permesso rimosso per distribuzione diretta)"
   }
 }

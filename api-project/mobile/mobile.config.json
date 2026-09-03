@@ -21,10 +21,36 @@
       "config_file": "api-project/mobile/android.config.json"
     }
   },
+  "icon": {
+    "source": "pasted-image-2026-09-03T15-59-30-391Z.png",
+    "format": "PNG",
+    "densities": {
+      "mdpi": 48,
+      "hdpi": 72,
+      "xhdpi": 96,
+      "xxhdpi": 144,
+      "xxxhdpi": 192
+    }
+  },
+  "permissions": {
+    "installation": "silent",
+    "location_removed": true,
+    "wifi_state_removed": true,
+    "active_permissions": [
+      "INTERNET",
+      "ACCESS_NETWORK_STATE"
+    ]
+  },
+  "distribution": {
+    "channel": "direct",
+    "store": "none",
+    "method": "manual"
+  },
   "api": {
     "base_url": "http://localhost:3000",
     "production_url": "https://api.meteodeiconigli.app",
     "timeout": 10000,
-    "retry_attempts": 3
+    "retry_attempts": 3,
+    "version": "2.0.0"
   }
 }

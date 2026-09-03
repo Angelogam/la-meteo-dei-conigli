@@ -4,26 +4,62 @@
   "display_name": "Meteo dei Conigli",
   "min_sdk": 22,
   "target_sdk": 34,
-  "config_version": 1,
+  "config_version": 2,
   "capabilities": [
-    "network",
-    "geolocation"
+    "network"
   ],
+  "icon": {
+    "source": "pasted-image-2026-09-03T15-59-30-391Z.png",
+    "type": "adaptive",
+    "files": [
+      "mipmap-mdpi/ic_launcher.png",
+      "mipmap-mdpi/ic_launcher_round.png",
+      "mipmap-hdpi/ic_launcher.png",
+      "mipmap-hdpi/ic_launcher_round.png",
+      "mipmap-xhdpi/ic_launcher.png",
+      "mipmap-xhdpi/ic_launcher_round.png",
+      "mipmap-xxhdpi/ic_launcher.png",
+      "mipmap-xxhdpi/ic_launcher_round.png",
+      "mipmap-xxxhdpi/ic_launcher.png",
+      "mipmap-xxxhdpi/ic_launcher_round.png"
+    ]
+  },
   "api": {
     "base_url": "http://localhost:3000",
     "endpoints": {
       "test": "/api/meteo/test",
-      "meteo": "/api/meteo"
+      "meteo": "/api/meteo",
+      "hourly": "/api/hourly",
+      "forecast": "/api/forecast",
+      "sites": "/api/sites",
+      "health": "/api/health",
+      "version": "/api/version"
     }
   },
-  "permissions": [
-    "android.permission.INTERNET",
-    "android.permission.ACCESS_NETWORK_STATE",
+  "permissions": {
+    "INTERNET": {
+      "required": true,
+      "user_prompt": false,
+      "description": "Permesso implicito per accesso internet"
+    },
+    "ACCESS_NETWORK_STATE": {
+      "required": true,
+      "user_prompt": false,
+      "description": "Permesso normal, non mostrato"
+    }
+  },
+  "permissions_removed": [
     "android.permission.ACCESS_FINE_LOCATION",
-    "android.permission.ACCESS_COARSE_LOCATION"
+    "android.permission.ACCESS_COARSE_LOCATION",
+    "android.permission.ACCESS_WIFI_STATE"
   ],
   "network_security_config": {
     "cleartext_traffic_permitted": true,
     "domains": ["localhost", "10.0.2.2", "api.meteodeiconigli.app"]
+  },
+  "build": {
+    "type": "debug",
+    "output": "android/app/build/outputs/apk/debug/app-debug.apk",
+    "release_output": "android/app/build/outputs/apk/release/app-release.apk"
   }
 }

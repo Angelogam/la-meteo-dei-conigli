@@ -1,13 +1,34 @@
 {
   "name": "Meteo dei Conigli API",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "API backend per l'app Meteo dei Conigli",
+  "package": "com.meteodeiconigli.app",
   "server": {
     "host": "0.0.0.0",
     "port": 3000,
     "env": "production"
   },
   "endpoints": {
+    "health": {
+      "path": "/api/health",
+      "method": "GET",
+      "description": "Health check (uptime, cache)"
+    },
+    "version": {
+      "path": "/api/version",
+      "method": "GET",
+      "description": "Versione API e metadata app"
+    },
+    "sites": {
+      "path": "/api/sites",
+      "method": "GET",
+      "description": "Lista 24 siti di decollo"
+    },
+    "site_by_id": {
+      "path": "/api/sites/:id",
+      "method": "GET",
+      "description": "Singolo sito per ID"
+    },
     "test": {
       "path": "/api/meteo/test",
       "method": "GET",
@@ -21,16 +42,79 @@
         "lat": "Latitude (required, -90 to 90)",
         "lon": "Longitude (required, -180 to 180)"
       }
+    },
+    "hourly": {
+      "path": "/api/hourly",
+      "method": "GET",
+      "description": "Forecast orario (fino a 48 ore)",
+      "params": {
+        "lat": "Latitude (required)",
+        "lon": "Longitude (required)",
+        "hours": "Numero ore (default: 24, max: 48)"
+      }
+    },
+    "forecast": {
+      "path": "/api/forecast",
+      "method": "GET",
+      "description": "Forecast completo (current + hourly + daily)",
+      "params": {
+        "lat": "Latitude (required)",
+        "lon": "Longitude (required)",
+        "days": "Numero giorni (default: 7, max: 7)"
+      }
     }
   },
   "upstream": {
     "openMeteo": {
       "url": "https://api.open-meteo.com/v1/forecast",
-      "timeout": 8000
+      "timeout": 8000,
+      "parameters": {
+        "current": [
+          "temperature_2m",
+          "relative_humidity_2m",
+          "dew_point_2m",
+          "apparent_temperature",
+          "precipitation",
+          "weather_code",
+          "cloud_cover",
+          "wind_speed_10m",
+          "wind_direction_10m",
+          "wind_gusts_10m",
+          "cape",
+          "uv_index"
+        ],
+        "hourly": [
+          "temperature_2m",
+          "relative_humidity_2m",
+          "wind_speed_10m",
+          "wind_direction_10m",
+          "precipitation",
+          "weather_code",
+          "cloud_cover",
+          "visibility"
+        ],
+        "daily": [
+          "weather_code",
+          "temperature_2m_max",
+          "temperature_2m_min",
+          "precipitation_sum",
+          "wind_speed_10m_max",
+          "sunrise",
+          "sunset"
+        ]
+      }
     }
   },
   "cors": {
     "enabled": true,
     "origins": "*"
+  },
+  "cache": {
+    "enabled": true,
+    "ttl_seconds": 300
+  },
+  "logging": {
+    "enabled": true,
+    "mobile_detection": true
   }
 }
