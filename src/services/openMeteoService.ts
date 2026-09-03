@@ -1,8 +1,10 @@
 "use client";
 
 import type { HourData, DailyData } from "@/types/meteo";
+import { getMeteoBaseUrl } from "@/config/apiConfig";
 
-const OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast";
+// URL base: usa il proxy Node.js se disponibile
+const getBaseUrl = () => getMeteoBaseUrl();
 
 const HOURLY_PARAMS = [
   "temperature_2m",
@@ -175,7 +177,7 @@ export async function fetchMeteoCorrente(lat: number, lon: number): Promise<Mete
   });
 
   try {
-    const res = await fetchWithTimeout(`${OPEN_METEO_BASE}?${params.toString()}`);
+    const res = await fetchWithTimeout(`${getBaseUrl()}?${params.toString()}`);
     if (!res.ok) return null;
     const json = await res.json();
     const c = json.current;
@@ -220,7 +222,7 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number, altit
   });
 
   try {
-    const res = await fetchWithTimeout(`${OPEN_METEO_BASE}?${params.toString()}`);
+    const res = await fetchWithTimeout(`${getBaseUrl()}?${params.toString()}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
 

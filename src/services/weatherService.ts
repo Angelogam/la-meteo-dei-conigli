@@ -1,6 +1,7 @@
 "use client";
 
 import type { HourData } from "@/types/meteo";
+import { getMeteoBaseUrl } from "@/config/apiConfig";
 
 export interface MeteoHourly {
   time: Date;
@@ -117,7 +118,8 @@ export interface MeteoDaily {
   shortwaveRadiationSum: number;
 }
 
-const OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast";
+// URL base: usa il proxy Node.js se disponibile
+const getBaseUrl = () => getMeteoBaseUrl();
 
 const HOURLY_PARAMS = [
   "temperature_2m",
@@ -237,7 +239,7 @@ export const weatherService = {
         forecast_days: "1",
       });
 
-      const res = await fetch(`${OPEN_METEO_BASE}?${params.toString()}`);
+      const res = await fetch(`${getBaseUrl()}?${params.toString()}`);
       if (!res.ok) return { data: null, ok: false };
       const json = await res.json();
       const c = json.current;
@@ -295,7 +297,7 @@ export const weatherService = {
       forecast_days: "3",
     });
 
-    const res = await fetch(`${OPEN_METEO_BASE}?${params.toString()}`);
+    const res = await fetch(`${getBaseUrl()}?${params.toString()}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
 
     const json: any = await res.json();

@@ -56,22 +56,43 @@ export function useMeteoCompleto(lat: number, lon: number, altitude: number): Da
 
   useEffect(() => {
     let attivo = true;
+    let timeoutId: NodeJS.Timeout | null = null;
+    
     const caricaDaily = async () => {
       try {
-        const { data } = await weatherService.fetchWithFallback(lat, lon);
-        if (!attivo || !data) return;
-        setDailyData(data.daily);
+        // Race con timeout per non bloccare
+        const result = await Promise.race([
+          weatherService.fetchWithFallback(lat, lon),
+          new Promise<{ data: any }>((_, reject) =>
+            setTimeout(() => reject(new Error("Timeout daily")), 6000)
+          ),
+        ]);
+        if (!attivo || !result?.data) return;
+        setDailyData(result.data.daily);
         setUltimoAggiornamento(new Date());
         setLoading(false);
         setError(null);
       } catch (err) {
         if (!attivo) return;
+        console.warn("[daily]", err);
         setError(err instanceof Error ? err.message : "Errore");
         setLoading(false);
       }
     };
     caricaDaily();
-    return () => { attivo = false; };
+    
+    // Safety: dopo 7 secondi forza loading=false
+    timeoutId = setTimeout(() => {
+      if (attivo && loading) {
+        console.warn("[daily] Forzo loading=false");
+        setLoading(false);
+      }
+    }, 7000);
+    
+    return () => {
+      attivo = false;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [lat, lon]);
 
   const marginiErrore = useMemo(() => {

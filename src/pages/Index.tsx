@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
@@ -96,9 +96,17 @@ export default function Index() {
     return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
   }, [selectedDay]);
 
-  const hasData = Boolean(site && currentData && dayData.length > 0);
+  const hasData = Boolean(site && (currentData || isOfflineMode));
+  const showCards = Boolean(site && (currentData || isOfflineMode || dayData.length > 0));
 
-  if (isLoading) {
+  // Loading iniziale (solo per 3 secondi max, poi mostra fallback)
+  const [initialLoadTimeout, setInitialLoadTimeout] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setInitialLoadTimeout(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading && !initialLoadTimeout) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col">
         <Header />
@@ -146,8 +154,17 @@ export default function Index() {
           </aside>
 
           <div className="flex-1 min-w-0 space-y-6">
-            {hasData && site && (
+            {showCards && site && (
               <>
+                {isOfflineMode && (
+                  <div className="bg-amber-900/20 border border-amber-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-amber-400" />
+                    <span className="text-xs text-amber-300">
+                      ⚠️ Dati offline (API non raggiungibile) - Stima automatica attiva
+                    </span>
+                  </div>
+                )}
+
                 <SiteHeader
                   site_name={site.site_name}
                   location_name={site.location_name}
@@ -266,7 +283,7 @@ export default function Index() {
                 )}
               </>
             )}
-            {!hasData && (
+            {!showCards && (
               <div className="text-center py-12 text-slate-400">
                 <p>Nessun dato meteo disponibile per {site?.site_name ?? "questo decollo"}. Verifica la connessione o riprova.</p>
               </div>

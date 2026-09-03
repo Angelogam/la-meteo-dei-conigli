@@ -1,6 +1,6 @@
 // server/api-server.mjs
 // Server API Meteo per app mobile Android - "Meteo dei Conigli"
-// v2.0 - Compatibile con appId: com.meteodeiconigli.app
+// v3.0 - Proxy trasparente Open-Meteo + endpoint nativi app
 // ZERO dipendenze (solo moduli built-in Node)
 // Avvio:  node server/api-server.mjs   (PORT default 3000)
 
@@ -9,9 +9,10 @@ import https from "node:https";
 import { URL } from "node:url";
 
 const PORT = process.env.PORT || 3000;
-const VERSION = "2.0.0";
+const VERSION = "3.0.0";
 const APP_NAME = "Meteo dei Conigli API";
 const ANDROID_PACKAGE = "com.meteodeiconigli.app";
+const OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast";
 
 // ============================================================
 // UTILITIES
@@ -177,6 +178,62 @@ const SITES = [
 ];
 
 // ============================================================
+// OPEN-METEO PROXY (trasparente)
+// Restituisce esattamente lo stesso formato di Open-Meteo
+// ============================================================
+
+function proxyOpenMeteo(targetUrl) {
+  return new Promise((resolve, reject) => {
+    const startProxy = Date.now();
+    https.get(targetUrl, (apiRes) => {
+      let data = "";
+      apiRes.on("data", (c) => (data += c));
+      apiRes.on("end", () => {
+        console.log(`  ↳ Open-Meteo risponso in ${Date.now() - startProxy}ms`);
+        try {
+          resolve(JSON.parse(data));
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }).on("error", (err) => {
+      console.error(`  ↳ Errore Open-Meteo: ${err.message}`);
+      reject(err);
+    });
+  });
+}
+
+// Endpoint proxy: /api/open-meteo?latitude=XX&longitude=YY&current=...&hourly=...&daily=...
+// Inoltra la richiesta a Open-Meteo e restituisce la risposta tale e quale
+async function handleOpenMeteoProxy(params) {
+  // Costruisci URL Open-Meteo
+  const omParams = new URLSearchParams();
+  
+  // Mappa i parametri latitude/longitude
+  const lat = params.get("latitude") || params.get("lat");
+  const lon = params.get("longitude") || params.get("lon");
+  if (lat) omParams.set("latitude", lat);
+  if (lon) omParams.set("longitude", lon);
+  
+  // Copia tutti gli altri parametri
+  for (const [key, value] of params.entries()) {
+    if (key !== "latitude" && key !== "longitude" && key !== "lat" && key !== "lon") {
+      omParams.set(key, value);
+    }
+  }
+  
+  // Default timezone se non specificato
+  if (!omParams.has("timezone")) {
+    omParams.set("timezone", "Europe/Rome");
+  }
+  
+  const url = `${OPEN_METEO_BASE}?${omParams.toString()}`;
+  console.log(`  ↳ Proxy Open-Meteo: ${url.substring(0, 120)}...`);
+  
+  return proxyOpenMeteo(url);
+}
+
+// ============================================================
 // SERVER
 // ============================================================
 
@@ -261,6 +318,28 @@ const server = http.createServer(async (req, res) => {
     }
     sendJSON(res, 200, site);
     return logRequest(req, 200, Date.now() - start);
+  }
+
+  // --- PROXY OPEN-METEO (trasparente) ---
+  // Inoltra la richiesta a Open-Meteo e restituisce la risposta tale e quale
+  if (path === "/api/open-meteo" || path === "/api/openmeteo" || path === "/v1/forecast") {
+    try {
+      const data = await handleOpenMeteoProxy(params);
+      res.writeHead(200, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-App-Version",
+      });
+      res.end(JSON.stringify(data));
+      return logRequest(req, 200, Date.now() - start);
+    } catch (e) {
+      sendJSON(res, 502, {
+        error: "Errore proxy Open-Meteo",
+        detail: String(e),
+      });
+      return logRequest(req, 502, Date.now() - start);
+    }
   }
 
   // --- TEST ENDPOINT (hardcoded) ---
