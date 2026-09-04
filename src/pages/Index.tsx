@@ -232,7 +232,7 @@ export default function Index() {
                 />
 
                 <WeatherDashboard
-                  dayData={filteredDayData}
+                  dayData={dayData}
                   altitude={site.elevation_m}
                   selectedHour={selectedHour}
                   onHourSelect={setSelectedHour}
