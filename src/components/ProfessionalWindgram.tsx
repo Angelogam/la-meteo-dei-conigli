@@ -436,6 +436,28 @@ export default function ProfessionalWindgram({
     return points.join(" ");
   }, [hourlyData]);
 
+  // Zona stabile: area blu/viola SOPRA la curva termica (aria stabile in quota)
+  const stableZonePath = useMemo(() => {
+    if (hourlyData.length === 0) return "";
+    const points: string[] = [];
+    // Inizia dall'alto a sinistra
+    points.push(`M ${margin.left},${margin.top}`);
+    // Vai a destra in alto
+    points.push(`L ${margin.left + plotW},${margin.top}`);
+    // Scendi lungo il bordo destro
+    points.push(`L ${margin.left + plotW},${getYFromAlt(hourlyData[HOURS.length - 1].thermalTop)}`);
+    // Segui la curva termica all'indietro
+    for (let i = HOURS.length - 1; i >= 0; i--) {
+      const x = getXFromHourIdx(i);
+      const y = getYFromAlt(hourlyData[i].thermalTop);
+      points.push(`L ${x},${y}`);
+    }
+    // Chiudi a sinistra
+    points.push(`L ${margin.left},${margin.top}`);
+    points.push(`Z`);
+    return points.join(" ");
+  }, [hourlyData]);
+
   // DeltaT strip at ground level
   const deltaTStripPath = useMemo(() => {
     if (hourlyData.length === 0) return "";
@@ -533,15 +555,36 @@ export default function ProfessionalWindgram({
               <path d={unstableZonePath} fill="#f97316" opacity="0.85" />
             )}
 
-            {/* 3. AREA STABILE IN QUOTA - BLU/VIOLA */}
-            <path
-              d={`M ${margin.left},${getYFromAlt(5000)}
-                  Q ${margin.left + plotW * 0.3},${getYFromAlt(6000)} ${margin.left + plotW * 0.5},${getYFromAlt(5700)}
-                  T ${margin.left + plotW},${getYFromAlt(5600)}
-                  L ${margin.left + plotW},${margin.top} L ${margin.left},${margin.top} Z`}
-              fill="#6366f1"
-              opacity="0.75"
-            />
+            {/* 3. AREA STABILE IN QUOTA - BLU/VIOLA (sopra la curva termica) */}
+            {stableZonePath && (
+              <path d={stableZonePath} fill="#6366f1" opacity="0.75" />
+            )}
+            {/* 3b. Strato di transizione stabile sopra thermalTop (azzurro chiaro) */}
+            {stableZonePath && (
+              <path
+                d={(() => {
+                  if (hourlyData.length === 0) return "";
+                  const points: string[] = [];
+                  hourlyData.forEach((h, i) => {
+                    const x = getXFromHourIdx(i);
+                    const yTop = getYFromAlt(h.thermalTop);
+                    const yBottom = getYFromAlt(h.thermalTop + 400);
+                    if (i === 0) points.push(`M ${x},${yTop}`);
+                    else points.push(`L ${x},${yTop}`);
+                  });
+                  // Chiudi dal fondo all'inizio
+                  for (let i = hourlyData.length - 1; i >= 0; i--) {
+                    const x = getXFromHourIdx(i);
+                    const yBottom = getYFromAlt(hourlyData[i].thermalTop + 400);
+                    points.push(`L ${x},${yBottom}`);
+                  }
+                  points.push("Z");
+                  return points.join(" ");
+                })()}
+                fill="#a5b4fc"
+                opacity="0.5"
+              />
+            )}
 
             {/* 4. Isoterme tratteggiate (linee di temperatura) */}
             {[-5, 0, 5, 10, 15, 20].map((temp) => (
@@ -798,6 +841,14 @@ export default function ProfessionalWindgram({
 
             {/* BORDO RETTANGOLARE NERO DEL PLOT */}
             <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#0f172a" strokeWidth="1.4" />
+
+            {/* ETICHETTA ZONA STABILE (in alto a destra) */}
+            <g transform={`translate(${margin.left + plotW - 130}, ${margin.top + 12})`}>
+              <rect x="0" y="0" width="125" height="22" rx="4" fill="#6366f1" stroke="#ffffff" strokeWidth="1.5" />
+              <text x="62.5" y="15" fill="#ffffff" fontSize="10" fontWeight="900" textAnchor="middle">
+                ❄ ARIA STABILE
+              </text>
+            </g>
           </svg>
         </div>
 
