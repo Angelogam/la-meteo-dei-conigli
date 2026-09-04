@@ -335,8 +335,8 @@ export default function WindgramMatrix({
           <div className="overflow-x-auto border-t border-b border-slate-200 bg-white">
             <table className="w-full text-center border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-700 bg-slate-100 font-bold">
-                  <th className="py-1 px-1 text-center w-10 sticky left-0 z-50 bg-slate-200 border-r-2 border-slate-400 text-slate-800 text-[10px] shadow-[2px_0_4px_rgba(0,0,0,0.15)]">
+                <tr className="border-b border-slate-200 text-slate-700 bg-slate-200 font-bold">
+                  <th className="py-1 px-1 text-center w-10 sticky left-0 z-50 bg-slate-300 border-r-2 border-slate-500 text-slate-900 text-[10px] shadow-[2px_0_5px_rgba(0,0,0,0.2)]">
                     Quota
                   </th>
                   {DISPLAY_HOURS.map((hr) => (
@@ -371,7 +371,7 @@ export default function WindgramMatrix({
                       } ${isDecolloLevel ? "bg-emerald-50" : ""}`}
                     >
                       <td
-                        className={`py-0.5 px-1 text-center font-bold sticky left-0 z-10 border-r border-slate-300 text-[9px] tabular-nums whitespace-nowrap ${
+                        className={`py-0.5 px-1 text-center font-bold sticky left-0 z-40 border-r-2 border-slate-500 text-[9px] tabular-nums whitespace-nowrap shadow-[2px_0_3px_rgba(0,0,0,0.12)] ${
                           isMajorLevel
                             ? "bg-slate-200 text-slate-900"
                             : isDecolloLevel
