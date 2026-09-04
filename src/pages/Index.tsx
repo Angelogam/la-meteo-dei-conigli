@@ -81,13 +81,10 @@ export default function Index() {
     const oggi = new Date();
     const target = new Date(oggi);
     target.setDate(oggi.getDate() + selectedDay);
+    const targetStr = target.toDateString();
     return dayData.filter((h) => {
       const d = new Date(h.time);
-      return (
-        d.getDate() === target.getDate() &&
-        d.getMonth() === target.getMonth() &&
-        d.getFullYear() === target.getFullYear()
-      );
+      return d.toDateString() === targetStr;
     });
   }, [dayData, selectedDay]);
 

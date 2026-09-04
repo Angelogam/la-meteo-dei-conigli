@@ -158,14 +158,21 @@ export default function WeatherDashboard({
         />
       )}
 
-      <HourlyTable
-        dayData={dayData}
-        altitude={altitude}
-        selectedHour={selectedHour}
-        onHourSelect={onHourSelect}
-        dayLabel={dayLabel}
-        siteName={siteName}
-      />
+      {dayData && dayData.length > 0 && (
+        <HourlyTable
+          dayData={dayData}
+          altitude={altitude}
+          selectedHour={selectedHour}
+          onHourSelect={onHourSelect}
+          dayLabel={dayLabel}
+          siteName={siteName}
+        />
+      )}
+      {(!dayData || dayData.length === 0) && (
+        <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-4 text-center text-slate-400 text-sm">
+          Previsioni orarie non disponibili per questo giorno.
+        </div>
+      )}
     </div>
   );
 }
