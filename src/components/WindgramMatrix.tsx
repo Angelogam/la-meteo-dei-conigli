@@ -336,7 +336,7 @@ export default function WindgramMatrix({
             <table className="w-full text-center border-collapse text-xs">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-700 bg-slate-100 font-bold">
-                  <th className="py-1 px-1 text-center w-10 sticky left-0 z-20 bg-slate-200 border-r border-slate-300 text-slate-800 text-[10px]">
+                  <th className="py-1 px-1 text-center w-10 sticky left-0 z-50 bg-slate-200 border-r-2 border-slate-400 text-slate-800 text-[10px] shadow-[2px_0_4px_rgba(0,0,0,0.15)]">
                     Quota
                   </th>
                   {DISPLAY_HOURS.map((hr) => (
