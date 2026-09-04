@@ -104,7 +104,7 @@ export default function WindgramMatrix({
     return false;
   }, [windProfileMap]);
 
-  const baseStep = 500;
+  const baseStep = 250;
   const baseDecolloFloor = Math.floor(altitude / baseStep) * baseStep;
   const maxAlt = 4000;
 
