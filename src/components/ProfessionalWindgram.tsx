@@ -72,7 +72,6 @@ async function fetchOpenMeteoData(
   const winds: number[] = data.hourly?.wind_speed_10m ?? [];
   const dirs: number[] = data.hourly?.wind_direction_10m ?? [];
 
-  // Filter only daytime hours (06:00 - 19:00 UTC) and shape into HourlyData
   const result: HourlyData[] = [];
   for (let i = 0; i < times.length; i++) {
     const hour = new Date(times[i]).getUTCHours();
@@ -120,6 +119,53 @@ export default function ProfessionalWindgram({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // ALL hooks MUST be called before any early returns
+  const dateObj = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + selectedDay);
+    return d;
+  }, [selectedDay]);
+
+  const formattedDateTitle = useMemo(() => {
+    const days = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
+    const months = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
+    return `${days[dateObj.getDay()]} ${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
+  }, [dateObj]);
+
+  const dateStr = useMemo(() => dateObj.toISOString().split("T")[0], [dateObj]);
+
+  // SVG dimensions (constants, not hooks)
+  const width = 1000;
+  const height = 600;
+  const margin = { top: 95, right: 85, bottom: 85, left: 85 };
+  const plotW = width - margin.left - margin.right;
+  const plotH = height - margin.top - margin.bottom;
+  const minAlt = Math.max(0, altitude - 200);
+  const maxAlt = 6000;
+
+  const getYFromAlt = (alt: number) => {
+    const clamped = Math.min(maxAlt, Math.max(minAlt, alt));
+    return margin.top + plotH - ((clamped - minAlt) / (maxAlt - minAlt)) * plotH;
+  };
+
+  const getXFromHourIdx = (idx: number) => {
+    return margin.left + (idx / Math.max(1, hourlyData.length - 1)) * plotW;
+  };
+
+  // Memoized calculations - only valid when hourlyData is available
+  const zeroThermal = useMemo(() => {
+    if (hourlyData.length === 0) return altitude;
+    const avgTemp = hourlyData.reduce((s, h) => s + h.temperature, 0) / hourlyData.length;
+    return Math.round(altitude + (avgTemp / 0.0065));
+  }, [hourlyData, altitude]);
+
+  const zeroThermalPath = useMemo(() => {
+    if (hourlyData.length === 0) return "";
+    return hourlyData
+      .map((_, i) => `${getXFromHourIdx(i)},${getYFromAlt(zeroThermal)}`)
+      .join(" ");
+  }, [zeroThermal, hourlyData]);
+
   useEffect(() => {
     let mounted = true;
     setLoading(true);
@@ -143,20 +189,7 @@ export default function ProfessionalWindgram({
     };
   }, [latitude, longitude, altitude, selectedDay]);
 
-  const dateObj = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + selectedDay);
-    return d;
-  }, [selectedDay]);
-
-  const formattedDateTitle = useMemo(() => {
-    const days = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
-    const months = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
-    return `${days[dateObj.getDay()]} ${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
-  }, [dateObj]);
-
-  const dateStr = dateObj.toISOString().split("T")[0];
-
+  // Loading state
   if (loading) {
     return (
       <div className="bg-slate-900/80 border border-slate-700/60 rounded-2xl p-4 shadow-xl">
@@ -169,6 +202,7 @@ export default function ProfessionalWindgram({
     );
   }
 
+  // Error state
   if (error || hourlyData.length === 0) {
     return (
       <div className="bg-slate-900/80 border border-red-500/40 rounded-2xl p-4 shadow-xl">
@@ -180,31 +214,6 @@ export default function ProfessionalWindgram({
       </div>
     );
   }
-
-  // SVG dimensions
-  const width = 1000;
-  const height = 600;
-  const margin = { top: 95, right: 85, bottom: 85, left: 85 };
-  const plotW = width - margin.left - margin.right;
-  const plotH = height - margin.top - margin.bottom;
-
-  const minAlt = Math.max(0, altitude - 200);
-  const maxAlt = 6000;
-
-  const getYFromAlt = (alt: number) => {
-    const clamped = Math.min(maxAlt, Math.max(minAlt, alt));
-    return margin.top + plotH - ((clamped - minAlt) / (maxAlt - minAlt)) * plotH;
-  };
-
-  const getXFromHourIdx = (idx: number) => {
-    return margin.left + (idx / Math.max(1, hourlyData.length - 1)) * plotW;
-  };
-
-  // Zero degree level estimate
-  const zeroThermal = useMemo(() => {
-    const avgTemp = hourlyData.reduce((s, h) => s + h.temperature, 0) / hourlyData.length;
-    return Math.round(altitude + (avgTemp / 0.0065));
-  }, [hourlyData, altitude]);
 
   // Render wind barb
   const renderWindBarb = (x: number, y: number, speedKmh: number, dirDeg: number) => {
@@ -280,20 +289,6 @@ export default function ProfessionalWindgram({
       </g>
     );
   };
-
-  // Zero thermal path
-  const zeroThermalPath = useMemo(() => {
-    return hourlyData
-      .map((_, i) => `${getXFromHourIdx(i)},${getYFromAlt(zeroThermal)}`)
-      .join(" ");
-  }, [zeroThermal, hourlyData]);
-
-  // Wind direction profile (single line) at decollo altitude
-  const windDirLine = useMemo(() => {
-    return hourlyData
-      .map((h, i) => `${getXFromHourIdx(i)},${getYFromAlt(altitude + 100 + (h.windSpeed * 30))}`)
-      .join(" ");
-  }, [hourlyData, altitude]);
 
   return (
     <div className="space-y-3">
@@ -375,58 +370,15 @@ export default function ProfessionalWindgram({
 
             {/* Background stability zones */}
             <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#a3e635" />
-            <path
-              d={`M ${margin.left},${getYFromAlt(5800)} Q ${margin.left + plotW * 0.3},${getYFromAlt(6000)} ${margin.left + plotW * 0.5},${getYFromAlt(5700)} T ${margin.left + plotW},${getYFromAlt(5600)} L ${margin.left + plotW},${margin.top} L ${margin.left},${margin.top} Z`}
-              fill="#eab308"
-              opacity="0.85"
-            />
-            <path
-              d={`M ${margin.left + plotW * 0.22},${getYFromAlt(4900)} Q ${margin.left + plotW * 0.35},${getYFromAlt(5200)} ${margin.left + plotW * 0.45},${getYFromAlt(4800)} Q ${margin.left + plotW * 0.35},${getYFromAlt(4500)} ${margin.left + plotW * 0.22},${getYFromAlt(4900)} Z`}
-              fill="#facc15"
-              opacity="0.9"
-            />
-            <path
-              d={`M ${margin.left + plotW * 0.55},${getYFromAlt(3900)} Q ${margin.left + plotW * 0.65},${getYFromAlt(4000)} ${margin.left + plotW * 0.75},${getYFromAlt(3700)} Q ${margin.left + plotW * 0.65},${getYFromAlt(3500)} ${margin.left + plotW * 0.55},${getYFromAlt(3900)} Z`}
-              fill="#facc15"
-              opacity="0.8"
-            />
-            <path
-              d={`M ${margin.left + plotW * 0.78},${getYFromAlt(3600)} Q ${margin.left + plotW * 0.88},${getYFromAlt(3700)} ${margin.left + plotW * 0.98},${getYFromAlt(3400)} Q ${margin.left + plotW * 0.88},${getYFromAlt(3300)} ${margin.left + plotW * 0.78},${getYFromAlt(3600)} Z`}
-              fill="#facc15"
-              opacity="0.85"
-            />
-            <path
-              d={`M ${margin.left},${getYFromAlt(3400)} Q ${margin.left + plotW * 0.25},${getYFromAlt(3500)} ${margin.left + plotW * 0.5},${getYFromAlt(3000)} L ${margin.left + plotW},${getYFromAlt(3000)} L ${margin.left + plotW},${getYFromAlt(2700)} Q ${margin.left + plotW * 0.5},${getYFromAlt(2700)} ${margin.left},${getYFromAlt(3100)} Z`}
-              fill="#38bdf8"
-              opacity="0.8"
-            />
-            <path
-              d={`M ${margin.left},${getYFromAlt(3100)} Q ${margin.left + plotW * 0.25},${getYFromAlt(3200)} ${margin.left + plotW * 0.45},${getYFromAlt(2800)} L ${margin.left + plotW * 0.45},${getYFromAlt(2650)} Q ${margin.left + plotW * 0.2},${getYFromAlt(2950)} ${margin.left},${getYFromAlt(2800)} Z`}
-              fill="#6366f1"
-              opacity="0.75"
-            />
-            <path
-              d={`M ${margin.left + plotW * 0.55},${getYFromAlt(1900)} Q ${margin.left + plotW * 0.65},${getYFromAlt(2000)} ${margin.left + plotW * 0.82},${getYFromAlt(1850)} Q ${margin.left + plotW * 0.70},${getYFromAlt(1700)} ${margin.left + plotW * 0.55},${getYFromAlt(1900)} Z`}
-              fill="#dc2626"
-              opacity="0.9"
-            />
-            <path
-              d={`M ${getXFromHourIdx(2)},${getYFromAlt(1450)} L ${getXFromHourIdx(2)},${getYFromAlt(2100)} Q ${getXFromHourIdx(5)},${getYFromAlt(2400)} ${getXFromHourIdx(8)},${getYFromAlt(2200)} L ${getXFromHourIdx(10)},${getYFromAlt(1800)} L ${getXFromHourIdx(10)},${getYFromAlt(1450)} Z`}
-              fill="url(#thermalHatch)"
-            />
-            <text
-              x={margin.left + plotW * 0.48}
-              y={getYFromAlt(3500)}
-              fill="#0f172a"
-              opacity="0.08"
-              fontSize="68"
-              fontWeight="900"
-              textAnchor="middle"
-              letterSpacing="6"
-              transform={`rotate(-15, ${margin.left + plotW * 0.48}, ${getYFromAlt(3500)})`}
-            >
-              ALPIUM
-            </text>
+            <path d={`M ${margin.left},${getYFromAlt(5800)} Q ${margin.left + plotW * 0.3},${getYFromAlt(6000)} ${margin.left + plotW * 0.5},${getYFromAlt(5700)} T ${margin.left + plotW},${getYFromAlt(5600)} L ${margin.left + plotW},${margin.top} L ${margin.left},${margin.top} Z`} fill="#eab308" opacity="0.85" />
+            <path d={`M ${margin.left + plotW * 0.22},${getYFromAlt(4900)} Q ${margin.left + plotW * 0.35},${getYFromAlt(5200)} ${margin.left + plotW * 0.45},${getYFromAlt(4800)} Q ${margin.left + plotW * 0.35},${getYFromAlt(4500)} ${margin.left + plotW * 0.22},${getYFromAlt(4900)} Z`} fill="#facc15" opacity="0.9" />
+            <path d={`M ${margin.left + plotW * 0.55},${getYFromAlt(3900)} Q ${margin.left + plotW * 0.65},${getYFromAlt(4000)} ${margin.left + plotW * 0.75},${getYFromAlt(3700)} Q ${margin.left + plotW * 0.65},${getYFromAlt(3500)} ${margin.left + plotW * 0.55},${getYFromAlt(3900)} Z`} fill="#facc15" opacity="0.8" />
+            <path d={`M ${margin.left + plotW * 0.78},${getYFromAlt(3600)} Q ${margin.left + plotW * 0.88},${getYFromAlt(3700)} ${margin.left + plotW * 0.98},${getYFromAlt(3400)} Q ${margin.left + plotW * 0.88},${getYFromAlt(3300)} ${margin.left + plotW * 0.78},${getYFromAlt(3600)} Z`} fill="#facc15" opacity="0.85" />
+            <path d={`M ${margin.left},${getYFromAlt(3400)} Q ${margin.left + plotW * 0.25},${getYFromAlt(3500)} ${margin.left + plotW * 0.5},${getYFromAlt(3000)} L ${margin.left + plotW},${getYFromAlt(3000)} L ${margin.left + plotW},${getYFromAlt(2700)} Q ${margin.left + plotW * 0.5},${getYFromAlt(2700)} ${margin.left},${getYFromAlt(3100)} Z`} fill="#38bdf8" opacity="0.8" />
+            <path d={`M ${margin.left},${getYFromAlt(3100)} Q ${margin.left + plotW * 0.25},${getYFromAlt(3200)} ${margin.left + plotW * 0.45},${getYFromAlt(2800)} L ${margin.left + plotW * 0.45},${getYFromAlt(2650)} Q ${margin.left + plotW * 0.2},${getYFromAlt(2950)} ${margin.left},${getYFromAlt(2800)} Z`} fill="#6366f1" opacity="0.75" />
+            <path d={`M ${margin.left + plotW * 0.55},${getYFromAlt(1900)} Q ${margin.left + plotW * 0.65},${getYFromAlt(2000)} ${margin.left + plotW * 0.82},${getYFromAlt(1850)} Q ${margin.left + plotW * 0.70},${getYFromAlt(1700)} ${margin.left + plotW * 0.55},${getYFromAlt(1900)} Z`} fill="#dc2626" opacity="0.9" />
+            <path d={`M ${getXFromHourIdx(2)},${getYFromAlt(1450)} L ${getXFromHourIdx(2)},${getYFromAlt(2100)} Q ${getXFromHourIdx(5)},${getYFromAlt(2400)} ${getXFromHourIdx(8)},${getYFromAlt(2200)} L ${getXFromHourIdx(10)},${getYFromAlt(1800)} L ${getXFromHourIdx(10)},${getYFromAlt(1450)} Z`} fill="url(#thermalHatch)" />
+            <text x={margin.left + plotW * 0.48} y={getYFromAlt(3500)} fill="#0f172a" opacity="0.08" fontSize="68" fontWeight="900" textAnchor="middle" letterSpacing="6" transform={`rotate(-15, ${margin.left + plotW * 0.48}, ${getYFromAlt(3500)})`}>ALPIUM</text>
 
             {/* Pressure levels & altitude grid */}
             {PRESSURE_LEVELS.map((lvl) => {
@@ -434,9 +386,7 @@ export default function ProfessionalWindgram({
               return (
                 <g key={`grid-lvl-${lvl.hpa}`}>
                   <line x1={margin.left} y1={y} x2={margin.left + plotW} y2={y} stroke="#1e293b" strokeWidth="0.8" strokeDasharray="2 3" opacity="0.4" />
-                  <text x={margin.left - 12} y={y + 4} fill="#0f172a" fontSize="11" fontWeight="800" textAnchor="end">
-                    {lvl.hpa} hPa
-                  </text>
+                  <text x={margin.left - 12} y={y + 4} fill="#0f172a" fontSize="11" fontWeight="800" textAnchor="end">{lvl.hpa} hPa</text>
                 </g>
               );
             })}
@@ -445,9 +395,7 @@ export default function ProfessionalWindgram({
               return (
                 <g key={`grid-alt-${alt}`}>
                   <line x1={margin.left + plotW} y1={y} x2={margin.left + plotW + 5} y2={y} stroke="#0f172a" strokeWidth="1.2" />
-                  <text x={margin.left + plotW + 10} y={y + 4} fill="#0f172a" fontSize="11" fontWeight="700" textAnchor="start">
-                    {alt} m
-                  </text>
+                  <text x={margin.left + plotW + 10} y={y + 4} fill="#0f172a" fontSize="11" fontWeight="700" textAnchor="start">{alt} m</text>
                 </g>
               );
             })}
@@ -461,13 +409,11 @@ export default function ProfessionalWindgram({
             {/* Wind barbs at multiple altitudes per hour */}
             {hourlyData.map((h, i) => {
               const x = getXFromHourIdx(i);
-              // Show barbs at 100m, 500m, 1000m, 2000m, 3000m, 4000m, 5000m above ground
               const altitudes = [100, 500, 1000, 2000, 3000, 4000, 5000].map((a) => altitude + a);
               return (
                 <g key={`col-barbs-${i}`}>
                   {altitudes.map((alt) => {
                     if (alt > maxAlt) return null;
-                    // Reduce wind speed with altitude for visualization
                     const speedFactor = 1 + (alt - altitude) / 8000;
                     return renderWindBarb(x, getYFromAlt(alt), h.windSpeed * speedFactor, h.windDirection);
                   })}
@@ -483,9 +429,7 @@ export default function ProfessionalWindgram({
               return (
                 <g key={`zero-snowflake-${i}`} transform={`translate(${x}, ${y})`}>
                   <circle cx="0" cy="0" r="7" fill="#ffffff" stroke="#0284c7" strokeWidth="1.6" />
-                  <text x="0" y="3.5" fill="#0284c7" fontSize="9" fontWeight="900" textAnchor="middle">
-                    ❄
-                  </text>
+                  <text x="0" y="3.5" fill="#0284c7" fontSize="9" fontWeight="900" textAnchor="middle">❄</text>
                 </g>
               );
             })}
@@ -493,9 +437,7 @@ export default function ProfessionalWindgram({
             {/* Zero thermal badge */}
             <g transform={`translate(${margin.left + plotW - 130}, ${getYFromAlt(zeroThermal) - 13})`}>
               <rect x="0" y="0" width="125" height="26" rx="6" fill="#0284c7" stroke="#ffffff" strokeWidth="2" />
-              <text x="62.5" y="17" fill="#ffffff" fontSize="11" fontWeight="900" textAnchor="middle" fontFamily="monospace">
-                0 °C &middot; {zeroThermal} m
-              </text>
+              <text x="62.5" y="17" fill="#ffffff" fontSize="11" fontWeight="900" textAnchor="middle" fontFamily="monospace">0 °C &middot; {zeroThermal} m</text>
             </g>
 
             {/* Cloud base line */}
@@ -504,15 +446,8 @@ export default function ProfessionalWindgram({
               const y = getYFromAlt(Math.min(maxAlt, h.cloudBase));
               return (
                 <g key={`cloud-${i}`} transform={`translate(${x}, ${y})`}>
-                  <path
-                    d="M -13,2 A 5,5 0 0,1 -6,-4 A 8,8 0 0,1 6,-5 A 6,6 0 0,1 13,1 A 4,4 0 0,1 11,6 L -11,6 A 4,4 0 0,1 -13,2 Z"
-                    fill="#ffffff"
-                    stroke="#64748b"
-                    strokeWidth="1.2"
-                  />
-                  <text x="0" y="3" fill="#0f172a" fontSize="8" fontWeight="900" textAnchor="middle">
-                    {Math.round(h.cloudCover)}%
-                  </text>
+                  <path d="M -13,2 A 5,5 0 0,1 -6,-4 A 8,8 0 0,1 6,-5 A 6,6 0 0,1 13,1 A 4,4 0 0,1 11,6 L -11,6 A 4,4 0 0,1 -13,2 Z" fill="#ffffff" stroke="#64748b" strokeWidth="1.2" />
+                  <text x="0" y="3" fill="#0f172a" fontSize="8" fontWeight="900" textAnchor="middle">{Math.round(h.cloudCover)}%</text>
                 </g>
               );
             })}
@@ -547,15 +482,7 @@ export default function ProfessionalWindgram({
               ))}
             </div>
             <div className="flex justify-between text-[9px] sm:text-[10px] font-mono font-bold text-slate-700 mt-1 px-1">
-              <span>-0.20</span>
-              <span>0.00</span>
-              <span>0.16</span>
-              <span>0.32</span>
-              <span>0.48</span>
-              <span>0.65</span>
-              <span>0.82</span>
-              <span>0.98</span>
-              <span>1.20</span>
+              <span>-0.20</span><span>0.00</span><span>0.16</span><span>0.32</span><span>0.48</span><span>0.65</span><span>0.82</span><span>0.98</span><span>1.20</span>
             </div>
             <div className="text-center text-[9px] text-slate-500 font-mono mt-1">
               Fonte: Open-Meteo &middot; Diagnostica di volo a vela stile Alpium
