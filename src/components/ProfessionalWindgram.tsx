@@ -472,17 +472,17 @@ export default function ProfessionalWindgram({
   return (
     <div className="space-y-6">
       {/* Contenitore Grafico Alpium Bianco con Bordo Arrotondato */}
-            <div className="bg-white text-slate-900 rounded-[24px] p-3 sm:p-5 shadow-2xl border border-slate-300 overflow-hidden font-sans select-none">
-              
-              {/* Titolo Principale in Alto */}
-              <div className="text-center pb-1.5">
-                <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight lowercase">
-                  {siteName.toLowerCase()} &middot; {formattedDateTitle.toLowerCase()}
-                </h2>
-                <p className="text-[10px] sm:text-xs text-slate-500 font-mono tracking-wide mt-0">
-                  plotted {dateStr} 00:00 UTC &middot; model ground {Math.round(altitude + 5)} m &middot; SRTM {Math.round(altitude)} m
-                </p>
-              </div>
+      <div className="bg-white text-slate-900 rounded-[28px] p-4 sm:p-7 shadow-2xl border border-slate-300 overflow-hidden font-sans select-none">
+        
+        {/* Titolo Principale in Alto */}
+        <div className="text-center pb-2">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight lowercase">
+            {siteName.toLowerCase()} &middot; {formattedDateTitle.toLowerCase()}
+          </h2>
+          <p className="text-[11px] sm:text-xs text-slate-500 font-mono tracking-wide mt-0.5">
+            plotted {dateStr} 00:00 UTC &middot; model ground {Math.round(altitude + 5)} m &middot; SRTM {Math.round(altitude)} m
+          </p>
+        </div>
 
         {/* TABELLA IN ALTO: Ascendenza media e Sole %} */}
         <div className="bg-slate-50 rounded-xl p-3 mb-3 border border-slate-200">

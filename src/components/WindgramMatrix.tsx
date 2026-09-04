@@ -331,9 +331,9 @@ export default function WindgramMatrix({
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto bg-slate-900/60 p-4 sm:p-5 rounded-2xl">
+    <div className="w-full max-w-3xl mx-auto bg-slate-900/60 p-3 sm:p-4 rounded-2xl">
       <div className="w-full bg-white text-slate-900 border border-slate-200/80 rounded-2xl shadow-2xl overflow-hidden font-sans select-none">
-        <div className="p-3 sm:p-4 pb-2">
+        <div className="p-3 sm:p-4 pb-1">
             <div className="flex items-center justify-between gap-3 mb-2">
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-lg bg-sky-100 text-sky-600">
@@ -417,7 +417,7 @@ export default function WindgramMatrix({
                             style={{
                               backgroundColor: bg.kind === "none" ? "transparent" : bg.color,
                             }}
-                            className={`py-1.5 px-1.5 border-r border-slate-200/60 cursor-pointer transition-colors relative ${
+                            className={`py-1 px-1 border-r border-slate-200/60 cursor-pointer transition-colors relative ${
                               isSelectedCol ? "ring-1 ring-sky-400/90" : "hover:brightness-95"
                             }`}
                           >
@@ -449,7 +449,7 @@ export default function WindgramMatrix({
             </table>
           </div>
 
-          <div className="p-2 bg-slate-50 border-t border-slate-100">
+          <div className="p-1.5 bg-slate-50 border-t border-slate-100">
             <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-1">
