@@ -151,9 +151,9 @@ export default function ProfessionalWindgram({
   }, [latitude, longitude, dateStr]);
 
   // Dimensioni SVG ad altissima fedeltà
-  const width = 1000;
-  const height = 660;
-  const margin = { top: 90, right: 85, bottom: 95, left: 85 };
+    const width = 1000;
+    const height = 580;
+    const margin = { top: 70, right: 85, bottom: 80, left: 85 };
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
@@ -492,12 +492,12 @@ export default function ProfessionalWindgram({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Contenitore Grafico Alpium Bianco con Bordo Arrotondato */}
-      <div className="bg-white text-slate-900 rounded-[28px] p-4 sm:p-7 shadow-2xl border border-slate-300 overflow-hidden font-sans select-none">
+      <div className="bg-white text-slate-900 rounded-[28px] p-3 sm:p-5 shadow-2xl border border-slate-300 overflow-hidden font-sans select-none">
         
         {/* Titolo Principale in Alto */}
-        <div className="text-center pb-2">
+        <div className="text-center pb-1">
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight lowercase">
             {siteName.toLowerCase()} &middot; {formattedDateTitle.toLowerCase()}
           </h2>
@@ -507,7 +507,7 @@ export default function ProfessionalWindgram({
         </div>
 
         {/* TABELLA IN ALTO: Ascendenza media e Sole %} */}
-        <div className="bg-slate-50 rounded-xl p-3 mb-3 border border-slate-200">
+        <div className="bg-slate-50 rounded-xl p-2 mb-2 border border-slate-200">
           <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-2">
             <span className="flex items-center gap-1.5">
               <Mountain className="w-3.5 h-3.5 text-emerald-500" />
@@ -853,7 +853,7 @@ export default function ProfessionalWindgram({
         </div>
 
         {/* SCALA GRADIENTE INFERIORE DELTA T / 100 m IDENTICA AD ALPIUM */}
-        <div className="mt-4 pt-3 border-t border-slate-200 flex flex-col items-center">
+        <div className="mt-2 pt-2 border-t border-slate-200 flex flex-col items-center">
           <div className="w-full max-w-2xl px-2">
             <defs>
               <linearGradient id="deltaTGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -891,8 +891,8 @@ export default function ProfessionalWindgram({
       </div>
 
       {/* BOLLETTINO E REPORT METEOROLOGICO DI SUPPORTO */}
-      {reportGenerato && (
-        <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border-2 border-emerald-500/40 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-4 text-slate-200">
+            {reportGenerato && (
+              <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border-2 border-emerald-500/40 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3 text-slate-200">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-900/40 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
