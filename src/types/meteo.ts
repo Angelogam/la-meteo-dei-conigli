@@ -71,6 +71,26 @@ export interface HourData {
   windDir2500?: number;
   windSpeed3000?: number;
   windDir3000?: number;
+  // Multi-level data for report generation
+  shortwaveRadiation?: number;
+  temperature80m?: number;
+  temperature120m?: number;
+  windSpeed80m?: number;
+  windDir80m?: number;
+  windSpeed120m?: number;
+  windDir120m?: number;
+  windSpeed180m?: number;
+  windDir180m?: number;
+  windSpeed925hPa?: number;
+  windDir925hPa?: number;
+  windSpeed850hPa?: number;
+  windDir850hPa?: number;
+  windSpeed700hPa?: number;
+  windDir700hPa?: number;
+  windSpeed600hPa?: number;
+  windDir600hPa?: number;
+  windSpeed500hPa?: number;
+  windDir500hPa?: number;
 }
 
 export interface DailyData {
