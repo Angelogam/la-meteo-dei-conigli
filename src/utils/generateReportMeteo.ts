@@ -51,7 +51,7 @@ function identificaScenario(
   avgSpread: number
 ): ScenarioMeteo {
   if (hasThunderstorm || (totPrecip > 2 && maxCape > 600)) return "instabile-temporali";
-  if (totPrecip > 1 || (avgClouds > 75 && maxCape > 400)) return "pioggia";
+    if (totPrecip > 0.3) return "pioggia";
   if (maxWindGround > 30 || avgWindGround > 22) return "ventoso";
   if (avgClouds > 70 && maxCape < 300) return "stabile-coperto";
   if (maxCape > 900 && avgWindGround < 15) return "perfezionistico";
