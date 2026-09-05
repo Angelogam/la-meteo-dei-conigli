@@ -205,15 +205,15 @@ export default function ProfessionalWindgram({
       const precip = h.precipitation?.[idx] ?? 0;
       const wind10 = h.wind_speed_10m?.[idx] ?? 7;
       const windDir10 = h.wind_direction_10m?.[idx] ?? 180;
-      const freeze = h.freezing_level_height?.[idx] ?? (altitude + (t / 0.0098) * 100);
+      const freeze = h.freezing_level_height?.[idx] ?? (altitude + t / 0.0098);
       const cape = h.cape?.[idx] ?? 350;
 
       // Sole % reale
       const sunPct = Math.min(100, Math.max(10, Math.round(((rad / 900) * (1 - (cloud / 100) * 0.65)) * 100)));
 
       // Spread T - Dew
-      const spread = Math.max(1, t - dew);
-      const cloudBase = Math.round(altitude + spread * 125);
+            const spread = Math.max(1, t - dew);
+            const cloudBase = Math.round(altitude + Math.min(1500, spread * 125));
       const cloudPct = Math.max(2, Math.min(95, Math.round(cloud)));
 
       // Gradiente T calcolato su livelli verticali

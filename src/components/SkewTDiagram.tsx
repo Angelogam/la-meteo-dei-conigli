@@ -290,7 +290,7 @@ export default function SkewTDiagram({
       const precip = h.precipitation?.[idx] ?? 0;
       const wind10 = h.wind_speed_10m?.[idx] ?? 7;
       const windDir10 = h.wind_direction_10m?.[idx] ?? 180;
-      const freeze = h.freezing_level_height?.[idx] ?? (siteAltitude + (t / 0.0098) * 100);
+      const freeze = h.freezing_level_height?.[idx] ?? (siteAltitude + t / 0.0098);
       const cape = h.cape?.[idx] ?? 350;
 
       const sunPct = Math.min(100, Math.max(10, Math.round(((rad / 900) * (1 - (cloud / 100) * 0.65)) * 100)));
@@ -311,7 +311,7 @@ export default function SkewTDiagram({
       else if (cloud > 80) rateo *= 0.4;
       rateo = Math.max(0.4, Math.min(2.5, Math.round(rateo * 10) / 10));
 
-      const thermalTop = Math.round(Math.min(3600, cloudBase + Math.min(700, rateo * 220 + cape * 0.3)));
+      const thermalTop = Math.round(Math.min(4000, cloudBase + Math.min(800, rateo * 100 + cape * 0.1)));
 
       const levelWinds = [
         { hpa: 500, alt: 5800, speed: h.wind_speed_500hPa?.[idx] ?? (wind10 * 2.8), dir: h.wind_direction_500hPa?.[idx] ?? (windDir10 + 40) },
