@@ -230,8 +230,12 @@ export default function ProfessionalWindgram({
       else if (cloud > 80) rateo *= 0.4;
       rateo = Math.max(0.4, Math.min(2.5, Math.round(rateo * 10) / 10));
 
-      // Quota top termico
-      const thermalTop = Math.round(Math.min(3600, cloudBase + Math.min(700, rateo * 220 + cape * 0.3)));
+      // Quota top termico realistica: base cumuli + sviluppo termico
+      // rateo in m/s * 100 = metri di sviluppo approssimativo
+      // CAPE contribuisce in modo marginale (J/kg / 10 ≈ metri aggiuntivi)
+      const thermalTop = Math.round(
+        Math.min(4000, cloudBase + Math.min(800, rateo * 100 + cape * 0.1))
+      );
 
       // Venti per ciascun livello isobarico da Open-Meteo
       const levelWinds = [
