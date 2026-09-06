@@ -1,20 +1,19 @@
 {
-  "appId": "com.meteodeiconigli.app",
   "appName": "Meteo dei Conigli",
   "webDir": "dist",
-  "bundledWebRuntime": false,
+  "bundleWebRuntime": true,
   "android": {
-    "allowMixedContent": true,
-    "captureInput": true,
-    "webContentsDebuggingEnabled": false,
-    "overrideUserAgent": "MeteoConigli/1.0",
-    "backgroundColor": "#020617",
-    "toolbarColor": "#020617",
-    "navigationBarColor": "#020617",
-    "statusBarColor": "#020617"
+    "buildOptions": {
+      "keystorePath": "keystore/debug.keystore",
+      "keystoreAlias": "androiddebugkey",
+      "keystorePassword": "android",
+      "storePassword": "android"
+    }
   },
-  "ios": {
-    "contentInset": "automatic",
-    "backgroundColor": "#020617"
+  "plugins": {
+    "SplashScreen": {
+      "launchShowAfter": 1000,
+      "androidScaleType": "CENTER_CROP"
+    }
   }
 }
