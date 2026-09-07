@@ -150,10 +150,10 @@ export default function ProfessionalWindgram({
     };
   }, [latitude, longitude, dateStr]);
 
-  // Dimensioni SVG ad altissima fedeltà - AUMENTATE PER MASSIMIZZARE IL GRAFICO
-        const width = 2400;
-        const height = 1900;
-        const margin = { top: 140, right: 200, bottom: 180, left: 200 };
+  // Dimensioni SVG ad altissima fedeltà
+    const width = 1000;
+    const height = 580;
+    const margin = { top: 70, right: 85, bottom: 80, left: 85 };
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
@@ -496,7 +496,7 @@ export default function ProfessionalWindgram({
   }
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-3">
       {/* Contenitore Grafico Alpium Bianco con Bordo Arrotondato */}
       <div className="bg-white text-slate-900 rounded-[28px] p-3 sm:p-5 shadow-2xl border border-slate-300 overflow-hidden font-sans select-none">
         
@@ -505,9 +505,9 @@ export default function ProfessionalWindgram({
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight lowercase">
             {siteName.toLowerCase()} &middot; {formattedDateTitle.toLowerCase()}
           </h2>
-          <p className="text-[13px] sm:text-base text-slate-500 font-mono tracking-wide mt-0.5">
-                      plotted {dateStr} 00:00 UTC &middot; model ground {Math.round(altitude + 5)} m &middot; SRTM {Math.round(altitude)} m
-                    </p>
+          <p className="text-[11px] sm:text-xs text-slate-500 font-mono tracking-wide mt-0.5">
+            plotted {dateStr} 00:00 UTC &middot; model ground {Math.round(altitude + 5)} m &middot; SRTM {Math.round(altitude)} m
+          </p>
         </div>
 
         {/* TABELLA IN ALTO: Ascendenza media e Sole %} */}
@@ -540,9 +540,7 @@ export default function ProfessionalWindgram({
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 pb-1">
           <svg
             viewBox={`0 0 ${width} ${height}`}
-            preserveAspectRatio="xMidYMid meet"
-            width="100%"
-            className="w-full h-auto block"
+            className="w-full h-auto min-w-[880px]"
             style={{ shapeRendering: "geometricPrecision", textRendering: "geometricPrecision" }}
           >
             <defs>
@@ -647,9 +645,9 @@ export default function ProfessionalWindgram({
                     opacity="0.4"
                   />
                   {/* Testo Asse Sinistro (hPa) */}
-                                          <text x={margin.left - 25} y={y + 11} fill="#0f172a" fontSize="28" fontWeight="800" textAnchor="end">
-                                            {lvl.hpa} hPa
-                                          </text>
+                        <text x={margin.left - 12} y={y + 5} fill="#0f172a" fontSize="13" fontWeight="800" textAnchor="end">
+                          {lvl.hpa} hPa
+                        </text>
                 </g>
               );
             })}
@@ -667,9 +665,9 @@ export default function ProfessionalWindgram({
                     stroke="#0f172a"
                     strokeWidth="1.2"
                   />
-                  <text x={margin.left + plotW + 18} y={y + 9} fill="#0f172a" fontSize="24" fontWeight="700" textAnchor="start">
-                                      {alt} m
-                                    </text>
+                  <text x={margin.left + plotW + 10} y={y + 5} fill="#0f172a" fontSize="13" fontWeight="700" textAnchor="start">
+                    {alt} m
+                  </text>
                 </g>
               );
             })}
@@ -731,9 +729,9 @@ export default function ProfessionalWindgram({
             })}
 
             {/* BADGE ZERO TERMICO LATERALE AZZURRO (es. 0 °C • 4381 m) */}
-            <g transform={`translate(${margin.left + plotW - 240}, ${getYFromAlt(avgZeroThermal) - 25})`}>
-              <rect x="0" y="0" width="230" height="50" rx="10" fill="#0284c7" stroke="#ffffff" strokeWidth="3" />
-              <text x="115" y="34" fill="#ffffff" fontSize="23" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+            <g transform={`translate(${margin.left + plotW - 145}, ${getYFromAlt(avgZeroThermal) - 15})`}>
+              <rect x="0" y="0" width="140" height="30" rx="6" fill="#0284c7" stroke="#ffffff" strokeWidth="2" />
+              <text x="70" y="20" fill="#ffffff" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                 0 °C &middot; {avgZeroThermal} m
               </text>
             </g>
@@ -779,19 +777,19 @@ export default function ProfessionalWindgram({
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const cloudY = getYFromAlt(h.cloudBase + 300);
+              const cloudY = getYFromAlt(h.cloudBase + 250);
 
               return (
                 <g key={`cumulus-cloud-${i}`} transform={`translate(${x}, ${cloudY})`}>
                   {/* Sagoma Nuvola */}
                   <path
-                    d="M -20,4 A 8,8 0 0,1 -8,-6 A 13,13 0 0,1 8,-7 A 10,10 0 0,1 20,3 L -20,3 A 7,7 0 0,1 -20,4 Z"
+                    d="M -16,3 A 6,6 0 0,1 -7,-5 A 10,10 0 0,1 7,-6 A 8,8 0 0,1 16,2 A 5,5 0 0,1 14,8 L -14,8 A 5,5 0 0,1 -16,3 Z"
                     fill="#ffffff"
                     stroke="#64748b"
-                    strokeWidth="2"
+                    strokeWidth="1.5"
                   />
                   {/* Testo % copertura */}
-                  <text x="0" y="6" fill="#0f172a" fontSize="13" fontWeight="900" textAnchor="middle">
+                  <text x="0" y="4" fill="#0f172a" fontSize="10" fontWeight="900" textAnchor="middle">
                     {h.cloudPct}%
                   </text>
                 </g>
@@ -816,12 +814,12 @@ export default function ProfessionalWindgram({
                     strokeWidth="1.5"
                     filter="drop-shadow(0 1px 2px rgba(0,0,0,0.15))"
                   />
-                  <text x="0" y="15" fill="#0f172a" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="monospace">
-                                      {h.cloudBase} m
-                                    </text>
-                                    <text x="0" y="28" fill="#b91c1c" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="monospace">
-                                      &uarr; {h.thermalAvg.toFixed(1)} m/s
-                                    </text>
+                  <text x="0" y="12" fill="#0f172a" fontSize="11" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+                    {h.cloudBase} m
+                  </text>
+                  <text x="0" y="23" fill="#b91c1c" fontSize="11" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+                    &uarr; {h.thermalAvg.toFixed(1)} m/s
+                  </text>
                 </g>
               );
             })}
@@ -833,9 +831,9 @@ export default function ProfessionalWindgram({
                 <text
                   key={`label-hour-${h}`}
                   x={x}
-                  y={margin.top + plotH + 45}
+                  y={margin.top + plotH + 25}
                   fill="#0f172a"
-                  fontSize="25"
+                  fontSize="14"
                   fontWeight="800"
                   textAnchor="middle"
                   fontFamily="monospace"
@@ -849,9 +847,9 @@ export default function ProfessionalWindgram({
             <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#0f172a" strokeWidth="1.4" />
 
             {/* ETICHETTA ZONA STABILE (in alto a destra) */}
-            <g transform={`translate(${margin.left + plotW - 210}, ${margin.top + 18})`}>
-              <rect x="0" y="0" width="200" height="38" rx="8" fill="#6366f1" stroke="#ffffff" strokeWidth="3" />
-              <text x="100" y="26" fill="#ffffff" fontSize="18" fontWeight="900" textAnchor="middle">
+            <g transform={`translate(${margin.left + plotW - 145}, ${margin.top + 12})`}>
+              <rect x="0" y="0" width="140" height="26" rx="5" fill="#6366f1" stroke="#ffffff" strokeWidth="2" />
+              <text x="70" y="18" fill="#ffffff" fontSize="12" fontWeight="900" textAnchor="middle">
                 ❄ ARIA STABILE
               </text>
             </g>
