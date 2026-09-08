@@ -357,10 +357,7 @@ export default function WindgramChart({
         hour: hr,
         idx,
         wind: [
-          // Livelli distanziati per evitare sovrapposizione di barbette su mobile
-          { alt: altitude, speed: h.wind_speed_10m[idx] ?? 0, dir: h.wind_direction_10m[idx] ?? 180 },
-          { alt: Math.round(altitude + 200), speed: h.wind_speed_80m[idx] ?? 0, dir: h.wind_direction_80m[idx] ?? 180 },
-          { alt: Math.round(altitude + 400), speed: h.wind_speed_120m[idx] ?? 0, dir: h.wind_direction_120m[idx] ?? 180 },
+          // Livelli isobarici standard — nessuna sovrapposizione
           { alt: 1450, speed: h.wind_speed_850hPa[idx] ?? 0, dir: h.wind_direction_850hPa[idx] ?? 180 },
           { alt: 3100, speed: h.wind_speed_700hPa[idx] ?? 0, dir: h.wind_direction_700hPa[idx] ?? 180 },
           { alt: 4400, speed: h.wind_speed_600hPa[idx] ?? 0, dir: h.wind_direction_600hPa[idx] ?? 180 },
