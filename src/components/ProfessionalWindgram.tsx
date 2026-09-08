@@ -786,9 +786,11 @@ export default function ProfessionalWindgram({
       ctx.fillText(`${String(c.hour).padStart(2, "0")}:00`, c.x, plotBottom + 10);
     });
 
-    // ── Right altitude ticks ───────────────────────
-    [1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000].forEach((alt) => {
-      const y = altToY(alt);
+    // ── Right altitude ticks: 250m steps from launch altitude up to 4000m ──
+    const launchAlt = Math.round(altitude);
+    const altMinTick = Math.floor((launchAlt - 1) / 250) * 250;
+    for (let a = altMinTick; a <= 4000; a += 250) {
+      const y = altToY(a);
       ctx.strokeStyle = "#1e293b";
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -799,8 +801,8 @@ export default function ProfessionalWindgram({
       ctx.font = "10px monospace";
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
-      ctx.fillText(`${alt} m`, plotRight + 9, y);
-    });
+      ctx.fillText(`${a} m`, plotRight + 9, y);
+    }
 
     // ── FOOTER: DeltaT legend ──────────────────────
     const legendY = TOTAL_H - 44;
