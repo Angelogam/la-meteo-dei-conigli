@@ -19,30 +19,27 @@ const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] as const;
 const NUM_HOURS = HOURS.length;
 
 const SVG_W = 1100;
-const SVG_H = 960;
-const HEADER_H = 140; // header + numeric strip
-const FOOTER_H = 70;  // legend + attribution
-const PLOT_TOP = HEADER_H;
+const HEADER_H = 140;
 const PLOT_H = 640;
+const FOOTER_H = 120;
 const TOTAL_H = HEADER_H + PLOT_H + FOOTER_H;
-const ML = 100; // margin left
-const MR = 100; // margin right
+const ML = 110; // margin left
+const MR = 90;  // margin right
 const GW = SVG_W - ML - MR;
 const GH = PLOT_H;
 
-const ALT_MIN = 1100;
-const ALT_MAX = 6000;
+const ALT_MIN = 1000;
+const ALT_MAX = 4500;
 
-const HPA_LEVELS = [
-  { hpa: 500, alt: 5570 },
-  { hpa: 550, alt: 4860 },
-  { hpa: 600, alt: 4200 },
-  { hpa: 650, alt: 3580 },
-  { hpa: 700, alt: 3010 },
-  { hpa: 750, alt: 2470 },
-  { hpa: 800, alt: 1950 },
-  { hpa: 850, alt: 1460 },
-];
+// Grid levels: 250m steps from 1000 to 4500 with hPa conversion
+const GRID_LEVELS: { hpa: string; alt: number }[] = (() => {
+  const levels: { hpa: string; alt: number }[] = [];
+  for (let a = 1000; a <= 4500; a += 250) {
+    const hPaVal = Math.round(1013.25 * Math.pow(1 - 2.25577e-5 * a, 5.25588));
+    levels.push({ hpa: `${hPaVal} hPa`, alt: a });
+  }
+  return levels;
+})();
 
 // ΔT color scale (Alpium)
 const DT_STOPS = [
@@ -56,16 +53,6 @@ const DT_STOPS = [
   { val:  0.82, color: "#c2410c" },
   { val:  1.00, color: "#b91c1c" },
   { val:  1.20, color: "#7f1d1d" },
-];
-
-// Legend gradient stops
-const LEGEND_STOPS: { pos: number; color: string }[] = [
-  { pos: 0.00, color: "#c084fc" },
-  { pos: 0.15, color: "#38bdf8" },
-  { pos: 0.35, color: "#4ade80" },
-  { pos: 0.65, color: "#facc15" },
-  { pos: 0.85, color: "#fb923c" },
-  { pos: 1.00, color: "#f87171" },
 ];
 
 // ─────────────────────────────────────────────────────
@@ -492,32 +479,26 @@ export default function ProfessionalWindgram({
         style={{ shapeRendering: "geometricPrecision" }}
       >
         <defs>
-          {/* Cloud mesh pattern */}
-          <pattern id="cloudHatch" width="8" height="8" patternTransform="rotate(30 0 0)" patternUnits="userSpaceOnUse">
-            <line x1="0" y1="0" x2="0" y2="8" stroke="#334155" strokeWidth="0.75" opacity="0.25" />
+          {/* Ground hatch pattern */}
+          <pattern id="groundHatch" width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="0" x2="0" y2="10" stroke="#1e293b" strokeWidth="1.2" opacity="0.35" />
           </pattern>
 
-          {/* Unstable mass vertical gradient */}
-          <linearGradient id="unstableMassGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#22c55e" stopOpacity="0.85" />
-            <stop offset="25%" stopColor="#eab308" stopOpacity="0.85" />
-            <stop offset="55%" stopColor="#f97316" stopOpacity="0.90" />
-            <stop offset="85%" stopColor="#ef4444" stopOpacity="0.95" />
-            <stop offset="100%" stopColor="#b91c1c" stopOpacity="1.0" />
+          {/* Alpium background heat map gradient */}
+          <linearGradient id="bgHeatmap" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#86efac" />
+            <stop offset="30%" stopColor="#fde047" />
+            <stop offset="65%" stopColor="#fdba74" />
+            <stop offset="100%" stopColor="#f87171" />
           </linearGradient>
 
-          {/* Thermal bubble gradient */}
-          <linearGradient id="thermalBubbleGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#a855f7" stopOpacity="0.4" />
-            <stop offset="40%" stopColor="#ec4899" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.1" />
-          </linearGradient>
-
-          {/* Legend gradient */}
+          {/* ΔT lapse rate bar gradient */}
           <linearGradient id="lapseRateBar" x1="0" y1="0" x2="1" y2="0">
-            {LEGEND_STOPS.map((s, i) => (
-              <stop key={i} offset={`${s.pos * 100}%`} stopColor={s.color} />
-            ))}
+            <stop offset="0%" stopColor="#3b82f6" />
+            <stop offset="25%" stopColor="#a855f7" />
+            <stop offset="50%" stopColor="#eab308" />
+            <stop offset="75%" stopColor="#f97316" />
+            <stop offset="100%" stopColor="#ef4444" />
           </linearGradient>
 
           {/* Drop shadow filter */}
@@ -528,10 +509,6 @@ export default function ProfessionalWindgram({
 
         {/* White background */}
         <rect x="0" y="0" width={SVG_W} height={TOTAL_H} fill="#ffffff" />
-
-        {/* Plot area background — unstable mass gradient as fallback */}
-        <rect x={plotLeft} y={PLOT_TOP} width={GW} height={GH}
-          fill="url(#unstableMassGrad)" opacity="0.6" />
 
         {/* ══════════════════════════════════════════════════ */}
         {/* HEADER */}
@@ -544,8 +521,9 @@ export default function ProfessionalWindgram({
         </text>
 
         {/* Top numeric strip labels */}
-        <text x={ML - 15} y="85" textAnchor="end" className="fill-slate-400 font-bold text-[10px]">ASCENDENZE (m/s)</text>
-        <text x={ML - 15} y="102" textAnchor="end" className="fill-slate-400 font-bold text-[10px]">SOLE %</text>
+        <text x={ML - 15} y="85" textAnchor="end" className="fill-slate-400 font-bold text-[9px]">SCENDENZE (m/s)</text>
+        <text x={ML - 15} y="98" textAnchor="end" className="fill-slate-400 font-bold text-[9px]">SOLE %</text>
+        <text x={ML - 15} y="111" textAnchor="end" className="fill-slate-400 font-bold text-[9px]">TEMP (°C)</text>
 
         {/* Top numeric values */}
         {columns.map((c, i) => (
@@ -554,69 +532,35 @@ export default function ProfessionalWindgram({
               className={c.rateo >= 1.6 ? "fill-red-600 font-black text-xs" : c.rateo >= 1.0 ? "fill-orange-600 font-black text-xs" : "fill-slate-900 font-black text-xs"}>
               {c.rateo.toFixed(1)}
             </text>
-            <text x={c.x} y="102" textAnchor="middle"
-              className={c.sunPct >= 60 ? "fill-orange-700 font-semibold text-xs" : "fill-slate-700 font-semibold text-xs"}>
+            <text x={c.x} y="98" textAnchor="middle"
+              className={c.sunPct >= 60 ? "fill-orange-700 font-semibold text-xs" : "fill-slate-500 font-medium text-[10px]"}>
               {c.sunPct}%
             </text>
-            <text x={c.x} y="119" textAnchor="middle" className="fill-blue-600 font-medium text-[10px]">
-              {c.t2m.toFixed(0)}°/{c.dew2m.toFixed(0)}°
+            <text x={c.x} y="111" textAnchor="middle" className="fill-slate-700 font-semibold text-[10px]">
+              {`${c.t2m.toFixed(0)}°/${c.dew2m.toFixed(0)}°`}
             </text>
           </g>
         ))}
 
         {/* ══════════════════════════════════════════════════ */}
-        {/* PLOT BACKGROUND — Alpium heat map with lapse-rate modulation */}
+        {/* PLOT BACKGROUND — Alpium heat map gradient */}
         {/* ══════════════════════════════════════════════════ */}
-        {/* Step 1: Base gradient background (Alpium colors by altitude, full coverage) */}
+        <rect x={plotLeft} y={PLOT_TOP} width={GW} height={GH}
+          fill="url(#bgHeatmap)" rx="4" />
+
+        {/* Terrain / ground below launch altitude */}
         {(() => {
-          const bands = [
-            { from: 5000, to: 6000, color: "#88c442" },
-            { from: 4000, to: 5000, color: "#b2d855" },
-            { from: 3000, to: 4000, color: "#e2e855" },
-            { from: 2200, to: 3000, color: "#fca835" },
-            { from: 1500, to: 2200, color: "#f84339" },
-            { from: 1100, to: 1500, color: "#fca835" },
-          ];
-          return bands.map((band, i) => (
-            <rect key={`bg-${i}`}
-              x={plotLeft} y={altToY(band.from)}
-              width={GW} height={altToY(band.to) - altToY(band.from)}
-              fill={band.color} opacity="0.88" />
-          ));
+          const launchY = altToY(Math.round(altitude));
+          const groundY = altToY(ALT_MIN);
+          return (
+            <g>
+              <rect x={plotLeft} y={launchY} width={GW} height={groundY - launchY}
+                fill="url(#groundHatch)" />
+              <line x1={plotLeft} y1={launchY} x2={plotLeft + GW} y2={launchY}
+                stroke="#0f172a" strokeWidth="2" />
+            </g>
+          );
         })()}
-
-        {/* Step 2: Per-column lapse-rate modulation overlay */}
-        {columns.map((col, ci) => {
-          const xL = col.x - xStep / 2;
-          const xR = col.x + xStep / 2;
-          const bAlt = boundaryAlts[ci];
-          const bY = altToY(bAlt);
-          const strips: React.ReactNode[] = [];
-          const N = 32;
-          for (let si = 0; si < N; si++) {
-            const altTop = ALT_MIN + ((N - si - 0.5) / N) * (ALT_MAX - ALT_MIN);
-            const altBot = ALT_MIN + ((N - si - 1.5) / N) * (ALT_MAX - ALT_MIN);
-            const yTop = altToY(altTop);
-            const yBot = altToY(altBot);
-            const midAlt = (altTop + altBot) / 2;
-            const h = Math.max(1, yTop - yBot);
-            const dt = interpLapseAt((col.x - plotLeft) / GW, midAlt);
-            const color = getDTColor(dt);
-            const [r, g, b] = hexToRgb(color);
-
-            // Opacity based on how much the lapse rate deviates from neutral
-            const neutral = 0.0;
-            const deviation = Math.abs(dt - neutral);
-            const alpha = Math.min(0.9, 0.35 + deviation * 0.5);
-
-            strips.push(
-              <rect key={`hm-${ci}-${si}`}
-                x={xL} y={yBot} width={xR - xL} height={h}
-                fill={rgbStr(r, g, b, alpha)} />
-            );
-          }
-          return <g key={`col-${ci}`}>{strips}</g>;
-        })}
 
         {/* ══════════════════════════════════════════════════ */}
         {/* CROSS-HATCH — rectangular zones per unstable column */}
@@ -642,58 +586,21 @@ export default function ProfessionalWindgram({
         })}
 
         {/* ══════════════════════════════════════════════════ */}
-        {/* HORIZONTAL GRID LINES + ALTITUDE / hPa LABELS */}
-        {/* Based on real altitude with 250m step from launch */}
+        {/* HORIZONTAL GRID LINES + hPa / meter LABELS */}
         {/* ══════════════════════════════════════════════════ */}
-        {(() => {
-          const launchAlt = Math.round(altitude);
-          const altStart = Math.floor((launchAlt - 1) / 250) * 250;
-          const els: React.ReactNode[] = [];
-          let lastY: number | null = null;
-
-          for (let a = altStart; a <= 4000; a += 250) {
-            const y = altToY(a);
-            // Skip if too close to previous (avoid overlap)
-            if (lastY !== null && Math.abs(y - lastY) < 18) continue;
-            lastY = y;
-
-            const isMajor = a % 500 === 0;
-            const isLaunch = a === launchAlt;
-            const fontSize = isLaunch ? 11 : isMajor ? 10 : 9;
-            const fontWeight = isLaunch ? "font-black" : "font-semibold";
-            const textColor = isLaunch ? "fill-violet-700" : "fill-slate-700";
-            const lineWidth = isMajor ? 1.2 : 0.7;
-            const lineColor = isMajor ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.10)";
-            const tickLen = isMajor ? 7 : 4;
-            const tickOver = isMajor ? 14 : 10;
-
-            // hPa conversion (standard atmosphere approx)
-            const hPaVal = Math.round(1013.25 * Math.pow(1 - 2.25577e-5 * a, 5.25588));
-
-            // Left side: hPa label
-            els.push(
-              <g key={`l-${a}`}>
-                <line x1={plotLeft} y1={y} x2={plotRight} y2={y}
-                  stroke={lineColor} strokeWidth={lineWidth} />
-                <text x={plotLeft - 10} y={y + 4} textAnchor="end"
-                  className={`fill-slate-500 ${fontWeight} ${isLaunch ? "text-xs" : isMajor ? "text-[10px]" : "text-[9px]"}`}>{hPaVal}</text>
-              </g>
-            );
-
-            // Right side: altitude label
-            els.push(
-              <g key={`r-${a}`}>
-                <line x1={plotRight} y1={y} x2={plotRight + tickLen} y2={y}
-                  stroke="#334155" strokeWidth={isMajor ? 1.5 : 1} />
-                <text x={plotRight + tickOver} y={y + 4} textAnchor="start"
-                  className={`fill-slate-800 ${fontWeight} font-mono ${textColor} ${isLaunch ? "text-xs" : isMajor ? "text-[10px]" : "text-[9px]"}`}>
-                  {a} m
-                </text>
-              </g>
-            );
-          }
-          return <g>{els}</g>;
-        })()}
+        {GRID_LEVELS.map((lvl, i) => {
+          const y = altToY(lvl.alt);
+          return (
+            <g key={`grid-${i}`}>
+              <line x1={plotLeft} y1={y} x2={plotRight} y2={y}
+                stroke="rgba(0,0,0,0.12)" strokeWidth="0.5" />
+              <text x={plotLeft - 12} y={y + 4} textAnchor="end"
+                className="fill-slate-800 font-bold text-[10px] tracking-tight">{lvl.hpa}</text>
+              <text x={plotRight + 12} y={y + 4} textAnchor="start"
+                className="fill-slate-800 font-extrabold text-[10px]">{lvl.alt} m</text>
+            </g>
+          );
+        })}
 
         {/* ══════════════════════════════════════════════════ */}
         {/* VERTICAL HOUR LINES */}
@@ -707,7 +614,7 @@ export default function ProfessionalWindgram({
         {/* PLOT BORDER */}
         {/* ══════════════════════════════════════════════════ */}
         <rect x={plotLeft} y={PLOT_TOP} width={GW} height={GH}
-          fill="none" stroke="#0f172a" strokeWidth="1.5" />
+          fill="none" stroke="#0f172a" strokeWidth="1.5" rx="4" />
 
         {/* ══════════════════════════════════════════════════ */}
         {/* WIND BARBS */}
@@ -845,37 +752,34 @@ export default function ProfessionalWindgram({
         {/* ══════════════════════════════════════════════════ */}
         {/* HOUR LABELS */}
         {/* ══════════════════════════════════════════════════ */}
-        {columns.map((c) => (
-          <g key={`xl-${c.hour}`}>
-            <line x1={c.x} y1={plotBottom} x2={c.x} y2={plotBottom + 6}
-              stroke="#1e293b" strokeWidth="1.2" />
-            <text x={c.x} y={plotBottom + 22} textAnchor="middle"
-              className="fill-slate-900 font-black text-xs">{`${String(c.hour).padStart(2, "0")}:00`}</text>
+        {HOURS.map((hr, i) => (
+          <g key={`xl-${hr}`}>
+            <line x1={xFromIdx(i)} y1={plotBottom} x2={xFromIdx(i)} y2={plotBottom + 8}
+              stroke="#1e293b" strokeWidth="1.5" />
+            <text x={xFromIdx(i)} y={plotBottom + 24} textAnchor="middle"
+              className="fill-slate-900 font-black text-sm">{`${String(hr).padStart(2, "0")}:00`}</text>
           </g>
         ))}
 
         {/* ══════════════════════════════════════════════════ */}
-        {/* FOOTER: ΔT LEGEND */}
+        {/* FOOTER: ΔT LEGEND — full-width bar */}
         {/* ══════════════════════════════════════════════════ */}
-        <g transform={`translate(${(SVG_W - 500) / 2}, ${TOTAL_H - 52})`}>
-          <rect width="500" height="12" rx="3" fill="url(#lapseRateBar)" stroke="#cbd5e1" strokeWidth="0.5" />
-          <text x="-12" y="10" textAnchor="end" className="fill-slate-600 font-bold text-[10px]">Stabile ←</text>
-          <text x="512" y="10" textAnchor="start" className="fill-slate-600 font-bold text-[10px]">→ Instabile</text>
-          <text x="250" y="-6" textAnchor="middle" className="fill-slate-800 font-black text-[10px]">
-            ΔT / 100 m
-          </text>
-          {/* Scale markers */}
-          {[-0.20, 0.00, 0.32, 0.65, 0.98, 1.20].map((v, i) => (
-            <text key={`lv-${i}`} x={i * 100} y="25" textAnchor="middle" className="fill-slate-400 text-[9px]">
-              {v}
-            </text>
-          ))}
+        <g transform={`translate(${ML}, ${TOTAL_H - 55})`}>
+          <text x="-12" y="11" textAnchor="end" className="fill-slate-700 font-black text-[10px]">ΔT / 100 m</text>
+          <rect x="0" y="2" width={GW} height="12" rx="3" fill="url(#lapseRateBar)" />
+          <g transform="translate(0, 26)" className="fill-slate-500 font-bold text-[9px]">
+            <text x="0" textAnchor="start">-0.2 (Stabile)</text>
+            <text x={GW * 0.25} textAnchor="middle">0</text>
+            <text x={GW * 0.5} textAnchor="middle">0.65</text>
+            <text x={GW * 0.75} textAnchor="middle">0.98</text>
+            <text x={GW} textAnchor="end">1.2 (Instabile)</text>
+          </g>
         </g>
 
         {/* ══════════════════════════════════════════════════ */}
         {/* ATTRIBUTION */}
         {/* ══════════════════════════════════════════════════ */}
-        <text x={SVG_W / 2} y={TOTAL_H - 12} textAnchor="middle" className="fill-slate-400 text-[9px]">
+        <text x={SVG_W / 2} y={TOTAL_H - 12} textAnchor="middle" className="fill-slate-400 font-medium text-[9px]">
           Fonte: AROME 0-48 h + ICON-EU 0-120 h via Open-Meteo · Diagnostica di volo a vela di Alpium
         </text>
       </svg>
