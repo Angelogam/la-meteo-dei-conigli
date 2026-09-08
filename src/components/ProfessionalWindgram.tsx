@@ -18,41 +18,21 @@ interface WindgramProps {
 const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] as const;
 const NUM_HOURS = HOURS.length;
 
-const SVG_W = 1150;
+const SVG_W = 1200;
 const HEADER_H = 140;
 const PLOT_TOP = HEADER_H;
 const PLOT_H = 660;
 const FOOTER_H = 120;
 const TOTAL_H = HEADER_H + PLOT_H + FOOTER_H;
 const ML = 110; // margin left
-const MR = 90;  // margin right
+const MR = 100; // margin right
 const GW = SVG_W - ML - MR;
 const GH = PLOT_H;
 
 const ALT_MIN = 1000;
-const ALT_MAX = 4500;
+const ALT_MAX = 4250;
 
-// Grid levels: 250m steps from 1000 to 4500 (Alpium reference hPa)
-const GRID_LEVELS: { hpa: string; alt: number }[] = [
-  { hpa: "577 hPa", alt: 4500 },
-  { hpa: "597 hPa", alt: 4250 },
-  { hpa: "616 hPa", alt: 4000 },
-  { hpa: "637 hPa", alt: 3750 },
-  { hpa: "658 hPa", alt: 3500 },
-  { hpa: "679 hPa", alt: 3250 },
-  { hpa: "701 hPa", alt: 3000 },
-  { hpa: "724 hPa", alt: 2750 },
-  { hpa: "747 hPa", alt: 2500 },
-  { hpa: "771 hPa", alt: 2250 },
-  { hpa: "795 hPa", alt: 2000 },
-  { hpa: "820 hPa", alt: 1750 },
-  { hpa: "846 hPa", alt: 1500 },
-  { hpa: "872 hPa", alt: 1250 },
-  { hpa: "899 hPa", alt: 1000 },
-];
-
-// Wind levels for display (Alpium reference)
-const WIND_LEVEL_ALTS = [4250, 3500, 2500, 1750];
+// Wind direction abbreviations
 const DIR_ABBREV: Record<number, string> = {
   0: "N", 45: "NE", 90: "E", 135: "SE", 180: "S", 225: "SO", 270: "O", 315: "NO",
 };
@@ -275,7 +255,7 @@ export default function ProfessionalWindgram({
         : t120 != null ? Math.round(((t2m - t120) / 118) * 100 * 100) / 100
         : spread >= 10 ? 0.95 : spread >= 5 ? 0.72 : 0.55;
 
-      const levelWinds = [
+      const rawLevels = [
         { hpa: 500, alt: 5570, speed: h.wind_speed_500hPa?.[idx], dir: h.wind_direction_500hPa?.[idx] },
         { hpa: 550, alt: 4860, speed: h.wind_speed_550hPa?.[idx], dir: h.wind_direction_550hPa?.[idx] },
         { hpa: 600, alt: 4200, speed: h.wind_speed_600hPa?.[idx], dir: h.wind_direction_600hPa?.[idx] },
@@ -289,6 +269,28 @@ export default function ProfessionalWindgram({
         speed: l.speed ?? Math.round(wind10 * (1 + (5570 - l.alt) / (5570 - 1460) * 1.5)),
         dir: l.dir ?? Math.round(windDir10 + (5570 - l.alt) * 0.005),
       }));
+
+      // Build full wind matrix at every 250m from launch to ALT_MAX
+      const launchAlt = Math.round(altitude);
+      const windMatrix: { alt: number; speed: number; dir: number }[] = [];
+      for (let a = launchAlt; a <= ALT_MAX; a += 250) {
+        // Interpolate from raw levels (sorted descending by alt: 5570 → 1460)
+        let above = rawLevels[0]!, below = rawLevels[rawLevels.length - 1]!;
+        for (let ri = 0; ri < rawLevels.length - 1; ri++) {
+          if (rawLevels[ri]!.alt <= a && rawLevels[ri + 1]!.alt >= a) {
+            below = rawLevels[ri + 1]!;
+            above = rawLevels[ri]!;
+            break;
+          }
+        }
+        const span = above.alt - below.alt || 1;
+        const f = (a - below.alt) / span;
+        const wSpeed = Math.round(below.speed + f * (above.speed - below.speed));
+        let wDir = below.dir + f * (above.dir - below.dir);
+        if (wDir < 0) wDir += 360;
+        if (wDir >= 360) wDir -= 360;
+        windMatrix.push({ alt: a, speed: Math.max(1, wSpeed), dir: Math.round(wDir) });
+      }
 
       type TP = { alt: number; temp: number };
       const tempPts: TP[] = [
@@ -330,7 +332,7 @@ export default function ProfessionalWindgram({
         wind10, windDir10, sunPct, sunDur,
         surfaceDeltaT, rateo,
         cloudBase, thermalTop, freeze,
-        levelWinds, lapseRates,
+        levelWinds: rawLevels, windMatrix, lapseRates,
         yCloudBase: altToY(cloudBase),
         yThermalTop: altToY(thermalTop),
         yFreeze: altToY(freeze),
@@ -451,21 +453,22 @@ export default function ProfessionalWindgram({
             <line x1="0" y1="0" x2="0" y2="8" stroke="#0284c7" strokeWidth="1.5" opacity="0.6" />
           </pattern>
 
-          {/* Alpium background heat map gradient */}
-          <linearGradient id="bgHeatmap" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#86efac" />
-            <stop offset="30%" stopColor="#fde047" />
-            <stop offset="65%" stopColor="#fdba74" />
-            <stop offset="100%" stopColor="#f87171" />
+          {/* Alpium atmosphere gradient — stable blue (top) → unstable red (bottom) */}
+          <linearGradient id="bgAtmosphere" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#38bdf8" />
+            <stop offset="25%" stopColor="#7dd3fc" />
+            <stop offset="50%" stopColor="#fef08a" />
+            <stop offset="75%" stopColor="#f97316" />
+            <stop offset="100%" stopColor="#ef4444" />
           </linearGradient>
 
           {/* ΔT lapse rate bar gradient */}
           <linearGradient id="lapseRateBar" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#3b82f6" />
-            <stop offset="25%" stopColor="#a855f7" />
+            <stop offset="0%" stopColor="#0284c7" />
+            <stop offset="30%" stopColor="#38bdf8" />
             <stop offset="50%" stopColor="#eab308" />
             <stop offset="75%" stopColor="#f97316" />
-            <stop offset="100%" stopColor="#ef4444" />
+            <stop offset="100%" stopColor="#dc2626" />
           </linearGradient>
 
           {/* Drop shadow filter */}
@@ -515,9 +518,9 @@ export default function ProfessionalWindgram({
         {/* GRAPH AREA — clipped to plot bounds */}
         {/* ══════════════════════════════════════════════════ */}
         <g clipPath="url(#graphClip)">
-          {/* Background heat map */}
+          {/* Atmosphere background gradient */}
           <rect x={plotLeft} y={PLOT_TOP} width={GW} height={GH}
-            fill="url(#bgHeatmap)" />
+            fill="url(#bgAtmosphere)" />
 
           {/* Rain zones */}
           {(() => {
@@ -578,21 +581,28 @@ export default function ProfessionalWindgram({
           })}
 
         {/* ══════════════════════════════════════════════════ */}
-        {/* HORIZONTAL GRID LINES + hPa / meter LABELS */}
+        {/* HORIZONTAL GRID LINES + ALTITUDE LABELS (every 250m, both sides) */}
         {/* ══════════════════════════════════════════════════ */}
-        {GRID_LEVELS.map((lvl, i) => {
-          const y = altToY(lvl.alt);
-          return (
-            <g key={`grid-${i}`}>
-              <line x1={plotLeft} y1={y} x2={plotRight} y2={y}
-                stroke="rgba(0,0,0,0.12)" strokeWidth="0.5" />
-              <text x={plotLeft - 12} y={y + 4} textAnchor="end"
-                className="fill-slate-800 font-bold text-[10px] tracking-tight">{lvl.hpa}</text>
-              <text x={plotRight + 12} y={y + 4} textAnchor="start"
-                className="fill-slate-800 font-extrabold text-[10px]">{lvl.alt} m</text>
-            </g>
-          );
-        })}
+        {(() => {
+          const launchAlt = Math.round(altitude);
+          const altStart = Math.floor((launchAlt - 1) / 250) * 250;
+          const els: React.ReactNode[] = [];
+          for (let a = altStart; a <= 4000; a += 250) {
+            const y = altToY(a);
+            const isMajor = a % 500 === 0;
+            els.push(
+              <g key={`grid-${a}`}>
+                <line x1={plotLeft} y1={y} x2={plotRight} y2={y}
+                  stroke="rgba(0,0,0,0.10)" strokeWidth="0.5" />
+                <text x={plotLeft - 10} y={y + 3} textAnchor="end"
+                  className="fill-slate-700 font-bold text-[9px]">{a} m</text>
+                <text x={plotRight + 10} y={y + 3} textAnchor="start"
+                  className="fill-slate-700 font-bold text-[9px]">{a} m</text>
+              </g>
+            );
+          }
+          return <g>{els}</g>;
+        })()}
 
         {/* ══════════════════════════════════════════════════ */}
         {/* VERTICAL HOUR LINES */}
@@ -606,29 +616,22 @@ export default function ProfessionalWindgram({
         {/* PLOT BORDER */}
         {/* ══════════════════════════════════════════════════ */}
         <rect x={plotLeft} y={PLOT_TOP} width={GW} height={GH}
-          fill="none" stroke="#0f172a" strokeWidth="1.5" rx="4" />
+          fill="none" stroke="#0f172a" strokeWidth="1.5" />
 
         {/* ══════════════════════════════════════════════════ */}
-        {/* WIND BARBS — Alpium style: stick + speed/direction */}
+        {/* WIND MATRIX — every 250m from launch to 4250m */}
         {/* ══════════════════════════════════════════════════ */}
-        {WIND_LEVEL_ALTS.map((wAlt) => {
-          const y = altToY(wAlt);
-          return columns.map((col) => {
-            // Find closest wind level for this altitude
-            const lw = col.levelWinds.find((w) => Math.abs(w.alt - wAlt) < 100);
-            if (!lw) return null;
-            return (
-              <g key={`wind-${col.hour}-${wAlt}`} transform={`translate(${col.x}, ${y})`}>
-                <line x1="-10" y1="0" x2="10" y2="0" stroke="#b91c1c" strokeWidth="1.5" />
-                <line x1="10" y1="0" x2="14" y2="-6" stroke="#b91c1c" strokeWidth="1.5" />
-                <text x="0" y="-8" textAnchor="middle"
-                  className="fill-black font-black text-[9px] tracking-tighter">
-                  {speedKmh(lw.speed)}k {getDirAbbrev(lw.dir)}
-                </text>
-              </g>
-            );
-          });
-        })}
+        {columns.map((col) =>
+          col.windMatrix.map((wm) => (
+            <g key={`wm-${col.hour}-${wm.alt}`} transform={`translate(${col.x}, ${altToY(wm.alt)})`}>
+              <line x1="-6" y1="0" x2="6" y2="0" stroke="#000000" strokeWidth="1" opacity="0.6" />
+              <text x="0" y="-3" textAnchor="middle"
+                className="fill-black font-bold text-[7px]">
+                {speedKmh(wm.speed)}k {getDirAbbrev(wm.dir)}
+              </text>
+            </g>
+          ))
+        )}
 
         {/* ══════════════════════════════════════════════════ */}
         {/* 0°C ISOTHERM (blue dashed + snowflakes + badge) */}
@@ -653,7 +656,7 @@ export default function ProfessionalWindgram({
         {/* THERMAL TOP CURVE (purple solid, thick) */}
         {/* ══════════════════════════════════════════════════ */}
         {thermalTopPts.length >= 2 && (
-          <path d={thermalTopPath} fill="none" stroke="#6b21a8" strokeWidth="4" filter="url(#shadow)" />
+          <path d={thermalTopPath} fill="none" stroke="#581c87" strokeWidth="3.5" />
         )}
 
         {/* ══════════════════════════════════════════════════ */}
@@ -704,7 +707,7 @@ export default function ProfessionalWindgram({
         })}
 
         {/* ══════════════════════════════════════════════════ */}
-        {/* CLOUD BADGES — Alpium cloud icon style */}
+        {/* CLOUD BADGES — Compact Alpium style */}
         {/* ══════════════════════════════════════════════════ */}
         {cloudBadges.map((b) => {
           const col = columns.find((c) => Math.abs(c.x - b.x) < 2);
@@ -713,23 +716,20 @@ export default function ProfessionalWindgram({
           return (
             <g key={`badge-${b.x}`} transform={`translate(${b.x}, ${b.y})`}>
               {hasCloud && (
-                /* Cloud development icon */
-                <g transform="translate(-22, -45)">
-                  <path d="M 12 24 C 6 24, 2 20, 2 15 C 2 11, 5 8, 9 8 C 10 4, 15 1, 21 1 C 27 1, 31 4, 33 8 C 37 8, 40 12, 40 17 C 40 21, 36 24, 31 24 Z"
-                    fill="#ffffff" stroke="#2563eb" strokeWidth="2" />
-                  <text x="21" y="16" textAnchor="middle"
-                    className="fill-blue-950 font-black text-[9px]">{b.cloudPct}%</text>
+                <g transform="translate(-18, -38)">
+                  <path d="M 10 20 C 5 20, 2 17, 2 13 C 2 9, 4 7, 8 7 C 9 3, 13 1, 18 1 C 23 1, 26 3, 28 7 C 31 7, 34 10, 34 14 C 34 18, 31 20, 27 20 Z"
+                    fill="#ffffff" stroke="#0284c7" strokeWidth="1.5" />
+                  <text x="18" y="13" textAnchor="middle"
+                    className="fill-sky-950 font-black text-[8px]">{b.cloudPct}%</text>
                 </g>
               )}
-              {/* Altitude pill */}
-              <rect x="-27" y="-12" width="54" height="16" rx="4"
-                fill="#ffffff" stroke="#6b21a8" strokeWidth="1.5" />
+              <rect x="-24" y="-10" width="48" height="14" rx="3"
+                fill="#ffffff" stroke="#581c87" strokeWidth="1.2" />
               <text x="0" y="0" textAnchor="middle"
-                className="fill-purple-950 font-black text-[10px]">{b.alt} m</text>
-              {/* Rate pill */}
-              <rect x="-22" y="7" width="44" height="13" rx="3" fill="#6b21a8" />
-              <text x="0" y="16" textAnchor="middle"
-                className="fill-white font-extrabold text-[9px]">↑ {b.rate.toFixed(1)} m/s</text>
+                className="fill-purple-950 font-black text-[9px]">{b.alt} m</text>
+              <rect x="-18" y="6" width="36" height="11" rx="2" fill="#581c87" />
+              <text x="0" y="14" textAnchor="middle"
+                className="fill-white font-black text-[8px]">↑ {b.rate.toFixed(1)} m/s</text>
             </g>
           );
         })}
