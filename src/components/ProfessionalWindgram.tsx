@@ -624,19 +624,18 @@ export default function ProfessionalWindgram({
     }
 
     // ══════════════════════════════════════════════════
-    // CROSS-HATCH — rectangular zones below thermal boundary
-    // Vertical strips per unstable column
+    // CROSS-HATCH — rectangular zones per unstable column
     // ══════════════════════════════════════════════════
     ctx.save();
     ctx.strokeStyle = "rgba(0, 0, 0, 0.13)";
     ctx.lineWidth = 0.85;
-    const hatchSp = 10;
+    const hatchSp = 6;
     for (let ci = 0; ci < columns.length; ci++) {
       const col = columns[ci];
       if (col.surfaceDeltaT < 0.55) continue;
       const bY = altToY(boundaryAlts[ci]);
-      const xL = col.x - xStep / 2 + 1;
-      const xR = col.x + xStep / 2 - 1;
+      const xL = col.x - xStep / 2;
+      const xR = col.x + xStep / 2;
 
       // Diagonal down-right
       for (let hx = xL - GH; hx < xR + GH; hx += hatchSp) {
@@ -860,8 +859,6 @@ export default function ProfessionalWindgram({
     // Purple circle with cloud %, altitude and rate below
     // ══════════════════════════════════════════════════
     cloudBadges.forEach((b) => {
-      const col = columns.find((c) => Math.abs(c.x - b.x) < 2);
-      if (!col) return;
       drawCloudBadge(ctx, b.x, b.y, b.alt, b.rate, b.cloudPct);
     });
 
@@ -901,8 +898,8 @@ export default function ProfessionalWindgram({
     // ══════════════════════════════════════════════════
     // FOOTER: ΔT LEGEND
     // ══════════════════════════════════════════════════
-    const legendY = TOTAL_H - 42;
-    const legendW = 520;
+    const legendY = TOTAL_H - 44;
+    const legendW = 540;
     const legendX = (CW - legendW) / 2;
 
     const grad = ctx.createLinearGradient(legendX, 0, legendX + legendW, 0);
@@ -912,15 +909,17 @@ export default function ProfessionalWindgram({
     ctx.roundRect(legendX, legendY, legendW, 14, 3);
     ctx.fill();
 
+    // ΔT values below legend
     const dtVals = DT_STOPS.map((s) => s.val);
     ctx.font = "9px monospace";
     ctx.fillStyle = "#6b7280";
     ctx.textAlign = "center";
     dtVals.forEach((v, i) => {
       const lx = legendX + (i / (dtVals.length - 1)) * legendW;
-      ctx.fillText(v.toFixed(2), lx, legendY + 17);
+      ctx.fillText(v.toFixed(2), lx, legendY + 18);
     });
 
+    // Labels flanking the legend
     ctx.font = "bold 10px sans-serif";
     ctx.textAlign = "right";
     ctx.fillStyle = "#475569";
