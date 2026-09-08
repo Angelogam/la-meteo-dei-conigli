@@ -76,7 +76,10 @@ function hexToRgb(hex: string): [number, number, number] {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 function rgbStr(r: number, g: number, b: number, a = 1): string {
-  return `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},${a})`;
+  const ra = Math.max(0, Math.min(255, Math.round(r)));
+  const ga = Math.max(0, Math.min(255, Math.round(g)));
+  const ba = Math.max(0, Math.min(255, Math.round(b)));
+  return `rgba(${ra},${ga},${ba},${a})`;
 }
 function blendColors(c1: string, c2: string, f: number): string {
   const [r1, g1, b1] = hexToRgb(c1);
@@ -526,6 +529,10 @@ export default function ProfessionalWindgram({
         {/* White background */}
         <rect x="0" y="0" width={SVG_W} height={TOTAL_H} fill="#ffffff" />
 
+        {/* Plot area background — unstable mass gradient as fallback */}
+        <rect x={plotLeft} y={PLOT_TOP} width={GW} height={GH}
+          fill="url(#unstableMassGrad)" opacity="0.6" />
+
         {/* ══════════════════════════════════════════════════ */}
         {/* HEADER */}
         {/* ══════════════════════════════════════════════════ */}
@@ -558,9 +565,27 @@ export default function ProfessionalWindgram({
         ))}
 
         {/* ══════════════════════════════════════════════════ */}
-        {/* PLOT BACKGROUND — Heatmap via ImageData approach */}
-        {/* Using SVG rect strips per column */}
+        {/* PLOT BACKGROUND — Alpium heat map with lapse-rate modulation */}
         {/* ══════════════════════════════════════════════════ */}
+        {/* Step 1: Base gradient background (Alpium colors by altitude, full coverage) */}
+        {(() => {
+          const bands = [
+            { from: 5000, to: 6000, color: "#88c442" },
+            { from: 4000, to: 5000, color: "#b2d855" },
+            { from: 3000, to: 4000, color: "#e2e855" },
+            { from: 2200, to: 3000, color: "#fca835" },
+            { from: 1500, to: 2200, color: "#f84339" },
+            { from: 1100, to: 1500, color: "#fca835" },
+          ];
+          return bands.map((band, i) => (
+            <rect key={`bg-${i}`}
+              x={plotLeft} y={altToY(band.from)}
+              width={GW} height={altToY(band.to) - altToY(band.from)}
+              fill={band.color} opacity="0.88" />
+          ));
+        })()}
+
+        {/* Step 2: Per-column lapse-rate modulation overlay */}
         {columns.map((col, ci) => {
           const xL = col.x - xStep / 2;
           const xR = col.x + xStep / 2;
@@ -575,30 +600,20 @@ export default function ProfessionalWindgram({
             const yBot = altToY(altBot);
             const midAlt = (altTop + altBot) / 2;
             const h = Math.max(1, yTop - yBot);
+            const dt = interpLapseAt((col.x - plotLeft) / GW, midAlt);
+            const color = getDTColor(dt);
+            const [r, g, b] = hexToRgb(color);
 
-            if (midAlt <= bAlt) {
-              const zoneFrac = Math.max(0, Math.min(1, (bAlt - midAlt) / (bAlt - ALT_MIN + 1)));
-              const intensity = col.surfaceDeltaT / 1.2;
-              const alpha = 0.3 + zoneFrac * 0.45 * intensity;
-              const r = Math.round(252 - zoneFrac * 100);
-              const g = Math.round(168 + zoneFrac * 80);
-              const b = Math.round(53 - zoneFrac * 80);
-              strips.push(
-                <rect key={`wb-${ci}-${si}`} x={xL} y={yBot} width={xR - xL} height={h}
-                  fill={rgbStr(r, g, b)} opacity={Math.min(0.85, alpha)} />
-              );
-            } else {
-              const zoneFrac = Math.max(0, Math.min(1, (midAlt - bAlt) / (ALT_MAX - bAlt + 1)));
-              const intensity = 1 - col.surfaceDeltaT / 1.5;
-              const alpha = 0.25 + zoneFrac * 0.5 * Math.max(0, intensity);
-              const r = Math.round(136 - zoneFrac * 80);
-              const g = Math.round(196 - zoneFrac * 120);
-              const b = Math.round(66 + zoneFrac * 100);
-              strips.push(
-                <rect key={`ws-${ci}-${si}`} x={xL} y={yBot} width={xR - xL} height={h}
-                  fill={rgbStr(r, g, b)} opacity={Math.min(0.8, alpha)} />
-              );
-            }
+            // Opacity based on how much the lapse rate deviates from neutral
+            const neutral = 0.0;
+            const deviation = Math.abs(dt - neutral);
+            const alpha = Math.min(0.9, 0.35 + deviation * 0.5);
+
+            strips.push(
+              <rect key={`hm-${ci}-${si}`}
+                x={xL} y={yBot} width={xR - xL} height={h}
+                fill={rgbStr(r, g, b, alpha)} />
+            );
           }
           return <g key={`col-${ci}`}>{strips}</g>;
         })}
