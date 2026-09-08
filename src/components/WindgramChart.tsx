@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Loader2, Wind } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 // ────────────────────────────────────────────────────────────────────────────
-// WindgramChart — nuovo windgram meteo-parapente
-// Background instabilità colorata + frecce vento + curve termiche
+// WindgramChart — windgram meteo-parapente stile Alpium/Rasoft
 // ────────────────────────────────────────────────────────────────────────────
 
 interface WindgramChartProps {
@@ -16,7 +15,6 @@ interface WindgramChartProps {
   selectedDay?: number;
 }
 
-// Livelli isobarici standard
 const HPA_LEVELS = [
   { hpa: 500, alt: 5800 },
   { hpa: 550, alt: 5000 },
@@ -30,41 +28,49 @@ const HPA_LEVELS = [
 
 const DISPLAY_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] as const;
 
-// Viewport SVG
+// Viewport SVG — layout simile all'immagine di riferimento
 const VB_W = 1100;
-const VB_H = 680;
-const MARGIN = { top: 90, right: 90, bottom: 90, left: 88 };
+const VB_H = 700;
+const MARGIN = { top: 95, right: 95, bottom: 90, left: 88 };
 const PLOT_W = VB_W - MARGIN.left - MARGIN.right;
 const PLOT_H = VB_H - MARGIN.top - MARGIN.bottom;
 
-const Y_MIN_ALT = 1000;
+const Y_MIN_ALT = 800;
 const Y_MAX_ALT = 6200;
 const yToPx = (alt: number) =>
   MARGIN.top + ((Y_MAX_ALT - alt) / (Y_MAX_ALT - Y_MIN_ALT)) * PLOT_H;
 const pxToAlt = (py: number) =>
   Y_MAX_ALT - ((py - MARGIN.top) / PLOT_H) * (Y_MAX_ALT - Y_MIN_ALT);
 
-const xToPx = (hr: number) => MARGIN.left + ((hr - 7.5) / DISPLAY_HOURS.length) * PLOT_W;
+const xToPx = (hr: number) =>
+  MARGIN.left + ((hr - 7.5) / DISPLAY_HOURS.length) * PLOT_W;
 
-// ─── Colori ΔT/100m (instabilità) ───
-function instabilityColor(deltaT: number): string {
-  if (deltaT <= -0.5) return "#3b5fa0";
-  if (deltaT <= -0.2) return "#5b78b8";
-  if (deltaT <= 0.0) return "#7fa0c8";
-  if (deltaT <= 0.2) return "#9bbed6";
-  if (deltaT <= 0.4) return "#bedfd6";
-  if (deltaT <= 0.55) return "#dfeec0";
-  if (deltaT <= 0.65) return "#fef08a";
-  if (deltaT <= 0.75) return "#fde047";
-  if (deltaT <= 0.85) return "#fbbf24";
-  if (deltaT <= 0.95) return "#fb923c";
-  if (deltaT <= 1.05) return "#f97316";
-  if (deltaT <= 1.20) return "#ea580c";
+// ─── Scala colori ΔT/100m ───
+const DT_COLORS = [
+  { max: -0.5, color: "#3b5fa0" },
+  { max: -0.2, color: "#5b78b8" },
+  { max: 0.0, color: "#7fa0c8" },
+  { max: 0.2, color: "#9bbed6" },
+  { max: 0.4, color: "#bedfd6" },
+  { max: 0.55, color: "#dfeec0" },
+  { max: 0.65, color: "#fef08a" },
+  { max: 0.75, color: "#fde047" },
+  { max: 0.85, color: "#fbbf24" },
+  { max: 0.95, color: "#fb923c" },
+  { max: 1.05, color: "#f97316" },
+  { max: 1.20, color: "#ea580c" },
+  { max: Infinity, color: "#dc2626" },
+];
+
+function dtColor(dt: number): string {
+  for (const s of DT_COLORS) {
+    if (dt <= s.max) return s.color;
+  }
   return "#dc2626";
 }
 
-// ─── Colore freccia vento (km/h) ───
-function windArrowColor(speed: number): string {
+// ─── Colore barbetta vento (km/h) ───
+function barbColor(speed: number): string {
   if (speed <= 4) return "#0284c7";
   if (speed <= 8) return "#0d9488";
   if (speed <= 13) return "#16a34a";
@@ -76,158 +82,7 @@ function windArrowColor(speed: number): string {
   return "#86198f";
 }
 
-// ─── Freccia vento stile meteo-parapente ───
-function WindArrow({
-  cx,
-  cy,
-  speed,
-  direction,
-}: {
-  cx: number;
-  cy: number;
-  speed: number;
-  direction: number;
-}) {
-  // direction = direzione DEL MOTO (Open-Meteo: provenienza, convertita già qui)
-  const targetDeg = direction;
-  const rad = (targetDeg * Math.PI) / 180;
-  const len = 15;
-  const dx = Math.sin(rad) * len;
-  const dy = -Math.cos(rad) * len;
-
-  const tx = cx - dx;
-  const ty = cy - dy;
-  const px = cx + dx;
-  const py = cy + dy;
-
-  const color = windArrowColor(speed);
-
-  const wingLen = 5.5;
-  const wingAngle = 0.55;
-  const perpX = Math.cos(rad) * wingLen;
-  const perpY = Math.sin(rad) * wingLen;
-
-  const a1x = px - dx * 0.45 + perpX * Math.sin(wingAngle);
-  const a1y = py - dy * 0.45 - perpY * Math.sin(wingAngle);
-  const a2x = px - dx * 0.45 - perpX * Math.sin(wingAngle);
-  const a2y = py - dy * 0.45 + perpY * Math.sin(wingAngle);
-
-  return (
-    <g>
-      <line
-        x1={tx}
-        y1={ty}
-        x2={px}
-        y2={py}
-        stroke={color}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-      />
-      <polygon
-        points={`${px},${py} ${a1x},${a1y} ${a2x},${a2y}`}
-        fill={color}
-        stroke={color}
-        strokeWidth={0.5}
-        strokeLinejoin="round"
-      />
-      {/* Codetta */}
-      <line
-        x1={tx}
-        y1={ty}
-        x2={tx - Math.sin(rad) * 3}
-        y2={ty + Math.cos(rad) * 3}
-        stroke={color}
-        strokeWidth={1.2}
-        strokeLinecap="round"
-      />
-    </g>
-  );
-}
-
-// ─── Parapendio stilizzato ───
-function ParagliderIcon({ x, y }: { x: number; y: number }) {
-  return (
-    <g transform={`translate(${x},${y})`}>
-      <path
-        d="M -10 -4 Q 0 -12 10 -4"
-        fill="none"
-        stroke="#a855f7"
-        strokeWidth={2}
-        strokeLinecap="round"
-      />
-      <path
-        d="M -8 -3 Q 0 -8 8 -3"
-        fill="none"
-        stroke="#c084fc"
-        strokeWidth={1}
-        strokeLinecap="round"
-      />
-      <line x1="-7" y1="-3" x2="0" y2="5" stroke="#7e22ce" strokeWidth={0.8} />
-      <line x1="7" y1="-3" x2="0" y2="5" stroke="#7e22ce" strokeWidth={0.8} />
-      <circle cx="0" cy="5" r="2" fill="#fff" stroke="#7e22ce" strokeWidth={1} />
-    </g>
-  );
-}
-
-// ─── Nuvola stilizzata ───
-function CloudIcon({ x, y, pct }: { x: number; y: number; pct: number }) {
-  const opacity = Math.min(1, 0.3 + (pct / 100) * 0.7);
-  return (
-    <g transform={`translate(${x},${y})`} opacity={opacity}>
-      <path
-        d="M -12 0 Q -12 -6 -6 -6 Q -4 -10 0 -10 Q 5 -10 7 -6 Q 13 -6 13 0 Q 13 4 9 4 L -9 4 Q -12 4 -12 0 Z"
-        fill="#fff"
-        stroke="#64748b"
-        strokeWidth={1}
-        strokeLinejoin="round"
-      />
-      {pct > 30 && (
-        <text
-          x={0}
-          y={3}
-          textAnchor="middle"
-          fontSize={7}
-          fontWeight={700}
-          fill="#1e293b"
-          fontFamily="ui-monospace, monospace"
-        >
-          {pct}%
-        </text>
-      )}
-    </g>
-  );
-}
-
-// ─── Fiocco di neve ───
-function SnowflakeIcon({ x, y }: { x: number; y: number }) {
-  return (
-    <g transform={`translate(${x},${y})`}>
-      <circle cx="0" cy="0" r="6" fill="#fff" stroke="#0284c7" strokeWidth={1.3} />
-      <g stroke="#0284c7" strokeWidth={1} strokeLinecap="round" fill="none">
-        <line x1="0" y1="-3.5" x2="0" y2="3.5" />
-        <line x1="-3.5" y1="0" x2="3.5" y2="0" />
-        <line x1="-2.5" y1="-2.5" x2="2.5" y2="2.5" />
-        <line x1="-2.5" y1="2.5" x2="2.5" y2="-2.5" />
-      </g>
-    </g>
-  );
-}
-
-// ─── Smooth curve ───
-function smoothPath(pts: { x: number; y: number }[]): string {
-  if (pts.length < 2) return "";
-  let d = `M ${pts[0].x} ${pts[0].y}`;
-  for (let i = 1; i < pts.length; i++) {
-    const prev = pts[i - 1];
-    const cur = pts[i];
-    const cpx = (prev.x + cur.x) / 2;
-    d += ` Q ${prev.x} ${prev.y} ${cpx} ${(prev.y + cur.y) / 2}`;
-    d += ` Q ${cur.x} ${cur.y} ${cur.x} ${cur.y}`;
-  }
-  return d;
-}
-
-// ─── Interpolazione temperatura a quota arbitraria ───
+// ─── Interpolazione temperatura ───
 function getTempAtAlt(
   hourly: any,
   idx: number,
@@ -236,8 +91,7 @@ function getTempAtAlt(
 ): number {
   const pts: { alt: number; temp: number }[] = [];
   HPA_LEVELS.forEach((lv) => {
-    const key = `temperature_${lv.hpa}hPa`;
-    const t = hourly[key]?.[idx];
+    const t = hourly[`temperature_${lv.hpa}hPa`]?.[idx];
     if (t != null && !isNaN(t)) pts.push({ alt: lv.alt, temp: t });
   });
   const t2 = hourly.temperature_2m?.[idx];
@@ -254,6 +108,203 @@ function getTempAtAlt(
     }
   }
   return pts[0].temp;
+}
+
+// ─── Smooth path ───
+function smoothPath(pts: { x: number; y: number }[]): string {
+  if (pts.length < 2) return "";
+  let d = `M ${pts[0].x} ${pts[0].y}`;
+  for (let i = 1; i < pts.length; i++) {
+    const prev = pts[i - 1];
+    const cur = pts[i];
+    const cpx = (prev.x + cur.x) / 2;
+    d += ` Q ${prev.x} ${prev.y} ${cpx} ${(prev.y + cur.y) / 2}`;
+    d += ` Q ${cur.x} ${cur.y} ${cur.x} ${cur.y}`;
+  }
+  return d;
+}
+
+// ─── WindBarb — barbetta meteorologica con piume ───
+// direction = direzione DEL MOTO (già +180 dalla provenienza Open-Meteo)
+function WindBarb({
+  cx,
+  cy,
+  speedKmh,
+  direction,
+}: {
+  cx: number;
+  cy: number;
+  speedKmh: number;
+  direction: number;
+}) {
+  if (speedKmh < 1 || isNaN(speedKmh)) return null;
+
+  const knots = speedKmh * 0.539957;
+  const angle = ((direction - 90) * Math.PI) / 180; // vettore vento (dove SOFFIA)
+  const staffLen = 28;
+
+  const ex = cx + staffLen * Math.cos(angle);
+  const ey = cy + staffLen * Math.sin(angle);
+
+  const color = barbColor(speedKmh);
+
+  // La barbetta punta nella direzione DA CUI SOFFIA il vento
+  // direction è direzione DEL MOTO, quindi "da dove" = direction + 180
+  const fromAngle = angle + Math.PI;
+  const featherAngle = fromAngle + (100 * Math.PI) / 180;
+
+  const elements: React.ReactNode[] = [];
+  let rem = Math.round(knots / 5) * 5;
+  let pos = 1.0;
+
+  while (rem >= 50 && pos >= 0.25) {
+    const bx = cx + pos * (ex - cx);
+    const by = cy + pos * (ey - cy);
+    elements.push(
+      <polygon
+        key={`p50-${cx}-${cy}-${pos}`}
+        points={`${bx},${by} ${bx + 13 * Math.cos(featherAngle)},${by + 13 * Math.sin(featherAngle)} ${bx + 6.5 * Math.cos(fromAngle)},${by + 6.5 * Math.sin(fromAngle)}`}
+        fill={color}
+        stroke={color}
+        strokeWidth={0.5}
+      />
+    );
+    rem -= 50;
+    pos -= 0.25;
+  }
+
+  while (rem >= 10 && pos >= 0.15) {
+    const bx = cx + pos * (ex - cx);
+    const by = cy + pos * (ey - cy);
+    elements.push(
+      <line
+        key={`l10-${cx}-${cy}-${pos}`}
+        x1={bx}
+        y1={by}
+        x2={bx + 12 * Math.cos(featherAngle)}
+        y2={by + 12 * Math.sin(featherAngle)}
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    );
+    rem -= 10;
+    pos -= 0.18;
+  }
+
+  if (rem >= 5 && pos >= 0.15) {
+    const bx = cx + pos * (ex - cx);
+    const by = cy + pos * (ey - cy);
+    elements.push(
+      <line
+        key={`l5-${cx}-${cy}`}
+        x1={bx}
+        y1={by}
+        x2={bx + 6.5 * Math.cos(featherAngle)}
+        y2={by + 6.5 * Math.sin(featherAngle)}
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    );
+  }
+
+  return (
+    <g key={`wb-${cx.toFixed(0)}-${cy.toFixed(0)}`}>
+      <line
+        x1={cx}
+        y1={cy}
+        x2={ex}
+        y2={ey}
+        stroke={color}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+      {elements}
+    </g>
+  );
+}
+
+// ─── Parapendio stilizzato ───
+function ParagliderIcon({ x, y }: { x: number; y: number }) {
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <path
+        d="M -12 -5 Q 0 -16 12 -5"
+        fill="none"
+        stroke="#a855f7"
+        strokeWidth={2.5}
+        strokeLinecap="round"
+      />
+      <path
+        d="M -9 -4 Q 0 -11 9 -4"
+        fill="none"
+        stroke="#c084fc"
+        strokeWidth={1.2}
+        strokeLinecap="round"
+      />
+      <line x1="-8" y1="-4" x2="0" y2="5" stroke="#7e22ce" strokeWidth={1} />
+      <line x1="8" y1="-4" x2="0" y2="5" stroke="#7e22ce" strokeWidth={1} />
+      <circle cx="0" cy="5" r="2.5" fill="#fff" stroke="#7e22ce" strokeWidth={1.2} />
+    </g>
+  );
+}
+
+// ─── Nuvola stilizzata ───
+function CloudIcon({ x, y, pct }: { x: number; y: number; pct: number }) {
+  const opacity = Math.min(1, 0.25 + (pct / 100) * 0.75);
+  return (
+    <g transform={`translate(${x},${y})`} opacity={opacity}>
+      <path
+        d="M -14 0 Q -14 -7 -7 -7 Q -4 -12 0 -12 Q 6 -12 8 -7 Q 15 -7 15 0 Q 15 5 10 5 L -10 5 Q -14 5 -14 0 Z"
+        fill="#fff"
+        stroke="#64748b"
+        strokeWidth={1.2}
+        strokeLinejoin="round"
+      />
+      {pct > 30 && (
+        <text
+          x={0}
+          y={4}
+          textAnchor="middle"
+          fontSize={7.5}
+          fontWeight={700}
+          fill="#1e293b"
+          fontFamily="ui-monospace, monospace"
+        >
+          {pct}%
+        </text>
+      )}
+    </g>
+  );
+}
+
+// ─── Fiocco di neve ───
+function SnowflakeIcon({ x, y }: { x: number; y: number }) {
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <circle cx="0" cy="0" r="7" fill="#fff" stroke="#0284c7" strokeWidth={1.4} />
+      <g stroke="#0284c7" strokeWidth={1.1} strokeLinecap="round" fill="none">
+        <line x1="0" y1="-4" x2="0" y2="4" />
+        <line x1="-4" y1="0" x2="4" y2="0" />
+        <line x1="-3" y1="-3" x2="3" y2="3" />
+        <line x1="-3" y1="3" x2="3" y2="-3" />
+      </g>
+    </g>
+  );
+}
+
+// ─── Cross-hatch pattern ───
+function CrossHatchPattern({
+  x, y, w, h,
+}: {
+  x: number; y: number; w: number; h: number;
+}) {
+  return (
+    <g>
+      <rect x={x} y={y} width={w} height={h} fill="url(#crossHatch)" />
+    </g>
+  );
 }
 
 interface HourRow {
@@ -337,10 +388,9 @@ export default function WindgramChart({
       const rad = h.shortwave_radiation[idx] ?? 0;
 
       const cloudBase = altitude + 125 * Math.max(1, t - td);
-      const thermalTop = cloudBase + Math.min(1500, cape * 0.8);
+      const thermalTop = cloudBase + Math.min(1800, cape * 0.9);
       const thermal = Math.min(3.5, Math.max(0, Math.sqrt(Math.max(0, cape)) * 0.12 + (thermalTop - cloudBase) / 5000));
 
-      // deltaT/100m approssimato
       const t850 = h.temperature_850hPa?.[idx];
       const t700 = h.temperature_700hPa?.[idx];
       let deltaT = 0.65;
@@ -391,20 +441,26 @@ export default function WindgramChart({
     () =>
       rows.map((r) => {
         const hf = 1 - Math.abs(r.hour - 13) / 5;
-        const pbl = 1400 + r.thermal * 600 * Math.max(0, hf);
-        return { x: xToPx(r.hour), y: yToPx(Math.min(Y_MAX_ALT, Math.max(1200, pbl))) };
+        const pbl = 1300 + r.thermal * 700 * Math.max(0, hf);
+        return { x: xToPx(r.hour), y: yToPx(Math.min(Y_MAX_ALT, Math.max(1100, pbl))) };
       }),
     [rows]
   );
 
-  // Nubi
+  // Curve base cumuli (dotted, leggermente sopra il thermal top)
+  const cloudBasePts = useMemo(
+    () => rows.map((r) => ({ x: xToPx(r.hour), y: yToPx(r.cloudBase) })),
+    [rows]
+  );
+
+  // Nuvole
   const cloudList = useMemo(
     () =>
       rows
-        .filter((r) => r.cloudPct > 25)
+        .filter((r) => r.cloudPct > 20)
         .map((r) => ({
           x: xToPx(r.hour),
-          y: yToPx(r.thermalTop + 300),
+          y: yToPx(r.thermalTop + 350),
           pct: r.cloudPct,
         })),
     [rows]
@@ -418,32 +474,72 @@ export default function WindgramChart({
     return { giorno: giorni[d.getDay()], data: d.getDate(), mese: mesi[d.getMonth()] };
   }, [targetDate]);
 
-  // Instabilità heatmap: rettangoli per ogni cella (ora × quota)
+  // Instabilità smooth grid: per ogni cella (ora × quota) calcola ΔT/100m
+  // Renderizzato come rettangoli piccoli ma continui → effetto contorno
   const instabilityCells = useMemo(() => {
     if (!data?.hourly?.time || rows.length === 0) return [];
     const h = data.hourly;
     const cells: { x: number; y: number; w: number; h: number; color: string; opacity: number }[] = [];
     const colW = PLOT_W / DISPLAY_HOURS.length;
-    const rowH = PLOT_H / 20;
+    const rowH = PLOT_H / 28;
 
     rows.forEach((row, ci) => {
-      for (let ri = 0; ri < 20; ri++) {
-        const alt = Y_MAX_ALT - (ri + 0.5) * (Y_MAX_ALT - Y_MIN_ALT) / 20;
-        const tBelow = getTempAtAlt(h, row.idx, alt - 150, altitude);
-        const tAbove = getTempAtAlt(h, row.idx, alt + 150, altitude);
-        const dt = ((tAbove - tBelow) / 300) * 100;
-        const color = instabilityColor(dt);
+      for (let ri = 0; ri < 28; ri++) {
+        const alt = Y_MAX_ALT - (ri + 0.5) * (Y_MAX_ALT - Y_MIN_ALT) / 28;
+        const tBelow = getTempAtAlt(h, row.idx, alt - 120, altitude);
+        const tAbove = getTempAtAlt(h, row.idx, alt + 120, altitude);
+        const dt = ((tAbove - tBelow) / 240) * 100;
+        const color = dtColor(dt);
         cells.push({
           x: MARGIN.left + ci * colW,
           y: MARGIN.top + ri * rowH,
-          w: colW + 0.5,
-          h: rowH + 0.5,
+          w: colW + 0.3,
+          h: rowH + 0.3,
           color,
-          opacity: 0.82,
+          opacity: 0.88,
         });
       }
     });
     return cells;
+  }, [data, rows, altitude]);
+
+  // Zona termica instabile (onda rossa/arancio sotto thermalTop)
+  const unstableZonePath = useMemo(() => {
+    if (rows.length === 0) return "";
+    const pts: { x: number; y: number }[] = [];
+    rows.forEach((r) => {
+      pts.push({ x: xToPx(r.hour), y: yToPx(r.thermalTop) });
+    });
+    const lastX = xToPx(rows[rows.length - 1].hour);
+    const firstX = xToPx(rows[0].hour);
+    const baseY = MARGIN.top + PLOT_H;
+    return smoothPath(pts) + ` L ${lastX} ${baseY} L ${firstX} ${baseY} Z`;
+  }, [rows]);
+
+  // Patern a croce per aree di alta instabilità (upper right)
+  const crossHatchAreas = useMemo(() => {
+    // Zone con deltaT > 0.8 e alta quota
+    const areas: { x: number; y: number; w: number; h: number }[] = [];
+    if (!data?.hourly?.time || rows.length === 0) return areas;
+    const h = data.hourly;
+    rows.forEach((row, ci) => {
+      // Cerca aree in quota con alta instabilità
+      for (let ri = 0; ri < 8; ri++) {
+        const alt = Y_MAX_ALT - (ri + 0.5) * (Y_MAX_ALT - Y_MIN_ALT) / 28;
+        const tBelow = getTempAtAlt(h, row.idx, alt - 120, altitude);
+        const tAbove = getTempAtAlt(h, row.idx, alt + 120, altitude);
+        const dt = ((tAbove - tBelow) / 240) * 100;
+        if (dt > 0.9 && alt > 3500) {
+          areas.push({
+            x: MARGIN.left + ci * (PLOT_W / DISPLAY_HOURS.length),
+            y: MARGIN.top + ri * (PLOT_H / 28),
+            w: PLOT_W / DISPLAY_HOURS.length + 0.5,
+            h: (PLOT_H / 28) * 2,
+          });
+        }
+      }
+    });
+    return areas;
   }, [data, rows, altitude]);
 
   if (loading) {
@@ -472,23 +568,38 @@ export default function WindgramChart({
       <div className="overflow-x-auto">
         <svg
           viewBox={`0 0 ${VB_W} ${VB_H}`}
-          className="w-full min-w-[900px] h-auto block"
+          className="w-full min-w-[920px] h-auto block"
           style={{ fontFamily: "Inter, system-ui, sans-serif" }}
         >
           <defs>
             <clipPath id="wc-plotClip">
               <rect x={MARGIN.left} y={MARGIN.top} width={PLOT_W} height={PLOT_H} />
             </clipPath>
+            {/* Pattern cross-hatch */}
+            <pattern id="crossHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="6" stroke="#1e293b" strokeWidth="1" opacity="0.5" />
+              <line x1="0" y1="0" x2="6" y2="0" stroke="#1e293b" strokeWidth="1" opacity="0.5" />
+            </pattern>
           </defs>
 
-          {/* ─── SFONDO INSTABILITÀ ─── */}
+          {/* ═══ SFONDO ISTABILITÀ (smooth grid) ═══ */}
           <g clipPath="url(#wc-plotClip)">
             {instabilityCells.map((c, i) => (
               <rect key={i} x={c.x} y={c.y} width={c.w} height={c.h} fill={c.color} opacity={c.opacity} />
             ))}
+
+            {/* Zona termica instabile rossa/arancio — onde sinusoidali dal suolo */}
+            {unstableZonePath && (
+              <path d={unstableZonePath} fill="#f97316" opacity={0.55} />
+            )}
+
+            {/* Zone cross-hatch alta instabilità */}
+            {crossHatchAreas.map((a, i) => (
+              <rect key={`ch-${i}`} x={a.x} y={a.y} width={a.w} height={a.h} fill="url(#crossHatch)" opacity={0.6} />
+            ))}
           </g>
 
-          {/* ─── BORDO PLOT ─── */}
+          {/* ═══ BORDO PLOT ═══ */}
           <rect
             x={MARGIN.left}
             y={MARGIN.top}
@@ -499,7 +610,7 @@ export default function WindgramChart({
             strokeWidth={1.3}
           />
 
-          {/* ─── LINEE QUOTE hPa ─── */}
+          {/* ═══ LINEE QUOTE hPa ═══ */}
           {HPA_LEVELS.map((lv) => (
             <g key={lv.hpa}>
               <line
@@ -508,15 +619,15 @@ export default function WindgramChart({
                 x2={MARGIN.left + PLOT_W}
                 y2={yToPx(lv.alt)}
                 stroke="#0f172a"
-                strokeWidth={0.6}
+                strokeWidth={0.7}
                 strokeDasharray="4 3"
-                opacity={0.55}
+                opacity={0.6}
               />
               <text
                 x={MARGIN.left - 6}
                 y={yToPx(lv.alt) + 4}
                 textAnchor="end"
-                fontSize={10.5}
+                fontSize={11}
                 fontWeight={800}
                 fill="#0f172a"
                 fontFamily="ui-monospace, monospace"
@@ -537,19 +648,19 @@ export default function WindgramChart({
             </g>
           ))}
 
-          {/* ─── ASSE Y DESTRO (quote 500m) ─── */}
-          {Array.from({ length: 11 }, (_, i) => 1000 + i * 500).map((alt) => (
+          {/* ═══ ASSE Y DESTRO (quote 500m) ═══ */}
+          {Array.from({ length: 12 }, (_, i) => 800 + i * 500).map((alt) => (
             <g key={`ay-${alt}`}>
               <line
                 x1={MARGIN.left + PLOT_W}
                 y1={yToPx(alt)}
-                x2={MARGIN.left + PLOT_W + 4}
+                x2={MARGIN.left + PLOT_W + 5}
                 y2={yToPx(alt)}
                 stroke="#0f172a"
-                strokeWidth={0.8}
+                strokeWidth={1}
               />
               <text
-                x={MARGIN.left + PLOT_W + 8}
+                x={MARGIN.left + PLOT_W + 9}
                 y={yToPx(alt) + 4}
                 fontSize={9}
                 fontWeight={600}
@@ -561,7 +672,7 @@ export default function WindgramChart({
             </g>
           ))}
 
-          {/* ─── ASSE X ORE ─── */}
+          {/* ═══ ASSE X ORE ═══ */}
           {DISPLAY_HOURS.map((hr) => (
             <g key={`x-${hr}`}>
               <line
@@ -574,7 +685,7 @@ export default function WindgramChart({
               />
               <text
                 x={xToPx(hr)}
-                y={MARGIN.top + PLOT_H + 20}
+                y={MARGIN.top + PLOT_H + 22}
                 textAnchor="middle"
                 fontSize={11}
                 fontWeight={800}
@@ -586,10 +697,10 @@ export default function WindgramChart({
             </g>
           ))}
 
-          {/* ─── HEADER: ascendenze + sole ─── */}
+          {/* ═══ HEADER: ascendenze + sole ═══ */}
           <g>
             <text x={MARGIN.left - 34} y={MARGIN.top - 54} fontSize={9.5} fontWeight={600} fill="#475569" textAnchor="end">
-              ascendenze (m/s)
+              valore medio ascendenze (m/s)
             </text>
             {rows.map((r) => (
               <g key={`h-${r.hour}`}>
@@ -597,7 +708,7 @@ export default function WindgramChart({
                   x={xToPx(r.hour)}
                   y={MARGIN.top - 34}
                   textAnchor="middle"
-                  fontSize={15}
+                  fontSize={16}
                   fontWeight={800}
                   fill={r.thermal >= 1.6 ? "#dc2626" : "#0f172a"}
                   fontFamily="ui-monospace, monospace"
@@ -608,7 +719,7 @@ export default function WindgramChart({
                   x={xToPx(r.hour)}
                   y={MARGIN.top - 14}
                   textAnchor="middle"
-                  fontSize={11}
+                  fontSize={12}
                   fontWeight={700}
                   fill={r.sunPct >= 90 ? "#94a3b8" : "#b45309"}
                   fontFamily="ui-monospace, monospace"
@@ -622,7 +733,7 @@ export default function WindgramChart({
             </text>
           </g>
 
-          {/* ─── TITOLO ─── */}
+          {/* ═══ TITOLO ═══ */}
           <text x={VB_W / 2} y={26} textAnchor="middle" fontSize={22} fontWeight={900} fill="#0f172a" letterSpacing={-0.3}>
             {siteName.toLowerCase()} · {dateInfo.giorno} {dateInfo.data} {dateInfo.mese}
           </text>
@@ -638,16 +749,16 @@ export default function WindgramChart({
             plotted {targetDate} 00:00 UTC · model ground {altitude + 10} m · SRTM {altitude} m
           </text>
 
-          {/* ─── FRECCE VENTO ─── */}
+          {/* ═══ FRECCE VENTO (barbette grandi) ═══ */}
           <g clipPath="url(#wc-plotClip)">
             {rows.map((r) => (
               <g key={`wb-${r.hour}`}>
                 {r.wind.map((w, i) => (
-                  <WindArrow
+                  <WindBarb
                     key={`wb-${r.hour}-${i}`}
                     cx={xToPx(r.hour)}
                     cy={yToPx(w.alt)}
-                    speed={w.speed}
+                    speedKmh={w.speed}
                     direction={w.dir}
                   />
                 ))}
@@ -655,12 +766,12 @@ export default function WindgramChart({
             ))}
           </g>
 
-          {/* ─── CURVA TOP TERMICO (viola) ─── */}
+          {/* ═══ CURVA TOP TERMICO (viola) ═══ */}
           <path
             d={smoothPath(thermalTopPts)}
             fill="none"
-            stroke="#a855f7"
-            strokeWidth={2.8}
+            stroke="#9333ea"
+            strokeWidth={3}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
@@ -668,7 +779,17 @@ export default function WindgramChart({
             <ParagliderIcon key={`pg-${i}`} x={p.x} y={p.y - 4} />
           ))}
 
-          {/* ─── PBL tratteggiato ─── */}
+          {/* ═══ CURVA BASE CUMULI (viola tratteggiata) ═══ */}
+          <path
+            d={smoothPath(cloudBasePts)}
+            fill="none"
+            stroke="#a855f7"
+            strokeWidth={1.8}
+            strokeDasharray="3 3"
+            opacity={0.7}
+          />
+
+          {/* ═══ PBL tratteggiato nero ═══ */}
           <path
             d={smoothPath(pblPts)}
             fill="none"
@@ -678,7 +799,7 @@ export default function WindgramChart({
             strokeLinecap="round"
           />
 
-          {/* ─── ZERO TERMICO ─── */}
+          {/* ═══ ZERO TERMICO ═══ */}
           <path
             d={smoothPath(freezingPts)}
             fill="none"
@@ -688,43 +809,60 @@ export default function WindgramChart({
             strokeLinecap="round"
           />
           {freezingPts.map((p, i) => (
-            <SnowflakeIcon key={`flake-${i}`} x={p.x} y={p.y - 14} />
+            <SnowflakeIcon key={`flake-${i}`} x={p.x} y={p.y - 15} />
           ))}
 
           {/* Badge zero termico */}
           {freezingPts[0] && (
-            <g transform={`translate(${MARGIN.left + PLOT_W - 90}, ${MARGIN.top + 6})`}>
-              <rect x={0} y={0} width={86} height={32} rx={5} fill="#fff" stroke="#0284c7" strokeWidth={1.4} />
-              <text x={43} y={14} textAnchor="middle" fontSize={11} fontWeight={800} fill="#0284c7" fontFamily="ui-monospace, monospace">
+            <g transform={`translate(${MARGIN.left + PLOT_W - 95}, ${MARGIN.top + 6})`}>
+              <rect x={0} y={0} width={90} height={32} rx={5} fill="#fff" stroke="#0284c7" strokeWidth={1.4} />
+              <text x={45} y={14} textAnchor="middle" fontSize={11} fontWeight={800} fill="#0284c7" fontFamily="ui-monospace, monospace">
                 0 °C
               </text>
-              <text x={43} y={27} textAnchor="middle" fontSize={11} fontWeight={800} fill="#0284c7" fontFamily="ui-monospace, monospace">
+              <text x={45} y={27} textAnchor="middle" fontSize={11} fontWeight={800} fill="#0284c7" fontFamily="ui-monospace, monospace">
                 {Math.round(pxToAlt(freezingPts[0].y))} m
               </text>
             </g>
           )}
 
-          {/* ─── NUVOLE ─── */}
+          {/* ═══ NUVOLE ═══ */}
           {cloudList.map((c, i) => (
             <CloudIcon key={`cl-${i}`} x={c.x} y={c.y} pct={c.pct} />
           ))}
 
-          {/* ─── QUOTA DECOLLO ─── */}
+          {/* ═══ QUOTA DECOLLO ═══ */}
           <line
             x1={MARGIN.left}
             y1={yToPx(altitude)}
             x2={MARGIN.left + PLOT_W}
             y2={yToPx(altitude)}
             stroke="#10b981"
-            strokeWidth={1.5}
+            strokeWidth={1.8}
             opacity={0.6}
           />
-          <text x={MARGIN.left + 4} y={yToPx(altitude) - 5} fontSize={10} fontWeight={800} fill="#10b981">
+          <text x={MARGIN.left + 5} y={yToPx(altitude) - 5} fontSize={10} fontWeight={800} fill="#10b981">
             ▲ {altitude}m
           </text>
 
-          {/* ─── SCALA ΔT/100m ─── */}
-          <g transform={`translate(${MARGIN.left}, ${VB_H - 40})`}>
+          {/* ═══ ETICHETTE QUOTA + RATEO sotto curva termica ═══ */}
+          {rows.map((r, i) => {
+            const x = xToPx(r.hour);
+            const badgeY = yToPx(r.thermalTop) + 16;
+            return (
+              <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
+                <rect x={-32} y={0} width={64} height={28} rx={5} fill="#fff" stroke="#ea580c" strokeWidth={1.5} />
+                <text x={0} y={12} textAnchor="middle" fontSize={10.5} fontWeight={800} fill="#0f172a" fontFamily="ui-monospace, monospace">
+                  {r.cloudBase} m
+                </text>
+                <text x={0} y={24} textAnchor="middle" fontSize={10.5} fontWeight={800} fill="#b91c1c" fontFamily="ui-monospace, monospace">
+                  ↑ {r.thermal.toFixed(1)} m/s
+                </text>
+              </g>
+            );
+          })}
+
+          {/* ═══ SCALA ΔT/100m ═══ */}
+          <g transform={`translate(${MARGIN.left}, ${VB_H - 42})`}>
             <text x={-28} y={12} textAnchor="end" fontSize={10} fontWeight={700} fill="#475569">
               Stabile ←
             </text>
@@ -766,7 +904,7 @@ export default function WindgramChart({
             })()}
           </g>
 
-          {/* ─── FONTE ─── */}
+          {/* ═══ FONTE ═══ */}
           <text
             x={VB_W / 2}
             y={VB_H - 6}
