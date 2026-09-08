@@ -24,10 +24,10 @@ const FOOTER_H = 52;
 const PLOT_TOP = HEADER_H;
 const PLOT_H = 600;
 const TOTAL_H = HEADER_H + PLOT_H + FOOTER_H;
-const ML = 80;   // margin left
-const MR = 82;   // margin right
-const GW = CW - ML - MR;   // graph width
-const GH = PLOT_H;          // graph height
+const ML = 80;
+const MR = 82;
+const GW = CW - ML - MR;
+const GH = PLOT_H;
 
 const ALT_MIN = 1200;
 const ALT_MAX = 6000;
@@ -104,7 +104,6 @@ function xFromIdx(i: number): number {
   return ML + (i / (NUM_HOURS - 1)) * GW;
 }
 
-// Catmull-Rom → cubic Bézier SVG path string
 function toBezier(pts: { x: number; y: number }[]): string {
   if (pts.length < 2) return "";
   let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
@@ -129,13 +128,13 @@ function strokePath(ctx: CanvasRenderingContext2D, pathStr: string) {
 }
 
 // ─────────────────────────────────────────────────────
-// Wind barb
+// Wind barb (meteorological convention)
 // ─────────────────────────────────────────────────────
 function drawWindBarb(ctx: CanvasRenderingContext2D, cx: number, cy: number, speed: number, dir: number) {
   if (speed == null || isNaN(speed) || speed < 1) return;
   const knots = speed * 0.54;
   const rad = ((dir - 90) * Math.PI) / 180;
-  const staffLen = 30;
+  const staffLen = 28;
   const ex = cx + staffLen * Math.cos(rad);
   const ey = cy + staffLen * Math.sin(rad);
   const featherRad = rad + Math.PI * 0.63;
@@ -145,15 +144,17 @@ function drawWindBarb(ctx: CanvasRenderingContext2D, cx: number, cy: number, spe
   ctx.fillStyle = col;
   ctx.lineWidth = 2;
   ctx.lineCap = "round";
+  // Staff
   ctx.beginPath();
   ctx.moveTo(cx, cy);
   ctx.lineTo(ex, ey);
   ctx.stroke();
+  // Feathers
   let rem = Math.round(knots / 5) * 5;
   let pos = 1.0;
   while (rem >= 50 && pos >= 0.22) {
     const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
-    const t = 14;
+    const t = 13;
     ctx.beginPath();
     ctx.moveTo(bx, by);
     ctx.lineTo(bx + t * fc, by + t * fs);
@@ -164,7 +165,7 @@ function drawWindBarb(ctx: CanvasRenderingContext2D, cx: number, cy: number, spe
   }
   while (rem >= 10 && pos >= 0.16) {
     const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
-    const t = 13;
+    const t = 12;
     ctx.beginPath();
     ctx.moveTo(bx, by);
     ctx.lineTo(bx + t * fc, by + t * fs);
@@ -173,7 +174,7 @@ function drawWindBarb(ctx: CanvasRenderingContext2D, cx: number, cy: number, spe
   }
   if (rem >= 5 && pos >= 0.12) {
     const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
-    const t = 7;
+    const t = 6;
     ctx.beginPath();
     ctx.moveTo(bx, by);
     ctx.lineTo(bx + t * fc, by + t * fs);
@@ -182,38 +183,41 @@ function drawWindBarb(ctx: CanvasRenderingContext2D, cx: number, cy: number, spe
 }
 
 // ─────────────────────────────────────────────────────
-// Paraglider icon
+// Paraglider icon — drawn ON the thermal top curve
 // ─────────────────────────────────────────────────────
 function drawParaglider(ctx: CanvasRenderingContext2D, x: number, y: number) {
   ctx.save();
   ctx.translate(x, y);
+  // Canopy (larger, more prominent)
   ctx.fillStyle = "#f3e8ff";
   ctx.strokeStyle = "#7e22ce";
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(-16, -5);
-  ctx.quadraticCurveTo(-10, -20, 0, -20);
-  ctx.quadraticCurveTo(10, -20, 16, -5);
-  ctx.quadraticCurveTo(8, -14, 0, -14);
-  ctx.quadraticCurveTo(-8, -14, -16, -5);
+  ctx.moveTo(-18, -6);
+  ctx.quadraticCurveTo(-12, -22, 0, -22);
+  ctx.quadraticCurveTo(12, -22, 18, -6);
+  ctx.quadraticCurveTo(9, -15, 0, -15);
+  ctx.quadraticCurveTo(-9, -15, -18, -6);
   ctx.closePath();
   ctx.fill(); ctx.stroke();
-  ctx.lineWidth = 1.2;
+  // Lines
+  ctx.lineWidth = 1.3;
   ctx.beginPath();
-  ctx.moveTo(-12, -5); ctx.lineTo(0, 8);
-  ctx.moveTo(12, -5); ctx.lineTo(0, 8);
+  ctx.moveTo(-14, -6); ctx.lineTo(0, 9);
+  ctx.moveTo(14, -6); ctx.lineTo(0, 9);
   ctx.stroke();
+  // Pilot circle
   ctx.fillStyle = "#fff";
   ctx.strokeStyle = "#7e22ce";
   ctx.lineWidth = 1.8;
   ctx.beginPath();
-  ctx.arc(0, 8, 4.5, 0, Math.PI * 2);
+  ctx.arc(0, 9, 5, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
   ctx.restore();
 }
 
 // ─────────────────────────────────────────────────────
-// Snowflake icon
+// Snowflake icon — ON the 0°C isotherm
 // ─────────────────────────────────────────────────────
 function drawSnowflake(ctx: CanvasRenderingContext2D, x: number, y: number) {
   ctx.save();
@@ -238,49 +242,74 @@ function drawSnowflake(ctx: CanvasRenderingContext2D, x: number, y: number) {
 }
 
 // ─────────────────────────────────────────────────────
-// Cloud badge — drawn ON the thermal top curve
-// Purple arc on top, text below.
-// Positioned at (x, yThermalTop) with arc above and text below.
+// Cloud badge — positioned at thermal-top altitude
+// Purple pill shape: arc on top, flat bottom with text
 // ─────────────────────────────────────────────────────
 function drawCloudBadge(ctx: CanvasRenderingContext2D, x: number, y: number, alt: number, rate: number) {
-  // y = yThermalTop (on the purple curve)
-  // Draw arc above the curve, text below
-  const arcR = 14;
-  const textColorY = 14;
+  // y is the thermal-top Y position (on the purple curve)
+  // The badge sits with its TOP edge at y, extending downward
+  const bw = 70, bh = 36;
+  const bx = x - bw / 2;
+  const by = y - bh; // badge extends upward from curve
 
-  ctx.save();
-  ctx.translate(x, y);
-
-  // Purple arc (top half of ellipse)
-  ctx.fillStyle = "#e0e7ff";
+  // White background pill
+  ctx.fillStyle = "#ffffff";
   ctx.strokeStyle = "#4338ca";
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.arc(0, 0, arcR, Math.PI, 0);
-  ctx.lineTo(arcR, 0);
-  ctx.lineTo(-arcR, 0);
+  ctx.roundRect(bx, by, bw, bh, 6);
+  ctx.fill(); ctx.stroke();
+
+  // Purple arc on top
+  ctx.fillStyle = "#e0e7ff";
+  ctx.beginPath();
+  ctx.arc(x, by + 2, 14, Math.PI, 0);
+  ctx.lineTo(x + 14, by + 2);
+  ctx.lineTo(x - 14, by + 2);
   ctx.closePath();
   ctx.fill();
+  ctx.strokeStyle = "#4338ca";
+  ctx.lineWidth = 1.2;
   ctx.stroke();
 
-  // Divider line
+  // Divider
   ctx.beginPath();
-  ctx.moveTo(-arcR, 0);
-  ctx.lineTo(arcR, 0);
+  ctx.moveTo(x - 14, by + 2);
+  ctx.lineTo(x + 14, by + 2);
+  ctx.strokeStyle = "#4338ca";
+  ctx.lineWidth = 1;
   ctx.stroke();
 
-  // Altitude text
+  // Text: altitude
   ctx.fillStyle = "#1e1b4b";
   ctx.font = "bold 10px monospace";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(`${alt} m`, 0, textColorY);
+  ctx.fillText(`${alt} m`, x, by + 16);
 
-  // Lift rate text
+  // Text: lift rate
   ctx.fillStyle = "#4338ca";
-  ctx.fillText(`↑ ${rate.toFixed(1)} m/s`, 0, textColorY + 12);
+  ctx.font = "bold 10px monospace";
+  ctx.fillText(`↑ ${rate.toFixed(1)} m/s`, x, by + 28);
+}
 
-  ctx.restore();
+// ─────────────────────────────────────────────────────
+// Precipitation label — small blue box near top
+// ─────────────────────────────────────────────────────
+function drawPrecipLabel(ctx: CanvasRenderingContext2D, x: number, y: number, amount: number) {
+  const tw = ctx.measureText(`${amount.toFixed(2)} mm`).width;
+  const bw = tw + 10, bh = 16;
+  ctx.fillStyle = "#dbeafe";
+  ctx.strokeStyle = "#3b82f6";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(x - bw / 2, y - bh / 2, bw, bh, 3);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#1e40af";
+  ctx.font = "bold 9px monospace";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(`${amount.toFixed(2)} mm`, x, y);
 }
 
 // ─────────────────────────────────────────────────────
@@ -477,28 +506,35 @@ export default function ProfessionalWindgram({
     [columns, altitude]
   );
 
-  // Cloud badges positioned EXACTLY on the thermal top curve
+  // Cloud badges ON the thermal top curve (with offset for readability)
   const cloudBadges = useMemo(
     () => columns.map((c) => ({
       x: c.x,
-      y: c.yThermalTop,         // ← on the curve, not offset
+      y: c.yThermalTop,
       alt: c.cloudBase,
       rate: c.rateo,
     })),
     [columns]
   );
 
+  // Precipitation labels (at top of plot area)
+  const precipLabels = useMemo(
+    () => columns.filter((c) => c.precip > 0.05).map((c) => ({
+      x: c.x,
+      y: altToY(ALT_MAX - 50),
+      amount: c.precip,
+    })),
+    [columns]
+  );
+
   // ── Interpolate lapse rate at arbitrary (colFrac, alt) ──
   function interpLapseAt(colFrac: number, alt: number): number {
-    // colFrac: 0 = first hour, 1 = last hour
     const ci0 = Math.floor(colFrac * (columns.length - 1));
     const ci1 = Math.min(ci0 + 1, columns.length - 1);
     const cf = colFrac * (columns.length - 1) - ci0;
-
     const c0 = columns[ci0]!;
     const c1 = columns[ci1]!;
 
-    // Find lapse rate at this altitude in each column via interpolation
     function lapseInCol(col: typeof c0, a: number): number {
       const lr = col.lapseRates;
       if (lr.length < 2) return col.surfaceDeltaT;
@@ -581,49 +617,51 @@ export default function ProfessionalWindgram({
 
     // ══════════════════════════════════════════════════
     // PIXEL-ACCURATE HEATMAP via ImageData
-    // Sample lapse rate at each pixel, map to ΔT colour
+    // Each pixel gets its ΔT from lapse-rate interpolation
     // ══════════════════════════════════════════════════
     if (columns.length > 0) {
       const imgData = ctx.createImageData(GW, GH);
       const d = imgData.data;
-
       for (let py = 0; py < GH; py++) {
         const alt = ALT_MIN + (1 - py / GH) * (ALT_MAX - ALT_MIN);
         for (let px = 0; px < GW; px++) {
-          const colFrac = px / GW; // 0..1 across the plot
+          const colFrac = px / GW;
           const dt = interpLapseAt(colFrac, alt);
           const color = getDTColor(dt);
           const [r, g, b] = hexToRgb(color);
-
           const idx = (py * GW + px) * 4;
           d[idx] = r;
           d[idx + 1] = g;
           d[idx + 2] = b;
-          d[idx + 3] = 220; // slight transparency for blending
+          d[idx + 3] = 215;
         }
       }
       ctx.putImageData(imgData, plotLeft, PLOT_TOP);
     }
 
     // ══════════════════════════════════════════════════
-    // CROSS-HATCH — only below thermal boundary in unstable columns
+    // CROSS-HATCH — rectangular zones below thermal boundary
+    // Vertical strips per unstable column
     // ══════════════════════════════════════════════════
     ctx.save();
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.11)";
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.13)";
     ctx.lineWidth = 0.85;
-    const hatchSp = 11;
+    const hatchSp = 10;
     for (let ci = 0; ci < columns.length; ci++) {
       const col = columns[ci];
       if (col.surfaceDeltaT < 0.55) continue;
       const bY = altToY(boundaryAlts[ci]);
-      const xL = col.x - xStep / 2;
-      const xR = col.x + xStep / 2;
+      const xL = col.x - xStep / 2 + 1;
+      const xR = col.x + xStep / 2 - 1;
+
+      // Diagonal down-right
       for (let hx = xL - GH; hx < xR + GH; hx += hatchSp) {
         ctx.beginPath();
         ctx.moveTo(hx, bY);
         ctx.lineTo(hx + (plotBottom - bY), plotBottom);
         ctx.stroke();
       }
+      // Diagonal up-right
       for (let hx = xL - GH; hx < xR + GH; hx += hatchSp) {
         ctx.beginPath();
         ctx.moveTo(hx, plotBottom);
@@ -696,7 +734,7 @@ export default function ProfessionalWindgram({
     ctx.strokeRect(plotLeft, PLOT_TOP, GW, GH);
 
     // ══════════════════════════════════════════════════
-    // WIND BARBS
+    // WIND BARBS — at each hour × hPa-level intersection
     // ══════════════════════════════════════════════════
     columns.forEach((col) => {
       col.levelWinds.forEach((lw) => {
@@ -705,7 +743,7 @@ export default function ProfessionalWindgram({
     });
 
     // ══════════════════════════════════════════════════
-    // 0°C ISOTHERM (blue dashed + snowflakes + badge)
+    // 0°C ISOTHERM (blue dashed line + snowflakes + badge)
     // ══════════════════════════════════════════════════
     if (freezePts.length >= 2) {
       ctx.save();
@@ -717,9 +755,8 @@ export default function ProfessionalWindgram({
       ctx.stroke();
       ctx.restore();
 
-      const snowInterval = Math.max(1, Math.floor(freezePts.length / 5));
-      freezePts.forEach((p, i) => {
-        if (i % snowInterval !== 0) return;
+      // Snowflake at each hour
+      freezePts.forEach((p) => {
         drawSnowflake(ctx, p.x, p.y - 16);
       });
     }
@@ -742,7 +779,7 @@ export default function ProfessionalWindgram({
     }
 
     // ══════════════════════════════════════════════════
-    // THERMAL TOP CURVE (purple solid, thickest line)
+    // THERMAL TOP CURVE (purple solid, thickest)
     // ══════════════════════════════════════════════════
     if (thermalTopPts.length >= 2) {
       ctx.strokeStyle = "#7e22ce";
@@ -754,7 +791,7 @@ export default function ProfessionalWindgram({
     }
 
     // ══════════════════════════════════════════════════
-    // THERMAL BOUNDARY (orange sinusoidal wave — glow + main + highlight)
+    // THERMAL BOUNDARY (orange sinusoidal wave)
     // ══════════════════════════════════════════════════
     if (boundaryYPts.length >= 2) {
       ctx.strokeStyle = "#f97316";
@@ -836,22 +873,28 @@ export default function ProfessionalWindgram({
 
     // ══════════════════════════════════════════════════
     // CLOUD BADGES — ON the thermal top curve
-    // Only show where thermal rate is significant (rateo >= 0.6)
+    // Only show for hours with significant thermal activity
     // ══════════════════════════════════════════════════
     cloudBadges.forEach((b) => {
-      // Find the column that matches this badge
       const col = columns.find((c) => Math.abs(c.x - b.x) < 2);
       if (!col || col.rateo < 0.55) return;
       drawCloudBadge(ctx, b.x, b.y, b.alt, b.rate);
     });
 
     // ══════════════════════════════════════════════════
-    // PARAGLIDER ICONS (on thermal top, above curve)
+    // PARAGLIDER ICONS — above thermal top curve
     // ══════════════════════════════════════════════════
     columns.forEach((c) => {
       if (c.rateo >= 0.55) {
-        drawParaglider(ctx, c.x, c.yThermalTop - 24);
+        drawParaglider(ctx, c.x, c.yThermalTop - 26);
       }
+    });
+
+    // ══════════════════════════════════════════════════
+    // PRECIPITATION LABELS — small blue boxes near top
+    // ══════════════════════════════════════════════════
+    precipLabels.forEach((pl) => {
+      drawPrecipLabel(ctx, pl.x, pl.y, pl.amount);
     });
 
     // ══════════════════════════════════════════════════
@@ -917,7 +960,7 @@ export default function ProfessionalWindgram({
     );
 
   }, [columns, boundaryAlts, boundaryYPts, boundaryPath, thermalTopPts, freezePts,
-      cloudBasePts, avgFreeze, cloudBadges, dateStr, siteName, altitude,
+      cloudBasePts, avgFreeze, cloudBadges, precipLabels, dateStr, siteName, altitude,
       formattedDateTitle, latitude, longitude]);
 
   // ── Loading / error ────────────────────────────────
