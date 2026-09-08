@@ -28,7 +28,7 @@ const LEVELS = [
 
 const ALT_TICKS = [6000, 5500, 5000, 4500, 4000, 3500, 3000, 2500, 2000, 1500];
 
-// Scala colori stabilità Alpium (-0.20 -> 1.20)
+// Scala colori stabilità (-0.20 -> 1.20)
 const STABILITY_SCALE = [
   { val: -0.20, color: "#8a5bb8" }, // viola
   { val: 0.00, color: "#4f7fd9" },  // blu
@@ -288,7 +288,7 @@ export default function ProfessionalWindgram({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Disegno barbetta identica al riferimento originale Alpium
+  // Disegno barbetta
   const renderWindBarb = (x: number, y: number, speedKmh: number, dirDeg: number) => {
     if (speedKmh == null || isNaN(speedKmh) || speedKmh < 1) return null;
     const knots = speedKmh * 0.539957;
@@ -300,7 +300,7 @@ export default function ProfessionalWindgram({
     const endX = x + staffLen * Math.cos(angle);
     const endY = y + staffLen * Math.sin(angle);
 
-    // Colore barbetta stile alpium (blu/viola scuro o arancio se vento forte)
+    // Colore barbetta (blu/viola scuro o arancio se vento forte)
     const barbColor = speedKmh > 30 ? "#d946ef" : speedKmh > 18 ? "#0284c7" : "#3b82f6";
 
     const elements = [];
@@ -423,43 +423,84 @@ export default function ProfessionalWindgram({
       .join(" ");
   };
 
-  // Zona instabile: area rossa/arancione sotto la curva termica (thermalTop)
-  const unstableZonePath = useMemo(() => {
+  // Amplitude della curva sinusoidale per il confine instabile/stabile
+  const SINEWAVE_AMPLITUDE = 180;
+  const SINEWAVE_FREQUENCY = Math.PI / 4;
+  
+  // Curva sinusoidale che separa instabile (sotto) da stabile (sopra)
+  const sinusoidalBoundaryPath = useMemo(() => {
     if (hourlyData.length === 0) return "";
     const points: string[] = [];
     hourlyData.forEach((h, i) => {
       const x = getXFromHourIdx(i);
-      const y = getYFromAlt(h.thermalTop);
+      const baseY = getYFromAlt(h.thermalTop);
+      // Aggiungi oscillazione sinusoidale
+      const sinOffset = Math.sin(i * SINEWAVE_FREQUENCY) * SINEWAVE_AMPLITUDE;
+      const y = baseY + sinOffset;
       if (i === 0) points.push(`M ${x},${y}`);
       else points.push(`L ${x},${y}`);
     });
-    // Chiudi il percorso verso il basso
-    points.push(`L ${getXFromHourIdx(HOURS.length - 1)},${margin.top + plotH}`);
-    points.push(`L ${margin.left},${margin.top + plotH}`);
-    points.push(`Z`);
     return points.join(" ");
   }, [hourlyData]);
-
-  // Zona stabile: area blu/viola SOPRA la curva termica (aria stabile in quota)
-  const stableZonePath = useMemo(() => {
-    if (hourlyData.length === 0) return "";
-    const points: string[] = [];
-    // Inizia dall'alto a sinistra
-    points.push(`M ${margin.left},${margin.top}`);
-    // Vai a destra in alto
-    points.push(`L ${margin.left + plotW},${margin.top}`);
-    // Scendi lungo il bordo destro
-    points.push(`L ${margin.left + plotW},${getYFromAlt(hourlyData[HOURS.length - 1].thermalTop)}`);
-    // Segui la curva termica all'indietro
-    for (let i = HOURS.length - 1; i >= 0; i--) {
+  
+  // Zone colorate a strisce basate su deltaT - SOTTO la curva sinusoidale (instabile)
+  const unstableStrips = useMemo(() => {
+    if (hourlyData.length === 0) return null;
+    const strips: React.ReactElement[] = [];
+    const stripWidth = plotW / (HOURS.length - 1) + 2;
+  
+    hourlyData.forEach((h, i) => {
       const x = getXFromHourIdx(i);
-      const y = getYFromAlt(hourlyData[i].thermalTop);
-      points.push(`L ${x},${y}`);
-    }
-    // Chiudi a sinistra
-    points.push(`L ${margin.left},${margin.top}`);
-    points.push(`Z`);
-    return points.join(" ");
+      const baseY = getYFromAlt(h.thermalTop);
+      const sinOffset = Math.sin(i * SINEWAVE_FREQUENCY) * SINEWAVE_AMPLITUDE;
+      const yBoundary = baseY + sinOffset;
+      const yBottom = margin.top + plotH;
+      const color = getStabilityColor(h.deltaT);
+  
+      strips.push(
+        <rect
+          key={`ustrip-${i}`}
+          x={x - 1}
+          y={yBoundary}
+          width={stripWidth}
+          height={yBottom - yBoundary}
+          fill={color}
+          opacity={0.75}
+        />
+      );
+    });
+    return <g key="unstable-strips">{strips}</g>;
+  }, [hourlyData]);
+  
+  // Zone colorate a strisce basate su deltaT - SOPRA la curva sinusoidale (stabile)
+  const stableStrips = useMemo(() => {
+    if (hourlyData.length === 0) return null;
+    const strips: React.ReactElement[] = [];
+    const stripWidth = plotW / (HOURS.length - 1) + 2;
+  
+    hourlyData.forEach((h, i) => {
+      const x = getXFromHourIdx(i);
+      const baseY = getYFromAlt(h.thermalTop);
+      const sinOffset = Math.sin(i * SINEWAVE_FREQUENCY) * SINEWAVE_AMPLITUDE;
+      const yBoundary = baseY + sinOffset;
+      const yTop = margin.top;
+      // Per la zona stabile, deltaT negativo = più stabile = più blu/verde
+      const stableDeltaT = -(h.deltaT); // Inverti per avere valori negativi
+      const color = getStabilityColor(stableDeltaT);
+  
+      strips.push(
+        <rect
+          key={`sstrip-${i}`}
+          x={x - 1}
+          y={yTop}
+          width={stripWidth}
+          height={yBoundary - yTop}
+          fill={color}
+          opacity={0.6}
+        />
+      );
+    });
+    return <g key="stable-strips">{strips}</g>;
   }, [hourlyData]);
 
   // DeltaT strip at ground level
@@ -497,7 +538,7 @@ export default function ProfessionalWindgram({
 
   return (
     <div className="space-y-3">
-      {/* Contenitore Grafico Alpium Bianco con Bordo Arrotondato */}
+      {/* Contenitore Grafico */}
       <div className="bg-white text-slate-900 rounded-[28px] p-3 sm:p-5 shadow-2xl border border-slate-300 overflow-hidden font-sans select-none">
         
         {/* Titolo Principale in Alto */}
@@ -551,43 +592,18 @@ export default function ProfessionalWindgram({
               </pattern>
             </defs>
 
-            {/* 1. SFONDO BASE TERRESTRE - GIALLO/CHIARO (aria instabile al suolo) */}
-            <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#fef08a" />
+            {/* 1. SFONDO BASE TERRESTRE */}
+            <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#fef9c3" />
 
-            {/* 2. ZONA INSTABILE ROSSA/ARANCIONE sotto thermalTop */}
-            {unstableZonePath && (
-              <path d={unstableZonePath} fill="#f97316" opacity="0.85" />
-            )}
+            {/* 2. STRISCHE COLORE ZONA STABILE (sopra curva sinusoidale) */}
+            {stableStrips}
 
-            {/* 3. AREA STABILE IN QUOTA - BLU/VIOLA (sopra la curva termica) */}
-            {stableZonePath && (
-              <path d={stableZonePath} fill="#6366f1" opacity="0.75" />
-            )}
-            {/* 3b. Strato di transizione stabile sopra thermalTop (azzurro chiaro) */}
-            {stableZonePath && (
-              <path
-                d={(() => {
-                  if (hourlyData.length === 0) return "";
-                  const points: string[] = [];
-                  hourlyData.forEach((h, i) => {
-                    const x = getXFromHourIdx(i);
-                    const yTop = getYFromAlt(h.thermalTop);
-                    const yBottom = getYFromAlt(h.thermalTop + 400);
-                    if (i === 0) points.push(`M ${x},${yTop}`);
-                    else points.push(`L ${x},${yTop}`);
-                  });
-                  // Chiudi dal fondo all'inizio
-                  for (let i = hourlyData.length - 1; i >= 0; i--) {
-                    const x = getXFromHourIdx(i);
-                    const yBottom = getYFromAlt(hourlyData[i].thermalTop + 400);
-                    points.push(`L ${x},${yBottom}`);
-                  }
-                  points.push("Z");
-                  return points.join(" ");
-                })()}
-                fill="#a5b4fc"
-                opacity="0.5"
-              />
+            {/* 3. STRISCIE COLORE ZONA INSTABILE (sotto curva sinusoidale) */}
+            {unstableStrips}
+
+            {/* 4. CURVA SINUSOIDALE DI CONFRONTO (rosso) */}
+            {sinusoidalBoundaryPath && (
+              <path d={sinusoidalBoundaryPath} fill="none" stroke="#dc2626" strokeWidth="3" strokeLinecap="round" strokeDasharray="8 4" />
             )}
 
             {/* 4. Isoterme tratteggiate (linee di temperatura) */}
@@ -847,16 +863,16 @@ export default function ProfessionalWindgram({
             <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#0f172a" strokeWidth="1.4" />
 
             {/* ETICHETTA ZONA STABILE (in alto a destra) */}
-            <g transform={`translate(${margin.left + plotW - 145}, ${margin.top + 12})`}>
-              <rect x="0" y="0" width="140" height="26" rx="5" fill="#6366f1" stroke="#ffffff" strokeWidth="2" />
-              <text x="70" y="18" fill="#ffffff" fontSize="12" fontWeight="900" textAnchor="middle">
-                ❄ ARIA STABILE
-              </text>
-            </g>
+                        <g transform={`translate(${margin.left + plotW - 145}, ${margin.top + 12})`}>
+                          <rect x="0" y="0" width="140" height="26" rx="5" fill="#22c55e" stroke="#ffffff" strokeWidth="2" />
+                          <text x="70" y="18" fill="#ffffff" fontSize="12" fontWeight="900" textAnchor="middle">
+                            ❄ STABILE
+                          </text>
+                        </g>
           </svg>
         </div>
 
-        {/* SCALA GRADIENTE INFERIORE DELTA T / 100 m IDENTICA AD ALPIUM */}
+        {/* SCALA GRADIENTE INFERIORE DELTA T / 100 m */}
         <div className="mt-2 pt-2 border-t border-slate-200 flex flex-col items-center">
           <div className="w-full max-w-2xl px-2">
             <defs>
@@ -888,7 +904,7 @@ export default function ProfessionalWindgram({
 
             {/* Didascalia Fonte Dati */}
             <div className="text-center text-[10px] text-slate-500 font-mono mt-3">
-              Fonte: AROME 0-48 h + ICON-EU 0-120 h via Open-Meteo &middot; Diagnostica di volo a vela di Alpium
+              Fonte: AROME 0-48 h + ICON-EU 0-120 h via Open-Meteo
             </div>
           </div>
         </div>
