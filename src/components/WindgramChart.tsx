@@ -574,21 +574,13 @@ export default function WindgramChart({
             </g>
           ))}
 
-          {/* ═══ ASSE Y DESTRO (quote da quota decollo a 4000m, step 250m) ═══ */}
-          {(() => {
-            const startAlt = altitude;
-            const endAlt = Math.max(4000, altitude + 2500);
-            const ticks: number[] = [];
-            for (let a = Math.round(startAlt / 250) * 250; a <= endAlt; a += 250) {
-              if (a >= startAlt && a <= endAlt) ticks.push(a);
-            }
-            return ticks.map((alt) => (
-              <g key={`ay-${alt}`}>
-                <line x1={MARGIN.left + PLOT_W} y1={yToPx(alt)} x2={MARGIN.left + PLOT_W + 6} y2={yToPx(alt)} stroke="#0f172a" strokeWidth={1.2} />
-                <text x={MARGIN.left + PLOT_W + 10} y={yToPx(alt) + 5} fontSize={11} fontWeight={700} fill="#334155" fontFamily="ui-monospace, monospace">{alt}</text>
-              </g>
-            ));
-          })()}
+          {/* ═══ ASSE Y DESTRO — scala armonica come righello (step 500m) ═══ */}
+          {Array.from({ length: 13 }, (_, i) => 1000 + i * 500).map((alt) => (
+            <g key={`ay-${alt}`}>
+              <line x1={MARGIN.left + PLOT_W} y1={yToPx(alt)} x2={MARGIN.left + PLOT_W + 8} y2={yToPx(alt)} stroke="#0f172a" strokeWidth={1.5} />
+              <text x={MARGIN.left + PLOT_W + 12} y={yToPx(alt) + 6} fontSize={13} fontWeight={800} fill="#1e293b" fontFamily="ui-monospace, monospace">{alt} m</text>
+            </g>
+          ))}
 
           {/* ═══ ASSE X ORE ═══ */}
           {DISPLAY_HOURS.map((hr) => (
