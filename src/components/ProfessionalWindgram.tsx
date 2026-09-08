@@ -18,10 +18,10 @@ interface WindgramProps {
 const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] as const;
 const NUM_HOURS = HOURS.length;
 
-const SVG_W = 1100;
+const SVG_W = 1150;
 const HEADER_H = 140;
 const PLOT_TOP = HEADER_H;
-const PLOT_H = 640;
+const PLOT_H = 660;
 const FOOTER_H = 120;
 const TOTAL_H = HEADER_H + PLOT_H + FOOTER_H;
 const ML = 110; // margin left
@@ -32,15 +32,37 @@ const GH = PLOT_H;
 const ALT_MIN = 1000;
 const ALT_MAX = 4500;
 
-// Grid levels: 250m steps from 1000 to 4500 with hPa conversion
-const GRID_LEVELS: { hpa: string; alt: number }[] = (() => {
-  const levels: { hpa: string; alt: number }[] = [];
-  for (let a = 1000; a <= 4500; a += 250) {
-    const hPaVal = Math.round(1013.25 * Math.pow(1 - 2.25577e-5 * a, 5.25588));
-    levels.push({ hpa: `${hPaVal} hPa`, alt: a });
-  }
-  return levels;
-})();
+// Grid levels: 250m steps from 1000 to 4500 (Alpium reference hPa)
+const GRID_LEVELS: { hpa: string; alt: number }[] = [
+  { hpa: "577 hPa", alt: 4500 },
+  { hpa: "597 hPa", alt: 4250 },
+  { hpa: "616 hPa", alt: 4000 },
+  { hpa: "637 hPa", alt: 3750 },
+  { hpa: "658 hPa", alt: 3500 },
+  { hpa: "679 hPa", alt: 3250 },
+  { hpa: "701 hPa", alt: 3000 },
+  { hpa: "724 hPa", alt: 2750 },
+  { hpa: "747 hPa", alt: 2500 },
+  { hpa: "771 hPa", alt: 2250 },
+  { hpa: "795 hPa", alt: 2000 },
+  { hpa: "820 hPa", alt: 1750 },
+  { hpa: "846 hPa", alt: 1500 },
+  { hpa: "872 hPa", alt: 1250 },
+  { hpa: "899 hPa", alt: 1000 },
+];
+
+// Wind levels for display (Alpium reference)
+const WIND_LEVEL_ALTS = [4250, 3500, 2500, 1750];
+const DIR_ABBREV: Record<number, string> = {
+  0: "N", 45: "NE", 90: "E", 135: "SE", 180: "S", 225: "SO", 270: "O", 315: "NO",
+};
+function getDirAbbrev(deg: number): string {
+  const dirs = ["N", "NO", "O", "SO", "S", "SE", "E", "NE"];
+  return dirs[Math.round(deg / 45) % 8];
+}
+function speedKmh(speed: number): string {
+  return String(Math.round(speed * 3.6));
+}
 
 // ΔT color scale (Alpium)
 const DT_STOPS = [
@@ -128,62 +150,6 @@ function toSinuousPath(pts: { x: number; y: number }[]): string {
     d += ` C ${cpX1.toFixed(1)},${cpY1.toFixed(1)} ${cpX2.toFixed(1)},${cpY2.toFixed(1)} ${curr.x.toFixed(1)},${curr.y.toFixed(1)}`;
   }
   return d;
-}
-
-// ─────────────────────────────────────────────────────
-// Wind barb — feathers on right side of staff (meteorological convention)
-// ─────────────────────────────────────────────────────
-function WindBarb({ cx, cy, knots, deg }: { cx: number; cy: number; knots: number; deg: number }) {
-  // Direction wind comes FROM
-  const rad = ((deg - 90) * Math.PI) / 180;
-  const staffLen = 28;
-  const ex = cx + staffLen * Math.cos(rad);
-  const ey = cy + staffLen * Math.sin(rad);
-
-  // Feather direction (right side of staff)
-  const featherRad = rad + Math.PI * 0.63;
-  const fc = Math.cos(featherRad), fs = Math.sin(featherRad);
-
-  const barbEls: React.ReactNode[] = [];
-  let rem = Math.round(knots / 5) * 5;
-  let pos = 1.0;
-  while (rem >= 50 && pos >= 0.22) {
-    const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
-    const t = 12;
-    barbEls.push(
-      <polygon key={`b50`}
-        points={`${bx},${by} ${bx + t * fc},${by + t * fs} ${bx + t * 0.4 * Math.cos(rad)},${by + t * 0.4 * Math.sin(rad)}`}
-        fill="#be123c" stroke="#be123c" strokeWidth="0.8" />
-    );
-    rem -= 50; pos -= 0.22;
-  }
-  while (rem >= 10 && pos >= 0.16) {
-    const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
-    const t = 11;
-    barbEls.push(
-      <line key={`b10`} x1={bx} y1={by} x2={bx + t * fc} y2={by + t * fs}
-        stroke="#be123c" strokeWidth="1.8" strokeLinecap="round" />
-    );
-    rem -= 10; pos -= 0.16;
-  }
-  if (rem >= 5 && pos >= 0.12) {
-    const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
-    const t = 6;
-    barbEls.push(
-      <line key={`b5`} x1={bx} y1={by} x2={bx + t * fc} y2={by + t * fs}
-        stroke="#be123c" strokeWidth="1.5" strokeLinecap="round" />
-    );
-  }
-
-  return (
-    <g>
-      <line x1={cx} y1={cy} x2={ex} y2={ey} stroke="#be123c" strokeWidth="1.8" strokeLinecap="round" />
-      {barbEls}
-      {knots < 3.5 && (
-        <circle cx={cx} cy={cy} r="3" fill="none" stroke="#be123c" strokeWidth="1.5" />
-      )}
-    </g>
-  );
 }
 
 // ─────────────────────────────────────────────────────
@@ -414,16 +380,6 @@ export default function ProfessionalWindgram({
     [columns]
   );
 
-  // Precipitation labels
-  const precipLabels = useMemo(
-    () => columns.filter((c) => c.precip > 0.05).map((c) => ({
-      x: c.x,
-      y: altToY(ALT_MAX - 30),
-      amount: c.precip,
-    })),
-    [columns]
-  );
-
   // Interpolate lapse rate at arbitrary point
   function interpLapseAt(colFrac: number, alt: number): number {
     const ci0 = Math.floor(colFrac * (columns.length - 1));
@@ -480,9 +436,19 @@ export default function ProfessionalWindgram({
         style={{ shapeRendering: "geometricPrecision" }}
       >
         <defs>
+          {/* Clip path for graph area */}
+          <clipPath id="graphClip">
+            <rect x={plotLeft} y={PLOT_TOP} width={GW} height={GH} />
+          </clipPath>
+
           {/* Ground hatch pattern */}
           <pattern id="groundHatch" width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
             <line x1="0" y1="0" x2="0" y2="10" stroke="#1e293b" strokeWidth="1.2" opacity="0.35" />
+          </pattern>
+
+          {/* Rain pattern */}
+          <pattern id="rainPattern" width="8" height="8" patternTransform="rotate(75 0 0)" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="0" x2="0" y2="8" stroke="#0284c7" strokeWidth="1.5" opacity="0.6" />
           </pattern>
 
           {/* Alpium background heat map gradient */}
@@ -546,45 +512,70 @@ export default function ProfessionalWindgram({
         {/* ══════════════════════════════════════════════════ */}
         {/* PLOT BACKGROUND — Alpium heat map gradient */}
         {/* ══════════════════════════════════════════════════ */}
-        <rect x={plotLeft} y={PLOT_TOP} width={GW} height={GH}
-          fill="url(#bgHeatmap)" rx="4" />
-
-        {/* Terrain / ground below launch altitude */}
-        {(() => {
-          const launchY = altToY(Math.round(altitude));
-          const groundY = altToY(ALT_MIN);
-          return (
-            <g>
-              <rect x={plotLeft} y={launchY} width={GW} height={groundY - launchY}
-                fill="url(#groundHatch)" />
-              <line x1={plotLeft} y1={launchY} x2={plotLeft + GW} y2={launchY}
-                stroke="#0f172a" strokeWidth="2" />
-            </g>
-          );
-        })()}
-
+        {/* GRAPH AREA — clipped to plot bounds */}
         {/* ══════════════════════════════════════════════════ */}
-        {/* CROSS-HATCH — rectangular zones per unstable column */}
-        {/* ══════════════════════════════════════════════════ */}
-        {columns.map((col, ci) => {
-          if (col.surfaceDeltaT < 0.55) return null;
-          const bY = altToY(boundaryAlts[ci]);
-          const xL = col.x - xStep / 2;
-          const xR = col.x + xStep / 2;
-          const hatchLines: React.ReactNode[] = [];
-          const sp = 6;
-          for (let hx = xL - GH; hx < xR + GH; hx += sp) {
-            hatchLines.push(
-              <line key={`d-${ci}-${hx}`} x1={hx} y1={bY} x2={hx + (plotBottom - bY)} y2={plotBottom}
-                stroke="rgba(0,0,0,0.13)" strokeWidth="0.85" />
+        <g clipPath="url(#graphClip)">
+          {/* Background heat map */}
+          <rect x={plotLeft} y={PLOT_TOP} width={GW} height={GH}
+            fill="url(#bgHeatmap)" />
+
+          {/* Rain zones */}
+          {(() => {
+            const rainCols = columns.filter((c, i) => c.precip > 0.05);
+            return rainCols.map((col, ri) => {
+              const xC = col.x;
+              const halfW = xStep / 2 - 2;
+              const yTop = altToY(ALT_MAX);
+              const yBase = altToY(Math.max(ALT_MIN, col.cloudBase));
+              return (
+                <g key={`rain-${col.hour}`}>
+                  <rect x={xC - halfW} y={yTop} width={halfW * 2} height={yBase - yTop}
+                    fill="url(#rainPattern)" />
+                  <rect x={xC - halfW} y={yTop} width={halfW * 2} height="16" rx="3"
+                    fill="#0284c7" />
+                  <text x={xC} y={yTop + 12} textAnchor="middle"
+                    className="fill-white font-extrabold text-[9px]">
+                    {col.precip.toFixed(2)} mm
+                  </text>
+                </g>
+              );
+            });
+          })()}
+
+          {/* Terrain / ground below launch altitude */}
+          {(() => {
+            const launchY = altToY(Math.round(altitude));
+            const groundY = altToY(ALT_MIN);
+            return (
+              <g>
+                <rect x={plotLeft} y={launchY} width={GW} height={groundY - launchY}
+                  fill="url(#groundHatch)" />
+                <line x1={plotLeft} y1={launchY} x2={plotLeft + GW} y2={launchY}
+                  stroke="#0f172a" strokeWidth="2" />
+              </g>
             );
-            hatchLines.push(
-              <line key={`u-${ci}-${hx}`} x1={hx} y1={plotBottom} x2={hx + (plotBottom - bY)} y2={bY}
-                stroke="rgba(0,0,0,0.13)" strokeWidth="0.85" />
-            );
-          }
-          return <g key={`ch-${ci}`}>{hatchLines}</g>;
-        })}
+          })()}
+
+          {/* CROSS-HATCH — unstable column zones */}
+          {columns.map((col, ci) => {
+            if (col.surfaceDeltaT < 0.55) return null;
+            const bY = altToY(boundaryAlts[ci]);
+            const xL = col.x - xStep / 2;
+            const xR = col.x + xStep / 2;
+            const hatchLines: React.ReactNode[] = [];
+            const sp = 6;
+            for (let hx = xL - GH; hx < xR + GH; hx += sp) {
+              hatchLines.push(
+                <line key={`d-${ci}-${hx}`} x1={hx} y1={bY} x2={hx + (plotBottom - bY)} y2={plotBottom}
+                  stroke="rgba(0,0,0,0.13)" strokeWidth="0.85" />
+              );
+              hatchLines.push(
+                <line key={`u-${ci}-${hx}`} x1={hx} y1={plotBottom} x2={hx + (plotBottom - bY)} y2={bY}
+                  stroke="rgba(0,0,0,0.13)" strokeWidth="0.85" />
+              );
+            }
+            return <g key={`ch-${ci}`}>{hatchLines}</g>;
+          })}
 
         {/* ══════════════════════════════════════════════════ */}
         {/* HORIZONTAL GRID LINES + hPa / meter LABELS */}
@@ -618,14 +609,26 @@ export default function ProfessionalWindgram({
           fill="none" stroke="#0f172a" strokeWidth="1.5" rx="4" />
 
         {/* ══════════════════════════════════════════════════ */}
-        {/* WIND BARBS */}
+        {/* WIND BARBS — Alpium style: stick + speed/direction */}
         {/* ══════════════════════════════════════════════════ */}
-        {columns.map((col) =>
-          col.levelWinds.map((lw) => (
-            <WindBarb key={`wb-${col.hour}-${lw.hpa}`}
-              cx={col.x} cy={altToY(lw.alt)} knots={lw.speed} deg={lw.dir} />
-          ))
-        )}
+        {WIND_LEVEL_ALTS.map((wAlt) => {
+          const y = altToY(wAlt);
+          return columns.map((col) => {
+            // Find closest wind level for this altitude
+            const lw = col.levelWinds.find((w) => Math.abs(w.alt - wAlt) < 100);
+            if (!lw) return null;
+            return (
+              <g key={`wind-${col.hour}-${wAlt}`} transform={`translate(${col.x}, ${y})`}>
+                <line x1="-10" y1="0" x2="10" y2="0" stroke="#b91c1c" strokeWidth="1.5" />
+                <line x1="10" y1="0" x2="14" y2="-6" stroke="#b91c1c" strokeWidth="1.5" />
+                <text x="0" y="-8" textAnchor="middle"
+                  className="fill-black font-black text-[9px] tracking-tighter">
+                  {speedKmh(lw.speed)}k {getDirAbbrev(lw.dir)}
+                </text>
+              </g>
+            );
+          });
+        })}
 
         {/* ══════════════════════════════════════════════════ */}
         {/* 0°C ISOTHERM (blue dashed + snowflakes + badge) */}
@@ -701,23 +704,32 @@ export default function ProfessionalWindgram({
         })}
 
         {/* ══════════════════════════════════════════════════ */}
-        {/* CLOUD BADGES — ON the thermal top curve */}
+        {/* CLOUD BADGES — Alpium cloud icon style */}
         {/* ══════════════════════════════════════════════════ */}
         {cloudBadges.map((b) => {
           const col = columns.find((c) => Math.abs(c.x - b.x) < 2);
           if (!col || col.rateo < 0.55) return null;
+          const hasCloud = b.cloudPct > 0;
           return (
             <g key={`badge-${b.x}`} transform={`translate(${b.x}, ${b.y})`}>
-              {/* Purple circle with cloud % */}
-              <circle cx="0" cy="0" r="16" fill="#e0e7ff" stroke="#4338ca" strokeWidth="1.5" />
-              <text x="0" y="-1" textAnchor="middle" dominantBaseline="middle"
-                className="fill-slate-800 font-bold text-[9px]">{b.cloudPct}%</text>
+              {hasCloud && (
+                /* Cloud development icon */
+                <g transform="translate(-22, -45)">
+                  <path d="M 12 24 C 6 24, 2 20, 2 15 C 2 11, 5 8, 9 8 C 10 4, 15 1, 21 1 C 27 1, 31 4, 33 8 C 37 8, 40 12, 40 17 C 40 21, 36 24, 31 24 Z"
+                    fill="#ffffff" stroke="#2563eb" strokeWidth="2" />
+                  <text x="21" y="16" textAnchor="middle"
+                    className="fill-blue-950 font-black text-[9px]">{b.cloudPct}%</text>
+                </g>
+              )}
               {/* Altitude pill */}
-              <rect x="-30" y="20" width="60" height="18" rx="4" fill="#fff" stroke="#6b21a8" strokeWidth="1.5" filter="url(#shadow)" />
-              <text x="0" y="33" textAnchor="middle" className="fill-purple-950 font-black text-[10px]">{b.alt} m</text>
+              <rect x="-27" y="-12" width="54" height="16" rx="4"
+                fill="#ffffff" stroke="#6b21a8" strokeWidth="1.5" />
+              <text x="0" y="0" textAnchor="middle"
+                className="fill-purple-950 font-black text-[10px]">{b.alt} m</text>
               {/* Rate pill */}
-              <rect x="-22" y="42" width="44" height="14" rx="3" fill="#6b21a8" />
-              <text x="0" y="52" textAnchor="middle" className="fill-white font-bold text-[9px]">↑ {b.rate.toFixed(1)} m/s</text>
+              <rect x="-22" y="7" width="44" height="13" rx="3" fill="#6b21a8" />
+              <text x="0" y="16" textAnchor="middle"
+                className="fill-white font-extrabold text-[9px]">↑ {b.rate.toFixed(1)} m/s</text>
             </g>
           );
         })}
@@ -734,21 +746,7 @@ export default function ProfessionalWindgram({
             <circle cx="0" cy="9" r="5" fill="#fff" stroke="#7e22ce" strokeWidth="1.8" />
           </g>
         ))}
-
-        {/* ══════════════════════════════════════════════════ */}
-        {/* PRECIPITATION LABELS */}
-        {/* ══════════════════════════════════════════════════ */}
-        {precipLabels.map((pl) => {
-          const tw = pl.amount.toFixed(2).length * 6 + 10;
-          return (
-            <g key={`prec-${pl.x}`} transform={`translate(${pl.x - tw / 2}, ${pl.y - 8})`}>
-              <rect width={tw} height="16" rx="3" fill="#dbeafe" stroke="#3b82f6" strokeWidth="1" />
-              <text x={tw / 2} y="11" textAnchor="middle" className="fill-blue-900 font-bold text-[9px]">
-                {pl.amount.toFixed(2)} mm
-              </text>
-            </g>
-          );
-        })}
+        </g> {/* close clipPath */}
 
         {/* ══════════════════════════════════════════════════ */}
         {/* HOUR LABELS */}
