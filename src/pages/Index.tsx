@@ -210,17 +210,6 @@ export default function Index() {
                   />
                 </div>
 
-                {/* Windgram Rasoft Montoso Alto */}
-                {site.id === "montoso-decollo-basso" && (
-                  <RasoftWindgram
-                    latitude={site.lat}
-                    longitude={site.lon}
-                    altitude={site.elevation_m}
-                    siteName="Montoso Alto"
-                    selectedDay={selectedDay}
-                  />
-                )}
-
                 {/* SkewTDiagram — aggiornato al giorno di previsione selezionato */}
                 <SkewTDiagram
                   latitude={site.lat}
