@@ -13,27 +13,27 @@ interface WindgramProps {
 }
 
 // ─────────────────────────────────────────────────────
-// Layout — match Alpium reference exactly
+// Layout — EXACT Alpium reference
 // ─────────────────────────────────────────────────────
 const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] as const;
 const NUM_HOURS = HOURS.length;
 
-const CW = 1000; // canvas width
-const HEADER_H = 120; // header + numeric strip
-const FOOTER_H = 52;  // legend + attribution
+const CW = 1000;
+const HEADER_H = 120;
+const FOOTER_H = 58;
 const PLOT_TOP = HEADER_H;
 const PLOT_H = 600;
 const TOTAL_H = HEADER_H + PLOT_H + FOOTER_H;
-const MARGIN_L = 80;
-const MARGIN_R = 82;
-const GRAPH_W = CW - MARGIN_L - MARGIN_R;
-const GRAPH_H = PLOT_H;
+const ML = 80;   // margin left
+const MR = 82;   // margin right
+const GW = CW - ML - MR;  // graph width
+const GH = PLOT_H;         // graph height
 
 const ALT_MIN = 1200;
 const ALT_MAX = 6000;
 
-// Exact Alpium hPa grid (8 levels evenly spaced)
-const HPA_LEVELS = [
+// Alpium hPa grid
+const HPA = [
   { hpa: "500 hPa", alt: "6000 m" },
   { hpa: "550 hPa", alt: "5000 m" },
   { hpa: "600 hPa", alt: "4000 m" },
@@ -44,260 +44,189 @@ const HPA_LEVELS = [
   { hpa: "850 hPa", alt: "1500 m" },
 ];
 
-// Alpium exact heatmap base bands
-const HEAT_BANDS = [
-  { altTop: 6000, color: "#88c442" },
-  { altTop: 4500, color: "#b2d855" },
-  { altTop: 3500, color: "#e2e855" },
-  { altTop: 2800, color: "#fca835" },
-  { altTop: 2200, color: "#f84339" },
-  { altTop: 1500, color: "#fca835" },
-  { altTop: 1200, color: "#b2d855" },
+// Alpium heatmap base bands (top→bottom)
+const BANDS = [
+  { top: 6000, col: "#88c442" },
+  { top: 4500, col: "#b2d855" },
+  { top: 3500, col: "#e2e855" },
+  { top: 2800, col: "#fca835" },
+  { top: 2200, col: "#f84339" },
+  { top: 1500, col: "#fca835" },
+  { top: 1200, col: "#b2d855" },
 ];
 
-// ΔT color scale — matches reference exactly
-const DT_STOPS = [
-  { val: -0.20, color: "#6d28d9" },
-  { val: -0.05, color: "#4338ca" },
-  { val:  0.00, color: "#1d4ed8" },
-  { val:  0.16, color: "#0e7490" },
-  { val:  0.32, color: "#047857" },
-  { val:  0.48, color: "#4d7c0f" },
-  { val:  0.65, color: "#a16207" },
-  { val:  0.82, color: "#c2410c" },
-  { val:  1.00, color: "#b91c1c" },
-  { val:  1.20, color: "#7f1d1d" },
+// ΔT → color (Alpium exact)
+const DT = [
+  { v: -0.20, c: "#6d28d9" }, { v: -0.05, c: "#4338ca" },
+  { v:  0.00, c: "#1d4ed8" }, { v:  0.16, c: "#0e7490" },
+  { v:  0.32, c: "#047857" }, { v:  0.48, c: "#4d7c0f" },
+  { v:  0.65, c: "#a16207" }, { v:  0.82, c: "#c2410c" },
+  { v:  1.00, c: "#b91c1c" }, { v:  1.20, c: "#7f1d1d" },
 ];
 
-// Legend gradient: stable (purple) → unstable (red)
-const LEGEND_STOPS: { pos: number; color: string }[] = [
-  { pos: 0.00, color: "#a855f7" },
-  { pos: 0.16, color: "#3b82f6" },
-  { pos: 0.32, color: "#06b6d4" },
-  { pos: 0.48, color: "#84cc16" },
-  { pos: 0.65, color: "#eab308" },
-  { pos: 0.82, color: "#f97316" },
-  { pos: 1.00, color: "#dc2626" },
+// Legend gradient (stable → unstable)
+const LEG = [
+  { p: 0.00, c: "#a855f7" }, { p: 0.16, c: "#3b82f6" },
+  { p: 0.32, c: "#06b6d4" }, { p: 0.48, c: "#84cc16" },
+  { p: 0.65, c: "#eab308" }, { p: 0.82, c: "#f97316" },
+  { p: 1.00, c: "#dc2626" },
 ];
 
 // ─────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────
-function hexToRgb(hex: string): [number, number, number] {
-  const n = parseInt(hex.slice(1), 16);
+function hexRgb(h: string): [number, number, number] {
+  const n = parseInt(h.slice(1), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
-function rgbStr(r: number, g: number, b: number, a = 1): string {
+function rgb(r: number, g: number, b: number, a = 1) {
   return `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},${a})`;
 }
-function blendColors(c1: string, c2: string, f: number): string {
-  const [r1, g1, b1] = hexToRgb(c1);
-  const [r2, g2, b2] = hexToRgb(c2);
-  return rgbStr(r1 + (r2 - r1) * f, g1 + (g2 - g1) * f, b1 + (b2 - b1) * f);
+function lerpColor(a: string, b: string, t: number) {
+  const [r1, g1, b1] = hexRgb(a);
+  const [r2, g2, b2] = hexRgb(b);
+  return rgb(r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t);
 }
 
-function getDTColor(dt: number): string {
-  if (dt <= DT_STOPS[0].val) return DT_STOPS[0].color;
-  if (dt >= DT_STOPS[DT_STOPS.length - 1].val) return DT_STOPS[DT_STOPS.length - 1].color;
-  for (let i = 0; i < DT_STOPS.length - 1; i++) {
-    if (dt >= DT_STOPS[i].val && dt <= DT_STOPS[i + 1].val) {
-      const f = (dt - DT_STOPS[i].val) / (DT_STOPS[i + 1].val - DT_STOPS[i].val);
-      return blendColors(DT_STOPS[i].color, DT_STOPS[i + 1].color, f);
+function dtColor(dt: number): string {
+  if (dt <= DT[0].v) return DT[0].c;
+  if (dt >= DT[DT.length - 1].v) return DT[DT.length - 1].c;
+  for (let i = 0; i < DT.length - 1; i++) {
+    if (dt >= DT[i].v && dt <= DT[i + 1].v) {
+      const f = (dt - DT[i].v) / (DT[i + 1].v - DT[i].v);
+      return lerpColor(DT[i].c, DT[i + 1].c, f);
     }
   }
-  return DT_STOPS[DT_STOPS.length - 1].color;
+  return DT[DT.length - 1].c;
 }
 
-function altToY(alt: number): number {
-  const a = Math.max(ALT_MIN, Math.min(ALT_MAX, alt));
-  return PLOT_TOP + GRAPH_H * (1 - (a - ALT_MIN) / (ALT_MAX - ALT_MIN));
+function altY(a: number) {
+  return PLOT_TOP + GH * (1 - (Math.max(ALT_MIN, Math.min(ALT_MAX, a)) - ALT_MIN) / (ALT_MAX - ALT_MIN));
 }
-function xFromIdx(i: number): number {
-  if (NUM_HOURS <= 1) return MARGIN_L + GRAPH_W / 2;
-  return MARGIN_L + (i / (NUM_HOURS - 1)) * GRAPH_W;
+function xIdx(i: number) {
+  return ML + (i / (NUM_HOURS - 1)) * GW;
 }
+function colL(i: number) { return i === 0 ? ML : xIdx(i - 0.5); }
+function colR(i: number) { return i === NUM_HOURS - 1 ? ML + GW : xIdx(i + 0.5); }
+function colW(i: number) { return colR(i) - colL(i); }
 
-// Catmull-Rom → cubic Bézier
-function toBezier(pts: { x: number; y: number }[]): string {
+// Catmull-Rom → cubic Bézier SVG path string
+function bezier(pts: { x: number; y: number }[]) {
   if (pts.length < 2) return "";
   let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
   for (let i = 1; i < pts.length; i++) {
-    const p0 = pts[i - 1], p1 = pts[i];
-    const p2 = pts[Math.min(i + 1, pts.length - 1)];
-    const c1x = p0.x + (p1.x - p0.x) / 3;
-    const c1y = p0.y + (p1.y - p0.y) / 3;
-    const c2x = p1.x - (p2.x - p1.x) / 3;
-    const c2y = p1.y - (p2.y - p1.y) / 3;
-    d += ` C ${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
+    const p0 = pts[i - 1], p1 = pts[i], p2 = pts[Math.min(i + 1, pts.length - 1)];
+    d += ` C ${(p0.x + (p1.x - p0.x) / 3).toFixed(1)},${(p0.y + (p1.y - p0.y) / 3).toFixed(1)}`;
+    d += ` ${(p1.x - (p2.x - p1.x) / 3).toFixed(1)},${(p1.y - (p2.y - p1.y) / 3).toFixed(1)}`;
+    d += ` ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
   }
   return d;
 }
-
-// Stroke a path string on canvas
-function strokePath(ctx: CanvasRenderingContext2D, pathStr: string) {
-  const tokens = pathStr.match(/[MLC]|[0-9.\-]+/g) || [];
-  for (let i = 0; i < tokens.length; i++) {
-    const t = tokens[i]!;
-    if (t === "M") {
-      ctx.moveTo(parseFloat(tokens[++i]!), parseFloat(tokens[++i]!));
-    } else if (t === "C") {
-      ctx.bezierCurveTo(
-        parseFloat(tokens[++i]!), parseFloat(tokens[++i]!),
-        parseFloat(tokens[++i]!), parseFloat(tokens[++i]!),
-        parseFloat(tokens[++i]!), parseFloat(tokens[++i]!)
-      );
-    }
+function strokePath(ctx: CanvasRenderingContext2D, s: string) {
+  const t = s.match(/[MLC]|[0-9.\-]+/g) || [];
+  for (let i = 0; i < t.length; i++) {
+    if (t[i] === "M") { ctx.moveTo(+t[++i]!, +t[++i]!); }
+    else if (t[i] === "C") { ctx.bezierCurveTo(+t[++i]!, +t[++i]!, +t[++i]!, +t[++i]!, +t[++i]!, +t[++i]!); }
   }
 }
 
 // ─────────────────────────────────────────────────────
-// Wind barb (meteorological, matches Alpium style)
+// Wind barb
 // ─────────────────────────────────────────────────────
-function drawWindBarb(
-  ctx: CanvasRenderingContext2D,
-  cx: number, cy: number,
-  speed: number, dir: number
-) {
-  if (speed == null || isNaN(speed) || speed < 1) return;
-  const knots = speed * 0.54;
-
-  // Direction wind comes FROM
+function drawBarb(ctx: CanvasRenderingContext2D, cx: number, cy: number, spd: number, dir: number) {
+  if (!spd || isNaN(spd) || spd < 1) return;
+  const kn = spd * 0.54;
   const rad = ((dir - 90) * Math.PI) / 180;
-  const staffLen = 30;
-  const ex = cx + staffLen * Math.cos(rad);
-  const ey = cy + staffLen * Math.sin(rad);
+  const sl = 30;
+  const ex = cx + sl * Math.cos(rad), ey = cy + sl * Math.sin(rad);
+  const fr = rad + Math.PI * 0.63;
+  const fc = Math.cos(fr), fs_ = Math.sin(fr);
+  const col = spd > 40 ? "#991b1b" : spd > 25 ? "#7e22ce" : "#1e3a5f";
+  ctx.strokeStyle = col; ctx.fillStyle = col;
+  ctx.lineWidth = 2; ctx.lineCap = "round";
 
-  const featherRad = rad + Math.PI * 0.63;
-  const fc = Math.cos(featherRad), fs = Math.sin(featherRad);
-  const col = speed > 40 ? "#991b1b" : speed > 25 ? "#7e22ce" : "#1e3a5f";
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ex, ey); ctx.stroke();
 
-  ctx.strokeStyle = col;
-  ctx.fillStyle = col;
-  ctx.lineWidth = 2;
-  ctx.lineCap = "round";
-
-  ctx.beginPath();
-  ctx.moveTo(cx, cy);
-  ctx.lineTo(ex, ey);
-  ctx.stroke();
-
-  let rem = Math.round(knots / 5) * 5;
-  let pos = 1.0;
+  let rem = Math.round(kn / 5) * 5, pos = 1.0;
   while (rem >= 50 && pos >= 0.22) {
-    const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
-    const t = 14;
+    const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy), t = 14;
     ctx.beginPath();
-    ctx.moveTo(bx, by);
-    ctx.lineTo(bx + t * fc, by + t * fs);
+    ctx.moveTo(bx, by); ctx.lineTo(bx + t * fc, by + t * fs_);
     ctx.lineTo(bx + t * 0.45 * Math.cos(rad), by + t * 0.45 * Math.sin(rad));
-    ctx.closePath();
-    ctx.fill();
+    ctx.closePath(); ctx.fill();
     rem -= 50; pos -= 0.22;
   }
   while (rem >= 10 && pos >= 0.16) {
-    const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
-    const t = 13;
-    ctx.beginPath();
-    ctx.moveTo(bx, by);
-    ctx.lineTo(bx + t * fc, by + t * fs);
-    ctx.stroke();
+    const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy), t = 13;
+    ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + t * fc, by + t * fs_); ctx.stroke();
     rem -= 10; pos -= 0.16;
   }
   if (rem >= 5 && pos >= 0.12) {
-    const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
-    const t = 7;
-    ctx.beginPath();
-    ctx.moveTo(bx, by);
-    ctx.lineTo(bx + t * fc, by + t * fs);
-    ctx.stroke();
+    const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy), t = 7;
+    ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + t * fc, by + t * fs_); ctx.stroke();
   }
 }
 
 // ─────────────────────────────────────────────────────
-// Paraglider icon
+// Icons
 // ─────────────────────────────────────────────────────
 function drawParaglider(ctx: CanvasRenderingContext2D, x: number, y: number) {
-  ctx.save();
-  ctx.translate(x, y);
-  // Canopy
-  ctx.fillStyle = "#f3e8ff";
-  ctx.strokeStyle = "#7e22ce";
-  ctx.lineWidth = 2;
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = "#f3e8ff"; ctx.strokeStyle = "#7e22ce"; ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(-16, -5);
-  ctx.quadraticCurveTo(-10, -20, 0, -20);
+  ctx.moveTo(-16, -5); ctx.quadraticCurveTo(-10, -20, 0, -20);
   ctx.quadraticCurveTo(10, -20, 16, -5);
   ctx.quadraticCurveTo(8, -14, 0, -14);
   ctx.quadraticCurveTo(-8, -14, -16, -5);
-  ctx.closePath();
-  ctx.fill(); ctx.stroke();
-  // Lines
+  ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  ctx.moveTo(-12, -5); ctx.lineTo(0, 8);
-  ctx.moveTo(12, -5); ctx.lineTo(0, 8);
-  ctx.stroke();
-  // Pilot
-  ctx.fillStyle = "#fff";
-  ctx.strokeStyle = "#7e22ce";
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  ctx.arc(0, 8, 4.5, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-12, -5); ctx.lineTo(0, 8);
+  ctx.moveTo(12, -5); ctx.lineTo(0, 8); ctx.stroke();
+  ctx.fillStyle = "#fff"; ctx.strokeStyle = "#7e22ce"; ctx.lineWidth = 1.8;
+  ctx.beginPath(); ctx.arc(0, 8, 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   ctx.restore();
 }
 
-// ─────────────────────────────────────────────────────
-// Snowflake icon
-// ─────────────────────────────────────────────────────
-function drawSnowflake(ctx: CanvasRenderingContext2D, x: number, y: number) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.fillStyle = "#ffffff";
-  ctx.strokeStyle = "#0284c7";
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  ctx.arc(0, 0, 10, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  ctx.strokeStyle = "#0284c7";
-  ctx.lineWidth = 1.2;
-  ctx.lineCap = "round";
+function drawSnow(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = "#fff"; ctx.strokeStyle = "#0284c7"; ctx.lineWidth = 1.8;
+  ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = "#0284c7"; ctx.lineWidth = 1.2; ctx.lineCap = "round";
   for (let a = 0; a < 4; a++) {
-    const angle = (a * Math.PI) / 4;
-    ctx.beginPath();
-    ctx.moveTo(Math.cos(angle) * 3, Math.sin(angle) * 3);
-    ctx.lineTo(Math.cos(angle) * 7, Math.sin(angle) * 7);
-    ctx.stroke();
+    const ag = (a * Math.PI) / 4;
+    ctx.beginPath(); ctx.moveTo(Math.cos(ag) * 3, Math.sin(ag) * 3);
+    ctx.lineTo(Math.cos(ag) * 7, Math.sin(ag) * 7); ctx.stroke();
   }
   ctx.restore();
 }
 
-// ─────────────────────────────────────────────────────
-// Cloud badge (purple arc, height + rate text)
-// ─────────────────────────────────────────────────────
-function drawCloudBadge(ctx: CanvasRenderingContext2D, x: number, y: number, alt: number, rate: number) {
-  const bw = 68, bh = 34;
+/**
+ * Cloud badge — purple arc on TOP, text below.
+ * Placed directly ON the cloud-base curve.
+ */
+function drawCloudBadge(ctx: CanvasRenderingContext2D, cx: number, cy: number, alt: number, rate: number) {
   ctx.save();
-  ctx.translate(x, y - 18);
-  // Purple cloud shape
+  // Purple semi-circle cloud (arc on top, flat bottom at cy)
   ctx.fillStyle = "#e0e7ff";
   ctx.strokeStyle = "#4338ca";
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.arc(0, 0, 14, Math.PI, 0);
-  ctx.lineTo(14, 0);
-  ctx.lineTo(-14, 0);
+  ctx.arc(cx, cy, 16, Math.PI, 0);          // upper arc
+  ctx.lineTo(cx + 16, cy);                  // right edge
+  ctx.lineTo(cx - 16, cy);                  // left edge
   ctx.closePath();
   ctx.fill(); ctx.stroke();
-  // Text: altitude
+
+  // Altitude text
   ctx.fillStyle = "#1e1b4b";
-  ctx.font = "bold 10px monospace";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(`${alt} m`, 0, 12);
-  // Text: lift rate
+  ctx.font = "bold 9px monospace";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(`${alt} m`, cx, cy + 13);
+
+  // Rate text
   ctx.fillStyle = "#4338ca";
-  ctx.fillText(`↑ ${rate.toFixed(1)} m/s`, 0, 24);
+  ctx.font = "bold 9px monospace";
+  ctx.fillText(`↑ ${rate.toFixed(1)} m/s`, cx, cy + 24);
   ctx.restore();
 }
 
@@ -313,25 +242,21 @@ export default function ProfessionalWindgram({
   const [error, setError] = useState<string | null>(null);
 
   const dateObj = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + selectedDay);
-    return d;
+    const d = new Date(); d.setDate(d.getDate() + selectedDay); return d;
   }, [selectedDay]);
   const dateStr = useMemo(() => dateObj.toISOString().split("T")[0], [dateObj]);
-  const formattedDateTitle = useMemo(() => {
+  const fmtDate = useMemo(() => {
     const days = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
     const months = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
     return `${days[dateObj.getDay()]} ${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
   }, [dateObj]);
 
-  // ── Fetch data ─────────────────────────────────────
+  // ── Fetch ─────────────────────────────────────────
   useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    setError(null);
-    const params = new URLSearchParams({
-      latitude: latitude.toString(),
-      longitude: longitude.toString(),
+    let on = true;
+    setLoading(true); setError(null);
+    const p = new URLSearchParams({
+      latitude: latitude.toString(), longitude: longitude.toString(),
       hourly: [
         "temperature_2m", "relative_humidity_2m", "dew_point_2m",
         "precipitation", "precipitation_probability",
@@ -351,621 +276,418 @@ export default function ProfessionalWindgram({
         "cape", "lifted_index", "convective_inhibition",
         "sunshine_duration",
       ].join(","),
-      timezone: "Europe/Rome",
-      start_date: dateStr,
-      end_date: dateStr,
+      timezone: "Europe/Rome", start_date: dateStr, end_date: dateStr,
     });
-    fetchWithProxyFallback(params.toString())
-      .then(async (r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const json = await r.json();
-        if (mounted) { setData(json); setLoading(false); }
-      })
-      .catch((e: any) => {
-        if (mounted) { setError(e?.message || "Errore dati"); setLoading(false); }
-      });
-    return () => { mounted = false; };
+    fetchWithProxyFallback(p.toString())
+      .then(async (r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const j = await r.json(); if (on) { setData(j); setLoading(false); } })
+      .catch((e: any) => { if (on) { setError(e?.message || "Errore"); setLoading(false); } });
+    return () => { on = false; };
   }, [latitude, longitude, dateStr]);
 
-  // ── Build columns ──────────────────────────────────
-  const columns = useMemo(() => {
+  // ── Build columns ─────────────────────────────────
+  const cols = useMemo(() => {
     if (!data?.hourly?.time) return [];
-    const times = data.hourly.time;
-    const h = data.hourly;
+    const h = data.hourly, times = data.hourly.time;
+    return HOURS.map((hr) => {
+      const i = times.findIndex((t: string) => parseInt(t.split("T")[1].split(":")[0], 10) === hr);
+      if (i === -1) return null;
 
-    return HOURS.map((targetHour) => {
-      const idx = times.findIndex((t: string) => parseInt(t.split("T")[1].split(":")[0], 10) === targetHour);
-      if (idx === -1) return null;
+      const t2m = h.temperature_2m[i] ?? 15;
+      const dew = h.dew_point_2m?.[i] ?? (t2m - 6);
+      const rad = h.shortwave_radiation?.[i] ?? 400;
+      const cloud = h.cloud_cover?.[i] ?? 30;
+      const precip = h.precipitation?.[i] ?? 0;
+      const cape = h.cape?.[i] ?? 0;
+      const cin = h.convective_inhibition?.[i] ?? 0;
+      const w10 = h.wind_speed_10m?.[i] ?? 5;
+      const wd10 = h.wind_direction_10m?.[i] ?? 180;
+      const frz = h.freezing_level_height?.[i] ?? Math.round(altitude + t2m / 0.0065);
+      const t80 = h.temperature_80m?.[i], t120 = h.temperature_120m?.[i];
+      const sunDur = h.sunshine_duration?.[i] ?? 0;
 
-      const t2m = h.temperature_2m[idx] ?? 15;
-      const dew2m = h.dew_point_2m?.[idx] ?? (t2m - 6);
-      const hum = h.relative_humidity_2m?.[idx] ?? 60;
-      const rad = h.shortwave_radiation?.[idx] ?? 400;
-      const cloud = h.cloud_cover?.[idx] ?? 30;
-      const precip = h.precipitation?.[idx] ?? 0;
-      const cape = h.cape?.[idx] ?? 0;
-      const cin = h.convective_inhibition?.[idx] ?? 0;
-      const wind10 = h.wind_speed_10m?.[idx] ?? 5;
-      const windDir10 = h.wind_direction_10m?.[idx] ?? 180;
-      const freeze = h.freezing_level_height?.[idx] ?? Math.round(altitude + t2m / 0.0065);
-      const t80 = h.temperature_80m?.[idx];
-      const t120 = h.temperature_120m?.[idx];
-      const sunDur = h.sunshine_duration?.[idx] ?? 0;
-
-      const spread = Math.max(0.5, t2m - dew2m);
+      const spread = Math.max(0.5, t2m - dew);
       const cloudBase = Math.round(altitude + spread * 125);
       const sunPct = Math.min(100, Math.max(5, Math.round((rad / 950) * (1 - cloud / 100 * 0.7) * 100)));
 
-      // Thermal rate
       let rateo = 0.5 + spread * 0.07 + (sunPct / 100) * 0.4 + (cape > 100 ? Math.min(1.0, cape / 800) : 0);
       if (precip > 0.3) rateo = Math.min(rateo, 0.3);
       else if (cloud > 80) rateo *= 0.35;
       if (cin > 100) rateo *= 0.5;
       rateo = Math.max(0.2, Math.min(3.0, Math.round(rateo * 10) / 10));
 
-      // Thermal top with sinusoidal envelope
-      const hourFrac = (targetHour - 8) / 10;
-      const sineEnvelope = Math.sin(hourFrac * Math.PI);
-      const thermalTop = Math.round(Math.min(5200, cloudBase + Math.min(1400, rateo * 150 + cape * 0.1 + sineEnvelope * 300)));
+      // Thermal top = slightly above cloud base (matching Alpium: ~2000-2300m in ref)
+      const sineEnv = Math.sin(((hr - 8) / 10) * Math.PI);
+      const thermalTop = Math.round(Math.min(5200, cloudBase + Math.max(150, rateo * 200 + sineEnv * 120)));
 
-      // Surface deltaT/100m
-      const surfaceDeltaT = t80 != null ? Math.round(((t2m - t80) / 78) * 100 * 100) / 100
+      const dtSurface = t80 != null ? Math.round(((t2m - t80) / 78) * 100 * 100) / 100
         : t120 != null ? Math.round(((t2m - t120) / 118) * 100 * 100) / 100
         : spread >= 10 ? 0.95 : spread >= 5 ? 0.72 : 0.55;
 
-      // Level winds
-      const levelWinds = [
-        { hpa: 500, alt: 5800, speed: h.wind_speed_500hPa?.[idx], dir: h.wind_direction_500hPa?.[idx] },
-        { hpa: 600, alt: 4400, speed: h.wind_speed_600hPa?.[idx], dir: h.wind_direction_600hPa?.[idx] },
-        { hpa: 700, alt: 3100, speed: h.wind_speed_700hPa?.[idx], dir: h.wind_direction_700hPa?.[idx] },
-        { hpa: 850, alt: 1450, speed: h.wind_speed_850hPa?.[idx], dir: h.wind_direction_850hPa?.[idx] },
+      // Level winds at 4 pressure levels
+      const lwinds = [
+        { alt: 5800, spd: h.wind_speed_500hPa?.[i], dir: h.wind_direction_500hPa?.[i] },
+        { alt: 4400, spd: h.wind_speed_600hPa?.[i], dir: h.wind_direction_600hPa?.[i] },
+        { alt: 3100, spd: h.wind_speed_700hPa?.[i], dir: h.wind_direction_700hPa?.[i] },
+        { alt: 1450, spd: h.wind_speed_850hPa?.[i], dir: h.wind_direction_850hPa?.[i] },
       ].map((l) => ({
         ...l,
-        speed: l.speed ?? Math.round(wind10 * (1 + (5800 - l.alt) / (5800 - 1450) * 1.8)),
-        dir: l.dir ?? Math.round(windDir10 + (5800 - l.alt) * 0.008),
+        spd: l.spd ?? Math.round(w10 * (1 + (5800 - l.alt) / (5800 - 1450) * 1.8)),
+        dir: l.dir ?? Math.round(wd10 + (5800 - l.alt) * 0.008),
       }));
 
-      // Lapse rate profile
-      type TP = { alt: number; temp: number };
-      const tempPts: TP[] = [
-        { alt: altitude, temp: t2m },
-        ...(t80 != null ? [{ alt: altitude + 80, temp: t80 }] : []),
-        ...(t120 != null ? [{ alt: altitude + 120, temp: t120 }] : []),
-        { alt: 1450, temp: t2m - (1450 - altitude) * 0.0065 },
-        { alt: 3100, temp: t2m - (3100 - altitude) * 0.007 },
-        { alt: 4400, temp: t2m - (4400 - altitude) * 0.0075 },
-        { alt: 5800, temp: t2m - (5800 - altitude) * 0.008 },
-      ].filter((p): p is TP => p.temp != null && !isNaN(p.temp));
+      // Lapse-rate profile
+      type TP = { a: number; t: number };
+      const tps: TP[] = [
+        { a: altitude, t: t2m },
+        ...(t80 != null ? [{ a: altitude + 80, t: t80 }] : []),
+        ...(t120 != null ? [{ a: altitude + 120, t: t120 }] : []),
+        { a: 1450, t: t2m - (1450 - altitude) * 0.0065 },
+        { a: 3100, t: t2m - (3100 - altitude) * 0.007 },
+        { a: 4400, t: t2m - (4400 - altitude) * 0.0075 },
+        { a: 5800, t: t2m - (5800 - altitude) * 0.008 },
+      ].filter((p): p is TP => p.t != null && !isNaN(p.t));
 
-      function interpT(alt: number): number {
-        if (tempPts.length === 0) return t2m - (alt - altitude) * 0.0065;
-        const s = [...tempPts].sort((a, b) => a.alt - b.alt);
-        if (alt <= s[0].alt) return s[0].temp;
-        if (alt >= s[s.length - 1].alt) return s[s.length - 1].temp;
-        for (let i = 0; i < s.length - 1; i++) {
-          if (s[i].alt <= alt && s[i + 1].alt >= alt) {
-            const f = (alt - s[i].alt) / (s[i + 1].alt - s[i].alt);
-            return s[i].temp + f * (s[i + 1].temp - s[i].temp);
+      const interp = (a: number) => {
+        if (!tps.length) return t2m - (a - altitude) * 0.0065;
+        const s = [...tps].sort((a, b) => a.a - b.a);
+        if (a <= s[0].a) return s[0].t;
+        if (a >= s[s.length - 1].a) return s[s.length - 1].t;
+        for (let j = 0; j < s.length - 1; j++) {
+          if (s[j].a <= a && s[j + 1].a >= a) {
+            const f = (a - s[j].a) / (s[j + 1].a - s[j].a);
+            return s[j].t + f * (s[j + 1].t - s[j].t);
           }
         }
         return t2m;
-      }
+      };
 
-      const lapseRates: { alt: number; dt: number }[] = [];
-      const sampleAlts = [altitude, altitude + 300, altitude + 600, altitude + 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 5800];
-      for (const a of sampleAlts) {
-        const tB = interpT(a - 150);
-        const tA = interpT(a + 150);
-        lapseRates.push({ alt: a, dt: Math.round(((tA - tB) / 300) * 100 * 100) / 100 });
+      const lapseRates: { a: number; dt: number }[] = [];
+      for (const a of [altitude, altitude + 300, altitude + 600, altitude + 1000,
+                       1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 5800]) {
+        lapseRates.push({ a, dt: Math.round(((interp(a + 150) - interp(a - 150)) / 300) * 100 * 100) / 100 });
       }
 
       return {
-        hour: targetHour, idx,
-        x: xFromIdx(HOURS.indexOf(targetHour)),
-        t2m, dew2m, hum, spread, cloud, precip, cape,
-        wind10, windDir10, sunPct, sunDur,
-        surfaceDeltaT, rateo,
-        cloudBase, thermalTop, freeze,
-        levelWinds, lapseRates,
-        yCloudBase: altToY(cloudBase),
-        yThermalTop: altToY(thermalTop),
-        yFreeze: altToY(freeze),
-        sineEnvelope,
+        hr, i, x: xIdx(HOURS.indexOf(hr)),
+        t2m, dew, spread, cloud, precip, cape, rateo, dtSurface,
+        wind10: w10, windDir10: wd10, sunPct, sunDur, cloudBase, thermalTop, frz,
+        lwinds, lapseRates,
+        yCB: altY(cloudBase), yTT: altY(thermalTop), yFrz: altY(frz),
       };
     }).filter((c): c is NonNullable<typeof c> => c !== null);
   }, [data, altitude]);
 
-  // ── Pre-compute curves ─────────────────────────────
-  const boundaryAlts = useMemo(() =>
-    columns.map((c) => {
-      const hourFrac = (c.hour - 8) / 10;
-      const sine = Math.sin(hourFrac * Math.PI);
-      const baseAlt = ALT_MIN + 180;
-      const amp = c.rateo * 220 + c.cape * 0.08 + 160;
-      return Math.min(ALT_MAX - 50, Math.max(ALT_MIN + 80, Math.round(baseAlt + sine * amp)));
-    }),
-    [columns]
-  );
-  const boundaryYPts = useMemo(
-    () => columns.map((c, i) => ({ x: c.x, y: altToY(boundaryAlts[i]) })),
-    [columns, boundaryAlts]
-  );
-  const boundaryPath = useMemo(() => toBezier(boundaryYPts), [boundaryYPts]);
+  // ── Thermal boundary (sinusoidal wave) ────────────
+  const bAlts = useMemo(() =>
+    cols.map((c) => {
+      const s = Math.sin(((c.hr - 8) / 10) * Math.PI);
+      const amp = c.rateo * 260 + c.cape * 0.1 + 180;
+      return Math.min(ALT_MAX - 50, Math.max(ALT_MIN + 60, Math.round(ALT_MIN + 160 + s * amp)));
+    }), [cols]);
+  const bYPts = useMemo(() => cols.map((c, i) => ({ x: c.x, y: altY(bAlts[i]) })), [cols, bAlts]);
+  const bPath = useMemo(() => bezier(bYPts), [bYPts]);
 
-  const thermalTopPts = useMemo(() => columns.map((c) => ({ x: c.x, y: c.yThermalTop })), [columns]);
-  const freezePts = useMemo(() => columns.map((c) => ({ x: c.x, y: c.yFreeze })), [columns]);
-  const cloudBasePts = useMemo(() => columns.map((c) => ({ x: c.x, y: c.yCloudBase })), [columns]);
-  const avgFreeze = useMemo(
-    () => columns.length ? Math.round(columns.reduce((s, c) => s + c.freeze, 0) / columns.length) : altitude + 3200,
-    [columns, altitude]
-  );
-  const cloudBadges = useMemo(
-    () => columns.slice(1, -1).map((c) => ({
-      x: c.x, y: altToY(c.cloudBase + 240), alt: c.cloudBase, rate: c.rateo,
-    })),
-    [columns]
+  const ttPts = useMemo(() => cols.map((c) => ({ x: c.x, y: c.yTT })), [cols]);
+  const frzPts = useMemo(() => cols.map((c) => ({ x: c.x, y: c.yFrz })), [cols]);
+  const cbPts = useMemo(() => cols.map((c) => ({ x: c.x, y: c.yCB })), [cols]);
+  const avgFrz = useMemo(() =>
+    cols.length ? Math.round(cols.reduce((s, c) => s + c.frz, 0) / cols.length) : altitude + 3200, [cols, altitude]);
+
+  // Cloud badges: ONE per intermediate hour, placed ON the cloud-base curve
+  const badges = useMemo(
+    () => cols.slice(1, -1).map((c) => ({ x: c.x, y: c.yCB, alt: c.cloudBase, rate: c.rateo })),
+    [cols]
   );
 
-  // ── Draw canvas ────────────────────────────────────
+  // Precipitation labels
+  const precipLabels = useMemo(
+    () => cols.filter((c) => c.precip > 0.05).map((c) => ({ x: c.x, y: altY(ALT_MAX) - 6, mm: c.precip })),
+    [cols]
+  );
+
+  // ── Draw ───────────────────────────────────────────
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const cvs = canvasRef.current;
+    if (!cvs) return;
+    const ctx = cvs.getContext("2d");
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = CW * dpr;
-    canvas.height = TOTAL_H * dpr;
-    canvas.style.width = `${CW}px`;
-    canvas.style.height = `${TOTAL_H}px`;
+    cvs.width = CW * dpr; cvs.height = TOTAL_H * dpr;
+    cvs.style.width = `${CW}px`; cvs.style.height = `${TOTAL_H}px`;
     ctx.scale(dpr, dpr);
 
-    // White background
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, CW, TOTAL_H);
+    const PL = ML, PR = ML + GW, PB = PLOT_TOP + GH;
+    const xs = GW / (HOURS.length - 1);
 
-    const plotLeft = MARGIN_L;
-    const plotRight = MARGIN_L + GRAPH_W;
-    const plotBottom = PLOT_TOP + GRAPH_H;
-    const xStep = GRAPH_W / (HOURS.length - 1);
+    // White bg
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, CW, TOTAL_H);
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
 
-    // ══════════════════════════════════════════════════
-    // HEADER
-    // ══════════════════════════════════════════════════
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    // Site name + date
-    ctx.fillStyle = "#111827";
-    ctx.font = "bold 20px sans-serif";
-    ctx.fillText(
-      `${siteName.toLowerCase()} · ${formattedDateTitle.toLowerCase()}`,
-      CW / 2, 28
-    );
-
-    // Sub-header
-    ctx.fillStyle = "#6b7280";
-    ctx.font = "11px monospace";
-    ctx.fillText(
-      `plotted ${dateStr} 00:00 UTC · model ground ${Math.round(altitude + 5)} m · SRTM ${Math.round(altitude)} m`,
-      CW / 2, 48
-    );
-
-    // "valore medio ascendenze" label
-    ctx.fillStyle = "#6b7280";
-    ctx.font = "italic 11px sans-serif";
+    // ── HEADER ────────────────────────────────────
+    ctx.fillStyle = "#111827"; ctx.font = "bold 20px sans-serif";
+    ctx.fillText(`${siteName.toLowerCase()} · ${fmtDate.toLowerCase()}`, CW / 2, 28);
+    ctx.fillStyle = "#6b7280"; ctx.font = "11px monospace";
+    ctx.fillText(`plotted ${dateStr} 00:00 UTC · model ground ${Math.round(altitude + 5)} m · SRTM ${Math.round(altitude)} m`, CW / 2, 48);
+    ctx.fillStyle = "#6b7280"; ctx.font = "italic 11px sans-serif";
     ctx.fillText("valore medio ascendenze (m/s)", CW / 2, 68);
 
-    // ══════════════════════════════════════════════════
-    // TOP NUMERIC STRIP (two rows)
-    // ══════════════════════════════════════════════════
-    HOURS.forEach((_, i) => {
-      const x = MARGIN_L + i * xStep;
-      const c = columns[i];
-      if (!c) return;
-
-      // Row 1: thermal rate (large, bold)
-      const rateColor = c.rateo >= 1.6 ? "#b91c1c" : c.rateo >= 1.0 ? "#ca8a04" : "#111827";
-      ctx.fillStyle = rateColor;
-      ctx.font = "bold 14px monospace";
+    // ── TOP NUMERIC STRIP ─────────────────────────
+    cols.forEach((c, idx) => {
+      const x = ML + idx * xs;
+      // Row 1: rateo
+      const rc = c.rateo >= 1.6 ? "#b91c1c" : c.rateo >= 1.0 ? "#ca8a04" : "#111827";
+      ctx.fillStyle = rc; ctx.font = "bold 14px monospace";
       ctx.textAlign = "center";
       ctx.fillText(c.rateo.toFixed(1), x, 88);
-
-      // "sole %" label on first column
-      if (i === 0) {
-        ctx.fillStyle = "#6b7280";
-        ctx.font = "10px sans-serif";
-        ctx.textAlign = "right";
-        ctx.fillText("sole %", MARGIN_L - 8, 106);
+      // Row 2: sole %
+      if (idx === 0) {
+        ctx.fillStyle = "#6b7280"; ctx.font = "10px sans-serif"; ctx.textAlign = "right";
+        ctx.fillText("sole %", ML - 8, 106);
       }
-
-      // Row 2: sun %
-      const sunColor = c.sunPct >= 60 ? "#b45309" : "#475569";
-      ctx.fillStyle = sunColor;
-      ctx.font = "bold 11px monospace";
+      const sc = c.sunPct >= 60 ? "#b45309" : "#475569";
+      ctx.fillStyle = sc; ctx.font = "bold 11px monospace";
       ctx.textAlign = "center";
       ctx.fillText(`${c.sunPct}%`, x, 106);
     });
 
-    // ══════════════════════════════════════════════════
-    // PLOT BACKGROUND — Alpium exact color bands
-    // ══════════════════════════════════════════════════
-    let bandY = PLOT_TOP;
-    for (const band of HEAT_BANDS) {
-      const targetY = altToY(band.altTop);
-      ctx.fillStyle = band.color;
-      ctx.fillRect(plotLeft, bandY, GRAPH_W, targetY - bandY);
-      bandY = targetY;
+    // ── PLOT BG: Alpium heat bands ───────────────
+    let by = PLOT_TOP;
+    for (const b of BANDS) {
+      const ty = altY(b.top);
+      ctx.fillStyle = b.col;
+      ctx.fillRect(PL, by, GW, ty - by);
+      by = ty;
     }
 
-    // ══════════════════════════════════════════════════
-    // PER-COLUMN LAPSE-RATE MODULATION
-    // Overlay: warm colors (red/orange) where ΔT is high,
-    // cool colors (green/purple) where ΔT is low
-    // ══════════════════════════════════════════════════
-    if (columns.length > 0 && boundaryAlts.length === columns.length) {
+    // ── Per-column lapse-rate overlay ────────────
+    if (cols.length > 0) {
       const N = 32;
-      for (let ci = 0; ci < columns.length; ci++) {
-        const col = columns[ci];
-        const xL = col.x - xStep / 2;
-        const xR = col.x + xStep / 2;
-        const bAlt = boundaryAlts[ci];
-
+      for (let ci = 0; ci < cols.length; ci++) {
+        const c = cols[ci], bA = bAlts[ci];
+        const xL = colL(ci), xR = colR(ci), w = colW(ci);
         for (let si = 0; si < N; si++) {
-          const altTop = ALT_MIN + ((N - si - 0.5) / N) * (ALT_MAX - ALT_MIN);
-          const altBot = ALT_MIN + ((N - si - 1.5) / N) * (ALT_MAX - ALT_MIN);
-          const yTop = altToY(altTop);
-          const yBot = altToY(altBot);
-          const midAlt = (altTop + altBot) / 2;
-          const stripH = Math.max(1, yTop - yBot);
-
-          if (midAlt <= bAlt) {
-            // BELOW boundary: warm/unstable
-            const zoneFrac = Math.max(0, Math.min(1, (bAlt - midAlt) / (bAlt - ALT_MIN + 1)));
-            const intensity = col.surfaceDeltaT / 1.2;
-            const alpha = 0.3 + zoneFrac * 0.45 * intensity;
-            const r = Math.round(252 - zoneFrac * 100);
-            const g = Math.round(168 + zoneFrac * 80);
-            const b = Math.round(53 - zoneFrac * 80);
-            ctx.fillStyle = rgbStr(r, g, b, Math.min(0.85, alpha));
+          const aT = ALT_MIN + ((N - si - 0.5) / N) * (ALT_MAX - ALT_MIN);
+          const aB = ALT_MIN + ((N - si - 1.5) / N) * (ALT_MAX - ALT_MIN);
+          const yT = altY(aT), yB = altY(aB), mid = (aT + aB) / 2, sh = Math.max(1, yT - yB);
+          if (mid <= bA) {
+            const zf = Math.max(0, Math.min(1, (bA - mid) / (bA - ALT_MIN + 1)));
+            const inten = c.dtSurface / 1.2;
+            const al = Math.min(0.85, 0.25 + zf * 0.5 * inten);
+            ctx.fillStyle = rgb(252 - zf * 100, 168 + zf * 80, 53 - zf * 80, al);
           } else {
-            // ABOVE boundary: cool/stable
-            const zoneFrac = Math.max(0, Math.min(1, (midAlt - bAlt) / (ALT_MAX - bAlt + 1)));
-            const intensity = 1 - col.surfaceDeltaT / 1.5;
-            const alpha = 0.25 + zoneFrac * 0.5 * Math.max(0, intensity);
-            const r = Math.round(136 - zoneFrac * 80);
-            const g = Math.round(196 - zoneFrac * 120);
-            const b = Math.round(66 + zoneFrac * 100);
-            ctx.fillStyle = rgbStr(r, g, b, Math.min(0.8, alpha));
+            const zf = Math.max(0, Math.min(1, (mid - bA) / (ALT_MAX - bA + 1)));
+            const inten = 1 - c.dtSurface / 1.5;
+            const al = Math.min(0.8, 0.2 + zf * 0.5 * Math.max(0, inten));
+            ctx.fillStyle = rgb(136 - zf * 80, 196 - zf * 120, 66 + zf * 100, al);
           }
-          ctx.fillRect(xL, yTop, xR - xL, stripH);
+          ctx.fillRect(xL, yT, w, sh);
         }
       }
     }
 
-    // ══════════════════════════════════════════════════
-    // CROSS-HATCH (convective mesh) — below thermal boundary
-    // ══════════════════════════════════════════════════
+    // ── Cross-hatch (convective mesh, below boundary) ──
     ctx.save();
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.13)";
-    ctx.lineWidth = 0.9;
-    const hatchSpacing = 11;
-    for (let ci = 0; ci < columns.length; ci++) {
-      const col = columns[ci];
-      if (col.surfaceDeltaT < 0.55) continue;
-      const bY = altToY(boundaryAlts[ci]);
-      const xL = col.x - xStep / 2;
-      const xR = col.x + xStep / 2;
-
-      for (let hx = xL - GRAPH_H; hx < xR + GRAPH_H; hx += hatchSpacing) {
-        ctx.beginPath();
-        ctx.moveTo(hx, bY);
-        ctx.lineTo(hx + (plotBottom - bY), plotBottom);
-        ctx.stroke();
-      }
-      for (let hx = xL - GRAPH_H; hx < xR + GRAPH_H; hx += hatchSpacing) {
-        ctx.beginPath();
-        ctx.moveTo(hx, plotBottom);
-        ctx.lineTo(hx + (plotBottom - bY), bY);
-        ctx.stroke();
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.12)";
+    ctx.lineWidth = 0.85;
+    const hs = 11;
+    for (let ci = 0; ci < cols.length; ci++) {
+      if (cols[ci].dtSurface < 0.55) continue;
+      const bY = altY(bAlts[ci]);
+      const xL = colL(ci), xR = colR(ci);
+      for (let hx = xL - GH; hx < xR + GH; hx += hs) {
+        ctx.beginPath(); ctx.moveTo(hx, bY); ctx.lineTo(hx + (PB - bY), PB); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(hx, PB); ctx.lineTo(hx + (PB - bY), bY); ctx.stroke();
       }
     }
     ctx.restore();
 
-    // ══════════════════════════════════════════════════
-    // HORIZONTAL GRID LINES + hPa / meter LABELS
-    // ══════════════════════════════════════════════════
-    const hpaStep = GRAPH_H / (HPA_LEVELS.length - 1);
-    HPA_LEVELS.forEach((lvl, i) => {
+    // ── Horizontal grid + hPa / meter labels ─────
+    const hpaStep = GH / (HPA.length - 1);
+    HPA.forEach((lv, i) => {
       const y = PLOT_TOP + i * hpaStep;
-
-      ctx.strokeStyle = "rgba(0, 0, 0, 0.18)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(plotLeft, y);
-      ctx.lineTo(plotRight, y);
-      ctx.stroke();
-
-      // Left: hPa
-      ctx.fillStyle = "#1e293b";
-      ctx.font = "bold 11px monospace";
-      ctx.textAlign = "right";
-      ctx.textBaseline = "middle";
-      ctx.fillText(lvl.hpa, plotLeft - 10, y);
-
-      // Right: meters
+      ctx.strokeStyle = "rgba(0,0,0,0.18)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(PL, y); ctx.lineTo(PR, y); ctx.stroke();
+      ctx.fillStyle = "#1e293b"; ctx.font = "bold 11px monospace";
+      ctx.textAlign = "right"; ctx.textBaseline = "middle";
+      ctx.fillText(lv.hpa, PL - 10, y);
       ctx.textAlign = "left";
-      ctx.fillText(lvl.alt, plotRight + 10, y);
+      ctx.fillText(lv.alt, PR + 10, y);
     });
 
-    // ══════════════════════════════════════════════════
-    // RIGHT ALTITUDE TICKS — 250m steps from launch to 4000m
-    // ══════════════════════════════════════════════════
+    // ── Right altitude ticks: 250m steps launch→4000 ──
     const launchAlt = Math.round(altitude);
-    const altMinTick = Math.floor((launchAlt - 1) / 250) * 250;
-    for (let a = altMinTick; a <= 4000; a += 250) {
-      const y = altToY(a);
-      ctx.strokeStyle = "#1e293b";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(plotRight, y);
-      ctx.lineTo(plotRight + 5, y);
-      ctx.stroke();
-      ctx.fillStyle = "#475569";
-      ctx.font = "10px monospace";
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      ctx.fillText(`${a} m`, plotRight + 9, y);
+    const aMinTick = Math.floor((launchAlt - 1) / 250) * 250;
+    for (let a = aMinTick; a <= 4000; a += 250) {
+      const y = altY(a);
+      ctx.strokeStyle = "#1e293b"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(PR, y); ctx.lineTo(PR + 5, y); ctx.stroke();
+      ctx.fillStyle = "#475569"; ctx.font = "10px monospace";
+      ctx.textAlign = "left"; ctx.textBaseline = "middle";
+      ctx.fillText(`${a} m`, PR + 9, y);
     }
 
-    // ══════════════════════════════════════════════════
-    // VERTICAL HOUR LINES
-    // ══════════════════════════════════════════════════
-    columns.forEach((c) => {
-      ctx.strokeStyle = "rgba(148, 163, 184, 0.35)";
-      ctx.lineWidth = 0.7;
+    // ── Vertical hour lines ──────────────────────
+    cols.forEach((c) => {
+      ctx.strokeStyle = "rgba(148,163,184,0.35)"; ctx.lineWidth = 0.7;
       ctx.setLineDash([3, 3]);
-      ctx.beginPath();
-      ctx.moveTo(c.x, PLOT_TOP);
-      ctx.lineTo(c.x, plotBottom);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(c.x, PLOT_TOP); ctx.lineTo(c.x, PB); ctx.stroke();
       ctx.setLineDash([]);
     });
 
-    // ══════════════════════════════════════════════════
-    // PLOT BORDER
-    // ══════════════════════════════════════════════════
-    ctx.strokeStyle = "#0f172a";
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(plotLeft, PLOT_TOP, GRAPH_W, GRAPH_H);
+    // ── Plot border ──────────────────────────────
+    ctx.strokeStyle = "#0f172a"; ctx.lineWidth = 1.5;
+    ctx.strokeRect(PL, PLOT_TOP, GW, GH);
 
-    // ══════════════════════════════════════════════════
-    // WIND BARBS
-    // ══════════════════════════════════════════════════
-    columns.forEach((col) => {
-      col.levelWinds.forEach((lw) => {
-        drawWindBarb(ctx, col.x, altToY(lw.alt), lw.speed, lw.dir);
-      });
+    // ── Wind barbs ───────────────────────────────
+    cols.forEach((c) => {
+      c.lwinds.forEach((lw) => drawBarb(ctx, c.x, altY(lw.alt), lw.spd, lw.dir));
     });
 
-    // ══════════════════════════════════════════════════
-    // 0°C ISOTHERM (blue dashed line + snowflakes)
-    // ══════════════════════════════════════════════════
-    if (freezePts.length >= 2) {
+    // ── 0°C isotherm (blue dashed + snowflakes) ──
+    if (frzPts.length >= 2) {
       ctx.save();
-      ctx.strokeStyle = "#2563eb";
-      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = "#2563eb"; ctx.lineWidth = 2.2;
       ctx.setLineDash([7, 5]);
-      ctx.beginPath();
-      strokePath(ctx, toBezier(freezePts));
-      ctx.stroke();
+      ctx.beginPath(); strokePath(ctx, bezier(frzPts)); ctx.stroke();
       ctx.restore();
 
-      // Snowflake icons along isotherm
-      const snowInterval = Math.max(1, Math.floor(freezePts.length / 5));
-      freezePts.forEach((p, i) => {
-        if (i % snowInterval !== 0) return;
-        drawSnowflake(ctx, p.x, p.y - 16);
-      });
+      const si = Math.max(1, Math.floor(frzPts.length / 5));
+      frzPts.forEach((p, idx) => { if (idx % si === 0) drawSnow(ctx, p.x, p.y - 16); });
     }
 
     // 0°C badge
-    if (freezePts[0]) {
-      const badgeY = altToY(avgFreeze);
-      const badgeX = plotRight - 115;
-      ctx.fillStyle = "#ffffff";
-      ctx.strokeStyle = "#2563eb";
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.roundRect(badgeX, badgeY - 12, 105, 24, 5);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = "#1e40af";
-      ctx.font = "bold 12px monospace";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(`0 °C · ${avgFreeze} m`, badgeX + 52, badgeY);
+    if (frzPts[0]) {
+      const by = altY(avgFrz), bx = PR - 115;
+      ctx.fillStyle = "#fff"; ctx.strokeStyle = "#2563eb"; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.roundRect(bx, by - 12, 105, 24, 5); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#1e40af"; ctx.font = "bold 12px monospace";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(`0 °C · ${avgFrz} m`, bx + 52, by);
     }
 
-    // ══════════════════════════════════════════════════
-    // THERMAL TOP CURVE (purple solid, Alpium style)
-    // ══════════════════════════════════════════════════
-    if (thermalTopPts.length >= 2) {
-      ctx.strokeStyle = "#7e22ce";
-      ctx.lineWidth = 3;
-      ctx.lineCap = "round";
-      ctx.beginPath();
-      strokePath(ctx, toBezier(thermalTopPts));
-      ctx.stroke();
+    // ── Thermal TOP curve (purple solid, Alpium style) ──
+    if (ttPts.length >= 2) {
+      ctx.strokeStyle = "#7e22ce"; ctx.lineWidth = 3; ctx.lineCap = "round";
+      ctx.beginPath(); strokePath(ctx, bezier(ttPts)); ctx.stroke();
     }
 
-    // ══════════════════════════════════════════════════
-    // THERMAL BOUNDARY CURVE (orange sinusoidal wave)
-    // ══════════════════════════════════════════════════
-    if (boundaryYPts.length >= 2) {
-      // Glow
-      ctx.strokeStyle = "#f97316";
-      ctx.lineWidth = 8;
-      ctx.globalAlpha = 0.2;
-      ctx.beginPath();
-      strokePath(ctx, boundaryPath);
-      ctx.stroke();
+    // ── Thermal BOUNDARY wave (orange, prominent glow) ──
+    if (bYPts.length >= 2) {
+      ctx.strokeStyle = "#f97316"; ctx.lineWidth = 10;
+      ctx.globalAlpha = 0.18;
+      ctx.beginPath(); strokePath(ctx, bPath); ctx.stroke();
       ctx.globalAlpha = 1;
 
-      // Main
-      ctx.strokeStyle = "#ea580c";
-      ctx.lineWidth = 2.8;
-      ctx.lineCap = "round";
-      ctx.beginPath();
-      strokePath(ctx, boundaryPath);
-      ctx.stroke();
+      ctx.strokeStyle = "#ea580c"; ctx.lineWidth = 3; ctx.lineCap = "round";
+      ctx.beginPath(); strokePath(ctx, bPath); ctx.stroke();
 
-      // Highlight
-      ctx.strokeStyle = "#fb923c";
-      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = "#fb923c"; ctx.lineWidth = 1.2;
       ctx.globalAlpha = 0.7;
-      ctx.beginPath();
-      strokePath(ctx, boundaryPath);
-      ctx.stroke();
+      ctx.beginPath(); strokePath(ctx, bPath); ctx.stroke();
       ctx.globalAlpha = 1;
     }
 
-    // ══════════════════════════════════════════════════
-    // CLOUD BASE CURVE (purple dashed)
-    // ══════════════════════════════════════════════════
-    if (cloudBasePts.length >= 2) {
+    // ── Cloud BASE curve (purple dashed) ─────────
+    if (cbPts.length >= 2) {
       ctx.save();
-      ctx.strokeStyle = "#a855f7";
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([6, 3]);
-      ctx.globalAlpha = 0.7;
-      ctx.beginPath();
-      strokePath(ctx, toBezier(cloudBasePts));
-      ctx.stroke();
+      ctx.strokeStyle = "#a855f7"; ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 3]); ctx.globalAlpha = 0.7;
+      ctx.beginPath(); strokePath(ctx, bezier(cbPts)); ctx.stroke();
       ctx.restore();
     }
 
-    // ══════════════════════════════════════════════════
-    // PBL CURVE (black dashed)
-    // ══════════════════════════════════════════════════
-    const pblPts = columns.map((c) => ({
-      x: c.x,
-      y: altToY(Math.min(ALT_MAX, Math.max(ALT_MIN, c.cloudBase + c.rateo * 600))),
+    // ── PBL curve (black dashed) ─────────────────
+    const pblPts = cols.map((c) => ({
+      x: c.x, y: altY(Math.min(ALT_MAX, Math.max(ALT_MIN, c.cloudBase + c.rateo * 600))),
     }));
     if (pblPts.length >= 2) {
       ctx.save();
-      ctx.strokeStyle = "#0f172a";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([6, 4]);
-      ctx.globalAlpha = 0.55;
-      ctx.beginPath();
-      strokePath(ctx, toBezier(pblPts));
-      ctx.stroke();
+      ctx.strokeStyle = "#0f172a"; ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]); ctx.globalAlpha = 0.55;
+      ctx.beginPath(); strokePath(ctx, bezier(pblPts)); ctx.stroke();
       ctx.restore();
     }
 
-    // ══════════════════════════════════════════════════
-    // THERMAL PERCENTAGE CURVES (25%, 50%, 75%)
-    // ══════════════════════════════════════════════════
+    // ── Thermal % curves (25/50/75%, light purple dashed) ──
     [25, 50, 75].forEach((pct) => {
-      const pts = columns.map((c) => ({
-        x: c.x,
-        y: altToY(c.cloudBase + (c.thermalTop - c.cloudBase) * (pct / 100)),
+      const pts = cols.map((c) => ({
+        x: c.x, y: altY(c.cloudBase + (c.thermalTop - c.cloudBase) * (pct / 100)),
       }));
       ctx.save();
-      ctx.strokeStyle = "#6366f1";
-      ctx.lineWidth = 1.3;
-      ctx.setLineDash([5, 3]);
-      ctx.globalAlpha = 0.45;
-      ctx.beginPath();
-      strokePath(ctx, toBezier(pts));
-      ctx.stroke();
+      ctx.strokeStyle = "#6366f1"; ctx.lineWidth = 1.3;
+      ctx.setLineDash([5, 3]); ctx.globalAlpha = 0.45;
+      ctx.beginPath(); strokePath(ctx, bezier(pts)); ctx.stroke();
       ctx.restore();
     });
 
-    // ══════════════════════════════════════════════════
-    // PARAGLIDER ICONS (on thermal top)
-    // ══════════════════════════════════════════════════
-    columns.forEach((c) => {
-      drawParaglider(ctx, c.x, c.yThermalTop - 6);
+    // ── Paragliders ON thermal-top curve ─────────
+    cols.forEach((c) => drawParaglider(ctx, c.x, c.yTT - 6));
+
+    // ── Cloud badges ON cloud-base curve ─────────
+    badges.forEach((b) => drawCloudBadge(ctx, b.x, b.y, b.alt, b.rate));
+
+    // ── Cloud coverage % text (right side of plot) ─
+    cols.slice(1, -1).forEach((c) => {
+      ctx.fillStyle = "#475569"; ctx.font = "bold 11px monospace";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(`${c.cloud}%`, c.x, altY(c.cloudBase + 320));
     });
 
-    // ══════════════════════════════════════════════════
-    // CLOUD BASE BADGES
-    // ══════════════════════════════════════════════════
-    cloudBadges.forEach((b) => {
-      drawCloudBadge(ctx, b.x, b.y, b.alt, b.rate);
+    // ── Precipitation labels ─────────────────────
+    precipLabels.forEach((pl) => {
+      ctx.fillStyle = "#dbeafe"; ctx.strokeStyle = "#3b82f6"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.roundRect(pl.x - 18, pl.y - 8, 36, 16, 4);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#1e40af"; ctx.font = "bold 9px monospace";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(`${pl.mm.toFixed(2)} mm`, pl.x, pl.y);
     });
 
-    // ══════════════════════════════════════════════════
-    // HOUR LABELS
-    // ══════════════════════════════════════════════════
-    columns.forEach((c) => {
-      ctx.strokeStyle = "#1e293b";
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.moveTo(c.x, plotBottom);
-      ctx.lineTo(c.x, plotBottom + 6);
-      ctx.stroke();
-
-      ctx.fillStyle = "#111827";
-      ctx.font = "bold 12px monospace";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "top";
-      ctx.fillText(`${String(c.hour).padStart(2, "0")}:00`, c.x, plotBottom + 10);
+    // ── Hour labels ──────────────────────────────
+    cols.forEach((c) => {
+      ctx.strokeStyle = "#1e293b"; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(c.x, PB); ctx.lineTo(c.x, PB + 6); ctx.stroke();
+      ctx.fillStyle = "#111827"; ctx.font = "bold 12px monospace";
+      ctx.textAlign = "center"; ctx.textBaseline = "top";
+      ctx.fillText(`${String(c.hr).padStart(2, "0")}:00`, c.x, PB + 10);
     });
 
-    // ══════════════════════════════════════════════════
-    // FOOTER: ΔT LEGEND
-    // ══════════════════════════════════════════════════
-    const legendY = TOTAL_H - 42;
-    const legendW = 520;
-    const legendX = (CW - legendW) / 2;
-
-    const grad = ctx.createLinearGradient(legendX, 0, legendX + legendW, 0);
-    LEGEND_STOPS.forEach((s) => grad.addColorStop(s.pos, s.color));
+    // ── FOOTER: ΔT legend ────────────────────────
+    const ly = TOTAL_H - 44, lw = 520, lx = (CW - lw) / 2;
+    const grad = ctx.createLinearGradient(lx, 0, lx + lw, 0);
+    LEG.forEach((s) => grad.addColorStop(s.p, s.c));
     ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.roundRect(legendX, legendY, legendW, 14, 3);
-    ctx.fill();
+    ctx.beginPath(); ctx.roundRect(lx, ly, lw, 14, 3); ctx.fill();
 
-    // DeltaT values under legend
-    const dtVals = DT_STOPS.map((s) => s.val);
-    ctx.font = "9px monospace";
-    ctx.fillStyle = "#6b7280";
-    ctx.textAlign = "center";
-    dtVals.forEach((v, i) => {
-      const lx = legendX + (i / (dtVals.length - 1)) * legendW;
-      ctx.fillText(v.toFixed(2), lx, legendY + 17);
+    // ΔT values under legend
+    ctx.font = "9px monospace"; ctx.fillStyle = "#6b7280"; ctx.textAlign = "center";
+    DT.forEach((s, idx) => {
+      const px = lx + (idx / (DT.length - 1)) * lw;
+      ctx.fillText(s.v.toFixed(2), px, ly + 17);
     });
 
     ctx.font = "bold 10px sans-serif";
-    ctx.textAlign = "right";
-    ctx.fillStyle = "#475569";
-    ctx.fillText("Stabile ←", legendX - 8, legendY + 10);
+    ctx.textAlign = "right"; ctx.fillStyle = "#475569";
+    ctx.fillText("Stabile ←", lx - 8, ly + 10);
     ctx.textAlign = "left";
-    ctx.fillText("→ Instabile", legendX + legendW + 8, legendY + 10);
+    ctx.fillText("→ Instabile", lx + lw + 8, ly + 10);
     ctx.textAlign = "center";
-    ctx.font = "bold 11px sans-serif";
-    ctx.fillStyle = "#1e293b";
-    ctx.fillText("ΔT / 100 m", CW / 2, legendY - 7);
+    ctx.font = "bold 11px sans-serif"; ctx.fillStyle = "#1e293b";
+    ctx.fillText("ΔT / 100 m", CW / 2, ly - 7);
 
-    // ══════════════════════════════════════════════════
-    // ATTRIBUTION
-    // ══════════════════════════════════════════════════
-    ctx.font = "11px sans-serif";
-    ctx.fillStyle = "#6b7280";
-    ctx.textAlign = "center";
+    // Attribution
+    ctx.font = "11px sans-serif"; ctx.fillStyle = "#6b7280"; ctx.textAlign = "center";
     ctx.fillText(
       "Fonte: AROME 0-48 h + ICON-EU 0-120 h via Open-Meteo · Diagnostica di volo a vela di Alpium",
       CW / 2, TOTAL_H - 10
     );
 
-  }, [columns, boundaryAlts, boundaryYPts, boundaryPath, thermalTopPts, freezePts,
-      cloudBasePts, avgFreeze, cloudBadges, dateStr, siteName, altitude,
-      formattedDateTitle, latitude, longitude]);
+  }, [cols, bAlts, bYPts, bPath, ttPts, frzPts, cbPts, avgFrz, badges,
+      precipLabels, dateStr, siteName, altitude, fmtDate, latitude, longitude]);
 
-  // ── Loading / error ────────────────────────────────
+  // ── Loading / error ───────────────────────────────
   if (loading) {
     return (
       <div className="bg-white rounded-[28px] shadow-2xl border border-slate-300 p-8 flex flex-col items-center justify-center min-h-[420px]">
