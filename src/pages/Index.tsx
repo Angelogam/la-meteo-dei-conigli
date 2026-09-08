@@ -13,7 +13,7 @@ import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
-import Windgram from "@/components/Windgram";
+import WindgramChart from "@/components/WindgramChart";
 import RasoftWindgram from "@/components/RasoftWindgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import SkewTDiagram from "@/components/SkewTDiagram";
@@ -197,16 +197,12 @@ export default function Index() {
                       {site.elevation_m}m → 4000m
                     </span>
                   </div>
-                  <Windgram
-                    dayData={filteredDayData}
-                    siteName={site.site_name}
+                  <WindgramChart
+                    latitude={site.lat}
+                    longitude={site.lon}
                     altitude={site.elevation_m}
-                    selectedHour={selectedHour}
-                    onHourSelect={setSelectedHour}
+                    siteName={site.site_name}
                     selectedDay={selectedDay}
-                    dateLabel={dateLabel}
-                    lat={site.lat}
-                    lon={site.lon}
                   />
                 </div>
 

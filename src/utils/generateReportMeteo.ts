@@ -145,23 +145,43 @@ export function generateReportMeteo({
   else { rateoMin = 0.3; rateoMax = 0.7; }
 
   // Vento
-  const dayWinds = dayIndices.map((i) => winds[i] ?? 8);
-  const dayDirs = dayIndices.map((i) => dirs[i] ?? 180);
-  const avgWindGround = Math.round(dayWinds.reduce((a, b) => a + b, 0) / dayWinds.length);
-  const maxWindGround = Math.round(Math.max(...dayWinds));
-  const maxGust = Math.round(Math.max(...dayIndices.map(i => gusts[i] ?? 0)));
-  // Direzione prevalente (moda circolare)
-  const mainDirDeg = Math.round(dayDirs.reduce((a, b) => a + b, 0) / dayDirs.length);
-  const mainWindDir = degToCardinal(mainDirDeg);
-  const mainWindDirBreve = degToCardinalBreve(mainDirDeg);
-
-  // Venti alle quote (modello esponenziale realistico)
-  const wind1500_2500 = Math.round(avgWindGround * 1.4 + 3);
-  const dir1500_2500 = degToCardinal(mainDirDeg + 12);
-  const wind2500_3500 = Math.round(avgWindGround * 2.1 + 8);
-  const dir2500_3500 = degToCardinal(mainDirDeg + 28);
-  const windOver3500 = Math.round(avgWindGround * 2.9 + 15);
-  const dirOver3500 = degToCardinal(mainDirDeg + 45);
+    const dayWinds = dayIndices.map((i) => winds[i] ?? 8);
+    const dayDirs = dayIndices.map((i) => dirs[i] ?? 180);
+    const avgWindGround = Math.round(dayWinds.reduce((a, b) => a + b, 0) / dayWinds.length);
+    const maxWindGround = Math.round(Math.max(...dayWinds));
+    const maxGust = Math.round(Math.max(...dayIndices.map(i => gusts[i] ?? 0)));
+    // Direzione prevalente (moda circolare)
+    const mainDirDeg = Math.round(dayDirs.reduce((a, b) => a + b, 0) / dayDirs.length);
+    const mainWindDir = degToCardinal(mainDirDeg);
+    const mainWindDirBreve = degToCardinalBreve(mainDirDeg);
+  
+    // Venti reali ai livelli isobarici da Open-Meteo
+    const wind850 = hourlyData.wind_speed_850hPa ? dayIndices.map(i => hourlyData.wind_speed_850hPa[i] ?? 0) : [];
+    const wind700 = hourlyData.wind_speed_700hPa ? dayIndices.map(i => hourlyData.wind_speed_700hPa[i] ?? 0) : [];
+    const wind600 = hourlyData.wind_speed_600hPa ? dayIndices.map(i => hourlyData.wind_speed_600hPa[i] ?? 0) : [];
+    const wind500 = hourlyData.wind_speed_500hPa ? dayIndices.map(i => hourlyData.wind_speed_500hPa[i] ?? 0) : [];
+    const dir850 = hourlyData.wind_direction_850hPa ? dayIndices.map(i => hourlyData.wind_direction_850hPa[i] ?? mainDirDeg) : [];
+    const dir700 = hourlyData.wind_direction_700hPa ? dayIndices.map(i => hourlyData.wind_direction_700hPa[i] ?? mainDirDeg) : [];
+    const dir600 = hourlyData.wind_direction_600hPa ? dayIndices.map(i => hourlyData.wind_direction_600hPa[i] ?? mainDirDeg) : [];
+    const dir500 = hourlyData.wind_direction_500hPa ? dayIndices.map(i => hourlyData.wind_direction_500hPa[i] ?? mainDirDeg) : [];
+  
+    const avgWind850 = wind850.length > 0 ? Math.round(wind850.reduce((a,b)=>a+b,0)/wind850.length) : Math.round(avgWindGround * 1.2);
+    const avgWind700 = wind700.length > 0 ? Math.round(wind700.reduce((a,b)=>a+b,0)/wind700.length) : Math.round(avgWindGround * 1.8);
+    const avgWind600 = wind600.length > 0 ? Math.round(wind600.reduce((a,b)=>a+b,0)/wind600.length) : Math.round(avgWindGround * 2.3);
+    const avgWind500 = wind500.length > 0 ? Math.round(wind500.reduce((a,b)=>a+b,0)/wind500.length) : Math.round(avgWindGround * 2.9);
+  
+    const avgDir850 = dir850.length > 0 ? Math.round(dir850.reduce((a,b)=>a+b,0)/dir850.length) : mainDirDeg;
+        const avgDir700 = dir700.length > 0 ? Math.round(dir700.reduce((a,b)=>a+b,0)/dir700.length) : mainDirDeg + 15;
+        const avgDir600 = dir600.length > 0 ? Math.round(dir600.reduce((a,b)=>a+b,0)/dir600.length) : mainDirDeg + 30;
+        const avgDir500 = dir500.length > 0 ? Math.round(dir500.reduce((a,b)=>a+b,0)/dir500.length) : mainDirDeg + 45;
+    
+        // Venti medi per fasce di quota (per il paragrafo testuale)
+        const wind1500_2500 = avgWind850;
+        const dir1500_2500 = degToCardinal(avgDir850);
+        const wind2500_3500 = avgWind700;
+        const dir2500_3500 = degToCardinal(avgDir700);
+        const windOver3500 = avgWind600;
+        const dirOver3500 = degToCardinal(avgDir600);
 
   // Pioggia
   const dayPrecips = dayIndices.map((i) => precips[i] ?? 0);
@@ -334,6 +354,9 @@ export function generateReportMeteo({
   };
   const giudizioFinale = `${score} / 10 – ${giudizioDescMap[scenario]}. Monitorare l'evoluzione meteo nelle ore centrali e pianificare attentamente la finestra di volo.`;
 
+  // === Lista venti per quota (da inserire nel testo completo) ===
+  const listaVenti = `Lista venti per quota:\n  Al suolo (${altitude}m): ${avgWindGround} km/h da ${mainWindDir}\n  1500-2500m: ${wind1500_2500} km/h da ${dir1500_2500}\n  2500-3500m: ${wind2500_3500} km/h da ${dir2500_3500}\n  Oltre 3500m: ${windOver3500} km/h da ${dirOver3500}`;
+
   // === HEADER & TESTO COMPLETO ===
   const giorniSettimana = ["DOMENICA", "LUNEDÌ", "MARTEDÌ", "MERCOLEDÌ", "GIOVEDÌ", "VENERDÌ", "SABATO"];
   const mesi = ["GENNAIO", "FEBBRAIO", "MARZO", "APRILE", "MAGGIO", "GIUGNO", "LUGLIO", "AGOSTO", "SETTEMBRE", "OTTOBRE", "NOVEMBRE", "DICEMBRE"];
@@ -349,6 +372,8 @@ export function generateReportMeteo({
 3. Instabilità e precipitazioni: ${paragrafoInstabilita}
 
 4. Strategia di volo consigliata: ${paragrafoStrategia}
+
+${listaVenti}
 
 Segnali di pericolo: ${segnaliPericolo}
 
