@@ -93,7 +93,8 @@ export default function ValidazionePrevisioni() {
               end_date: dataStr,
             });
 
-            const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
+            const baseUrl = (await import("@/config/apiConfig")).getMeteoBaseUrl();
+            const res = await fetch(`${baseUrl}?${params}`);
             const responseTime = Math.round(performance.now() - startTime);
             avgTempoRisposta += responseTime;
 

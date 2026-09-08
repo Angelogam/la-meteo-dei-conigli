@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { RefreshCw, Wind, Calendar, Mountain, FileText, Check, Copy, AlertTriangle, ShieldCheck } from "lucide-react";
 import { generateReportMeteo, type GeneratedReport } from "@/utils/generateReportMeteo";
+import { getMeteoBaseUrl } from "@/config/apiConfig";
 
 interface WindgramProps {
   latitude: number;
@@ -126,7 +127,16 @@ export default function ProfessionalWindgram({
         "convective_inhibition",
       ].join(",");
 
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=${hourlyParams}&timezone=Europe/Rome&start_date=${dateStr}&end_date=${dateStr}`;
+      const baseUrl = getMeteoBaseUrl();
+      const params = new URLSearchParams({
+        latitude: latitude.toString(),
+        longitude: longitude.toString(),
+        hourly: hourlyParams,
+        timezone: "Europe/Rome",
+        start_date: dateStr,
+        end_date: dateStr,
+      });
+      const url = `${baseUrl}?${params.toString()}`;
 
       try {
         const res = await fetch(url);

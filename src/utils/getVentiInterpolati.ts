@@ -1,5 +1,7 @@
 "use client";
 
+import { getMeteoBaseUrl } from "@/config/apiConfig";
+
 export interface QuotaVento {
   speed: number;
   dir: number;
@@ -59,7 +61,16 @@ export async function getVentiInterpolati(
     return cached.data;
   }
 
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_925hPa,wind_direction_925hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa,wind_speed_600hPa,wind_direction_600hPa&timezone=Europe/Rome&start_date=${day}&end_date=${day}`;
+  const baseUrl = getMeteoBaseUrl();
+  const params = new URLSearchParams({
+    latitude: lat.toString(),
+    longitude: lon.toString(),
+    hourly: "temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_925hPa,wind_direction_925hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa,wind_speed_600hPa,wind_direction_600hPa",
+    timezone: "Europe/Rome",
+    start_date: day,
+    end_date: day,
+  });
+  const url = `${baseUrl}?${params.toString()}`;
 
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);

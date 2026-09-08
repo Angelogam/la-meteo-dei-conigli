@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { RefreshCw, AlertTriangle } from "lucide-react";
+import { getMeteoBaseUrl } from "@/config/apiConfig";
 
 interface SoundingData {
   pressure: number[];
@@ -232,7 +233,16 @@ export default function SkewTDiagram({
       "convective_inhibition",
     ].join(",");
 
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=${hourlyParams}&timezone=Europe/Rome&start_date=${dateStr}&end_date=${dateStr}`;
+    const baseUrl = getMeteoBaseUrl();
+    const params = new URLSearchParams({
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
+      hourly: hourlyParams,
+      timezone: "Europe/Rome",
+      start_date: dateStr,
+      end_date: dateStr,
+    });
+    const url = `${baseUrl}?${params.toString()}`;
 
     fetchMeteo();
     async function fetchMeteo() {

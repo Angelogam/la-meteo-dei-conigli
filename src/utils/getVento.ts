@@ -1,5 +1,7 @@
 "use client";
 
+import { getMeteoBaseUrl } from "@/config/apiConfig";
+
 export interface VentoOrario {
   ora: number;
   speed: number;
@@ -27,7 +29,16 @@ export async function getVento(lat: number, lon: number, day: string): Promise<V
     return cached.data;
   }
 
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=Europe/Rome&start_date=${day}&end_date=${day}`;
+  const baseUrl = getMeteoBaseUrl();
+  const params = new URLSearchParams({
+    latitude: lat.toString(),
+    longitude: lon.toString(),
+    hourly: "wind_speed_10m,wind_direction_10m,wind_gusts_10m",
+    timezone: "Europe/Rome",
+    start_date: day,
+    end_date: day,
+  });
+  const url = `${baseUrl}?${params.toString()}`;
 
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);

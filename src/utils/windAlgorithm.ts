@@ -1,5 +1,7 @@
 "use client";
 
+import { getMeteoBaseUrl } from "@/config/apiConfig";
+
 // === Esponenti pubblici ===
 export interface WindLevel {
   quota: number;
@@ -62,7 +64,14 @@ export async function fetchRealWindData(
   livelliReali: { quota: number; speed: number; dir: number }[];
   warning: string | null;
 }> {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m&timezone=Europe/Rome&forecast_days=1`;
+  const params = new URLSearchParams({
+    latitude: lat.toString(),
+    longitude: lon.toString(),
+    hourly: "wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m",
+    timezone: "Europe/Rome",
+    forecast_days: "1",
+  });
+  const url = `${getMeteoBaseUrl()}?${params.toString()}`;
   try {
     const res = await fetch(url);
     if (!res.ok) return { livelliReali: [], warning: `Errore HTTP ${res.status}` };

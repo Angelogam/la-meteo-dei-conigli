@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { getMeteoBaseUrl } from "@/config/apiConfig";
 
 interface WindLevel {
   hpa: string;
@@ -48,7 +49,16 @@ export function useWindProfile({ lat, lon, siteAlt, selectedHour, selectedDay = 
         const dayStr = targetDate.toISOString().split("T")[0];
 
         // Fetch ALL pressure levels from Open-Meteo - covers up to 500hPa (~5800m)
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m,wind_speed_925hPa,wind_direction_925hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa,wind_speed_600hPa,wind_direction_600hPa,wind_speed_500hPa,wind_direction_500hPa,temperature_2m,temperature_80m,temperature_120m,cloud_cover,precipitation,freezing_level_height,cape,lifted_index,convective_inhibition&timezone=Europe/Rome&start_date=${dayStr}&end_date=${dayStr}`;
+        const hourlyParams = "wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m,wind_speed_925hPa,wind_direction_925hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa,wind_speed_600hPa,wind_direction_600hPa,wind_speed_500hPa,wind_direction_500hPa,temperature_2m,temperature_80m,temperature_120m,cloud_cover,precipitation,freezing_level_height,cape,lifted_index,convective_inhibition";
+        const params = new URLSearchParams({
+          latitude: lat.toString(),
+          longitude: lon.toString(),
+          hourly: hourlyParams,
+          timezone: "Europe/Rome",
+          start_date: dayStr,
+          end_date: dayStr,
+        });
+        const url = `${getMeteoBaseUrl()}?${params.toString()}`;
 
         const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);

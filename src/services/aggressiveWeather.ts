@@ -1,8 +1,9 @@
 "use client";
 
 import type { MeteoCurrent, MeteoHourly, MeteoDaily } from "./openMeteoService";
+import { getMeteoBaseUrl } from "@/config/apiConfig";
 
-const OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast";
+const OPEN_METEO_BASE = getMeteoBaseUrl();
 const OPENWEATHER_BASE = "https://api.openweathermap.org/data/2.5/weather";
 const OPENWEATHER_API_KEY = "f01a9f572541fc5951d78441cbe750c6";
 

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { getMeteoBaseUrl } from "@/config/apiConfig";
 
 // ────────────────────────────────────────────────────────────────────────────
 // RasoftWindgram — replica fedele del windgram Rasoft/Meteo-Parapente
@@ -385,7 +386,8 @@ export default function RasoftWindgram({
       wind_speed_unit: "kmh",
     });
 
-    const url = `https://api.open-meteo.com/v1/forecast?${params.toString()}`;
+    const baseUrl = getMeteoBaseUrl();
+    const url = `${baseUrl}?${params.toString()}`;
 
     fetch(url)
       .then((r) => {
