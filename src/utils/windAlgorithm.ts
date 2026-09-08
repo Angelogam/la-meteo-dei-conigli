@@ -1,6 +1,6 @@
 "use client";
 
-import { getMeteoBaseUrl } from "@/config/apiConfig";
+import { fetchWithProxyFallback } from "@/utils/proxyFallback";
 
 // === Esponenti pubblici ===
 export interface WindLevel {
@@ -71,9 +71,8 @@ export async function fetchRealWindData(
     timezone: "Europe/Rome",
     forecast_days: "1",
   });
-  const url = `${getMeteoBaseUrl()}?${params.toString()}`;
   try {
-    const res = await fetch(url);
+    const res = await fetchWithProxyFallback(params.toString());
     if (!res.ok) return { livelliReali: [], warning: `Errore HTTP ${res.status}` };
     const raw = await res.json();
     const livelliReali = [

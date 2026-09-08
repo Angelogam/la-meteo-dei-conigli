@@ -93,8 +93,8 @@ export default function ValidazionePrevisioni() {
               end_date: dataStr,
             });
 
-            const baseUrl = (await import("@/config/apiConfig")).getMeteoBaseUrl();
-            const res = await fetch(`${baseUrl}?${params}`);
+            const { fetchWithProxyFallback } = await import("@/utils/proxyFallback");
+            const res = await fetchWithProxyFallback(params.toString());
             const responseTime = Math.round(performance.now() - startTime);
             avgTempoRisposta += responseTime;
 

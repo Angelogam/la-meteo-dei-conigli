@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
 import type { HourData } from "@/types/meteo";
 import { Wind, Loader2 } from "lucide-react";
-import { getMeteoBaseUrl } from "@/config/apiConfig";
+import { fetchWithProxyFallback } from "@/utils/proxyFallback";
 
 interface AlpiumWindgramProps {
   siteName: string;
@@ -141,9 +141,9 @@ function useAlpiumData(lat: number, lon: number, siteAlt: number, selectedDay: n
       start_date: dayStr,
       end_date: dayStr,
     });
-    const url = `${getMeteoBaseUrl()}?${params.toString()}`;
+    const url = params.toString();
 
-    fetch(url)
+    fetchWithProxyFallback(url)
       .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then((j) => {
         if (!mounted) return;

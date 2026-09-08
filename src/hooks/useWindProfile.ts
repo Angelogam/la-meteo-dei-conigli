@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { getMeteoBaseUrl } from "@/config/apiConfig";
+import { fetchWithProxyFallback } from "@/utils/proxyFallback";
 
 interface WindLevel {
   hpa: string;
@@ -58,9 +58,9 @@ export function useWindProfile({ lat, lon, siteAlt, selectedHour, selectedDay = 
           start_date: dayStr,
           end_date: dayStr,
         });
-        const url = `${getMeteoBaseUrl()}?${params.toString()}`;
+        const url = params.toString();
 
-        const res = await fetch(url);
+        const res = await fetchWithProxyFallback(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
 

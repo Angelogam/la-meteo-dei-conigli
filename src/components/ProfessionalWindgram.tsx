@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { RefreshCw, Wind, Calendar, Mountain, FileText, Check, Copy, AlertTriangle, ShieldCheck } from "lucide-react";
 import { generateReportMeteo, type GeneratedReport } from "@/utils/generateReportMeteo";
-import { getMeteoBaseUrl } from "@/config/apiConfig";
+import { fetchWithProxyFallback } from "@/utils/proxyFallback";
 
 interface WindgramProps {
   latitude: number;
@@ -127,7 +127,6 @@ export default function ProfessionalWindgram({
         "convective_inhibition",
       ].join(",");
 
-      const baseUrl = getMeteoBaseUrl();
       const params = new URLSearchParams({
         latitude: latitude.toString(),
         longitude: longitude.toString(),
@@ -136,10 +135,8 @@ export default function ProfessionalWindgram({
         start_date: dateStr,
         end_date: dateStr,
       });
-      const url = `${baseUrl}?${params.toString()}`;
-
       try {
-        const res = await fetch(url);
+        const res = await fetchWithProxyFallback(params.toString());
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         if (isMounted) {

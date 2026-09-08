@@ -1,6 +1,7 @@
 "use client";
 
 import { DECOLLI } from "@/data/decolli";
+import { fetchWithProxyFallback } from "@/utils/proxyFallback";
 
 export type Decollo = {
   name: string;
@@ -24,7 +25,6 @@ export type MeteoDecollo = {
 
 import { getMeteoBaseUrl } from "@/config/apiConfig";
 
-const OPEN_METEO_BASE = getMeteoBaseUrl();
 const OPENWEATHER_BASE = "https://api.openweathermap.org/data/2.5/weather";
 const OPENWEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_KEY || "f01a9f572541fc5951d78441cbe750c6";
 
@@ -32,10 +32,16 @@ const TOMORROW_BASE = "https://api.tomorrow.io/v4/timelines";
 const TOMORROW_API_KEY = import.meta.env.VITE_TOMORROW_KEY || "EBox6MVYAysc2A5X5EOhVgKeaDuFg4Pk";
 
 async function getOpenMeteo(lat: number, lon: number) {
-  const url = `${OPEN_METEO_BASE}?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`;
+  const params = new URLSearchParams({
+    latitude: lat.toString(),
+    longitude: lon.toString(),
+    hourly: "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m",
+    daily: "temperature_2m_max,temperature_2m_min,precipitation_sum",
+    timezone: "auto",
+  });
 
   try {
-    const res = await fetch(url);
+    const res = await fetchWithProxyFallback(params.toString());
     if (!res.ok) return null;
     const data = await res.json();
 

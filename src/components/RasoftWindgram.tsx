@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { getMeteoBaseUrl } from "@/config/apiConfig";
+import { fetchWithProxyFallback } from "@/utils/proxyFallback";
 
 // ────────────────────────────────────────────────────────────────────────────
 // RasoftWindgram — replica fedele del windgram Rasoft/Meteo-Parapente
@@ -386,10 +386,9 @@ export default function RasoftWindgram({
       wind_speed_unit: "kmh",
     });
 
-    const baseUrl = getMeteoBaseUrl();
-    const url = `${baseUrl}?${params.toString()}`;
+    const url = params.toString();
 
-    fetch(url)
+    fetchWithProxyFallback(url)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();

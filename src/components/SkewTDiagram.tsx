@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { RefreshCw, AlertTriangle } from "lucide-react";
-import { getMeteoBaseUrl } from "@/config/apiConfig";
+import { fetchWithProxyFallback } from "@/utils/proxyFallback";
 
 interface SoundingData {
   pressure: number[];
@@ -233,7 +233,6 @@ export default function SkewTDiagram({
       "convective_inhibition",
     ].join(",");
 
-    const baseUrl = getMeteoBaseUrl();
     const params = new URLSearchParams({
       latitude: latitude.toString(),
       longitude: longitude.toString(),
@@ -242,12 +241,10 @@ export default function SkewTDiagram({
       start_date: dateStr,
       end_date: dateStr,
     });
-    const url = `${baseUrl}?${params.toString()}`;
-
     fetchMeteo();
     async function fetchMeteo() {
       try {
-        const res = await fetch(url);
+        const res = await fetchWithProxyFallback(params.toString());
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         if (isMounted) {

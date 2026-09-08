@@ -1,6 +1,6 @@
 "use client";
 
-import { getMeteoBaseUrl } from "@/config/apiConfig";
+import { fetchWithProxyFallback } from "@/utils/proxyFallback";
 
 export interface VentoOrario {
   ora: number;
@@ -29,7 +29,6 @@ export async function getVento(lat: number, lon: number, day: string): Promise<V
     return cached.data;
   }
 
-  const baseUrl = getMeteoBaseUrl();
   const params = new URLSearchParams({
     latitude: lat.toString(),
     longitude: lon.toString(),
@@ -38,9 +37,9 @@ export async function getVento(lat: number, lon: number, day: string): Promise<V
     start_date: day,
     end_date: day,
   });
-  const url = `${baseUrl}?${params.toString()}`;
+  const url = params.toString();
 
-  const res = await fetch(url);
+  const res = await fetchWithProxyFallback(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
 
