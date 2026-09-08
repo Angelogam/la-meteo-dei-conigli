@@ -242,55 +242,38 @@ function drawSnowflake(ctx: CanvasRenderingContext2D, x: number, y: number) {
 }
 
 // ─────────────────────────────────────────────────────
-// Cloud badge — positioned at thermal-top altitude
-// Purple pill shape: arc on top, flat bottom with text
-// ─────────────────────────────────────────────────────
-function drawCloudBadge(ctx: CanvasRenderingContext2D, x: number, y: number, alt: number, rate: number) {
-  // y is the thermal-top Y position (on the purple curve)
-  // The badge sits with its TOP edge at y, extending downward
-  const bw = 70, bh = 36;
-  const bx = x - bw / 2;
-  const by = y - bh; // badge extends upward from curve
+// Cloud badge — centered ON the thermal top curve
+// Purple circle with cloud % at center, text below
+// ═════════════════════════════════════════════════════
+function drawCloudBadge(ctx: CanvasRenderingContext2D, x: number, y: number, alt: number, rate: number, cloudPct: number = 0) {
+  // y = yThermalTop — the badge is CENTERED on the curve
+  const R = 16; // radius of purple circle
+  const textY = y + 22; // text starts below the circle
 
-  // White background pill
-  ctx.fillStyle = "#ffffff";
+  // Purple circle (cloud %)
+  ctx.fillStyle = "#e0e7ff";
   ctx.strokeStyle = "#4338ca";
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.roundRect(bx, by, bw, bh, 6);
-  ctx.fill(); ctx.stroke();
-
-  // Purple arc on top
-  ctx.fillStyle = "#e0e7ff";
-  ctx.beginPath();
-  ctx.arc(x, by + 2, 14, Math.PI, 0);
-  ctx.lineTo(x + 14, by + 2);
-  ctx.lineTo(x - 14, by + 2);
-  ctx.closePath();
+  ctx.arc(x, y, R, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = "#4338ca";
-  ctx.lineWidth = 1.2;
   ctx.stroke();
 
-  // Divider
-  ctx.beginPath();
-  ctx.moveTo(x - 14, by + 2);
-  ctx.lineTo(x + 14, by + 2);
-  ctx.strokeStyle = "#4338ca";
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  // Text: altitude
+  // Cloud % text inside circle
   ctx.fillStyle = "#1e1b4b";
-  ctx.font = "bold 10px monospace";
+  ctx.font = "bold 9px monospace";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(`${alt} m`, x, by + 16);
+  ctx.fillText(`${cloudPct}%`, x, y);
 
-  // Text: lift rate
-  ctx.fillStyle = "#4338ca";
+  // Altitude text below circle
+  ctx.fillStyle = "#1e1b4b";
   ctx.font = "bold 10px monospace";
-  ctx.fillText(`↑ ${rate.toFixed(1)} m/s`, x, by + 28);
+  ctx.fillText(`${alt} m`, x, textY);
+
+  // Lift rate text
+  ctx.fillStyle = "#4338ca";
+  ctx.fillText(`↑ ${rate.toFixed(1)} m/s`, x, textY + 14);
 }
 
 // ─────────────────────────────────────────────────────
@@ -506,22 +489,23 @@ export default function ProfessionalWindgram({
     [columns, altitude]
   );
 
-  // Cloud badges ON the thermal top curve (with offset for readability)
+  // Cloud badges ON the thermal top curve
   const cloudBadges = useMemo(
     () => columns.map((c) => ({
       x: c.x,
       y: c.yThermalTop,
       alt: c.cloudBase,
       rate: c.rateo,
+      cloudPct: Math.round(c.cloud),
     })),
     [columns]
   );
 
-  // Precipitation labels (at top of plot area)
+  // Precipitation labels (near top of plot, only where precip > 0)
   const precipLabels = useMemo(
     () => columns.filter((c) => c.precip > 0.05).map((c) => ({
       x: c.x,
-      y: altToY(ALT_MAX - 50),
+      y: altToY(ALT_MAX - 30),
       amount: c.precip,
     })),
     [columns]
@@ -872,13 +856,13 @@ export default function ProfessionalWindgram({
     });
 
     // ══════════════════════════════════════════════════
-    // CLOUD BADGES — ON the thermal top curve
-    // Only show for hours with significant thermal activity
+    // CLOUD BADGES — CENTERED on the thermal top curve
+    // Purple circle with cloud %, altitude and rate below
     // ══════════════════════════════════════════════════
     cloudBadges.forEach((b) => {
       const col = columns.find((c) => Math.abs(c.x - b.x) < 2);
-      if (!col || col.rateo < 0.55) return;
-      drawCloudBadge(ctx, b.x, b.y, b.alt, b.rate);
+      if (!col) return;
+      drawCloudBadge(ctx, b.x, b.y, b.alt, b.rate, b.cloudPct);
     });
 
     // ══════════════════════════════════════════════════
@@ -886,7 +870,7 @@ export default function ProfessionalWindgram({
     // ══════════════════════════════════════════════════
     columns.forEach((c) => {
       if (c.rateo >= 0.55) {
-        drawParaglider(ctx, c.x, c.yThermalTop - 26);
+        drawParaglider(ctx, c.x, c.yThermalTop - 28);
       }
     });
 
