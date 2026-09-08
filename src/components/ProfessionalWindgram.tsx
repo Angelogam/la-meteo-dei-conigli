@@ -435,6 +435,22 @@ export default function ProfessionalWindgram({
     })), [columns]
   );
 
+  // ── Thermal boundary (sinusoidal curve) ──
+  const boundaryAlts = useMemo(() =>
+    columns.map((c) => {
+      const hourFrac = (c.hour - 8) / 10;
+      const sine = Math.sin(hourFrac * Math.PI);
+      const baseAlt = ALT_MIN + 180;
+      const amp = c.rateo * 220 + c.cape * 0.08 + 160;
+      return Math.min(ALT_MAX - 50, Math.max(ALT_MIN + 80, Math.round(baseAlt + sine * amp)));
+    }),
+    [columns]
+  );
+  const boundaryYPts = useMemo(
+    () => columns.map((c, i) => ({ x: c.x, y: altToY(boundaryAlts[i]) })),
+    [columns, boundaryAlts]
+  );
+
   // ── Loading / error ────────────────────────────────
   if (loading) {
     return (
@@ -525,67 +541,58 @@ export default function ProfessionalWindgram({
           <rect x={PLOT_LEFT} y={PLOT_Y0} width={PLOT_W} height={PLOT_H} fill="#fefce8" />
 
           {/* ── STABILITY COLOR FIELD ── */}
-          {/* Each column: vertical gradient from warm (bottom, unstable) to cool (top, stable) */}
+          {/* Sinusoidal thermal boundary: low at 8h (morning), peaks at 13h (midday), drops at 18h (evening) */}
+          {/* Below boundary: warm colors (unstable) · Above boundary: cool colors (stable) */}
           {columns.map((col, ci) => {
             const xL = colL(ci), xR = colR(ci), w = xR - xL;
-            const strips = [];
-            const N = 36;
+            const bAlt = boundaryAlts[ci];
+            const strips: React.ReactNode[] = [];
+            const N = 28;
             for (let si = 0; si < N; si++) {
               const altTop = ALT_MIN + ((N - si - 0.5) / N) * (ALT_MAX - ALT_MIN);
               const altBot = ALT_MIN + ((N - si - 1.5) / N) * (ALT_MAX - ALT_MIN);
-              // Find closest lapse rate
-              let dt = col.surfaceDeltaT;
-              for (const lr of col.lapseRates) {
-                if (Math.abs(lr.alt - altTop) < 300) { dt = lr.dt; break; }
-              }
-              // Altitude correction: higher = more stable (lower dt)
-              const altNorm = (altTop - ALT_MIN) / (ALT_MAX - ALT_MIN);
-              dt = dt * (1 - altNorm * 0.75) - altNorm * 0.2;
               const yTop = altToY(altTop), yBot = altToY(altBot);
-              strips.push(
-                <rect key={`s-${ci}-${si}`}
-                  x={xL} y={yTop} width={w} height={Math.max(1.5, yBot - yTop)}
-                  fill={getDTColor(dt)} opacity={0.75} />
-              );
+              const midAlt = (altTop + altBot) / 2;
+
+              if (midAlt <= bAlt) {
+                // BELOW boundary: warm/unstable — red (bottom) → orange (near boundary)
+                const zoneFrac = Math.max(0, Math.min(1, (bAlt - midAlt) / (bAlt - ALT_MIN + 1)));
+                const dt = 0.95 - zoneFrac * 0.5;
+                const y = yBot;
+                const h = Math.max(1.5, yTop - yBot);
+                strips.push(<rect key={`wb-${ci}-${si}`} x={xL} y={y} width={w} height={h}
+                  fill={getDTColor(dt)} opacity={0.82} />);
+              } else {
+                // ABOVE boundary: cool/stable — green (near boundary) → purple (top)
+                const zoneFrac = Math.max(0, Math.min(1, (midAlt - bAlt) / (ALT_MAX - bAlt + 1)));
+                const dt = 0.30 - zoneFrac * 0.60;
+                const y = yBot;
+                const h = Math.max(1.5, yTop - yBot);
+                strips.push(<rect key={`ws-${ci}-${si}`} x={xL} y={y} width={w} height={h}
+                  fill={getDTColor(dt)} opacity={0.78} />);
+              }
             }
             return <g key={`cbg-${ci}`}>{strips}</g>;
           })}
 
-          {/* ── CROSS-HATCH: convective zones (high surface ΔT) ── */}
+          {/* ── THERMAL BOUNDARY CURVE (the "wave") ── */}
+          <g>
+            <path d={smoothPath(boundaryYPts)} fill="none" stroke="#f97316" strokeWidth="7" opacity="0.18" strokeLinecap="round" />
+            <path d={smoothPath(boundaryYPts)} fill="none" stroke="#ea580c" strokeWidth="2.8" strokeLinecap="round" opacity="0.92" />
+            <path d={smoothPath(boundaryYPts)} fill="none" stroke="#fb923c" strokeWidth="1.2" strokeLinecap="round" opacity="0.7" />
+          </g>
+
+          {/* ── CROSS-HATCH: convective zone below boundary ── */}
           {columns.map((col, ci) => {
-            if (col.surfaceDeltaT < 0.55) return null;
+            if (col.surfaceDeltaT < 0.5) return null;
+            const bY = altToY(boundaryAlts[ci]);
             return (
               <rect key={`ch-${ci}`}
-                x={colL(ci)} y={PLOT_Y0}
-                width={colR(ci) - colL(ci)} height={PLOT_H}
-                fill="url(#crossHatch)" />
+                x={colL(ci)} y={bY}
+                width={colR(ci) - colL(ci)} height={PLOT_Y0 + PLOT_H - bY}
+                fill="url(#crossHatch)" opacity="0.5" />
             );
           })}
-
-          {/* ── INSTABLE WAVE: sinusoidal band in lower atmosphere ── */}
-          {/* Red-orange wave following thermal activity near surface */}
-          {(() => {
-            const waveYPts = columns.map((c, i) => {
-              const hourFrac = (c.hour - 8) / 10;
-              const sine = Math.sin(hourFrac * Math.PI);
-              // Wave amplitude proportional to thermal activity
-              const amp = c.rateo * 80 + c.cape * 0.05;
-              const baseY = altToY(ALT_MIN + 200);
-              return { x: c.x, y: baseY - sine * amp };
-            });
-            // Draw as filled band between two sinusoidal curves
-            const upperPts = waveYPts.map(p => ({ ...p, y: p.y - 60 }));
-            const lowerPts = waveYPts.map(p => ({ ...p, y: p.y + 60 }));
-            const upperPath = smoothPath(upperPts);
-            const lowerPathRev = [...lowerPts].reverse();
-            const lowerPath = smoothPath(lowerPathRev);
-            const fillPath = `${upperPath} L ${lowerPts[lowerPts.length - 1].x},${lowerPts[lowerPts.length - 1].y} ${lowerPathRev.map(p => `L ${p.x},${p.y}`).join(" ")} Z`;
-
-            // Gradient for the wave
-            return (
-              <path d={fillPath} fill="url(#instabWaveGrad)" opacity="0.55" />
-            );
-          })()}
 
           {/* ── Pressure grid lines ── */}
           {PRESSURE_LEVELS.map((lv) => {
