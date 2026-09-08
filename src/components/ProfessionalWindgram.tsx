@@ -479,8 +479,8 @@ export default function ProfessionalWindgram({
     return (
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-10 flex flex-col items-center justify-center text-slate-300 shadow-2xl">
         <RefreshCw className="w-9 h-9 text-emerald-400 animate-spin mb-3" />
-        <span className="text-lg font-bold text-white">Caricamento Grafico Aerologico Alpium...</span>
-        <span className="text-sm text-slate-400 mt-1">Interrogazione Open-Meteo per {siteName} ({altitude}m)</span>
+        <span className="text-lg font-bold text-white">Caricamento Grafico Aerologico...</span>
+                    <span className="text-sm text-slate-400 mt-1">Interrogazione Open-Meteo per {siteName} ({altitude}m)</span>
       </div>
     );
   }
