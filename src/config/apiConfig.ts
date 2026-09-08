@@ -13,11 +13,7 @@ export const API_PROXY_URL = "http://localhost:3000/api/open-meteo";
 // Endpoint diretto Open-Meteo (fallback)
 export const OPEN_METEO_DIRECT = "https://api.open-meteo.com/v1/forecast";
 
-/**
- * Determina se usare il proxy o andare diretto
- * Per ora è sempre true (proxy attivo)
- */
-export const USE_PROXY = true;
+export const USE_PROXY = false;
 
 /**
  * URL base per le chiamate meteo
