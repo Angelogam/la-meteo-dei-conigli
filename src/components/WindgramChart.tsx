@@ -124,9 +124,8 @@ function smoothPath(pts: { x: number; y: number }[]): string {
   return d;
 }
 
-// ─── WindBarb — barbetta meteorologica ───
+// ─── WindBarb — barbetta meteorologica INGRANDITA per mobile ───
 // direction = direzione DA CUI SOFFIA IL VENTO (convenzione meteo, gradi da Nord)
-// La barbetta punta verso la direzione DA CUI viene il vento (come nelle mappe meteo classiche)
 function WindBarb({
   cx,
   cy,
@@ -140,44 +139,31 @@ function WindBarb({
 }) {
   if (speedKmh < 1 || isNaN(speedKmh)) return null;
 
-  // direction è la direzione DA CUI viene il vento (0=Nord, 90=Est, 180=Sud, 270=Ovest)
-  // Nella convenzione meteo, la barbetta punta verso la direzione di provenienza
-  // Convertiamo in angolo SVG: Nord=−Y, Est=+X, Sud=+Y, Ovest=−X
-  // angolo SVG = (direction - 90) * π/180  →  0°(N)=−90°(SU), 90°(E)=0°(DESTRA)
-  // Aspetta — questo darebbe Nord=giù. Invece:
-  // Per punta verso Nord (direction=0): angolo = −90° in SVG → verso l'alto ✓
-  // Per punta verso Est (direction=90): angolo = 0° → verso destra ✓
-  // Per punta verso Sud (direction=180): angolo = +90° → verso il basso ✓
-  // Per punta verso Ovest (direction=270): angolo = +180° → verso sinistra ✓
   const svgAngle = ((direction - 90) * Math.PI) / 180;
-
   const knots = speedKmh * 0.539957;
-  const staffLen = 26;
+  const staffLen = 34; // +30% più lungo
 
-  // Vettore principale: dalla stazione verso la direzione di provenienza
   const ex = cx + staffLen * Math.cos(svgAngle);
   const ey = cy + staffLen * Math.sin(svgAngle);
 
   const color = barbColor(speedKmh);
-
-  // Penna: sul lato opposto alla provenienza (lato a monte)
-  // featherAngle = angolo + 100° in senso antiorario (perpicolare al gambo)
-  const featherAngle = svgAngle + (105 * Math.PI) / 180;
+  // Piume sul lato sopravento (perpendicolare a sinistra della provenienza)
+  const featherAngle = svgAngle - Math.PI / 2;
 
   const elements: React.ReactNode[] = [];
   let rem = Math.round(knots / 5) * 5;
   let pos = 1.0;
 
-  while (rem >= 50 && pos >= 0.25) {
+  while (rem >= 50 && pos >= 0.2) {
     const bx = cx + pos * (ex - cx);
     const by = cy + pos * (ey - cy);
     elements.push(
       <polygon
         key={`p50-${cx.toFixed(0)}-${cy.toFixed(0)}-${pos.toFixed(2)}`}
-        points={`${bx},${by} ${bx + 12 * Math.cos(featherAngle)},${by + 12 * Math.sin(featherAngle)} ${bx + 6 * Math.cos(svgAngle)},${by + 6 * Math.sin(svgAngle)}`}
+        points={`${bx},${by} ${bx + 16 * Math.cos(featherAngle)},${by + 16 * Math.sin(featherAngle)} ${bx + 8 * Math.cos(svgAngle)},${by + 8 * Math.sin(svgAngle)}`}
         fill={color}
         stroke={color}
-        strokeWidth={0.5}
+        strokeWidth={0.8}
       />
     );
     rem -= 50;
@@ -192,10 +178,10 @@ function WindBarb({
         key={`l10-${cx.toFixed(0)}-${cy.toFixed(0)}-${pos.toFixed(2)}`}
         x1={bx}
         y1={by}
-        x2={bx + 11 * Math.cos(featherAngle)}
-        y2={by + 11 * Math.sin(featherAngle)}
+        x2={bx + 15 * Math.cos(featherAngle)}
+        y2={by + 15 * Math.sin(featherAngle)}
         stroke={color}
-        strokeWidth="2.2"
+        strokeWidth="2.8"
         strokeLinecap="round"
       />
     );
@@ -211,10 +197,10 @@ function WindBarb({
         key={`l5-${cx.toFixed(0)}-${cy.toFixed(0)}`}
         x1={bx}
         y1={by}
-        x2={bx + 6 * Math.cos(featherAngle)}
-        y2={by + 6 * Math.sin(featherAngle)}
+        x2={bx + 8 * Math.cos(featherAngle)}
+        y2={by + 8 * Math.sin(featherAngle)}
         stroke={color}
-        strokeWidth="2.2"
+        strokeWidth="2.8"
         strokeLinecap="round"
       />
     );
@@ -222,13 +208,15 @@ function WindBarb({
 
   return (
     <g key={`wb-${cx.toFixed(0)}-${cy.toFixed(0)}`}>
+      {/* Cerchietto centrale per visibilità */}
+      <circle cx={cx} cy={cy} r={2.8} fill={color} opacity={0.85} />
       <line
         x1={cx}
         y1={cy}
         x2={ex}
         y2={ey}
         stroke={color}
-        strokeWidth="2.2"
+        strokeWidth="2.8"
         strokeLinecap="round"
       />
       {elements}
@@ -236,33 +224,33 @@ function WindBarb({
   );
 }
 
-// ─── Parapendio stilizzato ───
+// ─── Parapendio stilizzato (più grande per mobile) ───
 function ParagliderIcon({ x, y }: { x: number; y: number }) {
   return (
     <g transform={`translate(${x},${y})`}>
-      <path d="M -12 -5 Q 0 -16 12 -5" fill="none" stroke="#a855f7" strokeWidth={2.5} strokeLinecap="round" />
-      <path d="M -9 -4 Q 0 -11 9 -4" fill="none" stroke="#c084fc" strokeWidth={1.2} strokeLinecap="round" />
-      <line x1="-8" y1="-4" x2="0" y2="5" stroke="#7e22ce" strokeWidth={1} />
-      <line x1="8" y1="-4" x2="0" y2="5" stroke="#7e22ce" strokeWidth={1} />
-      <circle cx="0" cy="5" r="2.5" fill="#fff" stroke="#7e22ce" strokeWidth={1.2} />
+      <path d="M -14 -6 Q 0 -20 14 -6" fill="none" stroke="#a855f7" strokeWidth={3} strokeLinecap="round" />
+      <path d="M -10 -5 Q 0 -14 10 -5" fill="none" stroke="#c084fc" strokeWidth={1.5} strokeLinecap="round" />
+      <line x1="-9" y1="-5" x2="0" y2="7" stroke="#7e22ce" strokeWidth={1.3} />
+      <line x1="9" y1="-5" x2="0" y2="7" stroke="#7e22ce" strokeWidth={1.3} />
+      <circle cx="0" cy="7" r="3" fill="#fff" stroke="#7e22ce" strokeWidth={1.5} />
     </g>
   );
 }
 
-// ─── Nuvola stilizzata ───
+// ─── Nuvola stilizzata (più grande per mobile) ───
 function CloudIcon({ x, y, pct }: { x: number; y: number; pct: number }) {
   const opacity = Math.min(1, 0.25 + (pct / 100) * 0.75);
   return (
     <g transform={`translate(${x},${y})`} opacity={opacity}>
       <path
-        d="M -14 0 Q -14 -7 -7 -7 Q -4 -12 0 -12 Q 6 -12 8 -7 Q 15 -7 15 0 Q 15 5 10 5 L -10 5 Q -14 5 -14 0 Z"
+        d="M -16 0 Q -16 -8 -8 -8 Q -5 -14 0 -14 Q 7 -14 9 -8 Q 17 -8 17 0 Q 17 6 11 6 L -11 6 Q -16 6 -16 0 Z"
         fill="#fff"
         stroke="#64748b"
-        strokeWidth={1.2}
+        strokeWidth={1.5}
         strokeLinejoin="round"
       />
       {pct > 30 && (
-        <text x={0} y={4} textAnchor="middle" fontSize={7.5} fontWeight={700} fill="#1e293b" fontFamily="ui-monospace, monospace">
+        <text x={0} y={5} textAnchor="middle" fontSize={8.5} fontWeight={700} fill="#1e293b" fontFamily="ui-monospace, monospace">
           {pct}%
         </text>
       )}
@@ -270,16 +258,16 @@ function CloudIcon({ x, y, pct }: { x: number; y: number; pct: number }) {
   );
 }
 
-// ─── Fiocco di neve ───
+// ─── Fiocco di neve (più grande per mobile) ───
 function SnowflakeIcon({ x, y }: { x: number; y: number }) {
   return (
     <g transform={`translate(${x},${y})`}>
-      <circle cx="0" cy="0" r="7" fill="#fff" stroke="#0284c7" strokeWidth={1.4} />
-      <g stroke="#0284c7" strokeWidth={1.1} strokeLinecap="round" fill="none">
-        <line x1="0" y1="-4" x2="0" y2="4" />
-        <line x1="-4" y1="0" x2="4" y2="0" />
-        <line x1="-3" y1="-3" x2="3" y2="3" />
-        <line x1="-3" y1="3" x2="3" y2="-3" />
+      <circle cx="0" cy="0" r="9" fill="#fff" stroke="#0284c7" strokeWidth={1.8} />
+      <g stroke="#0284c7" strokeWidth={1.4} strokeLinecap="round" fill="none">
+        <line x1="0" y1="-5" x2="0" y2="5" />
+        <line x1="-5" y1="0" x2="5" y2="0" />
+        <line x1="-3.5" y1="-3.5" x2="3.5" y2="3.5" />
+        <line x1="-3.5" y1="3.5" x2="3.5" y2="-3.5" />
       </g>
     </g>
   );
