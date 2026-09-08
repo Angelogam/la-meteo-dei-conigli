@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { RefreshCw, AlertTriangle } from "lucide-react";
 import { fetchWithProxyFallback } from "@/utils/proxyFallback";
 
@@ -13,37 +13,38 @@ interface WindgramProps {
 }
 
 // ─────────────────────────────────────────────────────
-// Layout — exact Alpium reference dimensions
+// Layout — matches Alpium reference exactly
 // ─────────────────────────────────────────────────────
 const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] as const;
 const NUM_HOURS = HOURS.length;
 
-const CW = 1000;
-const HEADER_H = 120;
-const FOOTER_H = 52;
+const SVG_W = 1100;
+const SVG_H = 960;
+const HEADER_H = 140; // header + numeric strip
+const FOOTER_H = 70;  // legend + attribution
 const PLOT_TOP = HEADER_H;
-const PLOT_H = 600;
+const PLOT_H = 640;
 const TOTAL_H = HEADER_H + PLOT_H + FOOTER_H;
-const ML = 80;
-const MR = 82;
-const GW = CW - ML - MR;
+const ML = 100; // margin left
+const MR = 100; // margin right
+const GW = SVG_W - ML - MR;
 const GH = PLOT_H;
 
-const ALT_MIN = 1200;
+const ALT_MIN = 1100;
 const ALT_MAX = 6000;
 
 const HPA_LEVELS = [
-  { hpa: "500 hPa", alt: "6000 m" },
-  { hpa: "550 hPa", alt: "5000 m" },
-  { hpa: "600 hPa", alt: "4000 m" },
-  { hpa: "650 hPa", alt: "3500 m" },
-  { hpa: "700 hPa", alt: "3000 m" },
-  { hpa: "750 hPa", alt: "2500 m" },
-  { hpa: "800 hPa", alt: "2000 m" },
-  { hpa: "850 hPa", alt: "1500 m" },
+  { hpa: 500, alt: 5570 },
+  { hpa: 550, alt: 4860 },
+  { hpa: 600, alt: 4200 },
+  { hpa: 650, alt: 3580 },
+  { hpa: 700, alt: 3010 },
+  { hpa: 750, alt: 2470 },
+  { hpa: 800, alt: 1950 },
+  { hpa: 850, alt: 1460 },
 ];
 
-// ΔT → colour lookup (Alpium palette, 10 stops)
+// ΔT color scale (Alpium)
 const DT_STOPS = [
   { val: -0.20, color: "#6d28d9" },
   { val: -0.05, color: "#4338ca" },
@@ -57,14 +58,14 @@ const DT_STOPS = [
   { val:  1.20, color: "#7f1d1d" },
 ];
 
+// Legend gradient stops
 const LEGEND_STOPS: { pos: number; color: string }[] = [
-  { pos: 0.00, color: "#a855f7" },
-  { pos: 0.16, color: "#3b82f6" },
-  { pos: 0.32, color: "#06b6d4" },
-  { pos: 0.48, color: "#84cc16" },
-  { pos: 0.65, color: "#eab308" },
-  { pos: 0.82, color: "#f97316" },
-  { pos: 1.00, color: "#dc2626" },
+  { pos: 0.00, color: "#c084fc" },
+  { pos: 0.15, color: "#38bdf8" },
+  { pos: 0.35, color: "#4ade80" },
+  { pos: 0.65, color: "#facc15" },
+  { pos: 0.85, color: "#fb923c" },
+  { pos: 1.00, color: "#f87171" },
 ];
 
 // ─────────────────────────────────────────────────────
@@ -99,11 +100,15 @@ function altToY(alt: number): number {
   const a = Math.max(ALT_MIN, Math.min(ALT_MAX, alt));
   return PLOT_TOP + GH * (1 - (a - ALT_MIN) / (ALT_MAX - ALT_MIN));
 }
+function yToAlt(y: number): number {
+  return ALT_MIN + (1 - (y - PLOT_TOP) / GH) * (ALT_MAX - ALT_MIN);
+}
 function xFromIdx(i: number): number {
   if (NUM_HOURS <= 1) return ML + GW / 2;
   return ML + (i / (NUM_HOURS - 1)) * GW;
 }
 
+// Catmull-Rom → cubic Bézier path
 function toBezier(pts: { x: number; y: number }[]): string {
   if (pts.length < 2) return "";
   let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
@@ -119,189 +124,191 @@ function toBezier(pts: { x: number; y: number }[]): string {
   return d;
 }
 
-function strokePath(ctx: CanvasRenderingContext2D, pathStr: string) {
-  const t = pathStr.match(/[MLC]|[0-9.\-]+/g) || [];
-  for (let i = 0; i < t.length; i++) {
-    if (t[i] === "M") { ctx.moveTo(+t[++i]!, +t[++i]!); }
-    else if (t[i] === "C") { ctx.bezierCurveTo(+t[++i]!, +t[++i]!, +t[++i]!, +t[++i]!, +t[++i]!, +t[++i]!); }
+// Sinuous path with wave modulation (for thermal base)
+function toSinuousPath(pts: { x: number; y: number }[]): string {
+  if (pts.length < 2) return "";
+  let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+  for (let i = 1; i < pts.length; i++) {
+    const prev = pts[i - 1], curr = pts[i];
+    const cpX1 = prev.x + (curr.x - prev.x) * 0.45;
+    const cpY1 = prev.y - (i % 2 === 0 ? 15 : -15);
+    const cpX2 = prev.x + (curr.x - prev.x) * 0.75;
+    const cpY2 = curr.y + (i % 2 === 0 ? -10 : 10);
+    d += ` C ${cpX1.toFixed(1)},${cpY1.toFixed(1)} ${cpX2.toFixed(1)},${cpY2.toFixed(1)} ${curr.x.toFixed(1)},${curr.y.toFixed(1)}`;
   }
+  return d;
 }
 
 // ─────────────────────────────────────────────────────
-// Wind barb (meteorological convention)
+// Wind barb — feathers on right side of staff (meteorological convention)
 // ─────────────────────────────────────────────────────
-function drawWindBarb(ctx: CanvasRenderingContext2D, cx: number, cy: number, speed: number, dir: number) {
-  if (speed == null || isNaN(speed) || speed < 1) return;
-  const knots = speed * 0.54;
-  const rad = ((dir - 90) * Math.PI) / 180;
+function WindBarb({ cx, cy, knots, deg }: { cx: number; cy: number; knots: number; deg: number }) {
+  // Direction wind comes FROM
+  const rad = ((deg - 90) * Math.PI) / 180;
   const staffLen = 28;
   const ex = cx + staffLen * Math.cos(rad);
   const ey = cy + staffLen * Math.sin(rad);
+
+  // Feather direction (right side of staff)
   const featherRad = rad + Math.PI * 0.63;
   const fc = Math.cos(featherRad), fs = Math.sin(featherRad);
-  const col = speed > 40 ? "#991b1b" : speed > 25 ? "#7e22ce" : "#1e3a5f";
-  ctx.strokeStyle = col;
-  ctx.fillStyle = col;
-  ctx.lineWidth = 2;
-  ctx.lineCap = "round";
-  // Staff
-  ctx.beginPath();
-  ctx.moveTo(cx, cy);
-  ctx.lineTo(ex, ey);
-  ctx.stroke();
-  // Feathers
+
+  const barbEls: React.ReactNode[] = [];
   let rem = Math.round(knots / 5) * 5;
   let pos = 1.0;
   while (rem >= 50 && pos >= 0.22) {
     const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
-    const t = 13;
-    ctx.beginPath();
-    ctx.moveTo(bx, by);
-    ctx.lineTo(bx + t * fc, by + t * fs);
-    ctx.lineTo(bx + t * 0.45 * Math.cos(rad), by + t * 0.45 * Math.sin(rad));
-    ctx.closePath();
-    ctx.fill();
+    const t = 12;
+    barbEls.push(
+      <polygon key={`b50`}
+        points={`${bx},${by} ${bx + t * fc},${by + t * fs} ${bx + t * 0.4 * Math.cos(rad)},${by + t * 0.4 * Math.sin(rad)}`}
+        fill="#be123c" stroke="#be123c" strokeWidth="0.8" />
+    );
     rem -= 50; pos -= 0.22;
   }
   while (rem >= 10 && pos >= 0.16) {
     const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
-    const t = 12;
-    ctx.beginPath();
-    ctx.moveTo(bx, by);
-    ctx.lineTo(bx + t * fc, by + t * fs);
-    ctx.stroke();
+    const t = 11;
+    barbEls.push(
+      <line key={`b10`} x1={bx} y1={by} x2={bx + t * fc} y2={by + t * fs}
+        stroke="#be123c" strokeWidth="1.8" strokeLinecap="round" />
+    );
     rem -= 10; pos -= 0.16;
   }
   if (rem >= 5 && pos >= 0.12) {
     const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
     const t = 6;
-    ctx.beginPath();
-    ctx.moveTo(bx, by);
-    ctx.lineTo(bx + t * fc, by + t * fs);
-    ctx.stroke();
+    barbEls.push(
+      <line key={`b5`} x1={bx} y1={by} x2={bx + t * fc} y2={by + t * fs}
+        stroke="#be123c" strokeWidth="1.5" strokeLinecap="round" />
+    );
   }
+
+  return (
+    <g>
+      <line x1={cx} y1={cy} x2={ex} y2={ey} stroke="#be123c" strokeWidth="1.8" strokeLinecap="round" />
+      {barbEls}
+      {knots < 3.5 && (
+        <circle cx={cx} cy={cy} r="3" fill="none" stroke="#be123c" strokeWidth="1.5" />
+      )}
+    </g>
+  );
 }
 
 // ─────────────────────────────────────────────────────
-// Paraglider icon — drawn ON the thermal top curve
+// Snowflake icon
 // ─────────────────────────────────────────────────────
-function drawParaglider(ctx: CanvasRenderingContext2D, x: number, y: number) {
-  ctx.save();
-  ctx.translate(x, y);
-  // Canopy (larger, more prominent)
-  ctx.fillStyle = "#f3e8ff";
-  ctx.strokeStyle = "#7e22ce";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(-18, -6);
-  ctx.quadraticCurveTo(-12, -22, 0, -22);
-  ctx.quadraticCurveTo(12, -22, 18, -6);
-  ctx.quadraticCurveTo(9, -15, 0, -15);
-  ctx.quadraticCurveTo(-9, -15, -18, -6);
-  ctx.closePath();
-  ctx.fill(); ctx.stroke();
-  // Lines
-  ctx.lineWidth = 1.3;
-  ctx.beginPath();
-  ctx.moveTo(-14, -6); ctx.lineTo(0, 9);
-  ctx.moveTo(14, -6); ctx.lineTo(0, 9);
-  ctx.stroke();
-  // Pilot circle
-  ctx.fillStyle = "#fff";
-  ctx.strokeStyle = "#7e22ce";
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  ctx.arc(0, 9, 5, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  ctx.restore();
-}
-
-// ─────────────────────────────────────────────────────
-// Snowflake icon — ON the 0°C isotherm
-// ─────────────────────────────────────────────────────
-function drawSnowflake(ctx: CanvasRenderingContext2D, x: number, y: number) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.fillStyle = "#ffffff";
-  ctx.strokeStyle = "#0284c7";
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  ctx.arc(0, 0, 10, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  ctx.strokeStyle = "#0284c7";
-  ctx.lineWidth = 1.2;
-  ctx.lineCap = "round";
-  for (let a = 0; a < 4; a++) {
-    const angle = (a * Math.PI) / 4;
-    ctx.beginPath();
-    ctx.moveTo(Math.cos(angle) * 3, Math.sin(angle) * 3);
-    ctx.lineTo(Math.cos(angle) * 7, Math.sin(angle) * 7);
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
-// ─────────────────────────────────────────────────────
-// Cloud badge — centered ON the thermal top curve
-// Purple circle with cloud % at center, text below
-// ═════════════════════════════════════════════════════
-function drawCloudBadge(ctx: CanvasRenderingContext2D, x: number, y: number, alt: number, rate: number, cloudPct: number = 0) {
-  // y = yThermalTop — the badge is CENTERED on the curve
-  const R = 16; // radius of purple circle
-  const textY = y + 22; // text starts below the circle
-
-  // Purple circle (cloud %)
-  ctx.fillStyle = "#e0e7ff";
-  ctx.strokeStyle = "#4338ca";
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.arc(x, y, R, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-
-  // Cloud % text inside circle
-  ctx.fillStyle = "#1e1b4b";
-  ctx.font = "bold 9px monospace";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(`${cloudPct}%`, x, y);
-
-  // Altitude text below circle
-  ctx.fillStyle = "#1e1b4b";
-  ctx.font = "bold 10px monospace";
-  ctx.fillText(`${alt} m`, x, textY);
-
-  // Lift rate text
-  ctx.fillStyle = "#4338ca";
-  ctx.fillText(`↑ ${rate.toFixed(1)} m/s`, x, textY + 14);
-}
-
-// ─────────────────────────────────────────────────────
-// Precipitation label — small blue box near top
-// ─────────────────────────────────────────────────────
-function drawPrecipLabel(ctx: CanvasRenderingContext2D, x: number, y: number, amount: number) {
-  const tw = ctx.measureText(`${amount.toFixed(2)} mm`).width;
-  const bw = tw + 10, bh = 16;
-  ctx.fillStyle = "#dbeafe";
-  ctx.strokeStyle = "#3b82f6";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.roundRect(x - bw / 2, y - bh / 2, bw, bh, 3);
-  ctx.fill(); ctx.stroke();
-  ctx.fillStyle = "#1e40af";
-  ctx.font = "bold 9px monospace";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(`${amount.toFixed(2)} mm`, x, y);
+function SnowflakeIcon({ x, y }: { x: number; y: number }) {
+  return (
+    <g transform={`translate(${x}, ${y})`}>
+      <circle cx="0" cy="0" r="10" fill="#fff" stroke="#0284c7" strokeWidth="1.8" />
+      <g stroke="#0284c7" strokeWidth="1.2" strokeLinecap="round">
+        <line x1="0" y1="-5.5" x2="0" y2="5.5" />
+        <line x1="-5.5" y1="0" x2="5.5" y2="0" />
+        <line x1="-4" y1="-4" x2="4" y2="4" />
+        <line x1="-4" y1="4" x2="4" y2="-4" />
+      </g>
+    </g>
+  );
 }
 
 // ─────────────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────────────
+// Wind barb — feathers on right side of staff (meteorological convention)
+// ─────────────────────────────────────────────────────
+function WindBarb({ cx, cy, knots, deg }: { cx: number; cy: number; knots: number; deg: number }) {
+  const elements = useMemo(() => {
+    let k = Math.round(knots / 5) * 5;
+    const els: React.ReactNode[] = [];
+    let currentY = 0;
+    const flags50 = Math.floor(k / 50);
+    k %= 50;
+    const lines10 = Math.floor(k / 10);
+    k %= 10;
+    const lines5 = Math.floor(k / 5);
+
+    for (let i = 0; i < flags50; i++) {
+      els.push(
+        <polygon key={`f50-${i}`}
+          points={`0,${currentY} 10,${currentY + 3} 0,${currentY + 7}`}
+          fill="#be123c" stroke="#be123c" strokeWidth="1" />
+      );
+      currentY += 8;
+    }
+    for (let i = 0; i < lines10; i++) {
+      els.push(
+        <line key={`l10-${i}`} x1="0" y1={currentY} x2="10" y2={currentY - 3}
+          stroke="#be123c" strokeWidth="1.8" strokeLinecap="round" />
+      );
+      currentY += 5;
+    }
+    for (let i = 0; i < lines5; i++) {
+      els.push(
+        <line key={`l5-${i}`} x1="0" y1={currentY} x2="5" y2={currentY - 1.5}
+          stroke="#be123c" strokeWidth="1.5" strokeLinecap="round" />
+      );
+      currentY += 4;
+    }
+    return els;
+  }, [knots]);
+
+  // Direction wind comes FROM (meteorological)
+  const rad = ((deg - 90) * Math.PI) / 180;
+  const staffLen = 28;
+  const ex = cx + staffLen * Math.cos(rad);
+  const ey = cy + staffLen * Math.sin(rad);
+
+  // Feather direction (right side of staff)
+  const featherRad = rad + Math.PI * 0.63;
+  const fc = Math.cos(featherRad), fs = Math.sin(featherRad);
+
+  const barbEls: React.ReactNode[] = [];
+  let rem = Math.round(knots / 5) * 5;
+  let pos = 1.0;
+  while (rem >= 50 && pos >= 0.22) {
+    const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
+    const t = 12;
+    barbEls.push(
+      <polygon key={`b50`}
+        points={`${bx},${by} ${bx + t * fc},${by + t * fs} ${bx + t * 0.4 * Math.cos(rad)},${by + t * 0.4 * Math.sin(rad)}`}
+        fill="#be123c" stroke="#be123c" strokeWidth="0.8" />
+    );
+    rem -= 50; pos -= 0.22;
+  }
+  while (rem >= 10 && pos >= 0.16) {
+    const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
+    const t = 11;
+    barbEls.push(
+      <line key={`b10`} x1={bx} y1={by} x2={bx + t * fc} y2={by + t * fs}
+        stroke="#be123c" strokeWidth="1.8" strokeLinecap="round" />
+    );
+    rem -= 10; pos -= 0.16;
+  }
+  if (rem >= 5 && pos >= 0.12) {
+    const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
+    const t = 6;
+    barbEls.push(
+      <line key={`b5`} x1={bx} y1={by} x2={bx + t * fc} y2={by + t * fs}
+        stroke="#be123c" strokeWidth="1.5" strokeLinecap="round" />
+    );
+  }
+
+  return (
+    <g>
+      <line x1={cx} y1={cy} x2={ex} y2={ey} stroke="#be123c" strokeWidth="1.8" strokeLinecap="round" />
+      {barbEls}
+      {knots < 3.5 && (
+        <circle cx={cx} cy={cy} r="3" fill="none" stroke="#be123c" strokeWidth="1.5" />
+      )}
+    </g>
+  );
+}
+
+// ─────────────────────────────────────────────────────
 export default function ProfessionalWindgram({
   latitude, longitude, altitude = 1374, siteName = "sito", selectedDay = 0,
 }: WindgramProps) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -405,14 +412,18 @@ export default function ProfessionalWindgram({
         : spread >= 10 ? 0.95 : spread >= 5 ? 0.72 : 0.55;
 
       const levelWinds = [
-        { hpa: 500, alt: 5800, speed: h.wind_speed_500hPa?.[idx], dir: h.wind_direction_500hPa?.[idx] },
-        { hpa: 600, alt: 4400, speed: h.wind_speed_600hPa?.[idx], dir: h.wind_direction_600hPa?.[idx] },
-        { hpa: 700, alt: 3100, speed: h.wind_speed_700hPa?.[idx], dir: h.wind_direction_700hPa?.[idx] },
-        { hpa: 850, alt: 1450, speed: h.wind_speed_850hPa?.[idx], dir: h.wind_direction_850hPa?.[idx] },
+        { hpa: 500, alt: 5570, speed: h.wind_speed_500hPa?.[idx], dir: h.wind_direction_500hPa?.[idx] },
+        { hpa: 550, alt: 4860, speed: h.wind_speed_550hPa?.[idx], dir: h.wind_direction_550hPa?.[idx] },
+        { hpa: 600, alt: 4200, speed: h.wind_speed_600hPa?.[idx], dir: h.wind_direction_600hPa?.[idx] },
+        { hpa: 650, alt: 3580, speed: h.wind_speed_650hPa?.[idx], dir: h.wind_direction_650hPa?.[idx] },
+        { hpa: 700, alt: 3010, speed: h.wind_speed_700hPa?.[idx], dir: h.wind_direction_700hPa?.[idx] },
+        { hpa: 750, alt: 2470, speed: h.wind_speed_750hPa?.[idx], dir: h.wind_direction_750hPa?.[idx] },
+        { hpa: 800, alt: 1950, speed: h.wind_speed_800hPa?.[idx], dir: h.wind_direction_800hPa?.[idx] },
+        { hpa: 850, alt: 1460, speed: h.wind_speed_850hPa?.[idx], dir: h.wind_direction_850hPa?.[idx] },
       ].map((l) => ({
         ...l,
-        speed: l.speed ?? Math.round(wind10 * (1 + (5800 - l.alt) / (5800 - 1450) * 1.8)),
-        dir: l.dir ?? Math.round(windDir10 + (5800 - l.alt) * 0.008),
+        speed: l.speed ?? Math.round(wind10 * (1 + (5570 - l.alt) / (5570 - 1460) * 1.5)),
+        dir: l.dir ?? Math.round(windDir10 + (5570 - l.alt) * 0.005),
       }));
 
       type TP = { alt: number; temp: number };
@@ -420,20 +431,20 @@ export default function ProfessionalWindgram({
         { alt: altitude, temp: t2m },
         ...(t80 != null ? [{ alt: altitude + 80, temp: t80 }] : []),
         ...(t120 != null ? [{ alt: altitude + 120, temp: t120 }] : []),
-        { alt: 1450, temp: t2m - (1450 - altitude) * 0.0065 },
-        { alt: 3100, temp: t2m - (3100 - altitude) * 0.007 },
-        { alt: 4400, temp: t2m - (4400 - altitude) * 0.0075 },
-        { alt: 5800, temp: t2m - (5800 - altitude) * 0.008 },
+        { alt: 1460, temp: t2m - (1460 - altitude) * 0.0065 },
+        { alt: 3010, temp: t2m - (3010 - altitude) * 0.007 },
+        { alt: 4200, temp: t2m - (4200 - altitude) * 0.0075 },
+        { alt: 5570, temp: t2m - (5570 - altitude) * 0.008 },
       ].filter((p): p is TP => p.temp != null && !isNaN(p.temp));
 
-      function interpT(alt: number): number {
-        if (tempPts.length === 0) return t2m - (alt - altitude) * 0.0065;
+      function interpT(a: number): number {
+        if (tempPts.length === 0) return t2m - (a - altitude) * 0.0065;
         const s = [...tempPts].sort((a, b) => a.alt - b.alt);
-        if (alt <= s[0].alt) return s[0].temp;
-        if (alt >= s[s.length - 1].alt) return s[s.length - 1].temp;
+        if (a <= s[0].alt) return s[0].temp;
+        if (a >= s[s.length - 1].alt) return s[s.length - 1].temp;
         for (let i = 0; i < s.length - 1; i++) {
-          if (s[i].alt <= alt && s[i + 1].alt >= alt) {
-            const f = (alt - s[i].alt) / (s[i + 1].alt - s[i].alt);
+          if (s[i].alt <= a && s[i + 1].alt >= a) {
+            const f = (a - s[i].alt) / (s[i + 1].alt - s[i].alt);
             return s[i].temp + f * (s[i + 1].temp - s[i].temp);
           }
         }
@@ -480,16 +491,20 @@ export default function ProfessionalWindgram({
     [columns, boundaryAlts]
   );
   const boundaryPath = useMemo(() => toBezier(boundaryYPts), [boundaryYPts]);
+  const sinuousBoundaryPath = useMemo(() => toSinuousPath(boundaryYPts), [boundaryYPts]);
 
   const thermalTopPts = useMemo(() => columns.map((c) => ({ x: c.x, y: c.yThermalTop })), [columns]);
+  const thermalTopPath = useMemo(() => toBezier(thermalTopPts), [thermalTopPts]);
   const freezePts = useMemo(() => columns.map((c) => ({ x: c.x, y: c.yFreeze })), [columns]);
+  const freezePath = useMemo(() => toBezier(freezePts), [freezePts]);
   const cloudBasePts = useMemo(() => columns.map((c) => ({ x: c.x, y: c.yCloudBase })), [columns]);
+  const cloudBasePath = useMemo(() => toBezier(cloudBasePts), [cloudBasePts]);
   const avgFreeze = useMemo(
     () => columns.length ? Math.round(columns.reduce((s, c) => s + c.freeze, 0) / columns.length) : altitude + 3200,
     [columns, altitude]
   );
 
-  // Cloud badges ON the thermal top curve
+  // Cloud badges data
   const cloudBadges = useMemo(
     () => columns.map((c) => ({
       x: c.x,
@@ -501,7 +516,7 @@ export default function ProfessionalWindgram({
     [columns]
   );
 
-  // Precipitation labels (near top of plot, only where precip > 0)
+  // Precipitation labels
   const precipLabels = useMemo(
     () => columns.filter((c) => c.precip > 0.05).map((c) => ({
       x: c.x,
@@ -511,13 +526,12 @@ export default function ProfessionalWindgram({
     [columns]
   );
 
-  // ── Interpolate lapse rate at arbitrary (colFrac, alt) ──
+  // Interpolate lapse rate at arbitrary point
   function interpLapseAt(colFrac: number, alt: number): number {
     const ci0 = Math.floor(colFrac * (columns.length - 1));
     const ci1 = Math.min(ci0 + 1, columns.length - 1);
     const cf = colFrac * (columns.length - 1) - ci0;
-    const c0 = columns[ci0]!;
-    const c1 = columns[ci1]!;
+    const c0 = columns[ci0]!, c1 = columns[ci1]!;
 
     function lapseInCol(col: typeof c0, a: number): number {
       const lr = col.lapseRates;
@@ -531,420 +545,8 @@ export default function ProfessionalWindgram({
       return lr[0]!.dt;
     }
 
-    const d0 = lapseInCol(c0, alt);
-    const d1 = lapseInCol(c1, alt);
-    return d0 + (d1 - d0) * cf;
+    return lapseInCol(c0, alt) + (lapseInCol(c1, alt) - lapseInCol(c0, alt)) * cf;
   }
-
-  // ── Draw canvas ────────────────────────────────────
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = CW * dpr;
-    canvas.height = TOTAL_H * dpr;
-    canvas.style.width = `${CW}px`;
-    canvas.style.height = `${TOTAL_H}px`;
-    ctx.scale(dpr, dpr);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, CW, TOTAL_H);
-
-    const plotLeft = ML;
-    const plotRight = ML + GW;
-    const plotBottom = PLOT_TOP + GH;
-    const xStep = GW / (HOURS.length - 1);
-
-    // ══════════════════════════════════════════════════
-    // HEADER
-    // ══════════════════════════════════════════════════
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = "#111827";
-    ctx.font = "bold 20px sans-serif";
-    ctx.fillText(`${siteName.toLowerCase()} · ${formattedDateTitle.toLowerCase()}`, CW / 2, 28);
-
-    ctx.fillStyle = "#6b7280";
-    ctx.font = "11px monospace";
-    ctx.fillText(`plotted ${dateStr} 00:00 UTC · model ground ${Math.round(altitude + 5)} m · SRTM ${Math.round(altitude)} m`, CW / 2, 48);
-
-    ctx.font = "italic 11px sans-serif";
-    ctx.fillText("valore medio ascendenze (m/s)", CW / 2, 68);
-
-    // ══════════════════════════════════════════════════
-    // TOP NUMERIC STRIP
-    // ══════════════════════════════════════════════════
-    HOURS.forEach((_, i) => {
-      const x = ML + i * xStep;
-      const c = columns[i];
-      if (!c) return;
-      const rateColor = c.rateo >= 1.6 ? "#b91c1c" : c.rateo >= 1.0 ? "#ca8a04" : "#111827";
-      ctx.fillStyle = rateColor;
-      ctx.font = "bold 14px monospace";
-      ctx.textAlign = "center";
-      ctx.fillText(c.rateo.toFixed(1), x, 88);
-      if (i === 0) {
-        ctx.fillStyle = "#6b7280";
-        ctx.font = "10px sans-serif";
-        ctx.textAlign = "right";
-        ctx.fillText("sole %", ML - 8, 106);
-      }
-      const sunColor = c.sunPct >= 60 ? "#b45309" : "#475569";
-      ctx.fillStyle = sunColor;
-      ctx.font = "bold 11px monospace";
-      ctx.textAlign = "center";
-      ctx.fillText(`${c.sunPct}%`, x, 106);
-    });
-
-    // ══════════════════════════════════════════════════
-    // PIXEL-ACCURATE HEATMAP via ImageData
-    // Each pixel gets its ΔT from lapse-rate interpolation
-    // ══════════════════════════════════════════════════
-    if (columns.length > 0) {
-      const imgData = ctx.createImageData(GW, GH);
-      const d = imgData.data;
-      for (let py = 0; py < GH; py++) {
-        const alt = ALT_MIN + (1 - py / GH) * (ALT_MAX - ALT_MIN);
-        for (let px = 0; px < GW; px++) {
-          const colFrac = px / GW;
-          const dt = interpLapseAt(colFrac, alt);
-          const color = getDTColor(dt);
-          const [r, g, b] = hexToRgb(color);
-          const idx = (py * GW + px) * 4;
-          d[idx] = r;
-          d[idx + 1] = g;
-          d[idx + 2] = b;
-          d[idx + 3] = 215;
-        }
-      }
-      ctx.putImageData(imgData, plotLeft, PLOT_TOP);
-    }
-
-    // ══════════════════════════════════════════════════
-    // CROSS-HATCH — rectangular zones per unstable column
-    // ══════════════════════════════════════════════════
-    ctx.save();
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.13)";
-    ctx.lineWidth = 0.85;
-    const hatchSp = 6;
-    for (let ci = 0; ci < columns.length; ci++) {
-      const col = columns[ci];
-      if (col.surfaceDeltaT < 0.55) continue;
-      const bY = altToY(boundaryAlts[ci]);
-      const xL = col.x - xStep / 2;
-      const xR = col.x + xStep / 2;
-
-      // Diagonal down-right
-      for (let hx = xL - GH; hx < xR + GH; hx += hatchSp) {
-        ctx.beginPath();
-        ctx.moveTo(hx, bY);
-        ctx.lineTo(hx + (plotBottom - bY), plotBottom);
-        ctx.stroke();
-      }
-      // Diagonal up-right
-      for (let hx = xL - GH; hx < xR + GH; hx += hatchSp) {
-        ctx.beginPath();
-        ctx.moveTo(hx, plotBottom);
-        ctx.lineTo(hx + (plotBottom - bY), bY);
-        ctx.stroke();
-      }
-    }
-    ctx.restore();
-
-    // ══════════════════════════════════════════════════
-    // HORIZONTAL GRID LINES + hPa / meter LABELS
-    // ══════════════════════════════════════════════════
-    const hpaStep = GH / (HPA_LEVELS.length - 1);
-    HPA_LEVELS.forEach((lvl, i) => {
-      const y = PLOT_TOP + i * hpaStep;
-      ctx.strokeStyle = "rgba(0, 0, 0, 0.18)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(plotLeft, y);
-      ctx.lineTo(plotRight, y);
-      ctx.stroke();
-      ctx.fillStyle = "#1e293b";
-      ctx.font = "bold 11px monospace";
-      ctx.textAlign = "right";
-      ctx.textBaseline = "middle";
-      ctx.fillText(lvl.hpa, plotLeft - 10, y);
-      ctx.textAlign = "left";
-      ctx.fillText(lvl.alt, plotRight + 10, y);
-    });
-
-    // ══════════════════════════════════════════════════
-    // RIGHT ALTITUDE TICKS — 250m steps from launch to 4000m
-    // ══════════════════════════════════════════════════
-    const launchAlt = Math.round(altitude);
-    const altMinTick = Math.floor((launchAlt - 1) / 250) * 250;
-    for (let a = altMinTick; a <= 4000; a += 250) {
-      const y = altToY(a);
-      ctx.strokeStyle = "#1e293b";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(plotRight, y);
-      ctx.lineTo(plotRight + 5, y);
-      ctx.stroke();
-      ctx.fillStyle = "#475569";
-      ctx.font = "10px monospace";
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      ctx.fillText(`${a} m`, plotRight + 9, y);
-    }
-
-    // ══════════════════════════════════════════════════
-    // VERTICAL HOUR LINES
-    // ══════════════════════════════════════════════════
-    columns.forEach((c) => {
-      ctx.strokeStyle = "rgba(148, 163, 184, 0.35)";
-      ctx.lineWidth = 0.7;
-      ctx.setLineDash([3, 3]);
-      ctx.beginPath();
-      ctx.moveTo(c.x, PLOT_TOP);
-      ctx.lineTo(c.x, plotBottom);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    });
-
-    // ══════════════════════════════════════════════════
-    // PLOT BORDER
-    // ══════════════════════════════════════════════════
-    ctx.strokeStyle = "#0f172a";
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(plotLeft, PLOT_TOP, GW, GH);
-
-    // ══════════════════════════════════════════════════
-    // WIND BARBS — at each hour × hPa-level intersection
-    // ══════════════════════════════════════════════════
-    columns.forEach((col) => {
-      col.levelWinds.forEach((lw) => {
-        drawWindBarb(ctx, col.x, altToY(lw.alt), lw.speed, lw.dir);
-      });
-    });
-
-    // ══════════════════════════════════════════════════
-    // 0°C ISOTHERM (blue dashed line + snowflakes + badge)
-    // ══════════════════════════════════════════════════
-    if (freezePts.length >= 2) {
-      ctx.save();
-      ctx.strokeStyle = "#2563eb";
-      ctx.lineWidth = 2.2;
-      ctx.setLineDash([7, 5]);
-      ctx.beginPath();
-      strokePath(ctx, toBezier(freezePts));
-      ctx.stroke();
-      ctx.restore();
-
-      // Snowflake at each hour
-      freezePts.forEach((p) => {
-        drawSnowflake(ctx, p.x, p.y - 16);
-      });
-    }
-
-    if (freezePts[0]) {
-      const badgeY = altToY(avgFreeze);
-      const badgeX = plotRight - 115;
-      ctx.fillStyle = "#ffffff";
-      ctx.strokeStyle = "#2563eb";
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.roundRect(badgeX, badgeY - 12, 105, 24, 5);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = "#1e40af";
-      ctx.font = "bold 12px monospace";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(`0 °C · ${avgFreeze} m`, badgeX + 52, badgeY);
-    }
-
-    // ══════════════════════════════════════════════════
-    // THERMAL TOP CURVE (purple solid, thickest)
-    // ══════════════════════════════════════════════════
-    if (thermalTopPts.length >= 2) {
-      ctx.strokeStyle = "#7e22ce";
-      ctx.lineWidth = 3;
-      ctx.lineCap = "round";
-      ctx.beginPath();
-      strokePath(ctx, toBezier(thermalTopPts));
-      ctx.stroke();
-    }
-
-    // ══════════════════════════════════════════════════
-    // THERMAL BOUNDARY (orange sinusoidal wave)
-    // ══════════════════════════════════════════════════
-    if (boundaryYPts.length >= 2) {
-      ctx.strokeStyle = "#f97316";
-      ctx.lineWidth = 8;
-      ctx.globalAlpha = 0.18;
-      ctx.beginPath();
-      strokePath(ctx, boundaryPath);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-
-      ctx.strokeStyle = "#ea580c";
-      ctx.lineWidth = 2.8;
-      ctx.lineCap = "round";
-      ctx.beginPath();
-      strokePath(ctx, boundaryPath);
-      ctx.stroke();
-
-      ctx.strokeStyle = "#fb923c";
-      ctx.lineWidth = 1.2;
-      ctx.globalAlpha = 0.65;
-      ctx.beginPath();
-      strokePath(ctx, boundaryPath);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-
-    // ══════════════════════════════════════════════════
-    // CLOUD BASE CURVE (purple dashed)
-    // ══════════════════════════════════════════════════
-    if (cloudBasePts.length >= 2) {
-      ctx.save();
-      ctx.strokeStyle = "#a855f7";
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([6, 3]);
-      ctx.globalAlpha = 0.65;
-      ctx.beginPath();
-      strokePath(ctx, toBezier(cloudBasePts));
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // ══════════════════════════════════════════════════
-    // PBL CURVE (black dashed)
-    // ══════════════════════════════════════════════════
-    const pblPts = columns.map((c) => ({
-      x: c.x,
-      y: altToY(Math.min(ALT_MAX, Math.max(ALT_MIN, c.cloudBase + c.rateo * 600))),
-    }));
-    if (pblPts.length >= 2) {
-      ctx.save();
-      ctx.strokeStyle = "#0f172a";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([6, 4]);
-      ctx.globalAlpha = 0.5;
-      ctx.beginPath();
-      strokePath(ctx, toBezier(pblPts));
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // ══════════════════════════════════════════════════
-    // THERMAL PERCENTAGE CURVES (25%, 50%, 75%)
-    // ══════════════════════════════════════════════════
-    [25, 50, 75].forEach((pct) => {
-      const pts = columns.map((c) => ({
-        x: c.x,
-        y: altToY(c.cloudBase + (c.thermalTop - c.cloudBase) * (pct / 100)),
-      }));
-      ctx.save();
-      ctx.strokeStyle = "#6366f1";
-      ctx.lineWidth = 1.3;
-      ctx.setLineDash([5, 3]);
-      ctx.globalAlpha = 0.4;
-      ctx.beginPath();
-      strokePath(ctx, toBezier(pts));
-      ctx.stroke();
-      ctx.restore();
-    });
-
-    // ══════════════════════════════════════════════════
-    // CLOUD BADGES — CENTERED on the thermal top curve
-    // Purple circle with cloud %, altitude and rate below
-    // ══════════════════════════════════════════════════
-    cloudBadges.forEach((b) => {
-      drawCloudBadge(ctx, b.x, b.y, b.alt, b.rate, b.cloudPct);
-    });
-
-    // ══════════════════════════════════════════════════
-    // PARAGLIDER ICONS — above thermal top curve
-    // ══════════════════════════════════════════════════
-    columns.forEach((c) => {
-      if (c.rateo >= 0.55) {
-        drawParaglider(ctx, c.x, c.yThermalTop - 28);
-      }
-    });
-
-    // ══════════════════════════════════════════════════
-    // PRECIPITATION LABELS — small blue boxes near top
-    // ══════════════════════════════════════════════════
-    precipLabels.forEach((pl) => {
-      drawPrecipLabel(ctx, pl.x, pl.y, pl.amount);
-    });
-
-    // ══════════════════════════════════════════════════
-    // HOUR LABELS
-    // ══════════════════════════════════════════════════
-    columns.forEach((c) => {
-      ctx.strokeStyle = "#1e293b";
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.moveTo(c.x, plotBottom);
-      ctx.lineTo(c.x, plotBottom + 6);
-      ctx.stroke();
-      ctx.fillStyle = "#111827";
-      ctx.font = "bold 12px monospace";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "top";
-      ctx.fillText(`${String(c.hour).padStart(2, "0")}:00`, c.x, plotBottom + 10);
-    });
-
-    // ══════════════════════════════════════════════════
-    // FOOTER: ΔT LEGEND
-    // ══════════════════════════════════════════════════
-    const legendY = TOTAL_H - 44;
-    const legendW = 540;
-    const legendX = (CW - legendW) / 2;
-
-    const grad = ctx.createLinearGradient(legendX, 0, legendX + legendW, 0);
-    LEGEND_STOPS.forEach((s) => grad.addColorStop(s.pos, s.color));
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.roundRect(legendX, legendY, legendW, 14, 3);
-    ctx.fill();
-
-    // ΔT values below legend
-    const dtVals = DT_STOPS.map((s) => s.val);
-    ctx.font = "9px monospace";
-    ctx.fillStyle = "#6b7280";
-    ctx.textAlign = "center";
-    dtVals.forEach((v, i) => {
-      const lx = legendX + (i / (dtVals.length - 1)) * legendW;
-      ctx.fillText(v.toFixed(2), lx, legendY + 18);
-    });
-
-    // Labels flanking the legend
-    ctx.font = "bold 10px sans-serif";
-    ctx.textAlign = "right";
-    ctx.fillStyle = "#475569";
-    ctx.fillText("Stabile ←", legendX - 8, legendY + 10);
-    ctx.textAlign = "left";
-    ctx.fillText("→ Instabile", legendX + legendW + 8, legendY + 10);
-    ctx.textAlign = "center";
-    ctx.font = "bold 11px sans-serif";
-    ctx.fillStyle = "#1e293b";
-    ctx.fillText("ΔT / 100 m", CW / 2, legendY - 7);
-
-    // ══════════════════════════════════════════════════
-    // ATTRIBUTION
-    // ══════════════════════════════════════════════════
-    ctx.font = "11px sans-serif";
-    ctx.fillStyle = "#6b7280";
-    ctx.textAlign = "center";
-    ctx.fillText(
-      "Fonte: AROME 0-48 h + ICON-EU 0-120 h via Open-Meteo · Diagnostica di volo a vela di Alpium",
-      CW / 2, TOTAL_H - 10
-    );
-
-  }, [columns, boundaryAlts, boundaryYPts, boundaryPath, thermalTopPts, freezePts,
-      cloudBasePts, avgFreeze, cloudBadges, precipLabels, dateStr, siteName, altitude,
-      formattedDateTitle, latitude, longitude]);
 
   // ── Loading / error ────────────────────────────────
   if (loading) {
@@ -966,15 +568,379 @@ export default function ProfessionalWindgram({
     );
   }
 
+  // ── Render SVG ─────────────────────────────────────
+  const plotLeft = ML;
+  const plotRight = ML + GW;
+  const plotBottom = PLOT_TOP + GH;
+  const xStep = GW / (HOURS.length - 1);
+
   return (
     <div className="bg-white rounded-[28px] shadow-2xl border border-slate-300 overflow-hidden font-sans select-none">
-      <div className="overflow-x-auto">
-        <canvas
-          ref={canvasRef}
-          className="block w-full min-w-[700px] h-auto"
-          style={{ maxWidth: CW, margin: "0 auto" }}
-        />
-      </div>
+      <svg
+        viewBox={`0 0 ${SVG_W} ${TOTAL_H}`}
+        className="w-full h-auto block"
+        style={{ shapeRendering: "geometricPrecision" }}
+      >
+        <defs>
+          {/* Cloud mesh pattern */}
+          <pattern id="cloudHatch" width="8" height="8" patternTransform="rotate(30 0 0)" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="0" x2="0" y2="8" stroke="#334155" strokeWidth="0.75" opacity="0.25" />
+          </pattern>
+
+          {/* Unstable mass vertical gradient */}
+          <linearGradient id="unstableMassGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#22c55e" stopOpacity="0.85" />
+            <stop offset="25%" stopColor="#eab308" stopOpacity="0.85" />
+            <stop offset="55%" stopColor="#f97316" stopOpacity="0.90" />
+            <stop offset="85%" stopColor="#ef4444" stopOpacity="0.95" />
+            <stop offset="100%" stopColor="#b91c1c" stopOpacity="1.0" />
+          </linearGradient>
+
+          {/* Thermal bubble gradient */}
+          <linearGradient id="thermalBubbleGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#a855f7" stopOpacity="0.4" />
+            <stop offset="40%" stopColor="#ec4899" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.1" />
+          </linearGradient>
+
+          {/* Legend gradient */}
+          <linearGradient id="lapseRateBar" x1="0" y1="0" x2="1" y2="0">
+            {LEGEND_STOPS.map((s, i) => (
+              <stop key={i} offset={`${s.pos * 100}%`} stopColor={s.color} />
+            ))}
+          </linearGradient>
+
+          {/* Drop shadow filter */}
+          <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodOpacity="0.3" />
+          </filter>
+        </defs>
+
+        {/* White background */}
+        <rect x="0" y="0" width={SVG_W} height={TOTAL_H} fill="#ffffff" />
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* HEADER */}
+        {/* ══════════════════════════════════════════════════ */}
+        <text x={SVG_W / 2} y="36" textAnchor="middle" className="fill-slate-900 font-extrabold text-2xl tracking-tight">
+          {siteName.toLowerCase()} · {formattedDateTitle.toLowerCase()}
+        </text>
+        <text x={SVG_W / 2} y="56" textAnchor="middle" className="fill-slate-500 font-medium text-xs">
+          plotted {dateStr} 00:00 UTC · model ground {Math.round(altitude + 5)} m · SRTM {Math.round(altitude)} m
+        </text>
+
+        {/* Top numeric strip labels */}
+        <text x={ML - 15} y="85" textAnchor="end" className="fill-slate-400 font-bold text-[10px]">ASCENDENZE (m/s)</text>
+        <text x={ML - 15} y="102" textAnchor="end" className="fill-slate-400 font-bold text-[10px]">SOLE %</text>
+
+        {/* Top numeric values */}
+        {columns.map((c, i) => (
+          <g key={`head-${i}`}>
+            <text x={c.x} y="85" textAnchor="middle"
+              className={c.rateo >= 1.6 ? "fill-red-600 font-black text-xs" : c.rateo >= 1.0 ? "fill-orange-600 font-black text-xs" : "fill-slate-900 font-black text-xs"}>
+              {c.rateo.toFixed(1)}
+            </text>
+            <text x={c.x} y="102" textAnchor="middle"
+              className={c.sunPct >= 60 ? "fill-orange-700 font-semibold text-xs" : "fill-slate-700 font-semibold text-xs"}>
+              {c.sunPct}%
+            </text>
+            <text x={c.x} y="119" textAnchor="middle" className="fill-blue-600 font-medium text-[10px]">
+              {c.t2m.toFixed(0)}°/{c.dew2m.toFixed(0)}°
+            </text>
+          </g>
+        ))}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* PLOT BACKGROUND — Heatmap via ImageData approach */}
+        {/* Using SVG rect strips per column */}
+        {/* ══════════════════════════════════════════════════ */}
+        {columns.map((col, ci) => {
+          const xL = col.x - xStep / 2;
+          const xR = col.x + xStep / 2;
+          const bAlt = boundaryAlts[ci];
+          const bY = altToY(bAlt);
+          const strips: React.ReactNode[] = [];
+          const N = 32;
+          for (let si = 0; si < N; si++) {
+            const altTop = ALT_MIN + ((N - si - 0.5) / N) * (ALT_MAX - ALT_MIN);
+            const altBot = ALT_MIN + ((N - si - 1.5) / N) * (ALT_MAX - ALT_MIN);
+            const yTop = altToY(altTop);
+            const yBot = altToY(altBot);
+            const midAlt = (altTop + altBot) / 2;
+            const h = Math.max(1, yTop - yBot);
+
+            if (midAlt <= bAlt) {
+              const zoneFrac = Math.max(0, Math.min(1, (bAlt - midAlt) / (bAlt - ALT_MIN + 1)));
+              const intensity = col.surfaceDeltaT / 1.2;
+              const alpha = 0.3 + zoneFrac * 0.45 * intensity;
+              const r = Math.round(252 - zoneFrac * 100);
+              const g = Math.round(168 + zoneFrac * 80);
+              const b = Math.round(53 - zoneFrac * 80);
+              strips.push(
+                <rect key={`wb-${ci}-${si}`} x={xL} y={yBot} width={xR - xL} height={h}
+                  fill={rgbStr(r, g, b)} opacity={Math.min(0.85, alpha)} />
+              );
+            } else {
+              const zoneFrac = Math.max(0, Math.min(1, (midAlt - bAlt) / (ALT_MAX - bAlt + 1)));
+              const intensity = 1 - col.surfaceDeltaT / 1.5;
+              const alpha = 0.25 + zoneFrac * 0.5 * Math.max(0, intensity);
+              const r = Math.round(136 - zoneFrac * 80);
+              const g = Math.round(196 - zoneFrac * 120);
+              const b = Math.round(66 + zoneFrac * 100);
+              strips.push(
+                <rect key={`ws-${ci}-${si}`} x={xL} y={yBot} width={xR - xL} height={h}
+                  fill={rgbStr(r, g, b)} opacity={Math.min(0.8, alpha)} />
+              );
+            }
+          }
+          return <g key={`col-${ci}`}>{strips}</g>;
+        })}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* CROSS-HATCH — rectangular zones per unstable column */}
+        {/* ══════════════════════════════════════════════════ */}
+        {columns.map((col, ci) => {
+          if (col.surfaceDeltaT < 0.55) return null;
+          const bY = altToY(boundaryAlts[ci]);
+          const xL = col.x - xStep / 2;
+          const xR = col.x + xStep / 2;
+          const hatchLines: React.ReactNode[] = [];
+          const sp = 6;
+          for (let hx = xL - GH; hx < xR + GH; hx += sp) {
+            hatchLines.push(
+              <line key={`d-${ci}-${hx}`} x1={hx} y1={bY} x2={hx + (plotBottom - bY)} y2={plotBottom}
+                stroke="rgba(0,0,0,0.13)" strokeWidth="0.85" />
+            );
+            hatchLines.push(
+              <line key={`u-${ci}-${hx}`} x1={hx} y1={plotBottom} x2={hx + (plotBottom - bY)} y2={bY}
+                stroke="rgba(0,0,0,0.13)" strokeWidth="0.85" />
+            );
+          }
+          return <g key={`ch-${ci}`}>{hatchLines}</g>;
+        })}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* HORIZONTAL GRID LINES + hPa / meter LABELS */}
+        {/* ══════════════════════════════════════════════════ */}
+        {HPA_LEVELS.map((lvl, i) => {
+          const y = PLOT_TOP + i * (GH / (HPA_LEVELS.length - 1));
+          return (
+            <g key={`grid-${i}`}>
+              <line x1={plotLeft} y1={y} x2={plotRight} y2={y}
+                stroke="rgba(0,0,0,0.18)" strokeWidth="1" />
+              <text x={plotLeft - 12} y={y + 4} textAnchor="end"
+                className="fill-slate-800 font-bold text-[11px]">{lvl.hpa} hPa</text>
+              <text x={plotRight + 12} y={y + 4} textAnchor="start"
+                className="fill-slate-800 font-bold text-[11px]">{lvl.alt} m</text>
+            </g>
+          );
+        })}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* RIGHT ALTITUDE TICKS — 250m steps */}
+        {/* ══════════════════════════════════════════════════ */}
+        {(() => {
+          const launchAlt = Math.round(altitude);
+          const altMinTick = Math.floor((launchAlt - 1) / 250) * 250;
+          const ticks: React.ReactNode[] = [];
+          for (let a = altMinTick; a <= 4000; a += 250) {
+            const y = altToY(a);
+            ticks.push(
+              <g key={`tick-${a}`}>
+                <line x1={plotRight} y1={y} x2={plotRight + 5} y2={y}
+                  stroke="#1e293b" strokeWidth="1" />
+                <text x={plotRight + 9} y={y + 4} textAnchor="start"
+                  className="fill-slate-600 text-[10px] font-mono">{a} m</text>
+              </g>
+            );
+          }
+          return <g>{ticks}</g>;
+        })()}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* VERTICAL HOUR LINES */}
+        {/* ══════════════════════════════════════════════════ */}
+        {columns.map((c) => (
+          <line key={`vg-${c.hour}`} x1={c.x} y1={PLOT_TOP} x2={c.x} y2={plotBottom}
+            stroke="rgba(148,163,184,0.35)" strokeWidth="0.7" strokeDasharray="3 3" />
+        ))}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* PLOT BORDER */}
+        {/* ══════════════════════════════════════════════════ */}
+        <rect x={plotLeft} y={PLOT_TOP} width={GW} height={GH}
+          fill="none" stroke="#0f172a" strokeWidth="1.5" />
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* WIND BARBS */}
+        {/* ══════════════════════════════════════════════════ */}
+        {columns.map((col) =>
+          col.levelWinds.map((lw) => (
+            <WindBarb key={`wb-${col.hour}-${lw.hpa}`}
+              cx={col.x} cy={altToY(lw.alt)} knots={lw.speed} deg={lw.dir} />
+          ))
+        )}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* 0°C ISOTHERM (blue dashed + snowflakes + badge) */}
+        {/* ══════════════════════════════════════════════════ */}
+        {freezePts.length >= 2 && (
+          <>
+            <path d={freezePath} fill="none" stroke="#0284c7" strokeWidth="2.2"
+              strokeDasharray="7 5" filter="url(#shadow)" />
+            {freezePts.map((p, i) => (
+              <SnowflakeIcon key={`sf-${i}`} x={p.x} y={p.y - 16} />
+            ))}
+            <g transform={`translate(${plotRight - 110}, ${altToY(avgFreeze) - 11})`}>
+              <rect width="100" height="22" rx="4" fill="#fff" stroke="#0284c7" strokeWidth="1.5" filter="url(#shadow)" />
+              <text x="50" y="15" textAnchor="middle" className="fill-sky-800 font-extrabold text-[11px]">
+                0 °C · {avgFreeze} m
+              </text>
+            </g>
+          </>
+        )}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* THERMAL TOP CURVE (purple solid, thick) */}
+        {/* ══════════════════════════════════════════════════ */}
+        {thermalTopPts.length >= 2 && (
+          <path d={thermalTopPath} fill="none" stroke="#6b21a8" strokeWidth="4" filter="url(#shadow)" />
+        )}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* THERMAL BOUNDARY (orange sinusoidal wave) */}
+        {/* ══════════════════════════════════════════════════ */}
+        {boundaryYPts.length >= 2 && (
+          <>
+            <path d={sinuousBoundaryPath} fill="none" stroke="#f97316" strokeWidth="8" opacity="0.18" strokeLinecap="round" />
+            <path d={sinuousBoundaryPath} fill="none" stroke="#ea580c" strokeWidth="2.8" strokeLinecap="round" opacity="0.92" />
+            <path d={sinuousBoundaryPath} fill="none" stroke="#fb923c" strokeWidth="1.2" strokeLinecap="round" opacity="0.65" />
+          </>
+        )}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* CLOUD BASE CURVE (purple dashed) */}
+        {/* ══════════════════════════════════════════════════ */}
+        {cloudBasePts.length >= 2 && (
+          <path d={cloudBasePath} fill="none" stroke="#a855f7" strokeWidth="1.5"
+            strokeDasharray="6 3" opacity="0.65" />
+        )}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* PBL CURVE (black dashed) */}
+        {/* ══════════════════════════════════════════════════ */}
+        {(() => {
+          const pblPts = columns.map((c) => ({
+            x: c.x,
+            y: altToY(Math.min(ALT_MAX, Math.max(ALT_MIN, c.cloudBase + c.rateo * 600))),
+          }));
+          return pblPts.length >= 2 ? (
+            <path d={toBezier(pblPts)} fill="none" stroke="#0f172a" strokeWidth="2"
+              strokeDasharray="6 4" opacity="0.5" />
+          ) : null;
+        })()}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* THERMAL PERCENTAGE CURVES (25%, 50%, 75%) */}
+        {/* ══════════════════════════════════════════════════ */}
+        {[25, 50, 75].map((pct) => {
+          const pts = columns.map((c) => ({
+            x: c.x,
+            y: altToY(c.cloudBase + (c.thermalTop - c.cloudBase) * (pct / 100)),
+          }));
+          return (
+            <path key={`tlc-${pct}`} d={toBezier(pts)} fill="none" stroke="#6366f1" strokeWidth="1.3"
+              strokeDasharray="5 3" opacity="0.4" />
+          );
+        })}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* CLOUD BADGES — ON the thermal top curve */}
+        {/* ══════════════════════════════════════════════════ */}
+        {cloudBadges.map((b) => {
+          const col = columns.find((c) => Math.abs(c.x - b.x) < 2);
+          if (!col || col.rateo < 0.55) return null;
+          return (
+            <g key={`badge-${b.x}`} transform={`translate(${b.x}, ${b.y})`}>
+              {/* Purple circle with cloud % */}
+              <circle cx="0" cy="0" r="16" fill="#e0e7ff" stroke="#4338ca" strokeWidth="1.5" />
+              <text x="0" y="-1" textAnchor="middle" dominantBaseline="middle"
+                className="fill-slate-800 font-bold text-[9px]">{b.cloudPct}%</text>
+              {/* Altitude pill */}
+              <rect x="-30" y="20" width="60" height="18" rx="4" fill="#fff" stroke="#6b21a8" strokeWidth="1.5" filter="url(#shadow)" />
+              <text x="0" y="33" textAnchor="middle" className="fill-purple-950 font-black text-[10px]">{b.alt} m</text>
+              {/* Rate pill */}
+              <rect x="-22" y="42" width="44" height="14" rx="3" fill="#6b21a8" />
+              <text x="0" y="52" textAnchor="middle" className="fill-white font-bold text-[9px]">↑ {b.rate.toFixed(1)} m/s</text>
+            </g>
+          );
+        })}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* PARAGLIDER ICONS — above thermal top curve */}
+        {/* ══════════════════════════════════════════════════ */}
+        {columns.filter((c) => c.rateo >= 0.55).map((c) => (
+          <g key={`pg-${c.hour}`} transform={`translate(${c.x}, ${c.yThermalTop - 28})`}>
+            <path d="M -18,-6 Q -12,-22 0,-22 Q 12,-22 18,-6 Q 9,-15 0,-15 Q -9,-15 -18,-6 Z"
+              fill="#f3e8ff" stroke="#7e22ce" strokeWidth="2" />
+            <line x1="-14" y1="-6" x2="0" y2="9" stroke="#7e22ce" strokeWidth="1.3" />
+            <line x1="14" y1="-6" x2="0" y2="9" stroke="#7e22ce" strokeWidth="1.3" />
+            <circle cx="0" cy="9" r="5" fill="#fff" stroke="#7e22ce" strokeWidth="1.8" />
+          </g>
+        ))}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* PRECIPITATION LABELS */}
+        {/* ══════════════════════════════════════════════════ */}
+        {precipLabels.map((pl) => {
+          const tw = pl.amount.toFixed(2).length * 6 + 10;
+          return (
+            <g key={`prec-${pl.x}`} transform={`translate(${pl.x - tw / 2}, ${pl.y - 8})`}>
+              <rect width={tw} height="16" rx="3" fill="#dbeafe" stroke="#3b82f6" strokeWidth="1" />
+              <text x={tw / 2} y="11" textAnchor="middle" className="fill-blue-900 font-bold text-[9px]">
+                {pl.amount.toFixed(2)} mm
+              </text>
+            </g>
+          );
+        })}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* HOUR LABELS */}
+        {/* ══════════════════════════════════════════════════ */}
+        {columns.map((c) => (
+          <g key={`xl-${c.hour}`}>
+            <line x1={c.x} y1={plotBottom} x2={c.x} y2={plotBottom + 6}
+              stroke="#1e293b" strokeWidth="1.2" />
+            <text x={c.x} y={plotBottom + 22} textAnchor="middle"
+              className="fill-slate-900 font-black text-xs">{`${String(c.hour).padStart(2, "0")}:00`}</text>
+          </g>
+        ))}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* FOOTER: ΔT LEGEND */}
+        {/* ══════════════════════════════════════════════════ */}
+        <g transform={`translate(${(SVG_W - 500) / 2}, ${TOTAL_H - 52})`}>
+          <rect width="500" height="12" rx="3" fill="url(#lapseRateBar)" stroke="#cbd5e1" strokeWidth="0.5" />
+          <text x="-12" y="10" textAnchor="end" className="fill-slate-600 font-bold text-[10px]">Stabile ←</text>
+          <text x="512" y="10" textAnchor="start" className="fill-slate-600 font-bold text-[10px]">→ Instabile</text>
+          <text x="250" y="-6" textAnchor="middle" className="fill-slate-800 font-black text-[10px]">
+            ΔT / 100 m
+          </text>
+          {/* Scale markers */}
+          {[-0.20, 0.00, 0.32, 0.65, 0.98, 1.20].map((v, i) => (
+            <text key={`lv-${i}`} x={i * 100} y="25" textAnchor="middle" className="fill-slate-400 text-[9px]">
+              {v}
+            </text>
+          ))}
+        </g>
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* ATTRIBUTION */}
+        {/* ══════════════════════════════════════════════════ */}
+        <text x={SVG_W / 2} y={TOTAL_H - 12} textAnchor="middle" className="fill-slate-400 text-[9px]">
+          Fonte: AROME 0-48 h + ICON-EU 0-120 h via Open-Meteo · Diagnostica di volo a vela di Alpium
+        </text>
+      </svg>
     </div>
   );
 }
