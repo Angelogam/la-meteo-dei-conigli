@@ -13,25 +13,26 @@ interface WindgramProps {
 }
 
 // ─────────────────────────────────────────────────────
-// Layout constants
+// Layout — match Alpium reference exactly
 // ─────────────────────────────────────────────────────
 const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] as const;
 const NUM_HOURS = HOURS.length;
 
-const CANVAS_W = 1000;
-const HEADER_H = 120; // header + top numeric strip
-const FOOTER_H = 60;  // legend + attribution
+const CW = 1000; // canvas width
+const HEADER_H = 120; // header + numeric strip
+const FOOTER_H = 52;  // legend + attribution
 const PLOT_TOP = HEADER_H;
 const PLOT_H = 600;
 const TOTAL_H = HEADER_H + PLOT_H + FOOTER_H;
-const MARGIN = { top: HEADER_H, right: 80, bottom: FOOTER_H, left: 80 };
-const GRAPH_W = CANVAS_W - MARGIN.left - MARGIN.right;
+const MARGIN_L = 80;
+const MARGIN_R = 82;
+const GRAPH_W = CW - MARGIN_L - MARGIN_R;
 const GRAPH_H = PLOT_H;
 
-// Altitude range matching Alpium (1200–6000 m)
 const ALT_MIN = 1200;
 const ALT_MAX = 6000;
 
+// Exact Alpium hPa grid (8 levels evenly spaced)
 const HPA_LEVELS = [
   { hpa: "500 hPa", alt: "6000 m" },
   { hpa: "550 hPa", alt: "5000 m" },
@@ -43,7 +44,7 @@ const HPA_LEVELS = [
   { hpa: "850 hPa", alt: "1500 m" },
 ];
 
-// Alpium-style heatmap bands (from top to bottom)
+// Alpium exact heatmap base bands
 const HEAT_BANDS = [
   { altTop: 6000, color: "#88c442" },
   { altTop: 4500, color: "#b2d855" },
@@ -54,7 +55,7 @@ const HEAT_BANDS = [
   { altTop: 1200, color: "#b2d855" },
 ];
 
-// DeltaT color scale
+// ΔT color scale — matches reference exactly
 const DT_STOPS = [
   { val: -0.20, color: "#6d28d9" },
   { val: -0.05, color: "#4338ca" },
@@ -68,14 +69,15 @@ const DT_STOPS = [
   { val:  1.20, color: "#7f1d1d" },
 ];
 
-// Legend gradient stops (stable → unstable)
-const LEGEND_STOPS = [
-  { pos: 0.0, color: "#a855f7" },
-  { pos: 0.2, color: "#3b82f6" },
-  { pos: 0.4, color: "#06b6d4" },
-  { pos: 0.6, color: "#84cc16" },
-  { pos: 0.8, color: "#f97316" },
-  { pos: 1.0, color: "#dc2626" },
+// Legend gradient: stable (purple) → unstable (red)
+const LEGEND_STOPS: { pos: number; color: string }[] = [
+  { pos: 0.00, color: "#a855f7" },
+  { pos: 0.16, color: "#3b82f6" },
+  { pos: 0.32, color: "#06b6d4" },
+  { pos: 0.48, color: "#84cc16" },
+  { pos: 0.65, color: "#eab308" },
+  { pos: 0.82, color: "#f97316" },
+  { pos: 1.00, color: "#dc2626" },
 ];
 
 // ─────────────────────────────────────────────────────
@@ -110,32 +112,46 @@ function altToY(alt: number): number {
   const a = Math.max(ALT_MIN, Math.min(ALT_MAX, alt));
   return PLOT_TOP + GRAPH_H * (1 - (a - ALT_MIN) / (ALT_MAX - ALT_MIN));
 }
-function yToAlt(y: number): number {
-  return ALT_MIN + (1 - (y - PLOT_TOP) / GRAPH_H) * (ALT_MAX - ALT_MIN);
-}
 function xFromIdx(i: number): number {
-  if (NUM_HOURS <= 1) return MARGIN.left + GRAPH_W / 2;
-  return MARGIN.left + (i / (NUM_HOURS - 1)) * GRAPH_W;
+  if (NUM_HOURS <= 1) return MARGIN_L + GRAPH_W / 2;
+  return MARGIN_L + (i / (NUM_HOURS - 1)) * GRAPH_W;
 }
 
-// Catmull-Rom → cubic Bézier path
-function catmullRomToBezier(pts: { x: number; y: number }[]): string {
+// Catmull-Rom → cubic Bézier
+function toBezier(pts: { x: number; y: number }[]): string {
   if (pts.length < 2) return "";
   let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
   for (let i = 1; i < pts.length; i++) {
     const p0 = pts[i - 1], p1 = pts[i];
     const p2 = pts[Math.min(i + 1, pts.length - 1)];
-    const cp1x = p0.x + (p1.x - p0.x) / 3;
-    const cp1y = p0.y + (p1.y - p0.y) / 3;
-    const cp2x = p1.x - (p2.x - p1.x) / 3;
-    const cp2y = p1.y - (p2.y - p1.y) / 3;
-    d += ` C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
+    const c1x = p0.x + (p1.x - p0.x) / 3;
+    const c1y = p0.y + (p1.y - p0.y) / 3;
+    const c2x = p1.x - (p2.x - p1.x) / 3;
+    const c2y = p1.y - (p2.y - p1.y) / 3;
+    d += ` C ${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
   }
   return d;
 }
 
+// Stroke a path string on canvas
+function strokePath(ctx: CanvasRenderingContext2D, pathStr: string) {
+  const tokens = pathStr.match(/[MLC]|[0-9.\-]+/g) || [];
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i]!;
+    if (t === "M") {
+      ctx.moveTo(parseFloat(tokens[++i]!), parseFloat(tokens[++i]!));
+    } else if (t === "C") {
+      ctx.bezierCurveTo(
+        parseFloat(tokens[++i]!), parseFloat(tokens[++i]!),
+        parseFloat(tokens[++i]!), parseFloat(tokens[++i]!),
+        parseFloat(tokens[++i]!), parseFloat(tokens[++i]!)
+      );
+    }
+  }
+}
+
 // ─────────────────────────────────────────────────────
-// Wind barb (Canvas)
+// Wind barb (meteorological, matches Alpium style)
 // ─────────────────────────────────────────────────────
 function drawWindBarb(
   ctx: CanvasRenderingContext2D,
@@ -145,16 +161,14 @@ function drawWindBarb(
   if (speed == null || isNaN(speed) || speed < 1) return;
   const knots = speed * 0.54;
 
-  // Direction the wind comes FROM (meteorological convention)
+  // Direction wind comes FROM
   const rad = ((dir - 90) * Math.PI) / 180;
   const staffLen = 30;
   const ex = cx + staffLen * Math.cos(rad);
   const ey = cy + staffLen * Math.sin(rad);
 
-  // Feathers on the right side of the staff
   const featherRad = rad + Math.PI * 0.63;
   const fc = Math.cos(featherRad), fs = Math.sin(featherRad);
-
   const col = speed > 40 ? "#991b1b" : speed > 25 ? "#7e22ce" : "#1e3a5f";
 
   ctx.strokeStyle = col;
@@ -162,19 +176,15 @@ function drawWindBarb(
   ctx.lineWidth = 2;
   ctx.lineCap = "round";
 
-  // Staff line
   ctx.beginPath();
   ctx.moveTo(cx, cy);
   ctx.lineTo(ex, ey);
   ctx.stroke();
 
-  // Feathers
   let rem = Math.round(knots / 5) * 5;
   let pos = 1.0;
-
   while (rem >= 50 && pos >= 0.22) {
-    const bx = cx + pos * (ex - cx);
-    const by = cy + pos * (ey - cy);
+    const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
     const t = 14;
     ctx.beginPath();
     ctx.moveTo(bx, by);
@@ -182,29 +192,113 @@ function drawWindBarb(
     ctx.lineTo(bx + t * 0.45 * Math.cos(rad), by + t * 0.45 * Math.sin(rad));
     ctx.closePath();
     ctx.fill();
-    rem -= 50;
-    pos -= 0.22;
+    rem -= 50; pos -= 0.22;
   }
   while (rem >= 10 && pos >= 0.16) {
-    const bx = cx + pos * (ex - cx);
-    const by = cy + pos * (ey - cy);
+    const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
     const t = 13;
     ctx.beginPath();
     ctx.moveTo(bx, by);
     ctx.lineTo(bx + t * fc, by + t * fs);
     ctx.stroke();
-    rem -= 10;
-    pos -= 0.16;
+    rem -= 10; pos -= 0.16;
   }
   if (rem >= 5 && pos >= 0.12) {
-    const bx = cx + pos * (ex - cx);
-    const by = cy + pos * (ey - cy);
+    const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
     const t = 7;
     ctx.beginPath();
     ctx.moveTo(bx, by);
     ctx.lineTo(bx + t * fc, by + t * fs);
     ctx.stroke();
   }
+}
+
+// ─────────────────────────────────────────────────────
+// Paraglider icon
+// ─────────────────────────────────────────────────────
+function drawParaglider(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  ctx.save();
+  ctx.translate(x, y);
+  // Canopy
+  ctx.fillStyle = "#f3e8ff";
+  ctx.strokeStyle = "#7e22ce";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-16, -5);
+  ctx.quadraticCurveTo(-10, -20, 0, -20);
+  ctx.quadraticCurveTo(10, -20, 16, -5);
+  ctx.quadraticCurveTo(8, -14, 0, -14);
+  ctx.quadraticCurveTo(-8, -14, -16, -5);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  // Lines
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(-12, -5); ctx.lineTo(0, 8);
+  ctx.moveTo(12, -5); ctx.lineTo(0, 8);
+  ctx.stroke();
+  // Pilot
+  ctx.fillStyle = "#fff";
+  ctx.strokeStyle = "#7e22ce";
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.arc(0, 8, 4.5, 0, Math.PI * 2);
+  ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+// ─────────────────────────────────────────────────────
+// Snowflake icon
+// ─────────────────────────────────────────────────────
+function drawSnowflake(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = "#ffffff";
+  ctx.strokeStyle = "#0284c7";
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.arc(0, 0, 10, 0, Math.PI * 2);
+  ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = "#0284c7";
+  ctx.lineWidth = 1.2;
+  ctx.lineCap = "round";
+  for (let a = 0; a < 4; a++) {
+    const angle = (a * Math.PI) / 4;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(angle) * 3, Math.sin(angle) * 3);
+    ctx.lineTo(Math.cos(angle) * 7, Math.sin(angle) * 7);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ─────────────────────────────────────────────────────
+// Cloud badge (purple arc, height + rate text)
+// ─────────────────────────────────────────────────────
+function drawCloudBadge(ctx: CanvasRenderingContext2D, x: number, y: number, alt: number, rate: number) {
+  const bw = 68, bh = 34;
+  ctx.save();
+  ctx.translate(x, y - 18);
+  // Purple cloud shape
+  ctx.fillStyle = "#e0e7ff";
+  ctx.strokeStyle = "#4338ca";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, 14, Math.PI, 0);
+  ctx.lineTo(14, 0);
+  ctx.lineTo(-14, 0);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  // Text: altitude
+  ctx.fillStyle = "#1e1b4b";
+  ctx.font = "bold 10px monospace";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(`${alt} m`, 0, 12);
+  // Text: lift rate
+  ctx.fillStyle = "#4338ca";
+  ctx.fillText(`↑ ${rate.toFixed(1)} m/s`, 0, 24);
+  ctx.restore();
 }
 
 // ─────────────────────────────────────────────────────
@@ -235,7 +329,6 @@ export default function ProfessionalWindgram({
     let mounted = true;
     setLoading(true);
     setError(null);
-
     const params = new URLSearchParams({
       latitude: latitude.toString(),
       longitude: longitude.toString(),
@@ -262,7 +355,6 @@ export default function ProfessionalWindgram({
       start_date: dateStr,
       end_date: dateStr,
     });
-
     fetchWithProxyFallback(params.toString())
       .then(async (r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -272,7 +364,6 @@ export default function ProfessionalWindgram({
       .catch((e: any) => {
         if (mounted) { setError(e?.message || "Errore dati"); setLoading(false); }
       });
-
     return () => { mounted = false; };
   }, [latitude, longitude, dateStr]);
 
@@ -384,7 +475,7 @@ export default function ProfessionalWindgram({
     }).filter((c): c is NonNullable<typeof c> => c !== null);
   }, [data, altitude]);
 
-  // ── Thermal boundary (sinusoidal curve) ────────────
+  // ── Pre-compute curves ─────────────────────────────
   const boundaryAlts = useMemo(() =>
     columns.map((c) => {
       const hourFrac = (c.hour - 8) / 10;
@@ -399,12 +490,8 @@ export default function ProfessionalWindgram({
     () => columns.map((c, i) => ({ x: c.x, y: altToY(boundaryAlts[i]) })),
     [columns, boundaryAlts]
   );
-  const boundaryPath = useMemo(
-    () => catmullRomToBezier(boundaryYPts),
-    [boundaryYPts]
-  );
+  const boundaryPath = useMemo(() => toBezier(boundaryYPts), [boundaryYPts]);
 
-  // ── Other paths ────────────────────────────────────
   const thermalTopPts = useMemo(() => columns.map((c) => ({ x: c.x, y: c.yThermalTop })), [columns]);
   const freezePts = useMemo(() => columns.map((c) => ({ x: c.x, y: c.yFreeze })), [columns]);
   const cloudBasePts = useMemo(() => columns.map((c) => ({ x: c.x, y: c.yCloudBase })), [columns]);
@@ -426,79 +513,83 @@ export default function ProfessionalWindgram({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Handle HiDPI
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = CANVAS_W * dpr;
+    canvas.width = CW * dpr;
     canvas.height = TOTAL_H * dpr;
-    canvas.style.width = `${CANVAS_W}px`;
+    canvas.style.width = `${CW}px`;
     canvas.style.height = `${TOTAL_H}px`;
     ctx.scale(dpr, dpr);
 
     // White background
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, CANVAS_W, TOTAL_H);
+    ctx.fillRect(0, 0, CW, TOTAL_H);
 
-    // ── Header ──────────────────────────────────────
+    const plotLeft = MARGIN_L;
+    const plotRight = MARGIN_L + GRAPH_W;
+    const plotBottom = PLOT_TOP + GRAPH_H;
+    const xStep = GRAPH_W / (HOURS.length - 1);
+
+    // ══════════════════════════════════════════════════
+    // HEADER
+    // ══════════════════════════════════════════════════
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
+    // Site name + date
     ctx.fillStyle = "#111827";
     ctx.font = "bold 20px sans-serif";
     ctx.fillText(
       `${siteName.toLowerCase()} · ${formattedDateTitle.toLowerCase()}`,
-      CANVAS_W / 2, 28
+      CW / 2, 28
     );
 
+    // Sub-header
     ctx.fillStyle = "#6b7280";
     ctx.font = "11px monospace";
     ctx.fillText(
       `plotted ${dateStr} 00:00 UTC · model ground ${Math.round(altitude + 5)} m · SRTM ${Math.round(altitude)} m`,
-      CANVAS_W / 2, 48
+      CW / 2, 48
     );
 
+    // "valore medio ascendenze" label
     ctx.fillStyle = "#6b7280";
     ctx.font = "italic 11px sans-serif";
-    ctx.fillText("valore medio ascendenze (m/s)", CANVAS_W / 2, 68);
+    ctx.fillText("valore medio ascendenze (m/s)", CW / 2, 68);
 
-    // ── Top numeric strip ──────────────────────────
-    const xStep = GRAPH_W / (HOURS.length - 1);
-    ctx.font = "bold 12px sans-serif";
-
+    // ══════════════════════════════════════════════════
+    // TOP NUMERIC STRIP (two rows)
+    // ══════════════════════════════════════════════════
     HOURS.forEach((_, i) => {
-      const x = MARGIN.left + i * xStep;
-
-      // Ascendenze value
+      const x = MARGIN_L + i * xStep;
       const c = columns[i];
       if (!c) return;
+
+      // Row 1: thermal rate (large, bold)
       const rateColor = c.rateo >= 1.6 ? "#b91c1c" : c.rateo >= 1.0 ? "#ca8a04" : "#111827";
       ctx.fillStyle = rateColor;
       ctx.font = "bold 14px monospace";
       ctx.textAlign = "center";
       ctx.fillText(c.rateo.toFixed(1), x, 88);
 
-      // Sole %
+      // "sole %" label on first column
       if (i === 0) {
         ctx.fillStyle = "#6b7280";
         ctx.font = "10px sans-serif";
         ctx.textAlign = "right";
-        ctx.fillText("sole %", MARGIN.left - 8, 106);
-        ctx.fillStyle = "#111827";
-        ctx.font = "bold 11px monospace";
+        ctx.fillText("sole %", MARGIN_L - 8, 106);
       }
+
+      // Row 2: sun %
       const sunColor = c.sunPct >= 60 ? "#b45309" : "#475569";
       ctx.fillStyle = sunColor;
+      ctx.font = "bold 11px monospace";
       ctx.textAlign = "center";
       ctx.fillText(`${c.sunPct}%`, x, 106);
     });
 
-    // ── PLOT AREA ──────────────────────────────────
-    const plotLeft = MARGIN.left;
-    const plotRight = MARGIN.left + GRAPH_W;
-    const plotBottom = PLOT_TOP + GRAPH_H;
-
-    // ── Heatmap bands (full width, Alpium colors) ──
-    // But modulated by actual lapse rate data per column
-    // First draw base bands
+    // ══════════════════════════════════════════════════
+    // PLOT BACKGROUND — Alpium exact color bands
+    // ══════════════════════════════════════════════════
     let bandY = PLOT_TOP;
     for (const band of HEAT_BANDS) {
       const targetY = altToY(band.altTop);
@@ -507,10 +598,13 @@ export default function ProfessionalWindgram({
       bandY = targetY;
     }
 
-    // ── Per-column lapse-rate modulated opacity overlay ──
-    // Using the boundary curve: below = more opaque warm colors, above = stable
+    // ══════════════════════════════════════════════════
+    // PER-COLUMN LAPSE-RATE MODULATION
+    // Overlay: warm colors (red/orange) where ΔT is high,
+    // cool colors (green/purple) where ΔT is low
+    // ══════════════════════════════════════════════════
     if (columns.length > 0 && boundaryAlts.length === columns.length) {
-      const N = 32; // vertical segments per column
+      const N = 32;
       for (let ci = 0; ci < columns.length; ci++) {
         const col = columns[ci];
         const xL = col.x - xStep / 2;
@@ -526,21 +620,19 @@ export default function ProfessionalWindgram({
           const stripH = Math.max(1, yTop - yBot);
 
           if (midAlt <= bAlt) {
-            // Below boundary: warm/unstable — modulate intensity by surfaceDeltaT
+            // BELOW boundary: warm/unstable
             const zoneFrac = Math.max(0, Math.min(1, (bAlt - midAlt) / (bAlt - ALT_MIN + 1)));
-            const intensity = col.surfaceDeltaT / 1.2; // normalize
+            const intensity = col.surfaceDeltaT / 1.2;
             const alpha = 0.3 + zoneFrac * 0.45 * intensity;
-            // Color: orange at bottom → green near boundary
             const r = Math.round(252 - zoneFrac * 100);
             const g = Math.round(168 + zoneFrac * 80);
             const b = Math.round(53 - zoneFrac * 80);
             ctx.fillStyle = rgbStr(r, g, b, Math.min(0.85, alpha));
           } else {
-            // Above boundary: cool/stable
+            // ABOVE boundary: cool/stable
             const zoneFrac = Math.max(0, Math.min(1, (midAlt - bAlt) / (ALT_MAX - bAlt + 1)));
             const intensity = 1 - col.surfaceDeltaT / 1.5;
             const alpha = 0.25 + zoneFrac * 0.5 * Math.max(0, intensity);
-            // Color: green near boundary → purple at top
             const r = Math.round(136 - zoneFrac * 80);
             const g = Math.round(196 - zoneFrac * 120);
             const b = Math.round(66 + zoneFrac * 100);
@@ -551,11 +643,12 @@ export default function ProfessionalWindgram({
       }
     }
 
-    // ── Cross-hatch (convective mesh) ──────────────
-    // Only in columns with high surfaceDeltaT, below boundary
+    // ══════════════════════════════════════════════════
+    // CROSS-HATCH (convective mesh) — below thermal boundary
+    // ══════════════════════════════════════════════════
     ctx.save();
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.12)";
-    ctx.lineWidth = 0.8;
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.13)";
+    ctx.lineWidth = 0.9;
     const hatchSpacing = 11;
     for (let ci = 0; ci < columns.length; ci++) {
       const col = columns[ci];
@@ -564,14 +657,12 @@ export default function ProfessionalWindgram({
       const xL = col.x - xStep / 2;
       const xR = col.x + xStep / 2;
 
-      // Diagonal lines going down-right
       for (let hx = xL - GRAPH_H; hx < xR + GRAPH_H; hx += hatchSpacing) {
         ctx.beginPath();
         ctx.moveTo(hx, bY);
         ctx.lineTo(hx + (plotBottom - bY), plotBottom);
         ctx.stroke();
       }
-      // Diagonal lines going up-right
       for (let hx = xL - GRAPH_H; hx < xR + GRAPH_H; hx += hatchSpacing) {
         ctx.beginPath();
         ctx.moveTo(hx, plotBottom);
@@ -581,10 +672,13 @@ export default function ProfessionalWindgram({
     }
     ctx.restore();
 
-    // ── Horizontal grid lines + labels ─────────────
+    // ══════════════════════════════════════════════════
+    // HORIZONTAL GRID LINES + hPa / meter LABELS
+    // ══════════════════════════════════════════════════
     const hpaStep = GRAPH_H / (HPA_LEVELS.length - 1);
     HPA_LEVELS.forEach((lvl, i) => {
       const y = PLOT_TOP + i * hpaStep;
+
       ctx.strokeStyle = "rgba(0, 0, 0, 0.18)";
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -592,20 +686,42 @@ export default function ProfessionalWindgram({
       ctx.lineTo(plotRight, y);
       ctx.stroke();
 
-      // Left label (hPa)
+      // Left: hPa
       ctx.fillStyle = "#1e293b";
       ctx.font = "bold 11px monospace";
       ctx.textAlign = "right";
       ctx.textBaseline = "middle";
       ctx.fillText(lvl.hpa, plotLeft - 10, y);
 
-      // Right label (m)
+      // Right: meters
       ctx.textAlign = "left";
       ctx.fillText(lvl.alt, plotRight + 10, y);
     });
 
-    // ── Vertical hour lines ────────────────────────
-    columns.forEach((c, i) => {
+    // ══════════════════════════════════════════════════
+    // RIGHT ALTITUDE TICKS — 250m steps from launch to 4000m
+    // ══════════════════════════════════════════════════
+    const launchAlt = Math.round(altitude);
+    const altMinTick = Math.floor((launchAlt - 1) / 250) * 250;
+    for (let a = altMinTick; a <= 4000; a += 250) {
+      const y = altToY(a);
+      ctx.strokeStyle = "#1e293b";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(plotRight, y);
+      ctx.lineTo(plotRight + 5, y);
+      ctx.stroke();
+      ctx.fillStyle = "#475569";
+      ctx.font = "10px monospace";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(`${a} m`, plotRight + 9, y);
+    }
+
+    // ══════════════════════════════════════════════════
+    // VERTICAL HOUR LINES
+    // ══════════════════════════════════════════════════
+    columns.forEach((c) => {
       ctx.strokeStyle = "rgba(148, 163, 184, 0.35)";
       ctx.lineWidth = 0.7;
       ctx.setLineDash([3, 3]);
@@ -616,53 +732,36 @@ export default function ProfessionalWindgram({
       ctx.setLineDash([]);
     });
 
-    // ── Plot border ────────────────────────────────
+    // ══════════════════════════════════════════════════
+    // PLOT BORDER
+    // ══════════════════════════════════════════════════
     ctx.strokeStyle = "#0f172a";
     ctx.lineWidth = 1.5;
     ctx.strokeRect(plotLeft, PLOT_TOP, GRAPH_W, GRAPH_H);
 
-    // ── Wind barbs ─────────────────────────────────
+    // ══════════════════════════════════════════════════
+    // WIND BARBS
+    // ══════════════════════════════════════════════════
     columns.forEach((col) => {
       col.levelWinds.forEach((lw) => {
         drawWindBarb(ctx, col.x, altToY(lw.alt), lw.speed, lw.dir);
       });
     });
 
-    // ── 0°C isotherm (blue dashed line) ───────────
+    // ══════════════════════════════════════════════════
+    // 0°C ISOTHERM (blue dashed line + snowflakes)
+    // ══════════════════════════════════════════════════
     if (freezePts.length >= 2) {
-      const isoPath = catmullRomToBezier(freezePts);
       ctx.save();
       ctx.strokeStyle = "#2563eb";
       ctx.lineWidth = 2.2;
       ctx.setLineDash([7, 5]);
       ctx.beginPath();
-      // Parse path and stroke it
-      const cmdMatches = isoPath.match(/[MLC]|[0-9.\-]+/g);
-      let px = 0, py = 0;
-      let first = true;
-      for (let i = 0; i < cmdMatches!.length; i++) {
-        const token = cmdMatches![i];
-        if (token === "M") {
-          const nx = parseFloat(cmdMatches![++i]!);
-          const ny = parseFloat(cmdMatches![++i]!);
-          ctx.moveTo(nx, ny);
-          first = false;
-          px = nx; py = ny;
-        } else if (token === "C") {
-          const cx1 = parseFloat(cmdMatches![++i]!);
-          const cy1 = parseFloat(cmdMatches![++i]!);
-          const cx2 = parseFloat(cmdMatches![++i]!);
-          const cy2 = parseFloat(cmdMatches![++i]!);
-          const x = parseFloat(cmdMatches![++i]!);
-          const y = parseFloat(cmdMatches![++i]!);
-          ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x, y);
-          px = x; py = y;
-        }
-      }
+      strokePath(ctx, toBezier(freezePts));
       ctx.stroke();
       ctx.restore();
 
-      // Snowflake icons along the isotherm
+      // Snowflake icons along isotherm
       const snowInterval = Math.max(1, Math.floor(freezePts.length / 5));
       freezePts.forEach((p, i) => {
         if (i % snowInterval !== 0) return;
@@ -688,25 +787,28 @@ export default function ProfessionalWindgram({
       ctx.fillText(`0 °C · ${avgFreeze} m`, badgeX + 52, badgeY);
     }
 
-    // ── Thermal top curve (purple solid, Alpium style) ──
+    // ══════════════════════════════════════════════════
+    // THERMAL TOP CURVE (purple solid, Alpium style)
+    // ══════════════════════════════════════════════════
     if (thermalTopPts.length >= 2) {
-      const tp = catmullRomToBezier(thermalTopPts);
       ctx.strokeStyle = "#7e22ce";
       ctx.lineWidth = 3;
       ctx.lineCap = "round";
       ctx.beginPath();
-      parseAndStroke(ctx, tp);
+      strokePath(ctx, toBezier(thermalTopPts));
       ctx.stroke();
     }
 
-    // ── Thermal boundary curve (orange sinusoidal wave) ──
+    // ══════════════════════════════════════════════════
+    // THERMAL BOUNDARY CURVE (orange sinusoidal wave)
+    // ══════════════════════════════════════════════════
     if (boundaryYPts.length >= 2) {
       // Glow
       ctx.strokeStyle = "#f97316";
       ctx.lineWidth = 8;
       ctx.globalAlpha = 0.2;
       ctx.beginPath();
-      parseAndStroke(ctx, boundaryPath);
+      strokePath(ctx, boundaryPath);
       ctx.stroke();
       ctx.globalAlpha = 1;
 
@@ -715,7 +817,7 @@ export default function ProfessionalWindgram({
       ctx.lineWidth = 2.8;
       ctx.lineCap = "round";
       ctx.beginPath();
-      parseAndStroke(ctx, boundaryPath);
+      strokePath(ctx, boundaryPath);
       ctx.stroke();
 
       // Highlight
@@ -723,12 +825,14 @@ export default function ProfessionalWindgram({
       ctx.lineWidth = 1.2;
       ctx.globalAlpha = 0.7;
       ctx.beginPath();
-      parseAndStroke(ctx, boundaryPath);
+      strokePath(ctx, boundaryPath);
       ctx.stroke();
       ctx.globalAlpha = 1;
     }
 
-    // ── Cloud base curve (purple dashed) ───────────
+    // ══════════════════════════════════════════════════
+    // CLOUD BASE CURVE (purple dashed)
+    // ══════════════════════════════════════════════════
     if (cloudBasePts.length >= 2) {
       ctx.save();
       ctx.strokeStyle = "#a855f7";
@@ -736,12 +840,14 @@ export default function ProfessionalWindgram({
       ctx.setLineDash([6, 3]);
       ctx.globalAlpha = 0.7;
       ctx.beginPath();
-      parseAndStroke(ctx, catmullRomToBezier(cloudBasePts));
+      strokePath(ctx, toBezier(cloudBasePts));
       ctx.stroke();
       ctx.restore();
     }
 
-    // ── PBL curve (black dashed) ───────────────────
+    // ══════════════════════════════════════════════════
+    // PBL CURVE (black dashed)
+    // ══════════════════════════════════════════════════
     const pblPts = columns.map((c) => ({
       x: c.x,
       y: altToY(Math.min(ALT_MAX, Math.max(ALT_MIN, c.cloudBase + c.rateo * 600))),
@@ -753,24 +859,48 @@ export default function ProfessionalWindgram({
       ctx.setLineDash([6, 4]);
       ctx.globalAlpha = 0.55;
       ctx.beginPath();
-      parseAndStroke(ctx, catmullRomToBezier(pblPts));
+      strokePath(ctx, toBezier(pblPts));
       ctx.stroke();
       ctx.restore();
     }
 
-    // ── Paraglider icons ───────────────────────────
+    // ══════════════════════════════════════════════════
+    // THERMAL PERCENTAGE CURVES (25%, 50%, 75%)
+    // ══════════════════════════════════════════════════
+    [25, 50, 75].forEach((pct) => {
+      const pts = columns.map((c) => ({
+        x: c.x,
+        y: altToY(c.cloudBase + (c.thermalTop - c.cloudBase) * (pct / 100)),
+      }));
+      ctx.save();
+      ctx.strokeStyle = "#6366f1";
+      ctx.lineWidth = 1.3;
+      ctx.setLineDash([5, 3]);
+      ctx.globalAlpha = 0.45;
+      ctx.beginPath();
+      strokePath(ctx, toBezier(pts));
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    // ══════════════════════════════════════════════════
+    // PARAGLIDER ICONS (on thermal top)
+    // ══════════════════════════════════════════════════
     columns.forEach((c) => {
       drawParaglider(ctx, c.x, c.yThermalTop - 6);
     });
 
-    // ── Cloud base badges ──────────────────────────
+    // ══════════════════════════════════════════════════
+    // CLOUD BASE BADGES
+    // ══════════════════════════════════════════════════
     cloudBadges.forEach((b) => {
       drawCloudBadge(ctx, b.x, b.y, b.alt, b.rate);
     });
 
-    // ── Hour labels ────────────────────────────────
+    // ══════════════════════════════════════════════════
+    // HOUR LABELS
+    // ══════════════════════════════════════════════════
     columns.forEach((c) => {
-      // Tick
       ctx.strokeStyle = "#1e293b";
       ctx.lineWidth = 1.2;
       ctx.beginPath();
@@ -778,7 +908,6 @@ export default function ProfessionalWindgram({
       ctx.lineTo(c.x, plotBottom + 6);
       ctx.stroke();
 
-      // Label
       ctx.fillStyle = "#111827";
       ctx.font = "bold 12px monospace";
       ctx.textAlign = "center";
@@ -786,28 +915,12 @@ export default function ProfessionalWindgram({
       ctx.fillText(`${String(c.hour).padStart(2, "0")}:00`, c.x, plotBottom + 10);
     });
 
-    // ── Right altitude ticks: 250m steps from launch altitude up to 4000m ──
-    const launchAlt = Math.round(altitude);
-    const altMinTick = Math.floor((launchAlt - 1) / 250) * 250;
-    for (let a = altMinTick; a <= 4000; a += 250) {
-      const y = altToY(a);
-      ctx.strokeStyle = "#1e293b";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(plotRight, y);
-      ctx.lineTo(plotRight + 5, y);
-      ctx.stroke();
-      ctx.fillStyle = "#475569";
-      ctx.font = "10px monospace";
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      ctx.fillText(`${a} m`, plotRight + 9, y);
-    }
-
-    // ── FOOTER: DeltaT legend ──────────────────────
-    const legendY = TOTAL_H - 44;
+    // ══════════════════════════════════════════════════
+    // FOOTER: ΔT LEGEND
+    // ══════════════════════════════════════════════════
+    const legendY = TOTAL_H - 42;
     const legendW = 520;
-    const legendX = (CANVAS_W - legendW) / 2;
+    const legendX = (CW - legendW) / 2;
 
     const grad = ctx.createLinearGradient(legendX, 0, legendX + legendW, 0);
     LEGEND_STOPS.forEach((s) => grad.addColorStop(s.pos, s.color));
@@ -815,6 +928,16 @@ export default function ProfessionalWindgram({
     ctx.beginPath();
     ctx.roundRect(legendX, legendY, legendW, 14, 3);
     ctx.fill();
+
+    // DeltaT values under legend
+    const dtVals = DT_STOPS.map((s) => s.val);
+    ctx.font = "9px monospace";
+    ctx.fillStyle = "#6b7280";
+    ctx.textAlign = "center";
+    dtVals.forEach((v, i) => {
+      const lx = legendX + (i / (dtVals.length - 1)) * legendW;
+      ctx.fillText(v.toFixed(2), lx, legendY + 17);
+    });
 
     ctx.font = "bold 10px sans-serif";
     ctx.textAlign = "right";
@@ -825,15 +948,17 @@ export default function ProfessionalWindgram({
     ctx.textAlign = "center";
     ctx.font = "bold 11px sans-serif";
     ctx.fillStyle = "#1e293b";
-    ctx.fillText("ΔT / 100 m", CANVAS_W / 2, legendY - 7);
+    ctx.fillText("ΔT / 100 m", CW / 2, legendY - 7);
 
-    // ── Attribution ────────────────────────────────
+    // ══════════════════════════════════════════════════
+    // ATTRIBUTION
+    // ══════════════════════════════════════════════════
     ctx.font = "11px sans-serif";
     ctx.fillStyle = "#6b7280";
     ctx.textAlign = "center";
     ctx.fillText(
       "Fonte: AROME 0-48 h + ICON-EU 0-120 h via Open-Meteo · Diagnostica di volo a vela di Alpium",
-      CANVAS_W / 2, TOTAL_H - 10
+      CW / 2, TOTAL_H - 10
     );
 
   }, [columns, boundaryAlts, boundaryYPts, boundaryPath, thermalTopPts, freezePts,
@@ -866,137 +991,9 @@ export default function ProfessionalWindgram({
         <canvas
           ref={canvasRef}
           className="block w-full min-w-[700px] h-auto"
-          style={{ maxWidth: CANVAS_W, margin: "0 auto" }}
+          style={{ maxWidth: CW, margin: "0 auto" }}
         />
       </div>
     </div>
   );
-}
-
-// ─────────────────────────────────────────────────────
-// Helper: stroke a path string on canvas
-// ─────────────────────────────────────────────────────
-function parseAndStroke(ctx: CanvasRenderingContext2D, pathStr: string) {
-  const tokens = pathStr.match(/[MLC]|[0-9.\-]+/g) || [];
-  let x = 0, y = 0;
-  for (let i = 0; i < tokens.length; i++) {
-    const t = tokens[i]!;
-    if (t === "M") {
-      x = parseFloat(tokens[++i]!);
-      y = parseFloat(tokens[++i]!);
-      ctx.moveTo(x, y);
-    } else if (t === "C") {
-      const cx1 = parseFloat(tokens[++i]!), cy1 = parseFloat(tokens[++i]!);
-      const cx2 = parseFloat(tokens[++i]!), cy2 = parseFloat(tokens[++i]!);
-      x = parseFloat(tokens[++i]!), y = parseFloat(tokens[++i]!);
-      ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x, y);
-    }
-  }
-}
-
-// ─────────────────────────────────────────────────────
-// Paraglider icon
-// ─────────────────────────────────────────────────────
-function drawParaglider(ctx: CanvasRenderingContext2D, x: number, y: number) {
-  ctx.save();
-  ctx.translate(x, y);
-
-  // Canopy
-  ctx.fillStyle = "#f3e8ff";
-  ctx.strokeStyle = "#7e22ce";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(-16, -5);
-  ctx.quadraticCurveTo(-10, -20, 0, -20);
-  ctx.quadraticCurveTo(10, -20, 16, -5);
-  ctx.quadraticCurveTo(8, -14, 0, -14);
-  ctx.quadraticCurveTo(-8, -14, -16, -5);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  // Lines
-  ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  ctx.moveTo(-12, -5);
-  ctx.lineTo(0, 8);
-  ctx.moveTo(12, -5);
-  ctx.lineTo(0, 8);
-  ctx.stroke();
-
-  // Pilot
-  ctx.fillStyle = "#ffffff";
-  ctx.strokeStyle = "#7e22ce";
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  ctx.arc(0, 8, 4.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.restore();
-}
-
-// ─────────────────────────────────────────────────────
-// Snowflake icon
-// ─────────────────────────────────────────────────────
-function drawSnowflake(ctx: CanvasRenderingContext2D, x: number, y: number) {
-  ctx.save();
-  ctx.translate(x, y);
-
-  ctx.fillStyle = "#ffffff";
-  ctx.strokeStyle = "#0284c7";
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  ctx.arc(0, 0, 10, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.strokeStyle = "#0284c7";
-  ctx.lineWidth = 1.2;
-  ctx.lineCap = "round";
-  for (let a = 0; a < 4; a++) {
-    const angle = (a * Math.PI) / 4;
-    ctx.beginPath();
-    ctx.moveTo(Math.cos(angle) * 3, Math.sin(angle) * 3);
-    ctx.lineTo(Math.cos(angle) * 7, Math.sin(angle) * 7);
-    ctx.stroke();
-  }
-
-  ctx.restore();
-}
-
-// ─────────────────────────────────────────────────────
-// Cloud badge (height + lift rate)
-// ─────────────────────────────────────────────────────
-function drawCloudBadge(ctx: CanvasRenderingContext2D, x: number, y: number, alt: number, rate: number) {
-  const bw = 66, bh = 30;
-  const bx = x - bw / 2, by = y - bh / 2 - 14;
-
-  // Purple arc top
-  ctx.fillStyle = "#f5d0fe";
-  ctx.strokeStyle = "#a855f7";
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  ctx.arc(0, 4, 18, Math.PI, 0);
-  ctx.lineTo(18, 4);
-  ctx.lineTo(-18, 4);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  // Divider
-  ctx.beginPath();
-  ctx.moveTo(-18, 4);
-  ctx.lineTo(18, 4);
-  ctx.stroke();
-
-  // Text
-  ctx.fillStyle = "#0f172a";
-  ctx.font = "bold 10px monospace";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(`${alt} m`, 0, 14);
-
-  ctx.fillStyle = "#7e22ce";
-  ctx.fillText(`↑ ${rate.toFixed(1)} m/s`, 0, 26);
 }
