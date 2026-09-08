@@ -20,6 +20,7 @@ const NUM_HOURS = HOURS.length;
 
 const SVG_W = 1100;
 const HEADER_H = 140;
+const PLOT_TOP = HEADER_H;
 const PLOT_H = 640;
 const FOOTER_H = 120;
 const TOTAL_H = HEADER_H + PLOT_H + FOOTER_H;
