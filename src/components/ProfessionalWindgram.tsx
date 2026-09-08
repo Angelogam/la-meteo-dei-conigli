@@ -642,41 +642,57 @@ export default function ProfessionalWindgram({
         })}
 
         {/* ══════════════════════════════════════════════════ */}
-        {/* HORIZONTAL GRID LINES + hPa / meter LABELS */}
-        {/* ══════════════════════════════════════════════════ */}
-        {HPA_LEVELS.map((lvl, i) => {
-          const y = PLOT_TOP + i * (GH / (HPA_LEVELS.length - 1));
-          return (
-            <g key={`grid-${i}`}>
-              <line x1={plotLeft} y1={y} x2={plotRight} y2={y}
-                stroke="rgba(0,0,0,0.18)" strokeWidth="1" />
-              <text x={plotLeft - 12} y={y + 4} textAnchor="end"
-                className="fill-slate-800 font-bold text-[11px]">{lvl.hpa} hPa</text>
-              <text x={plotRight + 12} y={y + 4} textAnchor="start"
-                className="fill-slate-800 font-bold text-[11px]">{lvl.alt} m</text>
-            </g>
-          );
-        })}
-
-        {/* ══════════════════════════════════════════════════ */}
-        {/* RIGHT ALTITUDE TICKS — 250m steps */}
+        {/* HORIZONTAL GRID LINES + ALTITUDE / hPa LABELS */}
+        {/* Based on real altitude with 250m step from launch */}
         {/* ══════════════════════════════════════════════════ */}
         {(() => {
           const launchAlt = Math.round(altitude);
-          const altMinTick = Math.floor((launchAlt - 1) / 250) * 250;
-          const ticks: React.ReactNode[] = [];
-          for (let a = altMinTick; a <= 4000; a += 250) {
+          const altStart = Math.floor((launchAlt - 1) / 250) * 250;
+          const els: React.ReactNode[] = [];
+          let lastY: number | null = null;
+
+          for (let a = altStart; a <= 4000; a += 250) {
             const y = altToY(a);
-            ticks.push(
-              <g key={`tick-${a}`}>
-                <line x1={plotRight} y1={y} x2={plotRight + 5} y2={y}
-                  stroke="#1e293b" strokeWidth="1" />
-                <text x={plotRight + 9} y={y + 4} textAnchor="start"
-                  className="fill-slate-600 text-[10px] font-mono">{a} m</text>
+            // Skip if too close to previous (avoid overlap)
+            if (lastY !== null && Math.abs(y - lastY) < 18) continue;
+            lastY = y;
+
+            const isMajor = a % 500 === 0;
+            const isLaunch = a === launchAlt;
+            const fontSize = isLaunch ? 11 : isMajor ? 10 : 9;
+            const fontWeight = isLaunch ? "font-black" : "font-semibold";
+            const textColor = isLaunch ? "fill-violet-700" : "fill-slate-700";
+            const lineWidth = isMajor ? 1.2 : 0.7;
+            const lineColor = isMajor ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.10)";
+            const tickLen = isMajor ? 7 : 4;
+            const tickOver = isMajor ? 14 : 10;
+
+            // hPa conversion (standard atmosphere approx)
+            const hPaVal = Math.round(1013.25 * Math.pow(1 - 2.25577e-5 * a, 5.25588));
+
+            // Left side: hPa label
+            els.push(
+              <g key={`l-${a}`}>
+                <line x1={plotLeft} y1={y} x2={plotRight} y2={y}
+                  stroke={lineColor} strokeWidth={lineWidth} />
+                <text x={plotLeft - 10} y={y + 4} textAnchor="end"
+                  className={`fill-slate-500 ${fontWeight} ${isLaunch ? "text-xs" : isMajor ? "text-[10px]" : "text-[9px]"}`}>{hPaVal}</text>
+              </g>
+            );
+
+            // Right side: altitude label
+            els.push(
+              <g key={`r-${a}`}>
+                <line x1={plotRight} y1={y} x2={plotRight + tickLen} y2={y}
+                  stroke="#334155" strokeWidth={isMajor ? 1.5 : 1} />
+                <text x={plotRight + tickOver} y={y + 4} textAnchor="start"
+                  className={`fill-slate-800 ${fontWeight} font-mono ${textColor} ${isLaunch ? "text-xs" : isMajor ? "text-[10px]" : "text-[9px]"}`}>
+                  {a} m
+                </text>
               </g>
             );
           }
-          return <g>{ticks}</g>;
+          return <g>{els}</g>;
         })()}
 
         {/* ══════════════════════════════════════════════════ */}
