@@ -410,7 +410,7 @@ export default function RasoftWindgram({
 
   // Costruiamo le righe orarie 08-18 leggendo i dati Open-Meteo
   const rows = useMemo<HourRow[]>(() => {
-    if (!data) return [];
+    if (!data?.time) return [];
     const out: HourRow[] = [];
     for (const hour of HOURS) {
       const idx = data.time.findIndex((t) => {
