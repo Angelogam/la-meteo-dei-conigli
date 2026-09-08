@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { RefreshCw, AlertTriangle } from "lucide-react";
 import { fetchWithProxyFallback } from "@/utils/proxyFallback";
 
@@ -208,99 +208,6 @@ function SnowflakeIcon({ x, y }: { x: number; y: number }) {
         <line x1="-4" y1="-4" x2="4" y2="4" />
         <line x1="-4" y1="4" x2="4" y2="-4" />
       </g>
-    </g>
-  );
-}
-
-// ─────────────────────────────────────────────────────
-// Main component
-// ─────────────────────────────────────────────────────
-// Wind barb — feathers on right side of staff (meteorological convention)
-// ─────────────────────────────────────────────────────
-function WindBarb({ cx, cy, knots, deg }: { cx: number; cy: number; knots: number; deg: number }) {
-  const elements = useMemo(() => {
-    let k = Math.round(knots / 5) * 5;
-    const els: React.ReactNode[] = [];
-    let currentY = 0;
-    const flags50 = Math.floor(k / 50);
-    k %= 50;
-    const lines10 = Math.floor(k / 10);
-    k %= 10;
-    const lines5 = Math.floor(k / 5);
-
-    for (let i = 0; i < flags50; i++) {
-      els.push(
-        <polygon key={`f50-${i}`}
-          points={`0,${currentY} 10,${currentY + 3} 0,${currentY + 7}`}
-          fill="#be123c" stroke="#be123c" strokeWidth="1" />
-      );
-      currentY += 8;
-    }
-    for (let i = 0; i < lines10; i++) {
-      els.push(
-        <line key={`l10-${i}`} x1="0" y1={currentY} x2="10" y2={currentY - 3}
-          stroke="#be123c" strokeWidth="1.8" strokeLinecap="round" />
-      );
-      currentY += 5;
-    }
-    for (let i = 0; i < lines5; i++) {
-      els.push(
-        <line key={`l5-${i}`} x1="0" y1={currentY} x2="5" y2={currentY - 1.5}
-          stroke="#be123c" strokeWidth="1.5" strokeLinecap="round" />
-      );
-      currentY += 4;
-    }
-    return els;
-  }, [knots]);
-
-  // Direction wind comes FROM (meteorological)
-  const rad = ((deg - 90) * Math.PI) / 180;
-  const staffLen = 28;
-  const ex = cx + staffLen * Math.cos(rad);
-  const ey = cy + staffLen * Math.sin(rad);
-
-  // Feather direction (right side of staff)
-  const featherRad = rad + Math.PI * 0.63;
-  const fc = Math.cos(featherRad), fs = Math.sin(featherRad);
-
-  const barbEls: React.ReactNode[] = [];
-  let rem = Math.round(knots / 5) * 5;
-  let pos = 1.0;
-  while (rem >= 50 && pos >= 0.22) {
-    const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
-    const t = 12;
-    barbEls.push(
-      <polygon key={`b50`}
-        points={`${bx},${by} ${bx + t * fc},${by + t * fs} ${bx + t * 0.4 * Math.cos(rad)},${by + t * 0.4 * Math.sin(rad)}`}
-        fill="#be123c" stroke="#be123c" strokeWidth="0.8" />
-    );
-    rem -= 50; pos -= 0.22;
-  }
-  while (rem >= 10 && pos >= 0.16) {
-    const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
-    const t = 11;
-    barbEls.push(
-      <line key={`b10`} x1={bx} y1={by} x2={bx + t * fc} y2={by + t * fs}
-        stroke="#be123c" strokeWidth="1.8" strokeLinecap="round" />
-    );
-    rem -= 10; pos -= 0.16;
-  }
-  if (rem >= 5 && pos >= 0.12) {
-    const bx = cx + pos * (ex - cx), by = cy + pos * (ey - cy);
-    const t = 6;
-    barbEls.push(
-      <line key={`b5`} x1={bx} y1={by} x2={bx + t * fc} y2={by + t * fs}
-        stroke="#be123c" strokeWidth="1.5" strokeLinecap="round" />
-    );
-  }
-
-  return (
-    <g>
-      <line x1={cx} y1={cy} x2={ex} y2={ey} stroke="#be123c" strokeWidth="1.8" strokeLinecap="round" />
-      {barbEls}
-      {knots < 3.5 && (
-        <circle cx={cx} cy={cy} r="3" fill="none" stroke="#be123c" strokeWidth="1.5" />
-      )}
     </g>
   );
 }
