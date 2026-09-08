@@ -1003,7 +1003,7 @@ export default function RasoftWindgram({
             fill="#94a3b8"
             fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
           >
-            Fonte: AROME 0-48 h + ICON-EU 0-120 h via Open-Meteo · Diagnostica di volo a vela
+            Fonte: AROME 0-48 h + ICON-EU 0-120 h via Open-Meteo · Diagnostica di volo a vela di Alpium
           </text>
         </svg>
       </div>
