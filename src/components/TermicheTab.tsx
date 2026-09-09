@@ -5,7 +5,6 @@ import { HourData } from "@/types/meteo";
 import type { MeteoCurrent } from "@/services/openMeteoService";
 import { calcolaTermiche } from "@/utils/termiche";
 import { Wind, Cloud, Droplets, TrendingUp, AlertTriangle, MapPin, Calendar } from "lucide-react";
-import ThermalChartFull from "@/components/ThermalChartFull";
 
 interface TermicheTabProps {
   currentData: HourData | MeteoCurrent | null;
@@ -97,15 +96,6 @@ export default function TermicheTab({ dayData, site, selectedDay = 0 }: Termiche
             </p>
           </div>
         </div>
-      </div>
-
-      {/* Grafico termiche migliorato */}
-      <div className="bg-slate-800/40 border border-orange-500/30 rounded-2xl p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-4 h-4 text-orange-400" />
-          <span className="text-sm font-bold text-white">Andamento termiche giornaliero</span>
-        </div>
-        <ThermalChartFull hourlyData={dayData} siteAlt={site.alt} />
       </div>
 
       <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl overflow-hidden">

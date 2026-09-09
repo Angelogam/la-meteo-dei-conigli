@@ -16,18 +16,13 @@ import AnalisiMeteo from "@/components/AnalisiMeteo";
 import Windgram from "@/components/Windgram";
 import RasoftWindgram from "@/components/RasoftWindgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
-import FlightStatusCard from "@/components/FlightStatusCard";
-import SmartAlerts from "@/components/SmartAlerts";
-import ThermalChartFull from "@/components/ThermalChartFull";
-import WindgramMatrixEnhanced from "@/components/WindgramMatrixEnhanced";
-import ModelComparisonBadge from "@/components/ModelComparisonBadge";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 import { DECOLLI } from "@/data/decolli";
 import { getStabilityIndex } from "@/utils/weatherHelpers";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
-import { Activity, Wind, Radio } from "lucide-react";
+import { Activity, Wind } from "lucide-react";
 
 export default function Index() {
   useEffect(() => {
@@ -193,38 +188,7 @@ export default function Index() {
                   nomeDecollo={site.site_name}
                 />
 
-                {/* Card Stato Volo immediata */}
-                <FlightStatusCard
-                  currentData={currentData}
-                  hourlyData={filteredDayData}
-                  siteAlt={site.elevation_m}
-                />
-
-                {/* Windgram con enhanced matrix e badge modello */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-800/30 border border-emerald-500/30 rounded-2xl px-4 py-3">
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <Wind className="w-5 h-5 text-emerald-400" />
-                    Windgram — {dateLabel}
-                  </h3>
-                  <ModelComparisonBadge
-                    confidence={72}
-                    dominantModel="GFS"
-                    lastUpdate={String(lastUpdate) || "—"}
-                  />
-                </div>
-
-                <div className="bg-slate-800/30 border border-emerald-500/30 rounded-2xl p-4">
-                  <WindgramMatrixEnhanced
-                    dayData={filteredDayData}
-                    siteName={site.site_name}
-                    altitude={site.elevation_m}
-                    selectedHour={selectedHour}
-                    onHourSelect={setSelectedHour}
-                    selectedDay={selectedDay}
-                  />
-                </div>
-
-                {/* Windgram SVG professionale */}
+                {/* Windgram professionale con dati reali Open-Meteo */}
                 <div className="bg-slate-800/30 border border-emerald-500/30 rounded-2xl p-4">
                   <Windgram
                     dayData={filteredDayData}
@@ -258,11 +222,6 @@ export default function Index() {
                   onHourSelect={setSelectedHour}
                   dayLabel={dateLabel}
                   siteName={site.site_name}
-                />
-                <SmartAlerts
-                  currentData={currentData}
-                  hourlyData={filteredDayData}
-                  siteAlt={site.elevation_m}
                 />
                 <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
