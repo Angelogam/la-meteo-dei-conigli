@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import type { HourData } from "@/types/meteo";
-import { Mountain, Wind } from "lucide-react";
+import { Wind } from "lucide-react";
 import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
 
 const DISPLAY_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] as const;
@@ -26,8 +26,8 @@ function WindArrowIcon({ deg, color }: { deg: number; color: { fill: string; str
   // We add 180° to convert provenance → motion direction.
   const targetDeg = (deg + 180) % 360;
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" className="shrink-0" style={{ transform: `rotate(${targetDeg}deg)` }}>
-      <path d="M12 2L17 10H13.5V22H10.5V10H7L12 2Z" fill={color.fill} stroke={color.stroke} strokeWidth="1" />
+    <svg width="16" height="16" viewBox="0 0 24 24" className="shrink-0" style={{ transform: `rotate(${targetDeg}deg)` }} aria-label={`Vento da ${deg}°`}>
+      <path d="M12 2L17 10H13.5V22H10.5V10H7L12 2Z" fill={color.fill} stroke={color.stroke} strokeWidth="1.2" />
     </svg>
   );
 }
@@ -79,6 +79,7 @@ export default function WindgramMatrix({
     selectedDay,
   });
 
+
   const hourlyMap = useMemo(() => {
     const map = new Map<number, HourData>();
     if (dayData && dayData.length > 0) {
@@ -91,10 +92,12 @@ export default function WindgramMatrix({
   }, [dayData]);
 
   const hasRealAltitudeData = useMemo(() => {
+    let count = 0;
     for (const hourData of windProfileMap.values()) {
-      if (hourData.levels.some((l) => l.alt >= 1000 && l.alt <= 3000)) return true;
+      const hasMid = hourData.levels.some((l) => l.alt >= 1000 && l.alt <= 3000);
+      if (hasMid) count++;
     }
-    return false;
+    return count > 0;
   }, [windProfileMap]);
 
   const hasRealPressureData = useMemo(() => {
@@ -224,6 +227,7 @@ export default function WindgramMatrix({
 
   const windDataByHourAlt = useMemo(() => {
     const result: Record<number, Record<number, { speed: number; dir: number }>> = {};
+    let filled = 0;
     DISPLAY_HOURS.forEach((hr) => {
       result[hr] = {};
       activeAltitudes.forEach((alt) => {
@@ -231,11 +235,12 @@ export default function WindgramMatrix({
         const interp = interpolateAtAltitude(hr, alt);
         if (interp) {
           result[hr][alt] = { speed: Math.round(interp.speed), dir: Math.round(interp.dir) };
+          filled++;
         }
       });
     });
     return result;
-  }, [activeAltitudes, interpolateAtAltitude]);
+  }, [activeAltitudes, interpolateAtAltitude, windProfileMap, profileLoading]);
 
   const cloudBaseRow = useMemo(() => {
     const map: Record<number, number> = {};
@@ -329,10 +334,27 @@ export default function WindgramMatrix({
                   <p className="text-[10px] text-sky-700 font-semibold">{headerDate}</p>
                 </div>
               </div>
-              {dataSourceBadge}
+              <div className="flex items-center gap-2 text-[9px] flex-wrap">
+                <span className={`px-1.5 py-0.5 rounded font-bold ${windProfileMap.size > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                  {windProfileMap.size > 0 ? `✓ ${windProfileMap.size}h vento` : '⏳ carico vento…'}
+                </span>
+                <span className={`px-1.5 py-0.5 rounded font-bold ${profileError ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'}`}>
+                  {profileError ? `✗ ${profileError.slice(0, 20)}` : '✓ OK'}
+                </span>
+                {dataSourceBadge}
+              </div>
             </div>
 
           <div className="overflow-x-auto border-t border-b border-slate-200 bg-white">
+            {/* Debug row */}
+            <div className="px-2 py-1 text-[9px] text-slate-400 bg-slate-50 flex items-center gap-3">
+              <span>Map: {windProfileMap.size}h</span>
+              <span>Rows: {activeAltitudes.length}</span>
+              <span>Hours: {DISPLAY_HOURS.length}</span>
+              <span className={windProfileMap.size > 0 ? "text-emerald-500" : "text-amber-500"}>
+                {windProfileMap.size > 0 ? "✓ vento pronto" : "⏳ attesa dati..."}
+              </span>
+            </div>
             <table className="w-full text-center border-collapse text-xs">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-700 bg-slate-200 font-bold">
@@ -385,7 +407,7 @@ export default function WindgramMatrix({
                         const w = windDataByHourAlt[hr]?.[alt];
                         const wColor = w
                           ? getWindArrowColor(w.speed)
-                          : { fill: "#94a3b8", stroke: "#64748b", text: "#94a3b8" };
+                          : { fill: "#e74c3c", stroke: "#c0392b", text: "#e74c3c" };
                         const isSelectedCol = hr === selectedHour;
                         const bg = getThermalBgColor(alt, hr);
                         const showCloud = cloudBaseRow[hr] === rowIdx;
@@ -400,15 +422,26 @@ export default function WindgramMatrix({
                               isSelectedCol ? "ring-1 ring-sky-400/90" : "hover:brightness-95"
                             }`}
                           >
-                            <div className="flex items-center justify-center gap-0 h-full relative">
-                              {w && <WindArrowIcon deg={w.dir} color={wColor} />}
-                              <span
-                                className="font-bold text-[10px] tabular-nums tracking-tighter relative z-10 leading-none"
-                                style={{ color: wColor.text }}
-                                title={w ? `Open-Meteo: ${w.speed} km/h from ${w.dir}°` : "N/D"}
-                              >
-                                {w ? w.speed : "—"}
-                              </span>
+                            <div className="flex items-center justify-center gap-0.5 h-full relative min-h-[18px]">
+                              {w ? (
+                                <>
+                                  <WindArrowIcon deg={w.dir} color={wColor} />
+                                  <span
+                                    className="font-bold text-[10px] tabular-nums tracking-tighter relative z-10 leading-none"
+                                    style={{ color: wColor.text }}
+                                    title={w ? `Open-Meteo: ${w.speed} km/h da ${w.dir}°` : "N/D"}
+                                  >
+                                    {w.speed}
+                                  </span>
+                                </>
+                              ) : (
+                                <span
+                                  className="font-bold text-[9px] tabular-nums tracking-tighter relative z-10 leading-none text-slate-300"
+                                  title="Nessun dato vento"
+                                >
+                                  —
+                                </span>
+                              )}
                               {showCloud && (
                                 <div className="absolute bottom-[calc(100%+2px)] left-1/2 -translate-x-1/2 z-20 pointer-events-none">
                                   <CloudIcon cloudCover={hourThermalData[hr]?.cloudCover ?? 30} />
