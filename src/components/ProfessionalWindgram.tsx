@@ -856,13 +856,6 @@ export default function ProfessionalWindgram({
         {/* SCALA GRADIENTE INFERIORE DELTA T / 100 m IDENTICA AD ALPIUM */}
         <div className="mt-2 pt-2 border-t border-slate-200 flex flex-col items-center">
           <div className="w-full max-w-2xl px-2">
-            <defs>
-              <linearGradient id="deltaTGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                {STABILITY_SCALE.map((item, idx) => (
-                  <stop key={idx} offset={idx / (STABILITY_SCALE.length - 1)} stopColor={item.color} />
-                ))}
-              </linearGradient>
-            </defs>
             <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
               <span>Stabile &larr;</span>
               <span className="text-slate-900 font-extrabold text-sm">&Delta;T / 100 m</span>

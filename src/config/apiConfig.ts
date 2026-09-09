@@ -14,20 +14,23 @@ export const OPEN_METEO_DIRECT = "https://api.open-meteo.com/v1/forecast";
 
 /**
  * Determina se usare il proxy o andare diretto.
- * Usa il proxy solo se esplicitamente abilitato via variabile d'ambiente.
- * In produzione (build) il proxy non è disponibile → fallback diretto.
+ * Il proxy va usato SOLO in locale quando il server Node è attivo su :3000.
+ * Di default FALSE per evitare errori quando il server non è in esecuzione.
+ * Per attivarlo: VITE_USE_PROXY=true .env oppure passare direttamente.
  */
-export const USE_PROXY = import.meta.env.VITE_USE_PROXY === "true";
+export const USE_PROXY = typeof import.meta.env.VITE_USE_PROXY !== "undefined"
+  ? import.meta.env.VITE_USE_PROXY === "true"
+  : false;
 
 /**
  * URL base per le chiamate meteo.
- * In ambiente sviluppo con proxy attivo usa il proxy, altrimenti va diretto.
+ * In produzione o se il proxy non è configurato → diretto a Open-Meteo.
  */
 export const getMeteoBaseUrl = (): string => {
-  if (USE_PROXY && typeof window !== "undefined") {
-    return API_PROXY_URL;
-  }
-  return OPEN_METEO_DIRECT;
+  if (typeof window === "undefined") return OPEN_METEO_DIRECT;
+  if (!USE_PROXY) return OPEN_METEO_DIRECT;
+  // Prova il proxy, se fallisce torna al diretto (gestito dal client con try/catch)
+  return API_PROXY_URL;
 };
 
 /**
