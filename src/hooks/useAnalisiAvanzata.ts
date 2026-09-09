@@ -60,7 +60,7 @@ export function useAnalisiAvanzata(lat: number, lon: number, altitude: number) {
       attivo = false;
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [lat, lon]);
+  }, [lat, lon, altitude]);
 
   useEffect(() => {
     const timer = setInterval(() => {

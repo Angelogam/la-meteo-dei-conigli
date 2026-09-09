@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Wind, Calendar, MapPin, TrendingUp, Cloud, AlertTriangle, Loader2, Sun, CloudRain, Zap } from "lucide-react";
 
-const TOMORROW_API_KEY = "EBox6MVYAysc2A5X5EOhVgKeaDuFg4Pk";
+const TOMORROW_API_KEY = import.meta.env.VITE_TOMORROW_KEY || "";
 
 interface WindPoint {
   time: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import type { HourData } from "@/types/meteo";
-import { fetchFull } from "@/lib/openMeteoClient";
+import { fetchFull, fetchCurrent as fetchCurrentFromClient } from "@/lib/openMeteoClient";
 
 const HOURLY_PARAMS = [
   "temperature_2m",
@@ -335,7 +335,7 @@ export const weatherService = {
   fetchPrevisioniGiornaliere,
   async fetchCurrent(lat: number, lon: number): Promise<MeteoCurrent | null> {
     try {
-      const json = await fetchFull(lat, lon, "", "", CURRENT_PARAMS);
+      const json = await fetchCurrentFromClient(lat, lon, CURRENT_PARAMS);
       const c = json.current;
       if (!c) return null;
       return {

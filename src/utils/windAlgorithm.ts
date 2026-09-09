@@ -64,7 +64,8 @@ export async function fetchRealWindData(
   warning: string | null;
 }> {
   try {
-    const data = await fetchHourly(lat, lon, "wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m");
+    const today = new Date().toISOString().split("T")[0];
+    const data = await fetchHourly(lat, lon, "wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m", today, today);
     const raw = data.hourly;
     const livelliReali = [
       { quota: quotaDecollo, speed: Number(raw.wind_speed_10m?.[0]), dir: Number(raw.wind_direction_10m?.[0]) },
