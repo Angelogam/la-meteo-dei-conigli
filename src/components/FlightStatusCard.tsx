@@ -2,7 +2,7 @@
 
 import type { MeteoCurrent } from "@/services/openMeteoService";
 import type { HourData } from "@/types/meteo";
-import { Wind, CloudSun, Lightning, Sun, Thermometer, Droplets } from "lucide-react";
+import { Wind, CloudSun, Zap, Sun, Thermometer, Droplets } from "lucide-react";
 
 interface FlightStatusCardProps {
   currentData: MeteoCurrent | null;
@@ -283,7 +283,7 @@ export default function FlightStatusCard({ currentData, hourlyData, siteAlt }: F
         {/* 5. Wave Index */}
         <div className="bg-slate-800/70 rounded-lg p-3 border border-slate-700/50">
           <div className="flex items-center gap-2 mb-1">
-            <Lightning className="w-4 h-4 text-violet-400 shrink-0" />
+            <Zap className="w-4 h-4 text-violet-400 shrink-0" />
             <span className="text-slate-400 text-xs font-medium">Wave Index</span>
           </div>
           <p className="text-lg font-black text-slate-100 tabular-nums">{status.waveIndex}°</p>
