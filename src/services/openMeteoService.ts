@@ -70,6 +70,9 @@ const CURRENT_PARAMS = [
   "precipitation",
   "weather_code",
   "cloud_cover",
+  "cloud_cover_low",
+  "cloud_cover_mid",
+  "cloud_cover_high",
   "wind_speed_10m",
   "wind_direction_10m",
   "wind_gusts_10m",
@@ -99,6 +102,9 @@ export interface MeteoCurrent {
   precipitation: number;
   weatherCode: number;
   cloudCover: number;
+  cloudCoverLow: number;
+  cloudCoverMid: number;
+  cloudCoverHigh: number;
   windSpeed: number;
   windDir: number;
   windGusts: number;
@@ -225,6 +231,9 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
       precipitation: safeNum(c.precipitation, 0),
       weatherCode: safeNum(c.weather_code, 0),
       cloudCover: safeNum(c.cloud_cover, 0),
+      cloudCoverLow: safeNum(c.cloud_cover_low, 0),
+      cloudCoverMid: safeNum(c.cloud_cover_mid, 0),
+      cloudCoverHigh: safeNum(c.cloud_cover_high, 0),
       windSpeed: safeNum(c.wind_speed_10m, 0),
       windDir: safeNum(c.wind_direction_10m, 0),
       windGusts: safeNum(c.wind_gusts_10m, c.wind_speed_10m ?? 0),
@@ -374,7 +383,7 @@ export const weatherService = {
         windDir: safeNum(c.wind_direction_10m, 0),
         windGusts: safeNum(c.wind_gusts_10m, c.wind_speed_10m ?? 0),
         cape: safeNum(c.cape, 0),
-          apparentTemp: safeNumOrNull(c.apparent_temperature),
+        apparentTemp: safeNumOrNull(c.apparent_temperature),
           uvIndex: safeNum(c.uv_index, 0),
           visibility: safeNum(c.visibility, 10000),
         };

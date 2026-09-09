@@ -232,6 +232,7 @@ export default function Index() {
                     site={{ alt: site.elevation_m, name: site.site_name }}
                     thermalDelta={thermalDelta}
                     modelName={activeModel}
+                    selectedHour={selectedHour}
                   />
                 )}
 

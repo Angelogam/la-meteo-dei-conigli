@@ -10,6 +10,7 @@ interface MeteoTabProps {
   site: { alt: number; name?: string };
   thermalDelta: number;
   modelName?: string;
+  selectedHour?: number;
 }
 
 // Calcola base cumuli in metri
@@ -43,7 +44,7 @@ function dirArrow(deg: number) {
   return arrows[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
 }
 
-export default function MeteoTab({ currentData, dayData, site, thermalDelta, modelName }: MeteoTabProps) {
+export default function MeteoTab({ currentData, dayData, site, thermalDelta, modelName, selectedHour }: MeteoTabProps) {
   if (!currentData || dayData.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-slate-400">
@@ -92,18 +93,38 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
     ? `${String(dayData[windowStart]?.time?.getHours() ?? 8).padStart(2, "0")}:00 – ${String(dayData[Math.min(windowEnd, dayData.length - 1)]?.time?.getHours() ?? 17).padStart(2, "0")}:00`
     : "—";
 
-  // Vento in quota (media ore centrali)
-  const midData = dayData.slice(8, 16);
-  const avgWind80m = midData.reduce((s, h) => s + (h.windSpeed80m ?? 0), 0) / midData.length;
-  const avgWind120m = midData.reduce((s, h) => s + (h.windSpeed120m ?? 0), 0) / midData.length;
-  const avgWind180m = midData.reduce((s, h) => s + (h.windSpeed180m ?? 0), 0) / midData.length;
-  const avgWind850 = midData.reduce((s, h) => s + (h.windSpeed850 ?? 0), 0) / midData.length;
-  const dir80m = midData.reduce((s, h) => s + (h.windDir80m ?? 0), 0) / midData.length;
-  const dir120m = midData.reduce((s, h) => s + (h.windDir120m ?? 0), 0) / midData.length;
-  const dir180m = midData.reduce((s, h) => s + (h.windDir180m ?? 0), 0) / midData.length;
-  const dir850 = midData.reduce((s, h) => s + (h.windDir850 ?? 0), 0) / midData.length;
+  // Trova dato per l'ora selezionata (o ora corrente se non selezionata)
+  const hourIdx = selectedHour != null
+    ? dayData.findIndex(h => (h.time instanceof Date ? h.time : new Date(h.time)).getHours() === selectedHour)
+    : dayData.findIndex(h => (h.time instanceof Date ? h.time : new Date(h.time)).getHours() === new Date().getHours());
+  const selHr = hourIdx >= 0 ? dayData[hourIdx] : null;
 
-  const waveIndex = calcWaveIndex(windDir, dir850);
+  // Vento in quota — usa solo dati reali (null = non disponibile, non 0)
+  const midData = dayData.slice(8, 16);
+  const valid80 = midData.filter(h => h.windSpeed80m != null);
+  const valid120 = midData.filter(h => h.windSpeed120m != null);
+  const valid180 = midData.filter(h => h.windSpeed180m != null);
+  const valid850 = midData.filter(h => h.windSpeed850 != null);
+  const avgWind80m = valid80.length > 0 ? valid80.reduce((s, h) => s + (h.windSpeed80m ?? 0), 0) / valid80.length : null;
+  const avgWind120m = valid120.length > 0 ? valid120.reduce((s, h) => s + (h.windSpeed120m ?? 0), 0) / valid120.length : null;
+  const avgWind180m = valid180.length > 0 ? valid180.reduce((s, h) => s + (h.windSpeed180m ?? 0), 0) / valid180.length : null;
+  const avgWind850 = valid850.length > 0 ? valid850.reduce((s, h) => s + (h.windSpeed850 ?? 0), 0) / valid850.length : null;
+  const dir80m = valid80.length > 0 ? valid80.reduce((s, h) => s + (h.windDir80m ?? 0), 0) / valid80.length : null;
+  const dir120m = valid120.length > 0 ? valid120.reduce((s, h) => s + (h.windDir120m ?? 0), 0) / valid120.length : null;
+  const dir180m = valid180.length > 0 ? valid180.reduce((s, h) => s + (h.windDir180m ?? 0), 0) / valid180.length : null;
+  const dir850 = valid850.length > 0 ? valid850.reduce((s, h) => s + (h.windDir850 ?? 0), 0) / valid850.length : null;
+
+  // Usa dato ora selezionata se disponibile, altrimenti media
+  const wind80m = selHr?.windSpeed80m ?? avgWind80m;
+  const wind120m = selHr?.windSpeed120m ?? avgWind120m;
+  const wind180m = selHr?.windSpeed180m ?? avgWind180m;
+  const wind850 = selHr?.windSpeed850 ?? avgWind850;
+  const dir80mUse = selHr?.windDir80m ?? dir80m;
+  const dir120mUse = selHr?.windDir120m ?? dir120m;
+  const dir180mUse = selHr?.windDir180m ?? dir180m;
+  const dir850Use = selHr?.windDir850 ?? dir850;
+
+  const waveIndex = calcWaveIndex(windDir, dir850Use ?? 180);
   const zeroThermal = dayData.reduce((s, h) => s + (h.freezingLevel ?? 0), 0) / dayData.length;
   const avgFreezing = zeroThermal > 0 ? Math.round(zeroThermal) : siteAlt + 3000;
 
@@ -273,25 +294,25 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
           <div className="space-y-1 text-[11px]">
             <div className="flex justify-between">
               <span className="text-slate-500">80m</span>
-              <span className="text-violet-300 font-bold tabular-nums">{avgWind80m > 0 ? `${Math.round(avgWind80m)} ${dirLabel(Math.round(dir80m))} ${dirArrow(Math.round(dir80m))}` : "—"}</span>
+              <span className="text-violet-300 font-bold tabular-nums">{wind80m != null ? `${Math.round(wind80m)} ${dirLabel(Math.round(dir80mUse ?? 0))} ${dirArrow(Math.round(dir80mUse ?? 0))}` : "—"}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">120m</span>
-              <span className="text-violet-300 font-bold tabular-nums">{avgWind120m > 0 ? `${Math.round(avgWind120m)} ${dirLabel(Math.round(dir120m))} ${dirArrow(Math.round(dir120m))}` : "—"}</span>
+              <span className="text-violet-300 font-bold tabular-nums">{wind120m != null ? `${Math.round(wind120m)} ${dirLabel(Math.round(dir120mUse ?? 0))} ${dirArrow(Math.round(dir120mUse ?? 0))}` : "—"}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">850hPa (~1500m)</span>
-              <span className={`font-bold tabular-nums ${avgWind850 > 20 ? "text-red-400" : "text-sky-300"}`}>
-                {avgWind850 > 0 ? `${Math.round(avgWind850)} ${dirLabel(Math.round(dir850))} ${dirArrow(Math.round(dir850))}` : "—"}
+              <span className={`font-bold tabular-nums ${wind850 != null && wind850 > 20 ? "text-red-400" : wind850 != null ? "text-sky-300" : ""}`}>
+                {wind850 != null ? `${Math.round(wind850)} ${dirLabel(Math.round(dir850Use ?? 0))} ${dirArrow(Math.round(dir850Use ?? 0))}` : "—"}
               </span>
             </div>
-            {avgWind180m > 0 && (
+            {wind180m != null && (
               <div className="flex justify-between">
                 <span className="text-slate-500">180m</span>
-                <span className="text-violet-300 font-bold tabular-nums">{Math.round(avgWind180m)} {dirLabel(Math.round(dir180m))} {dirArrow(Math.round(dir180m))}</span>
+                <span className="text-violet-300 font-bold tabular-nums">{Math.round(wind180m)} {dirLabel(Math.round(dir180mUse ?? 0))} {dirArrow(Math.round(dir180mUse ?? 0))}</span>
               </div>
             )}
-            {avgWind850 > 0 && (
+            {wind850 != null && (
               <div className="pt-1 border-t border-slate-700/50 flex justify-between">
                 <span className="text-slate-500">Wave Index</span>
                 <span className={`font-black text-sm tabular-nums ${waveIndex < 30 ? "text-emerald-400" : waveIndex < 60 ? "text-amber-400" : "text-slate-400"}`}>
