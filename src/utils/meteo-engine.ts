@@ -333,22 +333,21 @@ export async function fetchAllSources(site: Site): Promise<{
   openWeather: any;
   tomorrow: any;
 }> {
-  const baseUrl = 'https://api.open-meteo.com/v1/forecast';
+  const baseUrl = getMeteoBaseUrl();
   const params = new URLSearchParams({
     latitude: site.latitude.toString(),
     longitude: site.longitude.toString(),
-    hourly: 'temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_base,cloud_cover,rain,thermal_strength',
+    hourly: 'temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_cover,rain',
     timezone: site.timeZone,
     forecast_days: '2',
   });
   const omUrl = `${baseUrl}?${params}`;
 
-  // Per OpenWeather e Tomorrow simuliamo (in realtà avresti le tue chiavi)
-  // Qui puoi integrare le tue chiamate reali
+  // Placeholder per OpenWeather e Tomorrow — integrare con API key reali
   const [omRes, owRes, tmRes] = await Promise.allSettled([
     fetch(omUrl).then(r => r.json()),
-    Promise.resolve(null), // placeholder
-    Promise.resolve(null), // placeholder
+    Promise.resolve(null),
+    Promise.resolve(null),
   ]);
 
   return {

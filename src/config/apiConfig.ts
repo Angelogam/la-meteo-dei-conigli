@@ -7,23 +7,24 @@
  */
 
 // Endpoint del proxy Node.js locale
-// Quando il server è attivo, TUTTE le chiamate passano da qui
 export const API_PROXY_URL = "http://localhost:3000/api/open-meteo";
 
 // Endpoint diretto Open-Meteo (fallback)
 export const OPEN_METEO_DIRECT = "https://api.open-meteo.com/v1/forecast";
 
 /**
- * Determina se usare il proxy o andare diretto
- * Per ora è sempre true (proxy attivo)
+ * Determina se usare il proxy o andare diretto.
+ * Usa il proxy solo se esplicitamente abilitato via variabile d'ambiente.
+ * In produzione (build) il proxy non è disponibile → fallback diretto.
  */
-export const USE_PROXY = true;
+export const USE_PROXY = import.meta.env.VITE_USE_PROXY === "true";
 
 /**
- * URL base per le chiamate meteo
+ * URL base per le chiamate meteo.
+ * In ambiente sviluppo con proxy attivo usa il proxy, altrimenti va diretto.
  */
 export const getMeteoBaseUrl = (): string => {
-  if (USE_PROXY) {
+  if (USE_PROXY && typeof window !== "undefined") {
     return API_PROXY_URL;
   }
   return OPEN_METEO_DIRECT;
@@ -33,5 +34,5 @@ export const getMeteoBaseUrl = (): string => {
  * URL per le chiamate API (altri endpoint)
  */
 export const getApiBaseUrl = (): string => {
-  return "http://localhost:3000/api";
+  return API_PROXY_URL.replace("/open-meteo", "");
 };

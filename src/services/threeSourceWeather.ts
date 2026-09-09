@@ -23,8 +23,8 @@ export type MeteoDecollo = {
   fonte: string;
 };
 
-const OPENWEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_KEY || "f01a9f572541fc5951d78441cbe750c6";
-const TOMORROW_API_KEY = import.meta.env.VITE_TOMORROW_KEY || "EBox6MVYAysc2A5X5EOhVgKeaDuFg4Pk";
+const OPENWEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_KEY || "";
+const TOMORROW_API_KEY = import.meta.env.VITE_TOMORROW_KEY || "";
 
 async function getOpenMeteo(lat: number, lon: number) {
   try {
@@ -48,6 +48,7 @@ async function getOpenMeteo(lat: number, lon: number) {
 }
 
 async function getOpenWeather(lat: number, lon: number) {
+  if (!OPENWEATHER_API_KEY) return null;
   try {
     const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`;
     const res = await fetch(url);
@@ -67,6 +68,7 @@ async function getOpenWeather(lat: number, lon: number) {
 }
 
 async function getTomorrow(lat: number, lon: number) {
+  if (!TOMORROW_API_KEY) return null;
   try {
     const url = `https://api.tomorrow.io/v4/timelines?location=${lat},${lon}&fields=temperature,cloudCover,precipitationIntensity,windSpeed,windDirection&timesteps=1h&apikey=${TOMORROW_API_KEY}`;
     const res = await fetch(url);

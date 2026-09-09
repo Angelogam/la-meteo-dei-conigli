@@ -1,5 +1,7 @@
 "use client";
 
+import { getMeteoBaseUrl } from "@/config/apiConfig";
+
 // -----------------------------
 // 1. MODELLI
 // -----------------------------

@@ -92,7 +92,7 @@ async function fetchOpenMeteo(lat: number, lon: number): Promise<OpenMeteoData |
 }
 
 async function fetchOpenWeather(lat: number, lon: number): Promise<OpenWeatherData | null> {
-  const apiKey = import.meta.env.VITE_OPENWEATHER_KEY || "f01a9f572541fc5951d78441cbe750c6";
+  const apiKey = import.meta.env.VITE_OPENWEATHER_KEY || "";
   try {
     const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
     const res = await fetch(url);

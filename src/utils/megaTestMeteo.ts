@@ -10,7 +10,8 @@
  * - Eventuali anomalie
  */
 
-const BASE_URL = "https://api.open-meteo.com/v1/forecast";
+import { getMeteoBaseUrl } from "@/config/apiConfig";
+const BASE_URL = getMeteoBaseUrl();
 const HOURLY_PARAMS = "temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,uv_index,shortwave_radiation,cape,convective_inhibition,lifted_index";
 const DAILY_PARAMS = "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_direction_10m_dominant,uv_index_max";
 
@@ -114,7 +115,7 @@ export async function eseguiTestSingolo(lat: number, lon: number, alt: number, i
       forecast_days: "2",
     });
 
-    const url = `${BASE_URL}?${params.toString()}`;
+    const url = `${getMeteoBaseUrl()}?${params.toString()}`;
     const res = await fetch(url);
     const tempoMs = Math.round(performance.now() - inizio);
 

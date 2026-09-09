@@ -90,28 +90,6 @@ export async function getVentiInterpolati(
   const hours: string[] = data.hourly.time;
   const h = data.hourly;
 
-  // Costruisci mappa livelli disponibili -> quota reale
-  const livelliDisponibili: { quota: number; speed: number; dir: number; key: string }[] = [];
-
-  for (const [key, defaultAlt] of Object.entries(HPA_TO_QUOTA)) {
-    const speedArr = h[`wind_speed_${key}`];
-    const dirArr = h[`wind_direction_${key}`];
-    if (speedArr && dirArr) {
-      for (let i = 0; i < hours.length; i++) {
-        const speed = safeNumOrNull(speedArr[i]);
-        const dir = safeNumOrNull(dirArr[i]);
-        if (speed !== null && dir !== null && speed >= 0 && dir >= 0) {
-          // Usa quota reale del sito come riferimento per i livelli bassi
-          const quota = key === "10m" ? quotaDecollo : key === "80m" ? quotaDecollo + 70 :
-                        key === "120m" ? quotaDecollo + 110 : key === "180m" ? quotaDecollo + 170 :
-                        defaultAlt;
-          livelliDisponibili.push({ quota, speed, dir, key });
-        }
-      }
-      break; // una sola iterazione per chiave
-    }
-  }
-
   // Determina range quote da interpolare
   const partenza = Math.floor(quotaDecollo / 250) * 250;
   const quoteInterpolazione: number[] = [];

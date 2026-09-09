@@ -1,7 +1,9 @@
 "use client";
 
+import { getMeteoBaseUrl } from "@/config/apiConfig";
+
 /**
- * Sistema di test massivo per verificare che i dati di Open-Meteo 
+ * Sistema di test massivo per verificare che i dati di Open-Meteo
  * arrivino correttamente e che le palette meteo siano attendibili.
  * 
  * Il tester:
@@ -40,7 +42,7 @@ const VALIDATION_RULES = {
   uvIndex: { min: 0, max: 20, label: "UV Index" },
 };
 
-const BASE_URL = "https://api.open-meteo.com/v1/forecast";
+const BASE_URL = getMeteoBaseUrl();
 
 // Parametri ridotti per il test — stessi usati dall'app
 const HOURLY_PARAMS = [
