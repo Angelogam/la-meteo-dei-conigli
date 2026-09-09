@@ -479,7 +479,7 @@ export default function AlpiumWindgram({
           >
             {/* SFONDO MAPPA INSTABILITÀ */}
             {instabilityGrid.map((cell, i) => (
-              <rect key={i} x={cell.x} y={cell.y} width={cell.w} height={cell.h} fill={cell.color} opacity={cell.opacity} />
+              <rect key={`inst-${i}-${cell.x}-${cell.y}`} x={cell.x} y={cell.y} width={cell.w} height={cell.h} fill={cell.color} opacity={cell.opacity} />
             ))}
 
             {/* Bordo area plot */}

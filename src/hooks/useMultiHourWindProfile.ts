@@ -59,6 +59,7 @@ function interpolateWindAtAltitude(
     return { speed: Math.round(sorted[sorted.length - 1].speed), dir: Math.round(sorted[sorted.length - 1].dir) };
   }
 
+
   for (let i = 0; i < sorted.length - 1; i++) {
     if (sorted[i].alt <= targetAlt && sorted[i + 1].alt >= targetAlt) {
       const lower = sorted[i];
@@ -156,8 +157,18 @@ export function useMultiHourWindProfile({
           ];
 
           const realLevels: WindLevel[] = pressureLevels
-            .filter((l) => l.speed != null && !isNaN(l.speed) && l.dir != null && !isNaN(l.dir))
-            .map((l) => ({ hpa: l.hpa, alt: l.alt, speed: Number(l.speed), dir: Number(l.dir), gust: l.gust ? Number(l.gust) : undefined }))
+            .filter((l) => {
+              const s = Number(l.speed);
+              const d = Number(l.dir);
+              return l.speed != null && !isNaN(s) && l.dir != null && !isNaN(d) && s >= 0 && d >= 0;
+            })
+            .map((l) => ({
+              hpa: l.hpa,
+              alt: l.alt,
+              speed: Number(l.speed),
+              dir: Number(l.dir),
+              gust: l.gust ? Number(l.gust) : undefined,
+            }))
             .sort((a, b) => a.alt - b.alt);
 
           const maxRealAltitude = realLevels.length > 0
