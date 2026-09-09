@@ -77,9 +77,6 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   const avgSpread = dayData.reduce((s, h) => s + Math.max(0.5, (h.temperature ?? t) - (h.dewPoint ?? dew)), 0) / dayData.length;
   const avgThermalRate = Math.min(4, Math.max(0.3, avgSpread * 0.25 + avgCape * 0.001));
   const thermalTop = calcThermalTop(cloudBase, avgCape, avgSpread, cloudCover);
-  const waveIndex = calcWaveIndex(windDir, dir850);
-  const zeroThermal = dayData.reduce((s, h) => s + (h.freezingLevel ?? 0), 0) / dayData.length;
-  const avgFreezing = zeroThermal > 0 ? Math.round(zeroThermal) : siteAlt + 3000;
 
   // Finestra di volo
   const flightHours = dayData.filter(h => {
@@ -105,6 +102,10 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   const dir120m = midData.reduce((s, h) => s + (h.windDir120m ?? 0), 0) / midData.length;
   const dir180m = midData.reduce((s, h) => s + (h.windDir180m ?? 0), 0) / midData.length;
   const dir850 = midData.reduce((s, h) => s + (h.windDir850 ?? 0), 0) / midData.length;
+
+  const waveIndex = calcWaveIndex(windDir, dir850);
+  const zeroThermal = dayData.reduce((s, h) => s + (h.freezingLevel ?? 0), 0) / dayData.length;
+  const avgFreezing = zeroThermal > 0 ? Math.round(zeroThermal) : siteAlt + 3000;
 
   // Stima tasso termico corrente
   const currentRate = Math.min(4, Math.max(0.3, spread * 0.25 + cape * 0.001));
