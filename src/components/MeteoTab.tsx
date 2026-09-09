@@ -1,40 +1,50 @@
 "use client";
 
-import React from "react";
-import {
-  CloudSun, ArrowUp, TrendingUp,
-  Sun, Eye, AlertTriangle, Thermometer, Calendar, MapPin
-} from "lucide-react";
+import type { MeteoCurrent } from "@/services/openMeteoService";
+import type { HourData } from "@/types/meteo";
+import { CloudSun, Wind, Thermometer, Droplets, Sun, Zap, Lightning, Eye, Calendar, MapPin } from "lucide-react";
 
 interface MeteoTabProps {
-  currentData: any;
-  dayData: any[];
+  currentData: MeteoCurrent | null;
+  dayData: HourData[];
   site: { alt: number; name?: string };
   thermalDelta: number;
-  stabilityIndex: { label: string; color: string };
   modelName?: string;
-  cape?: number;
-  liftedIndex?: number;
-  cin?: number;
 }
 
-function formatDateShort(date: Date): string {
-  const d = date instanceof Date ? date : new Date(date);
-  if (isNaN(d.getTime())) return "";
-  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+// Calcola base cumuli in metri
+function calcCloudBase(siteAlt: number, t: number, dew: number) {
+  const spread = Math.max(0.5, t - dew);
+  return siteAlt + spread * 125;
 }
 
-export default function MeteoTab({
-  currentData, dayData, site, thermalDelta, stabilityIndex, modelName, cape, liftedIndex, cin
-}: MeteoTabProps) {
-  const dataGiorno = React.useMemo(() => {
-    if (dayData && dayData.length > 0) {
-      return formatDateShort(dayData[0].time);
-    }
-    return formatDateShort(new Date());
-  }, [dayData]);
+// Calcola top termico realistico
+function calcThermalTop(cloudBase: number, cape: number, spread: number, cloudCover: number) {
+  const rate = Math.min(4, Math.max(0.3, spread * 0.25 + cape * 0.001));
+  const cloudPenalty = cloudCover > 60 ? 0.4 : cloudCover > 40 ? 0.7 : 1.0;
+  return Math.round(Math.min(5000, cloudBase + rate * 500 * cloudPenalty + spread * 60));
+}
 
-  if (!currentData) {
+// Calcola wave index (gradi di differenza vento 10m vs 850hPa)
+function calcWaveIndex(dir10: number, dir850: number) {
+  let diff = Math.abs(dir850 - dir10);
+  if (diff > 180) diff = 360 - diff;
+  return diff;
+}
+
+// Direzione cardinale
+function dirLabel(deg: number) {
+  const dirs = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"];
+  return dirs[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
+}
+
+function dirArrow(deg: number) {
+  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
+  return arrows[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
+}
+
+export default function MeteoTab({ currentData, dayData, site, thermalDelta, modelName }: MeteoTabProps) {
+  if (!currentData || dayData.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-slate-400">
         <CloudSun className="w-16 h-16 text-slate-600 mb-4" />
@@ -43,169 +53,393 @@ export default function MeteoTab({
     );
   }
 
-  const temp = currentData.temperature;
-  const humidity = currentData.humidity;
-  const pressure = currentData.pressure ?? currentData.surfacePressure;
-  const cloudCover = currentData.cloudCover;
-  const cloudLow = currentData.cloudCoverLow ?? 0;
-  const cloudMid = currentData.cloudCoverMid ?? 0;
-  const cloudHigh = currentData.cloudCoverHigh ?? 0;
-  const windSpeed = currentData.windSpeed;
-  const windDir = currentData.windDir;
-  const windGust = currentData.windGusts;
-  const precipitation = currentData.precipitation;
-  const dewPoint = currentData.dewPoint ?? (temp - (100 - (humidity ?? 50)) / 5);
-  const weatherCode = currentData.weatherCode;
-  const temp80m = currentData.temp80m;
-  const temp120m = currentData.temp120m;
-  const uvIndex = currentData.uvIndex;
+  const { alt: siteAlt, name: siteName } = site;
+  const t = currentData.temperature ?? 18;
+  const dew = currentData.dewPoint ?? t - 8;
+  const humidity = currentData.humidity ?? 50;
+  const windSpeed = currentData.windSpeed ?? 0;
+  const windDir = currentData.windDir ?? 180;
+  const windGusts = currentData.windGusts ?? 0;
+  const cape = currentData.cape ?? 0;
+  const li = currentData.liftedIndex ?? 1.5;
+  const cloudCover = currentData.cloudCover ?? 20;
+  const precipitation = currentData.precipitation ?? 0;
+  const weatherCode = currentData.weatherCode ?? 0;
   const visibility = currentData.visibility ?? 10000;
+  const pressure = currentData.surfacePressure ?? currentData.pressure ?? 1013;
+  const uvIndex = currentData.uvIndex ?? 0;
 
-  const spread = temp - dewPoint;
-  const cloudBase = Math.max(200, Math.min(3000, Math.round(spread * 125)));
+  // === Calcoli per il volo ===
+  const cloudBase = calcCloudBase(siteAlt, t, dew);
+  const spread = Math.max(0.5, t - dew);
+  const avgCape = dayData.reduce((s, h) => s + (h.cape ?? 0), 0) / dayData.length;
+  const avgLi = dayData.reduce((s, h) => s + (h.liftedIndex ?? 0), 0) / dayData.length;
+  const avgSpread = dayData.reduce((s, h) => s + Math.max(0.5, (h.temperature ?? t) - (h.dewPoint ?? dew)), 0) / dayData.length;
+  const avgThermalRate = Math.min(4, Math.max(0.3, avgSpread * 0.25 + avgCape * 0.001));
+  const thermalTop = calcThermalTop(cloudBase, avgCape, avgSpread, cloudCover);
+  const waveIndex = calcWaveIndex(windDir, dayData[6]?.windDir850 ?? 200);
+  const zeroThermal = dayData.reduce((s, h) => s + (h.freezingLevel ?? 0), 0) / dayData.length;
+  const avgFreezing = zeroThermal > 0 ? Math.round(zeroThermal) : siteAlt + 3000;
 
-  let gradienteReale = 0.98;
-  let gradienteLabel = "Adiabatico secco";
-  if (temp80m != null) { gradienteReale = ((temp - temp80m) / 78) * 100; gradienteLabel = "Da T80m"; }
-  else if (temp120m != null) { gradienteReale = ((temp - temp120m) / 118) * 100; gradienteLabel = "Da T120m"; }
+  // Finestra di volo
+  const flightHours = dayData.filter(h => {
+    const ht = h.temperature ?? t;
+    const hd = h.dewPoint ?? dew;
+    const hSpread = Math.max(0.5, ht - hd);
+    return hSpread > 4 && (h.cape ?? 0) < 600 && (h.precipitationProba ?? 0) < 30;
+  }).length;
+  const windowStart = dayData.findIndex(h => (h.temperature ?? t) - (h.dewPoint ?? dew) > 4);
+  const reversedEnd = [...dayData].reverse().findIndex(h => (h.temperature ?? t) - (h.dewPoint ?? dew) > 4);
+  const windowEnd = dayData.length - 1 - reversedEnd;
+  const flightWindow = windowStart >= 0 && windowEnd > windowStart
+    ? `${String(dayData[windowStart]?.time?.getHours() ?? 8).padStart(2, "0")}:00 – ${String(dayData[Math.min(windowEnd, dayData.length - 1)]?.time?.getHours() ?? 17).padStart(2, "0")}:00`
+    : "—";
 
-  let forzaTermica = 0;
-  if (gradienteReale >= 1.2) forzaTermica += 3;
-  else if (gradienteReale >= 0.98) forzaTermica += 2;
-  else if (gradienteReale >= 0.7) forzaTermica += 1;
-  if (windSpeed >= 5 && windSpeed <= 15) forzaTermica += 2;
-  else if (windSpeed >= 3 && windSpeed < 5) forzaTermica += 1.5;
-  else if (windSpeed > 15 && windSpeed <= 22) forzaTermica += 1;
-  if (cloudCover >= 15 && cloudCover <= 45) forzaTermica += 2;
-  else if (cloudCover >= 5 && cloudCover < 15) forzaTermica += 1.5;
-  if (humidity >= 30 && humidity <= 50) forzaTermica += 1.5;
-  else if (humidity > 50 && humidity <= 65) forzaTermica += 1;
-  if (uvIndex != null) {
-    if (uvIndex >= 7) forzaTermica += 1;
-    else if (uvIndex >= 5) forzaTermica += 0.7;
-    else if (uvIndex >= 3) forzaTermica += 0.4;
-  }
-  forzaTermica = Math.min(10, Math.max(0, Math.round(forzaTermica * 10) / 10));
-  let rateoTermico = (forzaTermica / 10) * 4;
-  if (precipitation > 1) rateoTermico = 0;
-  rateoTermico = Math.round(rateoTermico * 10) / 10;
-  const topTermico = Math.min(5000, cloudBase + Math.round(forzaTermica * 250));
-  const raffiche = windGust ?? Math.round(windSpeed * 1.4);
-  const zeroTermico = Math.max(0, Math.round(site.alt + (temp / 0.0098) + 200));
+  // Vento in quota (media ore centrali)
+  const midData = dayData.slice(8, 16);
+  const avgWind80m = midData.reduce((s, h) => s + (h.windSpeed80m ?? 0), 0) / midData.length;
+  const avgWind120m = midData.reduce((s, h) => s + (h.windSpeed120m ?? 0), 0) / midData.length;
+  const avgWind850 = midData.reduce((s, h) => s + (h.windSpeed850 ?? 0), 0) / midData.length;
+  const dir850 = midData.reduce((s, h) => s + (h.windDir850 ?? 0), 0) / midData.length;
 
-  const dirCardinali = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-  const dirLabel = dirCardinali[Math.round((windDir ?? 0) / 45) % 8];
-  const arrow = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"][Math.round((windDir ?? 0) / 45) % 8];
+  // Stima tasso termico corrente
+  const currentRate = Math.min(4, Math.max(0.3, spread * 0.25 + cape * 0.001));
+  const currentTop = calcThermalTop(cloudBase, cape, spread, cloudCover);
+
+  // Previsione prossime 6h
+  const now = new Date().getHours();
+  const next6h = dayData.filter(h => {
+    const hr = h.time instanceof Date ? h.time.getHours() : new Date(h.time).getHours();
+    return hr >= now && hr <= now + 6;
+  });
+  const nextRain = next6h.reduce((s, h) => s + (h.precipitation ?? 0), 0);
+  const nextRainProb = next6h.reduce((s, h) => s + (h.precipitationProba ?? 0), 0) / (next6h.length || 1);
+  const nextCape = next6h.reduce((s, h) => s + (h.cape ?? 0), 0) / (next6h.length || 1);
+
+  // Semáforo volo
+  let signal: "green" | "yellow" | "red";
+  let signalLabel: string;
+  if (weatherCode >= 95 || weatherCode === 82) { signal = "red"; signalLabel = "TEMPORALI"; }
+  else if (windSpeed > 30 || nextCape > 1000 || precipitation > 1) { signal = "red"; signalLabel = "PERICOLOSO"; }
+  else if (windSpeed > 20 || avgCape > 600 || nextRainProb > 40 || cloudBase < siteAlt + 300) {
+    signal = "yellow"; signalLabel = "ATTENZIONE";
+  } else { signal = "green"; signalLabel = "VOLO CONSENTITO"; }
+
+  const signalColors = {
+    green: { bg: "bg-emerald-500/20", border: "border-emerald-500/50", text: "text-emerald-400", ring: "ring-emerald-500/30" },
+    yellow: { bg: "bg-amber-500/20", border: "border-amber-500/50", text: "text-amber-400", ring: "ring-amber-500/30" },
+    red: { bg: "bg-red-500/20", border: "border-red-500/50", text: "text-red-400", ring: "ring-red-500/30" },
+  };
+  const sc = signalColors[signal];
+
+  // Warning list
+  const warnings: string[] = [];
+  if (cloudBase < siteAlt + 300) warnings.push("Base cumuli bassa → nebbia mattutina");
+  if (avgFreezing < siteAlt + 2000) warnings.push("Zero termico basso → rischio neve");
+  if (windSpeed > 20) warnings.push(`Vento forte al suolo (${Math.round(windSpeed)} km/h)`);
+  if (windSpeed > 0 && windGusts > windSpeed * 1.5) warnings.push(`Raffiche forti (${Math.round(windGusts)} km/h)`);
+  if (avgCape > 800 && humidity > 60) warnings.push("CAPE elevato + umidità → temporali probabili");
+  if (waveIndex < 30 && windSpeed > 15) warnings.push("Wave index basso → onda montana attiva");
+  if (visibility < 3000) warnings.push(`Visibilità ridotta (${Math.round(visibility / 1000)}km)`);
+  if (nextRainProb > 30) warnings.push(`Pioggia probabile nelle prossime 6h (${Math.round(nextRainProb)}%)`);
+  if (avgLi < -4) warnings.push(`Instabilità estrema (LI ${avgLi.toFixed(1)})`);
+  if (flightHours < 4) warnings.push("Finestra di volo molto breve");
 
   return (
     <div className="space-y-4">
-      {/* Intestazione con nome decollo e data */}
+      {/* Header */}
       <div className="bg-slate-800/60 border border-emerald-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
         <MapPin className="w-5 h-5 text-emerald-400 shrink-0" />
         <div>
-          <div className="text-sm font-bold text-white">{site?.name || "Decollo"}</div>
+          <div className="text-sm font-bold text-white">{siteName || "Decollo"}</div>
           <div className="text-[10px] text-slate-400 flex items-center gap-2">
             <Calendar className="w-3 h-3" />
-            <span>{dataGiorno}</span>
+            <span>{new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })}</span>
             <span className="text-slate-600">·</span>
-            <span>{site?.alt || 0}m</span>
+            <span>{siteAlt}m · {modelName || "Open-Meteo"}</span>
           </div>
         </div>
       </div>
 
-      {/* Grid parametri */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
-          <p className="text-[10px] text-slate-500 mb-1">Temp. percepita</p>
-          <p className="text-lg font-bold text-white tabular-nums">
-            {currentData.apparentTemp != null ? `${Math.round(currentData.apparentTemp)}°` : temp != null ? `${Math.round(temp)}°` : "--"}
-          </p>
-        </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
-          <p className="text-[10px] text-slate-500 mb-1">Umidità</p>
-          <p className="text-lg font-bold text-sky-300 tabular-nums">{humidity != null ? `${Math.round(humidity)}%` : "--"}</p>
-        </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
-          <p className="text-[10px] text-slate-500 mb-1">Pressione</p>
-          <p className="text-lg font-bold text-emerald-300 tabular-nums">
-            {pressure != null ? `${Math.round(pressure)}` : "--"} <span className="text-xs text-slate-500 font-normal">hPa</span>
-          </p>
-        </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
-          <p className="text-[10px] text-slate-500 mb-1">Visibilità</p>
-          <p className="text-lg font-bold text-violet-300 tabular-nums">
-            {visibility >= 10000 ? '10+' : visibility >= 5000 ? '5' : Math.round(visibility / 1000)} <span className="text-xs text-slate-500 font-normal">km</span>
-          </p>
+      {/* Semáforo volo */}
+      <div className={`rounded-xl border ${sc.border} ${sc.bg} p-4`}>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <div className={`w-5 h-5 rounded-full ${sc.text.replace("text-", "bg-").replace("/40", "/50")} ring-4 ${sc.ring}`} />
+            {signal === "green" && (
+              <div className={`absolute inset-0 rounded-full ${sc.text.replace("text-", "bg-").replace("/40", "/50")} animate-ping opacity-20`} />
+            )}
+          </div>
+          <div>
+            <p className={`font-black text-xl ${sc.text} tracking-wider`}>{signalLabel}</p>
+            <p className="text-slate-500 text-xs">Giudizio volo · {flightHours} ore favorevoli</p>
+          </div>
+          <div className="ml-auto text-right">
+            <p className="text-2xl font-black text-slate-100">{flightWindow}</p>
+            <p className="text-slate-500 text-[10px]">Finestra di volo</p>
+          </div>
         </div>
       </div>
 
-      {/* Nuvolosità per strato */}
+      {/* 6 Indicatori chiave */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {/* 1. Termiche */}
+        <div className="bg-slate-800/70 rounded-xl p-3 border border-slate-700/50">
+          <div className="flex items-center gap-2 mb-2">
+            <Thermometer className="w-4 h-4 text-orange-400" />
+            <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Termiche</span>
+          </div>
+          <div className="space-y-1">
+            <div className="flex justify-between">
+              <span className="text-slate-500 text-[10px]">Rateo corrente</span>
+              <span className="text-orange-300 font-black text-sm tabular-nums">{currentRate.toFixed(1)} m/s</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500 text-[10px]">Media giornata</span>
+              <span className="text-orange-400 font-bold text-sm tabular-nums">{avgThermalRate.toFixed(1)} m/s</span>
+            </div>
+            <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${Math.min(100, (currentRate / 4) * 100)}%`,
+                  backgroundColor: currentRate >= 2 ? "#f97316" : currentRate >= 1 ? "#eab308" : "#dc2626",
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 2. Base / Top */}
+        <div className="bg-slate-800/70 rounded-xl p-3 border border-slate-700/50">
+          <div className="flex items-center gap-2 mb-2">
+            <CloudSun className="w-4 h-4 text-sky-400" />
+            <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Cumuli</span>
+          </div>
+          <div className="space-y-1">
+            <div className="flex justify-between">
+              <span className="text-slate-500 text-[10px]">Base</span>
+              <span className="text-sky-300 font-black text-sm tabular-nums">{cloudBase}m</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500 text-[10px]">Top</span>
+              <span className="text-violet-300 font-black text-sm tabular-nums">{currentTop}m</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500 text-[10px]">Spread T-deW</span>
+              <span className="text-amber-300 font-bold text-sm tabular-nums">{spread.toFixed(1)}°C</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Vento suolo */}
+        <div className="bg-slate-800/70 rounded-xl p-3 border border-slate-700/50">
+          <div className="flex items-center gap-2 mb-2">
+            <Wind className="w-4 h-4 text-cyan-400" />
+            <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Vento Suolo</span>
+          </div>
+          <div className="space-y-1">
+            <div className="flex justify-between items-baseline">
+              <span className="text-slate-500 text-[10px]">Velocità</span>
+              <span className={`font-black text-lg tabular-nums ${windSpeed > 20 ? "text-red-400" : windSpeed > 12 ? "text-amber-400" : "text-cyan-300"}`}>
+                {Math.round(windSpeed)}
+              </span>
+              <span className="text-slate-600 text-xs">km/h</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500 text-[10px]">Direzione</span>
+              <span className="text-slate-300 font-bold text-sm">{dirLabel(windDir)} {dirArrow(windDir)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500 text-[10px]">Raffiche</span>
+              <span className={`font-bold text-sm tabular-nums ${windGusts > windSpeed * 1.5 ? "text-red-400" : "text-slate-400"}`}>
+                {Math.round(windGusts)} km/h
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. Vento in quota */}
+        <div className="bg-slate-800/70 rounded-xl p-3 border border-slate-700/50">
+          <div className="flex items-center gap-2 mb-2">
+            <Wind className="w-4 h-4 text-violet-400" />
+            <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Vento Quota</span>
+          </div>
+          <div className="space-y-1 text-[11px]">
+            <div className="flex justify-between">
+              <span className="text-slate-500">80m</span>
+              <span className="text-violet-300 font-bold tabular-nums">{avgWind80m > 0 ? `${Math.round(avgWind80m)} ${dirArrow(dir850)}` : "—"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">120m</span>
+              <span className="text-violet-300 font-bold tabular-nums">{avgWind120m > 0 ? `${Math.round(avgWind120m)} ${dirArrow(dir850)}` : "—"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">850hPa</span>
+              <span className={`font-bold tabular-nums ${avgWind850 > 20 ? "text-red-400" : "text-sky-300"}`}>
+                {avgWind850 > 0 ? `${Math.round(avgWind850)} ${dirArrow(dir850)}` : "—"}
+              </span>
+            </div>
+            {avgWind850 > 0 && (
+              <div className="pt-1 border-t border-slate-700/50 flex justify-between">
+                <span className="text-slate-500">Wave Index</span>
+                <span className={`font-black text-sm tabular-nums ${waveIndex < 30 ? "text-emerald-400" : waveIndex < 60 ? "text-amber-400" : "text-slate-400"}`}>
+                  {Math.round(waveIndex)}°
+                  {waveIndex < 30 && <span className="text-[9px] ml-1">🌊 onda</span>}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 5. Instabilità */}
+        <div className="bg-slate-800/70 rounded-xl p-3 border border-slate-700/50">
+          <div className="flex items-center gap-2 mb-2">
+            <Zap className="w-4 h-4 text-amber-400" />
+            <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Instabilità</span>
+          </div>
+          <div className="space-y-1.5">
+            <div className="flex justify-between items-baseline">
+              <span className="text-slate-500 text-[10px]">CAPE</span>
+              <span className={`font-black text-lg tabular-nums ${avgCape > 800 ? "text-red-400" : avgCape > 300 ? "text-amber-400" : "text-emerald-400"}`}>
+                {Math.round(avgCape)}
+              </span>
+              <span className="text-slate-600 text-[10px]">J/kg</span>
+            </div>
+            <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${Math.min(100, (avgCape / 1500) * 100)}%`,
+                  backgroundColor: avgCape > 800 ? "#dc2626" : avgCape > 300 ? "#eab308" : "#10b981",
+                }}
+              />
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500 text-[10px]">Lifted Index</span>
+              <span className={`font-bold text-sm tabular-nums ${avgLi < -4 ? "text-red-400" : avgLi < -2 ? "text-amber-400" : "text-emerald-400"}`}>
+                {avgLi.toFixed(1)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500 text-[10px]">CIN</span>
+              <span className="text-slate-400 font-bold text-sm tabular-nums">{Math.round(currentData.cin ?? 0)} J/kg</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 6. Zero termico + visibilità */}
+        <div className="bg-slate-800/70 rounded-xl p-3 border border-slate-700/50">
+          <div className="flex items-center gap-2 mb-2">
+            <Sun className="w-4 h-4 text-yellow-400" />
+            <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Altro</span>
+          </div>
+          <div className="space-y-1.5">
+            <div className="flex justify-between">
+              <span className="text-slate-500 text-[10px]">Zero termico</span>
+              <span className={`font-bold text-sm tabular-nums ${avgFreezing < siteAlt + 2000 ? "text-red-400" : "text-cyan-300"}`}>
+                {avgFreezing}m
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500 text-[10px]">Visibilità</span>
+              <span className={`font-bold text-sm tabular-nums ${visibility < 3000 ? "text-red-400" : visibility < 5000 ? "text-amber-400" : "text-emerald-400"}`}>
+                {visibility >= 10000 ? "10+" : Math.round(visibility / 1000)}km
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500 text-[10px]">UV Index</span>
+              <span className={`font-bold text-sm tabular-nums ${uvIndex >= 8 ? "text-red-400" : uvIndex >= 5 ? "text-amber-400" : "text-slate-300"}`}>
+                {Math.round(uvIndex)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500 text-[10px]">Pressione</span>
+              <span className="text-slate-300 font-bold text-sm tabular-nums">{Math.round(pressure)} hPa</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 7. Tendenza prossime 6h */}
+        <div className="bg-slate-800/70 rounded-xl p-3 border border-slate-700/50 md:col-span-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Eye className="w-4 h-4 text-sky-400" />
+            <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Tendenza prossime 6h</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-[11px]">
+            <div>
+              <span className="text-slate-500">Pioggia totale</span>
+              <p className={`font-black text-base tabular-nums ${nextRain > 2 ? "text-red-400" : nextRain > 0.5 ? "text-amber-400" : "text-emerald-400"}`}>
+                {nextRain > 0 ? `${nextRain.toFixed(1)}` : "0"}mm
+              </p>
+            </div>
+            <div>
+              <span className="text-slate-500">Prob. pioggia</span>
+              <p className={`font-black text-base tabular-nums ${nextRainProb > 40 ? "text-red-400" : nextRainProb > 20 ? "text-amber-400" : "text-emerald-400"}`}>
+                {Math.round(nextRainProb)}%
+              </p>
+            </div>
+            <div>
+              <span className="text-slate-500">CAPE medio</span>
+              <p className={`font-black text-base tabular-nums ${nextCape > 800 ? "text-red-400" : nextCape > 300 ? "text-amber-400" : "text-emerald-400"}`}>
+                {Math.round(nextCape)} J/kg
+              </p>
+            </div>
+            <div>
+              <span className="text-slate-500">Ore secche</span>
+              <p className="font-black text-base tabular-nums text-sky-300">
+                {dayData.filter(h => (h.precipitationProba ?? 0) < 20 && (h.cape ?? 0) < 400).length}
+                <span className="text-slate-500 text-xs font-normal">/{dayData.length}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Warning */}
+      {warnings.length > 0 && (
+        <div className="bg-amber-950/30 border border-amber-500/30 rounded-xl p-3 space-y-1.5">
+          <div className="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-wider">
+            <Lightning className="w-3.5 h-3.5" />
+            Attenzione
+          </div>
+          {warnings.map((w, i) => (
+            <p key={i} className="text-amber-200/80 text-xs flex items-start gap-1.5">
+              <span className="text-amber-500 mt-0.5 shrink-0">·</span>
+              {w}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {/* Nuvolosità dettagliata */}
       <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
         <p className="text-xs font-bold text-slate-400 mb-3 flex items-center gap-1.5">
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /></svg>
+          <CloudSun className="w-3.5 h-3.5" />
           Nuvolosità per strato
         </p>
         <div className="space-y-2">
           {[
-            { label: "Bassa (0–2 km)", value: cloudLow, color: "bg-blue-400" },
-            { label: "Media (2–6 km)", value: cloudMid, color: "bg-sky-400" },
-            { label: "Alta (6–12 km)", value: cloudHigh, color: "bg-indigo-400" },
+            { label: "Bassa (0–2 km)", value: currentData.cloudCoverLow ?? 0, color: "bg-blue-400" },
+            { label: "Media (2–6 km)", value: currentData.cloudCoverMid ?? 0, color: "bg-sky-400" },
+            { label: "Alta (6–12 km)", value: currentData.cloudCoverHigh ?? 0, color: "bg-indigo-400" },
           ].map(({ label, value, color }) => (
             <div key={label} className="flex items-center gap-3">
               <span className="text-[11px] text-slate-400 w-28 shrink-0">{label}</span>
               <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${color}`}
-                  style={{ width: `${Math.min(100, value || 0)}%` }}
-                />
+                <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${Math.min(100, value || 0)}%` }} />
               </div>
-              <span className="text-[11px] font-bold text-slate-300 w-8 tabular-nums text-right">
-                {Math.round(value || 0)}%
-              </span>
+              <span className="text-[11px] font-bold text-slate-300 w-8 tabular-nums text-right">{Math.round(value || 0)}%</span>
             </div>
           ))}
           <div className="border-t border-slate-700/50 pt-2 flex items-center gap-3">
             <span className="text-[11px] text-slate-400 w-28 shrink-0">Totale</span>
             <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full bg-slate-400 transition-all"
-                style={{ width: `${Math.min(100, cloudCover || 0)}%` }}
-              />
+              <div className="h-full rounded-full bg-slate-400 transition-all" style={{ width: `${Math.min(100, cloudCover || 0)}%` }} />
             </div>
-            <span className="text-[11px] font-bold text-white w-8 tabular-nums text-right">
-              {Math.round(cloudCover ?? 0)}%
-            </span>
+            <span className="text-[11px] font-bold text-white w-8 tabular-nums text-right">{Math.round(cloudCover ?? 0)}%</span>
           </div>
         </div>
-      </div>
-
-      {/* Wind + Termiche info */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
-          <p className="text-[10px] text-slate-500 mb-1">Vento al suolo</p>
-          <p className="text-base font-bold text-sky-300 tabular-nums">
-            {Math.round(windSpeed)} <span className="text-xs text-slate-500 font-normal">km/h</span>
-          </p>
-          <p className="text-[10px] text-slate-500">{dirLabel} {arrow}</p>
-        </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
-          <p className="text-[10px] text-slate-500 mb-1">Raffiche</p>
-          <p className="text-base font-bold text-rose-300 tabular-nums">
-            {Math.round(raffiche)} <span className="text-xs text-slate-500 font-normal">km/h</span>
-          </p>
-        </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
-          <p className="text-[10px] text-slate-500 mb-1">Base cumuli</p>
-          <p className="text-base font-bold text-purple-300 tabular-nums">{cloudBase} <span className="text-xs text-slate-500 font-normal">m</span></p>
-        </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
-          <p className="text-[10px] text-slate-500 mb-1">Zero termico</p>
-          <p className="text-base font-bold text-cyan-300 tabular-nums">{zeroTermico} <span className="text-xs text-slate-500 font-normal">m</span></p>
-        </div>
-      </div>
-
-      <div className="text-center text-sm text-slate-600 border-t border-slate-700/30 pt-3">
-        {site?.name} · Dati Open-Meteo · Modello: {modelName || "auto"}
       </div>
     </div>
   );

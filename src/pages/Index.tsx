@@ -231,11 +231,7 @@ export default function Index() {
                     dayData={filteredDayData}
                     site={{ alt: site.elevation_m, name: site.site_name }}
                     thermalDelta={thermalDelta}
-                    stabilityIndex={stabilityIndex}
                     modelName={activeModel}
-                    cape={currentCape?.cape}
-                    liftedIndex={currentCape?.liftedIndex}
-                    cin={currentCape?.cin}
                   />
                 )}
 
