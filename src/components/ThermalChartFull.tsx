@@ -129,6 +129,15 @@ export default function ThermalChartFull({ hourlyData, siteAlt }: ThermalChartFu
             domain={[siteAlt, maxThermalTop + 500]}
             tickFormatter={(v: number) => `${(v / 1000).toFixed(1)}k`}
           />
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            stroke="#94a3b8"
+            fontSize={11}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(v: number) => `${v}`}
+          />
           <Tooltip
             contentStyle={{
               backgroundColor: "#1e293b",
