@@ -28,7 +28,8 @@ const TOMORROW_API_KEY = import.meta.env.VITE_TOMORROW_KEY || "";
 
 async function getOpenMeteo(lat: number, lon: number) {
   try {
-    const data = await fetchHourly(lat, lon, "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m", undefined, undefined);
+    const today = new Date().toISOString().split("T")[0];
+    const data = await fetchHourly(lat, lon, "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m", today, today);
     const t = data.hourly?.temperature_2m?.[0];
     if (t === undefined || t === null) return null;
     return {

@@ -1,6 +1,6 @@
 "use client";
 
-import { getMeteoBaseUrl } from "@/config/apiConfig";
+import { fetchFull } from "@/lib/openMeteoClient";
 import type { MeteoHourly, MeteoCurrent, MeteoDaily } from "./openMeteoService";
 
 export type { MeteoHourly, MeteoCurrent, MeteoDaily };
@@ -55,19 +55,7 @@ export const weatherService = {
     daily: MeteoDaily[];
     model: string;
   }> {
-    const params = new URLSearchParams({
-      latitude: lat.toString(),
-      longitude: lon.toString(),
-      hourly: HOURLY_PARAMS,
-      daily: DAILY_PARAMS,
-      current: CURRENT_PARAMS,
-      timezone: "Europe/Rome",
-      forecast_days: "3",
-    });
-
-    const res = await fetch(`${getMeteoBaseUrl()}?${params.toString()}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    const json: any = await res.json();
+    const json: any = await fetchFull(lat, lon, HOURLY_PARAMS, DAILY_PARAMS, CURRENT_PARAMS);
 
     const hourly: MeteoHourly[] = [];
     for (let i = 0; i < json.hourly.time.length; i++) {
