@@ -13,7 +13,7 @@ interface WindgramProps {
 }
 
 // ─────────────────────────────────────────────────────
-// Layout — Alpium style
+// Layout constants — Alpium-style
 // ─────────────────────────────────────────────────────
 const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] as const;
 const NUM_HOURS = HOURS.length;
@@ -24,8 +24,8 @@ const PLOT_TOP = HEADER_H;
 const PLOT_H = 680;
 const FOOTER_H = 110;
 const TOTAL_H = HEADER_H + PLOT_H + FOOTER_H;
-const ML = 175;   // left margin for altitude/temp labels
-const MR = 95;    // right margin for altitude labels
+const ML = 170;   // left margin — wide for altitude+temp labels
+const MR = 90;    // right margin — for altitude labels
 const GW = SVG_W - ML - MR;
 const GH = PLOT_H;
 
@@ -33,7 +33,9 @@ const ALT_MIN = 1000;
 const ALT_MAX = 4000;
 const ALT_STEP = 250;
 
+// ─────────────────────────────────────────────────────
 // Wind direction abbreviations
+// ─────────────────────────────────────────────────────
 const DIR_ABBREV: Record<number, string> = {
   0: "N", 45: "NE", 90: "E", 135: "SE", 180: "S", 225: "SO", 270: "O", 315: "NO",
 };
@@ -43,7 +45,7 @@ function getDirAbbrev(deg: number): string {
 }
 
 // ─────────────────────────────────────────────────────
-// ΔT color scale (Alpium) — from purple (stable) to red (unstable)
+// ΔT color scale (Alpium)
 // ─────────────────────────────────────────────────────
 const DT_STOPS = [
   { val: -0.20, color: "#6d28d9" },
@@ -97,7 +99,7 @@ function xFromIdx(i: number): number {
   return ML + (i / (NUM_HOURS - 1)) * GW;
 }
 
-// Catmull-Rom → cubic Bézier
+// Catmull-Rom → cubic Bézier path
 function toBezier(pts: { x: number; y: number }[]): string {
   if (pts.length < 2) return "";
   let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
@@ -105,6 +107,21 @@ function toBezier(pts: { x: number; y: number }[]): string {
     const p0 = pts[i - 1], p1 = pts[i];
     const p2 = pts[Math.min(i + 1, pts.length - 1)];
     d += ` C ${p0.x + (p1.x - p0.x) / 3},${p0.y + (p1.y - p0.y) / 3} ${p1.x - (p2.x - p1.x) / 3},${p1.y - (p2.y - p1.y) / 3} ${p1.x},${p1.y}`;
+  }
+  return d;
+}
+
+// Sinuous path with wave modulation (for thermal boundary)
+function toSinuousPath(pts: { x: number; y: number }[]): string {
+  if (pts.length < 2) return "";
+  let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+  for (let i = 1; i < pts.length; i++) {
+    const prev = pts[i - 1], curr = pts[i];
+    const cpX1 = prev.x + (curr.x - prev.x) * 0.45;
+    const cpY1 = prev.y - (i % 2 === 0 ? 15 : -15);
+    const cpX2 = prev.x + (curr.x - prev.x) * 0.75;
+    const cpY2 = curr.y + (i % 2 === 0 ? -10 : 10);
+    d += ` C ${cpX1.toFixed(1)},${cpY1.toFixed(1)} ${cpX2.toFixed(1)},${cpY2.toFixed(1)} ${curr.x.toFixed(1)},${curr.y.toFixed(1)}`;
   }
   return d;
 }
@@ -165,14 +182,14 @@ function WindBarb({
   const color = speedKmh > 60 ? "#ef4444" : speedKmh > 40 ? "#f59e0b" : "#0f172a";
 
   // Barbs calculation
-  const barbs = [];
+  const barbs: { d: number; type: "flag" | "long" | "short" }[] = [];
   let remaining = speedKmh;
   let d = 5;
-  while (remaining >= 25) { barbs.push({ d, type: "flag" as const }); remaining -= 25; d += 7; }
+  while (remaining >= 25) { barbs.push({ d, type: "flag" }); remaining -= 25; d += 7; }
   d = 5;
-  while (remaining >= 10) { barbs.push({ d, type: "long" as const }); remaining -= 10; d += 5; }
+  while (remaining >= 10) { barbs.push({ d, type: "long" }); remaining -= 10; d += 5; }
   d = 5;
-  while (remaining >= 5) { barbs.push({ d, type: "short" as const }); remaining -= 5; d += 4; }
+  while (remaining >= 5) { barbs.push({ d, type: "short" }); remaining -= 5; d += 4; }
 
   return (
     <g>
@@ -195,13 +212,13 @@ function WindBarb({
             stroke={color} strokeWidth="2.5" strokeLinecap="round" />
         );
       })}
-      {/* Speed text — below the barb */}
+      {/* Speed text */}
       <text x={cx} y={cy + 18} textAnchor="middle"
         className="fill-slate-900 font-black text-xs"
         style={{ textShadow: "0px 0px 3px rgba(255,255,255,0.8)" }}>
         {Math.round(speedKmh)}
       </text>
-      {/* Direction label — small, to the right */}
+      {/* Direction label */}
       <text x={cx + 14} y={cy - 8} textAnchor="start"
         className="fill-slate-700 font-bold text-[9px]">
         {getDirAbbrev(dirDeg)}
@@ -303,9 +320,9 @@ export default function ProfessionalWindgram({
       const t80 = h.temperature_80m?.[idx];
       const t120 = h.temperature_120m?.[idx];
 
-      // Spread = temp - dew point → cloud base estimator
+      // Spread = temp - dew point → LCL estimator
       const spread = Math.max(0.5, t2m - dew2m);
-      const cloudBase = Math.round(altitude + spread * 125); // LCL estimation
+      const cloudBase = Math.round(altitude + spread * 125);
       const sunPct = Math.min(100, Math.max(5, Math.round((rad / 950) * (1 - cloud / 100 * 0.7) * 100)));
 
       // Rateo di ascendenza (m/s)
@@ -347,13 +364,11 @@ export default function ProfessionalWindgram({
     }).filter((c): c is NonNullable<typeof c> => c !== null);
   }, [data, altitude]);
 
-  // ── Pre-compute lapse rate at every altitude per column ──
+  // ── Lapse rate matrix: ΔT/100m at each altitude per column ──
   const lapseMatrix = useMemo(() => {
     return columns.map(col => {
       const rates: { alt: number; dt: number }[] = [];
-      // Sample at every 250m
       for (let a = ALT_MIN; a <= ALT_MAX; a += ALT_STEP) {
-        // Approximate temperature at a using standard lapse rate from surface
         const surfaceT = col.t2m;
         const altDiff = a - altitude;
         const tempAtA = surfaceT - altDiff * 0.0065;
@@ -367,23 +382,18 @@ export default function ProfessionalWindgram({
   }, [columns, altitude]);
 
   // ── Curves ─────────────────────────────────────────
-  const cloudBasePath = useMemo(() => {
-    if (columns.length < 2) return "";
-    return toBezier(columns.map(c => ({ x: c.x, y: c.yCloudBase })));
-  }, [columns]);
-
   const thermalTopPts = useMemo(() => columns.map(c => ({ x: c.x, y: c.yThermalTop })), [columns]);
   const thermalTopPath = useMemo(() => toBezier(thermalTopPts), [thermalTopPts]);
-
   const freezePts = useMemo(() => columns.map(c => ({ x: c.x, y: c.yFreeze })), [columns]);
   const freezePath = useMemo(() => toBezier(freezePts), [freezePts]);
-
   const avgFreeze = useMemo(
     () => columns.length ? Math.round(columns.reduce((s, c) => s + c.freeze, 0) / columns.length) : altitude + 3200,
     [columns, altitude]
   );
+  const cloudBasePts = useMemo(() => columns.map(c => ({ x: c.x, y: c.yCloudBase })), [columns]);
+  const cloudBasePath = useMemo(() => toBezier(cloudBasePts), [cloudBasePts]);
 
-  // Boundary altitudes (PBL)
+  // Boundary (PBL) altitudes
   const boundaryAlts = useMemo(() =>
     columns.map(c => {
       const hf = (c.hour - 8) / 10;
@@ -394,6 +404,8 @@ export default function ProfessionalWindgram({
   const boundaryYPts = useMemo(
     () => columns.map((c, i) => ({ x: c.x, y: altToY(boundaryAlts[i]) })), [columns, boundaryAlts]
   );
+  const boundaryPath = useMemo(() => toBezier(boundaryYPts), [boundaryYPts]);
+  const sinuousBoundaryPath = useMemo(() => toSinuousPath(boundaryYPts), [boundaryYPts]);
 
   // ── Loading / error ────────────────────────────────
   if (loading) {
@@ -433,7 +445,6 @@ export default function ProfessionalWindgram({
           <clipPath id="graphClip">
             <rect x={plotLeft} y={PLOT_TOP} width={GW} height={GH} />
           </clipPath>
-
           {/* Rain pattern */}
           <pattern id="rainPattern" width="10" height="10" patternTransform="rotate(70 0 0)" patternUnits="userSpaceOnUse">
             <line x1="0" y1="0" x2="0" y2="10" stroke="#0284c7" strokeWidth="2" opacity="0.5" />
@@ -446,11 +457,22 @@ export default function ProfessionalWindgram({
           <pattern id="groundHatch" width="12" height="12" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
             <line x1="0" y1="0" x2="0" y2="12" stroke="#0f172a" strokeWidth="1.8" opacity="0.4" />
           </pattern>
-
           {/* Drop shadow */}
           <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
             <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodOpacity="0.3" />
           </filter>
+          {/* ΔT gradient bar */}
+          <linearGradient id="lapseRateBar" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#6d28d9" />
+            <stop offset="20%" stopColor="#4338ca" />
+            <stop offset="35%" stopColor="#1d4ed8" />
+            <stop offset="50%" stopColor="#0e7490" />
+            <stop offset="65%" stopColor="#047857" />
+            <stop offset="78%" stopColor="#a16207" />
+            <stop offset="88%" stopColor="#c2410c" />
+            <stop offset="95%" stopColor="#b91c1c" />
+            <stop offset="100%" stopColor="#7f1d1d" />
+          </linearGradient>
         </defs>
 
         {/* White background */}
@@ -487,18 +509,18 @@ export default function ProfessionalWindgram({
         <g clipPath="url(#graphClip)">
 
           {/* ══════════════════════════════════════════════════ */}
-          {/* STABILITY BANDS — colored cells based on ΔT/100m */}
+          {/* STABILITY BANDS — colored cells (ΔT/100m) */}
           {/* ══════════════════════════════════════════════════ */}
           {columns.map((col, ci) => {
-            const dtRates = lapseMatrix[ci]!;
-            return dtRates.map((lr) => {
+            const rates = lapseMatrix[ci]!;
+            return rates.map((lr) => {
               const cellY = altToY(lr.alt + ALT_STEP / 2);
-              const cellH = altToY(lr.alt) - altToY(lr.alt + ALT_STEP);
+              const cellH = Math.max(1, altToY(lr.alt) - altToY(lr.alt + ALT_STEP));
               return (
                 <rect
                   key={`cell-${col.hour}-${lr.alt}`}
                   x={col.x - halfW} y={cellY}
-                  width={halfW * 2} height={Math.max(1, cellH)}
+                  width={halfW * 2} height={cellH}
                   fill={getDTColor(lr.dt)}
                   opacity="0.72"
                 />
@@ -547,7 +569,7 @@ export default function ProfessionalWindgram({
           })()}
 
           {/* ══════════════════════════════════════════════════ */}
-          {/* CROSS-HATCH — unstable column zones (ΔT > 0.55) */}
+          {/* CROSS-HATCH — unstable column zones */}
           {/* ══════════════════════════════════════════════════ */}
           {columns.map((col, ci) => {
             if (col.surfaceDeltaT < 0.55) return null;
@@ -568,7 +590,7 @@ export default function ProfessionalWindgram({
           })}
 
           {/* ══════════════════════════════════════════════════ */}
-          {/* HORIZONTAL GRID LINES + LABELS */}
+          {/* HORIZONTAL GRID LINES + ALTITUDE LABELS */}
           {/* ══════════════════════════════════════════════════ */}
           {(() => {
             const launchAlt = Math.round(altitude);
@@ -582,13 +604,13 @@ export default function ProfessionalWindgram({
                 <g key={`grid-${a}`}>
                   <line x1={plotLeft} y1={y} x2={plotRight} y2={y}
                     stroke="rgba(0,0,0,0.15)" strokeWidth="0.8" />
-                  {/* Left: temperature */}
+                  {/* Left: altitude + temp */}
                   <text x={plotLeft - 15} y={y + 5} textAnchor="end"
                     className="fill-slate-900 font-black text-xs">
                     {a} m
                     <tspan className="fill-blue-600 font-bold"> ({tempStr}°C)</tspan>
                   </text>
-                  {/* Right: altitude */}
+                  {/* Right: altitude only */}
                   <text x={plotRight + 15} y={y + 5} textAnchor="start"
                     className="fill-slate-900 font-black text-xs">
                     {a} m
@@ -620,7 +642,6 @@ export default function ProfessionalWindgram({
             const rates = lapseMatrix[HOURS.indexOf(col.hour)]!;
             return rates.map((lr) => {
               const y = altToY(lr.alt);
-              // Interpolate wind at this altitude
               const lvl = col.rawLevels;
               const alt = lr.alt;
               let wSpeed = col.wind10;
@@ -676,12 +697,12 @@ export default function ProfessionalWindgram({
           )}
 
           {/* ══════════════════════════════════════════════════ */}
-          {/* THERMAL BOUNDARY (orange sinusoidal) */}
+          {/* THERMAL BOUNDARY (orange sinusoidal wave) */}
           {/* ══════════════════════════════════════════════════ */}
           {boundaryYPts.length >= 2 && (
             <>
-              <path d={toBezier(boundaryYPts)} fill="none" stroke="#f97316" strokeWidth="8" opacity="0.15" strokeLinecap="round" />
-              <path d={toBezier(boundaryYPts)} fill="none" stroke="#ea580c" strokeWidth="2.5" strokeLinecap="round" opacity="0.85" />
+              <path d={sinuousBoundaryPath} fill="none" stroke="#f97316" strokeWidth="8" opacity="0.15" strokeLinecap="round" />
+              <path d={sinuousBoundaryPath} fill="none" stroke="#ea580c" strokeWidth="2.5" strokeLinecap="round" opacity="0.85" />
             </>
           )}
 
@@ -698,11 +719,10 @@ export default function ProfessionalWindgram({
           {/* ══════════════════════════════════════════════════ */}
           {columns.filter(c => c.rateo >= 0.55).map((col) => {
             const paraY = col.yThermalTop;
-            // Cloud positioned ABOVE the paraglider
             const cloudY = paraY - 30;
             return (
               <g key={`badge-${col.hour}`}>
-                {/* Cloud at LCL-ish altitude, above paraglider */}
+                {/* Cloud at LCL-ish altitude, ABOVE the paraglider */}
                 <CloudPuff x={col.x} y={cloudY} pct={col.cloud} />
 
                 {/* Paraglider icon at thermal top */}
@@ -751,21 +771,6 @@ export default function ProfessionalWindgram({
             <text x={GW} textAnchor="end" className="fill-red-700">1.2 (Instabile / Rosso)</text>
           </g>
         </g>
-
-        {/* Gradient for ΔT bar (re-declared inside SVG) */}
-        <defs>
-          <linearGradient id="lapseRateBar" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#6d28d9" />
-            <stop offset="20%" stopColor="#4338ca" />
-            <stop offset="35%" stopColor="#1d4ed8" />
-            <stop offset="50%" stopColor="#0e7490" />
-            <stop offset="65%" stopColor="#047857" />
-            <stop offset="78%" stopColor="#a16207" />
-            <stop offset="88%" stopColor="#c2410c" />
-            <stop offset="95%" stopColor="#b91c1c" />
-            <stop offset="100%" stopColor="#7f1d1d" />
-          </linearGradient>
-        </defs>
 
         {/* ══════════════════════════════════════════════════ */}
         {/* ATTRIBUTION */}
