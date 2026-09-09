@@ -8,6 +8,7 @@ import {
   Navigation,
   Wind,
   Sparkles,
+  Sun,
 } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 import type { MeteoCurrent } from "@/services/openMeteoService";
