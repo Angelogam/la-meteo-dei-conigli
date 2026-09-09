@@ -1,8 +1,8 @@
 "use client";
 
 import type { MeteoCurrent, MeteoHourly, MeteoDaily } from "./openMeteoService";
-import { fetchWithProxyFallback } from "@/utils/proxyFallback";
 
+const OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast";
 const OPENWEATHER_BASE = "https://api.openweathermap.org/data/2.5/weather";
 const OPENWEATHER_API_KEY = "f01a9f572541fc5951d78441cbe750c6";
 
@@ -76,14 +76,8 @@ interface AggressiveWeatherResult {
 
 async function fetchOpenMeteo(lat: number, lon: number): Promise<OpenMeteoData | null> {
   try {
-    const params = new URLSearchParams({
-      latitude: lat.toString(),
-      longitude: lon.toString(),
-      hourly: "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m",
-      daily: "temperature_2m_max,temperature_2m_min,precipitation_sum,cloud_cover_mean",
-      timezone: "auto",
-    });
-    const res = await fetchWithProxyFallback(params.toString());
+    const url = `${OPEN_METEO_BASE}?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation,cloudcover,windspeed_10m,winddirection_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,cloudcover_mean&timezone=auto`;
+    const res = await fetch(url);
     if (!res.ok) return null;
     const data = await res.json();
     

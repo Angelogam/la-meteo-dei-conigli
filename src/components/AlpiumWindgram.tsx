@@ -2,7 +2,6 @@ import React, { useMemo, useState } from "react";
 import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
 import type { HourData } from "@/types/meteo";
 import { Wind, Loader2 } from "lucide-react";
-import { fetchWithProxyFallback } from "@/utils/proxyFallback";
 
 interface AlpiumWindgramProps {
   siteName: string;
@@ -133,17 +132,9 @@ function useAlpiumData(lat: number, lon: number, siteAlt: number, selectedDay: n
       "wind_speed_500hPa", "wind_direction_500hPa",
     ].join(",");
 
-    const params = new URLSearchParams({
-      latitude: lat.toString(),
-      longitude: lon.toString(),
-      hourly: `${windFields},${tempFields},temperature_2m,dew_point_2m,cloud_cover`,
-      timezone: "Europe/Rome",
-      start_date: dayStr,
-      end_date: dayStr,
-    });
-    const url = params.toString();
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${windFields},${tempFields},temperature_2m,dew_point_2m,cloud_cover&timezone=Europe/Rome&start_date=${dayStr}&end_date=${dayStr}`;
 
-    fetchWithProxyFallback(url)
+    fetch(url)
       .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then((j) => {
         if (!mounted) return;

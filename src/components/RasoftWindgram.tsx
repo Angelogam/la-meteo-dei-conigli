@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { fetchWithProxyFallback } from "@/utils/proxyFallback";
 
 // ────────────────────────────────────────────────────────────────────────────
 // RasoftWindgram — replica fedele del windgram Rasoft/Meteo-Parapente
@@ -386,9 +385,9 @@ export default function RasoftWindgram({
       wind_speed_unit: "kmh",
     });
 
-    const url = params.toString();
+    const url = `https://api.open-meteo.com/v1/forecast?${params.toString()}`;
 
-    fetchWithProxyFallback(url)
+    fetch(url)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
@@ -411,7 +410,7 @@ export default function RasoftWindgram({
 
   // Costruiamo le righe orarie 08-18 leggendo i dati Open-Meteo
   const rows = useMemo<HourRow[]>(() => {
-    if (!data?.time) return [];
+    if (!data) return [];
     const out: HourRow[] = [];
     for (const hour of HOURS) {
       const idx = data.time.findIndex((t) => {

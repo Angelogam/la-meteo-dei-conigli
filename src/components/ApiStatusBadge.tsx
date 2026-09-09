@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { Server, CheckCircle, XCircle, Loader2, Bug } from "lucide-react";
-import { getMeteoBaseUrl } from "@/config/apiConfig";
 
 type ApiStatus = "loading" | "online" | "offline";
 
@@ -18,13 +17,7 @@ export default function ApiStatusBadge({ onOpenTester }: ApiStatusBadgeProps) {
     let mounted = true;
 
     // Test Open-Meteo
-    const omUrl = new URL(`${getMeteoBaseUrl()}`);
-    omUrl.searchParams.set("latitude", "44.2587");
-    omUrl.searchParams.set("longitude", "7.7943");
-    omUrl.searchParams.set("hourly", "temperature_2m");
-    omUrl.searchParams.set("forecast_days", "1");
-    omUrl.searchParams.set("timezone", "Europe/Rome");
-    fetch(omUrl.toString())
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=44.2587&longitude=7.7943&hourly=temperature_2m&forecast_days=1&timezone=Europe/Rome")
       .then(r => { if (mounted) setOmStatus(r.ok ? "online" : "offline"); })
       .catch(() => { if (mounted) setOmStatus("offline"); });
 
