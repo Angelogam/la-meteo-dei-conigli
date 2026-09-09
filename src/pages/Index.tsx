@@ -182,6 +182,16 @@ export default function Index() {
                   sunset={enrichedDaily[selectedDay]?.sunset?.slice(0, 5)}
                   uvIndex={enrichedDaily[selectedDay]?.uvIndexMax ?? currentData?.uvIndex}
                 />
+                <PrevisioniGiornaliere
+                  enrichedDaily={enrichedDaily}
+                  dateLabels={dateLabels}
+                  currentData={currentData as any}
+                  dayData={dayData}
+                  site={{ name: site.site_name, altitude: site.elevation_m, exposure: site.orientation }}
+                  selectedDay={selectedDay}
+                  onSelectDay={setSelectedDay}
+                  nomeDecollo={site.site_name}
+                />
 
                 {/* Card Stato Volo immediata */}
                 <FlightStatusCard
