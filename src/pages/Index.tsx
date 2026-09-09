@@ -209,6 +209,7 @@ export default function Index() {
                     dateLabel={dateLabel}
                     lat={site.lat}
                     lon={site.lon}
+                    fallbackData={filteredDayData}
                   />
                 </div>
 

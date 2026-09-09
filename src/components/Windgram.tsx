@@ -14,6 +14,7 @@ interface WindgramProps {
   dateLabel?: string;
   lat?: number;
   lon?: number;
+  fallbackData?: HourData[];
 }
 
 export default function Windgram({
@@ -26,6 +27,7 @@ export default function Windgram({
   dateLabel = "",
   lat,
   lon,
+  fallbackData,
 }: WindgramProps) {
   return (
     <div className="w-full">
@@ -37,9 +39,14 @@ export default function Windgram({
         onHourSelect={onHourSelect}
         selectedDay={selectedDay}
         dateLabel={dateLabel}
-        lat={lat}
-        lon={lon}
+        lat={lat ?? DEFAULT_LAT}
+        lon={lon ?? DEFAULT_LON}
+        fallbackData={fallbackData}
       />
     </div>
   );
 }
+
+// Passa lat/lon come default se non forniti
+const DEFAULT_LAT = 44.2587;
+const DEFAULT_LON = 7.7943;

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { fetchHourly } from "@/lib/openMeteoClient";
+import type { HourData } from "@/types/meteo";
 
 interface WindLevel {
   hpa: string;
@@ -86,10 +87,11 @@ interface UseMultiHourWindProfileProps {
   lon: number;
   siteAlt: number;
   selectedDay: number;
+  fallbackData?: HourData[];
 }
 
 export function useMultiHourWindProfile({
-  lat, lon, siteAlt, selectedDay
+  lat, lon, siteAlt, selectedDay, fallbackData
 }: UseMultiHourWindProfileProps) {
   const [data, setData] = useState<Map<number, HourWindData>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -196,6 +198,13 @@ export function useMultiHourWindProfile({
           setLoading(false);
         }
       } catch (err) {
+        // Fallback: usa i dati orari già disponibili se l'API fallisce
+        if (fallbackData && fallbackData.length > 0 && mountedRef.current) {
+          const hourDataMap = buildFromFallback(fallbackData, siteAlt);
+          setData(hourDataMap);
+          setLoading(false);
+          return;
+        }
         if (mountedRef.current) {
           setError(err instanceof Error ? err.message : "Errore caricamento profilo vento multi-ora");
           setLoading(false);
@@ -205,7 +214,58 @@ export function useMultiHourWindProfile({
 
     fetchAllHours();
     return () => { mountedRef.current = false; };
-  }, [lat, lon, siteAlt, selectedDay]);
+  }, [lat, lon, siteAlt, selectedDay, fallbackData]);
+
+  // Costruisce il profilo vento dai dati orari di fallback
+  function buildFromFallback(hourly: HourData[], siteAlt: number): Map<number, HourWindData> {
+    const map = new Map<number, HourWindData>();
+    DEFAULT_HOURS.forEach((targetHour) => {
+      const h = hourly.find(d => new Date(d.time).getHours() === targetHour);
+      if (!h) return;
+
+      const t = h.temperature ?? 15;
+      const dew = h.dewPoint ?? (t - 8);
+      const cloud = h.cloudCover ?? 30;
+      const freeze = h.freezingLevel ?? Math.round(siteAlt + (t / 0.0098) * 100);
+      const cape = h.cape ?? 0;
+
+      // Costruisci livelli vento dalle quote disponibili
+      const levels: WindLevel[] = [];
+      const addLevel = (hpa: string, alt: number, speed: number | undefined, dir: number | undefined) => {
+        if (speed !== undefined && dir !== undefined && !isNaN(speed) && !isNaN(dir) && speed >= 0 && dir >= 0) {
+          levels.push({ hpa, alt, speed: Math.round(speed), dir: Math.round(dir) });
+        }
+      };
+
+      addLevel("10m", siteAlt + 10, h.windSpeed, h.windDir);
+      addLevel("80m", siteAlt + 70, h.windSpeed80m, h.windDir80m);
+      addLevel("120m", siteAlt + 110, h.windSpeed120m, h.windDir120m);
+      addLevel("180m", siteAlt + 170, undefined, undefined);
+      addLevel("925hPa", 760, h.windSpeed925hPa ?? h.windSpeed925, h.windDir925hPa ?? h.windDir925);
+      addLevel("850hPa", 1450, h.windSpeed850hPa ?? h.windSpeed850, h.windDir850hPa ?? h.windDir850);
+      addLevel("700hPa", 3000, h.windSpeed700hPa ?? h.windSpeed700, h.windDir700hPa ?? h.windDir700);
+      addLevel("600hPa", 4200, h.windSpeed600hPa ?? h.windSpeed600, h.windDir600hPa ?? h.windDir600);
+      addLevel("500hPa", 5500, h.windSpeed500hPa ?? h.windSpeed500, h.windDir500hPa ?? h.windDir500);
+
+      const sortedLevels = levels.sort((a, b) => a.alt - b.alt);
+      const maxRealAltitude = sortedLevels.length > 0 ? Math.max(...sortedLevels.map(l => l.alt)) : siteAlt;
+      const spread = Math.max(1, t - dew);
+      const cloudBase = Math.round(siteAlt + spread * 125);
+
+      map.set(targetHour, {
+        hour: targetHour,
+        temp: t,
+        dew,
+        cloud,
+        freeze,
+        cape,
+        levels: sortedLevels,
+        cloudBase,
+        maxRealAltitude,
+      });
+    });
+    return map;
+  }
 
   const interpolateAtAltitude = useCallback((hour: number, targetAlt: number) => {
     const hourData = dataRef.current.get(hour);

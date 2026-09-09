@@ -6,124 +6,16 @@ import { DECOLLI } from "@/data/decolli";
 import { fetchPrevisioniGiornaliere, type MeteoCurrent, type MeteoHourly, type MeteoDaily } from "@/services/openMeteoService";
 import { calcolaStatoMeteo, calcolaPrecipProssimeOre, type StatoMeteo, type StatoMeteoResult } from "@/utils/statoMeteo";
 import { calcolaIndiceVolabilita, type RisultatoVolabilita } from "@/utils/indiceVolabilita";
+import { generateRealisticHourly, generateRealisticDaily, generateRealisticCurrent } from "@/services/fallbackWeatherData";
 
 const STORAGE_KEY_SITE = "meteo_selected_decollo";
 const REFRESH_INTERVAL = 900000; // 15 minuti
 
-// Fallback data per quando l'API non risponde
-function getFallbackData(): { hourly: MeteoHourly[]; daily: MeteoDaily[]; current: MeteoCurrent | null } {
-  const now = new Date();
-  const hourly: MeteoHourly[] = [];
-  const daily: MeteoDaily[] = [];
-  
-  // Genera 48 ore di dati fake ma plausibili
-  for (let i = 0; i < 48; i++) {
-    const time = new Date(now);
-    time.setHours(time.getHours() + i);
-    hourly.push({
-      time,
-      temperature: 18 + Math.random() * 10,
-      humidity: 50 + Math.random() * 30,
-      dewPoint: 10 + Math.random() * 8,
-      precipitation: 0,
-      precipitationProbability: Math.random() * 20,
-      weatherCode: 0,
-      cloudCover: Math.random() * 30,
-      cloudCoverLow: Math.random() * 20,
-      cloudCoverMid: 0,
-      cloudCoverHigh: Math.random() * 10,
-      windSpeed: 5 + Math.random() * 15,
-      windDir: 180 + Math.random() * 60 - 30,
-      windGusts: 10 + Math.random() * 20,
-      cape: Math.random() * 500,
-      liftedIndex: 5 + Math.random() * 5,
-      shortwaveRadiation: i > 6 && i < 18 ? 500 + Math.random() * 500 : 0,
-      directRadiation: i > 6 && i < 18 ? 300 + Math.random() * 400 : 0,
-      uvIndex: i > 6 && i < 18 ? 3 + Math.random() * 5 : 0,
-      visibility: 10000,
-      feelsLike: 18 + Math.random() * 10,
-      pressure: 1013,
-      surfacePressure: 1013,
-      rain: 0,
-      snowfall: 0,
-      vapourPressureDeficit: 0,
-      isDay: i > 6 && i < 18,
-      freezingLevel: 3000 + Math.random() * 1000,
-      sunshineDuration: i > 6 && i < 18 ? 0.8 : 0,
-      mixingRatio: 0,
-      virtualTemp: 0,
-      radiation: i > 6 && i < 18 ? 500 + Math.random() * 500 : 0,
-      cin: 0,
-      temp80m: null,
-      temp120m: null,
-      apparentTemp: null,
-      precipitationProba: 0,
-      evapotranspiration: 0,
-      et0: 0,
-      soilTemp: 0,
-      soilMoisture: 0,
-      diffuseRadiation: 0,
-      directNormalIrradiance: 0,
-      terrestrialRadiation: 0,
-      windSpeed925: null,
-      windDir925: null,
-      windSpeed850: null,
-      windDir850: null,
-      windSpeed700: null,
-      windDir700: null,
-      windSpeed600: null,
-      windDir600: null,
-      windSpeed500: null,
-      windDir500: null,
-    });
-  }
-  
-  // Genera 7 giorni di dati daily
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(now);
-    date.setDate(date.getDate() + i);
-    daily.push({
-      date,
-      weatherCode: 0,
-      tempMax: 22 + Math.random() * 5,
-      tempMin: 12 + Math.random() * 4,
-      precipitationSum: Math.random() * 5,
-      precipitationProbabilityMax: Math.random() * 30,
-      windSpeedMax: 15 + Math.random() * 10,
-      windGustsMax: 20 + Math.random() * 15,
-      windDirDominant: 180,
-      uvIndexMax: 5 + Math.random() * 3,
-      sunrise: "06:30",
-      sunset: "19:45",
-      temperatureMax: 22 + Math.random() * 5,
-      temperatureMin: 12 + Math.random() * 4,
-      temperatureMean: 17 + Math.random() * 4,
-      apparentTempMax: 22 + Math.random() * 5,
-      apparentTempMin: 12 + Math.random() * 4,
-      daylightDuration: 13 + Math.random(),
-      sunshineDuration: 8 + Math.random() * 3,
-      rainSum: Math.random() * 5,
-      snowfallSum: 0,
-      precipitationHours: Math.random() * 2,
-      shortwaveRadiationSum: 5000 + Math.random() * 2000,
-    });
-  }
-  
-  const current: MeteoCurrent = {
-    time: now,
-    temperature: 20 + Math.random() * 5,
-    humidity: 55 + Math.random() * 20,
-    dewPoint: 12 + Math.random() * 5,
-    precipitation: 0,
-    weatherCode: 0,
-    cloudCover: 20 + Math.random() * 20,
-    windSpeed: 8 + Math.random() * 8,
-    windDir: 180 + Math.random() * 40 - 20,
-    windGusts: 12 + Math.random() * 10,
-    cape: 100 + Math.random() * 400,
-    apparentTemp: 18 + Math.random() * 6,
-  };
-  
+// Fallback realistico basato su fisica atmosferica quando l'API non risponde
+function getFallbackData(lat: number, lon: number, altitude: number): { hourly: MeteoHourly[]; daily: MeteoDaily[]; current: MeteoCurrent | null } {
+  const hourly = generateRealisticHourly(lat, lon, altitude, 0);
+  const daily = generateRealisticDaily(lat, lon, altitude, new Date());
+  const current = generateRealisticCurrent(lat, lon, altitude, hourly);
   return { hourly, daily, current };
 }
 
@@ -189,8 +81,8 @@ export function useWeatherData() {
       console.warn("API non disponibile, uso fallback offline:", error);
       setLoadingError("Dati offline (API non raggiungibile)");
       
-      // Usa fallback ma mostra comunque i contenuti
-      const fallback = getFallbackData();
+      // Usa fallback realistico basato su fisica atmosferica
+      const fallback = getFallbackData(site.lat, site.lon, site.elevation_m);
       setHourlyData(fallback.hourly);
       setDailyData(fallback.daily);
       setCurrentData(fallback.current);

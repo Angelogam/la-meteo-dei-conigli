@@ -150,6 +150,12 @@ export interface MeteoHourly {
   windProfile?: { height: number; speed: number; dir: number }[];
   temp80m: number | null;
   temp120m: number | null;
+  windSpeed80m: number | null;
+  windDir80m: number | null;
+  windSpeed120m: number | null;
+  windDir120m: number | null;
+  windSpeed180m: number | null;
+  windDir180m: number | null;
   apparentTemp: number | null;
   precipitationProba: number;
   evapotranspiration: number;
@@ -241,6 +247,12 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
       const freezingLevel = safeNumOrNull(json.hourly.freezing_level_height?.[i]);
       const temp80m = safeNumOrNull(json.hourly.temperature_80m?.[i]);
       const temp120m = safeNumOrNull(json.hourly.temperature_120m?.[i]);
+      const windSpeed80m = safeNumOrNull(json.hourly.wind_speed_80m?.[i]);
+      const windDir80m = safeNumOrNull(json.hourly.wind_direction_80m?.[i]);
+      const windSpeed120m = safeNumOrNull(json.hourly.wind_speed_120m?.[i]);
+      const windDir120m = safeNumOrNull(json.hourly.wind_direction_120m?.[i]);
+      const windSpeed180m = safeNumOrNull(json.hourly.wind_speed_180m?.[i]);
+      const windDir180m = safeNumOrNull(json.hourly.wind_direction_180m?.[i]);
 
       hourly.push({
         time: new Date(json.hourly.time[i]),
@@ -276,6 +288,12 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
         virtualTemp: 0,
         temp80m,
         temp120m,
+        windSpeed80m,
+        windDir80m,
+        windSpeed120m,
+        windDir120m,
+        windSpeed180m,
+        windDir180m,
         apparentTemp: feelsLike,
         precipitationProba: safeNum(json.hourly.precipitation_probability?.[i], 0),
         evapotranspiration: 0,

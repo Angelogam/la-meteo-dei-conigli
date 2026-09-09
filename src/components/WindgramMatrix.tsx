@@ -54,6 +54,7 @@ interface WindgramMatrixProps {
   dateLabel?: string;
   lat?: number;
   lon?: number;
+  fallbackData?: HourData[];
 }
 
 function getHourTemperature(hourlyMap: Map<number, HourData>, hr: number): string {
@@ -71,12 +72,14 @@ export default function WindgramMatrix({
   dateLabel = "",
   lat = 44.2587,
   lon = 7.7943,
+  fallbackData,
 }: WindgramMatrixProps) {
   const { data: windProfileMap, loading: profileLoading, error: profileError, interpolateAtAltitude } = useMultiHourWindProfile({
     lat,
     lon,
     siteAlt: altitude,
     selectedDay,
+    fallbackData,
   });
 
 
