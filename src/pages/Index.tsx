@@ -173,6 +173,9 @@ export default function Index() {
                   orientation={site.orientation}
                   elevation_m={site.elevation_m}
                   currentData={currentData as any}
+                  sunrise={enrichedDaily[selectedDay]?.sunrise?.slice(0, 5)}
+                  sunset={enrichedDaily[selectedDay]?.sunset?.slice(0, 5)}
+                  uvIndex={enrichedDaily[selectedDay]?.uvIndexMax ?? currentData?.uvIndex}
                 />
                 <PrevisioniGiornaliere
                   enrichedDaily={enrichedDaily}

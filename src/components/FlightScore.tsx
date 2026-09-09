@@ -30,6 +30,12 @@ interface FlightScoreProps {
   cloudCover?: number;
   windSpeed?: number;
   sunHours?: number[];
+  // Nuovi indici
+  waveIndex?: "forte" | "medio" | "debole" | "assente";
+  waveDiffDeg?: number;
+  turbulenceIndex?: "bassa" | "moderata" | "alta";
+  gustRatio?: number;
+  flightWindow?: string;
 }
 
 export default function FlightScore({
@@ -49,6 +55,11 @@ export default function FlightScore({
   cloudCover,
   windSpeed,
   sunHours = [],
+  waveIndex = "medio",
+  waveDiffDeg,
+  turbulenceIndex = "moderata",
+  gustRatio,
+  flightWindow,
 }: FlightScoreProps) {
   const isRaining = rainHours.length > 0;
   const hasThunderstorm = thunderstormHours.length > 0;
@@ -152,7 +163,7 @@ export default function FlightScore({
         </div>
 
         {/* Griglia dettagli */}
-        <div className="grid grid-cols-2 gap-2 text-xs">
+        <div className="grid grid-cols-2 gap-2 text-xs mb-2">
           <div className="bg-slate-900/60 rounded-xl p-2.5 flex items-center gap-2 border border-slate-700/30">
             <TrendingUp className="w-4 h-4 text-amber-400 shrink-0" />
             <span className="text-slate-300 truncate">
@@ -164,10 +175,41 @@ export default function FlightScore({
             <span className="text-slate-300 truncate">
               {hasBadWeather
                 ? "Nessuna finestra utile"
-                : `Miglior ora: ${String(bestHour).padStart(2, "0")}:00 (${bestRateo.toFixed(1)} m/s)`}
+                : flightWindow || `Miglior ora: ${String(bestHour).padStart(2, "0")}:00 (${bestRateo.toFixed(1)} m/s)`}
             </span>
           </div>
         </div>
+
+        {/* IndiciWave + Turbolenza */}
+        {!hasBadWeather && (
+          <div className="grid grid-cols-2 gap-2 text-xs mb-2">
+            <div className="bg-slate-900/60 rounded-xl p-2 flex items-center justify-between border border-slate-700/30">
+              <div className="flex items-center gap-1.5">
+                <Wind className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+                <span className="text-slate-400 text-[10px]">Wave</span>
+              </div>
+              <span className={`font-bold tabular-nums ${
+                waveIndex === "forte" ? "text-violet-300" :
+                waveIndex === "medio" ? "text-sky-300" :
+                waveIndex === "debole" ? "text-amber-300" : "text-slate-500"
+              }`}>
+                {waveDiffDeg != null ? `${waveDiffDeg}°` : "—"}
+              </span>
+            </div>
+            <div className="bg-slate-900/60 rounded-xl p-2 flex items-center justify-between border border-slate-700/30">
+              <div className="flex items-center gap-1.5">
+                <Wind className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                <span className="text-slate-400 text-[10px]">Turbolenza</span>
+              </div>
+              <span className={`font-bold text-[11px] ${
+                turbulenceIndex === "bassa" ? "text-emerald-300" :
+                turbulenceIndex === "moderata" ? "text-amber-300" : "text-rose-300"
+              }`}>
+                {gustRatio != null ? `${Math.round(gustRatio * 100)}%` : "—"}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Icone condizioni meteo dinamiche */}
         {(isSunny || isCloudy || hasFog || hasLightRain || isRaining || hasThunderstorm || isWindy) && (

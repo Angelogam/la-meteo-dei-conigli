@@ -94,6 +94,19 @@ export default function VentiInterpolatiTab({
   targetDate.setDate(oggi.getDate() + selectedDay);
   const dataGiorno = formatDateShort(targetDate);
 
+  // Wave Index: differenza direzione vento al suolo vs 850hPa (~1450m)
+  const waveIndex = useMemo(() => {
+    if (!data || data.ventoOrario.length === 0) return null;
+    const ref = data.ventoOrario.find(v => v.ora === oraSelezionata) || data.ventoOrario[0];
+    if (!ref) return null;
+    const dir10 = ref.quote?.[quotaDecollo]?.dir ?? ref.quote?.[quotaDecollo + 10]?.dir ?? 0;
+    const dir850 = ref.quote?.[1450]?.dir ?? 0;
+    if (dir10 === 0 && dir850 === 0) return null;
+    const diff = Math.abs(dir850 - dir10);
+    const normalized = diff > 180 ? 360 - diff : diff;
+    return { diff: Math.round(normalized), level: normalized < 30 ? "forte" : normalized < 60 ? "medio" : normalized < 90 ? "debole" : "assente" as const };
+  }, [data, oraSelezionata, quotaDecollo]);
+
   const oraData = useMemo(() => {
     if (!data) return null;
     return data.ventoOrario.find((v) => v.ora === oraSelezionata) || data.ventoOrario[0] || null;
@@ -148,6 +161,28 @@ export default function VentiInterpolatiTab({
 
       {data && (
         <>
+          <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-3 flex items-center gap-4">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <Wind className="w-4 h-4 text-violet-400 shrink-0" />
+              <span className="text-xs text-slate-400">Wave Index</span>
+            </div>
+            {waveIndex ? (
+              <span className={`text-sm font-bold tabular-nums ${
+                waveIndex.level === "forte" ? "text-violet-300" :
+                waveIndex.level === "medio" ? "text-sky-300" :
+                waveIndex.level === "debole" ? "text-amber-300" : "text-slate-500"
+              }`}>
+                {waveIndex.diff}°{" "}
+                <span className="text-[10px] font-normal opacity-70">
+                  {waveIndex.level === "forte" ? "Onda forte ✓" :
+                   waveIndex.level === "medio" ? "Onda presente" :
+                   waveIndex.level === "debole" ? "Onda debole" : "No onda"}
+                </span>
+              </span>
+            ) : (
+              <span className="text-xs text-slate-500">—</span>
+            )}
+          </div>
           <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
             {data.ventoOrario.map((v) => (
               <button

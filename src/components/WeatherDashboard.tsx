@@ -108,6 +108,40 @@ export default function WeatherDashboard({
 
     const best = termichePerOra.reduce((b, t) => t.rateo > b.rateo ? t : b, termichePerOra[0]);
 
+    // Wave Index: differenza direzione vento 10m vs 850hPa
+    const windDirs10m: number[] = oreVolo.map(h => h.windDir || 0);
+    const windDirs850: number[] = (dayData as any[]).filter((h: any) => {
+      const ora = new Date(h.time).getHours();
+      return ora >= 9 && ora <= 19;
+    }).map((h: any) => h.windDir850 ?? h.wind_direction_850hPa ?? null).filter(Boolean);
+
+    let waveDiffDeg: number | null = null;
+    if (windDirs10m.length > 0 && windDirs850.length > 0) {
+      const avg10 = windDirs10m.reduce((a, b) => a + b, 0) / windDirs10m.length;
+      const avg850 = windDirs850.reduce((a, b) => a + b, 0) / windDirs850.length;
+      waveDiffDeg = Math.round(Math.abs(avg850 - avg10) > 180 ? 360 - Math.abs(avg850 - avg10) : Math.abs(avg850 - avg10));
+    }
+
+    // Turbulence Index: (gusts - wind) / wind * 100
+    const gustRatios: number[] = oreVolo
+      .map(h => {
+        const ratio = h.windGusts && h.windSpeed > 0 ? (h.windGusts - h.windSpeed) / h.windSpeed : 0;
+        return Math.max(0, ratio);
+      });
+    const avgGustRatio = gustRatios.length > 0 ? gustRatios.reduce((a, b) => a + b, 0) / gustRatios.length : 0;
+    const turbulenceLevel = avgGustRatio > 0.4 ? "alta" : avgGustRatio > 0.2 ? "moderata" : "bassa";
+
+    // Flight Window
+    let windowStart = best.ora;
+    let windowEnd = best.ora;
+    for (const t of termichePerOra) {
+      if (t.rateo >= 0.5) {
+        if (t.ora < windowStart) windowStart = t.ora;
+        if (t.ora > windowEnd) windowEnd = t.ora;
+      }
+    }
+    const flightWindowStr = (haTemporali || pioggiaTot > 0.3 || ventoMax > 30) ? null : `${String(windowStart).padStart(2, "0")}:00–${String(windowEnd).padStart(2, "0")}:00`;
+
     return {
       score: Math.round(score * 10) / 10,
       label,
@@ -118,6 +152,10 @@ export default function WeatherDashboard({
       thermalLabel,
       mediaRateo: Math.round(mediaRateo * 10) / 10,
       maxRateo: Math.round(maxRateo * 10) / 10,
+      waveDiffDeg,
+      turbulenceLevel,
+      gustRatio: avgGustRatio,
+      flightWindow: flightWindowStr,
     };
   }, [dayData, altitude]);
 
@@ -155,6 +193,11 @@ export default function WeatherDashboard({
           siteName={siteName}
           rainHours={rainHours}
           thunderstormHours={thunderstormHours}
+          waveIndex={flightScore.waveDiffDeg != null ? (flightScore.waveDiffDeg < 30 ? "forte" : flightScore.waveDiffDeg < 60 ? "medio" : flightScore.waveDiffDeg < 90 ? "debole" : "assente") : undefined}
+          waveDiffDeg={flightScore.waveDiffDeg}
+          turbulenceIndex={flightScore.turbulenceLevel}
+          gustRatio={flightScore.gustRatio}
+          flightWindow={flightScore.flightWindow}
         />
       )}
 

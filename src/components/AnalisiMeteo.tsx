@@ -90,6 +90,25 @@ export default function AnalisiMeteo({ currentData, dayData, site, cape, liftedI
     return "";
   }, [dayData]);
 
+  // K-Index: indicatore rischio temporali
+  // Formula approssimata: K = T850 - T500 + Td850 - (T2m - Td2m)
+  const kIndex = useMemo(() => {
+    if (dayData.length < 3) return null;
+    const central = dayData[Math.floor(dayData.length / 2)];
+    const t850 = (central as any).windSpeed850 != null ? 15 + (central as any).temperature850 : null;
+    const t500 = (central as any).windSpeed500 != null ? -15 - (central as any).temperature500 : null;
+    const t2m = central.temperature ?? 15;
+    const td2m = central.dewPoint ?? (t2m - 8);
+
+    // Usa temperature reali se disponibili, altrimenti stime
+    const temp850 = (central as any).temperature850 ?? (t2m - 8);
+    const temp500 = (central as any).temperature500 ?? (t2m - 25);
+    const dew850 = (central as any).dewPoint850 ?? (temp850 - 5);
+
+    const k = temp850 - temp500 + dew850 - (t2m - td2m);
+    return Math.round(k * 10) / 10;
+  }, [dayData]);
+
   if (!dayData || dayData.length < 3) {
     return (
       <div className="text-center py-12 text-slate-400 text-base">
@@ -121,6 +140,43 @@ export default function AnalisiMeteo({ currentData, dayData, site, cape, liftedI
             <span className="text-slate-600">·</span>
             <span>{site?.alt}m · Esposizione {site?.exposure || "N/D"}</span>
           </div>
+        </div>
+      </div>
+
+      {/* K-Index Card */}
+      <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3 flex items-center gap-3">
+        <Zap className="w-5 h-5 text-purple-400 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-bold text-white flex items-center gap-2">
+            <span>K-Index</span>
+            <span className="text-[10px] text-slate-500 font-normal">rischio temporali</span>
+          </div>
+          <div className="text-[10px] text-slate-400">
+            {kIndex != null ? (
+              kIndex >= 25
+                ? <span className="text-rose-400 font-bold">Alto rischio temporali ⚡</span>
+                : kIndex >= 20
+                ? <span className="text-amber-400 font-bold">Attività convettiva possibile 🌩️</span>
+                : kIndex >= 15
+                ? <span className="text-sky-400 font-bold">Instabilità moderata 🌤️</span>
+                : <span className="text-emerald-400 font-bold">Atmosfera stabile ✅</span>
+            ) : (
+              <span className="text-slate-500">Dati insufficienti</span>
+            )}
+          </div>
+        </div>
+        <div className="text-right shrink-0">
+          {kIndex != null ? (
+            <span className={`text-2xl font-black tabular-nums ${
+              kIndex >= 25 ? "text-rose-400" :
+              kIndex >= 20 ? "text-amber-400" :
+              kIndex >= 15 ? "text-sky-400" : "text-emerald-400"
+            }`}>
+              {kIndex}
+            </span>
+          ) : (
+            <span className="text-slate-600 text-xl">—</span>
+          )}
         </div>
       </div>
 

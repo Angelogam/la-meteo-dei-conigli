@@ -55,6 +55,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
       const oraCorrente = now.getHours();
       const isAdesso = ora === oraCorrente;
       
+      const probPioggia = (h as any).precipitationProbability ?? (h as any).precipitation_probal ?? 0;
       return {
         ora,
         icona: iconaMeteo(h.weatherCode),
@@ -66,6 +67,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
         termiche: t.rateo.toFixed(1) + " m/s",
         nuvole: Math.round(h.cloudCover) + "%",
         pioggia: h.precipitation > 0 ? h.precipitation.toFixed(1) + "mm" : "No",
+        probPioggia,
         voloIcona: v.icon,
         voloTesto: v.label,
         voloColore: v.color,
@@ -117,6 +119,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
               <th className="p-2 text-left">Termiche</th>
               <th className="p-2 text-left">Nuvole</th>
               <th className="p-2 text-left">Pioggia</th>
+              <th className="p-2 text-left">Prob.</th>
               <th className="p-2 text-left">Volo</th>
             </tr>
           </thead>
@@ -139,6 +142,17 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                 <td className="p-2 font-bold" style={{ color: "#f97316" }}>{r.termiche}</td>
                 <td className="p-2 text-slate-300">{r.nuvole}</td>
                 <td className="p-2 text-blue-300">{r.pioggia}</td>
+                <td className="p-2">
+                  {r.probPioggia > 0 ? (
+                    <span className={`font-bold tabular-nums ${
+                      r.probPioggia >= 60 ? "text-rose-400" :
+                      r.probPioggia >= 30 ? "text-amber-400" :
+                      "text-slate-400"
+                    }`}>{Math.round(r.probPioggia)}%</span>
+                  ) : (
+                    <span className="text-slate-500">—</span>
+                  )}
+                </td>
                 <td className="p-2">
                   <span className={"inline-block px-2 py-0.5 rounded-full text-[11px] font-bold border " + r.voloColore}>
                     {r.voloIcona} {r.voloTesto}

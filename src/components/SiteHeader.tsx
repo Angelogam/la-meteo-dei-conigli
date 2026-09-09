@@ -20,6 +20,10 @@ interface SiteHeaderProps {
   elevation_m: number;
   // Dati meteo dinamici
   currentData: HourData | MeteoCurrent | null;
+  // Dati supplementari
+  sunrise?: string;
+  sunset?: string;
+  uvIndex?: number;
 }
 
 function getWeatherLabel(weatherCode: number): string {
@@ -55,6 +59,9 @@ export default function SiteHeader({
   orientation,
   elevation_m,
   currentData,
+  sunrise,
+  sunset,
+  uvIndex,
 }: SiteHeaderProps) {
   const weatherCode = currentData?.weatherCode ?? 0;
   const label = getWeatherLabel(weatherCode);
@@ -89,6 +96,30 @@ export default function SiteHeader({
               <Mountain className="w-3 h-3 text-amber-400" />
               {elevation_m}m
             </span>
+            {sunrise && sunset && (
+              <>
+                <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0 hidden md:block" />
+                <span className="flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded-full border border-slate-700/50">
+                  <Sun className="w-3 h-3 text-amber-300" />
+                  <span className="text-amber-200">{sunrise}</span>
+                  <span className="text-slate-600">–</span>
+                  <span className="text-amber-200">{sunset}</span>
+                </span>
+              </>
+            )}
+            {uvIndex != null && (
+              <>
+                <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0 hidden md:block" />
+                <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full border ${
+                  uvIndex >= 8 ? 'bg-red-900/40 border-red-500/40 text-red-300' :
+                  uvIndex >= 5 ? 'bg-amber-900/40 border-amber-500/40 text-amber-300' :
+                  'bg-slate-800/80 border-slate-700/50 text-slate-300'
+                }`}>
+                  <Sun className="w-3 h-3" />
+                  <span>UV {Math.round(uvIndex)}</span>
+                </span>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -113,14 +144,34 @@ export default function SiteHeader({
           </div>
           <div className="text-center relative z-10">
             <div className="text-2xl font-black text-white tabular-nums">
-              {currentData.temperature !== null && currentData.temperature !== undefined 
-                ? `${Math.round(currentData.temperature)}°` 
+              {currentData.temperature !== null && currentData.temperature !== undefined
+                ? `${Math.round(currentData.temperature)}°`
                 : "--°"}
             </div>
             <div className="flex items-center justify-center gap-2 text-xs text-slate-400">
               <Wind className="w-3 h-3 text-sky-400" />
               <span className="tabular-nums font-bold">{Math.round(currentData.windSpeed)} km/h</span>
+              {currentData.windGusts != null && currentData.windGusts > currentData.windSpeed + 5 && (
+                <span className="text-rose-400 font-mono">G {Math.round(currentData.windGusts)}</span>
+              )}
             </div>
+          </div>
+          <div className="hidden md:flex flex-col items-end gap-1 text-[10px] text-slate-400 shrink-0">
+            {currentData?.surfacePressure != null && (
+              <div className="flex items-center gap-1">
+                <span className="text-slate-500">Pressione</span>
+                <span className="font-mono font-bold text-slate-200">{Math.round(currentData.surfacePressure)}</span>
+                <span className="text-slate-500">hPa</span>
+              </div>
+            )}
+            {currentData?.visibility != null && currentData.visibility > 0 && (
+              <div className="flex items-center gap-1">
+                <span className="text-slate-500">Visibilità</span>
+                <span className="font-mono font-bold text-slate-200">
+                  {currentData.visibility >= 10000 ? '10+' : currentData.visibility >= 5000 ? '5' : Math.round(currentData.visibility / 1000)} km
+                </span>
+              </div>
+            )}
           </div>
           <div className="text-xs text-slate-300 font-bold whitespace-nowrap">
             {label}

@@ -45,8 +45,11 @@ export default function MeteoTab({
 
   const temp = currentData.temperature;
   const humidity = currentData.humidity;
-  const pressure = currentData.pressure;
+  const pressure = currentData.pressure ?? currentData.surfacePressure;
   const cloudCover = currentData.cloudCover;
+  const cloudLow = currentData.cloudCoverLow ?? 0;
+  const cloudMid = currentData.cloudCoverMid ?? 0;
+  const cloudHigh = currentData.cloudCoverHigh ?? 0;
   const windSpeed = currentData.windSpeed;
   const windDir = currentData.windDir;
   const windGust = currentData.windGusts;
@@ -56,6 +59,7 @@ export default function MeteoTab({
   const temp80m = currentData.temp80m;
   const temp120m = currentData.temp120m;
   const uvIndex = currentData.uvIndex;
+  const visibility = currentData.visibility ?? 10000;
 
   const spread = temp - dewPoint;
   const cloudBase = Math.max(200, Math.min(3000, Math.round(spread * 125)));
@@ -106,6 +110,97 @@ export default function MeteoTab({
             <span className="text-slate-600">·</span>
             <span>{site?.alt || 0}m</span>
           </div>
+        </div>
+      </div>
+
+      {/* Grid parametri */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
+          <p className="text-[10px] text-slate-500 mb-1">Temp. percepita</p>
+          <p className="text-lg font-bold text-white tabular-nums">
+            {currentData.apparentTemp != null ? `${Math.round(currentData.apparentTemp)}°` : temp != null ? `${Math.round(temp)}°` : "--"}
+          </p>
+        </div>
+        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
+          <p className="text-[10px] text-slate-500 mb-1">Umidità</p>
+          <p className="text-lg font-bold text-sky-300 tabular-nums">{humidity != null ? `${Math.round(humidity)}%` : "--"}</p>
+        </div>
+        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
+          <p className="text-[10px] text-slate-500 mb-1">Pressione</p>
+          <p className="text-lg font-bold text-emerald-300 tabular-nums">
+            {pressure != null ? `${Math.round(pressure)}` : "--"} <span className="text-xs text-slate-500 font-normal">hPa</span>
+          </p>
+        </div>
+        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
+          <p className="text-[10px] text-slate-500 mb-1">Visibilità</p>
+          <p className="text-lg font-bold text-violet-300 tabular-nums">
+            {visibility >= 10000 ? '10+' : visibility >= 5000 ? '5' : Math.round(visibility / 1000)} <span className="text-xs text-slate-500 font-normal">km</span>
+          </p>
+        </div>
+      </div>
+
+      {/* Nuvolosità per strato */}
+      <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
+        <p className="text-xs font-bold text-slate-400 mb-3 flex items-center gap-1.5">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /></svg>
+          Nuvolosità per strato
+        </p>
+        <div className="space-y-2">
+          {[
+            { label: "Bassa (0–2 km)", value: cloudLow, color: "bg-blue-400" },
+            { label: "Media (2–6 km)", value: cloudMid, color: "bg-sky-400" },
+            { label: "Alta (6–12 km)", value: cloudHigh, color: "bg-indigo-400" },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="flex items-center gap-3">
+              <span className="text-[11px] text-slate-400 w-28 shrink-0">{label}</span>
+              <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${color}`}
+                  style={{ width: `${Math.min(100, value || 0)}%` }}
+                />
+              </div>
+              <span className="text-[11px] font-bold text-slate-300 w-8 tabular-nums text-right">
+                {Math.round(value || 0)}%
+              </span>
+            </div>
+          ))}
+          <div className="border-t border-slate-700/50 pt-2 flex items-center gap-3">
+            <span className="text-[11px] text-slate-400 w-28 shrink-0">Totale</span>
+            <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-slate-400 transition-all"
+                style={{ width: `${Math.min(100, cloudCover || 0)}%` }}
+              />
+            </div>
+            <span className="text-[11px] font-bold text-white w-8 tabular-nums text-right">
+              {Math.round(cloudCover ?? 0)}%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Wind + Termiche info */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
+          <p className="text-[10px] text-slate-500 mb-1">Vento al suolo</p>
+          <p className="text-base font-bold text-sky-300 tabular-nums">
+            {Math.round(windSpeed)} <span className="text-xs text-slate-500 font-normal">km/h</span>
+          </p>
+          <p className="text-[10px] text-slate-500">{dirLabel} {arrow}</p>
+        </div>
+        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
+          <p className="text-[10px] text-slate-500 mb-1">Raffiche</p>
+          <p className="text-base font-bold text-rose-300 tabular-nums">
+            {Math.round(raffiche)} <span className="text-xs text-slate-500 font-normal">km/h</span>
+          </p>
+        </div>
+        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
+          <p className="text-[10px] text-slate-500 mb-1">Base cumuli</p>
+          <p className="text-base font-bold text-purple-300 tabular-nums">{cloudBase} <span className="text-xs text-slate-500 font-normal">m</span></p>
+        </div>
+        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
+          <p className="text-[10px] text-slate-500 mb-1">Zero termico</p>
+          <p className="text-base font-bold text-cyan-300 tabular-nums">{zeroTermico} <span className="text-xs text-slate-500 font-normal">m</span></p>
         </div>
       </div>
 
