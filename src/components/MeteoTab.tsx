@@ -77,7 +77,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   const avgSpread = dayData.reduce((s, h) => s + Math.max(0.5, (h.temperature ?? t) - (h.dewPoint ?? dew)), 0) / dayData.length;
   const avgThermalRate = Math.min(4, Math.max(0.3, avgSpread * 0.25 + avgCape * 0.001));
   const thermalTop = calcThermalTop(cloudBase, avgCape, avgSpread, cloudCover);
-  const waveIndex = calcWaveIndex(windDir, dayData[6]?.windDir850 ?? 200);
+  const waveIndex = calcWaveIndex(windDir, dir850);
   const zeroThermal = dayData.reduce((s, h) => s + (h.freezingLevel ?? 0), 0) / dayData.length;
   const avgFreezing = zeroThermal > 0 ? Math.round(zeroThermal) : siteAlt + 3000;
 
@@ -99,7 +99,11 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   const midData = dayData.slice(8, 16);
   const avgWind80m = midData.reduce((s, h) => s + (h.windSpeed80m ?? 0), 0) / midData.length;
   const avgWind120m = midData.reduce((s, h) => s + (h.windSpeed120m ?? 0), 0) / midData.length;
+  const avgWind180m = midData.reduce((s, h) => s + (h.windSpeed180m ?? 0), 0) / midData.length;
   const avgWind850 = midData.reduce((s, h) => s + (h.windSpeed850 ?? 0), 0) / midData.length;
+  const dir80m = midData.reduce((s, h) => s + (h.windDir80m ?? 0), 0) / midData.length;
+  const dir120m = midData.reduce((s, h) => s + (h.windDir120m ?? 0), 0) / midData.length;
+  const dir180m = midData.reduce((s, h) => s + (h.windDir180m ?? 0), 0) / midData.length;
   const dir850 = midData.reduce((s, h) => s + (h.windDir850 ?? 0), 0) / midData.length;
 
   // Stima tasso termico corrente
@@ -268,18 +272,24 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
           <div className="space-y-1 text-[11px]">
             <div className="flex justify-between">
               <span className="text-slate-500">80m</span>
-              <span className="text-violet-300 font-bold tabular-nums">{avgWind80m > 0 ? `${Math.round(avgWind80m)} ${dirArrow(dir850)}` : "—"}</span>
+              <span className="text-violet-300 font-bold tabular-nums">{avgWind80m > 0 ? `${Math.round(avgWind80m)} ${dirLabel(Math.round(dir80m))} ${dirArrow(Math.round(dir80m))}` : "—"}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">120m</span>
-              <span className="text-violet-300 font-bold tabular-nums">{avgWind120m > 0 ? `${Math.round(avgWind120m)} ${dirArrow(dir850)}` : "—"}</span>
+              <span className="text-violet-300 font-bold tabular-nums">{avgWind120m > 0 ? `${Math.round(avgWind120m)} ${dirLabel(Math.round(dir120m))} ${dirArrow(Math.round(dir120m))}` : "—"}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">850hPa</span>
+              <span className="text-slate-500">850hPa (~1500m)</span>
               <span className={`font-bold tabular-nums ${avgWind850 > 20 ? "text-red-400" : "text-sky-300"}`}>
-                {avgWind850 > 0 ? `${Math.round(avgWind850)} ${dirArrow(dir850)}` : "—"}
+                {avgWind850 > 0 ? `${Math.round(avgWind850)} ${dirLabel(Math.round(dir850))} ${dirArrow(Math.round(dir850))}` : "—"}
               </span>
             </div>
+            {avgWind180m > 0 && (
+              <div className="flex justify-between">
+                <span className="text-slate-500">180m</span>
+                <span className="text-violet-300 font-bold tabular-nums">{Math.round(avgWind180m)} {dirLabel(Math.round(dir180m))} {dirArrow(Math.round(dir180m))}</span>
+              </div>
+            )}
             {avgWind850 > 0 && (
               <div className="pt-1 border-t border-slate-700/50 flex justify-between">
                 <span className="text-slate-500">Wave Index</span>
