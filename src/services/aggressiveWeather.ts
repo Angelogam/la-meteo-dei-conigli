@@ -73,7 +73,8 @@ interface AggressiveWeatherResult {
 
 async function fetchOpenMeteo(lat: number, lon: number): Promise<OpenMeteoData | null> {
   try {
-    const data = await fetchHourly(lat, lon, "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m");
+    const today = new Date().toISOString().split("T")[0];
+    const data = await fetchHourly(lat, lon, "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m", today, today);
     const om = data.hourly;
     return {
       temp: Number(om?.temperature_2m?.[0]) ?? 0,

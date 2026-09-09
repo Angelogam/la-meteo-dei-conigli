@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 
-const TOMORROW_API_KEY = "EBox6MVYAysc2A5X5EOhVgKeaDuFg4Pk";
+const TOMORROW_API_KEY = import.meta.env.VITE_TOMORROW_KEY || "";
 
 type WindPoint = {
   time: string;
