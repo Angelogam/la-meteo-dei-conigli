@@ -43,17 +43,20 @@ function interpolateWindAtAltitude(
   targetAlt: number
 ): { speed: number; dir: number } | null {
   if (!levels || levels.length === 0) return null;
-  if (levels.length === 1) {
-    return { speed: Math.round(levels[0].speed), dir: Math.round(levels[0].dir) };
-  }
 
   const sorted = [...levels].sort((a, b) => a.alt - b.alt);
 
+  if (sorted.length === 1) {
+    return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
+  }
+
+  // Target below lowest level → use lowest level's data
   if (targetAlt <= sorted[0].alt) {
     return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
   }
+  // Target above highest level → use highest level's data (nearest-neighbor fallback)
   if (targetAlt >= sorted[sorted.length - 1].alt) {
-    return null;
+    return { speed: Math.round(sorted[sorted.length - 1].speed), dir: Math.round(sorted[sorted.length - 1].dir) };
   }
 
   for (let i = 0; i < sorted.length - 1; i++) {
@@ -70,7 +73,11 @@ function interpolateWindAtAltitude(
       return { speed: Math.round(speed), dir: Math.round(dir) };
     }
   }
-  return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
+  // Fallback: nearest neighbor
+  const closest = sorted.reduce((best, curr) =>
+    Math.abs(curr.alt - targetAlt) < Math.abs(best.alt - targetAlt) ? curr : best
+  , sorted[0]);
+  return { speed: Math.round(closest.speed), dir: Math.round(closest.dir) };
 }
 
 interface UseMultiHourWindProfileProps {
@@ -135,8 +142,9 @@ export function useMultiHourWindProfile({
           const freeze = Number(h.freezing_level_height?.[idx]) ?? (siteAlt + (t / 0.0098) * 100);
           const cape = Number(h.cape?.[idx]) ?? 0;
 
+          // Quote reali: 10m/80m/120m/180m sopra il suolo + livelli di pressione standard
           const pressureLevels: { hpa: string; alt: number; speed?: number; dir?: number; gust?: number }[] = [
-            { hpa: "10m", alt: siteAlt, speed: h.wind_speed_10m[idx], dir: h.wind_direction_10m[idx], gust: h.wind_gusts_10m[idx] },
+            { hpa: "10m", alt: siteAlt + 10, speed: h.wind_speed_10m[idx], dir: h.wind_direction_10m[idx], gust: h.wind_gusts_10m[idx] },
             { hpa: "80m", alt: siteAlt + 70, speed: h.wind_speed_80m[idx], dir: h.wind_direction_80m[idx] },
             { hpa: "120m", alt: siteAlt + 110, speed: h.wind_speed_120m[idx], dir: h.wind_direction_120m[idx] },
             { hpa: "180m", alt: siteAlt + 170, speed: h.wind_speed_180m[idx], dir: h.wind_direction_180m[idx] },
@@ -149,7 +157,8 @@ export function useMultiHourWindProfile({
 
           const realLevels: WindLevel[] = pressureLevels
             .filter((l) => l.speed != null && !isNaN(l.speed) && l.dir != null && !isNaN(l.dir))
-            .map((l) => ({ hpa: l.hpa, alt: l.alt, speed: Number(l.speed), dir: Number(l.dir), gust: l.gust ? Number(l.gust) : undefined }));
+            .map((l) => ({ hpa: l.hpa, alt: l.alt, speed: Number(l.speed), dir: Number(l.dir), gust: l.gust ? Number(l.gust) : undefined }))
+            .sort((a, b) => a.alt - b.alt);
 
           const maxRealAltitude = realLevels.length > 0
             ? Math.max(...realLevels.map((l) => l.alt))
