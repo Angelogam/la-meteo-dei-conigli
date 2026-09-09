@@ -120,6 +120,8 @@ export const weatherService = {
         windDir850: json.hourly.wind_direction_850hPa?.[i] ?? null,
         windSpeed700: json.hourly.wind_speed_700hPa?.[i] ?? null,
         windDir700: json.hourly.wind_direction_700hPa?.[i] ?? null,
+        windSpeed180m: json.hourly.wind_speed_180m?.[i] ?? null,
+        windDir180m: json.hourly.wind_direction_180m?.[i] ?? null,
         windSpeed600: json.hourly.wind_speed_600hPa?.[i] ?? null,
         windDir600: json.hourly.wind_direction_600hPa?.[i] ?? null,
         windSpeed500: json.hourly.wind_speed_500hPa?.[i] ?? null,
