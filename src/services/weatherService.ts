@@ -40,6 +40,7 @@ const CURRENT_PARAMS = [
   "snowfall", "weather_code", "cloud_cover",
   "pressure_msl", "surface_pressure",
   "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m", "cape",
+  "uv_index", "visibility",
 ].join(",");
 
 function safeNum(v: unknown, fallback: number = 0): number {
@@ -139,6 +140,8 @@ export const weatherService = {
       windDir: c?.wind_direction_10m ?? 0,
       windGusts: c?.wind_gusts_10m ?? c?.wind_speed_10m ?? 0,
       cape: c?.cape ?? 0,
+      uvIndex: c?.uv_index ?? 0,
+      visibility: c?.visibility ?? 10000,
     };
 
     const daily: MeteoDaily[] = [];

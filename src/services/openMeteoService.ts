@@ -75,6 +75,8 @@ const CURRENT_PARAMS = [
   "wind_gusts_10m",
   "cape",
   "apparent_temperature",
+  "uv_index",
+  "visibility",
 ].join(",");
 
 function safeNum(v: unknown, fallback: number = 0): number {
@@ -222,6 +224,8 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
       windGusts: safeNum(c.wind_gusts_10m, c.wind_speed_10m ?? 0),
       cape: safeNum(c.cape, 0),
       apparentTemp: safeNumOrNull(c.apparent_temperature),
+      uvIndex: safeNum(c.uv_index, 0),
+      visibility: safeNum(c.visibility, 10000),
     } : null;
 
     // Hourly
@@ -352,13 +356,15 @@ export const weatherService = {
         windDir: safeNum(c.wind_direction_10m, 0),
         windGusts: safeNum(c.wind_gusts_10m, c.wind_speed_10m ?? 0),
         cape: safeNum(c.cape, 0),
-        apparentTemp: safeNumOrNull(c.apparent_temperature),
-      };
-    } catch {
-      return null;
-    }
-  },
-  async fetchWithFallback(lat: number, lon: number) {
+          apparentTemp: safeNumOrNull(c.apparent_temperature),
+          uvIndex: safeNum(c.uv_index, 0),
+          visibility: safeNum(c.visibility, 10000),
+        };
+      } catch {
+        return null;
+      }
+    },
+    async fetchWithFallback(lat: number, lon: number) {
     try {
       const data = await fetchPrevisioniGiornaliere(lat, lon);
       return { data, ok: true };
