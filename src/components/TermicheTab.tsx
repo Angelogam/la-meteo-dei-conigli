@@ -4,8 +4,7 @@ import React, { useMemo } from "react";
 import { HourData } from "@/types/meteo";
 import type { MeteoCurrent } from "@/services/openMeteoService";
 import { calcolaTermiche } from "@/utils/termiche";
-import { Thermometer, Wind, Cloud, Droplets, Sun, TrendingUp, AlertTriangle, MapPin, Calendar } from "lucide-react";
-import SkewTDiagram from "@/components/SkewTDiagram";
+import { Wind, Cloud, Droplets, TrendingUp, AlertTriangle, MapPin, Calendar } from "lucide-react";
 
 interface TermicheTabProps {
   currentData: HourData | MeteoCurrent | null;
@@ -70,15 +69,6 @@ export default function TermicheTab({ dayData, site, selectedDay = 0 }: Termiche
           <div className="text-[10px] text-slate-400">{site.alt}m · Dati Open-Meteo</div>
         </div>
       </div>
-
-      <SkewTDiagram
-        latitude={site.lat}
-        longitude={site.lon}
-        siteAltitude={site.alt}
-        siteName={site.name}
-        selectedHour={12}
-        selectedDay={selectedDay}
-      />
 
       <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5">
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
