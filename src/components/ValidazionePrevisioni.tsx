@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { DECOLLI } from "@/data/decolli";
+import { fetchHourly } from "@/lib/openMeteoClient";
 import { CheckCircle, XCircle, AlertTriangle, Loader2, Bug, Activity, Clock, TrendingUp } from "lucide-react";
 
 const CLIMA_MENSILE: Record<number, { tempMax: [number, number]; ventoMedio: [number, number]; pioggiaMax: number; deltaMin: number }> = {
@@ -84,35 +85,27 @@ export default function ValidazionePrevisioni() {
 
           try {
             const startTime = performance.now();
-            const params = new URLSearchParams({
-              latitude: d.lat.toString(),
-              longitude: d.lon.toString(),
-              hourly: "temperature_2m,wind_speed_10m,wind_gusts_10m,precipitation,cloud_cover,relative_humidity_2m",
-              timezone: "Europe/Rome",
-              start_date: dataStr,
-              end_date: dataStr,
-            });
-
-            const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
-            const responseTime = Math.round(performance.now() - startTime);
-            avgTempoRisposta += responseTime;
-
-            if (!res.ok) {
+            let raw: any;
+            try {
+              raw = await fetchHourly(d.lat, d.lon, "temperature_2m,wind_speed_10m,wind_gusts_10m,precipitation,cloud_cover,relative_humidity_2m", dataStr, dataStr);
+            } catch (err) {
+              const responseTime = Math.round(performance.now() - startTime);
+              avgTempoRisposta += responseTime;
               tutti.push({
                 siteId: d.id, siteName: d.name, giorno: giornoLabel, data: dataStr, altitudine: d.altitude,
-                ok: false, errori: [`HTTP ${res.status} (${responseTime}ms)`], warning: [],
+                ok: false, errori: [err instanceof Error ? err.message : "Errore connessione"], warning: [],
                 metriche: { tempMax: -999, tempMin: -999, ventoMedio: -1, ventoMax: -1, pioggiaTot: -1, nuvoleMedia: -1, deltaTermico: -1, oreConDati: 0, umiditaMedia: -1 },
                 climatologiaOk: false, anomalie: [],
               });
               continue;
             }
-
-            const raw = await res.json();
-            const temps: number[] = raw.hourly.temperature_2m || [];
-            const winds: number[] = raw.hourly.wind_speed_10m || [];
-            const rains: number[] = raw.hourly.precipitation || [];
-            const clouds: number[] = raw.hourly.cloud_cover || [];
-            const hums: number[] = raw.hourly.relative_humidity_2m || [];
+            const responseTime = Math.round(performance.now() - startTime);
+            avgTempoRisposta += responseTime;
+            const temps: number[] = raw.hourly?.temperature_2m || [];
+            const winds: number[] = raw.hourly?.wind_speed_10m || [];
+            const rains: number[] = raw.hourly?.precipitation || [];
+            const clouds: number[] = raw.hourly?.cloud_cover || [];
+            const hums: number[] = raw.hourly?.relative_humidity_2m || [];
 
             const oreValide = temps.filter((t: number) => t != null).length;
             const filteredTemps = temps.filter((t: number) => t != null);

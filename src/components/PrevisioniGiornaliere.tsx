@@ -30,9 +30,6 @@ function getWeatherEmoji(code: number): string {
 }
 
 function getFreezingLevel(daily: MeteoDaily): number | null {
-  if (daily.freezingLevel !== undefined && daily.freezingLevel !== null) {
-    return Math.round(daily.freezingLevel);
-  }
   if (daily.temperatureMin !== undefined && daily.temperatureMax !== undefined) {
     const avgTemp = (daily.temperatureMin + daily.temperatureMax) / 2;
     const estimated = Math.round(3000 - (avgTemp * 150));

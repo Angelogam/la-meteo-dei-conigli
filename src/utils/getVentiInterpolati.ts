@@ -1,5 +1,7 @@
 "use client";
 
+import { fetchHourly } from "@/lib/openMeteoClient";
+
 export interface QuotaVento {
   speed: number;
   dir: number;
@@ -23,13 +25,25 @@ export interface VentiInterpolatiData {
 const cacheVenti = new Map<string, { data: VentiInterpolatiData; ts: number }>();
 const CACHE_TTL = 3 * 60 * 1000;
 
-const LIVELLI_QUOTA = [
-  { quota: 0, speedKey: "wind_speed_10m", dirKey: "wind_direction_10m" },
-  { quota: 760, speedKey: "wind_speed_925hPa", dirKey: "wind_direction_925hPa" },
-  { quota: 1450, speedKey: "wind_speed_850hPa", dirKey: "wind_direction_850hPa" },
-  { quota: 3000, speedKey: "wind_speed_700hPa", dirKey: "wind_direction_700hPa" },
-  { quota: 4000, speedKey: "wind_speed_600hPa", dirKey: "wind_direction_600hPa" },
-];
+/**
+ * Mappa livelli hPa di Open-Meteo alle quote approssimative in metri
+ * Quote standard ISA (International Standard Atmosphere)
+ */
+const HPA_TO_QUOTA: Record<string, number> = {
+  "10m": 0,
+  "80m": 80,
+  "120m": 120,
+  "180m": 180,
+  "925hPa": 760,
+  "850hPa": 1450,
+  "700hPa": 3000,
+  "600hPa": 4200,
+  "500hPa": 5500,
+  "400hPa": 7000,
+  "300hPa": 9000,
+  "250hPa": 10000,
+  "200hPa": 11500,
+};
 
 function interpolateVento(
   quota: number,
@@ -59,18 +73,49 @@ export async function getVentiInterpolati(
     return cached.data;
   }
 
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_925hPa,wind_direction_925hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa,wind_speed_600hPa,wind_direction_600hPa&timezone=Europe/Rome&start_date=${day}&end_date=${day}`;
+  // Richiedi tutti i livelli vento disponibili da Open-Meteo
+  const windParams = [
+    "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",
+    "wind_speed_80m", "wind_direction_80m",
+    "wind_speed_120m", "wind_direction_120m",
+    "wind_speed_180m", "wind_direction_180m",
+    "wind_speed_925hPa", "wind_direction_925hPa",
+    "wind_speed_850hPa", "wind_direction_850hPa",
+    "wind_speed_700hPa", "wind_direction_700hPa",
+    "wind_speed_600hPa", "wind_direction_600hPa",
+    "wind_speed_500hPa", "wind_direction_500hPa",
+  ].join(",");
 
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
-
+  const data = await fetchHourly(lat, lon, windParams, day, day);
   const hours: string[] = data.hourly.time;
-  const temps: number[] = data.hourly.temperature_2m;
+  const h = data.hourly;
 
+  // Costruisci mappa livelli disponibili -> quota reale
+  const livelliDisponibili: { quota: number; speed: number; dir: number; key: string }[] = [];
+
+  for (const [key, defaultAlt] of Object.entries(HPA_TO_QUOTA)) {
+    const speedArr = h[`wind_speed_${key}`];
+    const dirArr = h[`wind_direction_${key}`];
+    if (speedArr && dirArr) {
+      for (let i = 0; i < hours.length; i++) {
+        const speed = safeNumOrNull(speedArr[i]);
+        const dir = safeNumOrNull(dirArr[i]);
+        if (speed !== null && dir !== null && speed >= 0 && dir >= 0) {
+          // Usa quota reale del sito come riferimento per i livelli bassi
+          const quota = key === "10m" ? quotaDecollo : key === "80m" ? quotaDecollo + 70 :
+                        key === "120m" ? quotaDecollo + 110 : key === "180m" ? quotaDecollo + 170 :
+                        defaultAlt;
+          livelliDisponibili.push({ quota, speed, dir, key });
+        }
+      }
+      break; // una sola iterazione per chiave
+    }
+  }
+
+  // Determina range quote da interpolare
   const partenza = Math.floor(quotaDecollo / 250) * 250;
   const quoteInterpolazione: number[] = [];
-  for (let q = partenza; q <= 4000; q += 250) {
+  for (let q = partenza; q <= 4500; q += 250) {
     quoteInterpolazione.push(q);
   }
   if (!quoteInterpolazione.includes(quotaDecollo)) {
@@ -84,43 +129,46 @@ export async function getVentiInterpolati(
     const ora = Number(hours[i].split("T")[1].split(":")[0]);
     if (ora >= 9 && ora <= 19) {
       const quote: Record<number, QuotaVento> = {};
-      const livelliDisponibili: { quota: number; speed: number; dir: number }[] = [];
+      const livelliOrari: { quota: number; speed: number; dir: number }[] = [];
 
-      LIVELLI_QUOTA.forEach((livello) => {
-        const speedArr = data.hourly[livello.speedKey];
-        const dirArr = data.hourly[livello.dirKey];
+      for (const [key, defaultAlt] of Object.entries(HPA_TO_QUOTA)) {
+        const speedArr = h[`wind_speed_${key}`];
+        const dirArr = h[`wind_direction_${key}`];
         if (speedArr && dirArr && speedArr[i] != null && dirArr[i] != null) {
-          livelliDisponibili.push({
-            quota: livello.quota,
-            speed: speedArr[i] as number,
-            dir: dirArr[i] as number,
-          });
+          const speed = Number(speedArr[i]);
+          const dir = Number(dirArr[i]);
+          if (!isNaN(speed) && !isNaN(dir) && speed >= 0 && dir >= 0) {
+            const quota = key === "10m" ? quotaDecollo : key === "80m" ? quotaDecollo + 70 :
+                          key === "120m" ? quotaDecollo + 110 : key === "180m" ? quotaDecollo + 170 :
+                          defaultAlt;
+            livelliOrari.push({ quota, speed, dir });
+          }
         }
-      });
+      }
 
-      if (livelliDisponibili.length === 0) continue;
+      if (livelliOrari.length === 0) continue;
 
-      livelliDisponibili.sort((a, b) => a.quota - b.quota);
+      livelliOrari.sort((a, b) => a.quota - b.quota);
 
       quoteInterpolazione.forEach((q) => {
-        const esatto = livelliDisponibili.find((l) => l.quota === q);
+        const esatto = livelliOrari.find((l) => l.quota === q);
         if (esatto) {
           quote[q] = { speed: Math.round(esatto.speed), dir: Math.round(esatto.dir) };
           return;
         }
 
-        const sotto = livelliDisponibili.filter((l) => l.quota <= q).pop();
-        const sopra = livelliDisponibili.find((l) => l.quota >= q);
+        const sotto = livelliOrari.filter((l) => l.quota <= q).pop();
+        const sopra = livelliOrari.find((l) => l.quota >= q);
 
         if (sotto && sopra && sotto !== sopra) {
           quote[q] = interpolateVento(q, sotto, sopra);
         } else if (sotto && !sopra) {
+          // Estrapolazione controllata verso l'alto
           const ultimo = sotto;
-          const penultimo = livelliDisponibili[livelliDisponibili.length - 2] || ultimo;
-          const gradientVento =
-            ultimo.quota !== penultimo.quota
-              ? (ultimo.speed - penultimo.speed) / (ultimo.quota - penultimo.quota)
-              : 0.01;
+          const penultimo = livelliOrari[livelliOrari.length - 2] || ultimo;
+          const gradientVento = penultimo.quota !== ultimo.quota
+            ? (ultimo.speed - penultimo.speed) / (ultimo.quota - penultimo.quota)
+            : 0.01;
           const speed = Math.max(0, ultimo.speed + gradientVento * (q - ultimo.quota));
           quote[q] = { speed: Math.round(speed), dir: Math.round(ultimo.dir) };
         } else if (!sotto && sopra) {
@@ -131,8 +179,8 @@ export async function getVentiInterpolati(
       ventoOrario.push({
         ora,
         quote,
-        gust: data.hourly.wind_gusts_10m[i],
-        temp: temps[i],
+        gust: safeNum(h.wind_gusts_10m?.[i], 0),
+        temp: safeNum(h.temperature_2m?.[i], 15),
       });
     }
   }
@@ -147,4 +195,16 @@ export async function getVentiInterpolati(
 
   cacheVenti.set(cacheKey, { data: result, ts: Date.now() });
   return result;
+}
+
+function safeNumOrNull(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  const n = Number(v);
+  return isNaN(n) ? null : n;
+}
+
+function safeNum(v: unknown, fallback: number = 0): number {
+  if (v === null || v === undefined) return fallback;
+  const n = Number(v);
+  return isNaN(n) ? fallback : n;
 }

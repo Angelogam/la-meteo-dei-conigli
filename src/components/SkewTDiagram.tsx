@@ -1,5 +1,6 @@
 "use client";
 
+import { fetchHourly } from "@/lib/openMeteoClient";
 import React, { useEffect, useState, useMemo } from "react";
 import { RefreshCw, AlertTriangle } from "lucide-react";
 
@@ -232,14 +233,9 @@ export default function SkewTDiagram({
       "convective_inhibition",
     ].join(",");
 
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=${hourlyParams}&timezone=Europe/Rome&start_date=${dateStr}&end_date=${dateStr}`;
-
-    fetchMeteo();
     async function fetchMeteo() {
       try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
+        const json = await fetchHourly(latitude, longitude, hourlyParams, dateStr, dateStr);
         if (isMounted) {
           setData(json);
           setLoading(false);

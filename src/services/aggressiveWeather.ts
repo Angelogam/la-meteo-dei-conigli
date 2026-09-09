@@ -1,10 +1,7 @@
 "use client";
 
+import { fetchHourly } from "@/lib/openMeteoClient";
 import type { MeteoCurrent, MeteoHourly, MeteoDaily } from "./openMeteoService";
-
-const OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast";
-const OPENWEATHER_BASE = "https://api.openweathermap.org/data/2.5/weather";
-const OPENWEATHER_API_KEY = "f01a9f572541fc5951d78441cbe750c6";
 
 export interface DecolloConfig {
   name: string;
@@ -14,30 +11,30 @@ export interface DecolloConfig {
 }
 
 export const DECOLLI_AGGRESSIVI: DecolloConfig[] = [
-  { name: "Malanotte", lat: 44.33, lon: 7.75, elevation: 1800 },
-  { name: "Colle di Tenda", lat: 44.20, lon: 7.58, elevation: 1870 },
-  { name: "Boves", lat: 44.33, lon: 7.50, elevation: 600 },
-  { name: "Monte Male – Dronero", lat: 44.45, lon: 7.35, elevation: 1500 },
-  { name: "Iretta", lat: 44.47, lon: 7.28, elevation: 1300 },
-  { name: "Pratoni di Val Mala", lat: 44.48, lon: 7.25, elevation: 1400 },
-  { name: "Monte Birrone", lat: 44.52, lon: 7.18, elevation: 2130 },
-  { name: "Colle dell'Agnello", lat: 44.63, lon: 6.98, elevation: 2744 },
-  { name: "Pian Munè – Seggiovia", lat: 44.70, lon: 7.25, elevation: 1870 },
-  { name: "Pian Munè – Bric Lombatera", lat: 44.71, lon: 7.26, elevation: 2100 },
-  { name: "Martiniana Po", lat: 44.65, lon: 7.30, elevation: 900 },
-  { name: "Rucas Alto", lat: 44.75, lon: 7.30, elevation: 1500 },
-  { name: "Montoso – decollo basso", lat: 44.65, lon: 7.35, elevation: 1100 },
-  { name: "Monte Vandalino", lat: 44.85, lon: 7.15, elevation: 2120 },
-  { name: "Pian dell'Alpe", lat: 45.00, lon: 7.05, elevation: 1900 },
-  { name: "Roletto – Piggi", lat: 44.90, lon: 7.35, elevation: 900 },
-  { name: "Piossasco – Monte S. Giorgio", lat: 45.00, lon: 7.35, elevation: 837 },
-  { name: "Truccetti", lat: 45.30, lon: 7.60, elevation: 900 },
-  { name: "Val della Torre", lat: 45.15, lon: 7.45, elevation: 1000 },
-  { name: "Rocca Canavese – M. della Neve", lat: 45.33, lon: 7.60, elevation: 1300 },
-  { name: "Santa Elisabetta", lat: 45.35, lon: 7.65, elevation: 900 },
-  { name: "Santa Elisabetta alto", lat: 45.36, lon: 7.66, elevation: 1100 },
-  { name: "Monte Cavallaria", lat: 45.37, lon: 7.67, elevation: 1600 },
-  { name: "Andrate", lat: 45.48, lon: 7.80, elevation: 1000 }
+  { name: "Malanotte", lat: 44.2587, lon: 7.7943, elevation: 1740 },
+  { name: "Colle di Tenda", lat: 44.1509, lon: 7.5693, elevation: 1990 },
+  { name: "Boves", lat: 44.3211, lon: 7.5447, elevation: 900 },
+  { name: "Monte Male – Dronero", lat: 44.4316, lon: 7.3629, elevation: 950 },
+  { name: "Iretta", lat: 44.4989, lon: 7.3820, elevation: 1050 },
+  { name: "Pratoni di Val Mala", lat: 44.5078, lon: 7.3466, elevation: 1400 },
+  { name: "Monte Birrone", lat: 44.5399, lon: 7.2529, elevation: 2131 },
+  { name: "Colle dell'Agnello", lat: 44.6828, lon: 6.9782, elevation: 2748 },
+  { name: "Pian Munè – Seggiovia", lat: 44.6386, lon: 7.2309, elevation: 1870 },
+  { name: "Pian Munè – Bric Lombatera", lat: 44.6574, lon: 7.2600, elevation: 1350 },
+  { name: "Martiniana Po", lat: 44.6070, lon: 7.3832, elevation: 1400 },
+  { name: "Rucas Alto", lat: 44.7421, lon: 7.2201, elevation: 1500 },
+  { name: "Montoso – decollo basso", lat: 44.7644, lon: 7.2498, elevation: 1250 },
+  { name: "Monte Vandalino", lat: 44.8367, lon: 7.1739, elevation: 2120 },
+  { name: "Pian dell'Alpe", lat: 45.0640, lon: 7.0283, elevation: 1990 },
+  { name: "Roletto – Piggi", lat: 44.9325, lon: 7.3110, elevation: 820 },
+  { name: "Piossasco – Monte S. Giorgio", lat: 44.9967, lon: 7.4480, elevation: 673 },
+  { name: "Truccetti", lat: 45.0797, lon: 7.3420, elevation: 900 },
+  { name: "Val della Torre", lat: 45.1626, lon: 7.4637, elevation: 970 },
+  { name: "Rocca Canavese – M. della Neve", lat: 45.3276, lon: 7.5728, elevation: 1100 },
+  { name: "Santa Elisabetta", lat: 45.4183, lon: 7.6419, elevation: 1000 },
+  { name: "Santa Elisabetta alto", lat: 45.4402, lon: 7.6480, elevation: 1400 },
+  { name: "Monte Cavallaria", lat: 45.5173, lon: 7.7988, elevation: 1430 },
+  { name: "Andrate", lat: 45.5506, lon: 7.8808, elevation: 1000 }
 ];
 
 interface OpenMeteoData {
@@ -76,21 +73,18 @@ interface AggressiveWeatherResult {
 
 async function fetchOpenMeteo(lat: number, lon: number): Promise<OpenMeteoData | null> {
   try {
-    const url = `${OPEN_METEO_BASE}?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation,cloudcover,windspeed_10m,winddirection_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,cloudcover_mean&timezone=auto`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const data = await res.json();
-    
+    const data = await fetchHourly(lat, lon, "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m");
+    const om = data.hourly;
     return {
-      temp: data.hourly?.temperature_2m?.[0] ?? 0,
-      rain: data.hourly?.precipitation?.[0] ?? 0,
-      cloud: data.hourly?.cloudcover?.[0] ?? 0,
-      wind: data.hourly?.windspeed_10m?.[0] ?? 0,
-      dir: data.hourly?.winddirection_10m?.[0] ?? 0,
-      tMax: data.daily?.temperature_2m_max?.[0] ?? 0,
-      tMin: data.daily?.temperature_2m_min?.[0] ?? 0,
-      cloudDaily: data.daily?.cloudcover_mean?.[0] ?? 0,
-      rainDaily: data.daily?.precipitation_sum?.[0] ?? 0
+      temp: Number(om?.temperature_2m?.[0]) ?? 0,
+      rain: Number(om?.precipitation?.[0]) ?? 0,
+      cloud: Number(om?.cloud_cover?.[0]) ?? 0,
+      wind: Number(om?.wind_speed_10m?.[0]) ?? 0,
+      dir: Number(om?.wind_direction_10m?.[0]) ?? 0,
+      tMax: Number(data.daily?.temperature_2m_max?.[0]) ?? 0,
+      tMin: Number(data.daily?.temperature_2m_min?.[0]) ?? 0,
+      cloudDaily: Number(data.daily?.cloud_cover_mean?.[0]) ?? 0,
+      rainDaily: Number(data.daily?.precipitation_sum?.[0]) ?? 0
     };
   } catch {
     return null;
@@ -98,12 +92,12 @@ async function fetchOpenMeteo(lat: number, lon: number): Promise<OpenMeteoData |
 }
 
 async function fetchOpenWeather(lat: number, lon: number): Promise<OpenWeatherData | null> {
+  const apiKey = import.meta.env.VITE_OPENWEATHER_KEY || "f01a9f572541fc5951d78441cbe750c6";
   try {
-    const url = `${OPENWEATHER_BASE}?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`;
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
     const res = await fetch(url);
     if (!res.ok) return null;
     const data = await res.json();
-    
     return {
       temp: data.main?.temp ?? 0,
       rain: data.rain?.["1h"] ?? 0,
@@ -151,7 +145,6 @@ function baseNubiAggressiva(cloud: number, elevation: number): string {
 
 function termicheAggressive(tMax: number, tMin: number, cloudDaily: number, rainDaily: number): string {
   const deltaT = tMax - tMin;
-  
   if (rainDaily > 1) return "Termiche disturbate (pioggia)";
   if (cloudDaily > 80) return "Termiche deboli (coperto)";
   if (deltaT < 6) return "Termiche scarse";
@@ -162,7 +155,6 @@ function termicheAggressive(tMax: number, tMin: number, cloudDaily: number, rain
 
 function indiceAggressivo(wind: number, rain: number, cloud: number, baseNubi: string, termiche: string): number {
   let i = 1;
-  
   if (rain > 0.1) i += 5;
   if (rain > 2) i += 3;
   if (wind > 15) i += 2;
@@ -171,7 +163,6 @@ function indiceAggressivo(wind: number, rain: number, cloud: number, baseNubi: s
   if (cloud > 70) i += 2;
   if (baseNubi.includes("Molto bassa")) i += 3;
   if (termiche.includes("forti")) i += 2;
-  
   return Math.min(i, 10);
 }
 
@@ -193,7 +184,6 @@ export async function getAggressiveWeatherForDecollo(decollo: DecolloConfig): Pr
     throw new Error("Nessuna fonte meteo disponibile");
   }
 
-  // Se una fonte fallisce, usa l'altra
   const om = openMeteo || { temp: 0, rain: 0, cloud: 0, wind: 0, dir: 0, tMax: 0, tMin: 0, cloudDaily: 0, rainDaily: 0 };
   const ow = openWeather || { temp: 0, rain: 0, cloud: 0, wind: 0, dir: 0, stato: "Clear" };
 
@@ -202,35 +192,19 @@ export async function getAggressiveWeatherForDecollo(decollo: DecolloConfig): Pr
   const rain = safe(Math.max(om.rain, ow.rain));
   const cloud = safe(media(om.cloud, ow.cloud));
   const wind = safe(media(om.wind, ow.wind));
-
   const baseNubi = baseNubiAggressiva(om.cloud, decollo.elevation);
   const termiche = termicheAggressive(om.tMax, om.tMin, om.cloudDaily, om.rainDaily);
-  const indice = indiceAggressivo(
-    parseFloat(wind), 
-    parseFloat(rain), 
-    parseFloat(cloud), 
-    baseNubi, 
-    termiche
-  );
+  const indice = indiceAggressivo(parseFloat(wind), parseFloat(rain), parseFloat(cloud), baseNubi, termiche);
   const indiceLabel = labelIndice(indice);
 
   return {
-    temp,
-    rain,
-    cloud,
-    wind,
-    stato,
-    baseNubi,
-    termiche,
-    indice,
-    indiceLabel,
+    temp, rain, cloud, wind, stato, baseNubi, termiche, indice, indiceLabel,
     fonte: "Ibrido Aggressivo (Open-Meteo + OpenWeather)"
   };
 }
 
 export async function getAllAggressiveWeather(): Promise<Map<string, AggressiveWeatherResult>> {
   const results = new Map<string, AggressiveWeatherResult>();
-  
   await Promise.all(
     DECOLLI_AGGRESSIVI.map(async (decollo) => {
       try {
@@ -246,6 +220,5 @@ export async function getAllAggressiveWeather(): Promise<Map<string, AggressiveW
       }
     })
   );
-  
   return results;
 }

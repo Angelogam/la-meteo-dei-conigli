@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { DECOLLI } from "@/data/decolli";
+import { fetchHourly } from "@/lib/openMeteoClient";
 import {
   Play,
   CheckCircle,
@@ -149,24 +150,25 @@ export default function ApiTestRunner() {
     // Test 1: Connessione base
     const connStart = Date.now();
     try {
-      const testUrl = `${OPEN_METEO_BASE}?latitude=${selectedSite.lat}&longitude=${selectedSite.lon}&current=temperature_2m&timezone=Europe/Rome`;
-      const res = await fetch(testUrl);
-      const connTime = Date.now() - connStart;
-
-      results[0] = {
-        name: "Connessione a Open-Meteo",
-        status: res.ok ? "success" : "error",
-        statusCode: res.status,
-        responseTime: connTime,
-        timestamp: new Date().toISOString(),
-      };
-
-      if (!res.ok) {
-        results[0].error = `HTTP ${res.status}`;
+      try {
+        await fetchHourly(selectedSite.lat, selectedSite.lon, "temperature_2m");
+      } catch (e) {
+        results[0] = {
+          name: "Connessione a Open-Meteo",
+          status: "error",
+          responseTime: Date.now() - connStart,
+          error: String(e),
+        };
         setTestResults([...results]);
         setIsRunning(false);
         return;
       }
+      results[0] = {
+        name: "Connessione a Open-Meteo",
+        status: "success",
+        responseTime: Date.now() - connStart,
+        timestamp: new Date().toISOString(),
+      };
     } catch (e) {
       results[0] = {
         name: "Connessione a Open-Meteo",
@@ -181,27 +183,12 @@ export default function ApiTestRunner() {
     setTestResults([...results]);
 
     // Test completo: Fetch tutti i dati
-    const fullUrl = `${OPEN_METEO_BASE}?latitude=${selectedSite.lat}&longitude=${selectedSite.lon}&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=Europe/Rome&forecast_days=3`;
-
     const fetchStart = Date.now();
+    let json: any;
     try {
-      const res = await fetch(fullUrl);
+      json = await fetchHourly(selectedSite.lat, selectedSite.lon, "temperature_2m,relative_humidity_2m,precipitation,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m");
       const fetchTime = Date.now() - fetchStart;
 
-      if (!res.ok) {
-        results[1] = {
-          name: "Fetch current weather",
-          status: "error",
-          statusCode: res.status,
-          responseTime: fetchTime,
-          error: `HTTP ${res.status}`,
-        };
-        setTestResults([...results]);
-        setIsRunning(false);
-        return;
-      }
-
-      const json = await res.json();
       setRawJson(JSON.stringify(json, null, 2));
 
       // Test 2: Current weather
@@ -307,10 +294,8 @@ export default function ApiTestRunner() {
         const site = DECOLLI[i];
         const siteStart = Date.now();
         try {
-          const siteUrl = `${OPEN_METEO_BASE}?latitude=${site.lat}&longitude=${site.lon}&current=temperature_2m,wind_speed_10m,wind_direction_10m,relative_humidity_2m,weather_code,cloud_cover&timezone=Europe/Rome`;
-          const siteRes = await fetch(siteUrl);
+          const siteJson = await fetchHourly(site.lat, site.lon, "temperature_2m,wind_speed_10m,wind_direction_10m,relative_humidity_2m,weather_code,cloud_cover");
           const siteTime = Date.now() - siteStart;
-          const siteJson = await siteRes.json();
           const sCurrent = siteJson.current;
 
           sites[i] = {

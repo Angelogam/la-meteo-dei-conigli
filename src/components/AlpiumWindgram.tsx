@@ -1,3 +1,4 @@
+import { fetchHourly } from "@/lib/openMeteoClient";
 import React, { useMemo, useState } from "react";
 import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
 import type { HourData } from "@/types/meteo";

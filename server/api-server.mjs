@@ -94,7 +94,7 @@ function fetchOpenMeteoHourly(lat, lon, hours = 24) {
       `precipitation_probability,weather_code,cloud_cover,cloud_cover_low,` +
       `cloud_cover_mid,cloud_cover_high,wind_speed_10m,wind_direction_10m,` +
       `wind_gusts_10m,cape,lifted_index,shortwave_radiation,uv_index,visibility` +
-      `&forecast_hours=${hours}&timezone=Europe/Rome`;
+      `&forecast_days=${Math.ceil(hours / 24)}&timezone=Europe/Rome`;
     https
       .get(url, (apiRes) => {
         let data = "";

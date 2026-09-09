@@ -54,6 +54,27 @@ function getFallbackData(): { hourly: MeteoHourly[]; daily: MeteoDaily[]; curren
       virtualTemp: 0,
       radiation: i > 6 && i < 18 ? 500 + Math.random() * 500 : 0,
       cin: 0,
+      temp80m: null,
+      temp120m: null,
+      apparentTemp: null,
+      precipitationProba: 0,
+      evapotranspiration: 0,
+      et0: 0,
+      soilTemp: 0,
+      soilMoisture: 0,
+      diffuseRadiation: 0,
+      directNormalIrradiance: 0,
+      terrestrialRadiation: 0,
+      windSpeed925: null,
+      windDir925: null,
+      windSpeed850: null,
+      windDir850: null,
+      windSpeed700: null,
+      windDir700: null,
+      windSpeed600: null,
+      windDir600: null,
+      windSpeed500: null,
+      windDir500: null,
     });
   }
   
@@ -152,7 +173,7 @@ export function useWeatherData() {
     setLoadingError(null);
     
     try {
-      const result = await fetchPrevisioniGiornaliere(site.lat, site.lon, site.elevation_m);
+      const result = await fetchPrevisioniGiornaliere(site.lat, site.lon);
       
       if (result.hourly.length > 0 && result.daily.length > 0) {
         setHourlyData(result.hourly);
@@ -249,7 +270,7 @@ export function useWeatherData() {
       precipitation: currentData.precipitation ?? 0,
       weatherCode: currentData.weatherCode,
       cape: currentData.cape,
-      liftedIndex: currentData.liftedIndex,
+      liftedIndex: currentData.liftedIndex ?? undefined,
       quota: site?.elevation_m ?? 1000,
     });
   }, [currentData, site]);

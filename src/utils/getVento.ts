@@ -1,5 +1,7 @@
 "use client";
 
+import { fetchHourly } from "@/lib/openMeteoClient";
+
 export interface VentoOrario {
   ora: number;
   speed: number;
@@ -16,7 +18,6 @@ export interface VentoData {
   ventoAtterraggio: number;
 }
 
-// Cache interna (3 minuti)
 const cacheVento = new Map<string, { data: VentoData; ts: number }>();
 const CACHE_TTL = 3 * 60 * 1000;
 
@@ -27,31 +28,42 @@ export async function getVento(lat: number, lon: number, day: string): Promise<V
     return cached.data;
   }
 
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=Europe/Rome&start_date=${day}&end_date=${day}`;
-
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
-
+  const data = await fetchHourly(lat, lon, "wind_speed_10m,wind_direction_10m,wind_gusts_10m", day, day);
   const hours: string[] = data.hourly.time;
-  const speeds: number[] = data.hourly.wind_speed_10m;
-  const dirs: number[] = data.hourly.wind_direction_10m;
-  const gusts: number[] = data.hourly.wind_gusts_10m;
+  const speeds: number[] = data.hourly.wind_speed_10m || [];
+  const dirs: number[] = data.hourly.wind_direction_10m || [];
+  const gusts: number[] = data.hourly.wind_gusts_10m || [];
 
   const ventoOrario: VentoOrario[] = [];
   for (let i = 0; i < hours.length; i++) {
     const ora = Number(hours[i].split("T")[1].split(":")[0]);
     if (ora >= 9 && ora <= 19) {
-      ventoOrario.push({ ora, speed: speeds[i], dir: dirs[i], gust: gusts[i] });
+      ventoOrario.push({
+        ora,
+        speed: Number(speeds[i]) || 0,
+        dir: Number(dirs[i]) || 0,
+        gust: Number(gusts[i]) || 0,
+      });
     }
   }
 
+  // Vento decollo = media delle prime 3 ore mattutine (9-11), atterraggio = ultime 2 (17-18)
+  const mattina = ventoOrario.filter((v) => v.ora >= 9 && v.ora <= 11);
+  const sera = ventoOrario.filter((v) => v.ora >= 17 && v.ora <= 18);
+  const ventoDecollo = mattina.length > 0
+    ? Math.round(mattina.reduce((s, v) => s + v.speed, 0) / mattina.length)
+    : (ventoOrario[0]?.speed ?? 0);
+  const ventoAtterraggio = sera.length > 0
+    ? Math.round(sera.reduce((s, v) => s + v.speed, 0) / sera.length)
+    : (ventoOrario[ventoOrario.length - 1]?.speed ?? 0);
+
   const result: VentoData = {
     giorno: day,
-    lat, lon,
+    lat,
+    lon,
     ventoOrario,
-    ventoDecollo: speeds[9] ?? 0,
-    ventoAtterraggio: speeds[10] ?? 0,
+    ventoDecollo,
+    ventoAtterraggio,
   };
 
   cacheVento.set(cacheKey, { data: result, ts: Date.now() });

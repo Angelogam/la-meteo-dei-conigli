@@ -30,7 +30,8 @@ export async function testVentoTuttiIDecolli(): Promise<{
 
   for (const decollo of DECOLLI) {
     try {
-      const { data } = await weatherService.fetchCurrent(decollo.lat, decollo.lon);
+      const result = await weatherService.fetchWeather(decollo.lat, decollo.lon);
+      const data = result.current;
       if (data && data.windSpeed != null) {
         okCount++;
         risultati.push({

@@ -1,6 +1,7 @@
 "use client";
 
 import { DECOLLI } from "@/data/decolli";
+import { fetchHourly } from "@/lib/openMeteoClient";
 
 export type Decollo = {
   name: string;
@@ -22,34 +23,24 @@ export type MeteoDecollo = {
   fonte: string;
 };
 
-const OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast";
-const OPENWEATHER_BASE = "https://api.openweathermap.org/data/2.5/weather";
 const OPENWEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_KEY || "f01a9f572541fc5951d78441cbe750c6";
-
-const TOMORROW_BASE = "https://api.tomorrow.io/v4/timelines";
 const TOMORROW_API_KEY = import.meta.env.VITE_TOMORROW_KEY || "EBox6MVYAysc2A5X5EOhVgKeaDuFg4Pk";
 
 async function getOpenMeteo(lat: number, lon: number) {
-  const url = `${OPEN_METEO_BASE}?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`;
-
   try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const data = await res.json();
-
+    const data = await fetchHourly(lat, lon, "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m", undefined, undefined);
     const t = data.hourly?.temperature_2m?.[0];
     if (t === undefined || t === null) return null;
-
     return {
-      temp: t ?? 0,
-      rain: data.hourly?.precipitation?.[0] ?? 0,
-      cloud: data.hourly?.cloud_cover?.[0] ?? 0,
-      wind: data.hourly?.wind_speed_10m?.[0] ?? 0,
-      dir: data.hourly?.wind_direction_10m?.[0] ?? 0,
-      tMax: data.daily?.temperature_2m_max?.[0] ?? 0,
-      tMin: data.daily?.temperature_2m_min?.[0] ?? 0,
-      cloudDaily: data.daily?.cloud_cover_mean?.[0] ?? 0,
-      rainDaily: data.daily?.precipitation_sum?.[0] ?? 0
+      temp: Number(t) || 0,
+      rain: Number(data.hourly?.precipitation?.[0]) || 0,
+      cloud: Number(data.hourly?.cloud_cover?.[0]) || 0,
+      wind: Number(data.hourly?.wind_speed_10m?.[0]) || 0,
+      dir: Number(data.hourly?.wind_direction_10m?.[0]) || 0,
+      tMax: Number(data.daily?.temperature_2m_max?.[0]) || 0,
+      tMin: Number(data.daily?.temperature_2m_min?.[0]) || 0,
+      cloudDaily: Number(data.daily?.cloud_cover_mean?.[0]) || 0,
+      rainDaily: Number(data.daily?.precipitation_sum?.[0]) || 0
     };
   } catch {
     return null;
@@ -58,11 +49,10 @@ async function getOpenMeteo(lat: number, lon: number) {
 
 async function getOpenWeather(lat: number, lon: number) {
   try {
-    const url = `${OPENWEATHER_BASE}?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`;
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`;
     const res = await fetch(url);
     if (!res.ok) return null;
     const data = await res.json();
-
     return {
       temp: data.main?.temp ?? 0,
       rain: data.rain ? (data.rain["1h"] || 0) : 0,
@@ -78,14 +68,12 @@ async function getOpenWeather(lat: number, lon: number) {
 
 async function getTomorrow(lat: number, lon: number) {
   try {
-    const url = `${TOMORROW_BASE}?location=${lat},${lon}&fields=temperature,cloudCover,precipitationIntensity,windSpeed,windDirection&timesteps=1h&apikey=${TOMORROW_API_KEY}`;
+    const url = `https://api.tomorrow.io/v4/timelines?location=${lat},${lon}&fields=temperature,cloudCover,precipitationIntensity,windSpeed,windDirection&timesteps=1h&apikey=${TOMORROW_API_KEY}`;
     const res = await fetch(url);
     if (!res.ok) return null;
     const data = await res.json();
-
     const v = data.data?.timelines?.[0]?.intervals?.[0]?.values;
     if (!v) return null;
-
     return {
       temp: v.temperature ?? 0,
       rain: v.precipitationIntensity ?? 0,
@@ -119,7 +107,6 @@ function statoAggressivo(openMeteo: any, openWeather: any, tomorrow: any): strin
   if (openWeather?.stato === "Thunderstorm") return "Temporale";
   const rainMax = Math.max(openMeteo?.rain || 0, openWeather?.rain || 0, tomorrow?.rain || 0);
   if (rainMax > 0.1) return "Pioggia";
-
   const cloudMax = Math.max(
     Number(openMeteo?.cloud || 0),
     Number(openWeather?.cloud || 0),
@@ -193,19 +180,16 @@ export async function getMeteoDecolloAggressivo(d: Decollo): Promise<MeteoDecoll
     { value: ow.temp, weight: WEIGHTS.temp.ow },
     { value: tw.temp, weight: WEIGHTS.temp.tw }
   ]);
-
   const rainNum = fuse([
     { value: om.rain, weight: WEIGHTS.rain.om },
     { value: ow.rain, weight: WEIGHTS.rain.ow },
     { value: tw.rain, weight: WEIGHTS.rain.tw }
   ]);
-
   const cloudNum = fuse([
     { value: om.cloud, weight: WEIGHTS.cloud.om },
     { value: ow.cloud, weight: WEIGHTS.cloud.ow },
     { value: tw.cloud, weight: WEIGHTS.cloud.tw }
   ]);
-
   const windNum = fuse([
     { value: om.wind, weight: WEIGHTS.wind.om },
     { value: ow.wind, weight: WEIGHTS.wind.ow },
@@ -234,7 +218,6 @@ export async function getMeteoDecolloAggressivo(d: Decollo): Promise<MeteoDecoll
 
 export async function getAllMeteoDecolliAggressivo(): Promise<Map<string, MeteoDecollo>> {
   const results = new Map<string, MeteoDecollo>();
-
   for (const d of DECOLLI) {
     try {
       const weather = await getMeteoDecolloAggressivo({
@@ -253,64 +236,5 @@ export async function getAllMeteoDecolliAggressivo(): Promise<Map<string, MeteoD
     }
     await new Promise(r => setTimeout(r, 200));
   }
-
   return results;
-}
-
-import { useState, useEffect, useCallback, useMemo } from "react";
-
-const REFRESH_INTERVAL = 15 * 60 * 1000;
-
-export function useThreeSourceWeather() {
-  const [weatherData, setWeatherData] = useState<Map<string, MeteoDecollo>>(new Map());
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const mergedDecolli = useMemo(() => {
-    return DECOLLI.map(d => {
-      const aggressive = weatherData.get(d.name);
-      return {
-        ...d,
-        aggressiveWeather: aggressive
-      };
-    });
-  }, [weatherData]);
-
-  const loadWeather = useCallback(async () => {
-    setUpdating(true);
-    setError(null);
-    try {
-      const data = await getAllMeteoDecolliAggressivo();
-      setWeatherData(data);
-      setLastUpdate(new Date());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Errore caricamento meteo 3-fonti");
-    } finally {
-      setLoading(false);
-      setUpdating(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadWeather();
-    const interval = setInterval(loadWeather, REFRESH_INTERVAL);
-    return () => clearInterval(interval);
-  }, [loadWeather]);
-
-  const getSelectedDecollo = useCallback((selectedId: string) => {
-    return mergedDecolli.find(d => d.id === selectedId);
-  }, [mergedDecolli]);
-
-  return {
-    weatherData,
-    mergedDecolli,
-    loading,
-    updating,
-    lastUpdate,
-    error,
-    loadWeather,
-    getSelectedDecollo
-  };
 }

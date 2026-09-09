@@ -1,6 +1,6 @@
 "use client";
 
-import type { MeteoHourly, MeteoCurrent } from "@/services/weatherService";
+import type { MeteoHourly, MeteoCurrent } from "./openMeteoService";
 
 export interface AnalisiCompleta {
   ora: number;
@@ -128,21 +128,23 @@ export function analisiAvanzataCompleta(
     const cloudCover = weather.cloudCover ?? 30;
     const uv = weather.uvIndex ?? 0;
     const precipitation = weather.precipitation ?? 0;
-    const temp80m = weather.temp80m ?? null;
-    const temp120m = weather.temp120m ?? null;
+    const temp80m = weather.temp80m;
+    const temp120m = weather.temp120m;
+    const cape = weather.cape ?? 0;
 
-    const pressure = current?.pressure ?? 1013;
+    const pressure = current?.pressure ?? null;
+    const presVal = pressure !== null && pressure !== undefined ? pressure : 1013;
 
-    const spread = Math.max(0.3, Math.min(20, temp - dew));
+    const spread = Math.max(0.3, Math.min(20, temp - (dew !== null ? dew : temp - 8)));
     const estimatedCape = Math.min(1500, Math.round(spread * spread * 6 + (temp - 10) * 5));
     const capeValue = Math.min(1500, Math.max(0, estimatedCape));
 
     const windShear = Math.round(Math.abs(windSpeed - windGusts) * 10) / 10;
 
     let gradiente = 0.98;
-    if (temp80m != null && temp80m > -50 && temp80m < 50) {
+    if (temp80m !== null && temp80m > -50 && temp80m < 50) {
       gradiente = Math.min(1.5, Math.max(0.3, ((temp - temp80m) / 78) * 100));
-    } else if (temp120m != null && temp120m > -50 && temp120m < 50) {
+    } else if (temp120m !== null && temp120m > -50 && temp120m < 50) {
       gradiente = Math.min(1.5, Math.max(0.3, ((temp - temp120m) / 118) * 100));
     }
     gradiente = Math.round(gradiente * 100) / 100;
@@ -173,7 +175,7 @@ export function analisiAvanzataCompleta(
 
     const topTermico = Math.min(4500, Math.max(baseNuvole + 200, baseNuvole + Math.round(rateo * 300 + capeValue * 0.8)));
 
-    const stabilita = calcolaStabilita(capeValue, Math.round((temp - (dew + 4)) * 10) / 10, gradiente);
+    const stabilita = calcolaStabilita(capeValue, Math.round((temp - (dew !== null ? dew : temp - 6)) * 10) / 10, gradiente);
     const turbolenza = calcolaTurbolenza(windSpeed, windGusts, windShear);
 
     let score = 0;
@@ -188,7 +190,7 @@ export function analisiAvanzataCompleta(
     if (uv >= 4) score += 5;
     if (stabilita === "leggermente instabile") score += 5;
     else if (stabilita === "stabile") score += 3;
-    if (!["forte", "severa"].includes(turbolenza)) score += 5;
+    if (["forte", "severa"].indexOf(turbolenza) === -1) score += 5;
     if (topTermico - baseNuvole > 500) score += 10;
     if (rateo >= 2) score += 10;
     const voloScore = Math.min(100, Math.max(0, score));
@@ -216,7 +218,7 @@ export function analisiAvanzataCompleta(
       direzioneDominante: "—",
       copertura: coperturaTesto,
       baseNuvole,
-      pressione: Math.round(pressure),
+      pressione: Math.round(presVal),
       umidita: Math.round(hum),
       uvIndex: Math.round(uv * 10) / 10,
       stabilitàAtmosferica: stabilita,
@@ -229,8 +231,8 @@ export function analisiAvanzataCompleta(
       forzaTermica,
       rateoSalita: rateo,
       cape: capeValue,
-      liftedIndex: Math.round((temp - dew - 6) * 10) / 10,
-      rischioTemporali: Math.min(100, Math.round(Math.max(0, (capeValue / 1500) * 50 + (spread / 20) * 30 + (1 - pressure / 1013) * 20))),
+      liftedIndex: Math.round((temp - (dew !== null ? dew : temp - 6)) * 10) / 10,
+      rischioTemporali: Math.min(100, Math.round(Math.max(0, (capeValue / 1500) * 50 + (spread / 20) * 30 + (1 - presVal / 1013) * 20))),
       pioggiaTotale: Math.round(precipitation * 10) / 10,
       voloScore,
       voloGiudizio: giudizio,

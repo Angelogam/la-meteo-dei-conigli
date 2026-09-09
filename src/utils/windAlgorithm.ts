@@ -1,6 +1,7 @@
 "use client";
 
-// === Esponenti pubblici ===
+import { fetchHourly } from "@/lib/openMeteoClient";
+
 export interface WindLevel {
   quota: number;
   vento: number;
@@ -57,21 +58,19 @@ function generaQuoteTarget(quotaDecollo: number): number[] {
 export async function fetchRealWindData(
   lat: number,
   lon: number,
-  _quotaDecollo: number
+  quotaDecollo: number
 ): Promise<{
   livelliReali: { quota: number; speed: number; dir: number }[];
   warning: string | null;
 }> {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m&timezone=Europe/Rome&forecast_days=1`;
   try {
-    const res = await fetch(url);
-    if (!res.ok) return { livelliReali: [], warning: `Errore HTTP ${res.status}` };
-    const raw = await res.json();
+    const data = await fetchHourly(lat, lon, "wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m");
+    const raw = data.hourly;
     const livelliReali = [
-      { quota: 10,  speed: raw.hourly.wind_speed_10m[0], dir: raw.hourly.wind_direction_10m[0] },
-      { quota: 80,  speed: raw.hourly.wind_speed_80m[0], dir: raw.hourly.wind_direction_80m[0] },
-      { quota: 120, speed: raw.hourly.wind_speed_120m[0], dir: raw.hourly.wind_direction_120m[0] },
-      { quota: 180, speed: raw.hourly.wind_speed_180m[0], dir: raw.hourly.wind_direction_180m[0] },
+      { quota: quotaDecollo, speed: Number(raw.wind_speed_10m?.[0]), dir: Number(raw.wind_direction_10m?.[0]) },
+      { quota: quotaDecollo + 70, speed: Number(raw.wind_speed_80m?.[0]), dir: Number(raw.wind_direction_80m?.[0]) },
+      { quota: quotaDecollo + 110, speed: Number(raw.wind_speed_120m?.[0]), dir: Number(raw.wind_direction_120m?.[0]) },
+      { quota: quotaDecollo + 170, speed: Number(raw.wind_speed_180m?.[0]), dir: Number(raw.wind_direction_180m?.[0]) },
     ].filter(l => l.speed != null && !isNaN(l.speed) && l.dir != null && !isNaN(l.dir));
     if (livelliReali.length === 0) return { livelliReali: [], warning: "Dati vento non disponibili." };
     return { livelliReali, warning: null };

@@ -75,11 +75,11 @@ async function testOpenMeteoService() {
   try {
     const site = DECOLLI[0];
     
-    const hourly = await weatherService.fetchLight(site.lat, site.lon);
-    if (!hourly.data || !Array.isArray(hourly.data)) {
+    const weatherData = await weatherService.fetchWeather(site.lat, site.lon);
+    if (!weatherData.hourly || !Array.isArray(weatherData.hourly)) {
       addResult("openMeteoService", "fetchHourlyData", "FAIL", "Risposta non valida");
     } else {
-      addResult("openMeteoService", "fetchHourlyData", "PASS", `${hourly.data.length} ore`);
+      addResult("openMeteoService", "fetchHourlyData", "PASS", `${weatherData.hourly.length} ore`);
     }
     
     const daily = await weatherService.fetchWeather(site.lat, site.lon);
@@ -100,12 +100,12 @@ async function testDataConsistency() {
     
     const [wsData, omHourly, omDaily] = await Promise.all([
       weatherService.fetchWeather(site.lat, site.lon),
-      weatherService.fetchLight(site.lat, site.lon),
+      weatherService.fetchWeather(site.lat, site.lon),
       weatherService.fetchWeather(site.lat, site.lon),
     ]);
-    
+
     const wsTemp = wsData.current.temperature;
-    const omTemp = omHourly.data?.[0]?.temperature;
+    const omTemp = omHourly.hourly?.[0]?.temperature;
     if (wsTemp !== undefined && omTemp !== undefined) {
       const diff = Math.abs(wsTemp - omTemp);
       if (diff > 1) {
@@ -116,7 +116,7 @@ async function testDataConsistency() {
     }
     
     const wsWind = wsData.current.windSpeed;
-    const omWind = omHourly.data?.[0]?.windSpeed;
+    const omWind = omHourly.hourly?.[0]?.windSpeed;
     if (wsWind !== undefined && omWind !== undefined) {
       const diff = Math.abs(wsWind - omWind);
       if (diff > 2) {

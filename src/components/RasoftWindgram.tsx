@@ -1,5 +1,6 @@
 "use client";
 
+import { fetchHourly } from "@/lib/openMeteoClient";
 import React, { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -385,13 +386,7 @@ export default function RasoftWindgram({
       wind_speed_unit: "kmh",
     });
 
-    const url = `https://api.open-meteo.com/v1/forecast?${params.toString()}`;
-
-    fetch(url)
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
+    fetchHourly(latitude, longitude, params.toString().replace("latitude=" + latitude + "&longitude=" + longitude + "&", ""), targetDate, targetDate)
       .then((json: OMData) => {
         if (cancelled) return;
         setData(json);
