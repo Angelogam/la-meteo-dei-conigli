@@ -198,16 +198,16 @@ export default function Index() {
                     </span>
                   </div>
                   <Windgram
-                      dayData={filteredDayData}
-                      siteName={site.site_name}
-                      altitude={site.elevation_m}
-                      selectedHour={selectedHour}
-                      onHourSelect={setSelectedHour}
-                      selectedDay={selectedDay}
-                      dateLabel={dateLabel}
-                      lat={site.lat}
-                      lon={site.lon}
-                    />
+                    dayData={filteredDayData}
+                    siteName={site.site_name}
+                    altitude={site.elevation_m}
+                    selectedHour={selectedHour}
+                    onHourSelect={setSelectedHour}
+                    selectedDay={selectedDay}
+                    dateLabel={dateLabel}
+                    lat={site.lat}
+                    lon={site.lon}
+                  />
                 </div>
 
                 {/* Windgram Rasoft Montoso Alto */}
