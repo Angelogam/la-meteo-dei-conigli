@@ -109,6 +109,8 @@ export interface MeteoCurrent {
   surfacePressure?: number | null;
   liftedIndex?: number | null;
   cin?: number | null;
+  visibility?: number;
+  uvIndex?: number;
 }
 
 export interface MeteoHourly {

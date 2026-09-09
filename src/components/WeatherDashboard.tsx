@@ -129,7 +129,7 @@ export default function WeatherDashboard({
         return Math.max(0, ratio);
       });
     const avgGustRatio = gustRatios.length > 0 ? gustRatios.reduce((a, b) => a + b, 0) / gustRatios.length : 0;
-    const turbulenceLevel = avgGustRatio > 0.4 ? "alta" : avgGustRatio > 0.2 ? "moderata" : "bassa";
+    const turbulenceLevel: "bassa" | "moderata" | "alta" = avgGustRatio > 0.4 ? "alta" : avgGustRatio > 0.2 ? "moderata" : "bassa";
 
     // Flight Window
     let windowStart = best.ora;
