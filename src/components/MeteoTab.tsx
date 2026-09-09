@@ -2,7 +2,7 @@
 
 import type { MeteoCurrent } from "@/services/openMeteoService";
 import type { HourData } from "@/types/meteo";
-import { CloudSun, Wind, Thermometer, Droplets, Sun, Zap, Lightning, Eye, Calendar, MapPin } from "lucide-react";
+import { CloudSun, Wind, Thermometer, Droplets, Sun, Zap, Eye, Calendar, MapPin } from "lucide-react";
 
 interface MeteoTabProps {
   currentData: MeteoCurrent | null;
@@ -400,7 +400,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
       {warnings.length > 0 && (
         <div className="bg-amber-950/30 border border-amber-500/30 rounded-xl p-3 space-y-1.5">
           <div className="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-wider">
-            <Lightning className="w-3.5 h-3.5" />
+            <Zap className="w-3.5 h-3.5" />
             Attenzione
           </div>
           {warnings.map((w, i) => (
