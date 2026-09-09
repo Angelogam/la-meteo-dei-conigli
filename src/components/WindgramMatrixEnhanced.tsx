@@ -129,8 +129,8 @@ export default function WindgramMatrixEnhanced({
                     );
                   }
 
-                  const speed = (hourData as Record<string, unknown>)[level.speedKey] ?? 0;
-                  const dir = (hourData as Record<string, unknown>)[level.dirKey] ?? 0;
+                  const speed = (hourData as unknown as Record<string, unknown>)[level.speedKey] ?? 0;
+                  const dir = (hourData as unknown as Record<string, unknown>)[level.dirKey] ?? 0;
                   const safeSpeed = Math.round(speed as number);
                   const safeDir = Math.round(dir as number);
                   const color = getWindColor(safeSpeed);

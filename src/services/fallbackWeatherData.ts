@@ -295,8 +295,6 @@ export function generateRealisticHourly(
       windDir120m: Math.round(windDir120m),
       windSpeed180m: Math.round(windSpeed180m * 10) / 10,
       windDir180m: Math.round(windDir180m),
-      windSpeed925hPa: null,
-      windDir925hPa: null,
       windSpeed850hPa: Math.round(windSpeed850hPa * 10) / 10,
       windDir850hPa: Math.round(windDir850hPa),
       windSpeed700hPa: Math.round(windSpeed700hPa * 10) / 10,

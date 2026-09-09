@@ -199,7 +199,7 @@ export default function Index() {
                   <ModelComparisonBadge
                     confidence={72}
                     dominantModel="GFS"
-                    lastUpdate={lastUpdate || "—"}
+                    lastUpdate={String(lastUpdate) || "—"}
                   />
                 </div>
 

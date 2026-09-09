@@ -33,6 +33,7 @@ function getFlightStatus(
   waveIndex: number;
   cape: number;
   li: number;
+  zeroThermal: number;
 } {
   if (!current || hourly.length === 0) {
     return {
@@ -48,6 +49,7 @@ function getFlightStatus(
       waveIndex: 0,
       cape: 0,
       li: 0,
+      zeroThermal: siteAlt + 3000,
     };
   }
 
