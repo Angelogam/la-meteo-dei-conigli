@@ -60,6 +60,13 @@ async function main() {
   if (!fs.existsSync(drawableV24Dir))
     fs.mkdirSync(drawableV24Dir, { recursive: true });
 
+  // Rimuovi XML conflittuale se esiste
+  const foregroundXml = path.join(drawableV24Dir, "ic_launcher_foreground.xml");
+  if (fs.existsSync(foregroundXml)) {
+    fs.unlinkSync(foregroundXml);
+    console.log("  🗑️ Rimosso ic_launcher_foreground.xml (conflitto con PNG)");
+  }
+
   await sharp(pngBuffer)
     .resize(108, 108, { fit: "cover" })
     .png()
