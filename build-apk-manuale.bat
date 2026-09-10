@@ -38,6 +38,17 @@ if errorlevel 1 (
     exit /b 1
 )
 echo OK
+
+REM 3.5 Genera icone personalizzate
+echo.
+echo [3.5/5] Genero icone personalizzate...
+call npm run generate-android-icons
+if errorlevel 1 (
+    echo ERRORE generazione icone!
+    pause
+    exit /b 1
+)
+echo OK
 echo.
 
 echo [4/5] Build APK (10-15 minuti)...

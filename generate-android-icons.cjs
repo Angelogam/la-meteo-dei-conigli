@@ -1,79 +1,91 @@
-#!/usr/bin/env node
-/**
- * Generate all Android icon sizes from a single source image
- * Uses sharp for image resizing
- */
+// generate-android-icons.cjs
+// 🐰 Converte app-icon.svg → ic_launcher.png e genera tutte le icone Android
+// Esegui: node generate-android-icons.cjs   oppure   npm run generate-icons
 
-const sharp = require('sharp');
-const fs = require('fs');
-const path = require('path');
+const { Resvg } = require("@resvg/resvg-js");
+const sharp = require("sharp");
+const fs = require("fs");
+const path = require("path");
 
-const SOURCE = path.join(__dirname, 'public', 'ic_launcher.png');
-const OUTPUT_DIR = path.join(__dirname, 'android', 'app', 'src', 'main', 'res');
+const SOURCE_SVG = path.join("public", "app-icon.svg");
+const OUTPUT_PNG = path.join("public", "ic_launcher.png");
 
-const SIZES = {
-  'mipmap-mdpi': 48,
-  'mipmap-hdpi': 72,
-  'mipmap-xhdpi': 96,
-  'mipmap-xxhdpi': 144,
-  'mipmap-xxxhdpi': 192,
+const DENSITIES = {
+  "mipmap-mdpi": 48,
+  "mipmap-hdpi": 72,
+  "mipmap-xhdpi": 96,
+  "mipmap-xxhdpi": 144,
+  "mipmap-xxxhdpi": 192,
 };
 
-const ROUND_SIZES = {
-  'mipmap-mdpi': 48,
-  'mipmap-hdpi': 72,
-  'mipmap-xhdpi': 96,
-  'mipmap-xxhdpi': 144,
-  'mipmap-xxxhdpi': 192,
-};
+const RES_DIR = path.join("android", "app", "src", "main", "res");
 
-async function generateIcons() {
-  console.log('Generating Android icons...');
-  
-  if (!fs.existsSync(SOURCE)) {
-    console.error('Source image not found:', SOURCE);
+async function main() {
+  console.log("🐰 Meteo dei Conigli - Generazione Icone Personalizzate\n");
+
+  if (!fs.existsSync(SOURCE_SVG)) {
+    console.error(`❌ File sorgente mancante: ${SOURCE_SVG}`);
     process.exit(1);
   }
 
-  for (const [dir, size] of Object.entries(SIZES)) {
-    const outDir = path.join(OUTPUT_DIR, dir);
-    fs.mkdirSync(outDir, { recursive: true });
-    
-    const outPath = path.join(outDir, 'ic_launcher.png');
-    await sharp(SOURCE)
-      .resize(size, size, { fit: 'cover' })
+  // 1. SVG → PNG 512x512
+  console.log("📐 Conversione SVG → PNG 512×512...");
+  const svgContent = fs.readFileSync(SOURCE_SVG, "utf8");
+  const resvg = new Resvg(svgContent, {
+    fitTo: { mode: "width", value: 512 },
+  });
+  const pngBuffer = resvg.render().asPng();
+  fs.writeFileSync(OUTPUT_PNG, pngBuffer);
+  console.log(`✅ ${OUTPUT_PNG} (512×512)`);
+
+  // 2. Icone Android (non round)
+  console.log("\n🤖 Generazione icone Android...");
+  for (const [dir, size] of Object.entries(DENSITIES)) {
+    const dirPath = path.join(RES_DIR, dir);
+    if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
+
+    await sharp(pngBuffer)
+      .resize(size, size, { fit: "cover" })
       .png()
-      .toFile(outPath);
-    console.log(`  ✓ ${dir}/ic_launcher.png (${size}x${size})`);
+      .toFile(path.join(dirPath, "ic_launcher.png"));
+    await sharp(pngBuffer)
+      .resize(size, size, { fit: "cover" })
+      .png()
+      .toFile(path.join(dirPath, "ic_launcher_round.png"));
+    console.log(`  ✅ ${dir}: ${size}×${size}px`);
   }
 
-  // Generate round icons
-  for (const [dir, size] of Object.entries(ROUND_SIZES)) {
-    const outDir = path.join(OUTPUT_DIR, dir);
-    fs.mkdirSync(outDir, { recursive: true });
-    
-    const outPath = path.join(outDir, 'ic_launcher_round.png');
-    await sharp(SOURCE)
-      .resize(size, size, { fit: 'cover' })
-      .png()
-      .toFile(outPath);
-    console.log(`  ✓ ${dir}/ic_launcher_round.png (${size}x${size})`);
-  }
+  // 3. Foreground adaptive icon (drawable-v24)
+  const drawableV24Dir = path.join(RES_DIR, "drawable-v24");
+  if (!fs.existsSync(drawableV24Dir))
+    fs.mkdirSync(drawableV24Dir, { recursive: true });
 
-  // Generate foreground (for adaptive icons)
-  const drawableV24Dir = path.join(OUTPUT_DIR, 'drawable-v24');
-  fs.mkdirSync(drawableV24Dir, { recursive: true });
-  
-  await sharp(SOURCE)
-    .resize(108, 108, { fit: 'cover' })
+  await sharp(pngBuffer)
+    .resize(108, 108, { fit: "cover" })
     .png()
-    .toFile(path.join(drawableV24Dir, 'ic_launcher_foreground.png'));
-  console.log(`  ✓ drawable-v24/ic_launcher_foreground.png (108x108)`);
+    .toFile(path.join(drawableV24Dir, "ic_launcher_foreground.png"));
+  console.log("  ✅ drawable-v24/ic_launcher_foreground.png (108×108)");
 
-  console.log('\n✅ All icons generated successfully!');
+  // 4. Aggiorna icone web
+  console.log("\n🌐 Aggiornamento icone web...");
+  await sharp(pngBuffer)
+    .resize(512, 512)
+    .png()
+    .toFile(path.join("public", "icon-512.png"));
+  await sharp(pngBuffer)
+    .resize(192, 192)
+    .png()
+    .toFile(path.join("public", "icon-192.png"));
+  console.log("  ✅ public/icon-512.png");
+  console.log("  ✅ public/icon-192.png");
+
+  console.log("\n✅ Tutto completato!");
+  console.log("\nOra esegui nel terminale:");
+  console.log("   npx cap sync android");
+  console.log("   cd android && ./gradlew assembleDebug");
 }
 
-generateIcons().catch(err => {
-  console.error('Error:', err);
+main().catch((err) => {
+  console.error("❌ Errore:", err.message);
   process.exit(1);
 });

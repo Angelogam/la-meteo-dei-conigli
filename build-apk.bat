@@ -66,7 +66,12 @@ echo OK - Dipendenze installate
 REM 3. Genera icone
 echo.
 echo [3/7] Genero icone...
-call npm run generate-icons
+call npm run generate-android-icons
+if errorlevel 1 (
+    echo ERRORE: generazione icone fallita!
+    pause
+    exit /b 1
+)
 echo OK - Icone generate
 
 REM 4. Build web app
