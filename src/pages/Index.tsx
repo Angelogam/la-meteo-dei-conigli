@@ -20,7 +20,6 @@ import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 import { DECOLLI } from "@/data/decolli";
-import { getStabilityIndex } from "@/utils/weatherHelpers";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
 import { Activity, Wind } from "lucide-react";
 
@@ -66,12 +65,6 @@ export default function Index() {
 
   // State for offline mode (gestito localmente se hook non lo espone)
   const [isOfflineMode, setIsOfflineMode] = useState(false);
-
-  const stabilityIndex = getStabilityIndex(
-    currentData?.temperature ?? 20,
-    currentData?.humidity ?? 50,
-    currentData?.cloudCover ?? 30
-  );
 
   const isLoading = weatherLoading || aggressiveLoading;
 

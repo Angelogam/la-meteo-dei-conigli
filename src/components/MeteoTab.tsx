@@ -32,11 +32,6 @@ function dirLabel(deg: number) {
   return dirs[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
 }
 
-function dirArrow(deg: number) {
-  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
-  return arrows[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
-}
-
 export default function MeteoTab({ currentData, dayData, site, thermalDelta, modelName, selectedHour }: MeteoTabProps) {
   if (!currentData || dayData.length === 0) {
     return (

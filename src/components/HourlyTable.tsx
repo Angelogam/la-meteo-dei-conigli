@@ -55,7 +55,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
       const oraCorrente = now.getHours();
       const isAdesso = ora === oraCorrente;
       
-      const probPioggia = (h as any).precipitationProbability ?? (h as any).precipitation_probal ?? 0;
+      const probPioggia = h.precipitationProba ?? 0;
       return {
         ora,
         icona: iconaMeteo(h.weatherCode),
@@ -73,7 +73,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
         voloColore: v.color,
         isAdesso,
       };
-    }).filter(Boolean) as any[];
+    }).filter((r): r is NonNullable<typeof r> => r != null);
   }, [dayData, altitude]);
 
   const dataLabel = useMemo(() => {
@@ -124,7 +124,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
             </tr>
           </thead>
           <tbody>
-            {rows.map((r: any) => (
+            {rows.map((r) => (
               <tr
                 key={r.ora}
                 onClick={() => onHourSelect(r.ora)}

@@ -42,6 +42,8 @@ const HOURLY_PARAMS = [
   "temperature_80m",
   "temperature_120m",
   "freezing_level_height",
+  "surface_pressure",
+  "pressure_msl",
 ].join(",");
 
 const DAILY_PARAMS = [

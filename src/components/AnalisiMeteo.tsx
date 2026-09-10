@@ -91,22 +91,29 @@ export default function AnalisiMeteo({ currentData, dayData, site, cape, liftedI
   }, [dayData]);
 
   // K-Index: indicatore rischio temporali
-  // Formula approssimata: K = T850 - T500 + Td850 - (T2m - Td2m)
+  // K = T850 - T500 + Td850 - (T2m - Td2m)
+  // Stimato da dati reali disponibili
   const kIndex = useMemo(() => {
     if (dayData.length < 3) return null;
     const central = dayData[Math.floor(dayData.length / 2)];
-    const t850 = (central as any).windSpeed850 != null ? 15 + (central as any).temperature850 : null;
-    const t500 = (central as any).windSpeed500 != null ? -15 - (central as any).temperature500 : null;
     const t2m = central.temperature ?? 15;
     const td2m = central.dewPoint ?? (t2m - 8);
+    const spread = t2m - td2m;
 
-    // Usa temperature reali se disponibili, altrimenti stime
-    const temp850 = (central as any).temperature850 ?? (t2m - 8);
-    const temp500 = (central as any).temperature500 ?? (t2m - 25);
-    const dew850 = (central as any).dewPoint850 ?? (temp850 - 5);
+    // Stima T850 e T500 dalla quota del sito e dallo spread
+    const siteTemp850 = t2m - 8;
+    const siteTemp500 = t2m - 22;
+    const siteDew850 = siteTemp850 - Math.min(10, spread * 0.5);
 
-    const k = temp850 - temp500 + dew850 - (t2m - td2m);
-    return Math.round(k * 10) / 10;
+    // Se abbiamo dati vento 850hPa come proxy di disponibilità quota
+    const hasUpperAir = central.windSpeed850 != null;
+    if (hasUpperAir) {
+      const k = siteTemp850 - siteTemp500 + siteDew850 - spread;
+      return Math.round(k * 10) / 10;
+    }
+
+    // Stima base solo con dati superficie
+    return Math.round((siteTemp850 - siteTemp500 + siteDew850 - spread) * 10) / 10;
   }, [dayData]);
 
   if (!dayData || dayData.length < 3) {

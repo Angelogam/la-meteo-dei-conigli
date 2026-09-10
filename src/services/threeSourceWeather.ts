@@ -15,6 +15,7 @@ export type MeteoDecollo = {
   rain: number | string;
   cloud: number | string;
   wind: number | string;
+  dir: number | string;
   stato: string;
   baseNubi: string;
   termiche: string;
@@ -199,6 +200,16 @@ export async function getMeteoDecolloAggressivo(d: Decollo): Promise<MeteoDecoll
     { value: tw.wind, weight: WEIGHTS.wind.tw }
   ]);
 
+  // Fuse wind direction (weighted arithmetic mean)
+  const dirPairs: FonteValore[] = [
+    om.dir > 0 ? { value: om.dir, weight: WEIGHTS.wind.om } : null,
+    ow.dir > 0 ? { value: ow.dir, weight: WEIGHTS.wind.ow } : null,
+    tw.dir > 0 ? { value: tw.dir, weight: WEIGHTS.wind.tw } : null,
+  ].filter((v): v is FonteValore => v != null);
+  const dirNum = dirPairs.length > 0
+    ? dirPairs.reduce((a, b) => a + b.value * b.weight, 0) / dirPairs.reduce((a, b) => a + b.weight, 0)
+    : 0;
+
   const stato = statoAggressivo(om, ow, tw);
   const baseNubi = baseNubiAggressiva(Number(cloudNum || 0));
   const termiche = termicheAggressive(om.tMax, om.tMin, om.cloudDaily, om.rainDaily);
@@ -210,6 +221,7 @@ export async function getMeteoDecolloAggressivo(d: Decollo): Promise<MeteoDecoll
     rain: safe(rainNum),
     cloud: safe(cloudNum),
     wind: safe(windNum),
+    dir: safe(dirNum),
     stato,
     baseNubi,
     termiche,
