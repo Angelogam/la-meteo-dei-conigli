@@ -41,3 +41,11 @@ dist-ssr
 /playwright-report/
 /playwright/.cache/
 .last-run.json
+# Large files - do not commit
+*.msi
+*.exe
+*.apk
+*.dmg
+*.pkg
+android/jdk*
+android/app/build/**
