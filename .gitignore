@@ -24,6 +24,18 @@ dist-ssr
 *.sw?
 .dyad/
 
+# Large files
+*.msi
+*.exe
+*.dmg
+*.pkg
+*.zip
+*.tar.gz
+*.jar
+*.aar
+*.apk
+!package-lock.json
+
 # Playwright test artifacts
 /test-results/
 /playwright-report/
