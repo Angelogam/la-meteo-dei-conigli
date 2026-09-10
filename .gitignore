@@ -49,3 +49,12 @@ dist-ssr
 *.pkg
 android/jdk*
 android/app/build/**
+
+# Large files - do not commit
+*.msi
+*.exe
+*.apk
+*.dmg
+*.pkg
+android/jdk*
+android/app/build/**
