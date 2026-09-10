@@ -110,10 +110,13 @@ export default function WeatherDashboard({
 
     // Wave Index: differenza direzione vento 10m vs 850hPa
     const windDirs10m: number[] = oreVolo.map(h => h.windDir || 0);
-    const windDirs850: number[] = (dayData as any[]).filter((h: any) => {
-      const ora = new Date(h.time).getHours();
-      return ora >= 9 && ora <= 19;
-    }).map((h: any) => h.windDir850 ?? h.wind_direction_850hPa ?? null).filter(Boolean);
+    const windDirs850: number[] = dayData
+      .filter((h) => {
+        const ora = new Date(h.time).getHours();
+        return ora >= 9 && ora <= 19;
+      })
+      .map((h) => h.windDir850 ?? null)
+      .filter((v): v is number => v != null);
 
     let waveDiffDeg: number | null = null;
     if (windDirs10m.length > 0 && windDirs850.length > 0) {

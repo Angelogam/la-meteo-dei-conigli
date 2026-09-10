@@ -381,19 +381,22 @@ export const weatherService = {
         precipitation: safeNum(c.precipitation, 0),
         weatherCode: safeNum(c.weather_code, 0),
         cloudCover: safeNum(c.cloud_cover, 0),
+        cloudCoverLow: safeNum(c.cloud_cover_low, 0),
+        cloudCoverMid: safeNum(c.cloud_cover_mid, 0),
+        cloudCoverHigh: safeNum(c.cloud_cover_high, 0),
         windSpeed: safeNum(c.wind_speed_10m, 0),
         windDir: safeNum(c.wind_direction_10m, 0),
         windGusts: safeNum(c.wind_gusts_10m, c.wind_speed_10m ?? 0),
         cape: safeNum(c.cape, 0),
         apparentTemp: safeNumOrNull(c.apparent_temperature),
-          uvIndex: safeNum(c.uv_index, 0),
-          visibility: safeNum(c.visibility, 10000),
-        };
-      } catch {
-        return null;
-      }
-    },
-    async fetchWithFallback(lat: number, lon: number) {
+        uvIndex: safeNum(c.uv_index, 0),
+        visibility: safeNum(c.visibility, 10000),
+      };
+    } catch {
+      return null;
+    }
+  },
+  async fetchWithFallback(lat: number, lon: number) {
     try {
       const data = await fetchPrevisioniGiornaliere(lat, lon);
       return { data, ok: true };

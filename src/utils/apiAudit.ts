@@ -148,7 +148,7 @@ function testComponentInteractivity() {
     { name: "SiteHeader", props: ["name", "exposure", "valley", "alt", "currentData"], interactive: false },
     { name: "PrevisioniGiornaliere", props: ["enrichedDaily", "dateLabels", "currentData", "dayData", "site", "selectedDay", "onSelectDay", "nomeDecollo"], interactive: true },
     { name: "WeatherDashboard", props: ["dayData", "altitude", "selectedHour", "onHourSelect", "dayLabel"], interactive: true },
-    { name: "MeteoTab", props: ["currentData", "dayData", "site", "thermalDelta", "stabilityIndex", "modelName", "cape", "liftedIndex", "cin"], interactive: false },
+    { name: "MeteoTab", props: ["currentData", "dayData", "site", "thermalDelta", "modelName", "cape", "liftedIndex", "cin"], interactive: false },
     { name: "VentiInterpolatiTab", props: ["lat", "lon", "quotaDecollo", "selectedDay", "oraCorrente", "onOraChange", "siteName"], interactive: true },
     { name: "TermicheTab", props: ["currentData", "dayData", "site"], interactive: false },
     { name: "AnalisiMeteo", props: ["currentData", "dayData", "site", "cape", "liftedIndex", "cin"], interactive: false },

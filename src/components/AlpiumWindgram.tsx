@@ -310,7 +310,7 @@ export default function AlpiumWindgram({
     return margin.top + ((MAX_ALT - clamped) / (MAX_ALT - MIN_ALT)) * plotH;
   };
   const hourToX = (hr: number) => {
-    const idx = DISPLAY_HOURS.indexOf(hr as any);
+    const idx = DISPLAY_HOURS.indexOf(hr as typeof DISPLAY_HOURS[number]);
     if (idx === -1) return margin.left;
     return margin.left + (idx / (DISPLAY_HOURS.length - 1)) * plotW;
   };

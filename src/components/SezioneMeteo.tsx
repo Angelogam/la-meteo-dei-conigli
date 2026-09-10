@@ -71,7 +71,6 @@ export default function SezioneMeteo() {
           dayData={dayData}
           site={{ alt: site.elevation_m }}
           thermalDelta={thermalDelta}
-          stabilityIndex={{ label: "Stabile", color: "#4fc3f7" }}
           modelName={activeModel}
           cape={currentCape?.cape ?? null}
           liftedIndex={currentCape?.liftedIndex ?? null}
