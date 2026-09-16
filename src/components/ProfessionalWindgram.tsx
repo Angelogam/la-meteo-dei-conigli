@@ -248,7 +248,7 @@ export default function ProfessionalWindgram({
   }, [hourlyData]);
 
   // Barbette vento
-  const renderWindBarb = (x: number, y: number, speedKmh: number, dirDeg: number) => {
+  const renderWindBarb = (x: number, y: number, speedKmh: number, dirDeg: number, idx?: number) => {
     if (speedKmh == null || isNaN(speedKmh) || speedKmh < 1) return null;
     const knots = speedKmh * 0.539957;
     const angle = ((dirDeg - 90) * Math.PI) / 180;
@@ -260,6 +260,7 @@ export default function ProfessionalWindgram({
     let rem = Math.round(knots / 5) * 5;
     let pos = 1.0;
     const featherAngle = angle + (115 * Math.PI) / 180 + Math.PI;
+    const keyBase = idx != null ? `-${idx}` : "";
 
     while (rem >= 50 && pos >= 0.3) {
       const bx = x + pos * (endX - x);
@@ -267,22 +268,22 @@ export default function ProfessionalWindgram({
       const p1 = `${bx},${by}`;
       const p2 = `${bx + 10 * Math.cos(featherAngle)},${by + 10 * Math.sin(featherAngle)}`;
       const p3 = `${bx + 5 * Math.cos(angle)},${by + 5 * Math.sin(angle)}`;
-      elements.push(<polygon key={`p50-${i}`} points={`${p1} ${p2} ${p3}`} fill={barbColor} stroke={barbColor} strokeWidth="1" />);
+      elements.push(<polygon key={`p50${keyBase}`} points={`${p1} ${p2} ${p3}`} fill={barbColor} stroke={barbColor} strokeWidth="1" />);
       rem -= 50; pos -= 0.28;
     }
     while (rem >= 10 && pos >= 0.2) {
       const bx = x + pos * (endX - x);
       const by = y + pos * (endY - y);
-      elements.push(<line key={`l10-${i}`} x1={bx} y1={by} x2={bx + 10 * Math.cos(featherAngle)} y2={by + 10 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="1.5" strokeLinecap="round" />);
+      elements.push(<line key={`l10${keyBase}`} x1={bx} y1={by} x2={bx + 10 * Math.cos(featherAngle)} y2={by + 10 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="1.5" strokeLinecap="round" />);
       rem -= 10; pos -= 0.18;
     }
     if (rem >= 5 && pos >= 0.2) {
       const bx = x + pos * (endX - x);
       const by = y + pos * (endY - y);
-      elements.push(<line key={`l5-${i}`} x1={bx} y1={by} x2={bx + 5.5 * Math.cos(featherAngle)} y2={by + 5.5 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="1.5" strokeLinecap="round" />);
+      elements.push(<line key={`l5${keyBase}`} x1={bx} y1={by} x2={bx + 5.5 * Math.cos(featherAngle)} y2={by + 5.5 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="1.5" strokeLinecap="round" />);
     }
     return (
-      <g key={`wb-${i}`}>
+      <g key={`wb${keyBase}`}>
         <line x1={x} y1={y} x2={endX} y2={endY} stroke={barbColor} strokeWidth="1.5" strokeLinecap="round" />
         {elements}
       </g>
@@ -408,7 +409,7 @@ export default function ProfessionalWindgram({
               const x = getXFromHourIdx(i);
               return (
                 <g key={`col-${i}`}>
-                  {calc.levelWinds.map((wLvl) => renderWindBarb(x, getYFromAlt(wLvl.alt), wLvl.speed, wLvl.dir))}
+                  {calc.levelWinds.map((wLvl, j) => renderWindBarb(x, getYFromAlt(wLvl.alt), wLvl.speed, wLvl.dir, i))}
                 </g>
               );
             })}
