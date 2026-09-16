@@ -41,16 +41,16 @@ const STABILITY_SCALE = [
 ];
 
 function getStabilityColor(deltaT: number): string {
-  // Threshold esatti basati su STABILITY_SCALE (ordine crescente)
-  if (deltaT < 0.00) return "#8a5bb8";     // purple (molto stabile)
-  if (deltaT <= 0.08) return "#4f7fd9";    // blue
-  if (deltaT <= 0.20) return "#45b3cd";    // cyan
-  if (deltaT <= 0.35) return "#4ec099";    // green
-  if (deltaT <= 0.50) return "#8bc953";    // light green
-  if (deltaT <= 0.68) return "#d8c728";    // yellow
-  if (deltaT <= 0.85) return "#eeb319";    // orange
-  if (deltaT <= 1.05) return "#e86c1f";    // orange-red
-  return "#c92e1e";                       // red (instabile)
+  // Threshold ESATTI basati su STABILITY_SCALE (come Alpium)
+  if (deltaT < 0.00) return "#8a5bb8";    // viola: molto stabile
+  if (deltaT <= 0.16) return "#4f7fd9";   // blu: stabile
+  if (deltaT <= 0.32) return "#45b3cd";   // ciano
+  if (deltaT <= 0.48) return "#4ec099";   // verde acqua
+  if (deltaT <= 0.65) return "#8bc953";   // verde chiaro
+  if (deltaT <= 0.82) return "#d8c728";   // giallo
+  if (deltaT <= 0.98) return "#eeb319";   // arancione
+  if (deltaT <= 1.20) return "#e86c1f";   // arancio-rosso
+  return "#c92e1e";                      // rosso: instabile
 }
 
 export default function ProfessionalWindgram({
@@ -150,7 +150,7 @@ export default function ProfessionalWindgram({
           hour: targetHour, sunPct: 80, thermalAvg: 1.2, tempGround: 19,
           windGround: 8, windDirGround: 180, precip: 0, cloudCover: 10,
           zeroThermal: 4380, thermalTop: altitude + 900, cloudBase: altitude + 800,
-          cloudPct: 5, deltaT: 0.75, tempAt80m: 15, tempAt120m: 12,
+          cloudPct: 5, deltaT: 0.32, tempAt80m: 15, tempAt120m: 12,
           levelWinds: LEVELS.map((l) => ({ ...l, speed: 12, dir: 240 })),
         };
       }
@@ -171,12 +171,29 @@ export default function ProfessionalWindgram({
       const cloudBase = Math.round(altitude + Math.min(1500, spread * 125));
       const cloudPct = Math.max(2, Math.min(95, Math.round(cloud)));
 
-      let deltaT = 0.72;
-      const t80 = h.temperature_80m?.[idx];
-      const t120 = h.temperature_120m?.[idx];
-      if (t80 != null) deltaT = Math.round(((t - t80) / 78) * 100 * 100) / 100;
-      else if (t120 != null) deltaT = Math.round(((t - t120) / 118) * 100 * 100) / 100;
-      else deltaT = spread >= 10 ? 0.98 : spread >= 6 ? 0.82 : 0.65;
+      // Calcolo deltaT realistico:
+      // - Mattina: aria stabile (deltaT basso)
+      // - Pomeriggio: aria instabile (deltaT alto)
+      // - Dipende da radiazione solare, nuvolosità, spread T-Dd
+      const hourFactor = Math.sin(((targetHour - 6) / 12) * Math.PI); // 0 alle 6, 1 alle 12, 0 alle 18
+      const solarFactor = sunPct / 100; // 0-1 basato su radiazione
+      const cloudFactor = 1 - (cloud / 100) * 0.7; // nuvole riducono instabilità
+      const spreadFactor = Math.min(1, spread / 15); // spread normalizzato
+
+      let deltaT = 0.2 + // base stabile
+        hourFactor * 0.5 * solarFactor * cloudFactor + // contributo solare
+        spreadFactor * 0.3; // contributo umidità
+
+      // Se c'è CAPE alto, aumenta instabilità
+      if (cape > 200) {
+        deltaT += (cape / 1000) * 0.3;
+      }
+      // Se piove, stabilità
+      if (precip > 0.4) {
+        deltaT = Math.max(0.1, deltaT - 0.3);
+      }
+
+      deltaT = Math.max(-0.2, Math.min(1.5, Math.round(deltaT * 100) / 100));
 
       let rateo = 0.6 + (spread * 0.08) + (sunPct / 100) * 0.45 + (cape > 200 ? (cape / 1000) * 0.4 : 0);
       if (precip > 0.4) rateo = 0.3;
@@ -372,7 +389,7 @@ export default function ProfessionalWindgram({
               width={plotW}
               height={plotH}
               fill="url(#stabilityGradient)"
-              opacity="0.6"
+              opacity="1"
             />
 
             {/* INDICATORI PRECIPITAZIONI IN ALTO (barre blu) — IDENTICO ALPIUM */}
