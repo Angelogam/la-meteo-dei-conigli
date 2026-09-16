@@ -41,15 +41,16 @@ const STABILITY_SCALE = [
 ];
 
 function getStabilityColor(deltaT: number): string {
-  if (deltaT <= -0.1) return STABILITY_SCALE[0].color;
-  if (deltaT <= 0.08) return STABILITY_SCALE[1].color;
-  if (deltaT <= 0.24) return STABILITY_SCALE[2].color;
-  if (deltaT <= 0.40) return STABILITY_SCALE[3].color;
-  if (deltaT <= 0.56) return STABILITY_SCALE[4].color;
-  if (deltaT <= 0.73) return STABILITY_SCALE[5].color;
-  if (deltaT <= 0.90) return STABILITY_SCALE[6].color;
-  if (deltaT <= 1.10) return STABILITY_SCALE[7].color;
-  return STABILITY_SCALE[8].color;
+  // Threshold esatti basati su STABILITY_SCALE (ordine crescente)
+  if (deltaT < 0.00) return "#8a5bb8";     // purple (molto stabile)
+  if (deltaT <= 0.08) return "#4f7fd9";    // blue
+  if (deltaT <= 0.20) return "#45b3cd";    // cyan
+  if (deltaT <= 0.35) return "#4ec099";    // green
+  if (deltaT <= 0.50) return "#8bc953";    // light green
+  if (deltaT <= 0.68) return "#d8c728";    // yellow
+  if (deltaT <= 0.85) return "#eeb319";    // orange
+  if (deltaT <= 1.05) return "#e86c1f";    // orange-red
+  return "#c92e1e";                       // red (instabile)
 }
 
 export default function ProfessionalWindgram({
@@ -486,7 +487,7 @@ export default function ProfessionalWindgram({
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const cloudY = getYFromAlt(h.cloudBase + 250);
+              const cloudY = getYFromAlt(h.cloudBase + 80);
               return (
                 <g key={`cumulus-cloud-${i}`} transform={`translate(${x}, ${cloudY})`}>
                   <path
@@ -502,10 +503,29 @@ export default function ProfessionalWindgram({
               );
             })}
 
+            {/* LINEE TRATTEGGIATE VERTICALI che collegano badge alla curva thermal top */}
+            {hourlyData.map((h, i) => {
+              const x = getXFromHourIdx(i);
+              const badgeY = getYFromAlt(h.thermalTop) + 42;
+              return (
+                <line
+                  key={`connector-${i}`}
+                  x1={x}
+                  y1={getYFromAlt(h.thermalTop) + 28}
+                  x2={x}
+                  y2={badgeY}
+                  stroke="#ea580c"
+                  strokeWidth="1"
+                  strokeDasharray="2 2"
+                  opacity="0.6"
+                />
+              );
+            })}
+
             {/* BADGE QUOTA CUMULO & ASCENDENZA */}
             {hourlyData.map((h, i) => {
               const x = getXFromHourIdx(i);
-              const badgeY = getYFromAlt(h.thermalTop) + 14;
+              const badgeY = getYFromAlt(h.thermalTop) + 42;
               return (
                 <g key={`badge-data-${i}`} transform={`translate(${x}, ${badgeY})`}>
                   <rect x="-30" y="0" width="60" height="28" rx="5" fill="#ffffff" stroke="#ea580c" strokeWidth="1.5" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.15))" />
@@ -543,20 +563,33 @@ export default function ProfessionalWindgram({
         </div>
 
         {/* SCALA GRADIENTE INFERIORE ΔT / 100 m — IDENTICA AD ALPIUM */}
-        <div className="mt-2 pt-2 border-t border-slate-200 flex flex-col items-center">
-          <div className="w-full max-w-2xl px-2">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
-              <span>Stabile ←</span>
-              <span className="text-slate-900 font-extrabold text-sm">ΔT / 100 m</span>
-              <span>→ Instabile</span>
-            </div>
+    <div className="mt-2 pt-2 border-t border-slate-200 flex flex-col items-center">
+      <div className="w-full max-w-2xl px-2">
+        <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
+          <span>Stabile ←</span>
+          <span className="text-slate-900 font-extrabold text-sm">ΔT / 100 m</span>
+          <span>→ Instabile</span>
+        </div>
 
-            {/* Barra Continua Segmentata a 9 Colori */}
-            <div className="w-full h-4 rounded-sm flex overflow-hidden border border-slate-400">
-              {STABILITY_SCALE.map((item, idx) => (
-                <div key={idx} className="flex-1 h-full" style={{ backgroundColor: item.color }} />
-              ))}
-            </div>
+            {/* Barra Continua con Gradiente SVG — 9 colori esatti */}
+        <div className="w-full h-4 rounded-sm overflow-hidden border border-slate-400">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
+            <defs>
+              <linearGradient id="deltaTGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#8a5bb8" />
+                <stop offset="12.5%" stopColor="#4f7fd9" />
+                <stop offset="25%" stopColor="#45b3cd" />
+                <stop offset="37.5%" stopColor="#4ec099" />
+                <stop offset="50%" stopColor="#8bc953" />
+                <stop offset="62.5%" stopColor="#d8c728" />
+                <stop offset="75%" stopColor="#eeb319" />
+                <stop offset="87.5%" stopColor="#e86c1f" />
+                <stop offset="100%" stopColor="#c92e1e" />
+              </linearGradient>
+            </defs>
+            <rect x="0" y="0" width="100" height="100" fill="url(#deltaTGradient)" />
+          </svg>
+        </div>
 
             {/* Etichette Valori Sotto la Barra */}
             <div className="flex justify-between text-[10px] sm:text-xs font-mono font-bold text-slate-700 mt-1 px-1">
