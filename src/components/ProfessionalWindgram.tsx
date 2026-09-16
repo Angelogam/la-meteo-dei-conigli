@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { RefreshCw, Wind, Calendar, Mountain, FileText, Check, Copy, AlertTriangle, ShieldCheck } from "lucide-react";
+import { RefreshCw, Wind, AlertTriangle } from "lucide-react";
 import { fetchHourly } from "@/lib/openMeteoClient";
-import { generateReportMeteo, type GeneratedReport } from "@/utils/generateReportMeteo";
 
 interface WindgramProps {
   latitude: number;
@@ -15,7 +14,6 @@ interface WindgramProps {
 
 const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 
-// Livelli di pressione precisi (hPa -> quota approssimativa standard)
 const LEVELS = [
   { hpa: 500, alt: 5800 },
   { hpa: 550, alt: 5000 },
@@ -29,21 +27,18 @@ const LEVELS = [
 
 const ALT_TICKS = [6000, 5500, 5000, 4500, 4000, 3500, 3000, 2500, 2000, 1500];
 
-// Scala colori stabilità Alpium (-0.20 -> 1.20)
+// Scala colori stabilita ALOPIUM IDENTICA
 const STABILITY_SCALE = [
-  { val: -0.20, color: "#8a5bb8" }, // viola
-  { val: 0.00, color: "#4f7fd9" },  // blu
-  { val: 0.16, color: "#45b3cd" },  // azzurro ciano
-  { val: 0.32, color: "#4ec099" },  // verde acqua
-  { val: 0.48, color: "#8bc953" },  // verde chiaro
-  { val: 0.65, color: "#d8c728" },  // giallo verde
-  { val: 0.82, color: "#eeb319" },  // giallo oro
-  { val: 0.98, color: "#e86c1f" },  // arancione
-  { val: 1.20, color: "#c92e1e" },  // rosso scuro
+  { val: -0.20, color: "#8a5bb8" },
+  { val: 0.00, color: "#4f7fd9" },
+  { val: 0.16, color: "#45b3cd" },
+  { val: 0.32, color: "#4ec099" },
+  { val: 0.48, color: "#8bc953" },
+  { val: 0.65, color: "#d8c728" },
+  { val: 0.82, color: "#eeb319" },
+  { val: 0.98, color: "#e86c1f" },
+  { val: 1.20, color: "#c92e1e" },
 ];
-
-// Percentuali per curve di livello termico
-const THERMAL_PERCENTAGES = [5, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100];
 
 function getStabilityColor(deltaT: number): string {
   if (deltaT <= -0.1) return STABILITY_SCALE[0].color;
@@ -67,7 +62,6 @@ export default function ProfessionalWindgram({
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState<boolean>(false);
 
   const dateObj = useMemo(() => {
     const d = new Date();
@@ -90,41 +84,20 @@ export default function ProfessionalWindgram({
 
     const fetchMeteo = async () => {
       const hourlyParams = [
-        "temperature_2m",
-        "relative_humidity_2m",
-        "dew_point_2m",
-        "precipitation",
-        "cloud_cover",
-        "cloud_cover_low",
-        "cloud_cover_mid",
-        "cloud_cover_high",
-        "wind_speed_10m",
-        "wind_direction_10m",
-        "wind_gusts_10m",
-        "wind_speed_80m",
-        "wind_direction_80m",
-        "wind_speed_120m",
-        "wind_direction_120m",
-        "wind_speed_180m",
-        "wind_direction_180m",
-        "wind_speed_925hPa",
-        "wind_direction_925hPa",
-        "wind_speed_850hPa",
-        "wind_direction_850hPa",
-        "wind_speed_700hPa",
-        "wind_direction_700hPa",
-        "wind_speed_600hPa",
-        "wind_direction_600hPa",
-        "wind_speed_500hPa",
-        "wind_direction_500hPa",
-        "temperature_80m",
-        "temperature_120m",
-        "surface_pressure",
-        "shortwave_radiation",
-        "freezing_level_height",
-        "cape",
-        "lifted_index",
-        "convective_inhibition",
+        "temperature_2m", "relative_humidity_2m", "dew_point_2m",
+        "precipitation", "cloud_cover", "cloud_cover_low", "cloud_cover_mid", "cloud_cover_high",
+        "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",
+        "wind_speed_80m", "wind_direction_80m",
+        "wind_speed_120m", "wind_direction_120m",
+        "wind_speed_180m", "wind_direction_180m",
+        "wind_speed_925hPa", "wind_direction_925hPa",
+        "wind_speed_850hPa", "wind_direction_850hPa",
+        "wind_speed_700hPa", "wind_direction_700hPa",
+        "wind_speed_600hPa", "wind_direction_600hPa",
+        "wind_speed_500hPa", "wind_direction_500hPa",
+        "temperature_80m", "temperature_120m",
+        "surface_pressure", "shortwave_radiation",
+        "freezing_level_height", "cape", "lifted_index",
       ].join(",");
 
       try {
@@ -142,15 +115,13 @@ export default function ProfessionalWindgram({
     };
 
     fetchMeteo();
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [latitude, longitude, dateStr]);
 
-  // Dimensioni SVG ad altissima fedeltà
-    const width = 1000;
-    const height = 580;
-    const margin = { top: 70, right: 85, bottom: 80, left: 85 };
+  // Dimensioni SVG identiche al riferimento Alpium
+  const width = 1000;
+  const height = 580;
+  const margin = { top: 70, right: 85, bottom: 80, left: 85 };
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
@@ -166,7 +137,7 @@ export default function ProfessionalWindgram({
     return margin.left + (idx / (HOURS.length - 1)) * plotW;
   };
 
-  // Dati orari interpolati fedelmente su Open-Meteo
+  // Dati orari
   const hourlyData = useMemo(() => {
     if (!data?.hourly?.time) return [];
     const times: string[] = data.hourly.time;
@@ -175,21 +146,10 @@ export default function ProfessionalWindgram({
       const idx = times.findIndex((t) => parseInt(t.split("T")[1].split(":")[0], 10) === targetHour);
       if (idx === -1) {
         return {
-          hour: targetHour,
-          sunPct: 80,
-          thermalAvg: 1.2,
-          tempGround: 19,
-          windGround: 8,
-          windDirGround: 180,
-          precip: 0,
-          cloudCover: 10,
-          zeroThermal: 4380,
-          thermalTop: altitude + 900,
-          cloudBase: altitude + 800,
-          cloudPct: 5,
-          deltaT: 0.75,
-          tempAt80m: 15,
-          tempAt120m: 12,
+          hour: targetHour, sunPct: 80, thermalAvg: 1.2, tempGround: 19,
+          windGround: 8, windDirGround: 180, precip: 0, cloudCover: 10,
+          zeroThermal: 4380, thermalTop: altitude + 900, cloudBase: altitude + 800,
+          cloudPct: 5, deltaT: 0.75, tempAt80m: 15, tempAt120m: 12,
           levelWinds: LEVELS.map((l) => ({ ...l, speed: 12, dir: 240 })),
         };
       }
@@ -205,15 +165,11 @@ export default function ProfessionalWindgram({
       const freeze = h.freezing_level_height?.[idx] ?? (altitude + t / 0.0098);
       const cape = h.cape?.[idx] ?? 350;
 
-      // Sole % reale
       const sunPct = Math.min(100, Math.max(10, Math.round(((rad / 900) * (1 - (cloud / 100) * 0.65)) * 100)));
-
-      // Spread T - Dew
-            const spread = Math.max(1, t - dew);
-            const cloudBase = Math.round(altitude + Math.min(1500, spread * 125));
+      const spread = Math.max(1, t - dew);
+      const cloudBase = Math.round(altitude + Math.min(1500, spread * 125));
       const cloudPct = Math.max(2, Math.min(95, Math.round(cloud)));
 
-      // Gradiente T calcolato su livelli verticali
       let deltaT = 0.72;
       const t80 = h.temperature_80m?.[idx];
       const t120 = h.temperature_120m?.[idx];
@@ -221,20 +177,13 @@ export default function ProfessionalWindgram({
       else if (t120 != null) deltaT = Math.round(((t - t120) / 118) * 100 * 100) / 100;
       else deltaT = spread >= 10 ? 0.98 : spread >= 6 ? 0.82 : 0.65;
 
-      // Rateo salita medio
       let rateo = 0.6 + (spread * 0.08) + (sunPct / 100) * 0.45 + (cape > 200 ? (cape / 1000) * 0.4 : 0);
       if (precip > 0.4) rateo = 0.3;
       else if (cloud > 80) rateo *= 0.4;
       rateo = Math.max(0.4, Math.min(2.5, Math.round(rateo * 10) / 10));
 
-      // Quota top termico realistica: base cumuli + sviluppo termico
-      // rateo in m/s * 100 = metri di sviluppo approssimativo
-      // CAPE contribuisce in modo marginale (J/kg / 10 ≈ metri aggiuntivi)
-      const thermalTop = Math.round(
-        Math.min(4000, cloudBase + Math.min(800, rateo * 100 + cape * 0.1))
-      );
+      const thermalTop = Math.round(Math.min(4000, cloudBase + Math.min(800, rateo * 100 + cape * 0.1)));
 
-      // Venti per ciascun livello isobarico da Open-Meteo
       const levelWinds = [
         { hpa: 500, alt: 5800, speed: h.wind_speed_500hPa?.[idx] ?? (wind10 * 2.8), dir: h.wind_direction_500hPa?.[idx] ?? (windDir10 + 40) },
         { hpa: 550, alt: 5000, speed: (h.wind_speed_500hPa?.[idx] ? h.wind_speed_500hPa[idx] * 0.9 : wind10 * 2.5), dir: (h.wind_direction_500hPa?.[idx] ?? windDir10) + 30 },
@@ -247,68 +196,68 @@ export default function ProfessionalWindgram({
       ];
 
       return {
-        hour: targetHour,
-        sunPct,
-        thermalAvg: rateo,
-        tempGround: Math.round(t),
-        windGround: Math.round(wind10),
-        windDirGround: Math.round(windDir10),
-        precip,
-        cloudCover: cloud,
-        zeroThermal: Math.round(freeze),
-        thermalTop,
-        cloudBase,
-        cloudPct,
-        deltaT,
-        tempAt80m: t80 ?? Math.round(t - 3),
-        tempAt120m: t120 ?? Math.round(t - 6),
+        hour: targetHour, sunPct, thermalAvg: rateo, tempGround: Math.round(t),
+        windGround: Math.round(wind10), windDirGround: Math.round(windDir10),
+        precip, cloudCover: cloud, zeroThermal: Math.round(freeze),
+        thermalTop, cloudBase, cloudPct, deltaT,
+        tempAt80m: t80 ?? Math.round(t - 3), tempAt120m: t120 ?? Math.round(t - 6),
         levelWinds,
       };
     });
   }, [data, altitude]);
 
-  // Report Meteorologico Testuale Coerente
-  const reportGenerato = useMemo<GeneratedReport | null>(() => {
-    if (!data?.hourly) return null;
-    return generateReportMeteo({
-      siteName,
-      altitude,
-      dateObj,
-      hourlyData: data.hourly,
-    });
-  }, [data, siteName, altitude, dateObj]);
+  // Curve
+  const zeroThermalPath = useMemo(() => {
+    if (hourlyData.length === 0) return "";
+    return hourlyData.map((h, i) => `${getXFromHourIdx(i)},${getYFromAlt(h.zeroThermal)}`).join(" ");
+  }, [hourlyData]);
 
-  const handleCopyReport = () => {
-    if (!reportGenerato) return;
-    navigator.clipboard.writeText(reportGenerato.testoCompleto);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const thermalTopCurve = useMemo(() => {
+    if (hourlyData.length === 0) return "";
+    return hourlyData
+      .map((h, i) => `${i === 0 ? "M" : "L"} ${getXFromHourIdx(i)},${getYFromAlt(h.thermalTop)}`)
+      .join(" ");
+  }, [hourlyData]);
 
-  // Disegno barbetta identica al riferimento originale Alpium
+  const avgZeroThermal = useMemo(() => {
+    if (hourlyData.length === 0) return 4381;
+    const sum = hourlyData.reduce((acc, h) => acc + h.zeroThermal, 0);
+    return Math.round(sum / hourlyData.length);
+  }, [hourlyData]);
+
+  // Sfondo colorato continuo basato su deltaT (IDENTICO ad Alpium)
+  const backgroundRects = useMemo(() => {
+    if (hourlyData.length === 0) return [];
+    const results: { x: number; w: number; color: string }[] = [];
+    for (let i = 0; i < hourlyData.length - 1; i++) {
+      const h1 = hourlyData[i];
+      const h2 = hourlyData[i + 1];
+      const x1 = getXFromHourIdx(i);
+      const x2 = getXFromHourIdx(i + 1);
+      const w = x2 - x1;
+      // Usa deltaT medio per questa colonna
+      const avgDeltaT = (h1.deltaT + h2.deltaT) / 2;
+      const color = getStabilityColor(avgDeltaT);
+      results.push({ x: x1, w, color });
+    }
+    return results;
+  }, [hourlyData]);
+
+  // Barbette vento
   const renderWindBarb = (x: number, y: number, speedKmh: number, dirDeg: number) => {
     if (speedKmh == null || isNaN(speedKmh) || speedKmh < 1) return null;
     const knots = speedKmh * 0.539957;
-    // Open-Meteo: direzione in gradi DA DOVE viene il vento (convenzione meteorologica standard)
-    // La barbetta punta nella direzione DA DOVE viene il vento
-    // deg=270 (vento da ovest) → barbetta deve puntare a OVEST (sinistra)
     const angle = ((dirDeg - 90) * Math.PI) / 180;
     const staffLen = 22;
     const endX = x + staffLen * Math.cos(angle);
     const endY = y + staffLen * Math.sin(angle);
-
-    // Colore barbetta stile alpium (blu/viola scuro o arancio se vento forte)
     const barbColor = speedKmh > 30 ? "#d946ef" : speedKmh > 18 ? "#0284c7" : "#3b82f6";
-
-    const elements = [];
+    const elements: any[] = [];
     let rem = Math.round(knots / 5) * 5;
     let pos = 1.0;
-    // Direzione in cui soffia il vento: ribaltata di 180° rispetto alla convenzione met.
     const barbAngle = angle + (115 * Math.PI) / 180;
-    // Le piume devono stare sul lato destro del gambo, quindi ribaltiamo l'angolo
     const featherAngle = barbAngle + Math.PI;
 
-    // Pennacchio 50 nodi
     while (rem >= 50 && pos >= 0.3) {
       const bx = x + pos * (endX - x);
       const by = y + pos * (endY - y);
@@ -319,45 +268,22 @@ export default function ProfessionalWindgram({
       rem -= 50;
       pos -= 0.28;
     }
-
-    // Alette 10 nodi
     while (rem >= 10 && pos >= 0.2) {
       const bx = x + pos * (endX - x);
       const by = y + pos * (endY - y);
       elements.push(
-        <line
-          key={`l10-${x}-${y}-${pos}`}
-          x1={bx}
-          y1={by}
-          x2={bx + 10 * Math.cos(featherAngle)}
-          y2={by + 10 * Math.sin(featherAngle)}
-          stroke={barbColor}
-          strokeWidth="1.6"
-          strokeLinecap="round"
-        />
+        <line key={`l10-${x}-${y}-${pos}`} x1={bx} y1={by} x2={bx + 10 * Math.cos(featherAngle)} y2={by + 10 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="1.6" strokeLinecap="round" />
       );
       rem -= 10;
       pos -= 0.18;
     }
-
-    // Alette 5 nodi
     if (rem >= 5 && pos >= 0.2) {
       const bx = x + pos * (endX - x);
       const by = y + pos * (endY - y);
       elements.push(
-        <line
-          key={`l5-${x}-${y}-${pos}`}
-          x1={bx}
-          y1={by}
-          x2={bx + 5.5 * Math.cos(featherAngle)}
-          y2={by + 5.5 * Math.sin(featherAngle)}
-          stroke={barbColor}
-          strokeWidth="1.6"
-          strokeLinecap="round"
-        />
+        <line key={`l5-${x}-${y}-${pos}`} x1={bx} y1={by} x2={bx + 5.5 * Math.cos(featherAngle)} y2={by + 5.5 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="1.6" strokeLinecap="round" />
       );
     }
-
     return (
       <g key={`wb-${x}-${Math.round(y)}`}>
         <line x1={x} y1={y} x2={endX} y2={endY} stroke={barbColor} strokeWidth="1.6" strokeLinecap="round" />
@@ -365,112 +291,6 @@ export default function ProfessionalWindgram({
       </g>
     );
   };
-
-  // Linea tratteggiata Zero Termico
-  const zeroThermalPath = useMemo(() => {
-    if (hourlyData.length === 0) return "";
-    return hourlyData.map((h, i) => `${getXFromHourIdx(i)},${getYFromAlt(h.zeroThermal)}`).join(" ");
-  }, [hourlyData]);
-
-  // Curva Paracadute Viola (Top Termico)
-  const thermalTopCurve = useMemo(() => {
-    if (hourlyData.length === 0) return "";
-    return hourlyData
-      .map((h, i) => `${i === 0 ? "M" : "L"} ${getXFromHourIdx(i)},${getYFromAlt(h.thermalTop)}`)
-      .join(" ");
-  }, [hourlyData]);
-
-  // Quota media zero termico per etichetta
-  const avgZeroThermal = useMemo(() => {
-    if (hourlyData.length === 0) return 4381;
-    const sum = hourlyData.reduce((acc, h) => acc + h.zeroThermal, 0);
-    return Math.round(sum / hourlyData.length);
-  }, [hourlyData]);
-
-  // Curva di livello percentuale per termiche (es. ↑5%, ↑10%, etc.)
-  const getThermalLevelCurve = (percent: number) => {
-    if (hourlyData.length === 0) return "";
-    return hourlyData
-      .map((h, i) => {
-        const targetAlt = h.cloudBase + (h.thermalTop - h.cloudBase) * (percent / 100);
-        return `${i === 0 ? "M" : "L"} ${getXFromHourIdx(i)},${getYFromAlt(targetAlt)}`;
-      })
-      .join(" ");
-  };
-
-  // Isoterme (linee di temperatura)
-  const getIsothermPath = (temp: number) => {
-    if (hourlyData.length === 0) return "";
-    return hourlyData
-      .map((h, i) => {
-        // Interpolazione lineare tra livelli
-        const temps = [h.tempGround, h.tempAt80m, h.tempAt120m];
-        const alts = [h.tempGround, 800, 1200];
-        // Trova l'altezza dove la temperatura è uguale a temp
-        let targetAlt = h.tempGround;
-        for (let j = 0; j < temps.length - 1; j++) {
-          if ((temps[j] >= temp && temps[j + 1] <= temp) || (temps[j] <= temp && temps[j + 1] >= temp)) {
-            const ratio = (temp - temps[j]) / (temps[j + 1] - temps[j]);
-            targetAlt = h.cloudBase + (alts[j + 1] - alts[j]) * ratio;
-            break;
-          }
-        }
-        return `${i === 0 ? "M" : "L"} ${getXFromHourIdx(i)},${getYFromAlt(targetAlt)}`;
-      })
-      .join(" ");
-  };
-
-  // Zona instabile: area rossa/arancione sotto la curva termica (thermalTop)
-  const unstableZonePath = useMemo(() => {
-    if (hourlyData.length === 0) return "";
-    const points: string[] = [];
-    hourlyData.forEach((h, i) => {
-      const x = getXFromHourIdx(i);
-      const y = getYFromAlt(h.thermalTop);
-      if (i === 0) points.push(`M ${x},${y}`);
-      else points.push(`L ${x},${y}`);
-    });
-    // Chiudi il percorso verso il basso
-    points.push(`L ${getXFromHourIdx(HOURS.length - 1)},${margin.top + plotH}`);
-    points.push(`L ${margin.left},${margin.top + plotH}`);
-    points.push(`Z`);
-    return points.join(" ");
-  }, [hourlyData]);
-
-  // Zona stabile: area blu/viola SOPRA la curva termica (aria stabile in quota)
-  const stableZonePath = useMemo(() => {
-    if (hourlyData.length === 0) return "";
-    const points: string[] = [];
-    // Inizia dall'alto a sinistra
-    points.push(`M ${margin.left},${margin.top}`);
-    // Vai a destra in alto
-    points.push(`L ${margin.left + plotW},${margin.top}`);
-    // Scendi lungo il bordo destro
-    points.push(`L ${margin.left + plotW},${getYFromAlt(hourlyData[HOURS.length - 1].thermalTop)}`);
-    // Segui la curva termica all'indietro
-    for (let i = HOURS.length - 1; i >= 0; i--) {
-      const x = getXFromHourIdx(i);
-      const y = getYFromAlt(hourlyData[i].thermalTop);
-      points.push(`L ${x},${y}`);
-    }
-    // Chiudi a sinistra
-    points.push(`L ${margin.left},${margin.top}`);
-    points.push(`Z`);
-    return points.join(" ");
-  }, [hourlyData]);
-
-  // DeltaT strip at ground level
-  const deltaTStripPath = useMemo(() => {
-    if (hourlyData.length === 0) return "";
-    const points: string[] = [];
-    hourlyData.forEach((h, i) => {
-      const x = getXFromHourIdx(i);
-      const y = getYFromAlt(altitude);
-      if (i === 0) points.push(`M ${x},${y}`);
-      else points.push(`L ${x},${y}`);
-    });
-    return points.join(" ");
-  }, [hourlyData]);
 
   if (loading) {
     return (
@@ -494,10 +314,10 @@ export default function ProfessionalWindgram({
 
   return (
     <div className="space-y-3">
-      {/* Contenitore Grafico Alpium Bianco con Bordo Arrotondato */}
+      {/* Contenitore Grafico Bianco con Bordo Arrotondato — IDENTICO ALPIUM */}
       <div className="bg-white text-slate-900 rounded-[28px] p-3 sm:p-5 shadow-2xl border border-slate-300 overflow-hidden font-sans select-none">
         
-        {/* Titolo Principale in Alto */}
+        {/* Titolo Principale */}
         <div className="text-center pb-1">
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight lowercase">
             {siteName.toLowerCase()} &middot; {formattedDateTitle.toLowerCase()}
@@ -507,33 +327,24 @@ export default function ProfessionalWindgram({
           </p>
         </div>
 
-        {/* TABELLA IN ALTO: Ascendenza media e Sole %} */}
-        <div className="bg-slate-50 rounded-xl p-2 mb-2 border border-slate-200">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-2">
-            <span className="flex items-center gap-1.5">
-              <Mountain className="w-3.5 h-3.5 text-emerald-500" />
-              Ascendenza media
-            </span>
-            <span className="flex items-center gap-1.5">
-              <SunIcon className="w-3.5 h-3.5 text-amber-500" />
-              Sole %
-            </span>
-          </div>
-          <div className="grid grid-cols-11 gap-px">
-            {hourlyData.map((h, i) => (
-              <div key={i} className="text-center">
-                <div className="font-black text-sm" style={{ color: h.thermalAvg >= 1.6 ? "#b91c1c" : "#0f172a" }}>
-                  {h.thermalAvg.toFixed(1)}
-                </div>
-                <div className="text-xs" style={{ color: h.sunPct >= 90 ? "#94a3b8" : "#b45309" }}>
-                  {h.sunPct}%
-                </div>
+        {/* HEADER IN ALTO: Ascendenza media e Sole % — IDENTICO ALPIUM */}
+        <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1 px-1">
+          <span className="text-slate-500">valore medio ascendenze (m/s)</span>
+        </div>
+        <div className="grid grid-cols-11 gap-0 px-1 mb-1">
+          {hourlyData.map((h, i) => (
+            <div key={i} className="text-center">
+              <div className="font-black text-sm" style={{ color: h.thermalAvg >= 1.6 ? "#b91c1c" : "#0f172a" }}>
+                {h.thermalAvg.toFixed(1)}
               </div>
-            ))}
-          </div>
+              <div className="text-xs" style={{ color: h.sunPct >= 90 ? "#94a3b8" : "#b45309" }}>
+                {h.sunPct}%
+              </div>
+            </div>
+          ))}
         </div>
 
-        {/* SVG Windgram Completo */}
+        {/* SVG Windgram — IDENTICO ALPIUM */}
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 pb-1">
           <svg
             viewBox={`0 0 ${width} ${height}`}
@@ -541,110 +352,55 @@ export default function ProfessionalWindgram({
             style={{ shapeRendering: "geometricPrecision", textRendering: "geometricPrecision" }}
           >
             <defs>
-              {/* Pattern a Reticolo (Cross-Hatching) per le zone termiche attive */}
+              {/* Pattern reticolo per zone convettive */}
               <pattern id="thermalHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
                 <line x1="0" y1="0" x2="0" y2="8" stroke="#1e293b" strokeWidth="1" strokeDasharray="2 2" opacity="0.35" />
                 <line x1="0" y1="0" x2="8" y2="0" stroke="#1e293b" strokeWidth="1" strokeDasharray="2 2" opacity="0.35" />
               </pattern>
+              {/* Gradient sfondo per precipitazioni */}
+              <linearGradient id="rainGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.2" />
+              </linearGradient>
             </defs>
 
-            {/* 1. SFONDO BASE TERRESTRE - GIALLO/CHIARO (aria instabile al suolo) */}
-            <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#fef08a" />
-
-            {/* 2. ZONA INSTABILE ROSSA/ARANCIONE sotto thermalTop */}
-            {unstableZonePath && (
-              <path d={unstableZonePath} fill="#f97316" opacity="0.85" />
-            )}
-
-            {/* 3. AREA STABILE IN QUOTA - VERDE/CHIARO (sopra la curva termica) */}
-            {stableZonePath && (
-              <path d={stableZonePath} fill="#34d399" opacity="0.5" />
-            )}
-            {/* 3b. Strato di transizione stabile sopra thermalTop (verde acqua) */}
-            {stableZonePath && (
-              <path
-                d={(() => {
-                  if (hourlyData.length === 0) return "";
-                  const points: string[] = [];
-                  hourlyData.forEach((h, i) => {
-                    const x = getXFromHourIdx(i);
-                    const yTop = getYFromAlt(h.thermalTop);
-                    const yBottom = getYFromAlt(h.thermalTop + 400);
-                    if (i === 0) points.push(`M ${x},${yTop}`);
-                    else points.push(`L ${x},${yTop}`);
-                  });
-                  // Chiudi dal fondo all'inizio
-                  for (let i = hourlyData.length - 1; i >= 0; i--) {
-                    const x = getXFromHourIdx(i);
-                    const yBottom = getYFromAlt(hourlyData[i].thermalTop + 400);
-                    points.push(`L ${x},${yBottom}`);
-                  }
-                  points.push("Z");
-                  return points.join(" ");
-                })()}
-                fill="#6ee7b7"
-                opacity="0.4"
-              />
-            )}
-
-            {/* 4. Isoterme tratteggiate (linee di temperatura) */}
-            {[-5, 0, 5, 10, 15, 20].map((temp) => (
-              <path
-                key={`isotherm-${temp}`}
-                d={getIsothermPath(temp)}
-                fill="none"
-                stroke="#94a3b8"
-                strokeWidth="1.2"
-                strokeDasharray="4 3"
-                opacity="0.6"
+            {/* SFONDO COLORATO CONTINUO BASE — IDENTICO ALPIUM */}
+            {backgroundRects.map((rect, i) => (
+              <rect
+                key={`bg-${i}`}
+                x={rect.x}
+                y={margin.top}
+                width={rect.w}
+                height={plotH}
+                fill={rect.color}
+                opacity="0.55"
               />
             ))}
 
-            {/* 5. Curve di livello percentuale termico (↑5%, ↑10%, ..., ↑100%) */}
-            {THERMAL_PERCENTAGES.map((pct) => (
-              <path
-                key={`thermal-level-${pct}`}
-                d={getThermalLevelCurve(pct)}
-                fill="none"
-                stroke={pct === 100 ? "#9333ea" : pct >= 50 ? "#a855f7" : pct >= 25 ? "#3b82f6" : "#0ea5e9"}
-                strokeWidth={pct === 100 ? 2.5 : 1.5}
-                strokeLinecap="round"
-                opacity="0.8"
-              />
-            ))}
-
-            {/* 6. DeltaT Strip at ground level (color gradient) */}
-            <rect x={margin.left} y={getYFromAlt(altitude) - 12} width={plotW} height="24" fill="url(#deltaTGradient)" />
-
-            {/* 7. Area con Tratteggio Reticolare nelle ore centrali convettive */}
-            <path
-              d={`M ${getXFromHourIdx(2)},${getYFromAlt(1450)} 
-                  L ${getXFromHourIdx(2)},${getYFromAlt(2100)} 
-                  Q ${getXFromHourIdx(5)},${getYFromAlt(2400)} ${getXFromHourIdx(8)},${getYFromAlt(2200)} 
-                  L ${getXFromHourIdx(10)},${getYFromAlt(1800)} 
-                  L ${getXFromHourIdx(10)},${getYFromAlt(1450)} Z`}
-              fill="url(#thermalHatch)"
-            />
+            {/* INDICATORI PRECIPITAZIONI IN ALTO (barre blu) — IDENTICO ALPIUM */}
+            {hourlyData.map((h, i) => {
+              if (h.precip <= 0.05) return null;
+              const x = getXFromHourIdx(i);
+              const barHeight = Math.min(30, h.precip * 15);
+              return (
+                <g key={`rain-${i}`}>
+                  <rect x={x - 8} y={margin.top + 5} width="16" height={barHeight} fill="#3b82f6" opacity="0.7" rx="2" />
+                  <text x={x} y={margin.top + barHeight + 12} fill="#1e293b" fontSize="9" fontWeight="700" textAnchor="middle" fontFamily="monospace">
+                    {h.precip.toFixed(2)} mm
+                  </text>
+                </g>
+              );
+            })}
 
             {/* LINEE ORIZZONTALI LIVELLI ISOBARICI & QUOTE */}
             {LEVELS.map((lvl) => {
               const y = getYFromAlt(lvl.alt);
               return (
                 <g key={`grid-lvl-${lvl.hpa}`}>
-                  <line
-                    x1={margin.left}
-                    y1={y}
-                    x2={margin.left + plotW}
-                    y2={y}
-                    stroke="#1e293b"
-                    strokeWidth="0.8"
-                    strokeDasharray="2 3"
-                    opacity="0.4"
-                  />
-                  {/* Testo Asse Sinistro (hPa) */}
-                        <text x={margin.left - 12} y={y + 5} fill="#0f172a" fontSize="13" fontWeight="800" textAnchor="end">
-                          {lvl.hpa} hPa
-                        </text>
+                  <line x1={margin.left} y1={y} x2={margin.left + plotW} y2={y} stroke="#1e293b" strokeWidth="0.8" strokeDasharray="2 3" opacity="0.4" />
+                  <text x={margin.left - 12} y={y + 5} fill="#0f172a" fontSize="13" fontWeight="800" textAnchor="end">
+                    {lvl.hpa} hPa
+                  </text>
                 </g>
               );
             })}
@@ -654,14 +410,7 @@ export default function ProfessionalWindgram({
               const y = getYFromAlt(alt);
               return (
                 <g key={`grid-alt-${alt}`}>
-                  <line
-                    x1={margin.left + plotW}
-                    y1={y}
-                    x2={margin.left + plotW + 5}
-                    y2={y}
-                    stroke="#0f172a"
-                    strokeWidth="1.2"
-                  />
+                  <line x1={margin.left + plotW} y1={y} x2={margin.left + plotW + 5} y2={y} stroke="#0f172a" strokeWidth="1.2" />
                   <text x={margin.left + plotW + 10} y={y + 5} fill="#0f172a" fontSize="13" fontWeight="700" textAnchor="start">
                     {alt} m
                   </text>
@@ -673,21 +422,11 @@ export default function ProfessionalWindgram({
             {HOURS.map((h, i) => {
               const x = getXFromHourIdx(i);
               return (
-                <line
-                  key={`vline-${h}`}
-                  x1={x}
-                  y1={margin.top}
-                  x2={x}
-                  y2={margin.top + plotH}
-                  stroke="#1e293b"
-                  strokeWidth="0.8"
-                  strokeDasharray="2 3"
-                  opacity="0.3"
-                />
+                <line key={`vline-${h}`} x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#1e293b" strokeWidth="0.8" strokeDasharray="2 3" opacity="0.3" />
               );
             })}
 
-            {/* BARBETTE DEL VENTO ISOARICHE (Vettori di vento Open-Meteo) */}
+            {/* BARBETTE DEL VENTO ISOARICHE */}
             {hourlyData.map((calc, i) => {
               const x = getXFromHourIdx(i);
               return (
@@ -700,16 +439,9 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {/* LINEA DELLO ZERO TERMICO (Azzurra Tratteggiata con Icone Fiocco di Neve) */}
+            {/* LINEA DELLO ZERO TERMICO (Azzurra Tratteggiata con Fiocchi di Neve) */}
             {zeroThermalPath && (
-              <polyline
-                points={zeroThermalPath}
-                fill="none"
-                stroke="#0284c7"
-                strokeWidth="2.5"
-                strokeDasharray="6 4"
-                strokeLinecap="round"
-              />
+              <polyline points={zeroThermalPath} fill="none" stroke="#0284c7" strokeWidth="2.5" strokeDasharray="6 4" strokeLinecap="round" />
             )}
 
             {hourlyData.map((h, i) => {
@@ -718,14 +450,12 @@ export default function ProfessionalWindgram({
               return (
                 <g key={`zero-snowflake-${i}`} transform={`translate(${x}, ${y})`}>
                   <circle cx="0" cy="0" r="7.5" fill="#ffffff" stroke="#0284c7" strokeWidth="1.8" />
-                  <text x="0" y="3.5" fill="#0284c7" fontSize="10" fontWeight="900" textAnchor="middle">
-                    ❄
-                  </text>
+                  <text x="0" y="3.5" fill="#0284c7" fontSize="10" fontWeight="900" textAnchor="middle">❄</text>
                 </g>
               );
             })}
 
-            {/* BADGE ZERO TERMICO LATERALE AZZURRO (es. 0 °C • 4381 m) */}
+            {/* BADGE ZERO TERMICO LATERALE */}
             <g transform={`translate(${margin.left + plotW - 145}, ${getYFromAlt(avgZeroThermal) - 15})`}>
               <rect x="0" y="0" width="140" height="30" rx="6" fill="#0284c7" stroke="#ffffff" strokeWidth="2" />
               <text x="70" y="20" fill="#ffffff" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="monospace">
@@ -733,17 +463,7 @@ export default function ProfessionalWindgram({
               </text>
             </g>
 
-            {/* LINEA NERA TRATTEGGIATA PBL / BOUNDARY LAYER */}
-            <path
-              d={`M ${getXFromHourIdx(0)},${getYFromAlt(1800)} 
-                  Q ${getXFromHourIdx(5)},${getYFromAlt(2700)} ${getXFromHourIdx(10)},${getYFromAlt(2300)}`}
-              fill="none"
-              stroke="#0f172a"
-              strokeWidth="2.2"
-              strokeDasharray="5 4"
-            />
-
-            {/* CURVA PARACADUTE VIOLA CON ARCHI (Thermal Top & Paraglider Icons) */}
+            {/* CURVA PARACADUTE VIOLA (Thermal Top) */}
             {thermalTopCurve && (
               <path d={thermalTopCurve} fill="none" stroke="#9333ea" strokeWidth="3.5" strokeLinecap="round" />
             )}
@@ -754,38 +474,27 @@ export default function ProfessionalWindgram({
               const y = getYFromAlt(h.thermalTop);
               return (
                 <g key={`paraglider-icon-${i}`} transform={`translate(${x}, ${y})`}>
-                  {/* Arco parapendio viola */}
-                  <path
-                    d="M -18,-5 C -14,-18 14,-18 18,-5 C 12,-10 -12,-10 -18,-5 Z"
-                    fill="#c084fc"
-                    stroke="#7e22ce"
-                    strokeWidth="2"
-                  />
-                  {/* Funi */}
+                  <path d="M -18,-5 C -14,-18 14,-18 18,-5 C 12,-10 -12,-10 -18,-5 Z" fill="#c084fc" stroke="#7e22ce" strokeWidth="2" />
                   <line x1="-14" y1="-6" x2="0" y2="0" stroke="#7e22ce" strokeWidth="1.5" />
                   <line x1="14" y1="-6" x2="0" y2="0" stroke="#7e22ce" strokeWidth="1.5" />
-                  {/* Pallino centrale */}
                   <circle cx="0" cy="0" r="4.5" fill="#ffffff" stroke="#7e22ce" strokeWidth="2.5" />
                 </g>
               );
             })}
 
-            {/* CARTELLINI CUMULI: Nuvola Bianca con % di Copertura */}
+            {/* CARTELLINI CUMULI con % di Copertura */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
               const cloudY = getYFromAlt(h.cloudBase + 250);
-
               return (
                 <g key={`cumulus-cloud-${i}`} transform={`translate(${x}, ${cloudY})`}>
-                  {/* Sagoma Nuvola */}
                   <path
                     d="M -16,3 A 6,6 0 0,1 -7,-5 A 10,10 0 0,1 7,-6 A 8,8 0 0,1 16,2 A 5,5 0 0,1 14,8 L -14,8 A 5,5 0 0,1 -16,3 Z"
                     fill="#ffffff"
                     stroke="#64748b"
                     strokeWidth="1.5"
                   />
-                  {/* Testo % copertura */}
                   <text x="0" y="4" fill="#0f172a" fontSize="10" fontWeight="900" textAnchor="middle">
                     {h.cloudPct}%
                   </text>
@@ -793,48 +502,28 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {/* BADGE GIALLI QUOTA CUMULO & ASCENDENZA (es. 2282 m ↑ 1.7 m/s) */}
+            {/* BADGE QUOTA CUMULO & ASCENDENZA */}
             {hourlyData.map((h, i) => {
               const x = getXFromHourIdx(i);
               const badgeY = getYFromAlt(h.thermalTop) + 14;
-
               return (
                 <g key={`badge-data-${i}`} transform={`translate(${x}, ${badgeY})`}>
-                  <rect
-                    x="-30"
-                    y="0"
-                    width="60"
-                    height="28"
-                    rx="5"
-                    fill="#ffffff"
-                    stroke="#ea580c"
-                    strokeWidth="1.5"
-                    filter="drop-shadow(0 1px 2px rgba(0,0,0,0.15))"
-                  />
+                  <rect x="-30" y="0" width="60" height="28" rx="5" fill="#ffffff" stroke="#ea580c" strokeWidth="1.5" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.15))" />
                   <text x="0" y="12" fill="#0f172a" fontSize="11" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                     {h.cloudBase} m
                   </text>
                   <text x="0" y="23" fill="#b91c1c" fontSize="11" fontWeight="900" textAnchor="middle" fontFamily="monospace">
-                    &uarr; {h.thermalAvg.toFixed(1)} m/s
+                    ↑ {h.thermalAvg.toFixed(1)} m/s
                   </text>
                 </g>
               );
             })}
 
-            {/* ASSE X INFERIORE: ORE ESATTE 08:00 - 18:00 */}
+            {/* ASSE X INFERIORE: ORE ESATTE */}
             {HOURS.map((h, i) => {
               const x = getXFromHourIdx(i);
               return (
-                <text
-                  key={`label-hour-${h}`}
-                  x={x}
-                  y={margin.top + plotH + 25}
-                  fill="#0f172a"
-                  fontSize="14"
-                  fontWeight="800"
-                  textAnchor="middle"
-                  fontFamily="monospace"
-                >
+                <text key={`label-hour-${h}`} x={x} y={margin.top + plotH + 25} fill="#0f172a" fontSize="14" fontWeight="800" textAnchor="middle" fontFamily="monospace">
                   {String(h).padStart(2, "0")}:00
                 </text>
               );
@@ -853,13 +542,13 @@ export default function ProfessionalWindgram({
           </svg>
         </div>
 
-        {/* SCALA GRADIENTE INFERIORE DELTA T / 100 m IDENTICA AD ALPIUM */}
+        {/* SCALA GRADIENTE INFERIORE ΔT / 100 m — IDENTICA AD ALPIUM */}
         <div className="mt-2 pt-2 border-t border-slate-200 flex flex-col items-center">
           <div className="w-full max-w-2xl px-2">
             <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
-              <span>Stabile &larr;</span>
-              <span className="text-slate-900 font-extrabold text-sm">&Delta;T / 100 m</span>
-              <span>&rarr; Instabile</span>
+              <span>Stabile ←</span>
+              <span className="text-slate-900 font-extrabold text-sm">ΔT / 100 m</span>
+              <span>→ Instabile</span>
             </div>
 
             {/* Barra Continua Segmentata a 9 Colori */}
@@ -878,114 +567,11 @@ export default function ProfessionalWindgram({
 
             {/* Didascalia Fonte Dati */}
             <div className="text-center text-[10px] text-slate-500 font-mono mt-3">
-              Fonte: AROME 0-48 h + ICON-EU 0-120 h via Open-Meteo &middot; Diagnostica di volo a vela di Alpium
+              Fonte: AROME 0-48 h + ICON-EU 0-120 h via Open-Meteo · Diagnostica di volo a vela di Alpium
             </div>
           </div>
         </div>
       </div>
-
-      {/* BOLLETTINO E REPORT METEOROLOGICO DI SUPPORTO */}
-            {reportGenerato && (
-              <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border-2 border-emerald-500/40 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3 text-slate-200">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-900/40 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-                <FileText className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-base sm:text-lg font-black text-white tracking-wide flex items-center gap-2">
-                  {reportGenerato.titolo}
-                </h4>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Bollettino aerologico analitico &bull; Quota Decollo {altitude} m slm
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-black border ${
-                  reportGenerato.score >= 7
-                    ? "bg-emerald-950/60 text-emerald-300 border-emerald-500/50"
-                    : reportGenerato.score >= 5
-                    ? "bg-amber-950/60 text-amber-300 border-amber-500/50"
-                    : "bg-rose-950/60 text-rose-300 border-rose-500/50"
-                }`}
-              >
-                Voto: {reportGenerato.score}/10
-              </span>
-
-              <button
-                onClick={handleCopyReport}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 transition-all border border-slate-700"
-                title="Copia testo bollettino"
-              >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copied ? "Copiato!" : "Copia"}</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-3 text-sm sm:text-base leading-relaxed text-slate-300">
-            <p>
-              <strong className="text-amber-300 font-semibold">1. Quadro Termico & Stabilità: </strong>
-              {reportGenerato.paragrafoTermico}
-            </p>
-
-            <p>
-              <strong className="text-cyan-300 font-semibold">2. Profilo Vento in Quota: </strong>
-              {reportGenerato.paragrafoVento}
-            </p>
-
-            <p>
-              <strong className="text-purple-300 font-semibold">3. Convezione Pomeridiana & Rischio: </strong>
-              {reportGenerato.paragrafoInstabilita}
-            </p>
-
-            <p>
-              <strong className="text-emerald-300 font-semibold">4. Finestra di Decollo & Tattica: </strong>
-              {reportGenerato.paragrafoStrategia}
-            </p>
-          </div>
-
-          <div className="pt-3 border-t border-slate-800/80 space-y-2">
-            <div className="flex items-start gap-2 text-xs sm:text-sm bg-rose-950/30 border border-rose-500/30 rounded-xl p-3 text-rose-200">
-              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-              <div>
-                <strong className="text-rose-300">Segnali di pericolo: </strong>
-                {reportGenerato.segnaliPericolo}
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2 text-xs sm:text-sm bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-3 text-emerald-200">
-              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-              <div>
-                <strong className="text-emerald-300">Giudizio finale: </strong>
-                {reportGenerato.giudizioFinale}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
-  );
-}
-
-// Componente icona sole
-function SunIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="5" />
-      <line x1="12" y1="2" x2="12" y2="4" />
-      <line x1="12" y1="20" x2="12" y2="22" />
-      <line x1="4.93" y1="4.93" x2="6.5" y2="6.5" />
-      <line x1="17.1" y1="17.1" x2="18.36" y2="18.36" />
-      <line x1="19.07" y1="4.93" x2="17.5" y2="6.5" />
-      <line x1="4.93" y1="19.07" x2="6.5" y2="17.5" />
-      <line x1="12" y1="4" x2="12" y2="2" />
-      <line x1="12" y1="22" x2="12" y2="24" />
-      <line x1="4.22" y1="12" x2="5.64" y2="12" />
-      <line x1="18.36" y1="12" x2="19.78" y2="12" />
-    </svg>
   );
 }
