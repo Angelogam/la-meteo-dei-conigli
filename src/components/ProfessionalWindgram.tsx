@@ -226,22 +226,16 @@ export default function ProfessionalWindgram({
     return Math.round(sum / hourlyData.length);
   }, [hourlyData]);
 
-  // Sfondo colorato continuo basato su deltaT (IDENTICO ad Alpium)
-  const backgroundRects = useMemo(() => {
+  // Sfondo a gradiente continuo (IDENTICO ad Alpium)
+  // I colori della scala sono fissi e interpolati linearmente
+  const gradientStops = useMemo(() => {
     if (hourlyData.length === 0) return [];
-    const results: { x: number; w: number; color: string }[] = [];
-    for (let i = 0; i < hourlyData.length - 1; i++) {
-      const h1 = hourlyData[i];
-      const h2 = hourlyData[i + 1];
-      const x1 = getXFromHourIdx(i);
-      const x2 = getXFromHourIdx(i + 1);
-      const w = x2 - x1;
-      // Usa deltaT medio per questa colonna
-      const avgDeltaT = (h1.deltaT + h2.deltaT) / 2;
-      const color = getStabilityColor(avgDeltaT);
-      results.push({ x: x1, w, color });
-    }
-    return results;
+    const colors = hourlyData.map(h => getStabilityColor(h.deltaT));
+    const total = colors.length;
+    return colors.map((c, i) => {
+      const offset = (i / (total - 1)) * 100;
+      return { offset, color: c };
+    });
   }, [hourlyData]);
 
   // Barbette vento
@@ -363,20 +357,23 @@ export default function ProfessionalWindgram({
                 <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.8" />
                 <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.2" />
               </linearGradient>
+              {/* Gradient sfondo stabilità ΔT — CONTINUO come Alpium */}
+              <linearGradient id="stabilityGradient" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse">
+                {gradientStops.map((stop, i) => (
+                  <stop key={i} offset={`${stop.offset}%`} stopColor={stop.color} />
+                ))}
+              </linearGradient>
             </defs>
 
-            {/* SFONDO COLORATO CONTINUO BASE — IDENTICO ALPIUM */}
-            {backgroundRects.map((rect, i) => (
-              <rect
-                key={`bg-${i}`}
-                x={rect.x}
-                y={margin.top}
-                width={rect.w}
-                height={plotH}
-                fill={rect.color}
-                opacity="0.55"
-              />
-            ))}
+            {/* SFONDO COLORATO CONTINUO GRADIENTE — IDENTICO ALPIUM */}
+            <rect
+              x={margin.left}
+              y={margin.top}
+              width={plotW}
+              height={plotH}
+              fill="url(#stabilityGradient)"
+              opacity="0.6"
+            />
 
             {/* INDICATORI PRECIPITAZIONI IN ALTO (barre blu) — IDENTICO ALPIUM */}
             {hourlyData.map((h, i) => {
