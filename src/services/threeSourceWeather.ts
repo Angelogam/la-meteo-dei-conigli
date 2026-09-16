@@ -244,7 +244,7 @@ export async function getAllMeteoDecolliAggressivo(): Promise<Map<string, MeteoD
       results.set(d.name, weather);
     } catch {
       results.set(d.name, {
-        temp: "--", rain: "--", cloud: "--", wind: "--",
+        temp: "--", rain: "--", cloud: "--", wind: "--", dir: "--",
         stato: "Errore", baseNubi: "--", termiche: "--",
         indice: 10, indiceLabel: "Sconsigliato", fonte: "Errore"
       });

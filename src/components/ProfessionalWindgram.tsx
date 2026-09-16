@@ -218,7 +218,7 @@ export default function ProfessionalWindgram({
         windGround: Math.round(wind10), windDirGround: Math.round(windDir10),
         precip, cloudCover: cloud, zeroThermal: Math.round(freeze),
         thermalTop, cloudBase, cloudPct, deltaT,
-        tempAt80m: t80 ?? Math.round(t - 3), tempAt120m: t120 ?? Math.round(t - 6),
+        tempAt80m: Math.round(t - 3), tempAt120m: Math.round(t - 6),
         levelWinds,
       };
     });
