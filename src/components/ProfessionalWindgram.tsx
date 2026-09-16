@@ -172,25 +172,17 @@ export default function ProfessionalWindgram({
       const sunPct = Math.min(100, Math.max(5, Math.round(((rad / 900) * (1 - (cloud / 100) * 0.6)) * 100)));
       const spread = Math.max(0.5, t - dew);
 
-      // DeltaT REALISTICO: usa differenza T_superficie - T_850hPa
-      // Se t850 disponibile: gradiente termico diretto
-      // Altrimenti: stima da CAPE e irraggiamento
-      let deltaT: number;
-      if (t850 != null && !isNaN(t850)) {
-        // Differenza temperatura superficie - 850hPa (~1500m)
-        // Standard: -6.5°C/km = -0.65°C/100m
-        // deltaT positivo = instabile, negativo = stabile
-        const tempDiff = t - t850;
-        const altDiff = altitude - 1500; // distanza in metri
-        deltaT = Math.round((tempDiff / Math.abs(altDiff)) * 10000) / 100; // °C per 100m
-      } else {
-        // Stima da parametri superficiali
-        const solarEffect = (sunPct / 100) * 0.6;
-        const capeEffect = Math.min(0.4, (cape / 1000) * 0.3);
-        const cloudEffect = -(cloud / 100) * 0.3;
-        deltaT = Math.max(-0.2, Math.min(1.5, 0.3 + solarEffect + capeEffect + cloudEffect));
-      }
-      deltaT = Math.round(deltaT * 100) / 100;
+      // DeltaT basato su ciclo giornaliero REALISTICO (come Alpium)
+      // Mattina: stabile (verde/blu) → Pomeriggio: instabile (giallo/arancione)
+      const hourFactor = Math.sin(((targetHour - 6) / 12) * Math.PI); // 0 alle 6, picco a 12, 0 a 18
+      const baseDeltaT = 0.15 + hourFactor * 0.55; // 0.15 (mattina) → 0.70 (pomeriggio)
+      const solarBoost = (sunPct / 100) * 0.25; // contributo sole
+      const capeBoost = Math.min(0.25, (cape / 800) * 0.15); // contributo CAPE
+      const cloudPenalty = -(cloud / 100) * 0.2; // nuvole stabilizzano
+      const precipPenalty = precip > 0.1 ? -0.15 : 0; // pioggia stabilizza
+
+      let deltaT = baseDeltaT + solarBoost + capeBoost + cloudPenalty + precipPenalty;
+      deltaT = Math.max(-0.2, Math.min(1.5, Math.round(deltaT * 100) / 100));
 
       // Rateo termico
       const rateo = Math.max(0.3, Math.min(2.5,
