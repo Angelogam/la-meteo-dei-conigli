@@ -148,31 +148,23 @@ export default function ProfessionalWindgram({
       const windDir10 = h.wind_direction_10m?.[idx] ?? 200;
       const freeze = h.freezing_level_height?.[idx] ?? (altitude + 2500);
       const cape = h.cape?.[idx] ?? 200;
-      const t80 = h.temperature_80m?.[idx];
-      const t120 = h.temperature_120m?.[idx];
 
       // Sole %
       const sunPct = Math.min(100, Math.max(5, Math.round(((rad / 900) * (1 - (cloud / 100) * 0.6)) * 100)));
       const spread = Math.max(0.5, t - dew);
 
-      // DeltaT REALE: usa gradiente termico verticale se disponibile
-      let deltaT: number;
-      if (t80 != null && !isNaN(t80)) {
-        // Gradiente: (T_superficie - T_80m) / 80 * 100 = °C/100m
-        deltaT = Math.round(((t - t80) / 80) * 100 * 100) / 100;
-      } else if (t120 != null && !isNaN(t120)) {
-        deltaT = Math.round(((t - t120) / 120) * 100 * 100) / 100;
-      } else {
-        // Stima realistica basata su ciclo giornaliero + parametri
-        const hourFactor = Math.sin(((targetHour - 6) / 12) * Math.PI);
-        const baseDeltaT = 0.10 + hourFactor * 0.60; // 0.10 (mattina) → 0.70 (pomeriggio)
-        const solarEffect = (sunPct / 100) * 0.20;
-        const capeEffect = Math.min(0.20, (cape / 600) * 0.15);
-        const cloudEffect = -(cloud / 100) * 0.15;
-        const precipEffect = precip > 0.1 ? -0.10 : 0;
-        deltaT = baseDeltaT + solarEffect + capeEffect + cloudEffect + precipEffect;
-      }
-      deltaT = Math.max(-0.20, Math.min(1.50, Math.round(deltaT * 100) / 100));
+      // DeltaT REALISTICO per siti montani
+      // Usa ciclo giornaliero + parametri atmosferici
+      // NON usare temperature_80m/120m a quote alte (produce valori assurdi)
+      const hourFactor = Math.sin(((targetHour - 6) / 12) * Math.PI); // 0→1→0
+      const baseDeltaT = 0.10 + hourFactor * 0.55; // 0.10 (mattina) → 0.65 (pomeriggio)
+      const solarEffect = (sunPct / 100) * 0.20; // +0.20 max
+      const capeEffect = Math.min(0.25, (cape / 500) * 0.20); // +0.25 max
+      const cloudEffect = -(cloud / 100) * 0.20; // -0.20 max
+      const precipEffect = precip > 0.1 ? -0.15 : 0; // -0.15
+
+      let deltaT = baseDeltaT + solarEffect + capeEffect + cloudEffect + precipEffect;
+      deltaT = Math.max(-0.20, Math.min(1.20, Math.round(deltaT * 100) / 100));
 
       // Rateo termico
       const rateo = Math.max(0.3, Math.min(2.5,
