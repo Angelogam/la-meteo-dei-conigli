@@ -547,11 +547,11 @@ export default function ProfessionalWindgram({
               <path d={thermalTopCurve} fill="none" stroke="#9333ea" strokeWidth="3" strokeLinecap="round" />
             )}
 
-            {/* ICONE PARAPENDIO VIOLA - CENTRALE NEL COLONNA */}
+            {/* ICONE PARAPENDIO VIOLA - IN BASSO (60% della colonna) */}
             {hourlyData.map((h, i) => {
               const x = getXFromHourIdx(i);
-              const midAlt = Math.round((h.thermalTop + h.cloudBase) / 2);
-              const y = getYFromAlt(midAlt);
+              const paraAlt = h.cloudBase + (h.thermalTop - h.cloudBase) * 0.6;
+              const y = getYFromAlt(paraAlt);
               return (
                 <g key={`para-${i}`} transform={`translate(${x}, ${y})`}>
                   <circle cx="0" cy="-8" r="18" fill="#ede9fe" stroke="#7e22ce" strokeWidth="2" opacity="0.9" />
@@ -563,13 +563,14 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {/* ICONE NUVOLE CUMULI - SOPRA IL PARAPENDIO (300m dalla base) */}
+            {/* ICONE NUVOLE CUMULI - SOPRA IL PARAPENDIO (80% della colonna) */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const cloudY = getYFromAlt(h.cloudBase + 300);
+              const cloudAlt = h.cloudBase + (h.thermalTop - h.cloudBase) * 0.8;
+              const y = getYFromAlt(cloudAlt);
               return (
-                <g key={`cloud-${i}`} transform={`translate(${x}, ${cloudY})`}>
+                <g key={`cloud-${i}`} transform={`translate(${x}, ${y})`}>
                   <circle cx="0" cy="0" r="16" fill="#f1f5f9" stroke="#64748b" strokeWidth="1.5" opacity="0.9" />
                   <path d="M -16,4 A 6,6 0 0,1 -7,-5 A 10,10 0 0,1 7,-6 A 8,8 0 0,1 16,2 A 5,5 0 0,1 15,8 L -14,8 A 5,5 0 0,1 -16,4 Z" fill="#ffffff" stroke="#64748b" strokeWidth="1.5" />
                   <text x="0" y="5" fill="#0f172a" fontSize="10" fontWeight="900" textAnchor="middle">{h.cloudPct}%</text>
@@ -577,12 +578,13 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {/* BADGE QUOTA CUMULO + ASCENDENZA - SOPRA LE NUVOLE (60px sopra) */}
+            {/* BADGE QUOTA CUMULO + ASCENDENZA - SOPRA LE NUVOLE (20px sopra) */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const cloudY = getYFromAlt(h.cloudBase + 300);
-              const badgeY = cloudY - 60; // 60px sopra la nuvola
+              const cloudAlt = h.cloudBase + (h.thermalTop - h.cloudBase) * 0.8;
+              const y = getYFromAlt(cloudAlt);
+              const badgeY = y - 20; // 20px sopra la nuvola
               const rateoColor = h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
               return (
                 <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
