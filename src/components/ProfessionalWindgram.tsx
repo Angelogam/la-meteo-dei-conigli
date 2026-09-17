@@ -556,11 +556,11 @@ export default function ProfessionalWindgram({
               <path d={unstableZonePath} fill="#f97316" opacity="0.85" />
             )}
 
-            {/* 3. AREA STABILE IN QUOTA - VERDE/CHIARO (sopra la curva termica) */}
+            {/* 3. AREA STABILE IN QUOTA - BLU/VIOLA (sopra la curva termica) */}
             {stableZonePath && (
-              <path d={stableZonePath} fill="#34d399" opacity="0.5" />
+              <path d={stableZonePath} fill="#6366f1" opacity="0.75" />
             )}
-            {/* 3b. Strato di transizione stabile sopra thermalTop (verde acqua) */}
+            {/* 3b. Strato di transizione stabile sopra thermalTop (azzurro chiaro) */}
             {stableZonePath && (
               <path
                 d={(() => {
@@ -582,8 +582,8 @@ export default function ProfessionalWindgram({
                   points.push("Z");
                   return points.join(" ");
                 })()}
-                fill="#6ee7b7"
-                opacity="0.4"
+                fill="#a5b4fc"
+                opacity="0.5"
               />
             )}
 
@@ -845,7 +845,7 @@ export default function ProfessionalWindgram({
 
             {/* ETICHETTA ZONA STABILE (in alto a destra) */}
             <g transform={`translate(${margin.left + plotW - 145}, ${margin.top + 12})`}>
-              <rect x="0" y="0" width="140" height="26" rx="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
+              <rect x="0" y="0" width="140" height="26" rx="5" fill="#6366f1" stroke="#ffffff" strokeWidth="2" />
               <text x="70" y="18" fill="#ffffff" fontSize="12" fontWeight="900" textAnchor="middle">
                 ❄ ARIA STABILE
               </text>
