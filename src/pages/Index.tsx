@@ -16,6 +16,7 @@ import AnalisiMeteo from "@/components/AnalisiMeteo";
 import Windgram from "@/components/Windgram";
 import RasoftWindgram from "@/components/RasoftWindgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
+import AlpiumVerticalChart from "@/components/AlpiumVerticalChart";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
@@ -149,6 +150,9 @@ export default function Index() {
           </aside>
 
           <div className="flex-1 min-w-0 space-y-6">
+            {/* Alpium Vertical Chart */}
+            <AlpiumVerticalChart />
+
             {showCards && site && (
               <>
                 {isOfflineMode && (
