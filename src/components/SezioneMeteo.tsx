@@ -72,6 +72,9 @@ export default function SezioneMeteo() {
           site={{ alt: site.elevation_m }}
           thermalDelta={thermalDelta}
           modelName={activeModel}
+          cape={currentCape?.cape ?? null}
+          liftedIndex={currentCape?.liftedIndex ?? null}
+          cin={currentCape?.cin ?? null}
         />
       )}
       {activeTab === "venti" && (
