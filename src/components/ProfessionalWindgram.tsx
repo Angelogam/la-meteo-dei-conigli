@@ -547,16 +547,14 @@ export default function ProfessionalWindgram({
               <path d={thermalTopCurve} fill="none" stroke="#9333ea" strokeWidth="3" strokeLinecap="round" />
             )}
 
-            {/* ICONE PARAPENDIO VIOLA - INGRANDITA E CENTRALE */}
+            {/* ICONE PARAPENDIO VIOLA - CENTRALE NEL COLONNA */}
             {hourlyData.map((h, i) => {
               const x = getXFromHourIdx(i);
               const midAlt = Math.round((h.thermalTop + h.cloudBase) / 2);
               const y = getYFromAlt(midAlt);
               return (
                 <g key={`para-${i}`} transform={`translate(${x}, ${y})`}>
-                  {/* Sfondo circolare per visibilità */}
                   <circle cx="0" cy="-8" r="18" fill="#ede9fe" stroke="#7e22ce" strokeWidth="2" opacity="0.9" />
-                  {/* Parapendio ingrandito */}
                   <path d="M -22,-12 C -16,-28 16,-28 22,-12 C 14,-18 -14,-18 -22,-12 Z" fill="#c084fc" stroke="#7e22ce" strokeWidth="2.5" />
                   <line x1="-18" y1="-14" x2="0" y2="-2" stroke="#7e22ce" strokeWidth="2" />
                   <line x1="18" y1="-14" x2="0" y2="-2" stroke="#7e22ce" strokeWidth="2" />
@@ -565,37 +563,34 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {/* ICONE NUVOLE CUMULI - INGRANDITE E SOTTO IL PARAPENDIO */}
+            {/* ICONE NUVOLE CUMULI - SOPRA IL PARAPENDIO (300m dalla base) */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const cloudY = getYFromAlt(h.cloudBase + 350);
+              const cloudY = getYFromAlt(h.cloudBase + 300);
               return (
                 <g key={`cloud-${i}`} transform={`translate(${x}, ${cloudY})`}>
-                  {/* Sfondo circolare */}
                   <circle cx="0" cy="0" r="16" fill="#f1f5f9" stroke="#64748b" strokeWidth="1.5" opacity="0.9" />
-                  {/* Nuvola ingrandita */}
                   <path d="M -16,4 A 6,6 0 0,1 -7,-5 A 10,10 0 0,1 7,-6 A 8,8 0 0,1 16,2 A 5,5 0 0,1 15,8 L -14,8 A 5,5 0 0,1 -16,4 Z" fill="#ffffff" stroke="#64748b" strokeWidth="1.5" />
                   <text x="0" y="5" fill="#0f172a" fontSize="10" fontWeight="900" textAnchor="middle">{h.cloudPct}%</text>
                 </g>
               );
             })}
 
-            {/* BADGE QUOTA CUMULO + ASCENDENZA - INGRANDITI E SOTTO LE NUVOLE */}
+            {/* BADGE QUOTA CUMULO + ASCENDENZA - SOPRA LE NUVOLE (60px sopra) */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const cloudY = getYFromAlt(h.cloudBase + 350);
-              const badgeY = cloudY + 28;
+              const cloudY = getYFromAlt(h.cloudBase + 300);
+              const badgeY = cloudY - 60; // 60px sopra la nuvola
               const rateoColor = h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
               return (
                 <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
-                  {/* Badge con sfondo bianco */}
-                  <rect x="-32" y="-8" width="64" height="32" rx="6" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1.5" />
-                  <text x="0" y="4" fill="#0f172a" fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+                  <rect x="-35" y="-10" width="70" height="36" rx="6" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1.5" />
+                  <text x="0" y="5" fill="#0f172a" fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                     {h.cloudBase}m
                   </text>
-                  <text x="0" y="16" fill={rateoColor} fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+                  <text x="0" y="20" fill={rateoColor} fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                     ↑{h.thermalAvg.toFixed(1)}
                   </text>
                 </g>
