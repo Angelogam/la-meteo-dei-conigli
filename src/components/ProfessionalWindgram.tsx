@@ -570,16 +570,16 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {/* BADGE QUOTA CUMULO + ASCENDENZA */}
+            {/* BADGE QUOTA CUMULO + ASCENDENZA — DENTRO IL GRAFICO, SOPRA LA CURVA THERMAL TOP */}
             {hourlyData.map((h, i) => {
               const x = getXFromHourIdx(i);
-              const badgeY = getYFromAlt(h.thermalTop) + 12;
+              const badgeY = getYFromAlt(h.thermalTop) - 38;
               const rateoColor = h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
               return (
                 <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
-                  <rect x="-28" y="0" width="56" height="26" rx="4" fill="#ffffff" stroke="#ea580c" strokeWidth="1.2" />
+                  <rect x="-28" y="0" width="56" height="30" rx="4" fill="#ffffff" stroke="#ea580c" strokeWidth="1.2" />
                   <text x="0" y="11" fill="#0f172a" fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">{h.cloudBase} m</text>
-                  <text x="0" y="22" fill={rateoColor} fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">↑ {h.thermalAvg.toFixed(1)} m/s</text>
+                  <text x="0" y="24" fill={rateoColor} fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">↑ {h.thermalAvg.toFixed(1)} m/s</text>
                 </g>
               );
             })}
