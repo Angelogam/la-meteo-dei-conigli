@@ -561,11 +561,11 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {/* ICONE NUVOLE CUMULI - PRIMA (dietro) */}
+            {/* ICONE NUVOLE CUMULI - PIÙ ALTO (400m sopra base) */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const cloudY = getYFromAlt(h.cloudBase + 200);
+              const cloudY = getYFromAlt(h.cloudBase + 400); // Spostato più in alto
               return (
                 <g key={`cloud-${i}`} transform={`translate(${x}, ${cloudY})`}>
                   <path d="M -14,3 A 5,5 0 0,1 -6,-4 A 9,9 0 0,1 6,-5 A 7,7 0 0,1 14,1 A 4,4 0 0,1 13,7 L -12,7 A 4,4 0 0,1 -14,3 Z" fill="#ffffff" stroke="#64748b" strokeWidth="1.2" />
@@ -574,12 +574,12 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {/* BADGE QUOTA CUMULO + ASCENDENZA - DOPO (davanti) */}
+            {/* BADGE QUOTA CUMULO + ASCENDENZA - SOTTO LE NUVOLE */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const cloudY = getYFromAlt(h.cloudBase + 200);
-              const badgeY = cloudY + 16;
+              const cloudY = getYFromAlt(h.cloudBase + 400);
+              const badgeY = cloudY + 14; // Leggermente sotto la nuvola
               const rateoColor = h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
               return (
                 <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
