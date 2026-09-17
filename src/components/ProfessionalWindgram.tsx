@@ -27,9 +27,9 @@ const PRESSURE_LEVELS = [
   { hpa: 850, alt: 1450 },
 ];
 
-// Funzione per generare i tick dell'asse altitudine partendo da altitude+50
+// Funzione per generare i tick dell'asse altitudine partendo da una quota base
 function generateAltTicks(startAlt: number): number[] {
-  const start = Math.ceil(startAlt / 500) * 500; // Arrotonda al 500 superiore
+  const start = Math.floor(startAlt / 500) * 500; // Arrotonda al 500 inferiore
   const ticks: number[] = [];
   for (let alt = start; alt <= 6000; alt += 500) {
     ticks.push(alt);
@@ -161,9 +161,8 @@ export default function ProfessionalWindgram({
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
-  // Avvio asse Y: prossimo tick 500 superiore a altitude+50
-  const startAltTick = Math.ceil((Math.round(altitude) + 50) / 500) * 500;
-  const minAlt = Math.max(startAltTick, 500);
+  // Avvio asse Y: quota di decollo (arrotondata al 500 inferiore)
+  const minAlt = Math.max(Math.floor(Math.round(altitude) / 500) * 500, 500);
   const maxAlt = 6000;
 
   const getYFromAlt = (alt: number) => {
@@ -415,7 +414,7 @@ export default function ProfessionalWindgram({
             {siteName.toLowerCase()} &middot; {formattedDateTitle.toLowerCase()}
           </h2>
           <p className="text-[10px] sm:text-xs text-slate-500 font-mono tracking-wide mt-0.5">
-            plotted {dateStr} 00:00 UTC · ground {Math.round(altitude)} m · start {Math.round(altitude + 50)} m
+            plotted {dateStr} 00:00 UTC · takeoff {Math.round(altitude)} m · chart from {Math.floor(Math.round(altitude) / 500) * 500} m
           </p>
         </div>
 
