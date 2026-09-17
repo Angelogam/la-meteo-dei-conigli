@@ -1,108 +1,35 @@
-================================================================================
-LISTA COMPLETA DECOLLI - METEO DEI CONIGLI
-24 siti di volo libero con coordinate GPS
-================================================================================
+DECOLLI METEO DEI CONIGLI - Lista completa 24 decolli con coordinate GPS
 
-Formato: ID | NOME | LATITUDINE | LONGITUDINE | QUOTA (m) | VALLE/ZONA | ESPOSIZIONE
-
---------------------------------------------------------------------------------
-01 | malanotte                   | Malanotte                    | 44.2587457  | 7.7943047   | 1740 | Valle Ellero        | S/SE
-02 | colle-di-tenda              | Colle di Tenda               | 44.1509397  | 7.5692629   | 1990 | Valle Roya/Vermenagna | S
-03 | boves                       | Boves                        | 44.3211372  | 7.5446976   | 900  | Cuneese             | NE
-04 | monte-male-dronero          | Monte Male – Dronero         | 44.4316307  | 7.3628868   | 950  | Valle Maira         | S
-05 | iretta                      | Iretta                       | 44.4989374  | 7.3820366   | 1050 | Valle Maira         | SO
-06 | pratoni-di-val-mala         | Pratoni di Val Mala          | 44.5078012  | 7.3466190   | 1400 | Valle Maira         | S
-07 | monte-birrone               | Monte Birrone                | 44.5398928  | 7.2529395   | 2131 | Valle Maira         | S
-08 | colle-dell-agnello          | Colle dell'Agnello           | 44.6828259  | 6.9782006   | 2748 | Valle Varaita       | S
-09 | pian-mune-seggiovia         | Pian Munè – Seggiovia        | 44.6386103  | 7.2308895   | 1870 | Valle Po            | S/SW
-10 | pian-mune-bric-lombatera    | Pian Munè – Bric Lombatera   | 44.6573652  | 7.2600170   | 1350 | Valle Po            | S
-11 | martiniana-po               | Martiniana Po                | 44.6069527  | 7.3832261   | 1400 | Valle Po            | NE
-12 | rucas-alto                  | Rucas Alto                   | 44.7421393  | 7.2201187   | 1500 | Valle Infernotto    | S/SE
-13 | montoso-decollo-basso       | Montoso – Decollo Basso      | 44.7643723  | 7.2497579   | 1250 | Valle Infernotto    | SE
-14 | monte-vandalino             | Monte Vandalino              | 44.8367123  | 7.1738669   | 2120 | Val Pellice         | S/SE
-15 | pian-dell-alpe              | Pian dell'Alpe               | 45.0639615  | 7.0282665   | 1990 | Val Chisone         | S
-16 | roletto-piggi               | Roletto – Piggi              | 44.9324929  | 7.3109590   | 820  | Pinerolese          | S
-17 | piossasco-monte-s-giorgio   | Piossasco – Monte S. Giorgio | 44.9967184  | 7.4480022   | 673  | Collina Torinese    | S
-18 | truccetti                   | Truccetti                    | 45.0797351  | 7.3420183   | 900  | Canavese            | S
-19 | val-della-torre             | Val della Torre              | 45.1626275  | 7.4637162   | 970  | Val della Torre     | S
-20 | rocca-canavese-m-della-neve | Rocca Canavese – M. della Neve | 45.3275775 | 7.5727936 | 1100 | Canavese            | S
-21 | santa-elisabetta            | Santa Elisabetta             | 45.4182734  | 7.6419450   | 1000 | Canavese            | S
-22 | santa-elisabetta-alto       | Santa Elisabetta Alto        | 45.4401939  | 7.6480259   | 1400 | Canavese            | S
-23 | monte-cavallaria            | Monte Cavallaria             | 45.5172936  | 7.7988083   | 1430 | Canavese            | S
-24 | andrate                     | Andrate                      | 45.5506393  | 7.8807756   | 1000 | Canavese            | S
---------------------------------------------------------------------------------
+================================================================================
+ID                          NOME                          LATITUDINE    LONGITUDINE    QUOTA(m)  VALLE                ESPOSIZIONE
+================================================================================
+malanotte                   Malanotte                     44.2587457   7.7943047     1740      Valle Ellero         S/SE
+colle-di-tenda              Colle di Tenda                44.1509397   7.5692629     1990      Valle Roya/Vermenagna S
+boves                       Boves                         44.3211372   7.5446976     900       Cuneese              NE
+monte-male-dronero          Monte Male – Dronero          44.4316307   7.3628868     950       Valle Maira          S
+iretta                      Iretta                        44.4989374   7.3820366     1050      Valle Maira          SO
+pratoni-di-val-mala         Pratoni di Val Mala           44.5078012   7.3466190     1400      Valle Maira          S
+monte-birrone               Monte Birrone                 44.5398928   7.2529395     2131      Valle Maira          S
+colle-dell-agnello          Colle dell'Agnello            44.6828259   6.9782006     2748      Valle Varaita        S
+pian-mune-seggiovia         Pian Munè – Seggiovia         44.6386103   7.2308895     1870      Valle Po             S/SW
+pian-mune-bric-lombatera    Pian Munè – Bric Lombatera    44.6573652   7.2600170     1350      Valle Po             S
+martiniana-po               Martiniana Po                 44.6069527   7.3832261     1400      Valle Po             NE
+rucas-alto                  Rucas alto                    44.7421393   7.2201187     1500      Valle Infernotto     S/SE
+montoso-decollo-basso       Montoso – decollo basso       44.7643723   7.2497579     1250      Valle Infernotto     SE
+monte-vandalino             Monte Vandalino               44.8367123   7.1738669     2120      Val Pellice          S/SE
+pian-dell-alpe              Pian dell'Alpe                45.0639615   7.0282665     1990      Val Chisone          S
+roletto-piggi               Roletto – Piggi               44.9324929   7.3109590     820       Pinerolese           S
+piossasco-monte-s-giorgio   Piossasco – Monte S. Giorgio  44.9967184   7.4480022     673       Collina Torinese     S
+truccetti                   Truccetti                     45.0797351   7.3420183     900       Canavese             S
+val-della-torre             Val della Torre               45.1626275   7.4637162     970       Val della Torre      S
+rocca-canavese-m-della-neve Rocca Canavese – M. della Neve 45.3275775   7.5727936     1100      Canavese             S
+santa-elisabetta            Santa Elisabetta              45.4182734   7.6419450     1000      Canavese             S
+santa-elisabetta-alto       Santa Elisabetta alto         45.4401939   7.6480259     1400      Canavese             S
+monte-cavallaria            Monte Cavallaria              45.5172936   7.7988083     1430      Canavese             S
+andrate                     Andrate                       45.5506393   7.8807756     1000      Canavese             S
+================================================================================
 
 TOTALE: 24 decolli
-Range altitudine: 673 m – 2748 m
-Regione: Piemonte, Alpi Occidentali (Italia)
-Coordinate: WGS84 (latitudine, longitudine)
-
-================================================================================
-FORMATO CSV (facile da importare in Excel/Google Sheets)
-================================================================================
-
-id,nome,latitudine,longitudine,quota_m,valle,esposizione
-malanotte,Malanotte,44.2587457,7.7943047,1740,Valle Ellero,S/SE
-colle-di-tenda,Colle di Tenda,44.1509397,7.5692629,1990,Valle Roya/Vermenagna,S
-boves,Boves,44.3211372,7.5446976,900,Cuneese,NE
-monte-male-dronero,Monte Male – Dronero,44.4316307,7.3628868,950,Valle Maira,S
-iretta,Iretta,44.4989374,7.3820366,1050,Valle Maira,SO
-pratoni-di-val-mala,Pratoni di Val Mala,44.5078012,7.3466190,1400,Valle Maira,S
-monte-birrone,Monte Birrone,44.5398928,7.2529395,2131,Valle Maira,S
-colle-dell-agnello,Colle dell'Agnello,44.6828259,6.9782006,2748,Valle Varaita,S
-pian-mune-seggiovia,Pian Munè – Seggiovia,44.6386103,7.2308895,1870,Valle Po,S/SW
-pian-mune-bric-lombatera,Pian Munè – Bric Lombatera,44.6573652,7.2600170,1350,Valle Po,S
-martiniana-po,Martiniana Po,44.6069527,7.3832261,1400,Valle Po,NE
-rucas-alto,Rucas Alto,44.7421393,7.2201187,1500,Valle Infernotto,S/SE
-montoso-decollo-basso,Montoso – Decollo Basso,44.7643723,7.2497579,1250,Valle Infernotto,SE
-monte-vandalino,Monte Vandalino,44.8367123,7.1738669,2120,Val Pellice,S/SE
-pian-dell-alpe,Pian dell'Alpe,45.0639615,7.0282665,1990,Val Chisone,S
-roletto-piggi,Roletto – Piggi,44.9324929,7.3109590,820,Pinerolese,S
-piossasco-monte-s-giorgio,Piossasco – Monte S. Giorgio,44.9967184,7.4480022,673,Collina Torinese,S
-truccetti,Truccetti,45.0797351,7.3420183,900,Canavese,S
-val-della-torre,Val della Torre,45.1626275,7.4637162,970,Val della Torre,S
-rocca-canavese-m-della-neve,Rocca Canavese – M. della Neve,45.3275775,7.5727936,1100,Canavese,S
-santa-elisabetta,Santa Elisabetta,45.4182734,7.6419450,1000,Canavese,S
-santa-elisabetta-alto,Santa Elisabetta Alto,45.4401939,7.6480259,1400,Canavese,S
-monte-cavallaria,Monte Cavallaria,45.5172936,7.7988083,1430,Canavese,S
-andrate,Andrate,45.5506393,7.8807756,1000,Canavese,S
-
-================================================================================
-FORMATO JSON (facile da importare in applicazioni)
-================================================================================
-
-[
-  {"id":"malanotte","nome":"Malanotte","lat":44.2587457,"lon":7.7943047,"quota":1740,"valle":"Valle Ellero","esposizione":"S/SE"},
-  {"id":"colle-di-tenda","nome":"Colle di Tenda","lat":44.1509397,"lon":7.5692629,"quota":1990,"valle":"Valle Roya/Vermenagna","esposizione":"S"},
-  {"id":"boves","nome":"Boves","lat":44.3211372,"lon":7.5446976,"quota":900,"valle":"Cuneese","esposizione":"NE"},
-  {"id":"monte-male-dronero","nome":"Monte Male – Dronero","lat":44.4316307,"lon":7.3628868,"quota":950,"valle":"Valle Maira","esposizione":"S"},
-  {"id":"iretta","nome":"Iretta","lat":44.4989374,"lon":7.3820366,"quota":1050,"valle":"Valle Maira","esposizione":"SO"},
-  {"id":"pratoni-di-val-mala","nome":"Pratoni di Val Mala","lat":44.5078012,"lon":7.3466190,"quota":1400,"valle":"Valle Maira","esposizione":"S"},
-  {"id":"monte-birrone","nome":"Monte Birrone","lat":44.5398928,"lon":7.2529395,"quota":2131,"valle":"Valle Maira","esposizione":"S"},
-  {"id":"colle-dell-agnello","nome":"Colle dell'Agnello","lat":44.6828259,"lon":6.9782006,"quota":2748,"valle":"Valle Varaita","esposizione":"S"},
-  {"id":"pian-mune-seggiovia","nome":"Pian Munè – Seggiovia","lat":44.6386103,"lon":7.2308895,"quota":1870,"valle":"Valle Po","esposizione":"S/SW"},
-  {"id":"pian-mune-bric-lombatera","nome":"Pian Munè – Bric Lombatera","lat":44.6573652,"lon":7.2600170,"quota":1350,"valle":"Valle Po","esposizione":"S"},
-  {"id":"martiniana-po","nome":"Martiniana Po","lat":44.6069527,"lon":7.3832261,"quota":1400,"valle":"Valle Po","esposizione":"NE"},
-  {"id":"rucas-alto","nome":"Rucas Alto","lat":44.7421393,"lon":7.2201187,"quota":1500,"valle":"Valle Infernotto","esposizione":"S/SE"},
-  {"id":"montoso-decollo-basso","nome":"Montoso – Decollo Basso","lat":44.7643723,"lon":7.2497579,"quota":1250,"valle":"Valle Infernotto","esposizione":"SE"},
-  {"id":"monte-vandalino","nome":"Monte Vandalino","lat":44.8367123,"lon":7.1738669,"quota":2120,"valle":"Val Pellice","esposizione":"S/SE"},
-  {"id":"pian-dell-alpe","nome":"Pian dell'Alpe","lat":45.0639615,"lon":7.0282665,"quota":1990,"valle":"Val Chisone","esposizione":"S"},
-  {"id":"roletto-piggi","nome":"Roletto – Piggi","lat":44.9324929,"lon":7.3109590,"quota":820,"valle":"Pinerolese","esposizione":"S"},
-  {"id":"piossasco-monte-s-giorgio","nome":"Piossasco – Monte S. Giorgio","lat":44.9967184,"lon":7.4480022,"quota":673,"valle":"Collina Torinese","esposizione":"S"},
-  {"id":"truccetti","nome":"Truccetti","lat":45.0797351,"lon":7.3420183,"quota":900,"valle":"Canavese","esposizione":"S"},
-  {"id":"val-della-torre","nome":"Val della Torre","lat":45.1626275,"lon":7.4637162,"quota":970,"valle":"Val della Torre","esposizione":"S"},
-  {"id":"rocca-canavese-m-della-neve","nome":"Rocca Canavese – M. della Neve","lat":45.3275775,"lon":7.5727936,"quota":1100,"valle":"Canavese","esposizione":"S"},
-  {"id":"santa-elisabetta","nome":"Santa Elisabetta","lat":45.4182734,"lon":7.6419450,"quota":1000,"valle":"Canavese","esposizione":"S"},
-  {"id":"santa-elisabetta-alto","nome":"Santa Elisabetta Alto","lat":45.4401939,"lon":7.6480259,"quota":1400,"valle":"Canavese","esposizione":"S"},
-  {"id":"monte-cavallaria","nome":"Monte Cavallaria","lat":45.5172936,"lon":7.7988083,"quota":1430,"valle":"Canavese","esposizione":"S"},
-  {"id":"andrate","nome":"Andrate","lat":45.5506393,"lon":7.8807756,"quota":1000,"valle":"Canavese","esposizione":"S"}
-]
-
-================================================================================
-NOTE
-================================================================================
-- Le coordinate sono in formato WGS84 (EPSG:4326)
-- Latitudine (N) e Longitudine (E) in gradi decimali
-- Tutti i siti si trovano in Piemonte, Alpi Occidentali italiane
-- La quota è espressa in metri sul livello del mare (m s.l.m.)
-- Fonte dati: configurazione interna dell'applicazione Meteo dei Conigli
+Range altitudine: 673m - 2748m
+Coordinate: Piemonte, Alpi Occidentali (Italia)
+Fonte: src/data/decolli.ts
