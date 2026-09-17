@@ -547,48 +547,55 @@ export default function ProfessionalWindgram({
               <path d={thermalTopCurve} fill="none" stroke="#9333ea" strokeWidth="3" strokeLinecap="round" />
             )}
 
-            {/* ICONE PARAPENDIO VIOLA - PIÙ BASSO PER VISIBILITÀ */}
+            {/* ICONE PARAPENDIO VIOLA - INGRANDITA E CENTRALE */}
             {hourlyData.map((h, i) => {
               const x = getXFromHourIdx(i);
-              // Posizione: metà tra thermalTop e cloudBase, con minimo 200px sopra il basso
               const midAlt = Math.round((h.thermalTop + h.cloudBase) / 2);
               const y = getYFromAlt(midAlt);
               return (
                 <g key={`para-${i}`} transform={`translate(${x}, ${y})`}>
-                  <path d="M -18,-5 C -13,-18 13,-18 18,-5 C 11,-9 -11,-9 -18,-5 Z" fill="#c084fc" stroke="#7e22ce" strokeWidth="2" />
-                  <line x1="-14" y1="-6" x2="0" y2="0" stroke="#7e22ce" strokeWidth="1.5" />
-                  <line x1="14" y1="-6" x2="0" y2="0" stroke="#7e22ce" strokeWidth="1.5" />
-                  <circle cx="0" cy="0" r="5" fill="#ffffff" stroke="#7e22ce" strokeWidth="2" />
+                  {/* Sfondo circolare per visibilità */}
+                  <circle cx="0" cy="-8" r="18" fill="#ede9fe" stroke="#7e22ce" strokeWidth="2" opacity="0.9" />
+                  {/* Parapendio ingrandito */}
+                  <path d="M -22,-12 C -16,-28 16,-28 22,-12 C 14,-18 -14,-18 -22,-12 Z" fill="#c084fc" stroke="#7e22ce" strokeWidth="2.5" />
+                  <line x1="-18" y1="-14" x2="0" y2="-2" stroke="#7e22ce" strokeWidth="2" />
+                  <line x1="18" y1="-14" x2="0" y2="-2" stroke="#7e22ce" strokeWidth="2" />
+                  <circle cx="0" cy="-2" r="6" fill="#ffffff" stroke="#7e22ce" strokeWidth="2.5" />
                 </g>
               );
             })}
 
-            {/* ICONE NUVOLE CUMULI - SOTTO IL PARAPENDIO */}
+            {/* ICONE NUVOLE CUMULI - INGRANDITE E SOTTO IL PARAPENDIO */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const cloudY = getYFromAlt(h.cloudBase + 250); // Più vicino alla base
+              const cloudY = getYFromAlt(h.cloudBase + 350);
               return (
                 <g key={`cloud-${i}`} transform={`translate(${x}, ${cloudY})`}>
-                  <path d="M -14,3 A 5,5 0 0,1 -6,-4 A 9,9 0 0,1 6,-5 A 7,7 0 0,1 14,1 A 4,4 0 0,1 13,7 L -12,7 A 4,4 0 0,1 -14,3 Z" fill="#ffffff" stroke="#64748b" strokeWidth="1.2" />
-                  <text x="0" y="4" fill="#0f172a" fontSize="9" fontWeight="900" textAnchor="middle">{h.cloudPct}%</text>
+                  {/* Sfondo circolare */}
+                  <circle cx="0" cy="0" r="16" fill="#f1f5f9" stroke="#64748b" strokeWidth="1.5" opacity="0.9" />
+                  {/* Nuvola ingrandita */}
+                  <path d="M -16,4 A 6,6 0 0,1 -7,-5 A 10,10 0 0,1 7,-6 A 8,8 0 0,1 16,2 A 5,5 0 0,1 15,8 L -14,8 A 5,5 0 0,1 -16,4 Z" fill="#ffffff" stroke="#64748b" strokeWidth="1.5" />
+                  <text x="0" y="5" fill="#0f172a" fontSize="10" fontWeight="900" textAnchor="middle">{h.cloudPct}%</text>
                 </g>
               );
             })}
 
-            {/* BADGE QUOTA CUMULO + ASCENDENZA - SOTTO LE NUVOLE */}
+            {/* BADGE QUOTA CUMULO + ASCENDENZA - INGRANDITI E SOTTO LE NUVOLE */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const cloudY = getYFromAlt(h.cloudBase + 250);
-              const badgeY = cloudY + 18; // Sotto la nuvola
+              const cloudY = getYFromAlt(h.cloudBase + 350);
+              const badgeY = cloudY + 28;
               const rateoColor = h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
               return (
                 <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
-                  <text x="0" y="0" fill="#ffffff" fontSize="9" fontWeight="900" textAnchor="middle" fontFamily="monospace" opacity="0.9">
+                  {/* Badge con sfondo bianco */}
+                  <rect x="-32" y="-8" width="64" height="32" rx="6" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1.5" />
+                  <text x="0" y="4" fill="#0f172a" fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                     {h.cloudBase}m
                   </text>
-                  <text x="0" y="11" fill={rateoColor} fontSize="9" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+                  <text x="0" y="16" fill={rateoColor} fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                     ↑{h.thermalAvg.toFixed(1)}
                   </text>
                 </g>
