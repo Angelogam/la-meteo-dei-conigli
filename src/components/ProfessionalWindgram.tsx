@@ -27,7 +27,15 @@ const PRESSURE_LEVELS = [
   { hpa: 850, alt: 1450 },
 ];
 
-const ALT_TICKS = [6000, 5500, 5000, 4500, 4000, 3500, 3000, 2500, 2000, 1500];
+// Funzione per generare i tick dell'asse altitudine partendo da altitude+50
+function generateAltTicks(startAlt: number): number[] {
+  const start = Math.ceil(startAlt / 500) * 500; // Arrotonda al 500 superiore
+  const ticks: number[] = [];
+  for (let alt = start; alt <= 6000; alt += 500) {
+    ticks.push(alt);
+  }
+  return ticks;
+}
 
 // Scala colori come Alpium (deltaT / 100m)
 const STABILITY_COLORS = [
@@ -153,7 +161,9 @@ export default function ProfessionalWindgram({
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
-  const minAlt = 1200;
+  // Avvio asse Y: prossimo tick 500 superiore a altitude+50
+  const startAltTick = Math.ceil((Math.round(altitude) + 50) / 500) * 500;
+  const minAlt = Math.max(startAltTick, 500);
   const maxAlt = 6000;
 
   const getYFromAlt = (alt: number) => {
@@ -405,7 +415,7 @@ export default function ProfessionalWindgram({
             {siteName.toLowerCase()} &middot; {formattedDateTitle.toLowerCase()}
           </h2>
           <p className="text-[10px] sm:text-xs text-slate-500 font-mono tracking-wide mt-0.5">
-            plotted {dateStr} 00:00 UTC &middot; model ground {Math.round(altitude + 5)} m &middot; SRTM {Math.round(altitude)} m
+            plotted {dateStr} 00:00 UTC · ground {Math.round(altitude)} m · start {Math.round(altitude + 50)} m
           </p>
         </div>
 
@@ -478,8 +488,8 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {/* QUTE IN METRI (asse destro) */}
-            {ALT_TICKS.map((alt) => {
+            {/* QUTE IN METRI (asse destro) - dinamico basato su altitude */}
+            {generateAltTicks(altitude).map((alt) => {
               const y = getYFromAlt(alt);
               return (
                 <g key={`alt-${alt}`}>
