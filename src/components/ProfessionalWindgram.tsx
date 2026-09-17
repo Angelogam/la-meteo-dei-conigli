@@ -557,7 +557,7 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {/* ICONE NUVOLE CUMULI */}
+            {/* ICONE NUVOLE CUMULI - PRIMA (dietro) */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
@@ -570,16 +570,21 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {/* BADGE QUOTA CUMULO + ASCENDENZA */}
+            {/* BADGE QUOTA CUMULO + ASCENDENZA - DOPO (davanti) */}
             {hourlyData.map((h, i) => {
+              if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const badgeY = getYFromAlt(h.thermalTop) + 12;
+              const cloudY = getYFromAlt(h.cloudBase + 200);
+              const badgeY = cloudY + 16;
               const rateoColor = h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
               return (
                 <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
-                  <rect x="-28" y="0" width="56" height="26" rx="4" fill="#ffffff" stroke="#ea580c" strokeWidth="1.2" />
-                  <text x="0" y="11" fill="#0f172a" fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">{h.cloudBase} m</text>
-                  <text x="0" y="22" fill={rateoColor} fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">↑ {h.thermalAvg.toFixed(1)} m/s</text>
+                  <text x="0" y="0" fill="#ffffff" fontSize="9" fontWeight="900" textAnchor="middle" fontFamily="monospace" opacity="0.9">
+                    {h.cloudBase}m
+                  </text>
+                  <text x="0" y="11" fill={rateoColor} fontSize="9" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+                    ↑{h.thermalAvg.toFixed(1)}
+                  </text>
                 </g>
               );
             })}
