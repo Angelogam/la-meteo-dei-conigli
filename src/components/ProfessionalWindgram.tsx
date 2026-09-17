@@ -558,9 +558,25 @@ export default function ProfessionalWindgram({
 
             {/* 3. AREA STABILE IN QUOTA - VERDE (sopra la curva termica) */}
             {stableZonePath && (
-              <path d={stableZonePath} fill="#34d399" opacity="0.45" />
+              <path d={stableZonePath} fill="#34d399" opacity="0.35" />
             )}
-            {/* 3b. Strato di transizione stabile sopra thermalTop (verde chiaro) */}
+            {/* 3b. FASCE BLU ARIA STABILE ALTE QUOTE (4000-6000m) */}
+            {[5000, 5500, 6000].map((alt) => {
+              const yTop = getYFromAlt(alt + 500);
+              const yBottom = getYFromAlt(alt);
+              return (
+                <rect
+                  key={`stable-band-${alt}`}
+                  x={margin.left}
+                  y={yTop}
+                  width={plotW}
+                  height={yBottom - yTop}
+                  fill="#6366f1"
+                  opacity="0.4"
+                />
+              );
+            })}
+            {/* 3c. Strato di transizione stabile sopra thermalTop (verde chiaro) */}
             {stableZonePath && (
               <path
                 d={(() => {
@@ -583,7 +599,7 @@ export default function ProfessionalWindgram({
                   return points.join(" ");
                 })()}
                 fill="#6ee7b7"
-                opacity="0.35"
+                opacity="0.25"
               />
             )}
 
