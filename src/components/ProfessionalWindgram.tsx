@@ -27,27 +27,19 @@ const PRESSURE_LEVELS = [
   { hpa: 850, alt: 1450 },
 ];
 
-// Funzione per generare i tick dell'asse altitudine partendo da una quota base
-function generateAltTicks(startAlt: number): number[] {
-  const start = Math.floor(startAlt / 500) * 500; // Arrotonda al 500 inferiore
-  const ticks: number[] = [];
-  for (let alt = start; alt <= 6000; alt += 500) {
-    ticks.push(alt);
-  }
-  return ticks;
-}
+const ALT_TICKS = [6000, 5500, 5000, 4500, 4000, 3500, 3000, 2500, 2000, 1500];
 
-// Scala colori come Alpium (deltaT / 100m)
+// Scala colori Alpium (deltaT / 100m)
 const STABILITY_COLORS = [
-  { val: -0.20, color: "#8b5cf6" }, // viola
-  { val: 0.00, color: "#3b82f6" },  // blu
-  { val: 0.16, color: "#06b6d4" },  // ciano
-  { val: 0.32, color: "#10b981" },  // verde
-  { val: 0.48, color: "#84cc16" },  // lime
-  { val: 0.65, color: "#eab308" },  // giallo
-  { val: 0.82, color: "#f97316" },  // arancione
-  { val: 0.98, color: "#ef4444" },  // rosso
-  { val: 1.20, color: "#dc2626" },  // rosso scuro
+  { val: -0.20, color: "#8b5cf6" },
+  { val: 0.00, color: "#3b82f6" },
+  { val: 0.16, color: "#06b6d4" },
+  { val: 0.32, color: "#10b981" },
+  { val: 0.48, color: "#84cc16" },
+  { val: 0.65, color: "#eab308" },
+  { val: 0.82, color: "#f97316" },
+  { val: 0.98, color: "#ef4444" },
+  { val: 1.20, color: "#dc2626" },
 ];
 
 function getStabilityColor(deltaT: number): string {
@@ -63,7 +55,6 @@ function getStabilityColor(deltaT: number): string {
 }
 
 function getAltitudeBandColor(alt: number, deltaT: number): string {
-  // A quote più alte l'aria è più stabile (blu/viola)
   const altitudeFactor = Math.max(0, Math.min(1, (alt - 1500) / 4000));
   const stableColor = getStabilityColor(deltaT);
   const highAltColor = altitudeFactor > 0.5 ? "#6366f1" : stableColor;
@@ -103,37 +94,14 @@ export default function ProfessionalWindgram({
 
     const fetchMeteo = async () => {
       const hourlyParams = [
-        "temperature_2m",
-        "relative_humidity_2m",
-        "dew_point_2m",
-        "precipitation",
-        "cloud_cover",
-        "wind_speed_10m",
-        "wind_direction_10m",
-        "wind_gusts_10m",
-        "wind_speed_80m",
-        "wind_direction_80m",
-        "wind_speed_120m",
-        "wind_direction_120m",
-        "wind_speed_180m",
-        "wind_direction_180m",
-        "wind_speed_925hPa",
-        "wind_direction_925hPa",
-        "wind_speed_850hPa",
-        "wind_direction_850hPa",
-        "wind_speed_700hPa",
-        "wind_direction_700hPa",
-        "wind_speed_600hPa",
-        "wind_direction_600hPa",
-        "wind_speed_500hPa",
-        "wind_direction_500hPa",
-        "temperature_80m",
-        "temperature_120m",
-        "surface_pressure",
-        "shortwave_radiation",
-        "freezing_level_height",
-        "cape",
-        "lifted_index",
+        "temperature_2m", "relative_humidity_2m", "dew_point_2m", "precipitation",
+        "cloud_cover", "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",
+        "wind_speed_80m", "wind_direction_80m", "wind_speed_120m", "wind_direction_120m",
+        "wind_speed_180m", "wind_direction_180m", "wind_speed_925hPa", "wind_direction_925hPa",
+        "wind_speed_850hPa", "wind_direction_850hPa", "wind_speed_700hPa", "wind_direction_700hPa",
+        "wind_speed_600hPa", "wind_direction_600hPa", "wind_speed_500hPa", "wind_direction_500hPa",
+        "temperature_80m", "temperature_120m", "surface_pressure", "shortwave_radiation",
+        "freezing_level_height", "cape", "lifted_index",
       ].join(",");
 
       try {
@@ -156,13 +124,12 @@ export default function ProfessionalWindgram({
 
   // Dimensioni SVG
   const width = 1000;
-  const height = 560;
-  const margin = { top: 65, right: 80, bottom: 75, left: 80 };
+  const height = 580;
+  const margin = { top: 70, right: 85, bottom: 80, left: 85 };
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
-  // Avvio asse Y: quota di decollo (arrotondata al 500 inferiore)
-  const minAlt = Math.max(Math.floor(Math.round(altitude) / 500) * 500, 500);
+  const minAlt = 1200;
   const maxAlt = 6000;
 
   const getYFromAlt = (alt: number) => {
@@ -204,29 +171,23 @@ export default function ProfessionalWindgram({
       const t80 = h.temperature_80m?.[idx];
       const t120 = h.temperature_120m?.[idx];
 
-      // Sole %
       const sunPct = Math.min(100, Math.max(10, Math.round(((rad / 900) * (1 - (cloud / 100) * 0.65)) * 100)));
-      // Spread T - Dew
       const spread = Math.max(1, t - dew);
       const cloudBase = Math.round(altitude + Math.min(1500, spread * 125));
       const cloudPct = Math.max(2, Math.min(95, Math.round(cloud)));
 
-      // DeltaT (gradiente verticale)
       let deltaT = 0.72;
       if (t80 != null) deltaT = Math.round(((t - t80) / 78) * 100 * 100) / 100;
       else if (t120 != null) deltaT = Math.round(((t - t120) / 118) * 100 * 100) / 100;
       else deltaT = spread >= 10 ? 0.98 : spread >= 6 ? 0.82 : 0.65;
 
-      // Rateo salita
       let rateo = 0.6 + (spread * 0.08) + (sunPct / 100) * 0.45 + (cape > 200 ? (cape / 1000) * 0.4 : 0);
       if (precip > 0.4) rateo = 0.3;
       else if (cloud > 80) rateo *= 0.4;
       rateo = Math.max(0.4, Math.min(2.5, Math.round(rateo * 10) / 10));
 
-      // Thermal top
       const thermalTop = Math.round(Math.min(4000, cloudBase + Math.min(800, rateo * 100 + cape * 0.1)));
 
-      // Venti per livello
       const levelWinds = [
         { hpa: 500, alt: 5800, speed: h.wind_speed_500hPa?.[idx] ?? (wind10 * 2.8), dir: h.wind_direction_500hPa?.[idx] ?? (windDir10 + 40) },
         { hpa: 550, alt: 5000, speed: (h.wind_speed_500hPa?.[idx] ? h.wind_speed_500hPa[idx] * 0.9 : wind10 * 2.5), dir: (h.wind_direction_500hPa?.[idx] ?? windDir10) + 30 },
@@ -267,7 +228,7 @@ export default function ProfessionalWindgram({
     if (speedKmh == null || isNaN(speedKmh) || speedKmh < 1) return null;
     const knots = speedKmh * 0.539957;
     const angle = ((dirDeg - 90) * Math.PI) / 180;
-    const staffLen = 20;
+    const staffLen = 18;
     const endX = x + staffLen * Math.cos(angle);
     const endY = y + staffLen * Math.sin(angle);
     const barbColor = speedKmh > 30 ? "#d946ef" : speedKmh > 18 ? "#0284c7" : "#3b82f6";
@@ -282,26 +243,26 @@ export default function ProfessionalWindgram({
       const bx = x + pos * (endX - x);
       const by = y + pos * (endY - y);
       const p1 = `${bx},${by}`;
-      const p2 = `${bx + 10 * Math.cos(featherAngle)},${by + 10 * Math.sin(featherAngle)}`;
-      const p3 = `${bx + 5 * Math.cos(angle)},${by + 5 * Math.sin(angle)}`;
-      elements.push(<polygon key={`p50-${x}-${y}-${pos}`} points={`${p1} ${p2} ${p3}`} fill={barbColor} stroke={barbColor} strokeWidth="1" />);
+      const p2 = `${bx + 9 * Math.cos(featherAngle)},${by + 9 * Math.sin(featherAngle)}`;
+      const p3 = `${bx + 4 * Math.cos(angle)},${by + 4 * Math.sin(angle)}`;
+      elements.push(<polygon key={`p50-${x}-${y}-${pos}`} points={`${p1} ${p2} ${p3}`} fill={barbColor} stroke={barbColor} strokeWidth="0.8" />);
       rem -= 50; pos -= 0.28;
     }
     while (rem >= 10 && pos >= 0.2) {
       const bx = x + pos * (endX - x);
       const by = y + pos * (endY - y);
-      elements.push(<line key={`l10-${x}-${y}-${pos}`} x1={bx} y1={by} x2={bx + 10 * Math.cos(featherAngle)} y2={by + 10 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="1.6" strokeLinecap="round" />);
+      elements.push(<line key={`l10-${x}-${y}-${pos}`} x1={bx} y1={by} x2={bx + 9 * Math.cos(featherAngle)} y2={by + 9 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="1.4" strokeLinecap="round" />);
       rem -= 10; pos -= 0.18;
     }
     if (rem >= 5 && pos >= 0.2) {
       const bx = x + pos * (endX - x);
       const by = y + pos * (endY - y);
-      elements.push(<line key={`l5-${x}-${y}-${pos}`} x1={bx} y1={by} x2={bx + 5.5 * Math.cos(featherAngle)} y2={by + 5.5 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="1.6" strokeLinecap="round" />);
+      elements.push(<line key={`l5-${x}-${y}-${pos}`} x1={bx} y1={by} x2={bx + 5 * Math.cos(featherAngle)} y2={by + 5 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="1.4" strokeLinecap="round" />);
     }
 
     return (
       <g key={`wb-${x}-${Math.round(y)}`}>
-        <line x1={x} y1={y} x2={endX} y2={endY} stroke={barbColor} strokeWidth="1.6" strokeLinecap="round" />
+        <line x1={x} y1={y} x2={endX} y2={endY} stroke={barbColor} strokeWidth="1.4" strokeLinecap="round" />
         {elements}
       </g>
     );
@@ -326,21 +287,18 @@ export default function ProfessionalWindgram({
   // Path zona convettiva (cross-hatch)
   const convectiveZonePath = useMemo(() => {
     if (hourlyData.length === 0) return "";
-    // Trova le colonne dove deltaT è alto (>0.7) e thermalTop è basso
     const convectiveCols = hourlyData
       .map((h, i) => ({ i, h, active: h.deltaT > 0.65 && h.thermalTop < 2800 }))
       .filter(c => c.active);
     if (convectiveCols.length === 0) return "";
 
     const points: string[] = [];
-    // Bordo superiore
     convectiveCols.forEach((c, idx) => {
       const x = getXFromHourIdx(c.i);
-      const yTop = getYFromAlt(c.h.thermalTop + 600);
+      const yTop = getYFromAlt(c.h.thermalTop + 500);
       if (idx === 0) points.push(`M ${x},${yTop}`);
       else points.push(`L ${x},${yTop}`);
     });
-    // Bordo inferiore
     for (let i = convectiveCols.length - 1; i >= 0; i--) {
       const x = getXFromHourIdx(convectiveCols[i].i);
       const yBot = getYFromAlt(convectiveCols[i].h.thermalTop);
@@ -358,18 +316,21 @@ export default function ProfessionalWindgram({
 
     hourlyData.forEach((h, i) => {
       const x = getXFromHourIdx(i) - colW / 2;
-      // Altezza del rettangolo per ogni fascia di quota (dal decollo in su)
-      const bands = [];
-      let bandStart = Math.floor(altitude / 500) * 500; // Inizio dal decollo arrotondato
-      while (bandStart < 6000) {
-        bands.push({ altMin: bandStart, altMax: bandStart + 500 });
-        bandStart += 500;
-      }
+      const bands = [
+        { altMin: 1300, altMax: 2000 },
+        { altMin: 2000, altMax: 2500 },
+        { altMin: 2500, altMax: 3000 },
+        { altMin: 3000, altMax: 3500 },
+        { altMin: 3500, altMax: 4000 },
+        { altMin: 4000, altMax: 4500 },
+        { altMin: 4500, altMax: 5000 },
+        { altMin: 5000, altMax: 5500 },
+        { altMin: 5500, altMax: 6000 },
+      ];
 
       bands.forEach((band) => {
         const yTop = getYFromAlt(band.altMax);
         const yBot = getYFromAlt(band.altMin);
-        const hPa = Math.round((band.altMin + band.altMax) / 2 / 100) * 100;
         const color = getAltitudeBandColor((band.altMin + band.altMax) / 2, h.deltaT);
         const opacity = band.altMax > 4500 ? 0.7 : 0.5;
         rects.push({ x, y: yTop, w: colW + 2, h: yBot - yTop, fill: color, opacity });
@@ -409,7 +370,7 @@ export default function ProfessionalWindgram({
             {siteName.toLowerCase()} &middot; {formattedDateTitle.toLowerCase()}
           </h2>
           <p className="text-[10px] sm:text-xs text-slate-500 font-mono tracking-wide mt-0.5">
-            plotted {dateStr} 00:00 UTC · takeoff {Math.round(altitude)} m · chart from {Math.floor(Math.round(altitude) / 500) * 500} m
+            plotted {dateStr} 00:00 UTC &middot; model ground {Math.round(altitude + 5)} m &middot; SRTM {Math.round(altitude)} m
           </p>
         </div>
 
@@ -436,18 +397,18 @@ export default function ProfessionalWindgram({
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 pb-1">
           <svg
             viewBox={`0 0 ${width} ${height}`}
-            className="w-full h-auto min-w-[860px]"
+            className="w-full h-auto min-w-[900px]"
             style={{ shapeRendering: "geometricPrecision", textRendering: "geometricPrecision" }}
           >
             <defs>
               {/* Pattern cross-hatch per zone convettive */}
-              <pattern id="thermalHatch" width="6" height="6" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
-                <line x1="0" y1="0" x2="0" y2="6" stroke="#1e293b" strokeWidth="1.2" strokeDasharray="2 2" opacity="0.4" />
-                <line x1="0" y1="0" x2="6" y2="0" stroke="#1e293b" strokeWidth="1.2" strokeDasharray="2 2" opacity="0.4" />
+              <pattern id="thermalHatch" width="5" height="5" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                <line x1="0" y1="0" x2="0" y2="5" stroke="#1e293b" strokeWidth="1" strokeDasharray="1.5 1.5" opacity="0.5" />
+                <line x1="0" y1="0" x2="5" y2="0" stroke="#1e293b" strokeWidth="1" strokeDasharray="1.5 1.5" opacity="0.5" />
               </pattern>
-              <pattern id="thermalHatchBlue" width="6" height="6" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse">
-                <line x1="0" y1="0" x2="0" y2="6" stroke="#3b82f6" strokeWidth="1" opacity="0.3" />
-                <line x1="0" y1="0" x2="6" y2="0" stroke="#3b82f6" strokeWidth="1" opacity="0.3" />
+              <pattern id="thermalHatchBlue" width="5" height="5" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse">
+                <line x1="0" y1="0" x2="0" y2="5" stroke="#3b82f6" strokeWidth="0.8" opacity="0.4" />
+                <line x1="0" y1="0" x2="5" y2="0" stroke="#3b82f6" strokeWidth="0.8" opacity="0.4" />
               </pattern>
             </defs>
 
@@ -474,16 +435,16 @@ export default function ProfessionalWindgram({
               const y = getYFromAlt(lvl.alt);
               return (
                 <g key={`grid-${lvl.hpa}`}>
-                  <line x1={margin.left} y1={y} x2={margin.left + plotW} y2={y} stroke="#1e293b" strokeWidth="0.6" strokeDasharray="3 3" opacity="0.35" />
-                  <text x={margin.left - 10} y={y + 4} fill="#0f172a" fontSize="11" fontWeight="800" textAnchor="end" fontFamily="monospace">
+                  <line x1={margin.left} y1={y} x2={margin.left + plotW} y2={y} stroke="#1e293b" strokeWidth="0.5" strokeDasharray="3 3" opacity="0.3" />
+                  <text x={margin.left - 8} y={y + 4} fill="#0f172a" fontSize="11" fontWeight="800" textAnchor="end" fontFamily="monospace">
                     {lvl.hpa} hPa
                   </text>
                 </g>
               );
             })}
 
-            {/* QUTE IN METRI (asse destro) - dinamico basato su altitude */}
-            {generateAltTicks(altitude).map((alt) => {
+            {/* QUTE IN METRI (asse destro) */}
+            {ALT_TICKS.map((alt) => {
               const y = getYFromAlt(alt);
               return (
                 <g key={`alt-${alt}`}>
@@ -499,7 +460,7 @@ export default function ProfessionalWindgram({
             {HOURS.map((h, i) => {
               const x = getXFromHourIdx(i);
               return (
-                <line key={`vline-${h}`} x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#1e293b" strokeWidth="0.5" strokeDasharray="2 4" opacity="0.25" />
+                <line key={`vline-${h}`} x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#1e293b" strokeWidth="0.4" strokeDasharray="2 4" opacity="0.2" />
               );
             })}
 
@@ -522,16 +483,16 @@ export default function ProfessionalWindgram({
               const y = getYFromAlt(h.zeroThermal);
               return (
                 <g key={`snow-${i}`} transform={`translate(${x}, ${y})`}>
-                  <circle cx="0" cy="0" r="7" fill="#ffffff" stroke="#0284c7" strokeWidth="1.8" />
-                  <text x="0" y="3.5" fill="#0284c7" fontSize="9" fontWeight="900" textAnchor="middle">❄</text>
+                  <circle cx="0" cy="0" r="6" fill="#ffffff" stroke="#0284c7" strokeWidth="1.5" />
+                  <text x="0" y="3.5" fill="#0284c7" fontSize="8" fontWeight="900" textAnchor="middle">❄</text>
                 </g>
               );
             })}
 
             {/* BADGE ZERO TERMICO */}
-            <g transform={`translate(${margin.left + plotW - 140}, ${getYFromAlt(avgZeroThermal) - 14})`}>
-              <rect x="0" y="0" width="135" height="28" rx="5" fill="#0284c7" stroke="#ffffff" strokeWidth="2" />
-              <text x="67" y="19" fill="#ffffff" fontSize="12" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+            <g transform={`translate(${margin.left + plotW - 130}, ${getYFromAlt(avgZeroThermal) - 12})`}>
+              <rect x="0" y="0" width="125" height="26" rx="4" fill="#0284c7" stroke="#ffffff" strokeWidth="1.5" />
+              <text x="62" y="17" fill="#ffffff" fontSize="11" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                 0 °C · {avgZeroThermal} m
               </text>
             </g>
@@ -539,60 +500,58 @@ export default function ProfessionalWindgram({
             {/* LINEA PBL / BOUNDARY LAYER (nera tratteggiata) */}
             <path
               d={`M ${getXFromHourIdx(0)},${getYFromAlt(1800)} Q ${getXFromHourIdx(5)},${getYFromAlt(2600)} ${getXFromHourIdx(10)},${getYFromAlt(2200)}`}
-              fill="none" stroke="#0f172a" strokeWidth="2" strokeDasharray="5 4"
+              fill="none" stroke="#0f172a" strokeWidth="1.8" strokeDasharray="5 4"
             />
 
             {/* CURVA THERMAL TOP (viola) */}
             {thermalTopCurve && (
-              <path d={thermalTopCurve} fill="none" stroke="#9333ea" strokeWidth="3" strokeLinecap="round" />
+              <path d={thermalTopCurve} fill="none" stroke="#9333ea" strokeWidth="2.5" strokeLinecap="round" />
             )}
 
-            {/* ICONE PARAPENDIO VIOLA - IN BASSO (60% della colonna) */}
+            {/* ICONE PARAPENDIO VIOLA SUL THERMAL TOP */}
             {hourlyData.map((h, i) => {
               const x = getXFromHourIdx(i);
-              const paraAlt = h.cloudBase + (h.thermalTop - h.cloudBase) * 0.6;
-              const y = getYFromAlt(paraAlt);
+              const y = getYFromAlt(h.thermalTop);
               return (
                 <g key={`para-${i}`} transform={`translate(${x}, ${y})`}>
-                  <circle cx="0" cy="-8" r="18" fill="#ede9fe" stroke="#7e22ce" strokeWidth="2" opacity="0.9" />
-                  <path d="M -22,-12 C -16,-28 16,-28 22,-12 C 14,-18 -14,-18 -22,-12 Z" fill="#c084fc" stroke="#7e22ce" strokeWidth="2.5" />
-                  <line x1="-18" y1="-14" x2="0" y2="-2" stroke="#7e22ce" strokeWidth="2" />
-                  <line x1="18" y1="-14" x2="0" y2="-2" stroke="#7e22ce" strokeWidth="2" />
-                  <circle cx="0" cy="-2" r="6" fill="#ffffff" stroke="#7e22ce" strokeWidth="2.5" />
+                  {/* Arcina sopra il parapendio */}
+                  <path d="M -18,-2 A 18,18 0 0,1 18,-2" fill="none" stroke="#c084fc" strokeWidth="2" strokeLinecap="round" />
+                  {/* Parapendio */}
+                  <path d="M -14,-6 C -10,-16 10,-16 14,-6 C 8,-10 -8,-10 -14,-6 Z" fill="#c084fc" stroke="#7e22ce" strokeWidth="1.5" />
+                  <line x1="-10" y1="-7" x2="0" y2="0" stroke="#7e22ce" strokeWidth="1.2" />
+                  <line x1="10" y1="-7" x2="0" y2="0" stroke="#7e22ce" strokeWidth="1.2" />
+                  <circle cx="0" cy="0" r="3.5" fill="#ffffff" stroke="#7e22ce" strokeWidth="1.5" />
                 </g>
               );
             })}
 
-            {/* ICONE NUVOLE CUMULI - SOPRA IL PARAPENDIO (80% della colonna) */}
+            {/* ICONE NUVOLE CUMULI SUL THERMAL TOP */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const cloudAlt = h.cloudBase + (h.thermalTop - h.cloudBase) * 0.8;
-              const y = getYFromAlt(cloudAlt);
+              const y = getYFromAlt(h.thermalTop);
               return (
-                <g key={`cloud-${i}`} transform={`translate(${x}, ${y})`}>
-                  <circle cx="0" cy="0" r="16" fill="#f1f5f9" stroke="#64748b" strokeWidth="1.5" opacity="0.9" />
-                  <path d="M -16,4 A 6,6 0 0,1 -7,-5 A 10,10 0 0,1 7,-6 A 8,8 0 0,1 16,2 A 5,5 0 0,1 15,8 L -14,8 A 5,5 0 0,1 -16,4 Z" fill="#ffffff" stroke="#64748b" strokeWidth="1.5" />
-                  <text x="0" y="5" fill="#0f172a" fontSize="10" fontWeight="900" textAnchor="middle">{h.cloudPct}%</text>
+                <g key={`cloud-${i}`} transform={`translate(${x}, ${y - 14})`}>
+                  <path d="M -12,2 A 4,4 0 0,1 -5,-3 A 8,8 0 0,1 5,-4 A 6,6 0 0,1 12,1 A 3,3 0 0,1 11,5 L -10,5 A 3,3 0 0,1 -12,2 Z" fill="#ffffff" stroke="#64748b" strokeWidth="1" />
+                  <text x="0" y="4" fill="#0f172a" fontSize="8" fontWeight="900" textAnchor="middle">{h.cloudPct}%</text>
                 </g>
               );
             })}
 
-            {/* BADGE QUOTA CUMULO + ASCENDENZA - SOPRA LE NUVOLE (20px sopra) */}
+            {/* BADGE QUOTA CUMULO + ASCENDENZA - SOTTO LE NUVOLE */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const cloudAlt = h.cloudBase + (h.thermalTop - h.cloudBase) * 0.8;
-              const y = getYFromAlt(cloudAlt);
-              const badgeY = y - 20; // 20px sopra la nuvola
+              const cloudY = getYFromAlt(h.thermalTop) - 14;
+              const badgeY = cloudY + 16;
               const rateoColor = h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
               return (
                 <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
-                  <rect x="-35" y="-10" width="70" height="36" rx="6" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1.5" />
-                  <text x="0" y="5" fill="#0f172a" fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+                  {/* Badge compatto */}
+                  <text x="0" y="0" fill="#0f172a" fontSize="9" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                     {h.cloudBase}m
                   </text>
-                  <text x="0" y="20" fill={rateoColor} fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+                  <text x="0" y="11" fill={rateoColor} fontSize="9" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                     ↑{h.thermalAvg.toFixed(1)}
                   </text>
                 </g>
@@ -601,13 +560,13 @@ export default function ProfessionalWindgram({
 
             {/* ORE ASSE X */}
             {HOURS.map((h, i) => (
-              <text key={`hr-${h}`} x={getXFromHourIdx(i)} y={margin.top + plotH + 22} fill="#0f172a" fontSize="12" fontWeight="800" textAnchor="middle" fontFamily="monospace">
+              <text key={`hr-${h}`} x={getXFromHourIdx(i)} y={margin.top + plotH + 20} fill="#0f172a" fontSize="11" fontWeight="800" textAnchor="middle" fontFamily="monospace">
                 {String(h).padStart(2, "0")}:00
               </text>
             ))}
 
             {/* BORDO PLOT */}
-            <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#0f172a" strokeWidth="1.2" />
+            <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#0f172a" strokeWidth="1" />
           </svg>
         </div>
 
