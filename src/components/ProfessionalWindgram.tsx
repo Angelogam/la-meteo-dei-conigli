@@ -358,18 +358,13 @@ export default function ProfessionalWindgram({
 
     hourlyData.forEach((h, i) => {
       const x = getXFromHourIdx(i) - colW / 2;
-      // Altezza del rettangolo per ogni fascia di quota
-      const bands = [
-        { altMin: 1300, altMax: 2000 },
-        { altMin: 2000, altMax: 2500 },
-        { altMin: 2500, altMax: 3000 },
-        { altMin: 3000, altMax: 3500 },
-        { altMin: 3500, altMax: 4000 },
-        { altMin: 4000, altMax: 4500 },
-        { altMin: 4500, altMax: 5000 },
-        { altMin: 5000, altMax: 5500 },
-        { altMin: 5500, altMax: 6000 },
-      ];
+      // Altezza del rettangolo per ogni fascia di quota (dal decollo in su)
+      const bands = [];
+      let bandStart = Math.floor(altitude / 500) * 500; // Inizio dal decollo arrotondato
+      while (bandStart < 6000) {
+        bands.push({ altMin: bandStart, altMax: bandStart + 500 });
+        bandStart += 500;
+      }
 
       bands.forEach((band) => {
         const yTop = getYFromAlt(band.altMax);
