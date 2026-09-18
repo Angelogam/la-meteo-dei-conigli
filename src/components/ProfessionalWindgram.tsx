@@ -15,7 +15,6 @@ interface WindgramProps {
 
 const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 
-// Livelli pressione (hPa → quota approssimativa)
 const PRESSURE_LEVELS = [
   { hpa: 500, alt: 5800 },
   { hpa: 550, alt: 5000 },
@@ -29,7 +28,6 @@ const PRESSURE_LEVELS = [
 
 const ALT_TICKS = [6000, 5500, 5000, 4500, 4000, 3500, 3000, 2500, 2000, 1500];
 
-// Scala colori Alpium (deltaT / 100m)
 const STABILITY_COLORS = [
   { val: -0.20, color: "#8b5cf6" },
   { val: 0.00, color: "#3b82f6" },
@@ -57,8 +55,7 @@ function getStabilityColor(deltaT: number): string {
 function getAltitudeBandColor(alt: number, deltaT: number): string {
   const altitudeFactor = Math.max(0, Math.min(1, (alt - 1500) / 4000));
   const stableColor = getStabilityColor(deltaT);
-  const highAltColor = altitudeFactor > 0.5 ? "#6366f1" : stableColor;
-  return highAltColor;
+  return altitudeFactor > 0.5 ? "#6366f1" : stableColor;
 }
 
 export default function ProfessionalWindgram({
@@ -122,10 +119,10 @@ export default function ProfessionalWindgram({
     return () => { isMounted = false; };
   }, [latitude, longitude, dateStr]);
 
-  // Dimensioni SVG
+  // Dimensioni SVG - layout compatto come Alpium
   const width = 1000;
-  const height = 580;
-  const margin = { top: 70, right: 85, bottom: 80, left: 85 };
+  const height = 480;
+  const margin = { top: 60, right: 75, bottom: 65, left: 75 };
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
@@ -228,7 +225,7 @@ export default function ProfessionalWindgram({
     if (speedKmh == null || isNaN(speedKmh) || speedKmh < 1) return null;
     const knots = speedKmh * 0.539957;
     const angle = ((dirDeg - 90) * Math.PI) / 180;
-    const staffLen = 18;
+    const staffLen = 16;
     const endX = x + staffLen * Math.cos(angle);
     const endY = y + staffLen * Math.sin(angle);
     const barbColor = speedKmh > 30 ? "#d946ef" : speedKmh > 18 ? "#0284c7" : "#3b82f6";
@@ -243,26 +240,26 @@ export default function ProfessionalWindgram({
       const bx = x + pos * (endX - x);
       const by = y + pos * (endY - y);
       const p1 = `${bx},${by}`;
-      const p2 = `${bx + 9 * Math.cos(featherAngle)},${by + 9 * Math.sin(featherAngle)}`;
-      const p3 = `${bx + 4 * Math.cos(angle)},${by + 4 * Math.sin(angle)}`;
-      elements.push(<polygon key={`p50-${x}-${y}-${pos}`} points={`${p1} ${p2} ${p3}`} fill={barbColor} stroke={barbColor} strokeWidth="0.8" />);
+      const p2 = `${bx + 8 * Math.cos(featherAngle)},${by + 8 * Math.sin(featherAngle)}`;
+      const p3 = `${bx + 3.5 * Math.cos(angle)},${by + 3.5 * Math.sin(angle)}`;
+      elements.push(<polygon key={`p50-${x}-${y}-${pos}`} points={`${p1} ${p2} ${p3}`} fill={barbColor} stroke={barbColor} strokeWidth="0.7" />);
       rem -= 50; pos -= 0.28;
     }
     while (rem >= 10 && pos >= 0.2) {
       const bx = x + pos * (endX - x);
       const by = y + pos * (endY - y);
-      elements.push(<line key={`l10-${x}-${y}-${pos}`} x1={bx} y1={by} x2={bx + 9 * Math.cos(featherAngle)} y2={by + 9 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="1.4" strokeLinecap="round" />);
+      elements.push(<line key={`l10-${x}-${y}-${pos}`} x1={bx} y1={by} x2={bx + 8 * Math.cos(featherAngle)} y2={by + 8 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="1.2" strokeLinecap="round" />);
       rem -= 10; pos -= 0.18;
     }
     if (rem >= 5 && pos >= 0.2) {
       const bx = x + pos * (endX - x);
       const by = y + pos * (endY - y);
-      elements.push(<line key={`l5-${x}-${y}-${pos}`} x1={bx} y1={by} x2={bx + 5 * Math.cos(featherAngle)} y2={by + 5 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="1.4" strokeLinecap="round" />);
+      elements.push(<line key={`l5-${x}-${y}-${pos}`} x1={bx} y1={by} x2={bx + 4.5 * Math.cos(featherAngle)} y2={by + 4.5 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="1.2" strokeLinecap="round" />);
     }
 
     return (
       <g key={`wb-${x}-${Math.round(y)}`}>
-        <line x1={x} y1={y} x2={endX} y2={endY} stroke={barbColor} strokeWidth="1.4" strokeLinecap="round" />
+        <line x1={x} y1={y} x2={endX} y2={endY} stroke={barbColor} strokeWidth="1.2" strokeLinecap="round" />
         {elements}
       </g>
     );
@@ -284,7 +281,7 @@ export default function ProfessionalWindgram({
     return Math.round(hourlyData.reduce((acc, h) => acc + h.zeroThermal, 0) / hourlyData.length);
   }, [hourlyData]);
 
-  // Path zona convettiva (cross-hatch)
+  // Path zona convettiva (cross-hatch giallo)
   const convectiveZonePath = useMemo(() => {
     if (hourlyData.length === 0) return "";
     const convectiveCols = hourlyData
@@ -295,7 +292,7 @@ export default function ProfessionalWindgram({
     const points: string[] = [];
     convectiveCols.forEach((c, idx) => {
       const x = getXFromHourIdx(c.i);
-      const yTop = getYFromAlt(c.h.thermalTop + 500);
+      const yTop = getYFromAlt(c.h.thermalTop + 400);
       if (idx === 0) points.push(`M ${x},${yTop}`);
       else points.push(`L ${x},${yTop}`);
     });
@@ -332,8 +329,8 @@ export default function ProfessionalWindgram({
         const yTop = getYFromAlt(band.altMax);
         const yBot = getYFromAlt(band.altMin);
         const color = getAltitudeBandColor((band.altMin + band.altMax) / 2, h.deltaT);
-        const opacity = band.altMax > 4500 ? 0.7 : 0.5;
-        rects.push({ x, y: yTop, w: colW + 2, h: yBot - yTop, fill: color, opacity });
+        const opacity = band.altMax > 4500 ? 0.65 : 0.45;
+        rects.push({ x, y: yTop, w: colW + 1, h: yBot - yTop, fill: color, opacity });
       });
     });
     return rects;
@@ -362,30 +359,30 @@ export default function ProfessionalWindgram({
   return (
     <div className="space-y-3">
       {/* Contenitore Bianco stile Alpium */}
-      <div className="bg-white text-slate-900 rounded-[24px] p-3 sm:p-4 shadow-2xl border border-slate-200 overflow-hidden font-sans select-none">
+      <div className="bg-white text-slate-900 rounded-[20px] p-3 sm:p-4 shadow-2xl border border-slate-200 overflow-hidden font-sans select-none">
 
         {/* Titolo */}
         <div className="text-center pb-1">
-          <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight lowercase">
+          <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
             {siteName.toLowerCase()} &middot; {formattedDateTitle.toLowerCase()}
           </h2>
-          <p className="text-[10px] sm:text-xs text-slate-500 font-mono tracking-wide mt-0.5">
-            plotted {dateStr} 00:00 UTC &middot; model ground {Math.round(altitude + 5)} m &middot; SRTM {Math.round(altitude)} m
+          <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+            plotted {dateStr} 00:00 UTC · model ground {Math.round(altitude + 5)} m · SRTM {Math.round(altitude)} m
           </p>
         </div>
 
         {/* Tabella Ascendenza + Sole */}
-        <div className="bg-slate-50 rounded-xl p-2 mb-2 border border-slate-200">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1.5">
+        <div className="mb-2">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1 px-1">
             <span>valore medio ascendenze (m/s)</span>
           </div>
-          <div className="grid grid-cols-11 gap-px">
+          <div className="grid grid-cols-11 gap-1 px-1">
             {hourlyData.map((h, i) => (
               <div key={i} className="text-center">
-                <div className="font-black text-sm" style={{ color: h.thermalAvg >= 1.6 ? "#b91c1c" : "#0f172a" }}>
+                <div className="font-black text-sm leading-tight" style={{ color: h.thermalAvg >= 1.6 ? "#b91c1c" : "#0f172a" }}>
                   {h.thermalAvg.toFixed(1)}
                 </div>
-                <div className="text-[10px]" style={{ color: h.sunPct >= 70 ? "#b45309" : "#94a3b8" }}>
+                <div className="text-[9px] leading-tight" style={{ color: h.sunPct >= 70 ? "#b45309" : "#94a3b8" }}>
                   sole {h.sunPct}%
                 </div>
               </div>
@@ -397,22 +394,17 @@ export default function ProfessionalWindgram({
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 pb-1">
           <svg
             viewBox={`0 0 ${width} ${height}`}
-            className="w-full h-auto min-w-[900px]"
-            style={{ shapeRendering: "geometricPrecision", textRendering: "geometricPrecision" }}
+            className="w-full h-auto min-w-[850px]"
+            style={{ shapeRendering: "geometricPrecision" }}
           >
             <defs>
-              {/* Pattern cross-hatch per zone convettive */}
-              <pattern id="thermalHatch" width="5" height="5" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
-                <line x1="0" y1="0" x2="0" y2="5" stroke="#1e293b" strokeWidth="1" strokeDasharray="1.5 1.5" opacity="0.5" />
-                <line x1="0" y1="0" x2="5" y2="0" stroke="#1e293b" strokeWidth="1" strokeDasharray="1.5 1.5" opacity="0.5" />
-              </pattern>
-              <pattern id="thermalHatchBlue" width="5" height="5" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse">
-                <line x1="0" y1="0" x2="0" y2="5" stroke="#3b82f6" strokeWidth="0.8" opacity="0.4" />
-                <line x1="0" y1="0" x2="5" y2="0" stroke="#3b82f6" strokeWidth="0.8" opacity="0.4" />
+              <pattern id="thermalHatch" width="4" height="4" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                <line x1="0" y1="0" x2="0" y2="4" stroke="#ca8a04" strokeWidth="0.8" strokeDasharray="1.5 1" opacity="0.6" />
+                <line x1="0" y1="0" x2="4" y2="0" stroke="#ca8a04" strokeWidth="0.8" strokeDasharray="1.5 1" opacity="0.6" />
               </pattern>
             </defs>
 
-            {/* SFONDO: rettangoli di stabilità per ogni colonna e fascia di quota */}
+            {/* SFONDO: rettangoli di stabilità */}
             {stabilityRects.map((r, idx) => (
               <rect
                 key={`stab-${idx}`}
@@ -425,7 +417,7 @@ export default function ProfessionalWindgram({
               />
             ))}
 
-            {/* Pattern cross-hatch per zone convettive */}
+            {/* Pattern cross-hatch giallo per zone convettive */}
             {convectiveZonePath && (
               <path d={convectiveZonePath} fill="url(#thermalHatch)" />
             )}
@@ -435,8 +427,8 @@ export default function ProfessionalWindgram({
               const y = getYFromAlt(lvl.alt);
               return (
                 <g key={`grid-${lvl.hpa}`}>
-                  <line x1={margin.left} y1={y} x2={margin.left + plotW} y2={y} stroke="#1e293b" strokeWidth="0.5" strokeDasharray="3 3" opacity="0.3" />
-                  <text x={margin.left - 8} y={y + 4} fill="#0f172a" fontSize="11" fontWeight="800" textAnchor="end" fontFamily="monospace">
+                  <line x1={margin.left} y1={y} x2={margin.left + plotW} y2={y} stroke="#475569" strokeWidth="0.4" strokeDasharray="2 2" opacity="0.4" />
+                  <text x={margin.left - 6} y={y + 3.5} fill="#0f172a" fontSize="10" fontWeight="800" textAnchor="end" fontFamily="monospace">
                     {lvl.hpa} hPa
                   </text>
                 </g>
@@ -448,8 +440,8 @@ export default function ProfessionalWindgram({
               const y = getYFromAlt(alt);
               return (
                 <g key={`alt-${alt}`}>
-                  <line x1={margin.left + plotW} y1={y} x2={margin.left + plotW + 5} y2={y} stroke="#0f172a" strokeWidth="1" />
-                  <text x={margin.left + plotW + 8} y={y + 4} fill="#0f172a" fontSize="11" fontWeight="700" textAnchor="start" fontFamily="monospace">
+                  <line x1={margin.left + plotW} y1={y} x2={margin.left + plotW + 4} y2={y} stroke="#0f172a" strokeWidth="0.8" />
+                  <text x={margin.left + plotW + 6} y={y + 3.5} fill="#0f172a" fontSize="10" fontWeight="700" textAnchor="start" fontFamily="monospace">
                     {alt} m
                   </text>
                 </g>
@@ -457,10 +449,10 @@ export default function ProfessionalWindgram({
             })}
 
             {/* LINEE VERTICALI ORARIE */}
-            {HOURS.map((h, i) => {
+            {HOURS.map((_, i) => {
               const x = getXFromHourIdx(i);
               return (
-                <line key={`vline-${h}`} x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#1e293b" strokeWidth="0.4" strokeDasharray="2 4" opacity="0.2" />
+                <line key={`vline-${i}`} x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#475569" strokeWidth="0.3" strokeDasharray="1 3" opacity="0.3" />
               );
             })}
 
@@ -474,25 +466,25 @@ export default function ProfessionalWindgram({
               </g>
             ))}
 
-            {/* LINEA ZERO TERMICO (cyan tratteggiata con fiocchi) */}
+            {/* LINEA ZERO TERMICO (azzurra tratteggiata con fiocchi) */}
             {zeroThermalPath && (
-              <polyline points={zeroThermalPath} fill="none" stroke="#0284c7" strokeWidth="2" strokeDasharray="6 4" strokeLinecap="round" />
+              <polyline points={zeroThermalPath} fill="none" stroke="#0284c7" strokeWidth="1.5" strokeDasharray="5 3" strokeLinecap="round" />
             )}
             {hourlyData.map((h, i) => {
               const x = getXFromHourIdx(i);
               const y = getYFromAlt(h.zeroThermal);
               return (
                 <g key={`snow-${i}`} transform={`translate(${x}, ${y})`}>
-                  <circle cx="0" cy="0" r="6" fill="#ffffff" stroke="#0284c7" strokeWidth="1.5" />
-                  <text x="0" y="3.5" fill="#0284c7" fontSize="8" fontWeight="900" textAnchor="middle">❄</text>
+                  <circle cx="0" cy="0" r="5" fill="#ffffff" stroke="#0284c7" strokeWidth="1.2" />
+                  <text x="0" y="3" fill="#0284c7" fontSize="7" fontWeight="900" textAnchor="middle">❄</text>
                 </g>
               );
             })}
 
             {/* BADGE ZERO TERMICO */}
-            <g transform={`translate(${margin.left + plotW - 130}, ${getYFromAlt(avgZeroThermal) - 12})`}>
-              <rect x="0" y="0" width="125" height="26" rx="4" fill="#0284c7" stroke="#ffffff" strokeWidth="1.5" />
-              <text x="62" y="17" fill="#ffffff" fontSize="11" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+            <g transform={`translate(${margin.left + plotW - 125}, ${getYFromAlt(avgZeroThermal) - 10})`}>
+              <rect x="0" y="0" width="120" height="22" rx="3" fill="#0284c7" stroke="#ffffff" strokeWidth="1.2" />
+              <text x="60" y="15" fill="#ffffff" fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                 0 °C · {avgZeroThermal} m
               </text>
             </g>
@@ -500,12 +492,12 @@ export default function ProfessionalWindgram({
             {/* LINEA PBL / BOUNDARY LAYER (nera tratteggiata) */}
             <path
               d={`M ${getXFromHourIdx(0)},${getYFromAlt(1800)} Q ${getXFromHourIdx(5)},${getYFromAlt(2600)} ${getXFromHourIdx(10)},${getYFromAlt(2200)}`}
-              fill="none" stroke="#0f172a" strokeWidth="1.8" strokeDasharray="5 4"
+              fill="none" stroke="#0f172a" strokeWidth="1.5" strokeDasharray="4 3"
             />
 
             {/* CURVA THERMAL TOP (viola) */}
             {thermalTopCurve && (
-              <path d={thermalTopCurve} fill="none" stroke="#9333ea" strokeWidth="2.5" strokeLinecap="round" />
+              <path d={thermalTopCurve} fill="none" stroke="#9333ea" strokeWidth="2" strokeLinecap="round" />
             )}
 
             {/* ICONE PARAPENDIO VIOLA SUL THERMAL TOP */}
@@ -514,26 +506,26 @@ export default function ProfessionalWindgram({
               const y = getYFromAlt(h.thermalTop);
               return (
                 <g key={`para-${i}`} transform={`translate(${x}, ${y})`}>
-                  {/* Arcina sopra il parapendio */}
-                  <path d="M -18,-2 A 18,18 0 0,1 18,-2" fill="none" stroke="#c084fc" strokeWidth="2" strokeLinecap="round" />
+                  {/* Arcina sopra */}
+                  <path d="M -16,-2 A 16,16 0 0,1 16,-2" fill="none" stroke="#c084fc" strokeWidth="1.8" strokeLinecap="round" />
                   {/* Parapendio */}
-                  <path d="M -14,-6 C -10,-16 10,-16 14,-6 C 8,-10 -8,-10 -14,-6 Z" fill="#c084fc" stroke="#7e22ce" strokeWidth="1.5" />
-                  <line x1="-10" y1="-7" x2="0" y2="0" stroke="#7e22ce" strokeWidth="1.2" />
-                  <line x1="10" y1="-7" x2="0" y2="0" stroke="#7e22ce" strokeWidth="1.2" />
-                  <circle cx="0" cy="0" r="3.5" fill="#ffffff" stroke="#7e22ce" strokeWidth="1.5" />
+                  <path d="M -12,-5 C -8,-14 8,-14 12,-5 C 7,-9 -7,-9 -12,-5 Z" fill="#c084fc" stroke="#7e22ce" strokeWidth="1.2" />
+                  <line x1="-9" y1="-6" x2="0" y2="0" stroke="#7e22ce" strokeWidth="1" />
+                  <line x1="9" y1="-6" x2="0" y2="0" stroke="#7e22ce" strokeWidth="1" />
+                  <circle cx="0" cy="0" r="3" fill="#ffffff" stroke="#7e22ce" strokeWidth="1.2" />
                 </g>
               );
             })}
 
-            {/* ICONE NUVOLE CUMULI SUL THERMAL TOP */}
+            {/* ICONE NUVOLE CUMULI CERCHI Bianchi sul THERMAL TOP */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const y = getYFromAlt(h.thermalTop);
+              const y = getYFromAlt(h.thermalTop) - 12;
               return (
-                <g key={`cloud-${i}`} transform={`translate(${x}, ${y - 14})`}>
-                  <path d="M -12,2 A 4,4 0 0,1 -5,-3 A 8,8 0 0,1 5,-4 A 6,6 0 0,1 12,1 A 3,3 0 0,1 11,5 L -10,5 A 3,3 0 0,1 -12,2 Z" fill="#ffffff" stroke="#64748b" strokeWidth="1" />
-                  <text x="0" y="4" fill="#0f172a" fontSize="8" fontWeight="900" textAnchor="middle">{h.cloudPct}%</text>
+                <g key={`cloud-${i}`} transform={`translate(${x}, ${y})`}>
+                  <circle cx="0" cy="0" r="10" fill="#ffffff" stroke="#64748b" strokeWidth="1" />
+                  <text x="0" y="3.5" fill="#0f172a" fontSize="8" fontWeight="900" textAnchor="middle">{h.cloudPct}%</text>
                 </g>
               );
             })}
@@ -542,12 +534,11 @@ export default function ProfessionalWindgram({
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const cloudY = getYFromAlt(h.thermalTop) - 14;
-              const badgeY = cloudY + 16;
+              const cloudY = getYFromAlt(h.thermalTop) - 12;
+              const badgeY = cloudY + 22;
               const rateoColor = h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
               return (
                 <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
-                  {/* Badge compatto */}
                   <text x="0" y="0" fill="#0f172a" fontSize="9" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                     {h.cloudBase}m
                   </text>
@@ -560,13 +551,13 @@ export default function ProfessionalWindgram({
 
             {/* ORE ASSE X */}
             {HOURS.map((h, i) => (
-              <text key={`hr-${h}`} x={getXFromHourIdx(i)} y={margin.top + plotH + 20} fill="#0f172a" fontSize="11" fontWeight="800" textAnchor="middle" fontFamily="monospace">
+              <text key={`hr-${h}`} x={getXFromHourIdx(i)} y={margin.top + plotH + 18} fill="#0f172a" fontSize="10" fontWeight="800" textAnchor="middle" fontFamily="monospace">
                 {String(h).padStart(2, "0")}:00
               </text>
             ))}
 
             {/* BORDO PLOT */}
-            <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#0f172a" strokeWidth="1" />
+            <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#0f172a" strokeWidth="0.8" />
           </svg>
         </div>
 
@@ -578,17 +569,17 @@ export default function ProfessionalWindgram({
               <span className="text-slate-900 font-extrabold text-sm">ΔT / 100 m</span>
               <span>→ Instabile</span>
             </div>
-            <div className="w-full h-4 rounded-sm flex overflow-hidden border border-slate-400">
+            <div className="w-full h-3.5 rounded-sm flex overflow-hidden border border-slate-400">
               {STABILITY_COLORS.map((item, idx) => (
                 <div key={idx} className="flex-1 h-full" style={{ backgroundColor: item.color }} />
               ))}
             </div>
-            <div className="flex justify-between text-[10px] sm:text-xs font-mono font-bold text-slate-700 mt-1 px-1">
+            <div className="flex justify-between text-[9px] font-mono font-bold text-slate-700 mt-1 px-1">
               {STABILITY_COLORS.map((item, idx) => (
                 <span key={idx}>{item.val.toFixed(2)}</span>
               ))}
             </div>
-            <div className="text-center text-[10px] text-slate-500 font-mono mt-2">
+            <div className="text-center text-[9px] text-slate-500 font-mono mt-1.5">
               Fonte: AROME 0-48 h + ICON-EU 0-120 h via Open-Meteo · Diagnostica di volo a vela di Alpium
             </div>
           </div>
