@@ -506,22 +506,22 @@ export default function ProfessionalWindgram({
               const y = getYFromAlt(h.thermalTop);
               return (
                 <g key={`para-${i}`} transform={`translate(${x}, ${y})`}>
-                  {/* Arcina sopra */}
-                  <path d="M -16,-2 A 16,16 0 0,1 16,-2" fill="none" stroke="#c084fc" strokeWidth="1.8" strokeLinecap="round" />
-                  {/* Parapendio */}
-                  <path d="M -12,-5 C -8,-14 8,-14 12,-5 C 7,-9 -7,-9 -12,-5 Z" fill="#c084fc" stroke="#7e22ce" strokeWidth="1.2" />
-                  <line x1="-9" y1="-6" x2="0" y2="0" stroke="#7e22ce" strokeWidth="1" />
-                  <line x1="9" y1="-6" x2="0" y2="0" stroke="#7e22ce" strokeWidth="1" />
-                  <circle cx="0" cy="0" r="3" fill="#ffffff" stroke="#7e22ce" strokeWidth="1.2" />
+                  {/* Arcina viola sopra */}
+                  <path d="M -18,-3 A 18,18 0 0,1 18,-3" fill="none" stroke="#a855f7" strokeWidth="2" strokeLinecap="round" />
+                  {/* Parapendio piccolo */}
+                  <path d="M -10,-6 C -7,-12 7,-12 10,-6 C 6,-9 -6,-9 -10,-6 Z" fill="#c084fc" stroke="#7e22ce" strokeWidth="1.2" />
+                  <line x1="-7" y1="-7" x2="0" y2="-1" stroke="#7e22ce" strokeWidth="1" />
+                  <line x1="7" y1="-7" x2="0" y2="-1" stroke="#7e22ce" strokeWidth="1" />
+                  <circle cx="0" cy="-1" r="2.5" fill="#ffffff" stroke="#7e22ce" strokeWidth="1" />
                 </g>
               );
             })}
 
-            {/* ICONE NUVOLE CUMULI CERCHI Bianchi sul THERMAL TOP */}
+            {/* ICONE NUVOLE CUMULI - CERCHI BIANCHI CON PERCENTUALE */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const y = getYFromAlt(h.thermalTop) - 12;
+              const y = getYFromAlt(h.thermalTop) - 18;
               return (
                 <g key={`cloud-${i}`} transform={`translate(${x}, ${y})`}>
                   <circle cx="0" cy="0" r="10" fill="#ffffff" stroke="#64748b" strokeWidth="1" />
@@ -534,8 +534,8 @@ export default function ProfessionalWindgram({
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const cloudY = getYFromAlt(h.thermalTop) - 12;
-              const badgeY = cloudY + 22;
+              const cloudY = getYFromAlt(h.thermalTop) - 18;
+              const badgeY = cloudY + 24;
               const rateoColor = h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
               return (
                 <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
@@ -543,7 +543,7 @@ export default function ProfessionalWindgram({
                     {h.cloudBase}m
                   </text>
                   <text x="0" y="11" fill={rateoColor} fontSize="9" fontWeight="900" textAnchor="middle" fontFamily="monospace">
-                    ↑{h.thermalAvg.toFixed(1)}
+                    ↑{h.thermalAvg.toFixed(1)} m/s
                   </text>
                 </g>
               );
