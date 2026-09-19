@@ -313,36 +313,34 @@ export default function ProfessionalWindgram({
     return points.join(" ");
   }, [hourlyData]);
 
-  // Fasce orizzontali di stabilità per altitudine (come Alpium)
+  // Fasce dinamiche di stabilità - colore varia per altitudine E ora (come Alpium)
   const stabilityRects = useMemo(() => {
     if (hourlyData.length === 0) return [];
     const rects: { x: number; y: number; w: number; h: number; fill: string; opacity: number }[] = [];
-    const altBands = [
-      { altMin: 1300, altMax: 2000 },
-      { altMin: 2000, altMax: 2500 },
-      { altMin: 2500, altMax: 3000 },
-      { altMin: 3000, altMax: 3500 },
-      { altMin: 3500, altMax: 4000 },
-      { altMin: 4000, altMax: 4500 },
-      { altMin: 4500, altMax: 5000 },
-      { altMin: 5000, altMax: 5500 },
-      { altMin: 5500, altMax: 6000 },
-    ];
+    const colW = plotW / (HOURS.length - 1);
 
-    altBands.forEach((band) => {
-      const yTop = getYFromAlt(band.altMax);
-      const yBot = getYFromAlt(band.altMin);
-      // Media deltaT a questa quota su tutte le ore
-      const avgDeltaT = hourlyData.reduce((sum, h) => sum + h.deltaT, 0) / hourlyData.length;
-      const color = getStabilityColor(avgDeltaT);
-      const opacity = band.altMax > 4500 ? 0.6 : 0.4;
-      rects.push({
-        x: margin.left,
-        y: yTop,
-        w: plotW,
-        h: yBot - yTop,
-        fill: color,
-        opacity
+    hourlyData.forEach((h, i) => {
+      const x = getXFromHourIdx(i) - colW / 2;
+      // Fasce di altitudine per questa colonna
+      const bands = [
+        { altMin: 1300, altMax: 2000 },
+        { altMin: 2000, altMax: 2500 },
+        { altMin: 2500, altMax: 3000 },
+        { altMin: 3000, altMax: 3500 },
+        { altMin: 3500, altMax: 4000 },
+        { altMin: 4000, altMax: 4500 },
+        { altMin: 4500, altMax: 5000 },
+        { altMin: 5000, altMax: 5500 },
+        { altMin: 5500, altMax: 6000 },
+      ];
+
+      bands.forEach((band) => {
+        const yTop = getYFromAlt(band.altMax);
+        const yBot = getYFromAlt(band.altMin);
+        // COLORE: ROSSO in basso (instabile), BLU in alto (stabile)
+        const color = getStabilityColor(h.deltaT);
+        const opacity = band.altMax > 4500 ? 0.5 : 0.75; // Più opaco in basso
+        rects.push({ x, y: yTop, w: colW, h: yBot - yTop, fill: color, opacity });
       });
     });
     return rects;
