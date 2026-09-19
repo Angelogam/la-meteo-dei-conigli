@@ -119,10 +119,10 @@ export default function ProfessionalWindgram({
     return () => { isMounted = false; };
   }, [latitude, longitude, dateStr]);
 
-  // Dimensioni SVG - layout compatto come Alpium
-  const width = 1000;
-  const height = 480;
-  const margin = { top: 60, right: 75, bottom: 65, left: 75 };
+  // Dimensioni SVG - più grande per maggiore leggibilità
+  const width = 1100;
+  const height = 580;
+  const margin = { top: 70, right: 85, bottom: 75, left: 85 };
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
@@ -394,7 +394,7 @@ export default function ProfessionalWindgram({
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 pb-1">
           <svg
             viewBox={`0 0 ${width} ${height}`}
-            className="w-full h-auto min-w-[850px]"
+            className="w-full h-auto min-w-[950px]"
             style={{ shapeRendering: "geometricPrecision" }}
           >
             <defs>
@@ -509,10 +509,10 @@ export default function ProfessionalWindgram({
                   {/* Arcina viola sopra - più grande */}
                   <path d="M -22,-4 A 22,22 0 0,1 22,-4" fill="none" stroke="#a855f7" strokeWidth="2.5" strokeLinecap="round" />
                   {/* Parapendio ingrandito */}
-                  <path d="M -14,-8 C -10,-20 10,-20 14,-8 C 9,-13 -9,-13 -14,-8 Z" fill="#c084fc" stroke="#7e22ce" strokeWidth="1.5" />
-                  <line x1="-10" y1="-10" x2="0" y2="-2" stroke="#7e22ce" strokeWidth="1.2" />
-                  <line x1="10" y1="-10" x2="0" y2="-2" stroke="#7e22ce" strokeWidth="1.2" />
-                  <circle cx="0" cy="-2" r="4" fill="#ffffff" stroke="#7e22ce" strokeWidth="1.5" />
+                  <path d="M -16,-10 C -11,-24 11,-24 16,-10 C 10,-15 -10,-15 -16,-10 Z" fill="#c084fc" stroke="#7e22ce" strokeWidth="1.8" />
+                  <line x1="-12" y1="-12" x2="0" y2="-2" stroke="#7e22ce" strokeWidth="1.4" />
+                  <line x1="12" y1="-12" x2="0" y2="-2" stroke="#7e22ce" strokeWidth="1.4" />
+                  <circle cx="0" cy="-2" r="5" fill="#ffffff" stroke="#7e22ce" strokeWidth="1.8" />
                 </g>
               );
             })}
@@ -525,8 +525,8 @@ export default function ProfessionalWindgram({
               return (
                 <g key={`cloud-${i}`} transform={`translate(${x}, ${y})`}>
                   {/* Nuvola con bollini */}
-                  <path d="M -16,6 A 7,7 0 0,1 -8,-3 A 10,10 0 0,1 6,-5 A 8,8 0 0,1 16,1 A 5,5 0 0,1 15,7 L -14,7 A 5,5 0 0,1 -16,6 Z" fill="#ffffff" stroke="#64748b" strokeWidth="1.5" />
-                  <text x="0" y="5" fill="#0f172a" fontSize="9" fontWeight="900" textAnchor="middle">{h.cloudPct}%</text>
+                  <path d="M -18,7 A 8,8 0 0,1 -9,-4 A 11,11 0 0,1 7,-6 A 9,9 0 0,1 18,2 A 6,6 0 0,1 17,8 L -16,8 A 6,6 0 0,1 -18,7 Z" fill="#ffffff" stroke="#64748b" strokeWidth="1.8" />
+                  <text x="0" y="5.5" fill="#0f172a" fontSize="10" fontWeight="900" textAnchor="middle">{h.cloudPct}%</text>
                 </g>
               );
             })}
@@ -540,10 +540,10 @@ export default function ProfessionalWindgram({
               const rateoColor = h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
               return (
                 <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
-                  <text x="0" y="0" fill="#0f172a" fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+                  <text x="0" y="0" fill="#0f172a" fontSize="11" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                     {h.cloudBase}m
                   </text>
-                  <text x="0" y="13" fill={rateoColor} fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+                  <text x="0" y="15" fill={rateoColor} fontSize="11" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                     ↑{h.thermalAvg.toFixed(1)} m/s
                   </text>
                 </g>
