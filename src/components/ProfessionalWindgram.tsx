@@ -517,16 +517,15 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {/* ICONE NUVOLE CUMULI - CERCHI BIANCHI SOPRA IL PARAPENDIO */}
+            {/* ICONE NUVOLE CUMULI - CERCHI BIANCHI CON PERCENTUALE */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const paraY = getYFromAlt(h.thermalTop);
-              const cloudY = paraY - 30; // 30px sopra il parapendio
+              const y = getYFromAlt(h.thermalTop) - 18;
               return (
-                <g key={`cloud-${i}`} transform={`translate(${x}, ${cloudY})`}>
-                  <circle cx="0" cy="0" r="9" fill="#ffffff" stroke="#64748b" strokeWidth="1" />
-                  <text x="0" y="3" fill="#0f172a" fontSize="7" fontWeight="900" textAnchor="middle">{h.cloudPct}%</text>
+                <g key={`cloud-${i}`} transform={`translate(${x}, ${y})`}>
+                  <circle cx="0" cy="0" r="10" fill="#ffffff" stroke="#64748b" strokeWidth="1" />
+                  <text x="0" y="3.5" fill="#0f172a" fontSize="8" fontWeight="900" textAnchor="middle">{h.cloudPct}%</text>
                 </g>
               );
             })}
@@ -535,9 +534,8 @@ export default function ProfessionalWindgram({
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const paraY = getYFromAlt(h.thermalTop);
-              const cloudY = paraY - 30; // Nuvole 30px sopra parapendio
-              const badgeY = cloudY + 22; // Badge sotto nuvole
+              const cloudY = getYFromAlt(h.thermalTop) - 18;
+              const badgeY = cloudY + 24;
               const rateoColor = h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
               return (
                 <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
