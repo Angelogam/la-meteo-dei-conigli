@@ -448,11 +448,11 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {/* LINEE VERTICALI ORARIE */}
+            {/* LINEE VERTICALI ORARIE - quasi invisibili */}
             {HOURS.map((_, i) => {
               const x = getXFromHourIdx(i);
               return (
-                <line key={`vline-${i}`} x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#475569" strokeWidth="0.3" strokeDasharray="1 3" opacity="0.3" />
+                <line key={`vline-${i}`} x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#e2e8f0" strokeWidth="0.5" opacity="0.4" />
               );
             })}
 
