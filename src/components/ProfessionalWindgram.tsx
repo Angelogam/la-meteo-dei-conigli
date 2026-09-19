@@ -120,9 +120,9 @@ export default function ProfessionalWindgram({
   }, [latitude, longitude, dateStr]);
 
   // Dimensioni SVG - ottimizzato per massimizzare il grafico
-  const width = 1100;
-  const height = 620;
-  const margin = { top: 55, right: 80, bottom: 55, left: 80 };
+  const width = 1200;
+  const height = 640;
+  const margin = { top: 55, right: 100, bottom: 55, left: 80 };
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
@@ -394,7 +394,7 @@ export default function ProfessionalWindgram({
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 pb-1">
           <svg
             viewBox={`0 0 ${width} ${height}`}
-            className="w-full h-auto min-w-[950px]"
+            className="w-full h-auto min-w-[1000px]"
             style={{ shapeRendering: "geometricPrecision" }}
           >
             <defs>
