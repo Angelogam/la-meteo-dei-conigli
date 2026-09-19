@@ -313,32 +313,36 @@ export default function ProfessionalWindgram({
     return points.join(" ");
   }, [hourlyData]);
 
-  // Per ogni colonna, calcolo i rettangoli di colore per altitudine
+  // Fasce orizzontali di stabilità per altitudine (come Alpium)
   const stabilityRects = useMemo(() => {
     if (hourlyData.length === 0) return [];
     const rects: { x: number; y: number; w: number; h: number; fill: string; opacity: number }[] = [];
-    const colW = plotW / (HOURS.length - 1);
+    const altBands = [
+      { altMin: 1300, altMax: 2000 },
+      { altMin: 2000, altMax: 2500 },
+      { altMin: 2500, altMax: 3000 },
+      { altMin: 3000, altMax: 3500 },
+      { altMin: 3500, altMax: 4000 },
+      { altMin: 4000, altMax: 4500 },
+      { altMin: 4500, altMax: 5000 },
+      { altMin: 5000, altMax: 5500 },
+      { altMin: 5500, altMax: 6000 },
+    ];
 
-    hourlyData.forEach((h, i) => {
-      const x = getXFromHourIdx(i) - colW / 2;
-      const bands = [
-        { altMin: 1300, altMax: 2000 },
-        { altMin: 2000, altMax: 2500 },
-        { altMin: 2500, altMax: 3000 },
-        { altMin: 3000, altMax: 3500 },
-        { altMin: 3500, altMax: 4000 },
-        { altMin: 4000, altMax: 4500 },
-        { altMin: 4500, altMax: 5000 },
-        { altMin: 5000, altMax: 5500 },
-        { altMin: 5500, altMax: 6000 },
-      ];
-
-      bands.forEach((band) => {
-        const yTop = getYFromAlt(band.altMax);
-        const yBot = getYFromAlt(band.altMin);
-        const color = getAltitudeBandColor((band.altMin + band.altMax) / 2, h.deltaT);
-        const opacity = band.altMax > 4500 ? 0.65 : 0.45;
-        rects.push({ x, y: yTop, w: colW, h: yBot - yTop, fill: color, opacity });
+    altBands.forEach((band) => {
+      const yTop = getYFromAlt(band.altMax);
+      const yBot = getYFromAlt(band.altMin);
+      // Media deltaT a questa quota su tutte le ore
+      const avgDeltaT = hourlyData.reduce((sum, h) => sum + h.deltaT, 0) / hourlyData.length;
+      const color = getStabilityColor(avgDeltaT);
+      const opacity = band.altMax > 4500 ? 0.6 : 0.4;
+      rects.push({
+        x: margin.left,
+        y: yTop,
+        w: plotW,
+        h: yBot - yTop,
+        fill: color,
+        opacity
       });
     });
     return rects;
