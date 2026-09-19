@@ -340,7 +340,7 @@ export default function ProfessionalWindgram({
 
       // Colore: rosso/giallo in basso (instabile), blu/viola in alto (stabile)
       const color = getStabilityColor(avgDeltaT);
-      const opacity = 0.6 + (altitudeFactor * 0.3); // Più opaco in alto
+      const opacity = 0.85 + (altitudeFactor * 0.15); // MOLTO opaco per vedere i colori
 
       bands.push({
         x: margin.left,
