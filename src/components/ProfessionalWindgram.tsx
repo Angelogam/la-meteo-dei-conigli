@@ -521,7 +521,7 @@ export default function ProfessionalWindgram({
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const y = getYFromAlt(h.thermalTop) - 55; // 55px sopra il parapendio
+              const y = getYFromAlt(h.thermalTop) - 50; // 50px sopra il parapendio
               return (
                 <g key={`cloud-${i}`} transform={`translate(${x}, ${y})`}>
                   {/* Nuvola con bollini */}
@@ -531,12 +531,12 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {/* BADGE QUOTA CUMULO + ASCENDENZA - SOTTO LE NUVOLE (fuori dal parapendio) */}
+            {/* BADGE QUOTA CUMULO + ASCENDENZA - SOTTO IL PARAPENDIO (fuori dall'icona) */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const cloudY = getYFromAlt(h.thermalTop) - 55;
-              const badgeY = cloudY + 35; // 35px sotto la nuvola, sopra il parapendio
+              const paraY = getYFromAlt(h.thermalTop);
+              const badgeY = paraY + 32; // 32px sotto il parapendio
               const rateoColor = h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
               return (
                 <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
