@@ -456,12 +456,21 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {/* BARBETTE DEL VENTO */}
+            {/* BARBETTE DEL VENTO + ETICHETTE */}
             {hourlyData.map((calc, i) => (
               <g key={`col-${i}`}>
                 {calc.levelWinds.map((wLvl) => {
+                  const x = getXFromHourIdx(i);
                   const y = getYFromAlt(wLvl.alt);
-                  return renderWindBarb(getXFromHourIdx(i), y, wLvl.speed, wLvl.dir);
+                  return (
+                    <g key={`wb-${i}-${wLvl.hpa}`}>
+                      {renderWindBarb(x, y, wLvl.speed, wLvl.dir)}
+                      {/* Etichetta velocità e direzione */}
+                      <text x={x + 12} y={y - 4} fill="#0f172a" fontSize="7" fontWeight="700" textAnchor="start" fontFamily="monospace">
+                        {Math.round(wLvl.speed)}km/{Math.round(wLvl.dir)}°
+                      </text>
+                    </g>
+                  );
                 })}
               </g>
             ))}
