@@ -313,37 +313,45 @@ export default function ProfessionalWindgram({
     return points.join(" ");
   }, [hourlyData]);
 
-  // Fasce dinamiche di stabilità - colore varia per altitudine E ora (come Alpium)
-  const stabilityRects = useMemo(() => {
-    if (hourlyData.length === 0) return [];
-    const rects: { x: number; y: number; w: number; h: number; fill: string; opacity: number }[] = [];
-    const colW = plotW / (HOURS.length - 1);
+  // SFONDO FLUIDO come Alpium - gradiente continuo basato su deltaT + altitudine
+  const backgroundGradient = useMemo(() => {
+    if (hourlyData.length === 0) return null;
+    const steps = 60; // Precisione del gradiente
+    const stepHeight = plotH / steps;
+    const bands = [];
 
-    hourlyData.forEach((h, i) => {
-      const x = getXFromHourIdx(i) - colW / 2;
-      // Fasce di altitudine per questa colonna
-      const bands = [
-        { altMin: 1300, altMax: 2000 },
-        { altMin: 2000, altMax: 2500 },
-        { altMin: 2500, altMax: 3000 },
-        { altMin: 3000, altMax: 3500 },
-        { altMin: 3500, altMax: 4000 },
-        { altMin: 4000, altMax: 4500 },
-        { altMin: 4500, altMax: 5000 },
-        { altMin: 5000, altMax: 5500 },
-        { altMin: 5500, altMax: 6000 },
-      ];
+    for (let step = 0; step < steps; step++) {
+      const altTop = minAlt + (step / steps) * (maxAlt - minAlt);
+      const altBot = minAlt + ((step + 1) / steps) * (maxAlt - minAlt);
+      const yTop = getYFromAlt(altTop);
+      const yBot = getYFromAlt(altBot);
 
-      bands.forEach((band) => {
-        const yTop = getYFromAlt(band.altMax);
-        const yBot = getYFromAlt(band.altMin);
-        // COLORE: ROSSO in basso (instabile), BLU in alto (stabile)
-        const color = getStabilityColor(h.deltaT);
-        const opacity = band.altMax > 4500 ? 0.5 : 0.75; // Più opaco in basso
-        rects.push({ x, y: yTop, w: colW, h: yBot - yTop, fill: color, opacity });
+      // Per ogni quota, trova il deltaT medio delle ore vicine
+      let totalDeltaT = 0;
+      let count = 0;
+      hourlyData.forEach(h => {
+        // Il deltaT diminuisce con l'altitudine (aria più stabile in alto)
+        const altitudeFactor = Math.max(0, Math.min(1, (altTop - minAlt) / (maxAlt - minAlt)));
+        const adjustedDeltaT = h.deltaT * (1 - altitudeFactor * 0.5);
+        totalDeltaT += adjustedDeltaT;
+        count++;
       });
-    });
-    return rects;
+      const avgDeltaT = totalDeltaT / count;
+
+      // Colore: rosso/giallo in basso (instabile), blu/viola in alto (stabile)
+      const color = getStabilityColor(avgDeltaT);
+      const opacity = 0.6 + (altitudeFactor * 0.3); // Più opaco in alto
+
+      bands.push({
+        x: margin.left,
+        y: yTop,
+        w: plotW,
+        h: yBot - yTop + 0.5, // Piccola sovrapposizione per evitare gap
+        fill: color,
+        opacity
+      });
+    }
+    return bands;
   }, [hourlyData]);
 
   if (loading) {
@@ -414,10 +422,10 @@ export default function ProfessionalWindgram({
               </pattern>
             </defs>
 
-            {/* SFONDO: rettangoli di stabilità */}
-            {stabilityRects.map((r, idx) => (
+            {/* SFONDO FLUIDO come Alpium */}
+            {backgroundGradient && backgroundGradient.map((r, idx) => (
               <rect
-                key={`stab-${idx}`}
+                key={`bg-${idx}`}
                 x={r.x}
                 y={r.y}
                 width={r.w}
