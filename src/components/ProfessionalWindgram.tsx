@@ -313,43 +313,26 @@ export default function ProfessionalWindgram({
     return points.join(" ");
   }, [hourlyData]);
 
-  // SFONDO FLUIDO come Alpium - gradiente continuo basato su deltaT + altitudine
-  const backgroundBands = useMemo(() => {
+  // SFONDO FLUIDO come Alpium - gradiente verticale unico, SENZA LINEE
+  const backgroundColors = useMemo(() => {
     if (hourlyData.length === 0) return [];
-    const steps = 60; // Precisione del gradiente
-    const bands = [];
+    const steps = 60;
+    const colors: string[] = [];
 
     for (let step = 0; step < steps; step++) {
       const altTop = minAlt + (step / steps) * (maxAlt - minAlt);
-      const altBot = minAlt + ((step + 1) / steps) * (maxAlt - minAlt);
-      const yTop = getYFromAlt(altTop);
-      const yBot = getYFromAlt(altBot);
-
-      // Per ogni quota, trova il deltaT medio delle ore vicine
-      let totalDeltaT = 0;
       const altitudeFactor = Math.max(0, Math.min(1, (altTop - minAlt) / (maxAlt - minAlt)));
+
+      // Unico deltaT medio ponderato per quota
+      let totalDeltaT = 0;
       hourlyData.forEach(h => {
-        // Il deltaT diminuisce con l'altitudine (aria più stabile in alto)
-        const adjustedDeltaT = h.deltaT * (1 - altitudeFactor * 0.5);
-        totalDeltaT += adjustedDeltaT;
+        totalDeltaT += h.deltaT * (1 - altitudeFactor * 0.5);
       });
       const avgDeltaT = totalDeltaT / hourlyData.length;
 
-      // Colore: rosso/giallo in basso (instabile), blu/viola in alto (stabile)
-      const color = getStabilityColor(avgDeltaT);
-      const opacity = 0.9 + (altitudeFactor * 0.1); // MOLTO opaco per vedere i colori
-
-      bands.push({
-        x: margin.left,
-        y: yTop,
-        w: plotW,
-        h: Math.max(0.5, yBot - yTop + 0.5),
-        fill: color,
-        opacity
-      });
+      colors.push(getStabilityColor(avgDeltaT));
     }
-    console.log('Background bands computed:', bands.length, 'hours:', hourlyData.length);
-    return bands;
+    return colors;
   }, [hourlyData]);
 
   if (loading) {
@@ -423,20 +406,26 @@ export default function ProfessionalWindgram({
             {/* Sfondo bianco di base */}
             <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#ffffff" />
 
-            {/* SFONDO FLUIDO come Alpium - SEMPRE RENDERIZZATO */}
-            {backgroundBands.length > 0 ? backgroundBands.map((band) => (
-              <rect
-                key={`bg-${band.x}-${band.y}`}
-                x={band.x}
-                y={band.y}
-                width={band.w}
-                height={band.h}
-                fill={band.fill}
-                opacity={band.opacity}
-              />
-            )) : (
-              // Fallback: mostra una banda di colore se non ci sono dati
-              <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#3b82f6" opacity="0.9" />
+            {/* SFONDO FLUIDO - gradiente verticale senza linee */}
+            {backgroundColors.length > 0 ? backgroundColors.map((color, step) => {
+              const altTop = minAlt + (step / 60) * (maxAlt - minAlt);
+              const altBot = minAlt + ((step + 1) / 60) * (maxAlt - minAlt);
+              const yTop = getYFromAlt(altTop);
+              const yBot = getYFromAlt(altBot);
+              const h = yBot - yTop;
+              return (
+                <rect
+                  key={step}
+                  x={margin.left}
+                  y={yTop}
+                  width={plotW}
+                  height={h}
+                  fill={color}
+                  opacity="0.95"
+                />
+              );
+            }) : (
+              <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#3b82f6" opacity="0.95" />
             )}
 
             {/* Pattern cross-hatch giallo per zone convettive */}
