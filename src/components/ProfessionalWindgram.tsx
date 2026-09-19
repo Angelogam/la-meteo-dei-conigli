@@ -517,11 +517,11 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {/* ICONE NUVOLE CUMULI - CERCHI BIANCHI CON PERCENTUALE */}
+            {/* ICONE NUVOLE CUMULI - PIÙ IN ALTO, SOPRA IL PARAPENDIO */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const y = getYFromAlt(h.thermalTop) - 18;
+              const y = getYFromAlt(h.thermalTop) - 35; // 35px sopra il parapendio
               return (
                 <g key={`cloud-${i}`} transform={`translate(${x}, ${y})`}>
                   <circle cx="0" cy="0" r="10" fill="#ffffff" stroke="#64748b" strokeWidth="1" />
@@ -534,8 +534,8 @@ export default function ProfessionalWindgram({
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const cloudY = getYFromAlt(h.thermalTop) - 18;
-              const badgeY = cloudY + 24;
+              const cloudY = getYFromAlt(h.thermalTop) - 35;
+              const badgeY = cloudY + 26; // 26px sotto la nuvola
               const rateoColor = h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
               return (
                 <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
