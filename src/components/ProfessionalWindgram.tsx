@@ -422,18 +422,39 @@ export default function ProfessionalWindgram({
               </pattern>
             </defs>
 
-            {/* SFONDO FLUIDO come Alpium */}
-            {backgroundGradient && backgroundGradient.map((r, idx) => (
-              <rect
-                key={`bg-${idx}`}
-                x={r.x}
-                y={r.y}
-                width={r.w}
-                height={r.h}
-                fill={r.fill}
-                opacity={r.opacity}
-              />
-            ))}
+            {/* SFONDO FLUIDO come Alpium - SEMPRE RENDERIZZATO */}
+            {(() => {
+              if (hourlyData.length === 0) return null;
+              const steps = 60;
+              const result = [];
+              for (let step = 0; step < steps; step++) {
+                const altTop = minAlt + (step / steps) * (maxAlt - minAlt);
+                const altBot = minAlt + ((step + 1) / steps) * (maxAlt - minAlt);
+                const yTop = getYFromAlt(altTop);
+                const yBot = getYFromAlt(altBot);
+                const altitudeFactor = Math.max(0, Math.min(1, (altTop - minAlt) / (maxAlt - minAlt)));
+                let totalDeltaT = 0;
+                hourlyData.forEach(h => {
+                  const adjustedDeltaT = h.deltaT * (1 - altitudeFactor * 0.5);
+                  totalDeltaT += adjustedDeltaT;
+                });
+                const avgDeltaT = totalDeltaT / hourlyData.length;
+                const color = getStabilityColor(avgDeltaT);
+                const opacity = 0.9 + (altitudeFactor * 0.1);
+                result.push(
+                  <rect
+                    key={`bg-${step}`}
+                    x={margin.left}
+                    y={yTop}
+                    width={plotW}
+                    height={yBot - yTop + 0.5}
+                    fill={color}
+                    opacity={opacity}
+                  />
+                );
+              }
+              return result;
+            })()}
 
             {/* Pattern cross-hatch giallo per zone convettive */}
             {convectiveZonePath && (
