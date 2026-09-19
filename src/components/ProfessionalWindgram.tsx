@@ -309,7 +309,7 @@ export default function ProfessionalWindgram({
   const stabilityRects = useMemo(() => {
     if (hourlyData.length === 0) return [];
     const rects: { x: number; y: number; w: number; h: number; fill: string; opacity: number }[] = [];
-    const colW = plotW / HOURS.length;
+    const colW = plotW / (HOURS.length - 1);
 
     hourlyData.forEach((h, i) => {
       const x = getXFromHourIdx(i) - colW / 2;
