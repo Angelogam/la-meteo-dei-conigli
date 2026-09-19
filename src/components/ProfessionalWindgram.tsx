@@ -329,9 +329,9 @@ export default function ProfessionalWindgram({
       // Per ogni quota, trova il deltaT medio delle ore vicine
       let totalDeltaT = 0;
       let count = 0;
+      const altitudeFactor = Math.max(0, Math.min(1, (altTop - minAlt) / (maxAlt - minAlt)));
       hourlyData.forEach(h => {
         // Il deltaT diminuisce con l'altitudine (aria più stabile in alto)
-        const altitudeFactor = Math.max(0, Math.min(1, (altTop - minAlt) / (maxAlt - minAlt)));
         const adjustedDeltaT = h.deltaT * (1 - altitudeFactor * 0.5);
         totalDeltaT += adjustedDeltaT;
         count++;
