@@ -472,8 +472,8 @@ export default function ProfessionalWindgram({
                   return (
                     <g key={`wb-${i}-${wLvl.hpa}`}>
                       {renderWindBarb(x, y, wLvl.speed, wLvl.dir)}
-                      {/* Etichetta velocità e direzione in lettere */}
-                      <text x={x + 14} y={y - 6} fill="#0f172a" fontSize="8" fontWeight="800" textAnchor="start" fontFamily="monospace">
+                      {/* Etichetta velocità e direzione in lettere - GRANDISSIMA */}
+                      <text x={x + 18} y={y - 10} fill="#0f172a" fontSize="10" fontWeight="900" textAnchor="start" fontFamily="monospace">
                         {Math.round(wLvl.speed)}km/{getDirLetter(wLvl.dir)}
                       </text>
                     </g>
