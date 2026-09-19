@@ -220,15 +220,15 @@ export default function ProfessionalWindgram({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Wind barb rendering
+  // Wind barb rendering - più grande e contrastato
   const renderWindBarb = (x: number, y: number, speedKmh: number, dirDeg: number) => {
     if (speedKmh == null || isNaN(speedKmh) || speedKmh < 1) return null;
     const knots = speedKmh * 0.539957;
     const angle = ((dirDeg - 90) * Math.PI) / 180;
-    const staffLen = 16;
+    const staffLen = 20;
     const endX = x + staffLen * Math.cos(angle);
     const endY = y + staffLen * Math.sin(angle);
-    const barbColor = speedKmh > 30 ? "#d946ef" : speedKmh > 18 ? "#0284c7" : "#3b82f6";
+    const barbColor = speedKmh > 30 ? "#d946ef" : speedKmh > 18 ? "#0284c7" : "#1d4ed8";
     const barbAngle = angle + (115 * Math.PI) / 180;
     const featherAngle = barbAngle + Math.PI;
 
@@ -240,26 +240,26 @@ export default function ProfessionalWindgram({
       const bx = x + pos * (endX - x);
       const by = y + pos * (endY - y);
       const p1 = `${bx},${by}`;
-      const p2 = `${bx + 8 * Math.cos(featherAngle)},${by + 8 * Math.sin(featherAngle)}`;
-      const p3 = `${bx + 3.5 * Math.cos(angle)},${by + 3.5 * Math.sin(angle)}`;
-      elements.push(<polygon key={`p50-${x}-${y}-${pos}`} points={`${p1} ${p2} ${p3}`} fill={barbColor} stroke={barbColor} strokeWidth="0.7" />);
+      const p2 = `${bx + 10 * Math.cos(featherAngle)},${by + 10 * Math.sin(featherAngle)}`;
+      const p3 = `${bx + 4.5 * Math.cos(angle)},${by + 4.5 * Math.sin(angle)}`;
+      elements.push(<polygon key={`p50-${x}-${y}-${pos}`} points={`${p1} ${p2} ${p3}`} fill={barbColor} stroke={barbColor} strokeWidth="0.8" />);
       rem -= 50; pos -= 0.28;
     }
     while (rem >= 10 && pos >= 0.2) {
       const bx = x + pos * (endX - x);
       const by = y + pos * (endY - y);
-      elements.push(<line key={`l10-${x}-${y}-${pos}`} x1={bx} y1={by} x2={bx + 8 * Math.cos(featherAngle)} y2={by + 8 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="1.2" strokeLinecap="round" />);
+      elements.push(<line key={`l10-${x}-${y}-${pos}`} x1={bx} y1={by} x2={bx + 10 * Math.cos(featherAngle)} y2={by + 10 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="1.6" strokeLinecap="round" />);
       rem -= 10; pos -= 0.18;
     }
     if (rem >= 5 && pos >= 0.2) {
       const bx = x + pos * (endX - x);
       const by = y + pos * (endY - y);
-      elements.push(<line key={`l5-${x}-${y}-${pos}`} x1={bx} y1={by} x2={bx + 4.5 * Math.cos(featherAngle)} y2={by + 4.5 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="1.2" strokeLinecap="round" />);
+      elements.push(<line key={`l5-${x}-${y}-${pos}`} x1={bx} y1={by} x2={bx + 5.5 * Math.cos(featherAngle)} y2={by + 5.5 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="1.6" strokeLinecap="round" />);
     }
 
     return (
       <g key={`wb-${x}-${Math.round(y)}`}>
-        <line x1={x} y1={y} x2={endX} y2={endY} stroke={barbColor} strokeWidth="1.2" strokeLinecap="round" />
+        <line x1={x} y1={y} x2={endX} y2={endY} stroke={barbColor} strokeWidth="1.6" strokeLinecap="round" />
         {elements}
       </g>
     );
