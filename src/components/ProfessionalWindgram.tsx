@@ -314,10 +314,9 @@ export default function ProfessionalWindgram({
   }, [hourlyData]);
 
   // SFONDO FLUIDO come Alpium - gradiente continuo basato su deltaT + altitudine
-  const backgroundGradient = useMemo(() => {
-    if (hourlyData.length === 0) return null;
+  const backgroundBands = useMemo(() => {
+    if (hourlyData.length === 0) return [];
     const steps = 60; // Precisione del gradiente
-    const stepHeight = plotH / steps;
     const bands = [];
 
     for (let step = 0; step < steps; step++) {
@@ -328,29 +327,28 @@ export default function ProfessionalWindgram({
 
       // Per ogni quota, trova il deltaT medio delle ore vicine
       let totalDeltaT = 0;
-      let count = 0;
       const altitudeFactor = Math.max(0, Math.min(1, (altTop - minAlt) / (maxAlt - minAlt)));
       hourlyData.forEach(h => {
         // Il deltaT diminuisce con l'altitudine (aria più stabile in alto)
         const adjustedDeltaT = h.deltaT * (1 - altitudeFactor * 0.5);
         totalDeltaT += adjustedDeltaT;
-        count++;
       });
-      const avgDeltaT = totalDeltaT / count;
+      const avgDeltaT = totalDeltaT / hourlyData.length;
 
       // Colore: rosso/giallo in basso (instabile), blu/viola in alto (stabile)
       const color = getStabilityColor(avgDeltaT);
-      const opacity = 0.85 + (altitudeFactor * 0.15); // MOLTO opaco per vedere i colori
+      const opacity = 0.9 + (altitudeFactor * 0.1); // MOLTO opaco per vedere i colori
 
       bands.push({
         x: margin.left,
         y: yTop,
         w: plotW,
-        h: yBot - yTop + 0.5, // Piccola sovrapposizione per evitare gap
+        h: Math.max(0.5, yBot - yTop + 0.5),
         fill: color,
         opacity
       });
     }
+    console.log('Background bands computed:', bands.length, 'hours:', hourlyData.length);
     return bands;
   }, [hourlyData]);
 
@@ -422,39 +420,24 @@ export default function ProfessionalWindgram({
               </pattern>
             </defs>
 
+            {/* Sfondo bianco di base */}
+            <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#ffffff" />
+
             {/* SFONDO FLUIDO come Alpium - SEMPRE RENDERIZZATO */}
-            {(() => {
-              if (hourlyData.length === 0) return null;
-              const steps = 60;
-              const result = [];
-              for (let step = 0; step < steps; step++) {
-                const altTop = minAlt + (step / steps) * (maxAlt - minAlt);
-                const altBot = minAlt + ((step + 1) / steps) * (maxAlt - minAlt);
-                const yTop = getYFromAlt(altTop);
-                const yBot = getYFromAlt(altBot);
-                const altitudeFactor = Math.max(0, Math.min(1, (altTop - minAlt) / (maxAlt - minAlt)));
-                let totalDeltaT = 0;
-                hourlyData.forEach(h => {
-                  const adjustedDeltaT = h.deltaT * (1 - altitudeFactor * 0.5);
-                  totalDeltaT += adjustedDeltaT;
-                });
-                const avgDeltaT = totalDeltaT / hourlyData.length;
-                const color = getStabilityColor(avgDeltaT);
-                const opacity = 0.9 + (altitudeFactor * 0.1);
-                result.push(
-                  <rect
-                    key={`bg-${step}`}
-                    x={margin.left}
-                    y={yTop}
-                    width={plotW}
-                    height={yBot - yTop + 0.5}
-                    fill={color}
-                    opacity={opacity}
-                  />
-                );
-              }
-              return result;
-            })()}
+            {backgroundBands.length > 0 ? backgroundBands.map((band) => (
+              <rect
+                key={`bg-${band.x}-${band.y}`}
+                x={band.x}
+                y={band.y}
+                width={band.w}
+                height={band.h}
+                fill={band.fill}
+                opacity={band.opacity}
+              />
+            )) : (
+              // Fallback: mostra una banda di colore se non ci sono dati
+              <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#3b82f6" opacity="0.9" />
+            )}
 
             {/* Pattern cross-hatch giallo per zone convettive */}
             {convectiveZonePath && (
