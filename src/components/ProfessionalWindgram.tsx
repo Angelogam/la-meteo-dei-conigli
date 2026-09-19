@@ -500,32 +500,33 @@ export default function ProfessionalWindgram({
               <path d={thermalTopCurve} fill="none" stroke="#9333ea" strokeWidth="2" strokeLinecap="round" />
             )}
 
-            {/* ICONE PARAPENDIO VIOLA SUL THERMAL TOP */}
+            {/* ICONE PARAPENDIO VIOLA SUL THERMAL TOP - INGRANDITO */}
             {hourlyData.map((h, i) => {
               const x = getXFromHourIdx(i);
               const y = getYFromAlt(h.thermalTop);
               return (
                 <g key={`para-${i}`} transform={`translate(${x}, ${y})`}>
-                  {/* Arcina viola sopra */}
-                  <path d="M -18,-3 A 18,18 0 0,1 18,-3" fill="none" stroke="#a855f7" strokeWidth="2" strokeLinecap="round" />
-                  {/* Parapendio piccolo */}
-                  <path d="M -10,-6 C -7,-12 7,-12 10,-6 C 6,-9 -6,-9 -10,-6 Z" fill="#c084fc" stroke="#7e22ce" strokeWidth="1.2" />
-                  <line x1="-7" y1="-7" x2="0" y2="-1" stroke="#7e22ce" strokeWidth="1" />
-                  <line x1="7" y1="-7" x2="0" y2="-1" stroke="#7e22ce" strokeWidth="1" />
-                  <circle cx="0" cy="-1" r="2.5" fill="#ffffff" stroke="#7e22ce" strokeWidth="1" />
+                  {/* Arcina viola sopra - più grande */}
+                  <path d="M -22,-4 A 22,22 0 0,1 22,-4" fill="none" stroke="#a855f7" strokeWidth="2.5" strokeLinecap="round" />
+                  {/* Parapendio ingrandito */}
+                  <path d="M -14,-8 C -10,-20 10,-20 14,-8 C 9,-13 -9,-13 -14,-8 Z" fill="#c084fc" stroke="#7e22ce" strokeWidth="1.5" />
+                  <line x1="-10" y1="-10" x2="0" y2="-2" stroke="#7e22ce" strokeWidth="1.2" />
+                  <line x1="10" y1="-10" x2="0" y2="-2" stroke="#7e22ce" strokeWidth="1.2" />
+                  <circle cx="0" cy="-2" r="4" fill="#ffffff" stroke="#7e22ce" strokeWidth="1.5" />
                 </g>
               );
             })}
 
-            {/* ICONE NUVOLE CUMULI - PIÙ IN ALTO, SOPRA IL PARAPENDIO */}
+            {/* ICONE NUVOLE CUMULI - VERA FORMA DI NUVOLA, PIÙ GRANDE */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const y = getYFromAlt(h.thermalTop) - 35; // 35px sopra il parapendio
+              const y = getYFromAlt(h.thermalTop) - 42; // 42px sopra il parapendio
               return (
                 <g key={`cloud-${i}`} transform={`translate(${x}, ${y})`}>
-                  <circle cx="0" cy="0" r="10" fill="#ffffff" stroke="#64748b" strokeWidth="1" />
-                  <text x="0" y="3.5" fill="#0f172a" fontSize="8" fontWeight="900" textAnchor="middle">{h.cloudPct}%</text>
+                  {/* Nuvola con bollini */}
+                  <path d="M -16,6 A 7,7 0 0,1 -8,-3 A 10,10 0 0,1 6,-5 A 8,8 0 0,1 16,1 A 5,5 0 0,1 15,7 L -14,7 A 5,5 0 0,1 -16,6 Z" fill="#ffffff" stroke="#64748b" strokeWidth="1.5" />
+                  <text x="0" y="5" fill="#0f172a" fontSize="9" fontWeight="900" textAnchor="middle">{h.cloudPct}%</text>
                 </g>
               );
             })}
@@ -534,15 +535,15 @@ export default function ProfessionalWindgram({
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const cloudY = getYFromAlt(h.thermalTop) - 35;
-              const badgeY = cloudY + 26; // 26px sotto la nuvola
+              const cloudY = getYFromAlt(h.thermalTop) - 42;
+              const badgeY = cloudY + 30; // 30px sotto la nuvola
               const rateoColor = h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
               return (
                 <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
-                  <text x="0" y="0" fill="#0f172a" fontSize="9" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+                  <text x="0" y="0" fill="#0f172a" fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                     {h.cloudBase}m
                   </text>
-                  <text x="0" y="11" fill={rateoColor} fontSize="9" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+                  <text x="0" y="13" fill={rateoColor} fontSize="10" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                     ↑{h.thermalAvg.toFixed(1)} m/s
                   </text>
                 </g>
