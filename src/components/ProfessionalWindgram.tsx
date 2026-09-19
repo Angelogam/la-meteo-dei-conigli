@@ -330,7 +330,7 @@ export default function ProfessionalWindgram({
         const yBot = getYFromAlt(band.altMin);
         const color = getAltitudeBandColor((band.altMin + band.altMax) / 2, h.deltaT);
         const opacity = band.altMax > 4500 ? 0.65 : 0.45;
-        rects.push({ x, y: yTop, w: colW + 1, h: yBot - yTop, fill: color, opacity });
+        rects.push({ x, y: yTop, w: colW, h: yBot - yTop, fill: color, opacity });
       });
     });
     return rects;
