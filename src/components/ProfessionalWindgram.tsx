@@ -506,8 +506,6 @@ export default function ProfessionalWindgram({
               const y = getYFromAlt(h.thermalTop);
               return (
                 <g key={`para-${i}`} transform={`translate(${x}, ${y})`}>
-                  {/* Arcina viola sopra - più grande */}
-                  <path d="M -22,-4 A 22,22 0 0,1 22,-4" fill="none" stroke="#a855f7" strokeWidth="2.5" strokeLinecap="round" />
                   {/* Parapendio ingrandito */}
                   <path d="M -16,-10 C -11,-24 11,-24 16,-10 C 10,-15 -10,-15 -16,-10 Z" fill="#c084fc" stroke="#7e22ce" strokeWidth="1.8" />
                   <line x1="-12" y1="-12" x2="0" y2="-2" stroke="#7e22ce" strokeWidth="1.4" />
