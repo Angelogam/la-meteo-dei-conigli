@@ -313,26 +313,43 @@ export default function ProfessionalWindgram({
     return points.join(" ");
   }, [hourlyData]);
 
-  // SFONDO FLUIDO come Alpium - gradiente verticale unico, SENZA LINEE
-  const backgroundColors = useMemo(() => {
+  // SFONDO FLUIDO come Alpium - gradiente 2D (orizzontale + verticale), SENZA LINEE
+  const backgroundBands2D = useMemo(() => {
     if (hourlyData.length === 0) return [];
     const steps = 60;
-    const colors: string[] = [];
+    const bands: Array<{ step: number; color: string }> = [];
 
     for (let step = 0; step < steps; step++) {
       const altTop = minAlt + (step / steps) * (maxAlt - minAlt);
       const altitudeFactor = Math.max(0, Math.min(1, (altTop - minAlt) / (maxAlt - minAlt)));
 
-      // Unico deltaT medio ponderato per quota
+      // Calcola deltaT medio per QUESTA quota, su tutte le ore
       let totalDeltaT = 0;
       hourlyData.forEach(h => {
         totalDeltaT += h.deltaT * (1 - altitudeFactor * 0.5);
       });
       const avgDeltaT = totalDeltaT / hourlyData.length;
 
-      colors.push(getStabilityColor(avgDeltaT));
+      bands.push({ step, color: getStabilityColor(avgDeltaT) });
     }
-    return colors;
+    return bands;
+  }, [hourlyData]);
+
+  // VERSIONE ORIZZONTALE: colore diverso per ogni colonna oraria
+  const backgroundCols = useMemo(() => {
+    if (hourlyData.length === 0) return [];
+    const steps = 60;
+    const result: Array<{ col: number; step: number; color: string }> = [];
+
+    hourlyData.forEach((h, colIdx) => {
+      for (let step = 0; step < steps; step++) {
+        const altTop = minAlt + (step / steps) * (maxAlt - minAlt);
+        const altitudeFactor = Math.max(0, Math.min(1, (altTop - minAlt) / (maxAlt - minAlt)));
+        const adjustedDeltaT = h.deltaT * (1 - altitudeFactor * 0.5);
+        result.push({ col: colIdx, step, color: getStabilityColor(adjustedDeltaT) });
+      }
+    });
+    return result;
   }, [hourlyData]);
 
   if (loading) {
@@ -406,21 +423,24 @@ export default function ProfessionalWindgram({
             {/* Sfondo bianco di base */}
             <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#ffffff" />
 
-            {/* SFONDO FLUIDO - gradiente verticale senza linee */}
-            {backgroundColors.length > 0 ? backgroundColors.map((color, step) => {
-              const altTop = minAlt + (step / 60) * (maxAlt - minAlt);
-              const altBot = minAlt + ((step + 1) / 60) * (maxAlt - minAlt);
+            {/* SFONDO FLUIDO 2D - gradiente verticale E orizzontale, senza linee */}
+            {backgroundCols.length > 0 ? backgroundCols.map((item) => {
+              const x = margin.left + (item.col / (HOURS.length - 1)) * plotW;
+              const nextX = margin.left + ((item.col + 1) / (HOURS.length - 1)) * plotW;
+              const w = nextX - x;
+              const altTop = minAlt + (item.step / 60) * (maxAlt - minAlt);
+              const altBot = minAlt + ((item.step + 1) / 60) * (maxAlt - minAlt);
               const yTop = getYFromAlt(altTop);
               const yBot = getYFromAlt(altBot);
               const h = yBot - yTop;
               return (
                 <rect
-                  key={step}
-                  x={margin.left}
+                  key={`${item.col}-${item.step}`}
+                  x={x}
                   y={yTop}
-                  width={plotW}
+                  width={w}
                   height={h}
-                  fill={color}
+                  fill={item.color}
                   opacity="0.95"
                 />
               );
