@@ -58,6 +58,13 @@ function getAltitudeBandColor(alt: number, deltaT: number): string {
   return altitudeFactor > 0.5 ? "#6366f1" : stableColor;
 }
 
+// Funzione per convertire gradi in lettere cardinali
+function getDirLetter(deg: number): string {
+  const dirs = ["N", "NO", "O", "SO", "S", "SE", "E", "NE"];
+  const idx = Math.round(deg / 45) % 8;
+  return dirs[idx];
+}
+
 export default function ProfessionalWindgram({
   latitude,
   longitude,
@@ -465,9 +472,9 @@ export default function ProfessionalWindgram({
                   return (
                     <g key={`wb-${i}-${wLvl.hpa}`}>
                       {renderWindBarb(x, y, wLvl.speed, wLvl.dir)}
-                      {/* Etichetta velocità e direzione - più grande */}
+                      {/* Etichetta velocità e direzione in lettere */}
                       <text x={x + 14} y={y - 6} fill="#0f172a" fontSize="8" fontWeight="800" textAnchor="start" fontFamily="monospace">
-                        {Math.round(wLvl.speed)}km/{Math.round(wLvl.dir)}°
+                        {Math.round(wLvl.speed)}km/{getDirLetter(wLvl.dir)}
                       </text>
                     </g>
                   );
