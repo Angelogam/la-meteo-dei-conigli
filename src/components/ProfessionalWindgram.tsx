@@ -119,10 +119,10 @@ export default function ProfessionalWindgram({
     return () => { isMounted = false; };
   }, [latitude, longitude, dateStr]);
 
-  // Dimensioni SVG - più grande per maggiore leggibilità
+  // Dimensioni SVG - ottimizzato per massimizzare il grafico
   const width = 1100;
-  const height = 580;
-  const margin = { top: 70, right: 85, bottom: 75, left: 85 };
+  const height = 620;
+  const margin = { top: 55, right: 80, bottom: 55, left: 80 };
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
@@ -359,7 +359,7 @@ export default function ProfessionalWindgram({
   return (
     <div className="space-y-3">
       {/* Contenitore Bianco stile Alpium */}
-      <div className="bg-white text-slate-900 rounded-[20px] p-3 sm:p-4 shadow-2xl border border-slate-200 overflow-hidden font-sans select-none">
+      <div className="bg-white text-slate-900 rounded-[20px] p-2 sm:p-3 shadow-2xl border border-slate-200 overflow-hidden font-sans select-none">
 
         {/* Titolo */}
         <div className="text-center pb-1">
