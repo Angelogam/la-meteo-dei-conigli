@@ -393,7 +393,7 @@ export default function ProfessionalWindgram({
           <svg
             viewBox={`0 0 ${width} ${height}`}
             className="w-full h-auto min-w-[1000px]"
-            style={{ shapeRendering: "geometricPrecision" }}
+            style={{ shapeRendering: "crispEdges" }}
           >
             <defs>
               <pattern id="thermalHatch" width="4" height="4" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
@@ -418,15 +418,16 @@ export default function ProfessionalWindgram({
               const yTop = getYFromAlt(altTop);
               const yBot = getYFromAlt(altBot);
               const colH = yBot - yTop;
+              // Sovrapposizione di 1px per coprire eventuali gap
               return (
                 <rect
                   key={`${item.col}-${item.step}`}
                   x={colX}
-                  y={yTop}
-                  width={colW}
-                  height={Math.max(1, colH)}
+                  y={yTop - 0.5}
+                  width={colW + 0.5}
+                  height={colH + 1}
                   fill={item.color}
-                  opacity="0.92"
+                  opacity="0.95"
                 />
               );
             }) : (
