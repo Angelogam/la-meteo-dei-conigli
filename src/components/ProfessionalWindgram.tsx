@@ -313,31 +313,12 @@ export default function ProfessionalWindgram({
     return points.join(" ");
   }, [hourlyData]);
 
-  // SFONDO FLUIDO come Alpium - gradiente 2D (orizzontale + verticale), SENZA LINEE
-  const backgroundBands2D = useMemo(() => {
-    if (hourlyData.length === 0) return [];
-    const steps = 60;
-    const bands: Array<{ step: number; color: string }> = [];
-
-    for (let step = 0; step < steps; step++) {
-      const altTop = minAlt + (step / steps) * (maxAlt - minAlt);
-      const altitudeFactor = Math.max(0, Math.min(1, (altTop - minAlt) / (maxAlt - minAlt)));
-
-      // Calcola deltaT medio per QUESTA quota, su tutte le ore
-      let totalDeltaT = 0;
-      hourlyData.forEach(h => {
-        totalDeltaT += h.deltaT * (1 - altitudeFactor * 0.5);
-      });
-      const avgDeltaT = totalDeltaT / hourlyData.length;
-
-      bands.push({ step, color: getStabilityColor(avgDeltaT) });
-    }
-    return bands;
-  }, [hourlyData]);
-
   // VERSIONE ORIZZONTALE: colore diverso per ogni colonna oraria
   const backgroundCols = useMemo(() => {
-    if (hourlyData.length === 0) return [];
+    if (hourlyData.length === 0) {
+      console.log('DEBUG: hourlyData vuoto, backgroundCols = []');
+      return [];
+    }
     const steps = 60;
     const result: Array<{ col: number; step: number; color: string }> = [];
 
@@ -349,6 +330,7 @@ export default function ProfessionalWindgram({
         result.push({ col: colIdx, step, color: getStabilityColor(adjustedDeltaT) });
       }
     });
+    console.log('DEBUG: backgroundCols calcolati:', result.length, 'items');
     return result;
   }, [hourlyData]);
 
@@ -423,29 +405,33 @@ export default function ProfessionalWindgram({
             {/* Sfondo bianco di base */}
             <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#ffffff" />
 
+            {/* DEBUG: verifica rendering */}
+            <text x={margin.left + 5} y={margin.top + 20} fill="#ff0000" fontSize="16" fontWeight="bold">DEBUG: {hourlyData.length}h</text>
+
             {/* SFONDO FLUIDO 2D - gradiente verticale E orizzontale, senza linee */}
             {backgroundCols.length > 0 ? backgroundCols.map((item) => {
-              const x = margin.left + (item.col / (HOURS.length - 1)) * plotW;
-              const nextX = margin.left + ((item.col + 1) / (HOURS.length - 1)) * plotW;
-              const w = nextX - x;
+              const colX = margin.left + (item.col / (HOURS.length - 1)) * plotW;
+              const nextColX = margin.left + ((item.col + 1) / (HOURS.length - 1)) * plotW;
+              const colW = nextColX - colX;
               const altTop = minAlt + (item.step / 60) * (maxAlt - minAlt);
               const altBot = minAlt + ((item.step + 1) / 60) * (maxAlt - minAlt);
               const yTop = getYFromAlt(altTop);
               const yBot = getYFromAlt(altBot);
-              const h = yBot - yTop;
+              const colH = yBot - yTop;
               return (
                 <rect
                   key={`${item.col}-${item.step}`}
-                  x={x}
+                  x={colX}
                   y={yTop}
-                  width={w}
-                  height={h}
+                  width={colW}
+                  height={Math.max(1, colH)}
                   fill={item.color}
-                  opacity="0.95"
+                  opacity="0.92"
                 />
               );
             }) : (
-              <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#3b82f6" opacity="0.95" />
+              // Fallback se nessun dato
+              <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#3b82f6" opacity="0.9" />
             )}
 
             {/* Pattern cross-hatch giallo per zone convettive */}
