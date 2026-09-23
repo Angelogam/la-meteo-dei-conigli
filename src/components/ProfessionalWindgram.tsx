@@ -239,14 +239,16 @@ export default function ProfessionalWindgram({
   const renderWindBarb = (x: number, y: number, speedKmh: number, dirDeg: number) => {
     if (speedKmh == null || isNaN(speedKmh) || speedKmh < 1) return null;
     const knots = speedKmh * 0.539957;
-    const angle = ((dirDeg - 90) * Math.PI) / 180;
-    const staffLen = 24;
-    const endX = x + staffLen * Math.cos(angle);
-    const endY = y + staffLen * Math.sin(angle);
-    // Colore più scuro per massimo contrasto
-    const barbColor = speedKmh > 30 ? "#7e22ce" : speedKmh > 18 ? "#0369a1" : "#1e3a8a";
-    const barbAngle = angle + (115 * Math.PI) / 180;
-    const featherAngle = barbAngle + Math.PI;
+      // In meteorologia, la direzione è DA DOVE SOFFIA IL VENTO
+      // La barbetta deve puntare VERSO DOVE VA IL VENTO (direzione opposta)
+      const angle = ((dirDeg + 180 - 90) * Math.PI) / 180;
+      const staffLen = 24;
+      const endX = x + staffLen * Math.cos(angle);
+      const endY = y + staffLen * Math.sin(angle);
+      // Colore più scuro per massimo contrasto
+      const barbColor = speedKmh > 30 ? "#7e22ce" : speedKmh > 18 ? "#0369a1" : "#1e3a8a";
+      const barbAngle = angle + (115 * Math.PI) / 180;
+      const featherAngle = barbAngle + Math.PI;
 
     const elements: React.ReactElement[] = [];
     let rem = Math.round(knots / 5) * 5;
