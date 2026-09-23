@@ -413,34 +413,25 @@ export default function ProfessionalWindgram({
         {/* SVG Windgram */}
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 pb-1">
           <div className="relative">
+            {/* SFONDO 2D - Canvas per heat map fluido, posizionato absolutely sopra lo SVG */}
+            <canvas
+              ref={canvasRef}
+              width={plotW}
+              height={plotH}
+              className="absolute top-0 left-0"
+              style={{ width: plotW, height: plotH }}
+            />
             <svg
               viewBox={`0 0 ${width} ${height}`}
               className="w-full h-auto min-w-[1000px]"
-              style={{ shapeRendering: "geometricPrecision" }}
+              style={{ shapeRendering: "geometricPrecision", position: "relative", zIndex: 1 }}
             >
             <defs>
               <pattern id="thermalHatch" width="4" height="4" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
                 <line x1="0" y1="0" x2="0" y2="4" stroke="#ca8a04" strokeWidth="0.8" strokeDasharray="1.5 1" opacity="0.6" />
                 <line x1="0" y1="0" x2="4" y2="0" stroke="#ca8a04" strokeWidth="0.8" strokeDasharray="1.5 1" opacity="0.6" />
               </pattern>
-              {/* Filtro per rendere i colori morbidi e continui */}
-                <filter id="softBlend" x="-5%" y="-5%" width="110%" height="110%">
-                  <feGaussianBlur stdDeviation="1.5" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
             </defs>
-
-            {/* SFONDO 2D - Canvas per heat map fluido */}
-            <canvas
-              ref={canvasRef}
-              width={plotW}
-              height={plotH}
-              className="absolute"
-              style={{ left: margin.left, top: margin.top, width: plotW, height: plotH }}
-            />
 
             {/* Bordo perimetro */}
             <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#0f172a" strokeWidth="1.2" />
@@ -601,8 +592,8 @@ export default function ProfessionalWindgram({
 
             {/* BORDO PLOT */}
             <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#0f172a" strokeWidth="0.8" />
-          </svg>
-        </div>
+            </svg>
+          </div>
         </div>
 
         {/* SCALA STABILITÀ IDENTICA AD ALPIUM */}
@@ -628,6 +619,7 @@ export default function ProfessionalWindgram({
             </div>
           </div>
         </div>
+      </div>
 
       {/* BOLLETTINO METEOROLOGICO */}
       {reportGenerato && (
