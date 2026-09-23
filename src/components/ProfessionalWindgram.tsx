@@ -338,6 +338,10 @@ export default function ProfessionalWindgram({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // DEBUG: controlla i dati
+    console.log('DEBUG hourlyData:', hourlyData.length, 'ore');
+    console.log('DEBUG prime ore deltaT:', hourlyData.slice(0, 3).map(h => ({ hour: h.hour, deltaT: h.deltaT })));
+
     // Pulisce il canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -358,6 +362,11 @@ export default function ProfessionalWindgram({
       });
       const avgDeltaT = totalDeltaT / hourlyData.length;
       const color = getStabilityColor(avgDeltaT);
+
+      // DEBUG: controlla i colori per le quote chiave
+      if (row === 0 || row === 50 || row === 100 || row === 150 || row === 199) {
+        console.log(`DEBUG row ${row} alt=${Math.round(alt)}m af=${af.toFixed(2)} deltaT=${avgDeltaT.toFixed(2)} color=${color}`);
+      }
 
       // DISEGNA BANDA ORIZZONTALE su TUTTA la larghezza del plot
       const y = margin.top + row * cellH;
