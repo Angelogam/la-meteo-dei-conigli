@@ -331,7 +331,7 @@ export default function ProfessionalWindgram({
     return result;
   }, [hourlyData]);
 
-  // Disegna lo sfondo sul canvas - INVERTITO: in Canvas Y=0 è in alto
+  // Disegna lo sfondo sul canvas - BAND ORIZZONTALI per altitudine
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || hourlyData.length === 0) return;
@@ -341,27 +341,29 @@ export default function ProfessionalWindgram({
     // Pulisce il canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const totalCols = hourlyData.length;
     const totalRows = 200;
-    const cellW = plotW / totalCols;
     const cellH = plotH / totalRows;
 
     // INVERSO: row 0 = quota ALTA (maxAlt) = TOP del canvas
     //          row 200 = quota BASSA (minAlt) = BOTTOM del canvas
-    for (let col = 0; col < totalCols; col++) {
-      const h = hourlyData[col];
-      for (let row = 0; row < totalRows; row++) {
-        // Quota: row 0 → maxAlt (6000m, alto), row 200 → minAlt (1200m, basso)
-        const alt = maxAlt - (row / totalRows) * (maxAlt - minAlt);
-        const af = (alt - minAlt) / (maxAlt - minAlt);
-        const dT = h.deltaT * (1 - af * 0.5);
-        const color = getStabilityColor(dT);
-        const x = margin.left + col * cellW;
-        const y = margin.top + row * cellH;
-        ctx.fillStyle = color;
-        ctx.globalAlpha = 0.94;
-        ctx.fillRect(x, y, cellW + 0.3, cellH + 0.3);
-      }
+    for (let row = 0; row < totalRows; row++) {
+      // Quota: row 0 → maxAlt (6000m, alto), row 200 → minAlt (1200m, basso)
+      const alt = maxAlt - (row / totalRows) * (maxAlt - minAlt);
+      const af = (alt - minAlt) / (maxAlt - minAlt);
+
+      // CALCOLO DELTA T MEDIO SU TUTTE LE ORE per questa quota
+      let totalDeltaT = 0;
+      hourlyData.forEach(h => {
+        totalDeltaT += h.deltaT * (1 - af * 0.5);
+      });
+      const avgDeltaT = totalDeltaT / hourlyData.length;
+      const color = getStabilityColor(avgDeltaT);
+
+      // DISEGNA BANDA ORIZZONTALE su TUTTA la larghezza del plot
+      const y = margin.top + row * cellH;
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.94;
+      ctx.fillRect(margin.left, y, plotW + 0.5, cellH + 0.3);
     }
 
     // Smooth blending: passa attraverso il canvas e media i colori adiacenti
