@@ -603,7 +603,7 @@ export default function ProfessionalWindgram({
             <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#0f172a" strokeWidth="0.8" />
           </svg>
         </div>
-      </div>
+        </div>
 
         {/* SCALA STABILITÀ IDENTICA AD ALPIUM */}
         <div className="mt-2 pt-2 border-t border-slate-200">
