@@ -242,8 +242,8 @@ export default function ProfessionalWindgram({
     const knots = speedKmh * 0.539957;
       // In meteorologia, la direzione è DA DOVE SOFFIA IL VENTO
       // La barbetta deve puntare VERSO DOVE VA IL VENTO (direzione opposta)
-      // Formula corretta: angolo SVG = 90° - dirDeg (Nav)
-      const angle = ((90 - dirDeg) * Math.PI) / 180;
+      // Formula: angolo SVG = dirDeg + 180° - 90° = dirDeg + 90°
+      const angle = ((dirDeg + 90) * Math.PI) / 180;
       const staffLen = 24;
       const endX = x + staffLen * Math.cos(angle);
       const endY = y + staffLen * Math.sin(angle);
