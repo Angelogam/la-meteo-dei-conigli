@@ -389,37 +389,47 @@ export default function ProfessionalWindgram({
           <svg
             viewBox={`0 0 ${width} ${height}`}
             className="w-full h-auto min-w-[1000px]"
-            style={{ shapeRendering: "crispEdges" }}
+            style={{ shapeRendering: "geometricPrecision" }}
           >
             <defs>
               <pattern id="thermalHatch" width="4" height="4" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
                 <line x1="0" y1="0" x2="0" y2="4" stroke="#ca8a04" strokeWidth="0.8" strokeDasharray="1.5 1" opacity="0.6" />
                 <line x1="0" y1="0" x2="4" y2="0" stroke="#ca8a04" strokeWidth="0.8" strokeDasharray="1.5 1" opacity="0.6" />
               </pattern>
-              {hourlyData.length > 0 && (() => {
-                const steps = 30;
-                const stops: Array<{ offset: number; color: string }> = [];
-                for (let step = 0; step <= steps; step++) {
-                  const alt = minAlt + (step / steps) * (maxAlt - minAlt);
-                  const altitudeFactor = (alt - minAlt) / (maxAlt - minAlt);
-                  const avgDeltaT = hourlyData.reduce((sum, h) => sum + h.deltaT * (1 - altitudeFactor * 0.5), 0) / hourlyData.length;
-                  stops.push({ offset: step / steps, color: getStabilityColor(avgDeltaT) });
-                }
-                return (
-                  <linearGradient id="windgramBg" x1="0%" y1="100%" x2="0%" y2="0%">
-                    {stops.map((s, i) => (
-                      <stop key={i} offset={`${Math.round(s.offset * 100)}%`} stopColor={s.color} stopOpacity="0.95" />
-                    ))}
-                  </linearGradient>
-                );
-              })()}
             </defs>
 
-            {/* SFONDO: gradiente colorato o blu fallback */}
-            {hourlyData.length > 0
-              ? <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="url(#windgramBg)" />
-              : <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#3b82f6" opacity="0.95" />
-            }
+            {/* SFONDO 2D - Ogni ora ha il suo gradiente verticale basato sul deltaT specifico */}
+            {hourlyData.length > 0 ? (() => {
+              const cols = hourlyData.length;
+              const rows = 60;
+              const out: React.ReactElement[] = [];
+              for (let col = 0; col < cols; col++) {
+                const h = hourlyData[col];
+                const x0 = margin.left + (col / (cols - 1)) * plotW;
+                const x1 = margin.left + ((col + 1) / (cols - 1)) * plotW;
+                const cw = x1 - x0;
+                for (let row = 0; row < rows; row++) {
+                  const altTop = minAlt + (row / rows) * (maxAlt - minAlt);
+                  const altBot = minAlt + ((row + 1) / rows) * (maxAlt - minAlt);
+                  const yTop = getYFromAlt(altTop);
+                  const yBot = getYFromAlt(altBot);
+                  const af = (altTop - minAlt) / (maxAlt - minAlt);
+                  const dT = h.deltaT * (1 - af * 0.5);
+                  out.push(
+                    <rect
+                      key={`c${col}r${row}`}
+                      x={x0}
+                      y={yTop}
+                      width={cw + 0.5}
+                      height={Math.max(0.8, yBot - yTop + 0.3)}
+                      fill={getStabilityColor(dT)}
+                      opacity="0.94"
+                    />
+                  );
+                }
+              }
+              return out;
+            })() : <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#3b82f6" opacity="0.94" />}
 
             {/* Bordo perimetro */}
             <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#0f172a" strokeWidth="1.2" />
