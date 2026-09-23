@@ -11,6 +11,9 @@ interface MeteoTabProps {
   thermalDelta: number;
   modelName?: string;
   selectedHour?: number;
+  cape?: number | null;
+  liftedIndex?: number | null;
+  cin?: number | null;
 }
 
 // Calcola base cumuli in metri

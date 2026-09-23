@@ -17,6 +17,7 @@ function offlineFallback(name: string): MeteoDecollo {
     rain: "0.0",
     cloud: "40.0",
     wind: "8.0",
+    dir: "--",
     stato: "Sereno",
     baseNubi: "Media (1800-2500 m)",
     termiche: "Termiche moderate",
