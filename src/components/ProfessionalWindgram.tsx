@@ -331,33 +331,56 @@ export default function ProfessionalWindgram({
     return result;
   }, [hourlyData]);
 
-  // Disegna lo sfondo sul canvas
+  // Disegna lo sfondo sul canvas - INVERTITO: in Canvas Y=0 è in alto
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || hourlyData.length === 0) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Canvas è grande come l'SVG completo (width×height)
+    // Pulisce il canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     const totalCols = hourlyData.length;
     const totalRows = 200;
     const cellW = plotW / totalCols;
     const cellH = plotH / totalRows;
 
+    // INVERSO: row 0 = quota ALTA (maxAlt) = TOP del canvas
+    //          row 200 = quota BASSA (minAlt) = BOTTOM del canvas
     for (let col = 0; col < totalCols; col++) {
       const h = hourlyData[col];
       for (let row = 0; row < totalRows; row++) {
-        const alt = minAlt + (row / totalRows) * (maxAlt - minAlt);
+        // Quota: row 0 → maxAlt (6000m, alto), row 200 → minAlt (1200m, basso)
+        const alt = maxAlt - (row / totalRows) * (maxAlt - minAlt);
         const af = (alt - minAlt) / (maxAlt - minAlt);
         const dT = h.deltaT * (1 - af * 0.5);
         const color = getStabilityColor(dT);
-        // Posiziona nel canvas considerando i margini SVG
         const x = margin.left + col * cellW;
         const y = margin.top + row * cellH;
         ctx.fillStyle = color;
-        ctx.fillRect(x, y, cellW + 0.5, cellH + 0.5);
+        ctx.globalAlpha = 0.94;
+        ctx.fillRect(x, y, cellW + 0.3, cellH + 0.3);
       }
     }
+
+    // Smooth blending: passa attraverso il canvas e media i colori adiacenti
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    const w = canvas.width;
+    const h = canvas.height;
+    for (let y = 1; y < h - 1; y += 2) {
+      for (let x = 1; x < w - 1; x += 2) {
+        const idx = (y * w + x) * 4;
+        // Media con i vicini sopra e sotto
+        const upIdx = ((y - 1) * w + x) * 4;
+        const dnIdx = ((y + 1) * w + x) * 4;
+        data[idx] = Math.round((data[idx] + data[upIdx] + data[dnIdx]) / 3);
+        data[idx + 1] = Math.round((data[idx + 1] + data[upIdx + 1] + data[dnIdx + 1]) / 3);
+        data[idx + 2] = Math.round((data[idx + 2] + data[upIdx + 2] + data[dnIdx + 2]) / 3);
+      }
+    }
+    ctx.putImageData(imageData, 0, 0);
   }, [hourlyData]);
 
   if (loading) {
