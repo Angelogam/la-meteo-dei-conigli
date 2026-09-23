@@ -315,10 +315,7 @@ export default function ProfessionalWindgram({
 
   // VERSIONE ORIZZONTALE: colore diverso per ogni colonna oraria
   const backgroundCols = useMemo(() => {
-    if (hourlyData.length === 0) {
-      console.log('DEBUG: hourlyData vuoto, backgroundCols = []');
-      return [];
-    }
+    if (hourlyData.length === 0) return [];
     const steps = 60;
     const result: Array<{ col: number; step: number; color: string }> = [];
 
@@ -330,7 +327,6 @@ export default function ProfessionalWindgram({
         result.push({ col: colIdx, step, color: getStabilityColor(adjustedDeltaT) });
       }
     });
-    console.log('DEBUG: backgroundCols calcolati:', result.length, 'items');
     return result;
   }, [hourlyData]);
 
@@ -400,40 +396,33 @@ export default function ProfessionalWindgram({
                 <line x1="0" y1="0" x2="0" y2="4" stroke="#ca8a04" strokeWidth="0.8" strokeDasharray="1.5 1" opacity="0.6" />
                 <line x1="0" y1="0" x2="4" y2="0" stroke="#ca8a04" strokeWidth="0.8" strokeDasharray="1.5 1" opacity="0.6" />
               </pattern>
+              {hourlyData.length > 0 && (() => {
+                const steps = 30;
+                const stops: Array<{ offset: number; color: string }> = [];
+                for (let step = 0; step <= steps; step++) {
+                  const alt = minAlt + (step / steps) * (maxAlt - minAlt);
+                  const altitudeFactor = (alt - minAlt) / (maxAlt - minAlt);
+                  const avgDeltaT = hourlyData.reduce((sum, h) => sum + h.deltaT * (1 - altitudeFactor * 0.5), 0) / hourlyData.length;
+                  stops.push({ offset: step / steps, color: getStabilityColor(avgDeltaT) });
+                }
+                return (
+                  <linearGradient id="windgramBg" x1="0%" y1="100%" x2="0%" y2="0%">
+                    {stops.map((s, i) => (
+                      <stop key={i} offset={`${Math.round(s.offset * 100)}%`} stopColor={s.color} stopOpacity="0.95" />
+                    ))}
+                  </linearGradient>
+                );
+              })()}
             </defs>
 
-            {/* Sfondo bianco di base */}
-            <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#ffffff" />
+            {/* SFONDO: gradiente colorato o blu fallback */}
+            {hourlyData.length > 0
+              ? <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="url(#windgramBg)" />
+              : <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#3b82f6" opacity="0.95" />
+            }
 
-            {/* DEBUG: verifica rendering */}
-            <text x={margin.left + 5} y={margin.top + 20} fill="#ff0000" fontSize="16" fontWeight="bold">DEBUG: {hourlyData.length}h</text>
-
-            {/* SFONDO FLUIDO 2D - gradiente verticale E orizzontale, senza linee */}
-            {backgroundCols.length > 0 ? backgroundCols.map((item) => {
-              const colX = margin.left + (item.col / (HOURS.length - 1)) * plotW;
-              const nextColX = margin.left + ((item.col + 1) / (HOURS.length - 1)) * plotW;
-              const colW = nextColX - colX;
-              const altTop = minAlt + (item.step / 60) * (maxAlt - minAlt);
-              const altBot = minAlt + ((item.step + 1) / 60) * (maxAlt - minAlt);
-              const yTop = getYFromAlt(altTop);
-              const yBot = getYFromAlt(altBot);
-              const colH = yBot - yTop;
-              // Sovrapposizione di 1px per coprire eventuali gap
-              return (
-                <rect
-                  key={`${item.col}-${item.step}`}
-                  x={colX}
-                  y={yTop - 0.5}
-                  width={colW + 0.5}
-                  height={colH + 1}
-                  fill={item.color}
-                  opacity="0.95"
-                />
-              );
-            }) : (
-              // Fallback se nessun dato
-              <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#3b82f6" opacity="0.9" />
-            )}
+            {/* Bordo perimetro */}
+            <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#0f172a" strokeWidth="1.2" />
 
             {/* Pattern cross-hatch giallo per zone convettive */}
             {convectiveZonePath && (
@@ -446,9 +435,9 @@ export default function ProfessionalWindgram({
               return (
                 <g key={`grid-${lvl.hpa}`}>
                   <line x1={margin.left} y1={y} x2={margin.left + plotW} y2={y} stroke="#475569" strokeWidth="0.4" strokeDasharray="2 2" opacity="0.4" />
-                  <text x={margin.left - 6} y={y + 3.5} fill="#0f172a" fontSize="10" fontWeight="800" textAnchor="end" fontFamily="monospace">
-                    {lvl.hpa} hPa
-                  </text>
+                  <text x={margin.left - 6} y={y + 4} fill="#0f172a" fontSize="11" fontWeight="900" textAnchor="end" fontFamily="monospace">
+                        {lvl.hpa} hPa
+                      </text>
                 </g>
               );
             })}
@@ -459,7 +448,7 @@ export default function ProfessionalWindgram({
               return (
                 <g key={`alt-${alt}`}>
                   <line x1={margin.left + plotW} y1={y} x2={margin.left + plotW + 4} y2={y} stroke="#0f172a" strokeWidth="0.8" />
-                  <text x={margin.left + plotW + 6} y={y + 3.5} fill="#0f172a" fontSize="10" fontWeight="700" textAnchor="start" fontFamily="monospace">
+                  <text x={margin.left + plotW + 6} y={y + 4} fill="#0f172a" fontSize="11" fontWeight="900" textAnchor="start" fontFamily="monospace">
                     {alt} m
                   </text>
                 </g>
@@ -483,8 +472,9 @@ export default function ProfessionalWindgram({
                   return (
                     <g key={`wb-${i}-${wLvl.hpa}`}>
                       {renderWindBarb(x, y, wLvl.speed, wLvl.dir)}
-                      {/* Etichetta velocità e direzione in lettere - GRANDISSIMA */}
-                      <text x={x + 18} y={y - 10} fill="#0f172a" fontSize="10" fontWeight="900" textAnchor="start" fontFamily="monospace">
+                      {/* Etichetta con sfondo bianco per leggibilità */}
+                      <rect x={x + 14} y={y - 18} width={Math.max(55, (String(Math.round(wLvl.speed)).length + 4) * 6.5 + 6)} height="16" rx="3" fill="#ffffff" opacity="0.92" />
+                      <text x={x + 18} y={y - 6} fill="#0f172a" fontSize="13" fontWeight="900" textAnchor="start" fontFamily="monospace">
                         {Math.round(wLvl.speed)}km/{getDirLetter(wLvl.dir)}
                       </text>
                     </g>
@@ -502,8 +492,8 @@ export default function ProfessionalWindgram({
               const y = getYFromAlt(h.zeroThermal);
               return (
                 <g key={`snow-${i}`} transform={`translate(${x}, ${y})`}>
-                  <circle cx="0" cy="0" r="5" fill="#ffffff" stroke="#0284c7" strokeWidth="1.2" />
-                  <text x="0" y="3" fill="#0284c7" fontSize="7" fontWeight="900" textAnchor="middle">❄</text>
+                  <circle cx="0" cy="0" r="7" fill="#ffffff" stroke="#0284c7" strokeWidth="1.8" />
+                  <text x="0" y="4" fill="#0284c7" fontSize="9" fontWeight="900" textAnchor="middle">❄</text>
                 </g>
               );
             })}
@@ -527,48 +517,54 @@ export default function ProfessionalWindgram({
               <path d={thermalTopCurve} fill="none" stroke="#9333ea" strokeWidth="2" strokeLinecap="round" />
             )}
 
-            {/* ICONE PARAPENDIO VIOLA SUL THERMAL TOP - INGRANDITO */}
+            {/* ICONE PARAPENDIO VIOLA SUL THERMAL TOP - GRANDE E CHIARA */}
             {hourlyData.map((h, i) => {
               const x = getXFromHourIdx(i);
               const y = getYFromAlt(h.thermalTop);
               return (
                 <g key={`para-${i}`} transform={`translate(${x}, ${y})`}>
-                  {/* Parapendio ingrandito */}
-                  <path d="M -16,-10 C -11,-24 11,-24 16,-10 C 10,-15 -10,-15 -16,-10 Z" fill="#c084fc" stroke="#7e22ce" strokeWidth="1.8" />
-                  <line x1="-12" y1="-12" x2="0" y2="-2" stroke="#7e22ce" strokeWidth="1.4" />
-                  <line x1="12" y1="-12" x2="0" y2="-2" stroke="#7e22ce" strokeWidth="1.4" />
-                  <circle cx="0" cy="-2" r="5" fill="#ffffff" stroke="#7e22ce" strokeWidth="1.8" />
+                  {/* Cerchio bianco di base più grande */}
+                  <circle cx="0" cy="0" r="10" fill="#ffffff" stroke="#7e22ce" strokeWidth="2.5" />
+                  {/* Ali del parapendio */}
+                  <path d="M -24,-16 C -16,-38 16,-38 24,-16 C 14,-24 -14,-24 -24,-16 Z" fill="#d8b4fe" stroke="#7e22ce" strokeWidth="2.5" />
+                  {/* Cime */}
+                  <line x1="-18" y1="-18" x2="0" y2="-6" stroke="#7e22ce" strokeWidth="2" />
+                  <line x1="18" y1="-18" x2="0" y2="-6" stroke="#7e22ce" strokeWidth="2" />
+                  {/* Pilota */}
+                  <circle cx="0" cy="-6" r="4" fill="#7e22ce" />
                 </g>
               );
             })}
 
-            {/* ICONE NUVOLE CUMULI - VERA FORMA DI NUVOLA, PIÙ GRANDE */}
+            {/* ICONE NUVOLE CUMULI - FORMA REALE, CHIARA E LeggIBILE */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const y = getYFromAlt(h.thermalTop) - 50; // 50px sopra il parapendio
+              const y = getYFromAlt(h.thermalTop) - 60;
               return (
                 <g key={`cloud-${i}`} transform={`translate(${x}, ${y})`}>
-                  {/* Nuvola con bollini */}
-                  <path d="M -18,7 A 8,8 0 0,1 -9,-4 A 11,11 0 0,1 7,-6 A 9,9 0 0,1 18,2 A 6,6 0 0,1 17,8 L -16,8 A 6,6 0 0,1 -18,7 Z" fill="#ffffff" stroke="#64748b" strokeWidth="1.8" />
-                  <text x="0" y="5.5" fill="#0f172a" fontSize="10" fontWeight="900" textAnchor="middle">{h.cloudPct}%</text>
+                  {/* Nuvola più grande e definita */}
+                  <path d="M -26,11 A 12,12 0 0,1 -13,-7 A 16,16 0 0,1 10,-10 A 13,13 0 0,1 26,4 A 8,8 0 0,1 25,12 L -24,12 A 8,8 0 0,1 -26,11 Z" fill="#ffffff" stroke="#475569" strokeWidth="2.5" />
+                  <text x="0" y="10" fill="#0f172a" fontSize="13" fontWeight="900" textAnchor="middle">{h.cloudPct}%</text>
                 </g>
               );
             })}
 
-            {/* BADGE QUOTA CUMULO + ASCENDENZA - SOTTO IL PARAPENDIO (fuori dall'icona) */}
+            {/* BADGE QUOTA CUMULO + ASCENDENZA - SOTTO IL PARAPENDIO */}
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
               const paraY = getYFromAlt(h.thermalTop);
-              const badgeY = paraY + 32; // 32px sotto il parapendio
+              const badgeY = paraY + 38;
               const rateoColor = h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
               return (
                 <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
-                  <text x="0" y="0" fill="#0f172a" fontSize="11" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+                  <rect x="-35" y="-12" width="70" height="14" rx="3" fill="#ffffff" opacity="0.9" />
+                  <text x="0" y="-1" fill="#0f172a" fontSize="12" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                     {h.cloudBase}m
                   </text>
-                  <text x="0" y="15" fill={rateoColor} fontSize="11" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+                  <rect x="-40" y="4" width="80" height="14" rx="3" fill="#ffffff" opacity="0.9" />
+                  <text x="0" y="15" fill={rateoColor} fontSize="12" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                     ↑{h.thermalAvg.toFixed(1)} m/s
                   </text>
                 </g>
@@ -577,7 +573,7 @@ export default function ProfessionalWindgram({
 
             {/* ORE ASSE X */}
             {HOURS.map((h, i) => (
-              <text key={`hr-${h}`} x={getXFromHourIdx(i)} y={margin.top + plotH + 18} fill="#0f172a" fontSize="10" fontWeight="800" textAnchor="middle" fontFamily="monospace">
+              <text key={`hr-${h}`} x={getXFromHourIdx(i)} y={margin.top + plotH + 20} fill="#0f172a" fontSize="12" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                 {String(h).padStart(2, "0")}:00
               </text>
             ))}
