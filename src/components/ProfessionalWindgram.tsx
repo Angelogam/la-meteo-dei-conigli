@@ -456,7 +456,7 @@ export default function ProfessionalWindgram({
 
         {/* SVG Windgram */}
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 pb-1">
-          <div className="relative" style={{ overflow: 'hidden' }}>
+          <div className="relative" style={{ overflow: 'visible' }}>
             {/* SFONDO 2D - Canvas per heat map fluido */}
             <canvas
               ref={canvasRef}
