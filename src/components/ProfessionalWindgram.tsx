@@ -349,12 +349,9 @@ export default function ProfessionalWindgram({
     console.log('DEBUG hourlyData:', hourlyData.length, 'ore');
     console.log('DEBUG prime ore deltaT:', hourlyData.slice(0, 3).map(h => ({ hour: h.hour, deltaT: h.deltaT })));
 
-    // Sfondo giallo di base
+    // Sfondo giallo di base per tutto il canvas
     ctx.fillStyle = "#fef9c3";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Pulisce solo l'area del plot
-    ctx.clearRect(margin.left, margin.top, plotW, plotH);
 
     const totalRows = 200;
     const cellH = plotH / totalRows;
@@ -378,10 +375,10 @@ export default function ProfessionalWindgram({
       }
 
       // DISEGNA BANDA ORIZZONTALE su TUTTA la larghezza del plot
-      const y = margin.top + row * cellH;
+      const y = row * cellH;
       ctx.fillStyle = color;
       ctx.globalAlpha = 0.94;
-      ctx.fillRect(margin.left, y, plotW + 0.5, cellH + 0.3);
+      ctx.fillRect(0, y, plotW + 0.5, cellH + 0.3);
     }
 
     // Smooth blending: passa attraverso il canvas e media i colori adiacenti
@@ -459,14 +456,14 @@ export default function ProfessionalWindgram({
 
         {/* SVG Windgram */}
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 pb-1">
-          <div className="relative">
+          <div className="relative" style={{ overflow: 'hidden' }}>
             {/* SFONDO 2D - Canvas per heat map fluido */}
             <canvas
               ref={canvasRef}
-              width={width}
-              height={height}
-              className="absolute inset-0"
-              style={{ width: '100%', height: '100%', zIndex: 0 }}
+              width={plotW}
+              height={plotH}
+              className="absolute top-0 left-0"
+              style={{ width: plotW, height: plotH, zIndex: 0 }}
             />
             <svg
               viewBox={`0 0 ${width} ${height}`}
