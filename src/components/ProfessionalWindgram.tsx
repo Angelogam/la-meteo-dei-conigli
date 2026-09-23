@@ -397,20 +397,20 @@ export default function ProfessionalWindgram({
                 <line x1="0" y1="0" x2="4" y2="0" stroke="#ca8a04" strokeWidth="0.8" strokeDasharray="1.5 1" opacity="0.6" />
               </pattern>
               {/* Filtro per rendere i colori morbidi e continui */}
-              <filter id="softBlend" x="-5%" y="-5%" width="110%" height="110%">
-                <feGaussianBlur stdDeviation="1.2" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
+                <filter id="softBlend" x="-5%" y="-5%" width="110%" height="110%">
+                  <feGaussianBlur stdDeviation="1.5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
             </defs>
 
-            {/* SFONDO 2D - Heat map morbido con filtro di blending */}
+            {/* SFONDO 2D - Heat map morbido fluido come Alpium */}
             <g filter="url(#softBlend)">
               {hourlyData.length > 0 ? (() => {
                 const cols = hourlyData.length;
-                const rows = 24;
+                const rows = 120;
                 const out: React.ReactElement[] = [];
                 for (let col = 0; col < cols; col++) {
                   const h = hourlyData[col];
@@ -428,17 +428,17 @@ export default function ProfessionalWindgram({
                       <rect
                         key={`c${col}r${row}`}
                         x={x0}
-                        y={yTop - 0.5}
-                        width={cw + 0.8}
-                        height={Math.max(1.5, yBot - yTop + 1)}
+                        y={yTop}
+                        width={cw}
+                        height={yBot - yTop + 0.8}
                         fill={getStabilityColor(dT)}
-                        opacity="0.93"
+                        opacity="0.92"
                       />
                     );
                   }
                 }
                 return out;
-              })() : <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#3b82f6" opacity="0.93" />}
+              })() : <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#3b82f6" opacity="0.92" />}
             </g>
 
             {/* Bordo perimetro */}
