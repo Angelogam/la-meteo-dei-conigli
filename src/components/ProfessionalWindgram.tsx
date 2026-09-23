@@ -338,20 +338,24 @@ export default function ProfessionalWindgram({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const cols = hourlyData.length;
-    const rows = 200;
-    const cellW = plotW / cols;
-    const cellH = plotH / rows;
+    // Canvas è grande come l'SVG completo (width×height)
+    const totalCols = hourlyData.length;
+    const totalRows = 200;
+    const cellW = plotW / totalCols;
+    const cellH = plotH / totalRows;
 
-    for (let col = 0; col < cols; col++) {
+    for (let col = 0; col < totalCols; col++) {
       const h = hourlyData[col];
-      for (let row = 0; row < rows; row++) {
-        const alt = minAlt + (row / rows) * (maxAlt - minAlt);
+      for (let row = 0; row < totalRows; row++) {
+        const alt = minAlt + (row / totalRows) * (maxAlt - minAlt);
         const af = (alt - minAlt) / (maxAlt - minAlt);
         const dT = h.deltaT * (1 - af * 0.5);
         const color = getStabilityColor(dT);
+        // Posiziona nel canvas considerando i margini SVG
+        const x = margin.left + col * cellW;
+        const y = margin.top + row * cellH;
         ctx.fillStyle = color;
-        ctx.fillRect(col * cellW, row * cellH, cellW + 0.5, cellH + 0.5);
+        ctx.fillRect(x, y, cellW + 0.5, cellH + 0.5);
       }
     }
   }, [hourlyData]);
@@ -413,13 +417,13 @@ export default function ProfessionalWindgram({
         {/* SVG Windgram */}
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 pb-1">
           <div className="relative">
-            {/* SFONDO 2D - Canvas per heat map fluido, posizionato absolutely sopra lo SVG */}
+            {/* SFONDO 2D - Canvas per heat map fluido */}
             <canvas
               ref={canvasRef}
-              width={plotW}
-              height={plotH}
-              className="absolute top-0 left-0"
-              style={{ width: plotW, height: plotH }}
+              width={width}
+              height={height}
+              className="absolute inset-0"
+              style={{ width: '100%', height: '100%', zIndex: 0 }}
             />
             <svg
               viewBox={`0 0 ${width} ${height}`}
