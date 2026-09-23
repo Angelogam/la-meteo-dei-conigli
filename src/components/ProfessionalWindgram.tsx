@@ -61,6 +61,7 @@ function getAltitudeBandColor(alt: number, deltaT: number): string {
 // Funzione per convertire gradi in lettere cardinali
 function getDirLetter(deg: number): string {
   const dirs = ["N", "NO", "O", "SO", "S", "SE", "E", "NE"];
+  // In meteorologia, 0° = NORD (vento DA Nord), 90° = EST, 180° = SUD, 270° = OVEST
   const idx = Math.round(deg / 45) % 8;
   return dirs[idx];
 }
@@ -241,7 +242,8 @@ export default function ProfessionalWindgram({
     const knots = speedKmh * 0.539957;
       // In meteorologia, la direzione è DA DOVE SOFFIA IL VENTO
       // La barbetta deve puntare VERSO DOVE VA IL VENTO (direzione opposta)
-      const angle = ((dirDeg + 180 - 90) * Math.PI) / 180;
+      // Formula corretta: angolo SVG = 90° - dirDeg (Nav)
+      const angle = ((90 - dirDeg) * Math.PI) / 180;
       const staffLen = 24;
       const endX = x + staffLen * Math.cos(angle);
       const endY = y + staffLen * Math.sin(angle);
