@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { RefreshCw, FileText, Check, Copy, AlertTriangle, ShieldCheck } from "lucide-react";
 import { fetchHourly } from "@/lib/openMeteoClient";
 import { generateReportMeteo, type GeneratedReport } from "@/utils/generateReportMeteo";
@@ -76,6 +76,7 @@ export default function ProfessionalWindgram({
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const dateObj = useMemo(() => {
     const d = new Date();
@@ -330,6 +331,31 @@ export default function ProfessionalWindgram({
     return result;
   }, [hourlyData]);
 
+  // Disegna lo sfondo sul canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || hourlyData.length === 0) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const cols = hourlyData.length;
+    const rows = 200;
+    const cellW = plotW / cols;
+    const cellH = plotH / rows;
+
+    for (let col = 0; col < cols; col++) {
+      const h = hourlyData[col];
+      for (let row = 0; row < rows; row++) {
+        const alt = minAlt + (row / rows) * (maxAlt - minAlt);
+        const af = (alt - minAlt) / (maxAlt - minAlt);
+        const dT = h.deltaT * (1 - af * 0.5);
+        const color = getStabilityColor(dT);
+        ctx.fillStyle = color;
+        ctx.fillRect(col * cellW, row * cellH, cellW + 0.5, cellH + 0.5);
+      }
+    }
+  }, [hourlyData]);
+
   if (loading) {
     return (
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-10 flex flex-col items-center justify-center text-slate-300 shadow-2xl">
@@ -386,11 +412,12 @@ export default function ProfessionalWindgram({
 
         {/* SVG Windgram */}
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 pb-1">
-          <svg
-            viewBox={`0 0 ${width} ${height}`}
-            className="w-full h-auto min-w-[1000px]"
-            style={{ shapeRendering: "geometricPrecision" }}
-          >
+          <div className="relative">
+            <svg
+              viewBox={`0 0 ${width} ${height}`}
+              className="w-full h-auto min-w-[1000px]"
+              style={{ shapeRendering: "geometricPrecision" }}
+            >
             <defs>
               <pattern id="thermalHatch" width="4" height="4" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
                 <line x1="0" y1="0" x2="0" y2="4" stroke="#ca8a04" strokeWidth="0.8" strokeDasharray="1.5 1" opacity="0.6" />
@@ -406,40 +433,14 @@ export default function ProfessionalWindgram({
                 </filter>
             </defs>
 
-            {/* SFONDO 2D - Heat map morbido fluido come Alpium */}
-            <g filter="url(#softBlend)">
-              {hourlyData.length > 0 ? (() => {
-                const cols = hourlyData.length;
-                const rows = 120;
-                const out: React.ReactElement[] = [];
-                for (let col = 0; col < cols; col++) {
-                  const h = hourlyData[col];
-                  const x0 = margin.left + (col / (cols - 1)) * plotW;
-                  const x1 = margin.left + ((col + 1) / (cols - 1)) * plotW;
-                  const cw = x1 - x0;
-                  for (let row = 0; row < rows; row++) {
-                    const altTop = minAlt + (row / rows) * (maxAlt - minAlt);
-                    const altBot = minAlt + ((row + 1) / rows) * (maxAlt - minAlt);
-                    const yTop = getYFromAlt(altTop);
-                    const yBot = getYFromAlt(altBot);
-                    const af = (altTop - minAlt) / (maxAlt - minAlt);
-                    const dT = h.deltaT * (1 - af * 0.5);
-                    out.push(
-                      <rect
-                        key={`c${col}r${row}`}
-                        x={x0}
-                        y={yTop}
-                        width={cw}
-                        height={yBot - yTop + 0.8}
-                        fill={getStabilityColor(dT)}
-                        opacity="0.92"
-                      />
-                    );
-                  }
-                }
-                return out;
-              })() : <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#3b82f6" opacity="0.92" />}
-            </g>
+            {/* SFONDO 2D - Canvas per heat map fluido */}
+            <canvas
+              ref={canvasRef}
+              width={plotW}
+              height={plotH}
+              className="absolute"
+              style={{ left: margin.left, top: margin.top, width: plotW, height: plotH }}
+            />
 
             {/* Bordo perimetro */}
             <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#0f172a" strokeWidth="1.2" />
@@ -602,6 +603,7 @@ export default function ProfessionalWindgram({
             <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#0f172a" strokeWidth="0.8" />
           </svg>
         </div>
+      </div>
 
         {/* SCALA STABILITÀ IDENTICA AD ALPIUM */}
         <div className="mt-2 pt-2 border-t border-slate-200">
@@ -626,7 +628,6 @@ export default function ProfessionalWindgram({
             </div>
           </div>
         </div>
-      </div>
 
       {/* BOLLETTINO METEOROLOGICO */}
       {reportGenerato && (
