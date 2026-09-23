@@ -522,26 +522,6 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {/* BARBETTE DEL VENTO + ETICHETTE */}
-            {hourlyData.map((calc, i) => (
-              <g key={`col-${i}`}>
-                {calc.levelWinds.map((wLvl) => {
-                  const x = getXFromHourIdx(i);
-                  const y = getYFromAlt(wLvl.alt);
-                  return (
-                    <g key={`wb-${i}-${wLvl.hpa}`}>
-                      {renderWindBarb(x, y, wLvl.speed, wLvl.dir)}
-                      {/* Etichetta con sfondo giallo per leggibilità */}
-                      <rect x={x + 14} y={y - 18} width={Math.max(55, (String(Math.round(wLvl.speed)).length + 4) * 6.5 + 6)} height="16" rx="3" fill="#fef08a" opacity="0.95" />
-                      <text x={x + 18} y={y - 6} fill="#0f172a" fontSize="13" fontWeight="900" textAnchor="start" fontFamily="monospace">
-                        {Math.round(wLvl.speed)}km/{getDirLetter(wLvl.dir)}
-                      </text>
-                    </g>
-                  );
-                })}
-              </g>
-            ))}
-
             {/* LINEA ZERO TERMICO (azzurra tratteggiata con fiocchi) */}
             {zeroThermalPath && (
               <polyline points={zeroThermalPath} fill="none" stroke="#0284c7" strokeWidth="1.5" strokeDasharray="5 3" strokeLinecap="round" />
@@ -629,6 +609,25 @@ export default function ProfessionalWindgram({
                 </g>
               );
             })}
+
+            {/* BARBETTE DEL VENTO + ETICHETTE - RENDERIZZATE PER ULTIME */}
+            {hourlyData.map((calc, i) => (
+              <g key={`col-${i}`}>
+                {calc.levelWinds.map((wLvl) => {
+                  const x = getXFromHourIdx(i);
+                  const y = getYFromAlt(wLvl.alt);
+                  return (
+                    <g key={`wb-${i}-${wLvl.hpa}`}>
+                      {renderWindBarb(x, y, wLvl.speed, wLvl.dir)}
+                      {/* Etichetta senza sfondo per evitare sovrapposizioni */}
+                      <text x={x + 14} y={y - 4} fill="#0f172a" fontSize="10" fontWeight="700" textAnchor="start" fontFamily="monospace">
+                        {Math.round(wLvl.speed)}km/{getDirLetter(wLvl.dir)}
+                      </text>
+                    </g>
+                  );
+                })}
+              </g>
+            ))}
 
             {/* ORE ASSE X */}
             {HOURS.map((h, i) => (
