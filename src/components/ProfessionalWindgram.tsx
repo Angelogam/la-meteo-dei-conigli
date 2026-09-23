@@ -362,12 +362,10 @@ export default function ProfessionalWindgram({
       const alt = maxAlt - (row / totalRows) * (maxAlt - minAlt);
       const af = (alt - minAlt) / (maxAlt - minAlt);
 
-      // CALCOLO DELTA T MEDIO SU TUTTE LE ORE per questa quota
-      let totalDeltaT = 0;
-      hourlyData.forEach(h => {
-        totalDeltaT += h.deltaT * (1 - af * 0.5);
-      });
-      const avgDeltaT = totalDeltaT / hourlyData.length;
+      // CALCOLO DELTA T PER QUESTA QUOTA - massima instabilità in basso, stabilità in alto
+      const maxDeltaT = Math.max(...hourlyData.map(h => h.deltaT));
+      const minDeltaT = Math.min(...hourlyData.map(h => h.deltaT));
+      const avgDeltaT = (maxDeltaT + minDeltaT) / 2 * (1 - af * 0.9);
       const color = getStabilityColor(avgDeltaT);
 
       // DEBUG: controlla i colori per le quote chiave
