@@ -102,20 +102,20 @@ export default function ProfessionalWindgram({
         "temperature_2m", "relative_humidity_2m", "dew_point_2m", "precipitation",
         "cloud_cover", "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",
         "wind_speed_80m", "wind_direction_80m", "wind_speed_120m", "wind_direction_120m",
-        "wind_speed_180m", "wind_direction_180m", "wind_speed_925hPa", "wind_direction_925hPa",
-        "wind_speed_850hPa", "wind_direction_850hPa", "wind_speed_700hPa", "wind_direction_700hPa",
-        "wind_speed_600hPa", "wind_direction_600hPa", "wind_speed_500hPa", "wind_direction_500hPa",
+        "wind_speed_180m", "wind_direction_180m",
         "temperature_80m", "temperature_120m", "surface_pressure", "shortwave_radiation",
         "freezing_level_height", "cape", "lifted_index",
       ].join(",");
 
       try {
         const json = await fetchHourly(latitude, longitude, hourlyParams, dateStr, dateStr);
+        console.log('DEBUG API response:', json?.hourly?.time?.length || 0, 'ore ricevute');
         if (isMounted) {
           setData(json);
           setLoading(false);
         }
       } catch (err) {
+        console.error('DEBUG API error:', err);
         if (isMounted) {
           setError(err instanceof Error ? err.message : "Errore dati");
           setLoading(false);
@@ -182,9 +182,16 @@ export default function ProfessionalWindgram({
       const cloudPct = Math.max(2, Math.min(95, Math.round(cloud)));
 
       let deltaT = 0.72;
-      if (t80 != null) deltaT = Math.round(((t - t80) / 78) * 100 * 100) / 100;
-      else if (t120 != null) deltaT = Math.round(((t - t120) / 118) * 100 * 100) / 100;
-      else deltaT = spread >= 10 ? 0.98 : spread >= 6 ? 0.82 : 0.65;
+      if (t80 != null) {
+        deltaT = Math.round(((t - t80) / 78) * 100 * 100) / 100;
+      } else if (t120 != null) {
+        deltaT = Math.round(((t - t120) / 118) * 100 * 100) / 100;
+      } else {
+        // Stima basata su spread temperatura/punto di rugiada
+        deltaT = spread >= 10 ? 0.98 : spread >= 6 ? 0.82 : 0.65;
+      }
+      // Limiti ragionevoli per deltaT
+      deltaT = Math.max(-0.2, Math.min(1.3, deltaT));
 
       let rateo = 0.6 + (spread * 0.08) + (sunPct / 100) * 0.45 + (cape > 200 ? (cape / 1000) * 0.4 : 0);
       if (precip > 0.4) rateo = 0.3;
