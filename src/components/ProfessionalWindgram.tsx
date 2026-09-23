@@ -349,8 +349,12 @@ export default function ProfessionalWindgram({
     console.log('DEBUG hourlyData:', hourlyData.length, 'ore');
     console.log('DEBUG prime ore deltaT:', hourlyData.slice(0, 3).map(h => ({ hour: h.hour, deltaT: h.deltaT })));
 
-    // Pulisce il canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Sfondo giallo di base
+    ctx.fillStyle = "#fef9c3";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Pulisce solo l'area del plot
+    ctx.clearRect(margin.left, margin.top, plotW, plotH);
 
     const totalRows = 200;
     const cellH = plotH / totalRows;
@@ -527,8 +531,8 @@ export default function ProfessionalWindgram({
                   return (
                     <g key={`wb-${i}-${wLvl.hpa}`}>
                       {renderWindBarb(x, y, wLvl.speed, wLvl.dir)}
-                      {/* Etichetta con sfondo bianco per leggibilità */}
-                      <rect x={x + 14} y={y - 18} width={Math.max(55, (String(Math.round(wLvl.speed)).length + 4) * 6.5 + 6)} height="16" rx="3" fill="#ffffff" opacity="0.92" />
+                      {/* Etichetta con sfondo giallo per leggibilità */}
+                      <rect x={x + 14} y={y - 18} width={Math.max(55, (String(Math.round(wLvl.speed)).length + 4) * 6.5 + 6)} height="16" rx="3" fill="#fef08a" opacity="0.95" />
                       <text x={x + 18} y={y - 6} fill="#0f172a" fontSize="13" fontWeight="900" textAnchor="start" fontFamily="monospace">
                         {Math.round(wLvl.speed)}km/{getDirLetter(wLvl.dir)}
                       </text>
