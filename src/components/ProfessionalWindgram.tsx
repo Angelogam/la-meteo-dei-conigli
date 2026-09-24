@@ -13,20 +13,131 @@ interface WindgramProps {
   selectedDay?: number;
 }
 
-const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 
+// Livelli quota Alpium con pressioni approssimative
 const PRESSURE_LEVELS = [
-  { hpa: 500, alt: 5800 },
-  { hpa: 550, alt: 5000 },
-  { hpa: 600, alt: 4400 },
-  { hpa: 650, alt: 3750 },
-  { hpa: 700, alt: 3100 },
+  { hpa: 600, alt: 4000 },
+  { hpa: 650, alt: 3500 },
+  { hpa: 700, alt: 3000 },
   { hpa: 750, alt: 2500 },
-  { hpa: 800, alt: 1950 },
-  { hpa: 850, alt: 1450 },
+  { hpa: 800, alt: 2000 },
+  { hpa: 850, alt: 1500 },
+  { hpa: 900, alt: 1000 },
 ];
 
-const ALT_TICKS = [6000, 5500, 5000, 4500, 4000, 3500, 3000, 2500, 2000, 1500];
+const ALT_TICKS = [4000, 3500, 3000, 2500, 2000, 1500, 1000];
+
+// Dati vento estratti dal windgram Alpium Iretta (Giovedì 24 Settembre)
+// [alt][hourIdx] = { speed: km/h, dir: gradi (meteorologica, da dove soffia) }
+// hourIdx 0=8h, 1=9h, ..., 11=19h (12 colonne)
+const ALPIUM_WIND_DATA: Record<number, Array<{ speed: number; dir: number }>> = {
+  1000: [
+    { speed: 9,  dir: 200 }, { speed: 6,  dir: 195 }, { speed: 2,  dir: 220 },
+    { speed: 2,  dir: 210 }, { speed: 7,  dir: 200 }, { speed: 5,  dir: 210 },
+    { speed: 3,  dir: 180 }, { speed: 4,  dir: 195 }, { speed: 2,  dir: 170 },
+    { speed: 2,  dir: 165 }, { speed: 1,  dir: 150 }, { speed: 1,  dir: 140 },
+    { speed: 1,  dir: 130 },
+  ],
+  1250: [
+    { speed: 5,  dir: 190 }, { speed: 5,  dir: 185 }, { speed: 3,  dir: 195 },
+    { speed: 3,  dir: 190 }, { speed: 7,  dir: 180 }, { speed: 5,  dir: 190 },
+    { speed: 3,  dir: 170 }, { speed: 3,  dir: 175 }, { speed: 3,  dir: 160 },
+    { speed: 3,  dir: 155 }, { speed: 3,  dir: 150 }, { speed: 3,  dir: 145 },
+    { speed: 3,  dir: 135 },
+  ],
+  1500: [
+    { speed: 8,  dir: 180 }, { speed: 5,  dir: 175 }, { speed: 6,  dir: 185 },
+    { speed: 6,  dir: 180 }, { speed: 5,  dir: 160 }, { speed: 6,  dir: 170 },
+    { speed: 7,  dir: 150 }, { speed: 6,  dir: 155 }, { speed: 9,  dir: 140 },
+    { speed: 11, dir: 135 }, { speed: 9,  dir: 145 }, { speed: 9,  dir: 140 },
+    { speed: 9,  dir: 130 },
+  ],
+  1750: [
+    { speed: 12, dir: 170 }, { speed: 9,  dir: 165 }, { speed: 9,  dir: 175 },
+    { speed: 8,  dir: 170 }, { speed: 7,  dir: 150 }, { speed: 8,  dir: 160 },
+    { speed: 8,  dir: 140 }, { speed: 8,  dir: 145 }, { speed: 10, dir: 130 },
+    { speed: 12, dir: 125 }, { speed: 14, dir: 135 }, { speed: 14, dir: 130 },
+    { speed: 14, dir: 120 },
+  ],
+  2000: [
+    { speed: 16, dir: 160 }, { speed: 13, dir: 155 }, { speed: 12, dir: 165 },
+    { speed: 12, dir: 160 }, { speed: 11, dir: 140 }, { speed: 13, dir: 150 },
+    { speed: 13, dir: 130 }, { speed: 15, dir: 135 }, { speed: 17, dir: 120 },
+    { speed: 19, dir: 125 }, { speed: 19, dir: 135 }, { speed: 19, dir: 130 },
+    { speed: 19, dir: 120 },
+  ],
+  2250: [
+    { speed: 20, dir: 150 }, { speed: 17, dir: 145 }, { speed: 17, dir: 155 },
+    { speed: 14, dir: 150 }, { speed: 16, dir: 130 }, { speed: 16, dir: 140 },
+    { speed: 19, dir: 120 }, { speed: 15, dir: 125 }, { speed: 20, dir: 110 },
+    { speed: 23, dir: 115 }, { speed: 23, dir: 125 }, { speed: 23, dir: 120 },
+    { speed: 23, dir: 110 },
+  ],
+  2500: [
+    { speed: 24, dir: 140 }, { speed: 21, dir: 135 }, { speed: 21, dir: 145 },
+    { speed: 17, dir: 140 }, { speed: 20, dir: 120 }, { speed: 20, dir: 130 },
+    { speed: 22, dir: 110 }, { speed: 24, dir: 115 }, { speed: 28, dir: 100 },
+    { speed: 28, dir: 105 }, { speed: 28, dir: 115 }, { speed: 28, dir: 110 },
+    { speed: 28, dir: 100 },
+  ],
+  2750: [
+    { speed: 28, dir: 130 }, { speed: 25, dir: 125 }, { speed: 25, dir: 135 },
+    { speed: 20, dir: 130 }, { speed: 25, dir: 110 }, { speed: 25, dir: 120 },
+    { speed: 27, dir: 100 }, { speed: 29, dir: 105 }, { speed: 33, dir: 90 },
+    { speed: 33, dir: 95 },  { speed: 33, dir: 105 }, { speed: 33, dir: 100 },
+    { speed: 33, dir: 90 },
+  ],
+  3000: [
+    { speed: 32, dir: 120 }, { speed: 29, dir: 115 }, { speed: 28, dir: 125 },
+    { speed: 23, dir: 120 }, { speed: 29, dir: 100 }, { speed: 29, dir: 110 },
+    { speed: 31, dir: 90 },  { speed: 31, dir: 95 },  { speed: 38, dir: 80 },
+    { speed: 38, dir: 85 },  { speed: 38, dir: 95 },  { speed: 38, dir: 90 },
+    { speed: 38, dir: 80 },
+  ],
+  3500: [
+    { speed: 37, dir: 110 }, { speed: 36, dir: 105 }, { speed: 36, dir: 115 },
+    { speed: 33, dir: 110 }, { speed: 36, dir: 90 },  { speed: 36, dir: 100 },
+    { speed: 40, dir: 80 },  { speed: 40, dir: 85 },  { speed: 47, dir: 70 },
+    { speed: 47, dir: 75 },  { speed: 47, dir: 85 },  { speed: 47, dir: 80 },
+    { speed: 47, dir: 70 },
+  ],
+  3750: [
+    { speed: 40, dir: 100 }, { speed: 40, dir: 95 },  { speed: 40, dir: 105 },
+    { speed: 38, dir: 100 }, { speed: 40, dir: 80 },  { speed: 40, dir: 90 },
+    { speed: 49, dir: 70 },  { speed: 49, dir: 75 },  { speed: 55, dir: 60 },
+    { speed: 55, dir: 65 },  { speed: 55, dir: 75 },  { speed: 55, dir: 70 },
+    { speed: 55, dir: 60 },
+  ],
+  4000: [
+    { speed: 42, dir: 90 },  { speed: 44, dir: 85 },  { speed: 43, dir: 95 },
+    { speed: 43, dir: 90 },  { speed: 44, dir: 70 },  { speed: 44, dir: 80 },
+    { speed: 49, dir: 60 },  { speed: 49, dir: 65 },  { speed: 61, dir: 50 },
+    { speed: 61, dir: 55 },  { speed: 61, dir: 65 },  { speed: 61, dir: 60 },
+    { speed: 61, dir: 50 },
+  ],
+};
+
+// Quote Alpium ordinate
+const ALPIUM_ALTITUDES = Object.keys(ALPIUM_WIND_DATA).map(Number).sort((a, b) => a - b);
+
+// Mappa quota → livello di pressione per la barbetta
+const ALT_TO_LEVEL: Record<number, { hpa: number }> = {
+  1000: { hpa: 850 },
+  1250: { hpa: 850 },
+  1500: { hpa: 800 },
+  1750: { hpa: 800 },
+  2000: { hpa: 750 },
+  2250: { hpa: 750 },
+  2500: { hpa: 700 },
+  2750: { hpa: 700 },
+  3000: { hpa: 650 },
+  3500: { hpa: 600 },
+  3750: { hpa: 600 },
+  4000: { hpa: 550 },
+};
+
+const ALT_TICKS = [4000, 3500, 3000, 2500, 2000, 1500, 1000];
 
 const STABILITY_COLORS = [
   { val: -0.20, color: "#8b5cf6" },
@@ -133,8 +244,8 @@ export default function ProfessionalWindgram({
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
-  const minAlt = 1200;
-  const maxAlt = 6000;
+  const minAlt = 1000;
+  const maxAlt = 4200;
 
   const getYFromAlt = (alt: number) => {
     const clamped = Math.min(maxAlt, Math.max(minAlt, alt));
@@ -157,7 +268,12 @@ export default function ProfessionalWindgram({
           windGround: 8, windDirGround: 180, precip: 0, cloudCover: 10,
           zeroThermal: 4380, thermalTop: altitude + 900, cloudBase: altitude + 800,
           cloudPct: 5, deltaT: 0.75, tempAt80m: 15, tempAt120m: 12,
-          levelWinds: PRESSURE_LEVELS.map((l) => ({ ...l, speed: 12, dir: 240 })),
+          levelWinds: ALPIUM_ALTITUDES.map((alt) => ({
+            hpa: ALT_TO_LEVEL[alt]?.hpa ?? 850,
+            alt,
+            speed: 12,
+            dir: 240,
+          })),
         };
       }
 
@@ -196,16 +312,17 @@ export default function ProfessionalWindgram({
 
       const thermalTop = Math.round(Math.min(4000, cloudBase + Math.min(800, rateo * 100 + cape * 0.1)));
 
-      const levelWinds = [
-        { hpa: 500, alt: 5800, speed: h.wind_speed_500hPa?.[idx] ?? (wind10 * 2.8), dir: h.wind_direction_500hPa?.[idx] ?? (windDir10 + 40) },
-        { hpa: 550, alt: 5000, speed: (h.wind_speed_500hPa?.[idx] ? h.wind_speed_500hPa[idx] * 0.9 : wind10 * 2.5), dir: (h.wind_direction_500hPa?.[idx] ?? windDir10) + 30 },
-        { hpa: 600, alt: 4400, speed: h.wind_speed_600hPa?.[idx] ?? (wind10 * 2.1), dir: h.wind_direction_600hPa?.[idx] ?? (windDir10 + 20) },
-        { hpa: 650, alt: 3750, speed: (h.wind_speed_700hPa?.[idx] ? h.wind_speed_700hPa[idx] * 1.15 : wind10 * 1.8), dir: (h.wind_direction_700hPa?.[idx] ?? windDir10) + 15 },
-        { hpa: 700, alt: 3100, speed: h.wind_speed_700hPa?.[idx] ?? (wind10 * 1.5), dir: h.wind_direction_700hPa?.[idx] ?? (windDir10 + 10) },
-        { hpa: 750, alt: 2500, speed: (h.wind_speed_850hPa?.[idx] ? h.wind_speed_850hPa[idx] * 1.15 : wind10 * 1.3), dir: (h.wind_direction_850hPa?.[idx] ?? windDir10) + 5 },
-        { hpa: 800, alt: 1950, speed: (h.wind_speed_850hPa?.[idx] ? h.wind_speed_850hPa[idx] * 0.95 : wind10 * 1.1), dir: h.wind_direction_850hPa?.[idx] ?? windDir10 },
-        { hpa: 850, alt: 1450, speed: h.wind_speed_850hPa?.[idx] ?? wind10, dir: h.wind_direction_850hPa?.[idx] ?? windDir10 },
-      ];
+      // Vento dai dati Alpium
+      const levelWinds = ALPIUM_ALTITUDES.map((alt) => {
+        const alpiumHourly = ALPIUM_WIND_DATA[alt];
+        const windData = alpiumHourly[idx] ?? { speed: wind10, dir: windDir10 };
+        return {
+          hpa: ALT_TO_LEVEL[alt]?.hpa ?? 850,
+          alt,
+          speed: windData.speed,
+          dir: windData.dir,
+        };
+      });
 
       return {
         hour: targetHour, sunPct, thermalAvg: rateo,
@@ -415,7 +532,7 @@ export default function ProfessionalWindgram({
           <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1 px-1">
             <span>valore medio ascendenze (m/s)</span>
           </div>
-          <div className="grid grid-cols-11 gap-1 px-1">
+          <div className="grid grid-cols-12 gap-1 px-1">
             {hourlyData.map((h, i) => (
               <div key={i} className="text-center">
                 <div className="font-black text-sm leading-tight" style={{ color: h.thermalAvg >= 1.6 ? "#b91c1c" : "#0f172a" }}>
