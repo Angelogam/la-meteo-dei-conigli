@@ -137,8 +137,6 @@ const ALT_TO_LEVEL: Record<number, { hpa: number }> = {
   4000: { hpa: 550 },
 };
 
-const ALT_TICKS = [4000, 3500, 3000, 2500, 2000, 1500, 1000];
-
 const STABILITY_COLORS = [
   { val: -0.20, color: "#8b5cf6" },
   { val: 0.00, color: "#3b82f6" },
