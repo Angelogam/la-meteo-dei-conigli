@@ -52,17 +52,18 @@ function getStabilityColor(deltaT: number): string {
   return STABILITY_COLORS[8].color;
 }
 
-// Converti gradi (da dove soffia il vento) in direzione della barbetta
-// In meteorologia, 0° = vento DA Nord, 90° = vento DA Est
-// La barbetta punta VERSO dove va il vento (opposto)
+// La barbetta punta NEL VERSO del vento (dove va).
+// Open-Meteo wind_direction_XXX = Meteorologica (da dove viene il vento).
+// Quindi: barbetta punta nella direzione del vento = wind_direction.
 function getBarbAngle(dirDeg: number): number {
-  // Vento che soffia DA Nord (0°) → barbetta punta verso SUD (180°)
-  return ((dirDeg + 180) * Math.PI) / 180;
+  // barbetta punta nella direzione del vento (dove va)
+  return (dirDeg * Math.PI) / 180;
 }
 
 function getDirLetter(deg: number): string {
+  // Mostra DOVE IL VENTO VA (direzione della barbetta)
   const dirs = ["N", "NO", "O", "SO", "S", "SE", "E", "NE"];
-  const idx = Math.round(deg / 45) % 8;
+  const idx = Math.round(((deg + 180) % 360 + 360) % 360 / 45) % 8;
   return dirs[idx];
 }
 
@@ -229,35 +230,72 @@ export default function ProfessionalWindgram({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Rendering wind barb CORRETTO come Alpium
+  // Rendering wind barb CLASSICO stile Alpium
+  // Piume a triangolo dal lato giusto della barbetta
   const renderWindBarb = (x: number, y: number, speedKmh: number, dirDeg: number) => {
     if (speedKmh == null || isNaN(speedKmh) || speedKmh < 1) return null;
 
-    // Angolo della barbetta (verso dove VA il vento)
     const barbAngle = getBarbAngle(dirDeg);
-    
-    // Lunghezza asta
-    const staffLen = Math.min(18, 4 + speedKmh * 0.35);
-    const endX = x + staffLen * Math.cos(barbAngle);
-    const endY = y + staffLen * Math.sin(barbAngle);
-
-    // Colore
-    const barbColor = speedKmh > 30 ? "#7e22ce" : speedKmh > 18 ? "#0369a1" : "#1e3a8a";
-
-    // Penna principale (perpendicolare all'asta)
     const perpAngle = barbAngle + Math.PI / 2;
-    const featherLen = Math.min(12, 3 + speedKmh * 0.18);
-    const midX = (x + endX) / 2;
-    const midY = (y + endY) / 2;
-    const featherEndX = midX + featherLen * Math.cos(perpAngle);
-    const featherEndY = midY + featherLen * Math.sin(perpAngle);
+
+    // Lunghezza asta
+    const staffLen = Math.min(20, 5 + speedKmh * 0.4);
+    const sx = x + staffLen * Math.cos(barbAngle);
+    const sy = y + staffLen * Math.sin(barbAngle);
+
+    // Colore in base alla velocità
+    const barbColor = speedKmh > 35 ? "#7e22ce" : speedKmh > 20 ? "#0369a1" : "#1e3a8a";
+    const fs = 1.5; // stroke width
+
+    // Piume a triangolo sul lato destro della barbetta
+    // Triangolo grande = 20 km/h (circa 10 nodi)
+    // Triangolo piccolo = 10 km/h (circa 5 nodi)
+    const triangles = [];
+    const remaining = speedKmh;
+
+    // Ogni 20 km/h → triangolo grande
+    for (let i = 0; i < Math.floor(speedKmh / 20); i++) {
+      const distFromEnd = 6 + i * 9;
+      const fx = sx - distFromEnd * Math.cos(barbAngle);
+      const fy = sy - distFromEnd * Math.sin(barbAngle);
+      triangles.push({ fx, fy, size: 8, color: barbColor });
+    }
+    // Ogni 10 km/h rimanenti → triangolo piccolo
+    const mod20 = speedKmh % 20;
+    if (mod20 >= 10) {
+      const distFromEnd = 6 + Math.floor(speedKmh / 20) * 9 + 4.5;
+      const fx = sx - distFromEnd * Math.cos(barbAngle);
+      const fy = sy - distFromEnd * Math.sin(barbAngle);
+      triangles.push({ fx, fy, size: 5, color: barbColor });
+    }
 
     return (
       <g key={`wb-${Math.round(x)}-${Math.round(y)}`}>
-        {/* Asta */}
-        <line x1={x} y1={y} x2={endX} y2={endY} stroke={barbColor} strokeWidth="2" strokeLinecap="round" />
-        {/* Penna */}
-        <line x1={midX} y1={midY} x2={featherEndX} y2={featherEndY} stroke={barbColor} strokeWidth="2.5" strokeLinecap="round" />
+        {/* Asta principale */}
+        <line x1={x} y1={y} x2={sx} y2={sy} stroke={barbColor} strokeWidth={fs} strokeLinecap="round" />
+        {/* Triangoli (piume a triangolo) */}
+        {triangles.map((tr, ti) => {
+          // Vertici del triangolo
+          const tipX = tr.fx;
+          const tipY = tr.fy;
+          const baseDist = tr.size * 0.5;
+          const baseLen = tr.size * 0.6;
+          const bx1 = tipX + baseDist * Math.cos(barbAngle + Math.PI);
+          const by1 = tipY + baseDist * Math.sin(barbAngle + Math.PI);
+          const bx2 = tipX + baseDist * Math.cos(barbAngle + Math.PI + Math.PI / 2);
+          const by2 = tipY + baseDist * Math.sin(barbAngle + Math.PI + Math.PI / 2);
+          const bx3 = tipX + baseDist * Math.cos(barbAngle + Math.PI - Math.PI / 2);
+          const by3 = tipY + baseDist * Math.sin(barbAngle + Math.PI - Math.PI / 2);
+          return (
+            <polygon
+              key={ti}
+              points={`${tipX.toFixed(1)},${tipY.toFixed(1)} ${bx1.toFixed(1)},${by1.toFixed(1)} ${bx2.toFixed(1)},${by2.toFixed(1)} ${bx3.toFixed(1)},${by3.toFixed(1)}`}
+              fill={tr.color}
+              stroke={barbColor}
+              strokeWidth={fs * 0.8}
+            />
+          );
+        })}
       </g>
     );
   };
