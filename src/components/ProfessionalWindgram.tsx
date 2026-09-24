@@ -249,7 +249,7 @@ export default function ProfessionalWindgram({
       const endY = y + staffLen * Math.sin(angle);
       // Colore più scuro per massimo contrasto
       const barbColor = speedKmh > 30 ? "#7e22ce" : speedKmh > 18 ? "#0369a1" : "#1e3a8a";
-      const barbAngle = angle + (115 * Math.PI) / 180;
+      const barbAngle = angle - (115 * Math.PI) / 180;
       const featherAngle = barbAngle + Math.PI;
 
     const elements: React.ReactElement[] = [];
