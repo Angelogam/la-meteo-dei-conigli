@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import { RefreshCw, FileText, Check, Copy, AlertTriangle, ShieldCheck } from "lucide-react";
 import { fetchHourly } from "@/lib/openMeteoClient";
 import { generateReportMeteo, type GeneratedReport } from "@/utils/generateReportMeteo";
+import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
 
 interface WindgramProps {
   latitude: number;
@@ -28,113 +29,12 @@ const PRESSURE_LEVELS = [
 
 const ALT_TICKS = [4000, 3500, 3000, 2500, 2000, 1500, 1000];
 
-// Dati vento estratti dal windgram Alpium Iretta (Giovedì 24 Settembre)
-// [alt][hourIdx] = { speed: km/h, dir: gradi (meteorologica, da dove soffia) }
-// hourIdx 0=8h, 1=9h, ..., 11=19h (12 colonne)
-const ALPIUM_WIND_DATA: Record<number, Array<{ speed: number; dir: number }>> = {
-  1000: [
-    { speed: 9,  dir: 200 }, { speed: 6,  dir: 195 }, { speed: 2,  dir: 220 },
-    { speed: 2,  dir: 210 }, { speed: 7,  dir: 200 }, { speed: 5,  dir: 210 },
-    { speed: 3,  dir: 180 }, { speed: 4,  dir: 195 }, { speed: 2,  dir: 170 },
-    { speed: 2,  dir: 165 }, { speed: 1,  dir: 150 }, { speed: 1,  dir: 140 },
-    { speed: 1,  dir: 130 },
-  ],
-  1250: [
-    { speed: 5,  dir: 190 }, { speed: 5,  dir: 185 }, { speed: 3,  dir: 195 },
-    { speed: 3,  dir: 190 }, { speed: 7,  dir: 180 }, { speed: 5,  dir: 190 },
-    { speed: 3,  dir: 170 }, { speed: 3,  dir: 175 }, { speed: 3,  dir: 160 },
-    { speed: 3,  dir: 155 }, { speed: 3,  dir: 150 }, { speed: 3,  dir: 145 },
-    { speed: 3,  dir: 135 },
-  ],
-  1500: [
-    { speed: 8,  dir: 180 }, { speed: 5,  dir: 175 }, { speed: 6,  dir: 185 },
-    { speed: 6,  dir: 180 }, { speed: 5,  dir: 160 }, { speed: 6,  dir: 170 },
-    { speed: 7,  dir: 150 }, { speed: 6,  dir: 155 }, { speed: 9,  dir: 140 },
-    { speed: 11, dir: 135 }, { speed: 9,  dir: 145 }, { speed: 9,  dir: 140 },
-    { speed: 9,  dir: 130 },
-  ],
-  1750: [
-    { speed: 12, dir: 170 }, { speed: 9,  dir: 165 }, { speed: 9,  dir: 175 },
-    { speed: 8,  dir: 170 }, { speed: 7,  dir: 150 }, { speed: 8,  dir: 160 },
-    { speed: 8,  dir: 140 }, { speed: 8,  dir: 145 }, { speed: 10, dir: 130 },
-    { speed: 12, dir: 125 }, { speed: 14, dir: 135 }, { speed: 14, dir: 130 },
-    { speed: 14, dir: 120 },
-  ],
-  2000: [
-    { speed: 16, dir: 160 }, { speed: 13, dir: 155 }, { speed: 12, dir: 165 },
-    { speed: 12, dir: 160 }, { speed: 11, dir: 140 }, { speed: 13, dir: 150 },
-    { speed: 13, dir: 130 }, { speed: 15, dir: 135 }, { speed: 17, dir: 120 },
-    { speed: 19, dir: 125 }, { speed: 19, dir: 135 }, { speed: 19, dir: 130 },
-    { speed: 19, dir: 120 },
-  ],
-  2250: [
-    { speed: 20, dir: 150 }, { speed: 17, dir: 145 }, { speed: 17, dir: 155 },
-    { speed: 14, dir: 150 }, { speed: 16, dir: 130 }, { speed: 16, dir: 140 },
-    { speed: 19, dir: 120 }, { speed: 15, dir: 125 }, { speed: 20, dir: 110 },
-    { speed: 23, dir: 115 }, { speed: 23, dir: 125 }, { speed: 23, dir: 120 },
-    { speed: 23, dir: 110 },
-  ],
-  2500: [
-    { speed: 24, dir: 140 }, { speed: 21, dir: 135 }, { speed: 21, dir: 145 },
-    { speed: 17, dir: 140 }, { speed: 20, dir: 120 }, { speed: 20, dir: 130 },
-    { speed: 22, dir: 110 }, { speed: 24, dir: 115 }, { speed: 28, dir: 100 },
-    { speed: 28, dir: 105 }, { speed: 28, dir: 115 }, { speed: 28, dir: 110 },
-    { speed: 28, dir: 100 },
-  ],
-  2750: [
-    { speed: 28, dir: 130 }, { speed: 25, dir: 125 }, { speed: 25, dir: 135 },
-    { speed: 20, dir: 130 }, { speed: 25, dir: 110 }, { speed: 25, dir: 120 },
-    { speed: 27, dir: 100 }, { speed: 29, dir: 105 }, { speed: 33, dir: 90 },
-    { speed: 33, dir: 95 },  { speed: 33, dir: 105 }, { speed: 33, dir: 100 },
-    { speed: 33, dir: 90 },
-  ],
-  3000: [
-    { speed: 32, dir: 120 }, { speed: 29, dir: 115 }, { speed: 28, dir: 125 },
-    { speed: 23, dir: 120 }, { speed: 29, dir: 100 }, { speed: 29, dir: 110 },
-    { speed: 31, dir: 90 },  { speed: 31, dir: 95 },  { speed: 38, dir: 80 },
-    { speed: 38, dir: 85 },  { speed: 38, dir: 95 },  { speed: 38, dir: 90 },
-    { speed: 38, dir: 80 },
-  ],
-  3500: [
-    { speed: 37, dir: 110 }, { speed: 36, dir: 105 }, { speed: 36, dir: 115 },
-    { speed: 33, dir: 110 }, { speed: 36, dir: 90 },  { speed: 36, dir: 100 },
-    { speed: 40, dir: 80 },  { speed: 40, dir: 85 },  { speed: 47, dir: 70 },
-    { speed: 47, dir: 75 },  { speed: 47, dir: 85 },  { speed: 47, dir: 80 },
-    { speed: 47, dir: 70 },
-  ],
-  3750: [
-    { speed: 40, dir: 100 }, { speed: 40, dir: 95 },  { speed: 40, dir: 105 },
-    { speed: 38, dir: 100 }, { speed: 40, dir: 80 },  { speed: 40, dir: 90 },
-    { speed: 49, dir: 70 },  { speed: 49, dir: 75 },  { speed: 55, dir: 60 },
-    { speed: 55, dir: 65 },  { speed: 55, dir: 75 },  { speed: 55, dir: 70 },
-    { speed: 55, dir: 60 },
-  ],
-  4000: [
-    { speed: 42, dir: 90 },  { speed: 44, dir: 85 },  { speed: 43, dir: 95 },
-    { speed: 43, dir: 90 },  { speed: 44, dir: 70 },  { speed: 44, dir: 80 },
-    { speed: 49, dir: 60 },  { speed: 49, dir: 65 },  { speed: 61, dir: 50 },
-    { speed: 61, dir: 55 },  { speed: 61, dir: 65 },  { speed: 61, dir: 60 },
-    { speed: 61, dir: 50 },
-  ],
-};
-
-// Quote Alpium ordinate
-const ALPIUM_ALTITUDES = Object.keys(ALPIUM_WIND_DATA).map(Number).sort((a, b) => a - b);
-
-// Mappa quota → livello di pressione per la barbetta
-const ALT_TO_LEVEL: Record<number, { hpa: number }> = {
-  1000: { hpa: 850 },
-  1250: { hpa: 850 },
-  1500: { hpa: 800 },
-  1750: { hpa: 800 },
-  2000: { hpa: 750 },
-  2250: { hpa: 750 },
-  2500: { hpa: 700 },
-  2750: { hpa: 700 },
-  3000: { hpa: 650 },
-  3500: { hpa: 600 },
-  3750: { hpa: 600 },
-  4000: { hpa: 550 },
+// Quote per le barbette: step 250m da altitude a 4000m (stessa logica di WindgramMatrix)
+const computeDisplayAltitudes = (siteAlt: number): number[] => {
+  const base = Math.floor(siteAlt / 250) * 250;
+  const result: number[] = [];
+  for (let alt = 4000; alt >= base; alt -= 250) result.push(alt);
+  return result;
 };
 
 const STABILITY_COLORS = [
@@ -162,17 +62,21 @@ function getStabilityColor(deltaT: number): string {
 }
 
 // La barbetta punta NEL VERSO del vento (dove va).
-// Open-Meteo wind_direction_XXX = Meteorologica (da dove viene il vento).
-// Quindi: barbetta punta nella direzione del vento = wind_direction.
+// getBarbAngle usa la direzione di moto direttamente (open-meteo dir è provenienza,
+// ma interpolateAtAltitude restituisce dir già in convenzione meteorologica,
+// quindi aggiungiamo 180° per ottenere la direzione di moto).
+// Stessa logica di WindgramMatrix.tsx (targetDeg = (deg + 180) % 360).
 function getBarbAngle(dirDeg: number): number {
-  // barbetta punta nella direzione del vento (dove va)
-  return (dirDeg * Math.PI) / 180;
+  // dirDeg = provenienza meteorologica → barbetta punta dove va il vento
+  const motionDeg = (dirDeg + 180) % 360;
+  return (motionDeg * Math.PI) / 180;
 }
 
 function getDirLetter(deg: number): string {
-  // Mostra DOVE IL VENTO VA (direzione della barbetta)
+  // deg = provenienza meteorologica → mostra direzione di moto (dove va)
   const dirs = ["N", "NO", "O", "SO", "S", "SE", "E", "NE"];
-  const idx = Math.round(((deg + 180) % 360 + 360) % 360 / 45) % 8;
+  const motionDeg = ((deg + 180) % 360 + 360) % 360;
+  const idx = Math.round(motionDeg / 45) % 8;
   return dirs[idx];
 }
 
@@ -188,6 +92,16 @@ export default function ProfessionalWindgram({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Venti multi-livello da Open-Meteo (stessa fonte di WindgramMatrix)
+  const { interpolateAtAltitude } = useMultiHourWindProfile({
+    lat: latitude,
+    lon: longitude,
+    siteAlt: altitude,
+    selectedDay,
+  });
+
+  const displayAltitudes = useMemo(() => computeDisplayAltitudes(altitude), [altitude]);
 
   const dateObj = useMemo(() => {
     const d = new Date();
@@ -266,8 +180,7 @@ export default function ProfessionalWindgram({
           windGround: 8, windDirGround: 180, precip: 0, cloudCover: 10,
           zeroThermal: 4380, thermalTop: altitude + 900, cloudBase: altitude + 800,
           cloudPct: 5, deltaT: 0.75, tempAt80m: 15, tempAt120m: 12,
-          levelWinds: ALPIUM_ALTITUDES.map((alt) => ({
-            hpa: ALT_TO_LEVEL[alt]?.hpa ?? 850,
+          levelWinds: displayAltitudes.map((alt) => ({
             alt,
             speed: 12,
             dir: 240,
@@ -310,15 +223,13 @@ export default function ProfessionalWindgram({
 
       const thermalTop = Math.round(Math.min(4000, cloudBase + Math.min(800, rateo * 100 + cape * 0.1)));
 
-      // Vento dai dati Alpium
-      const levelWinds = ALPIUM_ALTITUDES.map((alt) => {
-        const alpiumHourly = ALPIUM_WIND_DATA[alt];
-        const windData = alpiumHourly[idx] ?? { speed: wind10, dir: windDir10 };
+      // Vento multi-livello interpolato da Open-Meteo (stessa fonte di WindgramMatrix)
+      const levelWinds = displayAltitudes.map((alt) => {
+        const interp = interpolateAtAltitude(targetHour, alt);
         return {
-          hpa: ALT_TO_LEVEL[alt]?.hpa ?? 850,
           alt,
-          speed: windData.speed,
-          dir: windData.dir,
+          speed: interp?.speed ?? wind10,
+          dir: interp?.dir ?? windDir10,
         };
       });
 
@@ -331,7 +242,7 @@ export default function ProfessionalWindgram({
         levelWinds,
       };
     });
-  }, [data, altitude]);
+  }, [data, altitude, displayAltitudes, interpolateAtAltitude]);
 
   const reportGenerato = useMemo<GeneratedReport | null>(() => {
     if (!data?.hourly) return null;
@@ -695,7 +606,7 @@ export default function ProfessionalWindgram({
                   const x = getXFromHourIdx(i);
                   const y = getYFromAlt(wLvl.alt);
                   return (
-                    <g key={`wb-${i}-${wLvl.hpa}`}>
+                    <g key={`wb-${i}-${Math.round(wLvl.alt)}`}>
                       {renderWindBarb(x, y, wLvl.speed, wLvl.dir)}
                       {/* Etichetta */}
                       <text x={x + 16} y={y - 4} fill="#0f172a" fontSize="10" fontWeight="700" textAnchor="start" fontFamily="monospace">
