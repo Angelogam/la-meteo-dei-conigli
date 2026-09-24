@@ -236,51 +236,43 @@ export default function ProfessionalWindgram({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Wind barb rendering - MOLTO grande e contrastato
+  // Wind barb rendering - SEMPLIFICATA come Alpium
   const renderWindBarb = (x: number, y: number, speedKmh: number, dirDeg: number) => {
     if (speedKmh == null || isNaN(speedKmh) || speedKmh < 1) return null;
-    const knots = speedKmh * 0.539957;
-      // In meteorologia, la direzione è DA DOVE SOFFIA IL VENTO
-      // La barbetta deve puntare VERSO DOVE VA IL VENTO (direzione opposta)
-      // Formula: angolo SVG = 90° - dirDeg (NORD=0→giù, EST=90→destra, SUD=180→su, OVEST=270→sinistra)
-      const angle = ((90 - dirDeg) * Math.PI) / 180;
-      const staffLen = 24;
-      const endX = x + staffLen * Math.cos(angle);
-      const endY = y + staffLen * Math.sin(angle);
-      // Colore più scuro per massimo contrasto
-      const barbColor = speedKmh > 30 ? "#7e22ce" : speedKmh > 18 ? "#0369a1" : "#1e3a8a";
-      const barbAngle = angle + (115 * Math.PI) / 180;
-      const featherAngle = barbAngle + Math.PI;
 
-    const elements: React.ReactElement[] = [];
-    let rem = Math.round(knots / 5) * 5;
-    let pos = 1.0;
+    // Direzione del vento (DA dove soffia)
+    // Per la barbetta: l'asta punta VERSO dove va il vento
+    const windDirRad = (dirDeg * Math.PI) / 180;
 
-    while (rem >= 50 && pos >= 0.3) {
-      const bx = x + pos * (endX - x);
-      const by = y + pos * (endY - y);
-      const p1 = `${bx},${by}`;
-      const p2 = `${bx + 12 * Math.cos(featherAngle)},${by + 12 * Math.sin(featherAngle)}`;
-      const p3 = `${bx + 5.5 * Math.cos(angle)},${by + 5.5 * Math.sin(angle)}`;
-      elements.push(<polygon key={`p50-${x}-${y}-${pos}`} points={`${p1} ${p2} ${p3}`} fill={barbColor} stroke={barbColor} strokeWidth="1" />);
-      rem -= 50; pos -= 0.28;
-    }
-    while (rem >= 10 && pos >= 0.2) {
-      const bx = x + pos * (endX - x);
-      const by = y + pos * (endY - y);
-      elements.push(<line key={`l10-${x}-${y}-${pos}`} x1={bx} y1={by} x2={bx + 12 * Math.cos(featherAngle)} y2={by + 12 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="2" strokeLinecap="round" />);
-      rem -= 10; pos -= 0.18;
-    }
-    if (rem >= 5 && pos >= 0.2) {
-      const bx = x + pos * (endX - x);
-      const by = y + pos * (endY - y);
-      elements.push(<line key={`l5-${x}-${y}-${pos}`} x1={bx} y1={by} x2={bx + 6.5 * Math.cos(featherAngle)} y2={by + 6.5 * Math.sin(featherAngle)} stroke={barbColor} strokeWidth="2" strokeLinecap="round" />);
-    }
+    // Lunghezza asta proporzionale alla velocità
+    const staffLen = Math.min(20, 6 + speedKmh * 0.3);
+    // Punto iniziale (origine) e finale (dove va il vento)
+    const startX = x - staffLen * Math.cos(windDirRad);
+    const startY = y - staffLen * Math.sin(windDirRad);
+    const endX = x;
+    const endY = y;
+
+    // Colore
+    const barbColor = speedKmh > 30 ? "#7e22ce" : speedKmh > 18 ? "#0369a1" : "#1e3a8a";
+
+    // Penna principale (perpendicolare all'asta, sul lato corretto)
+    const perpAngle = windDirRad + Math.PI / 2;
+    const featherLen = Math.min(10, 4 + speedKmh * 0.15);
+
+    // Calcola posizione penna (a metà asta)
+    const midX = (startX + endX) / 2;
+    const midY = (startY + endY) / 2;
+
+    // Penna si estende dal lato "sopra" l'asta
+    const featherEndX = midX + featherLen * Math.cos(perpAngle);
+    const featherEndY = midY + featherLen * Math.sin(perpAngle);
 
     return (
       <g key={`wb-${x}-${Math.round(y)}`}>
-        <line x1={x} y1={y} x2={endX} y2={endY} stroke={barbColor} strokeWidth="2" strokeLinecap="round" />
-        {elements}
+        {/* Asta */}
+        <line x1={startX} y1={startY} x2={endX} y2={endY} stroke={barbColor} strokeWidth="1.8" strokeLinecap="round" />
+        {/* Penna */}
+        <line x1={midX} y1={midY} x2={featherEndX} y2={featherEndY} stroke={barbColor} strokeWidth="2" strokeLinecap="round" />
       </g>
     );
   };
