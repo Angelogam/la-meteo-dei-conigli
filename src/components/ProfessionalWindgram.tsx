@@ -239,7 +239,7 @@ export default function ProfessionalWindgram({
     const perpAngle = barbAngle + Math.PI / 2;
 
     // Lunghezza asta
-    const staffLen = Math.min(20, 5 + speedKmh * 0.4);
+    const staffLen = Math.min(26, 8 + speedKmh * 0.5);
     const sx = x + staffLen * Math.cos(barbAngle);
     const sy = y + staffLen * Math.sin(barbAngle);
 
@@ -255,18 +255,18 @@ export default function ProfessionalWindgram({
 
     // Ogni 20 km/h → triangolo grande
     for (let i = 0; i < Math.floor(speedKmh / 20); i++) {
-      const distFromEnd = 6 + i * 9;
+      const distFromEnd = 9 + i * 12;
       const fx = sx - distFromEnd * Math.cos(barbAngle);
       const fy = sy - distFromEnd * Math.sin(barbAngle);
-      triangles.push({ fx, fy, size: 8, color: barbColor });
+      triangles.push({ fx, fy, size: 9, color: barbColor });
     }
     // Ogni 10 km/h rimanenti → triangolo piccolo
     const mod20 = speedKmh % 20;
     if (mod20 >= 10) {
-      const distFromEnd = 6 + Math.floor(speedKmh / 20) * 9 + 4.5;
+      const distFromEnd = 9 + Math.floor(speedKmh / 20) * 12 + 6;
       const fx = sx - distFromEnd * Math.cos(barbAngle);
       const fy = sy - distFromEnd * Math.sin(barbAngle);
-      triangles.push({ fx, fy, size: 5, color: barbColor });
+      triangles.push({ fx, fy, size: 6, color: barbColor });
     }
 
     return (
