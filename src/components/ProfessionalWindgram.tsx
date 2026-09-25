@@ -259,72 +259,88 @@ export default function ProfessionalWindgram({
   // Rendering wind barb CLASSICO stile Alpium
   // Piume a triangolo dal lato giusto della barbetta
   const renderWindBarb = (x: number, y: number, speedKmh: number, dirDeg: number) => {
-    if (speedKmh == null || isNaN(speedKmh) || speedKmh < 1) return null;
-
-    const barbAngle = getBarbAngle(dirDeg);
-    const perpAngle = barbAngle + Math.PI / 2;
-
-    // Lunghezza asta
-    const staffLen = Math.min(26, 8 + speedKmh * 0.5);
-    const sx = x + staffLen * Math.cos(barbAngle);
-    const sy = y + staffLen * Math.sin(barbAngle);
-
-    // Colore in base alla velocità
-    const barbColor = speedKmh > 35 ? "#7e22ce" : speedKmh > 20 ? "#0369a1" : "#1e3a8a";
-    const fs = 1.5; // stroke width
-
-    // Piume a triangolo sul lato destro della barbetta
-    // Triangolo grande = 20 km/h (circa 10 nodi)
-    // Triangolo piccolo = 10 km/h (circa 5 nodi)
-    const triangles = [];
-    const remaining = speedKmh;
-
-    // Ogni 20 km/h → triangolo grande
-    for (let i = 0; i < Math.floor(speedKmh / 20); i++) {
-      const distFromEnd = 9 + i * 12;
-      const fx = sx - distFromEnd * Math.cos(barbAngle);
-      const fy = sy - distFromEnd * Math.sin(barbAngle);
-      triangles.push({ fx, fy, size: 9, color: barbColor });
-    }
-    // Ogni 10 km/h rimanenti → triangolo piccolo
-    const mod20 = speedKmh % 20;
-    if (mod20 >= 10) {
-      const distFromEnd = 9 + Math.floor(speedKmh / 20) * 12 + 6;
-      const fx = sx - distFromEnd * Math.cos(barbAngle);
-      const fy = sy - distFromEnd * Math.sin(barbAngle);
-      triangles.push({ fx, fy, size: 6, color: barbColor });
-    }
-
-    return (
-      <g key={`wb-${Math.round(x)}-${Math.round(y)}`}>
-        {/* Asta principale */}
-        <line x1={x} y1={y} x2={sx} y2={sy} stroke={barbColor} strokeWidth={fs} strokeLinecap="round" />
-        {/* Triangoli (piume a triangolo) */}
-        {triangles.map((tr, ti) => {
-          // Vertici del triangolo
-          const tipX = tr.fx;
-          const tipY = tr.fy;
-          const baseDist = tr.size * 0.5;
-          const baseLen = tr.size * 0.6;
-          const bx1 = tipX + baseDist * Math.cos(barbAngle + Math.PI);
-          const by1 = tipY + baseDist * Math.sin(barbAngle + Math.PI);
-          const bx2 = tipX + baseDist * Math.cos(barbAngle + Math.PI + Math.PI / 2);
-          const by2 = tipY + baseDist * Math.sin(barbAngle + Math.PI + Math.PI / 2);
-          const bx3 = tipX + baseDist * Math.cos(barbAngle + Math.PI - Math.PI / 2);
-          const by3 = tipY + baseDist * Math.sin(barbAngle + Math.PI - Math.PI / 2);
-          return (
-            <polygon
-              key={ti}
-              points={`${tipX.toFixed(1)},${tipY.toFixed(1)} ${bx1.toFixed(1)},${by1.toFixed(1)} ${bx2.toFixed(1)},${by2.toFixed(1)} ${bx3.toFixed(1)},${by3.toFixed(1)}`}
-              fill={tr.color}
-              stroke={barbColor}
-              strokeWidth={fs * 0.8}
-            />
-          );
-        })}
-      </g>
-    );
-  };
+      if (speedKmh == null || isNaN(speedKmh) || speedKmh < 1) return null;
+  
+      const barbAngle = getBarbAngle(dirDeg);
+  
+      // Lunghezza asta
+      const staffLen = Math.min(26, 8 + speedKmh * 0.5);
+      const sx = x + staffLen * Math.cos(barbAngle); // punta (dove va il vento)
+      const sy = y + staffLen * Math.sin(barbAngle);
+  
+      // Colore in base alla velocità
+      const barbColor = speedKmh > 35 ? "#7e22ce" : speedKmh > 20 ? "#0369a1" : "#1e3a8a";
+      const fs = 1.5; // stroke width
+  
+      return (
+        <g key={`wb-${Math.round(x)}-${Math.round(y)}`}>
+          {/* Asta principale */}
+          <line x1={x} y1={y} x2={sx} y2={sy} stroke={barbColor} strokeWidth={fs} strokeLinecap="round" />
+          
+          {/* Freccia sulla punta */}
+          <polygon
+            points={`${sx.toFixed(1)},${sy.toFixed(1)}
+                    ${(sx - 6 * Math.cos(barbAngle) - 4 * Math.sin(barbAngle)).toFixed(1)},${(sy - 6 * Math.sin(barbAngle) + 4 * Math.cos(barbAngle)).toFixed(1)}
+                    ${(sx - 6 * Math.cos(barbAngle) + 4 * Math.sin(barbAngle)).toFixed(1)},${(sy - 6 * Math.sin(barbAngle) - 4 * Math.cos(barbAngle)).toFixed(1)}`}
+            fill={barbColor}
+          />
+          
+          {/* Piume sulla coda (lato opposto alla freccia) */}
+          {/* Ogni 20 km/h → piuma grande */}
+          {[...Array(Math.floor(speedKmh / 20))].map((_, i) => {
+            const d = 12 + i * 12; // distanza dalla punta
+            const fx = sx - d * Math.cos(barbAngle);
+            const fy = sy - d * Math.sin(barbAngle);
+            const staffX = Math.cos(barbAngle);
+            const staffY = Math.sin(barbAngle);
+            const perpX = -Math.sin(barbAngle); // perpendicolare verso sinistra (in direzione vento venendo)
+            const perpY = Math.cos(barbAngle);
+            return (
+              <polygon
+                key={\`lg-${i}\`}
+                points={
+                  `${(fx + 9 * perpX).toFixed(1)},${(fy + 9 * perpY).toFixed(1)} // punta esterna
+                  ${(fx - 3 * staffX).toFixed(1)},${(fy - 3 * staffY).toFixed(1)} // base sinistra
+                  ${(fx + 3 * staffX).toFixed(1)},${(fy + 3 * staffY).toFixed(1)} // base destra`
+                }
+                fill={barbColor}
+              />
+            );
+          })}
+          
+          {/* Ogni 10 km/h rimanenti → piuma piccola */}
+          {speedKmh % 20 >= 10 && (
+            <>
+              {[...Array(1)].map((_, i) => {
+                const d = 12 + Math.floor(speedKmh / 20) * 12 + 6;
+                const fx = sx - d * Math.cos(barbAngle);
+                const fy = sy - d * Math.sin(barbAngle);
+                const staffX = Math.cos(barbAngle);
+                const staffY = Math.sin(barbAngle);
+                const perpX = -Math.sin(barbAngle);
+                const perpY = Math.cos(barbAngle);
+                return (
+                  <polygon
+                    key={\`sm-${i}\`}
+                    points={
+                      `${(fx + 6 * perpX).toFixed(1)},${(fy + 6 * perpY).toFixed(1)} // punta esterna
+                      ${(fx - 2 * staffX).toFixed(1)},${(fy - 2 * staffY).toFixed(1)} // base sinistra
+                      ${(fx + 2 * staffX).toFixed(1)},${(fy + 2 * staffY).toFixed(1)} // base destra`
+                    }
+                    fill={barbColor}
+                  />
+                );
+              })}
+            </>
+          )}
+          
+          {/* Etichetta velocità e direzione */}
+          <text x={x + 16} y={y - 4} fill="#0f172a" fontSize="10" fontWeight="700" textAnchor="start" fontFamily="monospace">
+            {Math.round(speedKmh)}km/{getDirLetter(wLvl.dir)}
+          </text>
+        </g>
+      );
+    };
 
   // Paths
   const zeroThermalPath = useMemo(() => {
