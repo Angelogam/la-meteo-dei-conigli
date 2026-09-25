@@ -72,10 +72,11 @@ function getBarbAngle(dirDeg: number): number {
 }
 
 function getDirLetter(deg: number): string {
-  // deg = provenienza meteorologica → mostra direzione di moto (dove va)
-  const dirs = ["N", "NO", "O", "SO", "S", "SE", "E", "NE"];
-  const motionDeg = ((deg + 180) % 360 + 360) % 360;
-  const idx = Math.round(motionDeg / 45) % 8;
+  // deg = provenienza meteorologica (da dove viene il vento)
+  // Mostra il punto cardinale di provenienza (convenzione meteo standard).
+  const dirs = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"];
+  const provenienzaDeg = ((deg % 360) + 360) % 360;
+  const idx = Math.round(provenienzaDeg / 45) % 8;
   return dirs[idx];
 }
 
