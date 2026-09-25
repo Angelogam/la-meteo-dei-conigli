@@ -62,14 +62,13 @@ function getStabilityColor(deltaT: number): string {
 }
 
 // La barbetta punta NEL VERSO del vento (dove va).
-// getBarbAngle usa la direzione di moto direttamente (open-meteo dir è provenienza,
-// ma interpolateAtAltitude restituisce dir già in convenzione meteorologica,
-// quindi aggiungiamo 180° per ottenere la direzione di moto).
-// Stessa logica di WindgramMatrix.tsx (targetDeg = (deg + 180) % 360).
+// In SVG, l'angolo 0 radianti punta a destra, angolo positivo ruota in senso orario.
+// Per ottenere l'angolo in senso orario da destra:
+//   theta = (direzione_provenienza + 90) % 360
 function getBarbAngle(dirDeg: number): number {
-  // dirDeg = provenienza meteorologica → barbetta punta dove va il vento
-  const motionDeg = (dirDeg + 180) % 360;
-  return (motionDeg * Math.PI) / 180;
+  // dirDeg = direzione meteorologica da cui proviene il vento
+  const thetaDeg = (dirDeg + 90) % 360; // angolo in senso orario da destra (0=est, 90=sud, 180=ovest, 270=nord)
+  return (thetaDeg * Math.PI) / 180;
 }
 
 function getDirLetter(deg: number): string {
