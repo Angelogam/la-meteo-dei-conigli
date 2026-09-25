@@ -330,10 +330,6 @@ export default function ProfessionalWindgram({
             </>
           )}
           
-          {/* Etichetta velocità e direzione */}
-          <text x={x + 16} y={y - 4} fill="#0f172a" fontSize="10" fontWeight="700" textAnchor="start" fontFamily="monospace">
-            {Math.round(speedKmh)}km/{getDirLetter(wLvl.dir)}
-          </text>
         </g>
       );
     };
@@ -612,23 +608,23 @@ export default function ProfessionalWindgram({
             })}
 
             {/* BARBETTE DEL VENTO */}
-            {hourlyData.map((calc, i) => (
-              <g key={`col-${i}`}>
-                {calc.levelWinds.map((wLvl) => {
-                  const x = getXFromHourIdx(i);
-                  const y = getYFromAlt(wLvl.alt);
-                  return (
-                    <g key={`wb-${i}-${Math.round(wLvl.alt)}`}>
-                      {renderWindBarb(x, y, wLvl.speed, wLvl.dir)}
-                      {/* Etichetta */}
-                      <text x={x + 16} y={y - 4} fill="#0f172a" fontSize="10" fontWeight="700" textAnchor="start" fontFamily="monospace">
-                        {Math.round(wLvl.speed)}km/{getDirLetter(wLvl.dir)}
-                      </text>
-                    </g>
-                  );
-                })}
-              </g>
-            ))}
+                        {hourlyData.map((calc, i) => (
+                          <g key={`col-${i}`}>
+                            {calc.levelWinds.map((windLevel) => {
+                              const x = getXFromHourIdx(i);
+                              const y = getYFromAlt(windLevel.alt);
+                              return (
+                                <g key={`wb-${i}-${Math.round(windLevel.alt)}`}>
+                                  {renderWindBarb(x, y, windLevel.speed, windLevel.dir)}
+                                  {/* Etichetta */}
+                                  <text x={x + 16} y={y - 4} fill="#0f172a" fontSize="10" fontWeight="700" textAnchor="start" fontFamily="monospace">
+                                    {Math.round(windLevel.speed)}km/{getDirLetter(windLevel.dir)}
+                                  </text>
+                                </g>
+                              );
+                            })}
+                          </g>
+                        ))}
 
             {/* ORE ASSE X */}
             {HOURS.map((h, i) => (
