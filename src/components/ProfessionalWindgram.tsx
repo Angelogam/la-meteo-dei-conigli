@@ -577,7 +577,7 @@ export default function ProfessionalWindgram({
             {hourlyData.map((h, i) => {
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
-              const y = getYFromAlt(h.thermalTop) - 90;
+              const y = getYFromAlt(h.thermalTop) - 60;
               return (
                 <g key={`cloud-${i}`} transform={`translate(${x}, ${y})`}>
                   <path d="M -26,11 A 12,12 0 0,1 -13,-7 A 16,16 0 0,1 10,-10 A 13,13 0 0,1 26,4 A 8,8 0 0,1 25,12 L -24,12 A 8,8 0 0,1 -26,11 Z" fill="#ffffff" stroke="#475569" strokeWidth="2.5" />
@@ -591,7 +591,7 @@ export default function ProfessionalWindgram({
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
               const paraY = getYFromAlt(h.thermalTop);
-              const badgeY = paraY + 62;
+              const badgeY = paraY + 38;
               const rateoColor = h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
               return (
                 <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
@@ -608,26 +608,23 @@ export default function ProfessionalWindgram({
             })}
 
             {/* BARBETTE DEL VENTO */}
-            {hourlyData.map((calc, i) => (
-              <g key={`col-${i}`}>
-                {calc.levelWinds.map((windLevel, lvlIdx) => {
-                  const x = getXFromHourIdx(i);
-                  const y = getYFromAlt(windLevel.alt);
-                  // Alternare etichette a destra/sinistra per evitare sovrapposizioni
-                  const labelRight = lvlIdx % 2 === 0;
-                  const labelX = labelRight ? x + 18 : x - 18;
-                  const labelAnchor = labelRight ? "start" : "end";
-                  return (
-                    <g key={`wb-${i}-${Math.round(windLevel.alt)}`}>
-                      {renderWindBarb(x, y, windLevel.speed, windLevel.dir)}
-                      <text x={labelX} y={y - 3} fill="#0f172a" fontSize="9" fontWeight="700" textAnchor={labelAnchor} fontFamily="monospace">
-                        {Math.round(windLevel.speed)}{getDirLetter(windLevel.dir)}
-                      </text>
-                    </g>
-                  );
-                })}
-              </g>
-            ))}
+                        {hourlyData.map((calc, i) => (
+                          <g key={`col-${i}`}>
+                            {calc.levelWinds.map((windLevel) => {
+                              const x = getXFromHourIdx(i);
+                              const y = getYFromAlt(windLevel.alt);
+                              return (
+                                <g key={`wb-${i}-${Math.round(windLevel.alt)}`}>
+                                  {renderWindBarb(x, y, windLevel.speed, windLevel.dir)}
+                                  {/* Etichetta */}
+                                  <text x={x + 16} y={y - 4} fill="#0f172a" fontSize="10" fontWeight="700" textAnchor="start" fontFamily="monospace">
+                                    {Math.round(windLevel.speed)}km/{getDirLetter(windLevel.dir)}
+                                  </text>
+                                </g>
+                              );
+                            })}
+                          </g>
+                        ))}
 
             {/* ORE ASSE X */}
             {HOURS.map((h, i) => (
