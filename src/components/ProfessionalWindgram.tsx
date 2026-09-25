@@ -151,8 +151,8 @@ export default function ProfessionalWindgram({
   }, [latitude, longitude, dateStr]);
 
   const width = 1200;
-  const height = 800;
-  const margin = { top: 60, right: 140, bottom: 65, left: 90 };
+  const height = 880;
+  const margin = { top: 65, right: 150, bottom: 70, left: 95 };
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
