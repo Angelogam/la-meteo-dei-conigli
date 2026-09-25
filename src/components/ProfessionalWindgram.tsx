@@ -295,14 +295,12 @@ export default function ProfessionalWindgram({
             const staffY = Math.sin(barbAngle);
             const perpX = -Math.sin(barbAngle); // perpendicolare verso sinistra (in direzione vento venendo)
             const perpY = Math.cos(barbAngle);
+            const lgKey = `lg-${i}`;
+            const lgPoints = `${(fx + 9 * perpX).toFixed(1)},${(fy + 9 * perpY).toFixed(1)} ${(fx - 3 * staffX).toFixed(1)},${(fy - 3 * staffY).toFixed(1)} ${(fx + 3 * staffX).toFixed(1)},${(fy + 3 * staffY).toFixed(1)}`;
             return (
               <polygon
-                key={\`lg-${i}\`}
-                points={
-                  `${(fx + 9 * perpX).toFixed(1)},${(fy + 9 * perpY).toFixed(1)} // punta esterna
-                  ${(fx - 3 * staffX).toFixed(1)},${(fy - 3 * staffY).toFixed(1)} // base sinistra
-                  ${(fx + 3 * staffX).toFixed(1)},${(fy + 3 * staffY).toFixed(1)} // base destra`
-                }
+                key={lgKey}
+                points={lgPoints}
                 fill={barbColor}
               />
             );
@@ -319,14 +317,12 @@ export default function ProfessionalWindgram({
                 const staffY = Math.sin(barbAngle);
                 const perpX = -Math.sin(barbAngle);
                 const perpY = Math.cos(barbAngle);
+                const smKey = `sm-${i}`;
+                const smPoints = `${(fx + 6 * perpX).toFixed(1)},${(fy + 6 * perpY).toFixed(1)} ${(fx - 2 * staffX).toFixed(1)},${(fy - 2 * staffY).toFixed(1)} ${(fx + 2 * staffX).toFixed(1)},${(fy + 2 * staffY).toFixed(1)}`;
                 return (
                   <polygon
-                    key={\`sm-${i}\`}
-                    points={
-                      `${(fx + 6 * perpX).toFixed(1)},${(fy + 6 * perpY).toFixed(1)} // punta esterna
-                      ${(fx - 2 * staffX).toFixed(1)},${(fy - 2 * staffY).toFixed(1)} // base sinistra
-                      ${(fx + 2 * staffX).toFixed(1)},${(fy + 2 * staffY).toFixed(1)} // base destra`
-                    }
+                    key={smKey}
+                    points={smPoints}
                     fill={barbColor}
                   />
                 );
