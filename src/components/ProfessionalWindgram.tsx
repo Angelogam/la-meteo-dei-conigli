@@ -373,40 +373,14 @@ export default function ProfessionalWindgram({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.fillStyle = "#fef9c3";
+    // Sfondo solido e pulito senza fasce disturbanti
+    ctx.fillStyle = "#f8fafc"; // Un grigio-azzurro chiarissimo molto professionale
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const totalRows = 200;
-    const cellH = plotH / totalRows;
-
-    for (let row = 0; row < totalRows; row++) {
-      const alt = maxAlt - (row / totalRows) * (maxAlt - minAlt);
-      const af = (alt - minAlt) / (maxAlt - minAlt);
-      const maxDeltaT = Math.max(...hourlyData.map(h => h.deltaT));
-      const minDeltaT = Math.min(...hourlyData.map(h => h.deltaT));
-      const avgDeltaT = (maxDeltaT + minDeltaT) / 2 * (1 - af * 0.9);
-      const color = getStabilityColor(avgDeltaT);
-      const y = row * cellH;
-      ctx.fillStyle = color;
-      ctx.globalAlpha = 0.94;
-      ctx.fillRect(0, y, plotW + 0.5, cellH + 0.3);
-    }
-
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-    const w = canvas.width;
-    const h = canvas.height;
-    for (let y = 1; y < h - 1; y += 2) {
-      for (let x = 1; x < w - 1; x += 2) {
-        const idx = (y * w + x) * 4;
-        const upIdx = ((y - 1) * w + x) * 4;
-        const dnIdx = ((y + 1) * w + x) * 4;
-        data[idx] = Math.round((data[idx] + data[upIdx] + data[dnIdx]) / 3);
-        data[idx + 1] = Math.round((data[idx + 1] + data[upIdx + 1] + data[dnIdx + 1]) / 3);
-        data[idx + 2] = Math.round((data[idx + 2] + data[upIdx + 2] + data[dnIdx + 2]) / 3);
-      }
-    }
-    ctx.putImageData(imageData, 0, 0);
+    // Rimuoviamo il loop delle 200 righe che creava le "fasce" orizzontali
+    // che l'utente percepiva come righe rosse fastidiose.
+    // Manteniamo solo una leggera sfumatura di profondità se necessario,
+    // ma per ora restiamo sul pulito come richiesto.
   }, [hourlyData]);
 
   if (loading) {
