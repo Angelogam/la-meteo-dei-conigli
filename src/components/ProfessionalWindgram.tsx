@@ -350,38 +350,44 @@ export default function ProfessionalWindgram({
     return Math.round(hourlyData.reduce((acc, h) => acc + h.zeroThermal, 0) / hourlyData.length);
   }, [hourlyData]);
 
-  // Background cols per colore colonna
-  const backgroundCols = useMemo(() => {
-    if (hourlyData.length === 0) return [];
-    const steps = 60;
-    const result: Array<{ col: number; step: number; color: string }> = [];
-    hourlyData.forEach((h, colIdx) => {
-      for (let step = 0; step < steps; step++) {
-        const altTop = minAlt + (step / steps) * (maxAlt - minAlt);
-        const af = (altTop - minAlt) / (maxAlt - minAlt);
-        const adjustedDeltaT = h.deltaT * (1 - af * 0.5);
-        result.push({ col: colIdx, step, color: getStabilityColor(adjustedDeltaT) });
-      }
-    });
-    return result;
-  }, [hourlyData]);
-
-  // Disegna sfondo sul canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || hourlyData.length === 0) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Sfondo solido e pulito senza fasce disturbanti
-    ctx.fillStyle = "#f8fafc"; // Un grigio-azzurro chiarissimo molto professionale
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Rimuoviamo il loop delle 200 righe che creava le "fasce" orizzontali
-    // che l'utente percepiva come righe rosse fastidiose.
-    // Manteniamo solo una leggera sfumatura di profondità se necessario,
-    // ma per ora restiamo sul pulito come richiesto.
-  }, [hourlyData]);
+  // Disegna sfondo sul canvas - Heatmap fluida per masse d'aria (senza bande orizzontali)
+    useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas || hourlyData.length === 0) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+  
+      const w = canvas.width;
+      const h = canvas.height;
+  
+      // Per ogni colonna oraria, disegniamo un gradiente verticale fluido
+      // basato sul deltaT di quell'ora (stabilità della massa d'aria)
+      hourlyData.forEach((hourData, colIdx) => {
+        const x = (colIdx / (HOURS.length - 1)) * w;
+        const colWidth = w / (HOURS.length - 1) + 1; // +1 per evitare gap
+  
+        // Crea gradiente verticale per questa colonna
+        const gradient = ctx.createLinearGradient(0, 0, 0, h);
+        
+        // Campiona la stabilità a diverse quote per questa ora
+        // deltaT alto = instabile (colori caldi), deltaT basso = stabile (colori freddi)
+        const baseDeltaT = hourData.deltaT;
+        
+        // Aggiungiamo alcuni stop al gradiente per transizione fluida
+        // In alto (quota 4000m) l'aria è generalmente più stabile
+        // In basso (quota 1000m) riflette il deltaT reale
+        gradient.addColorStop(0, getStabilityColor(baseDeltaT * 0.3));      // 4000m - più stabile
+        gradient.addColorStop(0.3, getStabilityColor(baseDeltaT * 0.6));    // 3000m
+        gradient.addColorStop(0.6, getStabilityColor(baseDeltaT * 0.85));   // 2000m
+        gradient.addColorStop(1, getStabilityColor(baseDeltaT));            // 1000m - reale
+  
+        ctx.fillStyle = gradient;
+        ctx.globalAlpha = 0.35; // Trasparenza per non coprire le linee della griglia
+        ctx.fillRect(x, 0, colWidth, h);
+      });
+  
+      ctx.globalAlpha = 1.0;
+    }, [hourlyData]);
 
   if (loading) {
     return (
