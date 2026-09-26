@@ -591,7 +591,7 @@ export default function ProfessionalWindgram({
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
               const paraY = getYFromAlt(h.thermalTop);
-              const badgeY = paraY + 38;
+              const badgeY = paraY + 52;
               const rateoColor = h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
               return (
                 <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
@@ -613,13 +613,20 @@ export default function ProfessionalWindgram({
                             {calc.levelWinds.map((windLevel) => {
                               const x = getXFromHourIdx(i);
                               const y = getYFromAlt(windLevel.alt);
+                              // Se siamo vicini alla termica o alla base nube, evitiamo di sovrapporre il testo del vento
+                              const currentHourData = hourlyData[i];
+                              const isNearThermal = Math.abs(y - getYFromAlt(currentHourData.thermalTop)) < 30;
+                              const isNearBadge = Math.abs(y - (getYFromAlt(currentHourData.thermalTop) + 52)) < 30;
+                              
                               return (
                                 <g key={`wb-${i}-${Math.round(windLevel.alt)}`}>
                                   {renderWindBarb(x, y, windLevel.speed, windLevel.dir)}
-                                  {/* Etichetta */}
-                                  <text x={x + 16} y={y - 4} fill="#0f172a" fontSize="10" fontWeight="700" textAnchor="start" fontFamily="monospace">
-                                    {Math.round(windLevel.speed)}km/{getDirLetter(windLevel.dir)}
-                                  </text>
+                                  {/* Etichetta spostata leggermente più a destra, nascosta se troppo vicina ai badge termici per chiarezza */}
+                                  {!(isNearThermal || isNearBadge) && (
+                                    <text x={x + 20} y={y - 4} fill="#0f172a" fontSize="10" fontWeight="700" textAnchor="start" fontFamily="monospace">
+                                      {Math.round(windLevel.speed)}km/{getDirLetter(windLevel.dir)}
+                                    </text>
+                                  )}
                                 </g>
                               );
                             })}
