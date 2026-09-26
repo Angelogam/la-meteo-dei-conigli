@@ -591,16 +591,16 @@ export default function ProfessionalWindgram({
               if (i === 0 || i === hourlyData.length - 1) return null;
               const x = getXFromHourIdx(i);
               const paraY = getYFromAlt(h.thermalTop);
-              const badgeY = paraY + 52;
+              const badgeY = paraY + 12; // Attaccato subito sotto il cerchio (r=10)
               const rateoColor = h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
               return (
                 <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
-                  <rect x="-35" y="-12" width="70" height="14" rx="3" fill="#ffffff" opacity="0.9" />
-                  <text x="0" y="-1" fill="#0f172a" fontSize="12" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+                  <rect x="-35" y="0" width="70" height="14" rx="3" fill="#ffffff" opacity="0.95" stroke="#7e22ce" strokeWidth="0.5" />
+                  <text x="0" y="10" fill="#0f172a" fontSize="11" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                     {h.cloudBase}m
                   </text>
-                  <rect x="-40" y="4" width="80" height="14" rx="3" fill="#ffffff" opacity="0.9" />
-                  <text x="0" y="15" fill={rateoColor} fontSize="12" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+                  <rect x="-40" y="16" width="80" height="14" rx="3" fill="#ffffff" opacity="0.95" stroke="#7e22ce" strokeWidth="0.5" />
+                  <text x="0" y="27" fill={rateoColor} fontSize="11" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                     ↑{h.thermalAvg.toFixed(1)} m/s
                   </text>
                 </g>
@@ -615,8 +615,8 @@ export default function ProfessionalWindgram({
                               const y = getYFromAlt(windLevel.alt);
                               // Se siamo vicini alla termica o alla base nube, evitiamo di sovrapporre il testo del vento
                               const currentHourData = hourlyData[i];
-                              const isNearThermal = Math.abs(y - getYFromAlt(currentHourData.thermalTop)) < 30;
-                              const isNearBadge = Math.abs(y - (getYFromAlt(currentHourData.thermalTop) + 52)) < 30;
+                              const isNearThermal = Math.abs(y - getYFromAlt(currentHourData.thermalTop)) < 15;
+                              const isNearBadge = Math.abs(y - (getYFromAlt(currentHourData.thermalTop) + 25)) < 25;
                               
                               return (
                                 <g key={`wb-${i}-${Math.round(windLevel.alt)}`}>
