@@ -350,7 +350,7 @@ export default function ProfessionalWindgram({
     return Math.round(hourlyData.reduce((acc, h) => acc + h.zeroThermal, 0) / hourlyData.length);
   }, [hourlyData]);
 
-  // Disegna sfondo sul canvas - Heatmap fluida per masse d'aria (senza bande orizzontali)
+  // Disegna sfondo sul canvas - Fasce orizzontali (dal basso verso l'alto) per masse d'aria
     useEffect(() => {
       const canvas = canvasRef.current;
       if (!canvas || hourlyData.length === 0) return;
@@ -360,32 +360,53 @@ export default function ProfessionalWindgram({
       const w = canvas.width;
       const h = canvas.height;
   
-      // Per ogni colonna oraria, disegniamo un gradiente verticale fluido
-      // basato sul deltaT di quell'ora (stabilità della massa d'aria)
-      hourlyData.forEach((hourData, colIdx) => {
-        const x = (colIdx / (HOURS.length - 1)) * w;
-        const colWidth = w / (HOURS.length - 1) + 1; // +1 per evitare gap
+      // Sfondo base chiaro
+      ctx.fillStyle = "#f8fafc";
+      ctx.fillRect(0, 0, w, h);
   
-        // Crea gradiente verticale per questa colonna
-        const gradient = ctx.createLinearGradient(0, 0, 0, h);
-        
-        // Campiona la stabilità a diverse quote per questa ora
-        // deltaT alto = instabile (colori caldi), deltaT basso = stabile (colori freddi)
-        const baseDeltaT = hourData.deltaT;
-        
-        // Aggiungiamo alcuni stop al gradiente per transizione fluida
-        // In alto (quota 4000m) l'aria è generalmente più stabile
-        // In basso (quota 1000m) riflette il deltaT reale
-        gradient.addColorStop(0, getStabilityColor(baseDeltaT * 0.3));      // 4000m - più stabile
-        gradient.addColorStop(0.3, getStabilityColor(baseDeltaT * 0.6));    // 3000m
-        gradient.addColorStop(0.6, getStabilityColor(baseDeltaT * 0.85));   // 2000m
-        gradient.addColorStop(1, getStabilityColor(baseDeltaT));            // 1000m - reale
+      const pixelPerMeter = plotH / (maxAlt - minAlt);
+      const quotaStep = 100; // 100m per fascia orizzontale
+      const numSteps = Math.ceil((maxAlt - minAlt) / quotaStep);
   
+      // Per ogni fascia orizzontale (dal basso verso l'alto)
+      for (let i = 0; i < numSteps; i++) {
+        const altLow = minAlt + i * quotaStep;
+        const altHigh = Math.min(altLow + quotaStep, maxAlt);
+        
+        // Coordinate Y della fascia (relative alla canvas)
+        const yTop = getYFromAlt(altHigh) - margin.top;
+        const yBottom = getYFromAlt(altLow) - margin.top;
+        
+        if (yBottom - yTop < 0.5) continue; // Salta se la fascia è troppo sottile
+  
+        // Crea gradiente orizzontale per questa fascia
+        const gradient = ctx.createLinearGradient(0, 0, plotW, 0);
+        
+        hourlyData.forEach((h, colIdx) => {
+          const xAbs = getXFromHourIdx(colIdx);
+          const xRel = xAbs - margin.left; // relativo alla canvas
+          const frac = xRel / plotW;
+          
+          // Calcola il deltaT a questa quota (usiamo altLow come rappresentante)
+          const altFraction = (altLow - minAlt) / (maxAlt - minAlt);
+          const adjustedDeltaT = h.deltaT * (1 - altFraction * 0.5);
+          const color = getStabilityColor(adjustedDeltaT);
+          
+          gradient.addColorStop(frac, color);
+        });
+        
+        // Aggiungi un stop alla fine per l'ultima ora
+        const lastHour = hourlyData[hourlyData.length - 1];
+        const lastAltFraction = (altLow - minAlt) / (maxAlt - minAlt);
+        const lastAdjustedDeltaT = lastHour.deltaT * (1 - lastAltFraction * 0.5);
+        const lastColor = getStabilityColor(lastAdjustedDeltaT);
+        gradient.addColorStop(1, lastColor);
+        
         ctx.fillStyle = gradient;
-        ctx.globalAlpha = 0.35; // Trasparenza per non coprire le linee della griglia
-        ctx.fillRect(x, 0, colWidth, h);
-      });
-  
+        ctx.globalAlpha = 0.3;
+        ctx.fillRect(0, yTop, plotW, yBottom - yTop);
+      }
+      
       ctx.globalAlpha = 1.0;
     }, [hourlyData]);
 
