@@ -263,40 +263,40 @@ export default function ProfessionalWindgram({
   
       const barbAngle = getBarbAngle(dirDeg);
   
-      // Lunghezza asta
-      const staffLen = Math.min(26, 8 + speedKmh * 0.5);
+      // Lunghezza asta aumentata
+      const staffLen = Math.min(35, 12 + speedKmh * 0.65);
       const sx = x + staffLen * Math.cos(barbAngle); // punta (dove va il vento)
       const sy = y + staffLen * Math.sin(barbAngle);
   
       // Colore in base alla velocità
       const barbColor = speedKmh > 35 ? "#7e22ce" : speedKmh > 20 ? "#0369a1" : "#1e3a8a";
-      const fs = 1.5; // stroke width
+      const fs = 1.8; // stroke width leggermente aumentato
   
       return (
         <g key={`wb-${Math.round(x)}-${Math.round(y)}`}>
           {/* Asta principale */}
           <line x1={x} y1={y} x2={sx} y2={sy} stroke={barbColor} strokeWidth={fs} strokeLinecap="round" />
           
-          {/* Freccia sulla punta */}
+          {/* Freccia sulla punta (leggermente più grande) */}
           <polygon
             points={`${sx.toFixed(1)},${sy.toFixed(1)}
-                    ${(sx - 6 * Math.cos(barbAngle) - 4 * Math.sin(barbAngle)).toFixed(1)},${(sy - 6 * Math.sin(barbAngle) + 4 * Math.cos(barbAngle)).toFixed(1)}
-                    ${(sx - 6 * Math.cos(barbAngle) + 4 * Math.sin(barbAngle)).toFixed(1)},${(sy - 6 * Math.sin(barbAngle) - 4 * Math.cos(barbAngle)).toFixed(1)}`}
+                    ${(sx - 8 * Math.cos(barbAngle) - 5 * Math.sin(barbAngle)).toFixed(1)},${(sy - 8 * Math.sin(barbAngle) + 5 * Math.cos(barbAngle)).toFixed(1)}
+                    ${(sx - 8 * Math.cos(barbAngle) + 5 * Math.sin(barbAngle)).toFixed(1)},${(sy - 8 * Math.sin(barbAngle) - 5 * Math.cos(barbAngle)).toFixed(1)}`}
             fill={barbColor}
           />
           
           {/* Piume sulla coda (lato opposto alla freccia) */}
           {/* Ogni 20 km/h → piuma grande */}
           {[...Array(Math.floor(speedKmh / 20))].map((_, i) => {
-            const d = 12 + i * 12; // distanza dalla punta
+            const d = 16 + i * 14; // distanze aumentate per asta più lunga
             const fx = sx - d * Math.cos(barbAngle);
             const fy = sy - d * Math.sin(barbAngle);
             const staffX = Math.cos(barbAngle);
             const staffY = Math.sin(barbAngle);
-            const perpX = -Math.sin(barbAngle); // perpendicolare verso sinistra (in direzione vento venendo)
+            const perpX = -Math.sin(barbAngle);
             const perpY = Math.cos(barbAngle);
             const lgKey = `lg-${i}`;
-            const lgPoints = `${(fx + 9 * perpX).toFixed(1)},${(fy + 9 * perpY).toFixed(1)} ${(fx - 3 * staffX).toFixed(1)},${(fy - 3 * staffY).toFixed(1)} ${(fx + 3 * staffX).toFixed(1)},${(fy + 3 * staffY).toFixed(1)}`;
+            const lgPoints = `${(fx + 11 * perpX).toFixed(1)},${(fy + 11 * perpY).toFixed(1)} ${(fx - 4 * staffX).toFixed(1)},${(fy - 4 * staffY).toFixed(1)} ${(fx + 4 * staffX).toFixed(1)},${(fy + 4 * staffY).toFixed(1)}`;
             return (
               <polygon
                 key={lgKey}
@@ -310,7 +310,7 @@ export default function ProfessionalWindgram({
           {speedKmh % 20 >= 10 && (
             <>
               {[...Array(1)].map((_, i) => {
-                const d = 12 + Math.floor(speedKmh / 20) * 12 + 6;
+                const d = 16 + Math.floor(speedKmh / 20) * 14 + 7;
                 const fx = sx - d * Math.cos(barbAngle);
                 const fy = sy - d * Math.sin(barbAngle);
                 const staffX = Math.cos(barbAngle);
@@ -318,7 +318,7 @@ export default function ProfessionalWindgram({
                 const perpX = -Math.sin(barbAngle);
                 const perpY = Math.cos(barbAngle);
                 const smKey = `sm-${i}`;
-                const smPoints = `${(fx + 6 * perpX).toFixed(1)},${(fy + 6 * perpY).toFixed(1)} ${(fx - 2 * staffX).toFixed(1)},${(fy - 2 * staffY).toFixed(1)} ${(fx + 2 * staffX).toFixed(1)},${(fy + 2 * staffY).toFixed(1)}`;
+                const smPoints = `${(fx + 8 * perpX).toFixed(1)},${(fy + 8 * perpY).toFixed(1)} ${(fx - 3 * staffX).toFixed(1)},${(fy - 3 * staffY).toFixed(1)} ${(fx + 3 * staffX).toFixed(1)},${(fy + 3 * staffY).toFixed(1)}`;
                 return (
                   <polygon
                     key={smKey}
@@ -621,9 +621,9 @@ export default function ProfessionalWindgram({
                               return (
                                 <g key={`wb-${i}-${Math.round(windLevel.alt)}`}>
                                   {renderWindBarb(x, y, windLevel.speed, windLevel.dir)}
-                                  {/* Etichetta spostata leggermente più a destra, nascosta se troppo vicina ai badge termici per chiarezza */}
+                                  {/* Etichetta aumentata e spostata per accomodare barbette più lunghe */}
                                   {!(isNearThermal || isNearBadge) && (
-                                    <text x={x + 20} y={y - 4} fill="#0f172a" fontSize="10" fontWeight="700" textAnchor="start" fontFamily="monospace">
+                                    <text x={x + 28} y={y - 4} fill="#0f172a" fontSize="13" fontWeight="800" textAnchor="start" fontFamily="monospace">
                                       {Math.round(windLevel.speed)}km/{getDirLetter(windLevel.dir)}
                                     </text>
                                   )}
