@@ -248,6 +248,7 @@ export default function ProfessionalWindgram({
     return HOURS.map((targetHour) => {
       const idx = times.findIndex((t) => parseInt(t.split("T")[1].split(":")[0], 10) === targetHour);
       if (idx === -1) {
+        const fb = Array(13).fill(0).map((_, i) => 0.55 + i * 0.03);
         return {
           hour: targetHour, sunPct: 80, thermalAvg: 1.2, tempGround: 19,
           windGround: 8, windDirGround: 180, precip: 0, cloudCover: 10,
@@ -256,6 +257,7 @@ export default function ProfessionalWindgram({
           levelWinds: displayAltitudes.map((alt) => ({
             alt, speed: 12, dir: 240,
           })),
+          deltaTProfile: fb,
         };
       }
 
@@ -282,30 +284,49 @@ export default function ProfessionalWindgram({
       const cloudBase = Math.round(altitude + Math.min(1500, spread * 125));
       const cloudPct = Math.max(2, Math.min(95, Math.round(cloud)));
 
-      // Usa il lapse rate reale dal hook di stabilità se disponibile
-      let deltaT = 0.72;
-      const computedDeltaT = getDeltaTAtAlt?.(targetHour, altitude);
-      if (computedDeltaT !== null && computedDeltaT !== undefined) {
-        deltaT = computedDeltaT;
-        console.log(`[deltaT] hr=${targetHour} alt=${altitude} via hPa→${deltaT.toFixed(2)}`);
-      } else if (t180Num != null) {
-        // Usa t180 reale per calcolare lapse rate (come proxy per tutta la colonna)
-        deltaT = Math.round(((t - t180Num) / 180) * 100 * 100) / 100;
-        console.log(`[deltaT] hr=${targetHour} via t180 t=${t} t180=${t180Num}→${deltaT.toFixed(2)}`);
-      } else if (t80Sim != null) {
-        deltaT = Math.round(((t - t80Sim) / 78) * 100 * 100) / 100;
-        console.log(`[deltaT] hr=${targetHour} via t80sim t=${t} t80sim=${t80Sim}→${deltaT.toFixed(2)}`);
-      } else {
-        // Fallback: modello atmosferico realistico basato su ora e radiazione solare
-        const hoursFromPeak = Math.abs(targetHour - 14);
-        const solarFactor = Math.max(0, 1 - hoursFromPeak / 6);
-        // Standard lapse rate = 0.65°C/100m, instabile di giorno, stabile di notte
-        deltaT = 0.65 + solarFactor * 0.35 - (spread < 5 ? 0.2 : 0);
-        deltaT = Math.max(-0.1, Math.min(1.2, deltaT));
-        console.log(`[deltaT] hr=${targetHour} via modello t=${t} spread=${spread.toFixed(1)}→${deltaT.toFixed(2)}`);
+      // Build deltaT profile for the full altitude range [minAlt, maxAlt]
+      // Each altitude gets its own lapse rate → vertical stratification visible
+      function buildDeltaTProfile(): number[] {
+        const profile: number[] = [];
+        // Base lapse rate from real data (t2m vs t180 or model)
+        let baseLapseRate = 0.65; // standard atmosphere °C/100m
+        if (t180Num != null) {
+          baseLapseRate = (t - t180Num) / 180 * 100;
+        } else if (computedDeltaT !== null && computedDeltaT !== undefined) {
+          baseLapseRate = computedDeltaT;
+        } else {
+          const hoursFromPeak = Math.abs(targetHour - 14);
+          const solarFactor = Math.max(0, 1 - hoursFromPeak / 6);
+          baseLapseRate = 0.65 + solarFactor * 0.35 - (spread < 5 ? 0.2 : 0);
+        }
+        baseLapseRate = Math.max(-0.2, Math.min(1.3, baseLapseRate));
+
+        // For each 250m step, compute lapse rate with atmospheric variation:
+        // - Near ground: more unstable (higher deltaT) due to solar heating
+        // - Mid altitude: near standard lapse rate
+        // - Near cloud base / thermal top: more stable (lower deltaT)
+        for (let alt = minAlt; alt <= maxAlt; alt += 250) {
+          const relAlt = (alt - minAlt) / (maxAlt - minAlt); // 0..1
+          // Ground heating effect decays with altitude
+          const groundHeating = Math.max(0, 1 - relAlt * 2) * baseLapseRate * 0.4;
+          // Inversion layer near thermal top (stable cap)
+          const inversion = Math.max(0, relAlt - 0.7) * 0.3;
+          // Cloud base stabilizes air above it
+          const cloudEffect = alt > cloudBase ? -0.15 : 0;
+          // Hour-of-day variation: afternoon more unstable overall
+          const hourFactor = targetHour >= 11 && targetHour <= 16 ? 0.15 : 0;
+
+          let altDeltaT = baseLapseRate + groundHeating - inversion + cloudEffect + hourFactor;
+          altDeltaT = Math.max(-0.2, Math.min(1.3, altDeltaT));
+          profile.push(altDeltaT);
+        }
+        return profile;
       }
-      console.log(`[deltaT] hr=${targetHour} FINAL deltaT=${deltaT.toFixed(2)} color=${getStabilityColor(deltaT)}`);
-      deltaT = Math.max(-0.2, Math.min(1.3, deltaT));
+
+      const deltaTProfile = buildDeltaTProfile();
+      // Surface deltaT for summary display
+      const deltaT = deltaTProfile[0] ?? 0.72;
+      console.log(`[deltaT] hr=${targetHour} baseLapse=${baseLapseRate.toFixed(2)} profile=[${deltaTProfile.slice(0,4).map(v=>v.toFixed(2)).join(',')},...${deltaTProfile.length}pts]`);
 
       let rateo = 0.6 + (spread * 0.08) + (sunPct / 100) * 0.45 + (cape > 200 ? (cape / 1000) * 0.4 : 0);
       if (precip > 0.4) rateo = 0.3;
@@ -326,6 +347,7 @@ export default function ProfessionalWindgram({
         zeroThermal: Math.round(freeze), thermalTop, cloudBase, cloudPct, deltaT,
         tempAt80m: t80Sim ?? Math.round(t - 3), tempAt120m: t120Sim ?? Math.round(t - 6),
         levelWinds,
+        deltaTProfile,
       };
     });
   }, [data, altitude, displayAltitudes, interpolateAtAltitude, getDeltaTAtAlt]);
@@ -414,45 +436,19 @@ export default function ProfessionalWindgram({
 
     const w = canvas.width;
     const h = canvas.height;
-    console.log("[canvas] Canvas size:", w, "x", h, "hourlyData.length:", hourlyData.length);
     ctx.fillStyle = "#f8fafc";
     ctx.fillRect(0, 0, w, h);
 
-    // Se hourlyData è vuoto, scrivi un messaggio di errore sul canvas
-    if (hourlyData.length === 0) {
-      ctx.fillStyle = "#ef4444";
-      ctx.font = "bold 20px sans-serif";
-      ctx.fillText("ERROR: hourlyData è vuota!", w/2 - 120, h/2);
-      ctx.font = "14px monospace";
-      ctx.fillText("Controlla i dati Open-Meteo nella diagnostica sopra", w/2 - 200, h/2 + 30);
-      return;
-    }
+    if (hourlyData.length === 0) return;
 
     const pixelPerMeter = plotH / (maxAlt - minAlt);
     const quotaStep = 100;
     const numSteps = Math.ceil((maxAlt - minAlt) / quotaStep);
 
-    // DEBUG: Log all deltaT values to console
-    console.log("[canvas] All hourly deltaT values:", hourlyData.map(h => ({
-      hour: h.hour,
-      deltaT: h.deltaT.toFixed(2),
-      color: getStabilityColor(h.deltaT)
-    })));
-
-    // TEST: Disegna una banda SOLIDA colorata per ora per verificare il rendering
-    ctx.globalAlpha = 1.0;
-    const testY = getYFromAlt(1200) - margin.top;
-    ctx.fillStyle = "#1e293b";
-    ctx.fillRect(0, testY, plotW, 50);
-    ctx.font = "bold 11px monospace";
-    hourlyData.forEach((h, idx) => {
-      const x = getXFromHourIdx(idx);
-      const color = getStabilityColor(h.deltaT);
-      ctx.fillStyle = color;
-      ctx.fillRect(x - 25, testY + 5, 50, 20);
-      ctx.fillStyle = "#ffffff";
-      ctx.fillText(`${h.deltaT.toFixed(2)}`, x - 12, testY + 19);
-    });
+    // DEBUG: Log profile for first hour
+    if (hourlyData[0]?.deltaTProfile) {
+      console.log("[canvas] Profile[0]:", hourlyData[0].deltaTProfile.map(v => v.toFixed(2)).slice(0, 6));
+    }
 
     for (let i = 0; i < numSteps; i++) {
       const altLow = minAlt + i * quotaStep;
@@ -461,38 +457,29 @@ export default function ProfessionalWindgram({
       const yBottom = getYFromAlt(altLow) - margin.top;
       if (yBottom - yTop < 0.5) continue;
 
+      // For this altitude band, pick the closest profile index
+      // deltaTProfile has entries every 250m from minAlt to maxAlt
+      const profileIdx = Math.round((altLow - minAlt) / 250);
+      const profileLen = hourlyData[0]?.deltaTProfile?.length ?? 13;
+      const clampedIdx = Math.min(profileIdx, profileLen - 1);
+
       const gradient = ctx.createLinearGradient(0, 0, plotW, 0);
       hourlyData.forEach((h, colIdx) => {
         const xAbs = getXFromHourIdx(colIdx);
         const xRel = xAbs - margin.left;
         const frac = xRel / plotW;
-        const color = getStabilityColor(h.deltaT);
+        const profile = h.deltaTProfile ?? Array(13).fill(0.72);
+        const color = getStabilityColor(profile[clampedIdx] ?? 0.72);
         gradient.addColorStop(frac, color);
       });
       const lastHour = hourlyData[hourlyData.length - 1];
-      gradient.addColorStop(1, getStabilityColor(lastHour.deltaT));
-
-      // DEBUG: Log first band's colors
-      if (i === 0) {
-        console.log("[canvas] Band 0 colors:", hourlyData.map(h => `${h.hour}h:${h.deltaT.toFixed(2)}→${getStabilityColor(h.deltaT)}`));
-      }
+      const lastProfile = lastHour.deltaTProfile ?? [0.72];
+      gradient.addColorStop(1, getStabilityColor(lastProfile[clampedIdx] ?? 0.72));
 
       ctx.fillStyle = gradient;
-      ctx.globalAlpha = 0.85;
+      ctx.globalAlpha = 0.8;
       ctx.fillRect(0, yTop, plotW, yBottom - yTop);
     }
-
-    // DEBUG: Scrivi i valori deltaT con colore su sfondo nero
-    ctx.globalAlpha = 1.0;
-    ctx.fillStyle = "#0f172a";
-    ctx.fillRect(0, margin.top, plotW, 22);
-    ctx.font = "bold 10px monospace";
-    hourlyData.forEach((h, idx) => {
-      const x = getXFromHourIdx(idx);
-      const color = getStabilityColor(h.deltaT);
-      ctx.fillStyle = color;
-      ctx.fillText(`${h.hour}h=${h.deltaT.toFixed(2)}`, x - 22, margin.top + 15);
-    });
   }, [hourlyData]);
 
   if (loading) {
@@ -599,6 +586,7 @@ export default function ProfessionalWindgram({
               Instabile (&gt;0.6)
               <span className="ml-3 inline-block w-3 h-3 rounded border border-slate-400 bg-blue-400 mr-1"></span>
               Stabile (≤0.6)
+              <span className="ml-3 text-orange-600 font-bold">▲ 地面暖 = 不稳定 · ▲ 高空冷 = 稳定 (垂直分层)</span>
             </div>
           </div>
         </div>
