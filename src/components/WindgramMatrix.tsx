@@ -170,11 +170,12 @@ export default function WindgramMatrix({
             const idx = times.findIndex((t: string) => parseInt(t.split("T")[1].split(":")[0], 10) === hr);
             if (idx !== -1) {
               const t2mRaw = stabilitaData.temperature_2m?.[idx];
-                            const t2m = (t2mRaw != null && !isNaN(Number(t2mRaw))) ? Number(t2mRaw) : h.temperature;
-                            const t80Raw = stabilitaData.temperature_80m?.[idx];
-                            const t80 = (t80Raw != null && !isNaN(Number(t80Raw))) ? Number(t80Raw) : null;
-                            const t120Raw = stabilitaData.temperature_120m?.[idx];
-                            const t120 = (t120Raw != null && !isNaN(Number(t120Raw))) ? Number(t120Raw) : null;
+              const t2m = (t2mRaw != null && !isNaN(Number(t2mRaw))) ? Number(t2mRaw) : h.temperature;
+              // Open-Meteo non ha temperature_80m/120m, usa temperature_180m
+              const t180Raw = stabilitaData.temperature_180m?.[idx];
+              const t180 = (t180Raw != null && !isNaN(Number(t180Raw))) ? Number(t180Raw) : null;
+              const t80 = t180 != null ? t2m + (t180 - t2m) * (80 / 180) : null;
+              const t120 = t180 != null ? t2m + (t180 - t2m) * (120 / 180) : null;
               if (t80 != null) {
                               deltaT = Math.round(((t2m - t80) / 78) * 100 * 100) / 100;
                             } else if (t120 != null) {

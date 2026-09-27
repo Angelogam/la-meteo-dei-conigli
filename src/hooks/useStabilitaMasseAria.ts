@@ -41,25 +41,24 @@ export function useStabilitaMasseAria(
     const dayStr = target.toISOString().split("T")[0];
 
     // Temperature a tutti i livelli di pressione per il calcolo del lapse rate
+    // NOTA: Open-Meteo non ha temperature_80m/120m separati, usa 2m, 180m e livelli hPa
     const tempFields = [
       "temperature_2m",
-      "temperature_80m",
-      "temperature_120m",
       "temperature_180m",
       "temperature_925hPa",
       "temperature_850hPa",
-      "temperature_800hPa",
-      "temperature_750hPa",
       "temperature_700hPa",
-      "temperature_650hPa",
       "temperature_600hPa",
-      "temperature_550hPa",
       "temperature_500hPa",
       "dew_point_2m",
       "cloud_cover",
       "precipitation",
       "cape",
       "lifted_index",
+      "wind_speed_10m",
+      "wind_direction_10m",
+      "wind_speed_180m",
+      "wind_direction_180m",
     ].join(",");
 
     fetchHourly(lat, lon, tempFields, dayStr, dayStr)
@@ -72,8 +71,7 @@ export function useStabilitaMasseAria(
               // Log first few values for key fields
               console.log('useStabilitaMasseAria samples:');
               console.log('  temperature_2m[0-2]:', j.hourly.temperature_2m?.slice(0,3));
-              console.log('  temperature_80m[0-2]:', j.hourly.temperature_80m?.slice(0,3));
-              console.log('  temperature_120m[0-2]:', j.hourly.temperature_120m?.slice(0,3));
+              console.log('  temperature_180m[0-2]:', j.hourly.temperature_180m?.slice(0,3));
               console.log('  temperature_925hPa[0-2]:', j.hourly.temperature_925hPa?.slice(0,3));
               console.log('  temperature_850hPa[0-2]:', j.hourly.temperature_850hPa?.slice(0,3));
             }
