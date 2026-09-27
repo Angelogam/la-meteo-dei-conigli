@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from "react";
 import type { HourData } from "@/types/meteo";
 import { Wind } from "lucide-react";
 import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
+import { useStabilitaMasseAria } from "@/hooks/useStabilitaMasseAria";
 
 const DISPLAY_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] as const;
 
@@ -75,12 +76,17 @@ export default function WindgramMatrix({
   fallbackData,
 }: WindgramMatrixProps) {
   const { data: windProfileMap, loading: profileLoading, error: profileError, interpolateAtAltitude } = useMultiHourWindProfile({
-    lat,
-    lon,
-    siteAlt: altitude,
-    selectedDay,
-    fallbackData,
-  });
+      lat,
+      lon,
+      siteAlt: altitude,
+      selectedDay,
+      fallbackData,
+    });
+  
+    // Hook per la stabilità delle masse d'aria con dati reali Open-Meteo
+    const { hourly: stabilitaData, loading: stabilitaLoading, error: stabilitaError } = useStabilitaMasseAria(
+      lat, lon, selectedDay
+    );
 
 
   const hourlyMap = useMemo(() => {
@@ -123,110 +129,161 @@ export default function WindgramMatrix({
   }, [baseDecolloFloor, maxAlt]);
 
   const hourThermalData = useMemo(() => {
-    const data: Record<number, { top: number; base: number; rateo: number; cloudBase: number; cloudCover: number } | null> = {};
-
-    let tempMax = 20;
-    let tempMin = 10;
-    DISPLAY_HOURS.forEach((hr) => {
-      const h = hourlyMap.get(hr);
-      if (h && h.temperature != null) {
-        tempMax = Math.max(tempMax, h.temperature);
-        tempMin = Math.min(tempMin, h.temperature);
-      }
-    });
-    const dailyAmplitude = Math.max(5, tempMax - tempMin);
-
-    DISPLAY_HOURS.forEach((hr) => {
-      const h = hourlyMap.get(hr);
-      if (h && h.temperature != null && h.dewPoint != null) {
-        const spread = Math.max(1, h.temperature - h.dewPoint);
-        const lcl = Math.round(altitude + spread * 125);
-
-        let diurnalFactor = 0;
-        if (hr >= 8 && hr <= 18) {
-          const hoursFromPeak = Math.abs(hr - 13);
-          if (hoursFromPeak <= 5) {
-            diurnalFactor = Math.max(0, Math.cos((hoursFromPeak / 5) * (Math.PI / 2)));
-          }
+      const data: Record<number, { top: number; base: number; rateo: number; cloudBase: number; cloudCover: number; deltaT: number } | null> = {};
+  
+      let tempMax = 20;
+      let tempMin = 10;
+      DISPLAY_HOURS.forEach((hr) => {
+        const h = hourlyMap.get(hr);
+        if (h && h.temperature != null) {
+          tempMax = Math.max(tempMax, h.temperature);
+          tempMin = Math.min(tempMin, h.temperature);
         }
-
-        const maxThermalDepth = 600 + dailyAmplitude * 60;
-        const thermalDepth = maxThermalDepth * diurnalFactor;
-
-        const base = Math.max(altitude + 100, lcl);
-        const top = Math.min(3500, base + thermalDepth);
-        const rateo = 0.1 + 3.4 * diurnalFactor;
-
-        data[hr] = {
-          top,
-          base,
-          rateo,
-          cloudBase: Math.min(lcl, 3500),
-          cloudCover: h.cloudCover ?? 30,
-        };
-      } else {
-        data[hr] = null;
-      }
-    });
-
-    return data;
-  }, [hourlyMap, altitude]);
+      });
+      const dailyAmplitude = Math.max(5, tempMax - tempMin);
+  
+      DISPLAY_HOURS.forEach((hr) => {
+        const h = hourlyMap.get(hr);
+        if (h && h.temperature != null && h.dewPoint != null) {
+          const spread = Math.max(1, h.temperature - h.dewPoint);
+          const lcl = Math.round(altitude + spread * 125);
+  
+          let diurnalFactor = 0;
+          if (hr >= 8 && hr <= 18) {
+            const hoursFromPeak = Math.abs(hr - 13);
+            if (hoursFromPeak <= 5) {
+              diurnalFactor = Math.max(0, Math.cos((hoursFromPeak / 5) * (Math.PI / 2)));
+            }
+          }
+  
+          const maxThermalDepth = 600 + dailyAmplitude * 60;
+          const thermalDepth = maxThermalDepth * diurnalFactor;
+  
+          const base = Math.max(altitude + 100, lcl);
+          const top = Math.min(3500, base + thermalDepth);
+          const rateo = 0.1 + 3.4 * diurnalFactor;
+  
+          // Calcolo deltaT reale dai dati di stabilità Open-Meteo
+          let deltaT = 0.72;
+          if (stabilitaData?.time) {
+            const times = stabilitaData.time;
+            const idx = times.findIndex((t: string) => parseInt(t.split("T")[1].split(":")[0], 10) === hr);
+            if (idx !== -1) {
+              const t2m = Number(stabilitaData.temperature_2m?.[idx]) ?? h.temperature;
+              const t80 = Number(stabilitaData.temperature_80m?.[idx]);
+              const t120 = Number(stabilitaData.temperature_120m?.[idx]);
+              if (t80 != null && !isNaN(t80)) {
+                deltaT = Math.round(((t2m - t80) / 78) * 100 * 100) / 100;
+              } else if (t120 != null && !isNaN(t120)) {
+                deltaT = Math.round(((t2m - t120) / 118) * 100 * 100) / 100;
+              } else {
+                deltaT = spread >= 10 ? 0.98 : spread >= 6 ? 0.82 : 0.65;
+              }
+            }
+          }
+          deltaT = Math.max(-0.2, Math.min(1.3, deltaT));
+  
+          data[hr] = {
+            top,
+            base,
+            rateo,
+            cloudBase: Math.min(lcl, 3500),
+            cloudCover: h.cloudCover ?? 30,
+            deltaT,
+          };
+        } else {
+          data[hr] = null;
+        }
+      });
+  
+      return data;
+    }, [hourlyMap, altitude, stabilitaData]);
 
   type CellBg =
-    | { kind: "none" }
-    | { kind: "thermal"; color: string }
-    | { kind: "stable"; color: string };
-
-  const getThermalBgColor = (alt: number, hr: number): CellBg => {
-    const thermal = hourThermalData[hr];
-    if (!thermal) return { kind: "none" };
-    // Curva sinusoidale dell'ora del giorno (modello Alpium/Rasoft):
-    //   hr=8h: 0 (termica appena nata)
-    //   hr=13h: 1 (picco termico)
-    //   hr=18h: 0 (termica morente)
-    const dayPhase = (hr - 13) / 5; // -1 alle 8h, 0 alle 13h, +1 alle 18h
-    if (dayPhase < -1 || dayPhase > 1) return { kind: "none" };
-    const diurnal = Math.cos((dayPhase * Math.PI) / 2); // 0 ai bordi, 1 al picco
-    if (diurnal < 0.05) return { kind: "none" };
-
-    // Top della termica (in cima finisce il giallo, inizia il blu stabile)
-    const cloudCeil = Math.max(altitude + 250, thermal.cloudBase);
-    const thermalTop = altitude + (cloudCeil - altitude) * diurnal;
-    if (alt < altitude) return { kind: "none" };
-
-    // --- ZONA BLU "aria stabile (sopra cumuli)" ---
-    // Si estende dal top della termica verso l'alto.
-    // Spessore: ~500m ai bordi, ~1000m al picco (come nel modello Alpium)
-    const stableBandThickness = 500 + diurnal * 500;
-    const stableTop = Math.min(thermalTop + stableBandThickness, 4000);
-
-    if (alt > thermalTop && alt <= stableTop) {
-      const stableRel = (alt - thermalTop) / stableBandThickness;
-      // Colori steel-blue come il modello Alpium/Rucas:
-      //   Basso (vicino cumuli) → più scuro
-      //   Alto → più chiaro/sfumato
-      if (stableRel < 0.25) return { kind: "stable", color: "#6a9cba" }; // steel blue scuro
-      if (stableRel < 0.5) return { kind: "stable", color: "#82b1cc" };  // steel blue medio
-      if (stableRel < 0.75) return { kind: "stable", color: "#9dc4d9" }; // steel blue chiaro
-      return { kind: "stable", color: "#b5d5e4" };                       // steel blue leggero
+      | { kind: "none" }
+      | { kind: "thermal"; color: string }
+      | { kind: "stable"; color: string };
+  
+    // Colori stabilità (stesso algoritmo di ProfessionalWindgram)
+    const STABILITY_COLORS = [
+      { val: -0.20, color: "#8b5cf6" },
+      { val: 0.00, color: "#3b82f6" },
+      { val: 0.16, color: "#06b6d4" },
+      { val: 0.32, color: "#10b981" },
+      { val: 0.48, color: "#84cc16" },
+      { val: 0.65, color: "#eab308" },
+      { val: 0.82, color: "#f97316" },
+      { val: 0.98, color: "#ef4444" },
+      { val: 1.20, color: "#dc2626" },
+    ];
+  
+    function getStabilityColor(deltaT: number): string {
+      if (deltaT <= -0.1) return STABILITY_COLORS[0].color;
+      if (deltaT <= 0.08) return STABILITY_COLORS[1].color;
+      if (deltaT <= 0.24) return STABILITY_COLORS[2].color;
+      if (deltaT <= 0.40) return STABILITY_COLORS[3].color;
+      if (deltaT <= 0.56) return STABILITY_COLORS[4].color;
+      if (deltaT <= 0.73) return STABILITY_COLORS[5].color;
+      if (deltaT <= 0.90) return STABILITY_COLORS[6].color;
+      if (deltaT <= 1.10) return STABILITY_COLORS[7].color;
+      return STABILITY_COLORS[8].color;
     }
-    if (alt > stableTop) return { kind: "none" };
-
-    // --- ZONA GIALLA/ARANCIO "termica attiva (fino a base cumuli)" ---
-    if (alt >= altitude && alt <= thermalTop) {
-      const span = Math.max(200, thermalTop - altitude);
-      const relHeight = (alt - altitude) / span;
-      // Forza colore: più intenso vicino al suolo, sfuma verso l'alto
-      const strength = (1 - relHeight * 0.7) * diurnal;
-      if (strength > 0.78) return { kind: "thermal", color: "#f97316" }; // arancio intenso
-      if (strength > 0.62) return { kind: "thermal", color: "#fb923c" }; // arancio
-      if (strength > 0.46) return { kind: "thermal", color: "#fbbf24" }; // ambra
-      if (strength > 0.30) return { kind: "thermal", color: "#fde047" }; // giallo vivo
-      if (strength > 0.15) return { kind: "thermal", color: "#fef08a" }; // giallo chiaro
+  
+    const getThermalBgColor = (alt: number, hr: number): CellBg => {
+      const thermal = hourThermalData[hr];
+      if (!thermal) return { kind: "none" };
+  
+      // Usa il deltaT reale calcolato dal hook di stabilità
+      const deltaT = thermal.deltaT ?? 0.72;
+      const stabilityColor = getStabilityColor(deltaT);
+  
+      // Curva sinusoidale dell'ora del giorno (modello Alpium/Rasoft):
+      //   hr=8h: 0 (termica appena nata)
+      //   hr=13h: 1 (picco termico)
+      //   hr=18h: 0 (termica morente)
+      const dayPhase = (hr - 13) / 5; // -1 alle 8h, 0 alle 13h, +1 alle 18h
+      if (dayPhase < -1 || dayPhase > 1) return { kind: "none" };
+      const diurnal = Math.cos((dayPhase * Math.PI) / 2); // 0 ai bordi, 1 al picco
+      if (diurnal < 0.05) return { kind: "none" };
+  
+      // Top della termica (in cima finisce il giallo, inizia il blu stabile)
+      const cloudCeil = Math.max(altitude + 250, thermal.cloudBase);
+      const thermalTop = altitude + (cloudCeil - altitude) * diurnal;
+      if (alt < altitude) return { kind: "none" };
+  
+      // --- ZONA BLU "aria stabile (sopra cumuli)" ---
+      // Si estende dal top della termica verso l'alto.
+      // Spessore: ~500m ai bordi, ~1000m al picco (come nel modello Alpium)
+      const stableBandThickness = 500 + diurnal * 500;
+      const stableTop = Math.min(thermalTop + stableBandThickness, 4000);
+  
+      if (alt > thermalTop && alt <= stableTop) {
+        const stableRel = (alt - thermalTop) / stableBandThickness;
+        // Colori steel-blue come il modello Alpium/Rucas:
+        //   Basso (vicino cumuli) → più scuro
+        //   Alto → più chiaro/sfumato
+        if (stableRel < 0.25) return { kind: "stable", color: "#6a9cba" }; // steel blue scuro
+        if (stableRel < 0.5) return { kind: "stable", color: "#82b1cc" };  // steel blue medio
+        if (stableRel < 0.75) return { kind: "stable", color: "#9dc4d9" }; // steel blue chiaro
+        return { kind: "stable", color: "#b5d5e4" };                       // steel blue leggero
+      }
+      if (alt > stableTop) return { kind: "none" };
+  
+      // --- ZONA GIALLA/ARANCIO "termica attiva (fino a base cumuli)" ---
+      if (alt >= altitude && alt <= thermalTop) {
+        const span = Math.max(200, thermalTop - altitude);
+        const relHeight = (alt - altitude) / span;
+        // Forza colore: più intenso vicino al suolo, sfuma verso l'alto
+        const strength = (1 - relHeight * 0.7) * diurnal;
+        if (strength > 0.78) return { kind: "thermal", color: "#f97316" }; // arancio intenso
+        if (strength > 0.62) return { kind: "thermal", color: "#fb923c" }; // arancio
+        if (strength > 0.46) return { kind: "thermal", color: "#fbbf24" }; // ambra
+        if (strength > 0.30) return { kind: "thermal", color: "#fde047" }; // giallo vivo
+        if (strength > 0.15) return { kind: "thermal", color: "#fef08a" }; // giallo chiaro
+        return { kind: "none" };
+      }
       return { kind: "none" };
-    }
-    return { kind: "none" };
-  };
+    };
 
   const windDataByHourAlt = useMemo(() => {
     const result: Record<number, Record<number, { speed: number; dir: number }>> = {};
