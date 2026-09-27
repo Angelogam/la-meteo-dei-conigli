@@ -225,34 +225,39 @@ export default function ProfessionalWindgram({
       //   • Free atmosphere (>2500m): standard or inversion (γ<0.4 → blue/purple)
 
       // 1. Derive base surface lapse rate from real data
-      let gamma0 = 0.72; // default: standard atmosphere °C/100m at surface
+      // Typical daytime surface lapse: 0.8–1.4 °C/100m (super-adiabatic boundary layer)
+      let gamma0 = 0.72; // default: near-standard atmosphere
       if (t180Num != null && t180Num !== t && t180Num >= -60) {
-        gamma0 = (t - t180Num) / 1.8; // °C per 100m between 2m and 180m
+        gamma0 = Math.max(0.1, (t - t180Num) / 1.8); // real measured lapse
       }
-      // Boost gamma0 for warm sunny afternoons (stronger surface heating)
+      // Strong solar boost on sunny afternoons → super-adiabatic layer near ground
       const hoursFromPeak = Math.abs(targetHour - 14);
-      const solarBoost = hoursFromPeak < 4 ? (1 - hoursFromPeak / 4) * 0.25 : 0;
-      const capeBoost = cape > 100 ? Math.min(0.2, cape / 3000) : 0;
-      gamma0 = Math.max(0.1, Math.min(1.5, gamma0 + solarBoost + capeBoost));
+      const sunIntensity = (sunPct / 100) * Math.max(0, 1 - hoursFromPeak / 5);
+      const solarBoost = sunIntensity * 0.55; // up to +0.55 °C/100m at peak sun
+      const capeBoost = cape > 50 ? Math.min(0.35, cape / 2500) : 0;
+      const spreadBoost = spread > 6 ? (spread - 6) * 0.03 : 0; // dry air = stronger heating
+      gamma0 = Math.max(0.05, Math.min(1.6, gamma0 + solarBoost + capeBoost + spreadBoost));
 
       // 2. Lapse-rate as function of altitude (smooth transition)
-      //    γ(h) = γ_free + (γ0 - γ_free) × exp(-h/H)  where H ≈ 900m
-      const gammaFree = 0.55; // standard free-atmosphere lapse
-      const H = 900; // e-folding scale height of boundary layer
+      //    γ(h) = γ_free + (γ0 - γ_free) × exp(-h/H)
+      //    H controls how deep the surface heating extends (larger = thicker red zone)
+      const gammaFree = 0.52; // standard free-atmosphere lapse
+      const H = 1200; // e-folding scale: surface heating extends ~1km+ for red conditions
       function gammaAt(alt: number): number {
-        const rel = (alt - minAlt) / 100; // in 100m units
-        const expDecay = Math.exp(-rel * 100 / H);
+        const h = alt - minAlt; // metres above display bottom
+        const expDecay = Math.exp(-h / H);
         let gamma = gammaFree + (gamma0 - gammaFree) * expDecay;
-        // Inversion above thermal top (stable lid)
+        // Inversion above thermal top (stable lid) — strong and wide
         if (alt > thermalTop) {
-          const invStrength = Math.min(0.6, (alt - thermalTop) / 600);
+          const invDist = alt - thermalTop;
+          const invStrength = Math.min(0.7, invDist / 500) * 0.6;
           gamma -= invStrength;
         }
         // Cloud base slightly stabilises
-        if (alt > cloudBase) gamma -= 0.08;
-        // Rain suppresses convection
-        if (precip > 0.3) gamma -= 0.1;
-        return Math.max(-0.35, Math.min(1.4, gamma));
+        if (alt > cloudBase) gamma -= 0.1;
+        // Rain suppresses convection throughout
+        if (precip > 0.3) gamma -= 0.12;
+        return Math.max(-0.35, Math.min(1.6, gamma));
       }
 
       // 3. Build temperature profile by integrating lapse rate (trapezoidal rule)
