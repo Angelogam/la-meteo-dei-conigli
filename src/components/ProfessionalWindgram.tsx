@@ -408,7 +408,7 @@ export default function ProfessionalWindgram({
   // Disegna sfondo sul canvas - Fasce orizzontali per masse d'aria con deltaT reale
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || hourlyData.length === 0) return;
+    if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -417,6 +417,16 @@ export default function ProfessionalWindgram({
     console.log("[canvas] Canvas size:", w, "x", h, "hourlyData.length:", hourlyData.length);
     ctx.fillStyle = "#f8fafc";
     ctx.fillRect(0, 0, w, h);
+
+    // Se hourlyData è vuoto, scrivi un messaggio di errore sul canvas
+    if (hourlyData.length === 0) {
+      ctx.fillStyle = "#ef4444";
+      ctx.font = "bold 20px sans-serif";
+      ctx.fillText("ERROR: hourlyData è vuota!", w/2 - 120, h/2);
+      ctx.font = "14px monospace";
+      ctx.fillText("Controlla i dati Open-Meteo nella diagnostica sopra", w/2 - 200, h/2 + 30);
+      return;
+    }
 
     const pixelPerMeter = plotH / (maxAlt - minAlt);
     const quotaStep = 100;
@@ -428,6 +438,23 @@ export default function ProfessionalWindgram({
       deltaT: h.deltaT.toFixed(2),
       color: getStabilityColor(h.deltaT)
     })));
+
+    // TEST: Disegna bande DI AGGIORNAMENTO per verificare il canale grafico
+    ctx.globalAlpha = 1.0;
+    // Banda GIALLA forzata in basso (per vedere se il canvas funziona)
+    const testY1 = getYFromAlt(1500) - margin.top;
+    ctx.fillStyle = "#eab308";
+    ctx.fillRect(0, testY1, plotW, 40);
+    ctx.fillStyle = "#000000";
+    ctx.font = "bold 14px monospace";
+    ctx.fillText(`CANVAS RENDERING OK - ${hourlyData.length} ore`, 10, testY1 + 26);
+    // Banda ROSSA forzata in alto
+    const testY2 = getYFromAlt(4000) - margin.top;
+    ctx.fillStyle = "#ef4444";
+    ctx.fillRect(0, testY2, plotW, 20);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 11px monospace";
+    ctx.fillText("ROSSO=TEST", 10, testY2 + 14);
 
     for (let i = 0; i < numSteps; i++) {
       const altLow = minAlt + i * quotaStep;
@@ -453,10 +480,19 @@ export default function ProfessionalWindgram({
       }
 
       ctx.fillStyle = gradient;
-      ctx.globalAlpha = 0.8;
+      ctx.globalAlpha = 0.85;
       ctx.fillRect(0, yTop, plotW, yBottom - yTop);
     }
+
+    // TEST: Scrivi i valori deltaT direttamente sul canvas per ogni ora
     ctx.globalAlpha = 1.0;
+    ctx.font = "bold 10px monospace";
+    hourlyData.forEach((h, idx) => {
+      const x = getXFromHourIdx(idx);
+      const color = getStabilityColor(h.deltaT);
+      ctx.fillStyle = color;
+      ctx.fillText(`${h.deltaT.toFixed(2)}`, x - 18, margin.top + 12);
+    });
   }, [hourlyData]);
 
   if (loading) {
@@ -491,25 +527,68 @@ export default function ProfessionalWindgram({
           </p>
         </div>
 
-        {/* DEBUG: Stato dati stabilità */}
-        <div className="mb-2 p-2 bg-amber-50 border border-amber-300 rounded text-[9px] font-mono">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-black text-amber-800">DEBUG:</span>
-            <span className={stabilitaLoading ? "text-amber-600" : "text-green-600"}>
-              {stabilitaLoading ? "⏳ caricamento..." : "✓ dati pronti"}
-            </span>
-            {stabilitaError && <span className="text-red-600">✗ {stabilitaError}</span>}
-            {stabilitaData?.time && (
-              <span className="text-blue-600">
-                ✓ {stabilitaData.time.length} ore · campi: {Object.keys(stabilitaData).filter(k => k !== 'time').length}
+        {/* DEBUG: Stato dati stabilità - GRANDE */}
+        <div className="mb-3 p-4 bg-red-100 border-4 border-red-500 rounded-xl text-sm font-mono">
+          <div className="font-black text-red-800 mb-2 text-lg">🔍 DIAGNOSI MASSE D'ARIA</div>
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <span className="font-bold text-slate-600">Caricamento:</span>
+              <span className={stabilitaLoading ? " text-yellow-600 font-black" : " text-green-700 font-black"}>
+                {stabilitaLoading ? "⏳ IN CARICAMENTO" : "✓ PRONTO"}
               </span>
-            )}
-            {stabilitaData?.temperature_80m && stabilitaData.temperature_80m[0] != null && (
-              <span className="text-green-700 font-bold">✓ t80 disponibile</span>
-            )}
-            {!stabilitaData?.temperature_80m || stabilitaData.temperature_80m[0] == null ? (
-              <span className="text-orange-600">✗ t80 NON disponibile</span>
-            ) : null}
+            </div>
+            <div>
+              <span className="font-bold text-slate-600">Error:</span>
+              <span className={stabilitaError ? " text-red-600 font-black" : " text-green-600"}>
+                {stabilitaError || "✓ Nessuno"}
+              </span>
+            </div>
+            <div>
+              <span className="font-bold text-slate-600">Ore dati:</span>
+              <span className="text-blue-700 font-black">{stabilitaData?.time?.length || 0}</span>
+            </div>
+            <div>
+              <span className="font-bold text-slate-600">Campi temp:</span>
+              <span className="text-blue-700 font-black">{stabilitaData ? Object.keys(stabilitaData).filter(k => k.startsWith('temperature')).length : 0}</span>
+            </div>
+            <div>
+              <span className="font-bold text-slate-600">t80[0]:</span>
+              <span className={stabilitaData?.temperature_80m?.[0] != null ? " text-green-700 font-black" : " text-red-700 font-black"}>
+                {stabilitaData?.temperature_80m?.[0] ?? "NULL"}
+              </span>
+            </div>
+            <div>
+              <span className="font-bold text-slate-600">t120[0]:</span>
+              <span className={stabilitaData?.temperature_120m?.[0] != null ? " text-green-700 font-black" : " text-red-700 font-black"}>
+                {stabilitaData?.temperature_120m?.[0] ?? "NULL"}
+              </span>
+            </div>
+            <div>
+              <span className="font-bold text-slate-600">t2m[0]:</span>
+              <span className="text-blue-700 font-black">{stabilitaData?.temperature_2m?.[0] ?? "NULL"}</span>
+            </div>
+            <div>
+              <span className="font-bold text-slate-600">DeltaT medio:</span>
+              <span className="font-black" style={{ color: hourlyData.length > 0 ? getStabilityColor(hourlyData.reduce((a,b) => a+b.deltaT,0)/Math.max(1,hourlyData.length)) : '#000' }}>
+                {(hourlyData.length > 0 ? hourlyData.reduce((a,b) => a+b.deltaT,0)/hourlyData.length : 0).toFixed(2)}
+              </span>
+            </div>
+          </div>
+          {/* Barra colori reali */}
+          <div className="mt-3">
+            <div className="font-bold text-slate-700 mb-1">Colori reali per ora:</div>
+            <div className="flex gap-1">
+              {hourlyData.map((h, i) => (
+                <div key={i} className="flex flex-col items-center">
+                  <div
+                    className="w-8 h-8 rounded border-2 border-slate-800 shadow-lg"
+                    style={{ backgroundColor: getStabilityColor(h.deltaT) }}
+                  />
+                  <span className="text-[8px] font-black text-slate-800 mt-0.5">{h.hour}h</span>
+                  <span className="text-[7px] font-mono text-slate-600">{h.deltaT.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -714,20 +793,22 @@ export default function ProfessionalWindgram({
             <div className="text-center text-[9px] text-slate-500 font-mono mt-1.5">
               Fonte: Open-Meteo GFS/AROME · Temperature reali a livelli hPa · Lapse rate calcolato algoritmicamente
             </div>
-            {/* DEBUG: Tabella valori deltaT */}
-            <div className="mt-2 p-2 bg-slate-100 rounded border-2 border-orange-400">
-              <div className="text-[9px] font-black text-orange-700 mb-1">🔍 DEBUG: ΔT per ora (colore sfondo = colore banda)</div>
-              <div className="flex gap-1 flex-wrap">
-                {hourlyData.map((h, i) => (
-                  <div key={i} className="flex flex-col items-center px-1">
-                    <div
-                      className="w-7 h-7 rounded border-2 border-slate-600 shadow-sm"
-                      style={{ backgroundColor: getStabilityColor(h.deltaT) }}
-                    />
-                    <span className="text-[8px] font-black text-slate-800">{h.hour}h</span>
-                    <span className="text-[7px] font-mono font-bold text-orange-600">{h.deltaT.toFixed(2)}</span>
-                  </div>
-                ))}
+            {/* Seconda barra debug: valori deltaT dettagliati */}
+            <div className="mt-2 p-2 bg-amber-50 rounded border-2 border-amber-400">
+              <div className="text-[9px] font-black text-amber-800 mb-1">Colori effettivi per ogni ora (ΔT → colore):</div>
+              <div className="flex gap-1 flex-wrap items-center">
+                {hourlyData.map((h, i) => {
+                  const color = getStabilityColor(h.deltaT);
+                  const label = h.deltaT <= 0 ? "STABILE" : h.deltaT <= 0.4 ? "NEUTRO" : h.deltaT <= 0.7 ? "MODERATO" : "INSTABILE";
+                  return (
+                    <div key={i} className="flex items-center gap-0.5 px-1 py-0.5 rounded border border-slate-300" style={{ backgroundColor: color + "30" }}>
+                      <div className="w-4 h-4 rounded border border-slate-500" style={{ backgroundColor: color }} />
+                      <span className="text-[8px] font-bold text-slate-800">{h.hour}h</span>
+                      <span className="text-[7px] font-mono text-slate-600">{h.deltaT.toFixed(2)}</span>
+                      <span className="text-[6px] text-slate-500">{label}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
