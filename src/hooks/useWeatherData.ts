@@ -169,31 +169,46 @@ export function useWeatherData() {
 
   // Dati giornalieri arricchiti
   const enrichedDaily = useMemo(() => {
-    return dailyData.map((d, i) => ({
-      ...d,
-      weatherCode: d.weatherCode ?? 0,
-      tempMax: d.tempMax ?? d.temperatureMax ?? 20,
-      tempMin: d.tempMin ?? d.temperatureMin ?? 10,
-      precipitationSum: d.precipitationSum ?? 0,
-      precipitationProbabilityMax: d.precipitationProbabilityMax ?? 0,
-      windSpeedMax: d.windSpeedMax ?? 10,
-      windGustsMax: d.windGustsMax ?? 15,
-      windDirDominant: d.windDirDominant ?? 180,
-      uvIndexMax: d.uvIndexMax ?? 5,
-      sunrise: d.sunrise ?? "06:30",
-      sunset: d.sunset ?? "19:30",
-      temperatureMax: d.temperatureMax ?? d.tempMax ?? 20,
-      temperatureMin: d.temperatureMin ?? d.tempMin ?? 10,
-      temperatureMean: d.temperatureMean ?? ((d.tempMax ?? 20) + (d.tempMin ?? 10)) / 2,
-      apparentTempMax: d.apparentTempMax ?? (d.tempMax ?? 20),
-      apparentTempMin: d.apparentTempMin ?? (d.tempMin ?? 10),
-      daylightDuration: d.daylightDuration ?? 13,
-      sunshineDuration: d.sunshineDuration ?? 8,
-      rainSum: d.rainSum ?? d.precipitationSum ?? 0,
-      snowfallSum: d.snowfallSum ?? 0,
-      precipitationHours: d.precipitationHours ?? 0,
-      shortwaveRadiationSum: d.shortwaveRadiationSum ?? 5000,
-    }));
+    return dailyData.map((d, i) => {
+      const base = {
+        ...d,
+        weatherCode: d.weatherCode ?? 0,
+        tempMax: d.tempMax ?? d.temperatureMax ?? 20,
+        tempMin: d.tempMin ?? d.temperatureMin ?? 10,
+        precipitationSum: d.precipitationSum ?? 0,
+        precipitationProbabilityMax: d.precipitationProbabilityMax ?? 0,
+        windSpeedMax: d.windSpeedMax ?? 10,
+        windGustsMax: d.windGustsMax ?? 15,
+        windDirDominant: d.windDirDominant ?? 180,
+        uvIndexMax: d.uvIndexMax ?? 5,
+        sunrise: d.sunrise ?? "06:30",
+        sunset: d.sunset ?? "19:30",
+        temperatureMax: d.temperatureMax ?? d.tempMax ?? 20,
+        temperatureMin: d.temperatureMin ?? d.tempMin ?? 10,
+        temperatureMean: d.temperatureMean ?? ((d.tempMax ?? 20) + (d.tempMin ?? 10)) / 2,
+        apparentTempMax: d.apparentTempMax ?? (d.tempMax ?? 20),
+        apparentTempMin: d.apparentTempMin ?? (d.tempMin ?? 10),
+        daylightDuration: d.daylightDuration ?? 13,
+        sunshineDuration: d.sunshineDuration ?? 8,
+        rainSum: d.rainSum ?? d.precipitationSum ?? 0,
+        snowfallSum: d.snowfallSum ?? 0,
+        precipitationHours: d.precipitationHours ?? 0,
+        shortwaveRadiationSum: d.shortwaveRadiationSum ?? 5000,
+      };
+      // Freezing level: use API data or estimate from mean temperature
+      const freezingLevel = d.freezingLevel ?? Math.round(5500 - (base.temperatureMean ?? 10) * 155);
+      // Trend: compare with next day's predicted temp
+      let trend: "↑" | "↓" | "→" | null = null;
+      if (i < dailyData.length - 1) {
+        const nextTempMax = dailyData[i + 1]?.temperatureMax ?? dailyData[i + 1]?.tempMax ?? 0;
+        const thisTempMax = base.temperatureMax;
+        const diff = nextTempMax - thisTempMax;
+        if (diff > 2) trend = "↑";
+        else if (diff < -2) trend = "↓";
+        else trend = "→";
+      }
+      return { ...base, freezingLevel: Math.max(500, freezingLevel), trend };
+    });
   }, [dailyData]);
 
   const dateLabels = useMemo(() => {

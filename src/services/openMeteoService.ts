@@ -213,6 +213,8 @@ export interface MeteoDaily {
   precipitationHours: number;
   shortwaveRadiationSum: number;
   weatherDescription?: string;
+  freezingLevel?: number | null; // quota 0°C in metri s.l.m.
+  trend?: "↑" | "↓" | "→" | null; // tendenza 24h
 }
 
 export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Promise<{
@@ -357,6 +359,8 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
         snowfallSum: safeNum(json.daily.snowfall_sum?.[i], 0),
         precipitationHours: safeNum(json.daily.precipitation_hours?.[i], 0),
         shortwaveRadiationSum: safeNum(json.daily.shortwave_radiation_sum?.[i], 0),
+        freezingLevel: safeNumOrNull(json.daily.freezing_level_height_max?.[i]) ??
+                       (json.hourly ? Math.round(5500 - safeNum(json.daily.temperature_2m_mean?.[i], 10) * 155) : null),
       });
     }
 
