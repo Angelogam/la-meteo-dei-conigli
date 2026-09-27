@@ -98,11 +98,7 @@ export default function ProfessionalWindgram({
     latitude, longitude, selectedDay
   );
 
-  // DEBUG: mostra lo stato dei dati di stabilità
-  console.log('[DEBUG] stabilitaLoading:', stabilitaLoading, 'stabilitaError:', stabilitaError, 'hasData:', !!stabilitaData?.time);
-  if (stabilitaData?.time) {
-    console.log('[DEBUG] stabilitaData fields:', Object.keys(stabilitaData).filter(k => k !== 'time').slice(0, 5));
-  }
+  // Data status check
 
   const displayAltitudes = useMemo(() => computeDisplayAltitudes(altitude), [altitude]);
 
@@ -205,14 +201,6 @@ export default function ProfessionalWindgram({
             }
           });
       
-          // DEBUG: log tempByHour for first hour
-          if (tempByHour.size > 0) {
-            const firstHr = tempByHour.keys().next().value;
-            console.log('getDeltaTAtAlt tempByHour sample:', firstHr, tempByHour.get(firstHr));
-          } else {
-            console.log('getDeltaTAtAlt: tempByHour is EMPTY - no hPa data available');
-          }
-      
           // Se non abbiamo dati hPa per nessuna ora, restituisci null per attivare il fallback
           if (tempByHour.size === 0) return null;
   
@@ -277,63 +265,76 @@ export default function ProfessionalWindgram({
       // Simula t80/t120 interpolando da t2m e t180
       const t80Sim = t180Num != null ? t + (t180Num - t) * (80 / 180) : null;
       const t120Sim = t180Num != null ? t + (t180Num - t) * (120 / 180) : null;
-      console.log(`[DATA] hr=${targetHour} idx=${idx} t=${t} t180=${t180} t80sim=${t80Sim} t120sim=${t120Sim}`);
 
       const sunPct = Math.min(100, Math.max(10, Math.round(((rad / 900) * (1 - (cloud / 100) * 0.65)) * 100)));
       const spread = Math.max(1, t - dew);
       const cloudBase = Math.round(altitude + Math.min(1500, spread * 125));
       const cloudPct = Math.max(2, Math.min(95, Math.round(cloud)));
 
-      // Build deltaT profile for the full altitude range [minAlt, maxAlt]
-      // Each altitude gets its own lapse rate → vertical stratification visible
-      function buildDeltaTProfile(): number[] {
-        const profile: number[] = [];
-        // Base lapse rate from real data (t2m vs t180 or model)
-        let baseLapseRate = 0.65; // standard atmosphere °C/100m
-        if (t180Num != null) {
-          baseLapseRate = (t - t180Num) / 180 * 100;
-        } else if (computedDeltaT !== null && computedDeltaT !== undefined) {
-          baseLapseRate = computedDeltaT;
-        } else {
-          const hoursFromPeak = Math.abs(targetHour - 14);
-          const solarFactor = Math.max(0, 1 - hoursFromPeak / 6);
-          baseLapseRate = 0.65 + solarFactor * 0.35 - (spread < 5 ? 0.2 : 0);
-        }
-        baseLapseRate = Math.max(-0.2, Math.min(1.3, baseLapseRate));
-
-        // For each 250m step, compute lapse rate with atmospheric variation:
-        // - Near ground: more unstable (higher deltaT) due to solar heating
-        // - Mid altitude: near standard lapse rate
-        // - Near cloud base / thermal top: more stable (lower deltaT)
-        for (let alt = minAlt; alt <= maxAlt; alt += 250) {
-          const relAlt = (alt - minAlt) / (maxAlt - minAlt); // 0..1
-          // Ground heating effect decays with altitude
-          const groundHeating = Math.max(0, 1 - relAlt * 2) * baseLapseRate * 0.4;
-          // Inversion layer near thermal top (stable cap)
-          const inversion = Math.max(0, relAlt - 0.7) * 0.3;
-          // Cloud base stabilizes air above it
-          const cloudEffect = alt > cloudBase ? -0.15 : 0;
-          // Hour-of-day variation: afternoon more unstable overall
-          const hourFactor = targetHour >= 11 && targetHour <= 16 ? 0.15 : 0;
-
-          let altDeltaT = baseLapseRate + groundHeating - inversion + cloudEffect + hourFactor;
-          altDeltaT = Math.max(-0.2, Math.min(1.3, altDeltaT));
-          profile.push(altDeltaT);
-        }
-        return profile;
-      }
-
-      const deltaTProfile = buildDeltaTProfile();
-      // Surface deltaT for summary display
-      const deltaT = deltaTProfile[0] ?? 0.72;
-      console.log(`[deltaT] hr=${targetHour} baseLapse=${baseLapseRate.toFixed(2)} profile=[${deltaTProfile.slice(0,4).map(v=>v.toFixed(2)).join(',')},...${deltaTProfile.length}pts]`);
-
+      // ─── First compute derived values needed by the lapse-rate model ───
       let rateo = 0.6 + (spread * 0.08) + (sunPct / 100) * 0.45 + (cape > 200 ? (cape / 1000) * 0.4 : 0);
       if (precip > 0.4) rateo = 0.3;
       else if (cloud > 80) rateo *= 0.4;
       rateo = Math.max(0.4, Math.min(2.5, Math.round(rateo * 10) / 10));
-
       const thermalTop = Math.round(Math.min(4000, cloudBase + Math.min(800, rateo * 100 + cape * 0.1)));
+
+      // ─── Atmospheric lapse-rate profile for air-mass coloring ───
+      // Pattern (matches Alpium reference):
+      //   1000-1800 m  → yellow (unstable, ground-heated boundary layer)
+      //   1800-3000 m  → green (neutral/transition)
+      //   3000-4200 m  → blue/purple (stable, free atmosphere + inversion)
+      // Real Open-Meteo data modulates each layer's intensity.
+
+      // 1. Real base lapse rate from t2m vs t180m (closest available)
+      let baseLapseRate = 0.65; // standard atmosphere °C/100m
+      if (t180Num != null && t180Num !== t) {
+        baseLapseRate = Math.abs(t - t180Num) / 180 * 100;
+      } else if (computedDeltaT !== null && computedDeltaT !== undefined) {
+        baseLapseRate = computedDeltaT;
+      } else {
+        const hoursFromPeak = Math.abs(targetHour - 14);
+        const solarFactor = Math.max(0, 1 - hoursFromPeak / 6);
+        baseLapseRate = 0.65 + solarFactor * 0.3;
+      }
+      baseLapseRate = Math.max(0.2, Math.min(1.2, baseLapseRate));
+
+      // 2. Layered lapse-rate model per altitude (in °C/100m)
+      // Pattern: unstable near ground (yellow) → neutral mid (green) → stable aloft (blue/purple)
+      // Driven by real t2m–t180m data + inversion cap at thermal top.
+      function calcDeltaTAt(alt: number): number {
+        const r = (alt - minAlt) / (maxAlt - minAlt); // 0..1
+
+        // Surface heating contribution (decays exponentially with height)
+        const surfaceHeat = baseLapseRate * Math.exp(-r * 2.2);
+
+        // Standard free-atmosphere lapse (dominates at high altitude)
+        const freeAtmos = 0.55 * Math.max(0, (r - 0.2) / 0.8);
+
+        // Thermal-top inversion: strong stable cap above convection height
+        const inversion = alt > thermalTop ? -0.45 * Math.min(1, (alt - thermalTop) / 400) : 0;
+
+        // Cloud-base suppression of convection
+        const cloudSuppression = alt > cloudBase ? -0.18 : 0;
+
+        // Afternoon solar boost near surface
+        const hoursFromPeak = Math.abs(targetHour - 14);
+        const solarBoost = hoursFromPeak < 4
+          ? (1 - hoursFromPeak / 4) * baseLapseRate * 0.15 * Math.max(0, 1 - r * 1.5)
+          : 0;
+
+        // Rain suppresses convection throughout
+        const rainSuppress = precip > 0.3 ? -0.12 : 0;
+
+        const deltaT = surfaceHeat + freeAtmos + inversion + cloudSuppression + solarBoost + rainSuppress;
+        return Math.max(-0.25, Math.min(1.25, deltaT));
+      }
+
+      // 3. Build 250m-resolved profile
+      const deltaTProfile: number[] = [];
+      for (let alt = minAlt; alt <= maxAlt; alt += 250) {
+        deltaTProfile.push(calcDeltaTAt(alt));
+      }
+      const deltaT = deltaTProfile[0] ?? 0.72;
 
       const levelWinds = displayAltitudes.map((alt) => {
         const interp = interpolateAtAltitude(targetHour, alt);
@@ -445,11 +446,6 @@ export default function ProfessionalWindgram({
     const quotaStep = 100;
     const numSteps = Math.ceil((maxAlt - minAlt) / quotaStep);
 
-    // DEBUG: Log profile for first hour
-    if (hourlyData[0]?.deltaTProfile) {
-      console.log("[canvas] Profile[0]:", hourlyData[0].deltaTProfile.map(v => v.toFixed(2)).slice(0, 6));
-    }
-
     for (let i = 0; i < numSteps; i++) {
       const altLow = minAlt + i * quotaStep;
       const altHigh = Math.min(altLow + quotaStep, maxAlt);
@@ -514,80 +510,24 @@ export default function ProfessionalWindgram({
           </p>
         </div>
 
-        {/* DEBUG: Stato dati stabilità - GRANDE */}
-        <div className="mb-3 p-4 bg-red-100 border-4 border-red-500 rounded-xl text-sm font-mono">
-          <div className="font-black text-red-800 mb-2 text-lg">🔍 DIAGNOSI MASSE D'ARIA</div>
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div>
-              <span className="font-bold text-slate-600">Caricamento:</span>
-              <span className={stabilitaLoading ? " text-yellow-600 font-black" : " text-green-700 font-black"}>
-                {stabilitaLoading ? "⏳ IN CARICAMENTO" : "✓ PRONTO"}
+        {/* Stato dati stabilità */}
+        <div className="mb-2 p-2 bg-slate-50 border border-slate-200 rounded-lg text-[9px] font-mono">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="font-bold text-slate-500">Stabilità:</span>
+            <span className={stabilitaLoading ? "text-amber-600 font-bold" : "text-emerald-600 font-bold"}>
+              {stabilitaLoading ? "⏳ caricamento..." : "✓ dati pronti"}
+            </span>
+            {stabilitaError && <span className="text-red-500 font-bold">✗ {stabilitaError}</span>}
+            {stabilitaData?.time && (
+              <span className="text-sky-600 font-bold">
+                {stabilitaData.time.length}h · t2m={stabilitaData.temperature_2m?.[0] ?? '—'}°C · t180={stabilitaData.temperature_180m?.[0] ?? '—'}°C
               </span>
-            </div>
-            <div>
-              <span className="font-bold text-slate-600">Error:</span>
-              <span className={stabilitaError ? " text-red-600 font-black" : " text-green-600"}>
-                {stabilitaError || "✓ Nessuno"}
+            )}
+            {hourlyData.length > 0 && (
+              <span className="font-bold" style={{ color: getStabilityColor(hourlyData.reduce((a,b)=>a+b.deltaT,0)/hourlyData.length) }}>
+                ΔT medio: {(hourlyData.reduce((a,b)=>a+b.deltaT,0)/hourlyData.length).toFixed(2)}
               </span>
-            </div>
-            <div>
-              <span className="font-bold text-slate-600">Ore dati:</span>
-              <span className="text-blue-700 font-black">{stabilitaData?.time?.length || 0}</span>
-            </div>
-            <div>
-              <span className="font-bold text-slate-600">Campi temp:</span>
-              <span className="text-blue-700 font-black">{stabilitaData ? Object.keys(stabilitaData).filter(k => k.startsWith('temperature')).length : 0}</span>
-            </div>
-            <div>
-              <span className="font-bold text-slate-600">t180[0]:</span>
-              <span className={stabilitaData?.temperature_180m?.[0] != null ? " text-green-700 font-black" : " text-red-700 font-black"}>
-                {stabilitaData?.temperature_180m?.[0] ?? "NULL"}
-              </span>
-            </div>
-            <div>
-              <span className="font-bold text-slate-600">hPa levels:</span>
-              <span className="text-blue-700 font-black">{stabilitaData ? Object.keys(stabilitaData).filter(k => k.includes('hPa') && k.startsWith('temperature')).length : 0}</span>
-            </div>
-            <div>
-              <span className="font-bold text-slate-600">t2m[0]:</span>
-              <span className="text-blue-700 font-black">{stabilitaData?.temperature_2m?.[0] ?? "NULL"}</span>
-            </div>
-            <div>
-              <span className="font-bold text-slate-600">DeltaT medio:</span>
-              <span className="font-black" style={{ color: hourlyData.length > 0 ? getStabilityColor(hourlyData.reduce((a,b) => a+b.deltaT,0)/Math.max(1,hourlyData.length)) : '#000' }}>
-                {(hourlyData.length > 0 ? hourlyData.reduce((a,b) => a+b.deltaT,0)/hourlyData.length : 0).toFixed(2)}
-              </span>
-            </div>
-          </div>
-          {/* Barra colori reali */}
-          <div className="mt-3">
-            <div className="font-bold text-slate-700 mb-1">Colori reali per ora:</div>
-            <div className="flex gap-1 flex-wrap">
-              {hourlyData.map((h, i) => {
-                const color = getStabilityColor(h.deltaT);
-                const isUnstable = h.deltaT >= 0.6;
-                return (
-                  <div key={i} className="flex flex-col items-center">
-                    <div
-                      className="w-8 h-8 rounded border-2 shadow-lg"
-                      style={{ backgroundColor: color, borderColor: isUnstable ? '#ef4444' : '#94a3b8' }}
-                    />
-                    <span className="text-[8px] font-black text-slate-800 mt-0.5">{h.hour}h</span>
-                    <span className={`text-[7px] font-bold ${isUnstable ? 'text-red-600' : 'text-slate-500'}`}>
-                      {h.deltaT.toFixed(2)}
-                    </span>
-                    {isUnstable && <span className="text-[6px] font-black text-red-600">⬆</span>}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="mt-1 text-[9px] text-slate-600">
-              <span className="inline-block w-3 h-3 rounded border border-red-400 bg-red-500 mr-1"></span>
-              Instabile (&gt;0.6)
-              <span className="ml-3 inline-block w-3 h-3 rounded border border-slate-400 bg-blue-400 mr-1"></span>
-              Stabile (≤0.6)
-              <span className="ml-3 text-orange-600 font-bold">▲ 地面暖 = 不稳定 · ▲ 高空冷 = 稳定 (垂直分层)</span>
-            </div>
+            )}
           </div>
         </div>
 
@@ -791,24 +731,6 @@ export default function ProfessionalWindgram({
             </div>
             <div className="text-center text-[9px] text-slate-500 font-mono mt-1.5">
               Fonte: Open-Meteo GFS/AROME · Temperature reali a livelli hPa · Lapse rate calcolato algoritmicamente
-            </div>
-            {/* Seconda barra debug: valori deltaT dettagliati */}
-            <div className="mt-2 p-2 bg-amber-50 rounded border-2 border-amber-400">
-              <div className="text-[9px] font-black text-amber-800 mb-1">Colori effettivi per ogni ora (ΔT → colore):</div>
-              <div className="flex gap-1 flex-wrap items-center">
-                {hourlyData.map((h, i) => {
-                  const color = getStabilityColor(h.deltaT);
-                  const label = h.deltaT <= 0 ? "STABILE" : h.deltaT <= 0.4 ? "NEUTRO" : h.deltaT <= 0.7 ? "MODERATO" : "INSTABILE";
-                  return (
-                    <div key={i} className="flex items-center gap-0.5 px-1 py-0.5 rounded border border-slate-300" style={{ backgroundColor: color + "30" }}>
-                      <div className="w-4 h-4 rounded border border-slate-500" style={{ backgroundColor: color }} />
-                      <span className="text-[8px] font-bold text-slate-800">{h.hour}h</span>
-                      <span className="text-[7px] font-mono text-slate-600">{h.deltaT.toFixed(2)}</span>
-                      <span className="text-[6px] text-slate-500">{label}</span>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
           </div>
         </div>
