@@ -167,68 +167,6 @@ export default function ProfessionalWindgram({
     return margin.left + (idx / (HOURS.length - 1)) * plotW;
   };
 
-  // Calcolo del lapse rate reale per ogni quota usando i dati di temperatura a livelli hPa
-    // Restituisce null se i dati hPa non sono disponibili, così il fallback chain in hourlyData può usare t180
-    const getDeltaTAtAlt = useMemo(() => {
-      if (!stabilitaData?.time || !data?.hourly?.time) return null;
-
-      const times = stabilitaData.time;
-      // Campi disponibili: Open-Meteo ha solo 2m, 180m e livelli hPa
-      const tempFields = [
-        { key: "temperature_2m", alt: 0 },
-        { key: "temperature_180m", alt: 180 },
-        { key: "temperature_925hPa", alt: 760 },
-        { key: "temperature_850hPa", alt: 1450 },
-        { key: "temperature_700hPa", alt: 3000 },
-        { key: "temperature_500hPa", alt: 5000 },
-      ];
-
-      // Costruisci una mappa di temperature per ogni ora
-      // Solo includi i livelli per cui i dati sono realmente disponibili da Open-Meteo
-      const tempByHour = new Map<number, { alt: number; temp: number }[]>();
-      times.forEach((t, idx) => {
-        const hr = parseInt(t.split("T")[1].split(":")[0], 10);
-            const readings: { alt: number; temp: number }[] = [];
-            tempFields.forEach((f) => {
-              const val = stabilitaData[f.key]?.[idx];
-              if (val != null && !isNaN(val)) {
-                readings.push({ alt: f.alt, temp: Number(val) });
-              }
-            });
-            // Se non ci sono letture valide, non aggiungere nulla per questo orario
-            if (readings.length > 0) {
-              tempByHour.set(hr, readings);
-            }
-          });
-      
-          // Se non abbiamo dati hPa per nessuna ora, restituisci null per attivare il fallback
-          if (tempByHour.size === 0) return null;
-  
-      return (hr: number, alt: number): number | null => {
-        const readings = tempByHour.get(hr);
-        if (!readings || readings.length < 2) {
-          // Dati insufficienti per questo orario specifico
-          return null;
-        }
-  
-        // Interpolazione: trova i due livelli più vicini all'altitudine richiesta
-        const sorted = [...readings].sort((a, b) => a.alt - b.alt);
-        if (alt <= sorted[0].alt) return ((sorted[0].temp - sorted[0].temp) / 100);
-        if (alt >= sorted[sorted.length - 1].alt) return ((sorted[sorted.length - 1].temp - sorted[sorted.length - 2].temp) / 100);
-  
-        for (let i = 0; i < sorted.length - 1; i++) {
-          if (sorted[i].alt <= alt && sorted[i + 1].alt >= alt) {
-            const ratio = (alt - sorted[i].alt) / (sorted[i + 1].alt - sorted[i].alt);
-            const tempAtAlt = sorted[i].temp + ratio * (sorted[i + 1].temp - sorted[i].temp);
-            const tempAtSurface = sorted[0].temp;
-            // Lapse rate: (T_surface - T_alt) / altitudine * 100
-            return Math.round(((tempAtSurface - tempAtAlt) / alt) * 100 * 100) / 100;
-          }
-        }
-        return null;
-      };
-    }, [stabilitaData, data]);
-
   const hourlyData = useMemo(() => {
     if (!data?.hourly?.time) return [];
     const times: string[] = data.hourly.time;
@@ -245,7 +183,8 @@ export default function ProfessionalWindgram({
           levelWinds: displayAltitudes.map((alt) => ({
             alt, speed: 12, dir: 240,
           })),
-          deltaTProfile: fb,
+          // Fallback profile: linear gradient from yellow (surface) to blue (aloft)
+          deltaTProfile: Array(13).fill(0).map((_, i) => 0.9 - i * 0.055),
         };
       }
 
@@ -278,63 +217,71 @@ export default function ProfessionalWindgram({
       rateo = Math.max(0.4, Math.min(2.5, Math.round(rateo * 10) / 10));
       const thermalTop = Math.round(Math.min(4000, cloudBase + Math.min(800, rateo * 100 + cape * 0.1)));
 
-      // ─── Atmospheric lapse-rate profile for air-mass coloring ───
-      // Pattern (matches Alpium reference):
-      //   1000-1800 m  → yellow (unstable, ground-heated boundary layer)
-      //   1800-3000 m  → green (neutral/transition)
-      //   3000-4200 m  → blue/purple (stable, free atmosphere + inversion)
-      // Real Open-Meteo data modulates each layer's intensity.
+      // ─── PHYSICAL LAPSE-RATE PROFILE for air-mass coloring ───
+      // Model: integrate a lapse-rate curve → temperature profile → local ΔT/100m at each 100m.
+      // The lapse rate γ(h) = -dT/dh changes with altitude:
+      //   • Surface layer (0–~800m): super-adiabatic from solar heating (high γ → yellow/red)
+      //   • Mixed layer (~800–2500m): near-standard lapse (γ≈0.65 → green)
+      //   • Free atmosphere (>2500m): standard or inversion (γ<0.4 → blue/purple)
 
-      // 1. Real base lapse rate from t2m vs t180m (closest available)
-      let baseLapseRate = 0.65; // standard atmosphere °C/100m
-      if (t180Num != null && t180Num !== t) {
-        baseLapseRate = Math.abs(t - t180Num) / 180 * 100;
-      } else if (computedDeltaT !== null && computedDeltaT !== undefined) {
-        baseLapseRate = computedDeltaT;
-      } else {
-        const hoursFromPeak = Math.abs(targetHour - 14);
-        const solarFactor = Math.max(0, 1 - hoursFromPeak / 6);
-        baseLapseRate = 0.65 + solarFactor * 0.3;
+      // 1. Derive base surface lapse rate from real data
+      let gamma0 = 0.72; // default: standard atmosphere °C/100m at surface
+      if (t180Num != null && t180Num !== t && t180Num >= -60) {
+        gamma0 = (t - t180Num) / 1.8; // °C per 100m between 2m and 180m
       }
-      baseLapseRate = Math.max(0.2, Math.min(1.2, baseLapseRate));
+      // Boost gamma0 for warm sunny afternoons (stronger surface heating)
+      const hoursFromPeak = Math.abs(targetHour - 14);
+      const solarBoost = hoursFromPeak < 4 ? (1 - hoursFromPeak / 4) * 0.25 : 0;
+      const capeBoost = cape > 100 ? Math.min(0.2, cape / 3000) : 0;
+      gamma0 = Math.max(0.1, Math.min(1.5, gamma0 + solarBoost + capeBoost));
 
-      // 2. Layered lapse-rate model per altitude (in °C/100m)
-      // Pattern: unstable near ground (yellow) → neutral mid (green) → stable aloft (blue/purple)
-      // Driven by real t2m–t180m data + inversion cap at thermal top.
-      function calcDeltaTAt(alt: number): number {
-        const r = (alt - minAlt) / (maxAlt - minAlt); // 0..1
-
-        // Surface heating contribution (decays exponentially with height)
-        const surfaceHeat = baseLapseRate * Math.exp(-r * 2.2);
-
-        // Standard free-atmosphere lapse (dominates at high altitude)
-        const freeAtmos = 0.55 * Math.max(0, (r - 0.2) / 0.8);
-
-        // Thermal-top inversion: strong stable cap above convection height
-        const inversion = alt > thermalTop ? -0.45 * Math.min(1, (alt - thermalTop) / 400) : 0;
-
-        // Cloud-base suppression of convection
-        const cloudSuppression = alt > cloudBase ? -0.18 : 0;
-
-        // Afternoon solar boost near surface
-        const hoursFromPeak = Math.abs(targetHour - 14);
-        const solarBoost = hoursFromPeak < 4
-          ? (1 - hoursFromPeak / 4) * baseLapseRate * 0.15 * Math.max(0, 1 - r * 1.5)
-          : 0;
-
-        // Rain suppresses convection throughout
-        const rainSuppress = precip > 0.3 ? -0.12 : 0;
-
-        const deltaT = surfaceHeat + freeAtmos + inversion + cloudSuppression + solarBoost + rainSuppress;
-        return Math.max(-0.25, Math.min(1.25, deltaT));
+      // 2. Lapse-rate as function of altitude (smooth transition)
+      //    γ(h) = γ_free + (γ0 - γ_free) × exp(-h/H)  where H ≈ 900m
+      const gammaFree = 0.55; // standard free-atmosphere lapse
+      const H = 900; // e-folding scale height of boundary layer
+      function gammaAt(alt: number): number {
+        const rel = (alt - minAlt) / 100; // in 100m units
+        const expDecay = Math.exp(-rel * 100 / H);
+        let gamma = gammaFree + (gamma0 - gammaFree) * expDecay;
+        // Inversion above thermal top (stable lid)
+        if (alt > thermalTop) {
+          const invStrength = Math.min(0.6, (alt - thermalTop) / 600);
+          gamma -= invStrength;
+        }
+        // Cloud base slightly stabilises
+        if (alt > cloudBase) gamma -= 0.08;
+        // Rain suppresses convection
+        if (precip > 0.3) gamma -= 0.1;
+        return Math.max(-0.35, Math.min(1.4, gamma));
       }
 
-      // 3. Build 250m-resolved profile
+      // 3. Build temperature profile by integrating lapse rate (trapezoidal rule)
+      const STEP = 50; // 50m steps for smooth integration
+      const nSteps = Math.ceil((maxAlt - minAlt) / STEP);
+      const tempProfile: number[] = new Array(nSteps + 1);
+      tempProfile[0] = t; // T at minAlt = surface temp
+      for (let s = 0; s < nSteps; s++) {
+        const altMid = minAlt + (s + 0.5) * STEP;
+        tempProfile[s + 1] = tempProfile[s] - gammaAt(altMid) * (STEP / 100);
+      }
+
+      // 4. Compute local lapse rate (ΔT/100m) at each altitude from the temperature profile
+      function localDeltaT(alt: number): number {
+        const i0 = Math.round((alt - minAlt) / STEP);
+        const iL = Math.max(0, Math.min(i0, nSteps - 1));
+        const iR = Math.min(nSteps, i0 + 1);
+        const dAlt = (iR - iL) * STEP;
+        if (dAlt === 0) return gammaAt(alt);
+        const dTemp = (tempProfile[iR] - tempProfile[iL]) / dAlt;
+        return dTemp * 100; // °C per 100m
+      }
+
+      // 5. Build 250m-resolved profile for canvas rendering
       const deltaTProfile: number[] = [];
       for (let alt = minAlt; alt <= maxAlt; alt += 250) {
-        deltaTProfile.push(calcDeltaTAt(alt));
+        deltaTProfile.push(localDeltaT(alt));
       }
-      const deltaT = deltaTProfile[0] ?? 0.72;
+      const deltaT = deltaTProfile[0] ?? gamma0;
 
       const levelWinds = displayAltitudes.map((alt) => {
         const interp = interpolateAtAltitude(targetHour, alt);
@@ -351,7 +298,7 @@ export default function ProfessionalWindgram({
         deltaTProfile,
       };
     });
-  }, [data, altitude, displayAltitudes, interpolateAtAltitude, getDeltaTAtAlt]);
+  }, [data, altitude, displayAltitudes, interpolateAtAltitude]);
 
   const reportGenerato = useMemo<GeneratedReport | null>(() => {
     if (!data?.hourly) return null;
@@ -453,24 +400,21 @@ export default function ProfessionalWindgram({
       const yBottom = getYFromAlt(altLow) - margin.top;
       if (yBottom - yTop < 0.5) continue;
 
-      // For this altitude band, pick the closest profile index
-      // deltaTProfile has entries every 250m from minAlt to maxAlt
+      // deltaTProfile: one value every 250m from minAlt..maxAlt
       const profileIdx = Math.round((altLow - minAlt) / 250);
       const profileLen = hourlyData[0]?.deltaTProfile?.length ?? 13;
-      const clampedIdx = Math.min(profileIdx, profileLen - 1);
+      const ci = Math.min(Math.max(0, profileIdx), profileLen - 1);
 
       const gradient = ctx.createLinearGradient(0, 0, plotW, 0);
       hourlyData.forEach((h, colIdx) => {
         const xAbs = getXFromHourIdx(colIdx);
         const xRel = xAbs - margin.left;
         const frac = xRel / plotW;
-        const profile = h.deltaTProfile ?? Array(13).fill(0.72);
-        const color = getStabilityColor(profile[clampedIdx] ?? 0.72);
+        const color = getStabilityColor(h.deltaTProfile?.[ci] ?? 0.72);
         gradient.addColorStop(frac, color);
       });
-      const lastHour = hourlyData[hourlyData.length - 1];
-      const lastProfile = lastHour.deltaTProfile ?? [0.72];
-      gradient.addColorStop(1, getStabilityColor(lastProfile[clampedIdx] ?? 0.72));
+      const lastH = hourlyData[hourlyData.length - 1];
+      gradient.addColorStop(1, getStabilityColor(lastH.deltaTProfile?.[ci] ?? 0.72));
 
       ctx.fillStyle = gradient;
       ctx.globalAlpha = 0.8;
@@ -523,11 +467,14 @@ export default function ProfessionalWindgram({
                 {stabilitaData.time.length}h · t2m={stabilitaData.temperature_2m?.[0] ?? '—'}°C · t180={stabilitaData.temperature_180m?.[0] ?? '—'}°C
               </span>
             )}
-            {hourlyData.length > 0 && (
-              <span className="font-bold" style={{ color: getStabilityColor(hourlyData.reduce((a,b)=>a+b.deltaT,0)/hourlyData.length) }}>
-                ΔT medio: {(hourlyData.reduce((a,b)=>a+b.deltaT,0)/hourlyData.length).toFixed(2)}
-              </span>
-            )}
+            {hourlyData.length > 0 && (() => {
+              const avg = hourlyData.reduce((a,b)=>a+b.deltaT,0)/hourlyData.length;
+              return (
+                <span className="font-bold" style={{ color: getStabilityColor(avg) }}>
+                  ΔT superficie: {avg.toFixed(2)} · ΔT+2km: {(hourlyData.reduce((a,h)=>a+(h.deltaTProfile?.[6]??0),0)/hourlyData.length).toFixed(2)} · ΔT+4km: {(hourlyData.reduce((a,h)=>a+(h.deltaTProfile?.[12]??0),0)/hourlyData.length).toFixed(2)}
+                </span>
+              );
+            })()}
           </div>
         </div>
 
