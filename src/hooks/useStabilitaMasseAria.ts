@@ -63,11 +63,23 @@ export function useStabilitaMasseAria(
     ].join(",");
 
     fetchHourly(lat, lon, tempFields, dayStr, dayStr)
-      .then((j) => {
-        if (!mounted) return;
-        setHourly(j.hourly);
-        setLoading(false);
-      })
+          .then((j) => {
+            if (!mounted) return;
+            // DEBUG: log available fields
+            if (j.hourly) {
+              const fields = Object.keys(j.hourly).filter(k => k.startsWith('temperature'));
+              console.log('useStabilitaMasseAria fields:', fields);
+              // Log first few values for key fields
+              console.log('useStabilitaMasseAria samples:');
+              console.log('  temperature_2m[0-2]:', j.hourly.temperature_2m?.slice(0,3));
+              console.log('  temperature_80m[0-2]:', j.hourly.temperature_80m?.slice(0,3));
+              console.log('  temperature_120m[0-2]:', j.hourly.temperature_120m?.slice(0,3));
+              console.log('  temperature_925hPa[0-2]:', j.hourly.temperature_925hPa?.slice(0,3));
+              console.log('  temperature_850hPa[0-2]:', j.hourly.temperature_850hPa?.slice(0,3));
+            }
+            setHourly(j.hourly);
+            setLoading(false);
+          })
       .catch((e) => {
         if (!mounted) return;
         setError(e instanceof Error ? e.message : "Errore");

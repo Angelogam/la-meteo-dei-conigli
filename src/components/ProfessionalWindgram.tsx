@@ -98,6 +98,12 @@ export default function ProfessionalWindgram({
     latitude, longitude, selectedDay
   );
 
+  // DEBUG: mostra lo stato dei dati di stabilità
+  console.log('[DEBUG] stabilitaLoading:', stabilitaLoading, 'stabilitaError:', stabilitaError, 'hasData:', !!stabilitaData?.time);
+  if (stabilitaData?.time) {
+    console.log('[DEBUG] stabilitaData fields:', Object.keys(stabilitaData).filter(k => k !== 'time').slice(0, 5));
+  }
+
   const displayAltitudes = useMemo(() => computeDisplayAltitudes(altitude), [altitude]);
 
   const dateObj = useMemo(() => {
@@ -188,25 +194,33 @@ export default function ProfessionalWindgram({
       ];
   
       // Costruisci una mappa di temperature per ogni ora
-      // Solo includi i livelli per cui i dati sono realmente disponibili da Open-Meteo
-      const tempByHour = new Map<number, { alt: number; temp: number }[]>();
-      times.forEach((t, idx) => {
-        const hr = parseInt(t.split("T")[1].split(":")[0], 10);
-        const readings: { alt: number; temp: number }[] = [];
-        tempFields.forEach((f) => {
-          const val = stabilitaData[f.key]?.[idx];
-          if (val != null && !isNaN(val)) {
-            readings.push({ alt: f.alt, temp: Number(val) });
+          // Solo includi i livelli per cui i dati sono realmente disponibili da Open-Meteo
+          const tempByHour = new Map<number, { alt: number; temp: number }[]>();
+          times.forEach((t, idx) => {
+            const hr = parseInt(t.split("T")[1].split(":")[0], 10);
+            const readings: { alt: number; temp: number }[] = [];
+            tempFields.forEach((f) => {
+              const val = stabilitaData[f.key]?.[idx];
+              if (val != null && !isNaN(val)) {
+                readings.push({ alt: f.alt, temp: Number(val) });
+              }
+            });
+            // Se non ci sono letture valide, non aggiungere nulla per questo orario
+            if (readings.length > 0) {
+              tempByHour.set(hr, readings);
+            }
+          });
+      
+          // DEBUG: log tempByHour for first hour
+          if (tempByHour.size > 0) {
+            const firstHr = tempByHour.keys().next().value;
+            console.log('getDeltaTAtAlt tempByHour sample:', firstHr, tempByHour.get(firstHr));
+          } else {
+            console.log('getDeltaTAtAlt: tempByHour is EMPTY - no hPa data available');
           }
-        });
-        // Se non ci sono letture valide, non aggiungere nulla per questo orario
-        if (readings.length > 0) {
-          tempByHour.set(hr, readings);
-        }
-      });
-  
-      // Se non abbiamo dati hPa per nessuna ora, restituisci null per attivare il fallback
-      if (tempByHour.size === 0) return null;
+      
+          // Se non abbiamo dati hPa per nessuna ora, restituisci null per attivare il fallback
+          if (tempByHour.size === 0) return null;
   
       return (hr: number, alt: number): number | null => {
         const readings = tempByHour.get(hr);
@@ -261,8 +275,11 @@ export default function ProfessionalWindgram({
       const windDir10 = h.wind_direction_10m?.[idx] ?? 180;
       const freeze = h.freezing_level_height?.[idx] ?? (altitude + t / 0.0098);
       const cape = h.cape?.[idx] ?? 350;
-      const t80 = h.temperature_80m?.[idx];
-      const t120 = h.temperature_120m?.[idx];
+      const t80Raw = h.temperature_80m?.[idx];
+      const t120Raw = h.temperature_120m?.[idx];
+      const t80 = (t80Raw != null && !isNaN(Number(t80Raw))) ? Number(t80Raw) : null;
+      const t120 = (t120Raw != null && !isNaN(Number(t120Raw))) ? Number(t120Raw) : null;
+      console.log(`[DATA] hr=${targetHour} idx=${idx} t=${t} t80=${t80Raw}(${typeof t80Raw}) t120=${t120Raw}(${typeof t120Raw})`);
 
       const sunPct = Math.min(100, Math.max(10, Math.round(((rad / 900) * (1 - (cloud / 100) * 0.65)) * 100)));
       const spread = Math.max(1, t - dew);
@@ -274,13 +291,20 @@ export default function ProfessionalWindgram({
             const computedDeltaT = getDeltaTAtAlt?.(targetHour, altitude);
             if (computedDeltaT !== null && computedDeltaT !== undefined) {
               deltaT = computedDeltaT;
+              console.log(`[deltaT] hr=${targetHour} alt=${altitude} via hPa→${deltaT.toFixed(2)}`);
             } else if (t80 != null) {
               deltaT = Math.round(((t - t80) / 78) * 100 * 100) / 100;
+              console.log(`[deltaT] hr=${targetHour} alt=${altitude} via t80 t=${t} t80=${t80}→${deltaT.toFixed(2)}`);
             } else if (t120 != null) {
               deltaT = Math.round(((t - t120) / 118) * 100 * 100) / 100;
+              console.log(`[deltaT] hr=${targetHour} alt=${altitude} via t120 t=${t} t120=${t120}→${deltaT.toFixed(2)}`);
             } else {
               deltaT = spread >= 10 ? 0.98 : spread >= 6 ? 0.82 : 0.65;
+              console.log(`[deltaT] hr=${targetHour} alt=${altitude} via spread=${spread.toFixed(1)}→${deltaT.toFixed(2)}`);
             }
+            console.log(`[deltaT] hr=${targetHour} FINAL deltaT=${deltaT.toFixed(2)} color=${getStabilityColor(deltaT)}`);
+            console.log(`[deltaT] hr=${targetHour} raw: t=${t}, t80=${t80}, t120=${t120}, spread=${spread.toFixed(1)}, computedDeltaT=${computedDeltaT}`);
+            console.log(`[deltaT] hr=${targetHour} t80 type=${typeof t80}, t120 type=${typeof t120}, idx=${idx}`);
             deltaT = Math.max(-0.2, Math.min(1.3, deltaT));
 
       let rateo = 0.6 + (spread * 0.08) + (sunPct / 100) * 0.45 + (cape > 200 ? (cape / 1000) * 0.4 : 0);
@@ -390,12 +414,20 @@ export default function ProfessionalWindgram({
 
     const w = canvas.width;
     const h = canvas.height;
+    console.log("[canvas] Canvas size:", w, "x", h, "hourlyData.length:", hourlyData.length);
     ctx.fillStyle = "#f8fafc";
     ctx.fillRect(0, 0, w, h);
 
     const pixelPerMeter = plotH / (maxAlt - minAlt);
     const quotaStep = 100;
     const numSteps = Math.ceil((maxAlt - minAlt) / quotaStep);
+
+    // DEBUG: Log all deltaT values to console
+    console.log("[canvas] All hourly deltaT values:", hourlyData.map(h => ({
+      hour: h.hour,
+      deltaT: h.deltaT.toFixed(2),
+      color: getStabilityColor(h.deltaT)
+    })));
 
     for (let i = 0; i < numSteps; i++) {
       const altLow = minAlt + i * quotaStep;
@@ -415,8 +447,13 @@ export default function ProfessionalWindgram({
       const lastHour = hourlyData[hourlyData.length - 1];
       gradient.addColorStop(1, getStabilityColor(lastHour.deltaT));
 
+      // DEBUG: Log first band's colors
+      if (i === 0) {
+        console.log("[canvas] Band 0 colors:", hourlyData.map(h => `${h.hour}h:${h.deltaT.toFixed(2)}→${getStabilityColor(h.deltaT)}`));
+      }
+
       ctx.fillStyle = gradient;
-      ctx.globalAlpha = 0.3;
+      ctx.globalAlpha = 0.8;
       ctx.fillRect(0, yTop, plotW, yBottom - yTop);
     }
     ctx.globalAlpha = 1.0;
@@ -452,6 +489,28 @@ export default function ProfessionalWindgram({
           <p className="text-[10px] text-slate-500 font-mono mt-0.5">
             plotted {dateStr} 00:00 UTC · model ground {Math.round(altitude + 5)} m · SRTM {Math.round(altitude)} m
           </p>
+        </div>
+
+        {/* DEBUG: Stato dati stabilità */}
+        <div className="mb-2 p-2 bg-amber-50 border border-amber-300 rounded text-[9px] font-mono">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-black text-amber-800">DEBUG:</span>
+            <span className={stabilitaLoading ? "text-amber-600" : "text-green-600"}>
+              {stabilitaLoading ? "⏳ caricamento..." : "✓ dati pronti"}
+            </span>
+            {stabilitaError && <span className="text-red-600">✗ {stabilitaError}</span>}
+            {stabilitaData?.time && (
+              <span className="text-blue-600">
+                ✓ {stabilitaData.time.length} ore · campi: {Object.keys(stabilitaData).filter(k => k !== 'time').length}
+              </span>
+            )}
+            {stabilitaData?.temperature_80m && stabilitaData.temperature_80m[0] != null && (
+              <span className="text-green-700 font-bold">✓ t80 disponibile</span>
+            )}
+            {!stabilitaData?.temperature_80m || stabilitaData.temperature_80m[0] == null ? (
+              <span className="text-orange-600">✗ t80 NON disponibile</span>
+            ) : null}
+          </div>
         </div>
 
         <div className="mb-2">
@@ -654,6 +713,22 @@ export default function ProfessionalWindgram({
             </div>
             <div className="text-center text-[9px] text-slate-500 font-mono mt-1.5">
               Fonte: Open-Meteo GFS/AROME · Temperature reali a livelli hPa · Lapse rate calcolato algoritmicamente
+            </div>
+            {/* DEBUG: Tabella valori deltaT */}
+            <div className="mt-2 p-2 bg-slate-100 rounded border-2 border-orange-400">
+              <div className="text-[9px] font-black text-orange-700 mb-1">🔍 DEBUG: ΔT per ora (colore sfondo = colore banda)</div>
+              <div className="flex gap-1 flex-wrap">
+                {hourlyData.map((h, i) => (
+                  <div key={i} className="flex flex-col items-center px-1">
+                    <div
+                      className="w-7 h-7 rounded border-2 border-slate-600 shadow-sm"
+                      style={{ backgroundColor: getStabilityColor(h.deltaT) }}
+                    />
+                    <span className="text-[8px] font-black text-slate-800">{h.hour}h</span>
+                    <span className="text-[7px] font-mono font-bold text-orange-600">{h.deltaT.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
