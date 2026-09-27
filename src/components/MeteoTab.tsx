@@ -17,6 +17,7 @@ interface MeteoTabProps {
   thermalDelta: number;
   modelName?: string;
   selectedHour?: number;
+  selectedDay?: number;
   cape?: number | null;
   liftedIndex?: number | null;
   cin?: number | null;
@@ -139,7 +140,7 @@ function getUVColor(uv: number) {
   return "text-emerald-400";
 }
 
-export default function MeteoTab({ currentData, dayData, site, thermalDelta, modelName, selectedHour, cape: propCape, liftedIndex: propLi, cin: propCin }: MeteoTabProps) {
+export default function MeteoTab({ currentData, dayData, site, thermalDelta, modelName, selectedHour, selectedDay = 0, cape: propCape, liftedIndex: propLi, cin: propCin }: MeteoTabProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -343,7 +344,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
               </div>
               <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
                 <Calendar className="w-3 h-3" />
-                <span className="font-medium">{new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })}</span>
+                <span className="font-medium">{(() => { const d = new Date(); d.setDate(d.getDate() + selectedDay); return d.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" }); })()}</span>
                 <span className="text-slate-600">·</span>
                 <span className="font-semibold">{siteAlt}m</span>
                 <span className="text-slate-600">·</span>
@@ -789,11 +790,11 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
 
       {/* ══════════════ WARNINGS / GOOD ══════════════ */}
       {warnings.length > 0 ? (
-        <div className="px-6 py-4 bg-orange-500/10 border-t border-orange-500/30">
-          <div className="flex items-center gap-2 mb-2"><AlertTriangle className="w-4 h-4 text-orange-400" /><span className="text-orange-400 text-sm font-black uppercase tracking-wider">Attenzione ({warnings.length})</span></div>
+        <div className="px-6 py-4 bg-slate-800/60 border-t border-slate-700/60">
+          <div className="flex items-center gap-2 mb-2"><AlertTriangle className="w-4 h-4 text-rose-400" /><span className="text-rose-400 text-sm font-black uppercase tracking-wider">Attenzione ({warnings.length})</span></div>
           <div className="space-y-1.5">
             {warnings.slice(0, 5).map((w, i) => (
-              <div key={i} className={`flex items-start gap-2 text-xs font-medium py-1.5 px-2.5 rounded-lg ${w.type === "danger" ? "bg-rose-500/10 text-rose-200/90 border border-rose-500/20" : w.type === "warning" ? "bg-amber-500/10 text-amber-200/90 border border-amber-500/20" : "bg-sky-500/10 text-sky-200/90 border border-sky-500/20"}`}>
+              <div key={i} className={`flex items-start gap-2 text-xs font-medium py-1.5 px-2.5 rounded-lg ${w.type === "danger" ? "bg-rose-950/40 text-rose-200 border border-rose-800/40" : w.type === "warning" ? "bg-violet-950/40 text-violet-200 border border-violet-800/40" : "bg-sky-950/40 text-sky-200 border border-sky-800/40"}`}>
                 <span className="shrink-0">{w.icon}</span>
                 {w.text}
               </div>
@@ -801,7 +802,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
           </div>
         </div>
       ) : (
-        <div className="px-6 py-4 bg-emerald-500/10 border-t border-emerald-500/20">
+        <div className="px-6 py-4 bg-emerald-950/30 border-t border-emerald-800/40">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             <span className="text-emerald-300 text-sm font-bold">✓ Condizioni favorevoli per il volo — nessun warning attivo</span>

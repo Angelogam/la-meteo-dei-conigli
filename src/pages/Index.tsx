@@ -226,6 +226,7 @@ export default function Index() {
                     thermalDelta={thermalDelta}
                     modelName={activeModel}
                     selectedHour={selectedHour}
+                    selectedDay={selectedDay}
                     cape={currentCape?.cape}
                     liftedIndex={currentCape?.liftedIndex}
                     cin={currentCape?.cin}
