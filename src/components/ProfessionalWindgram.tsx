@@ -166,58 +166,72 @@ export default function ProfessionalWindgram({
   };
 
   // Calcolo del lapse rate reale per ogni quota usando i dati di temperatura a livelli hPa
-  const getDeltaTAtAlt = useMemo(() => {
-    if (!stabilitaData?.time || !data?.hourly?.time) return null;
-
-    const times = stabilitaData.time;
-    const tempFields = [
-      { key: "temperature_2m", alt: 0 },
-      { key: "temperature_80m", alt: 80 },
-      { key: "temperature_120m", alt: 120 },
-      { key: "temperature_180m", alt: 180 },
-      { key: "temperature_925hPa", alt: 760 },
-      { key: "temperature_850hPa", alt: 1450 },
-      { key: "temperature_800hPa", alt: 1950 },
-      { key: "temperature_750hPa", alt: 2500 },
-      { key: "temperature_700hPa", alt: 3000 },
-      { key: "temperature_650hPa", alt: 3500 },
-      { key: "temperature_600hPa", alt: 4000 },
-      { key: "temperature_550hPa", alt: 4400 },
-      { key: "temperature_500hPa", alt: 5000 },
-    ];
-
-    // Costruisci una mappa di temperature per ogni ora
-    const tempByHour = new Map<number, { alt: number; temp: number }[]>();
-    times.forEach((t, idx) => {
-      const hr = parseInt(t.split("T")[1].split(":")[0], 10);
-      const readings = tempFields.map((f) => ({
-        alt: f.alt,
-        temp: Number(stabilitaData[f.key]?.[idx]) || 0,
-      }));
-      tempByHour.set(hr, readings);
-    });
-
-    return (hr: number, alt: number): number => {
-      const readings = tempByHour.get(hr);
-      if (!readings || readings.length === 0) return 0.72;
-
-      // Interpolazione: trova i due livelli più vicini all'altitudine richiesta
-      const sorted = [...readings].sort((a, b) => a.alt - b.alt);
-      if (alt <= sorted[0].alt) return ((sorted[0].temp - sorted[0].temp) / 100);
-      if (alt >= sorted[sorted.length - 1].alt) return ((sorted[sorted.length - 1].temp - sorted[sorted.length - 2].temp) / 100);
-
-      for (let i = 0; i < sorted.length - 1; i++) {
-        if (sorted[i].alt <= alt && sorted[i + 1].alt >= alt) {
-          const ratio = (alt - sorted[i].alt) / (sorted[i + 1].alt - sorted[i].alt);
-          const tempAtAlt = sorted[i].temp + ratio * (sorted[i + 1].temp - sorted[i].temp);
-          const tempAtSurface = sorted[0].temp;
-          // Lapse rate: (T_surface - T_alt) / altitudine * 100
-          return Math.round(((tempAtSurface - tempAtAlt) / alt) * 100 * 100) / 100;
+    // Restituisce null se i dati hPa non sono disponibili, così il fallback chain in hourlyData può usare t80/t120
+    const getDeltaTAtAlt = useMemo(() => {
+      if (!stabilitaData?.time || !data?.hourly?.time) return null;
+  
+      const times = stabilitaData.time;
+      const tempFields = [
+        { key: "temperature_2m", alt: 0 },
+        { key: "temperature_80m", alt: 80 },
+        { key: "temperature_120m", alt: 120 },
+        { key: "temperature_180m", alt: 180 },
+        { key: "temperature_925hPa", alt: 760 },
+        { key: "temperature_850hPa", alt: 1450 },
+        { key: "temperature_800hPa", alt: 1950 },
+        { key: "temperature_750hPa", alt: 2500 },
+        { key: "temperature_700hPa", alt: 3000 },
+        { key: "temperature_650hPa", alt: 3500 },
+        { key: "temperature_600hPa", alt: 4000 },
+        { key: "temperature_550hPa", alt: 4400 },
+        { key: "temperature_500hPa", alt: 5000 },
+      ];
+  
+      // Costruisci una mappa di temperature per ogni ora
+      // Solo includi i livelli per cui i dati sono realmente disponibili da Open-Meteo
+      const tempByHour = new Map<number, { alt: number; temp: number }[]>();
+      times.forEach((t, idx) => {
+        const hr = parseInt(t.split("T")[1].split(":")[0], 10);
+        const readings: { alt: number; temp: number }[] = [];
+        tempFields.forEach((f) => {
+          const val = stabilitaData[f.key]?.[idx];
+          if (val != null && !isNaN(val)) {
+            readings.push({ alt: f.alt, temp: Number(val) });
+          }
+        });
+        // Se non ci sono letture valide, non aggiungere nulla per questo orario
+        if (readings.length > 0) {
+          tempByHour.set(hr, readings);
         }
-      }
-      return 0.72;
-    };
-  }, [stabilitaData, data]);
+      });
+  
+      // Se non abbiamo dati hPa per nessuna ora, restituisci null per attivare il fallback
+      if (tempByHour.size === 0) return null;
+  
+      return (hr: number, alt: number): number | null => {
+        const readings = tempByHour.get(hr);
+        if (!readings || readings.length < 2) {
+          // Dati insufficienti per questo orario specifico
+          return null;
+        }
+  
+        // Interpolazione: trova i due livelli più vicini all'altitudine richiesta
+        const sorted = [...readings].sort((a, b) => a.alt - b.alt);
+        if (alt <= sorted[0].alt) return ((sorted[0].temp - sorted[0].temp) / 100);
+        if (alt >= sorted[sorted.length - 1].alt) return ((sorted[sorted.length - 1].temp - sorted[sorted.length - 2].temp) / 100);
+  
+        for (let i = 0; i < sorted.length - 1; i++) {
+          if (sorted[i].alt <= alt && sorted[i + 1].alt >= alt) {
+            const ratio = (alt - sorted[i].alt) / (sorted[i + 1].alt - sorted[i].alt);
+            const tempAtAlt = sorted[i].temp + ratio * (sorted[i + 1].temp - sorted[i].temp);
+            const tempAtSurface = sorted[0].temp;
+            // Lapse rate: (T_surface - T_alt) / altitudine * 100
+            return Math.round(((tempAtSurface - tempAtAlt) / alt) * 100 * 100) / 100;
+          }
+        }
+        return null;
+      };
+    }, [stabilitaData, data]);
 
   const hourlyData = useMemo(() => {
     if (!data?.hourly?.time) return [];
@@ -256,17 +270,18 @@ export default function ProfessionalWindgram({
       const cloudPct = Math.max(2, Math.min(95, Math.round(cloud)));
 
       // Usa il lapse rate reale dal hook di stabilità se disponibile
-      let deltaT = 0.72;
-      if (getDeltaTAtAlt) {
-        deltaT = getDeltaTAtAlt(targetHour, altitude);
-      } else if (t80 != null) {
-        deltaT = Math.round(((t - t80) / 78) * 100 * 100) / 100;
-      } else if (t120 != null) {
-        deltaT = Math.round(((t - t120) / 118) * 100 * 100) / 100;
-      } else {
-        deltaT = spread >= 10 ? 0.98 : spread >= 6 ? 0.82 : 0.65;
-      }
-      deltaT = Math.max(-0.2, Math.min(1.3, deltaT));
+            let deltaT = 0.72;
+            const computedDeltaT = getDeltaTAtAlt?.(targetHour, altitude);
+            if (computedDeltaT !== null && computedDeltaT !== undefined) {
+              deltaT = computedDeltaT;
+            } else if (t80 != null) {
+              deltaT = Math.round(((t - t80) / 78) * 100 * 100) / 100;
+            } else if (t120 != null) {
+              deltaT = Math.round(((t - t120) / 118) * 100 * 100) / 100;
+            } else {
+              deltaT = spread >= 10 ? 0.98 : spread >= 6 ? 0.82 : 0.65;
+            }
+            deltaT = Math.max(-0.2, Math.min(1.3, deltaT));
 
       let rateo = 0.6 + (spread * 0.08) + (sunPct / 100) * 0.45 + (cape > 200 ? (cape / 1000) * 0.4 : 0);
       if (precip > 0.4) rateo = 0.3;
