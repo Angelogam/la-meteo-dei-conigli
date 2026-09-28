@@ -149,6 +149,7 @@ export default function Index() {
                 </div>
               </div>
             </div>
+            <ResearchPanel />
             <DecolliCard
               decolli={mergedDecolli}
               selectedId={selectedId}
