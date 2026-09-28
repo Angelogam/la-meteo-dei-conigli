@@ -22,6 +22,7 @@ import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 import { DECOLLI } from "@/data/decolli";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
 import { Activity, Wind } from "lucide-react";
+import ResearchPanel from "@/components/ResearchPanel";
 
 export default function Index() {
   useEffect(() => {
@@ -157,6 +158,7 @@ export default function Index() {
                 setSelectedHour(new Date().getHours());
               }}
             />
+            <ResearchPanel />
           </aside>
 
           <div className="flex-1 min-w-0 space-y-6">

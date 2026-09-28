@@ -4,9 +4,10 @@ import type { MeteoCurrent } from "@/services/openMeteoService";
 import type { HourData } from "@/types/meteo";
 import {
   MapPin, Wind, Thermometer, Droplets, Eye, Mountain, Cloud,
-  Activity, AlertTriangle, CheckCircle2,
+  Activity, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp,
   Sun, Radiation, ArrowUp, CloudSnow, ArrowRight, TrendingUp,
-  TrendingDown, Minus, CloudRain, Zap, Gauge, CloudOff, Timer
+  TrendingDown, Minus, CloudRain, Zap, Gauge, CloudOff, Timer,
+  Waves
 } from "lucide-react";
 import { calcCloudBase } from "@/utils/calcCloudBase";
 
@@ -17,6 +18,7 @@ interface MeteoTabProps {
   thermalDelta: number;
   modelName?: string;
   selectedDay?: number;
+  selectedHour?: number;
   cape?: number | null;
   liftedIndex?: number | null;
   cin?: number | null;
@@ -32,6 +34,7 @@ function getWeatherDescription(code: number): string {
   if (code >= 80) return "Pioggia";
   if (code >= 71) return "Neve";
   if (code >= 61) return "Pioggia leggera";
+  if (code >= 51) return "Piombo";
   if (code >= 45) return "Nebbia";
   if (code >= 30) return "Nuvoloso";
   if (code >= 20) return "Temporale lontano";
@@ -40,24 +43,40 @@ function getWeatherDescription(code: number): string {
   return "Sereno";
 }
 
+function getCloudCoverLabel(pct: number) {
+  if (pct >= 90) return "Totale";
+  if (pct >= 70) return "Coperto";
+  if (pct >= 50) return "Variabile";
+  if (pct >= 30) return "Qualche nuvola";
+  if (pct >= 10) return "Pochissime nubi";
+  return "Sereno";
+}
+
+function getUVLabel(uv: number) {
+  if (uv >= 11) return "Estremo";
+  if (uv >= 8) return "Molto elevato";
+  if (uv >= 6) return "Elevato";
+  if (uv >= 3) return "Moderato";
+  return "Basso";
+}
+
 type Signal = "green" | "yellow" | "red";
 
-function getSignal(signal: Signal) {
-  if (signal === "green") return {
+function signalColors(signal: Signal) {
+  return signal === "green" ? {
     border: "border-emerald-500/30", bg: "bg-emerald-500/10", text: "text-emerald-400",
-    dot: "#34d399", badge: "bg-emerald-500/20 border-emerald-500/40 text-emerald-300",
-  };
-  if (signal === "yellow") return {
+    dot: "#34d399", badge: "bg-emerald-500/15 border-emerald-500/40 text-emerald-300",
+  } : signal === "yellow" ? {
     border: "border-amber-500/30", bg: "bg-amber-500/10", text: "text-amber-400",
-    dot: "#f59e0b", badge: "bg-amber-500/20 border-amber-500/40 text-amber-300",
-  };
-  return {
+    dot: "#f59e0b", badge: "bg-amber-500/15 border-amber-500/40 text-amber-300",
+  } : {
     border: "border-rose-500/30", bg: "bg-rose-500/10", text: "text-rose-400",
-    dot: "#fb7185", badge: "bg-rose-500/20 border-rose-500/40 text-rose-300",
+    dot: "#fb7185", badge: "bg-rose-500/15 border-rose-500/40 text-rose-300",
   };
 }
 
 export default function MeteoTab({ currentData, dayData, site, thermalDelta, modelName, selectedDay = 0, cape: propCape, liftedIndex: propLi, cin: propCin }: MeteoTabProps) {
+
   if (!currentData || dayData.length === 0) {
     return (
       <div className="rounded-2xl bg-slate-900 border border-slate-700/50 p-12 text-center">
@@ -80,7 +99,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   const pressure = currentData.pressure ?? 1013;
   const uvIndex = currentData.uvIndex ?? 5;
   const capeVal = currentData.cape ?? propCape ?? 0;
-  const liftedIndex = currentData.liftedIndex ?? propLi ?? 0;
+  const liftedIndexVal = currentData.liftedIndex ?? propLi ?? 0;
   const cinVal = currentData.cin ?? propCin ?? 0;
   const feelsLike = currentData.apparentTemp ?? t;
   const cloudCover = currentData.cloudCover ?? 0;
@@ -89,12 +108,13 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   const cloudCoverHigh = currentData.cloudCoverHigh ?? 0;
   const spread = Math.max(0.5, t - dew);
 
-  // ── Calcoli per il volo ──
+  // === Calcoli per il volo ===
   const cloudBase = calcCloudBase(siteAlt, t, dew);
   const avgCape = dayData.reduce((s, h) => s + (h.cape ?? 0), 0) / dayData.length;
   const avgLi = dayData.reduce((s, h) => s + (h.liftedIndex ?? 0), 0) / dayData.length;
   const avgSpread = dayData.reduce((s, h) => s + Math.max(0.5, (h.temperature ?? t) - (h.dewPoint ?? dew)), 0) / dayData.length;
   const avgThermalRate = Math.min(4, Math.max(0.3, avgSpread * 0.25 + avgCape * 0.001));
+  const maxThermalRate = Math.min(4, Math.max(0.3, avgSpread * 0.3 + (avgCape * 1.5) * 0.001));
   const thermalTop = Math.round(Math.min(4000, cloudBase + Math.min(800, avgThermalRate * 100 + avgCape * 0.1)));
 
   const midData = dayData.slice(8, 16);
@@ -151,13 +171,11 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
     ? `${String(dayData[windowStart]?.time?.getHours() ?? 8).padStart(2, "0")}:00–${String(dayData[Math.min(windowEnd, dayData.length - 1)]?.time?.getHours() ?? 17).padStart(2, "0")}:00`
     : "—";
 
-  // ── Rischio temporali ──
   const thunderProb = avgCape > 1200 && avgLi < -4 ? 80
     : avgCape > 900 && avgLi < -3 ? 60
     : avgCape > 600 && avgLi < -2 ? 40
     : avgCape > 400 ? 20 : 5;
 
-  // ── Rischio rotore ──
   const orientEsposizione = orientation?.toUpperCase() ?? "S";
   const isSWSite = orientEsposizione.includes("SO") || orientEsposizione.includes("SW");
   const windFromWest = windDir >= 245 && windDir <= 315;
@@ -165,14 +183,13 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
     : windFromWest && windSpeed > 15 ? 40
     : windFromWest ? 20 : 5;
 
-  // ── Segnale ──
   let signal: Signal;
   let signalLabel: string;
   if (weatherCode >= 95 || weatherCode === 82) { signal = "red"; signalLabel = "TEMPORALI"; }
   else if (windSpeed > 30 || nextCape > 1000 || precipitation > 1) { signal = "red"; signalLabel = "PERICOLOSO"; }
   else if (windSpeed > 20 || avgCape > 600 || nextRainProb > 40 || cloudBase < siteAlt + 300) { signal = "yellow"; signalLabel = "ATTENZIONE"; }
   else { signal = "green"; signalLabel = "VOLO CONSENTITO"; }
-  const sc = getSignal(signal);
+  const sc = signalColors(signal);
   const isFlyable = signal === "green";
 
   const warnings: { icon: string; text: string; type: "danger" | "warning" | "info" }[] = [];
@@ -211,16 +228,57 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   const lowCloudRisk = cloudBase < siteAlt + 500;
   const veryLowCloudRisk = cloudBase < siteAlt + 300;
 
+  // ── Sottotitoli pratici ──
+  const humiditySub = humidity > 70 ? "Aria umida: termiche pesanti ma attenzione ai temporali"
+    : humidity > 40 ? "Umidità ideale: buon equilibrio per termiche organizzate"
+    : "Aria secca: termiche leggere, cielo limpido";
+  const dewSub = spread > 8 ? `Spread ${Math.round(spread)}°C: aria secca in quota — termiche vigorose attese`
+    : spread > 4 ? `Spread ${Math.round(spread)}°C: umidità controllata — termiche moderate e prevedibili`
+    : `Spread ${Math.round(spread)}°C: aria umida — termiche pesanti e cumuli bassi`;
+  const visSub = visibility >= 10000 ? "Navigazione sicura su tutta la valle"
+    : visibility >= 5000 ? "Volo locale senza problemi"
+    : visibility >= 3000 ? "Attenzione alla navigazione in quota"
+    : "Non volare — visibilità critica";
+  const windSub = windSpeed <= 8 ? "Calmo: decollo assistito e atterraggio dolce"
+    : windSpeed <= 15 ? "Moderato: condizioni ideali per il termico"
+    : windSpeed <= 25 ? "Sostenuto: attenzione in decollo e atterraggio"
+    : "Forte: solo per piloti esperti";
+  const rateoSub = avgThermalRate > 2 ? "Termiche forti (>" + avgThermalRate.toFixed(1) + " m/s) — perfetto per cross-country"
+    : avgThermalRate > 1.2 ? "Termiche buone — ideale per allenamento e volo locale"
+    : avgThermalRate > 0.7 ? "Termiche discrete — volo possibile con pazienza"
+    : "Termiche deboli — meglio limitarsi al dynamic di cresta";
+  const cloudBaseSub = cloudBase > siteAlt + 800 ? `+${Math.round(cloudBase - siteAlt)}m dal suolo: ampio spazio per volare in sicurezza`
+    : cloudBase > siteAlt + 400 ? `+${Math.round(cloudBase - siteAlt)}m: spazio di manovra sufficiente`
+    : cloudBase > siteAlt + 200 ? `Attenzione: nubi basse a ${Math.round(cloudBase - siteAlt)}m dal campo`
+    : "Rischio nebbia al decollo, attendere il riscaldamento";
+  const zeroTermSub = avgFreezing > siteAlt + 3000 ? "Pioggia al suolo, neve solo in alta quota — nessuna preoccupazione"
+    : avgFreezing > siteAlt + 1500 ? "Possibile neve sopra i 2000-2500m — attenzione alle pareti esposte"
+    : "Zero molto basso: rischio ghiaccio sulle pareti nord";
+  const capeSub = avgCape > 1000 ? "⚠️ Forte instabilità — vigilanza temporali dopo le 14:00"
+    : avgCape > 400 ? "Buona energia termica — termiche sviluppate ma controllabili"
+    : avgCape > 100 ? "Cielo probabilmente stabile — termiche limitate"
+    : "Nessuna energia termica disponibile";
+  const thermalTopSub = thermalTop > siteAlt + 1500 ? `Max quota in termica: ${thermalTop}m slm — ottima per cross-country`
+    : thermalTop > siteAlt + 800 ? `Quota di volo confortevole a ${thermalTop}m slm`
+    : `Top limitato dalla stabilità a ${thermalTop}m slm`;
+  const cloudCoverSub = cloudCover >= 80 ? 'Cielo coperto: termiche inibite, solo dynamic di cresta'
+    : cloudCover >= 50 ? 'Nuvolosità variabile: termiche possibili ma irregolari'
+    : 'Cielo sereno: condizioni ideali per il volo termico';
+  const pressureSub = pressureTrend > 2 ? "Bel tempo in arrivo, termiche classiche da alta pressione"
+    : pressureTrend < -2 ? "Peggioramento imminente, volare nelle prime ore"
+    : "Condizioni stabili per tutta la giornata";
+
   return (
-    <div className={`rounded-2xl overflow-hidden ${sc.border} bg-slate-900 shadow-xl`}>
+    <div className={`rounded-2xl overflow-hidden ${sc.border} bg-slate-900 shadow-xl`} data-testid="meteo-tab">
       {/* ═══════════ TOP GRADIENT BAR ═══════════ */}
       <div className="h-1 bg-gradient-to-r from-orange-400 via-amber-400 to-rose-400" />
 
-      {/* ═══════════ HEADER ═══════════ */}
-      <div className="px-5 py-4 border-b border-white/5">
-        <div className="flex items-start justify-between gap-4">
+      {/* ═══════════ HERO: VOTO + CONDIZIONI ═══════════ */}
+      <div className="px-5 py-5 border-b border-white/5 bg-gradient-to-br from-slate-800/60 via-slate-900/40 to-transparent">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 mb-4">
           <div className="flex items-start gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/25 to-orange-600/10 border border-amber-500/40 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/10">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/25 to-orange-600/10 border border-amber-500/40 flex items-center justify-center shrink-0">
               <MapPin className="w-5 h-5 text-amber-400" />
             </div>
             <div className="min-w-0">
@@ -258,21 +316,26 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
             </div>
           </div>
         </div>
-      </div>
 
-      {/* ═══════════ HERO: Voto + Temp + Vento ═══════════ */}
-      <div className="px-5 py-4 border-b border-white/5 bg-gradient-to-br from-slate-800/40 via-transparent to-transparent">
+        {/* Flight Score + Temp + Wind */}
         <div className="flex flex-col sm:flex-row items-stretch gap-4">
           {/* Flight Score */}
-          <div className={`relative rounded-2xl p-4 border ${sc.bg} flex flex-col items-center justify-center text-center`}>
-            <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Voto Volo</div>
-            <div className={`text-6xl font-black tabular-nums leading-none ${sc.text}`}>
-              {signal === "green" ? "9" : signal === "yellow" ? "6" : "2"}
-              <span className="text-lg text-slate-500 font-bold ml-0.5">/10</span>
-            </div>
-            <div className={`text-sm font-black mt-1 ${sc.text}`}>{signalLabel}</div>
-            <div className="text-[10px] text-slate-500 mt-0.5">
-              {isFlyable ? "Condizioni favorevoli" : signal === "yellow" ? "Valutare con attenzione" : "Non volare"}
+          <div className={`relative rounded-2xl p-5 border ${sc.bg} flex flex-col items-center justify-center text-center`}>
+            <div className="absolute inset-0 rounded-2xl opacity-10" style={{ background: signal === 'green' ? 'radial-gradient(circle at 50% 50%, #10b981, transparent 70%)' : signal === 'yellow' ? 'radial-gradient(circle at 50% 50%, #f59e0b, transparent 70%)' : 'radial-gradient(circle at 50% 50%, #f43f5e, transparent 70%)' }} />
+            <div className="relative">
+              <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Voto Volo</div>
+              <div className={`text-7xl font-black tabular-nums leading-none ${sc.text}`}>
+                {signal === "green" ? "9" : signal === "yellow" ? "6" : "2"}
+                <span className="text-lg text-slate-500 font-bold ml-0.5">/10</span>
+              </div>
+              <div className={`text-sm font-black mt-2 ${sc.text}`}>{signalLabel}</div>
+              <div className="text-[10px] text-slate-500 mt-1">
+                {isFlyable ? "Condizioni favorevoli" : signal === "yellow" ? "Valutare con attenzione" : "Non volare"}
+              </div>
+              <div className="flex items-center gap-1.5 mt-3 text-[10px] text-slate-500">
+                {isFlyable ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <AlertTriangle className="w-3 h-3 text-rose-400" />}
+                <span>{isFlyable ? "Tutti i parametri nella norma" : "Parametri critici rilevati"}</span>
+              </div>
             </div>
           </div>
 
@@ -282,13 +345,13 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
               <div>
                 <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Temperatura aria</div>
                 <div className="flex items-baseline gap-1 mt-1">
-                  <span className="text-4xl font-black text-white tabular-nums">{Math.round(t)}</span>
-                  <span className="text-lg text-amber-400/70 font-black">°C</span>
+                  <span className="text-5xl font-black text-white tabular-nums">{Math.round(t)}</span>
+                  <span className="text-xl text-amber-400/70 font-black">°C</span>
                 </div>
               </div>
               <span className="text-3xl">{weatherCode >= 95 ? '⛈️' : weatherCode >= 80 ? '🌧️' : weatherCode >= 30 ? '☁️' : weatherCode >= 10 ? '🌤️' : '☀️'}</span>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-500">Percepita</span>
                 <span className="font-bold text-slate-200">{Math.round(feelsLike)}°C</span>
@@ -298,11 +361,11 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
                 <span className="font-bold text-slate-200">{Math.round(dew)}°C</span>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-500">Spread</span>
+                <span className="text-slate-500">Spread (T-Tδ)</span>
                 <span className="font-bold text-amber-300">{Math.round(spread)}°C</span>
               </div>
             </div>
-            <p className="text-[10px] text-slate-500 mt-2 leading-tight border-t border-slate-700/30 pt-2">
+            <p className="text-[10px] text-slate-500 mt-2.5 leading-tight border-t border-slate-700/30 pt-2.5">
               {avgThermalRate > 1.2 ? '🔥 Termiche attive — l\'aria si riscalda rapidamente' : avgThermalRate > 0.6 ? '⛅ Termiche deboli — solo correnti locali' : '❄️ Nessuna termica — atmosfera stabile'}
             </p>
           </div>
@@ -313,8 +376,8 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
               <div>
                 <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Vento al suolo</div>
                 <div className="flex items-baseline gap-1 mt-1">
-                  <span className="text-4xl font-black text-white tabular-nums">{Math.round(windSpeed)}</span>
-                  <span className="text-sm text-amber-400/70 font-black">km/h</span>
+                  <span className="text-5xl font-black text-white tabular-nums">{Math.round(windSpeed)}</span>
+                  <span className="text-base text-amber-400/70 font-black">km/h</span>
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-xs font-black text-amber-300">
                     {dirLabel(windDir)} {windDir}°
                   </span>
@@ -330,7 +393,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
                 <span className={`font-bold ${windGusts > windSpeed * 1.5 ? "text-rose-400" : "text-slate-400"}`}>×{gustRatio.toFixed(1)}</span>
               </div>
             )}
-            <p className="text-[10px] text-slate-500 leading-tight border-t border-slate-700/30 pt-2">
+            <p className="text-[10px] text-slate-500 leading-tight border-t border-slate-700/30 pt-2.5">
               {windSpeed <= 8 ? "Calmo: decollo assistito e atterraggio dolce"
                 : windSpeed <= 15 ? "Moderato: condizioni ideali per il termico"
                 : windSpeed <= 25 ? "Sostenuto: attenzione in decollo e atterraggio"
@@ -340,14 +403,18 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
         </div>
       </div>
 
-      {/* ═══════════ ROW 1: Condizioni + Parametri Volo ═══════════ */}
+      {/* ═══════════ ROW 1: Condizioni Attuali ═══════════ */}
       <div className="px-5 py-4 border-b border-white/5">
-        <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-3">Parametri attuali</div>
+        <div className="flex items-center gap-2 mb-3.5">
+          <div className="w-1 h-5 rounded-full bg-gradient-to-b from-amber-400 to-orange-500" />
+          <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Condizioni attuali</span>
+          <span className="text-[9px] text-slate-600 ml-auto">I 4 parametri fondamentali per capire se può piovere e com'è l'aria</span>
+        </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* Umidità */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-slate-700/40">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-orange-500/15 border border-orange-500/20 flex items-center justify-center">
+          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-slate-700/40 hover:border-orange-500/30 transition-all group cursor-default">
+            <div className="flex items-center gap-2 mb-2.5">
+              <div className="w-7 h-7 rounded-lg bg-orange-500/15 border border-orange-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Droplets className="w-3.5 h-3.5 text-orange-400" />
               </div>
               <div>
@@ -359,16 +426,16 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
               <span className="text-2xl font-black text-orange-300 tabular-nums">{humidity}</span>
               <span className="text-xs text-orange-400/60 font-bold">%</span>
             </div>
-            <div className="h-1.5 bg-slate-700/50 rounded-full mt-2 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-orange-700 to-orange-400 rounded-full" style={{ width: `${humidity}%` }} />
+            <div className="h-1.5 bg-slate-700/50 rounded-full mt-2.5 overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-orange-700 to-orange-400 rounded-full transition-all" style={{ width: `${humidity}%` }} />
             </div>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{humidity > 70 ? "Aria umida: termiche pesanti ma attenzione ai temporali" : humidity > 40 ? "Umidità ideale: buon equilibrio per termiche organizzate" : "Aria secca: termiche leggere, cielo limpido"}</p>
+            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{humiditySub}</p>
           </div>
 
           {/* Spread */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-slate-700/40">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-rose-500/15 border border-rose-500/20 flex items-center justify-center">
+          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-slate-700/40 hover:border-rose-500/30 transition-all group cursor-default">
+            <div className="flex items-center gap-2 mb-2.5">
+              <div className="w-7 h-7 rounded-lg bg-rose-500/15 border border-rose-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Thermometer className="w-3.5 h-3.5 text-rose-400" />
               </div>
               <div>
@@ -380,13 +447,13 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
               <span className="text-2xl font-black text-rose-300 tabular-nums">{Math.round(spread)}</span>
               <span className="text-xs text-rose-400/60 font-bold">°C</span>
             </div>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{spread > 8 ? "Aria secca in quota — termiche vigorose attese" : spread > 4 ? "Umidità controllata — termiche moderate e prevedibili" : "Aria umida — termiche pesanti e cumuli bassi"}</p>
+            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{dewSub}</p>
           </div>
 
           {/* Pressione */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-slate-700/40">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/20 flex items-center justify-center">
+          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-slate-700/40 hover:border-amber-500/30 transition-all group cursor-default">
+            <div className="flex items-center gap-2 mb-2.5">
+              <div className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Gauge className="w-3.5 h-3.5 text-amber-400" />
               </div>
               <div>
@@ -403,13 +470,13 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
               <span className={pressureTrendColor}>{pressureTrendLabel}</span>
               <span className="text-slate-600">Δ {pressureTrend > 0 ? "+" : ""}{pressureTrend.toFixed(1)}</span>
             </div>
-            <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{pressureTrend > 2 ? "Bel tempo in arrivo, termiche classiche da alta pressione" : pressureTrend < -2 ? "Peggioramento imminente, volare nelle prime ore" : "Condizioni stabili per tutta la giornata"}</p>
+            <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{pressureSub}</p>
           </div>
 
           {/* Visibilità */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-slate-700/40">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center">
+          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-slate-700/40 hover:border-emerald-500/30 transition-all group cursor-default">
+            <div className="flex items-center gap-2 mb-2.5">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Eye className="w-3.5 h-3.5 text-emerald-400" />
               </div>
               <div>
@@ -421,24 +488,24 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
               <span className="text-2xl font-black text-emerald-300 tabular-nums">{Math.round(visibility / 1000)}</span>
               <span className="text-xs text-emerald-400/60 font-bold">km</span>
             </div>
-            <div className="h-1.5 bg-slate-700/50 rounded-full mt-2 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-emerald-700 to-emerald-400 rounded-full" style={{ width: `${Math.min(100, (visibility / 15000) * 100)}%` }} />
+            <div className="h-1.5 bg-slate-700/50 rounded-full mt-2.5 overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-emerald-700 to-emerald-400 rounded-full transition-all" style={{ width: `${Math.min(100, (visibility / 15000) * 100)}%` }} />
             </div>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{visibility >= 10000 ? "Navigazione sicura su tutta la valle" : visibility >= 5000 ? "Volo locale senza problemi" : visibility >= 3000 ? "Attenzione alla navigazione in quota" : "Non volare — visibilità critica"}</p>
+            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{visSub}</p>
           </div>
         </div>
       </div>
 
-      {/* ═══════════ ROW 2: Parametri di volo ═══════════ */}
+      {/* ═══════════ ROW 2: Parametri di Volo ═══════════ */}
       <div className="px-5 py-4 border-b border-white/5">
-        <div className="flex items-center gap-2 mb-3">
-          <ArrowUp className="w-4 h-4 text-amber-400" />
+        <div className="flex items-center gap-2 mb-3.5">
+          <div className="w-1 h-5 rounded-full bg-gradient-to-b from-amber-400 to-orange-500" />
           <span className="text-[10px] text-slate-400 uppercase tracking-wider font-black">Parametri di volo</span>
           <span className="text-[9px] text-slate-600 ml-auto">Tutti i dati che ti servono per decidere se e quando volare</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* Rateo termico */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-rose-500/20">
+          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-rose-500/20 hover:border-rose-500/40 transition-all">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 rounded-lg bg-rose-500/15 border border-rose-500/20 flex items-center justify-center">
                 <ArrowUp className="w-3.5 h-3.5 text-rose-400" />
@@ -453,13 +520,13 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
               <span className="text-xs text-rose-400/60 font-bold">m/s</span>
             </div>
             <div className="h-1.5 bg-slate-700/50 rounded-full mt-2 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-rose-600 to-pink-400 rounded-full" style={{ width: `${Math.min(100, avgThermalRate / 4 * 100)}%` }} />
+              <div className="h-full bg-gradient-to-r from-rose-600 to-pink-400 rounded-full transition-all" style={{ width: `${Math.min(100, avgThermalRate / 4 * 100)}%` }} />
             </div>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{avgThermalRate > 2 ? "Termiche forti — perfetto per cross-country" : avgThermalRate > 1.2 ? "Termiche buone — ideale per allenamento" : avgThermalRate > 0.7 ? "Termiche discrete — volo con pazienza" : "Termiche deboli — meglio dynamic di cresta"}</p>
+            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{rateoSub}</p>
           </div>
 
           {/* Base cumuli */}
-          <div className={`rounded-xl p-3.5 border ${veryLowCloudRisk ? "bg-rose-500/10 border-rose-500/20" : lowCloudRisk ? "bg-violet-500/10 border-violet-500/20" : "bg-emerald-500/10 border-emerald-500/20"}`}>
+          <div className={`rounded-xl p-3.5 border hover:border-violet-500/40 transition-all ${veryLowCloudRisk ? "bg-rose-500/10 border-rose-500/20" : lowCloudRisk ? "bg-violet-500/10 border-violet-500/20" : "bg-emerald-500/10 border-emerald-500/20"}`}>
             <div className="flex items-center gap-2 mb-2">
               <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${veryLowCloudRisk ? "bg-rose-500/20" : lowCloudRisk ? "bg-violet-500/20" : "bg-emerald-500/20"}`}>
                 <Mountain className={`w-3.5 h-3.5 ${veryLowCloudRisk ? "text-rose-400" : lowCloudRisk ? "text-violet-400" : "text-emerald-400"}`} />
@@ -475,13 +542,13 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
               <span className={`text-xs font-bold ml-auto ${veryLowCloudRisk ? "text-rose-400" : lowCloudRisk ? "text-violet-400" : "text-emerald-400"}`}>+{Math.round(cloudBase - siteAlt)}m</span>
             </div>
             <div className="relative h-1.5 bg-slate-700/50 rounded-full mt-2 overflow-hidden">
-              <div className={`absolute top-0 h-full rounded-full ${veryLowCloudRisk ? "bg-rose-500" : lowCloudRisk ? "bg-violet-500" : "bg-emerald-500"}`} style={{ width: `${Math.min(100, Math.max(0, ((cloudBase - siteAlt) / 1500) * 100))}%` }} />
+              <div className={`absolute top-0 h-full rounded-full transition-all ${veryLowCloudRisk ? "bg-rose-500" : lowCloudRisk ? "bg-violet-500" : "bg-emerald-500"}`} style={{ width: `${Math.min(100, Math.max(0, ((cloudBase - siteAlt) / 1500) * 100))}%` }} />
             </div>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{cloudBase > siteAlt + 800 ? `+${Math.round(cloudBase - siteAlt)}m dal suolo: ampio spazio per volare in sicurezza` : cloudBase > siteAlt + 400 ? `+${Math.round(cloudBase - siteAlt)}m: spazio di manovra sufficiente` : cloudBase > siteAlt + 200 ? `Attenzione: nubi basse a ${Math.round(cloudBase - siteAlt)}m dal campo` : "Rischio nebbia al decollo, attendere il riscaldamento"}</p>
+            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{cloudBaseSub}</p>
           </div>
 
           {/* Zero termico */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-violet-500/20">
+          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-violet-500/20 hover:border-violet-500/40 transition-all">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 rounded-lg bg-violet-500/15 border border-violet-500/20 flex items-center justify-center">
                 <CloudSnow className="w-3.5 h-3.5 text-violet-400" />
@@ -496,11 +563,11 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
               <span className="text-xs text-violet-400/60 font-bold">m</span>
             </div>
             <div className="text-[9px] text-violet-400/50 font-semibold mt-1">{avgFreezing > siteAlt ? `+${Math.round(avgFreezing - siteAlt)}m sopr. decollo` : "⚠ Sotto il campo!"}</div>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{avgFreezing > siteAlt + 3000 ? "Pioggia al suolo, neve solo in alta quota — nessuna preoccupazione" : avgFreezing > siteAlt + 1500 ? "Possibile neve sopra i 2000-2500m — attenzione alle pareti esposte" : "Zero molto basso: rischio ghiaccio sulle pareti nord"}</p>
+            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{zeroTermSub}</p>
           </div>
 
           {/* CAPE */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-emerald-500/20">
+          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-emerald-500/20 hover:border-emerald-500/40 transition-all">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 rounded-lg bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center">
                 <Zap className="w-3.5 h-3.5 text-emerald-400" />
@@ -515,16 +582,16 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
               <span className="text-xs text-emerald-400/60 font-bold">J/kg</span>
             </div>
             <div className="h-1.5 bg-slate-700/50 rounded-full mt-2 overflow-hidden">
-              <div className={`h-full rounded-full ${avgCape > 600 ? "bg-violet-500" : "bg-emerald-500"}`} style={{ width: `${Math.min(100, avgCape / 1500 * 100)}%` }} />
+              <div className={`h-full rounded-full transition-all ${avgCape > 600 ? "bg-violet-500" : "bg-emerald-500"}`} style={{ width: `${Math.min(100, avgCape / 1500 * 100)}%` }} />
             </div>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{avgCape > 1000 ? "⚠️ Forte instabilità — vigilanza temporali dopo le 14:00" : avgCape > 400 ? "Buona energia termica — termiche sviluppate ma controllabili" : "Cielo probabilmente stabile — termiche limitate"}</p>
+            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{capeSub}</p>
           </div>
         </div>
 
         {/* Second row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
           {/* Top termico */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-amber-500/20">
+          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-amber-500/20 hover:border-amber-500/40 transition-all">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/20 flex items-center justify-center">
                 <ArrowUp className="w-3.5 h-3.5 text-amber-400" />
@@ -539,11 +606,11 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
               <span className="text-xs text-amber-400/60 font-bold">m</span>
             </div>
             <div className="text-[9px] text-amber-400/50 font-semibold mt-1">+{Math.round(thermalTop - siteAlt)}m dal suolo</div>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{thermalTop > siteAlt + 1500 ? `Max quota in termica: ${thermalTop}m slm — ottima per cross-country` : thermalTop > siteAlt + 800 ? `Quota di volo confortevole a ${thermalTop}m slm` : `Top limitato dalla stabilità a ${thermalTop}m slm`}</p>
+            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{thermalTopSub}</p>
           </div>
 
           {/* Copertura cielo */}
-          <div className={`rounded-xl p-3.5 border ${cloudCover >= 90 ? "bg-slate-500/10 border-slate-500/30" : cloudCover >= 70 ? "bg-violet-500/10 border-violet-500/20" : cloudCover >= 50 ? "bg-amber-500/10 border-amber-500/20" : cloudCover >= 20 ? "bg-orange-500/10 border-orange-500/20" : "bg-emerald-500/10 border-emerald-500/20"}`}>
+          <div className={`rounded-xl p-3.5 border hover:border-slate-500/40 transition-all ${cloudCover >= 90 ? "bg-slate-500/10 border-slate-500/30" : cloudCover >= 70 ? "bg-violet-500/10 border-violet-500/20" : cloudCover >= 50 ? "bg-amber-500/10 border-amber-500/20" : cloudCover >= 20 ? "bg-orange-500/10 border-orange-500/20" : "bg-emerald-500/10 border-emerald-500/20"}`}>
             <div className="flex items-center gap-2 mb-2">
               <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${cloudCover >= 90 ? "bg-slate-500/20" : cloudCover >= 70 ? "bg-violet-500/20" : cloudCover >= 50 ? "bg-amber-500/20" : cloudCover >= 20 ? "bg-orange-500/20" : "bg-emerald-500/20"}`}>
                 <CloudOff className={`w-3.5 h-3.5 ${cloudCover >= 90 ? "text-slate-400" : cloudCover >= 70 ? "text-violet-400" : cloudCover >= 50 ? "text-amber-400" : cloudCover >= 20 ? "text-orange-400" : "text-emerald-400"}`} />
@@ -555,7 +622,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
             </div>
             <div className="flex items-baseline gap-1">
               <span className={`text-2xl font-black tabular-nums ${cloudCover >= 90 ? "text-slate-300" : cloudCover >= 70 ? "text-violet-300" : cloudCover >= 50 ? "text-amber-300" : "text-emerald-300"}`}>{cloudCover}%</span>
-              <span className="text-xs opacity-60">{cloudCover >= 90 ? "Totale" : cloudCover >= 70 ? "Coperto" : cloudCover >= 50 ? "Variabile" : cloudCover >= 20 ? "Poco nuvoloso" : "Sereno"}</span>
+              <span className="text-xs opacity-60">{getCloudCoverLabel(cloudCover)}</span>
             </div>
             {cloudCover > 0 && (
               <div className="mt-2 space-y-1">
@@ -576,11 +643,11 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
                 </div>
               </div>
             )}
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{cloudCover >= 80 ? 'Cielo coperto: termiche inibite, solo dynamic di cresta' : cloudCover >= 50 ? 'Nuvolosità variabile: termiche possibili ma irregolari' : 'Cielo sereno: condizioni ideali per il volo termico'}</p>
+            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{cloudCoverSub}</p>
           </div>
 
           {/* UV */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-orange-500/20">
+          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-orange-500/20 hover:border-orange-500/40 transition-all">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 rounded-lg bg-orange-500/15 border border-orange-500/20 flex items-center justify-center">
                 <Sun className="w-3.5 h-3.5 text-orange-400" />
@@ -598,7 +665,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
           </div>
 
           {/* Radiazione */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-amber-500/20">
+          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-amber-500/20 hover:border-amber-500/40 transition-all">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/20 flex items-center justify-center">
                 <Radiation className="w-3.5 h-3.5 text-amber-400" />
@@ -620,8 +687,8 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
 
       {/* ═══════════ VENTO IN QUOTA ═══════════ */}
       <div className="border-t border-white/5 px-5 py-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Wind className="w-4 h-4 text-amber-400" />
+        <div className="flex items-center gap-2 mb-3.5">
+          <div className="w-1 h-5 rounded-full bg-gradient-to-b from-amber-400 to-orange-500" />
           <span className="text-[10px] text-slate-400 uppercase tracking-wider font-black">Profilo vento verticale</span>
           <span className="text-[9px] text-slate-600 ml-auto">Decollo → atterraggio — ogni livello conta per la sicurezza</span>
         </div>
@@ -691,10 +758,9 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-gradient-to-r from-violet-900/30 to-violet-800/20 rounded-xl p-3.5 border border-violet-500/30">
               <div className="flex items-center gap-2 mb-1.5">
-                <Wind className="w-4 h-4 text-violet-400" />
-                <span className="text-xs text-violet-300 font-bold">Quota ~2000m (850hPa)</span>
+                <Waves className="w-4 h-4 text-violet-400" />
+                <span className="text-xs text-violet-300 font-bold">Onda montana</span>
               </div>
-              <div className="text-xl font-black text-violet-300 tabular-nums">{Math.round(wind850)} <span className="text-sm text-violet-400/60 font-semibold">{dirLabel(dir850Use ?? windDir)}</span></div>
               <div className="text-xs text-violet-400/60 font-semibold mt-1">Wave index: {waveIndex.toFixed(0)}° · Shear {windSheer} km/h</div>
               <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{waveIndex < 30 ? "🌊 Onda montana attiva — provare quote superiori per dynamic" : waveIndex < 60 ? "Onda presente — condizioni favorevoli per volo in quota" : "Nessun effetto onda significativo"}</p>
             </div>
@@ -713,8 +779,8 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
 
       {/* ═══════════ FINESTRA DI VOLO + PIOGGIA ═══════════ */}
       <div className="border-t border-white/5 px-5 py-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Timer className="w-4 h-4 text-emerald-400" />
+        <div className="flex items-center gap-2 mb-3.5">
+          <div className="w-1 h-5 rounded-full bg-gradient-to-b from-emerald-400 to-teal-500" />
           <span className="text-[10px] text-slate-400 uppercase tracking-wider font-black">Finestra di volo & precipitazioni</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
@@ -778,8 +844,8 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
 
       {/* ═══════════ STABILITÀ TERMODINAMICA ═══════════ */}
       <div className="border-t border-white/5 px-5 py-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Activity className="w-4 h-4 text-violet-400" />
+        <div className="flex items-center gap-2 mb-3.5">
+          <div className="w-1 h-5 rounded-full bg-gradient-to-b from-violet-400 to-purple-500" />
           <span className="text-[10px] text-slate-400 uppercase tracking-wider font-black">Stabilità termodinamica</span>
           <span className="text-[9px] text-slate-600 ml-auto">Per piloti esperti — legge l'atmosfera come un radar</span>
         </div>
@@ -817,13 +883,13 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
       {tactics.length > 0 && (
         <div className="border-t border-white/5 px-5 py-4">
           <div className="flex items-center gap-2 mb-3">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <div className="w-1 h-5 rounded-full bg-gradient-to-b from-emerald-400 to-teal-500" />
             <span className="text-[10px] text-slate-400 uppercase tracking-wider font-black">Giudizio tattico</span>
             <span className="text-[9px] text-slate-600 ml-auto">Consigli pratici basati sulle condizioni attuali</span>
           </div>
           <div className="space-y-1.5">
             {tactics.map((tac, i) => (
-              <div key={i} className="flex items-start gap-2.5 text-xs text-slate-300 bg-slate-800/40 rounded-xl px-4 py-2.5 border border-slate-700/30">
+              <div key={i} className="flex items-start gap-2.5 text-xs text-slate-300 bg-slate-800/40 rounded-xl px-4 py-2.5 border border-slate-700/30 hover:border-slate-600/50 transition-colors">
                 <ArrowRight className="w-3 h-3 text-emerald-400 shrink-0 mt-0.5" />
                 {tac}
               </div>
