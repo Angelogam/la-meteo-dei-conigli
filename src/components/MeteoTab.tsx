@@ -6,7 +6,7 @@ import {
   MapPin, Wind, Thermometer, Droplets, Eye, Mountain, Cloud,
   Activity, AlertTriangle, CheckCircle2,
   Sun, Radiation, ArrowUp, CloudSnow, ArrowRight, TrendingUp,
-  TrendingDown, Minus, CloudRain, Zap, Gauge, CloudOff, Timer, Plane
+  TrendingDown, Minus, CloudRain, Zap, Gauge, CloudOff, Timer
 } from "lucide-react";
 import { calcCloudBase } from "@/utils/calcCloudBase";
 
@@ -16,7 +16,6 @@ interface MeteoTabProps {
   site: { alt: number; name?: string; orientation?: string };
   thermalDelta: number;
   modelName?: string;
-  selectedHour?: number;
   selectedDay?: number;
   cape?: number | null;
   liftedIndex?: number | null;
@@ -41,25 +40,20 @@ function getWeatherDescription(code: number): string {
   return "Sereno";
 }
 
-function getSignalColor(signal: "green" | "yellow" | "red") {
-  return signal === "green" ? {
-    border: "border-emerald-500/30",
-    bgClass: "bg-emerald-500/10",
-    text: "text-emerald-400",
-    dotColor: "#34d399",
-    badge: "bg-emerald-500/20 border-emerald-500/40 text-emerald-300",
-  } : signal === "yellow" ? {
-    border: "border-amber-500/30",
-    bgClass: "bg-amber-500/10",
-    text: "text-amber-400",
-    dotColor: "#f59e0b",
-    badge: "bg-amber-500/20 border-amber-500/40 text-amber-300",
-  } : {
-    border: "border-rose-500/30",
-    bgClass: "bg-rose-500/10",
-    text: "text-rose-400",
-    dotColor: "#fb7185",
-    badge: "bg-rose-500/20 border-rose-500/40 text-rose-300",
+type Signal = "green" | "yellow" | "red";
+
+function getSignal(signal: Signal) {
+  if (signal === "green") return {
+    border: "border-emerald-500/30", bg: "bg-emerald-500/10", text: "text-emerald-400",
+    dot: "#34d399", badge: "bg-emerald-500/20 border-emerald-500/40 text-emerald-300",
+  };
+  if (signal === "yellow") return {
+    border: "border-amber-500/30", bg: "bg-amber-500/10", text: "text-amber-400",
+    dot: "#f59e0b", badge: "bg-amber-500/20 border-amber-500/40 text-amber-300",
+  };
+  return {
+    border: "border-rose-500/30", bg: "bg-rose-500/10", text: "text-rose-400",
+    dot: "#fb7185", badge: "bg-rose-500/20 border-rose-500/40 text-rose-300",
   };
 }
 
@@ -85,7 +79,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   const visibility = currentData.visibility ?? 10000;
   const pressure = currentData.pressure ?? 1013;
   const uvIndex = currentData.uvIndex ?? 5;
-  const cape = currentData.cape ?? propCape ?? 0;
+  const capeVal = currentData.cape ?? propCape ?? 0;
   const liftedIndex = currentData.liftedIndex ?? propLi ?? 0;
   const cinVal = currentData.cin ?? propCin ?? 0;
   const feelsLike = currentData.apparentTemp ?? t;
@@ -172,13 +166,13 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
     : windFromWest ? 20 : 5;
 
   // ── Segnale ──
-  let signal: "green" | "yellow" | "red";
+  let signal: Signal;
   let signalLabel: string;
   if (weatherCode >= 95 || weatherCode === 82) { signal = "red"; signalLabel = "TEMPORALI"; }
   else if (windSpeed > 30 || nextCape > 1000 || precipitation > 1) { signal = "red"; signalLabel = "PERICOLOSO"; }
   else if (windSpeed > 20 || avgCape > 600 || nextRainProb > 40 || cloudBase < siteAlt + 300) { signal = "yellow"; signalLabel = "ATTENZIONE"; }
   else { signal = "green"; signalLabel = "VOLO CONSENTITO"; }
-  const sc = getSignalColor(signal);
+  const sc = getSignal(signal);
   const isFlyable = signal === "green";
 
   const warnings: { icon: string; text: string; type: "danger" | "warning" | "info" }[] = [];
@@ -188,7 +182,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   if (windSpeed > 0 && windGusts > windSpeed * 1.5) warnings.push({ icon: "💨", text: `Raffiche forti (${Math.round(windGusts)} km/h)`, type: "danger" });
   if (avgCape > 800 && humidity > 60) warnings.push({ icon: "⚡", text: "CAPE elevato + umidità → temporali probabili", type: "danger" });
   if (waveIndex < 30 && windSpeed > 15) warnings.push({ icon: "🌊", text: "Wave index basso → onda montana attiva", type: "info" });
-  if (visibility < 3000) warnings.push({ icon: "👁️", text: `Visibilità ridotta (${Math.round(visibility / 1000)} km)`, type: "warning" });
+  if (visibility < 3000) warnings.push({ icon: "👁️", text: `Visibilità ridotta (${Math.round(visibility / 1000)}km)`, type: "warning" });
   if (nextRainProb > 30) warnings.push({ icon: "🌧️", text: `Pioggia probabile nelle prossime 6h (${Math.round(nextRainProb)}%)`, type: "warning" });
   if (avgLi < -4) warnings.push({ icon: "🔥", text: `Instabilità estrema (LI ${avgLi.toFixed(1)})`, type: "danger" });
   if (flightHours < 4) warnings.push({ icon: "⏰", text: "Finestra di volo molto breve", type: "warning" });
@@ -220,7 +214,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   return (
     <div className={`rounded-2xl overflow-hidden ${sc.border} bg-slate-900 shadow-xl`}>
       {/* ═══════════ TOP GRADIENT BAR ═══════════ */}
-      <div className={`h-1 bg-gradient-to-r from-orange-400 via-amber-400 to-rose-400`} />
+      <div className="h-1 bg-gradient-to-r from-orange-400 via-amber-400 to-rose-400" />
 
       {/* ═══════════ HEADER ═══════════ */}
       <div className="px-5 py-4 border-b border-white/5">
@@ -243,14 +237,14 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
                 <span>·</span>
                 <span>{modelName || "Open-Meteo"}</span>
                 <span>·</span>
-                <span className="text-slate-600">{(() => { const d = new Date(); d.setDate(d.getDate() + selectedDay); return d.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" }); })()}</span>
+                <span className="text-slate-600">{(() => { const d = new Date(); d.setDate(d.getDate() + selectedDay!); return d.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" }); })()}</span>
               </div>
             </div>
           </div>
           <div className="flex flex-col items-end gap-1.5 shrink-0">
             <div className={`px-3 py-1.5 rounded-xl border backdrop-blur-sm ${sc.badge}`}>
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: sc.dotColor }} />
+                <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: sc.dot }} />
                 <span className={`text-xs font-black tracking-wider ${sc.text}`}>{signalLabel}</span>
               </div>
             </div>
@@ -270,7 +264,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
       <div className="px-5 py-4 border-b border-white/5 bg-gradient-to-br from-slate-800/40 via-transparent to-transparent">
         <div className="flex flex-col sm:flex-row items-stretch gap-4">
           {/* Flight Score */}
-          <div className={`relative rounded-2xl p-4 border ${sc.bgClass} flex flex-col items-center justify-center text-center`}>
+          <div className={`relative rounded-2xl p-4 border ${sc.bg} flex flex-col items-center justify-center text-center`}>
             <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Voto Volo</div>
             <div className={`text-6xl font-black tabular-nums leading-none ${sc.text}`}>
               {signal === "green" ? "9" : signal === "yellow" ? "6" : "2"}
@@ -438,7 +432,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
       {/* ═══════════ ROW 2: Parametri di volo ═══════════ */}
       <div className="px-5 py-4 border-b border-white/5">
         <div className="flex items-center gap-2 mb-3">
-          <Plane className="w-4 h-4 text-amber-400" />
+          <ArrowUp className="w-4 h-4 text-amber-400" />
           <span className="text-[10px] text-slate-400 uppercase tracking-wider font-black">Parametri di volo</span>
           <span className="text-[9px] text-slate-600 ml-auto">Tutti i dati che ti servono per decidere se e quando volare</span>
         </div>
