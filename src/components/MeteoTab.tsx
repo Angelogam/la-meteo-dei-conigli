@@ -186,8 +186,9 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   const avgThermalRate = Math.min(4, Math.max(0.3, avgSpread * 0.25 + avgCape * 0.001));
   const maxThermalRate = Math.min(4, Math.max(0.3, avgSpread * 0.3 + (avgCape * 1.5) * 0.001));
 
-  // Stima altezza massima termica
-  const thermalTop = avgCape > 0 ? Math.round(cloudBase + 200 + Math.min(2000, avgCape * 1.2 + avgThermalRate * 200)) : cloudBase + 500;
+  // Stima altezza massima termica — stessa formula di ProfessionalWindgram per coerenza
+  const currentRateo = Math.max(0.4, Math.min(2.5, avgThermalRate));
+  const thermalTop = Math.round(Math.min(4000, cloudBase + Math.min(800, currentRateo * 100 + avgCape * 0.1)));
 
   // Finestra di volo
   const flightHours = dayData.filter(h => {

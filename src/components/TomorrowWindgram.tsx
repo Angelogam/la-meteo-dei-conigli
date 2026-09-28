@@ -13,6 +13,7 @@ interface WindPoint {
   windDirection: number;
   cloudCover: number;
   temperature: number;
+  dewPoint: number;
 }
 
 interface TomorrowWindgramProps {
@@ -31,7 +32,7 @@ async function fetchTomorrowWindgram(lat: number, lon: number): Promise<WindPoin
 
   const url =
     `https://api.tomorrow.io/v4/timelines?location=${lat},${lon}` +
-    `&fields=windSpeed,windDirection,temperature,cloudCover` +
+    `&fields=windSpeed,windDirection,temperature,cloudCover,dewPoint` +
     `&timesteps=1h&levels=${levels.join(",")}` +
     `&units=metric&apikey=${TOMORROW_API_KEY}`;
 
@@ -53,6 +54,7 @@ async function fetchTomorrowWindgram(lat: number, lon: number): Promise<WindPoin
         windDirection: v.windDirection?.[level] ?? NaN,
         cloudCover: v.cloudCover?.[level] ?? NaN,
         temperature: v.temperature?.[level] ?? NaN,
+        dewPoint: v.dewPoint?.[level] ?? NaN,
       });
     }
   }
@@ -303,9 +305,12 @@ export default function TomorrowWindgram({ decollo, selectedDay = 0 }: TomorrowW
       // Estimate thermal top from surface temp and cloud base
       const surfaceData = filteredData.find(p => p.time === times[i] && p.level === 0);
       if (!surfaceData) return "";
-      const spread = Math.max(1, surfaceData.temperature - (surfaceData.temperature - (100 - surfaceData.cloudCover) / 5));
-      const cloudBase = calcCloudBase(decollo.elevation, surfaceData.temperature, surfaceData.temperature - (100 - surfaceData.cloudCover) / 5);
-      const thermalTop = Math.min(3600, cloudBase + Math.min(700, 1.5 * 220));
+      const tSurface = surfaceData.temperature;
+      const dewSurface = !isNaN(surfaceData.dewPoint) ? surfaceData.dewPoint : tSurface - 8;
+      const spread = Math.max(1, tSurface - dewSurface);
+      const cloudBase = calcCloudBase(decollo.elevation, tSurface, dewSurface);
+      // Thermal top: cloudBase + CAPE-dependent contribution (matches ProfessionalWindgram)
+      const thermalTop = Math.min(3800, cloudBase + Math.min(800, spread * 60));
       return `${i === 0 ? "M" : "L"} ${getXFromHourIdx(i)},${getYFromAlt(thermalTop)}`;
     }).join(" ");
   }, [times, filteredData, decollo.elevation]);
@@ -462,9 +467,11 @@ export default function TomorrowWindgram({ decollo, selectedDay = 0 }: TomorrowW
             {times.map((_, i) => {
               const surfaceData = filteredData.find(p => p.time === times[i] && p.level === 0);
               if (!surfaceData) return null;
-              const spread = Math.max(1, surfaceData.temperature - (surfaceData.temperature - (100 - surfaceData.cloudCover) / 5));
+              const tS = surfaceData.temperature;
+              const dewS = !isNaN(surfaceData.dewPoint) ? surfaceData.dewPoint : tS - 8;
+              const spread = Math.max(1, tS - dewS);
               const cloudBase = Math.round(decollo.elevation + spread * 125);
-              const thermalTop = Math.min(3600, cloudBase + Math.min(700, 1.5 * 220));
+              const thermalTop = Math.min(3800, cloudBase + Math.min(800, spread * 60));
               const x = getXFromHourIdx(i);
               const y = getYFromAlt(thermalTop);
               return (
@@ -482,7 +489,9 @@ export default function TomorrowWindgram({ decollo, selectedDay = 0 }: TomorrowW
               if (i === 0 || i === times.length - 1) return null;
               const surfaceData = filteredData.find(p => p.time === t && p.level === 0);
               if (!surfaceData) return null;
-              const spread = Math.max(1, surfaceData.temperature - (surfaceData.temperature - (100 - surfaceData.cloudCover) / 5));
+              const tS = surfaceData.temperature;
+              const dewS = !isNaN(surfaceData.dewPoint) ? surfaceData.dewPoint : tS - 8;
+              const spread = Math.max(1, tS - dewS);
               const cloudBase = Math.round(decollo.elevation + spread * 125);
               const x = getXFromHourIdx(i);
               const cloudY = getYFromAlt(cloudBase + 250);
@@ -498,9 +507,11 @@ export default function TomorrowWindgram({ decollo, selectedDay = 0 }: TomorrowW
             {times.map((t, i) => {
               const surfaceData = filteredData.find(p => p.time === t && p.level === 0);
               if (!surfaceData) return null;
-              const spread = Math.max(1, surfaceData.temperature - (surfaceData.temperature - (100 - surfaceData.cloudCover) / 5));
+              const tS = surfaceData.temperature;
+              const dewS = !isNaN(surfaceData.dewPoint) ? surfaceData.dewPoint : tS - 8;
+              const spread = Math.max(1, tS - dewS);
               const cloudBase = Math.round(decollo.elevation + spread * 125);
-              const thermalTop = Math.min(3600, cloudBase + Math.min(700, 1.5 * 220));
+              const thermalTop = Math.min(3800, cloudBase + Math.min(800, spread * 60));
               const climbRate = Math.max(0.4, Math.min(2.5, spread * 0.15 + (surfaceData.cloudCover < 30 ? 0.5 : 0)));
               const x = getXFromHourIdx(i);
               const badgeY = getYFromAlt(thermalTop) + 12;

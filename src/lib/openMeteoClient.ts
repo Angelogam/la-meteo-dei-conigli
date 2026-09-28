@@ -7,6 +7,8 @@
 import { getMeteoBaseUrl, OPEN_METEO_DIRECT } from "@/config/apiConfig";
 
 const TIMEOUT_MS = 8000;
+// Modello ICON per l'Europa — stesso usato da meteo-parapente.com
+const DEFAULT_MODELS = "icon_seamless";
 
 async function fetchWithTimeout(url: string, timeoutMs: number = TIMEOUT_MS): Promise<Response> {
   const controller = new AbortController();
@@ -44,6 +46,7 @@ function buildUrl(params: {
   forecast_hours?: number;
   start_date?: string;
   end_date?: string;
+  models?: string;
 }): string {
   const baseUrl = getMeteoBaseUrl();
   const search = new URLSearchParams({
@@ -63,6 +66,8 @@ function buildUrl(params: {
     search.set("forecast_days", params.forecast_days.toString());
   }
   if (params.forecast_hours) search.set("forecast_hours", params.forecast_hours.toString());
+  // Usa modello ICON per l'Europa (stesso del sito meteo-parapente.com)
+  if (params.models) search.set("models", params.models);
   return `${baseUrl}?${search.toString()}`;
 }
 
@@ -80,6 +85,7 @@ function buildDirectUrl(params: {
   forecast_hours?: number;
   start_date?: string;
   end_date?: string;
+  models?: string;
 }): string {
   const search = new URLSearchParams({
     latitude: params.latitude.toString(),
@@ -96,6 +102,7 @@ function buildDirectUrl(params: {
     search.set("forecast_days", params.forecast_days.toString());
   }
   if (params.forecast_hours) search.set("forecast_hours", params.forecast_hours.toString());
+  if (params.models) search.set("models", params.models);
   return `${OPEN_METEO_DIRECT}?${search.toString()}`;
 }
 
@@ -109,7 +116,7 @@ export async function fetchHourly(
   start_date?: string,
   end_date?: string
 ): Promise<any> {
-  const url = buildUrl({ latitude: lat, longitude: lon, hourly: params, start_date, end_date });
+  const url = buildUrl({ latitude: lat, longitude: lon, hourly: params, start_date, end_date, models: DEFAULT_MODELS });
   try {
     const res = await fetchWithTimeout(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -117,7 +124,7 @@ export async function fetchHourly(
   } catch (err) {
     // Fallback: riprova direttamente su Open-Meteo se il proxy ha fallito
     if (url.includes("localhost:3000") || url.includes("/api/open-meteo")) {
-      const directUrl = buildDirectUrl({ latitude: lat, longitude: lon, hourly: params, start_date, end_date });
+      const directUrl = buildDirectUrl({ latitude: lat, longitude: lon, hourly: params, start_date, end_date, models: DEFAULT_MODELS });
       const res = await fetchWithTimeout(directUrl);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
@@ -135,14 +142,14 @@ export async function fetchDaily(
   params: string,
   days: number = 3
 ): Promise<any> {
-  const url = buildUrl({ latitude: lat, longitude: lon, daily: params, forecast_days: days });
+  const url = buildUrl({ latitude: lat, longitude: lon, daily: params, forecast_days: days, models: DEFAULT_MODELS });
   try {
     const res = await fetchWithTimeout(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   } catch (err) {
     if (url.includes("localhost:3000") || url.includes("/api/open-meteo")) {
-      const directUrl = buildDirectUrl({ latitude: lat, longitude: lon, daily: params, forecast_days: days });
+      const directUrl = buildDirectUrl({ latitude: lat, longitude: lon, daily: params, forecast_days: days, models: DEFAULT_MODELS });
       const res = await fetchWithTimeout(directUrl);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
@@ -155,14 +162,14 @@ export async function fetchDaily(
  * Fetch dati correnti
  */
 export async function fetchCurrent(lat: number, lon: number, params: string): Promise<any> {
-  const url = buildUrl({ latitude: lat, longitude: lon, current: params, forecast_days: 1 });
+  const url = buildUrl({ latitude: lat, longitude: lon, current: params, forecast_days: 1, models: DEFAULT_MODELS });
   try {
     const res = await fetchWithTimeout(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   } catch (err) {
     if (url.includes("localhost:3000") || url.includes("/api/open-meteo")) {
-      const directUrl = buildDirectUrl({ latitude: lat, longitude: lon, current: params, forecast_days: 1 });
+      const directUrl = buildDirectUrl({ latitude: lat, longitude: lon, current: params, forecast_days: 1, models: DEFAULT_MODELS });
       const res = await fetchWithTimeout(directUrl);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
@@ -188,6 +195,7 @@ export async function fetchFull(
     daily: dailyParams,
     current: currentParams,
     forecast_days: 3,
+    models: DEFAULT_MODELS,
   });
   try {
     const res = await fetchWithTimeout(url);
@@ -202,6 +210,7 @@ export async function fetchFull(
         daily: dailyParams,
         current: currentParams,
         forecast_days: 3,
+        models: DEFAULT_MODELS,
       });
       const res = await fetchWithTimeout(directUrl);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

@@ -130,39 +130,23 @@ export default function WindgramMatrix({
   }, [baseDecolloFloor, maxAlt]);
 
   const hourThermalData = useMemo(() => {
-      const data: Record<number, { top: number; base: number; rateo: number; cloudBase: number; cloudCover: number; deltaT: number } | null> = {};
-  
-      let tempMax = 20;
-      let tempMin = 10;
-      DISPLAY_HOURS.forEach((hr) => {
-        const h = hourlyMap.get(hr);
-        if (h && h.temperature != null) {
-          tempMax = Math.max(tempMax, h.temperature);
-          tempMin = Math.min(tempMin, h.temperature);
-        }
-      });
-      const dailyAmplitude = Math.max(5, tempMax - tempMin);
+      const data: Record<number, { top: number; base: number; rateo: number; cloudBase: number; cloudCover: number; deltaT: number; climbRate: number } | null> = {};
   
       DISPLAY_HOURS.forEach((hr) => {
         const h = hourlyMap.get(hr);
         if (h && h.temperature != null && h.dewPoint != null) {
           const spread = Math.max(1, h.temperature - h.dewPoint);
           const lcl = calcCloudBase(altitude, h.temperature ?? 18, h.dewPoint ?? (h.temperature ?? 18) - 6);
-  
-          let diurnalFactor = 0;
-          if (hr >= 8 && hr <= 18) {
-            const hoursFromPeak = Math.abs(hr - 13);
-            if (hoursFromPeak <= 5) {
-              diurnalFactor = Math.max(0, Math.cos((hoursFromPeak / 5) * (Math.PI / 2)));
-            }
-          }
-  
-          const maxThermalDepth = 600 + dailyAmplitude * 60;
-          const thermalDepth = maxThermalDepth * diurnalFactor;
-  
+
           const base = Math.max(altitude + 100, lcl);
-          const top = Math.min(3500, base + thermalDepth);
-          const rateo = 0.1 + 3.4 * diurnalFactor;
+          // Thermal top: same formula as ProfessionalWindgram for consistency
+          // Uses real CAPE from API + spread-derived climb rate
+          const cape = h.cape ?? 0;
+          const rateo = 0.6 + (spread * 0.08) + (h.cloudCover < 30 ? 0.3 : 0) + (cape > 200 ? Math.min(0.4, cape / 1000) : 0);
+          const cappedRateo = Math.max(0.4, Math.min(2.5, rateo));
+          const thermalDepth = Math.min(800, cappedRateo * 100 + cape * 0.1);
+          const top = Math.min(4000, base + thermalDepth);
+          const climbRate = cappedRateo;
   
           // Calcolo deltaT reale dai dati di stabilità Open-Meteo
           let deltaT = 0.72;
@@ -192,9 +176,10 @@ export default function WindgramMatrix({
             top,
             base,
             rateo,
-            cloudBase: Math.min(lcl, 3500),
+            cloudBase: Math.min(lcl, 4000),
             cloudCover: h.cloudCover ?? 30,
             deltaT,
+            climbRate,
           };
         } else {
           data[hr] = null;
