@@ -3,6 +3,7 @@ import React, { useMemo, useState } from "react";
 import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
 import type { HourData } from "@/types/meteo";
 import { Wind, Loader2 } from "lucide-react";
+import { calcCloudBase } from "@/utils/calcCloudBase";
 
 interface AlpiumWindgramProps {
   siteName: string;
@@ -248,7 +249,7 @@ export default function AlpiumWindgram({
       const t = hourly.temp2m[idx] ?? 15;
       const dew = hourly.dew2m[idx] ?? (t - 6);
       const spread = Math.max(1, t - dew);
-      const lcl = Math.round(siteAlt + spread * 125);
+      const lcl = calcCloudBase(siteAlt, t, dew);
 
       // Curva sinusoidale: 0 alle 8h, 1 alle 13h, 0 alle 18h
       const dayPhase = (hr - 13) / 5;

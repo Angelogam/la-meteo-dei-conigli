@@ -1,6 +1,7 @@
 "use client";
 
 import type { HourData } from "@/types/meteo";
+import { calcCloudBase } from "@/utils/calcCloudBase";
 
 interface TermicheResult {
   rateo: number;
@@ -84,10 +85,7 @@ export function calcolaTermiche(h: HourData | undefined | null, altitude: number
   rateo = Math.round(rateo * 10) / 10;
 
   // ===== BASE TERMICA (LCL) =====
-  const base = Math.max(
-    altitude + 100,
-    Math.min(altitude + 2500, Math.round(spread * 125 + altitude))
-  );
+  const base = Math.max(altitude + 100, calcCloudBase(altitude, temp, dewPoint));
 
   // ===== TOP TERMICO =====
   const topIncrement = rateo * 400 + spread * 50;

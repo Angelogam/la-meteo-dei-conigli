@@ -13,7 +13,6 @@ import type { MeteoHourly, MeteoDaily, MeteoCurrent } from "./openMeteoService";
 // ===== COSTANTI FISICHE =====
 const LAPSE_RATE_DRY = 0.0098;       // K/m gradiente adiabatico secco
 const LAPSE_RATE_MOIST = 0.006;      // K/m gradiente adiabatico saturo
-const LCL_FACTOR = 125;              // m per grado di spread T-dew point
 const STD_PRESSURE = 1013.25;        // hPa pressione media al livello del mare
 const STD_TEMP_MSL = 15;             // °C temperatura media al livello del mare
 
@@ -54,11 +53,7 @@ function diurnalRadiation(hour: number, cloudCover: number): number {
   return clearSky * (1 - cloudCover / 100 * 0.7);
 }
 
-/** Calcola la base dei cumuli in metri (lapse rate method) */
-function calcCloudBase(surfaceTemp: number, dewPoint: number, surfaceAlt: number): number {
-  const spread = Math.max(0.5, surfaceTemp - dewPoint);
-  return surfaceAlt + spread * LCL_FACTOR;
-}
+import { calcCloudBase } from "@/utils/calcCloudBase";
 
 /** Stima il gradiente termico reale tra 2m e 80m (K/100m) */
 function calcRealLapseRate(t2m: number, t80m: number | null, alt: number): number {

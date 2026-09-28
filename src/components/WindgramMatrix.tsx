@@ -3,6 +3,7 @@ import type { HourData } from "@/types/meteo";
 import { Wind } from "lucide-react";
 import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
 import { useStabilitaMasseAria } from "@/hooks/useStabilitaMasseAria";
+import { calcCloudBase } from "@/utils/calcCloudBase";
 
 const DISPLAY_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] as const;
 
@@ -146,7 +147,7 @@ export default function WindgramMatrix({
         const h = hourlyMap.get(hr);
         if (h && h.temperature != null && h.dewPoint != null) {
           const spread = Math.max(1, h.temperature - h.dewPoint);
-          const lcl = Math.round(altitude + spread * 125);
+          const lcl = calcCloudBase(altitude, h.temperature ?? 18, h.dewPoint ?? (h.temperature ?? 18) - 6);
   
           let diurnalFactor = 0;
           if (hr >= 8 && hr <= 18) {

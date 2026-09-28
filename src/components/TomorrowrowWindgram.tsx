@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { Sun, AlertTriangle } from "lucide-react";
+import { calcCloudBase } from "@/utils/calcCloudBase";
 
 const TOMORROW_API_KEY = import.meta.env.VITE_TOMORROW_KEY || "";
 
@@ -344,7 +345,7 @@ export default function Tomorrowwindgram({ decollo, selectedDay = 0 }: TomorrowW
             const surfaceData = filteredData.find((p) => p.time === times[i] && p.level === 0);
             if (!surfaceData) return null;
             const spread = Math.max(1, surfaceData.temperature - (surfaceData.temperature - (100 - surfaceData.cloudCover) / 5));
-            const cloudBase = Math.round(decollo.elevation + spread * 125);
+            const cloudBase = calcCloudBase(decollo.elevation, surfaceData.temperature, surfaceData.temperature - (100 - surfaceData.cloudCover) / 5);
             const thermalTop = Math.min(3600, cloudBase + Math.min(700, 1.5 * 220));
             const x = getXFromHourIdx(i);
             const y = getYFromAlt(thermalTop);
@@ -356,7 +357,7 @@ export default function Tomorrowwindgram({ decollo, selectedDay = 0 }: TomorrowW
             const surfaceData = filteredData.find((p) => p.time === t && p.level === 0);
             if (!surfaceData) return null;
             const spread = Math.max(1, surfaceData.temperature - (surfaceData.temperature - (100 - surfaceData.cloudCover) / 5));
-            const cloudBase = Math.round(decollo.elevation + spread * 125);
+            const cloudBase = calcCloudBase(decollo.elevation, surfaceData.temperature, surfaceData.temperature - (100 - surfaceData.cloudCover) / 5);
             const x = getXFromHourIdx(i);
             const cloudY = getYFromAlt(cloudBase + 250);
             return (

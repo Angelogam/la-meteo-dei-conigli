@@ -35,15 +35,14 @@ function getWeatherEmoji(code: number): string {
   return "☀️";
 }
 
-function calcCloudBase(weather: HourData): { cloudBase: number } {
-  const spread = weather.temperature - weather.dewPoint;
-  return { cloudBase: Math.max(200, Math.min(3000, Math.round(spread * 125))) };
-}
+import { calcCloudBase } from "@/utils/calcCloudBase";
 
-function calcThermal(_dayData: HourData[], _altitude: number) {
-  const cloudBases = _dayData.map(h => calcCloudBase(h));
+function calcThermal(dayData: HourData[], altitude: number) {
+  const cloudBases = dayData.map(h =>
+    calcCloudBase(altitude, h.temperature, h.dewPoint)
+  );
   const avgBase = cloudBases.length > 0
-    ? Math.round(cloudBases.reduce((s, c) => s + c.cloudBase, 0) / cloudBases.length)
+    ? Math.round(cloudBases.reduce((s, c) => s + c, 0) / cloudBases.length)
     : 0;
   return { cloudBase: avgBase };
 }

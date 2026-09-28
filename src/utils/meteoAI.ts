@@ -4,7 +4,11 @@ import type { HourData } from "@/types/meteo";
 
 const TEMP_GRADIENT = 0.98;
 const tempAtAlt = (tempBase: number, altM: number) => tempBase - (altM / 100) * TEMP_GRADIENT;
-const calcCloudBase = (temp: number, dewPoint: number) => (temp - dewPoint) * 125;
+import { calcCloudBase as calcCloudBaseShared } from "@/utils/calcCloudBase";
+// Helper che calcola cloudBase sopra il livello del mare (senza sito)
+// CalcCloudBase senza altitudine (solo spread × 125, per AI text generation)
+const calcCloudBase = (_temp: number, _dew: number) =>
+  Math.max(0, Math.round((_temp - _dew) * 125));
 const calcFreezingLevel = (temp: number) => Math.round(temp / TEMP_GRADIENT * 100);
 const calcCape = (temp: number, humidity: number) => {
   const dew = temp - (100 - humidity) / 5;

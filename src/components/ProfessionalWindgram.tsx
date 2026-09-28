@@ -6,6 +6,7 @@ import { fetchHourly } from "@/lib/openMeteoClient";
 import { generateReportMeteo, type GeneratedReport } from "@/utils/generateReportMeteo";
 import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
 import { useStabilitaMasseAria } from "@/hooks/useStabilitaMasseAria";
+import { calcCloudBase } from "@/utils/calcCloudBase";
 
 interface WindgramProps {
   latitude: number;
@@ -236,17 +237,30 @@ export default function ProfessionalWindgram({
     return HOURS.map((targetHour) => {
       const idx = times.findIndex((t) => parseInt(t.split("T")[1].split(":")[0], 10) === targetHour);
       if (idx === -1) {
-        const fb = Array(13).fill(0).map((_, i) => 0.55 + i * 0.03);
-        return {
-          hour: targetHour, sunPct: 80, thermalAvg: 1.2, tempGround: 19,
-          windGround: 8, windDirGround: 180, precip: 0, cloudCover: 10,
-          zeroThermal: 4380, thermalTop: altitude + 900, cloudBase: altitude + 800,
-          cloudPct: 5, deltaT: 0.75, tempAt80m: 15, tempAt120m: 12,
-          levelWinds: displayAltitudes.map((alt) => ({
-            alt, speed: 12, dir: 240,
-          })),
-          deltaTProfile: fb,
-        };
+        // Ore non disponibile nell'API: usa interpolation lineare dalle ore vicine
+        const prevIdx = times.findIndex((t) => parseInt(t.split("T")[1].split(":")[0], 10) < targetHour && parseInt(t.split("T")[1].split(":")[0], 10) >= targetHour - 2);
+        const nextIdx = times.findIndex((t) => parseInt(t.split("T")[1].split(":")[0], 10) > targetHour && parseInt(t.split("T")[1].split(":")[0], 10) <= targetHour + 2);
+        if (prevIdx !== -1 && nextIdx !== -1) {
+          const p = data.hourly;
+          const tPrev = p.temperature_2m?.[prevIdx] ?? 15;
+          const tNext = p.temperature_2m?.[nextIdx] ?? 15;
+          const t = (tPrev + tNext) / 2;
+          const dew = ((p.dew_point_2m?.[prevIdx] ?? tPrev - 6) + (p.dew_point_2m?.[nextIdx] ?? tNext - 6)) / 2;
+          const cloud = ((p.cloud_cover?.[prevIdx] ?? 30) + (p.cloud_cover?.[nextIdx] ?? 30)) / 2;
+          const cloudBaseVal = calcCloudBase(altitude, t, dew);
+          const fb = Array(13).fill(0).map((_, i) => 0.55 + i * 0.03);
+          return {
+            hour: targetHour, sunPct: 60, thermalAvg: 0.9, tempGround: Math.round(t),
+            windGround: 6, windDirGround: 180, precip: 0, cloudCover: Math.round(cloud),
+            zeroThermal: Math.round(altitude + t / 0.0098), thermalTop: cloudBaseVal + 500,
+            cloudBase: cloudBaseVal, cloudPct: Math.round(cloud), deltaT: 0.65,
+            tempAt80m: Math.round(t - 1.5), tempAt120m: Math.round(t - 3),
+            levelWinds: displayAltitudes.map((alt) => ({ alt, speed: 8, dir: 200 })),
+            deltaTProfile: fb,
+          };
+        }
+        // Nessun dato vicino: nascondi l'ora
+        return null as any;
       }
 
       const h = data.hourly;
@@ -268,7 +282,7 @@ export default function ProfessionalWindgram({
 
       const sunPct = Math.min(100, Math.max(10, Math.round(((rad / 900) * (1 - (cloud / 100) * 0.65)) * 100)));
       const spread = Math.max(1, t - dew);
-      const cloudBase = Math.round(altitude + Math.min(1500, spread * 125));
+      const cloudBase = calcCloudBase(altitude, t, dew);
       const cloudPct = Math.max(2, Math.min(95, Math.round(cloud)));
 
       // ─── First compute derived values needed by the lapse-rate model ───

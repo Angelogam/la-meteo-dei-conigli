@@ -5,6 +5,7 @@ import { Sun, Calendar } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 import type { MeteoCurrent } from "@/services/openMeteoService";
 import { calcolaTermiche } from "@/utils/termiche";
+import { calcCloudBase } from "@/utils/calcCloudBase";
 
 interface AnalisiTabProps {
   currentData: HourData | MeteoCurrent | null;
@@ -57,7 +58,7 @@ export default function AnalisiTab({ currentData, dayData, site }: AnalisiTabPro
     const rateoMax = Math.max(...termichePerOra.map((t) => t.rateo));
     const oreAttive = termichePerOra.filter((t) => t.rateo >= 0.3).length;
     const mediaSpread = tempMedia - dewMedia;
-    const baseLCL = Math.max(200, Math.min(3000, Math.round(mediaSpread * 125)));
+    const baseLCL = calcCloudBase(1400, tempMedia, dewMedia);
 
     const dirs = oreGiorno.map((h) => h.windDir).filter((d) => d != null);
     const dirCount: Record<number, number> = {};

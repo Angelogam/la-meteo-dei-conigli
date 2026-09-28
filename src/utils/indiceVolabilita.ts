@@ -1,5 +1,7 @@
 "use client";
 
+import { calcCloudBase } from "@/utils/calcCloudBase";
+
 export interface ParametriVolabilita {
   windSpeed: number;        // km/h (al suolo)
   windGusts?: number;       // km/h
@@ -65,9 +67,9 @@ function windRelativoLabel(windDir: number, esposizione: string): "frontale" | "
 export function calcolaIndiceVolabilita(p: ParametriVolabilita): RisultatoVolabilita {
   const motivi: string[] = [];
 
-  // 1. BASE NUBI (LCL semplificato: quota + spread * 125)
+  // 1. BASE NUBI (LCL semplificato: quota + spread * 125, max +1800m)
   const spread = Math.max(0.5, p.temperature - p.dewPoint);
-  const baseNubiM = Math.round(p.quota + spread * 125);
+  const baseNubiM = calcCloudBase(p.quota, p.temperature, p.dewPoint);
 
   // 2. RATEO TERMICO stimato
   let rateoTermico = Math.max(0, spread * 0.22 + (p.cape ? Math.min(1.5, p.cape / 800) : 0.3));

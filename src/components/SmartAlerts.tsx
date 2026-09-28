@@ -3,6 +3,7 @@
 import type { MeteoCurrent } from "@/services/openMeteoService";
 import type { HourData } from "@/types/meteo";
 import { AlertTriangle, CloudDrizzle, Snowflake, Wind, CloudLightning, Eye } from "lucide-react";
+import { calcCloudBase } from "@/utils/calcCloudBase";
 
 interface SmartAlertsProps {
   currentData: MeteoCurrent | null;
@@ -29,7 +30,7 @@ export function generateSmartAlerts(
   const t = current.temperature ?? 18;
   const dew = current.dewPoint ?? t - 8;
   const spread = Math.max(0.5, t - dew);
-  const cloudBase = siteAlt + spread * 125;
+  const cloudBase = calcCloudBase(siteAlt, t, dew);
   const cape = hourly.reduce((s, h) => s + (h.cape ?? 0), 0) / hourly.length;
   const li = hourly.reduce((s, h) => s + (h.liftedIndex ?? 0), 0) / hourly.length;
   const avgHumidity = hourly.reduce((s, h) => s + (h.humidity ?? 50), 0) / hourly.length;

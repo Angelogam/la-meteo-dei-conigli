@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { fetchHourly } from "@/lib/openMeteoClient";
 import type { HourData } from "@/types/meteo";
+import { calcCloudBase } from "@/utils/calcCloudBase";
 
 interface WindLevel {
   hpa: string;
@@ -178,7 +179,7 @@ export function useMultiHourWindProfile({
             : siteAlt;
 
           const spread = Math.max(1, t - dew);
-          const cloudBase = Math.round(siteAlt + spread * 125);
+          const cloudBase = calcCloudBase(siteAlt, t, dew);
 
           hourDataMap.set(targetHour, {
             hour: targetHour,
@@ -250,7 +251,7 @@ export function useMultiHourWindProfile({
       const sortedLevels = levels.sort((a, b) => a.alt - b.alt);
       const maxRealAltitude = sortedLevels.length > 0 ? Math.max(...sortedLevels.map(l => l.alt)) : siteAlt;
       const spread = Math.max(1, t - dew);
-      const cloudBase = Math.round(siteAlt + spread * 125);
+      const cloudBase = calcCloudBase(siteAlt, t, dew);
 
       map.set(targetHour, {
         hour: targetHour,

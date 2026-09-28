@@ -24,17 +24,15 @@ interface MeteoTabProps {
   cin?: number | null;
 }
 
-function calcCloudBase(siteAlt: number, t: number, dew: number) {
-  const spread = Math.max(0.5, t - dew);
-  return siteAlt + spread * 125;
-}
+import { calcCloudBase } from "@/utils/calcCloudBase";
 
-function calcLCL(siteAlt: number, t: number, dew: number) {
+function calcLCL(siteAlt: number, t: number, dew: number): number {
+  // LCL più preciso (formula di Bolton 1980), usato come riferimento secondario
   const a = 17.27;
   const b = 237.7;
   const gamma = (a * dew / (b + dew)) + Math.log((dew + 273.15) / (t + 273.15));
   if (gamma <= 0) return siteAlt;
-  return siteAlt + (b * (t + 273.15) * gamma) / (a * (t - dew));
+  return Math.round(siteAlt + (b * (t + 273.15) * gamma) / (a * (t - dew)));
 }
 
 function calcMixingRatio(t: number, rh: number) {
