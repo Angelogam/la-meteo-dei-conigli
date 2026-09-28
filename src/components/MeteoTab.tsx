@@ -4,12 +4,11 @@ import type { MeteoCurrent } from "@/services/openMeteoService";
 import type { HourData } from "@/types/meteo";
 import {
   MapPin, Wind, Thermometer, Droplets, Eye, Mountain, Cloud,
-  Activity, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp,
+  Activity, AlertTriangle, CheckCircle2,
   Sun, Radiation, ArrowUp, CloudSnow, ArrowRight, TrendingUp,
   TrendingDown, Minus, CloudRain, Waves, Zap as ZapIcon,
-  Gauge, Flame, CloudOff, Timer, PlaneTakeoff, Parachute
+  Gauge, CloudOff, Timer, PlaneTakeoff
 } from "lucide-react";
-import { useState } from "react";
 
 interface MeteoTabProps {
   currentData: MeteoCurrent | null;
@@ -87,9 +86,6 @@ function signalColors(signal: Signal) {
 }
 
 export default function MeteoTab({ currentData, dayData, site, thermalDelta, modelName, selectedHour, selectedDay = 0, cape: propCape, liftedIndex: propLi, cin: propCin }: MeteoTabProps) {
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showWindProfile, setShowWindProfile] = useState(false);
-
   if (!currentData || dayData.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-slate-500 bg-slate-900/50 rounded-2xl border border-slate-700/50">
@@ -150,6 +146,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   const dir850Use = valid850.length > 0 ? valid850.reduce((s, h) => s + (h.windDir850 ?? 0), 0) / valid850.length : null;
   const wind850 = valid850.length > 0 ? valid850.reduce((s, h) => s + (h.windSpeed850 ?? 0), 0) / valid850.length : null;
   const waveIndex = calcWaveIndex(windDir, dir850Use ?? 180);
+  const windSheer = wind850 != null ? Math.round(wind850 - windSpeed) : 0;
 
   const midDay = dayData[Math.floor(dayData.length / 2)] ?? dayData[0];
   const wind80m = midDay.windSpeed80m ?? null;
@@ -697,113 +694,98 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
         </div>
       </div>
 
-      {/* ══════════════ SECTION: Vento in Quota ══════════════ */}
-      <div className="border-t border-white/5">
-        <button
-          onClick={() => setShowWindProfile(!showWindProfile)}
-          className="w-full px-5 py-3.5 flex items-center justify-between hover:bg-white/5 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center">
-              <Wind className="w-3.5 h-3.5 text-slate-400" />
-            </div>
-            <div className="text-left">
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider font-black">Vento in quota</span>
-              <div className="text-[9px] text-slate-500 font-semibold mt-0.5">Profilo verticale del vento — cruciale per decollo e atterraggio</div>
-            </div>
+      {/* ══════════════ SECTION: Vento in quota ══════════════ */}
+      <div className="border-t border-white/5 px-5 py-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Wind className="w-4 h-4 text-amber-400" />
+          <span className="text-[10px] text-slate-400 uppercase tracking-wider font-black">Profilo vento verticale</span>
+          <span className="text-[9px] text-slate-600 ml-auto">Decollo → atterraggio — ogni livello conta</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          <div className="rounded-xl p-3 bg-amber-500/5 border border-amber-500/20">
+            <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">Suolo (10m)</div>
+            <div className="text-xl font-black text-amber-300 tabular-nums">{Math.round(windSpeed)} <span className="text-sm text-amber-400/60 font-semibold">{dirLabel(windDir)}</span></div>
+            {windGusts > 0 && <div className="text-xs text-slate-500 mt-1">Raffiche {Math.round(windGusts)} km/h · <span className={gustRatio > 1.5 ? "text-rose-400" : "text-slate-500"}>{turbulenceLevel}</span></div>}
+            <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{windSub}</p>
           </div>
-          {showWindProfile ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-        </button>
-
-        {showWindProfile && (
-          <div className="px-5 py-4 border-t border-white/5">
-            {/* Surface wind detail */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-              <div className="rounded-xl p-3 bg-amber-500/5 border border-amber-500/20">
-                <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">Suolo (10m)</div>
-                <div className="text-xl font-black text-amber-300 tabular-nums">{Math.round(windSpeed)} <span className="text-sm text-amber-400/60 font-semibold">{dirLabel(windDir)}</span></div>
-                {windGusts > 0 && <div className="text-xs text-slate-500 mt-1">Raffiche {Math.round(windGusts)} km/h · {turbulenceLevel}</div>}
-              </div>
-              {wind80m != null && (
-                <div className="rounded-xl p-3 bg-orange-500/5 border border-orange-500/20">
-                  <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">80m</div>
-                  <div className="text-xl font-black text-orange-300 tabular-nums">{Math.round(wind80m)} <span className="text-sm text-orange-400/60 font-semibold">{dirLabel(windDir80m ?? windDir)}</span></div>
-                  <div className="text-xs text-slate-500 mt-1">~{siteAlt + 80}m slm</div>
-                </div>
-              )}
-              {wind120m != null && (
-                <div className="rounded-xl p-3 bg-violet-500/5 border border-violet-500/20">
-                  <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">120m</div>
-                  <div className="text-xl font-black text-violet-300 tabular-nums">{Math.round(wind120m)} <span className="text-sm text-violet-400/60 font-semibold">{dirLabel(windDir120m ?? windDir)}</span></div>
-                  <div className="text-xs text-slate-500 mt-1">~{siteAlt + 120}m slm</div>
-                </div>
-              )}
-              {wind180m != null && (
-                <div className="rounded-xl p-3 bg-purple-500/5 border border-purple-500/20">
-                  <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">180m</div>
-                  <div className="text-xl font-black text-purple-300 tabular-nums">{Math.round(wind180m)} <span className="text-sm text-purple-400/60 font-semibold">{dirLabel(windDir180m ?? windDir)}</span></div>
-                  <div className="text-xs text-slate-500 mt-1">~{siteAlt + 180}m slm</div>
-                </div>
-              )}
+          {wind80m != null && (
+            <div className="rounded-xl p-3 bg-orange-500/5 border border-orange-500/20">
+              <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">80m</div>
+              <div className="text-xl font-black text-orange-300 tabular-nums">{Math.round(wind80m)} <span className="text-sm text-orange-400/60 font-semibold">{dirLabel(windDir80m ?? windDir)}</span></div>
+              <div className="text-xs text-slate-500 mt-1">~{siteAlt + 80}m slm</div>
             </div>
+          )}
+          {wind120m != null && (
+            <div className="rounded-xl p-3 bg-violet-500/5 border border-violet-500/20">
+              <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">120m</div>
+              <div className="text-xl font-black text-violet-300 tabular-nums">{Math.round(wind120m)} <span className="text-sm text-violet-400/60 font-semibold">{dirLabel(windDir120m ?? windDir)}</span></div>
+              <div className="text-xs text-slate-500 mt-1">~{siteAlt + 120}m slm</div>
+            </div>
+          )}
+          {wind180m != null && (
+            <div className="rounded-xl p-3 bg-purple-500/5 border border-purple-500/20">
+              <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">180m</div>
+              <div className="text-xl font-black text-purple-300 tabular-nums">{Math.round(wind180m)} <span className="text-sm text-purple-400/60 font-semibold">{dirLabel(windDir180m ?? windDir)}</span></div>
+              <div className="text-xs text-slate-500 mt-1">~{siteAlt + 180}m slm</div>
+            </div>
+          )}
+        </div>
 
-            {/* Wind gradient bars */}
-            {(wind80m != null || wind120m != null || wind180m != null) && (
-              <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/30">
-                <div className="text-[10px] text-slate-400 uppercase tracking-wider font-black mb-3">Gradiente verticale del vento</div>
-                <div className="space-y-2">
-                  {[
-                    { label: "10m (suolo)", speed: windSpeed, dir: windDir, color: "bg-amber-500" },
-                    ...(wind80m != null ? [{ label: "80m", speed: wind80m, dir: windDir80m ?? windDir, color: "bg-orange-500" }] : []),
-                    ...(wind120m != null ? [{ label: "120m", speed: wind120m, dir: windDir120m ?? windDir, color: "bg-violet-500" }] : []),
-                    ...(wind180m != null ? [{ label: "180m", speed: wind180m, dir: windDir180m ?? windDir, color: "bg-purple-500" }] : []),
-                    ...(wind2000m != null ? [{ label: "~2000m", speed: wind2000m, dir: dir2000m ?? windDir, color: "bg-rose-500" }] : []),
-                  ].map((layer, i, arr) => {
-                    const maxW = Math.max(...arr.map(l => l.speed ?? 1));
-                    const barWidth = ((layer.speed ?? 0) / maxW) * 100;
-                    return (
-                      <div key={i} className="flex items-center gap-3">
-                        <span className="text-[9px] text-slate-400 font-bold w-16 shrink-0 text-right">{layer.label}</span>
-                        <div className="flex-1 h-5 bg-slate-700/30 rounded-full overflow-hidden relative">
-                          <div className={`h-full ${layer.color} rounded-full transition-all flex items-center justify-end pr-2`} style={{ width: `${Math.max(8, barWidth)}%` }}>
-                            <span className="text-[9px] font-black text-white/90">{Math.round(layer.speed)} km/h</span>
-                          </div>
-                        </div>
-                        <span className="text-[9px] text-slate-500 font-bold w-8 shrink-0">{dirLabel(layer.dir)}</span>
+        {/* Wind gradient bars */}
+        {(wind80m != null || wind120m != null || wind180m != null) && (
+          <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/30 mb-3">
+            <div className="text-[10px] text-slate-400 uppercase tracking-wider font-black mb-3">Gradiente verticale — come cambia il vento salendo</div>
+            <div className="space-y-2">
+              {[
+                { label: "10m (suolo)", speed: windSpeed, dir: windDir, color: "bg-amber-500" },
+                ...(wind80m != null ? [{ label: "80m", speed: wind80m, dir: windDir80m ?? windDir, color: "bg-orange-500" }] : []),
+                ...(wind120m != null ? [{ label: "120m", speed: wind120m, dir: windDir120m ?? windDir, color: "bg-violet-500" }] : []),
+                ...(wind180m != null ? [{ label: "180m", speed: wind180m, dir: windDir180m ?? windDir, color: "bg-purple-500" }] : []),
+                ...(wind2000m != null ? [{ label: "~2000m", speed: wind2000m, dir: dir2000m ?? windDir, color: "bg-rose-500" }] : []),
+              ].map((layer, i, arr) => {
+                const maxW = Math.max(...arr.map(l => l.speed ?? 1));
+                const barWidth = ((layer.speed ?? 0) / maxW) * 100;
+                return (
+                  <div key={i} className="flex items-center gap-3">
+                    <span className="text-[9px] text-slate-400 font-bold w-16 shrink-0 text-right">{layer.label}</span>
+                    <div className="flex-1 h-5 bg-slate-700/30 rounded-full overflow-hidden relative">
+                      <div className={`h-full ${layer.color} rounded-full flex items-center justify-end pr-2`} style={{ width: `${Math.max(8, barWidth)}%` }}>
+                        <span className="text-[9px] font-black text-white/90">{Math.round(layer.speed)} km/h</span>
                       </div>
-                    );
-                  })}
-                </div>
-                <p className="text-[9px] text-slate-600 mt-3 leading-tight">
-                  Il gradiente mostra come il vento cambia con la quota. Wind shear forte = termiche deformate. Differenza direzione &gt;45° = rotazione del vento in quota.
-                </p>
-              </div>
-            )}
-
-            {wind2000m != null && (
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <div className="bg-gradient-to-r from-violet-900/30 to-violet-800/20 rounded-xl p-3.5 border border-violet-500/30">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Wind className="w-4 h-4 text-violet-400" />
-                    <span className="text-xs text-violet-300 font-bold">Quota ~2000m (850hPa)</span>
+                    </div>
+                    <span className="text-[9px] text-slate-500 font-bold w-8 shrink-0">{dirLabel(layer.dir)}</span>
                   </div>
-                  <div className="text-xl font-black text-violet-300 tabular-nums">{wind2000m} <span className="text-sm text-violet-400/60 font-semibold">{dirLabel(dir2000m ?? 0)}</span></div>
-                  <div className="text-xs text-violet-400/60 font-semibold mt-1">Wind shear: {waveIndex.toFixed(0)}°</div>
-                  <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{waveIndex < 30 ? "🌊 Onda montana molto probabile — provare quote superiori" : waveIndex < 60 ? "Onda presente — condizioni favorevoli per volo in quota" : "Nessun effetto onda significativo"}</p>
-                </div>
-                <div className="bg-slate-800/40 rounded-xl p-3.5 border border-slate-700/30">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Waves className="w-4 h-4 text-rose-400" />
-                    <span className="text-xs text-slate-400 font-bold">Turbolenza</span>
-                  </div>
-                  <div className={`text-xl font-black tabular-nums ${turbulenceColor}`}>{turbulenceLevel}</div>
-                  <div className="text-xs text-slate-500 font-semibold mt-1">Rapporto raffiche: {gustRatio.toFixed(2)}</div>
-                  <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{gustRatio > 1.8 ? "⚠️ Raffiche pericolose — attendere calma o evitare" : gustRatio > 1.4 ? "Raffiche significative — valutare con cautela" : "Turbolenza bassa — volo tranquillo"}</p>
-                </div>
-              </div>
-            )}
+                );
+              })}
+            </div>
+            <p className="text-[9px] text-slate-600 mt-3 leading-tight">
+              Gradiente forte = wind shear = termiche deformate. Differenza direzione &gt;45° = rotazione vento in quota.
+            </p>
           </div>
         )}
+
+        <div className="grid grid-cols-2 gap-3">
+          {wind2000m != null && (
+            <div className="bg-gradient-to-r from-violet-900/30 to-violet-800/20 rounded-xl p-3.5 border border-violet-500/30">
+              <div className="flex items-center gap-2 mb-1.5">
+                <Wind className="w-4 h-4 text-violet-400" />
+                <span className="text-xs text-violet-300 font-bold">Quota ~2000m (850hPa)</span>
+              </div>
+              <div className="text-xl font-black text-violet-300 tabular-nums">{wind2000m} <span className="text-sm text-violet-400/60 font-semibold">{dirLabel(dir2000m ?? 0)}</span></div>
+              <div className="text-xs text-violet-400/60 font-semibold mt-1">Wave index: {waveIndex.toFixed(0)}° · Shear {windSheer} km/h</div>
+              <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{waveIndex < 30 ? "🌊 Onda montana attiva — provare quote superiori per dynamic" : waveIndex < 60 ? "Onda presente — condizioni favorevoli per volo in quota" : "Nessun effetto onda significativo"}</p>
+            </div>
+          )}
+          <div className="bg-slate-800/40 rounded-xl p-3.5 border border-slate-700/30">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Waves className="w-4 h-4 text-rose-400" />
+              <span className="text-xs text-slate-400 font-bold">Turbolenza</span>
+            </div>
+            <div className={`text-xl font-black tabular-nums ${turbulenceColor}`}>{turbulenceLevel}</div>
+            <div className="text-xs text-slate-500 font-semibold mt-1">Rapporto raffiche: {gustRatio.toFixed(2)}x</div>
+            <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{gustRatio > 1.8 ? "⚠️ Raffiche pericolose — decollo solo in assenza di vento" : gustRatio > 1.4 ? "Raffiche significative — valutare il decollo con attenzione" : "Turbolenza bassa — volo tranquillo"}</p>
+          </div>
+        </div>
       </div>
 
       {/* ══════════════ SECTION: Pioggia Timeline ══════════════ */}
@@ -885,63 +867,41 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
         </div>
       </div>
 
-      {/* ══════════════ SECTION: Analisi Avanzata (collapsed) ══════════════ */}
-      <div className="border-t border-white/5">
-        <button
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="w-full px-5 py-3.5 flex items-center justify-between hover:bg-white/5 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center">
-              <Activity className="w-3.5 h-3.5 text-slate-400" />
-            </div>
-            <div className="text-left">
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider font-black">Analisi termodinamica avanzata</span>
-              <div className="text-[9px] text-slate-500 font-semibold mt-0.5">Parametri tecnici per piloti esperti — stabilità, instabilità, inibizione convettiva</div>
-            </div>
+      {/* ══════════════ SECTION: Stabilità termodinamica ══════════════ */}
+      <div className="border-t border-white/5 px-5 py-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Activity className="w-4 h-4 text-violet-400" />
+          <span className="text-[10px] text-slate-400 uppercase tracking-wider font-black">Stabilità termodinamica</span>
+          <span className="text-[9px] text-slate-600 ml-auto">Parametri tecnici — stabilità atmosferica e energia convettiva</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className={`rounded-xl p-3.5 border ${avgSpread > 1.5 ? "bg-rose-500/10 border-rose-500/30" : avgSpread > 1.0 ? "bg-violet-500/10 border-violet-500/30" : "bg-emerald-500/10 border-emerald-500/30"}`}>
+            <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">ΔT / 100m</div>
+            <span className={`text-xl font-black tabular-nums ${avgSpread > 1.5 ? "text-rose-300" : avgSpread > 1.0 ? "text-violet-300" : "text-emerald-300"}`}>{avgSpread.toFixed(2)}</span>
+            <span className="text-[9px] text-slate-500 font-bold ml-1">°C</span>
+            <div className="text-[9px] font-semibold mt-0.5 opacity-70">{avgSpread > 1.5 ? "Fortemente instabile" : avgSpread > 1.0 ? "Moderatamente instabile" : avgSpread > 0.6 ? "Instabile" : "Stabile"}</div>
+            <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{avgSpread > 1.5 ? "Atmosfera instabile: termiche potenti ma turbolente" : avgSpread > 1.0 ? "Instabilità moderata: termiche organizzate e prevedibili" : "Atmosfera stabile: poche termiche, preferire dynamic di cresta"}</p>
           </div>
-          {showAdvanced ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-        </button>
-
-        {showAdvanced && (
-          <div className="px-5 py-4 border-t border-white/5">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {/* ΔT/100m */}
-              <div className={`rounded-xl p-3.5 border ${avgSpread > 1.5 ? "bg-rose-500/10 border-rose-500/30" : avgSpread > 1.0 ? "bg-violet-500/10 border-violet-500/30" : "bg-emerald-500/10 border-emerald-500/30"}`}>
-                <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">ΔT / 100m</div>
-                <span className={`text-xl font-black tabular-nums ${avgSpread > 1.5 ? "text-rose-300" : avgSpread > 1.0 ? "text-violet-300" : "text-emerald-300"}`}>{avgSpread.toFixed(2)}</span>
-                <span className="text-[9px] text-slate-500 font-bold ml-1">°C</span>
-                <div className="text-[9px] font-semibold mt-0.5 opacity-70">{avgSpread > 1.5 ? "Fortemente instabile" : avgSpread > 1.0 ? "Moderatamente instabile" : avgSpread > 0.6 ? "Instabile" : "Stabile"}</div>
-                <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{avgSpread > 1.5 ? "Atmosfera instabile: termiche potenti ma turbolente" : avgSpread > 1.0 ? "Instabilità moderata: termiche organizzate e prevedibili" : "Atmosfera stabile: poche termiche, preferire dynamic di cresta"}</p>
-              </div>
-
-              {/* Lifted Index */}
-              <div className={`rounded-xl p-3.5 border ${avgLi < -4 ? "bg-rose-500/10 border-rose-500/30" : avgLi < 0 ? "bg-violet-500/10 border-violet-500/30" : "bg-emerald-500/10 border-emerald-500/30"}`}>
-                <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">Lifted Index</div>
-                <span className={`text-xl font-black tabular-nums ${avgLi < -4 ? "text-rose-300" : avgLi < 0 ? "text-violet-300" : "text-emerald-300"}`}>{avgLi.toFixed(1)}</span>
-                <div className="text-[9px] font-semibold mt-0.5 opacity-70">{avgLi < -4 ? "Estremamente instabile" : avgLi < 0 ? "Instabile" : "Stabile"}</div>
-                <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{avgLi < -2 ? "⚠️ Instabilità pomeridiana — volare al mattino presto quando l'aria è più stabile" : avgLi > 0 ? "Atmosfera stabile: vento di cresta preferibile al termico" : "Instabilità moderata: termiche possibili con moderazione"}</p>
-              </div>
-
-              {/* CIN */}
-              <div className={`rounded-xl p-3.5 border ${cinVal > 200 ? "bg-violet-500/10 border-violet-500/30" : "bg-emerald-500/10 border-emerald-500/30"}`}>
-                <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">CIN (Inibizione)</div>
-                <span className={`text-xl font-black tabular-nums ${cinVal > 200 ? "text-violet-300" : "text-emerald-300"}`}>{Math.round(cinVal)}</span>
-                <span className="text-xs text-slate-500 font-bold ml-1">J/kg</span>
-                <div className="text-[9px] font-semibold mt-0.5 opacity-70">{cinVal > 500 ? "Termiche soppresse" : cinVal > 200 ? "Leggera inibizione" : "Favorevole"}</div>
-                <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{cinVal > 200 ? "Strato stabile in basso blocca le termiche — aspettare che il suolo si riscaldi o volare in dynamic di cresta" : "No inibizione convettiva — le termiche possono svilupparsi liberamente non appena il suolo si riscalda"}</p>
-              </div>
-
-              {/* UV Max */}
-              <div className="rounded-xl p-3.5 border border-amber-500/20 bg-amber-500/5">
-                <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">UV massimo</div>
-                <span className="text-xl font-black text-amber-300 tabular-nums">{maxUV}</span>
-                <span className="text-xs text-amber-400/60 font-bold ml-1">{getUVLabel(maxUV)}</span>
-                <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{maxUV >= 8 ? "🔆 UV molto alto in quota: occhiali da sole con protezione UV obbligatori, crema solare prima di decollare" : maxUV >= 5 ? "☀️ UV moderato-alto: protezione consigliata durante il volo" : "🌤️ UV basso: nessuna protezione particolare necessaria"}</p>
-              </div>
-            </div>
+          <div className={`rounded-xl p-3.5 border ${avgLi < -4 ? "bg-rose-500/10 border-rose-500/30" : avgLi < 0 ? "bg-violet-500/10 border-violet-500/30" : "bg-emerald-500/10 border-emerald-500/30"}`}>
+            <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">Lifted Index</div>
+            <span className={`text-xl font-black tabular-nums ${avgLi < -4 ? "text-rose-300" : avgLi < 0 ? "text-violet-300" : "text-emerald-300"}`}>{avgLi.toFixed(1)}</span>
+            <div className="text-[9px] font-semibold mt-0.5 opacity-70">{avgLi < -4 ? "Estremamente instabile" : avgLi < 0 ? "Instabile" : "Stabile"}</div>
+            <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{avgLi < -2 ? "⚠️ Instabilità pomeridiana — volare al mattino presto quando l'aria è più stabile" : avgLi > 0 ? "Atmosfera stabile: vento di cresta preferibile al termico" : "Instabilità moderata: termiche possibili con moderazione"}</p>
           </div>
-        )}
+          <div className={`rounded-xl p-3.5 border ${cinVal > 200 ? "bg-violet-500/10 border-violet-500/30" : "bg-emerald-500/10 border-emerald-500/30"}`}>
+            <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">CIN (Inibizione)</div>
+            <span className={`text-xl font-black tabular-nums ${cinVal > 200 ? "text-violet-300" : "text-emerald-300"}`}>{Math.round(cinVal)}</span>
+            <span className="text-xs text-slate-500 font-bold ml-1">J/kg</span>
+            <div className="text-[9px] font-semibold mt-0.5 opacity-70">{cinVal > 500 ? "Termiche soppresse" : cinVal > 200 ? "Leggera inibizione" : "Favorevole"}</div>
+            <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{cinVal > 200 ? "Strato stabile in basso blocca le termiche — aspettare che il suolo si riscaldi o volare in dynamic di cresta" : "No inibizione convettiva — le termiche possono svilupparsi liberamente non appena il suolo si riscalda"}</p>
+          </div>
+          <div className="rounded-xl p-3.5 border border-amber-500/20 bg-amber-500/5">
+            <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">UV massimo giornaliero</div>
+            <span className="text-xl font-black text-amber-300 tabular-nums">{maxUV}</span>
+            <span className="text-xs text-amber-400/60 font-bold ml-1">{getUVLabel(maxUV)}</span>
+            <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{maxUV >= 8 ? "🔆 UV molto alto in quota: occhiali da sole con protezione UV obbligatori" : maxUV >= 5 ? "☀️ UV moderato-alto: protezione consigliata durante il volo" : "🌤️ UV basso: nessuna protezione particolare necessaria"}</p>
+          </div>
+        </div>
       </div>
 
       {/* ══════════════ SECTION: Giudizio Tattico ══════════════ */}
