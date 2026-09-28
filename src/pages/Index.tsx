@@ -149,7 +149,6 @@ export default function Index() {
                 </div>
               </div>
             </div>
-            <ResearchPanel />
             <DecolliCard
               decolli={mergedDecolli}
               selectedId={selectedId}
@@ -159,10 +158,10 @@ export default function Index() {
                 setSelectedHour(new Date().getHours());
               }}
             />
-            <ResearchPanel />
           </aside>
 
           <div className="flex-1 min-w-0 space-y-6">
+            <ResearchPanel />
             {showCards && site && (
               <>
                 {isOfflineMode && (
