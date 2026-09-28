@@ -130,12 +130,22 @@ export default function Index() {
               updating={updating}
               onRefresh={loadWeather}
             />
-            <div className="bg-slate-800/50 border border-emerald-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
-              <span className="text-xs text-emerald-300">
-                {site?.site_name ?? "Decollo"} — Dati reali Open-Meteo + 3 Fonti
-              </span>
-              <span className="text-[10px] text-slate-500 ml-auto">{tempoTrascorso}s</span>
+            <div className="relative bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-emerald-500/25 rounded-2xl px-4 py-3 overflow-hidden group">
+              <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/10">
+                  <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-black text-emerald-300 truncate">{site?.site_name ?? "Decollo"}</div>
+                  <div className="text-[10px] text-slate-500 font-semibold">Open-Meteo + 3 fonti · {tempoTrascorso}s ago</div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/60" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse shadow-sm shadow-sky-400/60" style={{ animationDelay: '0.3s' }} />
+                  <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse shadow-sm shadow-violet-400/60" style={{ animationDelay: '0.6s' }} />
+                </div>
+              </div>
             </div>
             <DecolliCard
               decolli={mergedDecolli}
