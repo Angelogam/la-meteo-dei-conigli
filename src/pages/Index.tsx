@@ -122,33 +122,34 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <Header />
+      {/* ─── Banner Ricerca Web — visibilissimo ─── */}
+      <div className="bg-red-600 text-white px-4 py-2 text-center font-black text-sm cursor-pointer hover:bg-red-500 transition-colors" onClick={async () => {
+        const res = await fetch("/api/scrape-parapendio");
+        if (!res.ok) return;
+        const data = await res.json();
+        const results = data.results || [data];
+        alert(results.map((r: any) => `${r.success ? "✅" : "❌"} ${r.site}\n${r.url}\n${r.description}`).join("\n\n"));
+      }}>
+        🔬 RICERCA WEB — CLICCA PER SCARICARE DATI METEO DAI SITI DI RIFERIMENTO
+      </div>
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6">
         <div className="flex flex-col lg:flex-row gap-6">
           <aside className="w-full lg:w-80 shrink-0 space-y-3">
             {/* ─── Ricerca Web — Pannello visibile sempre ─── */}
-            <button
-              onClick={async () => {
-                const res = await fetch("/api/scrape-parapendio");
-                if (!res.ok) return;
-                const data = await res.json();
-                const results = data.results || [data];
-                alert(
-                  results.map((r: any) =>
-                    `${r.success ? "✅" : "❌"} ${r.site}\n${r.url}\n${r.description}`
-                  ).join("\n\n")
-                );
-              }}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-black text-sm transition-all shadow-lg shadow-emerald-500/20"
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-lg">🔬</span>
-                <div className="text-left">
-                  <div>Ricerca Meteo Siti</div>
-                  <div className="text-[10px] font-normal opacity-75">Scrapa 5 siti parapendio</div>
-                </div>
+            <div className="bg-yellow-400 border-2 border-yellow-300 rounded-2xl p-4 cursor-pointer hover:bg-yellow-300 transition-colors" onClick={async () => {
+              const res = await fetch("/api/scrape-parapendio");
+              if (!res.ok) return;
+              const data = await res.json();
+              const results = data.results || [data];
+              alert(results.map((r: any) => `${r.success ? "✅" : "❌"} ${r.site} (${r.description})`).join("\n"));
+            }}>
+              <div className="text-slate-950 font-black text-sm flex items-center gap-2">
+                <span className="text-2xl">🔬</span>
+                RICERCA SITI METEO PARAPENDIO
               </div>
-              <span className="text-emerald-200 text-xs font-bold">APRI →</span>
-            </button>
+              <div className="text-slate-800 text-[10px] font-bold mt-1">Scrapa wingweather · xcweather · soaring.engine</div>
+              <div className="text-slate-900 text-xs font-black mt-2 bg-white/40 rounded-lg px-2 py-1 inline-block">▶ CLICCA PER AVVIARE</div>
+            </div>
 
             <UpdateTimer
               lastUpdate={aggressiveLastUpdate ?? lastUpdate}
@@ -313,6 +314,21 @@ export default function Index() {
       </main>
       <Footer />
       <DiagnosticaPanel />
+
+      {/* ─── Pulsante Flottante Ricerca Meteo Siti ─── */}
+      <button
+        onClick={async () => {
+          const res = await fetch("/api/scrape-parapendio");
+          if (!res.ok) return;
+          const data = await res.json();
+          const results = data.results || [data];
+          alert(results.map((r: any) => `${r.success ? "✅" : "❌"} ${r.site}\n${r.url}`).join("\n\n"));
+        }}
+        className="fixed bottom-5 right-5 z-50 w-14 h-14 rounded-full bg-yellow-400 hover:bg-yellow-300 active:bg-yellow-500 flex items-center justify-center shadow-2xl shadow-yellow-500/40 border-2 border-yellow-300 text-2xl transition-all"
+        aria-label="Avvia ricerca meteo siti parapendio"
+      >
+        🔬
+      </button>
     </div>
   );
 }
