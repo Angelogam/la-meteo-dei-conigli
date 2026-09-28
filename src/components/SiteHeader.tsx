@@ -193,13 +193,9 @@ export default function SiteHeader({
       )}
 
       {/* ─── Pulsante Ricerca Meteo Siti Parapendio ─── */}
-      <button
-        onClick={openResearch}
-        className="mt-4 w-full flex items-center justify-center gap-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-bold py-2.5 rounded-xl transition-all"
-      >
-        🔬 Avvia Ricerca Siti Meteo Parapendio
-        <span className="text-[10px] text-amber-500/70">(wingweather · xcweather · soaring.engine)</span>
-      </button>
+      <div className="mt-3 bg-rose-600 text-white font-black text-xs py-3 px-4 rounded-xl text-center shadow-lg shadow-rose-600/30" onClick={openResearch}>
+        🔬 RICERCA WEB — SCIARA SITI METEO PARAPENDIO (CLICCA)
+      </div>
     </div>
   );
 }
