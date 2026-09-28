@@ -48,8 +48,11 @@ function identificaScenario(
   totPrecip: number,
   hasThunderstorm: boolean,
   avgClouds: number,
-  avgSpread: number
+  avgSpread: number,
+  tempMax: number
 ): ScenarioMeteo {
+  // VETO ASSOLUTO: nuvolosità estrema >85% inibisce tutto, indipendentemente da CAPE
+  if (avgClouds > 85) return "stabile-coperto";
   if (hasThunderstorm || (totPrecip > 2 && maxCape > 600)) return "instabile-temporali";
     if (totPrecip > 0.3) return "pioggia";
   if (maxWindGround > 30 || avgWindGround > 22) return "ventoso";
@@ -172,8 +175,8 @@ export function generateReportMeteo({
   const avgClouds = Math.round(dayIndices.reduce((acc, i) => acc + (clouds[i] ?? 0), 0) / dayIndices.length);
   const maxClouds = Math.round(Math.max(...dayIndices.map(i => clouds[i] ?? 0)));
 
-  // Identifica scenario
-  const scenario = identificaScenario(maxCape, avgWindGround, maxWindGround, totPrecip, hasThunderstorm, avgClouds, avgSpread);
+  // Identifica scenario (passa tempMax per Penalità temperatura)
+  const scenario = identificaScenario(maxCape, avgWindGround, maxWindGround, totPrecip, hasThunderstorm, avgClouds, avgSpread, tempMax);
 
   // === PARAGRAFO TERMICO in base allo scenario ===
   let paragrafoTermico = "";
@@ -250,7 +253,7 @@ export function generateReportMeteo({
     paragrafoInstabilita = `Rischio di precipitazioni basso-moderato (probabilità stimata 15–25% nel pomeriggio). Possibile sviluppo di cumuli sui rilievi principali dopo le 14:00, con locali piovaschi se l'instabilità aumenta. La copertura nuvolosa media sarà di ${avgClouds}% con picchi pomeridiani fino a ${maxClouds}%. Base cumuli collocata tra ${baseCumuliMin} m e ${baseCumuliMax} m, generalmente ben al di sopra della quota di volo prevista. Monitorare l'evoluzione con radar e satelliti nelle ore centrali.`;
   }
 
-  // === STRATEGIA e SCORE in base allo scenario ===
+  // === STRATEGIA e SCORE in base allo scenario + penalità reali ===
   let score = 6;
   let paragrafoStrategia = "";
   let quotaSicura = Math.min(3000, baseCumuliMin);
@@ -306,6 +309,26 @@ export function generateReportMeteo({
       paragrafoStrategia = `Strategia obbligata al volo mattutino. Decollo rigorosamente entro le ${oraInnesco}, con atterraggio improrogabile entro le ${oraFine}. Quota operativa limitata a ${quotaSicura} m, ben al di sotto della base cumuli. Strategia: sfruttare esclusivamente le prime ore di volo, mantenersi lontano dai rilievi più elevati, atterrare non appena i primi cumuli mostrano crescita verticale significativa. Possibile attività elettrica: non volare.`;
       break;
   }
+
+  // === PENALITÀ REALI (indipendenti dallo scenario) ===
+  // Penalità temperatura fredda: se tempMax < 12°C sottrae punti
+  if (tempMax < 12) {
+    const tempPenalty = Math.round((12 - tempMax) * 0.5);
+    score = Math.max(1, score - tempPenalty);
+  }
+  // Penalità nuvolosità estrema (>90%) anche se scenario non era stabile-coperto
+  if (avgClouds > 90 && scenario !== "stabile-coperto") {
+    const cloudPenalty = Math.round((avgClouds - 90) * 0.3);
+    score = Math.max(1, score - cloudPenalty);
+  }
+  // Penalità vento forte al suolo
+  if (maxWindGround > 25) {
+    score = Math.max(1, score - 1);
+  }
+  if (maxWindGround > 35) {
+    score = Math.max(1, score - 1);
+  }
+  score = Math.min(10, Math.max(1, score));
 
   // === SEGNALI DI PERICOLO ===
   let segnaliPericolo = "";

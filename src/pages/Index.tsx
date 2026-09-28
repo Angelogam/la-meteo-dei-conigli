@@ -273,6 +273,7 @@ export default function Index() {
                     cape={currentCape?.cape}
                     liftedIndex={currentCape?.liftedIndex}
                     cin={currentCape?.cin}
+                    rawData={rawApiResponse}
                   />
                 )}
               </>

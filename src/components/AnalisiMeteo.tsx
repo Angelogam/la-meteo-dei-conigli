@@ -20,6 +20,7 @@ interface AnalisiMeteoProps {
   cape?: number | null;
   liftedIndex?: number | null;
   cin?: number | null;
+  rawData?: any; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
 }
 
 function formatDateShort(date: Date): string {
@@ -34,54 +35,55 @@ function getWindDirName(deg: number): string {
   return dirs[Math.round(deg / 22.5) % 16];
 }
 
-export default function AnalisiMeteo({ currentData, dayData, site, cape, liftedIndex, cin }: AnalisiMeteoProps) {
+export default function AnalisiMeteo({ currentData, dayData, site, cape, liftedIndex, cin, rawData }: AnalisiMeteoProps) {
   const report = useMemo<GeneratedReport | null>(() => {
     if (!dayData || dayData.length === 0) return null;
-    
-    // Convert currentData to the format expected by generateReportMeteo
-    const hourlyData = {
-      time: dayData.map(d => d.time.toISOString()),
-      temperature_2m: dayData.map(d => d.temperature ?? 18),
-      relative_humidity_2m: dayData.map(d => d.humidity ?? 60),
-      dew_point_2m: dayData.map(d => d.dewPoint ?? (d.temperature ?? 18) - 5),
-      precipitation: dayData.map(d => d.precipitation ?? 0),
-      cloud_cover: dayData.map(d => d.cloudCover ?? 20),
-      wind_speed_10m: dayData.map(d => d.windSpeed ?? 8),
-      wind_direction_10m: dayData.map(d => d.windDir ?? 180),
-      wind_gusts_10m: dayData.map(d => d.windGusts ?? 0),
-      weather_code: dayData.map(d => d.weatherCode ?? 0),
-      cape: dayData.map(d => d.cape ?? 300),
-      lifted_index: dayData.map(d => d.liftedIndex ?? 1.5),
-      convective_inhibition: dayData.map(d => d.cin ?? 0),
-      freezing_level_height: dayData.map(d => d.freezingLevel ?? 3600),
-      shortwave_radiation: dayData.map(d => d.shortwaveRadiation ?? 400),
-      temperature_80m: dayData.map(d => d.temperature80m ?? (d.temperature ?? 18) - 2),
-      temperature_120m: dayData.map(d => d.temperature120m ?? (d.temperature ?? 18) - 4),
-      wind_speed_80m: dayData.map(d => d.windSpeed80m ?? d.windSpeed ?? 8),
-      wind_direction_80m: dayData.map(d => d.windDir80m ?? d.windDir ?? 180),
-      wind_speed_120m: dayData.map(d => d.windSpeed120m ?? d.windSpeed ?? 8),
-      wind_direction_120m: dayData.map(d => d.windDir120m ?? d.windDir ?? 180),
-      wind_speed_180m: dayData.map(d => d.windSpeed180m ?? d.windSpeed ?? 8),
-      wind_direction_180m: dayData.map(d => d.windDir180m ?? d.windDir ?? 180),
-      wind_speed_925hPa: dayData.map(d => d.windSpeed925hPa ?? d.windSpeed ?? 8),
-      wind_direction_925hPa: dayData.map(d => d.windDir925hPa ?? d.windDir ?? 180),
-      wind_speed_850hPa: dayData.map(d => d.windSpeed850hPa ?? d.windSpeed ?? 8),
-      wind_direction_850hPa: dayData.map(d => d.windDir850hPa ?? d.windDir ?? 180),
-      wind_speed_700hPa: dayData.map(d => d.windSpeed700hPa ?? d.windSpeed ?? 8),
-      wind_direction_700hPa: dayData.map(d => d.windDir700hPa ?? d.windDir ?? 180),
-      wind_speed_600hPa: dayData.map(d => d.windSpeed600hPa ?? d.windSpeed ?? 8),
-      wind_direction_600hPa: dayData.map(d => d.windDir600hPa ?? d.windDir ?? 180),
-      wind_speed_500hPa: dayData.map(d => d.windSpeed500hPa ?? d.windSpeed ?? 8),
-      wind_direction_500hPa: dayData.map(d => d.windDir500hPa ?? d.windDir ?? 180),
+
+    // Usa i dati grezzi Open-Meteo (stessa fonte di ProfessionalWindgram) per coerenza
+    const rawHourly = rawData?.hourly ?? null;
+    if (!rawHourly?.time || rawHourly.time.length === 0) return null;
+
+    // Filtra solo le ore del giorno selezionato
+    const todayStr = dayData[0].time.toDateString();
+    const filteredTimes: string[] = [];
+    const filteredIndices: number[] = [];
+    rawHourly.time.forEach((t: string, i: number) => {
+      const d = new Date(t);
+      if (d.toDateString() === todayStr) {
+        filteredTimes.push(t);
+        filteredIndices.push(i);
+      }
+    });
+    if (filteredTimes.length === 0) return null;
+
+    const buildArray = (key: string): any[] => {
+      const arr = rawHourly[key];
+      if (!Array.isArray(arr)) return [];
+      return filteredIndices.map((i: number) => arr[i]);
     };
-    
+
+    const hourlyData = {
+      time: filteredTimes,
+      temperature_2m: buildArray("temperature_2m"),
+      dew_point_2m: buildArray("dew_point_2m"),
+      precipitation: buildArray("precipitation"),
+      cloud_cover: buildArray("cloud_cover"),
+      wind_speed_10m: buildArray("wind_speed_10m"),
+      wind_direction_10m: buildArray("wind_direction_10m"),
+      wind_gusts_10m: buildArray("wind_gusts_10m").length ? buildArray("wind_gusts_10m") : Array(filteredTimes.length).fill(0),
+      weather_code: buildArray("weather_code"),
+      cape: buildArray("cape").length ? buildArray("cape") : Array(filteredTimes.length).fill(0),
+      freezing_level_height: buildArray("freezing_level_height").length ? buildArray("freezing_level_height") : Array(filteredTimes.length).fill(3600),
+      shortwave_radiation: buildArray("shortwave_radiation").length ? buildArray("shortwave_radiation") : Array(filteredTimes.length).fill(400),
+    };
+
     return generateReportMeteo({
       siteName: site.name ?? "Decollo",
       altitude: site.alt ?? 1374,
       dateObj: dayData[0].time,
       hourlyData,
     });
-  }, [currentData, dayData, site, cape, liftedIndex, cin]);
+  }, [rawData, dayData, site, cape, liftedIndex, cin]);
 
   const dataGiorno = useMemo(() => {
     if (dayData && dayData.length > 0) {

@@ -96,8 +96,9 @@ export default function ProfessionalWindgram({
     rawData,
   });
 
-  // Stabilità: usa i dati grezzi condivisi (stesso modello ICON, stessi valori)
-  const stabilitaData = rawData?.hourly ?? null;
+  // Stabilità: usa SEMPRE data.hourly (dati del giorno specifico selezionato)
+  // per evitare discrepanze tra windgram e report
+  const stabilitaData = data?.hourly ?? null;
 
   // Data status check
 
