@@ -2,7 +2,6 @@ import React, { useEffect, useMemo } from "react";
 import type { HourData } from "@/types/meteo";
 import { Wind } from "lucide-react";
 import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
-import { useStabilitaMasseAria } from "@/hooks/useStabilitaMasseAria";
 import { calcCloudBase } from "@/utils/calcCloudBase";
 
 const DISPLAY_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] as const;
@@ -57,6 +56,7 @@ interface WindgramMatrixProps {
   lat?: number;
   lon?: number;
   fallbackData?: HourData[];
+  rawData?: any; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
 }
 
 function getHourTemperature(hourlyMap: Map<number, HourData>, hr: number): string {
@@ -75,6 +75,7 @@ export default function WindgramMatrix({
   lat = 44.2587,
   lon = 7.7943,
   fallbackData,
+  rawData,
 }: WindgramMatrixProps) {
   const { data: windProfileMap, loading: profileLoading, error: profileError, interpolateAtAltitude } = useMultiHourWindProfile({
       lat,
@@ -82,12 +83,11 @@ export default function WindgramMatrix({
       siteAlt: altitude,
       selectedDay,
       fallbackData,
+      rawData, // usa i dati già caricati da useWeatherData
     });
-  
-    // Hook per la stabilità delle masse d'aria con dati reali Open-Meteo
-    const { hourly: stabilitaData, loading: stabilitaLoading, error: stabilitaError } = useStabilitaMasseAria(
-      lat, lon, selectedDay
-    );
+
+    // Stabilità: usa i dati grezzi condivisi invece di fare una chiamata separata
+    const stabilitaData = rawData?.hourly ?? null;
 
 
   const hourlyMap = useMemo(() => {

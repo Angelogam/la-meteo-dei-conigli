@@ -15,6 +15,7 @@ interface WindgramProps {
   lat?: number;
   lon?: number;
   fallbackData?: HourData[];
+  rawData?: any; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
 }
 
 export default function Windgram({
@@ -28,6 +29,7 @@ export default function Windgram({
   lat,
   lon,
   fallbackData,
+  rawData,
 }: WindgramProps) {
   return (
     <div className="w-full">
@@ -42,6 +44,7 @@ export default function Windgram({
         lat={lat ?? DEFAULT_LAT}
         lon={lon ?? DEFAULT_LON}
         fallbackData={fallbackData}
+        rawData={rawData}
       />
     </div>
   );

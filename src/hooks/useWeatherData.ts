@@ -40,6 +40,8 @@ export function useWeatherData() {
   const [dailyData, setDailyData] = useState<MeteoDaily[]>([]);
   const [currentData, setCurrentData] = useState<MeteoCurrent | null>(null);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
+  // Raw JSON response — condiviso da tutti i componenti per evitare chiamate duplicate
+  const [rawApiResponse, setRawApiResponse] = useState<any>(null);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
@@ -71,6 +73,7 @@ export function useWeatherData() {
         setHourlyData(result.hourly);
         setDailyData(result.daily);
         setCurrentData(result.current);
+        setRawApiResponse(result.rawJson ?? null);
         setLastUpdate(new Date());
         setIsOfflineMode(false);
         setLoading(false);
@@ -80,12 +83,13 @@ export function useWeatherData() {
     } catch (error) {
       console.warn("API non disponibile, uso fallback offline:", error);
       setLoadingError("Dati offline (API non raggiungibile)");
-      
+
       // Usa fallback realistico basato su fisica atmosferica
       const fallback = getFallbackData(site.lat, site.lon, site.elevation_m);
       setHourlyData(fallback.hourly);
       setDailyData(fallback.daily);
       setCurrentData(fallback.current);
+      setRawApiResponse(null);
       setLastUpdate(new Date());
       setIsOfflineMode(true);
       setLoading(false);
@@ -259,5 +263,6 @@ export function useWeatherData() {
     volabilita,
     activeModel: "Open-Meteo" as const,
     currentCape: currentData ? { cape: currentData.cape ?? 0, liftedIndex: currentData.liftedIndex ?? 0, cin: currentData.cin ?? 0 } : null,
+    rawApiResponse,
   };
 }

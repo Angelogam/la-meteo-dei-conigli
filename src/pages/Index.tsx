@@ -48,6 +48,7 @@ export default function Index() {
     enrichedDaily,
     dateLabels,
     loadWeather,
+    rawApiResponse,
   } = useWeatherData();
   
   const { currentCape, activeModel } = useMemo(() => ({
@@ -194,17 +195,18 @@ export default function Index() {
                 {/* Windgram professionale con dati reali Open-Meteo */}
                 <div className="bg-slate-800/30 border border-emerald-500/30 rounded-2xl p-4">
                   <Windgram
-                    dayData={filteredDayData}
-                    siteName={site.site_name}
-                    altitude={site.elevation_m}
-                    selectedHour={selectedHour}
-                    onHourSelect={setSelectedHour}
-                    selectedDay={selectedDay}
-                    dateLabel={dateLabel}
-                    lat={site.lat}
-                    lon={site.lon}
-                    fallbackData={filteredDayData}
-                  />
+                      dayData={filteredDayData}
+                      siteName={site.site_name}
+                      altitude={site.elevation_m}
+                      selectedHour={selectedHour}
+                      onHourSelect={setSelectedHour}
+                      selectedDay={selectedDay}
+                      dateLabel={dateLabel}
+                      lat={site.lat}
+                      lon={site.lon}
+                      fallbackData={filteredDayData}
+                      rawData={rawApiResponse}
+                    />
                 </div>
 
                 {/* Windgram Rasoft Montoso Alto */}
@@ -252,6 +254,7 @@ export default function Index() {
                     oraCorrente={selectedHour}
                     onOraChange={setSelectedHour}
                     siteName={site.site_name}
+                    rawData={rawApiResponse}
                   />
                 )}
                 {activeTab === "termiche" && (

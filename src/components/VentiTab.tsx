@@ -47,6 +47,7 @@ interface VentiTabProps {
   oraCorrente?: number;
   onOraChange?: (ora: number) => void;
   siteName?: string;
+  rawData?: any; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
 }
 
 export default function VentiTab({
@@ -56,6 +57,7 @@ export default function VentiTab({
   selectedDay,
   oraCorrente = 12,
   onOraChange,
+  rawData,
   siteName,
 }: VentiTabProps) {
   const [data, setData] = useState<VentiInterpolatiData | null>(null);
@@ -168,6 +170,7 @@ export default function VentiTab({
             altitude={quotaDecollo}
             siteName={siteName}
             selectedDay={selectedDay}
+            rawData={rawData}
           />
 
           <div className="bg-slate-800/60 border border-blue-500/30 rounded-xl px-4 py-3 flex items-center gap-3">

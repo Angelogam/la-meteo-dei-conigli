@@ -5,7 +5,6 @@ import { RefreshCw, FileText, Check, Copy, AlertTriangle, ShieldCheck, Wind, The
 import { fetchHourly } from "@/lib/openMeteoClient";
 import { generateReportMeteo, type GeneratedReport } from "@/utils/generateReportMeteo";
 import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
-import { useStabilitaMasseAria } from "@/hooks/useStabilitaMasseAria";
 import { calcCloudBase } from "@/utils/calcCloudBase";
 
 interface WindgramProps {
@@ -14,6 +13,7 @@ interface WindgramProps {
   altitude?: number;
   siteName?: string;
   selectedDay?: number;
+  rawData?: any; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
 }
 
 const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
@@ -79,6 +79,7 @@ export default function ProfessionalWindgram({
   altitude = 1374,
   siteName = "Iretta",
   selectedDay = 0,
+  rawData,
 }: WindgramProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -86,18 +87,17 @@ export default function ProfessionalWindgram({
   const [copied, setCopied] = useState<boolean>(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Venti multi-livello da Open-Meteo
+  // Venti multi-livello — usa i dati condivisi se disponibili
   const { interpolateAtAltitude } = useMultiHourWindProfile({
     lat: latitude,
     lon: longitude,
     siteAlt: altitude,
     selectedDay,
+    rawData,
   });
 
-  // Hook per la stabilità delle masse d'aria con dati reali Open-Meteo
-  const { hourly: stabilitaData, loading: stabilitaLoading, error: stabilitaError } = useStabilitaMasseAria(
-    latitude, longitude, selectedDay
-  );
+  // Stabilità: usa i dati grezzi condivisi (stesso modello ICON, stessi valori)
+  const stabilitaData = rawData?.hourly ?? null;
 
   // Data status check
 
@@ -117,23 +117,37 @@ export default function ProfessionalWindgram({
     return `${days[dateObj.getDay()]} ${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
   }, [dateObj]);
 
+  // Usa i dati grezzi condivisi invece di fare una nuova chiamata API
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
     setError(null);
 
-    const fetchMeteo = async () => {
-      const hourlyParams = [
-        "temperature_2m", "relative_humidity_2m", "dew_point_2m", "precipitation",
-        "cloud_cover", "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",
-        "wind_speed_80m", "wind_direction_80m", "wind_speed_120m", "wind_direction_120m",
-        "wind_speed_180m", "wind_direction_180m",
-        "temperature_180m", "surface_pressure", "shortwave_radiation",
-        "freezing_level_height", "cape", "lifted_index",
-      ].join(",");
+    // Se rawData è disponibile, usalo
+    if (rawData && rawData.hourly) {
+      setData(rawData);
+      setLoading(false);
+      return;
+    }
 
+    // Fallback: se non c'è rawData, cerca nei dati orari passati
+    (async () => {
       try {
-        const json = await fetchHourly(latitude, longitude, hourlyParams, dateStr, dateStr);
+        const today = new Date();
+        const targetDate = new Date(today);
+        targetDate.setDate(today.getDate() + selectedDay);
+        const dayStr = targetDate.toISOString().split("T")[0];
+
+        const hourlyParams = [
+          "temperature_2m", "relative_humidity_2m", "dew_point_2m", "precipitation",
+          "cloud_cover", "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",
+          "wind_speed_80m", "wind_direction_80m", "wind_speed_120m", "wind_direction_120m",
+          "wind_speed_180m", "wind_direction_180m",
+          "temperature_180m", "surface_pressure", "shortwave_radiation",
+          "freezing_level_height", "cape", "lifted_index",
+        ].join(",");
+
+        const json = await fetchHourly(latitude, longitude, hourlyParams, dayStr, dayStr);
         if (isMounted) {
           setData(json);
           setLoading(false);
@@ -144,11 +158,10 @@ export default function ProfessionalWindgram({
           setLoading(false);
         }
       }
-    };
+    })();
 
-    fetchMeteo();
     return () => { isMounted = false; };
-  }, [latitude, longitude, dateStr]);
+  }, [latitude, longitude, selectedDay, rawData]);
 
   const width = 1200;
   const height = 880;
@@ -528,10 +541,10 @@ export default function ProfessionalWindgram({
         <div className="mb-2 p-2 bg-slate-50 border border-slate-200 rounded-lg text-[9px] font-mono">
           <div className="flex items-center gap-3 flex-wrap">
             <span className="font-bold text-slate-500">Stabilità:</span>
-            <span className={stabilitaLoading ? "text-amber-600 font-bold" : "text-emerald-600 font-bold"}>
-              {stabilitaLoading ? "⏳ caricamento..." : "✓ dati pronti"}
+            <span className={loading ? "text-amber-600 font-bold" : "text-emerald-600 font-bold"}>
+              {loading ? "⏳ caricamento..." : "✓ dati pronti"}
             </span>
-            {stabilitaError && <span className="text-red-500 font-bold">✗ {stabilitaError}</span>}
+            {error && <span className="text-red-500 font-bold">✗ {error}</span>}
             {stabilitaData?.time && (
               <span className="text-sky-600 font-bold">
                 {stabilitaData.time.length}h · t2m={stabilitaData.temperature_2m?.[0] ?? '—'}°C · t180={stabilitaData.temperature_180m?.[0] ?? '—'}°C

@@ -221,6 +221,7 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
   hourly: MeteoHourly[];
   daily: MeteoDaily[];
   current: MeteoCurrent | null;
+  rawJson?: any;
 }> {
   try {
     const json = await fetchFull(lat, lon, HOURLY_PARAMS, DAILY_PARAMS, CURRENT_PARAMS);
@@ -364,7 +365,7 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
       });
     }
 
-    return { hourly, daily, current };
+    return { hourly, daily, current, rawJson: json };
   } catch {
     return { hourly: [], daily: [], current: null };
   }
