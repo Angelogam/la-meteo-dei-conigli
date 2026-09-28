@@ -43,6 +43,24 @@
   line-height: 1.5;
 }
 
+/* REPORT SECTIONS */
+.report-section-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.report-text {
+  font-size: 14px;
+  line-height: 1.85;
+  color: #e2e8f0;
+  font-weight: 400;
+}
+
 @keyframes hop {
   0%, 100% { transform: translateY(0); }
   25% { transform: translateY(-6px); }

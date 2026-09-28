@@ -738,112 +738,141 @@ export default function ProfessionalWindgram({
 
       {reportGenerato && (() => {
         const scoreColor = reportGenerato.score >= 7 ? "text-emerald-400" : reportGenerato.score >= 5 ? "text-amber-400" : "text-rose-400";
-        const scoreBg = reportGenerato.score >= 7 ? "bg-emerald-500/10 border-emerald-500/30" : reportGenerato.score >= 5 ? "bg-amber-500/10 border-amber-500/30" : "bg-rose-500/10 border-rose-500/30";
+        const scoreLabel = reportGenerato.score >= 7 ? "Ottimo" : reportGenerato.score >= 5 ? "Discreto" : "Critico";
+        const scoreBg = reportGenerato.score >= 7 ? "from-emerald-500/15 to-emerald-600/5 border-emerald-500/30" : reportGenerato.score >= 5 ? "from-amber-500/15 to-amber-600/5 border-amber-500/30" : "from-rose-500/15 to-rose-600/5 border-rose-500/30";
+        const barColor = reportGenerato.score >= 7 ? "from-emerald-400 to-emerald-500" : reportGenerato.score >= 5 ? "from-amber-400 to-amber-500" : "from-rose-400 to-rose-500";
         return (
-        <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-emerald-500/30 rounded-3xl overflow-hidden shadow-2xl">
-          {/* HEADER */}
-          <div className="px-5 py-4 border-b border-slate-800/60 bg-slate-900/60">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-700/10 border border-emerald-500/40 flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-emerald-400" />
+        <div className="bg-slate-900 border border-slate-700/50 rounded-3xl overflow-hidden shadow-2xl">
+
+          {/* ══ HEADER ══ */}
+          <div className="px-6 py-5 border-b border-slate-800/80">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                  <FileText className="w-6 h-6 text-slate-300" />
                 </div>
                 <div>
-                  <h4 className="text-sm sm:text-base font-black text-white tracking-wide leading-tight">{reportGenerato.titolo}</h4>
-                  <p className="text-[10px] text-slate-500 mt-0.5 font-medium uppercase tracking-wider">Bollettino aerologico · Decollo {altitude} m slm</p>
+                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest mb-1">Bollettino aerologico</p>
+                  <h4 className="text-base font-black text-white leading-tight">{reportGenerato.titolo.replace("REPORT METEO ", "")}</h4>
+                  <p className="text-xs text-slate-500 mt-1">Decollo {altitude} m slm · Modello GFS/AROME</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <div className={`px-3 py-1.5 rounded-xl border ${scoreBg} flex items-center gap-1.5`}>
-                  <span className={`text-lg font-black tabular-nums ${scoreColor}`}>{reportGenerato.score}</span>
-                  <span className="text-[10px] text-slate-500 font-bold">/10</span>
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                <div className={`bg-gradient-to-br ${scoreBg} border rounded-2xl px-4 py-2.5 text-center`}>
+                  <div className={`text-2xl font-black tabular-nums ${scoreColor}`}>{reportGenerato.score}</div>
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{scoreLabel}</div>
                 </div>
-                <button onClick={handleCopyReport} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-bold text-slate-300 transition-all border border-slate-700/60">
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copied ? "Copiato!" : "Copia"}</span>
+                <button onClick={handleCopyReport} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-semibold text-slate-400 transition-all border border-slate-700/60">
+                  {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                  <span>{copied ? "Copiato" : "Copia"}</span>
                 </button>
               </div>
             </div>
           </div>
 
-          {/* SCORE BAR */}
-          <div className="px-5 pt-3 pb-0">
-            <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+          {/* ══ SCORE BAR ══ */}
+          <div className="px-6 pt-4 pb-0">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Voto complessivo</span>
+              <span className="text-[10px] text-slate-500 font-semibold">0 — 10</span>
+            </div>
+            <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all duration-700 ${reportGenerato.score >= 7 ? "bg-gradient-to-r from-emerald-500 to-green-400" : reportGenerato.score >= 5 ? "bg-gradient-to-r from-amber-500 to-yellow-400" : "bg-gradient-to-r from-rose-500 to-orange-400"}`}
+                className={`h-full rounded-full bg-gradient-to-r ${barColor} transition-all duration-1000 ease-out`}
                 style={{ width: `${reportGenerato.score * 10}%` }}
               />
             </div>
           </div>
 
-          {/* 4 SECTION CARDS */}
-          <div className="px-5 py-4 space-y-3">
+          {/* ══ SEZIONI ══ */}
+          <div className="px-6 py-5 space-y-4">
 
-            {/* 1. TERMICO */}
-            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-amber-500/15 bg-amber-500/5">
-                <div className="relative">
-                  <Thermometer className="w-4 h-4 text-amber-400 animate-pulse-glow" />
+            {/* 1 · TERMICO */}
+            <section>
+              <div className="flex items-center gap-3 mb-2.5">
+                <div className="w-8 h-8 rounded-xl bg-orange-500/15 border border-orange-500/25 flex items-center justify-center">
+                  <Thermometer className="w-4 h-4 text-orange-400" />
                 </div>
-                <span className="text-xs font-black text-amber-300 uppercase tracking-widest">1 · Quadro Termico &amp; Stabilità</span>
-              </div>
-              <p className="px-4 py-3 text-sm leading-relaxed text-amber-100/85 font-medium">{reportGenerato.paragrafoTermico}</p>
-            </div>
-
-            {/* 2. VENTO */}
-            <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/5 overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-cyan-500/15 bg-cyan-500/5">
-                <div className="relative">
-                  <Wind className="w-4 h-4 text-cyan-400 animate-spin-slow" />
+                <div>
+                  <span className="text-[10px] text-orange-400/60 font-bold uppercase tracking-widest mr-2">01</span>
+                  <span className="text-sm font-black text-orange-200">Quadro Termico &amp; Stabilità</span>
                 </div>
-                <span className="text-xs font-black text-cyan-300 uppercase tracking-widest">2 · Profilo Vento in Quota</span>
               </div>
-              <p className="px-4 py-3 text-sm leading-relaxed text-cyan-100/85 font-medium">{reportGenerato.paragrafoVento}</p>
-            </div>
+              <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">{reportGenerato.paragrafoTermico}</p>
+            </section>
 
-            {/* 3. INSTABILITÀ */}
-            <div className="rounded-2xl border border-violet-500/20 bg-violet-500/5 overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-violet-500/15 bg-violet-500/5">
-                <div className="relative">
+            {/* 2 · VENTO */}
+            <section>
+              <div className="flex items-center gap-3 mb-2.5">
+                <div className="w-8 h-8 rounded-xl bg-sky-500/15 border border-sky-500/25 flex items-center justify-center">
+                  <Wind className="w-4 h-4 text-sky-400 animate-spin-slow" />
+                </div>
+                <div>
+                  <span className="text-[10px] text-sky-400/60 font-bold uppercase tracking-widest mr-2">02</span>
+                  <span className="text-sm font-black text-sky-200">Profilo Vento in Quota</span>
+                </div>
+              </div>
+              <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">{reportGenerato.paragrafoVento}</p>
+            </section>
+
+            {/* 3 · INSTABILITÀ */}
+            <section>
+              <div className="flex items-center gap-3 mb-2.5">
+                <div className="w-8 h-8 rounded-xl bg-violet-500/15 border border-violet-500/25 flex items-center justify-center">
                   <Cloud className="w-4 h-4 text-violet-400 animate-float" />
                 </div>
-                <span className="text-xs font-black text-violet-300 uppercase tracking-widest">3 · Convezione &amp; Rischio</span>
+                <div>
+                  <span className="text-[10px] text-violet-400/60 font-bold uppercase tracking-widest mr-2">03</span>
+                  <span className="text-sm font-black text-violet-200">Convezione &amp; Rischio</span>
+                </div>
               </div>
-              <p className="px-4 py-3 text-sm leading-relaxed text-violet-100/85 font-medium">{reportGenerato.paragrafoInstabilita}</p>
-            </div>
+              <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">{reportGenerato.paragrafoInstabilita}</p>
+            </section>
 
-            {/* 4. STRATEGIA */}
-            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-emerald-500/15 bg-emerald-500/5">
-                <div className="relative">
+            {/* 4 · STRATEGIA */}
+            <section>
+              <div className="flex items-center gap-3 mb-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center">
                   <ArrowUp className="w-4 h-4 text-emerald-400" style={{ animation: "floatIcon 2s ease-in-out infinite" }} />
                 </div>
-                <span className="text-xs font-black text-emerald-300 uppercase tracking-widest">4 · Finestra &amp; Tattica</span>
+                <div>
+                  <span className="text-[10px] text-emerald-400/60 font-bold uppercase tracking-widest mr-2">04</span>
+                  <span className="text-sm font-black text-emerald-200">Finestra &amp; Tattica</span>
+                </div>
               </div>
-              <p className="px-4 py-3 text-sm leading-relaxed text-emerald-100/85 font-medium">{reportGenerato.paragrafoStrategia}</p>
-            </div>
+              <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">{reportGenerato.paragrafoStrategia}</p>
+            </section>
+
           </div>
 
-          {/* BOTTOM ALERTS */}
-          <div className="px-5 pb-4 space-y-2">
-            <div className="flex items-start gap-2.5 bg-rose-950/40 border border-rose-500/30 rounded-xl px-4 py-3 text-rose-200">
-              <div className="relative shrink-0">
+          {/* ══ SEPARATORE ══ */}
+          <div className="mx-6 border-t border-slate-800/80" />
+
+          {/* ══ BOTTOM ALERTS ══ */}
+          <div className="px-6 py-4 space-y-2.5">
+
+            {/* Pericolo */}
+            <div className="flex items-start gap-3 bg-rose-500/8 border border-rose-500/20 rounded-2xl px-4 py-3.5">
+              <div className="w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-500/25 flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-4 h-4 text-rose-400 animate-pulse-glow" />
               </div>
               <div>
-                <span className="text-xs font-black text-rose-300 uppercase tracking-wide block mb-0.5">Segnali di pericolo</span>
-                <span className="text-xs leading-relaxed font-medium opacity-90">{reportGenerato.segnaliPericolo}</span>
+                <span className="text-[10px] text-rose-400/70 font-bold uppercase tracking-widest block mb-1">Segnali di pericolo</span>
+                <p className="text-xs text-rose-200/90 leading-[1.7] font-medium">{reportGenerato.segnaliPericolo}</p>
               </div>
             </div>
-            <div className="flex items-start gap-2.5 bg-emerald-950/40 border border-emerald-500/30 rounded-xl px-4 py-3 text-emerald-200">
-              <div className="relative shrink-0">
+
+            {/* Giudizio */}
+            <div className="flex items-start gap-3 bg-emerald-500/8 border border-emerald-500/20 rounded-2xl px-4 py-3.5">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center shrink-0">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" style={{ animation: "floatIcon 2.5s ease-in-out infinite" }} />
               </div>
               <div>
-                <span className="text-xs font-black text-emerald-300 uppercase tracking-wide block mb-0.5">Giudizio finale</span>
-                <span className="text-xs leading-relaxed font-medium opacity-90">{reportGenerato.giudizioFinale}</span>
+                <span className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-widest block mb-1">Giudizio finale</span>
+                <p className="text-xs text-emerald-200/90 leading-[1.7] font-medium">{reportGenerato.giudizioFinale}</p>
               </div>
             </div>
+
           </div>
         </div>
         );
