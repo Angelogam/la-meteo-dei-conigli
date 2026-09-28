@@ -22,7 +22,6 @@ import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 import { DECOLLI } from "@/data/decolli";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
 import { Activity, Wind } from "lucide-react";
-import ResearchPanel from "@/components/ResearchPanel";
 
 export default function Index() {
   useEffect(() => {
@@ -125,7 +124,32 @@ export default function Index() {
       <Header />
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6">
         <div className="flex flex-col lg:flex-row gap-6">
-          <aside className="w-full lg:w-80 shrink-0 space-y-4">
+          <aside className="w-full lg:w-80 shrink-0 space-y-3">
+            {/* ─── Ricerca Web — Pannello visibile sempre ─── */}
+            <button
+              onClick={async () => {
+                const res = await fetch("/api/scrape-parapendio");
+                if (!res.ok) return;
+                const data = await res.json();
+                const results = data.results || [data];
+                alert(
+                  results.map((r: any) =>
+                    `${r.success ? "✅" : "❌"} ${r.site}\n${r.url}\n${r.description}`
+                  ).join("\n\n")
+                );
+              }}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-black text-sm transition-all shadow-lg shadow-emerald-500/20"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-lg">🔬</span>
+                <div className="text-left">
+                  <div>Ricerca Meteo Siti</div>
+                  <div className="text-[10px] font-normal opacity-75">Scrapa 5 siti parapendio</div>
+                </div>
+              </div>
+              <span className="text-emerald-200 text-xs font-bold">APRI →</span>
+            </button>
+
             <UpdateTimer
               lastUpdate={aggressiveLastUpdate ?? lastUpdate}
               countdown={countdown}
@@ -161,7 +185,6 @@ export default function Index() {
           </aside>
 
           <div className="flex-1 min-w-0 space-y-6">
-            <ResearchPanel />
             {showCards && site && (
               <>
                 {isOfflineMode && (
