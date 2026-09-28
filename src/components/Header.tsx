@@ -13,29 +13,29 @@ export const Header = () => {
       <div className="absolute -left-12 -bottom-12 w-44 h-44 rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-4 md:px-6 py-3.5 md:py-4">
-        <div className="flex items-center justify-between gap-3 md:gap-5">
+        <div className="flex items-center gap-2 md:gap-3">
 
           {/* Coniglio con parapendio — SINISTRA, animato */}
           <div
-            className="w-14 h-14 md:w-16 md:h-16 flex items-center justify-center shrink-0
-                       drop-shadow-[0_4px_12px_rgba(234,88,12,0.3)]"
+            className="w-16 h-16 md:w-20 md:h-20 flex items-center justify-center shrink-0
+                       drop-shadow-[0_4px_14px_rgba(234,88,12,0.3)]"
             style={{ animation: "bounce 2s ease-in-out infinite" }}
           >
             <img src="/logo.svg" alt="Coniglio con parapendio" className="w-full h-full object-contain" />
           </div>
 
           {/* Titolo e sottotitoli — CENTRATI */}
-          <div className="flex flex-col items-center text-center min-w-0 flex-1">
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+          <div className="flex flex-col items-center text-center min-w-0">
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight whitespace-nowrap">
               <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent drop-shadow-md">
                 Meteo dei Conigli
               </span>
             </h1>
-            <div className="flex flex-col items-center gap-0.5 mt-1">
-              <p className="text-[11px] md:text-xs font-medium text-slate-400 tracking-wide">
+            <div className="flex flex-col items-center gap-0.5 mt-0.5">
+              <p className="text-[10px] md:text-xs font-medium text-slate-400 tracking-wide">
                 Previsioni &bull; Aerologia &bull; Volo Libero
               </p>
-              <p className="text-[11px] md:text-xs font-semibold text-emerald-400 tracking-wide">
+              <p className="text-[10px] md:text-xs font-semibold text-emerald-400 tracking-wide">
                 Open-Meteo AROME
               </p>
             </div>
@@ -43,8 +43,8 @@ export const Header = () => {
 
           {/* Coniglio con parapendio — DESTRA, animato (mirror) */}
           <div
-            className="w-14 h-14 md:w-16 md:h-16 flex items-center justify-center shrink-0
-                       drop-shadow-[0_4px_12px_rgba(234,88,12,0.3)]"
+            className="w-16 h-16 md:w-20 md:h-20 flex items-center justify-center shrink-0
+                       drop-shadow-[0_4px_14px_rgba(234,88,12,0.3)]"
             style={{ animation: "bounce 2s ease-in-out infinite 0.5s" }}
           >
             <img src="/logo.svg" alt="Coniglio con parapendio" className="w-full h-full object-contain -scale-x-100" />
