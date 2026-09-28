@@ -13,7 +13,7 @@ export const Header = () => {
       <div className="absolute -left-12 -bottom-12 w-44 h-44 rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-4 md:px-6 py-3.5 md:py-4">
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center justify-center gap-2 md:gap-3">
 
           {/* Coniglio con parapendio — SINISTRA, animato */}
           <div
