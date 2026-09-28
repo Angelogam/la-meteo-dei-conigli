@@ -404,28 +404,68 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
           <div className="flex items-center gap-5">
             <div className="text-right">
               <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Vento</div>
-              <div className="flex items-baseline justify-end gap-1">
-                <span className="text-4xl font-black text-cyan-300 tabular-nums leading-none">{Math.round(windSpeed)}</span>
-                <span className="text-sm text-cyan-400/70 font-bold">km/h</span>
+              <div className="flex items-baseline justify-end gap-1.5">
+                <span className="text-5xl font-black text-cyan-300 tabular-nums leading-none">{Math.round(windSpeed)}</span>
+                <span className="text-sm text-cyan-400/70 font-black">km/h</span>
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-xs font-black text-cyan-300" title={`${windDir}°`}>
+                  <Wind className="w-3 h-3" />{dirLabel(windDir)}
+                </span>
               </div>
-              <div className="flex items-center justify-end gap-1.5 mt-0.5">
-                <span className="text-xs text-slate-400 font-semibold">{dirLabel(windDir)}</span>
-                {windGusts > 0 && (
-                  <span className="flex items-center gap-0.5 text-[10px] text-rose-400/80 font-semibold">
+              {windGusts > 0 && (
+                <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                  <span className="text-[10px] text-slate-500 font-semibold">Raffiche</span>
+                  <span className="flex items-center gap-0.5 text-[10px] text-rose-400/80 font-black">
                     <ArrowUp className="w-2.5 h-2.5 rotate-45" />{Math.round(windGusts)}
                   </span>
-                )}
-              </div>
+                  <span className="text-[10px] text-slate-600">km/h</span>
+                </div>
+              )}
             </div>
-            <div className="w-16 h-16 rounded-full bg-slate-800/90 border-2 border-slate-700/60 flex items-center justify-center relative shadow-inner" title={`Direzione vento: ${dirLabel(windDir)} (${windDir}°)`}>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-0.5 h-6 bg-gradient-to-t from-cyan-500 to-cyan-300 rounded-full origin-bottom shadow-sm shadow-cyan-400/60" style={{ transform: `rotate(${windAngle}deg) translateY(-50%)` }} />
-                <div className="w-0.5 h-1.5 bg-slate-500 rounded-full absolute" style={{ transform: `rotate(${windAngle}deg) translateY(35px)` }} />
+            <div className="relative w-20 h-20 flex-shrink-0">
+              {/* Outer ring */}
+              <div className="absolute inset-0 rounded-full bg-slate-800/90 border-2 border-slate-700/70 shadow-2xl shadow-slate-900/60" />
+              {/* Tick marks */}
+              {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(deg => (
+                <div
+                  key={deg}
+                  className="absolute w-px bg-slate-600/60 origin-center"
+                  style={{
+                    height: deg % 90 === 0 ? '6px' : '4px',
+                    top: deg % 90 === 0 ? '1px' : '3px',
+                    left: '50%',
+                    transform: `translateX(-50%) rotate(${deg}deg) translateY(0)`,
+                    transformOrigin: '50% 35px',
+                  }}
+                />
+              ))}
+              {/* Cardinal labels */}
+              <span className="absolute top-0.5 left-1/2 -translate-x-1/2 text-[7px] font-black text-slate-500">N</span>
+              <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[7px] font-black text-slate-500">S</span>
+              <span className="absolute left-0.5 top-1/2 -translate-y-1/2 text-[7px] font-black text-slate-500">O</span>
+              <span className="absolute right-0.5 top-1/2 -translate-y-1/2 text-[7px] font-black text-slate-500">E</span>
+              {/* Animated compass needle */}
+              <div
+                className="absolute inset-2 rounded-full flex items-center justify-center"
+                style={{ transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)', transform: `rotate(${windAngle}deg)` }}
+              >
+                {/* Needle body */}
+                <div className="relative w-1 h-8 flex flex-col items-center">
+                  {/* Arrow head */}
+                  <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[10px] border-b-cyan-400 drop-shadow-lg" style={{ filter: 'drop-shadow(0 0 6px rgba(34,211,238,0.5))' }} />
+                  {/* Needle shaft */}
+                  <div className="w-1 h-5 bg-gradient-to-b from-cyan-400 to-cyan-600 rounded-full shadow-sm" />
+                </div>
+                {/* Counterweight */}
+                <div className="w-1 h-3 bg-slate-500 rounded-full absolute -bottom-1" />
               </div>
-              <span className="text-[7px] font-black text-slate-500 absolute top-0.5">N</span>
-              <span className="text-[7px] font-black text-slate-500 absolute bottom-0.5">S</span>
-              <span className="text-[7px] font-black text-slate-500 absolute left-0.5">O</span>
-              <span className="text-[7px] font-black text-slate-500 absolute right-0.5">E</span>
+              {/* Center dot */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-slate-600 border border-slate-500 shadow-sm z-10" />
+              </div>
+              {/* Direction degree text */}
+              <div className="absolute inset-0 flex items-center justify-center pt-5">
+                <span className="text-[8px] font-black text-cyan-400/70 tabular-nums">{windDir}°</span>
+              </div>
             </div>
           </div>
         </div>
@@ -575,7 +615,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
               <span className="text-[10px] text-slate-500 font-black uppercase tracking-wider">Base cumuli</span>
             </div>
             <div className="flex items-baseline gap-1 mb-1">
-              <span className={`text-3xl font-black tabular-nums ${veryLowCloudRisk ? "text-rose-300" : lowCloudRisk ? "text-violet-300" : "text-sky-300"}`}>{cloudBase}</span>
+              <span className={`text-3xl font-black tabular-nums ${veryLowCloudRisk ? "text-rose-300" : lowCloudRisk ? "text-violet-300" : "text-sky-300"}`}>{Math.round(cloudBase)}</span>
               <span className="text-xs text-slate-500 font-semibold">m slm</span>
             </div>
             <div className={`text-xs font-bold mb-2 ${veryLowCloudRisk ? "text-rose-400" : lowCloudRisk ? "text-violet-400" : "text-emerald-400"}`}>
@@ -701,7 +741,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
           </div>
           <div className="bg-gradient-to-br from-sky-500/10 to-sky-600/5 rounded-xl p-3 border border-sky-500/20">
             <div className="flex items-center gap-1.5 mb-1.5"><Cloud className="w-3.5 h-3.5 text-sky-400" /><span className="text-[10px] text-sky-400/70 font-bold uppercase">Base cumuli</span></div>
-            <span className="text-2xl font-black text-sky-300 tabular-nums">{cloudBase}</span>
+            <span className="text-2xl font-black text-sky-300 tabular-nums">{Math.round(cloudBase)}</span>
             <span className="text-xs text-sky-400/60 font-bold ml-1">m</span>
             <div className="mt-1.5 text-[10px] text-sky-400/50 font-semibold">+{Math.round(cloudBase - siteAlt)}m sopr.</div>
           </div>
