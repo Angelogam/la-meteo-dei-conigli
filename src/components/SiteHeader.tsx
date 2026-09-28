@@ -69,6 +69,18 @@ export default function SiteHeader({
   const isOvercast = weatherCode >= 20 && weatherCode < 61;
   const isFog = weatherCode >= 45 && weatherCode <= 48;
 
+  async function openResearch() {
+    try {
+      const res = await fetch("/api/scrape-parapendio");
+      if (!res.ok) return;
+      const data = await res.json();
+      const results = data.results || [data];
+      alert(results.map((r: any) => `${r.success ? "✅" : "❌"} ${r.site}\n${r.url}\n${r.description}`).join("\n\n"));
+    } catch {
+      alert("Errore nella ricerca — riprova tra qualche secondo.");
+    }
+  }
+
   return (
     <div className="card header-decollo pb-5 mb-4 border-b border-orange-400/20 relative overflow-hidden">
       <div className="absolute -top-4 -left-4 w-32 h-32 bg-gradient-to-br from-orange-500/5 to-transparent rounded-full blur-2xl pointer-events-none" />
@@ -179,6 +191,15 @@ export default function SiteHeader({
           </div>
         </div>
       )}
+
+      {/* ─── Pulsante Ricerca Meteo Siti Parapendio ─── */}
+      <button
+        onClick={openResearch}
+        className="mt-4 w-full flex items-center justify-center gap-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-bold py-2.5 rounded-xl transition-all"
+      >
+        🔬 Avvia Ricerca Siti Meteo Parapendio
+        <span className="text-[10px] text-amber-500/70">(wingweather · xcweather · soaring.engine)</span>
+      </button>
     </div>
   );
 }
