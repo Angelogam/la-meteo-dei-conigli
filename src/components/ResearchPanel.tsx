@@ -1,123 +1,191 @@
-"use client";
+import { useState, useEffect, useRef } from "react";
+import { X, ExternalLink, CheckCircle2, XCircle, Search } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
-import { useState } from "react";
-import { Download, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
-
-interface ScrapeResult {
+interface ScrapedSite {
   site: string;
   url: string;
-  description: string;
+  description?: string;
   success: boolean;
-  content?: string;
+  title?: string;
   error?: string;
 }
 
-export default function ResearchPanel() {
-  const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<ScrapeResult[] | null>(null);
-  const [expanded, setExpanded] = useState<string | null>(null);
+interface ApiResult {
+  timestamp: string;
+  results: ScrapedSite[];
+}
 
-  async function scrape() {
+export default function ResearchPanel({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const [results, setResults] = useState<ScrapedSite[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [progress, setProgress] = useState(0);
+  const [currentSite, setCurrentSite] = useState("");
+  const fetchedRef = useRef(false);
+
+  useEffect(() => {
+    if (open && !fetchedRef.current) {
+      fetchedRef.current = true;
+      doFetch();
+    }
+    if (!open) {
+      // Reset for next open
+      fetchedRef.current = false;
+    }
+  }, [open]);
+
+  async function doFetch() {
     setLoading(true);
-    setResults(null);
+    setError("");
+    setResults([]);
+    setProgress(0);
     try {
       const res = await fetch("/api/scrape-parapendio");
-      const data = await res.json();
-      setResults(data.results || [data]);
-    } catch (err) {
-      setResults([{
-        site: "error",
-        url: "",
-        description: String(err),
-        success: false,
-        error: String(err)
-      }]);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: ApiResult = await res.json();
+      setResults(data.results ?? []);
+      setProgress(100);
+    } catch (e: any) {
+      setError(e.message || "Errore di rete — verifica la connessione");
     } finally {
       setLoading(false);
     }
   }
 
-  function downloadResult(result: ScrapeResult) {
-    const blob = new Blob([result.content || "N/A"], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `research-${result.site}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   return (
-    <div className="bg-slate-900 border border-slate-700/50 rounded-2xl p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-white font-bold text-sm">🔬 Ricerca Web — Siti Meteo Parapendio</h2>
-          <p className="text-slate-500 text-xs mt-0.5">Scarica contenuti dai siti di riferimento per studio piloti</p>
-        </div>
-        <button
-          onClick={scrape}
-          disabled={loading}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold transition-colors"
-        >
-          <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
-          {loading ? "In corso..." : "Avvia Ricerca"}
-        </button>
-      </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl bg-slate-900 border-slate-700 sm:max-w-2xl">
+        <DialogHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-white flex items-center gap-2 text-lg">
+              <Search className="w-5 h-5 text-orange-400" />
+              Ricerca Siti Meteo Parapendio
+            </DialogTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              className="h-8 w-8 p-0 text-slate-400 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          <p className="text-xs text-slate-400 -mt-1">
+            Scansione dei principali siti meteo dedicati al parapendio
+          </p>
+        </DialogHeader>
 
-      {results && (
-        <div className="space-y-2">
-          {results.map((r) => (
-            <div key={r.site} className="border border-slate-700/40 rounded-xl overflow-hidden">
-              <button
-                onClick={() => setExpanded(expanded === r.site ? null : r.site)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-800/50 transition-colors text-left"
-              >
-                {r.success ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                ) : (
-                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="text-white text-sm font-bold truncate">{r.site}</div>
-                  <div className="text-slate-500 text-xs truncate">{r.url}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {r.content && (
-                    <span className="text-[10px] text-emerald-400 font-mono">
-                      {(r.content.length / 1024).toFixed(0)}KB
-                    </span>
-                  )}
-                  <Download
-                    className="w-3.5 h-3.5 text-slate-500 hover:text-white cursor-pointer transition-colors"
-                    onClick={(e) => { e.stopPropagation(); downloadResult(r); }}
-                  />
-                </div>
-              </button>
-              
-              {expanded === r.site && (
-                <div className="px-3 pb-3 border-t border-slate-700/30">
-                  <p className="text-slate-400 text-xs mt-2">{r.description}</p>
-                  {r.error && (
-                    <p className="text-rose-400 text-xs mt-1">❌ {r.error}</p>
-                  )}
-                  {r.content && (
-                    <pre className="text-slate-300 text-xs mt-2 bg-slate-950/50 p-2 rounded-lg overflow-auto max-h-48 whitespace-pre-wrap break-all">
-                      {r.content.substring(0, 2000)}
-                      {r.content.length > 2000 && "...(troncato)"}
-                    </pre>
-                  )}
-                </div>
-              )}
+        <div className="space-y-4">
+          {/* Loading bar */}
+          {loading && (
+            <div className="space-y-2">
+              <Progress value={progress} className="h-2" />
+              <p className="text-xs text-slate-500 text-center">
+                {currentSite || "Connessione in corso…"}
+              </p>
             </div>
-          ))}
-        </div>
-      )}
+          )}
 
-      {!results && !loading && (
-        <p className="text-slate-600 text-xs text-center py-4">
-          Premi "Avvia Ricerca" per scaricare i contenuti dei siti
-        </p>
-      )}
-    </div>
+          {error && (
+            <div className="bg-rose-950/40 border border-rose-500/30 rounded-xl p-3 text-xs text-rose-300">
+              ⚠️ {error}
+            </div>
+          )}
+
+          {loading && (
+            <div className="text-center text-slate-500 text-xs py-4">
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-3 h-3 rounded-full border-2 border-orange-500/30 border-t-orange-400 animate-spin" />
+                <span>Scansione in corso…</span>
+              </div>
+            </div>
+          )}
+
+          {!loading && results.length === 0 && !error && (
+            <div className="text-center text-slate-500 text-xs py-6">
+              Clicca il pulsante qui sotto per avviare la scansione
+              <br />
+              <Button
+                onClick={doFetch}
+                className="mt-3 bg-orange-600 hover:bg-orange-500 text-white font-bold text-sm px-6"
+              >
+                🔬 Avvia Scansione
+              </Button>
+            </div>
+          )}
+
+          {results.length > 0 && (
+            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+              {results.map((r: ScrapedSite) => (
+                <div
+                  key={r.site}
+                  className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-3.5"
+                >
+                  <div className="flex items-start gap-3">
+                    {r.success ? (
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-sm text-white">
+                          {r.site}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] px-1.5 py-0 ${r.success ? "border-emerald-500/40 text-emerald-300" : "border-rose-500/40 text-rose-300"}`}
+                        >
+                          {r.success ? "OK" : "FALLITO"}
+                        </Badge>
+                      </div>
+                      <a
+                        href={r.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-orange-400 hover:text-orange-300 mt-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        {r.url}
+                      </a>
+                      {r.description && (
+                        <p className="text-xs text-slate-400 mt-1">
+                          {r.description}
+                        </p>
+                      )}
+                      {r.title && (
+                        <p className="text-[11px] text-slate-500 mt-1 italic">
+                          Titolo: {r.title}
+                        </p>
+                      )}
+                      {!r.success && r.error && (
+                        <p className="text-[11px] text-rose-400 mt-1">
+                          {r.error}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

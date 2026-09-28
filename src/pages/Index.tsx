@@ -171,10 +171,6 @@ export default function Index() {
                   </div>
                 )}
 
-                {/* DEBUG: verifica rendering */}
-                <div className="bg-fuchsia-600 text-white font-black text-xs py-2 px-4 rounded-xl text-center">
-                  🔬 RICERCA WEB — CLICCA QUI
-                </div>
                 <SiteHeader
                   site_name={site.site_name}
                   location_name={site.location_name}
