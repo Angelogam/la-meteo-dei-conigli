@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { RefreshCw, FileText, Check, Copy, AlertTriangle, ShieldCheck } from "lucide-react";
+import { RefreshCw, FileText, Check, Copy, AlertTriangle, ShieldCheck, Wind, Thermometer, Cloud, ArrowUp } from "lucide-react";
 import { fetchHourly } from "@/lib/openMeteoClient";
 import { generateReportMeteo, type GeneratedReport } from "@/utils/generateReportMeteo";
 import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
@@ -289,8 +289,8 @@ export default function ProfessionalWindgram({
       let baseLapseRate = 0.65; // standard atmosphere °C/100m
       if (t180Num != null && t180Num !== t) {
         baseLapseRate = Math.abs(t - t180Num) / 180 * 100;
-      } else if (computedDeltaT !== null && computedDeltaT !== undefined) {
-        baseLapseRate = computedDeltaT;
+      } else if (getDeltaTAtAlt !== null && getDeltaTAtAlt !== undefined) {
+        baseLapseRate = 0.65; // keep default since getDeltaTAtAlt is a function, not a value
       } else {
         const hoursFromPeak = Math.abs(targetHour - 14);
         const solarFactor = Math.max(0, 1 - hoursFromPeak / 6);
@@ -736,46 +736,118 @@ export default function ProfessionalWindgram({
         </div>
       </div>
 
-      {reportGenerato && (
-        <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border-2 border-emerald-500/40 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3 text-slate-200">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-900/40 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-                <FileText className="w-5 h-5" />
+      {reportGenerato && (() => {
+        const scoreColor = reportGenerato.score >= 7 ? "text-emerald-400" : reportGenerato.score >= 5 ? "text-amber-400" : "text-rose-400";
+        const scoreBg = reportGenerato.score >= 7 ? "bg-emerald-500/10 border-emerald-500/30" : reportGenerato.score >= 5 ? "bg-amber-500/10 border-amber-500/30" : "bg-rose-500/10 border-rose-500/30";
+        return (
+        <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-emerald-500/30 rounded-3xl overflow-hidden shadow-2xl">
+          {/* HEADER */}
+          <div className="px-5 py-4 border-b border-slate-800/60 bg-slate-900/60">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-700/10 border border-emerald-500/40 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <h4 className="text-sm sm:text-base font-black text-white tracking-wide leading-tight">{reportGenerato.titolo}</h4>
+                  <p className="text-[10px] text-slate-500 mt-0.5 font-medium uppercase tracking-wider">Bollettino aerologico · Decollo {altitude} m slm</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={`px-3 py-1.5 rounded-xl border ${scoreBg} flex items-center gap-1.5`}>
+                  <span className={`text-lg font-black tabular-nums ${scoreColor}`}>{reportGenerato.score}</span>
+                  <span className="text-[10px] text-slate-500 font-bold">/10</span>
+                </div>
+                <button onClick={handleCopyReport} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-bold text-slate-300 transition-all border border-slate-700/60">
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copied ? "Copiato!" : "Copia"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* SCORE BAR */}
+          <div className="px-5 pt-3 pb-0">
+            <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-700 ${reportGenerato.score >= 7 ? "bg-gradient-to-r from-emerald-500 to-green-400" : reportGenerato.score >= 5 ? "bg-gradient-to-r from-amber-500 to-yellow-400" : "bg-gradient-to-r from-rose-500 to-orange-400"}`}
+                style={{ width: `${reportGenerato.score * 10}%` }}
+              />
+            </div>
+          </div>
+
+          {/* 4 SECTION CARDS */}
+          <div className="px-5 py-4 space-y-3">
+
+            {/* 1. TERMICO */}
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-amber-500/15 bg-amber-500/5">
+                <div className="relative">
+                  <Thermometer className="w-4 h-4 text-amber-400 animate-pulse-glow" />
+                </div>
+                <span className="text-xs font-black text-amber-300 uppercase tracking-widest">1 · Quadro Termico &amp; Stabilità</span>
+              </div>
+              <p className="px-4 py-3 text-sm leading-relaxed text-amber-100/85 font-medium">{reportGenerato.paragrafoTermico}</p>
+            </div>
+
+            {/* 2. VENTO */}
+            <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/5 overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-cyan-500/15 bg-cyan-500/5">
+                <div className="relative">
+                  <Wind className="w-4 h-4 text-cyan-400 animate-spin-slow" />
+                </div>
+                <span className="text-xs font-black text-cyan-300 uppercase tracking-widest">2 · Profilo Vento in Quota</span>
+              </div>
+              <p className="px-4 py-3 text-sm leading-relaxed text-cyan-100/85 font-medium">{reportGenerato.paragrafoVento}</p>
+            </div>
+
+            {/* 3. INSTABILITÀ */}
+            <div className="rounded-2xl border border-violet-500/20 bg-violet-500/5 overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-violet-500/15 bg-violet-500/5">
+                <div className="relative">
+                  <Cloud className="w-4 h-4 text-violet-400 animate-float" />
+                </div>
+                <span className="text-xs font-black text-violet-300 uppercase tracking-widest">3 · Convezione &amp; Rischio</span>
+              </div>
+              <p className="px-4 py-3 text-sm leading-relaxed text-violet-100/85 font-medium">{reportGenerato.paragrafoInstabilita}</p>
+            </div>
+
+            {/* 4. STRATEGIA */}
+            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-emerald-500/15 bg-emerald-500/5">
+                <div className="relative">
+                  <ArrowUp className="w-4 h-4 text-emerald-400" style={{ animation: "floatIcon 2s ease-in-out infinite" }} />
+                </div>
+                <span className="text-xs font-black text-emerald-300 uppercase tracking-widest">4 · Finestra &amp; Tattica</span>
+              </div>
+              <p className="px-4 py-3 text-sm leading-relaxed text-emerald-100/85 font-medium">{reportGenerato.paragrafoStrategia}</p>
+            </div>
+          </div>
+
+          {/* BOTTOM ALERTS */}
+          <div className="px-5 pb-4 space-y-2">
+            <div className="flex items-start gap-2.5 bg-rose-950/40 border border-rose-500/30 rounded-xl px-4 py-3 text-rose-200">
+              <div className="relative shrink-0">
+                <AlertTriangle className="w-4 h-4 text-rose-400 animate-pulse-glow" />
               </div>
               <div>
-                <h4 className="text-base sm:text-lg font-black text-white tracking-wide">{reportGenerato.titolo}</h4>
-                <p className="text-xs text-slate-400 mt-0.5">Bollettino aerologico analitico · Quota Decollo {altitude} m slm</p>
+                <span className="text-xs font-black text-rose-300 uppercase tracking-wide block mb-0.5">Segnali di pericolo</span>
+                <span className="text-xs leading-relaxed font-medium opacity-90">{reportGenerato.segnaliPericolo}</span>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className={`px-3 py-1 rounded-full text-xs font-black border ${reportGenerato.score >= 7 ? "bg-emerald-950/60 text-emerald-300 border-emerald-500/50" : reportGenerato.score >= 5 ? "bg-amber-950/60 text-amber-300 border-amber-500/50" : "bg-rose-950/60 text-rose-300 border-rose-500/50"}`}>
-                Voto: {reportGenerato.score}/10
-              </span>
-              <button onClick={handleCopyReport} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 transition-all border border-slate-700">
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copied ? "Copiato!" : "Copia"}</span>
-              </button>
-            </div>
-          </div>
-          <div className="space-y-3 text-sm sm:text-base leading-relaxed text-slate-300">
-            <p><strong className="text-amber-300 font-semibold">1. Quadro Termico & Stabilità: </strong>{reportGenerato.paragrafoTermico}</p>
-            <p><strong className="text-cyan-300 font-semibold">2. Profilo Vento in Quota: </strong>{reportGenerato.paragrafoVento}</p>
-            <p><strong className="text-purple-300 font-semibold">3. Convezione Pomeridiana & Rischio: </strong>{reportGenerato.paragrafoInstabilita}</p>
-            <p><strong className="text-emerald-300 font-semibold">4. Finestra di Decollo & Tattica: </strong>{reportGenerato.paragrafoStrategia}</p>
-          </div>
-          <div className="pt-3 border-t border-slate-800/80 space-y-2">
-            <div className="flex items-start gap-2 text-xs sm:text-sm bg-rose-950/30 border border-rose-500/30 rounded-xl p-3 text-rose-200">
-              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-              <div><strong className="text-rose-300">Segnali di pericolo: </strong>{reportGenerato.segnaliPericolo}</div>
-            </div>
-            <div className="flex items-start gap-2 text-xs sm:text-sm bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-3 text-emerald-200">
-              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-              <div><strong className="text-emerald-300">Giudizio finale: </strong>{reportGenerato.giudizioFinale}</div>
+            <div className="flex items-start gap-2.5 bg-emerald-950/40 border border-emerald-500/30 rounded-xl px-4 py-3 text-emerald-200">
+              <div className="relative shrink-0">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" style={{ animation: "floatIcon 2.5s ease-in-out infinite" }} />
+              </div>
+              <div>
+                <span className="text-xs font-black text-emerald-300 uppercase tracking-wide block mb-0.5">Giudizio finale</span>
+                <span className="text-xs leading-relaxed font-medium opacity-90">{reportGenerato.giudizioFinale}</span>
+              </div>
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

@@ -71,6 +71,26 @@
 .animate-float { animation: float 3s ease-in-out infinite; }
 .animate-slide-up { animation: slideUp 0.4s ease-out; }
 .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+@keyframes floatIcon {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  30% { transform: translateY(-5px) rotate(-4deg); }
+  60% { transform: translateY(-2px) rotate(2deg); }
+}
+.animate-float-icon { animation: floatIcon 2s ease-in-out infinite; }
+@keyframes growBar {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+.animate-pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow { animation: spin 3s linear infinite; }
 
 /* ===== MOBILE FIRST ===== */
 @media (max-width: 768px) {

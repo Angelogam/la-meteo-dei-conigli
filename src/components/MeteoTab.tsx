@@ -464,32 +464,74 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
       {rainHours.length > 0 && (
         <div className="px-6 py-4 border-b border-slate-700/30">
           <div className="flex items-center gap-2 mb-3">
-            <CloudRain className="w-4 h-4 text-sky-400" />
-            <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Rischio piovaschi — prossime 24h</span>
+            <div className="relative">
+              <CloudRain className="w-4 h-4 text-sky-400 animate-bounce" />
+            </div>
+            <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Rischio piovaschi — 09:00 / 19:00</span>
+            <div className="ml-auto flex items-center gap-3 text-[10px] text-slate-500 font-semibold">
+              <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-sky-400 inline-block" /> 10-30%</span>
+              <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-violet-400 inline-block" /> 30-50%</span>
+              <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-rose-400 inline-block" /> &gt;50%</span>
+            </div>
           </div>
-          <div className="flex gap-1 items-end h-12">
-            {dayData.slice(0, 24).map((h, i) => {
-              const prob = h.precipitationProba ?? 0;
-              const hr = h.time instanceof Date ? h.time.getHours() : new Date(h.time).getHours();
-              const isNow = hr === now;
-              return (
-                <div key={i} className="flex-1 flex flex-col items-center gap-0.5 group relative">
-                  <div className={`w-full rounded-t-sm transition-all ${prob > 50 ? "bg-rose-500" : prob > 30 ? "bg-violet-500" : prob > 10 ? "bg-sky-500" : "bg-slate-700"} ${isNow ? "ring-1 ring-white/30" : ""}`} style={{ height: `${Math.max(4, prob)}%`, minHeight: prob > 0 ? '4px' : '2px' }} />
-                  {hr % 3 === 0 && <span className="text-[8px] text-slate-600 font-medium">{hr}:00</span>}
-                  {prob > 30 && (
-                    <div className="absolute bottom-full mb-1 px-1.5 py-0.5 bg-slate-800 border border-slate-600 rounded text-[9px] text-slate-300 font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10">
-                      {hr}:00 — {Math.round(prob)}%
-                    </div>
-                  )}
+          <div className="bg-slate-800/40 rounded-xl p-3 border border-slate-700/40">
+            {/* Header riga orari */}
+            <div className="flex gap-1 mb-1.5">
+              {[9,10,11,12,13,14,15,16,17,18,19].map(h => (
+                <div key={h} className="flex-1 text-center">
+                  <span className="text-[9px] font-black text-slate-500 tabular-nums">{String(h).padStart(2,"0")}</span>
                 </div>
-              );
-            })}
-          </div>
-          <div className="flex items-center gap-3 mt-2 text-[9px] text-slate-500 font-semibold">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-slate-700 inline-block" /> &lt;10%</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-sky-500 inline-block" /> 10-30%</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-violet-500 inline-block" /> 30-50%</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-rose-500 inline-block" /> &gt;50%</span>
+              ))}
+            </div>
+            {/* Barre rischio pioggia */}
+            <div className="flex gap-1 items-end h-14">
+              {[9,10,11,12,13,14,15,16,17,18,19].map(hour => {
+                const entry = dayData.find(h => {
+                  const hr = h.time instanceof Date ? h.time.getHours() : new Date(h.time).getHours();
+                  return hr === hour;
+                });
+                const prob = entry ? (entry.precipitationProba ?? 0) : 0;
+                const isNow = hour === now;
+                const barColor = prob > 50 ? "from-rose-500 to-rose-400" : prob > 30 ? "from-violet-500 to-violet-400" : prob > 10 ? "from-sky-500 to-sky-400" : "from-slate-600 to-slate-500";
+                const iconHour = () => {
+                  if (prob > 50) return "🌧️";
+                  if (prob > 30) return "🌦️";
+                  if (prob > 10) return "☁️";
+                  return hour >= 10 && hour <= 15 ? "☀️" : "🌙";
+                };
+                const iconKey = `icon-${hour}`;
+                return (
+                  <div key={hour} className="flex-1 flex flex-col items-center gap-0.5 group relative">
+                    {/* Icona animata */}
+                    <div className={`h-4 flex items-center justify-center transition-all ${prob > 30 ? '' : 'opacity-60'}`}>
+                      <span
+                        key={hour}
+                        className="text-xs leading-none"
+                        style={prob > 30 ? { animation: `floatIcon 1.8s ease-in-out infinite` } : {}}
+                      >{iconHour()}</span>
+                    </div>
+                    {/* Barra */}
+                    <div className={`w-full rounded-md bg-gradient-to-t ${barColor} transition-all duration-500 group-hover:opacity-80`}
+                         style={{ height: `${Math.max(4, prob)}%`, minHeight: `${Math.max(4, prob)}%`, animation: prob > 30 ? `growBar 0.8s ease-out ${hour * 0.05}s both` : undefined }} />
+                    {isNow && <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-white shadow-sm shadow-white/50" />}
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-900 border border-slate-600 rounded-lg text-[10px] text-white font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10 shadow-xl">
+                      {hour}:00 — {Math.round(prob)}% pioggia
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Fuso ora corrente */}
+            <div className="mt-2 flex items-center justify-center gap-2 text-[10px] text-slate-500 font-semibold">
+              <span className="flex items-center gap-1"><span className="w-1 h-1 rounded-full bg-white" /> ora attuale</span>
+              <span>·</span>
+              <span>09:00 → 19:00</span>
+              <span>·</span>
+              <span className="text-amber-400">🌧️ &gt;50%</span>
+              <span>🌦️ 30-50%</span>
+              <span>☁️ &lt;30%</span>
+            </div>
           </div>
         </div>
       )}
