@@ -16,6 +16,7 @@ import AnalisiMeteo from "@/components/AnalisiMeteo";
 import Windgram from "@/components/Windgram";
 import RasoftWindgram from "@/components/RasoftWindgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
+import ResearchPanel from "@/components/ResearchPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
@@ -171,10 +172,7 @@ export default function Index() {
                   </div>
                 )}
 
-                {/* DEBUG: verifica rendering */}
-                <div className="bg-fuchsia-600 text-white font-black text-xs py-2 px-4 rounded-xl text-center">
-                  🔬 RICERCA WEB — CLICCA QUI
-                </div>
+                <ResearchPanel />
                 <SiteHeader
                   site_name={site.site_name}
                   location_name={site.location_name}
