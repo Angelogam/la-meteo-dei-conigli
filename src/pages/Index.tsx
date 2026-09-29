@@ -192,30 +192,15 @@ export default function Index() {
             {showCards && site && (
               <>
                 {isOfflineMode && (
-                  <div className="bg-amber-900/20 border border-amber-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-amber-400" />
-                    <span className="text-xs text-amber-300">
-                      ⚠️ Dati offline (API non raggiungibile) - Stima automatica attiva
-                    </span>
-                  </div>
-                )}
-
-                {/* Pulsante Ricerca Meteo Siti Parapendio - SEMPRE VISIBILE */}
-                <div className="bg-rose-600 text-white font-black text-xs py-3 px-4 rounded-xl text-center shadow-lg shadow-rose-600/30 cursor-pointer hover:bg-rose-700 transition-colors" onClick={async () => {
-                  try {
-                    const res = await fetch("/api/scrape-parapendio");
-                    if (!res.ok) return;
-                    const data = await res.json();
-                    const results = data.results || [data];
-                    alert(results.map((r: any) => `${r.success ? "✅" : "❌"} ${r.site}\n${r.url}\n${r.description}`).join("\n\n"));
-                  } catch {
-                    alert("Errore nella ricerca — riprova tra qualche secondo.");
-                  }
-                }}>
-                  🔬 RICERCA WEB — SCIARA SITI METEO PARAPENDIO (CLICCA)
-                </div>
-
-                {/* Windgram professionale con dati reali Open-Meteo */}
+                                  <div className="bg-amber-900/20 border border-amber-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
+                                    <Activity className="w-4 h-4 text-amber-400" />
+                                    <span className="text-xs text-amber-300">
+                                      ⚠️ Dati offline (API non raggiungibile) - Stima automatica attiva
+                                    </span>
+                                  </div>
+                                )}
+                
+                                {/* Windgram professionale con dati reali Open-Meteo */}
                 <div className="bg-slate-800/30 border border-emerald-500/30 rounded-2xl p-4">
                   <Windgram
                       dayData={filteredDayData}
