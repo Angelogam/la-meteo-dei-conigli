@@ -1,3 +1,6 @@
+import { defineHandler } from "nitro";
+import { getQuery, createError } from "nitro/h3";
+
 /**
  * API Route: Scraping di siti meteo parapendio
  * Usato per ricerca e studio dei siti di riferimento
@@ -108,7 +111,7 @@ async function fetchSite(site: SiteToScrape): Promise<{ success: boolean; conten
   }
 }
 
-export default defineEventHandler(async (event) => {
+export default defineHandler(async (event) => {
   const query = getQuery(event);
   const siteName = query.site as string;
   
