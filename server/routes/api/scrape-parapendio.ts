@@ -1,5 +1,7 @@
-import { defineHandler } from "nitro";
-import { getQuery, createError } from "nitro/h3";
+/**
+ * API Route: Scraping di siti meteo parapendio
+ * Usato per ricerca e studio dei siti di riferimento
+ */
 
 interface SiteToScrape {
   name: string;
@@ -106,10 +108,11 @@ async function fetchSite(site: SiteToScrape): Promise<{ success: boolean; conten
   }
 }
 
-export default defineHandler(async (event) => {
+export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const siteName = query.site as string;
   
+  // Se specificato un sito, scarica solo quello
   if (siteName) {
     const site = SITES.find(s => s.name === siteName);
     if (!site) {
@@ -129,7 +132,8 @@ export default defineHandler(async (event) => {
     };
   }
   
-  const results: any[] = [];
+  // Altrimenti scarica tutti i siti
+  const results = [];
   for (const site of SITES) {
     console.log(`[scrape] Fetching ${site.name}...`);
     const result = await fetchSite(site);
@@ -139,6 +143,7 @@ export default defineHandler(async (event) => {
       description: site.description,
       ...result
     });
+    // Small delay to be polite
     await new Promise(r => setTimeout(r, 500));
   }
   

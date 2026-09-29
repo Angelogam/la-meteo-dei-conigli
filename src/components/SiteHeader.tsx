@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import {
   MapPin,
   Mountain,
@@ -69,26 +69,15 @@ export default function SiteHeader({
   const isOvercast = weatherCode >= 20 && weatherCode < 61;
   const isFog = weatherCode >= 45 && weatherCode <= 48;
 
-  const [researching, setResearching] = useState(false);
-  const [researchDone, setResearchDone] = useState(false);
-
   async function openResearch() {
-    setResearching(true);
-    setResearchDone(false);
     try {
       const res = await fetch("/api/scrape-parapendio");
-      if (!res.ok) throw new Error("API non disponibile");
+      if (!res.ok) return;
       const data = await res.json();
       const results = data.results || [data];
-      const summary = results.map((r: any) =>
-        `${r.success ? "✅" : "❌"} ${r.site} — ${r.url}`
-      ).join("\n");
-      alert(summary);
-      setResearchDone(true);
+      alert(results.map((r: any) => `${r.success ? "✅" : "❌"} ${r.site}\n${r.url}\n${r.description}`).join("\n\n"));
     } catch {
       alert("Errore nella ricerca — riprova tra qualche secondo.");
-    } finally {
-      setResearching(false);
     }
   }
 
@@ -204,31 +193,9 @@ export default function SiteHeader({
       )}
 
       {/* ─── Pulsante Ricerca Meteo Siti Parapendio ─── */}
-      <button
-        onClick={openResearch}
-        disabled={researching}
-        className={`mt-3 w-full font-black text-xs py-3 px-4 rounded-xl transition-all duration-200 ${
-          researching
-            ? "bg-rose-500/50 text-rose-200 cursor-wait"
-            : researchDone
-            ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/30"
-            : "bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30 hover:shadow-rose-500/40 active:scale-[0.98]"
-        }`}
-      >
-        {researching ? (
-          <span className="flex items-center justify-center gap-2">
-            <svg className="animate-spin w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-            </svg>
-            RICERCA IN CORSO…
-          </span>
-        ) : researchDone ? (
-          "✅ RICERCA COMPLETATA — CLICA PER RICOMINCIARE"
-        ) : (
-          "🔬 RICERCA WEB — SCIARA SITI METEO PARAPENDIO"
-        )}
-      </button>
+      <div className="mt-3 bg-rose-600 text-white font-black text-xs py-3 px-4 rounded-xl text-center shadow-lg shadow-rose-600/30" onClick={openResearch}>
+        🔬 RICERCA WEB — SCIARA SITI METEO PARAPENDIO (CLICCA)
+      </div>
     </div>
   );
 }
