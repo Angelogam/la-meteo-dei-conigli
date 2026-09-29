@@ -171,30 +171,20 @@ export default function Index() {
                   </div>
                 )}
 
-                {/* DEBUG: verifica rendering */}
-                <div className="bg-fuchsia-600 text-white font-black text-xs py-2 px-4 rounded-xl text-center">
-                  🔬 RICERCA WEB — CLICCA QUI
+                {/* Pulsante Ricerca Meteo Siti Parapendio - SEMPRE VISIBILE */}
+                <div className="bg-rose-600 text-white font-black text-xs py-3 px-4 rounded-xl text-center shadow-lg shadow-rose-600/30 cursor-pointer hover:bg-rose-700 transition-colors" onClick={async () => {
+                  try {
+                    const res = await fetch("/api/scrape-parapendio");
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    const results = data.results || [data];
+                    alert(results.map((r: any) => `${r.success ? "✅" : "❌"} ${r.site}\n${r.url}\n${r.description}`).join("\n\n"));
+                  } catch {
+                    alert("Errore nella ricerca — riprova tra qualche secondo.");
+                  }
+                }}>
+                  🔬 RICERCA WEB — SCIARA SITI METEO PARAPENDIO (CLICCA)
                 </div>
-                <SiteHeader
-                  site_name={site.site_name}
-                  location_name={site.location_name}
-                  orientation={site.orientation}
-                  elevation_m={site.elevation_m}
-                  currentData={currentData as any}
-                  sunrise={enrichedDaily[selectedDay]?.sunrise?.slice(0, 5)}
-                  sunset={enrichedDaily[selectedDay]?.sunset?.slice(0, 5)}
-                  uvIndex={enrichedDaily[selectedDay]?.uvIndexMax ?? currentData?.uvIndex}
-                />
-                <PrevisioniGiornaliere
-                  enrichedDaily={enrichedDaily}
-                  dateLabels={dateLabels}
-                  currentData={currentData as any}
-                  dayData={dayData}
-                  site={{ name: site.site_name, altitude: site.elevation_m, exposure: site.orientation }}
-                  selectedDay={selectedDay}
-                  onSelectDay={setSelectedDay}
-                  nomeDecollo={site.site_name}
-                />
 
                 {/* Windgram professionale con dati reali Open-Meteo */}
                 <div className="bg-slate-800/30 border border-emerald-500/30 rounded-2xl p-4">
