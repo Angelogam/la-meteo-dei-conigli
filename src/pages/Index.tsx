@@ -21,7 +21,7 @@ import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 import { DECOLLI } from "@/data/decolli";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
-import { Activity } from "lucide-react";
+import { Activity, Compass } from "lucide-react";
 
 export default function Index() {
   useEffect(() => {
@@ -125,39 +125,68 @@ export default function Index() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6">
         <div className="flex flex-col lg:flex-row gap-6">
           <aside className="w-full lg:w-80 shrink-0 space-y-3">
-            <UpdateTimer
-              lastUpdate={aggressiveLastUpdate ?? lastUpdate}
-              countdown={countdown}
-              updating={updating}
-              onRefresh={loadWeather}
-            />
-            <div className="relative bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-emerald-500/25 rounded-2xl px-4 py-3 overflow-hidden group">
-              <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/10">
-                  <Activity className="w-3.5 h-3.5 text-emerald-400" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-black text-emerald-300 truncate">{site?.site_name ?? "Decollo"}</div>
-                  <div className="text-[10px] text-slate-500 font-semibold">Open-Meteo + 3 fonti · {tempoTrascorso}s ago</div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/60" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse shadow-sm shadow-sky-400/60" style={{ animationDelay: '0.3s' }} />
-                  <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse shadow-sm shadow-violet-400/60" style={{ animationDelay: '0.6s' }} />
-                </div>
-              </div>
-            </div>
-            <DecolliCard
-              decolli={mergedDecolli}
-              selectedId={selectedId}
-              selectedDay={selectedDay}
-              onSelect={(item) => {
-                setSelectedId(item.id);
-                setSelectedHour(new Date().getHours());
-              }}
-            />
-          </aside>
+                      <UpdateTimer
+                        lastUpdate={aggressiveLastUpdate ?? lastUpdate}
+                        countdown={countdown}
+                        updating={updating}
+                        onRefresh={loadWeather}
+                      />
+                      <div className="relative bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-emerald-500/25 rounded-2xl px-4 py-3 overflow-hidden group">
+                        <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="relative flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/10">
+                            <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs font-black text-emerald-300 truncate">{site?.site_name ?? "Decollo"}</div>
+                            <div className="text-[10px] text-slate-500 font-semibold">Open-Meteo + 3 fonti · {tempoTrascorso}s ago</div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/60" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse shadow-sm shadow-sky-400/60" style={{ animationDelay: '0.3s' }} />
+                            <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse shadow-sm shadow-violet-400/60" style={{ animationDelay: '0.6s' }} />
+                          </div>
+                        </div>
+                      </div>
+                      <DecolliCard
+                        decolli={mergedDecolli}
+                        selectedId={selectedId}
+                        selectedDay={selectedDay}
+                        onSelect={(item) => {
+                          setSelectedId(item.id);
+                          setSelectedHour(new Date().getHours());
+                        }}
+                      />
+          
+                      {/* Card Ricerca Meteo Siti Parapendio — sotto i decolli, a sinistra */}
+                      <div className="bg-gradient-to-br from-rose-950/80 to-rose-900/40 border border-rose-500/30 rounded-2xl p-4 shadow-lg shadow-rose-900/40">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-8 h-8 rounded-xl bg-rose-500/20 border border-rose-400/40 flex items-center justify-center shrink-0">
+                            <Compass className="w-4 h-4 text-rose-400" />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-black text-white">Ricerca Meteo</h3>
+                            <p className="text-[10px] text-rose-300/70 font-semibold">Siti di riferimento parapendio</p>
+                          </div>
+                        </div>
+                        <div
+                          className="bg-rose-600 hover:bg-rose-500 text-white font-black text-xs py-3 px-4 rounded-xl text-center shadow-lg shadow-rose-600/30 cursor-pointer transition-colors"
+                          onClick={async () => {
+                            try {
+                              const res = await fetch("/api/scrape-parapendio");
+                              if (!res.ok) return;
+                              const data = await res.json();
+                              const results = data.results || [data];
+                              alert(results.map((r: any) => `${r.success ? "✅" : "❌"} ${r.site}\n${r.url}\n${r.description}`).join("\n\n"));
+                            } catch {
+                              alert("Errore nella ricerca — riprova tra qualche secondo.");
+                            }
+                          }}
+                        >
+                          🔬 RICERCA WEB — SCIARA SITI METEO PARAPENDIO (CLICCA)
+                        </div>
+                      </div>
+                    </aside>
 
           <div className="flex-1 min-w-0 space-y-6">
             {showCards && site && (
