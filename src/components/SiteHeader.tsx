@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import React from "react";
 import {
   MapPin,
@@ -13,7 +12,6 @@ import {
 } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 import type { MeteoCurrent } from "@/services/openMeteoService";
-import ResearchPanel from "./ResearchPanel";
 
 interface SiteHeaderProps {
   // Campi statici protetti dal dataset locale
@@ -70,7 +68,18 @@ export default function SiteHeader({
   const label = getWeatherLabel(weatherCode);
   const isOvercast = weatherCode >= 20 && weatherCode < 61;
   const isFog = weatherCode >= 45 && weatherCode <= 48;
-  const [researchOpen, setResearchOpen] = useState(false);
+
+  async function openResearch() {
+    try {
+      const res = await fetch("/api/scrape-parapendio");
+      if (!res.ok) return;
+      const data = await res.json();
+      const results = data.results || [data];
+      alert(results.map((r: any) => `${r.success ? "✅" : "❌"} ${r.site}\n${r.url}\n${r.description}`).join("\n\n"));
+    } catch {
+      alert("Errore nella ricerca — riprova tra qualche secondo.");
+    }
+  }
 
   return (
     <div className="card header-decollo pb-5 mb-4 border-b border-orange-400/20 relative overflow-hidden">
@@ -184,14 +193,9 @@ export default function SiteHeader({
       )}
 
       {/* ─── Pulsante Ricerca Meteo Siti Parapendio ─── */}
-      <button
-        className="mt-3 w-full bg-gradient-to-r from-orange-600 to-rose-600 hover:from-orange-500 hover:to-rose-500 text-white font-black text-xs py-3 px-4 rounded-xl text-center shadow-lg shadow-orange-600/25 transition-all duration-200 active:scale-[0.98]"
-        onClick={() => setResearchOpen(true)}
-      >
-        🔬 RICERCA WEB — SITI METEO PARAPENDIO
-      </button>
-
-      <ResearchPanel open={researchOpen} onOpenChange={setResearchOpen} />
+      <div className="mt-3 bg-rose-600 text-white font-black text-xs py-3 px-4 rounded-xl text-center shadow-lg shadow-rose-600/30" onClick={openResearch}>
+        🔬 RICERCA WEB — SCIARA SITI METEO PARAPENDIO (CLICCA)
+      </div>
     </div>
   );
 }
