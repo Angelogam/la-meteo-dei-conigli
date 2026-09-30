@@ -208,6 +208,11 @@ export default function Index() {
                   uvIndex={enrichedDaily[selectedDay]?.uvIndexMax ?? currentData?.uvIndex}
                 />
 
+                {/* ─── DEBUG: VERIFICA RENDERING ─── */}
+                <div className="bg-red-600 text-white font-black text-sm py-3 px-4 rounded-xl text-center shadow-lg">
+                  🧪 TEST CARD: VoloDecisionCard RENDERED
+                </div>
+                
                 {/* ─── SEZIONE DECISIONE VOLO SEMPLIFICATA ─── */}
                 <VoloDecisionCard
                   dayData={dayData}
