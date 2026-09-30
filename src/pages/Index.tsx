@@ -133,6 +133,10 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
+      {/* DEBUG BAR — SE VEDI QUESTO, IL CODICE E' CARICO */}
+      <div className="bg-yellow-500 text-black font-black text-sm py-2 px-4 text-center">
+        🚨 DEBUG ACTIVE — Versione con VoloDecisionCard
+      </div>
       <Header />
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6">
         <div className="flex flex-col lg:flex-row gap-6">
