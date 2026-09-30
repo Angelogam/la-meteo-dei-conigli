@@ -16,6 +16,7 @@ import AnalisiMeteo from "@/components/AnalisiMeteo";
 import Windgram from "@/components/Windgram";
 import RasoftWindgram from "@/components/RasoftWindgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
+import PilotSummaryCard from "@/components/PilotSummaryCard";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
@@ -206,6 +207,15 @@ export default function Index() {
                   sunset={enrichedDaily[selectedDay]?.sunset?.slice(0, 5)}
                   uvIndex={enrichedDaily[selectedDay]?.uvIndexMax ?? currentData?.uvIndex}
                 />
+
+                {/* ─── RIEPILOGO SEMPLICE PER IL PILOTA ─── */}
+                <PilotSummaryCard
+                  dayData={dayData}
+                  altitude={site.elevation_m}
+                  selectedHour={selectedHour}
+                  siteName={site.site_name}
+                />
+
                 <PrevisioniGiornaliere
                   enrichedDaily={enrichedDaily}
                   dateLabels={dateLabels}
