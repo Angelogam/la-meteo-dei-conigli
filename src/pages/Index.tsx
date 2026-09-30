@@ -16,7 +16,7 @@ import AnalisiMeteo from "@/components/AnalisiMeteo";
 import Windgram from "@/components/Windgram";
 import RasoftWindgram from "@/components/RasoftWindgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
-import PilotSummaryCard from "@/components/PilotSummaryCard";
+import PilotSummaryCard from "./components/PilotSummaryCard";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
