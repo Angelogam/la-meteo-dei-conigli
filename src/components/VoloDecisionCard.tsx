@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Wind, Thermometer, CloudRain, CloudSun, ArrowUp, Droplets, Gauge, CloudLightning } from "lucide-react";
+import { Wind, Thermometer, CloudRain, CloudSun, ArrowUpRight, CloudLightning } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 
 interface VoloDecisionCardProps {
@@ -189,7 +189,7 @@ export default function VoloDecisionCard({ dayData, selectedHour, altitude, site
         {/* Base Nuvole */}
         <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/40">
           <div className="flex items-center gap-1.5 text-slate-400 text-xs mb-2">
-            <ArrowUp className="w-3.5 h-3.5" />
+            <ArrowUpRight className="w-3.5 h-3.5" />
             <span>Base cumuli</span>
           </div>
           <div className="flex items-baseline gap-1">
