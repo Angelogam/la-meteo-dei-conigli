@@ -102,9 +102,17 @@ export default function Index() {
     return () => clearTimeout(timer);
   }, []);
 
+  // DEBUG BAR - sempre visibile
+  const debugBar = (
+    <div className="bg-red-600 text-white font-black text-xl py-6 px-4 text-center border-b-4 border-red-800">
+      🚨 CARD INTEGRATA CON SUCCESSO! — VoloDecisionCard ATTIVO 🚨
+    </div>
+  );
+
   if (isLoading && !initialLoadTimeout) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col">
+        {debugBar}
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
@@ -133,9 +141,14 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
-      {/* DEBUG BAR — SE VEDI QUESTO, IL CODICE E' CARICO */}
-      <div className="bg-yellow-500 text-black font-black text-sm py-2 px-4 text-center">
-        🚨 DEBUG ACTIVE — Versione con VoloDecisionCard
+      {/* ███████████████████████████████████████████████ */}
+      {/* ██  TEST VISIBILE — SE NON VEDI QUESTO, BUG  ██ */}
+      {/* ███████████████████████████████████████████████ */}
+      <div className="bg-red-600 text-white font-black text-xl py-6 px-4 text-center border-b-4 border-red-800">
+        🚨 CARD INTEGRATA CON SUCCESSO! 🚨
+        <div className="text-base mt-2 font-normal">
+          Se leggi questo messaggio, il codice funziona.
+        </div>
       </div>
       <Header />
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6">
