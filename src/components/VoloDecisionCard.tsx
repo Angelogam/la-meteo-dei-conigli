@@ -12,26 +12,9 @@ interface VoloDecisionCardProps {
 }
 
 export default function VoloDecisionCard({ dayData, selectedHour, altitude, siteName }: VoloDecisionCardProps) {
-  // DEBUG: log per verificare rendering
-  console.log("[VoloDecisionCard] dayData length:", dayData?.length, "selectedHour:", selectedHour);
-  
-  if (!dayData || dayData.length === 0) {
-    // Mostra.placeholder sempre visibile
-    return (
-      <div className="bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-lg py-8 px-6 rounded-2xl border-4 border-yellow-400 shadow-2xl">
-        <div className="text-center">
-          <div className="text-4xl mb-2">🚨</div>
-          <div>NESSUN DATO METEO</div>
-          <div className="text-sm font-normal mt-2">Attendi il caricamento...</div>
-        </div>
-      </div>
-    );
-  }
+  if (!dayData || dayData.length === 0) return null;
 
   const current = dayData[selectedHour] || dayData[0];
-
-  // DEBUG: assicuriamoci che il componente venga renderizzato
-  console.log("[VoloDecisionCard] RENDERING with", dayData.length, "ore di dati");
 
   // Calcoli semplificati
   const ventoMedia = dayData.slice(selectedHour, selectedHour + 3).reduce((s: number, h: any) => s + (h.windSpeed || 0), 0) / 3;
@@ -69,7 +52,7 @@ export default function VoloDecisionCard({ dayData, selectedHour, altitude, site
   }
 
   return (
-    <div className="bg-gradient-to-br from-blue-900/90 to-slate-900/90 border-2 border-blue-500/50 rounded-2xl overflow-hidden shadow-2xl">
+    <div className="bg-slate-900/90 border border-slate-700/50 rounded-2xl overflow-hidden shadow-xl">
       {/* Header */}
       <div className="bg-gradient-to-r from-slate-800/80 to-slate-900/80 px-4 py-3 border-b border-slate-700/50">
         <div className="flex items-center justify-between">

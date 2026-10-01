@@ -8,7 +8,7 @@ import { nitro } from "nitro/vite";
 export default defineConfig(() => ({
   server: {
     host: "::",
-    port: 5173,
+    port: 8080,
   },
   plugins: [dyadComponentTagger(), react(), nitro()],
   resolve: {
