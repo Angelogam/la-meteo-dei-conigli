@@ -52,9 +52,15 @@ export default function VoloDecisionCard({ dayData, selectedHour, altitude, site
   }
 
   return (
-    <div className="bg-slate-900/90 border border-slate-700/50 rounded-2xl overflow-hidden shadow-xl">
+    <div style={{ background: '#0f172a', border: '5px solid #ff0000', borderRadius: '1rem', padding: '1.5rem', margin: '1.5rem 0', boxShadow: '0 0 50px rgba(255, 0, 0, 0.8), inset 0 0 30px rgba(255, 0, 0, 0.2)' }}>
+      <div style={{ color: '#ff0000', fontWeight: 'bold', fontSize: '2rem', textAlign: 'center', marginBottom: '1rem', textShadow: '0 0 20px rgba(255, 0, 0, 0.8)' }}>
+        🚨 VoloDecisionCard ATTIVA — SE VEDI QUESTO, FUNZIONA! 🚨
+      </div>
+      <div style={{ color: '#ffffff', fontSize: '1.2rem', textAlign: 'center', marginBottom: '1rem' }}>
+        ← QUESTA È LA TUA CARD METEO PARAPENDIO ←
+      </div>
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-800/80 to-slate-900/80 px-4 py-3 border-b border-slate-700/50">
+      <div style={{ background: '#1e293b', padding: '0.75rem 1rem', borderBottom: '2px solid #334155', marginBottom: '1rem' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CloudSun className="w-5 h-5 text-sky-400" />
