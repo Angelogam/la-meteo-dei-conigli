@@ -69,6 +69,8 @@ export default function Index() {
 
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [windyPlugin, setWindyPlugin] = useState<any>(null);
+  const [windyLoading, setWindyLoading] = useState(false);
+  const [windyError, setWindyError] = useState<string | null>(null);
 
   const isLoading = weatherLoading || aggressiveLoading;
 
@@ -139,6 +141,7 @@ export default function Index() {
       const res = await fetch("/api/scrape-parapendio?site=windy_pg_soundings");
       console.log("[WindyPlugin] Response status:", res.status, "ok:", res.ok);
       if (!res.ok) {
+        setWindyError(`HTTP ${res.status}: ${res.statusText}`);
         console.error("[WindyPlugin] Failed to fetch:", res.statusText);
         return;
       }
@@ -146,12 +149,24 @@ export default function Index() {
       console.log("[WindyPlugin] Data received:", data);
       setWindyPlugin(data);
     } catch (err) {
+      setWindyError(err instanceof Error ? err.message : String(err));
       console.error("[WindyPlugin] Error:", err);
+    } finally {
+      setWindyLoading(false);
     }
   }
 
   useEffect(() => {
+    setWindyLoading(true);
+    setWindyError(null);
     loadWindyPlugin();
+    const timer = setTimeout(() => {
+      if (!windyPlugin && !windyError) {
+        setWindyError("Timeout — tentativo Fallito");
+        setWindyLoading(false);
+      }
+    }, 10000);
+    return () => clearTimeout(timer);
   }, []);
 
   return (
@@ -207,7 +222,22 @@ export default function Index() {
               <ResearchButton onClick={openResearch} />
             </div>
 
-            {/* Card Windy Plugin PG Soundings */}
+            {/* Card Windy Plugin PG Soundings — sempre visibile */}
+            {windyLoading && !windyPlugin && (
+              <div className="bg-sky-950/40 border border-sky-500/30 rounded-2xl px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full border-2 border-sky-500/20 border-t-sky-400 animate-spin shrink-0" />
+                  <span className="text-xs text-sky-300 font-semibold">Caricamento Windy Plugin PG Soundings…</span>
+                </div>
+              </div>
+            )}
+            {windyError && !windyPlugin && (
+              <div className="bg-rose-950/40 border border-rose-500/30 rounded-2xl px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-rose-300 font-semibold">⚠️ {windyError}</span>
+                </div>
+              </div>
+            )}
             {windyPlugin && windyPlugin.success && (
               <WindyPluginCard
                 plugin={windyPlugin}
