@@ -78,29 +78,36 @@ async function fetchSite(site: SiteToScrape): Promise<{ success: boolean; conten
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000);
-    
+
     const response = await fetch(site.url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept': '*/*',
         'Accept-Language': 'it-IT,it;q=0.9,en;q=0.8'
       },
       signal: controller.signal
     });
-    
+
     clearTimeout(timeout);
-    
+
     if (!response.ok) {
       return { success: false, error: `HTTP ${response.status}: ${response.statusText}` };
     }
-    
-    const html = await response.text();
-    const text = stripHtml(html);
-    const meta = extractMetaInfo(html);
-    
-    return {
-      success: true,
-      content: JSON.stringify({
+
+    // Try to get content as text first
+    const contentType = response.headers.get('content-type') || '';
+    let content: string;
+
+    if (contentType.includes('javascript') || site.url.endsWith('.js')) {
+      // For JS files, return raw content
+      content = await response.text();
+    } else {
+      // For HTML pages, parse and extract info
+      const html = await response.text();
+      const text = stripHtml(html);
+      const meta = extractMetaInfo(html);
+
+      content = JSON.stringify({
         url: site.url,
         status: response.status,
         title: meta.title,
@@ -109,7 +116,12 @@ async function fetchSite(site: SiteToScrape): Promise<{ success: boolean; conten
         keywords: meta.keywords,
         textPreview: text.substring(0, 5000),
         fullTextLength: text.length
-      }, null, 2)
+      }, null, 2);
+    }
+
+    return {
+      success: true,
+      content
     };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : String(err) };

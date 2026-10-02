@@ -135,12 +135,18 @@ export default function Index() {
 
   async function loadWindyPlugin() {
     try {
+      console.log("[WindyPlugin] Fetching plugin...");
       const res = await fetch("/api/scrape-parapendio?site=windy_pg_soundings");
-      if (!res.ok) return;
+      console.log("[WindyPlugin] Response status:", res.status);
+      if (!res.ok) {
+        console.error("[WindyPlugin] Failed to fetch:", res.statusText);
+        return;
+      }
       const data = await res.json();
+      console.log("[WindyPlugin] Data received:", data);
       setWindyPlugin(data);
-    } catch {
-      // Silently fail
+    } catch (err) {
+      console.error("[WindyPlugin] Error:", err);
     }
   }
 
