@@ -22,8 +22,9 @@ import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 import { DECOLLI } from "@/data/decolli";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
-import { Activity, Compass } from "lucide-react";
+import { Activity, Compass, CloudDownload } from "lucide-react";
 import ResearchButton from "@/components/ResearchButton";
+import WindyPluginCard from "@/components/WindyPluginCard";
 
 export default function Index() {
   useEffect(() => {
@@ -67,6 +68,7 @@ export default function Index() {
   );
 
   const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [windyPlugin, setWindyPlugin] = useState<any>(null);
 
   const isLoading = weatherLoading || aggressiveLoading;
 
@@ -131,6 +133,21 @@ export default function Index() {
     }
   }
 
+  async function loadWindyPlugin() {
+    try {
+      const res = await fetch("/api/scrape-parapendio?site=windy_pg_soundings");
+      if (!res.ok) return;
+      const data = await res.json();
+      setWindyPlugin(data);
+    } catch {
+      // Silently fail
+    }
+  }
+
+  useEffect(() => {
+    loadWindyPlugin();
+  }, []);
+
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <Header />
@@ -183,6 +200,22 @@ export default function Index() {
               </div>
               <ResearchButton onClick={openResearch} />
             </div>
+
+            {/* Card Windy Plugin PG Soundings */}
+            {windyPlugin && windyPlugin.success && (
+              <WindyPluginCard
+                plugin={windyPlugin}
+                onDownload={(content) => {
+                  const blob = new Blob([content], { type: "application/javascript" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = "windy-plugin-pg-soundings.js";
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+              />
+            )}
           </aside>
 
           <div className="flex-1 min-w-0 space-y-6">

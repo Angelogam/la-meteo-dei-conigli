@@ -37,6 +37,11 @@ const SITES: SiteToScrape[] = [
     name: 'meteofrance_parapente',
     url: 'https://www.meteofrance.com/parapente',
     description: 'Meteo Francia sezione parapendio'
+  },
+  {
+    name: 'windy_pg_soundings',
+    url: 'https://windy-plugins.com/2727410/windy-plugin-pg-soundings/1.6.2/plugin.min.js',
+    description: 'Windy Plugin PG Soundings — Sounding atmosferici per parapendio'
   }
 ];
 
@@ -127,6 +132,7 @@ export default defineHandler(async (event) => {
     }
     
     const result = await fetchSite(site);
+    console.log(`[scrape] Single site ${site.name}:`, result);
     return {
       site: site.name,
       url: site.url,
