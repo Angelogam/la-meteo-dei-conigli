@@ -137,7 +137,7 @@ export default function Index() {
     try {
       console.log("[WindyPlugin] Fetching plugin...");
       const res = await fetch("/api/scrape-parapendio?site=windy_pg_soundings");
-      console.log("[WindyPlugin] Response status:", res.status);
+      console.log("[WindyPlugin] Response status:", res.status, "ok:", res.ok);
       if (!res.ok) {
         console.error("[WindyPlugin] Failed to fetch:", res.statusText);
         return;
