@@ -100,7 +100,7 @@ export default function Index() {
     return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
   }, [selectedDay]);
 
-  const showCards = Boolean(site && (currentData || isOfflineMode || dayData.length > 0));
+  const showCards = true; // Always render — data shown as loading/offline as needed
 
   useEffect(() => {
     if (!appMounted || fetchStarted) return;

@@ -12,7 +12,14 @@ interface VoloDecisionCardProps {
 }
 
 export default function VoloDecisionCard({ dayData, selectedHour, altitude, siteName }: VoloDecisionCardProps) {
-  if (!dayData || dayData.length === 0) return null;
+  if (!dayData || dayData.length === 0) {
+    return (
+      <div className="bg-slate-900/90 border border-slate-700/50 rounded-2xl p-8 text-center">
+        <div className="w-8 h-8 rounded-full border-2 border-sky-500/20 border-t-sky-400 animate-spin mx-auto mb-3" />
+        <p className="text-xs text-sky-300 font-semibold">Caricamento dati meteo…</p>
+      </div>
+    );
+  }
 
   const current = dayData[selectedHour] || dayData[0];
 
