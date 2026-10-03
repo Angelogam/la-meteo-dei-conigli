@@ -34,7 +34,7 @@ test("Navigazione app meteo e verifica card Windy PG Soundings", async ({ page }
   await expect(page.getByTestId('windy-soundings-card')).toBeVisible();
   
   // Verify card content
-  await expect(page.getByText('⚡ CARD WINDY PG SOUNDINGS ⚡')).toBeVisible();
+  await expect(page.getByText('WINDY PG SOUNDINGS')).toBeVisible();
   await expect(page.getByTestId('windy-card-cape')).toBeVisible();
   await expect(page.getByTestId('windy-card-freezing-level')).toBeVisible();
   await expect(page.getByTestId('windy-card-wind-850')).toBeVisible();

@@ -11,31 +11,53 @@ export default function WindySoundingsCard({ siteName }: WindySoundingsCardProps
   console.log("[WindySoundingsCard] RENDERED — siteName:", siteName);
 
   return (
-    <div className="my-6 border-4 border-yellow-400 bg-yellow-50 text-yellow-900 p-6 rounded-xl shadow-lg" data-testid="windy-soundings-card">
-      <h3 className="text-xl font-black mb-2">⚡ CARD WINDY PG SOUNDINGS ⚡</h3>
-      <p className="text-sm mb-4">Siti: Montoso, Pian Munè, Colle Agnello, Monte Birrone</p>
-      
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white/60 rounded-lg p-3 text-center" data-testid="windy-card-cape">
-          <div className="text-xs text-slate-500">CAPE</div>
-          <div className="text-2xl font-black text-emerald-600">120</div>
-          <div className="text-xs">J/kg</div>
+    <div
+      className="my-6 border-2 border-amber-400/50 bg-gradient-to-br from-amber-950/60 to-slate-900/80 p-5 rounded-2xl shadow-lg shadow-amber-500/10"
+      data-testid="windy-soundings-card"
+    >
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center shrink-0">
+          <CloudLightning className="w-4 h-4 text-amber-400" />
         </div>
-        <div className="bg-white/60 rounded-lg p-3 text-center" data-testid="windy-card-freezing-level">
-          <div className="text-xs text-slate-500">Liv. 0°C</div>
-          <div className="text-2xl font-black text-amber-600">3800m</div>
-          <div className="text-xs">quota</div>
-        </div>
-        <div className="bg-white/60 rounded-lg p-3 text-center" data-testid="windy-card-wind-850">
-          <div className="text-xs text-slate-500">Vento 850hPa</div>
-          <div className="text-2xl font-black text-blue-600">22</div>
-          <div className="text-xs">km/h S-SE</div>
+        <div>
+          <h3 className="text-base font-black text-amber-300 leading-none">WINDY PG SOUNDINGS</h3>
+          <p className="text-[10px] text-amber-400/60 mt-0.5">Sondaggi atmosferici per parapendio</p>
         </div>
       </div>
 
-      <div className="mt-4 p-3 bg-white/40 rounded-lg border border-yellow-300">
-        <div className="text-xs font-bold text-slate-700 mb-1">Profilo verticale — Skew-T</div>
-        <div className="h-24 bg-white/60 rounded border border-slate-300 flex items-center justify-center">
+      <div className="grid grid-cols-3 gap-2.5 mb-4">
+        <div
+          className="bg-slate-800/70 rounded-xl p-3 text-center border border-emerald-500/20"
+          data-testid="windy-card-cape"
+        >
+          <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">CAPE</div>
+          <div className="text-2xl font-black text-emerald-400 leading-tight">120</div>
+          <div className="text-[10px] text-slate-500">J/kg</div>
+        </div>
+        <div
+          className="bg-slate-800/70 rounded-xl p-3 text-center border border-amber-500/20"
+          data-testid="windy-card-freezing-level"
+        >
+          <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Liv. 0°C</div>
+          <div className="text-2xl font-black text-amber-400 leading-tight">3800m</div>
+          <div className="text-[10px] text-slate-500">quota</div>
+        </div>
+        <div
+          className="bg-slate-800/70 rounded-xl p-3 text-center border border-sky-500/20"
+          data-testid="windy-card-wind-850"
+        >
+          <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Vento 850hPa</div>
+          <div className="text-2xl font-black text-sky-400 leading-tight">22</div>
+          <div className="text-[10px] text-slate-500">km/h S-SE</div>
+        </div>
+      </div>
+
+      <div className="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
+        <div className="text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5">
+          <Wind className="w-3.5 h-3.5 text-amber-400" />
+          Profilo verticale — Skew-T
+        </div>
+        <div className="h-20 bg-slate-900/60 rounded-lg border border-slate-700/50 flex items-center justify-center">
           <span className="text-slate-500 text-xs">[Diagramma Skew-T]</span>
         </div>
       </div>
@@ -45,7 +67,7 @@ export default function WindySoundingsCard({ siteName }: WindySoundingsCardProps
           href="https://windy-plugins.com/2727410/windy-plugin-pg-soundings/1.6.2/plugin.min.js"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-800"
+          className="inline-flex items-center gap-2 text-sm font-bold text-amber-400 hover:text-amber-300 transition-colors"
         >
           <Wind className="w-4 h-4" />
           Plugin originale Windy (apri)
