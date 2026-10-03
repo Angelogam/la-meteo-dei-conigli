@@ -257,6 +257,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
               return (
                 <tr
                   key={r.ora}
+                  data-testid={`hour-row-${r.ora}`}
                   onClick={() => onHourSelect(r.ora)}
                   onMouseEnter={() => setHoveredHour(r.ora)}
                   onMouseLeave={() => setHoveredHour(null)}

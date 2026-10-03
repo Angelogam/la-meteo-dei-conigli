@@ -171,6 +171,7 @@ export default function TabNav({ activeTab, onTabChange }: TabNavProps) {
         return (
           <button
             key={tabId}
+            data-testid={`tab-${tabId}`}
             onClick={() => onTabChange(tabId)}
             onMouseEnter={() => setHoveredTab(tabId)}
             onMouseLeave={() => setHoveredTab(null)}
