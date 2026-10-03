@@ -122,62 +122,31 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
-      <Header />
-
-      {/* ★★ WINDY PG SOUNDINGS — REACT COMPONENT, SEMPRE VISIBILE ★★ */}
+      {/* ★★ WINDY PG SOUNDINGS — SEMPRE VISIBILE ★★ */}
       <div
         data-testid="windy-soundings-card"
         style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 99999,
           background: "#ff0000",
-          padding: "16px 20px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "16px",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+          color: "#fff",
+          padding: "40px",
+          fontSize: "28px",
+          fontWeight: "900",
+          textAlign: "center",
+          borderBottom: "10px solid #000",
         }}
-        className="text-xs"
       >
-        <div className="flex items-center gap-3">
-          <div style={{ background: "#fff", width: 36, height: 36, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 20 }}>⚡</span>
-          </div>
-          <div>
-            <div style={{ color: "#000", fontSize: 16, fontWeight: 900, margin: 0 }}>WINDY PG SOUNDINGS</div>
-            <div style={{ color: "#333", fontSize: 10, margin: 2, 0 0 }}>Sondaggi atmosferici</div>
-          </div>
-        </div>
-        <div className="flex items-center gap-6">
-          <div data-testid="windy-card-cape" className="text-center">
-            <div style={{ color: "#666" }}>CAPE</div>
-            <div style={{ color: "#22c55e", fontSize: 22, fontWeight: 900, lineHeight: 1 }}>120</div>
-            <div style={{ color: "#888" }}>J/kg</div>
-          </div>
-          <div data-testid="windy-card-freezing-level" className="text-center">
-            <div style={{ color: "#666" }}>Liv. 0°C</div>
-            <div style={{ color: "#f59e0b", fontSize: 22, fontWeight: 900, lineHeight: 1 }}>3800</div>
-            <div style={{ color: "#888" }}>m</div>
-          </div>
-          <div data-testid="windy-card-wind-850" className="text-center">
-            <div style={{ color: "#666" }}>Vento 850hPa</div>
-            <div style={{ color: "#3b82f6", fontSize: 22, fontWeight: 900, lineHeight: 1 }}>22</div>
-            <div style={{ color: "#888" }}>km/h</div>
-          </div>
-          <a
-            href="https://windy-plugins.com/2727410/windy-plugin-pg-soundings/1.6.2/plugin.min.js"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: "#000", textDecoration: "none", fontWeight: 900, fontSize: 12, padding: "8px 16px", border: "2px solid #000", borderRadius: 8, background: "#fff" }}
-          >
-            Plugin Windy
-          </a>
-        </div>
+        ⚡ WINDY PG SOUNDINGS ⚡ CAPE: 120 | 3800m | 22 km/h
+        <a
+          href="https://windy-plugins.com/2727410/windy-plugin-pg-soundings/1.6.2/plugin.min.js"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "#000", background: "#fff", padding: "12px 24px", borderRadius: "8px", textDecoration: "none", fontWeight: "900", marginLeft: "20px", fontSize: "18px" }}
+        >
+          Plugin Windy
+        </a>
       </div>
+
+      <Header />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6" style={{ marginTop: 80 }}>
         <div className="flex flex-col lg:flex-row gap-6">
