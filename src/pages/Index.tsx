@@ -259,6 +259,9 @@ export default function Index() {
                 />
                 <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
+                {/* ★ CARD WINDY PG SOUNDINGS — Sempre visibile sotto i tab ★ */}
+                <WindySoundingsCard siteName={site.site_name} />
+
                 {activeTab === "meteo" && (
                   <MeteoTab
                     currentData={currentData}
@@ -296,8 +299,6 @@ export default function Index() {
                 )}
                 {activeTab === "analisi" && (
                   <div className="space-y-6">
-                    {/* ★ CARD WINDY PG SOUNDINGS — SUBITO SOPRA IL REPORT ★ */}
-                    <WindySoundingsCard siteName={site.site_name} />
                     <AnalisiMeteo
                       currentData={currentData as any}
                       dayData={filteredDayData}
