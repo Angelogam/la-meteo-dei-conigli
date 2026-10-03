@@ -131,6 +131,8 @@ export default function Index() {
               ✅ App attiva — {site?.site_name ?? "Decollo"} · {dayData.length} ore dati · Tab: {activeTab}
             </span>
           </div>
+          {/* Debug card */}
+          <DebugCard />
         <div className="flex flex-col lg:flex-row gap-6">
           {/* ─── SIDEBAR ─── */}
           <aside className="w-full lg:w-80 shrink-0 space-y-3">
