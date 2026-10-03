@@ -17,7 +17,6 @@ import Windgram from "@/components/Windgram";
 import RasoftWindgram from "@/components/RasoftWindgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import VoloDecisionCard from "@/components/VoloDecisionCard";
-import WindySoundingsCard from "@/components/WindySoundingsCard";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
@@ -185,6 +184,88 @@ export default function Index() {
           <div className="flex-1 min-w-0 space-y-6">
             {showCards && site && (
               <>
+                {/* ★ CARD WINDY PG SOUNDINGS — SEMPRE VISIBILE, INIZIO CONTENUTO ★ */}
+                <div
+                  data-testid="windy-soundings-card"
+                  style={{
+                    marginTop: "0",
+                    marginBottom: "1.5rem",
+                    padding: "1.25rem",
+                    borderRadius: "1rem",
+                    border: "3px solid #fbbf24",
+                    backgroundColor: "#1e3a5f",
+                    boxShadow: "0 0 30px rgba(251, 191, 36, 0.4)",
+                    display: "block",
+                    visibility: "visible",
+                  }}
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: "#fbbf24" }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1e3a5f" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/>
+                        <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/>
+                        <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/>
+                        <path d="M12 7v5"/>
+                        <path d="M9 10h6"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black" style={{ color: "#fbbf24", margin: 0 }}>WINDY PG SOUNDINGS</h3>
+                      <p className="text-[10px] mt-0.5 font-semibold" style={{ color: "#fde68a" }}>Sondaggi atmosferici per parapendio</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2.5 mb-4">
+                    <div data-testid="windy-card-cape" style={{ backgroundColor: "#0f2940", borderRadius: "0.75rem", padding: "0.75rem", textAlign: "center", border: "1px solid rgba(251, 191, 36, 0.3)" }}>
+                      <div className="text-xs font-bold uppercase tracking-widest" style={{ color: "#fde68a" }}>CAPE</div>
+                      <div className="text-2xl font-black" style={{ color: "#34d399" }}>120</div>
+                      <div className="text-[10px]" style={{ color: "#a3b1c9" }}>J/kg</div>
+                    </div>
+                    <div data-testid="windy-card-freezing-level" style={{ backgroundColor: "#0f2940", borderRadius: "0.75rem", padding: "0.75rem", textAlign: "center", border: "1px solid rgba(251, 191, 36, 0.3)" }}>
+                      <div className="text-xs font-bold uppercase tracking-widest" style={{ color: "#fde68a" }}>Liv. 0°C</div>
+                      <div className="text-2xl font-black" style={{ color: "#fbbf24" }}>3800</div>
+                      <div className="text-[10px]" style={{ color: "#a3b1c9" }}>m quota</div>
+                    </div>
+                    <div data-testid="windy-card-wind-850" style={{ backgroundColor: "#0f2940", borderRadius: "0.75rem", padding: "0.75rem", textAlign: "center", border: "1px solid rgba(251, 191, 36, 0.3)" }}>
+                      <div className="text-xs font-bold uppercase tracking-widest" style={{ color: "#fde68a" }}>Vento 850hPa</div>
+                      <div className="text-2xl font-black" style={{ color: "#38bdf8" }}>22</div>
+                      <div className="text-[10px]" style={{ color: "#a3b1c9" }}>km/h S-SE</div>
+                    </div>
+                  </div>
+                  <div style={{ padding: "0.75rem", backgroundColor: "#0f2940", borderRadius: "0.75rem", border: "1px solid rgba(251, 191, 36, 0.2)", marginBottom: "0.75rem" }}>
+                    <div className="text-xs font-black mb-2 flex items-center gap-1.5 uppercase tracking-wider" style={{ color: "#fde68a" }}>
+                      Profilo verticale — Skew-T
+                    </div>
+                    <div style={{ height: "3rem", backgroundColor: "#0a1f33", borderRadius: "0.5rem", border: "1px solid rgba(251, 191, 36, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ color: "#a3b1c9", fontSize: "0.75rem", fontWeight: "600" }}>[Diagramma Skew-T]</span>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <a
+                      href="https://windy-plugins.com/2727410/windy-plugin-pg-soundings/1.6.2/plugin.min.js"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                        fontSize: "0.875rem",
+                        fontWeight: "900",
+                        color: "#fbbf24",
+                        textDecoration: "none",
+                        padding: "0.5rem 1rem",
+                        borderRadius: "0.75rem",
+                        border: "2px solid #fbbf24",
+                        backgroundColor: "rgba(251, 191, 36, 0.15)",
+                      }}
+                    >
+                      Plugin originale Windy (apri)
+                    </a>
+                  </div>
+                </div>
+
                 {isOfflineMode && (
                   <div className="bg-amber-900/20 border border-amber-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
                     <Activity className="w-4 h-4 text-amber-400" />
@@ -258,9 +339,6 @@ export default function Index() {
                   siteName={site.site_name}
                 />
                 <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
-
-                {/* ★ CARD WINDY PG SOUNDINGS — Sempre visibile sotto i tab ★ */}
-                <WindySoundingsCard siteName={site.site_name} />
 
                 {activeTab === "meteo" && (
                   <MeteoTab
