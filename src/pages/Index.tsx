@@ -210,21 +210,7 @@ export default function Index() {
               }}
             />
 
-            {/* Card Ricerca Meteo */}
-            <div className="bg-gradient-to-br from-rose-950/80 to-rose-900/40 border border-rose-500/30 rounded-2xl p-4 shadow-lg shadow-rose-900/40">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-xl bg-rose-500/20 border border-rose-400/40 flex items-center justify-center shrink-0">
-                  <Compass className="w-4 h-4 text-rose-400" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-black text-white">Ricerca Meteo</h3>
-                  <p className="text-[10px] text-rose-300/70 font-semibold">Siti di riferimento parapendio</p>
-                </div>
-              </div>
-              <ResearchButton onClick={openResearch} />
-            </div>
-
-            {/* ── WINDY PLUGIN CARD — sempre visibile, 4 stati chiari ── */}
+            {/* ── WINDY PLUGIN CARD — sotto i Decolli, sempre visibile ── */}
             <div className="bg-slate-900/90 border border-slate-700/50 rounded-2xl overflow-hidden shadow-xl">
               {/* Header */}
               <div className="bg-gradient-to-r from-slate-800/80 to-slate-900/80 px-4 py-3 border-b border-slate-700/50">
@@ -306,6 +292,20 @@ export default function Index() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Card Ricerca Meteo */}
+            <div className="bg-gradient-to-br from-rose-950/80 to-rose-900/40 border border-rose-500/30 rounded-2xl p-4 shadow-lg shadow-rose-900/40">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-xl bg-rose-500/20 border border-rose-400/40 flex items-center justify-center shrink-0">
+                  <Compass className="w-4 h-4 text-rose-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white">Ricerca Meteo</h3>
+                  <p className="text-[10px] text-rose-300/70 font-semibold">Siti di riferimento parapendio</p>
+                </div>
+              </div>
+              <ResearchButton onClick={openResearch} />
             </div>
 
           </aside>
