@@ -296,6 +296,8 @@ export default function Index() {
                 )}
                 {activeTab === "analisi" && (
                   <div className="space-y-6">
+                    {/* ★ CARD WINDY PG SOUNDINGS — SUBITO SOPRA IL REPORT ★ */}
+                    <WindySoundingsCard siteName={site.site_name} />
                     <AnalisiMeteo
                       currentData={currentData as any}
                       dayData={filteredDayData}
@@ -305,8 +307,6 @@ export default function Index() {
                       cin={currentCape?.cin}
                       rawData={rawApiResponse}
                     />
-                    {/* ★ CARD WINDY PG SOUNDINGS — Nella tab Analisi ★ */}
-                    <WindySoundingsCard siteName={site.site_name} />
                   </div>
                 )}
               </>
