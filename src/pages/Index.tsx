@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
 import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
+import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
@@ -14,7 +15,7 @@ import AnalisiMeteo from "@/components/AnalisiMeteo";
 import Windgram from "@/components/Windgram";
 import RasoftWindgram from "@/components/RasoftWindgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
-import WeatherDashboard from "@/components/WeatherDashboard";
+import VoloDecisionCard from "@/components/VoloDecisionCard";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
@@ -107,7 +108,7 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
-      {/* ★★★ 飞行雷达气象站 - 核心功能恢复 ★★★ */}
+      {/* ★★★ NUOVO DESIGN — CARD VOLO INTERATTIVE ★★★ */}
       <Header />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6" style={{ marginTop: 80 }}>
@@ -178,14 +179,23 @@ export default function Index() {
                   uvIndex={enrichedDaily[selectedDay]?.uvIndexMax ?? currentData?.uvIndex}
                 />
 
-                {/* Previsioni orarie */}
-                <WeatherDashboard
+                {/* ★★★★★ 全新飞行决策卡片 - 完全重设计完成 ★★★★★ */}
+                <VoloDecisionCard
                   dayData={dayData}
                   altitude={site.elevation_m}
                   selectedHour={selectedHour}
-                  onHourSelect={setSelectedHour}
-                  dayLabel={dateLabel}
                   siteName={site.site_name}
+                />
+
+                <PrevisioniGiornaliere
+                  enrichedDaily={enrichedDaily}
+                  dateLabels={dateLabels}
+                  currentData={currentData as any}
+                  dayData={dayData}
+                  site={{ name: site.site_name, altitude: site.elevation_m, exposure: site.orientation }}
+                  selectedDay={selectedDay}
+                  onSelectDay={setSelectedDay}
+                  nomeDecollo={site.site_name}
                 />
 
                 <div className="bg-slate-800/30 border border-emerald-500/30 rounded-2xl p-4">
