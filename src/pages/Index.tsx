@@ -22,8 +22,7 @@ import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 import { DECOLLI } from "@/data/decolli";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
-import { Activity, Compass } from "lucide-react";
-import ResearchButton from "@/components/ResearchButton";
+import { Activity } from "lucide-react";
 
 export default function Index() {
   const [appMounted, setAppMounted] = useState(false);
@@ -108,18 +107,6 @@ export default function Index() {
     loadWeather();
   }, [appMounted, fetchStarted, loadWeather]);
 
-  async function openResearch() {
-    try {
-      const res = await fetch("/api/scrape-parapendio");
-      if (!res.ok) return;
-      const data = await res.json();
-      const results = data.results || [data];
-      alert(results.map((r: any) => `${r.success ? "✅" : "❌"} ${r.site}\n${r.url}\n${r.description}`).join("\n\n"));
-    } catch {
-      alert("Errore nella ricerca — riprova tra qualche secondo.");
-    }
-  }
-
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <Header />
@@ -166,19 +153,6 @@ export default function Index() {
               }}
             />
 
-            {/* Card Ricerca Meteo */}
-            <div className="bg-gradient-to-br from-rose-950/80 to-rose-900/40 border border-rose-500/30 rounded-2xl p-4 shadow-lg shadow-rose-900/40">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-xl bg-rose-500/20 border border-rose-400/40 flex items-center justify-center shrink-0">
-                  <Compass className="w-4 h-4 text-rose-400" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-black text-white">Ricerca Meteo</h3>
-                  <p className="text-[10px] text-rose-300/70 font-semibold">Siti di riferimento parapendio</p>
-                </div>
-              </div>
-              <ResearchButton onClick={openResearch} />
-            </div>
           </aside>
 
           {/* ─── MAIN CONTENT ─── */}
