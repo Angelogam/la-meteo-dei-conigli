@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test("Navigazione app meteo e verifica card Windy PG Soundings", async ({ page }) => {
   await page.goto("/");
 
-  // Wait for the app to be usable (main content visible)
+  // Wait for the app to be ready
   await page.waitForLoadState("domcontentloaded");
   await page.waitForTimeout(2000);
 
@@ -15,19 +15,19 @@ test("Navigazione app meteo e verifica card Windy PG Soundings", async ({ page }
 
   // Click each tab to verify navigation works
   await page.getByTestId("tab-meteo").click();
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(200);
   await page.getByTestId("tab-venti").click();
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(200);
   await page.getByTestId("tab-termiche").click();
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(200);
   await page.getByTestId("tab-analisi").click();
   await page.waitForTimeout(500);
 
-  // Scroll to the bottom of the main content area to find the Windy card
+  // Scroll to bottom to bring Windy card into view
   await page.locator("main").evaluate(el => el.scrollTop = el.scrollHeight);
   await page.waitForTimeout(300);
 
-  // The Windy Soundings Card must be visible after scrolling
+  // The Windy Soundings Card must be visible
   await expect(page.getByTestId("windy-soundings-card")).toBeVisible();
 
   // Verify card content
