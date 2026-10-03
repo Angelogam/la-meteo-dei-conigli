@@ -7,7 +7,7 @@ test("Navigazione app meteo e verifica card Windy PG Soundings", async ({ page }
   await page.waitForLoadState("domcontentloaded");
   await page.waitForTimeout(2000);
 
-  // The Windy Soundings Card should be the FIRST element in main content
+  // The Windy Soundings Card should be visible as a fixed overlay
   await expect(page.getByTestId("windy-soundings-card")).toBeVisible({ timeout: 10000 });
 
   // Verify card content
@@ -22,7 +22,7 @@ test("Navigazione app meteo e verifica card Windy PG Soundings", async ({ page }
   await expect(page.getByTestId("windy-card-wind-850")).toContainText("22");
 
   // Verify plugin link exists
-  await expect(page.getByRole("link", { name: /Plugin originale Windy/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Plugin Windy/ })).toBeVisible();
 
   // Verify tab buttons exist and work
   await expect(page.getByTestId("tab-meteo")).toBeVisible();
