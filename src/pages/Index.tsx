@@ -24,14 +24,12 @@ import { DECOLLI } from "@/data/decolli";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
 import { Activity, Compass } from "lucide-react";
 import ResearchButton from "@/components/ResearchButton";
-import WindyPluginCard from "@/components/WindyPluginCard";
 
 export default function Index() {
   const [appMounted, setAppMounted] = useState(false);
   const [fetchStarted, setFetchStarted] = useState(false);
 
   useEffect(() => {
-    // Ensure component is fully mounted before any fetches
     const t = setTimeout(() => setAppMounted(true), 50);
     return () => clearTimeout(t);
   }, []);
@@ -78,9 +76,6 @@ export default function Index() {
   );
 
   const [isOfflineMode, setIsOfflineMode] = useState(false);
-  const [windyPlugin, setWindyPlugin] = useState<any>(null);
-  const [windyLoading, setWindyLoading] = useState(false);
-  const [windyError, setWindyError] = useState<string | null>(null);
 
   const filteredDayData = useMemo(() => {
     if (!dayData || dayData.length === 0) return [];
@@ -105,51 +100,13 @@ export default function Index() {
     return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
   }, [selectedDay]);
 
-  const hasData = Boolean(site && (currentData || isOfflineMode));
   const showCards = Boolean(site && (currentData || isOfflineMode || dayData.length > 0));
 
-  // ── Load weather data as soon as mounted ──────────────────────
   useEffect(() => {
     if (!appMounted || fetchStarted) return;
     setFetchStarted(true);
     loadWeather();
   }, [appMounted, fetchStarted, loadWeather]);
-
-  // ── Fetch WindyPlugin data ────────────────────────────────────
-  async function loadWindyPlugin() {
-    try {
-      console.log("[WindyPlugin] Fetching plugin...");
-      const res = await fetch("/api/scrape-parapendio?site=windy_pg_soundings");
-      console.log("[WindyPlugin] Response status:", res.status, "ok:", res.ok);
-      if (!res.ok) {
-        setWindyError(`HTTP ${res.status}: ${res.statusText}`);
-        console.error("[WindyPlugin] Failed to fetch:", res.statusText);
-        return;
-      }
-      const data = await res.json();
-      console.log("[WindyPlugin] Data received:", data);
-      setWindyPlugin(data);
-    } catch (err) {
-      setWindyError(err instanceof Error ? err.message : String(err));
-      console.error("[WindyPlugin] Error:", err);
-    } finally {
-      setWindyLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (!appMounted) return;
-    setWindyLoading(true);
-    setWindyError(null);
-    loadWindyPlugin();
-    const timer = setTimeout(() => {
-      if (!windyPlugin && !windyError) {
-        setWindyError("Timeout — tentativo fallito");
-        setWindyLoading(false);
-      }
-    }, 10000);
-    return () => clearTimeout(timer);
-  }, [appMounted]);
 
   async function openResearch() {
     try {
@@ -163,7 +120,6 @@ export default function Index() {
     }
   }
 
-  // ── Main render (always shown, never blocked by loading state) ─
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <Header />
@@ -209,90 +165,6 @@ export default function Index() {
                 setSelectedHour(new Date().getHours());
               }}
             />
-
-            {/* ── WINDY PLUGIN CARD — sotto i Decolli, sempre visibile ── */}
-            <div className="bg-slate-900/90 border border-slate-700/50 rounded-2xl overflow-hidden shadow-xl">
-              {/* Header */}
-              <div className="bg-gradient-to-r from-slate-800/80 to-slate-900/80 px-4 py-3 border-b border-slate-700/50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">🪂</span>
-                    <span className="text-sm font-black text-white">Windy Plugin PG Soundings</span>
-                  </div>
-                  <span className="text-xs text-slate-500 font-semibold">1.6.2</span>
-                </div>
-                <div className="mt-1 flex items-center gap-2">
-                  {windyLoading && (
-                    <>
-                      <div className="w-3 h-3 rounded-full border-2 border-sky-500/20 border-t-sky-400 animate-spin" />
-                      <span className="text-[10px] text-sky-400 font-semibold">Caricamento…</span>
-                    </>
-                  )}
-                  {!windyLoading && windyError && (
-                    <span className="text-[10px] text-rose-400 font-semibold">⚠ Errore</span>
-                  )}
-                  {!windyLoading && windyPlugin?.success && (
-                    <span className="text-[10px] text-emerald-400 font-semibold">✓ Caricato</span>
-                  )}
-                  {!windyLoading && !windyPlugin && !windyError && (
-                    <span className="text-[10px] text-slate-500 font-semibold">In attesa…</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Corpo */}
-              <div className="p-4">
-                {/* Loading */}
-                {windyLoading && !windyPlugin && (
-                  <div className="text-center py-4">
-                    <div className="w-6 h-6 rounded-full border-2 border-sky-500/20 border-t-sky-400 animate-spin mx-auto mb-2" />
-                    <p className="text-xs text-sky-300 font-semibold">Recupero plugin da windy-plugins.com…</p>
-                  </div>
-                )}
-
-                {/* Error */}
-                {windyError && !windyPlugin && (
-                  <div className="bg-rose-950/40 border border-rose-500/30 rounded-xl px-3 py-3">
-                    <p className="text-xs text-rose-300 font-semibold">⚠️ {windyError}</p>
-                    <button
-                      onClick={() => { setWindyLoading(true); setWindyError(null); loadWindyPlugin(); }}
-                      className="mt-2 text-xs text-rose-400 hover:text-rose-300 underline font-semibold"
-                    >
-                      Riprova
-                    </button>
-                  </div>
-                )}
-
-                {/* Success */}
-                {windyPlugin && windyPlugin.success && (
-                  <WindyPluginCard
-                    plugin={windyPlugin}
-                    onDownload={(content: string) => {
-                      const blob = new Blob([content], { type: "application/javascript" });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = "windy-plugin-pg-soundings.js";
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    }}
-                  />
-                )}
-
-                {/* No response yet (fallback after timeout) */}
-                {!windyLoading && !windyPlugin && !windyError && (
-                  <div className="bg-amber-950/40 border border-amber-500/30 rounded-xl px-3 py-3 text-center">
-                    <p className="text-xs text-amber-300 font-semibold mb-2">Server non disponibile</p>
-                    <button
-                      onClick={() => { setWindyLoading(true); setWindyError(null); loadWindyPlugin(); }}
-                      className="text-xs text-amber-400 hover:text-amber-300 underline font-semibold"
-                    >
-                      Riprova
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
 
             {/* Card Ricerca Meteo */}
             <div className="bg-gradient-to-br from-rose-950/80 to-rose-900/40 border border-rose-500/30 rounded-2xl p-4 shadow-lg shadow-rose-900/40">
