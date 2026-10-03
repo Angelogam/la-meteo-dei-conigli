@@ -261,6 +261,12 @@ export default function Index() {
                 />
                 <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
+                {/* ★ TEST CARD — DEVE ESSERE VISIBLE SUBITO SOTTO LE TAB ★ */}
+                <div className="bg-red-600 text-white p-4 rounded-xl border-4 border-red-300">
+                  <h2 className="font-black text-lg">★ CARD WINDY PG SOUNDINGS ★</h2>
+                  <p className="text-sm opacity-80">Se vedi questo, React renderizza correttamente</p>
+                </div>
+
                 {activeTab === "meteo" && (
                   <MeteoTab
                     currentData={currentData}
