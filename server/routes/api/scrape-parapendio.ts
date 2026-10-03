@@ -74,46 +74,7 @@ function extractMetaInfo(html: string): { title: string; description: string; h1
   };
 }
 
-// Extract sounding data from Windy plugin JS
-function extractWindySoundingData(jsContent: string): { success: boolean; data?: any; error?: string } {
-  try {
-    const result: any = {
-      success: true,
-      rawSize: jsContent.length
-    };
-    
-    // Try to find latitude/longitude bounds
-    const latMatch = jsContent.match(/lat\s*[:=]\s*["']?([-\d.]+)["']?/i);
-    const lonMatch = jsContent.match(/lon\s*[:=]\s*["']?([-\d.]+)["']?/i);
-    
-    if (latMatch) result.latitude = parseFloat(latMatch[1]);
-    if (lonMatch) result.longitude = parseFloat(lonMatch[1]);
-    
-    // Try to find altitude levels
-    const altMatch = jsContent.match(/altitude\s*[:=]\s*["']?([\d,]+)["']?/i);
-    if (altMatch) result.altitudes = altMatch[1].split(',').map(Number).filter(n => !isNaN(n));
-    
-    // Try to find temperature data
-    const tempMatch = jsContent.match(/temperature\s*[:=]\s*["']?([\d.,-]+)["']?/gi);
-    if (tempMatch) result.temperatures = tempMatch.length;
-    
-    // Try to find wind data
-    const windMatch = jsContent.match(/windSpeed\s*[:=]\s*["']?([\d.]+)["']?/i);
-    if (windMatch) result.windSpeed = parseFloat(windMatch[1]);
-    
-    // If we found basic structure, mark as success
-    if (result.latitude !== undefined || result.longitude !== undefined) {
-      return { success: true, data: result };
-    }
-    
-    // Minimal success - just returned the raw content size
-    return { success: true, data: { rawSize: jsContent.length } };
-  } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : String(err) };
-  }
-}
-
-async function fetchSite(site: SiteToScrape): Promise<{ success: boolean; content?: string; error?: string; data?: any }> {
+async function fetchSite(site: SiteToScrape): Promise<{ success: boolean; content?: string; error?: string }> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000);
@@ -140,12 +101,6 @@ async function fetchSite(site: SiteToScrape): Promise<{ success: boolean; conten
     if (contentType.includes('javascript') || site.url.endsWith('.js')) {
       // For JS files, return raw content
       content = await response.text();
-      
-      // Special handling for Windy plugin - extract structured data
-      if (site.name === 'windy_pg_soundings') {
-        const extracted = extractWindySoundingData(content);
-        return { success: true, content, data: extracted.data };
-      }
     } else {
       // For HTML pages, parse and extract info
       const html = await response.text();
@@ -189,15 +144,13 @@ export default defineHandler(async (event) => {
     }
     
     const result = await fetchSite(site);
-        console.log(`[scrape] Single site ${site.name}:`, result);
-        return {
-          site: site.name,
-          url: site.url,
-          description: site.description,
-          ...result,
-          // Include extracted data for Windy plugin
-          ...(result.data && { extractedData: result.data })
-        };
+    console.log(`[scrape] Single site ${site.name}:`, result);
+    return {
+      site: site.name,
+      url: site.url,
+      description: site.description,
+      ...result
+    };
   }
   
   // Altrimenti scarica tutti i siti
