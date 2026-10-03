@@ -6,7 +6,7 @@ import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
 import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
-import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
+import HourlyTable from "@/components/HourlyTable";
 import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
@@ -15,13 +15,11 @@ import AnalisiMeteo from "@/components/AnalisiMeteo";
 import Windgram from "@/components/Windgram";
 import RasoftWindgram from "@/components/RasoftWindgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
-import VoloDecisionCard from "@/components/VoloDecisionCard";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 import { DECOLLI } from "@/data/decolli";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
-import { Activity } from "lucide-react";
 
 export default function Index() {
   const [appMounted, setAppMounted] = useState(false);
@@ -67,7 +65,7 @@ export default function Index() {
 
   const { mergedDecolli, loading: aggressiveLoading, lastUpdate: aggressiveLastUpdate } = useThreeSourceWeather();
 
-  const { tempoTrascorso } = useMeteoCompleto(
+  useMeteoCompleto(
     site?.lat ?? DECOLLI[0].lat,
     site?.lon ?? DECOLLI[0].lon,
     site?.elevation_m ?? DECOLLI[0].elevation_m
@@ -108,7 +106,6 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
-      {/* ★★★ NUOVO DESIGN — CARD VOLO INTERATTIVE ★★★ */}
       <Header />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6" style={{ marginTop: 80 }}>
@@ -123,25 +120,6 @@ export default function Index() {
               onRefresh={() => { loadWeather(); setFetchStarted(false); }}
             />
 
-            {/* Info decollo corrente */}
-            <div className="relative bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-emerald-500/25 rounded-2xl px-4 py-3 overflow-hidden group">
-              <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/10">
-                  <Activity className="w-3.5 h-3.5 text-emerald-400" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-black text-emerald-300 truncate">{site?.site_name ?? "Decollo"}</div>
-                  <div className="text-[10px] text-slate-500 font-semibold">Open-Meteo + 3 fonti · {tempoTrascorso}s ago</div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/60" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse shadow-sm shadow-sky-400/60" style={{ animationDelay: '0.3s' }} />
-                  <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse shadow-sm shadow-violet-400/60" style={{ animationDelay: '0.6s' }} />
-                </div>
-              </div>
-            </div>
-
             {/* Lista decolli */}
             <DecolliCard
               decolli={mergedDecolli}
@@ -152,7 +130,6 @@ export default function Index() {
                 setSelectedHour(new Date().getHours());
               }}
             />
-
           </aside>
 
           {/* ─── MAIN CONTENT ─── */}
@@ -161,7 +138,6 @@ export default function Index() {
               <>
                 {isOfflineMode && (
                   <div className="bg-amber-900/20 border border-amber-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-amber-400" />
                     <span className="text-xs text-amber-300">
                       ⚠️ Dati offline (API non raggiungibile) - Stima automatica attiva
                     </span>
@@ -179,23 +155,13 @@ export default function Index() {
                   uvIndex={enrichedDaily[selectedDay]?.uvIndexMax ?? currentData?.uvIndex}
                 />
 
-                {/* ★★★★★ 全新飞行决策卡片 - 完全重设计完成 ★★★★★ */}
-                <VoloDecisionCard
-                  dayData={dayData}
+                <HourlyTable
+                  dayData={filteredDayData}
                   altitude={site.elevation_m}
                   selectedHour={selectedHour}
+                  onHourSelect={setSelectedHour}
+                  dayLabel={dateLabel}
                   siteName={site.site_name}
-                />
-
-                <PrevisioniGiornaliere
-                  enrichedDaily={enrichedDaily}
-                  dateLabels={dateLabels}
-                  currentData={currentData as any}
-                  dayData={dayData}
-                  site={{ name: site.site_name, altitude: site.elevation_m, exposure: site.orientation }}
-                  selectedDay={selectedDay}
-                  onSelectDay={setSelectedDay}
-                  nomeDecollo={site.site_name}
                 />
 
                 <div className="bg-slate-800/30 border border-emerald-500/30 rounded-2xl p-4">

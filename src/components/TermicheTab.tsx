@@ -1,143 +1,16 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { HourData } from "@/types/meteo";
 import type { MeteoCurrent } from "@/services/openMeteoService";
 import { calcolaTermiche } from "@/utils/termiche";
 import { Wind, Cloud, Droplets, TrendingUp, AlertTriangle, MapPin, Calendar } from "lucide-react";
-import WindyPluginCard from "@/components/WindyPluginCard";
 
 interface TermicheTabProps {
   currentData: HourData | MeteoCurrent | null;
   dayData: HourData[];
   site: { alt: number; lat: number; lon: number; name: string };
   selectedDay?: number;
-}
-
-interface WindyPluginResult {
-  site: string;
-  url: string;
-  description: string;
-  success: boolean;
-  content?: string;
-  error?: string;
-}
-
-function WindyPluginSection() {
-  const [plugin, setPlugin] = useState<WindyPluginResult | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchPlugin() {
-      try {
-        console.log("[WindyPlugin] Fetching...");
-        const res = await fetch("/api/scrape-parapendio?site=windy_pg_soundings");
-        console.log("[WindyPlugin] Status:", res.status, "ok:", res.ok);
-        if (!res.ok) {
-          setError(`HTTP ${res.status}: ${res.statusText}`);
-          return;
-        }
-        const data = await res.json();
-        console.log("[WindyPlugin] Data:", data);
-        setPlugin(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
-        console.error("[WindyPlugin] Error:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchPlugin();
-    const timer = setTimeout(() => {
-      if (!plugin && !error) {
-        setError("Timeout — tentativo fallito");
-        setLoading(false);
-      }
-    }, 10000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  return (
-    <div className="bg-slate-900/90 border border-slate-700/50 rounded-2xl overflow-hidden shadow-xl mt-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-slate-800/80 to-slate-900/80 px-4 py-3 border-b border-slate-700/50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-base">🪂</span>
-            <span className="text-sm font-black text-white">Windy Plugin PG Soundings</span>
-          </div>
-          <span className="text-xs text-slate-500 font-semibold">1.6.2</span>
-        </div>
-        <div className="mt-1 flex items-center gap-2">
-          {loading && (
-            <>
-              <div className="w-3 h-3 rounded-full border-2 border-sky-500/20 border-t-sky-400 animate-spin" />
-              <span className="text-[10px] text-sky-400 font-semibold">Caricamento…</span>
-            </>
-          )}
-          {!loading && error && (
-            <span className="text-[10px] text-rose-400 font-semibold">⚠ Errore</span>
-          )}
-          {!loading && plugin?.success && (
-            <span className="text-[10px] text-emerald-400 font-semibold">✓ Caricato</span>
-          )}
-          {!loading && !plugin && !error && (
-            <span className="text-[10px] text-slate-500 font-semibold">In attesa…</span>
-          )}
-        </div>
-      </div>
-
-      {/* Corpo */}
-      <div className="p-4">
-        {loading && !plugin && (
-          <div className="text-center py-4">
-            <div className="w-6 h-6 rounded-full border-2 border-sky-500/20 border-t-sky-400 animate-spin mx-auto mb-2" />
-            <p className="text-xs text-sky-300 font-semibold">Recupero plugin da windy-plugins.com…</p>
-          </div>
-        )}
-
-        {error && !plugin && (
-          <div className="bg-rose-950/40 border border-rose-500/30 rounded-xl px-3 py-3">
-            <p className="text-xs text-rose-300 font-semibold">⚠️ {error}</p>
-            <button
-              onClick={() => { window.location.reload(); }}
-              className="mt-2 text-xs text-rose-400 hover:text-rose-300 underline font-semibold"
-            >
-              Ricarica pagina per riprovare
-            </button>
-          </div>
-        )}
-
-        {plugin && plugin.success && (
-          <WindyPluginCard
-            plugin={plugin}
-            onDownload={(content: string) => {
-              const blob = new Blob([content], { type: "application/javascript" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = "windy-plugin-pg-soundings.js";
-              a.click();
-              URL.revokeObjectURL(url);
-            }}
-          />
-        )}
-
-        {!loading && !plugin && !error && (
-          <div className="bg-amber-950/40 border border-amber-500/30 rounded-xl px-3 py-3 text-center">
-            <p className="text-xs text-amber-300 font-semibold mb-2">Server non disponibile</p>
-            <button
-              onClick={() => { window.location.reload(); }}
-              className="text-xs text-amber-400 hover:text-amber-300 underline font-semibold"
-            >
-              Ricarica pagina per riprovare
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
 }
 
 export default function TermicheTab({ dayData, site, selectedDay = 0 }: TermicheTabProps) {
@@ -283,9 +156,6 @@ export default function TermicheTab({ dayData, site, selectedDay = 0 }: Termiche
           </table>
         </div>
       </div>
-
-      {/* Windy Plugin Card */}
-      <WindyPluginSection />
     </div>
   );
 }
