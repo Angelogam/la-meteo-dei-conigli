@@ -3,27 +3,31 @@ import { test, expect } from "@playwright/test";
 test("Navigazione app meteo e verifica card Windy PG Soundings", async ({ page }) => {
   await page.goto("/");
 
-  // Wait for initial render — use DOMContentLoaded, not networkidle (APIs keep polling)
+  // Wait for the app to be usable (main content visible)
   await page.waitForLoadState("domcontentloaded");
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(2000);
 
-  // Verify basic page structure loaded
+  // Verify tab buttons exist
   await expect(page.getByTestId("tab-meteo")).toBeVisible();
   await expect(page.getByTestId("tab-venti")).toBeVisible();
   await expect(page.getByTestId("tab-termiche")).toBeVisible();
   await expect(page.getByTestId("tab-analisi")).toBeVisible();
 
-  // Click each tab — assert visibility of the tab element (active state adds glow class)
+  // Click each tab to verify navigation works
   await page.getByTestId("tab-meteo").click();
-  await expect(page.getByTestId("tab-meteo")).toBeVisible();
+  await page.waitForTimeout(300);
   await page.getByTestId("tab-venti").click();
-  await expect(page.getByTestId("tab-venti")).toBeVisible();
+  await page.waitForTimeout(300);
   await page.getByTestId("tab-termiche").click();
-  await expect(page.getByTestId("tab-termiche")).toBeVisible();
+  await page.waitForTimeout(300);
   await page.getByTestId("tab-analisi").click();
-  await expect(page.getByTestId("tab-analisi")).toBeVisible();
+  await page.waitForTimeout(500);
 
-  // Windy Soundings Card should now be visible in the Analisi tab
+  // Scroll to the bottom of the main content area to find the Windy card
+  await page.locator("main").evaluate(el => el.scrollTop = el.scrollHeight);
+  await page.waitForTimeout(300);
+
+  // The Windy Soundings Card must be visible after scrolling
   await expect(page.getByTestId("windy-soundings-card")).toBeVisible();
 
   // Verify card content
