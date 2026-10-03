@@ -5,7 +5,6 @@ import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
 import ApiTestRunner from "./pages/ApiTestRunner";
 import RicercaMeteo from "@/pages/RicercaMeteo";
-import WindyTest from "@/pages/WindyTest";
 
 const App = () => {
   return (
@@ -14,7 +13,6 @@ const App = () => {
         <Route path="/" element={<Index />} />
         <Route path="/ricerca-meteo" element={<RicercaMeteo />} />
         <Route path="/test-api" element={<ApiTestRunner />} />
-        <Route path="/test-windy" element={<WindyTest />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
