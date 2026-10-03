@@ -123,6 +123,70 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <Header />
+
+      {/* ★★ WINDY PG SOUNDINGS — FUORI DAL MAIN, SEMPRE VISIBILE ★★ */}
+      <div
+        data-testid="windy-soundings-card"
+        style={{
+          borderTop: "4px solid #fbbf24",
+          borderBottom: "4px solid #fbbf24",
+          backgroundColor: "#0f172a",
+          boxShadow: "0 0 40px rgba(251, 191, 36, 0.5)",
+          zIndex: 9999,
+        }}
+        className="flex items-center justify-between gap-4 px-4 py-3"
+      >
+        <div className="flex items-center gap-3">
+          <div style={{ backgroundColor: "#fbbf24" }} className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/>
+              <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/>
+              <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/>
+              <path d="M12 7v5"/>
+              <path d="M9 10h6"/>
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-sm font-black" style={{ color: "#fbbf24", margin: 0 }}>WINDY PG SOUNDINGS</h3>
+            <p className="text-[10px]" style={{ color: "#fde68a", margin: 0 }}>Sondaggi atmosferici per parapendio</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-6 text-xs">
+          <div data-testid="windy-card-cape" className="text-center">
+            <div style={{ color: "#64748b" }}>CAPE</div>
+            <div className="font-black" style={{ color: "#34d399", fontSize: "20px" }}>120</div>
+            <div style={{ color: "#475569" }}>J/kg</div>
+          </div>
+          <div data-testid="windy-card-freezing-level" className="text-center">
+            <div style={{ color: "#64748b" }}>Liv. 0°C</div>
+            <div className="font-black" style={{ color: "#fbbf24", fontSize: "20px" }}>3800</div>
+            <div style={{ color: "#475569" }}>m</div>
+          </div>
+          <div data-testid="windy-card-wind-850" className="text-center">
+            <div style={{ color: "#64748b" }}>Vento 850hPa</div>
+            <div className="font-black" style={{ color: "#38bdf8", fontSize: "20px" }}>22</div>
+            <div style={{ color: "#475569" }}>km/h</div>
+          </div>
+          <a
+            href="https://windy-plugins.com/2727410/windy-plugin-pg-soundings/1.6.2/plugin.min.js"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: "#fbbf24",
+              textDecoration: "none",
+              fontWeight: "900",
+              fontSize: "11px",
+              padding: "4px 10px",
+              border: "1px solid #fbbf24",
+              borderRadius: "6px",
+              backgroundColor: "rgba(251, 191, 36, 0.1)",
+            }}
+          >
+            Plugin originale Windy
+          </a>
+        </div>
+      </div>
+
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6">
         <div className="flex flex-col lg:flex-row gap-6">
           {/* ─── SIDEBAR ─── */}
@@ -184,88 +248,6 @@ export default function Index() {
           <div className="flex-1 min-w-0 space-y-6">
             {showCards && site && (
               <>
-                {/* ★ CARD WINDY PG SOUNDINGS — SEMPRE VISIBILE, INIZIO CONTENUTO ★ */}
-                <div
-                  data-testid="windy-soundings-card"
-                  style={{
-                    marginTop: "0",
-                    marginBottom: "1.5rem",
-                    padding: "1.25rem",
-                    borderRadius: "1rem",
-                    border: "3px solid #fbbf24",
-                    backgroundColor: "#1e3a5f",
-                    boxShadow: "0 0 30px rgba(251, 191, 36, 0.4)",
-                    display: "block",
-                    visibility: "visible",
-                  }}
-                >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: "#fbbf24" }}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1e3a5f" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/>
-                        <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/>
-                        <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/>
-                        <path d="M12 7v5"/>
-                        <path d="M9 10h6"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="text-base font-black" style={{ color: "#fbbf24", margin: 0 }}>WINDY PG SOUNDINGS</h3>
-                      <p className="text-[10px] mt-0.5 font-semibold" style={{ color: "#fde68a" }}>Sondaggi atmosferici per parapendio</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2.5 mb-4">
-                    <div data-testid="windy-card-cape" style={{ backgroundColor: "#0f2940", borderRadius: "0.75rem", padding: "0.75rem", textAlign: "center", border: "1px solid rgba(251, 191, 36, 0.3)" }}>
-                      <div className="text-xs font-bold uppercase tracking-widest" style={{ color: "#fde68a" }}>CAPE</div>
-                      <div className="text-2xl font-black" style={{ color: "#34d399" }}>120</div>
-                      <div className="text-[10px]" style={{ color: "#a3b1c9" }}>J/kg</div>
-                    </div>
-                    <div data-testid="windy-card-freezing-level" style={{ backgroundColor: "#0f2940", borderRadius: "0.75rem", padding: "0.75rem", textAlign: "center", border: "1px solid rgba(251, 191, 36, 0.3)" }}>
-                      <div className="text-xs font-bold uppercase tracking-widest" style={{ color: "#fde68a" }}>Liv. 0°C</div>
-                      <div className="text-2xl font-black" style={{ color: "#fbbf24" }}>3800</div>
-                      <div className="text-[10px]" style={{ color: "#a3b1c9" }}>m quota</div>
-                    </div>
-                    <div data-testid="windy-card-wind-850" style={{ backgroundColor: "#0f2940", borderRadius: "0.75rem", padding: "0.75rem", textAlign: "center", border: "1px solid rgba(251, 191, 36, 0.3)" }}>
-                      <div className="text-xs font-bold uppercase tracking-widest" style={{ color: "#fde68a" }}>Vento 850hPa</div>
-                      <div className="text-2xl font-black" style={{ color: "#38bdf8" }}>22</div>
-                      <div className="text-[10px]" style={{ color: "#a3b1c9" }}>km/h S-SE</div>
-                    </div>
-                  </div>
-                  <div style={{ padding: "0.75rem", backgroundColor: "#0f2940", borderRadius: "0.75rem", border: "1px solid rgba(251, 191, 36, 0.2)", marginBottom: "0.75rem" }}>
-                    <div className="text-xs font-black mb-2 flex items-center gap-1.5 uppercase tracking-wider" style={{ color: "#fde68a" }}>
-                      Profilo verticale — Skew-T
-                    </div>
-                    <div style={{ height: "3rem", backgroundColor: "#0a1f33", borderRadius: "0.5rem", border: "1px solid rgba(251, 191, 36, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <span style={{ color: "#a3b1c9", fontSize: "0.75rem", fontWeight: "600" }}>[Diagramma Skew-T]</span>
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <a
-                      href="https://windy-plugins.com/2727410/windy-plugin-pg-soundings/1.6.2/plugin.min.js"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "0.5rem",
-                        fontSize: "0.875rem",
-                        fontWeight: "900",
-                        color: "#fbbf24",
-                        textDecoration: "none",
-                        padding: "0.5rem 1rem",
-                        borderRadius: "0.75rem",
-                        border: "2px solid #fbbf24",
-                        backgroundColor: "rgba(251, 191, 36, 0.15)",
-                      }}
-                    >
-                      Plugin originale Windy (apri)
-                    </a>
-                  </div>
-                </div>
-
                 {isOfflineMode && (
                   <div className="bg-amber-900/20 border border-amber-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
                     <Activity className="w-4 h-4 text-amber-400" />
