@@ -297,16 +297,19 @@ export default function Index() {
                   />
                 )}
                 {activeTab === "analisi" && (
-                  <AnalisiMeteo
-                    currentData={currentData as any}
-                    dayData={filteredDayData}
-                    site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name, exposure: site.orientation }}
-                    cape={currentCape?.cape}
-                    liftedIndex={currentCape?.liftedIndex}
-                    cin={currentCape?.cin}
-                    rawData={rawApiResponse}
-                  />
-                )}
+                                  <div className="space-y-6">
+                                    <AnalisiMeteo
+                                      currentData={currentData as any}
+                                      dayData={filteredDayData}
+                                      site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name, exposure: site.orientation }}
+                                      cape={currentCape?.cape}
+                                      liftedIndex={currentCape?.liftedIndex}
+                                      cin={currentCape?.cin}
+                                      rawData={rawApiResponse}
+                                    />
+                                    <WindySoundingsCard siteName={site.site_name} />
+                                  </div>
+                                )}
               </>
             )}
             {!showCards && (
