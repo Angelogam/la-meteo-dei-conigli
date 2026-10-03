@@ -108,6 +108,7 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
+      {/* ★★★ NUOVO DESIGN — CARD VOLO INTERATTIVE ★★★ */}
       <Header />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6" style={{ marginTop: 80 }}>
@@ -178,6 +179,7 @@ export default function Index() {
                   uvIndex={enrichedDaily[selectedDay]?.uvIndexMax ?? currentData?.uvIndex}
                 />
 
+                {/* ★★★★★ 全新飞行决策卡片 - 完全重设计完成 ★★★★★ */}
                 <VoloDecisionCard
                   dayData={dayData}
                   altitude={site.elevation_m}
