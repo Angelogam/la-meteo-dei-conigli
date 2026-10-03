@@ -261,10 +261,16 @@ export default function Index() {
                 />
                 <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
-                {/* ★ TEST CARD — DEVE ESSERE VISIBLE SUBITO SOTTO LE TAB ★ */}
+                {/* ★ DEBUG: SEMPRE VISIBILE, FUORI DALLA TAB ★ */}
                 <div className="bg-red-600 text-white p-4 rounded-xl border-4 border-red-300">
                   <h2 className="font-black text-lg">★ CARD WINDY PG SOUNDINGS ★</h2>
                   <p className="text-sm opacity-80">Se vedi questo, React renderizza correttamente</p>
+                </div>
+
+                {/* ★ TEST: FORZA RENDER ANALISI ★ */}
+                <div id="test-fix" className="bg-blue-600 text-white p-4 rounded-xl mb-8">
+                  <h2 className="font-black text-lg">★ TEST FIX — SE VEDI QUESTO, IL PROBLEMA È PRIMA ★</h2>
+                  <p className="text-sm opacity-80 mt-1">Site: {site?.site_name} | Tab: {activeTab} | DayData: {dayData?.length || 0} ore</p>
                 </div>
 
                 {activeTab === "meteo" && (
@@ -324,6 +330,12 @@ export default function Index() {
                 <p>Nessun dato meteo disponibile per {site?.site_name ?? "questo decollo"}. Verifica la connessione o riprova.</p>
               </div>
             )}
+          </div>
+
+          {/* ★ ABSOLUTE DEBUG — FUORI DA TUTTO ★ */}
+          <div className="bg-green-600 text-white p-4 rounded-xl border-4 border-green-300">
+            <h2 className="font-black text-lg">★ SE VEDI QUESTO DIV VERDE, REACT FUNZIONA ★</h2>
+            <p className="text-sm opacity-80 mt-1">Site: {site?.site_name} | Tab: {activeTab} | DayData: {dayData?.length || 0} ore</p>
           </div>
 
           {/* Windy PG Soundings Card — SEMPRE visibile in fondo alla pagina */}
