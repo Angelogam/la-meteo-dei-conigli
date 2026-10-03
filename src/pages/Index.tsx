@@ -7,7 +7,6 @@ import DecolliCard from "@/components/DecolliCard";
 import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
-import WeatherDashboard from "@/components/WeatherDashboard";
 import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
@@ -223,14 +222,6 @@ export default function Index() {
                   />
                 )}
 
-                <WeatherDashboard
-                  dayData={dayData}
-                  altitude={site.elevation_m}
-                  selectedHour={selectedHour}
-                  onHourSelect={setSelectedHour}
-                  dayLabel={dateLabel}
-                  siteName={site.site_name}
-                />
                 <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
                 {activeTab === "meteo" && (
