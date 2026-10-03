@@ -22,14 +22,24 @@ import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 import { DECOLLI } from "@/data/decolli";
 import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
-import { Activity, Compass, CloudDownload } from "lucide-react";
+import { Activity, Compass } from "lucide-react";
 import ResearchButton from "@/components/ResearchButton";
 import WindyPluginCard from "@/components/WindyPluginCard";
 
 export default function Index() {
+  const [appMounted, setAppMounted] = useState(false);
+  const [fetchStarted, setFetchStarted] = useState(false);
+
   useEffect(() => {
-    avviaVerificaContinua(60000);
+    // Ensure component is fully mounted before any fetches
+    const t = setTimeout(() => setAppMounted(true), 50);
+    return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (!appMounted) return;
+    avviaVerificaContinua(60000);
+  }, [appMounted]);
 
   const {
     selectedId,
@@ -72,8 +82,6 @@ export default function Index() {
   const [windyLoading, setWindyLoading] = useState(false);
   const [windyError, setWindyError] = useState<string | null>(null);
 
-  const isLoading = weatherLoading || aggressiveLoading;
-
   const filteredDayData = useMemo(() => {
     if (!dayData || dayData.length === 0) return [];
     const oggi = new Date();
@@ -100,41 +108,14 @@ export default function Index() {
   const hasData = Boolean(site && (currentData || isOfflineMode));
   const showCards = Boolean(site && (currentData || isOfflineMode || dayData.length > 0));
 
-  const [initialLoadTimeout, setInitialLoadTimeout] = useState(false);
+  // ── Load weather data as soon as mounted ──────────────────────
   useEffect(() => {
-    const timer = setTimeout(() => setInitialLoadTimeout(true), 3000);
-    return () => clearTimeout(timer);
-  }, []);
+    if (!appMounted || fetchStarted) return;
+    setFetchStarted(true);
+    loadWeather();
+  }, [appMounted, fetchStarted, loadWeather]);
 
-  if (isLoading && !initialLoadTimeout) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex flex-col">
-        <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 rounded-full border-4 border-emerald-500/20 border-t-emerald-400 animate-spin" />
-            <p className="text-slate-400 text-sm">
-              Caricamento previsioni per {site?.site_name ?? "decollo..."}
-            </p>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  async function openResearch() {
-    try {
-      const res = await fetch("/api/scrape-parapendio");
-      if (!res.ok) return;
-      const data = await res.json();
-      const results = data.results || [data];
-      alert(results.map((r: any) => `${r.success ? "✅" : "❌"} ${r.site}\n${r.url}\n${r.description}`).join("\n\n"));
-    } catch {
-      alert("Errore nella ricerca — riprova tra qualche secondo.");
-    }
-  }
-
+  // ── Fetch WindyPlugin data ────────────────────────────────────
   async function loadWindyPlugin() {
     try {
       console.log("[WindyPlugin] Fetching plugin...");
@@ -157,30 +138,49 @@ export default function Index() {
   }
 
   useEffect(() => {
+    if (!appMounted) return;
     setWindyLoading(true);
     setWindyError(null);
     loadWindyPlugin();
     const timer = setTimeout(() => {
       if (!windyPlugin && !windyError) {
-        setWindyError("Timeout — tentativo Fallito");
+        setWindyError("Timeout — tentativo fallito");
         setWindyLoading(false);
       }
     }, 10000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [appMounted]);
 
+  async function openResearch() {
+    try {
+      const res = await fetch("/api/scrape-parapendio");
+      if (!res.ok) return;
+      const data = await res.json();
+      const results = data.results || [data];
+      alert(results.map((r: any) => `${r.success ? "✅" : "❌"} ${r.site}\n${r.url}\n${r.description}`).join("\n\n"));
+    } catch {
+      alert("Errore nella ricerca — riprova tra qualche secondo.");
+    }
+  }
+
+  // ── Main render (always shown, never blocked by loading state) ─
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <Header />
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6">
         <div className="flex flex-col lg:flex-row gap-6">
+          {/* ─── SIDEBAR ─── */}
           <aside className="w-full lg:w-80 shrink-0 space-y-3">
+
+            {/* Timer aggiornamento */}
             <UpdateTimer
               lastUpdate={aggressiveLastUpdate ?? lastUpdate}
               countdown={countdown}
               updating={updating}
-              onRefresh={loadWeather}
+              onRefresh={() => { loadWeather(); setFetchStarted(false); }}
             />
+
+            {/* Info decollo corrente */}
             <div className="relative bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-emerald-500/25 rounded-2xl px-4 py-3 overflow-hidden group">
               <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative flex items-center gap-2.5">
@@ -198,6 +198,8 @@ export default function Index() {
                 </div>
               </div>
             </div>
+
+            {/* Lista decolli */}
             <DecolliCard
               decolli={mergedDecolli}
               selectedId={selectedId}
@@ -208,7 +210,7 @@ export default function Index() {
               }}
             />
 
-            {/* Card Ricerca Meteo Siti Parapendio — sotto i decolli, a sinistra */}
+            {/* Card Ricerca Meteo */}
             <div className="bg-gradient-to-br from-rose-950/80 to-rose-900/40 border border-rose-500/30 rounded-2xl p-4 shadow-lg shadow-rose-900/40">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-8 h-8 rounded-xl bg-rose-500/20 border border-rose-400/40 flex items-center justify-center shrink-0">
@@ -222,38 +224,93 @@ export default function Index() {
               <ResearchButton onClick={openResearch} />
             </div>
 
-            {/* Card Windy Plugin PG Soundings — sempre visibile */}
-            {windyLoading && !windyPlugin && (
-              <div className="bg-sky-950/40 border border-sky-500/30 rounded-2xl px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full border-2 border-sky-500/20 border-t-sky-400 animate-spin shrink-0" />
-                  <span className="text-xs text-sky-300 font-semibold">Caricamento Windy Plugin PG Soundings…</span>
+            {/* ── WINDY PLUGIN CARD — sempre visibile, 4 stati chiari ── */}
+            <div className="bg-slate-900/90 border border-slate-700/50 rounded-2xl overflow-hidden shadow-xl">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-slate-800/80 to-slate-900/80 px-4 py-3 border-b border-slate-700/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">🪂</span>
+                    <span className="text-sm font-black text-white">Windy Plugin PG Soundings</span>
+                  </div>
+                  <span className="text-xs text-slate-500 font-semibold">1.6.2</span>
+                </div>
+                <div className="mt-1 flex items-center gap-2">
+                  {windyLoading && (
+                    <>
+                      <div className="w-3 h-3 rounded-full border-2 border-sky-500/20 border-t-sky-400 animate-spin" />
+                      <span className="text-[10px] text-sky-400 font-semibold">Caricamento…</span>
+                    </>
+                  )}
+                  {!windyLoading && windyError && (
+                    <span className="text-[10px] text-rose-400 font-semibold">⚠ Errore</span>
+                  )}
+                  {!windyLoading && windyPlugin?.success && (
+                    <span className="text-[10px] text-emerald-400 font-semibold">✓ Caricato</span>
+                  )}
+                  {!windyLoading && !windyPlugin && !windyError && (
+                    <span className="text-[10px] text-slate-500 font-semibold">In attesa…</span>
+                  )}
                 </div>
               </div>
-            )}
-            {windyError && !windyPlugin && (
-              <div className="bg-rose-950/40 border border-rose-500/30 rounded-2xl px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-rose-300 font-semibold">⚠️ {windyError}</span>
-                </div>
+
+              {/* Corpo */}
+              <div className="p-4">
+                {/* Loading */}
+                {windyLoading && !windyPlugin && (
+                  <div className="text-center py-4">
+                    <div className="w-6 h-6 rounded-full border-2 border-sky-500/20 border-t-sky-400 animate-spin mx-auto mb-2" />
+                    <p className="text-xs text-sky-300 font-semibold">Recupero plugin da windy-plugins.com…</p>
+                  </div>
+                )}
+
+                {/* Error */}
+                {windyError && !windyPlugin && (
+                  <div className="bg-rose-950/40 border border-rose-500/30 rounded-xl px-3 py-3">
+                    <p className="text-xs text-rose-300 font-semibold">⚠️ {windyError}</p>
+                    <button
+                      onClick={() => { setWindyLoading(true); setWindyError(null); loadWindyPlugin(); }}
+                      className="mt-2 text-xs text-rose-400 hover:text-rose-300 underline font-semibold"
+                    >
+                      Riprova
+                    </button>
+                  </div>
+                )}
+
+                {/* Success */}
+                {windyPlugin && windyPlugin.success && (
+                  <WindyPluginCard
+                    plugin={windyPlugin}
+                    onDownload={(content: string) => {
+                      const blob = new Blob([content], { type: "application/javascript" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "windy-plugin-pg-soundings.js";
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  />
+                )}
+
+                {/* No response yet (fallback after timeout) */}
+                {!windyLoading && !windyPlugin && !windyError && (
+                  <div className="bg-amber-950/40 border border-amber-500/30 rounded-xl px-3 py-3 text-center">
+                    <p className="text-xs text-amber-300 font-semibold mb-2">Server non disponibile</p>
+                    <button
+                      onClick={() => { setWindyLoading(true); setWindyError(null); loadWindyPlugin(); }}
+                      className="text-xs text-amber-400 hover:text-amber-300 underline font-semibold"
+                    >
+                      Riprova
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
-            {windyPlugin && windyPlugin.success && (
-              <WindyPluginCard
-                plugin={windyPlugin}
-                onDownload={(content) => {
-                  const blob = new Blob([content], { type: "application/javascript" });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = "windy-plugin-pg-soundings.js";
-                  a.click();
-                  URL.revokeObjectURL(url);
-                }}
-              />
-            )}
+            </div>
+
           </aside>
 
+          {/* ─── MAIN CONTENT ─── */}
           <div className="flex-1 min-w-0 space-y-6">
             {showCards && site && (
               <>
@@ -277,7 +334,6 @@ export default function Index() {
                   uvIndex={enrichedDaily[selectedDay]?.uvIndexMax ?? currentData?.uvIndex}
                 />
 
-                {/* ─── SEZIONE DECISIONE VOLO SEMPLIFICATA ─── */}
                 <VoloDecisionCard
                   dayData={dayData}
                   altitude={site.elevation_m}
