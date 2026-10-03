@@ -17,6 +17,7 @@ import Windgram from "@/components/Windgram";
 import RasoftWindgram from "@/components/RasoftWindgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import VoloDecisionCard from "@/components/VoloDecisionCard";
+import WindySoundingsCard from "@/components/WindySoundingsCard";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
