@@ -122,9 +122,15 @@ export default function Index() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
-      <Header />
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6">
+      <div className="min-h-screen bg-slate-950 flex flex-col">
+        <Header />
+        <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6">
+          {/* Debug banner */}
+          <div className="bg-emerald-900/30 border border-emerald-500/30 rounded-xl px-4 py-2 text-center">
+            <span className="text-xs text-emerald-300 font-semibold">
+              ✅ App attiva — {site?.site_name ?? "Decollo"} · {dayData.length} ore dati · Tab: {activeTab}
+            </span>
+          </div>
         <div className="flex flex-col lg:flex-row gap-6">
           {/* ─── SIDEBAR ─── */}
           <aside className="w-full lg:w-80 shrink-0 space-y-3">
@@ -307,14 +313,16 @@ export default function Index() {
                                       cin={currentCape?.cin}
                                       rawData={rawApiResponse}
                                     />
+                                    {/* Windy PG Soundings Card */}
                                     <WindySoundingsCard siteName={site.site_name} />
                                   </div>
                                 )}
-                                {activeTab !== "analisi" && (
-                                  <div className="text-center py-8 text-slate-500 text-sm">
-                                    Seleziona la tab <span className="text-violet-400 font-bold">Analisi</span> per vedere la card Windy PG Soundings
-                                  </div>
-                                )}
+
+                {/* Windy PG Soundings Card - sempre visibile, fuori dalle tab */}
+                <div className="border-4 border-violet-500 p-4 rounded-xl">
+                  <div className="text-sm text-violet-400 font-bold mb-2">★ CARD WINDY PG SOUNDINGS (SEMPRE VISIBLE) ★</div>
+                  <WindySoundingsCard siteName={site.site_name} />
+                </div>
               </>
             )}
             {!showCards && (
