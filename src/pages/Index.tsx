@@ -183,8 +183,8 @@ export default function Index() {
           </aside>
 
           {/* ─── MAIN CONTENT ─── */}
-          <div className="flex-1 min-w-0 space-y-6">
-            {showCards && site && (
+          <div className="flex-1 min-w-0 space-y-6 border-red-500/20">
+                      {showCards && site && (
               <>
                 {isOfflineMode && (
                   <div className="bg-amber-900/20 border border-amber-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
