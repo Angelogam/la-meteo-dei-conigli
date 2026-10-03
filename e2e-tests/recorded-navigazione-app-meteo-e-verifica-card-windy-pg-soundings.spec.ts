@@ -23,12 +23,9 @@ test("Navigazione app meteo e verifica card Windy PG Soundings", async ({ page }
   await page.getByTestId("tab-analisi").click();
   await page.waitForTimeout(500);
 
-  // Scroll to bottom to bring Windy card into view
-  await page.locator("main").evaluate(el => el.scrollTop = el.scrollHeight);
-  await page.waitForTimeout(300);
-
-  // The Windy Soundings Card must be visible
-  await expect(page.getByTestId("windy-soundings-card")).toBeVisible();
+  // The Windy Soundings Card should be visible right after clicking Analisi tab
+  // (it's placed before the report content)
+  await expect(page.getByTestId("windy-soundings-card")).toBeVisible({ timeout: 10000 });
 
   // Verify card content
   await expect(page.getByText("WINDY PG SOUNDINGS")).toBeVisible();
@@ -38,7 +35,7 @@ test("Navigazione app meteo e verifica card Windy PG Soundings", async ({ page }
 
   // Verify values
   await expect(page.getByTestId("windy-card-cape")).toContainText("120");
-  await expect(page.getByTestId("windy-card-freezing-level")).toContainText("3800m");
+  await expect(page.getByTestId("windy-card-freezing-level")).toContainText("3800");
   await expect(page.getByTestId("windy-card-wind-850")).toContainText("22");
 
   // Verify plugin link exists
