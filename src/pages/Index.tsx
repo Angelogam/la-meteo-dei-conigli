@@ -122,30 +122,6 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
-      {/* ★★ WINDY PG SOUNDINGS — SEMPRE VISIBILE ★★ */}
-      <div
-        data-testid="windy-soundings-card"
-        style={{
-          background: "#ff0000",
-          color: "#fff",
-          padding: "40px",
-          fontSize: "28px",
-          fontWeight: "900",
-          textAlign: "center",
-          borderBottom: "10px solid #000",
-        }}
-      >
-        ⚡ WINDY PG SOUNDINGS ⚡ CAPE: 120 | 3800m | 22 km/h
-        <a
-          href="https://windy-plugins.com/2727410/windy-plugin-pg-soundings/1.6.2/plugin.min.js"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: "#000", background: "#fff", padding: "12px 24px", borderRadius: "8px", textDecoration: "none", fontWeight: "900", marginLeft: "20px", fontSize: "18px" }}
-        >
-          Plugin Windy
-        </a>
-      </div>
-
       <Header />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6" style={{ marginTop: 80 }}>
