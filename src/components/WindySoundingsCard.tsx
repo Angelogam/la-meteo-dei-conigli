@@ -8,6 +8,7 @@ interface WindySoundingsCardProps {
 }
 
 export default function WindySoundingsCard({ siteName }: WindySoundingsCardProps) {
+  console.log("[WindySoundingsCard] Rendering with siteName:", siteName);
   const containerRef = useRef<HTMLDivElement>(null);
   const [pluginLoaded, setPluginLoaded] = useState(false);
   const [pluginError, setPluginError] = useState<string | null>(null);

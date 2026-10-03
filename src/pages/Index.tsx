@@ -310,6 +310,11 @@ export default function Index() {
                                     <WindySoundingsCard siteName={site.site_name} />
                                   </div>
                                 )}
+                                {activeTab !== "analisi" && (
+                                  <div className="text-center py-8 text-slate-500 text-sm">
+                                    Seleziona la tab <span className="text-violet-400 font-bold">Analisi</span> per vedere la card Windy PG Soundings
+                                  </div>
+                                )}
               </>
             )}
             {!showCards && (
