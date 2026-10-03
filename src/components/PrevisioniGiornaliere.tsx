@@ -176,13 +176,13 @@ export default function PrevisioniGiornaliere({
                       )}
 
                       {/* Sole */}
-                      {daily.sunHours != null && daily.sunHours > 0 && (
+                      {daily.sunshineDuration != null && daily.sunshineDuration > 0 && (
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <Sun className="w-3.5 h-3.5 text-amber-400" />
                             <span className="text-xs text-slate-500 font-medium">Ore sole</span>
                           </div>
-                          <span className="text-xs font-black text-amber-300">{daily.sunHours.toFixed(1)}h</span>
+                          <span className="text-xs font-black text-amber-300">{(daily.sunshineDuration / 3600).toFixed(1)}h</span>
                         </div>
                       )}
                     </div>
