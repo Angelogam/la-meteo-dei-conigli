@@ -16,6 +16,7 @@ import Windgram from "@/components/Windgram";
 import RasoftWindgram from "@/components/RasoftWindgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import PeopleManager from "@/components/PeopleManager";
+import ApiHealthCheck from "@/components/ApiHealthCheck";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
@@ -252,7 +253,8 @@ export default function Index() {
         </div>
       </main>
       <Footer />
-      <div className="max-w-7xl mx-auto px-3 md:px-6 py-4">
+      <div className="max-w-7xl mx-auto px-3 md:px-6 py-4 space-y-6">
+        <ApiHealthCheck />
         <PeopleManager />
       </div>
       <DiagnosticaPanel />

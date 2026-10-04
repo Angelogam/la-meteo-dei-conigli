@@ -1,14 +1,17 @@
 import { defineHandler } from "nitro";
-import { getQuery } from "nitro/h3";
+import { getQuery, createError } from "nitro/h3";
 import fs from "node:fs";
 import path from "node:path";
 
 const DATA_FILE = path.resolve("./server/data/people.json");
 
 function readPeople() {
+  if (!fs.existsSync(DATA_FILE)) {
+    return [];
+  }
   try {
     const data = fs.readFileSync(DATA_FILE, "utf-8");
-    return JSON.parse(data);
+    return JSON.parse(data) as any[];
   } catch {
     return [];
   }
@@ -21,7 +24,7 @@ export default defineHandler(async (event) => {
 
   const people = readPeople();
   const total = people.length;
-  const items = people.slice(offset, offset + limit);
+  const items = people.slice(offset, offset + Math.min(limit, 100));
 
   return {
     ok: true,
@@ -29,5 +32,7 @@ export default defineHandler(async (event) => {
     limit,
     offset,
     items,
+    dataFile: DATA_FILE,
+    fileExists: fs.existsSync(DATA_FILE),
   };
 });
