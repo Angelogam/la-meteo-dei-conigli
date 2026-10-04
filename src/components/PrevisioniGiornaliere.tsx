@@ -6,8 +6,8 @@ import type { MeteoCurrent, MeteoDaily } from "@/services/openMeteoService";
 import {
   Sun, Wind, Thermometer, CloudRain, Droplets, Mountain,
   ArrowUp, ArrowDown, Minus, Cloud, Zap, Eye, Gauge,
-  CheckCircle, AlertTriangle, XCircle, Calendar,
-  Thermometer as ThermoIcon, Droplets as HumidityIcon
+  CheckCircle, AlertTriangle, XCircle,
+  Thermometer as ThermoIcon
 } from "lucide-react";
 
 interface PrevisioniGiornaliereProps {
@@ -162,6 +162,7 @@ export default function PrevisioniGiornaliere({
   enrichedDaily,
   dateLabels,
   currentData,
+  dayData,
   site,
   selectedDay,
   onSelectDay,
