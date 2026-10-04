@@ -8,13 +8,6 @@ export default defineConfig(() => ({
   server: {
     host: "::",
     port: 8080,
-    proxy: {
-      // Proxy le chiamate API al server Nitro
-      "/api": {
-        target: "http://localhost:8080",
-        changeOrigin: true,
-      },
-    },
   },
   plugins: [dyadComponentTagger(), react(), nitro()],
   resolve: {
