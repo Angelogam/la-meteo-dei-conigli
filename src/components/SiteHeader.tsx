@@ -69,18 +69,6 @@ export default function SiteHeader({
   const isOvercast = weatherCode >= 20 && weatherCode < 61;
   const isFog = weatherCode >= 45 && weatherCode <= 48;
 
-  async function openResearch() {
-    try {
-      const res = await fetch("/api/scrape-parapendio");
-      if (!res.ok) return;
-      const data = await res.json();
-      const results = data.results || [data];
-      alert(results.map((r: any) => `${r.success ? "✅" : "❌"} ${r.site}\n${r.url}\n${r.description}`).join("\n\n"));
-    } catch {
-      alert("Errore nella ricerca — riprova tra qualche secondo.");
-    }
-  }
-
   return (
     <div className="card header-decollo pb-5 mb-4 border-b border-orange-400/20 relative overflow-hidden">
       <div className="absolute -top-4 -left-4 w-32 h-32 bg-gradient-to-br from-orange-500/5 to-transparent rounded-full blur-2xl pointer-events-none" />
@@ -191,11 +179,6 @@ export default function SiteHeader({
           </div>
         </div>
       )}
-
-      {/* ─── Pulsante Ricerca Meteo Siti Parapendio ─── */}
-      <div className="mt-3 bg-rose-600 text-white font-black text-xs py-3 px-4 rounded-xl text-center shadow-lg shadow-rose-600/30" onClick={openResearch}>
-        🔬 RICERCA WEB — SCIARA SITI METEO PARAPENDIO (CLICCA)
-      </div>
     </div>
   );
 }
