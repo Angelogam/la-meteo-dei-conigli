@@ -30,17 +30,17 @@ function getWeatherEmoji(code: number): string {
 }
 
 function getWeatherDesc(code: number): string {
-  if (code >= 95) return "雷暴";
-  if (code >= 80) return "阵雨";
-  if (code >= 71) return "雪";
-  if (code >= 61) return "雨";
-  if (code >= 51) return "毛毛雨";
-  if (code >= 45) return "雾";
-  if (code >= 30) return "阴天";
-  if (code >= 20) return "多云";
-  if (code >= 10) return "多变";
-  if (code >= 5) return "少云";
-  return "晴朗";
+  if (code >= 95) return "Temporale";
+  if (code >= 80) return "Rovesci";
+  if (code >= 71) return "Neve";
+  if (code >= 61) return "Pioggia";
+  if (code >= 51) return "Pioviggine";
+  if (code >= 45) return "Nebbia";
+  if (code >= 30) return "Coperto";
+  if (code >= 20) return "Nuvoloso";
+  if (code >= 10) return "Variabile";
+  if (code >= 5) return "Poco nuvoloso";
+  return "Sereno";
 }
 
 export default function PrevisioniGiornaliere({
@@ -51,19 +51,19 @@ export default function PrevisioniGiornaliere({
   nomeDecollo,
   site,
 }: PrevisioniGiornaliereProps) {
-  const tabs = ["今天", "明天", "后天"];
+  const tabs = ["Oggi", "Domani", "Dopodomani"];
 
   return (
     <div className="space-y-3">
-      {/* 头部 */}
+      {/* Header */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-sky-500/20 to-violet-500/20 border border-sky-500/30 flex items-center justify-center">
             <Sun className="w-4 h-4 text-sky-400" />
           </div>
           <div>
-            <h3 className="text-sm font-black text-white">3天预报</h3>
-            <p className="text-[10px] text-slate-500 font-medium">选择日期查看详情</p>
+            <h3 className="text-sm font-black text-white">Previsioni 3 Giorni</h3>
+            <p className="text-[10px] text-slate-500 font-medium">Clicca per vedere i dettagli</p>
           </div>
         </div>
         {nomeDecollo && (
@@ -73,7 +73,7 @@ export default function PrevisioniGiornaliere({
         )}
       </div>
 
-      {/* 卡片 */}
+      {/* Cards */}
       <div className="grid grid-cols-3 gap-3">
         {tabs.map((tabName, idx) => {
           const daily = enrichedDaily[idx];
@@ -95,65 +95,65 @@ export default function PrevisioniGiornaliere({
                   : "border-slate-700/50 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800/70"
               }`}
             >
-              {/* 背景装饰 */}
+              {/* Background decoration */}
               <div className={`absolute inset-0 opacity-5 ${
                 isActive ? "bg-emerald-500" : isRainy ? "bg-rose-500" : "bg-slate-400"
               }`} />
 
               <div className="relative">
-                {/* 顶部：表情符号 + 趋势 */}
+                {/* Top: emoji + trend */}
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-3xl drop-shadow-lg">{daily ? getWeatherEmoji(daily.weatherCode) : "☀️"}</span>
                   {trend && (
                     <span className={`text-sm font-black ${
                       trend === "↑" ? "text-orange-400" : trend === "↓" ? "text-sky-400" : "text-slate-500"
                     }`}>
-                      {trend === "↑" ? "↑ 升温" : trend === "↓" ? "↓ 降温" : "→ 稳定"}
+                      {trend === "↑" ? "↑ Caldo" : trend === "↓" ? "↓ Freddo" : "→ Stabile"}
                     </span>
                   )}
                 </div>
 
-                {/* 日期名称 */}
+                {/* Day name */}
                 <div className="font-black text-white text-base mb-0.5">{tabName}</div>
                 <div className="text-xs text-slate-500 font-medium mb-3">{label}</div>
 
                 {daily && (
                   <>
-                    {/* 温度 */}
+                    {/* Temperature */}
                     <div className="flex items-baseline gap-1 mb-2">
                       <span className="text-2xl font-black text-amber-300">{Math.round(daily.temperatureMax)}°</span>
                       <span className="text-xs text-slate-600 font-medium">/</span>
                       <span className="text-lg font-bold text-sky-300">{Math.round(daily.temperatureMin)}°</span>
                     </div>
 
-                    {/* 天气描述 */}
+                    {/* Weather description */}
                     <div className="text-xs text-slate-400 font-semibold mb-3">
                       {getWeatherDesc(daily.weatherCode)}
                     </div>
 
-                    {/* 指标网格 */}
+                    {/* Metrics grid */}
                     <div className="space-y-1.5 pt-2 border-t border-white/5">
-                      {/* 风 */}
+                      {/* Wind */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
                           <Wind className="w-3.5 h-3.5 text-sky-400" />
-                          <span className="text-xs text-slate-500 font-medium">最大风速</span>
+                          <span className="text-xs text-slate-500 font-medium">Vento max</span>
                         </div>
                         <span className="text-xs font-black text-sky-300">{Math.round(daily.windSpeedMax)} km/h</span>
                       </div>
 
-                      {/* 降雨 */}
+                      {/* Rain */}
                       {daily.precipitationSum > 0 && (
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <CloudRain className="w-3.5 h-3.5 text-rose-400" />
-                            <span className="text-xs text-slate-500 font-medium">降雨</span>
+                            <span className="text-xs text-slate-500 font-medium">Pioggia</span>
                           </div>
                           <span className="text-xs font-black text-rose-300">{daily.precipitationSum.toFixed(1)} mm</span>
                         </div>
                       )}
 
-                      {/* 零度层 */}
+                      {/* Freezing level */}
                       {freezingLevel && (
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
@@ -169,37 +169,26 @@ export default function PrevisioniGiornaliere({
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <Sun className="w-3.5 h-3.5 text-amber-400" />
-                            <span className="text-xs text-slate-500 font-medium">UV指数</span>
+                            <span className="text-xs text-slate-500 font-medium">UV</span>
                           </div>
                           <span className="text-xs font-black text-amber-300">{Math.round(daily.uvIndexMax)}</span>
                         </div>
                       )}
-
-                      {/* 日照时间 */}
-                      {daily.sunshineDuration != null && daily.sunshineDuration > 0 && (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                            <Sun className="w-3.5 h-3.5 text-amber-400" />
-                            <span className="text-xs text-slate-500 font-medium">日照时数</span>
-                          </div>
-                          <span className="text-xs font-black text-amber-300">{(daily.sunshineDuration / 3600).toFixed(1)}h</span>
-                        </div>
-                      )}
                     </div>
 
-                    {/* 飞行员提示 */}
+                    {/* Pilot tip */}
                     <div className={`mt-3 pt-2 border-t border-white/5 text-[10px] font-semibold leading-relaxed ${
                       isRainy ? "text-rose-400/80" :
                       daily.windSpeedMax > 20 ? "text-orange-400/80" :
                       (daily.uvIndexMax ?? 0) > 6 ? "text-amber-400/80" :
                       "text-emerald-400/70"
                     }`}>
-                      {isRainy ? "⚠️ 可能降雨 — 谨慎决策" :
-                       daily.windSpeedMax > 25 ? "💨 大风预测 — 仅专家" :
-                       daily.windSpeedMax > 18 ? "🌬️ 中风 — 注意阵风" :
-                       (daily.uvIndexMax ?? 0) > 6 ? "☀️ 高UV — 注意防晒" :
-                       daily.windSpeedMax <= 10 && daily.precipitationSum <= 0.2 ? "✅ 条件理想 — 适合飞行" :
-                       "🪂 条件总体良好"}
+                      {isRainy ? "⚠️ Possibile pioggia — valutare bene" :
+                       daily.windSpeedMax > 25 ? "💨 Vento forte — solo esperti" :
+                       daily.windSpeedMax > 18 ? "🌬️ Vento moderato — attenzione a raffiche" :
+                       (daily.uvIndexMax ?? 0) > 6 ? "☀️ UV alto — protect yourself" :
+                       daily.windSpeedMax <= 10 && daily.precipitationSum <= 0.2 ? "✅ Condizioni ideali per il volo" :
+                       "🪂 Condizioni generalmente buone"}
                     </div>
                   </>
                 )}

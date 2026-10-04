@@ -7,6 +7,7 @@ import DecolliCard from "@/components/DecolliCard";
 import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
 import HourlyTable from "@/components/HourlyTable";
+import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
@@ -15,8 +16,6 @@ import AnalisiMeteo from "@/components/AnalisiMeteo";
 import Windgram from "@/components/Windgram";
 import RasoftWindgram from "@/components/RasoftWindgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
-import PeopleManager from "@/components/PeopleManager";
-import ApiHealthCheck from "@/components/ApiHealthCheck";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
@@ -157,6 +156,17 @@ export default function Index() {
                   uvIndex={enrichedDaily[selectedDay]?.uvIndexMax ?? currentData?.uvIndex}
                 />
 
+                <PrevisioniGiornaliere
+                  enrichedDaily={enrichedDaily}
+                  dateLabels={dateLabels}
+                  currentData={currentData}
+                  dayData={dayData}
+                  site={{ name: site.site_name, altitude: site.elevation_m, exposure: site.orientation }}
+                  selectedDay={selectedDay}
+                  onSelectDay={setSelectedDay}
+                  nomeDecollo={site.site_name}
+                />
+
                 <HourlyTable
                   dayData={filteredDayData}
                   altitude={site.elevation_m}
@@ -253,10 +263,6 @@ export default function Index() {
         </div>
       </main>
       <Footer />
-      <div className="max-w-7xl mx-auto px-3 md:px-6 py-4 space-y-6">
-        <ApiHealthCheck />
-        <PeopleManager />
-      </div>
       <DiagnosticaPanel />
     </div>
   );
