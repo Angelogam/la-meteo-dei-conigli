@@ -85,7 +85,6 @@ export default function PrevisioniGiornaliere({
   const pressure = (currentData as any)?.surfacePressure ?? 1013;
   const visibility = (currentData as any)?.visibility ?? 10;
   const cape = (currentData as any)?.cape ?? 0;
-  const cloudCover = currentData?.cloudCover ?? 30;
   const uvIndex = currentData?.uvIndex ?? 5;
 
   const thermalRate = Math.max(0.1, Math.min(3, spread * 0.15 + (cape > 0 ? cape / 5000 : 0)));
@@ -105,87 +104,122 @@ export default function PrevisioniGiornaliere({
   ];
 
   return (
-    <div className="space-y-6" data-testid="new-layout-verified">
-      {/* HERO SECTION */}
-      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 border border-emerald-500/30 shadow-lg shadow-emerald-500/10">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-20 -right-20 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-sky-500/10 rounded-full blur-3xl" />
-        </div>
+    <div className="space-y-6">
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* HERO — REDSIGN TOTALE: barra verde luminosa in alto       */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      <div className="relative rounded-3xl overflow-hidden bg-slate-900 border border-emerald-500/40 shadow-2xl shadow-emerald-500/20">
+        {/* Striscia verde luminosa in cima */}
+        <div className="h-2 bg-gradient-to-r from-emerald-400 via-emerald-300 to-sky-400" />
         
-        <div className="relative p-6 md:p-8">
-          <div className="mb-4">
-            <div className="inline-block px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[10px] font-black uppercase tracking-widest mb-3">
-              ✈️ NUOVO LAYOUT — CONDIZIONI VOLO
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between mb-6">
+        {/* Badge animato */}
+        <div className="px-6 py-4 bg-emerald-950/50 border-b border-emerald-500/20">
+          <div className="flex items-center gap-3">
+            <span className="text-4xl">🛩️</span>
             <div>
-              <div className="flex items-center gap-2 text-[10px] font-black text-emerald-400/70 uppercase tracking-[0.2em] mb-1">
-                <span>✈️</span>
-                Condizioni Volo
+              <div className="text-[10px] font-black text-emerald-400/80 uppercase tracking-[0.3em]">
+                ★ NUOVO LAYOUT — Previsioni Volo
               </div>
               <div className="text-lg font-black text-white">{site.name}</div>
             </div>
-            <div className={`px-4 py-2 rounded-full text-sm font-black ${verdict.bg} ${verdict.color} border ${verdict.ring} ring-2`}>
-              {verdict.label}
+            <div className="ml-auto flex items-center gap-3">
+              <div className={`px-4 py-1.5 rounded-full text-xs font-black ${verdict.bg} ${verdict.color} border ${verdict.ring} ring-2`}>
+                {verdict.label}
+              </div>
             </div>
           </div>
-          
-          <div className="flex items-center gap-8 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="text-8xl font-black text-emerald-400 drop-shadow-lg">
+        </div>
+
+        <div className="p-6">
+          {/* RIGA VOTO + TEMP + VENTO */}
+          <div className="grid grid-cols-[auto_1fr_1fr] gap-8 items-center mb-6">
+            {/* VOTO GIGANTE */}
+            <div className="flex flex-col items-center">
+              <div className="text-[120px] leading-none font-black text-emerald-400 drop-shadow-[0_0_40px_rgba(16,185,129,0.6)]">
                 {flightRating}
               </div>
-              <div className="text-lg text-emerald-500/60 font-bold">/10</div>
+              <div className="text-xl text-emerald-500/50 font-black">/ 10</div>
+              <div className="mt-2 text-xs text-slate-500 font-bold uppercase tracking-widest">Voto Volo</div>
             </div>
-            
-            <div className="flex-1 grid grid-cols-2 gap-6">
-              <div>
-                <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-                  <Sun className="w-3 h-3 text-amber-400" />
-                  Temperatura
-                </div>
-                <div className="text-3xl font-black text-white">{Math.round(temp)}°<span className="text-base text-slate-500">C</span></div>
-                <div className="text-xs text-slate-400 mt-1">Percepita {Math.round(feelsLike)}°C</div>
-                <div className="text-xs text-slate-400">Spread {spread.toFixed(1)}°C</div>
+
+            {/* TEMPERATURA */}
+            <div className="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/50">
+              <div className="flex items-center gap-2 text-xs text-slate-500 mb-2">
+                <Sun className="w-4 h-4 text-amber-400" />
+                <span className="font-black uppercase tracking-wider">Temperatura</span>
               </div>
-              
-              <div>
-                <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-                  <Wind className="w-3 h-3 text-sky-400" />
-                  Vento
+              <div className="text-5xl font-black text-white">
+                {Math.round(temp)}<span className="text-2xl text-slate-500">°C</span>
+              </div>
+              <div className="mt-3 space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-500">Percepita</span>
+                  <span className="text-slate-300 font-bold">{Math.round(feelsLike)}°C</span>
                 </div>
-                <div className="text-3xl font-black text-white">{Math.round(windSpeed)}<span className="text-base text-slate-500"> km/h</span></div>
-                <div className="text-xs text-slate-400 mt-1">{dirToIcon(windDir)} {windDir}°</div>
-                <div className="text-xs text-slate-400">Raffiche {Math.round(windGusts)} km/h</div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-500">Spread</span>
+                  <span className="text-slate-300 font-bold">{spread.toFixed(1)}°C</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-500">Punto Rugiada</span>
+                  <span className="text-slate-300 font-bold">{Math.round(dewPoint)}°C</span>
+                </div>
+              </div>
+            </div>
+
+            {/* VENTO */}
+            <div className="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/50">
+              <div className="flex items-center gap-2 text-xs text-slate-500 mb-2">
+                <Wind className="w-4 h-4 text-sky-400" />
+                <span className="font-black uppercase tracking-wider">Vento</span>
+              </div>
+              <div className="text-5xl font-black text-white">
+                {Math.round(windSpeed)}<span className="text-2xl text-slate-500"> km/h</span>
+              </div>
+              <div className="mt-3 space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-500">Direzione</span>
+                  <span className="text-slate-300 font-bold">{dirToIcon(windDir)} {windDir}°</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-500">Raffiche</span>
+                  <span className="text-slate-300 font-bold">{Math.round(windGusts)} km/h</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-500">Esposizione</span>
+                  <span className="text-slate-300 font-bold">{site.exposure}</span>
+                </div>
               </div>
             </div>
           </div>
-          
-          <div className="grid grid-cols-4 gap-3">
+
+          {/* 4 STATISTICHE ORIZZONTALI */}
+          <div className="grid grid-cols-4 gap-4">
             {[
-              { icon: "💧", label: "Umidità", value: `${humidity}%`, color: "text-sky-400" },
-              { icon: "📊", label: "Pressione", value: `${Math.round(pressure)}`, color: "text-amber-400" },
-              { icon: "👁️", label: "Visibilità", value: `${visibility >= 10 ? "10+" : visibility}`, color: "text-emerald-400" },
-              { icon: "☀️", label: "UV", value: `${Math.round(uvIndex)}`, color: uvIndex > 6 ? "text-rose-400" : "text-amber-400" },
+              { icon: "💧", label: "Umidità", value: `${humidity}%`, color: "text-sky-400", sub: "Rilevata" },
+              { icon: "📊", label: "Pressione", value: `${Math.round(pressure)}`, color: "text-amber-400", sub: "hPa" },
+              { icon: "👁️", label: "Visibilità", value: `${visibility >= 10 ? "10+" : visibility}`, color: "text-emerald-400", sub: visibility >= 10 ? "Ottima" : "Buona" },
+              { icon: "☀️", label: "UV", value: `${Math.round(uvIndex)}`, color: uvIndex > 6 ? "text-rose-400" : "text-amber-400", sub: uvIndex > 8 ? "Estremo" : uvIndex > 5 ? "Alto" : "Moderato" },
             ].map((stat, i) => (
-              <div key={i} className="rounded-xl bg-slate-800/50 border border-slate-700/50 p-3 text-center">
-                <div className="text-2xl mb-1">{stat.icon}</div>
-                <div className={`text-xl font-black ${stat.color}`}>{stat.value}</div>
-                <div className="text-[10px] text-slate-500">{stat.label}</div>
+              <div key={i} className="bg-slate-800/40 rounded-2xl border border-slate-700/50 p-4 text-center hover:border-slate-600 transition-colors">
+                <div className="text-3xl mb-2">{stat.icon}</div>
+                <div className={`text-2xl font-black ${stat.color}`}>{stat.value}</div>
+                <div className="text-[10px] text-slate-500 uppercase tracking-wider mt-1">{stat.label}</div>
+                <div className="text-[9px] text-slate-600 mt-0.5">{stat.sub}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* AEROCARDS */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* AEROCARDS — 6 parametri di volo                           */}
+      {/* ═══════════════════════════════════════════════════════════ */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Parametri di Volo</div>
-          <span className="text-[9px] text-slate-600">Clicca per espandere</span>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-1 h-6 bg-emerald-500 rounded-full" />
+          <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Parametri di Volo</div>
+          <span className="text-[9px] text-slate-600 ml-auto">Clicca per espandere</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <AeroCard
@@ -251,14 +285,16 @@ export default function PrevisioniGiornaliere({
         </div>
       </div>
 
-      {/* WIND PROFILE */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* PROFILO VENTO VERTICALE                                    */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      <div className="rounded-2xl border border-sky-500/20 bg-gradient-to-br from-slate-900 to-sky-950/30 p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Wind className="w-5 h-5 text-sky-400" />
+            <div className="w-1 h-6 bg-sky-500 rounded-full" />
             <div className="text-sm font-black text-white">Profilo Vento Verticale</div>
           </div>
-          <div className="text-[10px] text-slate-500">{dirToIcon(windDir)} {windDir}°</div>
+          <div className="text-[10px] text-sky-400 font-bold">{dirToIcon(windDir)} {windDir}°</div>
         </div>
         
         <div className="space-y-3">
@@ -266,10 +302,10 @@ export default function PrevisioniGiornaliere({
             <div key={level.label} className="flex items-center gap-4">
               <div className="w-16 text-xs font-bold text-slate-400">{level.label}</div>
               <div className="flex-1">
-                <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-3 bg-slate-800 rounded-full overflow-hidden">
                   <div 
-                    className={`h-full rounded-full transition-all duration-500 ${level.speed > 25 ? 'bg-rose-500' : level.speed > 15 ? 'bg-amber-500' : 'bg-emerald-500'}`}
-                    style={{ width: `${Math.min(100, level.speed * 2)}%` }}
+                    className={`h-full rounded-full transition-all duration-700 ${level.speed > 25 ? 'bg-rose-500' : level.speed > 15 ? 'bg-amber-500' : 'bg-sky-500'}`}
+                    style={{ width: `${Math.min(100, level.speed * 2.5)}%` }}
                   />
                 </div>
               </div>
@@ -277,16 +313,28 @@ export default function PrevisioniGiornaliere({
                 <span className="text-sm font-black text-white">{Math.round(level.speed)}</span>
                 <span className="text-xs text-slate-500 ml-1">km/h</span>
               </div>
-              <div className="w-8 text-xs text-slate-500">{dirToIcon(level.dir)}</div>
+              <div className="w-10 text-xs text-slate-500">{dirToIcon(level.dir)}</div>
             </div>
           ))}
         </div>
+        
+        <div className="mt-4 flex justify-between text-[9px] text-slate-600">
+          <span>0 km/h</span>
+          <span>30 km/h</span>
+          <span>60 km/h</span>
+          <span>100+ km/h</span>
+        </div>
       </div>
 
-      {/* 3 DAYS PREVIEW */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* PREVISIONI 3 GIORNI                                        */}
+      {/* ═══════════════════════════════════════════════════════════ */}
       <div>
-        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Previsioni 3 Giorni</div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-1 h-6 bg-emerald-500 rounded-full" />
+          <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Previsioni 3 Giorni</div>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
           {tabs.map((tabName, idx) => {
             const d = enrichedDaily[idx];
             const isActive = selectedDay === idx;
@@ -299,31 +347,31 @@ export default function PrevisioniGiornaliere({
                 key={idx}
                 onClick={() => onSelectDay(idx)}
                 className={`
-                  relative rounded-2xl p-4 text-left transition-all duration-300
+                  relative rounded-2xl p-5 text-left transition-all duration-300
                   ${isActive 
-                    ? 'bg-emerald-950/40 border-2 border-emerald-400 shadow-lg shadow-emerald-900/30 scale-[1.02]' 
+                    ? 'bg-emerald-950/60 border-2 border-emerald-400 shadow-xl shadow-emerald-900/40 scale-[1.03]' 
                     : isRainy
                     ? 'bg-rose-950/20 border border-rose-500/30 hover:border-rose-500/50'
                     : 'bg-slate-800/40 border border-slate-700/50 hover:border-slate-600'
                   }
                 `}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-3xl">{d ? getWeatherEmoji(d.weatherCode) : "☀️"}</span>
-                  <div className={`text-xs font-black px-2 py-0.5 rounded-full ${isActive ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-700/50 text-slate-400'}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-4xl">{d ? getWeatherEmoji(d.weatherCode) : "☀️"}</span>
+                  <div className={`text-sm font-black px-3 py-1 rounded-full ${isActive ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-700/50 text-slate-400'}`}>
                     {rating}/10
                   </div>
                 </div>
-                <div className="font-black text-white">{tabName}</div>
-                <div className="text-[10px] text-slate-500 mb-2">{label}</div>
+                <div className="font-black text-white text-lg">{tabName}</div>
+                <div className="text-[10px] text-slate-500 mb-3">{label}</div>
                 {d && (
                   <>
-                    <div className="flex items-baseline gap-1 mb-1">
-                      <span className="text-lg font-black text-amber-300">{Math.round(d.temperatureMax)}°</span>
+                    <div className="flex items-baseline gap-1 mb-2">
+                      <span className="text-xl font-black text-amber-300">{Math.round(d.temperatureMax)}°</span>
                       <span className="text-xs text-slate-600">/</span>
-                      <span className="text-base font-bold text-sky-300">{Math.round(d.temperatureMin)}°</span>
+                      <span className="text-lg font-bold text-sky-300">{Math.round(d.temperatureMin)}°</span>
                     </div>
-                    <div className="text-[10px] text-slate-400 mb-2">
+                    <div className="text-[10px] text-slate-400 mb-1">
                       {d.precipitationSum > 0.5 ? '🌧️ Pioggia attesa' : '☀️ Sereno'}
                     </div>
                     <div className="text-[9px] text-slate-500">
