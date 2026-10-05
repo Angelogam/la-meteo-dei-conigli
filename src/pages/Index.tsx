@@ -17,10 +17,8 @@ import Windgram from "@/components/Windgram";
 import RasoftWindgram from "@/components/RasoftWindgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
-import { useMeteoCompleto } from "@/hooks/useMeteoCompleto";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 import { DECOLLI } from "@/data/decolli";
-import { avviaVerificaContinua } from "@/utils/mantenimentoAuto";
 
 export default function Index() {
   const [appMounted, setAppMounted] = useState(false);
@@ -30,11 +28,6 @@ export default function Index() {
     const t = setTimeout(() => setAppMounted(true), 50);
     return () => clearTimeout(t);
   }, []);
-
-  useEffect(() => {
-    if (!appMounted) return;
-    avviaVerificaContinua(60000);
-  }, [appMounted]);
 
   const {
     selectedId,
@@ -59,20 +52,7 @@ export default function Index() {
     rawApiResponse,
   } = useWeatherData();
 
-  const { currentCape, activeModel } = useMemo(() => ({
-    currentCape: currentData ? { cape: currentData.cape ?? 0, liftedIndex: currentData.liftedIndex ?? 0, cin: currentData.cin ?? 0 } : null,
-    activeModel: "Open-Meteo" as const,
-  }), [currentData]);
-
-  const { mergedDecolli, loading: aggressiveLoading, lastUpdate: aggressiveLastUpdate } = useThreeSourceWeather();
-
-  useMeteoCompleto(
-    site?.lat ?? DECOLLI[0].lat,
-    site?.lon ?? DECOLLI[0].lon,
-    site?.elevation_m ?? DECOLLI[0].elevation_m
-  );
-
-  const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const { mergedDecolli, lastUpdate: aggressiveLastUpdate } = useThreeSourceWeather();
 
   const filteredDayData = useMemo(() => {
     if (!dayData || dayData.length === 0) return [];
@@ -90,14 +70,9 @@ export default function Index() {
     const d = new Date();
     d.setDate(d.getDate() + selectedDay);
     const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
-    const mesi = [
-      "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
-      "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre",
-    ];
+    const mesi = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
     return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
   }, [selectedDay]);
-
-  const showCards = true;
 
   useEffect(() => {
     if (!appMounted || fetchStarted) return;
@@ -111,9 +86,8 @@ export default function Index() {
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6" style={{ marginTop: 80 }}>
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* ─── SIDEBAR ─── */}
+          {/* SIDEBAR */}
           <aside className="w-full lg:w-80 shrink-0 space-y-3">
-            {/* Timer aggiornamento */}
             <UpdateTimer
               lastUpdate={aggressiveLastUpdate ?? lastUpdate}
               countdown={countdown}
@@ -121,7 +95,6 @@ export default function Index() {
               onRefresh={() => { loadWeather(); setFetchStarted(false); }}
             />
 
-            {/* Lista decolli */}
             <DecolliCard
               decolli={mergedDecolli}
               selectedId={selectedId}
@@ -133,18 +106,10 @@ export default function Index() {
             />
           </aside>
 
-          {/* ─── MAIN CONTENT ─── */}
+          {/* MAIN CONTENT */}
           <div className="flex-1 min-w-0 space-y-6">
-            {showCards && site && (
+            {site && (
               <>
-                {isOfflineMode && (
-                  <div className="bg-amber-900/20 border border-amber-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
-                    <span className="text-xs text-amber-300">
-                      ⚠️ Dati offline (API non raggiungibile) - Stima automatica attiva
-                    </span>
-                  </div>
-                )}
-
                 <SiteHeader
                   site_name={site.site_name}
                   location_name={site.location_name}
@@ -210,12 +175,12 @@ export default function Index() {
                     dayData={filteredDayData}
                     site={{ alt: site.elevation_m, name: site.site_name }}
                     thermalDelta={thermalDelta}
-                    modelName={activeModel}
+                    modelName="Open-Meteo"
                     selectedHour={selectedHour}
                     selectedDay={selectedDay}
-                    cape={currentCape?.cape}
-                    liftedIndex={currentCape?.liftedIndex}
-                    cin={currentCape?.cin}
+                    cape={currentData?.cape}
+                    liftedIndex={currentData?.liftedIndex}
+                    cin={currentData?.cin}
                   />
                 )}
 
@@ -245,19 +210,14 @@ export default function Index() {
                       currentData={currentData as any}
                       dayData={filteredDayData}
                       site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name, exposure: site.orientation }}
-                      cape={currentCape?.cape}
-                      liftedIndex={currentCape?.liftedIndex}
-                      cin={currentCape?.cin}
+                      cape={currentData?.cape}
+                      liftedIndex={currentData?.liftedIndex}
+                      cin={currentData?.cin}
                       rawData={rawApiResponse}
                     />
                   </div>
                 )}
               </>
-            )}
-            {!showCards && (
-              <div className="text-center py-12 text-slate-400">
-                <p>Nessun dato meteo disponibile per {site?.site_name ?? "questo decollo"}. Verifica la connessione o riprova.</p>
-              </div>
             )}
           </div>
         </div>

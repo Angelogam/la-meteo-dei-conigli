@@ -3,11 +3,8 @@
 import { useState } from "react";
 import type { HourData } from "@/types/meteo";
 import type { MeteoCurrent, MeteoDaily } from "@/services/openMeteoService";
-import {
-  Sun, Wind, Thermometer, CloudRain, Droplets,
-  ArrowUp, Cloud, Zap, Eye, Gauge,
-  ChevronDown, Sparkles
-} from "lucide-react";
+import { ArrowUp, Cloud, Thermometer, Zap, Sun, Wind } from "lucide-react";
+import AeroCard from "./AeroCard";
 
 interface PrevisioniGiornaliereProps {
   enrichedDaily: MeteoDaily[];
@@ -20,7 +17,6 @@ interface PrevisioniGiornaliereProps {
   nomeDecollo?: string;
 }
 
-// ─── Utility Functions ──────────────────────────────────────
 function dirToIcon(dir: number): string {
   const dirs = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"];
   return dirs[Math.round(dir / 45) % 8];
@@ -68,109 +64,16 @@ function getFlightVerdict(rating: number): { label: string; color: string; bg: s
   return { label: "VOLO SCONSIGLIATO", color: "text-red-400", bg: "bg-red-500/10", ring: "ring-red-500/50" };
 }
 
-// ─── Expandable Card Component ──────────────────────────────
-function AeroCard({
-  icon,
-  title,
-  value,
-  subtitle,
-  detail,
-  accent = "sky",
-  barValue,
-  barMax,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  detail?: React.ReactNode;
-  accent?: "sky" | "emerald" | "amber" | "purple" | "rose" | "violet";
-  barValue?: number;
-  barMax?: number;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  
-  const accentColors = {
-    sky: { icon: "bg-sky-500/20 text-sky-400", bar: "bg-sky-500", border: "border-sky-500/20" },
-    emerald: { icon: "bg-emerald-500/20 text-emerald-400", bar: "bg-emerald-500", border: "border-emerald-500/20" },
-    amber: { icon: "bg-amber-500/20 text-amber-400", bar: "bg-amber-500", border: "border-amber-500/20" },
-    purple: { icon: "bg-purple-500/20 text-purple-400", bar: "bg-purple-500", border: "border-purple-500/20" },
-    rose: { icon: "bg-rose-500/20 text-rose-400", bar: "bg-rose-500", border: "border-rose-500/20" },
-    violet: { icon: "bg-violet-500/20 text-violet-400", bar: "bg-violet-500", border: "border-violet-500/20" },
-  };
-  
-  const c = accentColors[accent];
-
-  return (
-    <div 
-      onClick={() => setExpanded(!expanded)}
-      className={`
-        relative rounded-2xl border bg-slate-900/60 backdrop-blur-sm 
-        overflow-hidden transition-all duration-300 cursor-pointer
-        hover:border-white/20 hover:scale-[1.02] hover:bg-slate-800/60
-        ${expanded ? `ring-2 ${c.border.replace('border', 'ring')} bg-slate-800/70` : ''}
-      `}
-    >
-      <div className="p-4">
-        {/* Icon */}
-        <div className={`w-10 h-10 rounded-xl ${c.icon} flex items-center justify-center mb-3`}>
-          {icon}
-        </div>
-        
-        {/* Title */}
-        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{title}</div>
-        
-        {/* Value */}
-        <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-black text-white">{value}</span>
-        </div>
-        
-        {/* Subtitle */}
-        {subtitle && (
-          <div className="text-xs text-slate-400 mt-1">{subtitle}</div>
-        )}
-        
-        {/* Progress Bar */}
-        {barValue != null && barMax != null && (
-          <div className="mt-3">
-            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-              <div 
-                className={`h-full rounded-full transition-all duration-500 ${c.bar}`}
-                style={{ width: `${Math.min(100, (barValue / barMax) * 100)}%` }}
-              />
-            </div>
-          </div>
-        )}
-        
-        {/* Expanded Detail */}
-        {expanded && detail && (
-          <div className="mt-3 pt-3 border-t border-white/10 animate-in slide-in-from-top-2">
-            {detail}
-          </div>
-        )}
-        
-        {/* Expand indicator */}
-        <div className="mt-2 flex justify-center">
-          <ChevronDown className={`w-4 h-4 text-slate-600 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Main Component ──────────────────────────────────────────
 export default function PrevisioniGiornaliere({
   enrichedDaily,
   dateLabels,
   currentData,
-  dayData,
   site,
   selectedDay,
   onSelectDay,
 }: PrevisioniGiornaliereProps) {
   const tabs = ["Oggi", "Domani", "Dopodomani"];
 
-  // Core data
   const temp = currentData?.temperature ?? 15;
   const feelsLike = (currentData as any)?.feelsLike ?? temp;
   const dewPoint = (currentData as any)?.dewPoint ?? temp - 5;
@@ -185,18 +88,15 @@ export default function PrevisioniGiornaliere({
   const cloudCover = currentData?.cloudCover ?? 30;
   const uvIndex = currentData?.uvIndex ?? 5;
 
-  // Derived values
   const thermalRate = Math.max(0.1, Math.min(3, spread * 0.15 + (cape > 0 ? cape / 5000 : 0)));
   const cloudBase = site.altitude + Math.round(spread * 125);
   const zeroCLevel = (currentData as any)?.freezingLevel ?? Math.round(5500 - temp * 155);
   const topThermal = Math.round(cloudBase + thermalRate * 2000);
 
-  // Flight rating
   const daily = enrichedDaily[selectedDay] ?? enrichedDaily[0];
   const flightRating = getFlightRating(daily, currentData);
   const verdict = getFlightVerdict(flightRating);
 
-  // Wind profile at different altitudes
   const windLevels = [
     { label: "Suolo", speed: windSpeed, dir: windDir, alt: "10m" },
     { label: "80m", speed: windSpeed * 1.1, dir: windDir + 10, alt: "80m" },
@@ -206,20 +106,18 @@ export default function PrevisioniGiornaliere({
 
   return (
     <div className="space-y-6">
-      {/* ══════════ HERO SECTION: VOTO VOLO + INFO PRINCIPALI ══════════ */}
+      {/* HERO SECTION */}
       <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 border border-slate-700/50">
-        {/* Animated background */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-20 -right-20 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
           <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-sky-500/10 rounded-full blur-3xl" />
         </div>
         
         <div className="relative p-6 md:p-8">
-          {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
               <div className="flex items-center gap-2 text-[10px] font-black text-emerald-400/70 uppercase tracking-[0.2em] mb-1">
-                <Sparkles className="w-3 h-3" />
+                <span>✈️</span>
                 Condizioni Volo
               </div>
               <div className="text-lg font-black text-white">{site.name}</div>
@@ -229,7 +127,6 @@ export default function PrevisioniGiornaliere({
             </div>
           </div>
           
-          {/* Main Rating Display */}
           <div className="flex items-center gap-8 mb-6">
             <div className="flex items-center gap-3">
               <div className="text-8xl font-black text-emerald-400 drop-shadow-lg">
@@ -239,7 +136,6 @@ export default function PrevisioniGiornaliere({
             </div>
             
             <div className="flex-1 grid grid-cols-2 gap-6">
-              {/* Temperature */}
               <div>
                 <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
                   <Sun className="w-3 h-3 text-amber-400" />
@@ -250,7 +146,6 @@ export default function PrevisioniGiornaliere({
                 <div className="text-xs text-slate-400">Spread {spread.toFixed(1)}°C</div>
               </div>
               
-              {/* Wind */}
               <div>
                 <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
                   <Wind className="w-3 h-3 text-sky-400" />
@@ -263,26 +158,24 @@ export default function PrevisioniGiornaliere({
             </div>
           </div>
           
-          {/* Quick Stats Grid */}
           <div className="grid grid-cols-4 gap-3">
             {[
-              { icon: <Droplets className="w-4 h-4" />, label: "Umidità", value: `${humidity}%`, color: "text-sky-400", sub: "Aria umida" },
-              { icon: <Gauge className="w-4 h-4" />, label: "Pressione", value: `${Math.round(pressure)}`, color: "text-amber-400", sub: "hPa" },
-              { icon: <Eye className="w-4 h-4" />, label: "Visibilità", value: `${visibility >= 10 ? "10+" : visibility}`, color: "text-emerald-400", sub: visibility >= 10 ? "km" : "km" },
-              { icon: <Sun className="w-4 h-4" />, label: "UV", value: `${Math.round(uvIndex)}`, color: uvIndex > 6 ? "text-rose-400" : "text-amber-400", sub: uvIndex > 8 ? "Estremo" : uvIndex > 6 ? "Alto" : "Moderato" },
+              { icon: "💧", label: "Umidità", value: `${humidity}%`, color: "text-sky-400" },
+              { icon: "📊", label: "Pressione", value: `${Math.round(pressure)}`, color: "text-amber-400" },
+              { icon: "👁️", label: "Visibilità", value: `${visibility >= 10 ? "10+" : visibility}`, color: "text-emerald-400" },
+              { icon: "☀️", label: "UV", value: `${Math.round(uvIndex)}`, color: uvIndex > 6 ? "text-rose-400" : "text-amber-400" },
             ].map((stat, i) => (
               <div key={i} className="rounded-xl bg-slate-800/50 border border-slate-700/50 p-3 text-center">
-                <div className={`flex justify-center mb-2 ${stat.color}`}>{stat.icon}</div>
+                <div className="text-2xl mb-1">{stat.icon}</div>
                 <div className={`text-xl font-black ${stat.color}`}>{stat.value}</div>
                 <div className="text-[10px] text-slate-500">{stat.label}</div>
-                <div className="text-[9px] text-slate-600 mt-0.5">{stat.sub}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* ══════════ INTERACTIVE FLOW PARAMS ══════════ */}
+      {/* AEROCARDS */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Parametri di Volo</div>
@@ -297,16 +190,7 @@ export default function PrevisioniGiornaliere({
             accent="purple"
             barValue={thermalRate}
             barMax={3}
-            detail={
-              <div className="space-y-1">
-                <div className="text-[10px] text-slate-400">Ascendenza media in termiche</div>
-                <div className="flex gap-1 text-[9px]">
-                  <span className={thermalRate >= 1.5 ? "text-emerald-400" : "text-slate-500"}>✓ Strong</span>
-                  <span className={thermalRate >= 0.8 ? "text-amber-400" : "text-slate-500"}>✓ Moderate</span>
-                  <span className={thermalRate < 0.8 ? "text-rose-400" : "text-slate-500"}>✗ Weak</span>
-                </div>
-              </div>
-            }
+            detail={<div className="text-[10px] text-slate-400">Ascendenza media</div>}
           />
           <AeroCard
             icon={<Cloud className="w-5 h-5" />}
@@ -316,12 +200,7 @@ export default function PrevisioniGiornaliere({
             accent="sky"
             barValue={cloudBase}
             barMax={4000}
-            detail={
-              <div className="space-y-1">
-                <div className="text-[10px] text-slate-400">Quota inizio nubi cumuliformi</div>
-                <div className="text-[9px] text-sky-400">{cloudBase - site.altitude > 500 ? "✓ Buona quota" : "⚠️ Bassa quota"}</div>
-              </div>
-            }
+            detail={<div className="text-[10px] text-slate-400">Quota inizio nubi</div>}
           />
           <AeroCard
             icon={<Thermometer className="w-5 h-5" />}
@@ -331,12 +210,7 @@ export default function PrevisioniGiornaliere({
             accent="violet"
             barValue={zeroCLevel}
             barMax={5000}
-            detail={
-              <div className="space-y-1">
-                <div className="text-[10px] text-slate-400">Confine neve/pioggia</div>
-                <div className="text-[9px] text-violet-400">{zeroCLevel < 2000 ? "⚠️ Neve probabile" : "✓ Asciiutto"}</div>
-              </div>
-            }
+            detail={<div className="text-[10px] text-slate-400">Confine neve/pioggia</div>}
           />
           <AeroCard
             icon={<Zap className="w-5 h-5" />}
@@ -346,12 +220,7 @@ export default function PrevisioniGiornaliere({
             accent="amber"
             barValue={cape}
             barMax={2000}
-            detail={
-              <div className="space-y-1">
-                <div className="text-[10px] text-slate-400">Energia termica disponibile</div>
-                <div className="text-[9px] text-amber-400">{cape > 500 ? "✓ Termiche attivate" : "⚠️ Energia limitata"}</div>
-              </div>
-            }
+            detail={<div className="text-[10px] text-slate-400">Energia termica</div>}
           />
           <AeroCard
             icon={<ArrowUp className="w-5 h-5" />}
@@ -361,12 +230,7 @@ export default function PrevisioniGiornaliere({
             accent="emerald"
             barValue={topThermal}
             barMax={6000}
-            detail={
-              <div className="space-y-1">
-                <div className="text-[10px] text-slate-400">Massima quota delle termiche</div>
-                <div className="text-[9px] text-emerald-400">✓ {topThermal > 3000 ? "Ottima quota" : "Quota media"}</div>
-              </div>
-            }
+            detail={<div className="text-[10px] text-slate-400">Massima quota</div>}
           />
           <AeroCard
             icon={<Sun className="w-5 h-5" />}
@@ -376,17 +240,12 @@ export default function PrevisioniGiornaliere({
             accent="rose"
             barValue={uvIndex}
             barMax={11}
-            detail={
-              <div className="space-y-1">
-                <div className="text-[10px] text-slate-400">Protezione solare</div>
-                <div className="text-[9px] text-rose-400">{uvIndex > 8 ? "🔴 Protect obbligatorio" : uvIndex > 6 ? "🟠 Crema solare" : "🟢 Rischio basso"}</div>
-              </div>
-            }
+            detail={<div className="text-[10px] text-slate-400">Protezione solare</div>}
           />
         </div>
       </div>
 
-      {/* ══════════ WIND PROFILE VISUAL ══════════ */}
+      {/* WIND PROFILE */}
       <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -416,15 +275,9 @@ export default function PrevisioniGiornaliere({
             </div>
           ))}
         </div>
-        
-        <div className="mt-4 flex justify-between text-[9px] text-slate-600">
-          <span>0 km/h</span>
-          <span>50 km/h</span>
-          <span>100+ km/h</span>
-        </div>
       </div>
 
-      {/* ══════════ 3 DAYS PREVIEW ══════════ */}
+      {/* 3 DAYS PREVIEW */}
       <div>
         <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Previsioni 3 Giorni</div>
         <div className="grid grid-cols-3 gap-3">
