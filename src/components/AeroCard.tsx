@@ -38,9 +38,10 @@ export default function AeroCard({
 
   return (
     <div
+      data-testid={`aerocard-${title}`}
       onClick={() => setExpanded(!expanded)}
       className={`
-        relative rounded-2xl border bg-slate-900/60 backdrop-blur-sm 
+        relative rounded-2xl border bg-slate-900/60 backdrop-blur-sm
         overflow-hidden transition-all duration-300 cursor-pointer
         hover:border-white/20 hover:scale-[1.02] hover:bg-slate-800/60
         ${expanded ? `ring-2 ${c.border.replace('border', 'ring')} bg-slate-800/70` : ''}

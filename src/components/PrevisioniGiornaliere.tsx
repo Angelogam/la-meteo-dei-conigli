@@ -105,15 +105,21 @@ export default function PrevisioniGiornaliere({
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="new-layout-verified">
       {/* HERO SECTION */}
-      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 border border-slate-700/50">
+      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 border border-emerald-500/30 shadow-lg shadow-emerald-500/10">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-20 -right-20 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
           <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-sky-500/10 rounded-full blur-3xl" />
         </div>
         
         <div className="relative p-6 md:p-8">
+          <div className="mb-4">
+            <div className="inline-block px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[10px] font-black uppercase tracking-widest mb-3">
+              ✈️ NUOVO LAYOUT — CONDIZIONI VOLO
+            </div>
+          </div>
+          
           <div className="flex items-center justify-between mb-6">
             <div>
               <div className="flex items-center gap-2 text-[10px] font-black text-emerald-400/70 uppercase tracking-[0.2em] mb-1">
