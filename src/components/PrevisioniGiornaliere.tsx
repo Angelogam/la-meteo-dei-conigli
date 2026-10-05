@@ -5,8 +5,8 @@ import type { HourData } from "@/types/meteo";
 import type { MeteoCurrent, MeteoDaily } from "@/services/openMeteoService";
 import {
   Sun, Wind, Thermometer, CloudRain, Droplets,
-  ArrowUp, Cloud, Zap, Eye, Gauge, AlertTriangle,
-  ChevronDown, Sparkles, TrendingUp
+  ArrowUp, Cloud, Zap, Eye, Gauge,
+  ChevronDown, Sparkles
 } from "lucide-react";
 
 interface PrevisioniGiornaliereProps {
