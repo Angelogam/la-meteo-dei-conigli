@@ -45,11 +45,11 @@ export function calcolaTermicheReali(
       gradienteReale: 0, totaleOre: 0,
     };
   }
-  const dew = weather.dewPoint ?? (temp - 8);
-  const hum = weather.humidity ?? 60;
-  const windSpeed = weather.windSpeed ?? 10;
-  const cloudCover = weather.cloudCover ?? 30;
-  const precipitation = weather.precipitation ?? 0;
+  const dew = weather.dewPoint;
+  const hum = weather.humidity;
+  const windSpeed = weather.windSpeed;
+  const cloudCover = weather.cloudCover;
+  const precipitation = weather.precipitation;
   const temp80m = weather.temp80m ?? null;
   const temp120m = weather.temp120m ?? null;
   const ora = weather.time?.getHours?.() ?? new Date().getHours();
@@ -59,7 +59,21 @@ export function calcolaTermicheReali(
     : null;
   // CIN negativo è valido (inibizione), 0 o positivo significa nessuna inibizione
   const cinValue = weather.cin !== null && weather.cin !== undefined ? weather.cin : null;
-  const liValue = weather.liftedIndex ?? 0;
+  const liValue = weather.liftedIndex;
+
+  if (dew === null || dew === undefined || hum === null || hum === undefined ||
+      windSpeed === null || windSpeed === undefined ||
+      cloudCover === null || cloudCover === undefined ||
+      precipitation === null || precipitation === undefined ||
+      capeValue === null || liValue === null || liValue === undefined) {
+    return {
+      hour: ora,
+      base: 0, top: 0, rateo: 0, forza: 0,
+      label: "N/D", colore: "#475569",
+      cape: 0, cin: cinValue !== null ? Math.round(cinValue) : 0,
+      li: 0, gradienteReale: 0, totaleOre: 0,
+    };
+  }
 
   const spread = Math.max(0.5, temp - dew);
 
