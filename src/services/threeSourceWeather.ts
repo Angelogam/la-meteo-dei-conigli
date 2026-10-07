@@ -110,11 +110,11 @@ function normalizzaDirezione(dir: number): number {
 }
 
 /* funzione fuse mantenuta per compatibilità ma ora usa solo fonti valide */
-function fuse(values: { value: number; weight: number }[]): number {
-  const valid = values.filter(v => !isNaN(v.value));
-  if (valid.length === 0) return 0;
+function fuse(values: { value: number; weight: number }[]): number | null {
+  const valid = values.filter(v => Number.isFinite(v.value));
+  if (valid.length === 0) return null;
   const sumW = valid.reduce((a, b) => a + b.weight, 0);
-  if (sumW === 0) return 0;
+  if (sumW === 0) return null;
   return valid.reduce((a, b) => a + b.value * b.weight, 0) / sumW;
 }
 
@@ -139,7 +139,8 @@ function statoAggressivo(openMeteo: any, openWeather: any, tomorrow: any): strin
   return "Sereno";
 }
 
-function baseNubiAggressiva(cloud: number): string {
+function baseNubiAggressiva(cloud: number | null): string {
+  if (cloud === null) return "N/D";
   if (cloud > 80) return "Molto bassa (<1200 m)";
   if (cloud > 60) return "Bassa (1200-1800 m)";
   if (cloud > 40) return "Media (1800-2500 m)";
@@ -160,14 +161,15 @@ function termicheAggressive(tMax: number | null, tMin: number | null, cloudDaily
 
 /** Indice di volabilità: stima euristica, NON misura scientifica.
  *  Rinominato in indiceAffidabilitaStima per chiarezza. */
-function indiceAffidabilitaStima(wind: number, rain: number, cloud: number, baseNubi: string, termiche: string): number {
+function indiceAffidabilitaStima(wind: number | null, rain: number | null, cloud: number | null, baseNubi: string, termiche: string): number {
+  if (wind === null && rain === null && cloud === null) return 10;
   let i = 1;
-  if (rain > 0.1) i += 5;
-  if (rain > 2) i += 3;
-  if (wind > 15) i += 2;
-  if (wind > 25) i += 3;
-  if (wind > 30) i += 3;
-  if (cloud > 70) i += 2;
+  if ((rain ?? 0) > 0.1) i += 5;
+  if ((rain ?? 0) > 2) i += 3;
+  if ((wind ?? 0) > 15) i += 2;
+  if ((wind ?? 0) > 25) i += 3;
+  if ((wind ?? 0) > 30) i += 3;
+  if ((cloud ?? 0) > 70) i += 2;
   if (baseNubi.includes("Molto bassa")) i += 3;
   if (termiche.includes("forti")) i += 2;
   return Math.min(i, 10);
@@ -226,18 +228,23 @@ export async function getMeteoDecolloAggressivo(d: Decollo): Promise<MeteoDecoll
 
   // Fuse wind direction using circular mean (ignora valori null)
   const dirPairs: { value: number; weight: number }[] = [
-    om.dir > 0 ? { value: om.dir, weight: WEIGHTS.wind.om } : null,
-    ow.dir > 0 ? { value: ow.dir, weight: WEIGHTS.wind.ow } : null,
-    tw.dir > 0 ? { value: tw.dir, weight: WEIGHTS.wind.tw } : null,
+    om?.dir !== null && om?.dir !== undefined ? { value: om.dir, weight: WEIGHTS.wind.om } : null,
+    ow?.dir !== null && ow?.dir !== undefined ? { value: ow.dir, weight: WEIGHTS.wind.ow } : null,
+    tw?.dir !== null && tw?.dir !== undefined ? { value: tw.dir, weight: WEIGHTS.wind.tw } : null,
   ].filter((v): v is { value: number; weight: number } => v != null);
   const dirNum = dirPairs.length > 0
     ? circularMeanWindDirection(dirPairs.map(p => p.value))
     : null; // Se nessuna direzione valida, restituiamo null (N/D)
 
   const stato = statoAggressivo(om, ow, tw);
-  const baseNubi = baseNubiAggressiva(Number(cloudNum || 0));
-  const termiche = termicheAggressive(om.tMax, om.tMin, om.cloudDaily, om.rainDaily);
-  const indice = indiceAffidabilitaStima(Number(windNum || 0), Number(rainNum || 0), Number(cloudNum || 0), baseNubi, termiche);
+  const baseNubi = baseNubiAggressiva(cloudNum);
+  const termiche = termicheAggressive(
+    om?.tMax ?? null,
+    om?.tMin ?? null,
+    om?.cloudDaily ?? null,
+    om?.rainDaily ?? null
+  );
+  const indice = indiceAffidabilitaStima(windNum, rainNum, cloudNum, baseNubi, termiche);
   const indiceLabel = labelIndice(indice);
 
   return {
