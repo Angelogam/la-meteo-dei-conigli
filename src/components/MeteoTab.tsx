@@ -5,9 +5,9 @@ import type { MeteoCurrent } from "@/services/openMeteoService";
 import type { HourData } from "@/types/meteo";
 import {
   MapPin, Wind, Thermometer, Droplets, Eye, Mountain, Cloud,
-  Activity, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp,
+  Activity, AlertTriangle, CheckCircle2,
   Sun, Radiation, ArrowUp, CloudSnow, ArrowRight, TrendingUp,
-  TrendingDown, Minus, CloudRain, Zap, Gauge, CloudOff, Timer,
+  TrendingDown, Minus, CloudRain, Zap, Gauge, CloudOff,
   Waves
 } from "lucide-react";
 import { calcCloudBase } from "@/utils/calcCloudBase";
@@ -203,7 +203,6 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   const zeroThermal = dayData.reduce((s, h) => s + (h.freezingLevel ?? 0), 0) / dayData.length;
   const avgFreezing = zeroThermal > 0 ? Math.round(zeroThermal) : siteAlt + 3000;
 
-  const now = new Date().getHours();
   const next6h = dayData.filter(h => {
     const hr = h.time instanceof Date ? h.time.getHours() : new Date(h.time).getHours();
     return hr >= now && hr <= now + 6;
@@ -863,43 +862,6 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
           </div>
         </div>
 
-        {/* Rain timeline */}
-        {dayData.filter(h => (h.precipitationProba ?? 0) > 30).length > 0 && (
-          <div className="bg-slate-800/40 rounded-xl p-3.5 border border-slate-700/40">
-            <div className="flex items-center gap-2 mb-2.5">
-              <CloudRain className="w-4 h-4 text-orange-400" />
-              <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Rischio piovaschi — 09:00 → 19:00</span>
-            </div>
-            <div className="flex gap-1 items-end h-12">
-              {[9,10,11,12,13,14,15,16,17,18,19].map(hour => {
-                const entry = dayData.find(h => {
-                  const hr = h.time instanceof Date ? h.time.getHours() : new Date(h.time).getHours();
-                  return hr === hour;
-                });
-                const prob = entry ? (entry.precipitationProba ?? 0) : 0;
-                const isNow = hour === now;
-                const barColor = prob > 50 ? "from-rose-500 to-rose-400" : prob > 30 ? "from-violet-500 to-violet-400" : prob > 10 ? "from-orange-500 to-orange-400" : "from-slate-600 to-slate-500";
-                return (
-                  <div key={hour} className="flex-1 flex flex-col items-center gap-0.5 group relative">
-                    <div className="h-3 flex items-center justify-center text-xs transition-transform duration-200 group-hover:scale-125">{prob > 50 ? "🌧️" : prob > 30 ? "🌦️" : prob > 10 ? "☁️" : hour >= 10 && hour <= 15 ? "☀️" : "🌙"}</div>
-                    <div
-                      className={`w-full rounded-md bg-gradient-to-t ${barColor} transition-all duration-700`}
-                      style={{ height: `${Math.max(4, prob)}%`, minHeight: `${Math.max(4, prob)}%`, animationDelay: `${(hour - 9) * 50}ms` }}
-                    />
-                    {isNow && <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-white shadow-sm animate-pulse" />}
-                    <div className="text-[8px] text-slate-600 mt-0.5">{String(hour).padStart(2,"0")}</div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="mt-2 flex items-center justify-center gap-3 text-[9px] text-slate-500 font-semibold">
-              <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> ora attuale</span>
-              <span className="text-rose-400">🌧️ &gt;50%</span>
-              <span className="text-violet-400">🌦️ 30-50%</span>
-              <span className="text-orange-400">☁️ &lt;30%</span>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ═══════════ STABILITÀ TERMODINAMICA ═══════════ */}
