@@ -1,11 +1,12 @@
 /**
- * Genera dati meteo realistici per parapendio usando modelli fisici reali.
- * I parametri sono correlati tra loro come nell'atmosfera vera:
- *   - Temp/dew point → base cumuli
- *   - Spread T-dew → forza termica
- *   - Vento al suolo vs 850hPa → onda
- *   - CAPE / Lifted Index → instabilità
- *   - Radiazione → curve diurne
+ * GENERA DATI DI FALBACK PER MODALITÀ OFFLINE.
+ *
+ * ⚠️ QUESTI DATI NON SONO REALI — sono stimati da modelli fisici approssimati.
+ * Vengono mostrati SOLO quando l'API Open-Meteo non è raggiungibile.
+ * La UI deve contrassegnarli chiaramente come "offline" o "stimati".
+ *
+ * Regola: null dell'API → null nel fallback, MA per mantenere l'UI funzionante
+ * il fallback genera valori realistici basati su fisica atmosferica.
  */
 
 import type { MeteoHourly, MeteoDaily, MeteoCurrent } from "./openMeteoService";

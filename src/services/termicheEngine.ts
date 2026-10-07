@@ -43,8 +43,12 @@ export function calcolaTermicheReali(
   const temp80m = weather.temp80m ?? null;
   const temp120m = weather.temp120m ?? null;
   const ora = weather.time?.getHours?.() ?? new Date().getHours();
-  const capeValue = Math.min(2000, weather.cape ?? 0);
-  const cinValue = weather.cin ?? 0;
+  // Usa CAPE reale dall'API quando disponibile, altrimenti null (non 0!)
+  const capeValue = weather.cape !== null && weather.cape !== undefined
+    ? Math.min(2000, Math.max(0, weather.cape))
+    : null;
+  // CIN negativo è valido (inibizione), 0 o positivo significa nessuna inibizione
+  const cinValue = weather.cin !== null && weather.cin !== undefined ? weather.cin : null;
   const liValue = weather.liftedIndex ?? 0;
 
   const spread = Math.max(0.5, temp - dew);
@@ -54,9 +58,11 @@ export function calcolaTermicheReali(
 
   let gradiente = GRADIENTE_SECCO;
   if (temp80m != null && temp80m > -50 && temp80m < 50) {
-    gradiente = Math.min(1.5, Math.max(0.3, ((temp - temp80m) / 78) * 100));
+    // Formula corretta: distanza reale 80m, non 78m
+    gradiente = Math.min(1.5, Math.max(0.3, ((temp - temp80m) / 80) * 100));
   } else if (temp120m != null && temp120m > -50 && temp120m < 50) {
-    gradiente = Math.min(1.5, Math.max(0.3, ((temp - temp120m) / 118) * 100));
+    // Formula corretta: distanza reale 120m, non 118m
+    gradiente = Math.min(1.5, Math.max(0.3, ((temp - temp120m) / 120) * 100));
   }
 
   let forza = 0;
@@ -144,8 +150,8 @@ export function calcolaTermicheReali(
     forza,
     label,
     colore,
-    cape: Math.round(Math.min(2000, capeValue)),
-    cin: Math.round(cinValue),
+    cape: capeValue !== null ? Math.round(Math.min(2000, capeValue)) : 0,
+    cin: cinValue !== null ? Math.round(cinValue) : 0,
     li: Math.round(liValue * 10) / 10,
     gradienteReale: Math.round(gradiente * 100) / 100,
     totaleOre: 0,

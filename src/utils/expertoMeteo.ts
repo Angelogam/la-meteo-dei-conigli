@@ -9,6 +9,7 @@
 import type { HourData } from "@/types/meteo";
 import { calcCloudBase } from "@/utils/calcCloudBase";
 import { confrontaClima } from "@/utils/climatologia";
+import { circularMeanWindDirection } from "@/utils/windDirection";
 
 // ─── TIPOLOGIE DI VOLO ───────────────────────────────────────────────────────
 
@@ -94,7 +95,7 @@ export function valutaGiornataVolo(
     ? valid850.reduce((s, h) => s + (h.windSpeed850 ?? 0), 0) / valid850.length
     : null;
   const avgDir850 = valid850.length > 0
-    ? valid850.reduce((s, h) => s + (h.windDir850 ?? 0), 0) / valid850.length
+    ? circularMeanWindDirection(valid850.map(h => h.windDir850 ?? 0).filter(d => d > 0))
     : null;
 
   const windSheer = avgWind850 != null ? Math.round(avgWind850 - currentData.windSpeed) : 0;

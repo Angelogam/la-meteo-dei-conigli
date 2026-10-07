@@ -30,19 +30,26 @@ const TOMORROW_API_KEY = import.meta.env.VITE_TOMORROW_KEY || "";
 async function getOpenMeteo(lat: number, lon: number) {
   try {
     const today = new Date().toISOString().split("T")[0];
-    const data = await fetchHourly(lat, lon, "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m", today, today);
+    // Chiamata SOLO hourly come da istruzioni: non leggere daily se non richiesto
+    const data = await fetchHourly(lat, lon, "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,cape,freezing_level_height", today, today);
     const t = data.hourly?.temperature_2m?.[0];
     if (t === undefined || t === null) return null;
+    // CAPE e freezing level reali dall'API
+    const cape = data.hourly?.cape?.[0] !== undefined ? Number(data.hourly.cape[0]) : null;
+    const freezingLevel = data.hourly?.freezing_level_height?.[0] !== undefined ? Number(data.hourly.freezing_level_height[0]) : null;
     return {
-      temp: Number(t) || 0,
-      rain: Number(data.hourly?.precipitation?.[0]) || 0,
-      cloud: Number(data.hourly?.cloud_cover?.[0]) || 0,
-      wind: Number(data.hourly?.wind_speed_10m?.[0]) || 0,
-      dir: Number(data.hourly?.wind_direction_10m?.[0]) || 0,
-      tMax: Number(data.daily?.temperature_2m_max?.[0]) || 0,
-      tMin: Number(data.daily?.temperature_2m_min?.[0]) || 0,
-      cloudDaily: Number(data.daily?.cloud_cover_mean?.[0]) || 0,
-      rainDaily: Number(data.daily?.precipitation_sum?.[0]) || 0
+      temp: Number(t),
+      rain: data.hourly?.precipitation?.[0] !== undefined ? Number(data.hourly.precipitation[0]) : 0,
+      cloud: data.hourly?.cloud_cover?.[0] !== undefined ? Number(data.hourly.cloud_cover[0]) : 0,
+      wind: data.hourly?.wind_speed_10m?.[0] !== undefined ? Number(data.hourly.wind_speed_10m[0]) : 0,
+      dir: data.hourly?.wind_direction_10m?.[0] !== undefined ? Number(data.hourly.wind_direction_10m[0]) : 0,
+      cape,
+      freezingLevel,
+      // Dati daily non richiesti nella chiamata hourly — N/D
+      tMax: null,
+      tMin: null,
+      cloudDaily: null,
+      rainDaily: null
     };
   } catch {
     return null;
@@ -175,30 +182,32 @@ export async function getMeteoDecolloAggressivo(d: Decollo): Promise<MeteoDecoll
     throw new Error("Nessuna fonte meteo disponibile");
   }
 
-  const om = openMeteo || { temp: 0, rain: 0, cloud: 0, wind: 0, dir: 0, tMax: 0, tMin: 0, cloudDaily: 0, rainDaily: 0 };
-  const ow = openWeather || { temp: 0, rain: 0, cloud: 0, wind: 0, dir: 0, stato: "Clear" };
-  const tw = tomorrow || { temp: 0, rain: 0, cloud: 0, wind: 0, dir: 0 };
+  // Non usare valori di default 0 quando la fonte fallisce — usa null per segnalare N/D
+  const om = openMeteo ?? null;
+  const ow = openWeather ?? null;
+  const tw = tomorrow ?? null;
 
+  // Fuse: include solo fonti valide (non null)
   const tempNum = fuse([
-    { value: om.temp, weight: WEIGHTS.temp.om },
-    { value: ow.temp, weight: WEIGHTS.temp.ow },
-    { value: tw.temp, weight: WEIGHTS.temp.tw }
-  ]);
+    om?.temp !== null ? { value: om.temp, weight: WEIGHTS.temp.om } : null,
+    ow?.temp !== null ? { value: ow.temp, weight: WEIGHTS.temp.ow } : null,
+    tw?.temp !== null ? { value: tw.temp, weight: WEIGHTS.temp.tw } : null,
+  ].filter((v): v is FonteValore => v != null));
   const rainNum = fuse([
-    { value: om.rain, weight: WEIGHTS.rain.om },
-    { value: ow.rain, weight: WEIGHTS.rain.ow },
-    { value: tw.rain, weight: WEIGHTS.rain.tw }
-  ]);
+    om?.rain !== null ? { value: om.rain, weight: WEIGHTS.rain.om } : null,
+    ow?.rain !== null ? { value: ow.rain, weight: WEIGHTS.rain.ow } : null,
+    tw?.rain !== null ? { value: tw.rain, weight: WEIGHTS.rain.tw } : null,
+  ].filter((v): v is FonteValore => v != null));
   const cloudNum = fuse([
-    { value: om.cloud, weight: WEIGHTS.cloud.om },
-    { value: ow.cloud, weight: WEIGHTS.cloud.ow },
-    { value: tw.cloud, weight: WEIGHTS.cloud.tw }
-  ]);
+    om?.cloud !== null ? { value: om.cloud, weight: WEIGHTS.cloud.om } : null,
+    ow?.cloud !== null ? { value: ow.cloud, weight: WEIGHTS.cloud.ow } : null,
+    tw?.cloud !== null ? { value: tw.cloud, weight: WEIGHTS.cloud.tw } : null,
+  ].filter((v): v is FonteValore => v != null));
   const windNum = fuse([
-    { value: om.wind, weight: WEIGHTS.wind.om },
-    { value: ow.wind, weight: WEIGHTS.wind.ow },
-    { value: tw.wind, weight: WEIGHTS.wind.tw }
-  ]);
+    om?.wind !== null ? { value: om.wind, weight: WEIGHTS.wind.om } : null,
+    ow?.wind !== null ? { value: ow.wind, weight: WEIGHTS.wind.ow } : null,
+    tw?.wind !== null ? { value: tw.wind, weight: WEIGHTS.wind.tw } : null,
+  ].filter((v): v is FonteValore => v != null));
 
   // Fuse wind direction (weighted arithmetic mean)
   const dirPairs: FonteValore[] = [

@@ -242,7 +242,7 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
       windSpeed: safeNum(c.wind_speed_10m, 0),
       windDir: safeNum(c.wind_direction_10m, 0),
       windGusts: safeNum(c.wind_gusts_10m, c.wind_speed_10m ?? 0),
-      cape: safeNum(c.cape, 0),
+      cape: safeNumOrNull(c.cape),
       apparentTemp: safeNumOrNull(c.apparent_temperature),
       uvIndex: safeNum(c.uv_index, 0),
       visibility: safeNum(c.visibility, 10000),
@@ -283,8 +283,8 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
         windSpeed: safeNum(json.hourly.wind_speed_10m?.[i], 0),
         windDir: safeNum(json.hourly.wind_direction_10m?.[i], 0),
         windGusts: safeNum(json.hourly.wind_gusts_10m?.[i], 0),
-        cape: safeNum(json.hourly.cape?.[i], 0),
-        liftedIndex: safeNum(json.hourly.lifted_index?.[i], 0),
+        cape: safeNumOrNull(json.hourly.cape?.[i]),
+        liftedIndex: safeNumOrNull(json.hourly.lifted_index?.[i]),
         shortwaveRadiation: safeNum(json.hourly.shortwave_radiation?.[i], 0),
         directRadiation: safeNum(json.hourly.direct_radiation?.[i], 0),
         uvIndex: safeNum(json.hourly.uv_index?.[i], 0),
@@ -318,7 +318,7 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
         directNormalIrradiance: 0,
         terrestrialRadiation: 0,
         radiation: safeNum(json.hourly.shortwave_radiation?.[i], 0),
-        cin: safeNum(json.hourly.convective_inhibition?.[i], 0),
+        cin: safeNumOrNull(json.hourly.convective_inhibition?.[i]),
         windSpeed925: safeNumOrNull(json.hourly.wind_speed_925hPa?.[i]),
         windDir925: safeNumOrNull(json.hourly.wind_direction_925hPa?.[i]),
         windSpeed850: safeNumOrNull(json.hourly.wind_speed_850hPa?.[i]),
@@ -360,8 +360,7 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
         snowfallSum: safeNum(json.daily.snowfall_sum?.[i], 0),
         precipitationHours: safeNum(json.daily.precipitation_hours?.[i], 0),
         shortwaveRadiationSum: safeNum(json.daily.shortwave_radiation_sum?.[i], 0),
-        freezingLevel: safeNumOrNull(json.daily.freezing_level_height_max?.[i]) ??
-                       (json.hourly ? Math.round(5500 - safeNum(json.daily.temperature_2m_mean?.[i], 10) * 155) : null),
+        freezingLevel: safeNumOrNull(json.daily.freezing_level_height_max?.[i]) ?? null,
       });
     }
 

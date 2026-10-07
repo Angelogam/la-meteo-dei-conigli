@@ -130,29 +130,40 @@ export function analisiAvanzataCompleta(
     const precipitation = weather.precipitation ?? 0;
     const temp80m = weather.temp80m;
     const temp120m = weather.temp120m;
-    const cape = weather.cape ?? 0;
+    const cape = weather.cape;
+    const cin = weather.cin ?? null;
+    const liftedIndex = weather.liftedIndex ?? null;
 
+    // Pressione: usa dato API se disponibile, altrimenti media 1013
     const pressure = current?.pressure ?? null;
     const presVal = pressure !== null && pressure !== undefined ? pressure : 1013;
 
+    // Spread T-dew point
     const spread = Math.max(0.3, Math.min(20, temp - (dew !== null ? dew : temp - 8)));
-    const estimatedCape = Math.min(1500, Math.round(spread * spread * 6 + (temp - 10) * 5));
-    const capeValue = Math.min(1500, Math.max(0, estimatedCape));
 
-    const windShear = Math.round(Math.abs(windSpeed - windGusts) * 10) / 10;
+    // Usa CAPE reale dall'API quando disponibile, altrimenti null
+    const capeValue = cape !== null && cape !== undefined ? Math.min(1500, Math.max(0, cape)) : null;
+
+    const windShear = windGusts > 0 ? Math.round(Math.abs(windGusts - windSpeed) * 10) / 10 : null;
 
     let gradiente = 0.98;
     if (temp80m !== null && temp80m > -50 && temp80m < 50) {
-      gradiente = Math.min(1.5, Math.max(0.3, ((temp - temp80m) / 78) * 100));
+      // Formula corretta: ((tempSuperficie - temp80m) / 80) * 100
+      gradiente = Math.min(1.5, Math.max(0.3, ((temp - temp80m) / 80) * 100));
     } else if (temp120m !== null && temp120m > -50 && temp120m < 50) {
-      gradiente = Math.min(1.5, Math.max(0.3, ((temp - temp120m) / 118) * 100));
+      // Formula corretta: ((tempSuperficie - temp120m) / 120) * 100
+      gradiente = Math.min(1.5, Math.max(0.3, ((temp - temp120m) / 120) * 100));
     }
     gradiente = Math.round(gradiente * 100) / 100;
 
     const lclSopraSuolo = Math.min(2500, Math.max(50, Math.round(spread * 120)));
     const baseNuvole = Math.min(3500, altitude + lclSopraSuolo);
 
-    const zeroTermico = Math.min(4800, Math.max(altitude + 200, Math.round(altitude + temp * 80 + spread * 30)));
+    // Zero termico: usa dato API se disponibile, altrimenti stima conservativa
+    const zeroTermicoReal = weather.freezingLevel;
+    const zeroTermico = zeroTermicoReal !== null && zeroTermicoReal !== undefined
+      ? Math.min(4800, Math.max(altitude + 200, zeroTermicoReal))
+      : Math.min(4800, Math.max(altitude + 200, Math.round(altitude + temp * 80 + spread * 30)));
 
     let rateoBase = Math.min(3, Math.max(0.05, spread * 0.25));
     if (windSpeed >= 5 && windSpeed <= 15) rateoBase += 0.5;
@@ -175,7 +186,11 @@ export function analisiAvanzataCompleta(
 
     const topTermico = Math.min(4500, Math.max(baseNuvole + 200, baseNuvole + Math.round(rateo * 300 + capeValue * 0.8)));
 
-    const stabilita = calcolaStabilita(capeValue, Math.round((temp - (dew !== null ? dew : temp - 6)) * 10) / 10, gradiente);
+    const stabilityLI = liftedIndex !== null && liftedIndex !== undefined
+      ? Math.round(liftedIndex * 10) / 10
+      : Math.round((temp - (dew !== null ? dew : temp - 6)) * 10) / 10;
+
+    const stabilita = calcolaStabilita(capeValue ?? 0, stabilityLI, gradiente);
     const turbolenza = calcolaTurbolenza(windSpeed, windGusts, windShear);
 
     let score = 0;
@@ -230,9 +245,11 @@ export function analisiAvanzataCompleta(
       intensitaTermica: calcolaIntensitaTermica(rateo),
       forzaTermica,
       rateoSalita: rateo,
-      cape: capeValue,
-      liftedIndex: Math.round((temp - (dew !== null ? dew : temp - 6)) * 10) / 10,
-      rischioTemporali: Math.min(100, Math.round(Math.max(0, (capeValue / 1500) * 50 + (spread / 20) * 30 + (1 - presVal / 1013) * 20))),
+      cape: capeValue ?? 0,
+      liftedIndex: stabilityLI,
+      rischioTemporali: capeValue !== null
+        ? Math.min(100, Math.round(Math.max(0, (capeValue / 1500) * 50 + (spread / 20) * 30 + (1 - presVal / 1013) * 20)))
+        : 0,
       pioggiaTotale: Math.round(precipitation * 10) / 10,
       voloScore,
       voloGiudizio: giudizio,

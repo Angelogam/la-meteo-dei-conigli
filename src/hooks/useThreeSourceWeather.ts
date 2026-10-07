@@ -10,20 +10,20 @@ export type { MeteoDecollo };
 const REFRESH_INTERVAL = 15 * 60 * 1000;
 const LOAD_TIMEOUT = 30000; // 30 secondi max - aumentato per dare tempo a tutte le fonti
 
-// Fallback offline con dati stimati
+// Fallback offline: mostra N/D invece di dati inventati
 function offlineFallback(name: string): MeteoDecollo {
   return {
-    temp: "18.0",
-    rain: "0.0",
-    cloud: "40.0",
-    wind: "8.0",
+    temp: "--",
+    rain: "--",
+    cloud: "--",
+    wind: "--",
     dir: "--",
-    stato: "Sereno",
-    baseNubi: "Media (1800-2500 m)",
-    termiche: "Termiche moderate",
-    indice: 4,
-    indiceLabel: "Buono",
-    fonte: `Stima offline (${name})`
+    stato: "Offline",
+    baseNubi: "--",
+    termiche: "N/D",
+    indice: 0,
+    indiceLabel: "N/D",
+    fonte: `Nessun dato disponibile (${name})`
   };
 }
 

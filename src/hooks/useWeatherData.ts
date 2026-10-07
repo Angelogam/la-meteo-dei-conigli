@@ -199,8 +199,12 @@ export function useWeatherData() {
         precipitationHours: d.precipitationHours ?? 0,
         shortwaveRadiationSum: d.shortwaveRadiationSum ?? 5000,
       };
-      // Freezing level: use API data or estimate from mean temperature
-      const freezingLevel = d.freezingLevel ?? Math.round(5500 - (base.temperatureMean ?? 10) * 155);
+      // Freezing level: usa dato API quando disponibile, altrimenti stima conservativa
+      const freezingLevel = d.freezingLevel !== null && d.freezingLevel !== undefined
+        ? d.freezingLevel
+        : base.temperatureMean !== null && base.temperatureMean !== undefined
+          ? Math.max(500, Math.round(5500 - base.temperatureMean * 155))
+          : null;
       // Trend: compare with next day's predicted temp
       let trend: "↑" | "↓" | "→" | null = null;
       if (i < dailyData.length - 1) {
@@ -262,7 +266,11 @@ export function useWeatherData() {
     statoMeteo,
     volabilita,
     activeModel: "Open-Meteo" as const,
-    currentCape: currentData ? { cape: currentData.cape ?? 0, liftedIndex: currentData.liftedIndex ?? 0, cin: currentData.cin ?? 0 } : null,
+    currentCape: currentData ? {
+      cape: currentData.cape ?? null,
+      liftedIndex: currentData.liftedIndex ?? null,
+      cin: currentData.cin ?? null,
+    } : null,
     rawApiResponse,
   };
 }
