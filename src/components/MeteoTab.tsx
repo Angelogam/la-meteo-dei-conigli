@@ -902,7 +902,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
         </div>
       </div>
 
-      {/* ═══════════ RAPPORTO METEO — STILE AEROLOGICO ═══════════ */}
+      {/* ═══════════ RAPPORTO METEO — TESTO NARRATIVO ═══════════ */}
       {(warnings.length > 0 || tactics.length > 0) && (() => {
         const scoreColor = signal === "green" ? "text-emerald-400" : signal === "yellow" ? "text-amber-400" : "text-rose-400";
         const scoreBg = signal === "green" ? "from-emerald-500/15 to-emerald-600/5 border-emerald-500/30"
@@ -911,8 +911,98 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
         const barColor = signal === "green" ? "from-emerald-400 to-emerald-500"
           : signal === "yellow" ? "from-amber-400 to-amber-500"
           : "from-rose-400 to-rose-500";
-        const totalItems = warnings.length + tactics.length;
         const overallScore = signal === "green" ? 9 : signal === "yellow" ? 5 : 2;
+
+        // ── Costruzione testo narrativo ──
+
+        // Sezione termica e stabilità
+        const termicoParts: string[] = [];
+        if (avgThermalRate > 2) termicoParts.push(`Le termiche si presentano vigorose con un rateo medio di ${avgThermalRate.toFixed(1)} m/s, pertanto sarà possibile valutare con attenzione la scelta tra le diverse vallette per ottimizzare il volo.`);
+        else if (avgThermalRate > 1.5) termicoParts.push(`Le termiche sono medie, con un rateo di ${avgThermalRate.toFixed(1)} m/s: il volo è possibile purché si utilizzi una tecnica corretta e si apprezzino le migliori colonne.`);
+        else if (avgThermalRate > 1) termicoParts.push(`Le termiche sono discrete ma moderate (${avgThermalRate.toFixed(1)} m/s), consigliabile mantenere prudenza e privilegiare tratti brevi.`);
+        else termicoParts.push(`Le termiche risultano deboli con rateo inferiore a 1 m/s, si raccomanda pertanto di preferire il dynamic di cresta piuttosto che il volo termico.`);
+
+        if (avgLi < -4) termicoParts.push(`L'indice di sollevamento estremamente negativo (${avgLi.toFixed(1)}) indica un'instabilità marcata: è consigliabile limitare il volo al mattino, prima dello sviluppo dei temporali pomeridiani.`);
+        else if (avgLi < -2) termicoParts.push(`Instabilità moderata-${avgLi.toFixed(1)}: si prevedono termiche organizzate ma con tendenza al peggioramento nel pomeriggio.`);
+        else if (avgLi > 0) termicoParts.push(`Atmosfera stabilmente stratificata (LI positivo): le termiche saranno scarsamente sviluppate, preferire il vento di cresta.`);
+
+        if (pressureTrend > 2) termicoParts.push(`La pressione è in rialzo (${pressureTrendLabel}), il che suggerisce un miglioramento delle condizioni con ulteriore consolidamento dell'alta quota.`);
+        else if (pressureTrend < -2) termicoParts.push(`La pressione è in calo (${pressureTrendLabel}): si avvicina un sistema perturbato, si consiglia di volare nelle prime ore della giornata.`);
+
+        if (cinVal > 200) termicoParts.push(`Presente un'inibizione convettiva (CIN ${Math.round(cinVal)} J/kg): le termiche non si svilupperanno prima delle 10:30, momento in cui il riscaldamento del suolo riuscirà a superare lo strato stabile residuo.`);
+        else if (cinVal <= 200) termicoParts.push(`Nessuna inibizione convettiva rilevante: le termiche potranno attivarsi già dalle prime ore di sole, non appena il terreno inizierà a riscaldarsi.`);
+
+        // Sezione vento
+        const ventoParts: string[] = [];
+        ventoParts.push(`Il vento soffia da ${dirLabel(windDir)} (${windDir}°) con una velocità al suolo di ${Math.round(windSpeed)} km/h`);
+        if (windGusts > 0) ventoParts[ventoParts.length - 1] += `, accompagnata da raffiche che raggiungono i ${Math.round(windGusts)} km/h`;
+        ventoParts[ventoParts.length - 1] += `. La turbolenza è classificata come ${turbulenceLevel.toLowerCase()}`;
+
+        if (windSpeed > 15 && windSpeed <= 25) ventoParts.push(`Con queste condizioni è fondamentale orientare il decollo sempre controvento e prestare la massima attenzione nelle fasi di atterraggio.`);
+        else if (windSpeed > 10 && windSpeed <= 15) ventoParts.push(`Il vento è moderato: si prestino attenzioni a possibili rafaghe e a fenomeni di turbolenza meccanica, specialmente nelle fasi di decollo e atterraggio.`);
+        else if (windSpeed <= 10) ventoParts.push(`Condizioni di vento favorevoli per un decollo assistito e un atterraggio in sicurezza.`);
+
+        if (wind850 != null && wind850 > 30) ventoParts.push(`In quota, il vento a 850 hPa supera i 30 km/h, condizione che richiede particolare cautela nella gestione del decollo e dell'atterraggio, dato l'elevato shear verticale.`);
+        if (wind850 != null && Math.abs(wind850 - windSpeed) > 15) ventoParts.push(`Significativo wind shear tra suolo e quota (${Math.round(wind850)} km/h a 850 hPa contro i ${Math.round(windSpeed)} km/h al suolo): attenzione alla transizione tra gli strati durante la salita e la discesa.`);
+        if (waveIndex < 40 && wind850 != null && wind850 > 15) ventoParts.push(`Il wave index è favorevole allo sviluppo di onda montana: provare quote superiori per sfruttare il dynamic in quota.`);
+        if (wind850 != null && wind850 <= 30 && waveIndex >= 40) {} // nessun commento aggiuntivo
+
+        // Sezione strategia
+        const strategiaParts: string[] = [];
+        if (cloudBase > siteAlt + 800) strategiaParts.push(`La base dei cumuli si attesta a ${Math.round(cloudBase)} m slm (+${Math.round(cloudBase - siteAlt)}m dal campo), offrendo un ampio spazio di manovra e margini di sicurezza abbondanti.`);
+        else if (cloudBase > siteAlt + 400) strategiaParts.push(`La base dei cumuli si trova a ${Math.round(cloudBase)} m slm: lo spazio di manovra è sufficiente ma richiede attenzione durante le manovre in prossimità del fondo nuvoloso.`);
+        else strategiaParts.push(`Attenzione: la base dei cumuli si trova a soli ${Math.round(cloudBase - siteAlt)}m sopra il campo. Rischio di nebbia mattutina al decollo — attendere il riscaldamento solare.`);
+
+        if (flightHours > 6) strategiaParts.push(`La finestra di volo si estende per oltre ${flightHours} ore (${flightWindow}): è possibile pianificare con calma, privilegiando le ore centrali per il picco termico.`);
+        else if (flightHours >= 4) strategiaParts.push(`Finestra di volo di circa ${flightHours} ore (${flightWindow}). Pianificare le ore centrali per massimizzare lo sfruttamento delle termiche.`);
+        else strategiaParts.push(`Finestra di volo breve (${flightHours} ore). Valutare attentamente se le condizioni sono sufficienti per il decollo.`);
+
+        if (thunderProb > 40) strategiaParts.push(`Il rischio temporali è elevato (${thunderProb}%): si sconsiglia vivamente il volo nel pomeriggio. Qualora si decida di volare, limitarsi alle prime ore mattutine e avere un piano di fuga chiaro.`);
+        else if (thunderProb > 20) strategiaParts.push(`Rischio temporali moderato (${thunderProb}%). Possibile sviluppo pomeridiano: monitorare costantemente l'evoluzione e essere pronti a concludere il volo nelle prime ore.`);
+
+        if (nextRainProb > 40) strategiaParts.push(`La probabilità di pioggia nelle prossime 6 ore supera il ${Math.round(nextRainProb)}%: si consiglia di posticipare il volo o di tenere pronto il copri ala.`);
+        else if (nextRainProb > 20) strategiaParts.push(`Possibile pioggia isolata (${Math.round(nextRainProb)}%): tenere pronto il copri ala e monitorare le previsioni a breve termine.`);
+
+        if (tactics.some(t => t.includes("CAPE"))) {
+          if (avgCape > 1000) strategiaParts.push(`Il CAPE medio raggiunge valori elevati (${Math.round(avgCape)} J/kg), indicativo di forte instabilità e energia termica abbondante, ma con aumento del rischio temporali pomeridiano.`);
+          else if (avgCape > 400) strategiaParts.push(`CAPE nella fascia ${Math.round(avgCape)} J/kg: energia termica sufficiente per termiche sviluppate ma controllabili, condizioni generalmente favorevoli.`);
+        }
+
+        if (spread < 2 && humidity > 80) strategiaParts.push(`Aria molto umida con spread ridotto (${Math.round(spread)}°C): le termiche saranno pesanti ma poco organizzate, con cielo tendenzialmente coperto e visibilità ridotta in quota.`);
+        else if (spread > 8) strategiaParts.push(`Spread elevato (${Math.round(spread)}°C): aria secca in quota con termiche vigorose ma possibili cumuli verticali sviluppati e rischio gelività in quota.`);
+
+        // Sezione pericoli
+        const pericoloParts: string[] = [];
+        const dangerWarnings = warnings.filter(w => w.type === "danger");
+        const warningWarnings = warnings.filter(w => w.type === "warning");
+
+        if (dangerWarnings.length > 0) {
+          pericoloParts.push(`Si rilevano ${dangerWarnings.length} criticità di livello critico:`);
+          dangerWarnings.forEach((w, i) => {
+            pericoloParts.push(`${i + 1}) ${w.text}.`);
+          });
+        }
+        if (warningWarnings.length > 0) {
+          pericoloParts.push(`Ulteriori ${warningWarnings.length} avvertenze:`);
+          warningWarnings.forEach((w, i) => {
+            pericoloParts.push(`${dangerWarnings.length + i + 1}) ${w.text}.`);
+          });
+        }
+        if (pericoloParts.length === 0) {
+          pericoloParts.push("Nessun segnale di pericolo immediato rilevato. Le condizioni appaiono favorevoli al volo nelle ore centrali della giornata.");
+        }
+
+        // Giudizio finale
+        let giudizioFinale: string;
+        if (signal === "green") {
+          giudizioFinale = `Le condizioni meteo per il decollo di ${siteName || "questo sito"} si presentano complessivamente favorevoli. Il rateo termico medio e la quota della base dei cumuli consentono un volo termico sicuro, purché si rispettino le raccomandazioni operative indicate. Si consiglia di verificare l'evoluzione nel corso della giornata e di pianificare il rientro prima del possibile peggioramento pomeridiano.`;
+        } else if (signal === "yellow") {
+          giudizioFinale = `Le condizioni meteo presentano elementi di criticità che richiedono valutazione attenta. ${signalLabel.toLowerCase()}. Si raccomanda di seguire scrupolosamente le raccomandazioni riportate, mantenere una costante vigilanza sull'evoluzione delle condizioni e predisporre un piano di emergenza per il ritorno a terra. Il volo è consentito solo a piloti con adeguata esperienza e consapevolezza dei rischi.`;
+        } else {
+          giudizioFinale = `Condizioni meteo critiche per il volo a ${siteName || "questo sito"}. ${signalLabel.toLowerCase()}. Si sconsiglia il decollo fino a netto miglioramento delle condizioni. Eventuali attività in quota dovrebbero essere limitate a fasi brevissime e strettamente controllate, con preferenza per il mantenimento a terra fino al rientro dei parametri entro limiti di sicurezza.`;
+        }
+
+        const dateStr = new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
         return (
         <div className="rounded-2xl overflow-hidden shadow-2xl mt-1">
@@ -927,7 +1017,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
                   <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest mb-1">Bollettino meteo operatore</p>
                   <h4 className="text-base font-black text-white leading-tight">{siteName || "Decollo"} — {siteAlt}m slm</h4>
                   <p className="text-xs text-slate-500 mt-1">
-                    {new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })} · {String(now).padStart(2,"0")}:00 UTC · {modelName || "Open-Meteo"}
+                    {dateStr} · {String(now).padStart(2,"0")}:00 UTC · {modelName || "Open-Meteo"}
                   </p>
                 </div>
               </div>
@@ -944,7 +1034,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
           <div className="px-6 pt-4 pb-0">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Condizioni complessive</span>
-              <span className="text-[10px] text-slate-500 font-semibold">{totalItems} elementi analizzati</span>
+              <span className="text-[10px] text-slate-500 font-semibold">{warnings.length + tactics.length} elementi analizzati</span>
             </div>
             <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
               <div
@@ -957,91 +1047,50 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
           {/* ══ SEZIONI ══ */}
           <div className="px-6 py-5 space-y-4">
 
-            {/* 1 · AVVERTENZE */}
-            {warnings.length > 0 && (
-              <section>
-                <div className="flex items-center gap-3 mb-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-500/25 flex items-center justify-center">
-                    <AlertTriangle className="w-4 h-4 text-rose-400" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-rose-400/60 font-bold uppercase tracking-widest mr-2">01</span>
-                    <span className="text-sm font-black text-rose-200">Avvertenze Operative</span>
-                  </div>
+            {/* 1 · TERMICO */}
+            <section>
+              <div className="flex items-center gap-3 mb-2.5">
+                <div className="w-8 h-8 rounded-xl bg-orange-500/15 border border-orange-500/25 flex items-center justify-center">
+                  <Thermometer className="w-4 h-4 text-orange-400" />
                 </div>
-                <div className="space-y-2 pl-11">
-                  {warnings.map((w, i) => (
-                    <div
-                      key={i}
-                      className={`text-sm leading-[1.85] font-normal py-2 px-3 rounded-lg border ${
-                        w.type === "danger"
-                          ? "bg-rose-500/8 border-rose-500/20 text-rose-200"
-                          : w.type === "warning"
-                          ? "bg-amber-500/8 border-amber-500/20 text-amber-200"
-                          : "bg-sky-500/8 border-sky-500/20 text-sky-200"
-                      }`}
-                    >
-                      <span className="mr-2">{w.icon}</span>
-                      {w.text}
-                    </div>
-                  ))}
+                <div>
+                  <span className="text-[10px] text-orange-400/60 font-bold uppercase tracking-widest mr-2">01</span>
+                  <span className="text-sm font-black text-orange-200">Quadro Termico &amp; Stabilità</span>
                 </div>
-              </section>
-            )}
+              </div>
+              <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">{termicoParts.join(" ")}</p>
+            </section>
 
             {/* 2 · VENTO */}
-            {tactics.some(t => t.includes("Vento")) && (
-              <section>
-                <div className="flex items-center gap-3 mb-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-sky-500/15 border border-sky-500/25 flex items-center justify-center">
-                    <Wind className="w-4 h-4 text-sky-400" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-sky-400/60 font-bold uppercase tracking-widest mr-2">02</span>
-                    <span className="text-sm font-black text-sky-200">Profilo Vento e Orientamento</span>
-                  </div>
+            <section>
+              <div className="flex items-center gap-3 mb-2.5">
+                <div className="w-8 h-8 rounded-xl bg-sky-500/15 border border-sky-500/25 flex items-center justify-center">
+                  <Wind className="w-4 h-4 text-sky-400" />
                 </div>
-                <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">
-                  {tactics.filter(t => t.includes("Vento")).join(" · ")}
-                </p>
-              </section>
-            )}
+                <div>
+                  <span className="text-[10px] text-sky-400/60 font-bold uppercase tracking-widest mr-2">02</span>
+                  <span className="text-sm font-black text-sky-200">Profilo Vento in Quota</span>
+                </div>
+              </div>
+              <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">{ventoParts.join(" ")}</p>
+            </section>
 
-            {/* 3 · TERMICHE E STABILITÀ */}
-            {tactics.some(t => t.includes("Termiche") || t.includes("Instabilità") || t.includes("Pressure") || t.includes("pressione")) && (
-              <section>
-                <div className="flex items-center gap-3 mb-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-violet-500/15 border border-violet-500/25 flex items-center justify-center">
-                    <Cloud className="w-4 h-4 text-violet-400" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-violet-400/60 font-bold uppercase tracking-widest mr-2">03</span>
-                    <span className="text-sm font-black text-violet-200">Termiche e Stabilità Atmosferica</span>
-                  </div>
+            {/* 3 · INSTABILITÀ */}
+            <section>
+              <div className="flex items-center gap-3 mb-2.5">
+                <div className="w-8 h-8 rounded-xl bg-violet-500/15 border border-violet-500/25 flex items-center justify-center">
+                  <Cloud className="w-4 h-4 text-violet-400" />
                 </div>
-                <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">
-                  {tactics.filter(t => t.includes("Termiche") || t.includes("Instabilità") || t.includes("pressione")).join(" · ")}
-                </p>
-              </section>
-            )}
+                <div>
+                  <span className="text-[10px] text-violet-400/60 font-bold uppercase tracking-widest mr-2">03</span>
+                  <span className="text-sm font-black text-violet-200">Convezione &amp; Rischio</span>
+                </div>
+              </div>
+              <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">{strategiaParts.join(" ")}</p>
+            </section>
 
-            {/* 4 · STRATEGIA DI VOLO */}
-            {tactics.some(t => !t.includes("Vento") && !t.includes("Termiche") && !t.includes("Instabilità") && !t.includes("pressione")) && (
-              <section>
-                <div className="flex items-center gap-3 mb-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center">
-                    <ArrowUp className="w-4 h-4 text-emerald-400" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-emerald-400/60 font-bold uppercase tracking-widest mr-2">04</span>
-                    <span className="text-sm font-black text-emerald-200">Strategia e Finestra di Volo</span>
-                  </div>
-                </div>
-                <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">
-                  {tactics.filter(t => !t.includes("Vento") && !t.includes("Termiche") && !t.includes("Instabilità") && !t.includes("pressione")).join(" · ")}
-                </p>
-              </section>
-            )}
+            {/* 4 · STRATEGIA — integrato nella sezione 03 */}
+            {/* Sezione 03 include già: finestra, pioggia, CAPE, spread, nuvolosità */}
 
           </div>
 
@@ -1051,21 +1100,25 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
           {/* ══ BOTTOM ALERTS ══ */}
           <div className="px-6 py-4 space-y-2.5">
 
-            {/* Giudizio finale */}
+            {/* Pericolo */}
+            <div className="flex items-start gap-3 bg-rose-500/8 border border-rose-500/20 rounded-2xl px-4 py-3.5">
+              <div className="w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-500/25 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-4 h-4 text-rose-400" />
+              </div>
+              <div>
+                <span className="text-[10px] text-rose-400/70 font-bold uppercase tracking-widest block mb-1">Segnali di pericolo</span>
+                <p className="text-xs text-rose-200/90 leading-[1.7] font-medium">{pericoloParts.join(" ")}</p>
+              </div>
+            </div>
+
+            {/* Giudizio */}
             <div className="flex items-start gap-3 bg-emerald-500/8 border border-emerald-500/20 rounded-2xl px-4 py-3.5">
               <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center shrink-0">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
               </div>
               <div>
                 <span className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-widest block mb-1">Giudizio finale</span>
-                <p className="text-xs text-emerald-200/90 leading-[1.7] font-medium">
-                  {signal === "green"
-                    ? `Condizioni favorevoli per il volo a ${siteName || "questo decollo"}. ${isFlyable ? "Tutti i parametri nella norma." : "Valutare con attenzione eventuali criticità minori."}`
-                    : signal === "yellow"
-                    ? `Condizioni discrete ma da monitorare. ${signalLabel.toLowerCase()}. Si consiglia di verificare l'evoluzione nel corso della giornata.`
-                    : `Condizioni critiche — ${signalLabel.toLowerCase()}. Si sconsiglia il decollo fino a miglioramento delle condizioni.`
-                  }
-                </p>
+                <p className="text-xs text-emerald-200/90 leading-[1.7] font-medium">{giudizioFinale}</p>
               </div>
             </div>
 
