@@ -35,7 +35,6 @@ function useAnimatedValue(target: number, duration = 800): number {
     const animate = (now: number) => {
       const elapsed = now - startRef.current;
       const progress = Math.min(elapsed / duration, 1);
-      // easeOutExpo
       const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
       setValue(Math.round(target * eased));
       if (progress < 1) rafRef.current = requestAnimationFrame(animate);
@@ -115,14 +114,6 @@ function getCloudCoverLabel(pct: number) {
   if (pct >= 30) return "Qualche nuvola";
   if (pct >= 10) return "Pochissime nubi";
   return "Sereno";
-}
-
-function getUVLabel(uv: number) {
-  if (uv >= 11) return "Estremo";
-  if (uv >= 8) return "Molto elevato";
-  if (uv >= 6) return "Elevato";
-  if (uv >= 3) return "Moderato";
-  return "Basso";
 }
 
 type Signal = "green" | "yellow" | "red";
@@ -308,51 +299,34 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   const veryLowCloudRisk = cloudBase < siteAlt + 300;
 
   // ── Sottotitoli pratici ──
-  const humiditySub = humidity > 70 ? "Aria umida: termiche pesanti ma attenzione ai temporali"
-    : humidity > 40 ? "Umidità ideale: buon equilibrio per termiche organizzate"
-    : "Aria secca: termiche leggere, cielo limpido";
-  const dewSub = spread > 8 ? `Spread ${Math.round(spread)}°C: aria secca in quota — termiche vigorose attese`
-    : spread > 4 ? `Spread ${Math.round(spread)}°C: umidità controllata — termiche moderate e prevedibili`
-    : `Spread ${Math.round(spread)}°C: aria umida — termiche pesanti e cumuli bassi`;
-  const visSub = visibility >= 10000 ? "Navigazione sicura su tutta la valle"
-    : visibility >= 5000 ? "Volo locale senza problemi"
-    : visibility >= 3000 ? "Attenzione alla navigazione in quota"
-    : "Non volare — visibilità critica";
-  const windSub = windSpeed <= 8 ? "Calmo: decollo assistito e atterraggio dolce"
-    : windSpeed <= 15 ? "Moderato: condizioni ideali per il termico"
-    : windSpeed <= 25 ? "Sostenuto: attenzione in decollo e atterraggio"
-    : "Forte: solo per piloti esperti";
-  const rateoSub = avgThermalRate > 2 ? "Termiche forti (>" + avgThermalRate.toFixed(1) + " m/s) — perfetto per cross-country"
-    : avgThermalRate > 1.2 ? "Termiche buone — ideale per allenamento e volo locale"
-    : avgThermalRate > 0.7 ? "Termiche discrete — volo possibile con pazienza"
-    : "Termiche deboli — meglio limitarsi al dynamic di cresta";
-  const cloudBaseSub = cloudBase > siteAlt + 800 ? `+${Math.round(cloudBase - siteAlt)}m dal suolo: ampio spazio per volare in sicurezza`
-    : cloudBase > siteAlt + 400 ? `+${Math.round(cloudBase - siteAlt)}m: spazio di manovra sufficiente`
-    : cloudBase > siteAlt + 200 ? `Attenzione: nubi basse a ${Math.round(cloudBase - siteAlt)}m dal campo`
-    : "Rischio nebbia al decollo, attendere il riscaldamento";
-  const zeroTermSub = avgFreezing > siteAlt + 3000 ? "Pioggia al suolo, neve solo in alta quota — nessuna preoccupazione"
-    : avgFreezing > siteAlt + 1500 ? "Possibile neve sopra i 2000-2500m — attenzione alle pareti esposte"
-    : "Zero molto basso: rischio ghiaccio sulle pareti nord";
-  const capeSub = avgCape > 1000 ? "⚠️ Forte instabilità — vigilanza temporali dopo le 14:00"
-    : avgCape > 400 ? "Buona energia termica — termiche sviluppate ma controllabili"
-    : avgCape > 100 ? "Cielo probabilmente stabile — termiche limitate"
-    : "Nessuna energia termica disponibile";
-  const thermalTopSub = thermalTop > siteAlt + 1500 ? `Max quota in termica: ${thermalTop}m slm — ottima per cross-country`
-    : thermalTop > siteAlt + 800 ? `Quota di volo confortevole a ${thermalTop}m slm`
-    : `Top limitato dalla stabilità a ${thermalTop}m slm`;
-  const cloudCoverSub = cloudCover >= 80 ? 'Cielo coperto: termiche inibite, solo dynamic di cresta'
-    : cloudCover >= 50 ? 'Nuvolosità variabile: termiche possibili ma irregolari'
-    : 'Cielo sereno: condizioni ideali per il volo termico';
-  const pressureSub = pressureTrend > 2 ? "Bel tempo in arrivo, termiche classiche da alta pressione"
-    : pressureTrend < -2 ? "Peggioramento imminente, volare nelle prime ore"
-    : "Condizioni stabili per tutta la giornata";
-
-  // Stagger delay helper
-  const stagger = (i: number) => `calc(${i} * 60ms)`;
+  const rateoSub = avgThermalRate > 2 ? "Forti (>" + avgThermalRate.toFixed(1) + " m/s) — cross-country"
+    : avgThermalRate > 1.2 ? "Buone — allenamento e volo locale"
+    : avgThermalRate > 0.7 ? "Discrete — pazienza"
+    : "Deboli — dynamic di cresta";
+  const cloudBaseSub = cloudBase > siteAlt + 800 ? `+${Math.round(cloudBase - siteAlt)}m dal campo`
+    : cloudBase > siteAlt + 400 ? `+${Math.round(cloudBase - siteAlt)}m — spazio sufficiente`
+    : cloudBase > siteAlt + 200 ? `Attenzione: nubi basse a ${Math.round(cloudBase - siteAlt)}m`
+    : "Rischio nebbia al decollo";
+  const zeroTermSub = avgFreezing > siteAlt + 3000 ? "Neve solo in alta quota"
+    : avgFreezing > siteAlt + 1500 ? "Possibile neve sopra 2000m"
+    : "Zero molto basso — rischio ghiaccio";
+  const capeSub = avgCape > 1000 ? "⚠️ Forte instabilità — vigilanza dopo le 14:00"
+    : avgCape > 400 ? "Buona energia — termiche controllabili"
+    : avgCape > 100 ? "Termiche limitate"
+    : "Nessuna energia termica";
+  const thermalTopSub = thermalTop > siteAlt + 1500 ? `ottima per cross-country`
+    : thermalTop > siteAlt + 800 ? `quota confortevole`
+    : `top limitato dalla stabilità`;
+  const cloudCoverSub = cloudCover >= 80 ? 'Termiche inibite'
+    : cloudCover >= 50 ? 'Termiche irregolari'
+    : 'Condizioni ideali per il termico';
+  const pressureSub = pressureTrend > 2 ? "Bel tempo in arrivo"
+    : pressureTrend < -2 ? "Peggioramento imminente"
+    : "Stabile";
 
   return (
     <div className={`rounded-2xl overflow-hidden ${sc.border} bg-slate-900 shadow-xl transition-shadow duration-700 ${sc.glow}`} data-testid="meteo-tab">
-      {/* ═══════════ TOP GRADIENT BAR (animated) ═══════════ */}
+      {/* ═══════════ TOP GRADIENT BAR ═══════════ */}
       <div className="h-1 bg-gradient-to-r from-orange-400 via-amber-400 to-rose-400 animate-pulse" style={{ animationDuration: '3s' }} />
 
       {/* ═══════════ HERO: VOTO + CONDIZIONI ═══════════ */}
@@ -404,7 +378,6 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
           {/* Flight Score */}
           <div className={`relative rounded-2xl p-5 border ${sc.bg} flex flex-col items-center justify-center text-center`}>
             <div className="absolute inset-0 rounded-2xl opacity-10" style={{ background: signal === 'green' ? 'radial-gradient(circle at 50% 50%, #10b981, transparent 70%)' : signal === 'yellow' ? 'radial-gradient(circle at 50% 50%, #f59e0b, transparent 70%)' : 'radial-gradient(circle at 50% 50%, #f43f5e, transparent 70%)' }} />
-            {/* Glow ring */}
             <div className="absolute inset-0 rounded-2xl opacity-20" style={{ boxShadow: signal === 'green' ? 'inset 0 0 30px rgba(16,185,129,0.4)' : signal === 'yellow' ? 'inset 0 0 30px rgba(245,158,11,0.4)' : 'inset 0 0 30px rgba(244,63,94,0.4)' }} />
             <div className="relative">
               <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Voto Volo</div>
@@ -467,7 +440,6 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
                   </span>
                 </div>
               </div>
-              {/* Rotating wind compass */}
               <div className="relative w-10 h-10 shrink-0" style={{ transform: `rotate(${windDir - 180}deg)`, transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
                 <Wind className="w-8 h-8 text-amber-400/40 absolute -top-1 -left-1" />
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -493,284 +465,184 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
         </div>
       </div>
 
-      {/* ═══════════ ROW 1: Condizioni Attuali ═══════════ */}
+      {/* ═══════════ PANNELLO DATI VOLO — COMPATTO ═══════════ */}
       <div className="px-5 py-4 border-b border-white/5">
-        <div className="flex items-center gap-2 mb-3.5">
+        <div className="flex items-center gap-2 mb-3">
           <div className="w-1 h-5 rounded-full bg-gradient-to-b from-amber-400 to-orange-500" />
-          <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Condizioni attuali</span>
-          <span className="text-[9px] text-slate-600 ml-auto">I 4 parametri fondamentali per capire se può piovere e com'è l'aria</span>
+          <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Dati di volo</span>
+          <span className="text-[9px] text-slate-600 ml-auto">Parametri essenziali per la decisione operativa</span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {/* Umidità */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-slate-700/40 hover:border-orange-500/30 transition-all duration-300 hover:scale-[1.02] cursor-default group" style={{ animationDelay: stagger(0) }}>
-            <div className="flex items-center gap-2 mb-2.5">
-              <div className="w-7 h-7 rounded-lg bg-orange-500/15 border border-orange-500/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">
-                <Droplets className="w-3.5 h-3.5 text-orange-400" />
-              </div>
-              <div>
-                <div className="text-[9px] text-slate-400 font-black uppercase tracking-wider">Umidità</div>
-                <div className="text-[9px] text-slate-600">H₂O nell'aria</div>
-              </div>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-black text-orange-300 tabular-nums">{animatedHumidity}</span>
-              <span className="text-xs text-orange-400/60 font-bold">%</span>
-            </div>
-            <div className="h-1.5 bg-slate-700/50 rounded-full mt-2.5 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-orange-700 to-orange-400 rounded-full transition-all" style={{ width: `${animatedHumidity}%` }} />
-            </div>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{humiditySub}</p>
-          </div>
-
-          {/* Spread */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-slate-700/40 hover:border-rose-500/30 transition-all duration-300 hover:scale-[1.02] cursor-default group" style={{ animationDelay: stagger(1) }}>
-            <div className="flex items-center gap-2 mb-2.5">
-              <div className="w-7 h-7 rounded-lg bg-rose-500/15 border border-rose-500/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">
-                <Thermometer className="w-3.5 h-3.5 text-rose-400" />
-              </div>
-              <div>
-                <div className="text-[9px] text-slate-400 font-black uppercase tracking-wider">Spread</div>
-                <div className="text-[9px] text-slate-600">T − T punto rugiada</div>
-              </div>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-black text-rose-300 tabular-nums">{Math.round(spread)}</span>
-              <span className="text-xs text-rose-400/60 font-bold">°C</span>
-            </div>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{dewSub}</p>
-          </div>
-
-          {/* Pressione */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-slate-700/40 hover:border-amber-500/30 transition-all duration-300 hover:scale-[1.02] cursor-default group" style={{ animationDelay: stagger(2) }}>
-            <div className="flex items-center gap-2 mb-2.5">
-              <div className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">
-                <Gauge className="w-3.5 h-3.5 text-amber-400" />
-              </div>
-              <div>
-                <div className="text-[9px] text-slate-400 font-black uppercase tracking-wider">Pressione</div>
-                <div className="text-[9px] text-slate-600">Atmosferica</div>
-              </div>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-black text-amber-300 tabular-nums">{Math.round(pressure)}</span>
-              <span className="text-xs text-amber-400/60 font-bold">hPa</span>
-            </div>
-            <div className="flex items-center gap-1.5 mt-1.5 text-xs font-semibold">
-              {pressureTrend > 2 ? <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> : pressureTrend < -2 ? <TrendingDown className="w-3.5 h-3.5 text-rose-400" /> : <Minus className="w-3.5 h-3.5 text-slate-500" />}
-              <span className={pressureTrendColor}>{pressureTrendLabel}</span>
-              <span className="text-slate-600">Δ {pressureTrend > 0 ? "+" : ""}{pressureTrend.toFixed(1)}</span>
-            </div>
-            <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{pressureSub}</p>
-          </div>
-
-          {/* Visibilità */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-slate-700/40 hover:border-emerald-500/30 transition-all duration-300 hover:scale-[1.02] cursor-default group" style={{ animationDelay: stagger(3) }}>
-            <div className="flex items-center gap-2 mb-2.5">
-              <div className="w-7 h-7 rounded-lg bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">
-                <Eye className="w-3.5 h-3.5 text-emerald-400" />
-              </div>
-              <div>
-                <div className="text-[9px] text-slate-400 font-black uppercase tracking-wider">Visibilità</div>
-                <div className="text-[9px] text-slate-600">Distanza visibile</div>
-              </div>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-black text-emerald-300 tabular-nums">{Math.round(visibility / 1000)}</span>
-              <span className="text-xs text-emerald-400/60 font-bold">km</span>
-            </div>
-            <div className="h-1.5 bg-slate-700/50 rounded-full mt-2.5 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-emerald-700 to-emerald-400 rounded-full transition-all" style={{ width: `${animatedVisibility}%` }} />
-            </div>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{visSub}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ═══════════ ROW 2: Parametri di Volo ═══════════ */}
-      <div className="px-5 py-4 border-b border-white/5">
-        <div className="flex items-center gap-2 mb-3.5">
-          <div className="w-1 h-5 rounded-full bg-gradient-to-b from-amber-400 to-orange-500" />
-          <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Parametri di volo</span>
-          <span className="text-[9px] text-slate-600 ml-auto">Tutti i dati che ti servono per decidere se e quando volare</span>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
           {/* Rateo termico */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-rose-500/20 hover:border-rose-500/40 hover:shadow-[0_0_20px_rgba(244,63,94,0.15)] transition-all duration-300 hover:scale-[1.02]" style={{ animationDelay: stagger(0) }}>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-rose-500/15 border border-rose-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <ArrowUp className="w-3.5 h-3.5 text-rose-400" />
-              </div>
-              <div>
-                <div className="text-[9px] text-slate-400 font-black uppercase tracking-wider">Rateo termico</div>
-                <div className="text-[9px] text-slate-600">Ascendenza media</div>
-              </div>
+          <div className="rounded-xl p-3 bg-slate-800/60 border border-rose-500/20">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <ArrowUp className="w-3 h-3 text-rose-400" />
+              <span className="text-[9px] text-slate-500 font-bold uppercase">Rateo</span>
             </div>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-black text-rose-300 tabular-nums">{animatedThermalRate.toFixed(1)}</span>
-              <span className="text-xs text-rose-400/60 font-bold">m/s</span>
+              <span className="text-xl font-black text-rose-300 tabular-nums">{animatedThermalRate.toFixed(1)}</span>
+              <span className="text-[9px] text-rose-400/50">m/s</span>
             </div>
-            <div className="h-1.5 bg-slate-700/50 rounded-full mt-2 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-rose-600 to-pink-400 rounded-full transition-all" style={{ width: `${Math.min(100, (animatedThermalRate / 4) * 100)}%` }} />
+            <div className="h-1 bg-slate-700/50 rounded-full mt-2 overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-rose-700 to-pink-400 rounded-full" style={{ width: `${Math.min(100, (animatedThermalRate / 4) * 100)}%` }} />
             </div>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{rateoSub}</p>
+            <p className="text-[8px] text-slate-500 mt-1.5 leading-tight">{rateoSub}</p>
           </div>
 
           {/* Base cumuli */}
-          <div className={`rounded-xl p-3.5 border hover:border-violet-500/40 hover:shadow-[0_0_20px_rgba(139,92,246,0.15)] transition-all duration-300 hover:scale-[1.02] ${veryLowCloudRisk ? "bg-rose-500/10 border-rose-500/20" : lowCloudRisk ? "bg-violet-500/10 border-violet-500/20" : "bg-emerald-500/10 border-emerald-500/20"}`} style={{ animationDelay: stagger(1) }}>
-            <div className="flex items-center gap-2 mb-2">
-              <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${veryLowCloudRisk ? "bg-rose-500/20" : lowCloudRisk ? "bg-violet-500/20" : "bg-emerald-500/20"}`}>
-                <Mountain className={`w-3.5 h-3.5 ${veryLowCloudRisk ? "text-rose-400" : lowCloudRisk ? "text-violet-400" : "text-emerald-400"}`} />
-              </div>
-              <div>
-                <div className="text-[9px] text-slate-400 font-black uppercase tracking-wider">Base cumuli</div>
-                <div className="text-[9px] text-slate-600">Quota inizio nubi</div>
-              </div>
+          <div className={`rounded-xl p-3 border ${veryLowCloudRisk ? "bg-rose-500/10 border-rose-500/30" : lowCloudRisk ? "bg-violet-500/10 border-violet-500/30" : "bg-emerald-500/10 border-emerald-500/30"}`}>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Mountain className={`w-3 h-3 ${veryLowCloudRisk ? "text-rose-400" : lowCloudRisk ? "text-violet-400" : "text-emerald-400"}`} />
+              <span className="text-[9px] text-slate-500 font-bold uppercase">Base cumuli</span>
             </div>
             <div className="flex items-baseline gap-1">
-              <span className={`text-2xl font-black tabular-nums ${veryLowCloudRisk ? "text-rose-300" : lowCloudRisk ? "text-violet-300" : "text-emerald-300"}`}>{Math.round(cloudBase)}</span>
-              <span className="text-xs opacity-60">m slm</span>
-              <span className={`text-xs font-bold ml-auto ${veryLowCloudRisk ? "text-rose-400" : lowCloudRisk ? "text-violet-400" : "text-emerald-400"}`}>+{animatedCloudBaseDiff}m</span>
+              <span className={`text-xl font-black tabular-nums ${veryLowCloudRisk ? "text-rose-300" : lowCloudRisk ? "text-violet-300" : "text-emerald-300"}`}>{Math.round(cloudBase)}</span>
+              <span className="text-[9px] text-slate-500">m slm</span>
             </div>
-            <div className="relative h-1.5 bg-slate-700/50 rounded-full mt-2 overflow-hidden">
-              <div className={`absolute top-0 h-full rounded-full transition-all ${veryLowCloudRisk ? "bg-rose-500" : lowCloudRisk ? "bg-violet-500" : "bg-emerald-500"}`} style={{ width: `${Math.min(100, Math.max(0, (animatedCloudBaseDiff / 1500) * 100))}%` }} />
+            <div className="text-[9px] font-semibold mt-0.5" style={{ color: veryLowCloudRisk ? '#fb7185' : lowCloudRisk ? '#a78bfa' : '#34d399' }}>
+              +{animatedCloudBaseDiff}m dal campo
             </div>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{cloudBaseSub}</p>
           </div>
 
           {/* Zero termico */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-violet-500/20 hover:border-violet-500/40 hover:shadow-[0_0_20px_rgba(139,92,246,0.15)] transition-all duration-300 hover:scale-[1.02]" style={{ animationDelay: stagger(2) }}>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-violet-500/15 border border-violet-500/20 flex items-center justify-center">
-                <CloudSnow className="w-3.5 h-3.5 text-violet-400" />
-              </div>
-              <div>
-                <div className="text-[9px] text-slate-400 font-black uppercase tracking-wider">Zero termico</div>
-                <div className="text-[9px] text-slate-600">Confine neve/pioggia</div>
-              </div>
+          <div className="rounded-xl p-3 bg-slate-800/60 border border-violet-500/20">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <CloudSnow className="w-3 h-3 text-violet-400" />
+              <span className="text-[9px] text-slate-500 font-bold uppercase">Zero termico</span>
             </div>
             <div className="flex items-baseline gap-1">
-              <span className={`text-2xl font-black tabular-nums ${avgFreezing < siteAlt + 2000 ? "text-rose-300" : "text-violet-300"}`}>{avgFreezing}</span>
-              <span className="text-xs text-violet-400/60 font-bold">m</span>
+              <span className="text-xl font-black text-violet-300 tabular-nums">{avgFreezing}</span>
+              <span className="text-[9px] text-violet-400/50">m</span>
             </div>
-            <div className="text-[9px] text-violet-400/50 font-semibold mt-1">{avgFreezing > siteAlt ? `+${Math.round(avgFreezing - siteAlt)}m sopr. decollo` : "⚠ Sotto il campo!"}</div>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{zeroTermSub}</p>
+            <div className="text-[9px] text-violet-400/60 font-semibold mt-0.5">
+              {avgFreezing > siteAlt ? `+${Math.round(avgFreezing - siteAlt)}m sopr.` : '⚠ Sotto campo'}
+            </div>
           </div>
 
-          {/* CAPE */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-emerald-500/20 hover:border-emerald-500/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-all duration-300 hover:scale-[1.02]" style={{ animationDelay: stagger(3) }}>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center">
-                <Zap className="w-3.5 h-3.5 text-emerald-400" />
-              </div>
-              <div>
-                <div className="text-[9px] text-slate-400 font-black uppercase tracking-wider">CAPE</div>
-                <div className="text-[9px] text-slate-600">Energia termica</div>
-              </div>
+          {/* CAPE + LI */}
+          <div className="rounded-xl p-3 bg-slate-800/60 border border-emerald-500/20">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Zap className="w-3 h-3 text-emerald-400" />
+              <span className="text-[9px] text-slate-500 font-bold uppercase">CAPE</span>
             </div>
             <div className="flex items-baseline gap-1">
-              <span className={`text-2xl font-black tabular-nums ${avgCape > 600 ? "text-violet-300" : "text-emerald-300"}`}>{animatedCape}</span>
-              <span className="text-xs text-emerald-400/60 font-bold">J/kg</span>
+              <span className={`text-xl font-black tabular-nums ${avgCape > 600 ? "text-violet-300" : "text-emerald-300"}`}>{animatedCape}</span>
+              <span className="text-[9px] text-emerald-400/50">J/kg</span>
             </div>
-            <div className="h-1.5 bg-slate-700/50 rounded-full mt-2 overflow-hidden">
-              <div className={`h-full rounded-full transition-all ${avgCape > 600 ? "bg-violet-500" : "bg-emerald-500"}`} style={{ width: `${Math.min(100, animatedCape / 1500 * 100)}%` }} />
+            <div className="text-[9px] text-slate-500 mt-1">
+              LI <span className={`font-bold ${avgLi < -4 ? "text-rose-400" : avgLi < 0 ? "text-amber-400" : "text-emerald-400"}`}>{avgLi.toFixed(1)}</span>
             </div>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{capeSub}</p>
+          </div>
+
+          {/* Top termica */}
+          <div className="rounded-xl p-3 bg-slate-800/60 border border-amber-500/20">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <ArrowUp className="w-3 h-3 text-amber-400" />
+              <span className="text-[9px] text-slate-500 font-bold uppercase">Top termica</span>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-xl font-black text-amber-300 tabular-nums">{thermalTop}</span>
+              <span className="text-[9px] text-amber-400/50">m</span>
+            </div>
+            <div className="text-[9px] text-amber-400/60 font-semibold mt-0.5">
+              +{Math.round(thermalTop - siteAlt)}m
+            </div>
+          </div>
+
+          {/* Rischio tufo */}
+          <div className={`rounded-xl p-3 border ${thunderProb > 40 ? "bg-rose-500/10 border-rose-500/30" : thunderProb > 20 ? "bg-amber-500/10 border-amber-500/30" : "bg-emerald-500/10 border-emerald-500/30"}`}>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Activity className={`w-3 h-3 ${thunderProb > 40 ? "text-rose-400" : thunderProb > 20 ? "text-amber-400" : "text-emerald-400"}`} />
+              <span className="text-[9px] text-slate-500 font-bold uppercase">Rischio tufo</span>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className={`text-xl font-black tabular-nums ${thunderProb > 40 ? "text-rose-300" : thunderProb > 20 ? "text-amber-300" : "text-emerald-300"}`}>{thunderProb}</span>
+              <span className="text-[9px] text-slate-500">%</span>
+            </div>
+            <div className="text-[9px] font-semibold mt-0.5" style={{ color: thunderProb > 40 ? '#fb7185' : thunderProb > 20 ? '#fbbf24' : '#34d399' }}>
+              {thunderProb > 40 ? "Pericoloso" : thunderProb > 20 ? "Attenzione" : "Basso"}
+            </div>
           </div>
         </div>
 
-        {/* Second row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
-          {/* Top termico */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-amber-500/20 hover:border-amber-500/40 hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] transition-all duration-300 hover:scale-[1.02]">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/20 flex items-center justify-center">
-                <ArrowUp className="w-3.5 h-3.5 text-amber-400" />
-              </div>
-              <div>
-                <div className="text-[9px] text-slate-400 font-black uppercase tracking-wider">Top termica</div>
-                <div className="text-[9px] text-slate-600">Massima quota</div>
-              </div>
+        {/* Seconda riga: spread, pressione, copertura, visibilità */}
+        <div className="grid grid-cols-4 gap-2 mt-2">
+          {/* Spread */}
+          <div className="rounded-xl p-3 bg-slate-800/50 border border-slate-700/40">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Thermometer className="w-3 h-3 text-rose-400" />
+              <span className="text-[9px] text-slate-500 font-bold uppercase">Spread</span>
             </div>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-black text-amber-300 tabular-nums">{thermalTop}</span>
-              <span className="text-xs text-amber-400/60 font-bold">m</span>
+              <span className={`text-lg font-black tabular-nums ${spread > 6 ? "text-emerald-400" : spread > 3 ? "text-amber-400" : "text-rose-400"}`}>{Math.round(spread)}°C</span>
+              <span className="text-[9px] text-slate-500">oggi</span>
             </div>
-            <div className="text-[9px] text-amber-400/50 font-semibold mt-1">+{Math.round(thermalTop - siteAlt)}m dal suolo</div>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{thermalTopSub}</p>
+            <div className="text-[9px] text-slate-500 mt-1">
+              Media giornata: <span className="font-bold text-slate-300">{avgSpread.toFixed(1)}°C</span>
+            </div>
+          </div>
+
+          {/* Pressione + trend */}
+          <div className="rounded-xl p-3 bg-slate-800/50 border border-slate-700/40">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Gauge className="w-3 h-3 text-amber-400" />
+              <span className="text-[9px] text-slate-500 font-bold uppercase">Pressione</span>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-lg font-black text-amber-300 tabular-nums">{Math.round(pressure)}</span>
+              <span className="text-[9px] text-amber-400/50">hPa</span>
+            </div>
+            <div className="flex items-center gap-1 mt-1">
+              {pressureTrend > 2 ? <TrendingUp className="w-3 h-3 text-emerald-400" /> : pressureTrend < -2 ? <TrendingDown className="w-3 h-3 text-rose-400" /> : <Minus className="w-3 h-3 text-slate-500" />}
+              <span className={`text-[9px] font-semibold ${pressureTrendColor}`}>{pressureTrendLabel}</span>
+              <span className="text-[9px] text-slate-600">Δ{pressureTrend > 0 ? "+" : ""}{pressureTrend.toFixed(1)}</span>
+            </div>
           </div>
 
           {/* Copertura cielo */}
-          <div className={`rounded-xl p-3.5 border hover:shadow-[0_0_20px_rgba(100,116,139,0.15)] transition-all duration-300 hover:scale-[1.02] ${cloudCover >= 90 ? "bg-slate-500/10 border-slate-500/30" : cloudCover >= 70 ? "bg-violet-500/10 border-violet-500/20" : cloudCover >= 50 ? "bg-amber-500/10 border-amber-500/20" : cloudCover >= 20 ? "bg-orange-500/10 border-orange-500/20" : "bg-emerald-500/10 border-emerald-500/20"}`}>
-            <div className="flex items-center gap-2 mb-2">
-              <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${cloudCover >= 90 ? "bg-slate-500/20" : cloudCover >= 70 ? "bg-violet-500/20" : cloudCover >= 50 ? "bg-amber-500/20" : cloudCover >= 20 ? "bg-orange-500/20" : "bg-emerald-500/20"}`}>
-                <CloudOff className={`w-3.5 h-3.5 ${cloudCover >= 90 ? "text-slate-400" : cloudCover >= 70 ? "text-violet-400" : cloudCover >= 50 ? "text-amber-400" : cloudCover >= 20 ? "text-orange-400" : "text-emerald-400"}`} />
-              </div>
-              <div>
-                <div className="text-[9px] text-slate-400 font-black uppercase tracking-wider">Copertura cielo</div>
-                <div className="text-[9px] text-slate-600">Nuvolosità totale</div>
-              </div>
+          <div className={`rounded-xl p-3 border ${cloudCover >= 90 ? "bg-slate-500/10 border-slate-500/30" : cloudCover >= 50 ? "bg-amber-500/10 border-amber-500/30" : "bg-emerald-500/10 border-emerald-500/30"}`}>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <CloudOff className={`w-3 h-3 ${cloudCover >= 90 ? "text-slate-400" : cloudCover >= 50 ? "text-amber-400" : "text-emerald-400"}`} />
+              <span className="text-[9px] text-slate-500 font-bold uppercase">Cielo</span>
             </div>
             <div className="flex items-baseline gap-1">
-              <span className={`text-2xl font-black tabular-nums ${cloudCover >= 90 ? "text-slate-300" : cloudCover >= 70 ? "text-violet-300" : cloudCover >= 50 ? "text-amber-300" : "text-emerald-300"}`}>{animatedCloudCover}%</span>
-              <span className="text-xs opacity-60">{getCloudCoverLabel(cloudCover)}</span>
+              <span className={`text-lg font-black tabular-nums ${cloudCover >= 90 ? "text-slate-300" : cloudCover >= 50 ? "text-amber-300" : "text-emerald-300"}`}>{animatedCloudCover}%</span>
+              <span className="text-[9px] text-slate-500">{getCloudCoverLabel(cloudCover)}</span>
             </div>
             {cloudCover > 0 && (
-              <div className="mt-2 space-y-1">
-                <div className="flex items-center gap-2 text-[9px] text-slate-500">
-                  <span className="w-4 font-bold">B</span>
+              <div className="mt-1 space-y-0.5">
+                <div className="flex items-center gap-1.5 text-[8px] text-slate-500">
+                  <span className="w-3 font-bold">B</span>
                   <div className="flex-1 h-1 bg-slate-700/50 rounded-full overflow-hidden"><div className="h-full bg-amber-500/70 rounded-full" style={{ width: `${cloudCoverLow}%` }} /></div>
                   <span className="w-6 text-amber-400 font-bold tabular-nums">{cloudCoverLow}%</span>
                 </div>
-                <div className="flex items-center gap-2 text-[9px] text-slate-500">
-                  <span className="w-4 font-bold">M</span>
+                <div className="flex items-center gap-1.5 text-[8px] text-slate-500">
+                  <span className="w-3 font-bold">M</span>
                   <div className="flex-1 h-1 bg-slate-700/50 rounded-full overflow-hidden"><div className="h-full bg-violet-500/70 rounded-full" style={{ width: `${cloudCoverMid}%` }} /></div>
                   <span className="w-6 text-violet-400 font-bold tabular-nums">{cloudCoverMid}%</span>
                 </div>
-                <div className="flex items-center gap-2 text-[9px] text-slate-500">
-                  <span className="w-4 font-bold">A</span>
+                <div className="flex items-center gap-1.5 text-[8px] text-slate-500">
+                  <span className="w-3 font-bold">A</span>
                   <div className="flex-1 h-1 bg-slate-700/50 rounded-full overflow-hidden"><div className="h-full bg-fuchsia-500/70 rounded-full" style={{ width: `${cloudCoverHigh}%` }} /></div>
                   <span className="w-6 text-fuchsia-400 font-bold tabular-nums">{cloudCoverHigh}%</span>
                 </div>
               </div>
             )}
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{cloudCoverSub}</p>
           </div>
 
-          {/* UV */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-orange-500/20 hover:border-orange-500/40 hover:shadow-[0_0_20px_rgba(249,115,22,0.15)] transition-all duration-300 hover:scale-[1.02]">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-orange-500/15 border border-orange-500/20 flex items-center justify-center">
-                <Sun className="w-3.5 h-3.5 text-orange-400" />
-              </div>
-              <div>
-                <div className="text-[9px] text-slate-400 font-black uppercase tracking-wider">UV indice</div>
-                <div className="text-[9px] text-slate-600">Radiazione solare</div>
-              </div>
+          {/* Visibilità */}
+          <div className="rounded-xl p-3 bg-slate-800/50 border border-slate-700/40">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Eye className="w-3 h-3 text-emerald-400" />
+              <span className="text-[9px] text-slate-500 font-bold uppercase">Visibilità</span>
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className={`text-2xl font-black tabular-nums ${uvIndex >= 8 ? "text-rose-400" : uvIndex >= 6 ? "text-orange-400" : uvIndex >= 3 ? "text-amber-400" : "text-emerald-400"}`}>{uvIndex}</span>
-              <span className={`text-xs font-semibold ${uvIndex >= 8 ? "text-rose-400" : uvIndex >= 6 ? "text-orange-400" : uvIndex >= 3 ? "text-amber-400" : "text-emerald-400"}`}>{uvIndex >= 11 ? "Estremo" : uvIndex >= 8 ? "Molto elevato" : uvIndex >= 6 ? "Elevato" : uvIndex >= 3 ? "Moderato" : "Basso"}</span>
+            <div className="flex items-baseline gap-1">
+              <span className="text-lg font-black text-emerald-300 tabular-nums">{Math.round(visibility / 1000)}</span>
+              <span className="text-[9px] text-emerald-400/50">km</span>
             </div>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{uvIndex >= 6 ? '🔆 UV alto in quota: occhiali da sole e crema solare obbligatori' : '☀️ UV gestibile: protezione standard sufficiente'}</p>
-          </div>
-
-          {/* Radiazione */}
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-amber-500/20 hover:border-amber-500/40 hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] transition-all duration-300 hover:scale-[1.02]">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/20 flex items-center justify-center">
-                <Radiation className="w-3.5 h-3.5 text-amber-400" />
-              </div>
-              <div>
-                <div className="text-[9px] text-slate-400 font-black uppercase tracking-wider">Radiazione</div>
-                <div className="text-[9px] text-slate-600">Energia solare giornaliera</div>
-              </div>
+            <div className="text-[9px] text-slate-500 mt-1">
+              {visibility >= 10000 ? "Navigazione sicura" : visibility >= 5000 ? "Volo locale OK" : "Attenzione navigazione"}
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-black text-amber-300 tabular-nums">{Math.round(totalRadiation)}</span>
-              <span className="text-xs text-amber-400/60 font-bold">Wh/m²</span>
-            </div>
-            <div className="text-[9px] text-amber-400/50 font-semibold mt-1">{Math.round(totalSunshine / 3600)}h di sole</div>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{totalRadiation > 4000 ? '🔥 Alta radiazione: termiche forti attese nel pomeriggio' : totalRadiation > 2000 ? '⛅ Radiazione moderata: termiche regolari' : '☁️ Bassa radiazione: cielo coperto, termiche deboli'}</p>
           </div>
         </div>
       </div>
@@ -780,30 +652,29 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
         <div className="flex items-center gap-2 mb-3.5">
           <div className="w-1 h-5 rounded-full bg-gradient-to-b from-amber-400 to-orange-500" />
           <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Profilo vento verticale</span>
-          <span className="text-[9px] text-slate-600 ml-auto">Decollo → atterraggio — ogni livello conta per la sicurezza</span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-          <div className="rounded-xl p-3 bg-amber-500/5 border border-amber-500/20 hover:border-amber-500/40 hover:scale-[1.02] transition-all duration-300">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+          <div className="rounded-xl p-3 bg-amber-500/5 border border-amber-500/20">
             <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">Suolo (10m)</div>
             <div className="text-xl font-black text-amber-300 tabular-nums">{Math.round(windSpeed)} <span className="text-sm text-amber-400/60 font-semibold">{dirLabel(windDir)}</span></div>
             {windGusts > 0 && <div className="text-xs text-slate-500 mt-1">Raffiche {Math.round(windGusts)} km/h · <span className={gustRatio > 1.5 ? "text-rose-400" : "text-slate-500"}>{turbulenceLevel}</span></div>}
           </div>
           {wind80m != null && (
-            <div className="rounded-xl p-3 bg-orange-500/5 border border-orange-500/20 hover:border-orange-500/40 hover:scale-[1.02] transition-all duration-300">
+            <div className="rounded-xl p-3 bg-orange-500/5 border border-orange-500/20">
               <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">80m</div>
               <div className="text-xl font-black text-orange-300 tabular-nums">{Math.round(wind80m)} <span className="text-sm text-orange-400/60 font-semibold">{dirLabel(windDir80m ?? windDir)}</span></div>
               <div className="text-xs text-slate-500 mt-1">~{siteAlt + 80}m slm</div>
             </div>
           )}
           {wind120m != null && (
-            <div className="rounded-xl p-3 bg-violet-500/5 border border-violet-500/20 hover:border-violet-500/40 hover:scale-[1.02] transition-all duration-300">
+            <div className="rounded-xl p-3 bg-violet-500/5 border border-violet-500/20">
               <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">120m</div>
               <div className="text-xl font-black text-violet-300 tabular-nums">{Math.round(wind120m)} <span className="text-sm text-violet-400/60 font-semibold">{dirLabel(windDir120m ?? windDir)}</span></div>
               <div className="text-xs text-slate-500 mt-1">~{siteAlt + 120}m slm</div>
             </div>
           )}
           {wind180m != null && (
-            <div className="rounded-xl p-3 bg-purple-500/5 border border-purple-500/20 hover:border-purple-500/40 hover:scale-[1.02] transition-all duration-300">
+            <div className="rounded-xl p-3 bg-purple-500/5 border border-purple-500/20">
               <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">180m</div>
               <div className="text-xl font-black text-purple-300 tabular-nums">{Math.round(wind180m)} <span className="text-sm text-purple-400/60 font-semibold">{dirLabel(windDir180m ?? windDir)}</span></div>
               <div className="text-xs text-slate-500 mt-1">~{siteAlt + 180}m slm</div>
@@ -813,22 +684,26 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
 
         {wind850 != null && (
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gradient-to-r from-violet-900/30 to-violet-800/20 rounded-xl p-3.5 border border-violet-500/30 hover:border-violet-500/50 hover:shadow-[0_0_20px_rgba(139,92,246,0.2)] transition-all duration-300 hover:scale-[1.01]">
+            <div className="bg-gradient-to-r from-violet-900/30 to-violet-800/20 rounded-xl p-3.5 border border-violet-500/30 hover:border-violet-500/50 transition-all duration-300">
               <div className="flex items-center gap-2 mb-1.5">
                 <Waves className="w-4 h-4 text-violet-400" />
                 <span className="text-xs text-violet-300 font-bold">Onda montana</span>
               </div>
               <div className="text-xs text-violet-400/60 font-semibold mt-1">Wave index: {waveIndex.toFixed(0)}° · Shear {windSheer} km/h</div>
-              <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{waveIndex < 30 ? "🌊 Onda montana attiva — provare quote superiori per dynamic" : waveIndex < 60 ? "Onda presente — condizioni favorevoli per volo in quota" : "Nessun effetto onda significativo"}</p>
+              <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">
+                {waveIndex < 30 ? "🌊 Onda montana attiva — provare quote superiori per dynamic" : waveIndex < 60 ? "Onda presente — condizioni favorevoli per volo in quota" : "Nessun effetto onda significativo"}
+              </p>
             </div>
-            <div className="bg-slate-800/40 rounded-xl p-3.5 border border-slate-700/30 hover:border-slate-600/50 hover:shadow-[0_0_20px_rgba(244,63,94,0.1)] transition-all duration-300 hover:scale-[1.01]">
+            <div className="bg-slate-800/40 rounded-xl p-3.5 border border-slate-700/30 hover:border-slate-600/50 transition-all duration-300">
               <div className="flex items-center gap-2 mb-1.5">
                 <Activity className="w-4 h-4 text-rose-400" />
                 <span className="text-xs text-slate-400 font-bold">Turbolenza</span>
               </div>
               <div className={`text-xl font-black tabular-nums ${turbulenceColor}`}>{turbulenceLevel}</div>
               <div className="text-xs text-slate-500 font-semibold mt-1">Rapporto raffiche: {gustRatio.toFixed(2)}x</div>
-              <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{gustRatio > 1.8 ? "⚠️ Raffiche pericolose — decollo solo in assenza di vento" : gustRatio > 1.4 ? "Raffiche significative — valutare il decollo con attenzione" : "Turbolenza bassa — volo tranquillo"}</p>
+              <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">
+                {gustRatio > 1.8 ? "⚠️ Raffiche pericolose — decollo solo in assenza di vento" : gustRatio > 1.4 ? "Raffiche significative — valutare con attenzione" : "Turbolenza bassa — volo tranquillo"}
+              </p>
             </div>
           </div>
         )}
@@ -840,69 +715,37 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
           <div className="w-1 h-5 rounded-full bg-gradient-to-b from-emerald-400 to-teal-500" />
           <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Finestra di volo & precipitazioni</span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-          <div className="rounded-xl p-3.5 bg-emerald-500/5 border border-emerald-500/20 hover:border-emerald-500/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-all duration-300 hover:scale-[1.02]">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="rounded-xl p-3 bg-emerald-500/5 border border-emerald-500/20">
             <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">Ore favorevoli</div>
             <span className="text-2xl font-black text-emerald-300 tabular-nums">{flightHours}<span className="text-sm text-emerald-400/60 font-bold ml-1">h</span></span>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{flightHours > 6 ? "Finestra ampia: puoi scegliere l'ora migliore" : flightHours > 3 ? "Finestra decente: pianifica le ore centrali" : "Finestra breve: volare presto o tardi"}</p>
+            <p className="text-[9px] text-slate-500 mt-2 leading-tight">
+              {flightHours > 6 ? "Finestra ampia: scegliere l'ora migliore" : flightHours > 3 ? "Finestra decente: ore centrali" : "Finestra breve: volare presto o tardi"}
+            </p>
           </div>
-          <div className="rounded-xl p-3.5 bg-amber-500/5 border border-amber-500/20 hover:border-amber-500/40 hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] transition-all duration-300 hover:scale-[1.02]">
+          <div className="rounded-xl p-3 bg-amber-500/5 border border-amber-500/20">
             <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">Orario migliore</div>
             <span className="text-base font-black text-amber-300 tabular-nums">{flightWindow}</span>
             <p className="text-[9px] text-slate-500 mt-2 leading-tight">Periodo con spread &gt; 4°C e assenza di pioggia</p>
           </div>
-          <div className="rounded-xl p-3.5 bg-violet-500/5 border border-violet-500/20 hover:border-violet-500/40 hover:shadow-[0_0_20px_rgba(139,92,246,0.15)] transition-all duration-300 hover:scale-[1.02]">
+          <div className="rounded-xl p-3 bg-violet-500/5 border border-violet-500/20">
             <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">Pioggia (6h)</div>
             <span className={`text-2xl font-black tabular-nums ${nextRainProb > 40 ? "text-rose-300" : nextRainProb > 20 ? "text-violet-300" : "text-emerald-300"}`}>{Math.round(nextRainProb)}<span className="text-sm font-bold ml-1">%</span></span>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{nextRainProb > 40 ? "⚠️ Pioggia molto probabile — posticipare" : nextRainProb > 20 ? "Possibile pioggia isolata — tenere pronto il copri ala" : "Pioggia improbabile nelle prossime 6h"}</p>
+            <p className="text-[9px] text-slate-500 mt-2 leading-tight">
+              {nextRainProb > 40 ? "⚠️ Pioggia probabile — posticipare" : nextRainProb > 20 ? "Possibile pioggia isolata" : "Pioggia improbabile"}
+            </p>
           </div>
-          <div className="rounded-xl p-3.5 bg-slate-800/50 border border-slate-700/40 hover:border-slate-600/50 transition-all duration-300 hover:scale-[1.02]">
+          <div className="rounded-xl p-3 bg-slate-800/50 border border-slate-700/40">
             <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">Soleggiamento</div>
             <span className="text-2xl font-black text-amber-300 tabular-nums">{Math.round(totalSunshine / 3600 * 10) / 10}<span className="text-sm text-amber-400/60 font-bold ml-1">h</span></span>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">{totalSunshine / 3600 > 6 ? '☀️ Giornata molto soleggiata — termiche garantite' : totalSunshine / 3600 > 3 ? '⛅ Giornata parzialmente soleggiata' : '☁️ Poca luce solare — termiche deboli'}</p>
-          </div>
-        </div>
-
-      </div>
-
-      {/* ═══════════ STABILITÀ TERMODINAMICA ═══════════ */}
-      <div className="border-t border-white/5 px-5 py-4">
-        <div className="flex items-center gap-2 mb-3.5">
-          <div className="w-1 h-5 rounded-full bg-gradient-to-b from-violet-400 to-purple-500" />
-          <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Stabilità termodinamica</span>
-          <span className="text-[9px] text-slate-600 ml-auto">Per piloti esperti — legge l'atmosfera come un radar</span>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className={`rounded-xl p-3.5 border hover:shadow-[0_0_20px_rgba(244,63,94,0.15)] transition-all duration-300 hover:scale-[1.02] ${avgSpread > 1.5 ? "bg-rose-500/10 border-rose-500/30" : avgSpread > 1.0 ? "bg-violet-500/10 border-violet-500/30" : "bg-emerald-500/10 border-emerald-500/30"}`}>
-            <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">ΔT / 100m</div>
-            <span className={`text-xl font-black tabular-nums ${avgSpread > 1.5 ? "text-rose-300" : avgSpread > 1.0 ? "text-violet-300" : "text-emerald-300"}`}>{avgSpread.toFixed(2)}</span>
-            <span className="text-[9px] text-slate-500 font-bold ml-1">°C</span>
-            <div className="text-[9px] font-semibold mt-0.5 opacity-70">{avgSpread > 1.5 ? "Fortemente instabile" : avgSpread > 1.0 ? "Moderatamente instabile" : avgSpread > 0.6 ? "Instabile" : "Stabile"}</div>
-            <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{avgSpread > 1.5 ? "Atmosfera instabile: termiche potenti ma turbolente" : avgSpread > 1.0 ? "Instabilità moderata: termiche organizzate e prevedibili" : "Atmosfera stabile: poche termiche, preferire dynamic di cresta"}</p>
-          </div>
-          <div className={`rounded-xl p-3.5 border hover:shadow-[0_0_20px_rgba(244,63,94,0.15)] transition-all duration-300 hover:scale-[1.02] ${avgLi < -4 ? "bg-rose-500/10 border-rose-500/30" : avgLi < 0 ? "bg-violet-500/10 border-violet-500/30" : "bg-emerald-500/10 border-emerald-500/30"}`}>
-            <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">Lifted Index</div>
-            <span className={`text-xl font-black tabular-nums ${avgLi < -4 ? "text-rose-300" : avgLi < 0 ? "text-violet-300" : "text-emerald-300"}`}>{avgLi.toFixed(1)}</span>
-            <div className="text-[9px] font-semibold mt-0.5 opacity-70">{avgLi < -4 ? "Estremamente instabile" : avgLi < 0 ? "Instabile" : "Stabile"}</div>
-            <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{avgLi < -2 ? "⚠️ Instabilità pomeridiana — volare al mattino presto" : avgLi > 0 ? "Atmosfera stabile: vento di cresta preferibile" : "Instabilità moderata: termiche possibili"}</p>
-          </div>
-          <div className={`rounded-xl p-3.5 border hover:shadow-[0_0_20px_rgba(139,92,246,0.15)] transition-all duration-300 hover:scale-[1.02] ${cinVal > 200 ? "bg-violet-500/10 border-violet-500/30" : "bg-emerald-500/10 border-emerald-500/30"}`}>
-            <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">CIN (Inibizione)</div>
-            <span className={`text-xl font-black tabular-nums ${cinVal > 200 ? "text-violet-300" : "text-emerald-300"}`}>{Math.round(cinVal)}</span>
-            <span className="text-xs text-slate-500 font-bold ml-1">J/kg</span>
-            <div className="text-[9px] font-semibold mt-0.5 opacity-70">{cinVal > 500 ? "Termiche soppresse" : cinVal > 200 ? "Leggera inibizione" : "Favorevole"}</div>
-            <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{cinVal > 200 ? "Strato stabile in basso blocca le termiche — aspettare il riscaldamento del suolo (10:30+)" : "No inibizione convettiva — le termiche si svilupperanno appena il sole riscalda il terreno"}</p>
-          </div>
-          <div className="rounded-xl p-3.5 border border-amber-500/20 bg-amber-500/5 hover:border-amber-500/40 hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] transition-all duration-300 hover:scale-[1.02]">
-            <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">Rischio temporali</div>
-            <span className={`text-2xl font-black tabular-nums ${thunderProb > 40 ? "text-rose-300" : thunderProb > 20 ? "text-amber-300" : "text-emerald-300"}`}>{thunderProb}<span className="text-sm font-bold ml-1">%</span></span>
-            <div className="text-[9px] font-semibold mt-0.5 opacity-70">{thunderProb > 40 ? "Pericoloso" : thunderProb > 20 ? "Attenzione" : "Basso rischio"}</div>
-            <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">{thunderProb > 40 ? "⚠️ Rischio temporali elevato — evitare voli pomeridiani, pianificare per il mattino" : thunderProb > 20 ? "Possibile sviluppo temporalesco nel pomeriggio — monitorare l'evoluzione" : "Nessun rischio temporali significativo nella giornata"}</p>
+            <p className="text-[9px] text-slate-500 mt-2 leading-tight">
+              {totalSunshine / 3600 > 6 ? '☀️ Giornata molto soleggiata — termiche garantite' : totalSunshine / 3600 > 3 ? '⛅ Giornata parzialmente soleggiata' : '☁️ Poca luce — termiche deboli'}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* ═══════════ RAPPORTO METEO — TESTO NARRATIVO ═══════════ */}
+      {/* ═══════════ RAPPORTO METEO ═══════════ */}
       {(warnings.length > 0 || tactics.length > 0) && (() => {
         const scoreColor = signal === "green" ? "text-emerald-400" : signal === "yellow" ? "text-amber-400" : "text-rose-400";
         const scoreBg = signal === "green" ? "from-emerald-500/15 to-emerald-600/5 border-emerald-500/30"
@@ -913,9 +756,6 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
           : "from-rose-400 to-rose-500";
         const overallScore = signal === "green" ? 9 : signal === "yellow" ? 5 : 2;
 
-        // ── Costruzione testo narrativo ──
-
-        // Sezione termica e stabilità
         const termicoParts: string[] = [];
         if (avgThermalRate > 2) termicoParts.push(`Le termiche si presentano vigorose con un rateo medio di ${avgThermalRate.toFixed(1)} m/s, pertanto sarà possibile valutare con attenzione la scelta tra le diverse vallette per ottimizzare il volo.`);
         else if (avgThermalRate > 1.5) termicoParts.push(`Le termiche sono medie, con un rateo di ${avgThermalRate.toFixed(1)} m/s: il volo è possibile purché si utilizzi una tecnica corretta e si apprezzino le migliori colonne.`);
@@ -932,7 +772,6 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
         if (cinVal > 200) termicoParts.push(`Presente un'inibizione convettiva (CIN ${Math.round(cinVal)} J/kg): le termiche non si svilupperanno prima delle 10:30, momento in cui il riscaldamento del suolo riuscirà a superare lo strato stabile residuo.`);
         else if (cinVal <= 200) termicoParts.push(`Nessuna inibizione convettiva rilevante: le termiche potranno attivarsi già dalle prime ore di sole, non appena il terreno inizierà a riscaldarsi.`);
 
-        // Sezione vento
         const ventoParts: string[] = [];
         ventoParts.push(`Il vento soffia da ${dirLabel(windDir)} (${windDir}°) con una velocità al suolo di ${Math.round(windSpeed)} km/h`);
         if (windGusts > 0) ventoParts[ventoParts.length - 1] += `, accompagnata da raffiche che raggiungono i ${Math.round(windGusts)} km/h`;
@@ -945,9 +784,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
         if (wind850 != null && wind850 > 30) ventoParts.push(`In quota, il vento a 850 hPa supera i 30 km/h, condizione che richiede particolare cautela nella gestione del decollo e dell'atterraggio, dato l'elevato shear verticale.`);
         if (wind850 != null && Math.abs(wind850 - windSpeed) > 15) ventoParts.push(`Significativo wind shear tra suolo e quota (${Math.round(wind850)} km/h a 850 hPa contro i ${Math.round(windSpeed)} km/h al suolo): attenzione alla transizione tra gli strati durante la salita e la discesa.`);
         if (waveIndex < 40 && wind850 != null && wind850 > 15) ventoParts.push(`Il wave index è favorevole allo sviluppo di onda montana: provare quote superiori per sfruttare il dynamic in quota.`);
-        if (wind850 != null && wind850 <= 30 && waveIndex >= 40) {} // nessun commento aggiuntivo
 
-        // Sezione strategia
         const strategiaParts: string[] = [];
         if (cloudBase > siteAlt + 800) strategiaParts.push(`La base dei cumuli si attesta a ${Math.round(cloudBase)} m slm (+${Math.round(cloudBase - siteAlt)}m dal campo), offrendo un ampio spazio di manovra e margini di sicurezza abbondanti.`);
         else if (cloudBase > siteAlt + 400) strategiaParts.push(`La base dei cumuli si trova a ${Math.round(cloudBase)} m slm: lo spazio di manovra è sufficiente ma richiede attenzione durante le manovre in prossimità del fondo nuvoloso.`);
@@ -971,28 +808,22 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
         if (spread < 2 && humidity > 80) strategiaParts.push(`Aria molto umida con spread ridotto (${Math.round(spread)}°C): le termiche saranno pesanti ma poco organizzate, con cielo tendenzialmente coperto e visibilità ridotta in quota.`);
         else if (spread > 8) strategiaParts.push(`Spread elevato (${Math.round(spread)}°C): aria secca in quota con termiche vigorose ma possibili cumuli verticali sviluppati e rischio gelività in quota.`);
 
-        // Sezione pericoli
         const pericoloParts: string[] = [];
         const dangerWarnings = warnings.filter(w => w.type === "danger");
         const warningWarnings = warnings.filter(w => w.type === "warning");
 
         if (dangerWarnings.length > 0) {
           pericoloParts.push(`Si rilevano ${dangerWarnings.length} criticità di livello critico:`);
-          dangerWarnings.forEach((w, i) => {
-            pericoloParts.push(`${i + 1}) ${w.text}.`);
-          });
+          dangerWarnings.forEach((w, i) => { pericoloParts.push(`${i + 1}) ${w.text}.`); });
         }
         if (warningWarnings.length > 0) {
           pericoloParts.push(`Ulteriori ${warningWarnings.length} avvertenze:`);
-          warningWarnings.forEach((w, i) => {
-            pericoloParts.push(`${dangerWarnings.length + i + 1}) ${w.text}.`);
-          });
+          warningWarnings.forEach((w, i) => { pericoloParts.push(`${dangerWarnings.length + i + 1}) ${w.text}.`); });
         }
         if (pericoloParts.length === 0) {
           pericoloParts.push("Nessun segnale di pericolo immediato rilevato. Le condizioni appaiono favorevoli al volo nelle ore centrali della giornata.");
         }
 
-        // Giudizio finale
         let giudizioFinale: string;
         if (signal === "green") {
           giudizioFinale = `Le condizioni meteo per il decollo di ${siteName || "questo sito"} si presentano complessivamente favorevoli. Il rateo termico medio e la quota della base dei cumuli consentono un volo termico sicuro, purché si rispettino le raccomandazioni operative indicate. Si consiglia di verificare l'evoluzione nel corso della giornata e di pianificare il rientro prima del possibile peggioramento pomeridiano.`;
@@ -1005,125 +836,105 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
         const dateStr = new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
         return (
-        <div className="rounded-2xl overflow-hidden shadow-2xl mt-1">
-          {/* ══ HEADER ══ */}
-          <div className="px-6 py-5 border-b border-slate-800/80 bg-gradient-to-r from-slate-800/60 via-slate-800/40 to-transparent">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
-                  <FileText className="w-6 h-6 text-slate-300" />
+          <div className="rounded-2xl overflow-hidden shadow-2xl mt-1">
+            <div className="px-6 py-5 border-b border-slate-800/80 bg-gradient-to-r from-slate-800/60 via-slate-800/40 to-transparent">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                    <FileText className="w-6 h-6 text-slate-300" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest mb-1">Bollettino meteo operatore</p>
+                    <h4 className="text-base font-black text-white leading-tight">{siteName || "Decollo"} — {siteAlt}m slm</h4>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {dateStr} · {String(now).padStart(2,"0")}:00 UTC · {modelName || "Open-Meteo"}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest mb-1">Bollettino meteo operatore</p>
-                  <h4 className="text-base font-black text-white leading-tight">{siteName || "Decollo"} — {siteAlt}m slm</h4>
-                  <p className="text-xs text-slate-500 mt-1">
-                    {dateStr} · {String(now).padStart(2,"0")}:00 UTC · {modelName || "Open-Meteo"}
-                  </p>
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  <div className={`bg-gradient-to-br ${scoreBg} border rounded-2xl px-4 py-2.5 text-center`}>
+                    <div className={`text-2xl font-black tabular-nums ${scoreColor}`}>{overallScore}</div>
+                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{signalLabel}</div>
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-2 shrink-0">
-                <div className={`bg-gradient-to-br ${scoreBg} border rounded-2xl px-4 py-2.5 text-center`}>
-                  <div className={`text-2xl font-black tabular-nums ${scoreColor}`}>{overallScore}</div>
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{signalLabel}</div>
+            </div>
+
+            <div className="px-6 pt-4 pb-0">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Condizioni complessive</span>
+                <span className="text-[10px] text-slate-500 font-semibold">{warnings.length + tactics.length} elementi analizzati</span>
+              </div>
+              <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                <div className={`h-full rounded-full bg-gradient-to-r ${barColor} transition-all duration-1000 ease-out`} style={{ width: `${overallScore * 10}%` }} />
+              </div>
+            </div>
+
+            <div className="px-6 py-5 space-y-4">
+              <section>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-orange-500/15 border border-orange-500/25 flex items-center justify-center">
+                    <Thermometer className="w-4 h-4 text-orange-400" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-orange-400/60 font-bold uppercase tracking-widest mr-2">01</span>
+                    <span className="text-sm font-black text-orange-200">Quadro Termico &amp; Stabilità</span>
+                  </div>
+                </div>
+                <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">{termicoParts.join(" ")}</p>
+              </section>
+
+              <section>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-sky-500/15 border border-sky-500/25 flex items-center justify-center">
+                    <Wind className="w-4 h-4 text-sky-400" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-sky-400/60 font-bold uppercase tracking-widest mr-2">02</span>
+                    <span className="text-sm font-black text-sky-200">Profilo Vento in Quota</span>
+                  </div>
+                </div>
+                <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">{ventoParts.join(" ")}</p>
+              </section>
+
+              <section>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-violet-500/15 border border-violet-500/25 flex items-center justify-center">
+                    <Cloud className="w-4 h-4 text-violet-400" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-violet-400/60 font-bold uppercase tracking-widest mr-2">03</span>
+                    <span className="text-sm font-black text-violet-200">Convezione &amp; Rischio</span>
+                  </div>
+                </div>
+                <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">{strategiaParts.join(" ")}</p>
+              </section>
+            </div>
+
+            <div className="mx-6 border-t border-slate-800/80" />
+
+            <div className="px-6 py-4 space-y-2.5">
+              <div className="flex items-start gap-3 bg-rose-500/8 border border-rose-500/20 rounded-2xl px-4 py-3.5">
+                <div className="w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-500/25 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-4 h-4 text-rose-400" />
+                </div>
+                <div>
+                  <span className="text-[10px] text-rose-400/70 font-bold uppercase tracking-widest block mb-1">Segnali di pericolo</span>
+                  <p className="text-xs text-rose-200/90 leading-[1.7] font-medium">{pericoloParts.join(" ")}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 bg-emerald-500/8 border border-emerald-500/20 rounded-2xl px-4 py-3.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div>
+                  <span className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-widest block mb-1">Giudizio finale</span>
+                  <p className="text-xs text-emerald-200/90 leading-[1.7] font-medium">{giudizioFinale}</p>
                 </div>
               </div>
             </div>
           </div>
-
-          {/* ══ SCORE BAR ══ */}
-          <div className="px-6 pt-4 pb-0">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Condizioni complessive</span>
-              <span className="text-[10px] text-slate-500 font-semibold">{warnings.length + tactics.length} elementi analizzati</span>
-            </div>
-            <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full bg-gradient-to-r ${barColor} transition-all duration-1000 ease-out`}
-                style={{ width: `${overallScore * 10}%` }}
-              />
-            </div>
-          </div>
-
-          {/* ══ SEZIONI ══ */}
-          <div className="px-6 py-5 space-y-4">
-
-            {/* 1 · TERMICO */}
-            <section>
-              <div className="flex items-center gap-3 mb-2.5">
-                <div className="w-8 h-8 rounded-xl bg-orange-500/15 border border-orange-500/25 flex items-center justify-center">
-                  <Thermometer className="w-4 h-4 text-orange-400" />
-                </div>
-                <div>
-                  <span className="text-[10px] text-orange-400/60 font-bold uppercase tracking-widest mr-2">01</span>
-                  <span className="text-sm font-black text-orange-200">Quadro Termico &amp; Stabilità</span>
-                </div>
-              </div>
-              <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">{termicoParts.join(" ")}</p>
-            </section>
-
-            {/* 2 · VENTO */}
-            <section>
-              <div className="flex items-center gap-3 mb-2.5">
-                <div className="w-8 h-8 rounded-xl bg-sky-500/15 border border-sky-500/25 flex items-center justify-center">
-                  <Wind className="w-4 h-4 text-sky-400" />
-                </div>
-                <div>
-                  <span className="text-[10px] text-sky-400/60 font-bold uppercase tracking-widest mr-2">02</span>
-                  <span className="text-sm font-black text-sky-200">Profilo Vento in Quota</span>
-                </div>
-              </div>
-              <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">{ventoParts.join(" ")}</p>
-            </section>
-
-            {/* 3 · INSTABILITÀ */}
-            <section>
-              <div className="flex items-center gap-3 mb-2.5">
-                <div className="w-8 h-8 rounded-xl bg-violet-500/15 border border-violet-500/25 flex items-center justify-center">
-                  <Cloud className="w-4 h-4 text-violet-400" />
-                </div>
-                <div>
-                  <span className="text-[10px] text-violet-400/60 font-bold uppercase tracking-widest mr-2">03</span>
-                  <span className="text-sm font-black text-violet-200">Convezione &amp; Rischio</span>
-                </div>
-              </div>
-              <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">{strategiaParts.join(" ")}</p>
-            </section>
-
-            {/* 4 · STRATEGIA — integrato nella sezione 03 */}
-            {/* Sezione 03 include già: finestra, pioggia, CAPE, spread, nuvolosità */}
-
-          </div>
-
-          {/* ══ SEPARATORE ══ */}
-          <div className="mx-6 border-t border-slate-800/80" />
-
-          {/* ══ BOTTOM ALERTS ══ */}
-          <div className="px-6 py-4 space-y-2.5">
-
-            {/* Pericolo */}
-            <div className="flex items-start gap-3 bg-rose-500/8 border border-rose-500/20 rounded-2xl px-4 py-3.5">
-              <div className="w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-500/25 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-4 h-4 text-rose-400" />
-              </div>
-              <div>
-                <span className="text-[10px] text-rose-400/70 font-bold uppercase tracking-widest block mb-1">Segnali di pericolo</span>
-                <p className="text-xs text-rose-200/90 leading-[1.7] font-medium">{pericoloParts.join(" ")}</p>
-              </div>
-            </div>
-
-            {/* Giudizio */}
-            <div className="flex items-start gap-3 bg-emerald-500/8 border border-emerald-500/20 rounded-2xl px-4 py-3.5">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              </div>
-              <div>
-                <span className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-widest block mb-1">Giudizio finale</span>
-                <p className="text-xs text-emerald-200/90 leading-[1.7] font-medium">{giudizioFinale}</p>
-              </div>
-            </div>
-
-          </div>
-        </div>
         );
       })()}
     </div>
