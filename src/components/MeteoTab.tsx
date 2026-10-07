@@ -721,39 +721,6 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
           )}
         </div>
 
-        {/* Wind gradient bars */}
-        {(wind80m != null || wind120m != null || wind180m != null) && (
-          <div className="bg-slate-800/40 rounded-xl p-3.5 border border-slate-700/30 mb-3">
-            <div className="text-[10px] text-slate-400 uppercase tracking-wider font-black mb-2.5">Gradiente verticale — come cambia il vento salendo</div>
-            <div className="space-y-1.5">
-              {[
-                { label: "10m (suolo)", speed: windSpeed, dir: windDir, color: "bg-amber-500" },
-                ...(wind80m != null ? [{ label: "80m", speed: wind80m, dir: windDir80m ?? windDir, color: "bg-orange-500" }] : []),
-                ...(wind120m != null ? [{ label: "120m", speed: wind120m, dir: windDir120m ?? windDir, color: "bg-violet-500" }] : []),
-                ...(wind180m != null ? [{ label: "180m", speed: wind180m, dir: windDir180m ?? windDir, color: "bg-purple-500" }] : []),
-                ...(wind850 != null ? [{ label: "~2000m", speed: Math.round(wind850), dir: dir850Use ?? windDir, color: "bg-rose-500" }] : []),
-              ].map((layer, i, arr) => {
-                const maxW = Math.max(...arr.map(l => l.speed ?? 1));
-                const barWidth = ((layer.speed ?? 0) / maxW) * 100;
-                return (
-                  <div key={i} className="flex items-center gap-3">
-                    <span className="text-[9px] text-slate-400 font-bold w-16 shrink-0 text-right">{layer.label}</span>
-                    <div className="flex-1 h-5 bg-slate-700/30 rounded-full overflow-hidden relative">
-                      <div className={`h-full ${layer.color} rounded-full flex items-center justify-end pr-2`} style={{ width: `${Math.max(8, barWidth)}%` }}>
-                        <span className="text-[9px] font-black text-white/90">{Math.round(layer.speed)} km/h</span>
-                      </div>
-                    </div>
-                    <span className="text-[9px] text-slate-500 font-bold w-8 shrink-0">{dirLabel(layer.dir)}</span>
-                  </div>
-                );
-              })}
-            </div>
-            <p className="text-[9px] text-slate-600 mt-2.5 leading-tight">
-              Gradiente forte = wind shear = termiche deformate. Differenza direzione &gt;45° = rotazione vento in quota.
-            </p>
-          </div>
-        )}
-
         {wind850 != null && (
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-gradient-to-r from-violet-900/30 to-violet-800/20 rounded-xl p-3.5 border border-violet-500/30">
