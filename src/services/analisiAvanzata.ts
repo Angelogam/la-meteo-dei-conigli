@@ -18,7 +18,7 @@ export interface AnalisiCompleta {
   uvIndex: number;
   stabilitàAtmosferica: string;
   turbolenza: string;
-  gustSpread: number | null; // Differenza tra raffica e vento medio (NON wind shear verticale)
+  gustSpread: number | null;
   gradienteReale: number;
   zeroTermico: number;
   topTermico: number;
@@ -32,7 +32,7 @@ export interface AnalisiCompleta {
   voloScore: number;
   voloGiudizio: string;
   voloDescrizione: string;
-  confidenza: number; // Indice euristico di affidabilità (NON misura statistica reale)
+  confidenza: number;
 }
 
 function calcolaStabilita(cape: number, li: number, gradiente: number): string {
@@ -45,7 +45,6 @@ function calcolaStabilita(cape: number, li: number, gradiente: number): string {
   else if (li < 0) score += 1;
   if (gradiente > 1.1) score += 2;
   else if (gradiente > 0.9) score += 1;
-
   if (score >= 6) return "molto instabile";
   if (score >= 4) return "instabile";
   if (score >= 2) return "leggermente instabile";
@@ -65,7 +64,6 @@ function calcolaTurbolenza(windSpeed: number, windGusts: number, gustSpread: num
   }
   if (windSpeed > 25) score += 2;
   else if (windSpeed > 18) score += 1;
-
   if (score >= 6) return "severa";
   if (score >= 4) return "forte";
   if (score >= 2) return "moderata";
@@ -83,26 +81,11 @@ function calcolaIntensitaTermica(rateo: number): string {
 }
 
 function calcolaGiudizioVolo(score: number): { giudizio: string; descrizione: string } {
-  if (score >= 85) return {
-    giudizio: "Eccellente ⭐",
-    descrizione: "Condizioni migliori della giornata. Termiche sviluppate, cielo ideale. Volo consigliato.",
-  };
-  if (score >= 70) return {
-    giudizio: "Buono 👍",
-    descrizione: "Buone condizioni termiche. Volo piacevole con termiche moderate.",
-  };
-  if (score >= 55) return {
-    giudizio: "Discreto 😐",
-    descrizione: "Condizioni sufficienti per volo locale. Termiche deboli o moderate.",
-  };
-  if (score >= 40) return {
-    giudizio: "Mediocre ⚠️",
-    descrizione: "Termiche deboli e irregolari. Volo possibile ma poco produttivo.",
-  };
-  return {
-    giudizio: "Scarso ❌",
-    descrizione: "Condizioni sfavorevoli al volo. Termiche assenti o troppo deboli.",
-  };
+  if (score >= 85) return { giudizio: "Eccellente ⭐", descrizione: "Condizioni migliori della giornata. Termiche sviluppate, cielo ideale. Volo consigliato." };
+  if (score >= 70) return { giudizio: "Buono 👍", descrizione: "Buone condizioni termiche. Volo piacevole con termiche moderate." };
+  if (score >= 55) return { giudizio: "Discreto 😐", descrizione: "Condizioni sufficienti per volo locale. Termiche deboli o moderate." };
+  if (score >= 40) return { giudizio: "Mediocre ⚠️", descrizione: "Termiche deboli e irregolari. Volo possibile ma poco produttivo." };
+  return { giudizio: "Scarso ❌", descrizione: "Condizioni sfavorevoli al volo. Termiche assenti o troppo deboli." };
 }
 
 export function analisiAvanzataCompleta(
@@ -110,66 +93,67 @@ export function analisiAvanzataCompleta(
   current: MeteoCurrent,
   altitude: number
 ): AnalisiCompleta[] {
-  if (!hourlyData || hourlyData.length === 0 || !current) return [];
+  if (!hourlyData?.length || !current) return [];
+
+  // L'analisi usa data + ora: evita di prendere, per esempio, le 14:00 di domani.
+  const target = new Date(current.time);
+  const sameDay = hourlyData.filter(h => {
+    const t = new Date(h.time);
+    return t.getFullYear() === target.getFullYear() &&
+      t.getMonth() === target.getMonth() &&
+      t.getDate() === target.getDate();
+  });
 
   const oreUtili = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
   const risultati: AnalisiCompleta[] = [];
 
   for (const ora of oreUtili) {
-    const weather = hourlyData.find(h => {
-      const t = new Date(h.time);
-      return t.getHours() === ora;
-    });
+    const weather = sameDay.find(h => new Date(h.time).getHours() === ora);
     if (!weather) continue;
 
-    // Temperature: usa dato API reale, altrimenti il calcolo usa null per tutti i derivati
+    // Nessun valore meteorologico mancante viene inventato. Se manca un dato
+    // fondamentale per questa analisi, l'ora viene marcata come non disponibile.
     const temp = weather.temperature;
-    if (temp === null || temp === undefined) continue; // Salta l'ora se temperatura non disponibile
-    const dew = weather.dewPoint ?? (temp - 8);
-    const hum = weather.humidity ?? 60;
-    const windSpeed = weather.windSpeed ?? 0;
-    const windGusts = weather.windGusts ?? 0;
-    const cloudCover = weather.cloudCover ?? 30;
-    const uv = weather.uvIndex ?? 0;
-    const precipitation = weather.precipitation ?? 0;
-    const temp80m = weather.temp80m;
-    const temp120m = weather.temp120m;
+    const dew = weather.dewPoint;
+    const hum = weather.humidity;
+    const windSpeed = weather.windSpeed;
+    const windGusts = weather.windGusts;
+    const cloudCover = weather.cloudCover;
+    const uv = weather.uvIndex;
+    const precipitation = weather.precipitation;
     const cape = weather.cape;
-    const cin = weather.cin ?? null;
-    const liftedIndex = weather.liftedIndex ?? null;
+    const liftedIndex = weather.liftedIndex;
+    const freezingLevel = weather.freezingLevel;
 
-    // Pressione: usa dato API se disponibile, altrimenti null
-    const pressure = current?.pressure ?? null;
-    const presVal = pressure !== null && pressure !== undefined ? pressure : null;
+    if (
+      temp === null || dew === null || hum === null ||
+      windSpeed === null || windGusts === null ||
+      cape === null || liftedIndex === null ||
+      freezingLevel === null || uv === null
+    ) continue;
 
-    // Spread T-dew point
-    const spread = Math.max(0.3, Math.min(20, temp - (dew !== null ? dew : temp - 8)));
+    const pressure = weather.pressure ?? current.pressure ?? null;
+    const gustSpread = Math.round(Math.abs(windGusts - windSpeed) * 10) / 10;
 
-    // Usa CAPE reale dall'API quando disponibile, altrimenti null
-    const capeValue = cape !== null && cape !== undefined ? Math.min(1500, Math.max(0, cape)) : null;
-
-    // Gust spread: differenza tra raffica e vento medio (NON wind shear verticale)
-    const gustSpread = windGusts > 0 && windSpeed > 0 ? Math.round(Math.abs(windGusts - windSpeed) * 10) / 10 : null;
-
+    // Gradiente verticale reale quando è disponibile una temperatura a 80/120 m.
     let gradiente = 0.98;
-    if (temp80m !== null && temp80m > -50 && temp80m < 50) {
-      // Formula corretta: ((tempSuperficie - temp80m) / 80) * 100
-      gradiente = Math.min(1.5, Math.max(0.3, ((temp - temp80m) / 80) * 100));
-    } else if (temp120m !== null && temp120m > -50 && temp120m < 50) {
-      // Formula corretta: ((tempSuperficie - temp120m) / 120) * 100
-      gradiente = Math.min(1.5, Math.max(0.3, ((temp - temp120m) / 120) * 100));
+    if (weather.temp80m !== null) {
+      gradiente = Math.min(1.5, Math.max(0.3, ((temp - weather.temp80m) / 80) * 100));
+    } else if (weather.temp120m !== null) {
+      gradiente = Math.min(1.5, Math.max(0.3, ((temp - weather.temp120m) / 120) * 100));
     }
     gradiente = Math.round(gradiente * 100) / 100;
 
+    // Base nubi: stima derivata da T/Td, non un dato API. Non viene usata
+    // come sostituto dello zero termico reale.
+    const spread = Math.max(0, temp - dew);
     const lclSopraSuolo = Math.min(2500, Math.max(50, Math.round(spread * 120)));
-    const baseNuvole = Math.min(3500, altitude + lclSopraSuolo);
+    const baseNuvole = Math.min(3500, Math.max(50, altitude + lclSopraSuolo));
 
-    // Zero termico: usa dato API se disponibile, altrimenti stima conservativa
-    const zeroTermicoReal = weather.freezingLevel;
-    const zeroTermico = zeroTermicoReal !== null && zeroTermicoReal !== undefined
-      ? Math.min(4800, Math.max(altitude + 200, zeroTermicoReal))
-      : Math.min(4800, Math.max(altitude + 200, Math.round(altitude + temp * 80 + spread * 30)));
+    // Zero termico: esclusivamente il valore API Open-Meteo.
+    const zeroTermico = Math.round(freezingLevel);
 
+    // Rateo/forza/top sono stime derivate e non valori osservati.
     let rateoBase = Math.min(3, Math.max(0.05, spread * 0.25));
     if (windSpeed >= 5 && windSpeed <= 15) rateoBase += 0.5;
     if (cloudCover >= 15 && cloudCover <= 40) rateoBase += 0.3;
@@ -179,23 +163,19 @@ export function analisiAvanzataCompleta(
     const rateo = Math.max(0, Math.min(5, Math.round(rateoBase * 10) / 10));
 
     let forza = 0;
-    if (capeValue > 800) forza += 3;
-    else if (capeValue > 400) forza += 2;
-    else if (capeValue > 150) forza += 1;
-    else if (capeValue > 50) forza += 0.5;
+    if (cape > 800) forza += 3;
+    else if (cape > 400) forza += 2;
+    else if (cape > 150) forza += 1;
+    else if (cape > 50) forza += 0.5;
     if (gradiente > 1.2) forza += 1.5;
     else if (gradiente > 0.9) forza += 1;
     if (windSpeed >= 5 && windSpeed <= 15) forza += 0.5;
     if (cloudCover >= 15 && cloudCover <= 40) forza += 0.5;
     const forzaTermica = Math.min(10, Math.max(0, Math.round(forza * 10) / 10));
 
-    const topTermico = Math.min(4500, Math.max(baseNuvole + 200, baseNuvole + Math.round(rateo * 300 + capeValue * 0.8)));
+    const topTermico = Math.min(4500, Math.max(baseNuvole + 200, baseNuvole + Math.round(rateo * 300 + cape * 0.8)));
 
-    const stabilityLI = liftedIndex !== null && liftedIndex !== undefined
-      ? Math.round(liftedIndex * 10) / 10
-      : Math.round((temp - (dew !== null ? dew : temp - 6)) * 10) / 10;
-
-    const stabilita = calcolaStabilita(capeValue ?? 0, stabilityLI, gradiente);
+    const stabilita = calcolaStabilita(cape, liftedIndex, gradiente);
     const turbolenza = calcolaTurbolenza(windSpeed, windGusts, gustSpread);
 
     let score = 0;
@@ -210,52 +190,52 @@ export function analisiAvanzataCompleta(
     if (uv >= 4) score += 5;
     if (stabilita === "leggermente instabile") score += 5;
     else if (stabilita === "stabile") score += 3;
-    if (["forte", "severa"].indexOf(turbolenza) === -1) score += 5;
+    if (!["forte", "severa"].includes(turbolenza)) score += 5;
     if (topTermico - baseNuvole > 500) score += 10;
     if (rateo >= 2) score += 10;
     const voloScore = Math.min(100, Math.max(0, score));
-
     const { giudizio, descrizione } = calcolaGiudizioVolo(voloScore);
 
-    // Indice euristico di affidabilità: basato su rateo e forza termica, NON una vera misura statistica
-    const confidenza = Math.min(1, Math.round((0.3 + (rateo / 5) * 0.4 + (forzaTermica / 10) * 0.3) * 100) / 100);
+    // Euristico, non probabilità statistica.
+    const confidenza = Math.round((0.5 + Math.min(0.5, sameDay.length / 24 * 0.5)) * 100) / 100;
 
-    let coperturaTesto: string;
-    if (cloudCover >= 80) coperturaTesto = "coperto";
-    else if (cloudCover >= 60) coperturaTesto = "molto nuvoloso";
-    else if (cloudCover >= 40) coperturaTesto = "nuvoloso";
-    else if (cloudCover >= 20) coperturaTesto = "poco nuvoloso";
-    else if (cloudCover >= 5) coperturaTesto = "sereno con nuvole";
-    else coperturaTesto = "sereno";
+    const cloudText =
+      cloudCover >= 80 ? "coperto" :
+      cloudCover >= 60 ? "molto nuvoloso" :
+      cloudCover >= 40 ? "nuvoloso" :
+      cloudCover >= 20 ? "poco nuvoloso" :
+      cloudCover >= 5 ? "sereno con nuvole" : "sereno";
+
+    const dayTemps = sameDay.map(h => h.temperature).filter((v): v is number => v !== null);
+    const tempMax = dayTemps.length ? Math.round(Math.max(...dayTemps)) : Math.round(temp);
+    const tempMin = dayTemps.length ? Math.round(Math.min(...dayTemps)) : Math.round(temp);
 
     risultati.push({
       ora,
       data: new Date(weather.time).toLocaleDateString("it-IT", { day: "numeric", month: "short" }),
       temperatura: Math.round(temp),
-      tempMax: Math.round(temp + Math.min(5, spread * 0.5)),
-      tempMin: Math.round(temp - Math.min(5, (100 - hum) / 20)),
+      tempMax,
+      tempMin,
       ventoMedio: Math.round(windSpeed),
       ventoMax: Math.round(windGusts),
-      direzioneDominante: current?.windDir !== null && current?.windDir !== undefined ? `(${current.windDir}°)` : "—",
-      copertura: coperturaTesto,
+      direzioneDominante: weather.windDir !== null ? `(${Math.round(weather.windDir)}°)` : "—",
+      copertura: cloudText,
       baseNuvole,
-      pressione: presVal !== null ? Math.round(presVal) : null,
+      pressione: pressure !== null ? Math.round(pressure) : null,
       umidita: Math.round(hum),
       uvIndex: Math.round(uv * 10) / 10,
       stabilitàAtmosferica: stabilita,
       turbolenza,
-      gustSpread: gustSpread,
+      gustSpread,
       gradienteReale: gradiente,
       zeroTermico,
       topTermico,
       intensitaTermica: calcolaIntensitaTermica(rateo),
       forzaTermica,
       rateoSalita: rateo,
-      cape: capeValue ?? 0,
-      liftedIndex: stabilityLI,
-      rischioTemporali: capeValue !== null
-        ? Math.min(100, Math.round(Math.max(0, (capeValue / 1500) * 50 + (spread / 20) * 30 + (1 - presVal / 1013) * 20)))
-        : 0,
+      cape: Math.round(cape),
+      liftedIndex: Math.round(liftedIndex * 10) / 10,
+      rischioTemporali: Math.min(100, Math.round(Math.max(0, (cape / 1500) * 70 + Math.max(0, -liftedIndex) * 7))),
       pioggiaTotale: Math.round(precipitation * 10) / 10,
       voloScore,
       voloGiudizio: giudizio,

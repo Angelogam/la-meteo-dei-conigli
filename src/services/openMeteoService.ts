@@ -105,12 +105,12 @@ export interface MeteoCurrent {
   temperature: number | null;
   humidity: number | null;
   dewPoint: number | null;
-  precipitation: number;
-  weatherCode: number;
-  cloudCover: number;
-  cloudCoverLow: number;
-  cloudCoverMid: number;
-  cloudCoverHigh: number;
+  precipitation: number | null;
+  weatherCode: number | null;
+  cloudCover: number | null;
+  cloudCoverLow: number | null;
+  cloudCoverMid: number | null;
+  cloudCoverHigh: number | null;
   windSpeed: number | null;
   windDir: number | null;
   windGusts: number | null;
@@ -132,33 +132,33 @@ export interface MeteoHourly {
   temperature: number | null;
   humidity: number | null;
   dewPoint: number | null;
-  precipitation: number;
-  precipitationProbability: number;
-  weatherCode: number;
-  cloudCover: number;
-  cloudCoverLow: number;
-  cloudCoverMid: number;
-  cloudCoverHigh: number;
+  precipitation: number | null;
+  precipitationProbability: number | null;
+  weatherCode: number | null;
+  cloudCover: number | null;
+  cloudCoverLow: number | null;
+  cloudCoverMid: number | null;
+  cloudCoverHigh: number | null;
   windSpeed: number | null;
   windDir: number | null;
   windGusts: number | null;
   cape: number | null;
   liftedIndex: number | null;
-  shortwaveRadiation: number;
-  directRadiation: number;
+  shortwaveRadiation: number | null;
+  directRadiation: number | null;
   uvIndex: number | null;
   visibility: number | null;
   feelsLike: number | null;
   pressure: number | null;
   surfacePressure: number | null;
-  rain: number;
-  snowfall: number;
-  vapourPressureDeficit: number;
-  isDay: boolean;
+  rain: number | null;
+  snowfall: number | null;
+  vapourPressureDeficit: number | null;
+  isDay: boolean | null;
   freezingLevel: number | null;
-  sunshineDuration: number;
-  mixingRatio: number;
-  virtualTemp: number;
+  sunshineDuration: number | null;
+  mixingRatio: number | null;
+  virtualTemp: number | null;
   windProfile?: { height: number; speed: number; dir: number }[];
   temp80m: number | null;
   temp120m: number | null;
@@ -169,15 +169,15 @@ export interface MeteoHourly {
   windSpeed180m: number | null;
   windDir180m: number | null;
   apparentTemp: number | null;
-  precipitationProba: number;
-  evapotranspiration: number;
-  et0: number;
-  soilTemp: number;
-  soilMoisture: number;
-  diffuseRadiation: number;
-  directNormalIrradiance: number;
-  terrestrialRadiation: number;
-  radiation: number;
+  precipitationProba: number | null;
+  evapotranspiration: number | null;
+  et0: number | null;
+  soilTemp: number | null;
+  soilMoisture: number | null;
+  diffuseRadiation: number | null;
+  directNormalIrradiance: number | null;
+  terrestrialRadiation: number | null;
+  radiation: number | null;
   cin: number | null;
   // Pressure level winds
   windSpeed925: number | null;
@@ -194,7 +194,7 @@ export interface MeteoHourly {
 
 export interface MeteoDaily {
   date: Date;
-  weatherCode: number;
+  weatherCode: number | null;
   tempMax: number | null;
   tempMin: number | null;
   precipitationSum: number;
@@ -211,7 +211,7 @@ export interface MeteoDaily {
   apparentTempMax: number;
   apparentTempMin: number;
   daylightDuration: number;
-  sunshineDuration: number;
+  sunshineDuration: number | null;
   rainSum: number;
   snowfallSum: number;
   precipitationHours: number;
@@ -235,22 +235,22 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
     const current: MeteoCurrent | null = c ? {
           time: new Date(c.time),
           temperature: safeNumOrNull(c.temperature_2m),
-          humidity: safeNum(c.relative_humidity_2m, 50),
+          humidity: safeNumOrNull(c.relative_humidity_2m),
           dewPoint: safeNumOrNull(c.dew_point_2m),
-          precipitation: safeNum(c.precipitation, 0),
-          weatherCode: safeNum(c.weather_code, 0),
-          cloudCover: safeNum(c.cloud_cover, 0),
-          cloudCoverLow: safeNum(c.cloud_cover_low, 0),
-          cloudCoverMid: safeNum(c.cloud_cover_mid, 0),
-          cloudCoverHigh: safeNum(c.cloud_cover_high, 0),
-          windSpeed: safeNum(c.wind_speed_10m, 0),
-          windDir: safeNum(c.wind_direction_10m, 0),
-          windGusts: safeNum(c.wind_gusts_10m, c.wind_speed_10m ?? 0),
+          precipitation: safeNumOrNull(c.precipitation),
+          weatherCode: safeNumOrNull(c.weather_code),
+          cloudCover: safeNumOrNull(c.cloud_cover),
+          cloudCoverLow: safeNumOrNull(c.cloud_cover_low),
+          cloudCoverMid: safeNumOrNull(c.cloud_cover_mid),
+          cloudCoverHigh: safeNumOrNull(c.cloud_cover_high),
+          windSpeed: safeNumOrNull(c.wind_speed_10m),
+          windDir: safeNumOrNull(c.wind_direction_10m),
+          windGusts: safeNumOrNull(c.wind_gusts_10m),
           cape: safeNumOrNull(c.cape),
           cin: safeNumOrNull(c.convective_inhibition),
           apparentTemp: safeNumOrNull(c.apparent_temperature),
-          uvIndex: safeNum(c.uv_index, 0),
-          visibility: safeNum(c.visibility, 10000),
+          uvIndex: safeNumOrNull(c.uv_index),
+          visibility: safeNumOrNull(c.visibility),
     } : null;
 
     // Hourly
@@ -258,7 +258,7 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
     const len = json.hourly?.time?.length || 0;
     for (let i = 0; i < len; i++) {
       const t = safeNumOrNull(json.hourly.temperature_2m?.[i]);
-      const h = safeNum(json.hourly.relative_humidity_2m?.[i], 50);
+      const h = safeNumOrNull(json.hourly.relative_humidity_2m?.[i]);
       const dew = safeNumOrNull(json.hourly.dew_point_2m?.[i]);
       const feelsLike = safeNumOrNull(json.hourly.apparent_temperature?.[i]);
       const pressure = safeNumOrNull(json.hourly.pressure_msl?.[i]);
@@ -276,33 +276,33 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
       hourly.push({
         time: new Date(json.hourly.time[i]),
         temperature: t,
-        humidity: h,
+        humidity: safeNumOrNull(json.hourly.relative_humidity_2m?.[i]),
         dewPoint: dew,
-        precipitation: safeNum(json.hourly.precipitation?.[i], 0),
-        precipitationProbability: safeNum(json.hourly.precipitation_probability?.[i], 0),
-        weatherCode: safeNum(json.hourly.weather_code?.[i], 0),
-        cloudCover: safeNum(json.hourly.cloud_cover?.[i], 0),
-        cloudCoverLow: safeNum(json.hourly.cloud_cover_low?.[i], 0),
-        cloudCoverMid: safeNum(json.hourly.cloud_cover_mid?.[i], 0),
-        cloudCoverHigh: safeNum(json.hourly.cloud_cover_high?.[i], 0),
-        windSpeed: safeNum(json.hourly.wind_speed_10m?.[i], 0),
-        windDir: safeNum(json.hourly.wind_direction_10m?.[i], 0),
-        windGusts: safeNum(json.hourly.wind_gusts_10m?.[i], 0),
+        precipitation: safeNumOrNull(json.hourly.precipitation?.[i]),
+        precipitationProbability: safeNumOrNull(json.hourly.precipitation_probability?.[i]),
+        weatherCode: safeNumOrNull(json.hourly.weather_code?.[i]),
+        cloudCover: safeNumOrNull(json.hourly.cloud_cover?.[i]),
+        cloudCoverLow: safeNumOrNull(json.hourly.cloud_cover_low?.[i]),
+        cloudCoverMid: safeNumOrNull(json.hourly.cloud_cover_mid?.[i]),
+        cloudCoverHigh: safeNumOrNull(json.hourly.cloud_cover_high?.[i]),
+        windSpeed: safeNumOrNull(json.hourly.wind_speed_10m?.[i]),
+        windDir: safeNumOrNull(json.hourly.wind_direction_10m?.[i]),
+        windGusts: safeNumOrNull(json.hourly.wind_gusts_10m?.[i]),
         cape: safeNumOrNull(json.hourly.cape?.[i]),
         liftedIndex: safeNumOrNull(json.hourly.lifted_index?.[i]),
-        shortwaveRadiation: safeNum(json.hourly.shortwave_radiation?.[i], 0),
-        directRadiation: safeNum(json.hourly.direct_radiation?.[i], 0),
-        uvIndex: safeNum(json.hourly.uv_index?.[i], 0),
-        visibility: safeNum(json.hourly.visibility?.[i], 10000),
+        shortwaveRadiation: safeNumOrNull(json.hourly.shortwave_radiation?.[i]),
+        directRadiation: safeNumOrNull(json.hourly.direct_radiation?.[i]),
+        uvIndex: safeNumOrNull(json.hourly.uv_index?.[i]),
+        visibility: safeNumOrNull(json.hourly.visibility?.[i]),
         feelsLike: feelsLike,
         pressure: pressure,
         surfacePressure: surfacePressure,
-        rain: safeNum(json.hourly.rain?.[i], 0),
-        snowfall: safeNum(json.hourly.snowfall?.[i], 0),
+        rain: safeNumOrNull(json.hourly.rain?.[i]),
+        snowfall: safeNumOrNull(json.hourly.snowfall?.[i]),
         vapourPressureDeficit: 0,
         isDay: true,
         freezingLevel: freezingLevel,
-        sunshineDuration: safeNum(json.hourly.sunshine_duration?.[i], 0),
+        sunshineDuration: safeNumOrNull(json.hourly.sunshine_duration?.[i]),
         mixingRatio: 0,
         virtualTemp: 0,
         temp80m,
@@ -314,7 +314,7 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
         windSpeed180m,
         windDir180m,
         apparentTemp: feelsLike,
-        precipitationProba: safeNum(json.hourly.precipitation_probability?.[i], 0),
+        precipitationProba: safeNumOrNull(json.hourly.precipitation_probability?.[i]),
         evapotranspiration: 0,
         et0: 0,
         soilTemp: 0,
@@ -385,21 +385,21 @@ export const weatherService = {
       return {
         time: new Date(c.time),
         temperature: safeNumOrNull(c.temperature_2m),
-        humidity: safeNum(c.relative_humidity_2m, 50),
+        humidity: safeNumOrNull(c.relative_humidity_2m),
         dewPoint: safeNumOrNull(c.dew_point_2m),
-        precipitation: safeNum(c.precipitation, 0),
-        weatherCode: safeNum(c.weather_code, 0),
-        cloudCover: safeNum(c.cloud_cover, 0),
-        cloudCoverLow: safeNum(c.cloud_cover_low, 0),
-        cloudCoverMid: safeNum(c.cloud_cover_mid, 0),
-        cloudCoverHigh: safeNum(c.cloud_cover_high, 0),
-        windSpeed: safeNum(c.wind_speed_10m, 0),
-        windDir: safeNum(c.wind_direction_10m, 0),
-        windGusts: safeNum(c.wind_gusts_10m, c.wind_speed_10m ?? 0),
+        precipitation: safeNumOrNull(c.precipitation),
+        weatherCode: safeNumOrNull(c.weather_code),
+        cloudCover: safeNumOrNull(c.cloud_cover),
+        cloudCoverLow: safeNumOrNull(c.cloud_cover_low),
+        cloudCoverMid: safeNumOrNull(c.cloud_cover_mid),
+        cloudCoverHigh: safeNumOrNull(c.cloud_cover_high),
+        windSpeed: safeNumOrNull(c.wind_speed_10m),
+        windDir: safeNumOrNull(c.wind_direction_10m),
+        windGusts: safeNumOrNull(c.wind_gusts_10m),
         cape: safeNumOrNull(c.cape),
                 apparentTemp: safeNumOrNull(c.apparent_temperature),
-                uvIndex: safeNum(c.uv_index, 0),
-                visibility: safeNum(c.visibility, 10000),
+                uvIndex: safeNumOrNull(c.uv_index),
+                visibility: safeNumOrNull(c.visibility),
       };
     } catch {
       return null;

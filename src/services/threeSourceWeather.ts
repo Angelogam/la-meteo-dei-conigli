@@ -35,10 +35,10 @@ async function getOpenMeteo(lat: number, lon: number) {
     if (t === undefined || t === null) return null;
     return {
       temp: data.hourly?.temperature_2m?.[0] !== undefined ? Number(data.hourly.temperature_2m[0]) : null,
-      rain: data.hourly?.precipitation?.[0] !== undefined ? Number(data.hourly.precipitation[0]) : 0,
-      cloud: data.hourly?.cloud_cover?.[0] !== undefined ? Number(data.hourly.cloud_cover[0]) : 0,
-      wind: data.hourly?.wind_speed_10m?.[0] !== undefined ? Number(data.hourly.wind_speed_10m[0]) : 0,
-      dir: data.hourly?.wind_direction_10m?.[0] !== undefined ? Number(data.hourly.wind_direction_10m[0]) : 0,
+      rain: data.hourly?.precipitation?.[0] !== undefined ? Number(data.hourly.precipitation[0]) : null,
+      cloud: data.hourly?.cloud_cover?.[0] !== undefined ? Number(data.hourly.cloud_cover[0]) : null,
+      wind: data.hourly?.wind_speed_10m?.[0] !== undefined ? Number(data.hourly.wind_speed_10m[0]) : null,
+      dir: data.hourly?.wind_direction_10m?.[0] !== undefined ? Number(data.hourly.wind_direction_10m[0]) : null,
       cape: data.hourly?.cape?.[0] !== undefined ? Number(data.hourly.cape[0]) : null,
       freezingLevel: data.hourly?.freezing_level_height?.[0] !== undefined ? Number(data.hourly.freezing_level_height[0]) : null,
       tMax: null,
@@ -60,11 +60,11 @@ async function getOpenWeather(lat: number, lon: number) {
     const data = await res.json();
     return {
       temp: data.main?.temp ?? null,
-      rain: data.rain ? (data.rain["1h"] ?? 0) : 0,
-      cloud: data.clouds?.all ?? 0,
-      wind: data.wind?.speed ?? 0,
-      dir: data.wind?.deg ?? 0,
-      stato: data.weather?.[0]?.main ?? "Clear"
+      rain: data.rain?.["1h"] !== undefined ? Number(data.rain["1h"]) : null,
+      cloud: data.clouds?.all !== undefined ? Number(data.clouds.all) : null,
+      wind: data.wind?.speed !== undefined ? Number(data.wind.speed) : null,
+      dir: data.wind?.deg !== undefined ? Number(data.wind.deg) : null,
+      stato: typeof data.weather?.[0]?.main === "string" ? data.weather[0].main : null
     };
   } catch {
     return null;
@@ -82,10 +82,10 @@ async function getTomorrow(lat: number, lon: number) {
     if (!v) return null;
     return {
       temp: v.temperature ?? null,
-      rain: v.precipitationIntensity ?? 0,
-      cloud: v.cloudCover ?? 0,
-      wind: v.windSpeed ?? 0,
-      dir: v.windDirection ?? 0
+      rain: v.precipitationIntensity !== undefined && v.precipitationIntensity !== null ? Number(v.precipitationIntensity) : null,
+      cloud: v.cloudCover !== undefined && v.cloudCover !== null ? Number(v.cloudCover) : null,
+      wind: v.windSpeed !== undefined && v.windSpeed !== null ? Number(v.windSpeed) : null,
+      dir: v.windDirection !== undefined && v.windDirection !== null ? Number(v.windDirection) : null
     };
   } catch {
     return null;
@@ -110,11 +110,11 @@ function normalizzaDirezione(dir: number): number {
 }
 
 /* funzione fuse mantenuta per compatibilità ma ora usa solo fonti valide */
-function fuse(values: { value: number; weight: number }[]): number {
-  const valid = values.filter(v => !isNaN(v.value));
-  if (valid.length === 0) return 0;
+function fuse(values: { value: number; weight: number }[]): number | null {
+  const valid = values.filter(v => Number.isFinite(v.value));
+  if (valid.length === 0) return null;
   const sumW = valid.reduce((a, b) => a + b.weight, 0);
-  if (sumW === 0) return 0;
+  if (sumW === 0) return null;
   return valid.reduce((a, b) => a + b.value * b.weight, 0) / sumW;
 }
 
@@ -127,19 +127,18 @@ const WEIGHTS = {
 
 function statoAggressivo(openMeteo: any, openWeather: any, tomorrow: any): string {
   if (openWeather?.stato === "Thunderstorm") return "Temporale";
-  const rainMax = Math.max(openMeteo?.rain || 0, openWeather?.rain || 0, tomorrow?.rain || 0);
-  if (rainMax > 0.1) return "Pioggia";
-  const cloudMax = Math.max(
-    Number(openMeteo?.cloud || 0),
-    Number(openWeather?.cloud || 0),
-    Number(tomorrow?.cloud || 0)
-  );
+  const rains = [openMeteo?.rain, openWeather?.rain, tomorrow?.rain].filter((v): v is number => Number.isFinite(v));
+  if (rains.some(v => v > 0.1)) return "Pioggia";
+  const clouds = [openMeteo?.cloud, openWeather?.cloud, tomorrow?.cloud].filter((v): v is number => Number.isFinite(v));
+  if (!clouds.length) return "N/D";
+  const cloudMax = Math.max(...clouds);
   if (cloudMax > 80) return "Coperto";
   if (cloudMax > 40) return "Variabile";
   return "Sereno";
 }
 
-function baseNubiAggressiva(cloud: number): string {
+function baseNubiAggressiva(cloud: number | null): string {
+  if (cloud === null) return "N/D";
   if (cloud > 80) return "Molto bassa (<1200 m)";
   if (cloud > 60) return "Bassa (1200-1800 m)";
   if (cloud > 40) return "Media (1800-2500 m)";
@@ -160,14 +159,15 @@ function termicheAggressive(tMax: number | null, tMin: number | null, cloudDaily
 
 /** Indice di volabilità: stima euristica, NON misura scientifica.
  *  Rinominato in indiceAffidabilitaStima per chiarezza. */
-function indiceAffidabilitaStima(wind: number, rain: number, cloud: number, baseNubi: string, termiche: string): number {
+function indiceAffidabilitaStima(wind: number | null, rain: number | null, cloud: number | null, baseNubi: string, termiche: string): number {
+  if (wind === null && rain === null && cloud === null) return 10;
   let i = 1;
-  if (rain > 0.1) i += 5;
-  if (rain > 2) i += 3;
-  if (wind > 15) i += 2;
-  if (wind > 25) i += 3;
-  if (wind > 30) i += 3;
-  if (cloud > 70) i += 2;
+  if ((rain ?? 0) > 0.1) i += 5;
+  if ((rain ?? 0) > 2) i += 3;
+  if ((wind ?? 0) > 15) i += 2;
+  if ((wind ?? 0) > 25) i += 3;
+  if ((wind ?? 0) > 30) i += 3;
+  if ((cloud ?? 0) > 70) i += 2;
   if (baseNubi.includes("Molto bassa")) i += 3;
   if (termiche.includes("forti")) i += 2;
   return Math.min(i, 10);
@@ -181,7 +181,8 @@ function labelIndice(i: number): string {
   return "Sconsigliato";
 }
 
-function safe(v: number): string {
+function safe(v: number | null): string {
+  if (v === null) return "--";
   const n = parseFloat(String(v));
   return isNaN(n) ? "--" : n.toFixed(1);
 }
@@ -226,18 +227,23 @@ export async function getMeteoDecolloAggressivo(d: Decollo): Promise<MeteoDecoll
 
   // Fuse wind direction using circular mean (ignora valori null)
   const dirPairs: { value: number; weight: number }[] = [
-    om.dir > 0 ? { value: om.dir, weight: WEIGHTS.wind.om } : null,
-    ow.dir > 0 ? { value: ow.dir, weight: WEIGHTS.wind.ow } : null,
-    tw.dir > 0 ? { value: tw.dir, weight: WEIGHTS.wind.tw } : null,
+    om?.dir !== null && om?.dir !== undefined ? { value: om.dir, weight: WEIGHTS.wind.om } : null,
+    ow?.dir !== null && ow?.dir !== undefined ? { value: ow.dir, weight: WEIGHTS.wind.ow } : null,
+    tw?.dir !== null && tw?.dir !== undefined ? { value: tw.dir, weight: WEIGHTS.wind.tw } : null,
   ].filter((v): v is { value: number; weight: number } => v != null);
   const dirNum = dirPairs.length > 0
     ? circularMeanWindDirection(dirPairs.map(p => p.value))
     : null; // Se nessuna direzione valida, restituiamo null (N/D)
 
   const stato = statoAggressivo(om, ow, tw);
-  const baseNubi = baseNubiAggressiva(Number(cloudNum || 0));
-  const termiche = termicheAggressive(om.tMax, om.tMin, om.cloudDaily, om.rainDaily);
-  const indice = indiceAffidabilitaStima(Number(windNum || 0), Number(rainNum || 0), Number(cloudNum || 0), baseNubi, termiche);
+  const baseNubi = baseNubiAggressiva(cloudNum);
+  const termiche = termicheAggressive(
+    om?.tMax ?? null,
+    om?.tMin ?? null,
+    om?.cloudDaily ?? null,
+    om?.rainDaily ?? null
+  );
+  const indice = indiceAffidabilitaStima(windNum, rainNum, cloudNum, baseNubi, termiche);
   const indiceLabel = labelIndice(indice);
 
   return {

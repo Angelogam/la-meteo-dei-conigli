@@ -1,7 +1,6 @@
 "use client";
 
-import { fetchHourly } from "@/lib/openMeteoClient";
-import type { MeteoCurrent, MeteoHourly, MeteoDaily } from "./openMeteoService";
+import { fetchHourly, fetchDaily } from "@/lib/openMeteoClient";
 
 export interface DecolloConfig {
   name: string;
@@ -38,24 +37,24 @@ export const DECOLLI_AGGRESSIVI: DecolloConfig[] = [
 ];
 
 interface OpenMeteoData {
-  temp: number;
-  rain: number;
-  cloud: number;
-  wind: number;
-  dir: number;
-  tMax: number;
-  tMin: number;
-  cloudDaily: number;
-  rainDaily: number;
+  temp: number | null;
+  rain: number | null;
+  cloud: number | null;
+  wind: number | null;
+  dir: number | null;
+  tMax: number | null;
+  tMin: number | null;
+  cloudDaily: number | null;
+  rainDaily: number | null;
 }
 
 interface OpenWeatherData {
-  temp: number;
-  rain: number;
-  cloud: number;
-  wind: number;
-  dir: number;
-  stato: string;
+  temp: number | null;
+  rain: number | null;
+  cloud: number | null;
+  wind: number | null;
+  dir: number | null;
+  stato: string | null;
 }
 
 interface AggressiveWeatherResult {
@@ -71,21 +70,32 @@ interface AggressiveWeatherResult {
   fonte: string;
 }
 
+function numOrNull(v: unknown): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 async function fetchOpenMeteo(lat: number, lon: number): Promise<OpenMeteoData | null> {
   try {
     const today = new Date().toISOString().split("T")[0];
-    const data = await fetchHourly(lat, lon, "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m", today, today);
-    const om = data.hourly;
+    const [hourlyData, dailyData] = await Promise.all([
+      fetchHourly(lat, lon, "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m", today, today),
+      fetchDaily(lat, lon, "temperature_2m_max,temperature_2m_min,cloud_cover_mean,precipitation_sum", 1),
+    ]);
+    const h = hourlyData.hourly;
+    const d = dailyData.daily;
+    if (!h?.time?.length) return null;
     return {
-      temp: Number(om?.temperature_2m?.[0]) ?? 0,
-      rain: Number(om?.precipitation?.[0]) ?? 0,
-      cloud: Number(om?.cloud_cover?.[0]) ?? 0,
-      wind: Number(om?.wind_speed_10m?.[0]) ?? 0,
-      dir: Number(om?.wind_direction_10m?.[0]) ?? 0,
-      tMax: Number(data.daily?.temperature_2m_max?.[0]) ?? 0,
-      tMin: Number(data.daily?.temperature_2m_min?.[0]) ?? 0,
-      cloudDaily: Number(data.daily?.cloud_cover_mean?.[0]) ?? 0,
-      rainDaily: Number(data.daily?.precipitation_sum?.[0]) ?? 0
+      temp: numOrNull(h.temperature_2m?.[0]),
+      rain: numOrNull(h.precipitation?.[0]),
+      cloud: numOrNull(h.cloud_cover?.[0]),
+      wind: numOrNull(h.wind_speed_10m?.[0]),
+      dir: numOrNull(h.wind_direction_10m?.[0]),
+      tMax: numOrNull(d?.temperature_2m_max?.[0]),
+      tMin: numOrNull(d?.temperature_2m_min?.[0]),
+      cloudDaily: numOrNull(d?.cloud_cover_mean?.[0]),
+      rainDaily: numOrNull(d?.precipitation_sum?.[0]),
     };
   } catch {
     return null;
@@ -94,74 +104,76 @@ async function fetchOpenMeteo(lat: number, lon: number): Promise<OpenMeteoData |
 
 async function fetchOpenWeather(lat: number, lon: number): Promise<OpenWeatherData | null> {
   const apiKey = import.meta.env.VITE_OPENWEATHER_KEY || "";
+  if (!apiKey) return null;
   try {
     const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
     const res = await fetch(url);
     if (!res.ok) return null;
     const data = await res.json();
     return {
-      temp: data.main?.temp ?? 0,
-      rain: data.rain?.["1h"] ?? 0,
-      cloud: data.clouds?.all ?? 0,
-      wind: data.wind?.speed ?? 0,
-      dir: data.wind?.deg ?? 0,
-      stato: data.weather?.[0]?.main ?? "Clear"
+      temp: numOrNull(data.main?.temp),
+      rain: numOrNull(data.rain?.["1h"]),
+      cloud: numOrNull(data.clouds?.all),
+      wind: numOrNull(data.wind?.speed),
+      dir: numOrNull(data.wind?.deg),
+      stato: typeof data.weather?.[0]?.main === "string" ? data.weather[0].main : null,
     };
   } catch {
     return null;
   }
 }
 
-function media(a: number, b: number): number {
-  const na = parseFloat(String(a));
-  const nb = parseFloat(String(b));
-  if (!isNaN(na) && !isNaN(nb)) return (na + nb) / 2;
-  if (!isNaN(na)) return na;
-  if (!isNaN(nb)) return nb;
-  return NaN;
+function weightedMean(values: Array<{ value: number | null; weight: number }>): number | null {
+  const valid = values.filter(v => v.value !== null && Number.isFinite(v.value));
+  if (!valid.length) return null;
+  const weight = valid.reduce((s, v) => s + v.weight, 0);
+  return weight > 0 ? valid.reduce((s, v) => s + (v.value as number) * v.weight, 0) / weight : null;
 }
 
-function safe(v: number): string {
-  const n = parseFloat(String(v));
-  return isNaN(n) ? "--" : n.toFixed(1);
+function safe(v: number | null): string {
+  return v === null || !Number.isFinite(v) ? "--" : v.toFixed(1);
 }
 
-function statoAggressivo(om: OpenMeteoData, ow: OpenWeatherData): string {
-  if (ow.stato === "Thunderstorm") return "Temporale";
-  if (ow.stato === "Rain" || ow.rain > 0.1) return "Pioggia";
-  if (ow.cloud > 70) return "Coperto";
-  if (ow.cloud > 40) return "Variabile";
-  if (om.rain > 0.1) return "Pioggia";
-  if (om.cloud > 70) return "Coperto";
-  if (om.cloud > 40) return "Variabile";
+function statoAggressivo(om: OpenMeteoData | null, ow: OpenWeatherData | null): string {
+  if (ow?.stato === "Thunderstorm") return "Temporale";
+  const rains = [om?.rain, ow?.rain].filter((v): v is number => v !== null && Number.isFinite(v));
+  if (rains.some(v => v > 0.1)) return "Pioggia";
+  const clouds = [om?.cloud, ow?.cloud].filter((v): v is number => v !== null && Number.isFinite(v));
+  if (!clouds.length) return "N/D";
+  const cloud = Math.max(...clouds);
+  if (cloud > 70) return "Coperto";
+  if (cloud > 40) return "Variabile";
   return "Sereno";
 }
 
-function baseNubiAggressiva(cloud: number, elevation: number): string {
+function baseNubiAggressiva(cloud: number | null): string {
+  if (cloud === null) return "N/D";
   if (cloud > 80) return "Molto bassa (<1200 m)";
   if (cloud > 60) return "Bassa (1200–1800 m)";
   if (cloud > 40) return "Media (1800–2500 m)";
   return "Alta (>2500 m)";
 }
 
-function termicheAggressive(tMax: number, tMin: number, cloudDaily: number, rainDaily: number): string {
+function termicheAggressive(tMax: number | null, tMin: number | null, cloudDaily: number | null, rainDaily: number | null): string {
+  if (tMax === null || tMin === null) return "Termiche non disponibili";
   const deltaT = tMax - tMin;
-  if (rainDaily > 1) return "Termiche disturbate (pioggia)";
-  if (cloudDaily > 80) return "Termiche deboli (coperto)";
+  if (rainDaily !== null && rainDaily > 1) return "Termiche disturbate (pioggia)";
+  if (cloudDaily !== null && cloudDaily > 80) return "Termiche deboli (coperto)";
   if (deltaT < 6) return "Termiche scarse";
   if (deltaT < 10) return "Termiche moderate";
   if (deltaT < 15) return "Termiche buone";
-  return "Termiche forti / rischio overdevelopment";
+  return "Termiche forti";
 }
 
-function indiceAggressivo(wind: number, rain: number, cloud: number, baseNubi: string, termiche: string): number {
+function indiceAffidabilitaStima(wind: number | null, rain: number | null, cloud: number | null, baseNubi: string, termiche: string): number {
+  if (wind === null && rain === null && cloud === null) return 10;
   let i = 1;
-  if (rain > 0.1) i += 5;
-  if (rain > 2) i += 3;
-  if (wind > 15) i += 2;
-  if (wind > 25) i += 3;
-  if (wind > 30) i += 3;
-  if (cloud > 70) i += 2;
+  if ((rain ?? 0) > 0.1) i += 5;
+  if ((rain ?? 0) > 2) i += 3;
+  if ((wind ?? 0) > 15) i += 2;
+  if ((wind ?? 0) > 25) i += 3;
+  if ((wind ?? 0) > 30) i += 3;
+  if ((cloud ?? 0) > 70) i += 2;
   if (baseNubi.includes("Molto bassa")) i += 3;
   if (termiche.includes("forti")) i += 2;
   return Math.min(i, 10);
@@ -181,45 +193,59 @@ export async function getAggressiveWeatherForDecollo(decollo: DecolloConfig): Pr
     fetchOpenWeather(decollo.lat, decollo.lon)
   ]);
 
-  if (!openMeteo && !openWeather) {
-    throw new Error("Nessuna fonte meteo disponibile");
-  }
+  if (!openMeteo && !openWeather) throw new Error("Nessuna fonte meteo disponibile");
 
-  const om = openMeteo || { temp: 0, rain: 0, cloud: 0, wind: 0, dir: 0, tMax: 0, tMin: 0, cloudDaily: 0, rainDaily: 0 };
-  const ow = openWeather || { temp: 0, rain: 0, cloud: 0, wind: 0, dir: 0, stato: "Clear" };
+  const temp = weightedMean([
+    { value: openMeteo?.temp ?? null, weight: 0.5 },
+    { value: openWeather?.temp ?? null, weight: 0.5 },
+  ]);
+  const rainValues = [openMeteo?.rain ?? null, openWeather?.rain ?? null].filter((v): v is number => v !== null);
+  const rain = rainValues.length ? Math.max(...rainValues) : null;
+  const cloud = weightedMean([
+    { value: openMeteo?.cloud ?? null, weight: 0.5 },
+    { value: openWeather?.cloud ?? null, weight: 0.5 },
+  ]);
+  const wind = weightedMean([
+    { value: openMeteo?.wind ?? null, weight: 0.5 },
+    { value: openWeather?.wind ?? null, weight: 0.5 },
+  ]);
 
-  const stato = statoAggressivo(om, ow);
-  const temp = safe(media(om.temp, ow.temp));
-  const rain = safe(Math.max(om.rain, ow.rain));
-  const cloud = safe(media(om.cloud, ow.cloud));
-  const wind = safe(media(om.wind, ow.wind));
-  const baseNubi = baseNubiAggressiva(om.cloud, decollo.elevation);
-  const termiche = termicheAggressive(om.tMax, om.tMin, om.cloudDaily, om.rainDaily);
-  const indice = indiceAggressivo(parseFloat(wind), parseFloat(rain), parseFloat(cloud), baseNubi, termiche);
-  const indiceLabel = labelIndice(indice);
+  const baseNubi = baseNubiAggressiva(cloud);
+  const termiche = termicheAggressive(
+    openMeteo?.tMax ?? null,
+    openMeteo?.tMin ?? null,
+    openMeteo?.cloudDaily ?? null,
+    openMeteo?.rainDaily ?? null
+  );
+  const indice = indiceAffidabilitaStima(wind, rain, cloud, baseNubi, termiche);
 
   return {
-    temp, rain, cloud, wind, stato, baseNubi, termiche, indice, indiceLabel,
-    fonte: "Ibrido Aggressivo (Open-Meteo + OpenWeather)"
+    temp: safe(temp),
+    rain: safe(rain),
+    cloud: safe(cloud),
+    wind: safe(wind),
+    stato: statoAggressivo(openMeteo, openWeather),
+    baseNubi,
+    termiche,
+    indice,
+    indiceLabel: labelIndice(indice),
+    fonte: `Ibrido Aggressivo (${openMeteo ? "Open-Meteo" : ""}${openMeteo && openWeather ? " + " : ""}${openWeather ? "OpenWeather" : ""})`,
   };
 }
 
 export async function getAllAggressiveWeather(): Promise<Map<string, AggressiveWeatherResult>> {
   const results = new Map<string, AggressiveWeatherResult>();
-  await Promise.all(
-    DECOLLI_AGGRESSIVI.map(async (decollo) => {
-      try {
-        const weather = await getAggressiveWeatherForDecollo(decollo);
-        results.set(decollo.name, weather);
-      } catch (err) {
-        console.error(`Errore per ${decollo.name}:`, err);
-        results.set(decollo.name, {
-          temp: "--", rain: "--", cloud: "--", wind: "--",
-          stato: "Errore", baseNubi: "--", termiche: "--",
-          indice: 10, indiceLabel: "Sconsigliato", fonte: "Errore"
-        });
-      }
-    })
-  );
+  await Promise.all(DECOLLI_AGGRESSIVI.map(async (decollo) => {
+    try {
+      results.set(decollo.name, await getAggressiveWeatherForDecollo(decollo));
+    } catch (err) {
+      console.error(`Errore per ${decollo.name}:`, err);
+      results.set(decollo.name, {
+        temp: "--", rain: "--", cloud: "--", wind: "--",
+        stato: "Errore", baseNubi: "--", termiche: "--",
+        indice: 10, indiceLabel: "Sconsigliato", fonte: "Errore"
+      });
+    }
+  }));
   return results;
 }

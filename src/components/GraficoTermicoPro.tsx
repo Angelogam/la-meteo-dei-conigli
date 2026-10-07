@@ -104,20 +104,22 @@ const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
       </div>
 
       <div className="mt-6 w-full bg-[#1e293b] rounded-xl p-5 text-center border border-[#22c55e]/30">
-        <div className="text-sm text-gray-300">
-          Alle <span className="text-[#22c55e] font-semibold">17:00</span> -{" "}
-          <span className="text-[#f97316] font-semibold">Forte</span>
-        </div>
-        <div className="text-4xl font-bold text-white mt-1">1.6 m/s</div>
-        <div className="text-xs text-gray-400 mt-1">
-          Base <span className="text-[#22c55e]">2040 m</span> - Top{" "}
-          <span className="text-red-400">2520 m</span> - Salita{" "}
-          <span className="text-[#facc15]">480 m</span>
-        </div>
+        {data.length > 0 ? (
+          <>
+            <div className="text-sm text-gray-300">
+              Seleziona un'ora nel grafico per vedere il dettaglio.
+            </div>
+            <div className="text-xs text-gray-400 mt-2">
+              I valori visualizzati provengono dai dati disponibili della previsione.
+            </div>
+          </>
+        ) : (
+          <div className="text-sm text-gray-400">Dati termici non disponibili.</div>
+        )}
       </div>
 
       <div className="mt-4 text-[10px] text-gray-500 text-center">
-        Basato su dati reali Open-Meteo
+        Basato sui dati disponibili di Open-Meteo
       </div>
     </div>
   );
