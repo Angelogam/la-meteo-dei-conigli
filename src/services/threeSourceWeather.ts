@@ -35,10 +35,10 @@ async function getOpenMeteo(lat: number, lon: number) {
     if (t === undefined || t === null) return null;
     return {
       temp: data.hourly?.temperature_2m?.[0] !== undefined ? Number(data.hourly.temperature_2m[0]) : null,
-      rain: data.hourly?.precipitation?.[0] !== undefined ? Number(data.hourly.precipitation[0]) : 0,
-      cloud: data.hourly?.cloud_cover?.[0] !== undefined ? Number(data.hourly.cloud_cover[0]) : 0,
-      wind: data.hourly?.wind_speed_10m?.[0] !== undefined ? Number(data.hourly.wind_speed_10m[0]) : 0,
-      dir: data.hourly?.wind_direction_10m?.[0] !== undefined ? Number(data.hourly.wind_direction_10m[0]) : 0,
+      rain: data.hourly?.precipitation?.[0] !== undefined ? Number(data.hourly.precipitation[0]) : null,
+      cloud: data.hourly?.cloud_cover?.[0] !== undefined ? Number(data.hourly.cloud_cover[0]) : null,
+      wind: data.hourly?.wind_speed_10m?.[0] !== undefined ? Number(data.hourly.wind_speed_10m[0]) : null,
+      dir: data.hourly?.wind_direction_10m?.[0] !== undefined ? Number(data.hourly.wind_direction_10m[0]) : null,
       cape: data.hourly?.cape?.[0] !== undefined ? Number(data.hourly.cape[0]) : null,
       freezingLevel: data.hourly?.freezing_level_height?.[0] !== undefined ? Number(data.hourly.freezing_level_height[0]) : null,
       tMax: null,
@@ -60,11 +60,11 @@ async function getOpenWeather(lat: number, lon: number) {
     const data = await res.json();
     return {
       temp: data.main?.temp ?? null,
-      rain: data.rain ? (data.rain["1h"] ?? 0) : 0,
-      cloud: data.clouds?.all ?? 0,
-      wind: data.wind?.speed ?? 0,
-      dir: data.wind?.deg ?? 0,
-      stato: data.weather?.[0]?.main ?? "Clear"
+      rain: data.rain?.["1h"] !== undefined ? Number(data.rain["1h"]) : null,
+      cloud: data.clouds?.all !== undefined ? Number(data.clouds.all) : null,
+      wind: data.wind?.speed !== undefined ? Number(data.wind.speed) : null,
+      dir: data.wind?.deg !== undefined ? Number(data.wind.deg) : null,
+      stato: typeof data.weather?.[0]?.main === "string" ? data.weather[0].main : null
     };
   } catch {
     return null;
@@ -82,10 +82,10 @@ async function getTomorrow(lat: number, lon: number) {
     if (!v) return null;
     return {
       temp: v.temperature ?? null,
-      rain: v.precipitationIntensity ?? 0,
-      cloud: v.cloudCover ?? 0,
-      wind: v.windSpeed ?? 0,
-      dir: v.windDirection ?? 0
+      rain: v.precipitationIntensity !== undefined && v.precipitationIntensity !== null ? Number(v.precipitationIntensity) : null,
+      cloud: v.cloudCover !== undefined && v.cloudCover !== null ? Number(v.cloudCover) : null,
+      wind: v.windSpeed !== undefined && v.windSpeed !== null ? Number(v.windSpeed) : null,
+      dir: v.windDirection !== undefined && v.windDirection !== null ? Number(v.windDirection) : null
     };
   } catch {
     return null;
@@ -127,13 +127,11 @@ const WEIGHTS = {
 
 function statoAggressivo(openMeteo: any, openWeather: any, tomorrow: any): string {
   if (openWeather?.stato === "Thunderstorm") return "Temporale";
-  const rainMax = Math.max(openMeteo?.rain || 0, openWeather?.rain || 0, tomorrow?.rain || 0);
-  if (rainMax > 0.1) return "Pioggia";
-  const cloudMax = Math.max(
-    Number(openMeteo?.cloud || 0),
-    Number(openWeather?.cloud || 0),
-    Number(tomorrow?.cloud || 0)
-  );
+  const rains = [openMeteo?.rain, openWeather?.rain, tomorrow?.rain].filter((v): v is number => Number.isFinite(v));
+  if (rains.some(v => v > 0.1)) return "Pioggia";
+  const clouds = [openMeteo?.cloud, openWeather?.cloud, tomorrow?.cloud].filter((v): v is number => Number.isFinite(v));
+  if (!clouds.length) return "N/D";
+  const cloudMax = Math.max(...clouds);
   if (cloudMax > 80) return "Coperto";
   if (cloudMax > 40) return "Variabile";
   return "Sereno";
@@ -183,7 +181,8 @@ function labelIndice(i: number): string {
   return "Sconsigliato";
 }
 
-function safe(v: number): string {
+function safe(v: number | null): string {
+  if (v === null) return "--";
   const n = parseFloat(String(v));
   return isNaN(n) ? "--" : n.toFixed(1);
 }
