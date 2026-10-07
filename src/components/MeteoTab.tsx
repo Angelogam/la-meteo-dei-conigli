@@ -5,7 +5,7 @@ import type { MeteoCurrent } from "@/services/openMeteoService";
 import type { HourData } from "@/types/meteo";
 import {
   MapPin, Wind, Thermometer, Droplets, Eye, Mountain, Cloud,
-  Activity, AlertTriangle, CheckCircle2,
+  Activity, AlertTriangle, CheckCircle2, FileText, ShieldCheck,
   Sun, Radiation, ArrowUp, CloudSnow, ArrowRight, TrendingUp,
   TrendingDown, Minus, CloudRain, Zap, Gauge, CloudOff,
   Waves
@@ -902,113 +902,177 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
         </div>
       </div>
 
-      {/* ═══════════ WARNINGS + TACTICS ═══════════ */}
-      {/* ═══════════ RAPPORTO METEO — BRIEFING PILOTA ═══════════ */}
-      {(warnings.length > 0 || tactics.length > 0) && (
-        <div className="border-t border-white/5">
-          {/* Header del report */}
-          <div className="px-6 pt-5 pb-4 bg-gradient-to-r from-slate-800/80 via-slate-800/50 to-transparent border-b border-white/5">
-            <div className="flex items-center gap-3">
-              <div className="flex gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
-                <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xs font-black text-white uppercase tracking-[0.2em]">Rapporto Meteo — {siteName || siteAlt + "m slm"}</span>
-                  <span className="text-[9px] text-slate-500 font-mono">
-                    {new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric" })} · {String(now).padStart(2,"0")}:00 UTC
-                  </span>
+      {/* ═══════════ RAPPORTO METEO — STILE AEROLOGICO ═══════════ */}
+      {(warnings.length > 0 || tactics.length > 0) && (() => {
+        const scoreColor = signal === "green" ? "text-emerald-400" : signal === "yellow" ? "text-amber-400" : "text-rose-400";
+        const scoreBg = signal === "green" ? "from-emerald-500/15 to-emerald-600/5 border-emerald-500/30"
+          : signal === "yellow" ? "from-amber-500/15 to-amber-600/5 border-amber-500/30"
+          : "from-rose-500/15 to-rose-600/5 border-rose-500/30";
+        const barColor = signal === "green" ? "from-emerald-400 to-emerald-500"
+          : signal === "yellow" ? "from-amber-400 to-amber-500"
+          : "from-rose-400 to-rose-500";
+        const totalItems = warnings.length + tactics.length;
+        const overallScore = signal === "green" ? 9 : signal === "yellow" ? 5 : 2;
+
+        return (
+        <div className="rounded-2xl overflow-hidden shadow-2xl mt-1">
+          {/* ══ HEADER ══ */}
+          <div className="px-6 py-5 border-b border-slate-800/80 bg-gradient-to-r from-slate-800/60 via-slate-800/40 to-transparent">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                  <FileText className="w-6 h-6 text-slate-300" />
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${signal === "green" ? "bg-emerald-500/20 text-emerald-300" : signal === "yellow" ? "bg-amber-500/20 text-amber-300" : "bg-rose-500/20 text-rose-300"}`}>
-                    {signalLabel}
-                  </span>
-                  {warnings.length > 0 && (
-                    <span className="text-[9px] text-rose-400 font-semibold">· {warnings.length} criticità</span>
-                  )}
-                  {tactics.length > 0 && (
-                    <span className="text-[9px] text-emerald-400 font-semibold">· {tactics.length} raccomandazioni</span>
-                  )}
+                <div>
+                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest mb-1">Bollettino meteo operatore</p>
+                  <h4 className="text-base font-black text-white leading-tight">{siteName || "Decollo"} — {siteAlt}m slm</h4>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })} · {String(now).padStart(2,"0")}:00 UTC · {modelName || "Open-Meteo"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                <div className={`bg-gradient-to-br ${scoreBg} border rounded-2xl px-4 py-2.5 text-center`}>
+                  <div className={`text-2xl font-black tabular-nums ${scoreColor}`}>{overallScore}</div>
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{signalLabel}</div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Corpo del report */}
-          <div className="px-6 py-5 space-y-5">
-            {/* ── Sezione Avvertenze ── */}
+          {/* ══ SCORE BAR ══ */}
+          <div className="px-6 pt-4 pb-0">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Condizioni complessive</span>
+              <span className="text-[10px] text-slate-500 font-semibold">{totalItems} elementi analizzati</span>
+            </div>
+            <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full bg-gradient-to-r ${barColor} transition-all duration-1000 ease-out`}
+                style={{ width: `${overallScore * 10}%` }}
+              />
+            </div>
+          </div>
+
+          {/* ══ SEZIONI ══ */}
+          <div className="px-6 py-5 space-y-4">
+
+            {/* 1 · AVVERTENZE */}
             {warnings.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-0.5 h-4 rounded-full bg-rose-500" />
-                  <span className="text-[9px] font-black text-rose-400 uppercase tracking-[0.2em]">Avvertenze Operative</span>
-                  <div className="flex-1 h-px bg-rose-500/20 ml-2" />
+              <section>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-500/25 flex items-center justify-center">
+                    <AlertTriangle className="w-4 h-4 text-rose-400" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-rose-400/60 font-bold uppercase tracking-widest mr-2">01</span>
+                    <span className="text-sm font-black text-rose-200">Avvertenze Operative</span>
+                  </div>
                 </div>
-                <div className="bg-rose-500/5 rounded-xl border border-rose-500/15 p-4 space-y-2.5">
+                <div className="space-y-2 pl-11">
                   {warnings.map((w, i) => (
                     <div
                       key={i}
-                      className={`flex items-start gap-3 text-sm leading-relaxed py-2 px-3 rounded-lg transition-colors ${
+                      className={`text-sm leading-[1.85] font-normal py-2 px-3 rounded-lg border ${
                         w.type === "danger"
-                          ? "bg-rose-500/10 text-rose-200"
+                          ? "bg-rose-500/8 border-rose-500/20 text-rose-200"
                           : w.type === "warning"
-                          ? "bg-amber-500/8 text-amber-200"
-                          : "bg-sky-500/8 text-sky-200"
+                          ? "bg-amber-500/8 border-amber-500/20 text-amber-200"
+                          : "bg-sky-500/8 border-sky-500/20 text-sky-200"
                       }`}
                     >
-                      <span className="text-base shrink-0 mt-0.5">{w.icon}</span>
-                      <p className="leading-relaxed">{w.text}</p>
+                      <span className="mr-2">{w.icon}</span>
+                      {w.text}
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
             )}
 
-            {/* ── Separatore ── */}
-            {warnings.length > 0 && tactics.length > 0 && (
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-white/5" />
-                <span className="text-[8px] text-slate-600 uppercase tracking-widest font-black">—</span>
-                <div className="flex-1 h-px bg-white/5" />
-              </div>
+            {/* 2 · VENTO */}
+            {tactics.some(t => t.includes("Vento")) && (
+              <section>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-sky-500/15 border border-sky-500/25 flex items-center justify-center">
+                    <Wind className="w-4 h-4 text-sky-400" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-sky-400/60 font-bold uppercase tracking-widest mr-2">02</span>
+                    <span className="text-sm font-black text-sky-200">Profilo Vento e Orientamento</span>
+                  </div>
+                </div>
+                <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">
+                  {tactics.filter(t => t.includes("Vento")).join(" · ")}
+                </p>
+              </section>
             )}
 
-            {/* ── Sezione Raccomandazioni ── */}
-            {tactics.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-0.5 h-4 rounded-full bg-emerald-500" />
-                  <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.2em]">Raccomandazioni di Volo</span>
-                  <div className="flex-1 h-px bg-emerald-500/20 ml-2" />
+            {/* 3 · TERMICHE E STABILITÀ */}
+            {tactics.some(t => t.includes("Termiche") || t.includes("Instabilità") || t.includes("Pressure") || t.includes("pressione")) && (
+              <section>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-violet-500/15 border border-violet-500/25 flex items-center justify-center">
+                    <Cloud className="w-4 h-4 text-violet-400" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-violet-400/60 font-bold uppercase tracking-widest mr-2">03</span>
+                    <span className="text-sm font-black text-violet-200">Termiche e Stabilità Atmosferica</span>
+                  </div>
                 </div>
-                <div className="bg-emerald-500/5 rounded-xl border border-emerald-500/15 p-4 space-y-2">
-                  {tactics.map((tac, i) => (
-                    <div
-                      key={i}
-                      className="flex items-start gap-3 text-sm text-slate-200 leading-relaxed py-2 px-3 rounded-lg hover:bg-slate-700/20 transition-colors"
-                    >
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 mt-1.5" />
-                      <p className="leading-relaxed">{tac}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">
+                  {tactics.filter(t => t.includes("Termiche") || t.includes("Instabilità") || t.includes("pressione")).join(" · ")}
+                </p>
+              </section>
             )}
+
+            {/* 4 · STRATEGIA DI VOLO */}
+            {tactics.some(t => !t.includes("Vento") && !t.includes("Termiche") && !t.includes("Instabilità") && !t.includes("pressione")) && (
+              <section>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center">
+                    <ArrowUp className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-emerald-400/60 font-bold uppercase tracking-widest mr-2">04</span>
+                    <span className="text-sm font-black text-emerald-200">Strategia e Finestra di Volo</span>
+                  </div>
+                </div>
+                <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">
+                  {tactics.filter(t => !t.includes("Vento") && !t.includes("Termiche") && !t.includes("Instabilità") && !t.includes("pressione")).join(" · ")}
+                </p>
+              </section>
+            )}
+
           </div>
 
-          {/* Footer del report */}
-          <div className="px-6 py-3 border-t border-white/5 bg-slate-800/20 rounded-b-2xl">
-            <div className="flex items-center justify-between text-[9px] text-slate-600">
-              <span>Generato automaticamente da {modelName || "Open-Meteo"}</span>
-              <span className="font-mono">
-                {(() => { const d = new Date(); return d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }); })()}
-              </span>
+          {/* ══ SEPARATORE ══ */}
+          <div className="mx-6 border-t border-slate-800/80" />
+
+          {/* ══ BOTTOM ALERTS ══ */}
+          <div className="px-6 py-4 space-y-2.5">
+
+            {/* Giudizio finale */}
+            <div className="flex items-start gap-3 bg-emerald-500/8 border border-emerald-500/20 rounded-2xl px-4 py-3.5">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div>
+                <span className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-widest block mb-1">Giudizio finale</span>
+                <p className="text-xs text-emerald-200/90 leading-[1.7] font-medium">
+                  {signal === "green"
+                    ? `Condizioni favorevoli per il volo a ${siteName || "questo decollo"}. ${isFlyable ? "Tutti i parametri nella norma." : "Valutare con attenzione eventuali criticità minori."}`
+                    : signal === "yellow"
+                    ? `Condizioni discrete ma da monitorare. ${signalLabel.toLowerCase()}. Si consiglia di verificare l'evoluzione nel corso della giornata.`
+                    : `Condizioni critiche — ${signalLabel.toLowerCase()}. Si sconsiglia il decollo fino a miglioramento delle condizioni.`
+                  }
+                </p>
+              </div>
             </div>
+
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
