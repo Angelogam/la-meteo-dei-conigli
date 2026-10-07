@@ -96,13 +96,6 @@ export default function PrevisioniGiornaliere({
   const flightRating = getFlightRating(daily, currentData);
   const verdict = getFlightVerdict(flightRating);
 
-  const windLevels = [
-    { label: "Suolo", speed: windSpeed, dir: windDir, alt: "10m" },
-    { label: "80m", speed: windSpeed * 1.1, dir: windDir + 10, alt: "80m" },
-    { label: "120m", speed: windSpeed * 1.2, dir: windDir + 20, alt: "120m" },
-    { label: "180m", speed: windSpeed * 1.3, dir: windDir + 30, alt: "180m" },
-  ];
-
   return (
     <div className="space-y-6">
       {/* ═══════════════════════════════════════════════════════════ */}
@@ -282,47 +275,6 @@ export default function PrevisioniGiornaliere({
             barMax={11}
             detail={<div className="text-[10px] text-slate-400">Protezione solare</div>}
           />
-        </div>
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════ */}
-      {/* PROFILO VENTO VERTICALE                                    */}
-      {/* ═══════════════════════════════════════════════════════════ */}
-      <div className="rounded-2xl border border-sky-500/20 bg-gradient-to-br from-slate-900 to-sky-950/30 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-1 h-6 bg-sky-500 rounded-full" />
-            <div className="text-sm font-black text-white">Profilo Vento Verticale</div>
-          </div>
-          <div className="text-[10px] text-sky-400 font-bold">{dirToIcon(windDir)} {windDir}°</div>
-        </div>
-        
-        <div className="space-y-3">
-          {windLevels.map((level) => (
-            <div key={level.label} className="flex items-center gap-4">
-              <div className="w-16 text-xs font-bold text-slate-400">{level.label}</div>
-              <div className="flex-1">
-                <div className="h-3 bg-slate-800 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-700 ${level.speed > 25 ? 'bg-rose-500' : level.speed > 15 ? 'bg-amber-500' : 'bg-sky-500'}`}
-                    style={{ width: `${Math.min(100, level.speed * 2.5)}%` }}
-                  />
-                </div>
-              </div>
-              <div className="w-24 text-right">
-                <span className="text-sm font-black text-white">{Math.round(level.speed)}</span>
-                <span className="text-xs text-slate-500 ml-1">km/h</span>
-              </div>
-              <div className="w-10 text-xs text-slate-500">{dirToIcon(level.dir)}</div>
-            </div>
-          ))}
-        </div>
-        
-        <div className="mt-4 flex justify-between text-[9px] text-slate-600">
-          <span>0 km/h</span>
-          <span>30 km/h</span>
-          <span>60 km/h</span>
-          <span>100+ km/h</span>
         </div>
       </div>
 
