@@ -903,58 +903,109 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
       </div>
 
       {/* ═══════════ WARNINGS + TACTICS ═══════════ */}
+      {/* ═══════════ RAPPORTO METEO — BRIEFING PILOTA ═══════════ */}
       {(warnings.length > 0 || tactics.length > 0) && (
-        <div className="border-t border-white/5 px-5 py-5">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-1 h-5 rounded-full bg-gradient-to-b from-amber-400 to-orange-500" />
-            <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Analisi &amp; Consigli</span>
-            <div className="flex items-center gap-1.5 ml-auto">
-              {warnings.length > 0 && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/30 text-[9px] font-black text-rose-300">
-                  <AlertTriangle className="w-2.5 h-2.5" />
-                  {warnings.length}
-                </span>
-              )}
-              {tactics.length > 0 && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[9px] font-black text-emerald-300">
-                  <ArrowRight className="w-2.5 h-2.5" />
-                  {tactics.length}
-                </span>
-              )}
+        <div className="border-t border-white/5">
+          {/* Header del report */}
+          <div className="px-6 pt-5 pb-4 bg-gradient-to-r from-slate-800/80 via-slate-800/50 to-transparent border-b border-white/5">
+            <div className="flex items-center gap-3">
+              <div className="flex gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs font-black text-white uppercase tracking-[0.2em]">Rapporto Meteo — {siteName || siteAlt + "m slm"}</span>
+                  <span className="text-[9px] text-slate-500 font-mono">
+                    {new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric" })} · {String(now).padStart(2,"0")}:00 UTC
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${signal === "green" ? "bg-emerald-500/20 text-emerald-300" : signal === "yellow" ? "bg-amber-500/20 text-amber-300" : "bg-rose-500/20 text-rose-300"}`}>
+                    {signalLabel}
+                  </span>
+                  {warnings.length > 0 && (
+                    <span className="text-[9px] text-rose-400 font-semibold">· {warnings.length} criticità</span>
+                  )}
+                  {tactics.length > 0 && (
+                    <span className="text-[9px] text-emerald-400 font-semibold">· {tactics.length} raccomandazioni</span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            {warnings.length > 0 && warnings.map((w, i) => (
-              <div
-                key={`w-${i}`}
-                className={`flex items-start gap-3 text-sm py-3 px-4 rounded-xl border backdrop-blur-sm transition-all duration-300 hover:scale-[1.01] ${w.type === "danger" ? "bg-rose-500/8 border-rose-500/30 text-rose-100 hover:bg-rose-500/12" : w.type === "warning" ? "bg-amber-500/8 border-amber-500/30 text-amber-100 hover:bg-amber-500/12" : "bg-sky-500/8 border-sky-500/30 text-sky-100 hover:bg-sky-500/12"}`}
-                style={{ animationDelay: stagger(i) }}
-              >
-                <span className="text-base shrink-0 mt-0.5 w-5 h-5 flex items-center justify-center rounded-lg bg-white/5">{w.icon}</span>
-                <span className="leading-snug">{w.text}</span>
-              </div>
-            ))}
-
-            {tactics.length > 0 && (
-              <div className="border-t border-white/5 pt-3 mt-1">
-                <div className="text-[9px] text-slate-500 uppercase tracking-widest font-black mb-2.5">Consigli tattici</div>
-                <div className="space-y-1.5">
-                  {tactics.map((tac, i) => (
+          {/* Corpo del report */}
+          <div className="px-6 py-5 space-y-5">
+            {/* ── Sezione Avvertenze ── */}
+            {warnings.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-0.5 h-4 rounded-full bg-rose-500" />
+                  <span className="text-[9px] font-black text-rose-400 uppercase tracking-[0.2em]">Avvertenze Operative</span>
+                  <div className="flex-1 h-px bg-rose-500/20 ml-2" />
+                </div>
+                <div className="bg-rose-500/5 rounded-xl border border-rose-500/15 p-4 space-y-2.5">
+                  {warnings.map((w, i) => (
                     <div
-                      key={`t-${i}`}
-                      className="flex items-start gap-3 text-sm text-slate-200 bg-slate-800/40 rounded-xl px-4 py-3 border border-slate-700/30 hover:border-emerald-500/30 hover:bg-slate-800/60 transition-all duration-300 hover:scale-[1.01]"
-                      style={{ animationDelay: stagger(i + warnings.length) }}
+                      key={i}
+                      className={`flex items-start gap-3 text-sm leading-relaxed py-2 px-3 rounded-lg transition-colors ${
+                        w.type === "danger"
+                          ? "bg-rose-500/10 text-rose-200"
+                          : w.type === "warning"
+                          ? "bg-amber-500/8 text-amber-200"
+                          : "bg-sky-500/8 text-sky-200"
+                      }`}
                     >
-                      <div className="w-5 h-5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0 mt-0.5">
-                        <ArrowRight className="w-3 h-3 text-emerald-400" />
-                      </div>
-                      <span className="leading-snug">{tac}</span>
+                      <span className="text-base shrink-0 mt-0.5">{w.icon}</span>
+                      <p className="leading-relaxed">{w.text}</p>
                     </div>
                   ))}
                 </div>
               </div>
             )}
+
+            {/* ── Separatore ── */}
+            {warnings.length > 0 && tactics.length > 0 && (
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-white/5" />
+                <span className="text-[8px] text-slate-600 uppercase tracking-widest font-black">—</span>
+                <div className="flex-1 h-px bg-white/5" />
+              </div>
+            )}
+
+            {/* ── Sezione Raccomandazioni ── */}
+            {tactics.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-0.5 h-4 rounded-full bg-emerald-500" />
+                  <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.2em]">Raccomandazioni di Volo</span>
+                  <div className="flex-1 h-px bg-emerald-500/20 ml-2" />
+                </div>
+                <div className="bg-emerald-500/5 rounded-xl border border-emerald-500/15 p-4 space-y-2">
+                  {tactics.map((tac, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-3 text-sm text-slate-200 leading-relaxed py-2 px-3 rounded-lg hover:bg-slate-700/20 transition-colors"
+                    >
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 mt-1.5" />
+                      <p className="leading-relaxed">{tac}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer del report */}
+          <div className="px-6 py-3 border-t border-white/5 bg-slate-800/20 rounded-b-2xl">
+            <div className="flex items-center justify-between text-[9px] text-slate-600">
+              <span>Generato automaticamente da {modelName || "Open-Meteo"}</span>
+              <span className="font-mono">
+                {(() => { const d = new Date(); return d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }); })()}
+              </span>
+            </div>
           </div>
         </div>
       )}
