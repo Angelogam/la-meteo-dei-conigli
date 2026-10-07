@@ -84,7 +84,8 @@ function buildFromFallback(hourly: HourData[], siteAlt: number): Map<number, Hou
     const h = hourly.find(d => new Date(d.time).getHours() === targetHour);
     if (!h) return;
 
-    const t = h.temperature ?? 15;
+    const t = h.temperature ?? null;
+    if (t === null) return; // Skip hours without temperature data
     const dew = h.dewPoint ?? (t - 8);
     const cloud = h.cloudCover ?? 30;
     const freeze = h.freezingLevel ?? Math.round(siteAlt + (t / 0.0098) * 100);
@@ -139,7 +140,8 @@ function processRawJson(json: any, siteAlt: number): Map<number, HourWindData> {
     const idx = times.findIndex((t) => parseInt(t.split("T")[1].split(":")[0], 10) === targetHour);
     if (idx === -1) return;
 
-    const t = Number(h.temperature_2m[idx]) ?? 15;
+    const t = Number(h.temperature_2m[idx]);
+    if (isNaN(t)) return; // Skip hours without valid temperature data
     const dew = Number(h.dew_point_2m?.[idx]) ?? (t - 8);
     const cloud = Number(h.cloud_cover?.[idx]) ?? 30;
     const freeze = Number(h.freezing_level_height?.[idx]) ?? (siteAlt + (t / 0.0098) * 100);

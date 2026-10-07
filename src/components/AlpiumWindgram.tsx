@@ -246,8 +246,10 @@ export default function AlpiumWindgram({
     DISPLAY_HOURS.forEach((hr) => {
       const idx = hourIndices.get(hr);
       if (idx === undefined) return;
-      const t = hourly.temp2m[idx] ?? 15;
-      const dew = hourly.dew2m[idx] ?? (t - 6);
+      const t = hourly.temp2m[idx];
+      if (t === undefined || t === null) return null;
+      const tNum = Number(t);
+      const dew = hourly.dew2m[idx] !== undefined ? Number(hourly.dew2m[idx]) : (tNum - 6);
       const spread = Math.max(1, t - dew);
       const lcl = calcCloudBase(siteAlt, t, dew);
 

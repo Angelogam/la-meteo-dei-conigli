@@ -211,7 +211,7 @@ export default function VoloDecisionCard({ dayData, selectedHour, altitude, site
             <span className="text-sm text-slate-500 font-semibold">km/h</span>
           </div>
           <div className="flex items-center gap-2 mt-1.5">
-            <span className="text-xs font-bold text-slate-400">{direzioneVento(current.windDir ?? 180)}°</span>
+            <span className="text-xs font-bold text-slate-400">{current.windDir !== null ? `${direzioneVento(current.windDir)}°` : "N/D"}</span>
             <span className="text-xs text-slate-600">·</span>
             <span className={`text-xs font-bold ${ventoMedia > 20 ? "text-red-400" : ventoMedia > 12 ? "text-amber-400" : "text-emerald-400"}`}>
               {ventoTesto(ventoMedia)}

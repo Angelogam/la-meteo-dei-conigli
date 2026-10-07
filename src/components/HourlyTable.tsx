@@ -159,14 +159,14 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
       const oraCorrente = now.getHours();
       const isAdesso = ora === oraCorrente;
       const probPioggia = h.precipitationProba ?? 0;
-      const humidity = h.humidity ?? 50;
-      const dew = h.dewPoint ?? (h.temperature ?? 18) - 8;
-      const pressure = h.pressure ?? 1013;
-      const visibility = h.visibility ?? 10000;
-      const uv = h.uvIndex ?? 0;
-      const cape = h.cape ?? 0;
-      const windDir = h.windDir ?? 180;
-      const windGusts = h.windGusts ?? 0;
+      const humidity = h.humidity ?? null;
+      const dew = h.dewPoint ?? null;
+      const pressure = h.pressure ?? null;
+      const visibility = h.visibility ?? null;
+      const uv = h.uvIndex ?? null;
+      const cape = h.cape ?? null;
+      const windDir = h.windDir ?? null;
+      const windGusts = h.windGusts ?? null;
 
       return {
         ora,

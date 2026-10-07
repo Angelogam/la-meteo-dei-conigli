@@ -256,11 +256,17 @@ export default function ProfessionalWindgram({
         const nextIdx = times.findIndex((t) => parseInt(t.split("T")[1].split(":")[0], 10) > targetHour && parseInt(t.split("T")[1].split(":")[0], 10) <= targetHour + 2);
         if (prevIdx !== -1 && nextIdx !== -1) {
           const p = data.hourly;
-          const tPrev = p.temperature_2m?.[prevIdx] ?? 15;
-          const tNext = p.temperature_2m?.[nextIdx] ?? 15;
-          const t = (tPrev + tNext) / 2;
-          const dew = ((p.dew_point_2m?.[prevIdx] ?? tPrev - 6) + (p.dew_point_2m?.[nextIdx] ?? tNext - 6)) / 2;
-          const cloud = ((p.cloud_cover?.[prevIdx] ?? 30) + (p.cloud_cover?.[nextIdx] ?? 30)) / 2;
+          const tPrev = p.temperature_2m?.[prevIdx];
+          const tNext = p.temperature_2m?.[nextIdx];
+          // Both must be valid numbers for interpolation
+          if (tPrev === undefined || tNext === undefined) return null as any;
+          const t = (Number(tPrev) + Number(tNext)) / 2;
+          const dewPrev = p.dew_point_2m?.[prevIdx];
+          const dewNext = p.dew_point_2m?.[nextIdx];
+          const dew = ((dewPrev !== undefined ? Number(dewPrev) : t - 6) + (dewNext !== undefined ? Number(dewNext) : t - 6)) / 2;
+          const cloudPrev = p.cloud_cover?.[prevIdx] ?? 30;
+          const cloudNext = p.cloud_cover?.[nextIdx] ?? 30;
+          const cloud = ((cloudPrev !== undefined ? Number(cloudPrev) : 30) + (cloudNext !== undefined ? Number(cloudNext) : 30)) / 2;
           const cloudBaseVal = calcCloudBase(altitude, t, dew);
           const fb = Array(13).fill(0).map((_, i) => 0.55 + i * 0.03);
           return {
@@ -278,15 +284,17 @@ export default function ProfessionalWindgram({
       }
 
       const h = data.hourly;
-      const t = h.temperature_2m[idx] ?? 18;
-      const dew = h.dew_point_2m[idx] ?? (t - 8);
-      const rad = h.shortwave_radiation?.[idx] ?? 600;
-      const cloud = h.cloud_cover?.[idx] ?? 10;
-      const precip = h.precipitation?.[idx] ?? 0;
-      const wind10 = h.wind_speed_10m?.[idx] ?? 7;
-      const windDir10 = h.wind_direction_10m?.[idx] ?? 180;
-      const freeze = h.freezing_level_height?.[idx] ?? (altitude + t / 0.0098);
-      const cape = h.cape?.[idx] ?? 350;
+      const t = h.temperature_2m[idx];
+      if (t === undefined || t === null) return null as any; // Skip if no temperature data
+      const tNum = Number(t);
+      const dew = h.dew_point_2m[idx] !== undefined ? Number(h.dew_point_2m[idx]) : (tNum - 8);
+      const rad = h.shortwave_radiation?.[idx] !== undefined ? Number(h.shortwave_radiation[idx]) : null;
+      const cloud = h.cloud_cover?.[idx] !== undefined ? Number(h.cloud_cover[idx]) : null;
+      const precip = h.precipitation?.[idx] !== undefined ? Number(h.precipitation[idx]) : 0;
+      const wind10 = h.wind_speed_10m?.[idx] !== undefined ? Number(h.wind_speed_10m[idx]) : null;
+      const windDir10 = h.wind_direction_10m?.[idx] !== undefined ? Number(h.wind_direction_10m[idx]) : null;
+      const freeze = h.freezing_level_height?.[idx] !== undefined ? Number(h.freezing_level_height[idx]) : null;
+      const cape = h.cape?.[idx] !== undefined ? Number(h.cape[idx]) : null;
       // Usa temperature_180m come proxy per quote medie (Open-Meteo non ha 80m/120m separati)
       const t180 = h.temperature_180m?.[idx];
       const t180Num = (t180 != null && !isNaN(Number(t180))) ? Number(t180) : null;

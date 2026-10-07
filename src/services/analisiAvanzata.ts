@@ -18,7 +18,7 @@ export interface AnalisiCompleta {
   uvIndex: number;
   stabilitàAtmosferica: string;
   turbolenza: string;
-  windShear: number;
+  gustSpread: number | null; // Differenza tra raffica e vento medio (NON wind shear verticale)
   gradienteReale: number;
   zeroTermico: number;
   topTermico: number;
@@ -32,7 +32,7 @@ export interface AnalisiCompleta {
   voloScore: number;
   voloGiudizio: string;
   voloDescrizione: string;
-  confidenza: number;
+  confidenza: number; // Indice euristico di affidabilità (NON misura statistica reale)
 }
 
 function calcolaStabilita(cape: number, li: number, gradiente: number): string {
@@ -53,14 +53,16 @@ function calcolaStabilita(cape: number, li: number, gradiente: number): string {
   return "molto stabile";
 }
 
-function calcolaTurbolenza(windSpeed: number, windGusts: number, windShear: number): string {
+function calcolaTurbolenza(windSpeed: number, windGusts: number, gustSpread: number | null): string {
   let score = 0;
   if (windGusts > 40) score += 3;
   else if (windGusts > 25) score += 2;
   else if (windGusts > 15) score += 1;
-  if (windShear > 10) score += 3;
-  else if (windShear > 5) score += 2;
-  else if (windShear > 2) score += 1;
+  if (gustSpread !== null) {
+    if (gustSpread > 10) score += 3;
+    else if (gustSpread > 5) score += 2;
+    else if (gustSpread > 2) score += 1;
+  }
   if (windSpeed > 25) score += 2;
   else if (windSpeed > 18) score += 1;
 
@@ -120,7 +122,9 @@ export function analisiAvanzataCompleta(
     });
     if (!weather) continue;
 
-    const temp = weather.temperature ?? 15;
+    // Temperature: usa dato API reale, altrimenti il calcolo usa null per tutti i derivati
+    const temp = weather.temperature;
+    if (temp === null || temp === undefined) continue; // Salta l'ora se temperatura non disponibile
     const dew = weather.dewPoint ?? (temp - 8);
     const hum = weather.humidity ?? 60;
     const windSpeed = weather.windSpeed ?? 0;
@@ -144,7 +148,8 @@ export function analisiAvanzataCompleta(
     // Usa CAPE reale dall'API quando disponibile, altrimenti null
     const capeValue = cape !== null && cape !== undefined ? Math.min(1500, Math.max(0, cape)) : null;
 
-    const windShear = windGusts > 0 ? Math.round(Math.abs(windGusts - windSpeed) * 10) / 10 : null;
+    // Gust spread: differenza tra raffica e vento medio (NON wind shear verticale)
+    const gustSpread = windGusts > 0 && windSpeed > 0 ? Math.round(Math.abs(windGusts - windSpeed) * 10) / 10 : null;
 
     let gradiente = 0.98;
     if (temp80m !== null && temp80m > -50 && temp80m < 50) {
@@ -191,7 +196,7 @@ export function analisiAvanzataCompleta(
       : Math.round((temp - (dew !== null ? dew : temp - 6)) * 10) / 10;
 
     const stabilita = calcolaStabilita(capeValue ?? 0, stabilityLI, gradiente);
-    const turbolenza = calcolaTurbolenza(windSpeed, windGusts, windShear);
+    const turbolenza = calcolaTurbolenza(windSpeed, windGusts, gustSpread);
 
     let score = 0;
     score += Math.min(30, Math.round(rateo * 8));
@@ -212,6 +217,7 @@ export function analisiAvanzataCompleta(
 
     const { giudizio, descrizione } = calcolaGiudizioVolo(voloScore);
 
+    // Indice euristico di affidabilità: basato su rateo e forza termica, NON una vera misura statistica
     const confidenza = Math.min(1, Math.round((0.3 + (rateo / 5) * 0.4 + (forzaTermica / 10) * 0.3) * 100) / 100);
 
     let coperturaTesto: string;
@@ -238,7 +244,7 @@ export function analisiAvanzataCompleta(
       uvIndex: Math.round(uv * 10) / 10,
       stabilitàAtmosferica: stabilita,
       turbolenza,
-      windShear: windShear ?? 0, // gust spread quando windGusts mancante
+      gustSpread: gustSpread,
       gradienteReale: gradiente,
       zeroTermico,
       topTermico,

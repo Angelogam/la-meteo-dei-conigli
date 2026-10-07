@@ -258,7 +258,7 @@ export default function AnalisiAvanzataCard({
               Turbolenza {analisi.turbolenza}
             </div>
             <div className="opacity-70">
-              Shear {analisi.windShear} m/s
+              {analisi.gustSpread !== null ? `Gust spread ${analisi.gustSpread} km/h` : "Gust spread N/D"}
             </div>
           </div>
         </div>

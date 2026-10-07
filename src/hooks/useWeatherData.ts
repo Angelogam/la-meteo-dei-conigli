@@ -6,17 +6,31 @@ import { DECOLLI } from "@/data/decolli";
 import { fetchPrevisioniGiornaliere, type MeteoCurrent, type MeteoHourly, type MeteoDaily } from "@/services/openMeteoService";
 import { calcolaStatoMeteo, calcolaPrecipProssimeOre, type StatoMeteo, type StatoMeteoResult } from "@/utils/statoMeteo";
 import { calcolaIndiceVolabilita, type RisultatoVolabilita } from "@/utils/indiceVolabilita";
-import { generateRealisticHourly, generateRealisticDaily, generateRealisticCurrent } from "@/services/fallbackWeatherData";
-
 const STORAGE_KEY_SITE = "meteo_selected_decollo";
 const REFRESH_INTERVAL = 900000; // 15 minuti
 
-// Fallback realistico basato su fisica atmosferica quando l'API non risponde
-function getFallbackData(lat: number, lon: number, altitude: number): { hourly: MeteoHourly[]; daily: MeteoDaily[]; current: MeteoCurrent | null } {
-  const hourly = generateRealisticHourly(lat, lon, altitude, 0);
-  const daily = generateRealisticDaily(lat, lon, altitude, new Date());
-  const current = generateRealisticCurrent(lat, lon, altitude, hourly);
-  return { hourly, daily, current };
+// Mantieni ultimo dato reale valido per modalità offline
+function getLastValidData(): { hourly: MeteoHourly[]; daily: MeteoDaily[]; current: MeteoCurrent | null } | null {
+  try {
+    const cached = sessionStorage.getItem("meteo_last_valid_data");
+    if (!cached) return null;
+    const parsed = JSON.parse(cached);
+    return {
+      hourly: parsed.hourly ?? [],
+      daily: parsed.daily ?? [],
+      current: parsed.current ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function cacheLastValidData(hourly: MeteoHourly[], daily: MeteoDaily[], current: MeteoCurrent | null) {
+  try {
+    sessionStorage.setItem("meteo_last_valid_data", JSON.stringify({ hourly, daily, current }));
+  } catch {
+    // sessionStorage pieno o non disponibile
+  }
 }
 
 export function useWeatherData() {
@@ -76,22 +90,34 @@ export function useWeatherData() {
         setRawApiResponse(result.rawJson ?? null);
         setLastUpdate(new Date());
         setIsOfflineMode(false);
+        // Cache i dati reali per uso offline futuro
+        cacheLastValidData(result.hourly, result.daily, result.current);
         setLoading(false);
       } else {
         throw new Error("Dati vuoti");
       }
     } catch (error) {
-      console.warn("API non disponibile, uso fallback offline:", error);
+      console.warn("API non disponibile:", error);
       setLoadingError("Dati offline (API non raggiungibile)");
 
-      // Usa fallback realistico basato su fisica atmosferica
-      const fallback = getFallbackData(site.lat, site.lon, site.elevation_m);
-      setHourlyData(fallback.hourly);
-      setDailyData(fallback.daily);
-      setCurrentData(fallback.current);
-      setRawApiResponse(null);
-      setLastUpdate(new Date());
-      setIsOfflineMode(true);
+      // Usa ultimo dato reale cached se disponibile, altrimenti lascia dati vuoti
+      const cached = getLastValidData();
+      if (cached && (cached.hourly.length > 0 || cached.current !== null)) {
+        setHourlyData(cached.hourly);
+        setDailyData(cached.daily);
+        setCurrentData(cached.current);
+        setRawApiResponse(null);
+        setLastUpdate(new Date());
+        setIsOfflineMode(true);
+      } else {
+        // Nessun dato reale disponibile
+        setHourlyData([]);
+        setDailyData([]);
+        setCurrentData(null);
+        setRawApiResponse(null);
+        setLastUpdate(null);
+        setIsOfflineMode(true);
+      }
       setLoading(false);
     }
     

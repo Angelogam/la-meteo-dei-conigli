@@ -34,7 +34,17 @@ export function calcolaTermicheReali(
     };
   }
 
-  const temp = weather.temperature ?? 15;
+  // Temperature: usa dato API reale, altrimenti non calcolare
+  const temp = weather.temperature;
+  if (temp === null || temp === undefined) {
+    return {
+      hour: new Date().getHours(),
+      base: 0, top: 0, rateo: 0, forza: 0,
+      label: "N/D", colore: "#475569",
+      cape: 0, cin: 0, li: 0,
+      gradienteReale: 0, totaleOre: 0,
+    };
+  }
   const dew = weather.dewPoint ?? (temp - 8);
   const hum = weather.humidity ?? 60;
   const windSpeed = weather.windSpeed ?? 10;

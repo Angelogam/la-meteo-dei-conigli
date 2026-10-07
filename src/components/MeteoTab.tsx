@@ -196,32 +196,48 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   }
 
   const { alt: siteAlt, name: siteName, orientation } = site;
-  const t = currentData.temperature ?? 18;
-  const dew = currentData.dewPoint ?? t - 8;
-  const humidity = currentData.humidity ?? 50;
-  const windSpeed = currentData.windSpeed ?? 0;
-  const windDir = currentData.windDir ?? 180;
-  const windGusts = currentData.windGusts ?? 0;
+  // Temperature: usa dato API reale, non inventato
+  const t = currentData.temperature;
+  const dew = currentData.dewPoint;
+  const humidity = currentData.humidity;
+  const windSpeed = currentData.windSpeed;
+  const windDir = currentData.windDir;
+  const windGusts = currentData.windGusts;
+  // Fallback per calcoli che richiedono valore numerico quando dati mancanti
+  const tForCalc = t ?? null;
+  const dewForCalc = dew ?? null;
   const precipitation = currentData.precipitation ?? 0;
   const weatherCode = currentData.weatherCode ?? 0;
-  const visibility = currentData.visibility ?? 10000;
-  const pressure = currentData.pressure ?? 1013;
-  const uvIndex = currentData.uvIndex ?? 5;
-  const capeVal = currentData.cape ?? propCape ?? 0;
-  const liftedIndexVal = currentData.liftedIndex ?? propLi ?? 0;
-  const cinVal = currentData.cin ?? propCin ?? 0;
-  const feelsLike = currentData.apparentTemp ?? t;
+  const visibility = currentData.visibility;
+  const pressure = currentData.pressure;
+  const uvIndex = currentData.uvIndex;
+  const capeVal = currentData.cape ?? propCape ?? null;
+  const liftedIndexVal = currentData.liftedIndex ?? propLi ?? null;
+  const cinVal = currentData.cin ?? propCin ?? null;
+  const feelsLike = currentData.apparentTemp;
   const cloudCover = currentData.cloudCover ?? 0;
   const cloudCoverLow = currentData.cloudCoverLow ?? 0;
   const cloudCoverMid = currentData.cloudCoverMid ?? 0;
   const cloudCoverHigh = currentData.cloudCoverHigh ?? 0;
-  const spread = Math.max(0.5, t - dew);
+  // Spread: calcola solo se entrambi i dati sono disponibili
+  const spread = (tForCalc !== null && dewForCalc !== null) ? Math.max(0.5, tForCalc - dewForCalc) : 3;
 
   // === Calcoli per il volo ===
-  const cloudBase = calcCloudBase(siteAlt, t, dew);
-  const avgCape = dayData.reduce((s, h) => s + (h.cape ?? 0), 0) / dayData.length;
-  const avgLi = dayData.reduce((s, h) => s + (h.liftedIndex ?? 0), 0) / dayData.length;
-  const avgSpread = dayData.reduce((s, h) => s + Math.max(0.5, (h.temperature ?? t) - (h.dewPoint ?? dew)), 0) / dayData.length;
+  const cloudBase = tForCalc !== null && dewForCalc !== null
+    ? calcCloudBase(siteAlt, tForCalc, dewForCalc)
+    : siteAlt + 1000;
+  // CAPE e LI medi: usa solo ore con dati reali
+  const validCapeHours = dayData.filter(h => h.cape !== null && h.cape !== undefined);
+  const avgCape = validCapeHours.length > 0
+    ? validCapeHours.reduce((s, h) => s + h.cape, 0) / validCapeHours.length
+    : null;
+  const validLiHours = dayData.filter(h => h.liftedIndex !== null && h.liftedIndex !== undefined);
+  const avgLi = validLiHours.length > 0
+    ? validLiHours.reduce((s, h) => s + h.liftedIndex, 0) / validLiHours.length
+    : null;
+  const avgSpread = dayData.length > 0
+    ? dayData.reduce((s, h) => s + Math.max(0.5, (h.temperature ?? 0) - (h.dewPoint ?? 0)), 0) / dayData.length
+    : 3;
   const avgThermalRate = Math.min(4, Math.max(0.3, avgSpread * 0.25 + avgCape * 0.001));
   const maxThermalRate = Math.min(4, Math.max(0.3, avgSpread * 0.3 + (avgCape * 1.5) * 0.001));
   const thermalTop = Math.round(Math.min(4000, cloudBase + Math.min(800, avgThermalRate * 100 + avgCape * 0.1)));
@@ -241,8 +257,11 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   const wind180m = midDay.windSpeed180m ?? null;
   const windDir180m = midDay.windDir180m ?? null;
 
-  const zeroThermal = dayData.reduce((s, h) => s + (h.freezingLevel ?? 0), 0) / dayData.length;
-  const avgFreezing = zeroThermal > 0 ? Math.round(zeroThermal) : siteAlt + 3000;
+  // Freezing level medio: usa solo dati reali API
+  const validFreezeLevels = dayData.map(h => h.freezingLevel).filter(f => f !== null && f !== undefined);
+  const avgFreezing = validFreezeLevels.length > 0
+    ? Math.round(validFreezeLevels.reduce((s, f) => s + f, 0) / validFreezeLevels.length)
+    : null;
 
   const now = new Date().getHours();
   const next6h = dayData.filter(h => {
@@ -258,13 +277,13 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
 
   const first6h = dayData.slice(0, 6);
   const last6h = dayData.slice(-6);
-  const avgPressureFirst = first6h.reduce((s, h) => s + (h.pressure ?? 1013), 0) / first6h.length;
-  const avgPressureLast = last6h.reduce((s, h) => s + (h.pressure ?? 1013), 0) / last6h.length;
+  const avgPressureFirst = first6h.reduce((s, h) => s + (h.pressure ?? 0), 0) / first6h.length;
+  const avgPressureLast = last6h.reduce((s, h) => s + (h.pressure ?? 0), 0) / last6h.length;
   const pressureTrend = avgPressureLast - avgPressureFirst;
   const pressureTrendLabel = pressureTrend > 2 ? "↑ Rialzo" : pressureTrend < -2 ? "↓ Calo" : "→ Stabile";
   const pressureTrendColor = pressureTrend > 2 ? "text-emerald-400" : pressureTrend < -2 ? "text-rose-400" : "text-slate-400";
 
-  const gustRatio = windGusts > 0 ? windGusts / windSpeed : 1;
+  const gustRatio = (windGusts !== null && windSpeed !== null && windSpeed > 0 && windGusts > 0) ? windGusts / windSpeed : 1;
   const turbulenceLevel = gustRatio > 1.8 ? "Alta" : gustRatio > 1.4 ? "Moderata" : "Bassa";
   const turbulenceColor = gustRatio > 1.8 ? "text-rose-400" : gustRatio > 1.4 ? "text-amber-400" : "text-emerald-400";
 
@@ -303,7 +322,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
 
   // === Animated values ===
   const animatedScore = useAnimatedValue(signal === "green" ? 9 : signal === "yellow" ? 6 : 2);
-  const animatedTemp = useAnimatedValue(Math.round(t));
+  const animatedTemp = t !== null ? useAnimatedValue(Math.round(t)) : useAnimatedValue(0);
   const animatedWind = useAnimatedValue(Math.round(windSpeed));
   const animatedHumidity = usePercentAnimatedValue(humidity);
   const animatedVisibility = usePercentAnimatedValue(Math.min(100, (visibility / 15000) * 100));
@@ -671,7 +690,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
               </div>
             </div>
             <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-2xl font-black text-amber-300 tabular-nums">{Math.round(pressure)}</span>
+              <span className="text-2xl font-black text-amber-300 tabular-nums">{pressure !== null ? Math.round(pressure) : "N/D"}</span>
               <span className="text-[10px] text-amber-400/50">hPa</span>
             </div>
             <div className="flex items-center gap-1.5">
