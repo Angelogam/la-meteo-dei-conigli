@@ -64,8 +64,6 @@ const DAILY_PARAMS = [
   "sunshine_duration",
   "apparent_temperature_max",
   "apparent_temperature_min",
-  "freezing_level_height_max",
-  "convective_inhibition",
 ].join(",");
 
 const CURRENT_PARAMS = [
