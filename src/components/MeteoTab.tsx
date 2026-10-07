@@ -134,6 +134,56 @@ function signalColors(signal: Signal) {
   };
 }
 
+function cardGlow(color: string) {
+  return `box-shadow: 0 0 0 1px rgba(255,255,255,0.03), 0 4px 20px -4px ${color}, inset 0 1px 0 rgba(255,255,255,0.05)`;
+}
+
+function metricCard({
+  icon, label, sublabel, value, unit, color, bgFrom, bgTo, glowColor, children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  sublabel?: string;
+  value: React.ReactNode;
+  unit?: string;
+  color: string;
+  bgFrom: string;
+  bgTo: string;
+  glowColor: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div
+      className="relative rounded-2xl p-4 overflow-hidden group transition-all duration-300 hover:-translate-y-0.5"
+      style={{ background: `linear-gradient(135deg, ${bgFrom}, ${bgTo})`, boxShadow: `0 0 0 1px rgba(255,255,255,0.04), 0 8px 32px -8px ${glowColor}, inset 0 1px 0 rgba(255,255,255,0.06)` }}
+    >
+      {/* top shine */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      {/* corner glow */}
+      <div className="absolute -top-8 -right-8 w-16 h-16 rounded-full opacity-10" style={{ background: color, filter: 'blur(20px)' }} />
+
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: `${color}20`, border: `1px solid ${color}30` }}>
+            {icon}
+          </div>
+          <div>
+            <div className="text-[9px] font-black uppercase tracking-[0.12em] opacity-60">{label}</div>
+            {sublabel && <div className="text-[8px] opacity-40 mt-0.5">{sublabel}</div>}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-baseline gap-1.5 mb-2">
+        <span className="text-2xl font-black tabular-nums" style={{ color }}>{value}</span>
+        {unit && <span className="text-xs opacity-50 font-semibold">{unit}</span>}
+      </div>
+
+      {children && <div className="mt-2 pt-2.5 border-t border-white/5">{children}</div>}
+    </div>
+  );
+}
+
 export default function MeteoTab({ currentData, dayData, site, thermalDelta, modelName, selectedDay = 0, cape: propCape, liftedIndex: propLi, cin: propCin }: MeteoTabProps) {
 
   if (!currentData || dayData.length === 0) {
@@ -298,71 +348,52 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   const lowCloudRisk = cloudBase < siteAlt + 500;
   const veryLowCloudRisk = cloudBase < siteAlt + 300;
 
-  // ── Sottotitoli pratici ──
-  const rateoSub = avgThermalRate > 2 ? "Forti (>" + avgThermalRate.toFixed(1) + " m/s) — cross-country"
-    : avgThermalRate > 1.2 ? "Buone — allenamento e volo locale"
-    : avgThermalRate > 0.7 ? "Discrete — pazienza"
-    : "Deboli — dynamic di cresta";
-  const cloudBaseSub = cloudBase > siteAlt + 800 ? `+${Math.round(cloudBase - siteAlt)}m dal campo`
-    : cloudBase > siteAlt + 400 ? `+${Math.round(cloudBase - siteAlt)}m — spazio sufficiente`
-    : cloudBase > siteAlt + 200 ? `Attenzione: nubi basse a ${Math.round(cloudBase - siteAlt)}m`
-    : "Rischio nebbia al decollo";
-  const zeroTermSub = avgFreezing > siteAlt + 3000 ? "Neve solo in alta quota"
-    : avgFreezing > siteAlt + 1500 ? "Possibile neve sopra 2000m"
-    : "Zero molto basso — rischio ghiaccio";
-  const capeSub = avgCape > 1000 ? "⚠️ Forte instabilità — vigilanza dopo le 14:00"
-    : avgCape > 400 ? "Buona energia — termiche controllabili"
-    : avgCape > 100 ? "Termiche limitate"
-    : "Nessuna energia termica";
-  const thermalTopSub = thermalTop > siteAlt + 1500 ? `ottima per cross-country`
-    : thermalTop > siteAlt + 800 ? `quota confortevole`
-    : `top limitato dalla stabilità`;
-  const cloudCoverSub = cloudCover >= 80 ? 'Termiche inibite'
-    : cloudCover >= 50 ? 'Termiche irregolari'
-    : 'Condizioni ideali per il termico';
-  const pressureSub = pressureTrend > 2 ? "Bel tempo in arrivo"
-    : pressureTrend < -2 ? "Peggioramento imminente"
-    : "Stabile";
+  // ── Color helpers ──
+  const rateoColor = avgThermalRate > 2 ? "#f43f5e" : avgThermalRate > 1.2 ? "#fb923c" : "#fbbf24";
+  const cloudBaseColor = veryLowCloudRisk ? "#f43f5e" : lowCloudRisk ? "#a78bfa" : "#34d399";
+  const thunderColor = thunderProb > 40 ? "#f43f5e" : thunderProb > 20 ? "#fbbf24" : "#34d399";
+  const spreadColor = spread > 6 ? "#34d399" : spread > 3 ? "#fbbf24" : "#f43f5e";
+  const skyColor = cloudCover >= 90 ? "#94a3b8" : cloudCover >= 50 ? "#fbbf24" : "#34d399";
+  const liColor = avgLi < -4 ? "#f43f5e" : avgLi < 0 ? "#fbbf24" : "#34d399";
+  const capeColor = avgCape > 600 ? "#a78bfa" : "#34d399";
 
   return (
-    <div className={`rounded-2xl overflow-hidden ${sc.border} bg-slate-900 shadow-xl transition-shadow duration-700 ${sc.glow}`} data-testid="meteo-tab">
+    <div className={`rounded-2xl overflow-hidden ${sc.border} bg-[#0f172a] shadow-2xl transition-shadow duration-700 ${sc.glow}`} data-testid="meteo-tab">
       {/* ═══════════ TOP GRADIENT BAR ═══════════ */}
-      <div className="h-1 bg-gradient-to-r from-orange-400 via-amber-400 to-rose-400 animate-pulse" style={{ animationDuration: '3s' }} />
+      <div className="h-0.5 bg-gradient-to-r from-sky-400 via-amber-400 to-rose-500 opacity-70" />
 
-      {/* ═══════════ HERO: VOTO + CONDIZIONI ═══════════ */}
-      <div className="px-5 py-5 border-b border-white/5 bg-gradient-to-br from-slate-800/60 via-slate-900/40 to-transparent">
+      {/* ═══════════ HERO ═══════════ */}
+      <div className="px-6 py-6 border-b border-white/5" style={{ background: 'linear-gradient(180deg, rgba(30,41,59,0.5) 0%, transparent 100%)' }}>
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="flex items-start justify-between gap-4 mb-5">
           <div className="flex items-start gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/25 to-orange-600/10 border border-amber-500/40 flex items-center justify-center shrink-0">
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.2), rgba(249,115,22,0.1))', border: '1px solid rgba(245,158,11,0.3)' }}>
               <MapPin className="w-5 h-5 text-amber-400" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-base font-black text-white tracking-wide">{siteName || "Decollo"}</h2>
                 {orientation && (
-                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-xs font-bold text-amber-300">
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', color: '#fbbf24' }}>
                     <Wind className="w-3 h-3" />{orientation}
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+              <div className="flex items-center gap-2 mt-1.5 text-xs">
                 <span className="font-semibold text-slate-300">{siteAlt}m slm</span>
-                <span>·</span>
-                <span>{modelName || "Open-Meteo"}</span>
-                <span>·</span>
-                <span className="text-slate-600">{(() => { const d = new Date(); d.setDate(d.getDate() + selectedDay!); return d.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" }); })()}</span>
+                <span className="text-slate-600">·</span>
+                <span className="text-slate-500">{modelName || "Open-Meteo"}</span>
+                <span className="text-slate-600">·</span>
+                <span className="text-slate-500">{(() => { const d = new Date(); d.setDate(d.getDate() + selectedDay!); return d.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" }); })()}</span>
               </div>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-1.5 shrink-0">
-            <div className={`px-3 py-1.5 rounded-xl border backdrop-blur-sm ${sc.badge}`}>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: sc.dot, animation: 'pulse 2s cubic-bezier(0.4,0,0.6,1) infinite' }} />
-                <span className={`text-xs font-black tracking-wider ${sc.text}`}>{signalLabel}</span>
-              </div>
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            <div className={`px-4 py-2 rounded-2xl border backdrop-blur-md flex items-center gap-2.5`} style={{ ...sc }}>
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: sc.dot, animation: 'pulse 2s cubic-bezier(0.4,0,0.6,1) infinite', boxShadow: `0 0 8px ${sc.dot}` }} />
+              <span className={`text-xs font-black tracking-widest`}>{signalLabel}</span>
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+            <div className="flex items-center gap-1.5 text-xs">
               {weatherCode >= 95 ? <Zap className="w-3 h-3 text-rose-400" style={{ animation: 'pulse 1.5s cubic-bezier(0.4,0,0.6,1) infinite' }} /> :
                weatherCode >= 80 ? <CloudRain className="w-3 h-3 text-orange-400" /> :
                weatherCode >= 30 ? <Cloud className="w-3 h-3 text-slate-400" /> :
@@ -373,22 +404,22 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
           </div>
         </div>
 
-        {/* Flight Score + Temp + Wind */}
-        <div className="flex flex-col sm:flex-row items-stretch gap-4">
+        {/* Score + Temp + Wind */}
+        <div className="flex flex-col sm:flex-row items-stretch gap-3">
           {/* Flight Score */}
-          <div className={`relative rounded-2xl p-5 border ${sc.bg} flex flex-col items-center justify-center text-center`}>
-            <div className="absolute inset-0 rounded-2xl opacity-10" style={{ background: signal === 'green' ? 'radial-gradient(circle at 50% 50%, #10b981, transparent 70%)' : signal === 'yellow' ? 'radial-gradient(circle at 50% 50%, #f59e0b, transparent 70%)' : 'radial-gradient(circle at 50% 50%, #f43f5e, transparent 70%)' }} />
-            <div className="absolute inset-0 rounded-2xl opacity-20" style={{ boxShadow: signal === 'green' ? 'inset 0 0 30px rgba(16,185,129,0.4)' : signal === 'yellow' ? 'inset 0 0 30px rgba(245,158,11,0.4)' : 'inset 0 0 30px rgba(244,63,94,0.4)' }} />
+          <div
+            className="relative rounded-2xl p-6 flex flex-col items-center justify-center text-center overflow-hidden"
+            style={{ background: signal === 'green' ? 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.03))' : signal === 'yellow' ? 'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.03))' : 'linear-gradient(135deg, rgba(244,63,94,0.12), rgba(244,63,94,0.03))', border: `1px solid ${sc.border}` }}
+          >
+            <div className="absolute inset-0 opacity-5" style={{ background: signal === 'green' ? 'radial-gradient(circle at 50% 60%, #10b981, transparent 70%)' : signal === 'yellow' ? 'radial-gradient(circle at 50% 60%, #f59e0b, transparent 70%)' : 'radial-gradient(circle at 50% 60%, #f43f5e, transparent 70%)' }} />
             <div className="relative">
-              <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Voto Volo</div>
+              <div className="text-[9px] text-slate-500 uppercase tracking-[0.15em] font-black mb-2">Voto Volo</div>
               <div className={`text-7xl font-black tabular-nums leading-none ${sc.text}`}>
                 {animatedScore}
                 <span className="text-lg text-slate-500 font-bold ml-0.5">/10</span>
               </div>
-              <div className={`text-sm font-black mt-2 ${sc.text}`}>{signalLabel}</div>
-              <div className="text-[10px] text-slate-500 mt-1">
-                {isFlyable ? "Condizioni favorevoli" : signal === "yellow" ? "Valutare con attenzione" : "Non volare"}
-              </div>
+              <div className={`text-sm font-black mt-3 ${sc.text}`}>{signalLabel}</div>
+              <div className="text-[10px] text-slate-500 mt-1">{isFlyable ? "Condizioni favorevoli" : signal === "yellow" ? "Valutare con attenzione" : "Non volare"}</div>
               <div className="flex items-center gap-1.5 mt-3 text-[10px] text-slate-500">
                 {isFlyable ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <AlertTriangle className="w-3 h-3 text-rose-400" />}
                 <span>{isFlyable ? "Tutti i parametri nella norma" : "Parametri critici rilevati"}</span>
@@ -397,311 +428,362 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
           </div>
 
           {/* Temperatura */}
-          <div className="flex-1 rounded-2xl p-4 bg-slate-800/60 border border-slate-700/40 hover:border-amber-500/30 transition-all duration-300 group">
-            <div className="flex items-start justify-between mb-2">
+          <div
+            className="flex-1 rounded-2xl p-5 relative overflow-hidden"
+            style={{ background: 'linear-gradient(135deg, rgba(30,41,59,0.8), rgba(15,23,42,0.9))', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 8px 32px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)' }}
+          >
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/20 to-transparent" />
+            <div className="flex items-start justify-between mb-4">
               <div>
-                <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Temperatura aria</div>
-                <div className="flex items-baseline gap-1 mt-1">
-                  <span className="text-5xl font-black text-white tabular-nums">{animatedTemp}</span>
-                  <span className="text-xl text-amber-400/70 font-black">°C</span>
+                <div className="text-[9px] text-slate-500 uppercase tracking-[0.12em] font-black">Temperatura aria</div>
+                <div className="flex items-baseline gap-1 mt-1.5">
+                  <span className="text-5xl font-black text-white tabular-nums leading-none">{animatedTemp}</span>
+                  <span className="text-xl text-amber-400/60 font-black">°C</span>
                 </div>
               </div>
-              <span className="text-3xl group-hover:scale-110 transition-transform duration-300">{weatherCode >= 95 ? '⛈️' : weatherCode >= 80 ? '🌧️' : weatherCode >= 30 ? '☁️' : weatherCode >= 10 ? '🌤️' : '☀️'}</span>
+              <span className="text-3xl opacity-80">{weatherCode >= 95 ? '⛈️' : weatherCode >= 80 ? '🌧️' : weatherCode >= 30 ? '☁️' : weatherCode >= 10 ? '🌤️' : '☀️'}</span>
             </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-500">Percepita</span>
-                <span className="font-bold text-slate-200">{Math.round(feelsLike)}°C</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-500">Punto rugiada</span>
-                <span className="font-bold text-slate-200">{Math.round(dew)}°C</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-500">Spread (T-Tδ)</span>
-                <span className="font-bold text-amber-300">{Math.round(spread)}°C</span>
-              </div>
+            <div className="space-y-2">
+              {[
+                { label: "Percepita", val: `${Math.round(feelsLike)}°C`, color: "text-slate-200" },
+                { label: "Punto rugiada", val: `${Math.round(dew)}°C`, color: "text-slate-200" },
+                { label: "Spread (T-Tδ)", val: `${Math.round(spread)}°C`, color: "text-amber-300 font-black" },
+              ].map(r => (
+                <div key={r.label} className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500">{r.label}</span>
+                  <span className={`text-xs font-bold ${r.color}`}>{r.val}</span>
+                </div>
+              ))}
             </div>
-            <p className="text-[10px] text-slate-500 mt-2.5 leading-tight border-t border-slate-700/30 pt-2.5">
-              {avgThermalRate > 1.2 ? '🔥 Termiche attive — l\'aria si riscalda rapidamente' : avgThermalRate > 0.6 ? '⛅ Termiche deboli — solo correnti locali' : '❄️ Nessuna termica — atmosfera stabile'}
+            <p className="text-[10px] text-slate-500 mt-3 leading-tight pt-3 border-t border-white/5">
+              {avgThermalRate > 1.2 ? '🔥 Termiche attive' : avgThermalRate > 0.6 ? '⛅ Termiche deboli' : '❄️ Atmosfera stabile'}
             </p>
           </div>
 
-          {/* Vento con indicatore rotante */}
-          <div className="flex-1 rounded-2xl p-4 bg-slate-800/60 border border-slate-700/40 hover:border-amber-500/30 transition-all duration-300 group">
-            <div className="flex items-start justify-between mb-2">
+          {/* Vento */}
+          <div
+            className="flex-1 rounded-2xl p-5 relative overflow-hidden"
+            style={{ background: 'linear-gradient(135deg, rgba(30,41,59,0.8), rgba(15,23,42,0.9))', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 8px 32px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)' }}
+          >
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-400/20 to-transparent" />
+            <div className="flex items-start justify-between mb-4">
               <div>
-                <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Vento al suolo</div>
-                <div className="flex items-baseline gap-1 mt-1">
-                  <span className="text-5xl font-black text-white tabular-nums">{animatedWind}</span>
-                  <span className="text-base text-amber-400/70 font-black">km/h</span>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-xs font-black text-amber-300">
+                <div className="text-[9px] text-slate-500 uppercase tracking-[0.12em] font-black">Vento al suolo</div>
+                <div className="flex items-baseline gap-1 mt-1.5">
+                  <span className="text-5xl font-black text-white tabular-nums leading-none">{animatedWind}</span>
+                  <span className="text-base text-sky-400/50 font-black">km/h</span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-black" style={{ background: 'rgba(14,165,233,0.12)', border: '1px solid rgba(14,165,233,0.25)', color: '#7dd3fc' }}>
                     {dirLabel(windDir)} {windDir}°
                   </span>
                 </div>
               </div>
               <div className="relative w-10 h-10 shrink-0" style={{ transform: `rotate(${windDir - 180}deg)`, transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
-                <Wind className="w-8 h-8 text-amber-400/40 absolute -top-1 -left-1" />
+                <Wind className="w-8 h-8 text-sky-400/30 absolute -top-1 -left-1" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-0.5 h-3 bg-amber-400 rounded-full origin-bottom" style={{ transformOrigin: 'bottom center', transform: 'translateY(-4px)' }} />
+                  <div className="w-0.5 h-3 bg-sky-400 rounded-full origin-bottom" style={{ transformOrigin: 'bottom center', transform: 'translateY(-4px)' }} />
                 </div>
               </div>
             </div>
             {windGusts > 0 && (
-              <div className="flex items-center gap-2 text-xs mb-2">
+              <div className="flex items-center gap-2 text-xs mb-3">
                 <span className="text-slate-500">Raffiche</span>
                 <span className={`font-black ${windGusts > windSpeed * 1.5 ? "text-rose-400" : "text-orange-300"}`}>{Math.round(windGusts)} km/h</span>
                 <span className="text-slate-600">·</span>
                 <span className={`font-bold ${windGusts > windSpeed * 1.5 ? "text-rose-400" : "text-slate-400"}`}>×{gustRatio.toFixed(1)}</span>
               </div>
             )}
-            <p className="text-[10px] text-slate-500 leading-tight border-t border-slate-700/30 pt-2.5">
-              {windSpeed <= 8 ? "Calmo: decollo assistito e atterraggio dolce"
-                : windSpeed <= 15 ? "Moderato: condizioni ideali per il termico"
-                : windSpeed <= 25 ? "Sostenuto: attenzione in decollo e atterraggio"
-                : "Forte: solo per piloti esperti"}
+            <p className="text-[10px] text-slate-500 leading-tight pt-3 border-t border-white/5">
+              {windSpeed <= 8 ? "Calmo: decollo assistito" : windSpeed <= 15 ? "Moderato: condizioni ideali" : windSpeed <= 25 ? "Sostenuto: attenzione" : "Forte: solo esperti"}
             </p>
           </div>
         </div>
       </div>
 
-      {/* ═══════════ PANNELLO DATI VOLO — COMPATTO ═══════════ */}
-      <div className="px-5 py-4 border-b border-white/5">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-1 h-5 rounded-full bg-gradient-to-b from-amber-400 to-orange-500" />
-          <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Dati di volo</span>
-          <span className="text-[9px] text-slate-600 ml-auto">Parametri essenziali per la decisione operativa</span>
+      {/* ═══════════ DATI VOLO — CARDS RAFFINATE ═══════════ */}
+      <div className="px-6 py-5 border-b border-white/5">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-1 h-5 rounded-full bg-gradient-to-b from-sky-400 to-blue-500" />
+          <span className="text-[10px] text-slate-400 uppercase tracking-[0.15em] font-black">Dati di volo</span>
         </div>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
           {/* Rateo termico */}
-          <div className="rounded-xl p-3 bg-slate-800/60 border border-rose-500/20">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <ArrowUp className="w-3 h-3 text-rose-400" />
-              <span className="text-[9px] text-slate-500 font-bold uppercase">Rateo</span>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-xl font-black text-rose-300 tabular-nums">{animatedThermalRate.toFixed(1)}</span>
-              <span className="text-[9px] text-rose-400/50">m/s</span>
-            </div>
-            <div className="h-1 bg-slate-700/50 rounded-full mt-2 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-rose-700 to-pink-400 rounded-full" style={{ width: `${Math.min(100, (animatedThermalRate / 4) * 100)}%` }} />
-            </div>
-            <p className="text-[8px] text-slate-500 mt-1.5 leading-tight">{rateoSub}</p>
-          </div>
+          {metricCard({
+            icon: <ArrowUp className="w-3.5 h-3.5" style={{ color: rateoColor }} />,
+            label: "Rateo termico",
+            sublabel: "Ascendenza media",
+            value: <><span style={{ color: rateoColor }}>{animatedThermalRate.toFixed(1)}</span></>,
+            unit: "m/s",
+            color: rateoColor,
+            bgFrom: "rgba(30,41,59,0.9)", bgTo: "rgba(15,23,42,0.95)",
+            glowColor: `${rateoColor}30`,
+            children: (
+              <div>
+                <div className="h-1.5 bg-slate-700/60 rounded-full overflow-hidden mb-2">
+                  <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, (animatedThermalRate / 4) * 100)}%`, background: `linear-gradient(90deg, ${rateoColor}80, ${rateoColor})` }} />
+                </div>
+                <p className="text-[8px] opacity-50 leading-tight">{rateoSub}</p>
+              </div>
+            ),
+          })}
 
           {/* Base cumuli */}
-          <div className={`rounded-xl p-3 border ${veryLowCloudRisk ? "bg-rose-500/10 border-rose-500/30" : lowCloudRisk ? "bg-violet-500/10 border-violet-500/30" : "bg-emerald-500/10 border-emerald-500/30"}`}>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <Mountain className={`w-3 h-3 ${veryLowCloudRisk ? "text-rose-400" : lowCloudRisk ? "text-violet-400" : "text-emerald-400"}`} />
-              <span className="text-[9px] text-slate-500 font-bold uppercase">Base cumuli</span>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className={`text-xl font-black tabular-nums ${veryLowCloudRisk ? "text-rose-300" : lowCloudRisk ? "text-violet-300" : "text-emerald-300"}`}>{Math.round(cloudBase)}</span>
-              <span className="text-[9px] text-slate-500">m slm</span>
-            </div>
-            <div className="text-[9px] font-semibold mt-0.5" style={{ color: veryLowCloudRisk ? '#fb7185' : lowCloudRisk ? '#a78bfa' : '#34d399' }}>
-              +{animatedCloudBaseDiff}m dal campo
-            </div>
-          </div>
+          {metricCard({
+            icon: <Mountain className="w-3.5 h-3.5" style={{ color: cloudBaseColor }} />,
+            label: "Base cumuli",
+            sublabel: "Quota nubi",
+            value: <><span style={{ color: cloudBaseColor }}>{Math.round(cloudBase)}</span></>,
+            unit: "m slm",
+            color: cloudBaseColor,
+            bgFrom: "rgba(30,41,59,0.9)", bgTo: "rgba(15,23,42,0.95)",
+            glowColor: `${cloudBaseColor}30`,
+            children: (
+              <div>
+                <div className="h-1.5 bg-slate-700/60 rounded-full overflow-hidden mb-2">
+                  <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, Math.max(0, (animatedCloudBaseDiff / 1500) * 100))}%`, background: `linear-gradient(90deg, ${cloudBaseColor}80, ${cloudBaseColor})` }} />
+                </div>
+                <p className="text-[8px] opacity-50">{cloudBaseSub}</p>
+              </div>
+            ),
+          })}
 
           {/* Zero termico */}
-          <div className="rounded-xl p-3 bg-slate-800/60 border border-violet-500/20">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <CloudSnow className="w-3 h-3 text-violet-400" />
-              <span className="text-[9px] text-slate-500 font-bold uppercase">Zero termico</span>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-xl font-black text-violet-300 tabular-nums">{avgFreezing}</span>
-              <span className="text-[9px] text-violet-400/50">m</span>
-            </div>
-            <div className="text-[9px] text-violet-400/60 font-semibold mt-0.5">
-              {avgFreezing > siteAlt ? `+${Math.round(avgFreezing - siteAlt)}m sopr.` : '⚠ Sotto campo'}
-            </div>
-          </div>
+          {metricCard({
+            icon: <CloudSnow className="w-3.5 h-3.5 text-violet-400" />,
+            label: "Zero termico",
+            sublabel: "Confine neve",
+            value: <><span className="text-violet-300 font-black tabular-nums">{avgFreezing}</span></>,
+            unit: "m",
+            color: "#a78bfa",
+            bgFrom: "rgba(30,41,59,0.9)", bgTo: "rgba(15,23,42,0.95)",
+            glowColor: "rgba(167,139,250,0.2)",
+            children: (
+              <p className="text-[8px] text-violet-400/60 leading-tight">{zeroTermSub}</p>
+            ),
+          })}
 
           {/* CAPE + LI */}
-          <div className="rounded-xl p-3 bg-slate-800/60 border border-emerald-500/20">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <Zap className="w-3 h-3 text-emerald-400" />
-              <span className="text-[9px] text-slate-500 font-bold uppercase">CAPE</span>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className={`text-xl font-black tabular-nums ${avgCape > 600 ? "text-violet-300" : "text-emerald-300"}`}>{animatedCape}</span>
-              <span className="text-[9px] text-emerald-400/50">J/kg</span>
-            </div>
-            <div className="text-[9px] text-slate-500 mt-1">
-              LI <span className={`font-bold ${avgLi < -4 ? "text-rose-400" : avgLi < 0 ? "text-amber-400" : "text-emerald-400"}`}>{avgLi.toFixed(1)}</span>
-            </div>
-          </div>
+          {metricCard({
+            icon: <Zap className="w-3.5 h-3.5" style={{ color: capeColor }} />,
+            label: "CAPE",
+            sublabel: "Energia termica",
+            value: <><span style={{ color: capeColor }}>{animatedCape}</span></>,
+            unit: "J/kg",
+            color: capeColor,
+            bgFrom: "rgba(30,41,59,0.9)", bgTo: "rgba(15,23,42,0.95)",
+            glowColor: `${capeColor}30`,
+            children: (
+              <div className="flex items-center justify-between text-[8px]">
+                <span className="opacity-50">Lifted Index</span>
+                <span className="font-black" style={{ color: liColor }}>{avgLi.toFixed(1)}</span>
+              </div>
+            ),
+          })}
 
           {/* Top termica */}
-          <div className="rounded-xl p-3 bg-slate-800/60 border border-amber-500/20">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <ArrowUp className="w-3 h-3 text-amber-400" />
-              <span className="text-[9px] text-slate-500 font-bold uppercase">Top termica</span>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-xl font-black text-amber-300 tabular-nums">{thermalTop}</span>
-              <span className="text-[9px] text-amber-400/50">m</span>
-            </div>
-            <div className="text-[9px] text-amber-400/60 font-semibold mt-0.5">
-              +{Math.round(thermalTop - siteAlt)}m
-            </div>
-          </div>
+          {metricCard({
+            icon: <ArrowUp className="w-3.5 h-3.5 text-amber-400" />,
+            label: "Top termica",
+            sublabel: "Massima quota",
+            value: <><span className="text-amber-300 font-black tabular-nums">{thermalTop}</span></>,
+            unit: "m",
+            color: "#fbbf24",
+            bgFrom: "rgba(30,41,59,0.9)", bgTo: "rgba(15,23,42,0.95)",
+            glowColor: "rgba(251,191,36,0.2)",
+            children: (
+              <p className="text-[8px] text-amber-400/60 leading-tight">{thermalTopSub}</p>
+            ),
+          })}
 
           {/* Rischio tufo */}
-          <div className={`rounded-xl p-3 border ${thunderProb > 40 ? "bg-rose-500/10 border-rose-500/30" : thunderProb > 20 ? "bg-amber-500/10 border-amber-500/30" : "bg-emerald-500/10 border-emerald-500/30"}`}>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <Activity className={`w-3 h-3 ${thunderProb > 40 ? "text-rose-400" : thunderProb > 20 ? "text-amber-400" : "text-emerald-400"}`} />
-              <span className="text-[9px] text-slate-500 font-bold uppercase">Rischio tufo</span>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className={`text-xl font-black tabular-nums ${thunderProb > 40 ? "text-rose-300" : thunderProb > 20 ? "text-amber-300" : "text-emerald-300"}`}>{thunderProb}</span>
-              <span className="text-[9px] text-slate-500">%</span>
-            </div>
-            <div className="text-[9px] font-semibold mt-0.5" style={{ color: thunderProb > 40 ? '#fb7185' : thunderProb > 20 ? '#fbbf24' : '#34d399' }}>
-              {thunderProb > 40 ? "Pericoloso" : thunderProb > 20 ? "Attenzione" : "Basso"}
-            </div>
-          </div>
+          {metricCard({
+            icon: <Activity className="w-3.5 h-3.5" style={{ color: thunderColor }} />,
+            label: "Rischio tufo",
+            sublabel: "Probabilità",
+            value: <><span style={{ color: thunderColor }}>{thunderProb}</span></>,
+            unit: "%",
+            color: thunderColor,
+            bgFrom: "rgba(30,41,59,0.9)", bgTo: "rgba(15,23,42,0.95)",
+            glowColor: `${thunderColor}30`,
+            children: (
+              <p className="text-[8px] opacity-50 leading-tight">
+                {thunderProb > 40 ? "Pericoloso — evitare pomeriggio" : thunderProb > 20 ? "Attenzione — monitorare" : "Basso rischio"}
+              </p>
+            ),
+          })}
         </div>
 
-        {/* Seconda riga: spread, pressione, copertura, visibilità */}
-        <div className="grid grid-cols-4 gap-2 mt-2">
+        {/* Seconda riga */}
+        <div className="grid grid-cols-4 gap-3 mt-3">
           {/* Spread */}
-          <div className="rounded-xl p-3 bg-slate-800/50 border border-slate-700/40">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <Thermometer className="w-3 h-3 text-rose-400" />
-              <span className="text-[9px] text-slate-500 font-bold uppercase">Spread</span>
+          <div
+            className="relative rounded-2xl p-4 overflow-hidden"
+            style={{ background: 'linear-gradient(135deg, rgba(30,41,59,0.9), rgba(15,23,42,0.95))', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 8px 32px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)' }}
+          >
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-400/20 to-transparent" />
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: 'rgba(244,63,94,0.12)', border: '1px solid rgba(244,63,94,0.2)' }}>
+                <Thermometer className="w-3.5 h-3.5 text-rose-400" />
+              </div>
+              <div>
+                <div className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">Spread</div>
+                <div className="text-[8px] text-slate-600">T − T punto rugiada</div>
+              </div>
             </div>
-            <div className="flex items-baseline gap-1">
-              <span className={`text-lg font-black tabular-nums ${spread > 6 ? "text-emerald-400" : spread > 3 ? "text-amber-400" : "text-rose-400"}`}>{Math.round(spread)}°C</span>
-              <span className="text-[9px] text-slate-500">oggi</span>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-2xl font-black tabular-nums" style={{ color: spreadColor }}>{Math.round(spread)}°C</span>
+              <span className="text-[10px] text-slate-500">oggi</span>
             </div>
-            <div className="text-[9px] text-slate-500 mt-1">
-              Media giornata: <span className="font-bold text-slate-300">{avgSpread.toFixed(1)}°C</span>
+            <div className="text-[9px] text-slate-500">
+              Media: <span className="font-bold text-slate-300">{avgSpread.toFixed(1)}°C</span>
             </div>
           </div>
 
-          {/* Pressione + trend */}
-          <div className="rounded-xl p-3 bg-slate-800/50 border border-slate-700/40">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <Gauge className="w-3 h-3 text-amber-400" />
-              <span className="text-[9px] text-slate-500 font-bold uppercase">Pressione</span>
+          {/* Pressione */}
+          <div
+            className="relative rounded-2xl p-4 overflow-hidden"
+            style={{ background: 'linear-gradient(135deg, rgba(30,41,59,0.9), rgba(15,23,42,0.95))', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 8px 32px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)' }}
+          >
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/20 to-transparent" />
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                <Gauge className="w-3.5 h-3.5 text-amber-400" />
+              </div>
+              <div>
+                <div className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">Pressione</div>
+                <div className="text-[8px] text-slate-600">Atmosferica</div>
+              </div>
             </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-lg font-black text-amber-300 tabular-nums">{Math.round(pressure)}</span>
-              <span className="text-[9px] text-amber-400/50">hPa</span>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-2xl font-black text-amber-300 tabular-nums">{Math.round(pressure)}</span>
+              <span className="text-[10px] text-amber-400/50">hPa</span>
             </div>
-            <div className="flex items-center gap-1 mt-1">
+            <div className="flex items-center gap-1.5">
               {pressureTrend > 2 ? <TrendingUp className="w-3 h-3 text-emerald-400" /> : pressureTrend < -2 ? <TrendingDown className="w-3 h-3 text-rose-400" /> : <Minus className="w-3 h-3 text-slate-500" />}
-              <span className={`text-[9px] font-semibold ${pressureTrendColor}`}>{pressureTrendLabel}</span>
+              <span className={`text-[9px] font-bold ${pressureTrendColor}`}>{pressureTrendLabel}</span>
               <span className="text-[9px] text-slate-600">Δ{pressureTrend > 0 ? "+" : ""}{pressureTrend.toFixed(1)}</span>
             </div>
           </div>
 
           {/* Copertura cielo */}
-          <div className={`rounded-xl p-3 border ${cloudCover >= 90 ? "bg-slate-500/10 border-slate-500/30" : cloudCover >= 50 ? "bg-amber-500/10 border-amber-500/30" : "bg-emerald-500/10 border-emerald-500/30"}`}>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <CloudOff className={`w-3 h-3 ${cloudCover >= 90 ? "text-slate-400" : cloudCover >= 50 ? "text-amber-400" : "text-emerald-400"}`} />
-              <span className="text-[9px] text-slate-500 font-bold uppercase">Cielo</span>
+          <div
+            className="relative rounded-2xl p-4 overflow-hidden"
+            style={{ background: 'linear-gradient(135deg, rgba(30,41,59,0.9), rgba(15,23,42,0.95))', border: `1px solid ${skyColor}30`, boxShadow: `0 8px 32px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)` }}
+          >
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-400/20 to-transparent" />
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: `${skyColor}18`, border: `1px solid ${skyColor}30` }}>
+                <CloudOff className="w-3.5 h-3.5" style={{ color: skyColor }} />
+              </div>
+              <div>
+                <div className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">Cielo</div>
+                <div className="text-[8px] text-slate-600">Nuvolosità</div>
+              </div>
             </div>
-            <div className="flex items-baseline gap-1">
-              <span className={`text-lg font-black tabular-nums ${cloudCover >= 90 ? "text-slate-300" : cloudCover >= 50 ? "text-amber-300" : "text-emerald-300"}`}>{animatedCloudCover}%</span>
-              <span className="text-[9px] text-slate-500">{getCloudCoverLabel(cloudCover)}</span>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-2xl font-black tabular-nums" style={{ color: skyColor }}>{animatedCloudCover}%</span>
+              <span className="text-[10px] text-slate-500">{getCloudCoverLabel(cloudCover)}</span>
             </div>
             {cloudCover > 0 && (
-              <div className="mt-1 space-y-0.5">
-                <div className="flex items-center gap-1.5 text-[8px] text-slate-500">
-                  <span className="w-3 font-bold">B</span>
-                  <div className="flex-1 h-1 bg-slate-700/50 rounded-full overflow-hidden"><div className="h-full bg-amber-500/70 rounded-full" style={{ width: `${cloudCoverLow}%` }} /></div>
-                  <span className="w-6 text-amber-400 font-bold tabular-nums">{cloudCoverLow}%</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-[8px] text-slate-500">
-                  <span className="w-3 font-bold">M</span>
-                  <div className="flex-1 h-1 bg-slate-700/50 rounded-full overflow-hidden"><div className="h-full bg-violet-500/70 rounded-full" style={{ width: `${cloudCoverMid}%` }} /></div>
-                  <span className="w-6 text-violet-400 font-bold tabular-nums">{cloudCoverMid}%</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-[8px] text-slate-500">
-                  <span className="w-3 font-bold">A</span>
-                  <div className="flex-1 h-1 bg-slate-700/50 rounded-full overflow-hidden"><div className="h-full bg-fuchsia-500/70 rounded-full" style={{ width: `${cloudCoverHigh}%` }} /></div>
-                  <span className="w-6 text-fuchsia-400 font-bold tabular-nums">{cloudCoverHigh}%</span>
-                </div>
+              <div className="space-y-1">
+                {[
+                  { label: "Basso", pct: cloudCoverLow, color: "#fbbf24" },
+                  { label: "Medio", pct: cloudCoverMid, color: "#a78bfa" },
+                  { label: "Alto", pct: cloudCoverHigh, color: "#e879f9" },
+                ].map(l => (
+                  <div key={l.label} className="flex items-center gap-2">
+                    <span className="text-[8px] text-slate-500 w-5 font-bold">{l.label[0]}</span>
+                    <div className="flex-1 h-1 bg-slate-700/60 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all" style={{ width: `${l.pct}%`, background: l.color }} />
+                    </div>
+                    <span className="text-[8px] font-bold tabular-nums" style={{ color: l.color }}>{l.pct}%</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
 
           {/* Visibilità */}
-          <div className="rounded-xl p-3 bg-slate-800/50 border border-slate-700/40">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <Eye className="w-3 h-3 text-emerald-400" />
-              <span className="text-[9px] text-slate-500 font-bold uppercase">Visibilità</span>
+          <div
+            className="relative rounded-2xl p-4 overflow-hidden"
+            style={{ background: 'linear-gradient(135deg, rgba(30,41,59,0.9), rgba(15,23,42,0.95))', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 8px 32px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)' }}
+          >
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/20 to-transparent" />
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                <Eye className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+              <div>
+                <div className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">Visibilità</div>
+                <div className="text-[8px] text-slate-600">Distanza</div>
+              </div>
             </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-lg font-black text-emerald-300 tabular-nums">{Math.round(visibility / 1000)}</span>
-              <span className="text-[9px] text-emerald-400/50">km</span>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-2xl font-black text-emerald-300 tabular-nums">{Math.round(visibility / 1000)}</span>
+              <span className="text-[10px] text-emerald-400/50">km</span>
             </div>
-            <div className="text-[9px] text-slate-500 mt-1">
+            <div className="h-1.5 bg-slate-700/60 rounded-full overflow-hidden mb-2">
+              <div className="h-full bg-gradient-to-r from-emerald-700 to-emerald-400 rounded-full transition-all" style={{ width: `${animatedVisibility}%` }} />
+            </div>
+            <p className="text-[8px] text-slate-500 leading-tight">
               {visibility >= 10000 ? "Navigazione sicura" : visibility >= 5000 ? "Volo locale OK" : "Attenzione navigazione"}
-            </div>
+            </p>
           </div>
         </div>
       </div>
 
       {/* ═══════════ VENTO IN QUOTA ═══════════ */}
-      <div className="border-t border-white/5 px-5 py-4">
-        <div className="flex items-center gap-2 mb-3.5">
+      <div className="border-t border-white/5 px-6 py-5">
+        <div className="flex items-center gap-2 mb-4">
           <div className="w-1 h-5 rounded-full bg-gradient-to-b from-amber-400 to-orange-500" />
-          <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Profilo vento verticale</span>
+          <span className="text-[10px] text-slate-400 uppercase tracking-[0.15em] font-black">Profilo vento verticale</span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-          <div className="rounded-xl p-3 bg-amber-500/5 border border-amber-500/20">
-            <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">Suolo (10m)</div>
-            <div className="text-xl font-black text-amber-300 tabular-nums">{Math.round(windSpeed)} <span className="text-sm text-amber-400/60 font-semibold">{dirLabel(windDir)}</span></div>
-            {windGusts > 0 && <div className="text-xs text-slate-500 mt-1">Raffiche {Math.round(windGusts)} km/h · <span className={gustRatio > 1.5 ? "text-rose-400" : "text-slate-500"}>{turbulenceLevel}</span></div>}
-          </div>
-          {wind80m != null && (
-            <div className="rounded-xl p-3 bg-orange-500/5 border border-orange-500/20">
-              <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">80m</div>
-              <div className="text-xl font-black text-orange-300 tabular-nums">{Math.round(wind80m)} <span className="text-sm text-orange-400/60 font-semibold">{dirLabel(windDir80m ?? windDir)}</span></div>
-              <div className="text-xs text-slate-500 mt-1">~{siteAlt + 80}m slm</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          {[
+            { label: "Suolo (10m)", val: Math.round(windSpeed), dir: dirLabel(windDir), color: "#fbbf24", sub: windGusts > 0 ? `Raffiche ${Math.round(windGusts)} km/h · ${turbulenceLevel}` : undefined, border: "rgba(251,191,36,0.2)" },
+            { label: "80m", val: wind80m != null ? Math.round(wind80m) : null, dir: wind80m != null ? dirLabel(windDir80m ?? windDir) : null, color: "#fb923c", sub: `~${siteAlt + 80}m slm`, border: "rgba(251,146,60,0.2)" },
+            { label: "120m", val: wind120m != null ? Math.round(wind120m) : null, dir: wind120m != null ? dirLabel(windDir120m ?? windDir) : null, color: "#a78bfa", sub: `~${siteAlt + 120}m slm`, border: "rgba(167,139,250,0.2)" },
+            { label: "180m", val: wind180m != null ? Math.round(wind180m) : null, dir: wind180m != null ? dirLabel(windDir180m ?? windDir) : null, color: "#e879f9", sub: `~${siteAlt + 180}m slm`, border: "rgba(232,121,249,0.2)" },
+          ].map(layer => layer.val !== null ? (
+            <div
+              key={layer.label}
+              className="relative rounded-2xl p-4 overflow-hidden"
+              style={{ background: 'linear-gradient(135deg, rgba(30,41,59,0.8), rgba(15,23,42,0.9))', border: `1px solid ${layer.border}`, boxShadow: `0 8px 32px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)` }}
+            >
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+              <div className="text-[9px] text-slate-500 uppercase tracking-[0.1em] font-black mb-2">{layer.label}</div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xl font-black tabular-nums" style={{ color: layer.color }}>{layer.val}</span>
+                <span className="text-sm text-slate-500 font-semibold">{layer.dir}</span>
+                <span className="text-xs text-slate-600">km/h</span>
+              </div>
+              {layer.sub && <div className="text-[9px] text-slate-500 mt-1.5">{layer.sub}</div>}
             </div>
-          )}
-          {wind120m != null && (
-            <div className="rounded-xl p-3 bg-violet-500/5 border border-violet-500/20">
-              <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">120m</div>
-              <div className="text-xl font-black text-violet-300 tabular-nums">{Math.round(wind120m)} <span className="text-sm text-violet-400/60 font-semibold">{dirLabel(windDir120m ?? windDir)}</span></div>
-              <div className="text-xs text-slate-500 mt-1">~{siteAlt + 120}m slm</div>
-            </div>
-          )}
-          {wind180m != null && (
-            <div className="rounded-xl p-3 bg-purple-500/5 border border-purple-500/20">
-              <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">180m</div>
-              <div className="text-xl font-black text-purple-300 tabular-nums">{Math.round(wind180m)} <span className="text-sm text-purple-400/60 font-semibold">{dirLabel(windDir180m ?? windDir)}</span></div>
-              <div className="text-xs text-slate-500 mt-1">~{siteAlt + 180}m slm</div>
-            </div>
-          )}
+          ) : null)}
         </div>
 
         {wind850 != null && (
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gradient-to-r from-violet-900/30 to-violet-800/20 rounded-xl p-3.5 border border-violet-500/30 hover:border-violet-500/50 transition-all duration-300">
-              <div className="flex items-center gap-2 mb-1.5">
+            <div className="relative rounded-2xl p-4 overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(88,28,135,0.15), rgba(15,23,42,0.9))', border: '1px solid rgba(167,139,250,0.25)', boxShadow: '0 8px 32px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)' }}>
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-400/20 to-transparent" />
+              <div className="flex items-center gap-2 mb-2">
                 <Waves className="w-4 h-4 text-violet-400" />
-                <span className="text-xs text-violet-300 font-bold">Onda montana</span>
+                <span className="text-xs text-violet-300 font-black uppercase tracking-wider">Onda montana</span>
               </div>
               <div className="text-xs text-violet-400/60 font-semibold mt-1">Wave index: {waveIndex.toFixed(0)}° · Shear {windSheer} km/h</div>
-              <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">
-                {waveIndex < 30 ? "🌊 Onda montana attiva — provare quote superiori per dynamic" : waveIndex < 60 ? "Onda presente — condizioni favorevoli per volo in quota" : "Nessun effetto onda significativo"}
+              <p className="text-[9px] text-slate-500 mt-2 leading-tight">
+                {waveIndex < 30 ? "Onda montana attiva — provare quote superiori per dynamic" : waveIndex < 60 ? "Onda presente — condizioni favorevoli per volo in quota" : "Nessun effetto onda significativo"}
               </p>
             </div>
-            <div className="bg-slate-800/40 rounded-xl p-3.5 border border-slate-700/30 hover:border-slate-600/50 transition-all duration-300">
-              <div className="flex items-center gap-2 mb-1.5">
+            <div className="relative rounded-2xl p-4 overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(30,41,59,0.8), rgba(15,23,42,0.9))', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 8px 32px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)' }}>
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-400/20 to-transparent" />
+              <div className="flex items-center gap-2 mb-2">
                 <Activity className="w-4 h-4 text-rose-400" />
-                <span className="text-xs text-slate-400 font-bold">Turbolenza</span>
+                <span className="text-xs text-slate-400 font-black uppercase tracking-wider">Turbolenza</span>
               </div>
               <div className={`text-xl font-black tabular-nums ${turbulenceColor}`}>{turbulenceLevel}</div>
               <div className="text-xs text-slate-500 font-semibold mt-1">Rapporto raffiche: {gustRatio.toFixed(2)}x</div>
-              <p className="text-[9px] text-slate-500 mt-1.5 leading-tight">
+              <p className="text-[9px] text-slate-500 mt-2 leading-tight">
                 {gustRatio > 1.8 ? "⚠️ Raffiche pericolose — decollo solo in assenza di vento" : gustRatio > 1.4 ? "Raffiche significative — valutare con attenzione" : "Turbolenza bassa — volo tranquillo"}
               </p>
             </div>
@@ -709,228 +791,172 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
         )}
       </div>
 
-      {/* ═══════════ FINESTRA DI VOLO + PIOGGIA ═══════════ */}
-      <div className="border-t border-white/5 px-5 py-4">
-        <div className="flex items-center gap-2 mb-3.5">
+      {/* ═══════════ FINESTRA DI VOLO ═══════════ */}
+      <div className="border-t border-white/5 px-6 py-5">
+        <div className="flex items-center gap-2 mb-4">
           <div className="w-1 h-5 rounded-full bg-gradient-to-b from-emerald-400 to-teal-500" />
-          <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Finestra di volo & precipitazioni</span>
+          <span className="text-[10px] text-slate-400 uppercase tracking-[0.15em] font-black">Finestra di volo & precipitazioni</span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <div className="rounded-xl p-3 bg-emerald-500/5 border border-emerald-500/20">
-            <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">Ore favorevoli</div>
-            <span className="text-2xl font-black text-emerald-300 tabular-nums">{flightHours}<span className="text-sm text-emerald-400/60 font-bold ml-1">h</span></span>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">
-              {flightHours > 6 ? "Finestra ampia: scegliere l'ora migliore" : flightHours > 3 ? "Finestra decente: ore centrali" : "Finestra breve: volare presto o tardi"}
-            </p>
-          </div>
-          <div className="rounded-xl p-3 bg-amber-500/5 border border-amber-500/20">
-            <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">Orario migliore</div>
-            <span className="text-base font-black text-amber-300 tabular-nums">{flightWindow}</span>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">Periodo con spread &gt; 4°C e assenza di pioggia</p>
-          </div>
-          <div className="rounded-xl p-3 bg-violet-500/5 border border-violet-500/20">
-            <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">Pioggia (6h)</div>
-            <span className={`text-2xl font-black tabular-nums ${nextRainProb > 40 ? "text-rose-300" : nextRainProb > 20 ? "text-violet-300" : "text-emerald-300"}`}>{Math.round(nextRainProb)}<span className="text-sm font-bold ml-1">%</span></span>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">
-              {nextRainProb > 40 ? "⚠️ Pioggia probabile — posticipare" : nextRainProb > 20 ? "Possibile pioggia isolata" : "Pioggia improbabile"}
-            </p>
-          </div>
-          <div className="rounded-xl p-3 bg-slate-800/50 border border-slate-700/40">
-            <div className="text-[9px] text-slate-400 font-bold uppercase mb-1">Soleggiamento</div>
-            <span className="text-2xl font-black text-amber-300 tabular-nums">{Math.round(totalSunshine / 3600 * 10) / 10}<span className="text-sm text-amber-400/60 font-bold ml-1">h</span></span>
-            <p className="text-[9px] text-slate-500 mt-2 leading-tight">
-              {totalSunshine / 3600 > 6 ? '☀️ Giornata molto soleggiata — termiche garantite' : totalSunshine / 3600 > 3 ? '⛅ Giornata parzialmente soleggiata' : '☁️ Poca luce — termiche deboli'}
-            </p>
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            {
+              label: "Ore favorevoli", value: `${flightHours}h`, sub: flightHours > 6 ? "Finestra ampia" : flightHours > 3 ? "Finestra decente" : "Finestra breve",
+              color: "#34d399", border: "rgba(52,211,153,0.2)", bg: "rgba(52,211,153,0.06)",
+            },
+            {
+              label: "Orario migliore", value: flightWindow, sub: "Spread > 4°C · no pioggia",
+              color: "#fbbf24", border: "rgba(251,191,36,0.2)", bg: "rgba(251,191,36,0.06)",
+            },
+            {
+              label: "Pioggia (6h)", value: `${Math.round(nextRainProb)}%`, sub: nextRainProb > 40 ? "Posticipare" : nextRainProb > 20 ? "Possibile isolata" : "Improbabile",
+              color: nextRainProb > 40 ? "#f43f5e" : nextRainProb > 20 ? "#a78bfa" : "#34d399", border: nextRainProb > 40 ? "rgba(244,63,94,0.2)" : nextRainProb > 20 ? "rgba(167,139,250,0.2)" : "rgba(52,211,153,0.2)", bg: nextRainProb > 40 ? "rgba(244,63,94,0.06)" : nextRainProb > 20 ? "rgba(167,139,250,0.06)" : "rgba(52,211,153,0.06)",
+            },
+            {
+              label: "Soleggiamento", value: `${(totalSunshine / 3600).toFixed(1)}h`, sub: totalSunshine / 3600 > 6 ? "Giornata soleggiata" : totalSunshine / 3600 > 3 ? "Parzialmente nuvoloso" : "Poca luce",
+              color: "#fbbf24", border: "rgba(251,191,36,0.2)", bg: "rgba(251,191,36,0.06)",
+            },
+          ].map(card => (
+            <div key={card.label} className="relative rounded-2xl p-4 overflow-hidden" style={{ background: card.bg, border: `1px solid ${card.border}`, boxShadow: '0 8px 32px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)' }}>
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+              <div className="text-[9px] text-slate-500 uppercase tracking-[0.1em] font-black mb-2">{card.label}</div>
+              <div className="text-2xl font-black tabular-nums" style={{ color: card.color }}>{card.value}</div>
+              <p className="text-[9px] text-slate-500 mt-2 leading-tight">{card.sub}</p>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* ═══════════ RAPPORTO METEO ═══════════ */}
       {(warnings.length > 0 || tactics.length > 0) && (() => {
-        const scoreColor = signal === "green" ? "text-emerald-400" : signal === "yellow" ? "text-amber-400" : "text-rose-400";
-        const scoreBg = signal === "green" ? "from-emerald-500/15 to-emerald-600/5 border-emerald-500/30"
-          : signal === "yellow" ? "from-amber-500/15 to-amber-600/5 border-amber-500/30"
-          : "from-rose-500/15 to-rose-600/5 border-rose-500/30";
-        const barColor = signal === "green" ? "from-emerald-400 to-emerald-500"
-          : signal === "yellow" ? "from-amber-400 to-amber-500"
-          : "from-rose-400 to-rose-500";
+        const scoreColor = signal === "green" ? "#34d399" : signal === "yellow" ? "#fbbf24" : "#f43f5e";
+        const barColor = signal === "green" ? "from-emerald-400 to-emerald-500" : signal === "yellow" ? "from-amber-400 to-amber-500" : "from-rose-400 to-rose-500";
         const overallScore = signal === "green" ? 9 : signal === "yellow" ? 5 : 2;
 
         const termicoParts: string[] = [];
-        if (avgThermalRate > 2) termicoParts.push(`Le termiche si presentano vigorose con un rateo medio di ${avgThermalRate.toFixed(1)} m/s, pertanto sarà possibile valutare con attenzione la scelta tra le diverse vallette per ottimizzare il volo.`);
-        else if (avgThermalRate > 1.5) termicoParts.push(`Le termiche sono medie, con un rateo di ${avgThermalRate.toFixed(1)} m/s: il volo è possibile purché si utilizzi una tecnica corretta e si apprezzino le migliori colonne.`);
-        else if (avgThermalRate > 1) termicoParts.push(`Le termiche sono discrete ma moderate (${avgThermalRate.toFixed(1)} m/s), consigliabile mantenere prudenza e privilegiare tratti brevi.`);
-        else termicoParts.push(`Le termiche risultano deboli con rateo inferiore a 1 m/s, si raccomanda pertanto di preferire il dynamic di cresta piuttosto che il volo termico.`);
+        if (avgThermalRate > 2) termicoParts.push(`Le termiche si presentano vigorose con un rateo medio di ${avgThermalRate.toFixed(1)} m/s.`);
+        else if (avgThermalRate > 1.5) termicoParts.push(`Le termiche sono medie, con rateo di ${avgThermalRate.toFixed(1)} m/s.`);
+        else if (avgThermalRate > 1) termicoParts.push(`Le termiche sono discrete ma moderate (${avgThermalRate.toFixed(1)} m/s).`);
+        else termicoParts.push(`Le termiche risultano deboli con rateo inferiore a 1 m/s.`);
 
-        if (avgLi < -4) termicoParts.push(`L'indice di sollevamento estremamente negativo (${avgLi.toFixed(1)}) indica un'instabilità marcata: è consigliabile limitare il volo al mattino, prima dello sviluppo dei temporali pomeridiani.`);
-        else if (avgLi < -2) termicoParts.push(`Instabilità moderata-${avgLi.toFixed(1)}: si prevedono termiche organizzate ma con tendenza al peggioramento nel pomeriggio.`);
-        else if (avgLi > 0) termicoParts.push(`Atmosfera stabilmente stratificata (LI positivo): le termiche saranno scarsamente sviluppate, preferire il vento di cresta.`);
+        if (avgLi < -4) termicoParts.push(`LI ${avgLi.toFixed(1)} indica instabilità marcata — volare al mattino.`);
+        else if (avgLi < -2) termicoParts.push(`Instabilità moderata (${avgLi.toFixed(1)}) — tendenza al peggioramento pomeridiano.`);
+        else if (avgLi > 0) termicoParts.push(`Atmosfera stabile (LI positivo): preferire il vento di cresta.`);
 
-        if (pressureTrend > 2) termicoParts.push(`La pressione è in rialzo (${pressureTrendLabel}), il che suggerisce un miglioramento delle condizioni con ulteriore consolidamento dell'alta quota.`);
-        else if (pressureTrend < -2) termicoParts.push(`La pressione è in calo (${pressureTrendLabel}): si avvicina un sistema perturbato, si consiglia di volare nelle prime ore della giornata.`);
+        if (pressureTrend > 2) termicoParts.push(`Pressione in rialzo (${pressureTrendLabel}): condizioni in miglioramento.`);
+        else if (pressureTrend < -2) termicoParts.push(`Pressione in calo (${pressureTrendLabel}): si avvicina un sistema perturbato.`);
 
-        if (cinVal > 200) termicoParts.push(`Presente un'inibizione convettiva (CIN ${Math.round(cinVal)} J/kg): le termiche non si svilupperanno prima delle 10:30, momento in cui il riscaldamento del suolo riuscirà a superare lo strato stabile residuo.`);
-        else if (cinVal <= 200) termicoParts.push(`Nessuna inibizione convettiva rilevante: le termiche potranno attivarsi già dalle prime ore di sole, non appena il terreno inizierà a riscaldarsi.`);
+        if (cinVal > 200) termicoParts.push(`CIN ${Math.round(cinVal)} J/kg: le termiche si attivano dopo le 10:30.`);
+        else termicoParts.push(`Nessuna inibizione convettiva — termiche attive dalle prime ore di sole.`);
 
         const ventoParts: string[] = [];
-        ventoParts.push(`Il vento soffia da ${dirLabel(windDir)} (${windDir}°) con una velocità al suolo di ${Math.round(windSpeed)} km/h`);
-        if (windGusts > 0) ventoParts[ventoParts.length - 1] += `, accompagnata da raffiche che raggiungono i ${Math.round(windGusts)} km/h`;
-        ventoParts[ventoParts.length - 1] += `. La turbolenza è classificata come ${turbulenceLevel.toLowerCase()}`;
+        ventoParts.push(`Vento da ${dirLabel(windDir)} (${windDir}°) ${Math.round(windSpeed)} km/h`);
+        if (windGusts > 0) ventoParts[ventoParts.length - 1] += `, raffiche a ${Math.round(windGusts)} km/h`;
+        ventoParts.push(`Turbolenza ${turbulenceLevel.toLowerCase()}.`);
 
-        if (windSpeed > 15 && windSpeed <= 25) ventoParts.push(`Con queste condizioni è fondamentale orientare il decollo sempre controvento e prestare la massima attenzione nelle fasi di atterraggio.`);
-        else if (windSpeed > 10 && windSpeed <= 15) ventoParts.push(`Il vento è moderato: si prestino attenzioni a possibili rafaghe e a fenomeni di turbolenza meccanica, specialmente nelle fasi di decollo e atterraggio.`);
-        else if (windSpeed <= 10) ventoParts.push(`Condizioni di vento favorevoli per un decollo assistito e un atterraggio in sicurezza.`);
-
-        if (wind850 != null && wind850 > 30) ventoParts.push(`In quota, il vento a 850 hPa supera i 30 km/h, condizione che richiede particolare cautela nella gestione del decollo e dell'atterraggio, dato l'elevato shear verticale.`);
-        if (wind850 != null && Math.abs(wind850 - windSpeed) > 15) ventoParts.push(`Significativo wind shear tra suolo e quota (${Math.round(wind850)} km/h a 850 hPa contro i ${Math.round(windSpeed)} km/h al suolo): attenzione alla transizione tra gli strati durante la salita e la discesa.`);
-        if (waveIndex < 40 && wind850 != null && wind850 > 15) ventoParts.push(`Il wave index è favorevole allo sviluppo di onda montana: provare quote superiori per sfruttare il dynamic in quota.`);
+        if (wind850 != null && wind850 > 30) ventoParts.push(`Vento a 850 hPa superiore a 30 km/h — attenzione shear verticale.`);
+        if (waveIndex < 40 && wind850 != null && wind850 > 15) ventoParts.push(`Wave index favorevole — provare quote superiori per dynamic.`);
 
         const strategiaParts: string[] = [];
-        if (cloudBase > siteAlt + 800) strategiaParts.push(`La base dei cumuli si attesta a ${Math.round(cloudBase)} m slm (+${Math.round(cloudBase - siteAlt)}m dal campo), offrendo un ampio spazio di manovra e margini di sicurezza abbondanti.`);
-        else if (cloudBase > siteAlt + 400) strategiaParts.push(`La base dei cumuli si trova a ${Math.round(cloudBase)} m slm: lo spazio di manovra è sufficiente ma richiede attenzione durante le manovre in prossimità del fondo nuvoloso.`);
-        else strategiaParts.push(`Attenzione: la base dei cumuli si trova a soli ${Math.round(cloudBase - siteAlt)}m sopra il campo. Rischio di nebbia mattutina al decollo — attendere il riscaldamento solare.`);
+        if (cloudBase > siteAlt + 800) strategiaParts.push(`Base cumuli a ${Math.round(cloudBase)}m slm (+${Math.round(cloudBase - siteAlt)}m): spazio di manovra abbondante.`);
+        else if (cloudBase > siteAlt + 400) strategiaParts.push(`Base cumuli a ${Math.round(cloudBase)}m slm: spazio sufficiente.`);
+        else strategiaParts.push(`Attenzione: base cumuli a soli ${Math.round(cloudBase - siteAlt)}m — rischio nebbia mattutina.`);
 
-        if (flightHours > 6) strategiaParts.push(`La finestra di volo si estende per oltre ${flightHours} ore (${flightWindow}): è possibile pianificare con calma, privilegiando le ore centrali per il picco termico.`);
-        else if (flightHours >= 4) strategiaParts.push(`Finestra di volo di circa ${flightHours} ore (${flightWindow}). Pianificare le ore centrali per massimizzare lo sfruttamento delle termiche.`);
-        else strategiaParts.push(`Finestra di volo breve (${flightHours} ore). Valutare attentamente se le condizioni sono sufficienti per il decollo.`);
+        if (flightHours > 6) strategiaParts.push(`Finestra di ${flightHours}h (${flightWindow}): pianificare le ore centrali.`);
+        else if (flightHours >= 4) strategiaParts.push(`Finestra di ${flightHours}h (${flightWindow}).`);
+        else strategiaParts.push(`Finestra breve (${flightHours}h): valutare attentamente.`);
 
-        if (thunderProb > 40) strategiaParts.push(`Il rischio temporali è elevato (${thunderProb}%): si sconsiglia vivamente il volo nel pomeriggio. Qualora si decida di volare, limitarsi alle prime ore mattutine e avere un piano di fuga chiaro.`);
-        else if (thunderProb > 20) strategiaParts.push(`Rischio temporali moderato (${thunderProb}%). Possibile sviluppo pomeridiano: monitorare costantemente l'evoluzione e essere pronti a concludere il volo nelle prime ore.`);
+        if (thunderProb > 40) strategiaParts.push(`Rischio tufo ${thunderProb}% — evitare il pomeriggio.`);
+        else if (thunderProb > 20) strategiaParts.push(`Rischio tufo moderato (${thunderProb}%): monitorare l'evoluzione.`);
 
-        if (nextRainProb > 40) strategiaParts.push(`La probabilità di pioggia nelle prossime 6 ore supera il ${Math.round(nextRainProb)}%: si consiglia di posticipare il volo o di tenere pronto il copri ala.`);
-        else if (nextRainProb > 20) strategiaParts.push(`Possibile pioggia isolata (${Math.round(nextRainProb)}%): tenere pronto il copri ala e monitorare le previsioni a breve termine.`);
+        if (nextRainProb > 40) strategiaParts.push(`Pioggia probabile al ${Math.round(nextRainProb)}%: posticipare il volo.`);
+        else if (nextRainProb > 20) strategiaParts.push(`Possibile pioggia isolata (${Math.round(nextRainProb)}%): tenere pronto il copri ala.`);
 
-        if (tactics.some(t => t.includes("CAPE"))) {
-          if (avgCape > 1000) strategiaParts.push(`Il CAPE medio raggiunge valori elevati (${Math.round(avgCape)} J/kg), indicativo di forte instabilità e energia termica abbondante, ma con aumento del rischio temporali pomeridiano.`);
-          else if (avgCape > 400) strategiaParts.push(`CAPE nella fascia ${Math.round(avgCape)} J/kg: energia termica sufficiente per termiche sviluppate ma controllabili, condizioni generalmente favorevoli.`);
-        }
-
-        if (spread < 2 && humidity > 80) strategiaParts.push(`Aria molto umida con spread ridotto (${Math.round(spread)}°C): le termiche saranno pesanti ma poco organizzate, con cielo tendenzialmente coperto e visibilità ridotta in quota.`);
-        else if (spread > 8) strategiaParts.push(`Spread elevato (${Math.round(spread)}°C): aria secca in quota con termiche vigorose ma possibili cumuli verticali sviluppati e rischio gelività in quota.`);
+        if (avgCape > 1000) strategiaParts.push(`CAPE elevato (${Math.round(avgCape)} J/kg): energia termica abbondante ma rischio temporali.`);
+        else if (avgCape > 400) strategiaParts.push(`CAPE ${Math.round(avgCape)} J/kg: energia termica sufficiente e controllabile.`);
 
         const pericoloParts: string[] = [];
         const dangerWarnings = warnings.filter(w => w.type === "danger");
         const warningWarnings = warnings.filter(w => w.type === "warning");
-
         if (dangerWarnings.length > 0) {
-          pericoloParts.push(`Si rilevano ${dangerWarnings.length} criticità di livello critico:`);
+          pericoloParts.push(`Criticità (${dangerWarnings.length}):`);
           dangerWarnings.forEach((w, i) => { pericoloParts.push(`${i + 1}) ${w.text}.`); });
         }
         if (warningWarnings.length > 0) {
-          pericoloParts.push(`Ulteriori ${warningWarnings.length} avvertenze:`);
           warningWarnings.forEach((w, i) => { pericoloParts.push(`${dangerWarnings.length + i + 1}) ${w.text}.`); });
         }
-        if (pericoloParts.length === 0) {
-          pericoloParts.push("Nessun segnale di pericolo immediato rilevato. Le condizioni appaiono favorevoli al volo nelle ore centrali della giornata.");
-        }
+        if (pericoloParts.length === 0) pericoloParts.push("Nessun segnale di pericolo immediato.");
 
         let giudizioFinale: string;
-        if (signal === "green") {
-          giudizioFinale = `Le condizioni meteo per il decollo di ${siteName || "questo sito"} si presentano complessivamente favorevoli. Il rateo termico medio e la quota della base dei cumuli consentono un volo termico sicuro, purché si rispettino le raccomandazioni operative indicate. Si consiglia di verificare l'evoluzione nel corso della giornata e di pianificare il rientro prima del possibile peggioramento pomeridiano.`;
-        } else if (signal === "yellow") {
-          giudizioFinale = `Le condizioni meteo presentano elementi di criticità che richiedono valutazione attenta. ${signalLabel.toLowerCase()}. Si raccomanda di seguire scrupolosamente le raccomandazioni riportate, mantenere una costante vigilanza sull'evoluzione delle condizioni e predisporre un piano di emergenza per il ritorno a terra. Il volo è consentito solo a piloti con adeguata esperienza e consapevolezza dei rischi.`;
-        } else {
-          giudizioFinale = `Condizioni meteo critiche per il volo a ${siteName || "questo sito"}. ${signalLabel.toLowerCase()}. Si sconsiglia il decollo fino a netto miglioramento delle condizioni. Eventuali attività in quota dovrebbero essere limitate a fasi brevissime e strettamente controllate, con preferenza per il mantenimento a terra fino al rientro dei parametri entro limiti di sicurezza.`;
-        }
+        if (signal === "green") giudizioFinale = `Condizioni complessivamente favorevoli per il decollo di ${siteName || "questo sito"}. Rateo termico e base dei cumuli consentono un volo sicuro.`;
+        else if (signal === "yellow") giudizioFinale = `Condizioni critiche che richiedono valutazione attenta. ${signalLabel.toLowerCase()}. Volo consentito solo a piloti esperti.`;
+        else giudizioFinale = `Condizioni meteo critiche per il volo. Si sconsiglia il decollo.`;
 
         const dateStr = new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
         return (
-          <div className="rounded-2xl overflow-hidden shadow-2xl mt-1">
-            <div className="px-6 py-5 border-b border-slate-800/80 bg-gradient-to-r from-slate-800/60 via-slate-800/40 to-transparent">
+          <div className="rounded-2xl overflow-hidden mt-1" style={{ background: 'linear-gradient(135deg, rgba(30,41,59,0.6), rgba(15,23,42,0.8))', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 16px 64px -16px rgba(0,0,0,0.6)' }}>
+            <div className="px-6 py-5 border-b border-white/5">
               <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
-                    <FileText className="w-6 h-6 text-slate-300" />
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(100,116,139,0.15)', border: '1px solid rgba(100,116,139,0.25)' }}>
+                    <FileText className="w-5 h-5 text-slate-300" />
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest mb-1">Bollettino meteo operatore</p>
-                    <h4 className="text-base font-black text-white leading-tight">{siteName || "Decollo"} — {siteAlt}m slm</h4>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {dateStr} · {String(now).padStart(2,"0")}:00 UTC · {modelName || "Open-Meteo"}
-                    </p>
+                    <p className="text-[9px] text-slate-500 uppercase tracking-[0.15em] font-black mb-1">Bollettino meteo operatore</p>
+                    <h4 className="text-sm font-black text-white">{siteName || "Decollo"} — {siteAlt}m slm</h4>
+                    <p className="text-xs text-slate-500 mt-1">{dateStr} · {String(now).padStart(2,"0")}:00 UTC</p>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-2 shrink-0">
-                  <div className={`bg-gradient-to-br ${scoreBg} border rounded-2xl px-4 py-2.5 text-center`}>
-                    <div className={`text-2xl font-black tabular-nums ${scoreColor}`}>{overallScore}</div>
-                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{signalLabel}</div>
-                  </div>
+                <div className="text-center">
+                  <div className="text-3xl font-black tabular-nums" style={{ color: scoreColor }}>{overallScore}</div>
+                  <div className="text-[9px] text-slate-500 uppercase tracking-wider mt-0.5">{signalLabel}</div>
                 </div>
               </div>
             </div>
 
-            <div className="px-6 pt-4 pb-0">
+            <div className="px-6 pt-3 pb-0">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Condizioni complessive</span>
-                <span className="text-[10px] text-slate-500 font-semibold">{warnings.length + tactics.length} elementi analizzati</span>
+                <span className="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Condizioni complessive</span>
+                <span className="text-[9px] text-slate-600">{warnings.length + tactics.length} elementi analizzati</span>
               </div>
-              <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full bg-gradient-to-r ${barColor} transition-all duration-1000 ease-out`} style={{ width: `${overallScore * 10}%` }} />
+              <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div className={`h-full rounded-full bg-gradient-to-r ${barColor} transition-all duration-1000`} style={{ width: `${overallScore * 10}%` }} />
               </div>
             </div>
 
             <div className="px-6 py-5 space-y-4">
-              <section>
-                <div className="flex items-center gap-3 mb-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-orange-500/15 border border-orange-500/25 flex items-center justify-center">
-                    <Thermometer className="w-4 h-4 text-orange-400" />
+              {[
+                { num: "01", title: "Quadro Termico", color: "#fb923c", parts: termicoParts },
+                { num: "02", title: "Profilo Vento", color: "#38bdf8", parts: ventoParts },
+                { num: "03", title: "Convezione & Rischio", color: "#a78bfa", parts: strategiaParts },
+              ].map(sec => (
+                <section key={sec.num}>
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${sec.color}18`, border: `1px solid ${sec.color}30` }}>
+                      <span className="text-[9px] font-black" style={{ color: sec.color }}>{sec.num}</span>
+                    </div>
+                    <span className="text-xs font-black" style={{ color: sec.color }}>{sec.title}</span>
                   </div>
-                  <div>
-                    <span className="text-[10px] text-orange-400/60 font-bold uppercase tracking-widest mr-2">01</span>
-                    <span className="text-sm font-black text-orange-200">Quadro Termico &amp; Stabilità</span>
-                  </div>
-                </div>
-                <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">{termicoParts.join(" ")}</p>
-              </section>
-
-              <section>
-                <div className="flex items-center gap-3 mb-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-sky-500/15 border border-sky-500/25 flex items-center justify-center">
-                    <Wind className="w-4 h-4 text-sky-400" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-sky-400/60 font-bold uppercase tracking-widest mr-2">02</span>
-                    <span className="text-sm font-black text-sky-200">Profilo Vento in Quota</span>
-                  </div>
-                </div>
-                <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">{ventoParts.join(" ")}</p>
-              </section>
-
-              <section>
-                <div className="flex items-center gap-3 mb-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-violet-500/15 border border-violet-500/25 flex items-center justify-center">
-                    <Cloud className="w-4 h-4 text-violet-400" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-violet-400/60 font-bold uppercase tracking-widest mr-2">03</span>
-                    <span className="text-sm font-black text-violet-200">Convezione &amp; Rischio</span>
-                  </div>
-                </div>
-                <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">{strategiaParts.join(" ")}</p>
-              </section>
+                  <p className="text-sm text-slate-300 leading-[1.8] pl-10">{sec.parts.join(" ")}</p>
+                </section>
+              ))}
             </div>
 
-            <div className="mx-6 border-t border-slate-800/80" />
+            <div className="mx-6 border-t border-white/5" />
 
-            <div className="px-6 py-4 space-y-2.5">
-              <div className="flex items-start gap-3 bg-rose-500/8 border border-rose-500/20 rounded-2xl px-4 py-3.5">
-                <div className="w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-500/25 flex items-center justify-center shrink-0">
-                  <AlertTriangle className="w-4 h-4 text-rose-400" />
-                </div>
+            <div className="px-6 py-4 space-y-3">
+              <div className="flex items-start gap-3 rounded-2xl px-4 py-3.5" style={{ background: 'rgba(244,63,94,0.06)', border: '1px solid rgba(244,63,94,0.15)' }}>
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-[10px] text-rose-400/70 font-bold uppercase tracking-widest block mb-1">Segnali di pericolo</span>
-                  <p className="text-xs text-rose-200/90 leading-[1.7] font-medium">{pericoloParts.join(" ")}</p>
+                  <span className="text-[9px] text-rose-400/70 font-bold uppercase tracking-widest block mb-1">Segnali di pericolo</span>
+                  <p className="text-xs text-rose-200/80 leading-relaxed">{pericoloParts.join(" ")}</p>
                 </div>
               </div>
-
-              <div className="flex items-start gap-3 bg-emerald-500/8 border border-emerald-500/20 rounded-2xl px-4 py-3.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                </div>
+              <div className="flex items-start gap-3 rounded-2xl px-4 py-3.5" style={{ background: 'rgba(52,211,153,0.06)', border: '1px solid rgba(52,211,153,0.15)' }}>
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-widest block mb-1">Giudizio finale</span>
-                  <p className="text-xs text-emerald-200/90 leading-[1.7] font-medium">{giudizioFinale}</p>
+                  <span className="text-[9px] text-emerald-400/70 font-bold uppercase tracking-widest block mb-1">Giudizio finale</span>
+                  <p className="text-xs text-emerald-200/80 leading-relaxed">{giudizioFinale}</p>
                 </div>
               </div>
             </div>
