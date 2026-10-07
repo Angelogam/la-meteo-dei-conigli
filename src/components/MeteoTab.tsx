@@ -203,6 +203,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   const zeroThermal = dayData.reduce((s, h) => s + (h.freezingLevel ?? 0), 0) / dayData.length;
   const avgFreezing = zeroThermal > 0 ? Math.round(zeroThermal) : siteAlt + 3000;
 
+  const now = new Date().getHours();
   const next6h = dayData.filter(h => {
     const hr = h.time instanceof Date ? h.time.getHours() : new Date(h.time).getHours();
     return hr >= now && hr <= now + 6;
