@@ -881,25 +881,49 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
 
       {/* ═══════════ WARNINGS + TACTICS ═══════════ */}
       {(warnings.length > 0 || tactics.length > 0) && (
-        <div className="border-t border-white/5 px-5 py-4">
-          <div className="flex items-center gap-2 mb-3.5">
-            <div className="w-1 h-5 rounded-full bg-gradient-to-b from-emerald-400 to-teal-500" />
-            <span className="text-[10px] text-slate-400 uppercase tracking-wider font-black">Analisi e consigli</span>
-            <span className="text-[9px] text-slate-600 ml-auto">{warnings.length > 0 ? `${warnings.length} warning · ${tactics.length} consigli` : `${tactics.length} consigli pratici`}</span>
+        <div className="border-t border-white/5 px-5 py-5">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-1 h-5 rounded-full bg-gradient-to-b from-amber-400 to-orange-500" />
+            <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Analisi &amp; Consigli</span>
+            <div className="flex items-center gap-1.5 ml-auto">
+              {warnings.length > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/30 text-[9px] font-black text-rose-300">
+                  <AlertTriangle className="w-2.5 h-2.5" />
+                  {warnings.length}
+                </span>
+              )}
+              {tactics.length > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[9px] font-black text-emerald-300">
+                  <ArrowRight className="w-2.5 h-2.5" />
+                  {tactics.length}
+                </span>
+              )}
+            </div>
           </div>
-          <div className="space-y-1.5">
+
+          <div className="space-y-2">
             {warnings.length > 0 && warnings.map((w, i) => (
-              <div key={`w-${i}`} className={`flex items-start gap-2.5 text-xs py-2.5 px-4 rounded-xl border ${w.type === "danger" ? "bg-rose-500/10 border-rose-500/30 text-rose-200" : w.type === "warning" ? "bg-amber-500/10 border-amber-500/30 text-amber-200" : "bg-sky-500/10 border-sky-500/30 text-sky-200"}`}>
-                <span className="shrink-0 text-base mt-0.5">{w.icon}</span>
-                {w.text}
+              <div key={`w-${i}`} className={`flex items-start gap-3 text-sm py-3 px-4 rounded-xl border backdrop-blur-sm ${w.type === "danger" ? "bg-rose-500/8 border-rose-500/30 text-rose-100" : w.type === "warning" ? "bg-amber-500/8 border-amber-500/30 text-amber-100" : "bg-sky-500/8 border-sky-500/30 text-sky-100"}`}>
+                <span className="text-base shrink-0 mt-0.5 w-5 h-5 flex items-center justify-center rounded-lg bg-white/5">{w.icon}</span>
+                <span className="leading-snug">{w.text}</span>
               </div>
             ))}
-            {tactics.map((tac, i) => (
-              <div key={`t-${i}`} className="flex items-start gap-2.5 text-xs text-slate-300 bg-slate-800/50 rounded-xl px-4 py-2.5 border border-slate-700/30 hover:border-slate-600/50 transition-colors">
-                <ArrowRight className="w-3 h-3 text-emerald-400 shrink-0 mt-0.5" />
-                {tac}
+
+            {tactics.length > 0 && (
+              <div className="border-t border-white/5 pt-3 mt-1">
+                <div className="text-[9px] text-slate-500 uppercase tracking-widest font-black mb-2.5">Consigli tattici</div>
+                <div className="space-y-1.5">
+                  {tactics.map((tac, i) => (
+                    <div key={`t-${i}`} className="flex items-start gap-3 text-sm text-slate-200 bg-slate-800/40 rounded-xl px-4 py-3 border border-slate-700/30">
+                      <div className="w-5 h-5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0 mt-0.5">
+                        <ArrowRight className="w-3 h-3 text-emerald-400" />
+                      </div>
+                      <span className="leading-snug">{tac}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}
