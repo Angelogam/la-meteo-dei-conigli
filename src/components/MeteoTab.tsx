@@ -357,6 +357,22 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   const liColor = avgLi < -4 ? "#f43f5e" : avgLi < 0 ? "#fbbf24" : "#34d399";
   const capeColor = avgCape > 600 ? "#a78bfa" : "#34d399";
 
+  // ── Subtitles ──
+  const rateoSub = avgThermalRate > 2 ? "Forti — cross-country"
+    : avgThermalRate > 1.2 ? "Buone — allenamento e volo locale"
+    : avgThermalRate > 0.7 ? "Discrete — pazienza"
+    : "Deboli — dynamic di cresta";
+  const cloudBaseSub = cloudBase > siteAlt + 800 ? `+${Math.round(cloudBase - siteAlt)}m dal campo`
+    : cloudBase > siteAlt + 400 ? `+${Math.round(cloudBase - siteAlt)}m — spazio sufficiente`
+    : cloudBase > siteAlt + 200 ? `Attenzione: nubi basse a ${Math.round(cloudBase - siteAlt)}m`
+    : "Rischio nebbia al decollo";
+  const zeroTermSub = avgFreezing > siteAlt + 3000 ? "Neve solo in alta quota"
+    : avgFreezing > siteAlt + 1500 ? "Possibile neve sopra 2000m"
+    : "Zero molto basso — rischio ghiaccio";
+  const thermalTopSub = thermalTop > siteAlt + 1500 ? "ottima per cross-country"
+    : thermalTop > siteAlt + 800 ? "quota confortevole"
+    : "top limitato dalla stabilità";
+
   return (
     <div className={`rounded-2xl overflow-hidden ${sc.border} bg-[#0f172a] shadow-2xl transition-shadow duration-700 ${sc.glow}`} data-testid="meteo-tab">
       {/* ═══════════ TOP GRADIENT BAR ═══════════ */}
