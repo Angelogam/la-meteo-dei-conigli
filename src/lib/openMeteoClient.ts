@@ -8,7 +8,7 @@ import { getMeteoBaseUrl, OPEN_METEO_DIRECT } from "@/config/apiConfig";
 
 const TIMEOUT_MS = 8000;
 // Modello ICON per l'Europa — stesso usato da meteo-parapente.com
-const DEFAULT_MODELS = "icon_seamless";
+const DEFAULT_MODELS = "";
 
 async function fetchWithTimeout(url: string, timeoutMs: number = TIMEOUT_MS): Promise<Response> {
   const controller = new AbortController();
