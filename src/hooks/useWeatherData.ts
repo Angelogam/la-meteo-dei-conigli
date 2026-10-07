@@ -180,7 +180,15 @@ export function useWeatherData() {
 
   // Indice volabilità
   const volabilita = useMemo((): RisultatoVolabilita | null => {
-    if (!currentData) return null;
+    if (
+      !currentData ||
+      currentData.windSpeed === null ||
+      currentData.windDir === null ||
+      currentData.temperature === null ||
+      currentData.dewPoint === null ||
+      currentData.cloudCover === null ||
+      currentData.precipitation === null
+    ) return null;
     return calcolaIndiceVolabilita({
       windSpeed: currentData.windSpeed,
       windDir: currentData.windDir,
