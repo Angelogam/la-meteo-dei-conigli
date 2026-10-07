@@ -177,45 +177,45 @@ export function useWeatherData() {
       const base = {
         ...d,
         weatherCode: d.weatherCode ?? 0,
-        tempMax: d.tempMax ?? d.temperatureMax ?? 20,
-        tempMin: d.tempMin ?? d.temperatureMin ?? 10,
+        tempMax: d.tempMax ?? null,
+        tempMin: d.tempMin ?? null,
         precipitationSum: d.precipitationSum ?? 0,
         precipitationProbabilityMax: d.precipitationProbabilityMax ?? 0,
-        windSpeedMax: d.windSpeedMax ?? 10,
-        windGustsMax: d.windGustsMax ?? 15,
-        windDirDominant: d.windDirDominant ?? 180,
-        uvIndexMax: d.uvIndexMax ?? 5,
-        sunrise: d.sunrise ?? "06:30",
-        sunset: d.sunset ?? "19:30",
-        temperatureMax: d.temperatureMax ?? d.tempMax ?? 20,
-        temperatureMin: d.temperatureMin ?? d.tempMin ?? 10,
-        temperatureMean: d.temperatureMean ?? ((d.tempMax ?? 20) + (d.tempMin ?? 10)) / 2,
-        apparentTempMax: d.apparentTempMax ?? (d.tempMax ?? 20),
-        apparentTempMin: d.apparentTempMin ?? (d.tempMin ?? 10),
-        daylightDuration: d.daylightDuration ?? 13,
-        sunshineDuration: d.sunshineDuration ?? 8,
+        windSpeedMax: d.windSpeedMax ?? null,
+        windGustsMax: d.windGustsMax ?? null,
+        windDirDominant: d.windDirDominant ?? null,
+        uvIndexMax: d.uvIndexMax ?? null,
+        sunrise: d.sunrise ?? "",
+        sunset: d.sunset ?? "",
+        temperatureMax: d.temperatureMax ?? null,
+        temperatureMin: d.temperatureMin ?? null,
+        temperatureMean: d.temperatureMean ?? null,
+        apparentTempMax: d.apparentTempMax ?? null,
+        apparentTempMin: d.apparentTempMin ?? null,
+        daylightDuration: d.daylightDuration ?? 0,
+        sunshineDuration: d.sunshineDuration ?? 0,
         rainSum: d.rainSum ?? d.precipitationSum ?? 0,
         snowfallSum: d.snowfallSum ?? 0,
         precipitationHours: d.precipitationHours ?? 0,
-        shortwaveRadiationSum: d.shortwaveRadiationSum ?? 5000,
+        shortwaveRadiationSum: d.shortwaveRadiationSum ?? 0,
       };
-      // Freezing level: usa dato API quando disponibile, altrimenti stima conservativa
+      // Freezing level: usa dato API quando disponibile, altrimenti null
       const freezingLevel = d.freezingLevel !== null && d.freezingLevel !== undefined
         ? d.freezingLevel
-        : base.temperatureMean !== null && base.temperatureMean !== undefined
-          ? Math.max(500, Math.round(5500 - base.temperatureMean * 155))
-          : null;
+        : null;
       // Trend: compare with next day's predicted temp
       let trend: "↑" | "↓" | "→" | null = null;
       if (i < dailyData.length - 1) {
-        const nextTempMax = dailyData[i + 1]?.temperatureMax ?? dailyData[i + 1]?.tempMax ?? 0;
+        const nextTempMax = dailyData[i + 1]?.temperatureMax ?? dailyData[i + 1]?.tempMax ?? null;
         const thisTempMax = base.temperatureMax;
-        const diff = nextTempMax - thisTempMax;
-        if (diff > 2) trend = "↑";
-        else if (diff < -2) trend = "↓";
-        else trend = "→";
+        if (thisTempMax !== null && nextTempMax !== null) {
+          const diff = nextTempMax - thisTempMax;
+          if (diff > 2) trend = "↑";
+          else if (diff < -2) trend = "↓";
+          else trend = "→";
+        }
       }
-      return { ...base, freezingLevel: Math.max(500, freezingLevel), trend };
+      return { ...base, freezingLevel, trend };
     });
   }, [dailyData]);
 
@@ -231,10 +231,10 @@ export function useWeatherData() {
     return labels;
   }, []);
 
-  // Calcolo delta termico approssimativo
+  // Calcolo delta termico approssimativo (solo se dati reali disponibili)
   const thermalDelta = useMemo(() => {
-    if (!currentData) return 5;
-    const delta = currentData.temperature - (currentData.dewPoint ?? currentData.temperature - 5);
+    if (!currentData || currentData.temperature === null || currentData.dewPoint === null) return null;
+    const delta = currentData.temperature - currentData.dewPoint;
     return Math.max(2, Math.min(12, delta));
   }, [currentData]);
 

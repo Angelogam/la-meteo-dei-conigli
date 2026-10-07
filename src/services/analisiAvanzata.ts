@@ -13,7 +13,7 @@ export interface AnalisiCompleta {
   direzioneDominante: string;
   copertura: string;
   baseNuvole: number;
-  pressione: number;
+  pressione: number | null;
   umidita: number;
   uvIndex: number;
   stabilitàAtmosferica: string;
@@ -134,9 +134,9 @@ export function analisiAvanzataCompleta(
     const cin = weather.cin ?? null;
     const liftedIndex = weather.liftedIndex ?? null;
 
-    // Pressione: usa dato API se disponibile, altrimenti media 1013
+    // Pressione: usa dato API se disponibile, altrimenti null
     const pressure = current?.pressure ?? null;
-    const presVal = pressure !== null && pressure !== undefined ? pressure : 1013;
+    const presVal = pressure !== null && pressure !== undefined ? pressure : null;
 
     // Spread T-dew point
     const spread = Math.max(0.3, Math.min(20, temp - (dew !== null ? dew : temp - 8)));
@@ -230,15 +230,15 @@ export function analisiAvanzataCompleta(
       tempMin: Math.round(temp - Math.min(5, (100 - hum) / 20)),
       ventoMedio: Math.round(windSpeed),
       ventoMax: Math.round(windGusts),
-      direzioneDominante: "—",
+      direzioneDominante: current?.windDir !== null && current?.windDir !== undefined ? `(${current.windDir}°)` : "—",
       copertura: coperturaTesto,
       baseNuvole,
-      pressione: Math.round(presVal),
+      pressione: presVal !== null ? Math.round(presVal) : null,
       umidita: Math.round(hum),
       uvIndex: Math.round(uv * 10) / 10,
       stabilitàAtmosferica: stabilita,
       turbolenza,
-      windShear,
+      windShear: windShear ?? 0, // gust spread quando windGusts mancante
       gradienteReale: gradiente,
       zeroTermico,
       topTermico,

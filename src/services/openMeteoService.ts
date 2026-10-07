@@ -18,6 +18,7 @@ const HOURLY_PARAMS = [
   "wind_direction_10m",
   "wind_gusts_10m",
   "cape",
+  "convective_inhibition",
   "lifted_index",
   "shortwave_radiation",
   "direct_radiation",
@@ -63,6 +64,8 @@ const DAILY_PARAMS = [
   "sunshine_duration",
   "apparent_temperature_max",
   "apparent_temperature_min",
+  "freezing_level_height_max",
+  "convective_inhibition",
 ].join(",");
 
 const CURRENT_PARAMS = [
@@ -79,6 +82,7 @@ const CURRENT_PARAMS = [
   "wind_direction_10m",
   "wind_gusts_10m",
   "cape",
+  "convective_inhibition",
   "apparent_temperature",
   "uv_index",
   "visibility",
@@ -99,7 +103,7 @@ function safeNumOrNull(v: unknown): number | null {
 export interface MeteoCurrent {
   time: Date;
   temperature: number | null;
-  humidity: number;
+  humidity: number | null;
   dewPoint: number | null;
   precipitation: number;
   weatherCode: number;
@@ -107,10 +111,10 @@ export interface MeteoCurrent {
   cloudCoverLow: number;
   cloudCoverMid: number;
   cloudCoverHigh: number;
-  windSpeed: number;
-  windDir: number;
-  windGusts: number;
-  cape: number;
+  windSpeed: number | null;
+  windDir: number | null;
+  windGusts: number | null;
+  cape: number | null;
   apparentTemp: number | null;
   isDay?: number;
   rain?: number;
@@ -119,14 +123,14 @@ export interface MeteoCurrent {
   surfacePressure?: number | null;
   liftedIndex?: number | null;
   cin?: number | null;
-  visibility?: number;
-  uvIndex?: number;
+  visibility?: number | null;
+  uvIndex?: number | null;
 }
 
 export interface MeteoHourly {
   time: Date;
   temperature: number | null;
-  humidity: number;
+  humidity: number | null;
   dewPoint: number | null;
   precipitation: number;
   precipitationProbability: number;
@@ -135,15 +139,15 @@ export interface MeteoHourly {
   cloudCoverLow: number;
   cloudCoverMid: number;
   cloudCoverHigh: number;
-  windSpeed: number;
-  windDir: number;
-  windGusts: number;
-  cape: number;
-  liftedIndex: number;
+  windSpeed: number | null;
+  windDir: number | null;
+  windGusts: number | null;
+  cape: number | null;
+  liftedIndex: number | null;
   shortwaveRadiation: number;
   directRadiation: number;
-  uvIndex: number;
-  visibility: number;
+  uvIndex: number | null;
+  visibility: number | null;
   feelsLike: number | null;
   pressure: number | null;
   surfacePressure: number | null;
@@ -174,7 +178,7 @@ export interface MeteoHourly {
   directNormalIrradiance: number;
   terrestrialRadiation: number;
   radiation: number;
-  cin: number;
+  cin: number | null;
   // Pressure level winds
   windSpeed925: number | null;
   windDir925: number | null;
@@ -229,23 +233,24 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
     // Current
     const c = json.current;
     const current: MeteoCurrent | null = c ? {
-      time: new Date(c.time),
-      temperature: safeNumOrNull(c.temperature_2m),
-      humidity: safeNum(c.relative_humidity_2m, 50),
-      dewPoint: safeNumOrNull(c.dew_point_2m),
-      precipitation: safeNum(c.precipitation, 0),
-      weatherCode: safeNum(c.weather_code, 0),
-      cloudCover: safeNum(c.cloud_cover, 0),
-      cloudCoverLow: safeNum(c.cloud_cover_low, 0),
-      cloudCoverMid: safeNum(c.cloud_cover_mid, 0),
-      cloudCoverHigh: safeNum(c.cloud_cover_high, 0),
-      windSpeed: safeNum(c.wind_speed_10m, 0),
-      windDir: safeNum(c.wind_direction_10m, 0),
-      windGusts: safeNum(c.wind_gusts_10m, c.wind_speed_10m ?? 0),
-      cape: safeNumOrNull(c.cape),
-      apparentTemp: safeNumOrNull(c.apparent_temperature),
-      uvIndex: safeNum(c.uv_index, 0),
-      visibility: safeNum(c.visibility, 10000),
+          time: new Date(c.time),
+          temperature: safeNumOrNull(c.temperature_2m),
+          humidity: safeNum(c.relative_humidity_2m, 50),
+          dewPoint: safeNumOrNull(c.dew_point_2m),
+          precipitation: safeNum(c.precipitation, 0),
+          weatherCode: safeNum(c.weather_code, 0),
+          cloudCover: safeNum(c.cloud_cover, 0),
+          cloudCoverLow: safeNum(c.cloud_cover_low, 0),
+          cloudCoverMid: safeNum(c.cloud_cover_mid, 0),
+          cloudCoverHigh: safeNum(c.cloud_cover_high, 0),
+          windSpeed: safeNum(c.wind_speed_10m, 0),
+          windDir: safeNum(c.wind_direction_10m, 0),
+          windGusts: safeNum(c.wind_gusts_10m, c.wind_speed_10m ?? 0),
+          cape: safeNumOrNull(c.cape),
+          cin: safeNumOrNull(c.convective_inhibition),
+          apparentTemp: safeNumOrNull(c.apparent_temperature),
+          uvIndex: safeNum(c.uv_index, 0),
+          visibility: safeNum(c.visibility, 10000),
     } : null;
 
     // Hourly
@@ -343,17 +348,17 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
         tempMin: safeNumOrNull(json.daily.temperature_2m_min?.[i]),
         precipitationSum: safeNum(json.daily.precipitation_sum?.[i], 0),
         precipitationProbabilityMax: safeNum(json.daily.precipitation_probability_max?.[i], 0),
-        windSpeedMax: safeNum(json.daily.wind_speed_10m_max?.[i], 0),
-        windGustsMax: safeNum(json.daily.wind_gusts_10m_max?.[i], 0),
-        windDirDominant: safeNum(json.daily.wind_direction_10m_dominant?.[i], 0),
-        uvIndexMax: safeNum(json.daily.uv_index_max?.[i], 0),
+        windSpeedMax: safeNumOrNull(json.daily.wind_speed_10m_max?.[i]),
+        windGustsMax: safeNumOrNull(json.daily.wind_gusts_10m_max?.[i]),
+        windDirDominant: safeNumOrNull(json.daily.wind_direction_10m_dominant?.[i]),
+        uvIndexMax: safeNumOrNull(json.daily.uv_index_max?.[i]),
         sunrise: json.daily.sunrise?.[i] ?? "",
         sunset: json.daily.sunset?.[i] ?? "",
-        temperatureMax: safeNum(json.daily.temperature_2m_max?.[i], 0),
-        temperatureMin: safeNum(json.daily.temperature_2m_min?.[i], 0),
-        temperatureMean: safeNum(json.daily.temperature_2m_mean?.[i], 0),
-        apparentTempMax: safeNum(json.daily.apparent_temperature_max?.[i], 0),
-        apparentTempMin: safeNum(json.daily.apparent_temperature_min?.[i], 0),
+        temperatureMax: safeNumOrNull(json.daily.temperature_2m_max?.[i]),
+        temperatureMin: safeNumOrNull(json.daily.temperature_2m_min?.[i]),
+        temperatureMean: safeNumOrNull(json.daily.temperature_2m_mean?.[i]),
+        apparentTempMax: safeNumOrNull(json.daily.apparent_temperature_max?.[i]),
+        apparentTempMin: safeNumOrNull(json.daily.apparent_temperature_min?.[i]),
         daylightDuration: safeNum(json.daily.daylight_duration?.[i], 0),
         sunshineDuration: safeNum(json.daily.sunshine_duration?.[i], 0),
         rainSum: safeNum(json.daily.rain_sum?.[i], 0),
@@ -391,10 +396,10 @@ export const weatherService = {
         windSpeed: safeNum(c.wind_speed_10m, 0),
         windDir: safeNum(c.wind_direction_10m, 0),
         windGusts: safeNum(c.wind_gusts_10m, c.wind_speed_10m ?? 0),
-        cape: safeNum(c.cape, 0),
-        apparentTemp: safeNumOrNull(c.apparent_temperature),
-        uvIndex: safeNum(c.uv_index, 0),
-        visibility: safeNum(c.visibility, 10000),
+        cape: safeNumOrNull(c.cape),
+                apparentTemp: safeNumOrNull(c.apparent_temperature),
+                uvIndex: safeNum(c.uv_index, 0),
+                visibility: safeNum(c.visibility, 10000),
       };
     } catch {
       return null;

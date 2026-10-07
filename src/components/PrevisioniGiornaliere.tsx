@@ -25,11 +25,13 @@ function dirToIcon(dir: number): string {
 function getFlightRating(daily: MeteoDaily, current: HourData | MeteoCurrent | null): number {
   if (!daily) return 0;
   let score = 5;
-  const wind = daily.windSpeedMax ?? 10;
-  if (wind <= 8) score += 2;
-  else if (wind <= 15) score += 1;
-  else if (wind <= 25) score -= 1;
-  else score -= 2;
+  const wind = daily.windSpeedMax ?? null;
+  if (wind !== null) {
+    if (wind <= 8) score += 2;
+    else if (wind <= 15) score += 1;
+    else if (wind <= 25) score -= 1;
+    else score -= 2;
+  }
   const rain = daily.precipitationSum ?? 0;
   if (rain <= 0.2) score += 1;
   else if (rain <= 2) score -= 1;
@@ -37,11 +39,13 @@ function getFlightRating(daily: MeteoDaily, current: HourData | MeteoCurrent | n
   const cloudCover = (current as any)?.cloudCover ?? 30;
   if (cloudCover <= 30) score += 1;
   else if (cloudCover > 70) score -= 1;
-  const cape = (current as any)?.cape ?? 0;
-  if (cape >= 200 && cape <= 1000) score += 1;
-  else if (cape > 1500) score -= 1;
-  const uv = daily.uvIndexMax ?? 5;
-  if (uv > 8) score -= 1;
+  const cape = (current as any)?.cape ?? null;
+  if (cape !== null) {
+    if (cape >= 200 && cape <= 1000) score += 1;
+    else if (cape > 1500) score -= 1;
+  }
+  const uv = daily.uvIndexMax ?? null;
+  if (uv !== null && uv > 8) score -= 1;
   return Math.max(1, Math.min(10, Math.round(score)));
 }
 
@@ -95,23 +99,27 @@ export default function PrevisioniGiornaliere({
 }: PrevisioniGiornaliereProps) {
   const tabs = ["Oggi", "Domani", "Dopodomani"];
 
-  const temp = currentData?.temperature ?? 15;
-  const feelsLike = (currentData as any)?.feelsLike ?? temp;
-  const dewPoint = (currentData as any)?.dewPoint ?? temp - 5;
-  const spread = temp - dewPoint;
-  const windSpeed = currentData?.windSpeed ?? 5;
-  const windGusts = (currentData as any)?.windGusts ?? windSpeed * 1.3;
-  const windDir = currentData?.windDir ?? 180;
-  const humidity = currentData?.humidity ?? 60;
-  const pressure = (currentData as any)?.surfacePressure ?? 1013;
-  const visibility = (currentData as any)?.visibility ?? 10;
-  const cape = (currentData as any)?.cape ?? 0;
-  const uvIndex = currentData?.uvIndex ?? 5;
+  const temp = currentData?.temperature ?? null;
+  const feelsLike = (currentData as any)?.feelsLike ?? null;
+  const dewPoint = (currentData as any)?.dewPoint ?? null;
+  const spread = temp !== null && dewPoint !== null ? temp - dewPoint : 3;
+  const windSpeed = currentData?.windSpeed ?? null;
+  const windGusts = (currentData as any)?.windGusts ?? null;
+  const windDir = currentData?.windDir ?? null;
+  const humidity = currentData?.humidity ?? null;
+  const pressure = (currentData as any)?.surfacePressure ?? null;
+  const visibility = (currentData as any)?.visibility ?? null;
+  const cape = (currentData as any)?.cape ?? null;
+  const uvIndex = currentData?.uvIndex ?? null;
 
-  const thermalRate = Math.max(0.1, Math.min(3, spread * 0.15 + (cape > 0 ? cape / 5000 : 0)));
+  // Thermal rate from real CAPE when available, otherwise estimate from spread
+  const thermalRate = cape !== null
+    ? Math.max(0.1, Math.min(3, spread * 0.15 + (cape > 0 ? cape / 5000 : 0)))
+    : Math.max(0.1, Math.min(3, spread * 0.15));
   const cloudBase = site.altitude + Math.round(spread * 125);
-  const zeroCLevel = (currentData as any)?.freezingLevel ?? Math.round(5500 - temp * 155);
-  const topThermal = Math.round(cloudBase + thermalRate * 2000);
+  // Freezing level: usa dato API quando disponibile, altrimenti N/D
+  const zeroCLevel = (currentData as any)?.freezingLevel ?? null;
+  const topThermal = cape !== null ? Math.round(cloudBase + thermalRate * 2000) : null;
 
   const daily = enrichedDaily[selectedDay] ?? enrichedDaily[0];
   const flightRating = getFlightRating(daily, currentData);
@@ -169,20 +177,20 @@ export default function PrevisioniGiornaliere({
                 <span className="font-black uppercase tracking-wider">Temperatura</span>
               </div>
               <div className="text-5xl font-black text-white">
-                {Math.round(temp)}<span className="text-2xl text-slate-500">°C</span>
+                {temp !== null ? `${Math.round(temp)}<span className="text-2xl text-slate-500">°C</span>` : <span className="text-4xl text-slate-500">N/D</span>}
               </div>
               <div className="mt-3 space-y-1">
                 <div className="flex justify-between text-xs">
                   <span className="text-slate-500">Percepita</span>
-                  <span className="text-slate-300 font-bold">{Math.round(feelsLike)}°C</span>
+                  <span className="text-slate-300 font-bold">{feelsLike !== null ? `${Math.round(feelsLike)}°C` : "N/D"}</span>
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-slate-500">Spread</span>
-                  <span className="text-slate-300 font-bold">{spread.toFixed(1)}°C</span>
+                  <span className="text-slate-300 font-bold">{temp !== null && dewPoint !== null ? `${spread.toFixed(1)}°C` : "N/D"}</span>
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-slate-500">Punto Rugiada</span>
-                  <span className="text-slate-300 font-bold">{Math.round(dewPoint)}°C</span>
+                  <span className="text-slate-300 font-bold">{dewPoint !== null ? `${Math.round(dewPoint)}°C` : "N/D"}</span>
                 </div>
               </div>
             </div>
@@ -196,22 +204,22 @@ export default function PrevisioniGiornaliere({
                 </div>
                 <div
                   className="w-8 h-8 rounded-full border-2 border-sky-500/30 flex items-center justify-center"
-                  style={{ transform: `rotate(${windDir}deg)`, transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+                  style={{ transform: windDir !== null ? `rotate(${windDir}deg)` : undefined, transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
                 >
                   <div className="w-0.5 h-3 bg-sky-400 rounded-full -translate-y-1" />
                 </div>
               </div>
               <div className="text-5xl font-black text-white">
-                {Math.round(windSpeed)}<span className="text-2xl text-slate-500"> km/h</span>
+                {windSpeed !== null ? `${Math.round(windSpeed)}<span className="text-2xl text-slate-500"> km/h</span>` : <span className="text-4xl text-slate-500">N/D</span>}
               </div>
               <div className="mt-3 space-y-1">
                 <div className="flex justify-between text-xs">
                   <span className="text-slate-500">Direzione</span>
-                  <span className="text-slate-300 font-bold">{dirToIcon(windDir)} {windDir}°</span>
+                  <span className="text-slate-300 font-bold">{windDir !== null ? `${dirToIcon(windDir)} ${windDir}°` : "N/D"}</span>
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-slate-500">Raffiche</span>
-                  <span className="text-slate-300 font-bold">{Math.round(windGusts)} km/h</span>
+                  <span className="text-slate-300 font-bold">{windGusts !== null ? `${Math.round(windGusts)} km/h` : "N/D"}</span>
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-slate-500">Esposizione</span>
@@ -224,10 +232,10 @@ export default function PrevisioniGiornaliere({
           {/* 4 STATISTICHE ORIZZONTALI */}
           <div className="grid grid-cols-4 gap-4">
             {[
-              { icon: "💧", label: "Umidità", value: `${humidity}%`, color: "text-sky-400", sub: "Rilevata" },
-              { icon: "📊", label: "Pressione", value: `${Math.round(pressure)}`, color: "text-amber-400", sub: "hPa" },
-              { icon: "👁️", label: "Visibilità", value: `${visibility >= 10 ? "10+" : visibility}`, color: "text-emerald-400", sub: visibility >= 10 ? "Ottima" : "Buona" },
-              { icon: "☀️", label: "UV", value: `${Math.round(uvIndex)}`, color: uvIndex > 6 ? "text-rose-400" : "text-amber-400", sub: uvIndex > 8 ? "Estremo" : uvIndex > 5 ? "Alto" : "Moderato" },
+              { icon: "💧", label: "Umidità", value: humidity !== null ? `${humidity}%` : "N/D", color: humidity !== null ? "text-sky-400" : "text-slate-500", sub: humidity !== null ? "Rilevata" : "—" },
+              { icon: "📊", label: "Pressione", value: pressure !== null ? `${Math.round(pressure)} hPa` : "N/D", color: pressure !== null ? "text-amber-400" : "text-slate-500", sub: pressure !== null ? "MSL" : "—" },
+              { icon: "👁️", label: "Visibilità", value: visibility !== null ? `${visibility} m` : "N/D", color: visibility !== null ? "text-emerald-400" : "text-slate-500", sub: visibility !== null ? (visibility >= 10000 ? "Ottima" : visibility >= 5000 ? "Buona" : "Scadente") : "—" },
+              { icon: "☀️", label: "UV", value: uvIndex !== null ? `${Math.round(uvIndex)}` : "N/D", color: uvIndex !== null ? (uvIndex > 6 ? "text-rose-400" : "text-amber-400") : "text-slate-500", sub: uvIndex !== null ? (uvIndex > 8 ? "Estremo" : uvIndex > 5 ? "Alto" : "Moderato") : "—" },
             ].map((stat, i) => (
               <div
                 key={i}
@@ -277,30 +285,30 @@ export default function PrevisioniGiornaliere({
           <AeroCard
             icon={<Thermometer className="w-5 h-5" />}
             title="Zero Termico"
-            value={`${zeroCLevel.toLocaleString()} m`}
-            subtitle={`+${zeroCLevel - site.altitude}m dal suolo`}
+            value={zeroCLevel !== null ? `${zeroCLevel.toLocaleString()} m` : "N/D"}
+            subtitle={zeroCLevel !== null ? `+${zeroCLevel - site.altitude}m dal suolo` : "Dato non disponibile"}
             accent="violet"
-            barValue={zeroCLevel}
+            barValue={zeroCLevel ?? 0}
             barMax={5000}
             detail={<div className="text-[10px] text-slate-400">Confine neve/pioggia</div>}
           />
           <AeroCard
             icon={<Zap className="w-5 h-5" />}
             title="CAPE"
-            value={`${Math.round(cape)} J/kg`}
-            subtitle={cape > 1000 ? "Instabilità alta" : cape > 300 ? "Moderata" : "Stabile"}
+            value={cape !== null ? `${Math.round(cape)} J/kg` : "N/D"}
+            subtitle={cape !== null ? (cape > 1000 ? "Instabilità alta" : cape > 300 ? "Moderata" : "Stabile") : "Dato non disponibile"}
             accent="amber"
-            barValue={cape}
+            barValue={cape ?? 0}
             barMax={2000}
             detail={<div className="text-[10px] text-slate-400">Energia termica</div>}
           />
           <AeroCard
             icon={<ArrowUp className="w-5 h-5" />}
             title="Top Termica"
-            value={`${topThermal.toLocaleString()} m`}
-            subtitle={`+${topThermal - site.altitude}m dal suolo`}
+            value={topThermal !== null ? `${topThermal.toLocaleString()} m` : "N/D"}
+            subtitle={topThermal !== null ? `+${topThermal - site.altitude}m dal suolo` : "Dato non disponibile"}
             accent="emerald"
-            barValue={topThermal}
+            barValue={topThermal ?? 0}
             barMax={6000}
             detail={<div className="text-[10px] text-slate-400">Massima quota</div>}
           />
@@ -358,15 +366,15 @@ export default function PrevisioniGiornaliere({
                 {d && (
                   <>
                     <div className="flex items-baseline gap-1 mb-2">
-                      <span className="text-xl font-black text-amber-300">{Math.round(d.temperatureMax)}°</span>
+                      <span className="text-xl font-black text-amber-300">{d.temperatureMax !== null ? `${Math.round(d.temperatureMax)}°` : "N/D"}</span>
                       <span className="text-xs text-slate-600">/</span>
-                      <span className="text-lg font-bold text-sky-300">{Math.round(d.temperatureMin)}°</span>
+                      <span className="text-lg font-bold text-sky-300">{d.temperatureMin !== null ? `${Math.round(d.temperatureMin)}°` : "N/D"}</span>
                     </div>
                     <div className="text-[10px] text-slate-400 mb-1">
                       {d.precipitationSum > 0.5 ? '🌧️ Pioggia attesa' : '☀️ Sereno'}
                     </div>
                     <div className="text-[9px] text-slate-500">
-                      Vento max: {Math.round(d.windSpeedMax)} km/h
+                      Vento max: {d.windSpeedMax !== null ? `${Math.round(d.windSpeedMax)} km/h` : "N/D"}
                     </div>
                   </>
                 )}

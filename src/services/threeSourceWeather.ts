@@ -30,22 +30,17 @@ const TOMORROW_API_KEY = import.meta.env.VITE_TOMORROW_KEY || "";
 async function getOpenMeteo(lat: number, lon: number) {
   try {
     const today = new Date().toISOString().split("T")[0];
-    // Chiamata SOLO hourly come da istruzioni: non leggere daily se non richiesto
     const data = await fetchHourly(lat, lon, "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,cape,freezing_level_height", today, today);
     const t = data.hourly?.temperature_2m?.[0];
     if (t === undefined || t === null) return null;
-    // CAPE e freezing level reali dall'API
-    const cape = data.hourly?.cape?.[0] !== undefined ? Number(data.hourly.cape[0]) : null;
-    const freezingLevel = data.hourly?.freezing_level_height?.[0] !== undefined ? Number(data.hourly.freezing_level_height[0]) : null;
     return {
-      temp: Number(t),
+      temp: data.hourly?.temperature_2m?.[0] !== undefined ? Number(data.hourly.temperature_2m[0]) : null,
       rain: data.hourly?.precipitation?.[0] !== undefined ? Number(data.hourly.precipitation[0]) : 0,
       cloud: data.hourly?.cloud_cover?.[0] !== undefined ? Number(data.hourly.cloud_cover[0]) : 0,
       wind: data.hourly?.wind_speed_10m?.[0] !== undefined ? Number(data.hourly.wind_speed_10m[0]) : 0,
       dir: data.hourly?.wind_direction_10m?.[0] !== undefined ? Number(data.hourly.wind_direction_10m[0]) : 0,
-      cape,
-      freezingLevel,
-      // Dati daily non richiesti nella chiamata hourly — N/D
+      cape: data.hourly?.cape?.[0] !== undefined ? Number(data.hourly.cape[0]) : null,
+      freezingLevel: data.hourly?.freezing_level_height?.[0] !== undefined ? Number(data.hourly.freezing_level_height[0]) : null,
       tMax: null,
       tMin: null,
       cloudDaily: null,
@@ -64,8 +59,8 @@ async function getOpenWeather(lat: number, lon: number) {
     if (!res.ok) return null;
     const data = await res.json();
     return {
-      temp: data.main?.temp ?? 0,
-      rain: data.rain ? (data.rain["1h"] || 0) : 0,
+      temp: data.main?.temp ?? null,
+      rain: data.rain ? (data.rain["1h"] ?? 0) : 0,
       cloud: data.clouds?.all ?? 0,
       wind: data.wind?.speed ?? 0,
       dir: data.wind?.deg ?? 0,
@@ -86,7 +81,7 @@ async function getTomorrow(lat: number, lon: number) {
     const v = data.data?.timelines?.[0]?.intervals?.[0]?.values;
     if (!v) return null;
     return {
-      temp: v.temperature ?? 0,
+      temp: v.temperature ?? null,
       rain: v.precipitationIntensity ?? 0,
       cloud: v.cloudCover ?? 0,
       wind: v.windSpeed ?? 0,
@@ -97,9 +92,25 @@ async function getTomorrow(lat: number, lon: number) {
   }
 }
 
-type FonteValore = { value: number; weight: number };
+/** Media circolare della direzione del vento: ignora null, gestisce 360°/0° */
+function circularMeanWindDirection(values: number[]): number | null {
+  const valid = values.filter(v => v !== null && !isNaN(v));
+  if (valid.length === 0) return null;
+  const sumCos = valid.reduce((sum, v) => sum + Math.cos((v * Math.PI) / 180), 0);
+  const sumSin = valid.reduce((sum, v) => sum + Math.sin((v * Math.PI) / 180), 0);
+  const mean = Math.atan2(sumSin, sumCos) * 180 / Math.PI;
+  const normalized = (mean + 540) % 360; // Porta in [0, 360)
+  return normalizzaDirezione(normalized);
+}
 
-function fuse(values: FonteValore[]): number {
+/** Normalizza una direzione: 359° → 359, 1° → 1, evita 0° come fallback */
+function normalizzaDirezione(dir: number): number {
+  // Se il risultato è 0°, restituiamo 360° (non 0) per evitare l'errore classico di 350+10→180
+  return dir === 0 ? 360 : dir;
+}
+
+/* funzione fuse mantenuta per compatibilità ma ora usa solo fonti valide */
+function fuse(values: { value: number; weight: number }[]): number {
   const valid = values.filter(v => !isNaN(v.value));
   if (valid.length === 0) return 0;
   const sumW = valid.reduce((a, b) => a + b.weight, 0);
@@ -135,7 +146,9 @@ function baseNubiAggressiva(cloud: number): string {
   return "Alta (>2500 m)";
 }
 
-function termicheAggressive(tMax: number, tMin: number, cloudDaily: number, rainDaily: number): string {
+function termicheAggressive(tMax: number | null, tMin: number | null, cloudDaily: number | null, rainDaily: number | null): string {
+  // Se manca tMax o tMin, non possiamo calcolare deltaT → restituire "Termiche non disponibili"
+  if (tMax === null || tMin === null) return "Termiche non disponibili";
   const deltaT = tMax - tMin;
   if (rainDaily > 1) return "Termiche disturbate (pioggia)";
   if (cloudDaily > 80) return "Termiche deboli (coperto)";
@@ -145,7 +158,9 @@ function termicheAggressive(tMax: number, tMin: number, cloudDaily: number, rain
   return "Termiche forti";
 }
 
-function indiceAggressivo(wind: number, rain: number, cloud: number, baseNubi: string, termiche: string): number {
+/** Indice di volabilità: stima euristica, NON misura scientifica.
+ *  Rinominato in indiceAffidabilitaStima per chiarezza. */
+function indiceAffidabilitaStima(wind: number, rain: number, cloud: number, baseNubi: string, termiche: string): number {
   let i = 1;
   if (rain > 0.1) i += 5;
   if (rain > 2) i += 3;
@@ -192,37 +207,37 @@ export async function getMeteoDecolloAggressivo(d: Decollo): Promise<MeteoDecoll
     om?.temp !== null ? { value: om.temp, weight: WEIGHTS.temp.om } : null,
     ow?.temp !== null ? { value: ow.temp, weight: WEIGHTS.temp.ow } : null,
     tw?.temp !== null ? { value: tw.temp, weight: WEIGHTS.temp.tw } : null,
-  ].filter((v): v is FonteValore => v != null));
+  ].filter((v): v is { value: number; weight: number } => v != null));
   const rainNum = fuse([
     om?.rain !== null ? { value: om.rain, weight: WEIGHTS.rain.om } : null,
     ow?.rain !== null ? { value: ow.rain, weight: WEIGHTS.rain.ow } : null,
     tw?.rain !== null ? { value: tw.rain, weight: WEIGHTS.rain.tw } : null,
-  ].filter((v): v is FonteValore => v != null));
+  ].filter((v): v is { value: number; weight: number } => v != null));
   const cloudNum = fuse([
     om?.cloud !== null ? { value: om.cloud, weight: WEIGHTS.cloud.om } : null,
     ow?.cloud !== null ? { value: ow.cloud, weight: WEIGHTS.cloud.ow } : null,
     tw?.cloud !== null ? { value: tw.cloud, weight: WEIGHTS.cloud.tw } : null,
-  ].filter((v): v is FonteValore => v != null));
+  ].filter((v): v is { value: number; weight: number } => v != null));
   const windNum = fuse([
     om?.wind !== null ? { value: om.wind, weight: WEIGHTS.wind.om } : null,
     ow?.wind !== null ? { value: ow.wind, weight: WEIGHTS.wind.ow } : null,
     tw?.wind !== null ? { value: tw.wind, weight: WEIGHTS.wind.tw } : null,
-  ].filter((v): v is FonteValore => v != null));
+  ].filter((v): v is { value: number; weight: number } => v != null));
 
-  // Fuse wind direction (weighted arithmetic mean)
-  const dirPairs: FonteValore[] = [
+  // Fuse wind direction using circular mean (ignora valori null)
+  const dirPairs: { value: number; weight: number }[] = [
     om.dir > 0 ? { value: om.dir, weight: WEIGHTS.wind.om } : null,
     ow.dir > 0 ? { value: ow.dir, weight: WEIGHTS.wind.ow } : null,
     tw.dir > 0 ? { value: tw.dir, weight: WEIGHTS.wind.tw } : null,
-  ].filter((v): v is FonteValore => v != null);
+  ].filter((v): v is { value: number; weight: number } => v != null);
   const dirNum = dirPairs.length > 0
-    ? dirPairs.reduce((a, b) => a + b.value * b.weight, 0) / dirPairs.reduce((a, b) => a + b.weight, 0)
-    : 0;
+    ? circularMeanWindDirection(dirPairs.map(p => p.value))
+    : null; // Se nessuna direzione valida, restituiamo null (N/D)
 
   const stato = statoAggressivo(om, ow, tw);
   const baseNubi = baseNubiAggressiva(Number(cloudNum || 0));
   const termiche = termicheAggressive(om.tMax, om.tMin, om.cloudDaily, om.rainDaily);
-  const indice = indiceAggressivo(Number(windNum || 0), Number(rainNum || 0), Number(cloudNum || 0), baseNubi, termiche);
+  const indice = indiceAffidabilitaStima(Number(windNum || 0), Number(rainNum || 0), Number(cloudNum || 0), baseNubi, termiche);
   const indiceLabel = labelIndice(indice);
 
   return {
@@ -230,7 +245,7 @@ export async function getMeteoDecolloAggressivo(d: Decollo): Promise<MeteoDecoll
     rain: safe(rainNum),
     cloud: safe(cloudNum),
     wind: safe(windNum),
-    dir: safe(dirNum),
+    dir: dirNum !== null ? safe(dirNum) : "--",
     stato,
     baseNubi,
     termiche,
