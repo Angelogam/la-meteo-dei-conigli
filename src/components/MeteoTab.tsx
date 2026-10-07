@@ -879,46 +879,27 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
         </div>
       </div>
 
-      {/* ═══════════ GIUDIZIO TATTICO ═══════════ */}
-      {tactics.length > 0 && (
+      {/* ═══════════ WARNINGS + TACTICS ═══════════ */}
+      {(warnings.length > 0 || tactics.length > 0) && (
         <div className="border-t border-white/5 px-5 py-4">
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-3.5">
             <div className="w-1 h-5 rounded-full bg-gradient-to-b from-emerald-400 to-teal-500" />
-            <span className="text-[10px] text-slate-400 uppercase tracking-wider font-black">Giudizio tattico</span>
-            <span className="text-[9px] text-slate-600 ml-auto">Consigli pratici basati sulle condizioni attuali</span>
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider font-black">Analisi e consigli</span>
+            <span className="text-[9px] text-slate-600 ml-auto">{warnings.length > 0 ? `${warnings.length} warning · ${tactics.length} consigli` : `${tactics.length} consigli pratici`}</span>
           </div>
           <div className="space-y-1.5">
+            {warnings.length > 0 && warnings.map((w, i) => (
+              <div key={`w-${i}`} className={`flex items-start gap-2.5 text-xs py-2.5 px-4 rounded-xl border ${w.type === "danger" ? "bg-rose-500/10 border-rose-500/30 text-rose-200" : w.type === "warning" ? "bg-amber-500/10 border-amber-500/30 text-amber-200" : "bg-sky-500/10 border-sky-500/30 text-sky-200"}`}>
+                <span className="shrink-0 text-base mt-0.5">{w.icon}</span>
+                {w.text}
+              </div>
+            ))}
             {tactics.map((tac, i) => (
-              <div key={i} className="flex items-start gap-2.5 text-xs text-slate-300 bg-slate-800/40 rounded-xl px-4 py-2.5 border border-slate-700/30 hover:border-slate-600/50 transition-colors">
+              <div key={`t-${i}`} className="flex items-start gap-2.5 text-xs text-slate-300 bg-slate-800/50 rounded-xl px-4 py-2.5 border border-slate-700/30 hover:border-slate-600/50 transition-colors">
                 <ArrowRight className="w-3 h-3 text-emerald-400 shrink-0 mt-0.5" />
                 {tac}
               </div>
             ))}
-          </div>
-        </div>
-      )}
-
-      {/* ═══════════ WARNINGS ═══════════ */}
-      {warnings.length > 0 ? (
-        <div className="border-t border-rose-800/30 px-5 py-4 bg-rose-950/20">
-          <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="w-4 h-4 text-rose-400" />
-            <span className="text-rose-400 text-sm font-black uppercase tracking-wider">Attenzione ({warnings.length})</span>
-          </div>
-          <div className="space-y-1.5">
-            {warnings.slice(0, 5).map((w, i) => (
-              <div key={i} className={`flex items-start gap-2.5 text-xs font-medium py-2 px-3 rounded-xl ${w.type === "danger" ? "bg-rose-950/50 text-rose-200 border border-rose-800/50" : w.type === "warning" ? "bg-amber-950/40 text-amber-200 border border-amber-800/40" : "bg-sky-950/40 text-sky-200 border border-sky-800/40"}`}>
-                <span className="shrink-0 text-base">{w.icon}</span>
-                {w.text}
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="border-t border-emerald-800/30 px-5 py-4 bg-emerald-950/20">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span className="text-emerald-300 text-sm font-bold">✓ Condizioni favorevoli per il volo — nessun warning attivo</span>
           </div>
         </div>
       )}
