@@ -210,7 +210,7 @@ export function useWeatherData() {
     return dailyData.map((d, i) => {
       const base = {
         ...d,
-        weatherCode: d.weatherCode ?? 0,
+        weatherCode: d.weatherCode ?? null,
         tempMax: d.tempMax ?? null,
         tempMin: d.tempMin ?? null,
         precipitationSum: d.precipitationSum,
@@ -219,8 +219,8 @@ export function useWeatherData() {
         windGustsMax: d.windGustsMax ?? null,
         windDirDominant: d.windDirDominant ?? null,
         uvIndexMax: d.uvIndexMax ?? null,
-        sunrise: d.sunrise ?? "",
-        sunset: d.sunset ?? "",
+        sunrise: d.sunrise ?? null,
+        sunset: d.sunset ?? null,
         temperatureMax: d.temperatureMax ?? null,
         temperatureMin: d.temperatureMin ?? null,
         temperatureMean: d.temperatureMean ?? null,
@@ -231,7 +231,7 @@ export function useWeatherData() {
         rainSum: d.rainSum ?? d.precipitationSum,
         snowfallSum: d.snowfallSum,
         precipitationHours: d.precipitationHours,
-        shortwaveRadiationSum: d.shortwaveRadiationSum ?? 0,
+        shortwaveRadiationSum: d.shortwaveRadiationSum ?? null,
       };
       // Freezing level: usa dato API quando disponibile, altrimenti null
       const freezingLevel = d.freezingLevel !== null && d.freezingLevel !== undefined
@@ -269,7 +269,7 @@ export function useWeatherData() {
   const thermalDelta = useMemo(() => {
     if (!currentData || currentData.temperature === null || currentData.dewPoint === null) return null;
     const delta = currentData.temperature - currentData.dewPoint;
-    return Math.max(2, Math.min(12, delta));
+    return Math.round(delta * 10) / 10;
   }, [currentData]);
 
   return {
