@@ -235,7 +235,7 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
     const current: MeteoCurrent | null = c ? {
           time: new Date(c.time),
           temperature: safeNumOrNull(c.temperature_2m),
-          humidity: safeNum(c.relative_humidity_2m, 50),
+          humidity: safeNumOrNull(c.relative_humidity_2m),
           dewPoint: safeNumOrNull(c.dew_point_2m),
           precipitation: safeNumOrNull(c.precipitation),
           weatherCode: safeNumOrNull(c.weather_code),
@@ -243,14 +243,14 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
           cloudCoverLow: safeNumOrNull(c.cloud_cover_low),
           cloudCoverMid: safeNumOrNull(c.cloud_cover_mid),
           cloudCoverHigh: safeNumOrNull(c.cloud_cover_high),
-          windSpeed: safeNum(c.wind_speed_10m, 0),
-          windDir: safeNum(c.wind_direction_10m, 0),
-          windGusts: safeNum(c.wind_gusts_10m, c.wind_speed_10m ?? 0),
+          windSpeed: safeNumOrNull(c.wind_speed_10m),
+          windDir: safeNumOrNull(c.wind_direction_10m),
+          windGusts: safeNumOrNull(c.wind_gusts_10m),
           cape: safeNumOrNull(c.cape),
           cin: safeNumOrNull(c.convective_inhibition),
           apparentTemp: safeNumOrNull(c.apparent_temperature),
-          uvIndex: safeNum(c.uv_index, 0),
-          visibility: safeNum(c.visibility, 10000),
+          uvIndex: safeNumOrNull(c.uv_index),
+          visibility: safeNumOrNull(c.visibility),
     } : null;
 
     // Hourly
@@ -258,7 +258,7 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
     const len = json.hourly?.time?.length || 0;
     for (let i = 0; i < len; i++) {
       const t = safeNumOrNull(json.hourly.temperature_2m?.[i]);
-      const h = safeNum(json.hourly.relative_humidity_2m?.[i], 50);
+      const h = safeNumOrNull(json.hourly.relative_humidity_2m?.[i]);
       const dew = safeNumOrNull(json.hourly.dew_point_2m?.[i]);
       const feelsLike = safeNumOrNull(json.hourly.apparent_temperature?.[i]);
       const pressure = safeNumOrNull(json.hourly.pressure_msl?.[i]);
@@ -276,7 +276,7 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
       hourly.push({
         time: new Date(json.hourly.time[i]),
         temperature: t,
-        humidity: h,
+        humidity: safeNumOrNull(json.hourly.relative_humidity_2m?.[i]),
         dewPoint: dew,
         precipitation: safeNumOrNull(json.hourly.precipitation?.[i]),
         precipitationProbability: safeNumOrNull(json.hourly.precipitation_probability?.[i]),
@@ -285,15 +285,15 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
         cloudCoverLow: safeNumOrNull(json.hourly.cloud_cover_low?.[i]),
         cloudCoverMid: safeNumOrNull(json.hourly.cloud_cover_mid?.[i]),
         cloudCoverHigh: safeNumOrNull(json.hourly.cloud_cover_high?.[i]),
-        windSpeed: safeNum(json.hourly.wind_speed_10m?.[i], 0),
-        windDir: safeNum(json.hourly.wind_direction_10m?.[i], 0),
-        windGusts: safeNum(json.hourly.wind_gusts_10m?.[i], 0),
+        windSpeed: safeNumOrNull(json.hourly.wind_speed_10m?.[i]),
+        windDir: safeNumOrNull(json.hourly.wind_direction_10m?.[i]),
+        windGusts: safeNumOrNull(json.hourly.wind_gusts_10m?.[i]),
         cape: safeNumOrNull(json.hourly.cape?.[i]),
         liftedIndex: safeNumOrNull(json.hourly.lifted_index?.[i]),
         shortwaveRadiation: safeNumOrNull(json.hourly.shortwave_radiation?.[i]),
         directRadiation: safeNumOrNull(json.hourly.direct_radiation?.[i]),
-        uvIndex: safeNum(json.hourly.uv_index?.[i], 0),
-        visibility: safeNum(json.hourly.visibility?.[i], 10000),
+        uvIndex: safeNumOrNull(json.hourly.uv_index?.[i]),
+        visibility: safeNumOrNull(json.hourly.visibility?.[i]),
         feelsLike: feelsLike,
         pressure: pressure,
         surfacePressure: surfacePressure,
@@ -385,7 +385,7 @@ export const weatherService = {
       return {
         time: new Date(c.time),
         temperature: safeNumOrNull(c.temperature_2m),
-        humidity: safeNum(c.relative_humidity_2m, 50),
+        humidity: safeNumOrNull(c.relative_humidity_2m),
         dewPoint: safeNumOrNull(c.dew_point_2m),
         precipitation: safeNumOrNull(c.precipitation),
         weatherCode: safeNumOrNull(c.weather_code),
@@ -393,13 +393,13 @@ export const weatherService = {
         cloudCoverLow: safeNumOrNull(c.cloud_cover_low),
         cloudCoverMid: safeNumOrNull(c.cloud_cover_mid),
         cloudCoverHigh: safeNumOrNull(c.cloud_cover_high),
-        windSpeed: safeNum(c.wind_speed_10m, 0),
-        windDir: safeNum(c.wind_direction_10m, 0),
-        windGusts: safeNum(c.wind_gusts_10m, c.wind_speed_10m ?? 0),
+        windSpeed: safeNumOrNull(c.wind_speed_10m),
+        windDir: safeNumOrNull(c.wind_direction_10m),
+        windGusts: safeNumOrNull(c.wind_gusts_10m),
         cape: safeNumOrNull(c.cape),
                 apparentTemp: safeNumOrNull(c.apparent_temperature),
-                uvIndex: safeNum(c.uv_index, 0),
-                visibility: safeNum(c.visibility, 10000),
+                uvIndex: safeNumOrNull(c.uv_index),
+                visibility: safeNumOrNull(c.visibility),
       };
     } catch {
       return null;
