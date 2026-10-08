@@ -177,7 +177,11 @@ export default function PrevisioniGiornaliere({
                 <span className="font-black uppercase tracking-wider">Temperatura</span>
               </div>
               <div className="text-5xl font-black text-white">
-                {temp !== null ? `${Math.round(temp)}<span className="text-2xl text-slate-500">°C</span>` : <span className="text-4xl text-slate-500">N/D</span>}
+                {temp !== null ? (
+                  <>{Math.round(temp)}<span className="text-2xl text-slate-500">°C</span></>
+                ) : (
+                  <span className="text-4xl text-slate-500">N/D</span>
+                )}
               </div>
               <div className="mt-3 space-y-1">
                 <div className="flex justify-between text-xs">
@@ -210,7 +214,11 @@ export default function PrevisioniGiornaliere({
                 </div>
               </div>
               <div className="text-5xl font-black text-white">
-                {windSpeed !== null ? `${Math.round(windSpeed)}<span className="text-2xl text-slate-500"> km/h</span>` : <span className="text-4xl text-slate-500">N/D</span>}
+                {windSpeed !== null ? (
+                  <>{Math.round(windSpeed)}<span className="text-2xl text-slate-500"> km/h</span></>
+                ) : (
+                  <span className="text-4xl text-slate-500">N/D</span>
+                )}
               </div>
               <div className="mt-3 space-y-1">
                 <div className="flex justify-between text-xs">
