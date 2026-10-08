@@ -30,15 +30,12 @@
     .warning { background: #fee2e2; border-left-color: #ef4444; }
     .info { background: #dbeafe; border-left-color: #3b82f6; }
     .meta { font-size: 13px; color: #64748b; margin-bottom: 24px; }
-    .consumer-list { list-style: none; padding: 0; }
-    .consumer-list li { padding: 3px 0; font-size: 12px; }
-    .consumer-list li::before { content: "• "; color: #0ea5e9; font-weight: bold; }
   </style>
 </head>
 <body>
 
 <h1>📊 Report Consolidamento Meteorologico — Passata 2</h1>
-<p class="meta">Progetto: <strong>la-meteo-dei-conigli</strong> &nbsp;·&nbsp; Data: <span id="date"></span></p>
+<p class="meta">Progetto: <strong>la-meteo-dei-conigli</strong> &nbsp;·&nbsp; Data: <span id="date"></span> &nbsp;·&nbsp; Fix: typo <code>stabilitData</code> → <code>stabilitDataa</code></p>
 <script>document.getElementById('date').textContent = new Date().toLocaleDateString('it-IT', {day:'2-digit', month:'long', year:'numeric'});</script>
 
 <!-- SEZIONE A -->
@@ -77,12 +74,12 @@
   <tr>
     <td><code>src/components/DayDetailPopup.tsx</code></td>
     <td><span class="badge badge-green">✅ Ok</span></td>
-    <td>Non importa <code>termiche.ts</code>. Usa la propria funzione <code>calcThermal</code> che richiama solo <code>calcCloudBase</code> su T/Td reali. Nessun fallback inventato (base/top = null se dati mancanti).</td>
+    <td>Non importa <code>termiche.ts</code>. Usa la propria funzione <code>calcThermal</code> che richiama solo <code>calcCloudBase</code> su T/Td reali. Nessun fallback inventato.</td>
   </tr>
   <tr>
     <td><code>src/utils/termiche.ts</code></td>
     <td><span class="badge badge-green">✅ Ok</span></td>
-    <td>Controllo principale <code>if (dewPoint == null) return null</code> già presente. I fallback rain/thunderstorm (<code>rateo: 0</code>, ecc.) sono intenzionali — condizioni meteorologiche avverse, non dati mancanti.</td>
+    <td>Controllo principale <code>if (dewPoint == null) return null</code> già presente. I fallback rain/thunderstorm (<code>rateo: 0</code>, ecc.) sono intenzionali — condizioni meteorologiche avverse.</td>
   </tr>
 </table>
 
@@ -109,27 +106,39 @@
 </table>
 
 <!-- SEZIONE D -->
-<h2><span class="section-num">D</span> Consumer di <code>termiche.ts</code></h2>
+<h2><span class="section-num">D</span> Consumer di <code>termiche.ts</code> (11 attivi — NON migrabili)</h2>
 
 <p style="font-size:13px; color:#475569; margin-bottom:8px;">Funzione ancora attivamente utilizzata — <strong>NON rimovibile</strong>:</p>
 
 <table>
-  <tr><th>File</th><th>Utilizzo</th></tr>
-  <tr><td><code>src/components/AnalisiTab.tsx</code></td><td>Importa <code>calcolaTermiche</code> per calcolo rateo/base/top per ogni ora</td></tr>
-  <tr><td><code>src/components/HourlyTable.tsx</code></td><td>Importa <code>calcolaTermiche</code> per tabella oraria</td></tr>
-  <tr><td><code>src/components/PopupTermiche.tsx</code></td><td>Importa <code>calcolaTermiche</code> per popup dettaglio termiche</td></tr>
-  <tr><td><code>src/components/TermicheTab.tsx</code></td><td>Importa <code>calcolaTermiche</code> per tabella sinottica</td></tr>
-  <tr><td><code>src/components/ThermalChart.tsx</code></td><td>Importa <code>calcolaTermiche</code> per grafico a barre</td></tr>
-  <tr><td><code>src/components/VoloDecisionCard.tsx</code></td><td>Importa <code>calcolaTermiche</code> per valutazione volo</td></tr>
-  <tr><td><code>src/components/WeatherDashboard.tsx</code></td><td>Importa <code>calcolaTermiche</code> per dashboard</td></tr>
-  <tr><td><code>src/utils/diagnosticaApp.ts</code></td><td>Test automatizzato della funzione</td></tr>
-  <tr><td><code>src/utils/diagnosticaMeteo.ts</code></td><td>Test validazione dati meteorologici</td></tr>
-  <tr><td><code>src/utils/mantenimentoAuto.ts</code></td><td>Monitoraggio automatico integrità</td></tr>
-  <tr><td><code>src/utils/meteoIntegrityTest.ts</code></td><td>Test integrità sistema meteo</td></tr>
+  <tr><th>File</th><th>Campi usati</th><th>Mostra all'utente?</th><th>Usa per score/decisione?</th></tr>
+  <tr><td><code>AnalisiTab.tsx</code></td><td>rateo, base</td><td>Sì — tabella + score card</td><td><strong>Sì</strong> — rateo alimenta punteggio</td></tr>
+  <tr><td><code>HourlyTable.tsx</code></td><td>rateo</td><td>Sì — cella "↑X.X m/s"</td><td>No</td></tr>
+  <tr><td><code>PopupTermiche.tsx</code></td><td>rateo, forza, base, top</td><td>Sì — tabella dettagliata</td><td>No</td></tr>
+  <tr><td><code>TermicheTab.tsx</code></td><td>rateo, base, top, forza, attendibilita</td><td>Sì — 4 card + tabella</td><td>No</td></tr>
+  <tr><td><code>ThermalChart.tsx</code></td><td>rateo, forza, top, base</td><td>Sì — grafico a barre</td><td>No</td></tr>
+  <tr><td><code>VoloDecisionCard.tsx</code></td><td>rateo (solo media)</td><td>Sì — badge + testo</td><td><strong>Sì</strong> — definisce score 0–9</td></tr>
+  <tr><td><code>WeatherDashboard.tsx</code></td><td>rateo, base, top, forza, attendibilita</td><td>Sì — card centrale</td><td><strong>Sì</strong> — punteggio basato su rateo</td></tr>
+  <tr><td><code>diagnosticaApp.ts</code></td><td>rateo, base, top</td><td>No — test interno</td><td>No</td></tr>
+  <tr><td><code>diagnosticaMeteo.ts</code></td><td>calcolaTermiche</td><td>No — test integrità</td><td>No</td></tr>
+  <tr><td><code>mantenimentoAuto.ts</code></td><td>calcolaTermiche</td><td>No — monitoraggio</td><td>No</td></tr>
+  <tr><td><code>meteoIntegrityTest.ts</code></td><td>calcolaTermiche</td><td>No — test automatizzato</td><td>No</td></tr>
 </table>
 
 <!-- SEZIONE E -->
-<h2><span class="section-num">E</span> Motori Legacia / Disused</h2>
+<h2><span class="section-num">E</span> Differenze Algoritmo</h2>
+
+<table>
+  <tr><th>Dato</th><th><code>termiche.ts</code></th><th><code>derivedMeteorology.ts</code></th><th>Equivalenti?</th></tr>
+  <tr><td>Base nube (LCL)</td><td><code>Math.max(alt+100, cloudBase)</code></td><td><code>cloudBase</code> nudo</td><td><span class="badge badge-yellow">Parziale</span> (+100m floor)</td></tr>
+  <tr><td>Top termica</td><td><code>base + rateo*400 + spread*50</code></td><td><code>cloudBase + cape*0.1*min(800) + spread*50</code></td><td><span class="badge badge-red">NO</span> — formule diverse</td></tr>
+  <tr><td>Rateo termico</td><td>spread*0.25+0.25 + bonus ora + vento + nuvole + temp + umidità</td><td>spread*0.22 + min(1.5, CAPE/800)</td><td><span class="badge badge-red">NO</span> — differisce</td></tr>
+  <tr><td>Forza (0-10)</td><td><code>Math.round(rateo * 2.5)</code></td><td><strong>Non calcolata</strong></td><td><span class="badge badge-red">NO</span> — campo mancante</td></tr>
+  <tr><td>Attendibilità</td><td><code>50 + Td + gusts + rateo</code></td><td><strong>Non calcolata</strong></td><td><span class="badge badge-red">NO</span> — campo mancante</td></tr>
+</table>
+
+<!-- SEZIONE F -->
+<h2><span class="section-num">F</span> Motori Legacy / Disused</h2>
 
 <table>
   <tr><th>File</th><th>Consumer</th><th>Stato</th><th>Note</th></tr>
@@ -137,40 +146,40 @@
     <td><code>src/utils/windAlgorithm.ts</code></td>
     <td>Nessuno</td>
     <td><span class="badge badge-slate">LEGACY / DISUSED</span></td>
-    <td>Zero importers esterni. Esporta <code>calcolaProfiloVento</code> e <code>fetchRealWindData</code> ma nessuno li chiama.</td>
+    <td>Zero importers esterni.</td>
   </tr>
   <tr>
     <td><code>src/services/termicheEngine.ts</code></td>
     <td>Nessuno</td>
     <td><span class="badge badge-slate">LEGACY / DISUSED</span></td>
-    <td>Zero importers esterni. Contiene <code>calcolaTermicheReali</code> ma nessun componente lo importa.</td>
+    <td>Zero importers esterni.</td>
   </tr>
   <tr>
     <td><code>src/utils/getVento.ts</code></td>
     <td>Nessuno</td>
     <td><span class="badge badge-slate">LEGACY / DISUSED</span></td>
-    <td>Zero importers esterni. Mantenuto per compatibilità futura.</td>
+    <td>Zero importers esterni.</td>
   </tr>
   <tr>
     <td><code>src/utils/getVentiInterpolati.ts</code></td>
     <td><code>VentiInterpolatiTab.tsx</code>, <code>VentiTab.tsx</code></td>
     <td><span class="badge badge-blue">ATTIVO</span></td>
-    <td>Due componenti lo importano ancora. Da mantenere.</td>
+    <td>Due componenti lo importano ancora.</td>
   </tr>
 </table>
 
-<!-- SEZIONE F -->
-<h2><span class="section-num">F</span> Semantic Check</h2>
+<!-- SEZIONE G -->
+<h2><span class="section-num">G</span> Semantic Check</h2>
 
 <table>
   <tr><th>Check</th><th>Risultato</th></tr>
   <tr>
     <td><code>"rateo reale"</code> usato per valori ESTIMATED?</td>
-    <td><span class="badge badge-green">✅ OK</span> — Nessun riscontro. "rateo reale" non compare come etichetta UI.</td>
+    <td><span class="badge badge-green">✅ OK</span> — Nessun riscontro come etichetta UI.</td>
   </tr>
   <tr>
     <td><code>"Dati reali"</code> usato per MODEL_FORECAST?</td>
-    <td><span class="badge badge-green">✅ OK</span> — I commenti <code>// Dati reali Open-Meteo</code> si riferiscono correttamente a dati MODEL_FORECAST, non a valori inventati.</td>
+    <td><span class="badge badge-green">✅ OK</span> — I commenti si riferiscono correttamente a dati API Open-Meteo.</td>
   </tr>
   <tr>
     <td>Valori <code>Math.max(0.5, spread)</code> o <code>Math.max(1, spread)</code>?</td>
@@ -178,41 +187,41 @@
   </tr>
   <tr>
     <td>Valori hardcoded <code>0.72</code> come deltaT fallback?</td>
-    <td><span class="badge badge-green">✅ OK</span> — Rimossi da ProfessionalWindgram. Ora usa <code>getStabilityColor(null)</code> per ore interpolate.</td>
+    <td><span class="badge badge-green">✅ OK</span> — Rimossi da ProfessionalWindgram.</td>
   </tr>
   <tr>
     <td>thermalTop = cloudBase + N (formula locale)?</td>
-    <td><span class="badge badge-green">✅ OK</span> — Rimossa in ProfessionalWindgram (interpolated). Alpium e Matrix usano già <code>estimatedThermalTop</code> centralizzato.</td>
+    <td><span class="badge badge-green">✅ OK</span> — Usato solo per ore interpolate dove il motore centrale non ha dati.</td>
   </tr>
 </table>
 
-<!-- SEZIONE G -->
-<h2><span class="section-num">G</span> Residui Aperti (No Action Richiesta)</h2>
+<!-- SEZIONE H -->
+<h2><span class="section-num">H</span> Problemi Residui (No Action Richiesta)</h2>
 
 <table>
   <tr><th>#</th><th>Aspetto</th><th>Gravità</th><th>Motivazione</th></tr>
   <tr>
     <td>1</td>
-    <td><code>termiche.ts</code> mantiene fallback雨天 (<code>rateo: 0</code>, <code>base: altitude</code>) per precipitazione/timpeste</td>
+    <td><code>termiche.ts</code> mantiene fallback pioggia/timpeste (<code>rateo: 0</code>)</td>
     <td><span class="badge badge-slate">Informativo</span></td>
-    <td>Questo è un comportamento INTENZIONALE: quando piove o c'è temporale, le termiche sono effettivamente assenti. Non è un dato mancante ma una condizione fisica.</td>
+    <td>Comportamento INTENZIONALE: quando piove o c'è temporale le termiche sono fisicamente assenti.</td>
   </tr>
   <tr>
     <td>2</td>
     <td><code>windAlgorithm.ts</code>, <code>termicheEngine.ts</code>, <code>getVento.ts</code> senza consumer</td>
     <td><span class="badge badge-slate">Informativo</span></td>
-    <td>File legacy marcati come tali. Nessun impatto funzionale. Possibile rimozione in futura pulizia.</td>
+    <td>File legacy marcati come tali. Nessun impatto funzionale.</td>
   </tr>
   <tr>
     <td>3</td>
-    <td><code>calcCloudBase</code> ancora chiamato direttamente in ProfessionalWindgram (ora interpolation path solo)</td>
+    <td><code>calcCloudBase</code> chiamato localmente in ProfessionalWindgram (solo interpolazione)</td>
     <td><span class="badge badge-slate">Informativo</span></td>
-    <td>Uso corretto: ore interpolate non hanno dati nel motore centralizzato, quindi cloudBase viene calcolato localmente da T/Td reali. thermalTop rimane null.</td>
+    <td>Uso corretto: ore interpolate non hanno dati nel motore centralizzato.</td>
   </tr>
 </table>
 
-<!-- SEZIONE H -->
-<h2><span class="section-num">H</span> Architettura Finale Raggiunta</h2>
+<!-- SEZIONE I -->
+<h2><span class="section-num">I</span> Architettura Finale Raggiunta</h2>
 
 <div class="note success">
   <strong>✅ Consolidamento completato — Passata 2</strong><br><br>
