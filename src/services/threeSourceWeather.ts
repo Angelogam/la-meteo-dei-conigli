@@ -205,24 +205,24 @@ export async function getMeteoDecolloAggressivo(d: Decollo): Promise<MeteoDecoll
 
   // Fuse: include solo fonti valide (non null)
   const tempNum = fuse([
-    om?.temp !== null && om?.temp !== undefined ? { value: om.temp, weight: WEIGHTS.temp.om } : null,
-    ow?.temp !== null && ow?.temp !== undefined ? { value: ow.temp, weight: WEIGHTS.temp.ow } : null,
-    tw?.temp !== null && tw?.temp !== undefined ? { value: tw.temp, weight: WEIGHTS.temp.tw } : null,
+    om?.temp !== null ? { value: om.temp, weight: WEIGHTS.temp.om } : null,
+    ow?.temp !== null ? { value: ow.temp, weight: WEIGHTS.temp.ow } : null,
+    tw?.temp !== null ? { value: tw.temp, weight: WEIGHTS.temp.tw } : null,
   ].filter((v): v is { value: number; weight: number } => v != null));
   const rainNum = fuse([
-    om?.rain !== null && om?.rain !== undefined ? { value: om.rain, weight: WEIGHTS.rain.om } : null,
-    ow?.rain !== null && ow?.rain !== undefined ? { value: ow.rain, weight: WEIGHTS.rain.ow } : null,
-    tw?.rain !== null && tw?.rain !== undefined ? { value: tw.rain, weight: WEIGHTS.rain.tw } : null,
+    om?.rain !== null ? { value: om.rain, weight: WEIGHTS.rain.om } : null,
+    ow?.rain !== null ? { value: ow.rain, weight: WEIGHTS.rain.ow } : null,
+    tw?.rain !== null ? { value: tw.rain, weight: WEIGHTS.rain.tw } : null,
   ].filter((v): v is { value: number; weight: number } => v != null));
   const cloudNum = fuse([
-    om?.cloud !== null && om?.cloud !== undefined ? { value: om.cloud, weight: WEIGHTS.cloud.om } : null,
-    ow?.cloud !== null && ow?.cloud !== undefined ? { value: ow.cloud, weight: WEIGHTS.cloud.ow } : null,
-    tw?.cloud !== null && tw?.cloud !== undefined ? { value: tw.cloud, weight: WEIGHTS.cloud.tw } : null,
+    om?.cloud !== null ? { value: om.cloud, weight: WEIGHTS.cloud.om } : null,
+    ow?.cloud !== null ? { value: ow.cloud, weight: WEIGHTS.cloud.ow } : null,
+    tw?.cloud !== null ? { value: tw.cloud, weight: WEIGHTS.cloud.tw } : null,
   ].filter((v): v is { value: number; weight: number } => v != null));
   const windNum = fuse([
-    om?.wind !== null && om?.wind !== undefined ? { value: om.wind, weight: WEIGHTS.wind.om } : null,
-    ow?.wind !== null && ow?.wind !== undefined ? { value: ow.wind, weight: WEIGHTS.wind.ow } : null,
-    tw?.wind !== null && tw?.wind !== undefined ? { value: tw.wind, weight: WEIGHTS.wind.tw } : null,
+    om?.wind !== null ? { value: om.wind, weight: WEIGHTS.wind.om } : null,
+    ow?.wind !== null ? { value: ow.wind, weight: WEIGHTS.wind.ow } : null,
+    tw?.wind !== null ? { value: tw.wind, weight: WEIGHTS.wind.tw } : null,
   ].filter((v): v is { value: number; weight: number } => v != null));
 
   // Fuse wind direction using circular mean (ignora valori null)
