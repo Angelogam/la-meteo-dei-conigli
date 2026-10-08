@@ -52,7 +52,7 @@ export default function Index() {
     rawApiResponse,
   } = useWeatherData();
 
-  const { mergedDecolli, lastUpdate: aggressiveLastUpdate } = useThreeSourceWeather();
+  const { mergedDecolli, lastUpdate: aggressiveLastUpdate, error: aggressiveError, updating: aggressiveUpdating, loadWeather: loadAggressiveWeather } = useThreeSourceWeather();
 
   const filteredDayData = useMemo(() => {
     if (!dayData || dayData.length === 0) return [];
@@ -91,14 +91,17 @@ export default function Index() {
             <UpdateTimer
               lastUpdate={aggressiveLastUpdate ?? lastUpdate}
               countdown={countdown}
-              updating={updating}
-              onRefresh={() => { loadWeather(); setFetchStarted(false); }}
+              updating={updating || aggressiveUpdating}
+              onRefresh={() => { loadWeather(); loadAggressiveWeather(); setFetchStarted(false); }}
             />
 
             <DecolliCard
               decolli={mergedDecolli}
               selectedId={selectedId}
               selectedDay={selectedDay}
+              onRefresh={() => { loadAggressiveWeather(); }}
+              isUpdating={aggressiveUpdating}
+              error={aggressiveError}
               onSelect={(item) => {
                 setSelectedId(item.id);
                 setSelectedHour(new Date().getHours());

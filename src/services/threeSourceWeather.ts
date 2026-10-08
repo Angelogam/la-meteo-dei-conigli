@@ -215,11 +215,16 @@ function safe(v: number | null): string {
 }
 
 export async function getMeteoDecolloAggressivo(d: Decollo): Promise<MeteoDecollo> {
+  console.log(`[3S] Fetching weather for ${d.name} (${d.lat}, ${d.lon})`);
+
   const [openMeteo, openWeather, tomorrow] = await Promise.all([
-    getOpenMeteo(d.lat, d.lon).catch(() => null),
-    getOpenWeather(d.lat, d.lon).catch(() => null),
-    getTomorrow(d.lat, d.lon).catch(() => null)
+    getOpenMeteo(d.lat, d.lon).catch((e: any) => { console.warn(`[3S] OpenMeteo failed for ${d.name}:`, e?.message || e); return null; }),
+    getOpenWeather(d.lat, d.lon).catch((e: any) => { console.warn(`[3S] OpenWeather failed for ${d.name}:`, e?.message || e); return null; }),
+    getTomorrow(d.lat, d.lon).catch((e: any) => { console.warn(`[3S] Tomorrow failed for ${d.name}:`, e?.message || e); return null; })
   ]);
+
+  const sourcesAvailable = [openMeteo, openWeather, tomorrow].filter(s => s !== null).length;
+  console.log(`[3S] ${d.name}: sources=${sourcesAvailable} (OM=${!!openMeteo}, OW=${!!openWeather}, TW=${!!tomorrow})`);
 
   if (!openMeteo && !openWeather && !tomorrow) {
     throw new Error("Nessuna fonte meteo disponibile");
