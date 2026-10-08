@@ -27,7 +27,8 @@ interface SiteHeaderProps {
   uvIndex?: number;
 }
 
-function getWeatherLabel(weatherCode: number): string {
+function getWeatherLabel(weatherCode: number | null | undefined): string {
+  if (weatherCode == null) return "N/D";
   if (weatherCode >= 95) return "temporale";
   if (weatherCode >= 80) return "rovesci";
   if (weatherCode >= 71) return "neve";
@@ -41,7 +42,8 @@ function getWeatherLabel(weatherCode: number): string {
   return "sereno";
 }
 
-function getWeatherIcon(code: number): string {
+function getWeatherIcon(code: number | null | undefined): string {
+  if (code == null) return "❔";
   if (code >= 95) return "⛈️";
   if (code >= 80) return "🌧️";
   if (code >= 71) return "❄️";
@@ -64,10 +66,10 @@ export default function SiteHeader({
   sunset,
   uvIndex,
 }: SiteHeaderProps) {
-  const weatherCode = currentData?.weatherCode ?? 0;
+  const weatherCode = currentData?.weatherCode ?? null;
   const label = getWeatherLabel(weatherCode);
-  const isOvercast = weatherCode >= 20 && weatherCode < 61;
-  const isFog = weatherCode >= 45 && weatherCode <= 48;
+  const isOvercast = weatherCode != null && weatherCode >= 20 && weatherCode < 61;
+  const isFog = weatherCode != null && weatherCode >= 45 && weatherCode <= 48;
 
   return (
     <div className="card header-decollo pb-5 mb-4 border-b border-orange-400/20 relative overflow-hidden">
@@ -151,7 +153,7 @@ export default function SiteHeader({
             </div>
             <div className="flex items-center justify-center gap-2 text-xs text-slate-400">
               <Wind className="w-3 h-3 text-sky-400" />
-              <span className="tabular-nums font-bold">{Math.round(currentData.windSpeed)} km/h</span>
+              <span className="tabular-nums font-bold">{currentData.windSpeed != null ? `${Math.round(currentData.windSpeed)} km/h` : "N/D"}</span>
               {currentData.windGusts != null && currentData.windGusts > currentData.windSpeed + 5 && (
                 <span className="text-rose-400 font-mono">G {Math.round(currentData.windGusts)}</span>
               )}
