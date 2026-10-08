@@ -342,37 +342,35 @@ export default function WindgramMatrix({
                   <p className="text-[10px] text-sky-700 font-semibold">{headerDate}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-[9px] flex-wrap">
-                <span className={`px-1.5 py-0.5 rounded font-bold ${windProfileMap.size > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                  {windProfileMap.size > 0 ? `✓ ${windProfileMap.size}h vento` : '⏳ carico vento…'}
-                </span>
-                <span className={`px-1.5 py-0.5 rounded font-bold ${profileError ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'}`}>
-                  {profileError ? `✗ ${profileError.slice(0, 20)}` : '✓ OK'}
-                </span>
+              <div className="flex items-center gap-2 text-[10px] flex-wrap justify-end">
                 {dataSourceBadge}
               </div>
             </div>
 
-          <div className="overflow-x-auto border-t border-b border-slate-200 bg-white">
-            <table className="w-full min-w-[860px] text-center border-collapse text-sm">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600">
+            <span><strong>Ora</strong> in alto · <strong>Quota</strong> a sinistra</span>
+            <span>Freccia = direzione del vento · Numero = km/h</span>
+          </div>
+          <div className="overflow-x-auto border border-slate-200 rounded-lg bg-white">
+            <table className="w-full min-w-[900px] text-center border-collapse text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-700 bg-slate-200 font-bold">
-                  <th className="py-1 px-1 text-center w-10 sticky left-0 z-50 bg-slate-300 border-r-2 border-slate-500 text-slate-900 text-[10px] shadow-[2px_0_5px_rgba(0,0,0,0.2)]">
+                  <th className="py-2 px-2 text-center w-14 sticky left-0 z-50 bg-slate-800 border-r border-slate-600 text-white text-xs shadow-[2px_0_5px_rgba(0,0,0,0.12)]">
                     Quota
                   </th>
                   {DISPLAY_HOURS.map((hr) => (
                     <th
                       key={`th-${hr}`}
                       onClick={() => onHourSelect?.(hr)}
-                      className={`py-2 px-1.5 font-bold cursor-pointer transition-colors border-r border-slate-200/60 ${
+                      className={`py-2 px-2 font-bold cursor-pointer transition-colors border-r border-slate-200 ${
                         hr === selectedHour
                           ? "bg-sky-100 text-sky-900 ring-1 ring-sky-400"
                           : "hover:bg-slate-200/60 text-slate-800"
                       }`}
                     >
                       <div className="flex flex-col items-center gap-0">
-                        <span className="text-[10px]">{hr}h</span>
-                        <span className="text-[8px] font-normal text-slate-500 leading-none">
+                        <span className="text-xs">{String(hr).padStart(2, "0")}:00</span>
+                        <span className="text-[10px] font-normal text-slate-500 leading-none">
                           {getHourTemperature(hourlyMap, hr)}
                         </span>
                       </div>
@@ -392,7 +390,7 @@ export default function WindgramMatrix({
                       } ${isDecolloLevel ? "bg-emerald-50" : ""}`}
                     >
                       <td
-                        className={`py-0.5 px-1 text-center font-bold sticky left-0 z-40 border-r-2 border-slate-500 text-[9px] tabular-nums whitespace-nowrap shadow-[2px_0_3px_rgba(0,0,0,0.12)] ${
+                        className={`py-1.5 px-2 text-center font-bold sticky left-0 z-40 border-r border-slate-300 text-xs tabular-nums whitespace-nowrap shadow-[2px_0_3px_rgba(0,0,0,0.08)] ${
                           isMajorLevel
                             ? "bg-slate-200 text-slate-900"
                             : isDecolloLevel
@@ -415,18 +413,18 @@ export default function WindgramMatrix({
                             key={`cell-${alt}-${hr}`}
                             onClick={() => onHourSelect?.(hr)}
                             style={{
-                              backgroundColor: bg.kind === "none" ? "transparent" : bg.color,
+                              backgroundColor: isSelectedCol ? "#eff6ff" : "transparent",
                             }}
-                            className={`py-0.5 px-0.5 border-r border-slate-200/60 cursor-pointer transition-colors relative ${
+                            className={`py-1.5 px-1 border-r border-slate-100 cursor-pointer transition-colors relative ${
                               isSelectedCol ? "ring-1 ring-sky-400/90" : "hover:brightness-95"
                             }`}
                           >
-                            <div className="flex items-center justify-center gap-0.5 h-full relative min-h-[18px]">
+                            <div className="flex items-center justify-center gap-1 h-full relative min-h-[24px]">
                               {w ? (
                                 <>
                                   <WindArrowIcon deg={w.dir} color={wColor} />
                                   <span
-                                    className="font-bold text-xs tabular-nums relative z-10 leading-none"
+                                    className="font-semibold text-xs sm:text-sm tabular-nums relative z-10 leading-none"
                                     style={{ color: wColor.text }}
                                     title={w ? `Open-Meteo: ${w.speed} km/h da ${w.dir}°` : "N/D"}
                                   >
@@ -457,7 +455,7 @@ export default function WindgramMatrix({
             </table>
           </div>
 
-          <div className="p-1.5 bg-slate-50 border-t border-slate-100">
+          <div className="p-3 bg-slate-50 border-t border-slate-100">
             <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-1">
@@ -470,7 +468,7 @@ export default function WindgramMatrix({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[8px] font-mono text-slate-500">Freccia=dir · Numero=km/h</span>
+                <span className="text-[10px] font-mono text-slate-500">Freccia = direzione · numero = km/h</span>
               </div>
             </div>
 
