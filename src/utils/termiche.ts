@@ -22,14 +22,19 @@ export function calcolaTermiche(h: HourData | undefined | null, altitude: number
   }
 
   const temp = h.temperature;
-  // Se dewPoint manca o è 0, lo stimiamo realisticamente
-  const dewPoint = (h.dewPoint != null && h.dewPoint > -10) ? h.dewPoint : temp - 8;
+  // Usa dew point REALE dall'API — nessun fallback inventato
+  const dewPoint = (h.dewPoint != null && h.dewPoint > -10) ? h.dewPoint : null;
   const windSpeed = h.windSpeed ?? 5;
   const cloudCover = h.cloudCover ?? 30;
   const humidity = h.humidity ?? 50;
   const precipitation = h.precipitation ?? 0;
   const weatherCode = h.weatherCode ?? 0;
   const ora = new Date(h.time).getHours();
+
+  // Se il dew point manca, non possiamo calcolare termiche affidabili
+  if (dewPoint == null) {
+    return { rateo: 0, base: altitude + 200, top: altitude + 400, forza: 0, attendibilita: 10 };
+  }
 
   // Se piove o temporale -> termiche debolissime o zero
   if (precipitation > 1 || weatherCode >= 95) {

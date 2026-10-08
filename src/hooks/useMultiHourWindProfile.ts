@@ -86,7 +86,7 @@ function buildFromFallback(hourly: HourData[], siteAlt: number): Map<number, Hou
 
     const t = h.temperature ?? null;
     if (t === null) return; // Skip hours without temperature data
-    const dew = h.dewPoint ?? (t - 8);
+    const dew = h.dewPoint ?? null;
     const cloud = h.cloudCover ?? 30;
     const freeze = h.freezingLevel ?? Math.round(siteAlt + (t / 0.0098) * 100);
     const cape = h.cape ?? 0;
@@ -142,7 +142,7 @@ function processRawJson(json: any, siteAlt: number): Map<number, HourWindData> {
 
     const t = Number(h.temperature_2m[idx]);
     if (isNaN(t)) return; // Skip hours without valid temperature data
-    const dew = Number(h.dew_point_2m?.[idx]) ?? (t - 8);
+    const dew = h.dew_point_2m?.[idx] !== undefined ? Number(h.dew_point_2m[idx]) : null;
     const cloud = Number(h.cloud_cover?.[idx]) ?? 30;
     const freeze = Number(h.freezing_level_height?.[idx]) ?? (siteAlt + (t / 0.0098) * 100);
     const cape = Number(h.cape?.[idx]) ?? 0;

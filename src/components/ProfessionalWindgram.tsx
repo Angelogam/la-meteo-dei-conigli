@@ -263,10 +263,13 @@ export default function ProfessionalWindgram({
           const t = (Number(tPrev) + Number(tNext)) / 2;
           const dewPrev = p.dew_point_2m?.[prevIdx];
           const dewNext = p.dew_point_2m?.[nextIdx];
-          const dew = ((dewPrev !== undefined ? Number(dewPrev) : t - 6) + (dewNext !== undefined ? Number(dewNext) : t - 6)) / 2;
-          const cloudPrev = p.cloud_cover?.[prevIdx] ?? 30;
-          const cloudNext = p.cloud_cover?.[nextIdx] ?? 30;
-          const cloud = ((cloudPrev !== undefined ? Number(cloudPrev) : 30) + (cloudNext !== undefined ? Number(cloudNext) : 30)) / 2;
+          // Usa dew point reale quando disponibile, altrimenti null
+          const dewPrevVal = dewPrev !== undefined ? Number(dewPrev) : null;
+          const dewNextVal = dewNext !== undefined ? Number(dewNext) : null;
+          const dew = (dewPrevVal ?? dewNextVal) ?? null;
+          const cloudPrev = p.cloud_cover?.[prevIdx];
+          const cloudNext = p.cloud_cover?.[nextIdx];
+          const cloud = ((cloudPrev !== undefined ? Number(cloudPrev) : null) + (cloudNext !== undefined ? Number(cloudNext) : null)) / 2;
           const cloudBaseVal = calcCloudBase(altitude, t, dew);
           const fb = Array(13).fill(0).map((_, i) => 0.55 + i * 0.03);
           return {
@@ -275,7 +278,8 @@ export default function ProfessionalWindgram({
             zeroThermal: Math.round(altitude + t / 0.0098), thermalTop: cloudBaseVal + 500,
             cloudBase: cloudBaseVal, cloudPct: Math.round(cloud), deltaT: 0.65,
             tempAt80m: Math.round(t - 1.5), tempAt120m: Math.round(t - 3),
-            levelWinds: displayAltitudes.map((alt) => ({ alt, speed: 8, dir: 200 })),
+            // Nessun dato vento disponibile per ore interpolate — restituire null
+            levelWinds: displayAltitudes.map((alt) => ({ alt, speed: null as number | null, dir: null as number | null })),
             deltaTProfile: fb,
           };
         }
@@ -287,7 +291,8 @@ export default function ProfessionalWindgram({
       const t = h.temperature_2m[idx];
       if (t === undefined || t === null) return null as any; // Skip if no temperature data
       const tNum = Number(t);
-      const dew = h.dew_point_2m[idx] !== undefined ? Number(h.dew_point_2m[idx]) : (tNum - 8);
+      // Usa dew point REALE dall'API, nessun fallback inventato
+      const dew = h.dew_point_2m[idx] !== undefined ? Number(h.dew_point_2m[idx]) : null;
       const rad = h.shortwave_radiation?.[idx] !== undefined ? Number(h.shortwave_radiation[idx]) : null;
       const cloud = h.cloud_cover?.[idx] !== undefined ? Number(h.cloud_cover[idx]) : null;
       const precip = h.precipitation?.[idx] !== undefined ? Number(h.precipitation[idx]) : 0;
@@ -370,7 +375,8 @@ export default function ProfessionalWindgram({
       for (let alt = minAlt; alt <= maxAlt; alt += 250) {
         deltaTProfile.push(calcDeltaTAt(alt));
       }
-      const deltaT = deltaTProfile[0] ?? 0.72;
+      // Usa deltaT reale quando disponibile, altrimenti null
+      const deltaT = deltaTProfile[0] ?? null;
 
       const levelWinds = displayAltitudes.map((alt) => {
         const interp = interpolateAtAltitude(targetHour, alt);
@@ -382,7 +388,9 @@ export default function ProfessionalWindgram({
         tempGround: Math.round(t), windGround: Math.round(wind10),
         windDirGround: Math.round(windDir10), precip, cloudCover: cloud,
         zeroThermal: Math.round(freeze), thermalTop, cloudBase, cloudPct, deltaT,
-        tempAt80m: t80Sim ?? Math.round(t - 3), tempAt120m: t120Sim ?? Math.round(t - 6),
+        // Temperature in quota reali o null — nessun fallback inventato
+        tempAt80m: t80Sim,
+        tempAt120m: t120Sim,
         levelWinds,
         deltaTProfile,
       };
@@ -501,12 +509,12 @@ export default function ProfessionalWindgram({
         const xRel = xAbs - margin.left;
         const frac = xRel / plotW;
         const profile = h.deltaTProfile ?? Array(13).fill(0.72);
-        const color = getStabilityColor(profile[clampedIdx] ?? 0.72);
+        const color = getStabilityColor(profile[clampedIdx] ?? null);
         gradient.addColorStop(frac, color);
       });
       const lastHour = hourlyData[hourlyData.length - 1];
       const lastProfile = lastHour.deltaTProfile ?? [0.72];
-      gradient.addColorStop(1, getStabilityColor(lastProfile[clampedIdx] ?? 0.72));
+      gradient.addColorStop(1, getStabilityColor(lastProfile[clampedIdx] ?? null));
 
       ctx.fillStyle = gradient;
       ctx.globalAlpha = 0.8;

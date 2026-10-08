@@ -98,24 +98,25 @@ export default function AnalisiMeteo({ currentData, dayData, site, cape, liftedI
   const kIndex = useMemo(() => {
     if (dayData.length < 3) return null;
     const central = dayData[Math.floor(dayData.length / 2)];
-    const t2m = central.temperature ?? 15;
-    const td2m = central.dewPoint ?? (t2m - 8);
+    const t2m = central.temperature ?? null;
+    const td2m = central.dewPoint ?? null;
+    if (t2m == null || td2m == null) return null; // Nessun dato sufficiente per K-Index
     const spread = t2m - td2m;
 
-    // Stima T850 e T500 dalla quota del sito e dallo spread
-    const siteTemp850 = t2m - 8;
-    const siteTemp500 = t2m - 22;
-    const siteDew850 = siteTemp850 - Math.min(10, spread * 0.5);
+    // K-Index: K = T850 - T500 + Td850 - (T2m - Td2m)
+    // Usiamo dati reali quando disponibili, altrimenti stimiamo con null
+    const t850Real = central.temp80m ?? null; // proxy approssimativo per 850hPa
+    const t500Real = central.windSpeed850 != null ? (t2m - 15) : null; // stima conservativa se non disponibile
 
-    // Se abbiamo dati vento 850hPa come proxy di disponibilità quota
-    const hasUpperAir = central.windSpeed850 != null;
-    if (hasUpperAir) {
-      const k = siteTemp850 - siteTemp500 + siteDew850 - spread;
+    if (central.windSpeed850 != null && t850Real != null) {
+      // Abbiamo dati vento 850hPa: usa temperatura reale a 80m come proxy per 850hPa
+      const td850 = t850Real - Math.min(10, spread * 0.5);
+      const k = t850Real - (t2m - 20) + td850 - spread;
       return Math.round(k * 10) / 10;
     }
 
-    // Stima base solo con dati superficie
-    return Math.round((siteTemp850 - siteTemp500 + siteDew850 - spread) * 10) / 10;
+    // Dato insufficiente per K-Index affidabile
+    return null;
   }, [dayData]);
 
   if (!dayData || dayData.length < 3) {

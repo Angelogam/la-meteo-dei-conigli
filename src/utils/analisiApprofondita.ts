@@ -31,7 +31,7 @@ export interface AnalisiApprofondita {
   // Stabilità
   cape: number;
   capeDesc: string;
-  liftedIndex: number;
+  liftedIndex: number | null;
   liDesc: string;
   cin: number;
 
@@ -129,7 +129,8 @@ export function calcolaAnalisiApprofondita(
   const tempMax = Math.round(Math.max(...oreValide.map(h => h.temperature)));
   const tempMin = Math.round(Math.min(...oreValide.map(h => h.temperature)));
   const tempAttuale = Math.round(hAttuale.temperature);
-  const dewPoint = hAttuale.dewPoint ?? (tempAttuale - 10);
+  // Usa dew point REALE, nessun fallback inventato
+  const dewPoint = hAttuale.dewPoint ?? null;
   const umidita = Math.round(hAttuale.humidity);
 
   // Vento al suolo
@@ -149,16 +150,16 @@ export function calcolaAnalisiApprofondita(
   const thermalIndex = calcolaThermalIndex(omega, tempAttuale, site.alt);
   const thermalIndexDesc = getThermalIndexDesc(thermalIndex);
 
-  // CAPE
-  const cape = Math.round(Math.max(0, hAttuale.cape || (tempAttuale - dewPoint) * 40));
+  // CAPE REALE — nessun fallback inventato
+  const cape = hAttuale.cape != null ? Math.round(Math.max(0, hAttuale.cape)) : 0;
   const capeDesc = getCAPEDesc(cape);
 
-  // Lifted Index
-  const liftedIndex = Math.round((hAttuale.liftedIndex ?? (tempAttuale - dewPoint - 5)) * 100) / 100;
-  const liDesc = getLIDesc(liftedIndex);
+  // Lifted Index REALE dall'API — NON ricostruirlo da CAPE
+  const liftedIndex = hAttuale.liftedIndex != null ? Math.round(hAttuale.liftedIndex * 100) / 100 : null;
+  const liDesc = liftedIndex != null ? getLIDesc(liftedIndex) : "N/D";
 
-  // CIN
-  const cin = Math.round(Math.max(0, hAttuale.cin || 200 - cape * 0.3));
+  // CIN REALE
+  const cin = hAttuale.cin != null ? Math.round(Math.max(0, hAttuale.cin)) : 0;
 
   // Top termiche
   const topTermiche = Math.round(Math.max(
@@ -224,7 +225,7 @@ export function calcolaAnalisiApprofondita(
   } else if (pioggiaTot > 3) {
     rischioTemporali = 45;
     temporaliDesc = "possibili rovesci pomeridiani";
-  } else if (cape > 600 && liftedIndex < -2) {
+  } else if (cape > 600 && liftedIndex != null && liftedIndex < -2) {
     rischioTemporali = 35;
     temporaliDesc = "rischio isolato, da monitorare";
   } else if (cape > 1000) {

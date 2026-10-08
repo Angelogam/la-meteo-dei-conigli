@@ -136,7 +136,10 @@ export default function WindgramMatrix({
         const h = hourlyMap.get(hr);
         if (h && h.temperature != null && h.dewPoint != null) {
           const spread = Math.max(1, h.temperature - h.dewPoint);
-          const lcl = calcCloudBase(altitude, h.temperature ?? 18, h.dewPoint ?? (h.temperature ?? 18) - 6);
+          // Usa dew point REALE dall'API, nessun fallback inventato
+          const lcl = h.dewPoint != null
+            ? calcCloudBase(altitude, h.temperature ?? 0, h.dewPoint)
+            : null;
 
           const base = Math.max(altitude + 100, lcl);
           // Thermal top: same formula as ProfessionalWindgram for consistency

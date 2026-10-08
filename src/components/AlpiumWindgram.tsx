@@ -249,9 +249,10 @@ export default function AlpiumWindgram({
       const t = hourly.temp2m[idx];
       if (t === undefined || t === null) return null;
       const tNum = Number(t);
-      const dew = hourly.dew2m[idx] !== undefined ? Number(hourly.dew2m[idx]) : (tNum - 6);
-      const spread = Math.max(1, t - dew);
-      const lcl = calcCloudBase(siteAlt, t, dew);
+      // Usa dew point REALE, nessun fallback inventato
+      const dew = hourly.dew2m[idx] !== undefined ? Number(hourly.dew2m[idx]) : null;
+      const spread = (dew != null) ? Math.max(1, tNum - dew) : null;
+      const lcl = (dew != null) ? calcCloudBase(siteAlt, tNum, dew) : null;
 
       // Curva sinusoidale: 0 alle 8h, 1 alle 13h, 0 alle 18h
       const dayPhase = (hr - 13) / 5;

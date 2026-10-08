@@ -390,13 +390,14 @@ export function generateRealisticCurrent(
   
   const t = ref.temperature ?? 18;
   const h = ref.humidity ?? 50;
-  const dew = ref.dewPoint ?? t - 8;
-  
+  // Usa dew point REALE — nessun fallback inventato
+  const dew = ref.dewPoint ?? null;
+
   return {
     time: now,
     temperature: Math.round(t * 10) / 10,
     humidity: Math.round(h * 10) / 10,
-    dewPoint: Math.round(dew * 10) / 10,
+    dewPoint: dew != null ? Math.round(dew * 10) / 10 : null,
     precipitation: ref.precipitation ?? 0,
     weatherCode: ref.weatherCode ?? 0,
     cloudCover: ref.cloudCover ?? 30,
