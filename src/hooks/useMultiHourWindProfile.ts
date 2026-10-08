@@ -39,12 +39,9 @@ function interpolateWindAtAltitude(
     return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
   }
 
-  if (targetAlt <= sorted[0].alt) {
-    return { speed: Math.round(sorted[0].speed), dir: Math.round(sorted[0].dir) };
-  }
-  if (targetAlt >= sorted[sorted.length - 1].alt) {
-    return { speed: Math.round(sorted[sorted.length - 1].speed), dir: Math.round(sorted[sorted.length - 1].dir) };
-  }
+  // NON extrapolare al di sopra/sotto dei livelli disponibili
+  if (targetAlt < sorted[0].alt) return null;
+  if (targetAlt > sorted[sorted.length - 1].alt) return null;
 
   for (let i = 0; i < sorted.length - 1; i++) {
     if (sorted[i].alt <= targetAlt && sorted[i + 1].alt >= targetAlt) {
@@ -60,10 +57,8 @@ function interpolateWindAtAltitude(
       return { speed: Math.round(speed), dir: Math.round(dir) };
     }
   }
-  const closest = sorted.reduce((best, curr) =>
-    Math.abs(curr.alt - targetAlt) < Math.abs(best.alt - targetAlt) ? curr : best
-  , sorted[0]);
-  return { speed: Math.round(closest.speed), dir: Math.round(closest.dir) };
+  // Should not reach here, but safety fallback
+  return null;
 }
 
 interface UseMultiHourWindProfileProps {
@@ -77,11 +72,20 @@ interface UseMultiHourWindProfileProps {
 
 /**
  * Costruisce la mappa vento-oraria dai dati orari già disponibili (fallback).
+ * MATCHING: usa la DATA COMPLETA, non solo l'ora, per evitare coincidenze tra giorni diversi.
  */
-function buildFromFallback(hourly: HourData[], siteAlt: number): Map<number, HourWindData> {
+function buildFromFallback(hourly: HourData[], siteAlt: number, selectedDay: number): Map<number, HourWindData> {
   const map = new Map<number, HourWindData>();
   DEFAULT_HOURS.forEach((targetHour) => {
-    const h = hourly.find(d => new Date(d.time).getHours() === targetHour);
+    // Match by full date+time, not just hour, to avoid 10:00 today matching 10:00 tomorrow
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + selectedDay);
+    targetDate.setHours(targetHour, 0, 0, 0);
+
+    const h = hourly.find(d => {
+      const dDate = new Date(d.time);
+      return dDate.toDateString() === targetDate.toDateString() && dDate.getHours() === targetHour;
+    });
     if (!h) return;
 
     const t = h.temperature ?? null;
@@ -93,8 +97,9 @@ function buildFromFallback(hourly: HourData[], siteAlt: number): Map<number, Hou
 
     const levels: WindLevel[] = [];
     const addLevel = (hpa: string, alt: number, speed: number | undefined, dir: number | undefined) => {
-      if (speed !== undefined && dir !== undefined && !isNaN(speed) && !isNaN(dir) && speed >= 0 && dir >= 0) {
-        levels.push({ hpa, alt, speed: Math.round(speed), dir: Math.round(dir) });
+      // Usa != null invece di ?? per distinguere 0 (valore valido) da undefined (dato mancante)
+      if (speed != null && dir != null && !isNaN(Number(speed)) && !isNaN(Number(dir)) && Number(speed) >= 0 && Number(dir) >= 0) {
+        levels.push({ hpa, alt, speed: Math.round(Number(speed)), dir: Math.round(Number(dir)) });
       }
     };
 
@@ -110,7 +115,8 @@ function buildFromFallback(hourly: HourData[], siteAlt: number): Map<number, Hou
 
     const sortedLevels = levels.sort((a, b) => a.alt - b.alt);
     const maxRealAltitude = sortedLevels.length > 0 ? Math.max(...sortedLevels.map(l => l.alt)) : siteAlt;
-    const spread = dew != null ? Math.max(0.5, t - dew) : 0.5;
+    // Spread: differenza reale T-Td, senza minimi artificiali
+    const spread = dew != null ? t - dew : 0;
     const cloudBase = dew != null ? calcCloudBase(siteAlt, t, dew) : null;
 
     map.set(targetHour, {
@@ -130,47 +136,61 @@ function buildFromFallback(hourly: HourData[], siteAlt: number): Map<number, Hou
 
 /**
  * Elabora il JSON grezzo di Open-Meteo e restituisce la mappa vento-oraria.
+ * MATCHING: usa la DATA COMPLETA per identificare l'ora corretta.
  */
-function processRawJson(json: any, siteAlt: number): Map<number, HourWindData> {
+function processRawJson(json: any, siteAlt: number, selectedDay: number): Map<number, HourWindData> {
   const times: string[] = json.hourly.time;
   const h = json.hourly;
   const hourDataMap = new Map<number, HourWindData>();
 
+  // Calcola la data target per il matching corretto
+  const targetDayStr = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + selectedDay);
+    return d.toISOString().split("T")[0];
+  })();
+
   DEFAULT_HOURS.forEach((targetHour) => {
-    const idx = times.findIndex((t) => parseInt(t.split("T")[1].split(":")[0], 10) === targetHour);
+    // Match per data COMPLETA + ora, non solo ora
+    const idx = times.findIndex((t) => {
+      const datePart = t.split("T")[0];
+      const hourPart = parseInt(t.split("T")[1].split(":")[0], 10);
+      return datePart === targetDayStr && hourPart === targetHour;
+    });
     if (idx === -1) return;
 
-    const t = Number(h.temperature_2m[idx]);
+    const t = h.temperature_2m?.[idx] != null ? Number(h.temperature_2m[idx]) : NaN;
     if (isNaN(t)) return; // Skip hours without valid temperature data
-    const dew = h.dew_point_2m?.[idx] !== undefined ? Number(h.dew_point_2m[idx]) : null;
+    const dew = h.dew_point_2m?.[idx] != null ? Number(h.dew_point_2m[idx]) : null;
     const cloud = h.cloud_cover?.[idx] != null ? Number(h.cloud_cover[idx]) : null;
     const freeze = h.freezing_level_height?.[idx] != null ? Number(h.freezing_level_height[idx]) : null;
     const cape = h.cape?.[idx] != null ? Number(h.cape[idx]) : null;
 
     const pressureLevels: { hpa: string; alt: number; speed?: number; dir?: number; gust?: number }[] = [
-      { hpa: "10m", alt: siteAlt + 10, speed: h.wind_speed_10m[idx], dir: h.wind_direction_10m[idx], gust: h.wind_gusts_10m[idx] },
-      { hpa: "80m", alt: siteAlt + 70, speed: h.wind_speed_80m[idx], dir: h.wind_direction_80m[idx] },
-      { hpa: "120m", alt: siteAlt + 110, speed: h.wind_speed_120m[idx], dir: h.wind_direction_120m[idx] },
-      { hpa: "180m", alt: siteAlt + 170, speed: h.wind_speed_180m[idx], dir: h.wind_direction_180m[idx] },
-      { hpa: "925hPa", alt: 760, speed: h.wind_speed_925hPa[idx], dir: h.wind_direction_925hPa[idx] },
-      { hpa: "850hPa", alt: 1450, speed: h.wind_speed_850hPa[idx], dir: h.wind_direction_850hPa[idx] },
-      { hpa: "700hPa", alt: 3000, speed: h.wind_speed_700hPa[idx], dir: h.wind_direction_700hPa[idx] },
-      { hpa: "600hPa", alt: 4200, speed: h.wind_speed_600hPa[idx], dir: h.wind_direction_600hPa[idx] },
-      { hpa: "500hPa", alt: 5500, speed: h.wind_speed_500hPa[idx], dir: h.wind_direction_500hPa[idx] },
+      { hpa: "10m", alt: siteAlt + 10, speed: h.wind_speed_10m?.[idx], dir: h.wind_direction_10m?.[idx], gust: h.wind_gusts_10m?.[idx] },
+      { hpa: "80m", alt: siteAlt + 70, speed: h.wind_speed_80m?.[idx], dir: h.wind_direction_80m?.[idx] },
+      { hpa: "120m", alt: siteAlt + 110, speed: h.wind_speed_120m?.[idx], dir: h.wind_direction_120m?.[idx] },
+      { hpa: "180m", alt: siteAlt + 170, speed: h.wind_speed_180m?.[idx], dir: h.wind_direction_180m?.[idx] },
+      { hpa: "925hPa", alt: 760, speed: h.wind_speed_925hPa?.[idx], dir: h.wind_direction_925hPa?.[idx] },
+      { hpa: "850hPa", alt: 1450, speed: h.wind_speed_850hPa?.[idx], dir: h.wind_direction_850hPa?.[idx] },
+      { hpa: "700hPa", alt: 3000, speed: h.wind_speed_700hPa?.[idx], dir: h.wind_direction_700hPa?.[idx] },
+      { hpa: "600hPa", alt: 4200, speed: h.wind_speed_600hPa?.[idx], dir: h.wind_direction_600hPa?.[idx] },
+      { hpa: "500hPa", alt: 5500, speed: h.wind_speed_500hPa?.[idx], dir: h.wind_direction_500hPa?.[idx] },
     ];
 
     const realLevels: WindLevel[] = pressureLevels
       .filter((l) => {
-        const s = Number(l.speed);
-        const d = Number(l.dir);
-        return l.speed != null && !isNaN(s) && l.dir != null && !isNaN(d) && s >= 0 && d >= 0;
+        // Usa != null per distinguere 0 (valore valido) da undefined/null (dato mancante)
+        const s = l.speed;
+        const d = l.dir;
+        return s != null && !isNaN(Number(s)) && d != null && !isNaN(Number(d)) && Number(s) >= 0 && Number(d) >= 0;
       })
       .map((l) => ({
         hpa: l.hpa,
         alt: l.alt,
         speed: Number(l.speed),
         dir: Number(l.dir),
-        gust: l.gust ? Number(l.gust) : undefined,
+        gust: l.gust != null ? Number(l.gust) : undefined,
       }))
       .sort((a, b) => a.alt - b.alt);
 
@@ -178,7 +198,8 @@ function processRawJson(json: any, siteAlt: number): Map<number, HourWindData> {
       ? Math.max(...realLevels.map((l) => l.alt))
       : siteAlt;
 
-    const spread = dew != null ? Math.max(0.5, t - dew) : 0.5;
+    // Spread: differenza reale T-Td, senza minimi artificiali
+    const spread = dew != null ? t - dew : 0;
     const cloudBase = dew != null ? calcCloudBase(siteAlt, t, dew) : null;
 
     hourDataMap.set(targetHour, {
@@ -215,7 +236,7 @@ export function useMultiHourWindProfile({
 
     // Se i dati grezzi sono già disponibili (condivisi da useWeatherData), usiamo quelli
     if (rawData && rawData.hourly && rawData.hourly.time) {
-      const result = processRawJson(rawData, siteAlt);
+      const result = processRawJson(rawData, siteAlt, selectedDay);
       if (mountedRef.current) {
         setData(result);
         setLoading(false);
@@ -223,9 +244,9 @@ export function useMultiHourWindProfile({
       return;
     }
 
-    // Fallback: usa i dati orari già disponibili
+    // Fallback: usa i dati orari già disponibili (con matching basato sulla data completa)
     if (fallbackData && fallbackData.length > 0) {
-      const result = buildFromFallback(fallbackData, siteAlt);
+      const result = buildFromFallback(fallbackData, siteAlt, selectedDay);
       if (mountedRef.current) {
         setData(result);
         setLoading(false);
@@ -258,7 +279,7 @@ export function useMultiHourWindProfile({
         ].join(",");
 
         const json = await fetchHourly(lat, lon, windParams, dayStr, dayStr);
-        const result = processRawJson(json, siteAlt);
+        const result = processRawJson(json, siteAlt, selectedDay);
         if (mountedRef.current) {
           setData(result);
           setLoading(false);

@@ -75,7 +75,7 @@ export function calcolaTermicheReali(
     };
   }
 
-  const spread = Math.max(0.5, temp - dew);
+  const spread = temp - dew;
 
   const lclSopraSuolo = Math.min(2500, Math.max(100, Math.round(spread * LCL_FACTOR)));
   const base = Math.max(alt + 100, Math.min(alt + 3000, alt + lclSopraSuolo));
@@ -131,7 +131,7 @@ export function calcolaTermicheReali(
   if (capeValue > 50) {
     top = Math.min(4000, base + Math.min(2500, Math.round(capeValue * 1.8)));
   } else {
-    const deltaPoten = Math.max(0.5, Math.min(1.5, gradiente / GRADIENTE_SECCO));
+    const deltaPoten = Math.min(1.5, gradiente / GRADIENTE_SECCO);
     top = Math.min(4000, base + Math.round(300 * deltaPoten));
   }
 

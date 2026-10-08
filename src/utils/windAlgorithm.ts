@@ -121,7 +121,7 @@ export function calcolaProfiloVento(
       profilo.push({ quota, vento: null, direzione: null });
       continue;
     }
-    const dist = Math.max(1, quota - quotaDecollo);
+    const dist = quota - quotaDecollo;
     let speed = speedBase + gradienteMedio * dist;
     speed = Math.max(limiti[i].min, Math.min(limiti[i].max, speed));
     const vento = Math.round(speed);

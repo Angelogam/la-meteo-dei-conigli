@@ -10,7 +10,7 @@
 export const MAX_CLOUD_BASE_GAIN = 1800; // metri sopra il sito
 
 export function calcCloudBase(siteAlt: number, t: number, dew: number): number {
-  const spread = Math.max(0.5, t - dew);
+  const spread = t - dew;
   return Math.round(siteAlt + Math.min(MAX_CLOUD_BASE_GAIN, spread * 125));
 }
 

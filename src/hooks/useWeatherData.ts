@@ -299,7 +299,7 @@ export function useWeatherData() {
     dailyData,
     statoMeteo,
     volabilita,
-    activeModel: "Open-Meteo" as const,
+    activeModel: "Open-Meteo · modello automatico",
     currentCape: currentData ? {
       cape: currentData.cape,
       liftedIndex: currentData.liftedIndex,

@@ -357,11 +357,11 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
     for (let i = 0; i < dailyLen; i++) {
       daily.push({
         date: new Date(json.daily.time[i]),
-        weatherCode: safeNum(json.daily.weather_code?.[i], 0),
+        weatherCode: safeNumOrNull(json.daily.weather_code?.[i]),
         tempMax: safeNumOrNull(json.daily.temperature_2m_max?.[i]),
         tempMin: safeNumOrNull(json.daily.temperature_2m_min?.[i]),
-        precipitationSum: safeNum(json.daily.precipitation_sum?.[i], 0),
-        precipitationProbabilityMax: safeNum(json.daily.precipitation_probability_max?.[i], 0),
+        precipitationSum: safeNumOrNull(json.daily.precipitation_sum?.[i]),
+        precipitationProbabilityMax: safeNumOrNull(json.daily.precipitation_probability_max?.[i]),
         windSpeedMax: safeNumOrNull(json.daily.wind_speed_10m_max?.[i]),
         windGustsMax: safeNumOrNull(json.daily.wind_gusts_10m_max?.[i]),
         windDirDominant: safeNumOrNull(json.daily.wind_direction_10m_dominant?.[i]),
@@ -373,12 +373,12 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
         temperatureMean: safeNumOrNull(json.daily.temperature_2m_mean?.[i]),
         apparentTempMax: safeNumOrNull(json.daily.apparent_temperature_max?.[i]),
         apparentTempMin: safeNumOrNull(json.daily.apparent_temperature_min?.[i]),
-        daylightDuration: safeNum(json.daily.daylight_duration?.[i], 0),
-        sunshineDuration: safeNum(json.daily.sunshine_duration?.[i], 0),
-        rainSum: safeNum(json.daily.rain_sum?.[i], 0),
-        snowfallSum: safeNum(json.daily.snowfall_sum?.[i], 0),
-        precipitationHours: safeNum(json.daily.precipitation_hours?.[i], 0),
-        shortwaveRadiationSum: safeNum(json.daily.shortwave_radiation_sum?.[i], 0),
+        daylightDuration: safeNumOrNull(json.daily.daylight_duration?.[i]),
+        sunshineDuration: safeNumOrNull(json.daily.sunshine_duration?.[i]),
+        rainSum: safeNumOrNull(json.daily.rain_sum?.[i]),
+        snowfallSum: safeNumOrNull(json.daily.snowfall_sum?.[i]),
+        precipitationHours: safeNumOrNull(json.daily.precipitation_hours?.[i]),
+        shortwaveRadiationSum: safeNumOrNull(json.daily.shortwave_radiation_sum?.[i]),
         freezingLevel: safeNumOrNull(json.daily.freezing_level_height_max?.[i]) ?? null,
       });
     }

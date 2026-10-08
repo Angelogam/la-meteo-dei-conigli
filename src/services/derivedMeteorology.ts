@@ -105,20 +105,15 @@ export interface DerivedSurfaceData {
  * Calcola i dati derivati di superficie da RealData.
  */
 export function computeDerivedSurface(real: RealData): DerivedSurfaceData {
-  // Spread
+  // Spread: differenza reale T - Td. Null se mancano i dati.
+  // NON applicare minimi artificiali: un valore piccolo è un dato reale.
   const spread =
     real.temperature2m != null && real.dewPoint2m != null
-      ? Math.max(0.5, real.temperature2m - real.dewPoint2m)
+      ? real.temperature2m - real.dewPoint2m
       : null;
 
-  // Stima base cumuli (LCL): altitude + spread * 125m
-  // Questa è una stima approssimata, non un dato osservato
-  const estimatedCloudBase =
-    spread != null
-      ? Math.round(real.freezingLevel != null
-          ? real.freezingLevel + spread * 125
-          : 0) // placeholder, sarà corretto chi chiama
-      : null;
+  // Il calcolo della base nube (LCL) avviene in computeCloudBase(),
+  // che richiede l'altitudine del sito. Qui restituiamo solo lo spread.
 
   // Lapse rate reale: usa i dati di temperatura reali disponibili
   // I dati di temperatura in quota sono su MeteoHourly, non su RealData
@@ -153,14 +148,15 @@ export function computeDerivedSurface(real: RealData): DerivedSurfaceData {
 // Le temperature in quota (temp80m, temp120m, temperature180m) sono usate in computeHourlyDerived.
 
 /**
- * Correzione: calcola la base cumuli dato altitudine sito.
+ * Calcola la base nube (LCL stimato) data l'altitudine del sito e lo spread T-Td.
+ * CLASSIFICAZIONE: DERIVED / ESTIMATED — formula semplificata, non misura osservata.
+ *
+ * Formula: siteAltitude + 125 × (T - Td)
+ * NON usa il freezing level. NON aggiunge minimi artificiali.
  */
 export function computeCloudBase(siteAltitude: number, spread: number | null): number | null {
   if (spread == null) return null;
-  // Formula standard LCL: sede + spread * 125m
-  // Cap a 1800m sopra il sito (valore realistico per le Alpi)
-  const gain = Math.min(1800, spread * 125);
-  return Math.round(siteAltitude + Math.max(100, gain));
+  return Math.round(siteAltitude + spread * 125);
 }
 
 // ─── DATI VERTICALI REALI (pressioni) ──────────────────────────────────────
@@ -279,16 +275,19 @@ export interface HourlyDerivedData {
   // MODEL_FORECAST — dati forniti dal modello numerico Open-Meteo
   real: RealData;
 
-  // DERIVED — calcolati da dati MODEL_FORECAST (LCL, lapse rate, shear)
+  // DERIVED — calcolati da dati MODEL_FORECAST (LCL, low-level lapse rate, shear)
   spread: number | null;
-  cloudBase: number | null; // DERIVED — LCL calcolato da T e Td
-  realLapseRate: number | null;
+  cloudBase: number | null; // DERIVED/ESTIMATED — LCL stimato da T e Td
+  lowLevelLapseRate: number | null; // °C/100m tra 2m e livello più alto disponibile
   lapseRateClassification: string | null;
 
   // ESTIMATED — approssimazioni empiriche etichettate come tali
   estimatedThermalTop: number | null; // ESTIMATED / EMPIRICO
   estimatedThermalActivity: number | null; // ESTIMATED / EURISTICO (rateo in m/s)
   estimatedCloudBase: number | null; // alias di cloudBase, mantenuto per compatibilità
+
+  // MODEL_FORECAST — dato direttamente dall'API quando disponibile
+  boundaryLayerHeight: number | null; // PBL modello, non calculato
 
   // Vertical wind
   verticalProfile: VerticalWindProfile;
@@ -309,11 +308,12 @@ export function computeHourlyDerived(hourly: MeteoHourly, siteAltitude: number):
     return null;
   }
 
-  const spread = Math.max(0.5, real.temperature2m - real.dewPoint2m);
+  // Spread: differenza reale T - Td (MODEL_FORECAST → DERIVED)
+  const spread = real.temperature2m - real.dewPoint2m;
   const cloudBase = computeCloudBase(siteAltitude, spread);
 
-  // Lapse rate reale
-  // Temperature reali ai diversi livelli (MODEL_FORECAST da Open-Meteo)
+  // LOW-LEVEL LAPSE RATE: gradiente termico tra 2m e il livello più alto disponibile.
+  // Usa i dati diretti Open-Meteo quando presenti, senza ricostruzioni.
   const tempLevels: { alt: number; temp: number | null }[] = [
     { alt: 2, temp: real.temperature2m },
     { alt: 80, temp: hourly.temp80m ?? null },
@@ -321,18 +321,22 @@ export function computeHourlyDerived(hourly: MeteoHourly, siteAltitude: number):
     { alt: 180, temp: hourly.temperature180m ?? null },
   ];
 
-  const validTemps = tempLevels.filter((l) => l.temp != null);
-  let realLapseRate: number | null = null;
+  const validTemps = tempLevels.filter((l): l is { alt: number; temp: number } => l.temp != null);
+  let lowLevelLapseRate: number | null = null;
   if (validTemps.length >= 2) {
     const lowest = validTemps[0];
     const highest = validTemps[validTemps.length - 1];
     const altDiff = highest.alt - lowest.alt;
     if (altDiff > 0) {
-      realLapseRate = Math.round(((lowest.temp! - highest.temp!) / altDiff) * 100 * 100) / 100;
+      lowLevelLapseRate = Math.round(((lowest.temp - highest.temp) / altDiff) * 100 * 100) / 100;
     }
   }
 
-  const lapseRateClass = realLapseRate != null ? classifyLapseRate(realLapseRate) : null;
+  const lapseRateClass = lowLevelLapseRate != null ? classifyLapseRate(lowLevelLapseRate) : null;
+
+  // BOUNDARY LAYER HEIGHT — dato MODEL_FORECAST direttamente dall'API
+  // Null se non disponibile (non sempre supportato da tutti i modelli)
+  const boundaryLayerHeight = real.boundaryLayerHeight;
 
   // ESTIMATED thermal top — formula empirica, NON dato osservato
   let estimatedThermalTop: number | null = null;
@@ -345,7 +349,6 @@ export function computeHourlyDerived(hourly: MeteoHourly, siteAltitude: number):
   }
 
   // ESTIMATED thermal activity index — euristiche, NON rateo termico reale misurato
-  // Formula: spread × fattore + CAPE × fattore, espressa in m/s approssimati
   let estimatedThermalActivity: number | null = null;
   if (real.cape != null) {
     estimatedThermalActivity = Math.round(
@@ -360,7 +363,7 @@ export function computeHourlyDerived(hourly: MeteoHourly, siteAltitude: number):
 
   // Stability
   const stability: StabilityData = {
-    deltaT: realLapseRate,
+    deltaT: lowLevelLapseRate,
     classification: lapseRateClass,
   };
 
@@ -368,11 +371,12 @@ export function computeHourlyDerived(hourly: MeteoHourly, siteAltitude: number):
     real,
     spread,
     cloudBase,
-    realLapseRate,
+    lowLevelLapseRate,
     lapseRateClassification: lapseRateClass,
     estimatedThermalTop,
     estimatedThermalActivity,
     estimatedCloudBase: cloudBase, // mantenuto per compatibilità con codice esistente
+    boundaryLayerHeight,
     verticalProfile,
     stability,
   };

@@ -344,7 +344,7 @@ export default function Tomorrowwindgram({ decollo, selectedDay = 0 }: TomorrowW
           {times.map((_, i) => {
             const surfaceData = filteredData.find((p) => p.time === times[i] && p.level === 0);
             if (!surfaceData) return null;
-            const spread = Math.max(1, surfaceData.temperature - (surfaceData.temperature - (100 - surfaceData.cloudCover) / 5));
+            const spread = surfaceData.temperature - (surfaceData.temperature - (100 - surfaceData.cloudCover) / 5);
             const cloudBase = calcCloudBase(decollo.elevation, surfaceData.temperature, surfaceData.temperature - (100 - surfaceData.cloudCover) / 5);
             const thermalTop = Math.min(3600, cloudBase + Math.min(700, 1.5 * 220));
             const x = getXFromHourIdx(i);
@@ -356,7 +356,7 @@ export default function Tomorrowwindgram({ decollo, selectedDay = 0 }: TomorrowW
             if (i === 0 || i === times.length - 1) return null;
             const surfaceData = filteredData.find((p) => p.time === t && p.level === 0);
             if (!surfaceData) return null;
-            const spread = Math.max(1, surfaceData.temperature - (surfaceData.temperature - (100 - surfaceData.cloudCover) / 5));
+            const spread = surfaceData.temperature - (surfaceData.temperature - (100 - surfaceData.cloudCover) / 5);
             const cloudBase = calcCloudBase(decollo.elevation, surfaceData.temperature, surfaceData.temperature - (100 - surfaceData.cloudCover) / 5);
             const x = getXFromHourIdx(i);
             const cloudY = getYFromAlt(cloudBase + 250);

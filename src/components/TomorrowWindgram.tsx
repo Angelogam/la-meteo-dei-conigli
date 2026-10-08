@@ -307,7 +307,7 @@ export default function TomorrowWindgram({ decollo, selectedDay = 0 }: TomorrowW
       if (!surfaceData) return "";
       const tSurface = surfaceData.temperature;
       const dewSurface = !isNaN(surfaceData.dewPoint) ? surfaceData.dewPoint : tSurface - 8;
-      const spread = Math.max(1, tSurface - dewSurface);
+      const spread = tSurface - dewSurface;
       const cloudBase = calcCloudBase(decollo.elevation, tSurface, dewSurface);
       // Thermal top: cloudBase + CAPE-dependent contribution (matches ProfessionalWindgram)
       const thermalTop = Math.min(3800, cloudBase + Math.min(800, spread * 60));
@@ -469,7 +469,7 @@ export default function TomorrowWindgram({ decollo, selectedDay = 0 }: TomorrowW
               if (!surfaceData) return null;
               const tS = surfaceData.temperature;
               const dewS = !isNaN(surfaceData.dewPoint) ? surfaceData.dewPoint : tS - 8;
-              const spread = Math.max(1, tS - dewS);
+              const spread = tS - dewS;
               const cloudBase = Math.round(decollo.elevation + spread * 125);
               const thermalTop = Math.min(3800, cloudBase + Math.min(800, spread * 60));
               const x = getXFromHourIdx(i);
@@ -491,7 +491,7 @@ export default function TomorrowWindgram({ decollo, selectedDay = 0 }: TomorrowW
               if (!surfaceData) return null;
               const tS = surfaceData.temperature;
               const dewS = !isNaN(surfaceData.dewPoint) ? surfaceData.dewPoint : tS - 8;
-              const spread = Math.max(1, tS - dewS);
+              const spread = tS - dewS;
               const cloudBase = Math.round(decollo.elevation + spread * 125);
               const x = getXFromHourIdx(i);
               const cloudY = getYFromAlt(cloudBase + 250);
@@ -509,10 +509,10 @@ export default function TomorrowWindgram({ decollo, selectedDay = 0 }: TomorrowW
               if (!surfaceData) return null;
               const tS = surfaceData.temperature;
               const dewS = !isNaN(surfaceData.dewPoint) ? surfaceData.dewPoint : tS - 8;
-              const spread = Math.max(1, tS - dewS);
+              const spread = tS - dewS;
               const cloudBase = Math.round(decollo.elevation + spread * 125);
               const thermalTop = Math.min(3800, cloudBase + Math.min(800, spread * 60));
-              const climbRate = Math.max(0.4, Math.min(2.5, spread * 0.15 + (surfaceData.cloudCover < 30 ? 0.5 : 0)));
+              const climbRate = spread != null ? Math.max(0.4, Math.min(2.5, spread * 0.15 + (surfaceData.cloudCover != null && surfaceData.cloudCover < 30 ? 0.5 : 0))) : null;
               const x = getXFromHourIdx(i);
               const badgeY = getYFromAlt(thermalTop) + 12;
               return (

@@ -27,30 +27,26 @@ export function calcolaTermiche(h: HourData | undefined | null, altitude: number
   if (dewPoint == null) {
     return { rateo: 0.5, base: altitude + 200, top: altitude + 400, forza: 0.5, attendibilita: 30 };
   }
-  const windSpeed = h.windSpeed ?? 5;
-  const cloudCover = h.cloudCover ?? 30;
-  const humidity = h.humidity ?? 50;
-  const precipitation = h.precipitation ?? 0;
-  const weatherCode = h.weatherCode ?? 0;
+  // Dati reali Open-Meteo, nessun fallback artificiale
+  const windSpeed = h.windSpeed;
+  const cloudCover = h.cloudCover;
+  const humidity = h.humidity;
+  const precipitation = h.precipitation;
+  const weatherCode = h.weatherCode;
   const ora = new Date(h.time).getHours();
 
-  // Se il dew point manca, non possiamo calcolare termiche affidabili
-  if (dewPoint == null) {
-    return { rateo: 0, base: altitude + 200, top: altitude + 400, forza: 0, attendibilita: 10 };
-  }
-
   // Se piove o temporale -> termiche debolissime o zero
-  if (precipitation > 1 || weatherCode >= 95) {
+  if ((precipitation != null && precipitation > 1) || (weatherCode != null && weatherCode >= 95)) {
     return { rateo: 0, base: altitude + 50, top: altitude + 100, forza: 0, attendibilita: 90 };
   }
 
   // Se precipitation > 0.3 ma < 1, termiche molto deboli
-  if (precipitation > 0.3) {
+  if (precipitation != null && precipitation > 0.3) {
     return { rateo: 0.3, base: altitude + 100, top: altitude + 200, forza: 0.3, attendibilita: 80 };
   }
 
-  // Spread termico (differenza temp - dew)
-  const spread = Math.max(1, temp - dewPoint);
+  // Spread termico (differenza temp - dew) — valore reale, nessun minimo artificiale
+  const spread = temp - dewPoint;
 
   // Se fa molto freddo
   if (temp < 5) {
@@ -68,25 +64,31 @@ export function calcolaTermiche(h: HourData | undefined | null, altitude: number
   else if (ora >= 16 && ora <= 17) rateo += 0.2;
   else if (ora < 8 || ora > 18) rateo = Math.min(rateo, 0.5);
 
-  // Vento: 5-15 km/h aiuta, sotto 3 o sopra 20 penalizza
-  if (windSpeed >= 5 && windSpeed <= 15) rateo += 0.4;
-  else if (windSpeed > 15 && windSpeed <= 22) rateo -= 0.3;
-  else if (windSpeed > 22) rateo -= 0.6;
-  else if (windSpeed < 3) rateo -= 0.4;
+  // Vento: usa dato reale quando disponibile
+  if (windSpeed != null) {
+    if (windSpeed >= 5 && windSpeed <= 15) rateo += 0.4;
+    else if (windSpeed > 15 && windSpeed <= 22) rateo -= 0.3;
+    else if (windSpeed > 22) rateo -= 0.6;
+    else if (windSpeed < 3) rateo -= 0.4;
+  }
 
-  // Nuvolosità: 15-50% ideale
-  if (cloudCover >= 15 && cloudCover <= 50) rateo += 0.3;
-  else if (cloudCover > 70) rateo -= 0.6;
-  else if (cloudCover > 50) rateo -= 0.3;
+  // Nuvolosità: usa dato reale quando disponibile
+  if (cloudCover != null) {
+    if (cloudCover >= 15 && cloudCover <= 50) rateo += 0.3;
+    else if (cloudCover > 70) rateo -= 0.6;
+    else if (cloudCover > 50) rateo -= 0.3;
+  }
 
   // Temperatura alta = più energia
   if (temp >= 25 && temp <= 32) rateo += 0.4;
   else if (temp >= 20 && temp < 25) rateo += 0.2;
   else if (temp > 32) rateo += 0.2;
 
-  // Umidità: se troppo alta penalizza
-  if (humidity > 75) rateo -= 0.4;
-  else if (humidity > 85) rateo -= 0.7;
+  // Umidità: usa dato reale quando disponibile
+  if (humidity != null) {
+    if (humidity > 75) rateo -= 0.4;
+    else if (humidity > 85) rateo -= 0.7;
+  }
 
   // Clamp e arrotonda
   rateo = Math.max(0.1, Math.min(4.5, rateo));

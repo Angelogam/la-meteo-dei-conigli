@@ -68,7 +68,7 @@ export function calcolaIndiceVolabilita(p: ParametriVolabilita): RisultatoVolabi
   const motivi: string[] = [];
 
   // 1. BASE NUBI (LCL semplificato: quota + spread * 125, max +1800m)
-  const spread = Math.max(0.5, p.temperature - p.dewPoint);
+  const spread = p.temperature - p.dewPoint;
   const baseNubiM = calcCloudBase(p.quota, p.temperature, p.dewPoint);
 
   // 2. RATEO TERMICO stimato

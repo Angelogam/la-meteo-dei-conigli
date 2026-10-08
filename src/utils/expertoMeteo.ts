@@ -74,7 +74,7 @@ export function valutaGiornataVolo(
   const { alt: siteAlt, orientation } = site;
   const t = currentData.temperature;
   const dew = currentData.dewPoint;
-  const spread = Math.max(0.5, t - dew);
+  const spread = t - dew;
 
   // ── Calcoli base ──
   const cloudBase = calcCloudBase(siteAlt, t, dew);
@@ -82,7 +82,7 @@ export function valutaGiornataVolo(
   const validLi = dayData.length > 0 ? dayData.filter(h => h.liftedIndex != null).map(h => h.liftedIndex!) : [];
   const avgCape = validCape.length > 0 ? validCape.reduce((s, h) => s + h, 0) / validCape.length : null;
   const avgLi = validLi.length > 0 ? validLi.reduce((s, h) => s + h, 0) / validLi.length : null;
-  const avgSpread = dayData.length > 0 ? dayData.reduce((s, h) => s + Math.max(0.5, (h.temperature ?? t) - (h.dewPoint ?? dew)), 0) / dayData.length : spread;
+  const avgSpread = dayData.length > 0 ? dayData.reduce((s, h) => s + ((h.temperature != null && h.dewPoint != null) ? h.temperature - h.dewPoint : 0), 0) / dayData.length : spread;
 
   // Rateo termico stimato — ESTIMATED / EMPIRICO, NON misura reale
   const rateoTermico = avgCape != null
@@ -112,7 +112,7 @@ export function valutaGiornataVolo(
   const flightHours = dayData.filter(h => {
     const ht = h.temperature ?? t;
     const hd = h.dewPoint ?? dew;
-    const hSpread = Math.max(0.5, ht - hd);
+    const hSpread = ht - hd;
     return hSpread > 4 && (h.cape ?? null) < 600 && (h.precipitationProba ?? null) < 30 && (h.cloudCover ?? null) < 85;
   }).length;
 

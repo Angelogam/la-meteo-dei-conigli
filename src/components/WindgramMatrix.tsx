@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import type { HourData } from "@/types/meteo";
 import { Wind } from "lucide-react";
 import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
-import { calcCloudBase } from "@/utils/calcCloudBase";
+import { computeHourlyDerived } from "@/services/derivedMeteorology";
 
 const DISPLAY_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] as const;
 
@@ -86,8 +86,55 @@ export default function WindgramMatrix({
       rawData, // usa i dati già caricati da useWeatherData
     });
 
-    // Stabilità: usa i dati grezzi condivisi invece di fare una chiamata separata
+    // Stabilità: usa i dati grezzi condivisi per calcolare i derivati centralizzati
     const stabilitaData = rawData?.hourly ?? null;
+
+    // Calcola i derivati meteorologici centralizzati per ogni ora (se rawData disponibile)
+    const hourDerivedMap = useMemo(() => {
+      if (!stabilitaData || !stabilitaData.time) return new Map<number, ReturnType<typeof computeHourlyDerived>>();
+      const map = new Map<number, ReturnType<typeof computeHourlyDerived>>();
+      stabilitaData.time.forEach((t: string, idx: number) => {
+        const hr = parseInt(t.split("T")[1].split(":")[0], 10);
+        if (isNaN(hr)) return;
+        const hourlyRaw = {
+          temperature: stabilitaData.temperature_2m?.[idx] != null ? Number(stabilitaData.temperature_2m[idx]) : null,
+          dewPoint: stabilitaData.dew_point_2m?.[idx] != null ? Number(stabilitaData.dew_point_2m[idx]) : null,
+          temp80m: stabilitaData.temperature_80m?.[idx] != null ? Number(stabilitaData.temperature_80m[idx]) : null,
+          temp120m: stabilitaData.temperature_120m?.[idx] != null ? Number(stabilitaData.temperature_120m[idx]) : null,
+          temperature180m: stabilitaData.temperature_180m?.[idx] != null ? Number(stabilitaData.temperature_180m[idx]) : null,
+          windSpeed: stabilitaData.wind_speed_10m?.[idx] != null ? Number(stabilitaData.wind_speed_10m[idx]) : null,
+          windDir: stabilitaData.wind_direction_10m?.[idx] != null ? Number(stabilitaData.wind_direction_10m[idx]) : null,
+          windSpeed80m: stabilitaData.wind_speed_80m?.[idx] != null ? Number(stabilitaData.wind_speed_80m[idx]) : null,
+          windDir80m: stabilitaData.wind_direction_80m?.[idx] != null ? Number(stabilitaData.wind_direction_80m[idx]) : null,
+          windSpeed120m: stabilitaData.wind_speed_120m?.[idx] != null ? Number(stabilitaData.wind_speed_120m[idx]) : null,
+          windDir120m: stabilitaData.wind_direction_120m?.[idx] != null ? Number(stabilitaData.wind_direction_120m[idx]) : null,
+          windSpeed180m: stabilitaData.wind_speed_180m?.[idx] != null ? Number(stabilitaData.wind_speed_180m[idx]) : null,
+          windDir180m: stabilitaData.wind_direction_180m?.[idx] != null ? Number(stabilitaData.wind_direction_180m[idx]) : null,
+          cape: stabilitaData.cape?.[idx] != null ? Number(stabilitaData.cape[idx]) : null,
+          cin: stabilitaData.convective_inhibition?.[idx] != null ? Number(stabilitaData.convective_inhibition[idx]) : null,
+          liftedIndex: stabilitaData.lifted_index?.[idx] != null ? Number(stabilitaData.lifted_index[idx]) : null,
+          freezingLevel: stabilitaData.freezing_level_height?.[idx] != null ? Number(stabilitaData.freezing_level_height[idx]) : null,
+          cloudCover: stabilitaData.cloud_cover?.[idx] != null ? Number(stabilitaData.cloud_cover[idx]) : null,
+          shortwaveRadiation: stabilitaData.shortwave_radiation?.[idx] != null ? Number(stabilitaData.shortwave_radiation[idx]) : null,
+          boundaryLayerHeight: stabilitaData.boundary_layer_height?.[idx] != null ? Number(stabilitaData.boundary_layer_height[idx]) : null,
+          pressure: stabilitaData.pressure_msl?.[idx] != null ? Number(stabilitaData.pressure_msl[idx]) : null,
+          surfacePressure: stabilitaData.surface_pressure?.[idx] != null ? Number(stabilitaData.surface_pressure[idx]) : null,
+          windSpeed925: stabilitaData.wind_speed_925hPa?.[idx] != null ? Number(stabilitaData.wind_speed_925hPa[idx]) : null,
+          windDir925: stabilitaData.wind_direction_925hPa?.[idx] != null ? Number(stabilitaData.wind_direction_925hPa[idx]) : null,
+          windSpeed850: stabilitaData.wind_speed_850hPa?.[idx] != null ? Number(stabilitaData.wind_speed_850hPa[idx]) : null,
+          windDir850: stabilitaData.wind_direction_850hPa?.[idx] != null ? Number(stabilitaData.wind_direction_850hPa[idx]) : null,
+          windSpeed700: stabilitaData.wind_speed_700hPa?.[idx] != null ? Number(stabilitaData.wind_speed_700hPa[idx]) : null,
+          windDir700: stabilitaData.wind_direction_700hPa?.[idx] != null ? Number(stabilitaData.wind_direction_700hPa[idx]) : null,
+          windSpeed600: stabilitaData.wind_speed_600hPa?.[idx] != null ? Number(stabilitaData.wind_speed_600hPa[idx]) : null,
+          windDir600: stabilitaData.wind_direction_600hPa?.[idx] != null ? Number(stabilitaData.wind_direction_600hPa[idx]) : null,
+          windSpeed500: stabilitaData.wind_speed_500hPa?.[idx] != null ? Number(stabilitaData.wind_speed_500hPa[idx]) : null,
+          windDir500: stabilitaData.wind_direction_500hPa?.[idx] != null ? Number(stabilitaData.wind_direction_500hPa[idx]) : null,
+        };
+        const derived = computeHourlyDerived(hourlyRaw as any, altitude);
+        map.set(hr, derived);
+      });
+      return map;
+    }, [stabilitaData, altitude]);
 
 
   const hourlyMap = useMemo(() => {
@@ -129,87 +176,44 @@ export default function WindgramMatrix({
     return altitudes;
   }, [baseDecolloFloor, maxAlt]);
 
-  const hourThermalData = useMemo(() => {
-      const data: Record<number, { top: number; base: number; rateo: number; cloudBase: number; cloudCover: number; deltaT: number; climbRate: number } | null> = {};
-  
-      DISPLAY_HOURS.forEach((hr) => {
-        const h = hourlyMap.get(hr);
-        if (h && h.temperature != null && h.dewPoint != null) {
-          const spread = Math.max(1, h.temperature - h.dewPoint);
-          // Usa dew point REALE dall'API, nessun fallback inventato
-          const lcl = h.dewPoint != null
-            ? calcCloudBase(altitude, h.temperature ?? 0, h.dewPoint)
-            : null;
-
-          const base = Math.max(altitude + 100, lcl);
-          // Thermal top: same formula as ProfessionalWindgram for consistency
-          // Uses real CAPE from API + spread-derived climb rate
-          const cape = h.cape ?? null;
-          const rateo = 0.6 + (spread * 0.08) + (h.cloudCover < 30 ? 0.3 : 0) + (cape > 200 ? Math.min(0.4, cape / 1000) : 0);
-          const cappedRateo = Math.max(0.4, Math.min(2.5, rateo));
-          const thermalDepth = Math.min(800, cappedRateo * 100 + cape * 0.1);
-          const top = Math.min(4000, base + thermalDepth);
-          const climbRate = cappedRateo;
-  
-          // Calcolo deltaT reale dai dati di stabilità Open-Meteo
-          let deltaT = 0.72;
-          if (stabilitaData?.time) {
-            const times = stabilitaData.time;
-            const idx = times.findIndex((t: string) => parseInt(t.split("T")[1].split(":")[0], 10) === hr);
-            if (idx !== -1) {
-              const t2mRaw = stabilitaData.temperature_2m?.[idx];
-              const t2m = (t2mRaw != null && !isNaN(Number(t2mRaw))) ? Number(t2mRaw) : h.temperature;
-              // Open-Meteo non ha temperature_80m/120m, usa temperature_180m
-              const t180Raw = stabilitaData.temperature_180m?.[idx];
-              const t180 = (t180Raw != null && !isNaN(Number(t180Raw))) ? Number(t180Raw) : null;
-              const t80 = t180 != null ? t2m + (t180 - t2m) * (80 / 180) : null;
-              const t120 = t180 != null ? t2m + (t180 - t2m) * (120 / 180) : null;
-              if (t80 != null) {
-                              deltaT = Math.round(((t2m - t80) / 78) * 100 * 100) / 100;
-                            } else if (t120 != null) {
-                              deltaT = Math.round(((t2m - t120) / 118) * 100 * 100) / 100;
-                            } else {
-                deltaT = spread >= 10 ? 0.98 : spread >= 6 ? 0.82 : 0.65;
-              }
-            }
-          }
-          deltaT = Math.max(-0.2, Math.min(1.3, deltaT));
-  
-          data[hr] = {
-            top,
-            base,
-            rateo,
-            cloudBase: Math.min(lcl, 4000),
-            cloudCover: h.cloudCover ?? null,
-            deltaT,
-            climbRate,
-          };
-        } else {
-          data[hr] = null;
-        }
-      });
-  
-      return data;
-    }, [hourlyMap, altitude, stabilitaData]);
+  // hourThermalData sostituito da hourDerivedMap (motore centralizzato)
+  // Mantenuto per compatibilità con cloud icon e render
+  const hourDerivedInfo = useMemo(() => {
+    const info: Record<number, { cloudBase: number | null; cloudCover: number | null; lowLevelLapseRate: number | null; estimatedThermalTop: number | null; estimatedThermalActivity: number | null }> = {};
+    DISPLAY_HOURS.forEach((hr) => {
+      const derived = hourDerivedMap.get(hr);
+      if (derived) {
+        info[hr] = {
+          cloudBase: derived.cloudBase,
+          cloudCover: derived.real.cloudCover,
+          lowLevelLapseRate: derived.lowLevelLapseRate,
+          estimatedThermalTop: derived.estimatedThermalTop,
+          estimatedThermalActivity: derived.estimatedThermalActivity,
+        };
+      } else {
+        info[hr] = { cloudBase: null, cloudCover: null, lowLevelLapseRate: null, estimatedThermalTop: null, estimatedThermalActivity: null };
+      }
+    });
+    return info;
+  }, [hourDerivedMap]);
 
   type CellBg =
       | { kind: "none" }
-      | { kind: "thermal"; color: string }
       | { kind: "stable"; color: string };
-  
-    // Colori stabilità (stesso algoritmo di ProfessionalWindgram)
+
+    // Colori stabilità basati sul LOW-LEVEL LAPSE RATE (dato DERIVATO dal motore centrale)
     const STABILITY_COLORS = [
-      { val: -0.20, color: "#8b5cf6" },
-      { val: 0.00, color: "#3b82f6" },
-      { val: 0.16, color: "#06b6d4" },
-      { val: 0.32, color: "#10b981" },
-      { val: 0.48, color: "#84cc16" },
-      { val: 0.65, color: "#eab308" },
-      { val: 0.82, color: "#f97316" },
-      { val: 0.98, color: "#ef4444" },
-      { val: 1.20, color: "#dc2626" },
+      { val: -0.1, color: "#8b5cf6" },     // inversione
+      { val: 0.08, color: "#3b82f6" },     // stabile
+      { val: 0.24, color: "#06b6d4" },     // neutro-stabile
+      { val: 0.40, color: "#10b981" },     // neutro
+      { val: 0.56, color: "#84cc16" },     // neutro-instabile
+      { val: 0.73, color: "#eab308" },     // instabile
+      { val: 0.90, color: "#f97316" },     // molto_instabile
+      { val: 1.10, color: "#ef4444" },     // estremo
+      { val: 99, color: "#dc2626" },       // oltre soglia
     ];
-  
+
     function getStabilityColor(deltaT: number): string {
       if (deltaT <= -0.1) return STABILITY_COLORS[0].color;
       if (deltaT <= 0.08) return STABILITY_COLORS[1].color;
@@ -221,61 +225,17 @@ export default function WindgramMatrix({
       if (deltaT <= 1.10) return STABILITY_COLORS[7].color;
       return STABILITY_COLORS[8].color;
     }
-  
-    const getThermalBgColor = (alt: number, hr: number): CellBg => {
-      const thermal = hourThermalData[hr];
-      if (!thermal) return { kind: "none" };
-  
-      // Usa il deltaT reale calcolato dal hook di stabilità
-      const deltaT = thermal.deltaT ?? 0.72;
+
+    const getCellBgColor = (alt: number, hr: number): CellBg => {
+      const info = hourDerivedInfo[hr];
+      if (!info || info.lowLevelLapseRate == null) return { kind: "none" };
+
+      // Il colore di stabilità è lo stesso per tutta la colonna (dato ORIZZONTALE)
+      // Non si usa alcuna curva sinusoidale: il lapse rate è un dato misurato/derivato
+      const deltaT = info.lowLevelLapseRate;
       const stabilityColor = getStabilityColor(deltaT);
-  
-      // Curva sinusoidale dell'ora del giorno (modello Alpium/Rasoft):
-      //   hr=8h: 0 (termica appena nata)
-      //   hr=13h: 1 (picco termico)
-      //   hr=18h: 0 (termica morente)
-      const dayPhase = (hr - 13) / 5; // -1 alle 8h, 0 alle 13h, +1 alle 18h
-      if (dayPhase < -1 || dayPhase > 1) return { kind: "none" };
-      const diurnal = Math.cos((dayPhase * Math.PI) / 2); // 0 ai bordi, 1 al picco
-      if (diurnal < 0.05) return { kind: "none" };
-  
-      // Top della termica (in cima finisce il giallo, inizia il blu stabile)
-      const cloudCeil = Math.max(altitude + 250, thermal.cloudBase);
-      const thermalTop = altitude + (cloudCeil - altitude) * diurnal;
-      if (alt < altitude) return { kind: "none" };
-  
-      // --- ZONA BLU "aria stabile (sopra cumuli)" ---
-      // Si estende dal top della termica verso l'alto.
-      // Spessore: ~500m ai bordi, ~1000m al picco (come nel modello Alpium)
-      const stableBandThickness = 500 + diurnal * 500;
-      const stableTop = Math.min(thermalTop + stableBandThickness, 4000);
-  
-      if (alt > thermalTop && alt <= stableTop) {
-        const stableRel = (alt - thermalTop) / stableBandThickness;
-        // Colori steel-blue come il modello Alpium/Rucas:
-        //   Basso (vicino cumuli) → più scuro
-        //   Alto → più chiaro/sfumato
-        if (stableRel < 0.25) return { kind: "stable", color: "#6a9cba" }; // steel blue scuro
-        if (stableRel < 0.5) return { kind: "stable", color: "#82b1cc" };  // steel blue medio
-        if (stableRel < 0.75) return { kind: "stable", color: "#9dc4d9" }; // steel blue chiaro
-        return { kind: "stable", color: "#b5d5e4" };                       // steel blue leggero
-      }
-      if (alt > stableTop) return { kind: "none" };
-  
-      // --- ZONA GIALLA/ARANCIO "termica attiva (fino a base cumuli)" ---
-      if (alt >= altitude && alt <= thermalTop) {
-        const span = Math.max(200, thermalTop - altitude);
-        const relHeight = (alt - altitude) / span;
-        // Forza colore: più intenso vicino al suolo, sfuma verso l'alto
-        const strength = (1 - relHeight * 0.7) * diurnal;
-        if (strength > 0.78) return { kind: "thermal", color: "#f97316" }; // arancio intenso
-        if (strength > 0.62) return { kind: "thermal", color: "#fb923c" }; // arancio
-        if (strength > 0.46) return { kind: "thermal", color: "#fbbf24" }; // ambra
-        if (strength > 0.30) return { kind: "thermal", color: "#fde047" }; // giallo vivo
-        if (strength > 0.15) return { kind: "thermal", color: "#fef08a" }; // giallo chiaro
-        return { kind: "none" };
-      }
-      return { kind: "none" };
+
+      return { kind: "stable", color: stabilityColor };
     };
 
   const windDataByHourAlt = useMemo(() => {
@@ -298,18 +258,13 @@ export default function WindgramMatrix({
   const cloudBaseRow = useMemo(() => {
     const map: Record<number, number> = {};
     DISPLAY_HOURS.forEach((hr) => {
-      const thermal = hourThermalData[hr];
-      if (!thermal) return;
-      // Top termico sinusoidale: la nuvola appare dove termina il giallo.
-      const dayPhase = (hr - 13) / 5;
-      if (dayPhase < -1 || dayPhase > 1) return;
-      const diurnal = Math.cos((dayPhase * Math.PI) / 2);
-      const cloudCeil = Math.max(altitude + 250, thermal.cloudBase);
-      const thermalTop = altitude + (cloudCeil - altitude) * diurnal;
+      const info = hourDerivedInfo[hr];
+      if (!info || info.cloudBase == null) return;
+      // La base nube è un dato DERIVATO/ESTIMATED centralizzato, non sinusoidale
       let bestIdx = 0;
       let bestDiff = Infinity;
       activeAltitudes.forEach((a, idx) => {
-        const diff = Math.abs(a - thermalTop);
+        const diff = Math.abs(a - info.cloudBase);
         if (diff < bestDiff) {
           bestDiff = diff;
           bestIdx = idx;
@@ -318,22 +273,22 @@ export default function WindgramMatrix({
       map[hr] = bestIdx;
     });
     return map;
-  }, [hourThermalData, activeAltitudes, altitude]);
+  }, [hourDerivedInfo, activeAltitudes, altitude]);
 
   const dataSourceBadge = hasRealAltitudeData ? (
     <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold flex items-center gap-1">
       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-      Dati REALI quote 1000-3000m
+      Vento modello · quote 1000-3000m
     </span>
   ) : hasRealPressureData ? (
     <span className="px-2 py-0.5 rounded bg-sky-100 text-sky-700 text-[10px] font-bold flex items-center gap-1">
       <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
-      Dati hPa Open-Meteo
+      Vento modello · livelli hPa
     </span>
   ) : (
     <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px] font-bold flex items-center gap-1">
       <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-      Dati stimati
+      Dati vento N/D
     </span>
   );
 
@@ -462,7 +417,7 @@ export default function WindgramMatrix({
                           ? getWindArrowColor(w.speed)
                           : { fill: "#e74c3c", stroke: "#c0392b", text: "#e74c3c" };
                         const isSelectedCol = hr === selectedHour;
-                        const bg = getThermalBgColor(alt, hr);
+                        const bg = getCellBgColor(alt, hr);
                         const showCloud = cloudBaseRow[hr] === rowIdx;
                         return (
                           <td
@@ -496,10 +451,10 @@ export default function WindgramMatrix({
                                 </span>
                               )}
                               {showCloud && (
-                                <div className="absolute bottom-[calc(100%+2px)] left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-                                  <CloudIcon cloudCover={hourThermalData[hr]?.cloudCover ?? 30} />
-                                </div>
-                              )}
+                                                <div className="absolute bottom-[calc(100%+2px)] left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                                                  <CloudIcon cloudCover={hourDerivedInfo[hr]?.cloudCover ?? 50} />
+                                                </div>
+                                              )}
                             </div>
                           </td>
                         );
@@ -516,11 +471,11 @@ export default function WindgramMatrix({
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-1">
                   <div className="w-2.5 h-1.5 rounded bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500 border border-orange-400/60" />
-                  <span className="text-slate-700 font-medium text-[9px]">Termica</span>
+                  <span className="text-slate-700 font-medium text-[9px]">Instabile</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-2.5 h-1.5 rounded bg-gradient-to-b from-[#b5d5e4] via-[#82b1cc] to-[#6a9cba] border border-[#6a9cba]/60" />
-                  <span className="text-slate-700 font-medium text-[9px]">Stabile</span>
+                  <span className="text-slate-700 font-medium text-[9px]">Stabile/Neutro</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">

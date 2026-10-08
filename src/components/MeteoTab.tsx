@@ -219,13 +219,13 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   const cloudCoverLow = currentData.cloudCoverLow ?? 0;
   const cloudCoverMid = currentData.cloudCoverMid ?? 0;
   const cloudCoverHigh = currentData.cloudCoverHigh ?? 0;
-  // Spread: calcola solo se entrambi i dati sono disponibili
-  const spread = (tForCalc !== null && dewForCalc !== null) ? Math.max(0.5, tForCalc - dewForCalc) : 3;
+  // Spread: differenza reale T-Td, null se manca uno dei due
+  const spread = (tForCalc !== null && dewForCalc !== null) ? tForCalc - dewForCalc : null;
 
   // === Calcoli per il volo ===
   const cloudBase = tForCalc !== null && dewForCalc !== null
     ? calcCloudBase(siteAlt, tForCalc, dewForCalc)
-    : siteAlt + 1000;
+    : null;
   // CAPE e LI medi: usa solo ore con dati reali
   const validCapeHours = dayData.filter(h => h.cape !== null && h.cape !== undefined);
   const avgCape = validCapeHours.length > 0
@@ -236,8 +236,8 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
     ? validLiHours.reduce((s, h) => s + h.liftedIndex, 0) / validLiHours.length
     : null;
   const avgSpread = dayData.length > 0
-    ? dayData.reduce((s, h) => s + Math.max(0.5, (h.temperature ?? 0) - (h.dewPoint ?? 0)), 0) / dayData.length
-    : 3;
+    ? dayData.reduce((s, h) => s + ((h.temperature != null && h.dewPoint != null) ? h.temperature - h.dewPoint : 0), 0) / dayData.length
+    : null;
   const avgThermalRate = Math.min(4, Math.max(0.3, avgSpread * 0.25 + avgCape * 0.001));
   const maxThermalRate = Math.min(4, Math.max(0.3, avgSpread * 0.3 + (avgCape * 1.5) * 0.001));
   const thermalTop = Math.round(Math.min(4000, cloudBase + Math.min(800, avgThermalRate * 100 + avgCape * 0.1)));

@@ -271,12 +271,12 @@ export default function ProfessionalWindgram({
           const cloudNext = p.cloud_cover?.[nextIdx];
           const cloud = ((cloudPrev !== undefined ? Number(cloudPrev) : null) + (cloudNext !== undefined ? Number(cloudNext) : null)) / 2;
           const cloudBaseVal = dew != null ? calcCloudBase(altitude, t, dew) : null;
-          const fb = Array(13).fill(0).map((_, i) => 0.55 + i * 0.03);
+          // Interpolated data: use null for synthetic values
           return {
-            hour: targetHour, sunPct: 60, thermalAvg: 0.9, tempGround: Math.round(t),
-            windGround: 6, windDirGround: 180, precip: 0, cloudCover: Math.round(cloud),
+            hour: targetHour, sunPct: 60, thermalAvg: null as number | null, tempGround: Math.round(t),
+            windGround: null, windDirGround: null, precip: 0, cloudCover: Math.round(cloud),
             zeroThermal: Math.round(altitude + t / 0.0098), thermalTop: cloudBaseVal != null ? cloudBaseVal + 500 : null,
-            cloudBase: cloudBaseVal, cloudPct: Math.round(cloud), deltaT: 0.65,
+            cloudBase: cloudBaseVal, cloudPct: Math.round(cloud), deltaT: null,
             tempAt80m: Math.round(t - 1.5), tempAt120m: Math.round(t - 3),
             // Nessun dato vento disponibile per ore interpolate — restituire null
             levelWinds: displayAltitudes.map((alt) => ({ alt, speed: null as number | null, dir: null as number | null })),
@@ -307,7 +307,7 @@ export default function ProfessionalWindgram({
       const t80Sim = t180Num != null ? t + (t180Num - t) * (80 / 180) : null;
       const t120Sim = t180Num != null ? t + (t180Num - t) * (120 / 180) : null;
 
-      const spread = dew != null ? Math.max(0.5, t - dew) : 0.5;
+      const spread = dew != null ? t - dew : null;
       const cloudBase = dew != null ? calcCloudBase(altitude, t, dew) : null;
       const sunPct = cloud != null ? Math.min(100, Math.max(10, Math.round(((rad ?? 0) / 900) * (1 - (cloud / 100) * 0.65)) * 100)) : 60;
       const cloudPct = Math.max(2, Math.min(95, Math.round(cloud)));
