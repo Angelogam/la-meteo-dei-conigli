@@ -1,7 +1,7 @@
 "use client";
 
 import { DECOLLI } from "@/data/decolli";
-import { fetchCurrent, fetchHourly } from "@/lib/openMeteoClient";
+import { fetchCurrent, fetchHourly, fetchDaily } from "@/lib/openMeteoClient";
 
 export type Decollo = {
   name: string;
@@ -27,51 +27,73 @@ export type MeteoDecollo = {
 const OPENWEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_KEY || "";
 const TOMORROW_API_KEY = import.meta.env.VITE_TOMORROW_KEY || "";
 
+function numOrNull(v: unknown): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function findCurrentIndex(times: unknown[], now = new Date()): number {
+  let best = -1;
+  let bestDistance = Number.POSITIVE_INFINITY;
+
+  for (let i = 0; i < times.length; i++) {
+    const t = new Date(String(times[i]));
+    if (Number.isNaN(t.getTime())) continue;
+    const distance = Math.abs(t.getTime() - now.getTime());
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = i;
+    }
+  }
+
+  return best;
+}
+
 async function getOpenMeteo(lat: number, lon: number) {
   const today = new Date().toISOString().split("T")[0];
   const hourlyParams = "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,cape,freezing_level_height";
 
   try {
-    const data = await fetchHourly(lat, lon, hourlyParams, today, today);
-    const t = data.hourly?.temperature_2m?.[0];
-    if (t !== undefined && t !== null) {
-      const temperatures = (data.hourly?.temperature_2m ?? []).map(Number).filter(Number.isFinite);
-      const clouds = (data.hourly?.cloud_cover ?? []).map(Number).filter(Number.isFinite);
-      const rainValues = (data.hourly?.precipitation ?? []).map(Number).filter(Number.isFinite);
-      return {
-        temp: Number(t),
-        rain: data.hourly?.precipitation?.[0] !== undefined ? Number(data.hourly.precipitation[0]) : null,
-        cloud: data.hourly?.cloud_cover?.[0] !== undefined ? Number(data.hourly.cloud_cover[0]) : null,
-        wind: data.hourly?.wind_speed_10m?.[0] !== undefined ? Number(data.hourly.wind_speed_10m[0]) : null,
-        dir: data.hourly?.wind_direction_10m?.[0] !== undefined ? Number(data.hourly.wind_direction_10m[0]) : null,
-        cape: data.hourly?.cape?.[0] !== undefined ? Number(data.hourly.cape[0]) : null,
-        freezingLevel: data.hourly?.freezing_level_height?.[0] !== undefined ? Number(data.hourly.freezing_level_height[0]) : null,
-        tMax: temperatures.length > 0 ? Math.max(...temperatures) : null,
-        tMin: temperatures.length > 0 ? Math.min(...temperatures) : null,
-        cloudDaily: clouds.length > 0 ? Math.max(...clouds) : null,
-        rainDaily: rainValues.length > 0 ? rainValues.reduce((sum, value) => sum + value, 0) : null
-      };
-    }
-  } catch {
-    // Riprova con i dati correnti se il recupero orario non è disponibile.
-  }
+    const today = new Date().toISOString().split("T")[0];
 
-  try {
-    const data = await fetchCurrent(lat, lon, "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,cape");
-    const current = data.current;
-    if (current?.temperature_2m === undefined || current?.temperature_2m === null) return null;
+    const [hourlyData, dailyData] = await Promise.all([
+      fetchHourly(
+        lat,
+        lon,
+        "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,cape,freezing_level_height",
+        today,
+        today
+      ),
+      fetchDaily(
+        lat,
+        lon,
+        "temperature_2m_max,temperature_2m_min,cloud_cover_mean,precipitation_sum",
+        1
+      ),
+    ]);
+
+    const times = hourlyData.hourly?.time ?? [];
+    if (!Array.isArray(times) || times.length === 0) return null;
+
+    const i = findCurrentIndex(times);
+    if (i < 0) return null;
+
+    const h = hourlyData.hourly;
+    const d = dailyData.daily;
+
     return {
-      temp: Number(current.temperature_2m),
-      rain: current.precipitation !== undefined ? Number(current.precipitation) : null,
-      cloud: current.cloud_cover !== undefined ? Number(current.cloud_cover) : null,
-      wind: current.wind_speed_10m !== undefined ? Number(current.wind_speed_10m) : null,
-      dir: current.wind_direction_10m !== undefined ? Number(current.wind_direction_10m) : null,
-      cape: current.cape !== undefined ? Number(current.cape) : null,
-      freezingLevel: null,
-      tMax: null,
-      tMin: null,
-      cloudDaily: null,
-      rainDaily: null
+      temp: numOrNull(h.temperature_2m?.[i]),
+      rain: numOrNull(h.precipitation?.[i]),
+      cloud: numOrNull(h.cloud_cover?.[i]),
+      wind: numOrNull(h.wind_speed_10m?.[i]),
+      dir: numOrNull(h.wind_direction_10m?.[i]),
+      cape: numOrNull(h.cape?.[i]),
+      freezingLevel: numOrNull(h.freezing_level_height?.[i]),
+      tMax: numOrNull(d?.temperature_2m_max?.[0]),
+      tMin: numOrNull(d?.temperature_2m_min?.[0]),
+      cloudDaily: numOrNull(d?.cloud_cover_mean?.[0]),
+      rainDaily: numOrNull(d?.precipitation_sum?.[0]),
     };
   } catch {
     return null;
@@ -86,12 +108,12 @@ async function getOpenWeather(lat: number, lon: number) {
     if (!res.ok) return null;
     const data = await res.json();
     return {
-      temp: data.main?.temp ?? null,
-      rain: data.rain?.["1h"] !== undefined ? Number(data.rain["1h"]) : null,
-      cloud: data.clouds?.all !== undefined ? Number(data.clouds.all) : null,
-      wind: data.wind?.speed !== undefined ? Number(data.wind.speed) : null,
-      dir: data.wind?.deg !== undefined ? Number(data.wind.deg) : null,
-      stato: typeof data.weather?.[0]?.main === "string" ? data.weather[0].main : null
+      temp: numOrNull(data.main?.temp),
+      rain: numOrNull(data.rain?.["1h"]),
+      cloud: numOrNull(data.clouds?.all),
+      wind: numOrNull(data.wind?.speed),
+      dir: numOrNull(data.wind?.deg),
+      stato: typeof data.weather?.[0]?.main === "string" ? data.weather[0].main : null,
     };
   } catch {
     return null;
@@ -108,56 +130,55 @@ async function getTomorrow(lat: number, lon: number) {
     const v = data.data?.timelines?.[0]?.intervals?.[0]?.values;
     if (!v) return null;
     return {
-      temp: v.temperature ?? null,
-      rain: v.precipitationIntensity !== undefined && v.precipitationIntensity !== null ? Number(v.precipitationIntensity) : null,
-      cloud: v.cloudCover !== undefined && v.cloudCover !== null ? Number(v.cloudCover) : null,
-      wind: v.windSpeed !== undefined && v.windSpeed !== null ? Number(v.windSpeed) : null,
-      dir: v.windDirection !== undefined && v.windDirection !== null ? Number(v.windDirection) : null
+      temp: numOrNull(v.temperature),
+      rain: numOrNull(v.precipitationIntensity),
+      cloud: numOrNull(v.cloudCover),
+      wind: numOrNull(v.windSpeed),
+      dir: numOrNull(v.windDirection),
     };
   } catch {
     return null;
   }
 }
 
-/** Media circolare della direzione del vento: ignora null, gestisce 360°/0° */
 function circularMeanWindDirection(values: number[]): number | null {
-  const valid = values.filter(v => v !== null && !isNaN(v));
+  const valid = values.filter(Number.isFinite);
   if (valid.length === 0) return null;
+
   const sumCos = valid.reduce((sum, v) => sum + Math.cos((v * Math.PI) / 180), 0);
   const sumSin = valid.reduce((sum, v) => sum + Math.sin((v * Math.PI) / 180), 0);
-  const mean = Math.atan2(sumSin, sumCos) * 180 / Math.PI;
-  const normalized = (mean + 540) % 360; // Porta in [0, 360)
-  return normalizzaDirezione(normalized);
+  const mean = (Math.atan2(sumSin, sumCos) * 180) / Math.PI;
+  return (mean + 360) % 360;
 }
 
-/** Normalizza una direzione: 359° → 359, 1° → 1, evita 0° come fallback */
-function normalizzaDirezione(dir: number): number {
-  // Se il risultato è 0°, restituiamo 360° (non 0) per evitare l'errore classico di 350+10→180
-  return dir === 0 ? 360 : dir;
-}
+function fuse(values: Array<{ value: number | null; weight: number }>): number | null {
+  const valid = values.filter(v => v.value !== null && Number.isFinite(v.value));
+  if (!valid.length) return null;
 
-/* funzione fuse mantenuta per compatibilità ma ora usa solo fonti valide */
-function fuse(values: { value: number; weight: number }[]): number | null {
-  const valid = values.filter(v => Number.isFinite(v.value));
-  if (valid.length === 0) return null;
-  const sumW = valid.reduce((a, b) => a + b.weight, 0);
-  if (sumW === 0) return null;
-  return valid.reduce((a, b) => a + b.value * b.weight, 0) / sumW;
+  const weight = valid.reduce((sum, v) => sum + v.weight, 0);
+  if (weight <= 0) return null;
+
+  return valid.reduce((sum, v) => sum + (v.value as number) * v.weight, 0) / weight;
 }
 
 const WEIGHTS = {
   temp: { om: 0.3, ow: 0.3, tw: 0.4 },
   wind: { om: 0.3, ow: 0.4, tw: 0.3 },
   cloud: { om: 0.3, ow: 0.3, tw: 0.4 },
-  rain: { om: 0.3, ow: 0.4, tw: 0.3 }
+  rain: { om: 0.3, ow: 0.4, tw: 0.3 },
 };
 
 function statoAggressivo(openMeteo: any, openWeather: any, tomorrow: any): string {
   if (openWeather?.stato === "Thunderstorm") return "Temporale";
-  const rains = [openMeteo?.rain, openWeather?.rain, tomorrow?.rain].filter((v): v is number => Number.isFinite(v));
+
+  const rains = [openMeteo?.rain, openWeather?.rain, tomorrow?.rain]
+    .filter((v): v is number => Number.isFinite(v));
   if (rains.some(v => v > 0.1)) return "Pioggia";
-  const clouds = [openMeteo?.cloud, openWeather?.cloud, tomorrow?.cloud].filter((v): v is number => Number.isFinite(v));
+
+  const clouds = [openMeteo?.cloud, openWeather?.cloud, tomorrow?.cloud]
+    .filter((v): v is number => Number.isFinite(v));
   if (!clouds.length) return "N/D";
+
   const cloudMax = Math.max(...clouds);
   if (cloudMax > 80) return "Coperto";
   if (cloudMax > 40) return "Variabile";
@@ -166,41 +187,56 @@ function statoAggressivo(openMeteo: any, openWeather: any, tomorrow: any): strin
 
 function baseNubiAggressiva(cloud: number | null): string {
   if (cloud === null) return "N/D";
-  if (cloud > 80) return "Molto bassa (<1200 m)";
-  if (cloud > 60) return "Bassa (1200-1800 m)";
-  if (cloud > 40) return "Media (1800-2500 m)";
-  return "Alta (>2500 m)";
+  if (cloud > 80) return "Molto bassa";
+  if (cloud > 60) return "Bassa";
+  if (cloud > 40) return "Media";
+  return "Alta";
 }
 
-function termicheAggressive(tMax: number | null, tMin: number | null, cloudDaily: number | null, rainDaily: number | null): string {
-  // Se manca tMax o tMin, non possiamo calcolare deltaT → restituire "Termiche non disponibili"
-  if (tMax === null || tMin === null) return "Termiche non disponibili";
+function termicheAggressive(
+  tMax: number | null,
+  tMin: number | null,
+  cloudDaily: number | null,
+  rainDaily: number | null
+): string {
+  if (tMax === null || tMin === null) return "N/D";
+  if (rainDaily !== null && rainDaily > 1) return "Disturbate";
+  if (cloudDaily !== null && cloudDaily > 80) return "Deboli";
   const deltaT = tMax - tMin;
-  if (rainDaily > 1) return "Termiche disturbate (pioggia)";
-  if (cloudDaily > 80) return "Termiche deboli (coperto)";
-  if (deltaT < 6) return "Termiche scarse";
-  if (deltaT < 10) return "Termiche moderate";
-  if (deltaT < 15) return "Termiche buone";
-  return "Termiche forti";
+  if (deltaT < 6) return "Scarse";
+  if (deltaT < 10) return "Moderate";
+  if (deltaT < 15) return "Buone";
+  return "Forti";
 }
 
-/** Indice di volabilità: stima euristica, NON misura scientifica.
- *  Rinominato in indiceAffidabilitaStima per chiarezza. */
-function indiceAffidabilitaStima(wind: number | null, rain: number | null, cloud: number | null, baseNubi: string, termiche: string): number | null {
+function indiceAffidabilitaStima(
+  wind: number | null,
+  rain: number | null,
+  cloud: number | null,
+  baseNubi: string,
+  termiche: string
+): number | null {
   if (wind === null && rain === null && cloud === null) return null;
-  let i = 1;
-  if ((rain ?? 0) > 0.1) i += 5;
-  if ((rain ?? 0) > 2) i += 3;
-  if ((wind ?? 0) > 15) i += 2;
-  if ((wind ?? 0) > 25) i += 3;
-  if ((wind ?? 0) > 30) i += 3;
-  if ((cloud ?? 0) > 70) i += 2;
-  if (baseNubi.includes("Molto bassa")) i += 3;
-  if (termiche.includes("forti")) i += 2;
-  return Math.min(i, 10);
+
+  let score = 10;
+  if (rain !== null) {
+    if (rain > 2) score -= 5;
+    else if (rain > 0.1) score -= 3;
+  }
+  if (wind !== null) {
+    if (wind > 30) score -= 5;
+    else if (wind > 25) score -= 4;
+    else if (wind > 15) score -= 2;
+  }
+  if (cloud !== null && cloud > 70) score -= 2;
+  if (baseNubi === "Molto bassa") score -= 2;
+  if (termiche === "Disturbate" || termiche === "Scarse") score -= 2;
+
+  return Math.max(0, Math.min(10, score));
 }
 
-function labelIndice(i: number): string {
+function labelIndice(i: number | null): string {
+  if (i === null) return "N/D";
   if (i <= 3) return "Ottimo";
   if (i <= 5) return "Buono";
   if (i <= 7) return "Impegnativo";
@@ -209,9 +245,7 @@ function labelIndice(i: number): string {
 }
 
 function safe(v: number | null): string {
-  if (v === null) return "N/D";
-  const n = parseFloat(String(v));
-  return isNaN(n) ? "N/D" : n.toFixed(1);
+  return v === null || !Number.isFinite(v) ? "--" : v.toFixed(1);
 }
 
 export async function getMeteoDecolloAggressivo(d: Decollo): Promise<MeteoDecollo> {
@@ -230,88 +264,94 @@ export async function getMeteoDecolloAggressivo(d: Decollo): Promise<MeteoDecoll
     throw new Error("Nessuna fonte meteo disponibile");
   }
 
-  // Non usare valori di default 0 quando la fonte fallisce — usa null per segnalare N/D
-  const om = openMeteo ?? null;
-  const ow = openWeather ?? null;
-  const tw = tomorrow ?? null;
-
-  // Fuse: include solo fonti valide (non null)
   const tempNum = fuse([
-    om?.temp !== null ? { value: om.temp, weight: WEIGHTS.temp.om } : null,
-    ow?.temp !== null ? { value: ow.temp, weight: WEIGHTS.temp.ow } : null,
-    tw?.temp !== null ? { value: tw.temp, weight: WEIGHTS.temp.tw } : null,
-  ].filter((v): v is { value: number; weight: number } => v != null));
+    { value: openMeteo?.temp ?? null, weight: WEIGHTS.temp.om },
+    { value: openWeather?.temp ?? null, weight: WEIGHTS.temp.ow },
+    { value: tomorrow?.temp ?? null, weight: WEIGHTS.temp.tw },
+  ]);
   const rainNum = fuse([
-    om?.rain !== null ? { value: om.rain, weight: WEIGHTS.rain.om } : null,
-    ow?.rain !== null ? { value: ow.rain, weight: WEIGHTS.rain.ow } : null,
-    tw?.rain !== null ? { value: tw.rain, weight: WEIGHTS.rain.tw } : null,
-  ].filter((v): v is { value: number; weight: number } => v != null));
+    { value: openMeteo?.rain ?? null, weight: WEIGHTS.rain.om },
+    { value: openWeather?.rain ?? null, weight: WEIGHTS.rain.ow },
+    { value: tomorrow?.rain ?? null, weight: WEIGHTS.rain.tw },
+  ]);
   const cloudNum = fuse([
-    om?.cloud !== null ? { value: om.cloud, weight: WEIGHTS.cloud.om } : null,
-    ow?.cloud !== null ? { value: ow.cloud, weight: WEIGHTS.cloud.ow } : null,
-    tw?.cloud !== null ? { value: tw.cloud, weight: WEIGHTS.cloud.tw } : null,
-  ].filter((v): v is { value: number; weight: number } => v != null));
+    { value: openMeteo?.cloud ?? null, weight: WEIGHTS.cloud.om },
+    { value: openWeather?.cloud ?? null, weight: WEIGHTS.cloud.ow },
+    { value: tomorrow?.cloud ?? null, weight: WEIGHTS.cloud.tw },
+  ]);
   const windNum = fuse([
-    om?.wind !== null ? { value: om.wind, weight: WEIGHTS.wind.om } : null,
-    ow?.wind !== null ? { value: ow.wind, weight: WEIGHTS.wind.ow } : null,
-    tw?.wind !== null ? { value: tw.wind, weight: WEIGHTS.wind.tw } : null,
-  ].filter((v): v is { value: number; weight: number } => v != null));
+    { value: openMeteo?.wind ?? null, weight: WEIGHTS.wind.om },
+    { value: openWeather?.wind ?? null, weight: WEIGHTS.wind.ow },
+    { value: tomorrow?.wind ?? null, weight: WEIGHTS.wind.tw },
+  ]);
 
-  // Fuse wind direction using circular mean (ignora valori null)
-  const dirPairs: { value: number; weight: number }[] = [
-    om?.dir !== null && om?.dir !== undefined ? { value: om.dir, weight: WEIGHTS.wind.om } : null,
-    ow?.dir !== null && ow?.dir !== undefined ? { value: ow.dir, weight: WEIGHTS.wind.ow } : null,
-    tw?.dir !== null && tw?.dir !== undefined ? { value: tw.dir, weight: WEIGHTS.wind.tw } : null,
-  ].filter((v): v is { value: number; weight: number } => v != null);
-  const dirNum = dirPairs.length > 0
-    ? circularMeanWindDirection(dirPairs.map(p => p.value))
-    : null; // Se nessuna direzione valida, restituiamo null (N/D)
+  const directions = [
+    openMeteo?.dir,
+    openWeather?.dir,
+    tomorrow?.dir,
+  ].filter((v): v is number => Number.isFinite(v));
+  const dirNum = circularMeanWindDirection(directions);
 
-  const stato = statoAggressivo(om, ow, tw);
+  const stato = statoAggressivo(openMeteo, openWeather, tomorrow);
   const baseNubi = baseNubiAggressiva(cloudNum);
   const termiche = termicheAggressive(
-    om?.tMax ?? null,
-    om?.tMin ?? null,
-    om?.cloudDaily ?? null,
-    om?.rainDaily ?? null
+    openMeteo?.tMax ?? null,
+    openMeteo?.tMin ?? null,
+    openMeteo?.cloudDaily ?? null,
+    openMeteo?.rainDaily ?? null
   );
   const indice = indiceAffidabilitaStima(windNum, rainNum, cloudNum, baseNubi, termiche);
-  const indiceLabel = indice !== null ? labelIndice(indice) : "N/D";
 
   return {
     temp: safe(tempNum),
     rain: safe(rainNum),
     cloud: safe(cloudNum),
     wind: safe(windNum),
-    dir: dirNum !== null ? safe(dirNum) : "N/D",
+    dir: safe(dirNum),
     stato,
     baseNubi,
     termiche,
-    indice,
-    indiceLabel,
-    fonte: "Open-Meteo + OpenWeather + Tomorrow.io"
+    indice: indice ?? 0,
+    indiceLabel: labelIndice(indice),
+    fonte: "Open-Meteo + OpenWeather + Tomorrow.io",
   };
 }
 
 export async function getAllMeteoDecolliAggressivo(): Promise<Map<string, MeteoDecollo>> {
   const results = new Map<string, MeteoDecollo>();
-  for (const d of DECOLLI) {
-    try {
-      const weather = await getMeteoDecolloAggressivo({
-        name: d.name,
-        lat: d.lat,
-        lon: d.lon,
-        elevation: d.elevation_m
-      });
-      results.set(d.name, weather);
-    } catch {
-      results.set(d.name, {
-        temp: "N/D", rain: "N/D", cloud: "N/D", wind: "N/D",
-        dir: "N/D", stato: "Errore", baseNubi: "N/D", termiche: "N/D",
-        indice: null, indiceLabel: "N/D", fonte: "Errore"
-      });
+
+  // Concorrenza limitata: evita timeout del browser senza bombardare le API.
+  const queue = [...DECOLLI];
+  const worker = async () => {
+    while (queue.length) {
+      const d = queue.shift();
+      if (!d) return;
+
+      try {
+        results.set(d.name, await getMeteoDecolloAggressivo({
+          name: d.name,
+          lat: d.lat,
+          lon: d.lon,
+          elevation: d.elevation_m,
+        }));
+      } catch {
+        results.set(d.name, {
+          temp: "--",
+          rain: "--",
+          cloud: "--",
+          wind: "--",
+          dir: "--",
+          stato: "N/D",
+          baseNubi: "N/D",
+          termiche: "N/D",
+          indice: 0,
+          indiceLabel: "N/D",
+          fonte: "Nessuna fonte disponibile",
+        });
+      }
     }
-    await new Promise(r => setTimeout(r, 200));
-  }
+  };
+
+  await Promise.all(Array.from({ length: Math.min(4, DECOLLI.length) }, worker));
   return results;
 }

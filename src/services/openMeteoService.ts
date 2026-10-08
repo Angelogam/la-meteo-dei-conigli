@@ -22,6 +22,9 @@ const HOURLY_PARAMS = [
   "lifted_index",
   "shortwave_radiation",
   "direct_radiation",
+  "diffuse_radiation",
+  "direct_normal_irradiance",
+  "terrestrial_radiation",
   "uv_index",
   "visibility",
   "wind_speed_80m",
@@ -47,6 +50,13 @@ const HOURLY_PARAMS = [
   "freezing_level_height",
   "surface_pressure",
   "pressure_msl",
+  "vapour_pressure_deficit",
+  "evapotranspiration",
+  "et0_fao_evapotranspiration",
+  "soil_temperature_0_to_10cm",
+  "soil_moisture_0_to_10cm",
+  "sunshine_duration",
+  "is_day",
 ].join(",");
 
 const DAILY_PARAMS = [
@@ -200,25 +210,25 @@ export interface MeteoDaily {
   weatherCode: number | null;
   tempMax: number | null;
   tempMin: number | null;
-  precipitationSum: number;
-  precipitationProbabilityMax: number;
-  windSpeedMax: number;
-  windGustsMax: number;
-  windDirDominant: number;
-  uvIndexMax: number;
+  precipitationSum: number | null;
+  precipitationProbabilityMax: number | null;
+  windSpeedMax: number | null;
+  windGustsMax: number | null;
+  windDirDominant: number | null;
+  uvIndexMax: number | null;
   sunrise: string;
   sunset: string;
-  temperatureMax: number;
-  temperatureMin: number;
-  temperatureMean: number;
-  apparentTempMax: number;
-  apparentTempMin: number;
-  daylightDuration: number;
+  temperatureMax: number | null;
+  temperatureMin: number | null;
+  temperatureMean: number | null;
+  apparentTempMax: number | null;
+  apparentTempMin: number | null;
+  daylightDuration: number | null;
   sunshineDuration: number | null;
-  rainSum: number;
-  snowfallSum: number;
-  precipitationHours: number;
-  shortwaveRadiationSum: number;
+  rainSum: number | null;
+  snowfallSum: number | null;
+  precipitationHours: number | null;
+  shortwaveRadiationSum: number | null;
   weatherDescription?: string;
   freezingLevel?: number | null; // quota 0°C in metri s.l.m.
   trend?: "↑" | "↓" | "→" | null; // tendenza 24h
@@ -311,7 +321,7 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
         surfacePressure: surfacePressure,
         rain: safeNumOrNull(json.hourly.rain?.[i]),
         snowfall: safeNumOrNull(json.hourly.snowfall?.[i]),
-        vapourPressureDeficit: null,
+        vapourPressureDeficit: safeNumOrNull(json.hourly.vapour_pressure_deficit?.[i]),
         isDay,
         freezingLevel: freezingLevel,
         sunshineDuration: safeNumOrNull(json.hourly.sunshine_duration?.[i]),
@@ -328,13 +338,13 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
         windDir180m,
         apparentTemp: feelsLike,
         precipitationProba: safeNumOrNull(json.hourly.precipitation_probability?.[i]),
-        evapotranspiration: null,
-        et0: null,
-        soilTemp: null,
-        soilMoisture: null,
-        diffuseRadiation: null,
-        directNormalIrradiance: null,
-        terrestrialRadiation: null,
+        evapotranspiration: safeNumOrNull(json.hourly.evapotranspiration?.[i]),
+        et0: safeNumOrNull(json.hourly.et0_fao_evapotranspiration?.[i]),
+        soilTemp: safeNumOrNull(json.hourly.soil_temperature_0_to_10cm?.[i]),
+        soilMoisture: safeNumOrNull(json.hourly.soil_moisture_0_to_10cm?.[i]),
+        diffuseRadiation: safeNumOrNull(json.hourly.diffuse_radiation?.[i]),
+        directNormalIrradiance: safeNumOrNull(json.hourly.direct_normal_irradiance?.[i]),
+        terrestrialRadiation: safeNumOrNull(json.hourly.terrestrial_radiation?.[i]),
         radiation: safeNumOrNull(json.hourly.shortwave_radiation?.[i]),
         cin: safeNumOrNull(json.hourly.convective_inhibition?.[i]),
         boundaryLayerHeight: boundaryLayerHeight,
@@ -366,8 +376,8 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
         windGustsMax: safeNumOrNull(json.daily.wind_gusts_10m_max?.[i]),
         windDirDominant: safeNumOrNull(json.daily.wind_direction_10m_dominant?.[i]),
         uvIndexMax: safeNumOrNull(json.daily.uv_index_max?.[i]),
-        sunrise: json.daily.sunrise?.[i] ?? "",
-        sunset: json.daily.sunset?.[i] ?? "",
+        sunrise: json.daily.sunrise?.[i] ?? "N/D",
+        sunset: json.daily.sunset?.[i] ?? "N/D",
         temperatureMax: safeNumOrNull(json.daily.temperature_2m_max?.[i]),
         temperatureMin: safeNumOrNull(json.daily.temperature_2m_min?.[i]),
         temperatureMean: safeNumOrNull(json.daily.temperature_2m_mean?.[i]),
