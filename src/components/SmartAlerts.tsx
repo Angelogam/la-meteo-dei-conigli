@@ -30,7 +30,7 @@ export function generateSmartAlerts(
   const t = current.temperature ?? null;
   const dew = current.dewPoint ?? null;
   const spread = (t != null && dew != null) ? Math.max(0.5, t - dew) : null;
-  const cloudBase = calcCloudBase(siteAlt, t, dew);
+  const cloudBase = (t != null && dew != null) ? calcCloudBase(siteAlt, t, dew) : null;
   const validCapes = hourly.map(h => h.cape).filter((c): c is number => c != null);
   const cape = validCapes.length > 0 ? validCapes.reduce((s, h) => s + h, 0) / validCapes.length : null;
   const validLIs = hourly.map(h => h.liftedIndex).filter((li): li is number => li != null);

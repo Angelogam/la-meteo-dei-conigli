@@ -269,7 +269,8 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
     return hr >= now && hr <= now + 6;
   });
   const nextRainProb = next6h.reduce((s, h) => s + (h.precipitationProba ?? 0), 0) / (next6h.length || 1);
-  const nextCape = next6h.reduce((s, h) => s + (h.cape ?? 0), 0) / (next6h.length || 1);
+  const nextCapeValid = next6h.filter(h => h.cape != null);
+  const nextCape = nextCapeValid.length > 0 ? nextCapeValid.reduce((s, h) => s + h.cape!, 0) / nextCapeValid.length : null;
 
   const totalRadiation = dayData.reduce((s, h) => s + (h.shortwaveRadiation ?? h.radiation ?? 0), 0);
   const totalSunshine = dayData.reduce((s, h) => s + (h.sunshineDuration ?? 0), 0);
@@ -290,7 +291,7 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
   const flightHours = dayData.filter(h => {
     const ht = h.temperature ?? t;
     const hd = h.dewPoint ?? dew;
-    return (ht - hd) > 4 && (h.cape ?? 0) < 600 && (h.precipitationProba ?? 0) < 30 && (h.cloudCover ?? 0) < 85;
+    return (ht - hd) > 4 && (h.cape ?? null) < 600 && (h.precipitationProba ?? null) < 30 && (h.cloudCover ?? null) < 85;
   }).length;
   const windowStart = dayData.findIndex(h => (h.temperature ?? t) - (h.dewPoint ?? dew) > 4);
   const reversedEnd = [...dayData].reverse().findIndex(h => (h.temperature ?? t) - (h.dewPoint ?? dew) > 4);

@@ -30,6 +30,8 @@ const HOURLY_PARAMS = [
   "wind_direction_120m",
   "wind_speed_180m",
   "wind_direction_180m",
+  "temperature_180m",
+  "boundary_layer_height",
   "wind_speed_925hPa",
   "wind_direction_925hPa",
   "wind_speed_850hPa",
@@ -84,6 +86,7 @@ const CURRENT_PARAMS = [
   "apparent_temperature",
   "uv_index",
   "visibility",
+  "is_day",
 ].join(",");
 
 function safeNum(v: unknown, fallback: number = 0): number {
@@ -114,7 +117,7 @@ export interface MeteoCurrent {
   windGusts: number | null;
   cape: number | null;
   apparentTemp: number | null;
-  isDay?: number;
+  isDay: boolean | null;
   rain?: number;
   snowfall?: number;
   pressure?: number | null;
@@ -160,6 +163,7 @@ export interface MeteoHourly {
   windProfile?: { height: number; speed: number; dir: number }[];
   temp80m: number | null;
   temp120m: number | null;
+  temperature180m: number | null;
   windSpeed80m: number | null;
   windDir80m: number | null;
   windSpeed120m: number | null;
@@ -177,6 +181,7 @@ export interface MeteoHourly {
   terrestrialRadiation: number | null;
   radiation: number | null;
   cin: number | null;
+  boundaryLayerHeight: number | null;
   // Pressure level winds
   windSpeed925: number | null;
   windDir925: number | null;
@@ -249,6 +254,7 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
           apparentTemp: safeNumOrNull(c.apparent_temperature),
           uvIndex: safeNumOrNull(c.uv_index),
           visibility: safeNumOrNull(c.visibility),
+          isDay: c.is_day != null ? !!c.is_day : null,
     } : null;
 
     // Hourly
@@ -264,12 +270,20 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
       const freezingLevel = safeNumOrNull(json.hourly.freezing_level_height?.[i]);
       const temp80m = safeNumOrNull(json.hourly.temperature_80m?.[i]);
       const temp120m = safeNumOrNull(json.hourly.temperature_120m?.[i]);
+      const temp180m = safeNumOrNull(json.hourly.temperature_180m?.[i]);
+      const boundaryLayerHeight = safeNumOrNull(json.hourly.boundary_layer_height?.[i]);
       const windSpeed80m = safeNumOrNull(json.hourly.wind_speed_80m?.[i]);
       const windDir80m = safeNumOrNull(json.hourly.wind_direction_80m?.[i]);
       const windSpeed120m = safeNumOrNull(json.hourly.wind_speed_120m?.[i]);
       const windDir120m = safeNumOrNull(json.hourly.wind_direction_120m?.[i]);
       const windSpeed180m = safeNumOrNull(json.hourly.wind_speed_180m?.[i]);
       const windDir180m = safeNumOrNull(json.hourly.wind_direction_180m?.[i]);
+      // is_day dal JSON orario, altrimenti stima dall'ora locale
+      const rawIsDay = json.hourly.is_day?.[i];
+      const isDay = rawIsDay != null ? !!rawIsDay : (() => {
+        const hr = new Date(json.hourly.time[i]).getHours();
+        return hr >= 6 && hr <= 20;
+      })();
 
       hourly.push({
         time: new Date(json.hourly.time[i]),
@@ -297,14 +311,15 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
         surfacePressure: surfacePressure,
         rain: safeNumOrNull(json.hourly.rain?.[i]),
         snowfall: safeNumOrNull(json.hourly.snowfall?.[i]),
-        vapourPressureDeficit: 0,
-        isDay: true,
+        vapourPressureDeficit: null,
+        isDay,
         freezingLevel: freezingLevel,
         sunshineDuration: safeNumOrNull(json.hourly.sunshine_duration?.[i]),
-        mixingRatio: 0,
-        virtualTemp: 0,
+        mixingRatio: null,
+        virtualTemp: null,
         temp80m,
         temp120m,
+        temperature180m: temp180m,
         windSpeed80m,
         windDir80m,
         windSpeed120m,
@@ -313,15 +328,16 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
         windDir180m,
         apparentTemp: feelsLike,
         precipitationProba: safeNumOrNull(json.hourly.precipitation_probability?.[i]),
-        evapotranspiration: 0,
-        et0: 0,
-        soilTemp: 0,
-        soilMoisture: 0,
-        diffuseRadiation: 0,
-        directNormalIrradiance: 0,
-        terrestrialRadiation: 0,
-        radiation: safeNum(json.hourly.shortwave_radiation?.[i], 0),
+        evapotranspiration: null,
+        et0: null,
+        soilTemp: null,
+        soilMoisture: null,
+        diffuseRadiation: null,
+        directNormalIrradiance: null,
+        terrestrialRadiation: null,
+        radiation: safeNumOrNull(json.hourly.shortwave_radiation?.[i]),
         cin: safeNumOrNull(json.hourly.convective_inhibition?.[i]),
+        boundaryLayerHeight: boundaryLayerHeight,
         windSpeed925: safeNumOrNull(json.hourly.wind_speed_925hPa?.[i]),
         windDir925: safeNumOrNull(json.hourly.wind_direction_925hPa?.[i]),
         windSpeed850: safeNumOrNull(json.hourly.wind_speed_850hPa?.[i]),
@@ -398,6 +414,7 @@ export const weatherService = {
                 apparentTemp: safeNumOrNull(c.apparent_temperature),
                 uvIndex: safeNumOrNull(c.uv_index),
                 visibility: safeNumOrNull(c.visibility),
+                isDay: c.is_day != null ? !!c.is_day : null,
       };
     } catch {
       return null;

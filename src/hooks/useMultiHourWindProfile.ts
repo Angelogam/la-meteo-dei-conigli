@@ -16,12 +16,12 @@ interface WindLevel {
 interface HourWindData {
   hour: number;
   temp: number;
-  dew: number;
-  cloud: number;
-  freeze: number;
-  cape: number;
+  dew: number | null;
+  cloud: number | null;
+  freeze: number | null;
+  cape: number | null;
   levels: WindLevel[];
-  cloudBase: number;
+  cloudBase: number | null;
   maxRealAltitude: number;
 }
 
@@ -87,9 +87,9 @@ function buildFromFallback(hourly: HourData[], siteAlt: number): Map<number, Hou
     const t = h.temperature ?? null;
     if (t === null) return; // Skip hours without temperature data
     const dew = h.dewPoint ?? null;
-    const cloud = h.cloudCover ?? 30;
-    const freeze = h.freezingLevel ?? Math.round(siteAlt + (t / 0.0098) * 100);
-    const cape = h.cape ?? 0;
+    const cloud = h.cloudCover ?? null;
+    const freeze = h.freezingLevel ?? null;
+    const cape = h.cape ?? null;
 
     const levels: WindLevel[] = [];
     const addLevel = (hpa: string, alt: number, speed: number | undefined, dir: number | undefined) => {
@@ -110,18 +110,18 @@ function buildFromFallback(hourly: HourData[], siteAlt: number): Map<number, Hou
 
     const sortedLevels = levels.sort((a, b) => a.alt - b.alt);
     const maxRealAltitude = sortedLevels.length > 0 ? Math.max(...sortedLevels.map(l => l.alt)) : siteAlt;
-    const spread = Math.max(1, t - dew);
-    const cloudBase = calcCloudBase(siteAlt, t, dew);
+    const spread = dew != null ? Math.max(0.5, t - dew) : 0.5;
+    const cloudBase = dew != null ? calcCloudBase(siteAlt, t, dew) : null;
 
     map.set(targetHour, {
       hour: targetHour,
       temp: t,
       dew,
       cloud,
-      freeze,
+      freeze: freeze ?? null,
       cape,
       levels: sortedLevels,
-      cloudBase,
+      cloudBase: cloudBase ?? null,
       maxRealAltitude,
     });
   });
@@ -143,9 +143,9 @@ function processRawJson(json: any, siteAlt: number): Map<number, HourWindData> {
     const t = Number(h.temperature_2m[idx]);
     if (isNaN(t)) return; // Skip hours without valid temperature data
     const dew = h.dew_point_2m?.[idx] !== undefined ? Number(h.dew_point_2m[idx]) : null;
-    const cloud = Number(h.cloud_cover?.[idx]) ?? 30;
-    const freeze = Number(h.freezing_level_height?.[idx]) ?? (siteAlt + (t / 0.0098) * 100);
-    const cape = Number(h.cape?.[idx]) ?? 0;
+    const cloud = h.cloud_cover?.[idx] != null ? Number(h.cloud_cover[idx]) : null;
+    const freeze = h.freezing_level_height?.[idx] != null ? Number(h.freezing_level_height[idx]) : null;
+    const cape = h.cape?.[idx] != null ? Number(h.cape[idx]) : null;
 
     const pressureLevels: { hpa: string; alt: number; speed?: number; dir?: number; gust?: number }[] = [
       { hpa: "10m", alt: siteAlt + 10, speed: h.wind_speed_10m[idx], dir: h.wind_direction_10m[idx], gust: h.wind_gusts_10m[idx] },
@@ -178,15 +178,15 @@ function processRawJson(json: any, siteAlt: number): Map<number, HourWindData> {
       ? Math.max(...realLevels.map((l) => l.alt))
       : siteAlt;
 
-    const spread = Math.max(1, t - dew);
-    const cloudBase = calcCloudBase(siteAlt, t, dew);
+    const spread = dew != null ? Math.max(0.5, t - dew) : 0.5;
+    const cloudBase = dew != null ? calcCloudBase(siteAlt, t, dew) : null;
 
     hourDataMap.set(targetHour, {
       hour: targetHour,
       temp: t,
       dew,
       cloud,
-      freeze: Math.round(freeze),
+      freeze: freeze != null ? Math.round(freeze) : null,
       cape,
       levels: realLevels,
       cloudBase,

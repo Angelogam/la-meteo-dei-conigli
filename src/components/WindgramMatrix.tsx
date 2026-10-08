@@ -144,7 +144,7 @@ export default function WindgramMatrix({
           const base = Math.max(altitude + 100, lcl);
           // Thermal top: same formula as ProfessionalWindgram for consistency
           // Uses real CAPE from API + spread-derived climb rate
-          const cape = h.cape ?? 0;
+          const cape = h.cape ?? null;
           const rateo = 0.6 + (spread * 0.08) + (h.cloudCover < 30 ? 0.3 : 0) + (cape > 200 ? Math.min(0.4, cape / 1000) : 0);
           const cappedRateo = Math.max(0.4, Math.min(2.5, rateo));
           const thermalDepth = Math.min(800, cappedRateo * 100 + cape * 0.1);
@@ -180,7 +180,7 @@ export default function WindgramMatrix({
             base,
             rateo,
             cloudBase: Math.min(lcl, 4000),
-            cloudCover: h.cloudCover ?? 30,
+            cloudCover: h.cloudCover ?? null,
             deltaT,
             climbRate,
           };

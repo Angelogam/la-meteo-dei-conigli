@@ -12,7 +12,8 @@ const HOURLY_PARAMS = [
   "cloud_cover", "cloud_cover_low", "cloud_cover_mid", "cloud_cover_high",
   "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",
   "uv_index", "shortwave_radiation", "direct_radiation", "sunshine_duration",
-  "temperature_80m", "temperature_120m",
+  "temperature_80m", "temperature_120m", "temperature_180m",
+  "boundary_layer_height",
   "wind_speed_80m", "wind_direction_80m",
   "wind_speed_120m", "wind_direction_120m",
   "wind_speed_180m", "wind_direction_180m",
@@ -78,6 +79,13 @@ export const weatherService = {
       const freezingLevel = safeNumOrNull(json.hourly.freezing_level_height?.[i]);
       const temp80m = safeNumOrNull(json.hourly.temperature_80m?.[i]);
       const temp120m = safeNumOrNull(json.hourly.temperature_120m?.[i]);
+      const temp180m = safeNumOrNull(json.hourly.temperature_180m?.[i]);
+      const boundaryLayerHeight = safeNumOrNull(json.hourly.boundary_layer_height?.[i]);
+      const rawIsDay = json.hourly.is_day?.[i];
+      const isDay = rawIsDay != null ? !!rawIsDay : (() => {
+        const hr = new Date(json.hourly.time[i]).getHours();
+        return hr >= 6 && hr <= 20;
+      })();
       const windSpeed80m = safeNumOrNull(json.hourly.wind_speed_80m?.[i]);
       const windDir80m = safeNumOrNull(json.hourly.wind_direction_80m?.[i]);
       const windSpeed120m = safeNumOrNull(json.hourly.wind_speed_120m?.[i]);
@@ -92,14 +100,14 @@ export const weatherService = {
         dewPoint: dew,
         pressure: pressure,
         surfacePressure: surfacePressure,
-        precipitation: safeNum(json.hourly.precipitation?.[i], 0),
-        rain: safeNum(json.hourly.rain?.[i], 0),
-        snowfall: safeNum(json.hourly.snowfall?.[i], 0),
-        weatherCode: safeNum(json.hourly.weather_code?.[i], 0),
-        cloudCover: safeNum(json.hourly.cloud_cover?.[i], 0),
-        cloudCoverLow: safeNum(json.hourly.cloud_cover_low?.[i], 0),
-        cloudCoverMid: safeNum(json.hourly.cloud_cover_mid?.[i], 0),
-        cloudCoverHigh: safeNum(json.hourly.cloud_cover_high?.[i], 0),
+        precipitation: safeNumOrNull(json.hourly.precipitation?.[i]),
+        rain: safeNumOrNull(json.hourly.rain?.[i]),
+        snowfall: safeNumOrNull(json.hourly.snowfall?.[i]),
+        weatherCode: safeNumOrNull(json.hourly.weather_code?.[i]),
+        cloudCover: safeNumOrNull(json.hourly.cloud_cover?.[i]),
+        cloudCoverLow: safeNumOrNull(json.hourly.cloud_cover_low?.[i]),
+        cloudCoverMid: safeNumOrNull(json.hourly.cloud_cover_mid?.[i]),
+        cloudCoverHigh: safeNumOrNull(json.hourly.cloud_cover_high?.[i]),
         windSpeed: safeNumOrNull(json.hourly.wind_speed_10m?.[i]),
         windDir: safeNumOrNull(json.hourly.wind_direction_10m?.[i]),
         windGusts: safeNumOrNull(json.hourly.wind_gusts_10m?.[i]),
@@ -109,15 +117,15 @@ export const weatherService = {
         liftedIndex: safeNumOrNull(json.hourly.lifted_index?.[i]),
         temp80m,
         temp120m,
-        shortwaveRadiation: safeNum(json.hourly.shortwave_radiation?.[i], 0),
-        directRadiation: safeNum(json.hourly.direct_radiation?.[i], 0),
+        shortwaveRadiation: safeNumOrNull(json.hourly.shortwave_radiation?.[i]),
+        directRadiation: safeNumOrNull(json.hourly.direct_radiation?.[i]),
         visibility: safeNumOrNull(json.hourly.visibility?.[i]),
         feelsLike: feelsLike,
         apparentTemp: feelsLike,
-        precipitationProbability: safeNum(json.hourly.precipitation_probability?.[i], 0),
-        isDay: true,
+        precipitationProbability: safeNumOrNull(json.hourly.precipitation_probability?.[i]),
+        isDay: isDay,
         freezingLevel: freezingLevel,
-        sunshineDuration: safeNum(json.hourly.sunshine_duration?.[i], 0),
+        sunshineDuration: safeNumOrNull(json.hourly.sunshine_duration?.[i]),
         windSpeed925: safeNumOrNull(json.hourly.wind_speed_925hPa?.[i]),
         windDir925: safeNumOrNull(json.hourly.wind_direction_925hPa?.[i]),
         windSpeed850: safeNumOrNull(json.hourly.wind_speed_850hPa?.[i]),
@@ -126,6 +134,8 @@ export const weatherService = {
         windDir700: safeNumOrNull(json.hourly.wind_direction_700hPa?.[i]),
         windSpeed180m,
         windDir180m,
+        temperature180m: temp180m,
+        boundaryLayerHeight: boundaryLayerHeight,
         windSpeed80m,
         windDir80m,
         windSpeed120m,
@@ -134,18 +144,18 @@ export const weatherService = {
         windDir600: safeNumOrNull(json.hourly.wind_direction_600hPa?.[i]),
         windSpeed500: safeNumOrNull(json.hourly.wind_speed_500hPa?.[i]),
         windDir500: safeNumOrNull(json.hourly.wind_direction_500hPa?.[i]),
-        vapourPressureDeficit: 0,
-        mixingRatio: 0,
-        virtualTemp: 0,
-        precipitationProba: safeNum(json.hourly.precipitation_probability?.[i], 0),
-        evapotranspiration: 0,
-        et0: 0,
-        soilTemp: 0,
-        soilMoisture: 0,
-        diffuseRadiation: 0,
-        directNormalIrradiance: 0,
-        terrestrialRadiation: 0,
-        radiation: safeNum(json.hourly.shortwave_radiation?.[i], 0),
+        vapourPressureDeficit: null,
+        mixingRatio: null,
+        virtualTemp: null,
+        precipitationProba: safeNumOrNull(json.hourly.precipitation_probability?.[i]),
+        evapotranspiration: null,
+        et0: null,
+        soilTemp: null,
+        soilMoisture: null,
+        diffuseRadiation: null,
+        directNormalIrradiance: null,
+        terrestrialRadiation: null,
+        radiation: safeNumOrNull(json.hourly.shortwave_radiation?.[i]),
       });
     }
 
@@ -172,6 +182,7 @@ export const weatherService = {
       cape: safeNumOrNull(c?.cape),
       cin: safeNumOrNull(c?.convective_inhibition),
       liftedIndex: safeNumOrNull(c?.lifted_index),
+      isDay: c.is_day != null ? !!c.is_day : null,
       pressure: safeNumOrNull(c?.pressure_msl),
       surfacePressure: safeNumOrNull(c?.surface_pressure),
       uvIndex: safeNumOrNull(c?.uv_index),

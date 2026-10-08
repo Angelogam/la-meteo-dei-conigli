@@ -78,15 +78,21 @@ export function valutaGiornataVolo(
 
   // ── Calcoli base ──
   const cloudBase = calcCloudBase(siteAlt, t, dew);
-  const avgCape = dayData.length > 0 ? dayData.reduce((s, h) => s + (h.cape ?? 0), 0) / dayData.length : 0;
-  const avgLi = dayData.length > 0 ? dayData.reduce((s, h) => s + (h.liftedIndex ?? 0), 0) / dayData.length : 0;
+  const validCape = dayData.length > 0 ? dayData.filter(h => h.cape != null).map(h => h.cape!) : [];
+  const validLi = dayData.length > 0 ? dayData.filter(h => h.liftedIndex != null).map(h => h.liftedIndex!) : [];
+  const avgCape = validCape.length > 0 ? validCape.reduce((s, h) => s + h, 0) / validCape.length : null;
+  const avgLi = validLi.length > 0 ? validLi.reduce((s, h) => s + h, 0) / validLi.length : null;
   const avgSpread = dayData.length > 0 ? dayData.reduce((s, h) => s + Math.max(0.5, (h.temperature ?? t) - (h.dewPoint ?? dew)), 0) / dayData.length : spread;
 
-  // Rateo termico stimato
-  const rateoTermico = Math.min(4.0, Math.max(0.3, avgSpread * 0.25 + avgCape * 0.001));
+  // Rateo termico stimato — ESTIMATED / EMPIRICO, NON misura reale
+  const rateoTermico = avgCape != null
+    ? Math.min(4.0, Math.max(0.3, avgSpread * 0.25 + avgCape * 0.001))
+    : Math.min(4.0, Math.max(0.3, avgSpread * 0.25));
 
-  // Top termico
-  const thermalTop = Math.round(Math.min(4000, cloudBase + Math.min(800, rateoTermico * 100 + avgCape * 0.1)));
+  // Top termico — STIMA empirica, NON dato osservato
+  const thermalTop = avgCape != null
+    ? Math.round(Math.min(4000, cloudBase + Math.min(800, rateoTermico * 100 + avgCape * 0.1)))
+    : Math.round(cloudBase + 400);
 
   // Wind layers
   const midData = dayData.slice(8, 16);
@@ -107,7 +113,7 @@ export function valutaGiornataVolo(
     const ht = h.temperature ?? t;
     const hd = h.dewPoint ?? dew;
     const hSpread = Math.max(0.5, ht - hd);
-    return hSpread > 4 && (h.cape ?? 0) < 600 && (h.precipitationProba ?? 0) < 30 && (h.cloudCover ?? 0) < 85;
+    return hSpread > 4 && (h.cape ?? null) < 600 && (h.precipitationProba ?? null) < 30 && (h.cloudCover ?? null) < 85;
   }).length;
 
   const windowStart = dayData.findIndex(h => (h.temperature ?? t) - (h.dewPoint ?? dew) > 4);
@@ -118,10 +124,12 @@ export function valutaGiornataVolo(
     : "—";
 
   // ── Rischio temporali ──
-  const thunderProb = avgCape > 1200 && avgLi < -4 ? 80
-    : avgCape > 900 && avgLi < -3 ? 60
-    : avgCape > 600 && avgLi < -2 ? 40
-    : avgCape > 400 ? 20
+  const thunderProb = avgCape != null && avgLi != null
+    ? (avgCape > 1200 && avgLi < -4 ? 80
+      : avgCape > 900 && avgLi < -3 ? 60
+      : avgCape > 600 && avgLi < -2 ? 40
+      : avgCape > 400 ? 20
+      : 5)
     : 5;
 
   // ── Rischio rotore ──

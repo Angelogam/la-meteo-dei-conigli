@@ -38,12 +38,12 @@ function getWeatherEmoji(code: number): string {
 import { calcCloudBase } from "@/utils/calcCloudBase";
 
 function calcThermal(dayData: HourData[], altitude: number) {
-  const cloudBases = dayData.map(h =>
-    calcCloudBase(altitude, h.temperature, h.dewPoint)
-  );
+  const cloudBases = dayData
+    .filter(h => h.temperature != null && h.dewPoint != null)
+    .map(h => calcCloudBase(altitude, h.temperature!, h.dewPoint!));
   const avgBase = cloudBases.length > 0
     ? Math.round(cloudBases.reduce((s, c) => s + c, 0) / cloudBases.length)
-    : 0;
+    : null;
   return { cloudBase: avgBase };
 }
 

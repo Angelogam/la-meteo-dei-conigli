@@ -63,8 +63,8 @@ export default function VoloDecisionCard({ dayData, selectedHour, altitude, site
   const spreadVento = rafficheMedia - ventoMedia;
 
   const pioggiaProb = dayData.slice(selectedHour, Math.min(selectedHour + 6, dayData.length)).filter((h: any) => h.precipitation > 0.3).length / Math.min(6, dayData.length - selectedHour) * 100;
-  const liftedIndex = current.liftedIndex || 0;
-  const cape = current.cape || 0;
+  const liftedIndex = current.liftedIndex ?? null;
+  const cape = current.cape ?? null;
   const baseNuvole = current.dewPoint != null && current.temperature != null
     ? Math.round((current.temperature - current.dewPoint) * 125)
     : 0;

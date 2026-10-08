@@ -301,9 +301,9 @@ export function useWeatherData() {
     volabilita,
     activeModel: "Open-Meteo" as const,
     currentCape: currentData ? {
-      cape: currentData.cape ?? null,
-      liftedIndex: currentData.liftedIndex ?? null,
-      cin: currentData.cin ?? null,
+      cape: currentData.cape,
+      liftedIndex: currentData.liftedIndex,
+      cin: currentData.cin,
     } : null,
     rawApiResponse,
   };

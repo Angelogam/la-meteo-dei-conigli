@@ -38,16 +38,22 @@ export default function AnalisiTab({ currentData, dayData, site }: AnalisiTabPro
     });
     if (oreGiorno.length < 3) return null;
 
-    const tempMax = Math.max(...oreGiorno.map((h) => h.temperature));
-    const tempMedia = oreGiorno.reduce((s, h) => s + h.temperature, 0) / oreGiorno.length;
-    const windMedia = oreGiorno.reduce((s, h) => s + h.windSpeed, 0) / oreGiorno.length;
-    const windMax = Math.max(...oreGiorno.map((h) => h.windSpeed));
+    const withTemp = oreGiorno.filter(h => h.temperature != null);
+    const tempMax = withTemp.length > 0 ? Math.max(...withTemp.map((h) => h.temperature!)) : null;
+    const tempMedia = withTemp.length > 0 ? withTemp.reduce((s, h) => s + h.temperature!, 0) / withTemp.length : null;
+    const withWind = oreGiorno.filter(h => h.windSpeed != null);
+    const windMedia = withWind.length > 0 ? withWind.reduce((s, h) => s + h.windSpeed!, 0) / withWind.length : null;
+    const windMax = withWind.length > 0 ? Math.max(...withWind.map((h) => h.windSpeed!)) : null;
     const windGustsMax = Math.max(...oreGiorno.map((h) => h.windGusts || 0));
-    const cloudMedia = oreGiorno.reduce((s, h) => s + h.cloudCover, 0) / oreGiorno.length;
-    const humidityMedia = oreGiorno.reduce((s, h) => s + h.humidity, 0) / oreGiorno.length;
-    const precipTot = oreGiorno.reduce((s, h) => s + (h.precipitation || 0), 0);
-    const pressureMed = oreGiorno.reduce((s, h) => s + h.pressure, 0) / oreGiorno.length;
-    const dewMedia = oreGiorno.reduce((s, h) => s + h.dewPoint, 0) / oreGiorno.length;
+    const withCloud = oreGiorno.filter(h => h.cloudCover != null);
+    const cloudMedia = withCloud.length > 0 ? withCloud.reduce((s, h) => s + h.cloudCover!, 0) / withCloud.length : null;
+    const withHum = oreGiorno.filter(h => h.humidity != null);
+    const humidityMedia = withHum.length > 0 ? withHum.reduce((s, h) => s + h.humidity!, 0) / withHum.length : null;
+    const precipTot = oreGiorno.reduce((s, h) => s + (h.precipitation ?? 0), 0);
+    const withPressure = oreGiorno.filter(h => h.pressure != null);
+    const pressureMed = withPressure.length > 0 ? withPressure.reduce((s, h) => s + h.pressure!, 0) / withPressure.length : null;
+    const withDew = oreGiorno.filter(h => h.dewPoint != null);
+    const dewMedia = withDew.length > 0 ? withDew.reduce((s, h) => s + h.dewPoint!, 0) / withDew.length : null;
     const uvMedia = oreGiorno.reduce((s, h) => s + (h.uvIndex || 0), 0) / oreGiorno.length;
 
     const termichePerOra = oreGiorno.map((h) => {
@@ -57,8 +63,8 @@ export default function AnalisiTab({ currentData, dayData, site }: AnalisiTabPro
     const rateoMedio = termichePerOra.reduce((s, t) => s + t.rateo, 0) / termichePerOra.length;
     const rateoMax = Math.max(...termichePerOra.map((t) => t.rateo));
     const oreAttive = termichePerOra.filter((t) => t.rateo >= 0.3).length;
-    const mediaSpread = tempMedia - dewMedia;
-    const baseLCL = calcCloudBase(1400, tempMedia, dewMedia);
+    const mediaSpread = (tempMedia != null && dewMedia != null) ? tempMedia - dewMedia : null;
+    const baseLCL = (tempMedia != null && dewMedia != null) ? calcCloudBase(1400, tempMedia, dewMedia) : null;
 
     const dirs = oreGiorno.map((h) => h.windDir).filter((d) => d != null);
     const dirCount: Record<number, number> = {};
@@ -72,7 +78,7 @@ export default function AnalisiTab({ currentData, dayData, site }: AnalisiTabPro
     const dirDomNum = dirDom ? parseInt(dirDom) : (currentData?.windDir ?? 0);
     const dirName = getWindDirName(dirDomNum);
 
-    const zeroTermico = Math.max(0, Math.round(alt + (tempMedia / 0.0098) + 200));
+    const zeroTermico = tempMedia != null ? Math.max(0, Math.round(alt + (tempMedia / 0.0098) + 200)) : null;
     const tempMin = Math.min(...oreGiorno.map((h) => h.temperature));
     const deltaTermico = Math.round((tempMax - tempMin) * 10) / 10;
 

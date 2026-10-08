@@ -24,6 +24,9 @@ export function calcolaTermiche(h: HourData | undefined | null, altitude: number
   const temp = h.temperature;
   // Usa dew point REALE dall'API — nessun fallback inventato
   const dewPoint = (h.dewPoint != null && h.dewPoint > -10) ? h.dewPoint : null;
+  if (dewPoint == null) {
+    return { rateo: 0.5, base: altitude + 200, top: altitude + 400, forza: 0.5, attendibilita: 30 };
+  }
   const windSpeed = h.windSpeed ?? 5;
   const cloudCover = h.cloudCover ?? 30;
   const humidity = h.humidity ?? 50;

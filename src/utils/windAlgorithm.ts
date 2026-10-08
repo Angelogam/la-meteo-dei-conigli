@@ -4,8 +4,8 @@ import { fetchHourly } from "@/lib/openMeteoClient";
 
 export interface WindLevel {
   quota: number;
-  vento: number;
-  direzione: string;
+  vento: number | null;   // null quando dato non disponibile
+  direzione: string | null; // null quando dato non disponibile
 }
 
 export interface WindAlgorithmResult {
@@ -86,7 +86,7 @@ export function calcolaProfiloVento(
 ): WindAlgorithmResult {
   if (livelliReali.length === 0) {
     return {
-      profilo: generaQuoteTarget(quotaDecollo).map(q => ({ quota: q, vento: 0, direzione: "N" })),
+      profilo: generaQuoteTarget(quotaDecollo).map(q => ({ quota: q, vento: null, direzione: null })),
       warning: "Dati vento non disponibili.",
       datiReali: [],
       gradienteMedio: 0,
@@ -104,7 +104,7 @@ export function calcolaProfiloVento(
   const dirsValide = sorted.map(l => l.dir).filter(d => d != null && !isNaN(d));
   const dirMediaDeg = dirsValide.length > 0 ? mediaDir(dirsValide) : 0;
   const direzioneMedia = degTo16Dir(dirMediaDeg);
-  const speedBase = sorted[0]?.speed ?? 10;
+  const speedBase = sorted[0]?.speed ?? null;
   const quoteTarget = generaQuoteTarget(quotaDecollo);
   const profilo: WindLevel[] = [];
   const limiti: { min: number; max: number }[] = quoteTarget.map(q => {
@@ -117,7 +117,11 @@ export function calcolaProfiloVento(
   let warning: string | null = null;
   for (let i = 0; i < quoteTarget.length; i++) {
     const quota = quoteTarget[i];
-    const dist = Math.max(1, quota - 10);
+    if (speedBase === null) {
+      profilo.push({ quota, vento: null, direzione: null });
+      continue;
+    }
+    const dist = Math.max(1, quota - quotaDecollo);
     let speed = speedBase + gradienteMedio * dist;
     speed = Math.max(limiti[i].min, Math.min(limiti[i].max, speed));
     const vento = Math.round(speed);

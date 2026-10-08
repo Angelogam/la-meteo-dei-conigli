@@ -79,7 +79,7 @@ export function extractRealData(hourly: MeteoHourly): RealData {
     freezingLevel: hourly.freezingLevel,
     cloudCover: hourly.cloudCover,
     shortwaveRadiation: hourly.shortwaveRadiation,
-    boundaryLayerHeight: null, // non ancora richiesta dall'API
+    boundaryLayerHeight: hourly.boundaryLayerHeight, // MODEL_FORECAST — disponibile su GFS/ICON, non sempre su AROME
     pressureMsl: hourly.pressure,
     surfacePressure: hourly.surfacePressure,
   };
@@ -149,8 +149,8 @@ export function computeDerivedSurface(real: RealData): DerivedSurfaceData {
   };
 }
 
-// Nota: computeDerivedSurface usa temp80m e temperature180m che non esistono in RealData.
-// Correggiamo sotto.
+// computeDerivedSurface usa solo dati di superficie (temperatura2m, dewPoint2m).
+// Le temperature in quota (temp80m, temp120m, temperature180m) sono usate in computeHourlyDerived.
 
 /**
  * Correzione: calcola la base cumuli dato altitudine sito.
@@ -276,16 +276,19 @@ export function classifyLapseRate(deltaT: number): string {
 // ─── Funzione principale: computa tutti i derivati per un'ora ───────────────
 
 export interface HourlyDerivedData {
-  // Real (from API)
+  // MODEL_FORECAST — dati forniti dal modello numerico Open-Meteo
   real: RealData;
 
-  // Derived
+  // DERIVED — calcolati da dati MODEL_FORECAST (LCL, lapse rate, shear)
   spread: number | null;
-  estimatedCloudBase: number | null;
+  cloudBase: number | null; // DERIVED — LCL calcolato da T e Td
   realLapseRate: number | null;
   lapseRateClassification: string | null;
-  estimatedThermalTop: number | null; // ← denominato esplicitamente "stimato", non "reale"
-  cloudBase: number | null;
+
+  // ESTIMATED — approssimazioni empiriche etichettate come tali
+  estimatedThermalTop: number | null; // ESTIMATED / EMPIRICO
+  estimatedThermalActivity: number | null; // ESTIMATED / EURISTICO (rateo in m/s)
+  estimatedCloudBase: number | null; // alias di cloudBase, mantenuto per compatibilità
 
   // Vertical wind
   verticalProfile: VerticalWindProfile;
@@ -310,11 +313,12 @@ export function computeHourlyDerived(hourly: MeteoHourly, siteAltitude: number):
   const cloudBase = computeCloudBase(siteAltitude, spread);
 
   // Lapse rate reale
+  // Temperature reali ai diversi livelli (MODEL_FORECAST da Open-Meteo)
   const tempLevels: { alt: number; temp: number | null }[] = [
     { alt: 2, temp: real.temperature2m },
     { alt: 80, temp: hourly.temp80m ?? null },
     { alt: 120, temp: hourly.temp120m ?? null },
-    // temperature_180m non è presente in MeteoHourly (non richiesta nell'API attuale)
+    { alt: 180, temp: hourly.temperature180m ?? null },
   ];
 
   const validTemps = tempLevels.filter((l) => l.temp != null);
@@ -330,17 +334,25 @@ export function computeHourlyDerived(hourly: MeteoHourly, siteAltitude: number):
 
   const lapseRateClass = realLapseRate != null ? classifyLapseRate(realLapseRate) : null;
 
-  // Estimated thermal top — STIMA, non dato osservato
-  // Formula: cloudBase + contributo da CAPE + spread
-  // Etichettata esplicitamente come "estimated" per distinguerla da boundaryLayerHeight
+  // ESTIMATED thermal top — formula empirica, NON dato osservato
   let estimatedThermalTop: number | null = null;
   if (cloudBase != null && real.cape != null) {
     const capeFactor = Math.min(800, real.cape * 0.1);
     const spreadFactor = spread * 50;
     estimatedThermalTop = Math.round(Math.min(5000, cloudBase + capeFactor + spreadFactor));
   } else if (cloudBase != null) {
-    // Senza CAPE, stima minima
     estimatedThermalTop = Math.round(cloudBase + 400);
+  }
+
+  // ESTIMATED thermal activity index — euristiche, NON rateo termico reale misurato
+  // Formula: spread × fattore + CAPE × fattore, espressa in m/s approssimati
+  let estimatedThermalActivity: number | null = null;
+  if (real.cape != null) {
+    estimatedThermalActivity = Math.round(
+      Math.min(4.0, Math.max(0.1, spread * 0.22 + Math.min(1.5, real.cape / 800))) * 10
+    ) / 10;
+  } else if (spread != null) {
+    estimatedThermalActivity = Math.round(Math.max(0.1, spread * 0.22) * 10) / 10;
   }
 
   // Vertical wind profile
@@ -355,11 +367,12 @@ export function computeHourlyDerived(hourly: MeteoHourly, siteAltitude: number):
   return {
     real,
     spread,
-    estimatedCloudBase: cloudBase,
+    cloudBase,
     realLapseRate,
     lapseRateClassification: lapseRateClass,
     estimatedThermalTop,
-    cloudBase,
+    estimatedThermalActivity,
+    estimatedCloudBase: cloudBase, // mantenuto per compatibilità con codice esistente
     verticalProfile,
     stability,
   };

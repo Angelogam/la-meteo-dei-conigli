@@ -20,7 +20,7 @@ export default function SezioneMeteo() {
   } = useWeatherData();
   
   const { currentCape, activeModel } = useMemo(() => ({
-    currentCape: currentData ? { cape: currentData.cape ?? 0, liftedIndex: currentData.liftedIndex ?? 0, cin: currentData.cin ?? 0 } : null,
+    currentCape: currentData ? { cape: currentData.cape, liftedIndex: currentData.liftedIndex, cin: currentData.cin } : null,
     activeModel: "Open-Meteo" as const,
   }), [currentData]);
 
