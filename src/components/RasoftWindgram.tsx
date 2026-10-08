@@ -81,7 +81,7 @@ interface HourRow {
   hour: number;
   idx: number;
   time: string;
-  wind: { alt: number; speed: number; dir: number }[];
+  wind: { alt: number; speed: number | null; dir: number | null }[];
   thermal: number;
   sunPct: number;
   cloudPct: number;
@@ -89,7 +89,7 @@ interface HourRow {
   cloudMid: number;
   cloudHigh: number;
   cape: number;
-  freezing: number;
+  freezing: number | null;
   temp2m: number;
   dew2m: number;
   cloudBase: number;
@@ -438,13 +438,13 @@ export default function RasoftWindgram({
         idx,
         time: data.time[idx],
         wind: [
-          { alt: altitude, speed: data.wind_speed_10m[idx] ?? 0, dir: data.wind_direction_10m[idx] ?? 0 },
-          { alt: altitude + 80, speed: data.wind_speed_80m[idx] ?? 0, dir: data.wind_direction_80m[idx] ?? 0 },
-          { alt: altitude + 120, speed: data.wind_speed_120m[idx] ?? 0, dir: data.wind_direction_120m[idx] ?? 0 },
-          { alt: 1450, speed: data.wind_speed_850hPa[idx] ?? 0, dir: data.wind_direction_850hPa[idx] ?? 0 },
-          { alt: 3100, speed: data.wind_speed_700hPa[idx] ?? 0, dir: data.wind_direction_700hPa[idx] ?? 0 },
-          { alt: 4400, speed: data.wind_speed_600hPa[idx] ?? 0, dir: data.wind_direction_600hPa[idx] ?? 0 },
-          { alt: 5800, speed: data.wind_speed_500hPa[idx] ?? 0, dir: data.wind_direction_500hPa[idx] ?? 0 },
+          { alt: altitude, speed: data.wind_speed_10m[idx] ?? null, dir: data.wind_direction_10m[idx] ?? null },
+          { alt: altitude + 80, speed: data.wind_speed_80m[idx] ?? null, dir: data.wind_direction_80m[idx] ?? null },
+          { alt: altitude + 120, speed: data.wind_speed_120m[idx] ?? null, dir: data.wind_direction_120m[idx] ?? null },
+          { alt: 1450, speed: data.wind_speed_850hPa[idx] ?? null, dir: data.wind_direction_850hPa[idx] ?? null },
+          { alt: 3100, speed: data.wind_speed_700hPa[idx] ?? null, dir: data.wind_direction_700hPa[idx] ?? null },
+          { alt: 4400, speed: data.wind_speed_600hPa[idx] ?? null, dir: data.wind_direction_600hPa[idx] ?? null },
+          { alt: 5800, speed: data.wind_speed_500hPa[idx] ?? null, dir: data.wind_direction_500hPa[idx] ?? null },
         ],
         thermal,
         sunPct,
@@ -453,7 +453,7 @@ export default function RasoftWindgram({
         cloudMid: data.cloud_cover_mid[idx] ?? 0,
         cloudHigh: data.cloud_cover_high[idx] ?? 0,
         cape,
-        freezing: data.freezing_level_height[idx] ?? 4000,
+        freezing: data.freezing_level_height[idx] ?? null,
         temp2m: t,
         dew2m: td,
         cloudBase,
@@ -493,10 +493,12 @@ export default function RasoftWindgram({
   // Zero termico
   const freezingPoints = useMemo(
     () =>
-      rows.map((r) => ({
-        x: xToPx(r.hour),
-        y: yToPx(Math.min(Y_MAX, r.freezing)),
-      })),
+      rows
+        .filter((r) => r.freezing != null && Number.isFinite(r.freezing))
+        .map((r) => ({
+          x: xToPx(r.hour),
+          y: yToPx(Math.min(Y_MAX, r.freezing as number)),
+        })),
     [rows],
   );
 
@@ -773,13 +775,15 @@ export default function RasoftWindgram({
                       {rows.map((r) => (
                         <g key={`wb-${r.hour}`}>
                           {r.wind.map((w, i) => (
-                            <WindArrow
-                              key={`wb-${r.hour}-${i}`}
-                              cx={xToPx(r.hour)}
-                              cy={yToPx(w.alt)}
-                              speed={w.speed}
-                              direction={w.dir}
-                            />
+                            w.speed != null && w.dir != null && Number.isFinite(w.speed) && Number.isFinite(w.dir) ? (
+                              <WindArrow
+                                key={`wb-${r.hour}-${i}`}
+                                cx={xToPx(r.hour)}
+                                cy={yToPx(w.alt)}
+                                speed={w.speed}
+                                direction={w.dir}
+                              />
+                            ) : null
                           ))}
                         </g>
                       ))}
