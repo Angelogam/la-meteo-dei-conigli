@@ -237,22 +237,32 @@ export function useMultiHourWindProfile({
     // Se i dati grezzi sono già disponibili (condivisi da useWeatherData), usiamo quelli
     if (rawData && rawData.hourly && rawData.hourly.time) {
       const result = processRawJson(rawData, siteAlt, selectedDay);
-      if (mountedRef.current) {
-        setData(result);
-        setLoading(false);
+      const hasUsableWind = Array.from(result.values()).some((hour) => hour.levels.length > 0);
+      if (hasUsableWind) {
+        if (mountedRef.current) {
+          setData(result);
+          setLoading(false);
+        }
+        return;
       }
-      return;
+      // Se il payload condiviso non contiene livelli vento utilizzabili, prova i dati orari normalizzati.
+      // Non inventiamo frecce: usiamo soltanto velocità/direzioni presenti nei dati di fallback.
     }
 
     // Fallback: usa i dati orari già disponibili (con matching basato sulla data completa)
     if (fallbackData && fallbackData.length > 0) {
       const result = buildFromFallback(fallbackData, siteAlt, selectedDay);
-      if (mountedRef.current) {
-        setData(result);
-        setLoading(false);
+      const hasUsableWind = Array.from(result.values()).some((hour) => hour.levels.length > 0);
+      if (hasUsableWind || !rawData) {
+        if (mountedRef.current) {
+          setData(result);
+          setLoading(false);
+        }
+        return;
       }
-      return;
     }
+
+    // Il profilo non è disponibile: lascia le celle vuote, senza simulare il vento.
 
     // Altrimenti fetchiamo (ultima spiaggia)
     (async () => {
