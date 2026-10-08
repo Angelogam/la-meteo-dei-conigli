@@ -19,7 +19,7 @@ export type MeteoDecollo = {
   stato: string;
   baseNubi: string;
   termiche: string;
-  indice: number;
+  indice: number | null;
   indiceLabel: string;
   fonte: string;
 };
@@ -159,8 +159,8 @@ function termicheAggressive(tMax: number | null, tMin: number | null, cloudDaily
 
 /** Indice di volabilità: stima euristica, NON misura scientifica.
  *  Rinominato in indiceAffidabilitaStima per chiarezza. */
-function indiceAffidabilitaStima(wind: number | null, rain: number | null, cloud: number | null, baseNubi: string, termiche: string): number {
-  if (wind === null && rain === null && cloud === null) return 10;
+function indiceAffidabilitaStima(wind: number | null, rain: number | null, cloud: number | null, baseNubi: string, termiche: string): number | null {
+  if (wind === null && rain === null && cloud === null) return null;
   let i = 1;
   if ((rain ?? 0) > 0.1) i += 5;
   if ((rain ?? 0) > 2) i += 3;
@@ -182,9 +182,9 @@ function labelIndice(i: number): string {
 }
 
 function safe(v: number | null): string {
-  if (v === null) return "--";
+  if (v === null) return "N/D";
   const n = parseFloat(String(v));
-  return isNaN(n) ? "--" : n.toFixed(1);
+  return isNaN(n) ? "N/D" : n.toFixed(1);
 }
 
 export async function getMeteoDecolloAggressivo(d: Decollo): Promise<MeteoDecollo> {
@@ -244,14 +244,14 @@ export async function getMeteoDecolloAggressivo(d: Decollo): Promise<MeteoDecoll
     om?.rainDaily ?? null
   );
   const indice = indiceAffidabilitaStima(windNum, rainNum, cloudNum, baseNubi, termiche);
-  const indiceLabel = labelIndice(indice);
+  const indiceLabel = indice !== null ? labelIndice(indice) : "N/D";
 
   return {
     temp: safe(tempNum),
     rain: safe(rainNum),
     cloud: safe(cloudNum),
     wind: safe(windNum),
-    dir: dirNum !== null ? safe(dirNum) : "--",
+    dir: dirNum !== null ? safe(dirNum) : "N/D",
     stato,
     baseNubi,
     termiche,
@@ -274,9 +274,9 @@ export async function getAllMeteoDecolliAggressivo(): Promise<Map<string, MeteoD
       results.set(d.name, weather);
     } catch {
       results.set(d.name, {
-        temp: "--", rain: "--", cloud: "--", wind: "--",
-        dir: "--", stato: "Errore", baseNubi: "--", termiche: "--",
-        indice: 10, indiceLabel: "Sconsigliato", fonte: "Errore"
+        temp: "N/D", rain: "N/D", cloud: "N/D", wind: "N/D",
+        dir: "N/D", stato: "Errore", baseNubi: "N/D", termiche: "N/D",
+        indice: null, indiceLabel: "N/D", fonte: "Errore"
       });
     }
     await new Promise(r => setTimeout(r, 200));

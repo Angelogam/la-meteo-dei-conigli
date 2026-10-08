@@ -49,28 +49,30 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
           const aggressive = item.aggressiveWeather;
           const hasAggressive = aggressive != null;
 
-          // Usa dati aggressivi se disponibili, altrimenti fallback
+          // Usa dati aggressivi se disponibili, altrimenti mostra dati non disponibili
           const stato = hasAggressive ? aggressive.stato.toLowerCase() : "offline";
-          const temp = hasAggressive ? aggressive.temp : "--";
-          const rain = hasAggressive ? aggressive.rain : "--";
-          const cloud = hasAggressive ? aggressive.cloud : "--";
-          const wind = hasAggressive ? aggressive.wind : "--";
-          const baseNubi = hasAggressive ? aggressive.baseNubi : "--";
-          const termiche = hasAggressive ? aggressive.termiche : "--";
-          const indice = hasAggressive ? aggressive.indice : 10;
-          const indiceLabel = hasAggressive ? aggressive.indiceLabel : "Sconsigliato";
+          const temp = hasAggressive ? aggressive.temp : "N/D";
+          const rain = hasAggressive ? aggressive.rain : "N/D";
+          const cloud = hasAggressive ? aggressive.cloud : "N/D";
+          const wind = hasAggressive ? aggressive.wind : "N/D";
+          const baseNubi = hasAggressive ? aggressive.baseNubi : "N/D";
+          const termiche = hasAggressive ? aggressive.termiche : "N/D";
+          const indice = hasAggressive ? aggressive.indice : null;
+          const indiceLabel = hasAggressive ? aggressive.indiceLabel : "N/D";
 
           const dirLabel = hasAggressive ? getCardinalDir(parseFloat(aggressive.wind)) : "N/D";
           const dirArrow = hasAggressive ? getWindArrow(parseFloat(aggressive.wind)) : "→";
 
           // Colore indice
-          const indiceColor = indice <= 3 ? "text-emerald-400" : 
-                              indice <= 5 ? "text-lime-400" : 
-                              indice <= 7 ? "text-amber-400" : 
+          const indiceColor = indice === null ? "text-slate-400" :
+                              indice <= 3 ? "text-emerald-400" :
+                              indice <= 5 ? "text-lime-400" :
+                              indice <= 7 ? "text-amber-400" :
                               indice <= 8 ? "text-orange-400" : "text-red-400";
-          const indiceBg = indice <= 3 ? "bg-emerald-950/60 border-emerald-500/40" : 
-                           indice <= 5 ? "bg-lime-950/60 border-lime-500/40" : 
-                           indice <= 7 ? "bg-amber-950/60 border-amber-500/40" : 
+          const indiceBg = indice === null ? "bg-slate-800/60 border-slate-600/40" :
+                           indice <= 3 ? "bg-emerald-950/60 border-emerald-500/40" :
+                           indice <= 5 ? "bg-lime-950/60 border-lime-500/40" :
+                           indice <= 7 ? "bg-amber-950/60 border-amber-500/40" :
                            indice <= 8 ? "bg-orange-950/60 border-orange-500/40" : "bg-red-950/60 border-red-500/40";
 
           return (
@@ -100,8 +102,14 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
 
                 {/* Badge Indice Volabilità Aggressivo */}
                 <div className={`flex items-center gap-1 px-2 py-1 rounded-full border text-[11px] font-black ${indiceBg} ${indiceColor}`}>
-                  <span>{indice}</span>
-                  <span className="opacity-70">/10</span>
+                  {indice !== null ? (
+                    <>
+                      <span>{indice}</span>
+                      <span className="opacity-70">/10</span>
+                    </>
+                  ) : (
+                    <span>N/D</span>
+                  )}
                 </div>
               </div>
 

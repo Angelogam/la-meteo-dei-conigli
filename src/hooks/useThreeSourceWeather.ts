@@ -13,15 +13,15 @@ const LOAD_TIMEOUT = 30000; // 30 secondi max - aumentato per dare tempo a tutte
 // Fallback offline: mostra N/D invece di dati inventati
 function offlineFallback(name: string): MeteoDecollo {
   return {
-    temp: "--",
-    rain: "--",
-    cloud: "--",
-    wind: "--",
-    dir: "--",
+    temp: "N/D",
+    rain: "N/D",
+    cloud: "N/D",
+    wind: "N/D",
+    dir: "N/D",
     stato: "Offline",
-    baseNubi: "--",
+    baseNubi: "N/D",
     termiche: "N/D",
-    indice: 0,
+    indice: null,
     indiceLabel: "N/D",
     fonte: `Nessun dato disponibile (${name})`
   };
