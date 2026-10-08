@@ -278,12 +278,12 @@ export default function WindgramMatrix({
   const dataSourceBadge = hasRealAltitudeData ? (
     <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold flex items-center gap-1">
       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-      Vento modello · quote 1000-3000m
+      Vento previsto · profilo verticale
     </span>
   ) : hasRealPressureData ? (
     <span className="px-2 py-0.5 rounded bg-sky-100 text-sky-700 text-[10px] font-bold flex items-center gap-1">
       <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
-      Vento modello · livelli hPa
+      Vento previsto · livelli di pressione
     </span>
   ) : (
     <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px] font-bold flex items-center gap-1">
@@ -302,7 +302,7 @@ export default function WindgramMatrix({
 
   if (profileLoading) {
     return (
-      <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
+      <div className="w-full max-w-full mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
         <div className="w-full bg-white text-slate-900 border border-slate-200/80 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
           <div className="p-4 sm:p-5 pb-3 flex items-center justify-center gap-3">
             <div className="w-6 h-6 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" />
@@ -315,7 +315,7 @@ export default function WindgramMatrix({
 
   if (profileError) {
     return (
-      <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
+      <div className="w-full max-w-full mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
         <div className="w-full bg-white text-slate-900 border border-red-500/40 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
           <div className="p-4 sm:p-5 pb-3 text-center text-red-500">
             <p className="font-bold">Errore caricamento windgram</p>
@@ -327,7 +327,7 @@ export default function WindgramMatrix({
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-1.5 sm:p-2 rounded-2xl">
+    <div className="w-full max-w-full mx-auto bg-slate-900/60 p-1.5 sm:p-2 rounded-2xl">
       <div className="w-full bg-white text-slate-900 border border-slate-200/80 rounded-2xl shadow-2xl overflow-hidden font-sans select-none">
         <div className="p-2 sm:p-3 pb-2">
             <div className="flex items-center justify-between gap-2 mb-2">
@@ -354,16 +354,7 @@ export default function WindgramMatrix({
             </div>
 
           <div className="overflow-x-auto border-t border-b border-slate-200 bg-white">
-            {/* Debug row */}
-            <div className="px-2 py-1 text-[9px] text-slate-400 bg-slate-50 flex items-center gap-3">
-              <span>Map: {windProfileMap.size}h</span>
-              <span>Rows: {activeAltitudes.length}</span>
-              <span>Hours: {DISPLAY_HOURS.length}</span>
-              <span className={windProfileMap.size > 0 ? "text-emerald-500" : "text-amber-500"}>
-                {windProfileMap.size > 0 ? "✓ vento pronto" : "⏳ attesa dati..."}
-              </span>
-            </div>
-            <table className="w-full text-center border-collapse text-xs">
+            <table className="w-full min-w-[860px] text-center border-collapse text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-700 bg-slate-200 font-bold">
                   <th className="py-1 px-1 text-center w-10 sticky left-0 z-50 bg-slate-300 border-r-2 border-slate-500 text-slate-900 text-[10px] shadow-[2px_0_5px_rgba(0,0,0,0.2)]">
@@ -373,7 +364,7 @@ export default function WindgramMatrix({
                     <th
                       key={`th-${hr}`}
                       onClick={() => onHourSelect?.(hr)}
-                      className={`py-1 px-1 font-bold cursor-pointer transition-colors border-r border-slate-200/60 ${
+                      className={`py-2 px-1.5 font-bold cursor-pointer transition-colors border-r border-slate-200/60 ${
                         hr === selectedHour
                           ? "bg-sky-100 text-sky-900 ring-1 ring-sky-400"
                           : "hover:bg-slate-200/60 text-slate-800"
@@ -435,7 +426,7 @@ export default function WindgramMatrix({
                                 <>
                                   <WindArrowIcon deg={w.dir} color={wColor} />
                                   <span
-                                    className="font-bold text-[10px] tabular-nums tracking-tighter relative z-10 leading-none"
+                                    className="font-bold text-xs tabular-nums relative z-10 leading-none"
                                     style={{ color: wColor.text }}
                                     title={w ? `Open-Meteo: ${w.speed} km/h da ${w.dir}°` : "N/D"}
                                   >
