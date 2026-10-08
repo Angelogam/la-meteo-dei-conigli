@@ -55,6 +55,7 @@ export default function PopupTermiche({ siteName, siteAltitude, hourlyData, onCl
     })
     .map(h => {
       const t = calcolaTermiche(h, siteAltitude);
+      if (!t) return null;
       return {
         hour: h.time.getHours(),
         termiche: {
@@ -67,7 +68,8 @@ export default function PopupTermiche({ siteName, siteAltitude, hourlyData, onCl
           gradienteReale: t.rateo / 4,
         },
       };
-    });
+    })
+    .filter((r): r is NonNullable<typeof r> => r != null);
 
   if (!hourlyData || hourlyData.length === 0) {
     return null;

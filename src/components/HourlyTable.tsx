@@ -154,6 +154,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
       const h = dayData.find(d => d.time.getHours() === ora);
       if (!h) return null;
       const t = calcolaTermiche(h, altitude);
+      if (!t) return null;
       const v = getVoloStatus(h);
       const now = new Date();
       const oraCorrente = now.getHours();

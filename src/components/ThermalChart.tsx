@@ -89,6 +89,16 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude, s
       }
 
       const termiche = calcolaTermiche(weatherData, siteAltitude);
+      if (termiche == null) {
+        return {
+          hour: localHour,
+          value: 0,
+          rateo: 0,
+          label: "N/D",
+          colore: "bg-slate-700/40",
+          top: 0, base: 0,
+        };
+      }
       const label = getLabelFromRateo(termiche.rateo);
 
       return {

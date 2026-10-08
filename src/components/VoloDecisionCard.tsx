@@ -57,6 +57,7 @@ export default function VoloDecisionCard({ dayData, selectedHour, altitude, site
   // ── 计算 ──────────────────────────────────────────────────────────────
   const current = dayData[selectedHour] || dayData[0];
   const currentThermal = calcolaTermiche(current as any, altitude);
+  const thermalRateo = currentThermal?.rateo ?? 0;
 
   const ventoMedia = dayData.slice(selectedHour, Math.min(selectedHour + 3, dayData.length)).reduce((s: number, h: any) => s + (h.windSpeed || 0), 0) / Math.min(3, dayData.length - selectedHour);
   const rafficheMedia = dayData.slice(selectedHour, Math.min(selectedHour + 3, dayData.length)).reduce((s: number, h: any) => s + (h.windGusts || 0), 0) / Math.min(3, dayData.length - selectedHour);
@@ -84,10 +85,10 @@ export default function VoloDecisionCard({ dayData, selectedHour, altitude, site
   else if (ventoMedia > 25) { voto = 3; votoLabel = "大风"; votoColor = "red"; }
   else if (ventoMedia > 18 || spreadVento > 10) { voto = 4; votoLabel = "注意"; votoColor = "orange"; }
   else if (pioggiaProb > 30 || instabile) { voto = 5; votoLabel = "一般"; votoColor = "amber"; }
-  else if (currentThermal.rateo < 0.3) { voto = 6; votoLabel = "无热气流"; votoColor = "amber"; }
-  else if (currentThermal.rateo < 1) { voto = 7; votoLabel = "较弱"; votoColor = "yellow"; }
-  else if (currentThermal.rateo < 1.5) { voto = 8; votoLabel = "良好"; votoColor = "lime"; }
-  else if (currentThermal.rateo < 2.5) { voto = 9; votoLabel = "优秀"; votoColor = "emerald"; }
+  else if (thermalRateo < 0.3) { voto = 6; votoLabel = "无热气流"; votoColor = "amber"; }
+  else if (thermalRateo < 1) { voto = 7; votoLabel = "较弱"; votoColor = "yellow"; }
+  else if (thermalRateo < 1.5) { voto = 8; votoLabel = "良好"; votoColor = "lime"; }
+  else if (thermalRateo < 2.5) { voto = 9; votoLabel = "优秀"; votoColor = "emerald"; }
   else { voto = 10; votoLabel = "极佳"; votoColor = "emerald"; }
 
   // 飞行窗口
@@ -242,13 +243,13 @@ export default function VoloDecisionCard({ dayData, selectedHour, altitude, site
             </div>
           </div>
           <div className="flex items-baseline gap-1">
-            <span className={`text-3xl font-black tabular-nums ${currentThermal.rateo >= 2 ? "text-violet-300" : currentThermal.rateo >= 1 ? "text-sky-300" : "text-slate-400"}`}>
-              ↑{currentThermal.rateo.toFixed(1)}
+            <span className={`text-3xl font-black tabular-nums ${thermalRateo >= 2 ? "text-violet-300" : thermalRateo >= 1 ? "text-sky-300" : "text-slate-400"}`}>
+              ↑{thermalRateo.toFixed(1)}
             </span>
             <span className="text-sm text-slate-500 font-semibold">m/s</span>
           </div>
-          <div className={`text-xs font-bold mt-1.5 ${currentThermal.rateo >= 2 ? "text-violet-400" : currentThermal.rateo >= 1 ? "text-sky-400" : "text-slate-500"}`}>
-            {termicheTesto(currentThermal.rateo)}
+          <div className={`text-xs font-bold mt-1.5 ${thermalRateo >= 2 ? "text-violet-400" : thermalRateo >= 1 ? "text-sky-400" : "text-slate-500"}`}>
+            {termicheTesto(thermalRateo)}
           </div>
           {cape > 0 && (
             <div className="mt-2 flex items-center gap-1.5">
@@ -257,9 +258,9 @@ export default function VoloDecisionCard({ dayData, selectedHour, altitude, site
             </div>
           )}
           <div className="mt-1.5 text-[10px] text-slate-600">
-            {currentThermal.rateo >= 2 ? "适合长距离飞行" :
-             currentThermal.rateo >= 1 ? "适合本地飞行" :
-             currentThermal.rateo >= 0.3 ? "较弱 — 建议滑翔" :
+            {thermalRateo >= 2 ? "适合长距离飞行" :
+             thermalRateo >= 1 ? "适合本地飞行" :
+             thermalRateo >= 0.3 ? "较弱 — 建议滑翔" :
              "无热气流 — 仅滑翔起飞"}
           </div>
         </div>

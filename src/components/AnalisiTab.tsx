@@ -56,10 +56,13 @@ export default function AnalisiTab({ currentData, dayData, site }: AnalisiTabPro
     const dewMedia = withDew.length > 0 ? withDew.reduce((s, h) => s + h.dewPoint!, 0) / withDew.length : null;
     const uvMedia = oreGiorno.reduce((s, h) => s + (h.uvIndex || 0), 0) / oreGiorno.length;
 
-    const termichePerOra = oreGiorno.map((h) => {
-      const t = calcolaTermiche(h, alt);
-      return { rateo: t.rateo, base: t.base, ora: h.time.getHours() };
-    });
+    const termichePerOra = oreGiorno
+      .map((h) => {
+        const t = calcolaTermiche(h, alt);
+        if (!t) return null;
+        return { rateo: t.rateo, base: t.base, ora: h.time.getHours() };
+      })
+      .filter((r): r is NonNullable<typeof r> => r != null);
     const rateoMedio = termichePerOra.reduce((s, t) => s + t.rateo, 0) / termichePerOra.length;
     const rateoMax = Math.max(...termichePerOra.map((t) => t.rateo));
     const oreAttive = termichePerOra.filter((t) => t.rateo >= 0.3).length;

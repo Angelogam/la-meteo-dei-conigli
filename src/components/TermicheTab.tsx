@@ -40,6 +40,7 @@ export default function TermicheTab({ dayData, site, selectedDay = 0 }: Termiche
         const h = dayData.find(d => new Date(d.time).getHours() === ora);
         if (!h) return null;
         const t = calcolaTermiche(h, site.alt);
+        if (!t) return null;
         return { ora: `${String(ora).padStart(2, "0")}:00`, rateo: t.rateo, base: t.base, top: t.top, forza: t.forza, attendibilita: t.attendibilita, temp: h.temperature, vento: h.windSpeed, nuvole: h.cloudCover, umidita: h.humidity };
       })
       .filter(Boolean);

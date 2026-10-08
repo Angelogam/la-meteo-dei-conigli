@@ -13,19 +13,22 @@ interface TermicheResult {
 
 /**
  * Calcola le termiche a partire dai dati orari reali (Open‑Meteo).
- * PRODUCE VALORI REALISTICI: 1.0-3.5 m/s in condizioni normali,
- * 0.3-0.9 in condizioni deboli, 0.0-0.2 in caso di pioggia/temporale.
+ * Restituisce null quando mancano dati fondamentali (temperature o dew point).
+ * CLASSIFICAZIONE:
+ *   MODEL_FORECAST → temperature_2m, dew_point_2m (API Open-Meteo)
+ *   DERIVED        → spread, cloudBase (LCL)
+ *   ESTIMATED      → rateo, base, top (formule empiriche, etichettate come tali)
  */
-export function calcolaTermiche(h: HourData | undefined | null, altitude: number = 500): TermicheResult {
-  if (!h || typeof h.temperature !== "number") {
-    return { rateo: 0.5, base: altitude + 200, top: altitude + 400, forza: 0.5, attendibilita: 30 };
+export function calcolaTermiche(h: HourData | undefined | null, altitude: number = 500): TermicheResult | null {
+  if (!h || typeof h.temperature !== "number" || h.temperature == null) {
+    return null;
   }
 
   const temp = h.temperature;
   // Usa dew point REALE dall'API — nessun fallback inventato
   const dewPoint = (h.dewPoint != null && h.dewPoint > -10) ? h.dewPoint : null;
   if (dewPoint == null) {
-    return { rateo: 0.5, base: altitude + 200, top: altitude + 400, forza: 0.5, attendibilita: 30 };
+    return null;
   }
   // Dati reali Open-Meteo, nessun fallback artificiale
   const windSpeed = h.windSpeed;
@@ -35,14 +38,14 @@ export function calcolaTermiche(h: HourData | undefined | null, altitude: number
   const weatherCode = h.weatherCode;
   const ora = new Date(h.time).getHours();
 
-  // Se piove o temporale -> termiche debolissime o zero
+  // Se piove o temporale -> termiche assenti
   if ((precipitation != null && precipitation > 1) || (weatherCode != null && weatherCode >= 95)) {
-    return { rateo: 0, base: altitude + 50, top: altitude + 100, forza: 0, attendibilita: 90 };
+    return { rateo: 0, base: altitude, top: altitude + 50, forza: 0, attendibilita: 90 };
   }
 
   // Se precipitation > 0.3 ma < 1, termiche molto deboli
   if (precipitation != null && precipitation > 0.3) {
-    return { rateo: 0.3, base: altitude + 100, top: altitude + 200, forza: 0.3, attendibilita: 80 };
+    return { rateo: 0.3, base: altitude, top: altitude + 100, forza: 0.3, attendibilita: 80 };
   }
 
   // Spread termico (differenza temp - dew) — valore reale, nessun minimo artificiale
@@ -50,7 +53,7 @@ export function calcolaTermiche(h: HourData | undefined | null, altitude: number
 
   // Se fa molto freddo
   if (temp < 5) {
-    return { rateo: 0.2, base: altitude + 50, top: altitude + 150, forza: 0.2, attendibilita: 60 };
+    return { rateo: 0.2, base: altitude, top: altitude + 100, forza: 0.2, attendibilita: 60 };
   }
 
   // ===== CALCOLO RATEO PRINCIPALE =====

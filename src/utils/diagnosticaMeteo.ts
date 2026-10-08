@@ -200,7 +200,7 @@ export async function diagnosticaMeteoCompleta(): Promise<ReportConflittoMeteo> 
     virtualTemp: 298,
   };
   const termiche = calcolaTermiche(mockData, 1250);
-  const termicheOk = termiche.rateo > 0.3 && termiche.base > 200 && termiche.top > termiche.base;
+  const termicheOk = termiche != null && termiche.rateo > 0.3 && termiche.base > 200 && termiche.top > termiche.base;
   testCalcoli.push({
     nome: "Calcolo termiche (condizioni ideali)",
     ok: termicheOk,
@@ -211,7 +211,7 @@ export async function diagnosticaMeteoCompleta(): Promise<ReportConflittoMeteo> 
 
   const mockTempesta: HourData = { ...mockData, weatherCode: 95, precipitation: 5, cloudCover: 90 };
   const termTempesta = calcolaTermiche(mockTempesta, 1250);
-  const tempestaOk = termTempesta.rateo <= 0.2;
+  const tempestaOk = termTempesta != null && termTempesta.rateo <= 0.2;
   testCalcoli.push({
     nome: "Blocco termiche durante maltempo/temporale",
     ok: tempestaOk,

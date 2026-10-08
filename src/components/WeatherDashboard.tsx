@@ -50,10 +50,13 @@ export default function WeatherDashboard({
     const haTemporali = oreVolo.some(h => (h.weatherCode >= 95 && h.weatherCode <= 99) || h.weatherCode === 82);
     const ventoMax = Math.max(...oreVolo.map(h => h.windSpeed || 0));
 
-    const termichePerOra = oreVolo.map(h => ({
-      ...calcolaTermiche(h, altitude),
-      ora: new Date(h.time).getHours(),
-    }));
+    const termichePerOra = oreVolo
+      .map(h => {
+        const t = calcolaTermiche(h, altitude);
+        if (!t) return null;
+        return { ...t, ora: new Date(h.time).getHours() };
+      })
+      .filter((r): r is NonNullable<typeof r> => r != null);
 
     const ratei = termichePerOra.map(t => t.rateo);
     const mediaRateo = ratei.reduce((s, v) => s + v, 0) / ratei.length;

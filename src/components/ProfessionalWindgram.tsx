@@ -6,6 +6,7 @@ import { fetchHourly } from "@/lib/openMeteoClient";
 import { generateReportMeteo, type GeneratedReport } from "@/utils/generateReportMeteo";
 import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
 import { calcCloudBase } from "@/utils/calcCloudBase";
+import { computeHourlyDerived } from "@/services/derivedMeteorology";
 
 interface WindgramProps {
   latitude: number;
@@ -100,7 +101,52 @@ export default function ProfessionalWindgram({
   // per evitare discrepanze tra windgram e report
   const stabilitaData = data?.hourly ?? null;
 
-  // Data status check
+  // Dataset centralizzato — thermalTop/thermalAvg/deltaT provengono da qui
+  const hourDerivedMap = useMemo(() => {
+    if (!stabilitData?.time) return new Map<number, ReturnType<typeof computeHourlyDerived>>();
+    const map = new Map<number, ReturnType<typeof computeHourlyDerived>>();
+    stabilitData.time.forEach((t: string, idx: number) => {
+      const hr = parseInt(t.split("T")[1].split(":")[0], 10);
+      if (isNaN(hr)) return;
+      const raw = {
+        temperature: stabilitData.temperature_2m?.[idx] != null ? Number(stabilitData.temperature_2m[idx]) : null,
+        dewPoint: stabilitData.dew_point_2m?.[idx] != null ? Number(stabilitData.dew_point_2m[idx]) : null,
+        temp80m: stabilitData.temperature_80m?.[idx] != null ? Number(stabilitData.temperature_80m[idx]) : null,
+        temp120m: stabilitData.temperature_120m?.[idx] != null ? Number(stabilitData.temperature_120m[idx]) : null,
+        temperature180m: stabilitData.temperature_180m?.[idx] != null ? Number(stabilitData.temperature_180m[idx]) : null,
+        windSpeed: stabilitData.wind_speed_10m?.[idx] != null ? Number(stabilitData.wind_speed_10m[idx]) : null,
+        windDir: stabilitData.wind_direction_10m?.[idx] != null ? Number(stabilitData.wind_direction_10m[idx]) : null,
+        windSpeed80m: stabilitData.wind_speed_80m?.[idx] != null ? Number(stabilitData.wind_speed_80m[idx]) : null,
+        windDir80m: stabilitData.wind_direction_80m?.[idx] != null ? Number(stabilitData.wind_direction_80m[idx]) : null,
+        windSpeed120m: stabilitData.wind_speed_120m?.[idx] != null ? Number(stabilitData.wind_speed_120m[idx]) : null,
+        windDir120m: stabilitData.wind_direction_120m?.[idx] != null ? Number(stabilitData.wind_direction_120m[idx]) : null,
+        windSpeed180m: stabilitData.wind_speed_180m?.[idx] != null ? Number(stabilitData.wind_speed_180m[idx]) : null,
+        windDir180m: stabilitData.wind_direction_180m?.[idx] != null ? Number(stabilitData.wind_direction_180m[idx]) : null,
+        cape: stabilitData.cape?.[idx] != null ? Number(stabilitData.cape[idx]) : null,
+        cin: stabilitData.convective_inhibition?.[idx] != null ? Number(stabilitData.convective_inhibition[idx]) : null,
+        liftedIndex: stabilitData.lifted_index?.[idx] != null ? Number(stabilitData.lifted_index[idx]) : null,
+        freezingLevel: stabilitData.freezing_level_height?.[idx] != null ? Number(stabilitData.freezing_level_height[idx]) : null,
+        cloudCover: stabilitData.cloud_cover?.[idx] != null ? Number(stabilitData.cloud_cover[idx]) : null,
+        shortwaveRadiation: stabilitData.shortwave_radiation?.[idx] != null ? Number(stabilitData.shortwave_radiation[idx]) : null,
+        boundaryLayerHeight: stabilitData.boundary_layer_height?.[idx] != null ? Number(stabilitData.boundary_layer_height[idx]) : null,
+        pressure: stabilitData.pressure_msl?.[idx] != null ? Number(stabilitData.pressure_msl[idx]) : null,
+        surfacePressure: stabilitData.surface_pressure?.[idx] != null ? Number(stabilitData.surface_pressure[idx]) : null,
+        windSpeed925: stabilitData.wind_speed_925hPa?.[idx] != null ? Number(stabilitData.wind_speed_925hPa[idx]) : null,
+        windDir925: stabilitData.wind_direction_925hPa?.[idx] != null ? Number(stabilitData.wind_direction_925hPa[idx]) : null,
+        windSpeed850: stabilitData.wind_speed_850hPa?.[idx] != null ? Number(stabilitData.wind_speed_850hPa[idx]) : null,
+        windDir850: stabilitData.wind_direction_850hPa?.[idx] != null ? Number(stabilitData.wind_direction_850hPa[idx]) : null,
+        windSpeed700: stabilitData.wind_speed_700hPa?.[idx] != null ? Number(stabilitData.wind_speed_700hPa[idx]) : null,
+        windDir700: stabilitData.wind_direction_700hPa?.[idx] != null ? Number(stabilitData.wind_direction_700hPa[idx]) : null,
+        windSpeed600: stabilitData.wind_speed_600hPa?.[idx] != null ? Number(stabilitData.wind_speed_600hPa[idx]) : null,
+        windDir600: stabilitData.wind_direction_600hPa?.[idx] != null ? Number(stabilitData.wind_direction_600hPa[idx]) : null,
+        windSpeed500: stabilitData.wind_speed_500hPa?.[idx] != null ? Number(stabilitData.wind_speed_500hPa[idx]) : null,
+        windDir500: stabilitData.wind_direction_500hPa?.[idx] != null ? Number(stabilitData.wind_direction_500hPa[idx]) : null,
+      };
+      const derived = computeHourlyDerived(raw as any, altitude);
+      if (derived) map.set(hr, derived);
+    });
+    return map;
+  }, [stabilitData, altitude]);
 
   const displayAltitudes = useMemo(() => computeDisplayAltitudes(altitude), [altitude]);
 
@@ -270,17 +316,18 @@ export default function ProfessionalWindgram({
           const cloudPrev = p.cloud_cover?.[prevIdx];
           const cloudNext = p.cloud_cover?.[nextIdx];
           const cloud = ((cloudPrev !== undefined ? Number(cloudPrev) : null) + (cloudNext !== undefined ? Number(cloudNext) : null)) / 2;
+          // Interpolated hours: no central-engine data available.
+          // cloudBase from real T/Td only; thermalTop remains null (not invented).
           const cloudBaseVal = dew != null ? calcCloudBase(altitude, t, dew) : null;
-          // Interpolated data: use null for synthetic values
           return {
             hour: targetHour, sunPct: 60, thermalAvg: null as number | null, tempGround: Math.round(t),
             windGround: null, windDirGround: null, precip: 0, cloudCover: Math.round(cloud),
-            zeroThermal: Math.round(altitude + t / 0.0098), thermalTop: cloudBaseVal != null ? cloudBaseVal + 500 : null,
+            zeroThermal: Math.round(altitude + t / 0.0098), thermalTop: null,
             cloudBase: cloudBaseVal, cloudPct: Math.round(cloud), deltaT: null,
-            tempAt80m: Math.round(t - 1.5), tempAt120m: Math.round(t - 3),
+            tempAt80m: null, tempAt120m: null,
             // Nessun dato vento disponibile per ore interpolate — restituire null
             levelWinds: displayAltitudes.map((alt) => ({ alt, speed: null as number | null, dir: null as number | null })),
-            deltaTProfile: fb,
+            deltaTProfile: [],
           };
         }
         // Nessun dato vicino: nascondi l'ora
@@ -307,17 +354,16 @@ export default function ProfessionalWindgram({
       const t80Sim = t180Num != null ? t + (t180Num - t) * (80 / 180) : null;
       const t120Sim = t180Num != null ? t + (t180Num - t) * (120 / 180) : null;
 
-      const spread = dew != null ? t - dew : null;
-      const cloudBase = dew != null ? calcCloudBase(altitude, t, dew) : null;
+      // Consumi dati dal motore centralizzato (derivedMeteorology) — cloudBase, thermalTop, thermalAvg
+      const derived = hourDerivedMap.get(targetHour);
+      const cloudBase = derived?.cloudBase ?? null;
       const sunPct = cloud != null ? Math.min(100, Math.max(10, Math.round(((rad ?? 0) / 900) * (1 - (cloud / 100) * 0.65)) * 100)) : 60;
       const cloudPct = Math.max(2, Math.min(95, Math.round(cloud)));
 
-      // ─── First compute derived values needed by the lapse-rate model ───
-      let rateo = 0.6 + (spread * 0.08) + (sunPct / 100) * 0.45 + (cape > 200 ? (cape / 1000) * 0.4 : 0);
-      if (precip > 0.4) rateo = 0.3;
-      else if (cloud > 80) rateo *= 0.4;
-      rateo = Math.max(0.4, Math.min(2.5, Math.round(rateo * 10) / 10));
-      const thermalTop = Math.round(Math.min(4000, cloudBase + Math.min(800, rateo * 100 + cape * 0.1)));
+      // TERMIC_TOP: ESTIMATED — formula empirica, NON dato osservato
+      const thermalTop = derived?.estimatedThermalTop ?? null;
+      // THERMAL_AVG: ESTIMATED — indice euristico di attività termica (m/s)
+      const thermalAvg = derived?.estimatedThermalActivity ?? null;
 
       // ─── Atmospheric lapse-rate profile for air-mass coloring ───
       // Pattern (matches Alpium reference):
@@ -326,13 +372,11 @@ export default function ProfessionalWindgram({
       //   3000-4200 m  → blue/purple (stable, free atmosphere + inversion)
       // Real Open-Meteo data modulates each layer's intensity.
 
-      // 1. Real base lapse rate from t2m vs t180m (closest available)
-      let baseLapseRate = 0.65; // standard atmosphere °C/100m
-      if (t180Num != null && t180Num !== t) {
+      // 1. Real base lapse rate — consumo dal motore centralizzato quando disponibile
+      let baseLapseRate = derived?.lowLevelLapseRate ?? null;
+      if (baseLapseRate == null && t180Num != null && t180Num !== t) {
         baseLapseRate = Math.abs(t - t180Num) / 180 * 100;
-      } else if (getDeltaTAtAlt !== null && getDeltaTAtAlt !== undefined) {
-        baseLapseRate = 0.65; // keep default since getDeltaTAtAlt is a function, not a value
-      } else {
+      } else if (baseLapseRate == null) {
         const hoursFromPeak = Math.abs(targetHour - 14);
         const solarFactor = Math.max(0, 1 - hoursFromPeak / 6);
         baseLapseRate = 0.65 + solarFactor * 0.3;
@@ -384,7 +428,7 @@ export default function ProfessionalWindgram({
       });
 
       return {
-        hour: targetHour, sunPct, thermalAvg: rateo,
+        hour: targetHour, sunPct, thermalAvg,
         tempGround: Math.round(t), windGround: Math.round(wind10),
         windDirGround: Math.round(windDir10), precip, cloudCover: cloud,
         zeroThermal: Math.round(freeze), thermalTop, cloudBase, cloudPct, deltaT,
@@ -395,7 +439,7 @@ export default function ProfessionalWindgram({
         deltaTProfile,
       };
     });
-  }, [data, altitude, displayAltitudes, interpolateAtAltitude, getDeltaTAtAlt]);
+  }, [data, altitude, displayAltitudes, interpolateAtAltitude, getDeltaTAtAlt, hourDerivedMap]);
 
   const reportGenerato = useMemo<GeneratedReport | null>(() => {
     if (!data?.hourly) return null;
@@ -508,13 +552,18 @@ export default function ProfessionalWindgram({
         const xAbs = getXFromHourIdx(colIdx);
         const xRel = xAbs - margin.left;
         const frac = xRel / plotW;
-        const profile = h.deltaTProfile ?? Array(13).fill(0.72);
-        const color = getStabilityColor(profile[clampedIdx] ?? null);
+        const profile = h.deltaTProfile;
+        const color = profile && profile.length > 0
+          ? getStabilityColor(profile[clampedIdx] ?? null)
+          : getStabilityColor(null); // neutral stable for interpolated hours
         gradient.addColorStop(frac, color);
       });
       const lastHour = hourlyData[hourlyData.length - 1];
-      const lastProfile = lastHour.deltaTProfile ?? [0.72];
-      gradient.addColorStop(1, getStabilityColor(lastProfile[clampedIdx] ?? null));
+      const lastProfile = lastHour.deltaTProfile;
+      const lastColor = lastProfile && lastProfile.length > 0
+        ? getStabilityColor(lastProfile[clampedIdx] ?? null)
+        : getStabilityColor(null);
+      gradient.addColorStop(1, lastColor);
 
       ctx.fillStyle = gradient;
       ctx.globalAlpha = 0.8;
@@ -577,7 +626,7 @@ export default function ProfessionalWindgram({
 
         <div className="mb-2">
           <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1 px-1">
-            <span>valore medio ascendenze (m/s)</span>
+            <span>valore medio ascendenze (m/s) <span className="text-[9px] font-normal text-slate-400">★ ESTIMATED</span></span>
           </div>
           <div className="grid grid-cols-12 gap-1 px-1">
             {hourlyData.map((h, i) => (

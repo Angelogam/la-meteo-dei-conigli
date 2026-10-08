@@ -80,8 +80,8 @@ export async function meteoIntegrityTest(): Promise<{
   const termiche = calcolaTermiche(mockData, 1250);
   results.push({
     name: "calcolaTermiche funziona",
-    passed: termiche.rateo > 0 && termiche.base > 0 && termiche.top > 0,
-    message: termiche.rateo > 0
+    passed: termiche != null && termiche.rateo > 0 && termiche.base > 0 && termiche.top > 0,
+    message: termiche != null && termiche.rateo > 0
       ? `✅ Rateo: ${termiche.rateo} m/s, Base: ${termiche.base}m, Top: ${termiche.top}m`
       : "❌ calcolaTermiche non produce risultati validi",
   });
@@ -94,10 +94,10 @@ export async function meteoIntegrityTest(): Promise<{
   const termicheTempesta = calcolaTermiche(mockTempesta, 1250);
   results.push({
     name: "calcolaTermiche riconosce temporale",
-    passed: termicheTempesta.rateo < 0.5,
-    message: termicheTempesta.rateo < 0.5
+    passed: termicheTempesta != null && termicheTempesta.rateo < 0.5,
+    message: termicheTempesta != null && termicheTempesta.rateo < 0.5
       ? `✅ Temporale riconosciuto: rateo ${termicheTempesta.rateo} m/s`
-      : `❌ Temporale non riconosciuto: rateo ${termicheTempesta.rateo} m/s`,
+      : `❌ Temporale non riconosciuto: rateo ${termicheTempesta?.rateo ?? "null"} m/s`,
   });
 
   let decolliOk = 0;

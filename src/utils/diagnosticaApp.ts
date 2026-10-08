@@ -166,7 +166,7 @@ export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
     }
     const mockTempesta: HourData = { ...mockHourData, temperature: 28, precipitation: 5, weatherCode: 95, cloudCover: 90 };
     const resTempesta = calcolaTermiche(mockTempesta, 1250);
-    if (resTempesta.rateo > 0.5) {
+    if (resTempesta == null || resTempesta.rateo > 0.5) {
       tuttoOk = false;
       fail({ severita: "importante", componente: comp, descrizione: `calcolaTermiche dà rateo positivo (${resTempesta.rateo} m/s) durante temporale (code 95)`, dettaglio: "Dovrebbe essere ~0 per temporali", fixSuggerito: "Aggiungere controllo weatherCode >= 95 in termiche.ts" });
     } else {

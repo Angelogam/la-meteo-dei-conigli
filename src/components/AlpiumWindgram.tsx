@@ -4,6 +4,7 @@ import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
 import type { HourData } from "@/types/meteo";
 import { Wind, Loader2 } from "lucide-react";
 import { calcCloudBase } from "@/utils/calcCloudBase";
+import { computeHourlyDerived } from "@/services/derivedMeteorology";
 
 interface AlpiumWindgramProps {
   siteName: string;
@@ -237,29 +238,52 @@ export default function AlpiumWindgram({
     return m;
   }, [hourly, hourIndices, siteAlt]);
 
-  // ============ CURVA TERMICA SINUSOIDALE ============
-  // Per ogni ora, calcola base e top della termica
-  const thermalCurve = useMemo(() => {
-    if (!hourly) return new Map<number, { base: number; top: number; rate: number }>();
-    const m = new Map<number, { base: number; top: number; rate: number }>();
-
-    DISPLAY_HOURS.forEach((hr) => {
-      const idx = hourIndices.get(hr);
-      if (idx === undefined) return;
-      const t = hourly.temp2m[idx];
-      if (t === undefined || t === null) return null;
-      const tNum = Number(t);
-      // Usa dew point REALE, nessun fallback inventato
-      const dew = hourly.dew2m[idx] !== undefined ? Number(hourly.dew2m[idx]) : null;
-      const spread = (dew != null) ? tNum - dew : null;
-      const lcl = (dew != null) ? calcCloudBase(siteAlt, tNum, dew) : null;
-
-      // Thermal top e rateo basati su dati reali, senza curva sinusoidale
-      const thermalTop = lcl != null ? Math.min(4000, lcl + 400) : siteAlt;
-      const rate = spread != null ? Math.max(0.1, Math.min(3.0, spread * 0.2)) : 0;
-      m.set(hr, { base: lcl ?? siteAlt, top: thermalTop, rate });
+  // ============ DATI CENTRALIZZATI (derivedMeteorology) ============
+  // thermalTop e activity provengono dal motore centrale, mai da formule locali
+  const hourDerivedMap = useMemo(() => {
+    if (!hourly) return new Map<number, ReturnType<typeof computeHourlyDerived>>();
+    const map = new Map<number, ReturnType<typeof computeHourlyDerived>>();
+    hourly.times.forEach((t, idx) => {
+      const hr = parseInt(t.split("T")[1].split(":")[0], 10);
+      if (isNaN(hr) || hourIndices.get(hr) === undefined) return;
+      const raw = {
+        temperature: hourly.temp2m[idx] != null ? Number(hourly.temp2m[idx]) : null,
+        dewPoint: hourly.dew2m[idx] != null ? Number(hourly.dew2m[idx]) : null,
+        temp80m: null,
+        temp120m: null,
+        temperature180m: null,
+        windSpeed: hourly.windSpeed["10m"]?.[idx] ?? null,
+        windDir: hourly.windDir["10m"]?.[idx] ?? null,
+        windSpeed80m: hourly.windSpeed["80m"]?.[idx] ?? null,
+        windDir80m: hourly.windDir["80m"]?.[idx] ?? null,
+        windSpeed120m: hourly.windSpeed["120m"]?.[idx] ?? null,
+        windDir120m: hourly.windDir["120m"]?.[idx] ?? null,
+        windSpeed180m: null,
+        windDir180m: null,
+        cape: null,
+        cin: null,
+        liftedIndex: null,
+        freezingLevel: null,
+        cloudCover: hourly.cloud[idx] ?? null,
+        shortwaveRadiation: null,
+        boundaryLayerHeight: null,
+        pressure: null,
+        surfacePressure: null,
+        windSpeed925: hourly.windSpeed["925hPa"]?.[idx] ?? null,
+        windDir925: hourly.windDir["925hPa"]?.[idx] ?? null,
+        windSpeed850: hourly.windSpeed["850hPa"]?.[idx] ?? null,
+        windDir850: hourly.windDir["850hPa"]?.[idx] ?? null,
+        windSpeed700: hourly.windSpeed["700hPa"]?.[idx] ?? null,
+        windDir700: hourly.windDir["700hPa"]?.[idx] ?? null,
+        windSpeed600: hourly.windSpeed["600hPa"]?.[idx] ?? null,
+        windDir600: hourly.windDir["600hPa"]?.[idx] ?? null,
+        windSpeed500: hourly.windSpeed["500hPa"]?.[idx] ?? null,
+        windDir500: hourly.windDir["500hPa"]?.[idx] ?? null,
+      };
+      const derived = computeHourlyDerived(raw as any, siteAlt);
+      if (derived) map.set(hr, derived);
     });
-    return m;
+    return map;
   }, [hourly, hourIndices, siteAlt]);
 
   // ============ ZERO GRADI ============
@@ -556,14 +580,14 @@ export default function AlpiumWindgram({
               );
             })}
 
-            {/* CURVA TERMICA GIALLA (base termica, parte dal suolo) */}
+            {/* CURVA BASE TERMICA (gialla) — da cloudBase centralizzato */}
             <path
               d={
                 DISPLAY_HOURS.map((hr, i) => {
-                  const t = thermalCurve.get(hr);
-                  if (!t) return "";
+                  const d = hourDerivedMap.get(hr);
+                  if (!d || d.cloudBase == null) return "";
                   const x = hourToX(hr);
-                  const y = altToY(t.base);
+                  const y = altToY(d.cloudBase);
                   return `${i === 0 ? "M" : "L"} ${x} ${y}`;
                 }).join(" ")
               }
@@ -573,14 +597,16 @@ export default function AlpiumWindgram({
               opacity="0.85"
             />
 
-            {/* CURVA CUMULIBASE (viola/magenta con mezzelune) */}
+            {/* CURVA CUMULIBASE (viola/magenta con mezzelune) — da estimatedThermalTop centralizzato */}
             {DISPLAY_HOURS.map((hr, i) => {
-              const t = thermalCurve.get(hr);
-              if (!t || t.top <= t.base + 100) return null;
+              const d = hourDerivedMap.get(hr);
+              if (!d || d.cloudBase == null || d.estimatedThermalTop == null) return null;
+              const t = d.cloudBase;
+              const thermalTop = d.estimatedThermalTop;
+              if (thermalTop <= t + 100) return null;
               const x = hourToX(hr);
-              const yTop = altToY(t.top);
-              const yBase = altToY(t.base);
-              const height = yBase - yTop;
+              const yTop = altToY(thermalTop);
+              const yBase = altToY(t);
               // Mezzaluna cumulibase (arco viola)
               return (
                 <g key={`cb-${hr}`}>
@@ -597,10 +623,10 @@ export default function AlpiumWindgram({
                     strokeWidth="1.2"
                   />
                   <text x={x} y={yTop - 14} textAnchor="middle" className="text-[9px] font-bold" fill="#e9d5ff">
-                    {Math.round(t.top)} m
+                    {Math.round(thermalTop)} m
                   </text>
                   <text x={x} y={yTop - 4} textAnchor="middle" className="text-[9px]" fill="#c084fc">
-                    ↑{t.rate.toFixed(1)} m/s
+                    ↑{d.estimatedThermalActivity?.toFixed(1) ?? "?"} m/s
                   </text>
                 </g>
               );
