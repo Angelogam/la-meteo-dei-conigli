@@ -205,25 +205,25 @@ export interface MeteoDaily {
   weatherCode: number | null;
   tempMax: number | null;
   tempMin: number | null;
-  precipitationSum: number;
-  precipitationProbabilityMax: number;
-  windSpeedMax: number;
-  windGustsMax: number;
-  windDirDominant: number;
-  uvIndexMax: number;
+  precipitationSum: number | null;
+  precipitationProbabilityMax: number | null;
+  windSpeedMax: number | null;
+  windGustsMax: number | null;
+  windDirDominant: number | null;
+  uvIndexMax: number | null;
   sunrise: string;
   sunset: string;
-  temperatureMax: number;
-  temperatureMin: number;
-  temperatureMean: number;
-  apparentTempMax: number;
-  apparentTempMin: number;
-  daylightDuration: number;
+  temperatureMax: number | null;
+  temperatureMin: number | null;
+  temperatureMean: number | null;
+  apparentTempMax: number | null;
+  apparentTempMin: number | null;
+  daylightDuration: number | null;
   sunshineDuration: number | null;
-  rainSum: number;
-  snowfallSum: number;
-  precipitationHours: number;
-  shortwaveRadiationSum: number;
+  rainSum: number | null;
+  snowfallSum: number | null;
+  precipitationHours: number | null;
+  shortwaveRadiationSum: number | null;
   weatherDescription?: string;
   freezingLevel?: number | null; // quota 0°C in metri s.l.m.
   trend?: "↑" | "↓" | "→" | null; // tendenza 24h
@@ -308,7 +308,10 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
         rain: safeNumOrNull(json.hourly.rain?.[i]),
         snowfall: safeNumOrNull(json.hourly.snowfall?.[i]),
         vapourPressureDeficit: safeNumOrNull(json.hourly.vapour_pressure_deficit?.[i]),
-        isDay: safeNumOrNull(json.hourly.is_day?.[i]) === null ? undefined : safeNumOrNull(json.hourly.is_day?.[i])!,
+        isDay: (() => {
+          const value = safeNumOrNull(json.hourly.is_day?.[i]);
+          return value === null ? null : value === 1;
+        })(),
         freezingLevel: freezingLevel,
         sunshineDuration: safeNumOrNull(json.hourly.sunshine_duration?.[i]),
         mixingRatio: null,
