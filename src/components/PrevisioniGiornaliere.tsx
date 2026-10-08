@@ -22,27 +22,28 @@ function dirToIcon(dir: number): string {
   return dirs[Math.round(dir / 45) % 8];
 }
 
-function getFlightRating(daily: MeteoDaily, current: HourData | MeteoCurrent | null): number | null {
+function getFlightRating(daily: MeteoDaily | undefined, current: HourData | MeteoCurrent | null): number | null {
   if (!daily) return null;
-  let score = 5;
+
   const wind = daily.windSpeedMax ?? null;
-  if (wind !== null) {
-    if (wind <= 8) score += 2;
-    else if (wind <= 15) score += 1;
-    else if (wind <= 25) score -= 1;
-    else score -= 2;
-  }
-  const rain = daily.precipitationSum !== undefined ? daily.precipitationSum : null;
-  if (rain !== null) {
-    if (rain <= 0.2) score += 1;
-    else if (rain <= 2) score -= 1;
-    else score -= 2;
-  }
+  const rain = daily.precipitationSum ?? null;
   const cloudCover = (current as any)?.cloudCover ?? null;
-  if (cloudCover !== null) {
-    if (cloudCover <= 30) score += 1;
-    else if (cloudCover > 70) score -= 1;
-  }
+
+  if (wind === null || rain === null || cloudCover === null) return null;
+
+  let score = 5;
+  if (wind <= 8) score += 2;
+  else if (wind <= 15) score += 1;
+  else if (wind <= 25) score -= 1;
+  else score -= 2;
+
+  if (rain <= 0.2) score += 1;
+  else if (rain <= 2) score -= 1;
+  else score -= 2;
+
+  if (cloudCover <= 30) score += 1;
+  else if (cloudCover > 70) score -= 1;
+
   const cape = (current as any)?.cape ?? null;
   if (cape !== null) {
     if (cape >= 200 && cape <= 1000) score += 1;
