@@ -1,0 +1,205 @@
+================================================================================
+RICONOSCIMENTO TECNICO — WINDGRAM & REPORT METEOROLOGICO
+SEZIONE 1/3: A–E
+================================================================================
+
+A. FILE COINVOLTI
+================================================================================
+
+COMPONENTI WINDGRAM
+--------------------------------------------------------------------------------
+File                                       | Ruolo                               | Note
+-------------------------------------------|-------------------------------------|--------------------------------
+src/components/Windgram.tsx                | Wrapper principale                  | Rimanda a WindgramMatrix
+src/components/WindgramMatrix.tsx          | WINDGRAM PRINCIPALE VISIBILE IN APP | Tavola matrice altitudine×ora
+src/components/ProfessionalWindgram.tsx    | Versione SVG completa               | Contiene anche generateReportMeteo
+src/components/WindgramCard.tsx            | Wrapper con scelta variant          | Usato in altri contesti
+src/components/AlpiumWindgram.tsx          | Replica stile Alpium                | Chiamata autonoma a Open-Meteo
+src/components/RasoftWindgram.tsx          | Replica stile Rasoft                | Solo per sito montoso-decollo-basso
+src/components/TomorrowWindgram.tsx        | Versione Tomorrow.io                | API diversa, dati separati
+src/components/WindgramPro.tsx             | Versione Tomorrow.io semplificata   | API diversa
+src/components/TermicheAquila.tsx          | Grafico a barre termiche            | Non è windgram, visualizza ratei
+
+SERVIZI / HOOK / UTILITÀ
+--------------------------------------------------------------------------------
+File                                       | Ruolo
+-------------------------------------------|--------------------------------
+src/hooks/useWeatherData.ts                | Hook principale: fetch + stato + auto-refresh
+src/hooks/useMultiHourWindProfile.ts       | Costruisce profilo vento multi-altitudine
+src/lib/openMeteoClient.ts                 | Client API Open-Meteo centralizzato
+src/services/weatherService.ts             | Parsing dati in oggetti tipizzati
+src/utils/generateReportMeteo.ts           | GENERATORE DEL REPORT METEOROLOGICO
+src/utils/calcCloudBase.ts                 | Calcolo base cumuli (LCL) — usato da tutti
+src/services/fallbackWeatherData.ts        | Dati fittizi per modalità offline
+src/utils/termiche.ts                      | Calcolo termiche (rateo/base/top)
+src/services/termicheEngine.ts             | Motore termiche "realistico"
+src/components/AnalisiMeteo.tsx            | Scheda analisi che usa generateReportMeteo
+
+PAGINA PRINCIPALE
+--------------------------------------------------------------------------------
+File                 | Ruolo
+---------------------|--------------------------------
+src/pages/Index.tsx  | Orchestra tutti i componenti
+
+================================================================================
+B. API / DATI ORIGINE
+================================================================================
+
+API PRIMARIA: Open-Meteo (gratuita, no API key)
+--------------------------------------------------------------------------------
+- Endpoint: https://api.open-meteo.com/v1/forecast (via proxy locale /api/open-meteo)
+- Modello: GFS / AROME / ICON (scelto automaticamente da Open-Meteo per l'Europa)
+- Periodicità: Oraria, fino a 120 ore (5 giorni)
+- Auto-refresh: ogni 15 minuti
+
+PARAMETRI RICHIESTI (HOURLY_PARAMS in weatherService.ts):
+--------------------------------------------------------------------------------
+temperature_2m, relative_humidity_2m, dew_point_2m, apparent_temperature,
+precipitation, precipitation_probability, weather_code, pressure_msl, surface_pressure,
+cloud_cover, cloud_cover_low, cloud_cover_mid, cloud_cover_high,
+wind_speed_10m, wind_direction_10m, wind_gusts_10m,
+uv_index, shortwave_radiation, direct_radiation, sunshine_duration,
+temperature_80m, temperature_120m,
+wind_speed_80m, wind_direction_80m,
+wind_speed_120m, wind_direction_120m,
+wind_speed_180m, wind_direction_180m,
+cape, convective_inhibition, lifted_index,
+freezing_level_height,
+wind_speed_925hPa, wind_direction_925hPa,
+wind_speed_850hPa, wind_direction_850hPa,
+wind_speed_700hPa, wind_direction_700hPa,
+wind_speed_600hPa, wind_direction_600hPa,
+wind_speed_500hPa, wind_direction_500hPa
+
+API SECONDARIA: Tomorrow.io (opzionale, serve VITE_TOMORROW_KEY)
+--------------------------------------------------------------------------------
+- Usata da: TomorrowWindgram.tsx, WindgramPro.tsx, TomorrowrowWindgram.tsx
+- Campi: windSpeed, windDirection, temperature, cloudCover, dewPoint a 10 livelli
+- SEPARATA dall'API primaria — dati potentially diversi
+
+FALLBACK OFFLINE: fallbackWeatherData.ts
+--------------------------------------------------------------------------------
+- Genera dati realistici ma NON reali basati su fisica approssimata
+- Attivato solo quando l'API fallisce
+
+================================================================================
+C. STRUTTURA DATI WINDGRAM (Open-Meteo hourly response)
+================================================================================
+
+PER OGNI ORA, I CAMPI REALI DISPONIBILI:
+--------------------------------------------------------------------------------
+{
+  time: string,                    // ISO 8601
+  temperature_2m: number,          // °C
+  dew_point_2m: number,            // °C
+  relative_humidity_2m: number,    // %
+  cloud_cover: number,             // % (totale)
+  cloud_cover_low: number,         // %
+  cloud_cover_mid: number,         // %
+  cloud_cover_high: number,        // %
+  wind_speed_10m: number,          // km/h
+  wind_direction_10m: number,      // gradi (provenienza)
+  wind_gusts_10m: number,          // km/h
+  wind_speed_80m: number,          // km/h
+  wind_direction_80m: number,      // gradi
+  wind_speed_120m: number,         // km/h
+  wind_direction_120m: number,     // gradi
+  wind_speed_180m: number,         // km/h
+  wind_direction_180m: number,     // gradi
+  wind_speed_925hPa: number,       // km/h (~760m)
+  wind_direction_925hPa: number,
+  wind_speed_850hPa: number,       // km/h (~1450m)
+  wind_direction_850hPa: number,
+  wind_speed_700hPa: number,       // km/h (~3000m)
+  wind_direction_700hPa: number,
+  wind_speed_600hPa: number,       // km/h (~4200m)
+  wind_direction_600hPa: number,
+  wind_speed_500hPa: number,       // km/h (~5500m)
+  wind_direction_500hPa: number,
+  temperature_80m: number,         // °C
+  temperature_120m: number,        // °C
+  temperature_180m: number,        // °C
+  // Temperature a livelli isobarici: SOLO in AlpiumWindgram
+  temperature_500hPa..1000hPa: number[],
+  cape: number,                    // J/kg
+  convective_inhibition: number,   // J/kg
+  lifted_index: number,            // K
+  freezing_level_height: number,   // m
+  precipitation: number,           // mm
+  weather_code: number,            // WMO code
+  shortwave_radiation: number,     // W/m²
+  uv_index: number,
+  visibility: number,              // m
+  pressure_msl: number,            // hPa
+  surface_pressure: number,        // hPa
+}
+
+================================================================================
+D. DATI DISPONIBILI PER OGNI ORA (EFFETTIVI)
+================================================================================
+
+PARAMETRO                          | DISPONIBILE? | FONT
+-----------------------------------|--------------|---------------------------------
+Temperatura suolo (2m)             | ✅ Reale     | temperature_2m
+Punto di rugiada (2m)              | ✅ Reale     | dew_point_2m
+Umidità relativa (2m)              | ✅ Reale     | relative_humidity_2m
+Vento suolo (10m)                  | ✅ Reale     | wind_speed_10m / wind_direction_10m
+Raffiche (10m)                     | ✅ Reale     | wind_gusts_10m
+Vento a 80m                        | ✅ Reale     | wind_speed_80m / wind_direction_80m
+Vento a 120m                       | ✅ Reale     | wind_speed_120m / wind_direction_120m
+Vento a 180m                       | ✅ Reale     | wind_speed_180m / wind_direction_180m
+Vento a 925hPa (~760m)             | ✅ Reale     | wind_speed_925hPa
+Vento a 850hPa (~1450m)            | ✅ Reale     | wind_speed_850hPa
+Vento a 700hPa (~3000m)            | ✅ Reale     | wind_speed_700hPa
+Vento a 600hPa (~4200m)            | ✅ Reale     | wind_speed_600hPa
+Vento a 500hPa (~5500m)            | ✅ Reale     | wind_speed_500hPa
+Temperatura a 80m                  | ✅ Reale     | temperature_80m
+Temperatura a 120m                 | ✅ Reale     | temperature_120m
+Temperatura a 180m                 | ✅ Reale     | temperature_180m
+Temperatura a livelli hPa          | ⚠️ Parziale  | Solo in AlpiumWindgram
+Nuvolosità totale                   | ✅ Reale     | cloud_cover
+Nuvolosità basso/medio/alto         | ✅ Reale     | cloud_cover_low/mid/high
+Precipitazioni                      | ✅ Reale     | precipitation
+CAPE                               | ✅ Reale     | cape
+CIN                                | ✅ Reale     | convective_inhibition
+Lifted Index                       | ✅ Reale     | lifted_index
+Zero termico (freezing level)       | ✅ Reale     | freezing_level_height
+Radiazione solare                  | ✅ Reale     | shortwave_radiation
+Pressione MSL                      | ✅ Reale     | pressure_msl
+Pressione superficiale             | ✅ Reale     | surface_pressure
+Visibilità                         | ✅ Reale     | visibility
+UV Index                           | ✅ Reale     | uv_index
+Weather code                       | ✅ Reale     | weather_code
+
+================================================================================
+E. DATI VERTICALI DISPONIBILI — LIMITAZIONI REALI
+================================================================================
+
+✅ DISPONIBILI (dati reali API)
+--------------------------------------------------------------------------------
+Quote vento: 10m, 80m, 120m, 180m, 925hPa(760m), 850hPa(1450m),
+            700hPa(3000m), 600hPa(4200m), 500hPa(5500m)
+Quote temperatura: 2m, 80m, 120m, 180m
+Temperature a livelli isobarici: solo in AlpiumWindgram (500-1000hPa)
+Zero termico: dato reale API (freezing_level_height)
+
+⚠️ DERIVATI / STIMATI (calcolati dal codice)
+--------------------------------------------------------------------------------
+DeltaT / lapse rate:    calcolato come (t2m - t180m) / 180 * 100,
+                        oppure stimato con modello sinusoidale se dati mancanti
+Base cumuli (LCL):      altitude + (T - Td) * 125 — formula standard
+Top termica:            stimato come cloudBase + rateo * 100 + cape * 0.1
+Rateo termica:          formula basata su spread + radiazione + CAPE
+Boundary Layer:         non c'è dato reale; stimato o disattivato
+Shear:                  non calcolato esplicitamente in nessun windgram
+
+❌ NON DISPONIBILI (manca nell'API gratuita)
+--------------------------------------------------------------------------------
+Umidità relativa in quota              ❌ Non chiesta, non disponibile
+Venti ai livelli intermedi             ❌ Non disponibili (es. 875, 750, 650, 550 hPa)
+Temperature ai livelli intermedi       ❌ Solo in AlpiumWindgram
+Dati radiosondaggio reali              ❌ Non disponibili (servirebbe API a pagamento)
+Shear verticale calcolato              ❌ Non presente in alcun componente
+Convergenza                            ❌ Assente
+Top boundary layer reale               ❌ Stimato, non misurato
+Velocità media termiche reale          ❌ Stimata da formula empirica

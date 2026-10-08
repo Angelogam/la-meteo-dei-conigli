@@ -1,0 +1,164 @@
+================================================================================
+RICONOSCIMENTO TECNICO — WINDGRAM & REPORT METEOROLOGICO
+SEZIONE 3/3: K–L
+================================================================================
+
+K. DATI CHE MANCA AVERE
+================================================================================
+
+PARAMETRO                          | IMPORTANZA | STATO | NOTE
+-----------------------------------|------------|-------|----------------------------------
+Umidità relativa in quota          | ALTA       | ❌    | Non disponibile in API gratuita
+Venti a 875hPa, 750hPa, 650hPa    | MEDIA      | ❌    | Solo 5 livelli: 925, 850, 700, 600, 500
+Venti a 550hPa                     | MEDIA      | ❌    | Non disponibile
+Temperature a livelli intermedi    | MEDIA      | ❌    | Solo in AlpiumWindgram (parziale)
+Shear verticale calcolato           | ALTA       | ❌    | Non calcolato da nessun componente
+Convergenza                        | MEDIA      | ❌    | Non disponibile
+Dati radiosondaggio reali           | ALTA       | ❌    | Servirebbe API a pagamento (Meteoblue, etc.)
+Top boundary layer reale            | ALTA       | ❌    | Stimato, non misurato
+Velocità media termiche reale       | ALTA       | ❌    | Stimata da formula empirica
+Gradiente termico verticale pieno    | MEDIA      | ⚠️    | Parzialmente (deltaT semplificato 2m-180m)
+Wind shear tra livelli adiacenti    | ALTA       | ❌    | Non calcolato
+
+DETTAGLIO LIMITAZIONI API GRATUITA:
+--------------------------------------------------------------------------------
+Open-Meteo gratuito offre soli 5 livelli di vento in quota:
+  925hPa (~760m), 850hPa (~1450m), 700hPa (~3000m), 600hPa (~4200m), 500hPa (~5500m)
+Manca la risoluzione intermedia (875, 750, 650, 550 hPa) che sarebbe utile
+per interpolazioni più accurate nel windgram.
+
+Per le temperature in quota, l'API gratuita offre solo:
+  temperature_2m, temperature_80m, temperature_120m, temperature_180m
+I livelli hPa sono disponibili SOLO come parametro aggiuntivo richiesto
+esplicitamente (come fa AlpiumWindgram), ma non in tutte le chiamate.
+
+Dati come umidità in quota, wind shear, convergenza, e profili completi
+di radiosondaggio richiedono API a pagamento (Meteoblue, AerisWeather, etc.)
+o parsing di dati GRIB da fonti come Meteotest.
+
+================================================================================
+L. PROPOSTA DI ARCHITETTURA PER COLLEGARE REPORT E WINDGRAM
+================================================================================
+
+PROBLEMA CENTRALE
+--------------------------------------------------------------------------------
+Il windgram e il report lavorano su dati simili ma LI TRASFORMANO IN MODO
+INDIPENDENTE, producendo versioni divergenti della realtà.
+
+ARCHITETTURA PROPOSTA: SINGLE SOURCE OF TRUTH
+--------------------------------------------------------------------------------
+
+                         Open-Meteo API
+                               │
+                               ▼
+                    rawApiResponse
+                 (già in useWeatherData)
+                               │
+            ┌──────────────────┼──────────────────┐
+            │                  │                  │
+            ▼                  ▼                  ▼
+  useMultiHourWind   useDerivedMeteorological  generateReportMeteo
+  Profile()          Data()  ← NUOVO HOOK       (modificato)
+            │                  │                  │
+            ▼                  ▼                  ▼
+  WindgramMatrix    ────────►  Tutti i dati      Report coerente
+  ProfessionalWg    (stessi   derivati condivisi  con windgram
+  AlpiumWg          dati!)
+  RasoftWg
+            │
+            ▼
+  WindShearCalculator  ← NUOVO MODULO
+  (calcola shear da    (opzionale ma consigliato
+   venti reali multi-  per sicurezza volo)
+   livello)
+
+DESCRIZIONE DELLE MODIFICHE
+--------------------------------------------------------------------------------
+
+1. NUOVO HOOK: useDerivedMeteorologicalData()
+--------------------------------------------------------------------------------
+   Centralizza TUTTI i calcoli derivati una volta sola:
+   • deltaTProfile (da t2m, t180m, temperature_hPa)
+   • cloudBaseByHour (da t2m, dew2m)
+   • thermalTopByHour (da cloudBase + CAPE)
+   • thermalRateByHour (da spread + CAPE + nuvole)
+   • windShearByLevel (da venti reali multi-livello)
+   • pblHeightByHour (stima da thermalRate o deltaT)
+
+2. WINDGRAMMATRIX MODIFICATO
+--------------------------------------------------------------------------------
+   Usa gli stessi derived data invece di ricalcolare indipendentemente.
+   Eliminina la duplicazione di logica tra WindgramMatrix e ProfessionalWindgram.
+
+3. GENERATEREPORTMETEO MODIFICATO
+--------------------------------------------------------------------------------
+   a) Sostituire venti in quota stimati con REALI:
+      • wind1500_2500 ← interpolato da vento 850hPa (reale)
+      • wind2500_3500 ← interpolato da vento 700hPa (reale)
+      • windOver3500  ← interpolato da vento 500hPa (reale)
+      • stesse cose per le direzioni
+
+   b) Usare lifted_index REALE dall'API invece di derivarlo da CAPE:
+      // ATTUALE (sbagliato):
+      let liftedIndex = 1.5;
+      if (maxCape > 1500) liftedIndex = -6.0;
+      // CORRETTO:
+      const realLI = hourlyData.lifted_index?.[centralIdx] ?? null;
+      if (realLI !== null) liftedIndex = realLI;
+
+   c) Uniformare fallback dew point a t - 6 ovunque
+   d) Rimuovere curva PBL fissa, usare stima da dati reali
+   e) Usare shortwave_radiation reale quando disponibile
+
+4. NUOVO MODULO: windShearCalculator.ts
+--------------------------------------------------------------------------------
+   Calcola shear verticale dai venti reali:
+   • Shear tra 10m e 850hPa (direZIONALE e VELOCITÀ)
+   • Shear tra 850hPa e 500hPa
+   • Directional shear (rotazione vento con quota)
+   • Speed shear (gradiente velocità)
+   • Classificazione rischio (da DeMartine & Scott)
+
+5. ALPIUMWINDGRAM E RASOFTWINDGRAM
+--------------------------------------------------------------------------------
+   Farli usare rawData condiviso invece di fare chiamate autonome.
+   Aggiungere prop "sharedRawData?" per evitare duplicazione.
+
+6. TOMORROWWINDGRAM
+--------------------------------------------------------------------------------
+   Mantenere separato (è una feature diversa), ma chiaro nella UI
+   che i dati provengono da una fonte diversa e possono discostarsi.
+
+BENEFICI ATTESI
+--------------------------------------------------------------------------------
+✓ Unica fonte di verità per tutti i calcoli meteorologici
+✓ Report e windgram descrivono la stessa realtà
+✓ Eliminazione duplicazioni di codice
+✓ Maggiore accuratezza (venti reali invece di stime)
+✓ Facilmente estendibile (aggiungere nuovi derived data senza ripiegare)
+✓ Shear visibile e calcolato correttamente
+
+PRIME AZIONI CONSIGLIATE (priorità)
+--------------------------------------------------------------------------------
+1. [ALTA] Modificare generateReportMeteo per usare venti reali in quota
+2. [ALTA] Usare lifted_index reale dall'API
+3. [ALTA] Uniformare fallback dew point (t-6 ovunque)
+4. [MEDIO] Creare useDerivedMeteorologicalData() hook centrale
+5. [MEDIO] Creare windShearCalculator.ts
+6. [MEDIO] Far usare AlpiumWindgram e RasoftWindgram il rawData condiviso
+7. [BASSA] Sostituire curva PBL fissa con stima da dati
+
+================================================================================
+FINE DEL REPORT — RICOGNIZIONE COMPLETA
+================================================================================
+
+Riassunto exec:
+• 10+ componenti windgram, 3 fonti dati diverse (Open-Meteo, Tomorrow.io, fallback)
+• Il windgram principale usa dati reali Open-Meteo multi-livello
+• Il report usa dati reali DI SUPERFICIE ma STIME per quota
+• 10+ fallback arbitrari trovati, 7 critici
+• 3 differenze principali tra windgram e report che producono descrizioni divergenti
+• Soluzione: centralizzare i calcoli derivati in un singolo hook
+• Dati mancanti: umidità in quota, shear, convergenza, radiosondaggio
+
+================================================================================
