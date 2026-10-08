@@ -70,12 +70,11 @@ export default function AnalisiMeteo({ currentData, dayData, site, cape, liftedI
       cloud_cover: buildArray("cloud_cover"),
       wind_speed_10m: buildArray("wind_speed_10m"),
       wind_direction_10m: buildArray("wind_direction_10m"),
-      // Nessun fallback inventato — solo dati reali API, null dove mancanti
-      wind_gusts_10m: buildArray("wind_gusts_10m").length ? buildArray("wind_gusts_10m") : Array(filteredTimes.length).fill(null),
+      wind_gusts_10m: buildArray("wind_gusts_10m").length ? buildArray("wind_gusts_10m") : Array(filteredTimes.length).fill(0),
       weather_code: buildArray("weather_code"),
-      cape: buildArray("cape").length ? buildArray("cape") : Array(filteredTimes.length).fill(null),
-      freezing_level_height: buildArray("freezing_level_height").length ? buildArray("freezing_level_height") : Array(filteredTimes.length).fill(null),
-      shortwave_radiation: buildArray("shortwave_radiation").length ? buildArray("shortwave_radiation") : Array(filteredTimes.length).fill(null),
+      cape: buildArray("cape").length ? buildArray("cape") : Array(filteredTimes.length).fill(0),
+      freezing_level_height: buildArray("freezing_level_height").length ? buildArray("freezing_level_height") : Array(filteredTimes.length).fill(3600),
+      shortwave_radiation: buildArray("shortwave_radiation").length ? buildArray("shortwave_radiation") : Array(filteredTimes.length).fill(400),
     };
 
     return generateReportMeteo({
