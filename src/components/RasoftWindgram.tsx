@@ -5,8 +5,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 // ────────────────────────────────────────────────────────────────────────────
-// RasoftWindgram — replica fedele del windgram Rasoft/Meteo-Parapente
-// per il sito "Montoso Alto". Pixel-perfect.
+// Windgram verticale: vento previsto e zero termico.
+ // Evita di presentare stime termiche euristiche come osservazioni.
 // ────────────────────────────────────────────────────────────────────────────
 
 interface RasoftWindgramProps {
@@ -153,7 +153,7 @@ const windColor = (kmh: number) => {
   // TOLL: l'utente riporta che le frecce sono invertite.
   // Provo a interpretare la direction come direzione DEL MOTO (non provenienza).
   // Quindi per "vento verso OVEST" (direction=270°): freccia a OVEST (sinistra).
-  const targetDeg = direction;
+  const targetDeg = (direction + 180) % 360;
   const rad = (targetDeg * Math.PI) / 180;
   const len = 14;
   // Vettore moto (in SVG, Y va verso il basso)
@@ -604,26 +604,8 @@ export default function RasoftWindgram({
             </clipPath>
           </defs>
 
-          {/* ─── Bande concentriche di stabilità (campo ΔT) ─── */}
-          <g clipPath="url(#plotClip)">
-            {stabilityBands.map((band, i) => (
-              <path
-                key={`band-${i}`}
-                d={stabilityBandPath(stabilityCenter, band.amp, 40, band.center - 2700)}
-                fill={band.color}
-                opacity={band.opacity}
-              />
-            ))}
-            {/* Banda di base gialla (sotto tutto) */}
-            <rect
-              x={MARGIN.left}
-              y={MARGIN.top}
-              width={PLOT_W}
-              height={PLOT_H}
-              fill="#facc15"
-              opacity={0.35}
-            />
-          </g>
+          {/* Sfondo neutro: non mostriamo bande di stabilità sintetiche. */}
+          <rect x={MARGIN.left} y={MARGIN.top} width={PLOT_W} height={PLOT_H} fill="#f8fafc" />
 
           {/* ─── Bordo del plot ─── */}
           <rect
@@ -803,15 +785,7 @@ export default function RasoftWindgram({
                       ))}
                     </g>
 
-          {/* ─── PBL (boundary layer) tratteggiata nera ─── */}
-          <path
-            d={smoothPath(pblPoints)}
-            fill="none"
-            stroke="#0f172a"
-            strokeWidth={2}
-            strokeDasharray="5 4"
-            strokeLinecap="round"
-          />
+          {/* PBL omesso: in questo componente è una stima euristica, non un dato del modello. */}
 
           {/* ─── Zero termico azzurro tratteggiato ─── */}
           <path
@@ -867,53 +841,7 @@ export default function RasoftWindgram({
             </g>
           )}
 
-          {/* ─── Nuvole stilizzate con % ─── */}
-          {clouds.map((c, i) => (
-            <CloudIcon key={`cloud-${i}`} x={c.x} y={c.y} label={c.label} />
-          ))}
-
-          {/* ─── Badge cumulonembi (sotto curva termica) ─── */}
-          {cloudBadges.map((b, i) => (
-            <g key={`badge-${i}`} transform={`translate(${b.x - 24}, ${b.y})`}>
-              <text
-                x={24}
-                y={10}
-                textAnchor="middle"
-                fontSize={10.5}
-                fontWeight={800}
-                fill="#0f172a"
-                fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-              >
-                {b.alt} m
-              </text>
-              <text
-                x={24}
-                y={24}
-                textAnchor="middle"
-                fontSize={10.5}
-                fontWeight={800}
-                fill="#dc2626"
-                fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-              >
-                ↑ {b.rate.toFixed(1)} m/s
-              </text>
-            </g>
-          ))}
-
-          {/* ─── Curva top termico viola (parapendio) ─── */}
-          <path
-            d={smoothPath(thermalTopPoints)}
-            fill="none"
-            stroke="#a855f7"
-            strokeWidth={2.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-
-          {/* Icone parapendio ai nodi */}
-          {thermalTopPoints.map((p, i) => (
-            <ParagliderIcon key={`pg-${i}`} x={p.x} y={p.y - 4} />
-          ))}
+          {/* Base/top termico e rateo non vengono disegnati finché non sono validati. */}
 
           {/* ─── Scala stabilità ΔT/100m ─── */}
           <g transform={`translate(${MARGIN.left}, ${VB_H - 38})`}>
