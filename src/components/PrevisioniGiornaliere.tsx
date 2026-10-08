@@ -158,14 +158,14 @@ export default function PrevisioniGiornaliere({
         />
 
         {/* Badge animato */}
-        <div className="px-6 py-4 bg-emerald-950/50 border-b border-emerald-500/20">
+        <div className="px-4 py-3 bg-slate-900 border-b border-slate-700/70">
           <div className="flex items-center gap-3">
-            <span className="text-4xl" style={{ animation: 'bounce 2s ease-in-out infinite' }}>🛩️</span>
+            <span className="text-2xl shrink-0" style={{ animation: 'bounce 2s ease-in-out infinite' }}>🛩️</span>
             <div>
               <div className="text-[10px] font-black text-emerald-400/80 uppercase tracking-[0.3em]">
-                ★ NUOVO LAYOUT — Previsioni Volo
+                PREVISIONI METEO
               </div>
-              <div className="text-lg font-black text-white">{site.name}</div>
+              <div className="text-base font-bold text-white">{site.name}</div>
             </div>
             <div className="ml-auto flex items-center gap-3">
               <div className={`px-4 py-1.5 rounded-full text-xs font-black ${verdict.bg} ${verdict.color} border ${verdict.ring} ring-2`}>
@@ -175,31 +175,31 @@ export default function PrevisioniGiornaliere({
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-4">
           {/* RIGA VOTO + TEMP + VENTO */}
-          <div className="grid grid-cols-[auto_1fr_1fr] gap-8 items-center mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr_1fr] gap-3 items-stretch mb-4">
             {/* VOTO GIGANTE ANIMATO */}
             <div className="flex flex-col items-center">
               {hasValidRating ? (
                 <>
-                  <div className="text-[120px] leading-none font-black text-emerald-400 drop-shadow-[0_0_40px_rgba(16,185,129,0.6)] transition-all duration-700">
+                  <div className="text-6xl leading-none font-black text-slate-100 transition-all duration-300">
                     {animatedScore}
                   </div>
-                  <div className="text-xl text-emerald-500/50 font-black">/ 10</div>
+                  <div className="text-sm text-slate-500 font-bold">/ 10</div>
                 </>
               ) : (
-                <div className="text-[100px] leading-none font-black text-slate-500">N/D</div>
+                <div className="text-4xl leading-none font-black text-slate-500">N/D</div>
               )}
-              <div className="mt-2 text-xs text-slate-500 font-bold uppercase tracking-widest">Voto Volo</div>
+              <div className="mt-2 text-[10px] text-slate-500 font-bold uppercase tracking-wider">Indice sintetico</div>
             </div>
 
             {/* TEMPERATURA */}
-            <div className="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/50 hover:border-amber-500/30 transition-all duration-300 hover:shadow-[0_0_20px_rgba(245,158,11,0.1)] hover:scale-[1.01]">
+            <div className="bg-slate-800/50 rounded-xl p-3 sm:p-4 border border-slate-700/60">
               <div className="flex items-center gap-2 text-xs text-slate-500 mb-2">
                 <Sun className="w-4 h-4 text-amber-400" />
                 <span className="font-black uppercase tracking-wider">Temperatura</span>
               </div>
-              <div className="text-5xl font-black text-white">
+              <div className="text-3xl sm:text-4xl font-black text-white">
                 {temp !== null ? (
                   <>{Math.round(temp)}<span className="text-2xl text-slate-500">°C</span></>
                 ) : (
@@ -223,7 +223,7 @@ export default function PrevisioniGiornaliere({
             </div>
 
             {/* VENTO */}
-            <div className="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/50 hover:border-sky-500/30 transition-all duration-300 hover:shadow-[0_0_20px_rgba(14,165,233,0.1)] hover:scale-[1.01]">
+            <div className="bg-slate-800/50 rounded-xl p-3 sm:p-4 border border-slate-700/60">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2 text-xs text-slate-500">
                   <Wind className="w-4 h-4 text-sky-400" style={{ animation: 'spin 4s linear infinite' }} />
@@ -261,7 +261,7 @@ export default function PrevisioniGiornaliere({
           </div>
 
           {/* 4 STATISTICHE ORIZZONTALI */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[
               { icon: "💧", label: "Umidità", value: humidity !== null ? `${humidity}%` : "N/D", color: humidity !== null ? "text-sky-400" : "text-slate-500", sub: humidity !== null ? "Rilevata" : "—" },
               { icon: "📊", label: "Pressione", value: pressure !== null ? `${Math.round(pressure)} hPa` : "N/D", color: pressure !== null ? "text-amber-400" : "text-slate-500", sub: pressure !== null ? "MSL" : "—" },
@@ -270,10 +270,10 @@ export default function PrevisioniGiornaliere({
             ].map((stat, i) => (
               <div
                 key={i}
-                className="bg-slate-800/40 rounded-2xl border border-slate-700/50 p-4 text-center hover:border-slate-600 hover:scale-[1.03] transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] cursor-default"
+                className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-3 text-center"
                 style={{ animationDelay: `${i * 60}ms` }}
               >
-                <div className="text-3xl mb-2 transition-transform duration-300 hover:scale-125">{stat.icon}</div>
+                <div className="text-xl mb-1">{stat.icon}</div>
                 <div className={`text-2xl font-black ${stat.color}`}>{stat.value}</div>
                 <div className="text-[10px] text-slate-500 uppercase tracking-wider mt-1">{stat.label}</div>
                 <div className="text-[9px] text-slate-600 mt-0.5">{stat.sub}</div>
@@ -292,7 +292,7 @@ export default function PrevisioniGiornaliere({
           <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Parametri di Volo</div>
           <span className="text-[9px] text-slate-600 ml-auto">Clicca per espandere</span>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
           <AeroCard
             icon={<ArrowUp className="w-5 h-5" />}
             title="Rateo Termico"
@@ -364,7 +364,7 @@ export default function PrevisioniGiornaliere({
           <div className="w-1 h-6 bg-emerald-500 rounded-full" />
           <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Previsioni 3 Giorni</div>
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {tabs.map((tabName, idx) => {
             const d = enrichedDaily[idx];
             const isActive = selectedDay === idx;
@@ -377,9 +377,9 @@ export default function PrevisioniGiornaliere({
                 key={idx}
                 onClick={() => onSelectDay(idx)}
                 className={`
-                  relative rounded-2xl p-5 text-left transition-all duration-300
+                  relative rounded-xl p-3 sm:p-4 text-left transition-colors duration-200
                   ${isActive
-                    ? 'bg-emerald-950/60 border-2 border-emerald-400 shadow-xl shadow-emerald-900/40 scale-[1.03]'
+                    ? 'bg-emerald-950/60 border-2 border-emerald-400 shadow-md shadow-emerald-900/20'
                     : isRainy
                     ? 'bg-rose-950/20 border border-rose-500/30 hover:border-rose-500/50 hover:shadow-[0_0_20px_rgba(244,63,94,0.15)]'
                     : 'bg-slate-800/40 border border-slate-700/50 hover:border-slate-600 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,255,255,0.05)]'
@@ -387,7 +387,7 @@ export default function PrevisioniGiornaliere({
                 `}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className={`text-4xl transition-transform duration-300 hover:scale-110`}>{d ? getWeatherEmoji(d.weatherCode) : "☀️"}</span>
+                  <span className={`text-2xl`}>{d ? getWeatherEmoji(d.weatherCode) : "☀️"}</span>
                   <div className={`text-sm font-black px-3 py-1 rounded-full transition-all duration-300 ${isActive ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-700/50 text-slate-400'}`}>
                     {rating !== null ? `${rating}/10` : "N/D"}
                   </div>
@@ -397,7 +397,7 @@ export default function PrevisioniGiornaliere({
                 {d && (
                   <>
                     <div className="flex items-baseline gap-1 mb-2">
-                      <span className="text-xl font-black text-amber-300">{d.temperatureMax !== null ? `${Math.round(d.temperatureMax)}°` : "N/D"}</span>
+                      <span className="text-lg font-bold text-amber-300">{d.temperatureMax !== null ? `${Math.round(d.temperatureMax)}°` : "N/D"}</span>
                       <span className="text-xs text-slate-600">/</span>
                       <span className="text-lg font-bold text-sky-300">{d.temperatureMin !== null ? `${Math.round(d.temperatureMin)}°` : "N/D"}</span>
                     </div>
