@@ -99,54 +99,54 @@ export default function ProfessionalWindgram({
 
   // Stabilità: usa SEMPRE data.hourly (dati del giorno specifico selezionato)
   // per evitare discrepanze tra windgram e report
-  const stabilitaData = data?.hourly ?? null;
+  const stabilitDataa = data?.hourly ?? null;
 
   // Dataset centralizzato — thermalTop/thermalAvg/deltaT provengono da qui
   const hourDerivedMap = useMemo(() => {
-    if (!stabilitData?.time) return new Map<number, ReturnType<typeof computeHourlyDerived>>();
+    if (!stabilitDataa?.time) return new Map<number, ReturnType<typeof computeHourlyDerived>>();
     const map = new Map<number, ReturnType<typeof computeHourlyDerived>>();
-    stabilitData.time.forEach((t: string, idx: number) => {
+    stabilitDataa.time.forEach((t: string, idx: number) => {
       const hr = parseInt(t.split("T")[1].split(":")[0], 10);
       if (isNaN(hr)) return;
       const raw = {
-        temperature: stabilitData.temperature_2m?.[idx] != null ? Number(stabilitData.temperature_2m[idx]) : null,
-        dewPoint: stabilitData.dew_point_2m?.[idx] != null ? Number(stabilitData.dew_point_2m[idx]) : null,
-        temp80m: stabilitData.temperature_80m?.[idx] != null ? Number(stabilitData.temperature_80m[idx]) : null,
-        temp120m: stabilitData.temperature_120m?.[idx] != null ? Number(stabilitData.temperature_120m[idx]) : null,
-        temperature180m: stabilitData.temperature_180m?.[idx] != null ? Number(stabilitData.temperature_180m[idx]) : null,
-        windSpeed: stabilitData.wind_speed_10m?.[idx] != null ? Number(stabilitData.wind_speed_10m[idx]) : null,
-        windDir: stabilitData.wind_direction_10m?.[idx] != null ? Number(stabilitData.wind_direction_10m[idx]) : null,
-        windSpeed80m: stabilitData.wind_speed_80m?.[idx] != null ? Number(stabilitData.wind_speed_80m[idx]) : null,
-        windDir80m: stabilitData.wind_direction_80m?.[idx] != null ? Number(stabilitData.wind_direction_80m[idx]) : null,
-        windSpeed120m: stabilitData.wind_speed_120m?.[idx] != null ? Number(stabilitData.wind_speed_120m[idx]) : null,
-        windDir120m: stabilitData.wind_direction_120m?.[idx] != null ? Number(stabilitData.wind_direction_120m[idx]) : null,
-        windSpeed180m: stabilitData.wind_speed_180m?.[idx] != null ? Number(stabilitData.wind_speed_180m[idx]) : null,
-        windDir180m: stabilitData.wind_direction_180m?.[idx] != null ? Number(stabilitData.wind_direction_180m[idx]) : null,
-        cape: stabilitData.cape?.[idx] != null ? Number(stabilitData.cape[idx]) : null,
-        cin: stabilitData.convective_inhibition?.[idx] != null ? Number(stabilitData.convective_inhibition[idx]) : null,
-        liftedIndex: stabilitData.lifted_index?.[idx] != null ? Number(stabilitData.lifted_index[idx]) : null,
-        freezingLevel: stabilitData.freezing_level_height?.[idx] != null ? Number(stabilitData.freezing_level_height[idx]) : null,
-        cloudCover: stabilitData.cloud_cover?.[idx] != null ? Number(stabilitData.cloud_cover[idx]) : null,
-        shortwaveRadiation: stabilitData.shortwave_radiation?.[idx] != null ? Number(stabilitData.shortwave_radiation[idx]) : null,
-        boundaryLayerHeight: stabilitData.boundary_layer_height?.[idx] != null ? Number(stabilitData.boundary_layer_height[idx]) : null,
-        pressure: stabilitData.pressure_msl?.[idx] != null ? Number(stabilitData.pressure_msl[idx]) : null,
-        surfacePressure: stabilitData.surface_pressure?.[idx] != null ? Number(stabilitData.surface_pressure[idx]) : null,
-        windSpeed925: stabilitData.wind_speed_925hPa?.[idx] != null ? Number(stabilitData.wind_speed_925hPa[idx]) : null,
-        windDir925: stabilitData.wind_direction_925hPa?.[idx] != null ? Number(stabilitData.wind_direction_925hPa[idx]) : null,
-        windSpeed850: stabilitData.wind_speed_850hPa?.[idx] != null ? Number(stabilitData.wind_speed_850hPa[idx]) : null,
-        windDir850: stabilitData.wind_direction_850hPa?.[idx] != null ? Number(stabilitData.wind_direction_850hPa[idx]) : null,
-        windSpeed700: stabilitData.wind_speed_700hPa?.[idx] != null ? Number(stabilitData.wind_speed_700hPa[idx]) : null,
-        windDir700: stabilitData.wind_direction_700hPa?.[idx] != null ? Number(stabilitData.wind_direction_700hPa[idx]) : null,
-        windSpeed600: stabilitData.wind_speed_600hPa?.[idx] != null ? Number(stabilitData.wind_speed_600hPa[idx]) : null,
-        windDir600: stabilitData.wind_direction_600hPa?.[idx] != null ? Number(stabilitData.wind_direction_600hPa[idx]) : null,
-        windSpeed500: stabilitData.wind_speed_500hPa?.[idx] != null ? Number(stabilitData.wind_speed_500hPa[idx]) : null,
-        windDir500: stabilitData.wind_direction_500hPa?.[idx] != null ? Number(stabilitData.wind_direction_500hPa[idx]) : null,
+        temperature: stabilitDataa.temperature_2m?.[idx] != null ? Number(stabilitDataa.temperature_2m[idx]) : null,
+        dewPoint: stabilitDataa.dew_point_2m?.[idx] != null ? Number(stabilitDataa.dew_point_2m[idx]) : null,
+        temp80m: stabilitDataa.temperature_80m?.[idx] != null ? Number(stabilitDataa.temperature_80m[idx]) : null,
+        temp120m: stabilitDataa.temperature_120m?.[idx] != null ? Number(stabilitDataa.temperature_120m[idx]) : null,
+        temperature180m: stabilitDataa.temperature_180m?.[idx] != null ? Number(stabilitDataa.temperature_180m[idx]) : null,
+        windSpeed: stabilitDataa.wind_speed_10m?.[idx] != null ? Number(stabilitDataa.wind_speed_10m[idx]) : null,
+        windDir: stabilitDataa.wind_direction_10m?.[idx] != null ? Number(stabilitDataa.wind_direction_10m[idx]) : null,
+        windSpeed80m: stabilitDataa.wind_speed_80m?.[idx] != null ? Number(stabilitDataa.wind_speed_80m[idx]) : null,
+        windDir80m: stabilitDataa.wind_direction_80m?.[idx] != null ? Number(stabilitDataa.wind_direction_80m[idx]) : null,
+        windSpeed120m: stabilitDataa.wind_speed_120m?.[idx] != null ? Number(stabilitDataa.wind_speed_120m[idx]) : null,
+        windDir120m: stabilitDataa.wind_direction_120m?.[idx] != null ? Number(stabilitDataa.wind_direction_120m[idx]) : null,
+        windSpeed180m: stabilitDataa.wind_speed_180m?.[idx] != null ? Number(stabilitDataa.wind_speed_180m[idx]) : null,
+        windDir180m: stabilitDataa.wind_direction_180m?.[idx] != null ? Number(stabilitDataa.wind_direction_180m[idx]) : null,
+        cape: stabilitDataa.cape?.[idx] != null ? Number(stabilitDataa.cape[idx]) : null,
+        cin: stabilitDataa.convective_inhibition?.[idx] != null ? Number(stabilitDataa.convective_inhibition[idx]) : null,
+        liftedIndex: stabilitDataa.lifted_index?.[idx] != null ? Number(stabilitDataa.lifted_index[idx]) : null,
+        freezingLevel: stabilitDataa.freezing_level_height?.[idx] != null ? Number(stabilitDataa.freezing_level_height[idx]) : null,
+        cloudCover: stabilitDataa.cloud_cover?.[idx] != null ? Number(stabilitDataa.cloud_cover[idx]) : null,
+        shortwaveRadiation: stabilitDataa.shortwave_radiation?.[idx] != null ? Number(stabilitDataa.shortwave_radiation[idx]) : null,
+        boundaryLayerHeight: stabilitDataa.boundary_layer_height?.[idx] != null ? Number(stabilitDataa.boundary_layer_height[idx]) : null,
+        pressure: stabilitDataa.pressure_msl?.[idx] != null ? Number(stabilitDataa.pressure_msl[idx]) : null,
+        surfacePressure: stabilitDataa.surface_pressure?.[idx] != null ? Number(stabilitDataa.surface_pressure[idx]) : null,
+        windSpeed925: stabilitDataa.wind_speed_925hPa?.[idx] != null ? Number(stabilitDataa.wind_speed_925hPa[idx]) : null,
+        windDir925: stabilitDataa.wind_direction_925hPa?.[idx] != null ? Number(stabilitDataa.wind_direction_925hPa[idx]) : null,
+        windSpeed850: stabilitDataa.wind_speed_850hPa?.[idx] != null ? Number(stabilitDataa.wind_speed_850hPa[idx]) : null,
+        windDir850: stabilitDataa.wind_direction_850hPa?.[idx] != null ? Number(stabilitDataa.wind_direction_850hPa[idx]) : null,
+        windSpeed700: stabilitDataa.wind_speed_700hPa?.[idx] != null ? Number(stabilitDataa.wind_speed_700hPa[idx]) : null,
+        windDir700: stabilitDataa.wind_direction_700hPa?.[idx] != null ? Number(stabilitDataa.wind_direction_700hPa[idx]) : null,
+        windSpeed600: stabilitDataa.wind_speed_600hPa?.[idx] != null ? Number(stabilitDataa.wind_speed_600hPa[idx]) : null,
+        windDir600: stabilitDataa.wind_direction_600hPa?.[idx] != null ? Number(stabilitDataa.wind_direction_600hPa[idx]) : null,
+        windSpeed500: stabilitDataa.wind_speed_500hPa?.[idx] != null ? Number(stabilitDataa.wind_speed_500hPa[idx]) : null,
+        windDir500: stabilitDataa.wind_direction_500hPa?.[idx] != null ? Number(stabilitDataa.wind_direction_500hPa[idx]) : null,
       };
       const derived = computeHourlyDerived(raw as any, altitude);
       if (derived) map.set(hr, derived);
     });
     return map;
-  }, [stabilitData, altitude]);
+  }, [stabilitDataa, altitude]);
 
   const displayAltitudes = useMemo(() => computeDisplayAltitudes(altitude), [altitude]);
 
@@ -231,9 +231,9 @@ export default function ProfessionalWindgram({
   // Calcolo del lapse rate reale per ogni quota usando i dati di temperatura a livelli hPa
     // Restituisce null se i dati hPa non sono disponibili, così il fallback chain in hourlyData può usare t180
     const getDeltaTAtAlt = useMemo(() => {
-      if (!stabilitaData?.time || !data?.hourly?.time) return null;
+      if (!stabilitDataa?.time || !data?.hourly?.time) return null;
 
-      const times = stabilitaData.time;
+      const times = stabilitDataa.time;
       // Campi disponibili: Open-Meteo ha solo 2m, 180m e livelli hPa
       const tempFields = [
         { key: "temperature_2m", alt: 0 },
@@ -251,7 +251,7 @@ export default function ProfessionalWindgram({
         const hr = parseInt(t.split("T")[1].split(":")[0], 10);
             const readings: { alt: number; temp: number }[] = [];
             tempFields.forEach((f) => {
-              const val = stabilitaData[f.key]?.[idx];
+              const val = stabilitDataa[f.key]?.[idx];
               if (val != null && !isNaN(val)) {
                 readings.push({ alt: f.alt, temp: Number(val) });
               }
@@ -288,7 +288,7 @@ export default function ProfessionalWindgram({
         }
         return null;
       };
-    }, [stabilitaData, data]);
+    }, [stabilitDataa, data]);
 
   const hourlyData = useMemo(() => {
     if (!data?.hourly?.time) return [];
@@ -611,9 +611,9 @@ export default function ProfessionalWindgram({
               {loading ? "⏳ caricamento..." : "✓ dati pronti"}
             </span>
             {error && <span className="text-red-500 font-bold">✗ {error}</span>}
-            {stabilitaData?.time && (
+            {stabilitDataa?.time && (
               <span className="text-sky-600 font-bold">
-                {stabilitaData.time.length}h · t2m={stabilitaData.temperature_2m?.[0] ?? '—'}°C · t180={stabilitaData.temperature_180m?.[0] ?? '—'}°C
+                {stabilitDataa.time.length}h · t2m={stabilitDataa.temperature_2m?.[0] ?? '—'}°C · t180={stabilitDataa.temperature_180m?.[0] ?? '—'}°C
               </span>
             )}
             {hourlyData.length > 0 && (
