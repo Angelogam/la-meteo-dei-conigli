@@ -2,11 +2,11 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Report Consolidamento Motore Meteorologico</title>
+  <title>Report Consolidamento Meteorologico — Passata 2</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1e293b; background: #fff; padding: 40px; line-height: 1.6; }
-    h1 { font-size: 24px; color: #0f172a; border-bottom: 3px solid #0ea5e9; padding-bottom: 10px; margin-bottom: 30px; }
+    h1 { font-size: 24px; color: #0f172a; border-bottom: 3px solid #0ea5e9; padding-bottom: 10px; margin-bottom: 12px; }
     h2 { font-size: 18px; color: #0ea5e9; margin-top: 30px; margin-bottom: 12px; border-left: 4px solid #0ea5e9; padding-left: 12px; }
     h3 { font-size: 14px; color: #475569; margin-top: 20px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
     table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
@@ -28,246 +28,214 @@
     .note { background: #fef3c7; border-left: 3px solid #f59e0b; padding: 10px 14px; font-size: 12px; margin: 12px 0; border-radius: 0 6px 6px 0; }
     .success { background: #d1fae5; border-left-color: #10b981; }
     .warning { background: #fee2e2; border-left-color: #ef4444; }
+    .info { background: #dbeafe; border-left-color: #3b82f6; }
+    .meta { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+    .consumer-list { list-style: none; padding: 0; }
+    .consumer-list li { padding: 3px 0; font-size: 12px; }
+    .consumer-list li::before { content: "• "; color: #0ea5e9; font-weight: bold; }
   </style>
 </head>
 <body>
 
-<h1>📊 Report Consolidamento Motore Meteorologico</h1>
-<p style="font-size:13px; color:#64748b; margin-bottom:24px;">Progetto: <strong>la-meteo-dei-conigli</strong> &nbsp;·&nbsp; Data: <span id="date"></span> &nbsp;·&nbsp; Commit: <code>b0fcb98</code></p>
+<h1>📊 Report Consolidamento Meteorologico — Passata 2</h1>
+<p class="meta">Progetto: <strong>la-meteo-dei-conigli</strong> &nbsp;·&nbsp; Data: <span id="date"></span></p>
 <script>document.getElementById('date').textContent = new Date().toLocaleDateString('it-IT', {day:'2-digit', month:'long', year:'numeric'});</script>
 
 <!-- SEZIONE A -->
-<h2><span class="section-num">A</span> File Modificati</h2>
+<h2><span class="section-num">A</span> File Modificati in Questa Passata</h2>
 
 <table>
-  <tr><th>File</th><th>Tipo modifica</th><th>Dettaglio</th></tr>
-  <tr>
-    <td><code>src/hooks/useMultiHourWindProfile.ts</code></td>
-    <td><span class="badge badge-green">Fix critico</span></td>
-    <td>Estrapolazione vento → restituisce <code>null</code> (prima restituiva il punto più vicino). Check gap: <code>l.gust != null</code>.</td>
-  </tr>
-  <tr>
-    <td><code>src/services/weatherService.ts</code></td>
-    <td><span class="badge badge-green">Fix critico</span></td>
-    <td>Rimossa funzione <code>safeNum</code> inutilizzata. Campi <code>current</code> aggiornati da <code>safeNum(x, 0)</code> a <code>safeNumOrNull(x)</code>.</td>
-  </tr>
-  <tr>
-    <td><code>src/services/openMeteoService.ts</code></td>
-    <td><span class="badge badge-green">Fix critico</span></td>
-    <td>Campi daily aggiornati da <code>safeNum(x, 0)</code> a <code>safeNumOrNull(x)</code> (weather_code, precipitation_sum, ecc.).</td>
-  </tr>
-  <tr>
-    <td><code>src/utils/calcCloudBase.ts</code></td>
-    <td><span class="badge badge-green">Fix critico</span></td>
-    <td>Rimosso <code>Math.max(0.5, ...)</code>: lo spread è ora differenza reale T-Td senza minimi artificiali.</td>
-  </tr>
-  <tr>
-    <td><code>src/components/MeteoTab.tsx</code></td>
-    <td><span class="badge badge-green">Fix critico</span></td>
-    <td><code>spread</code> senza minimo artificiale. <code>cloudBase = null</code> quando T/Td mancanti (prima: <code>siteAlt+1000</code>). <code>avgSpread</code> filtrato su dati reali.</td>
-  </tr>
+  <tr><th>File</th><th>Tipo</th><th>Modifica</th></tr>
   <tr>
     <td><code>src/components/ProfessionalWindgram.tsx</code></td>
-    <td><span class="badge badge-yellow">Fix importante</span></td>
-    <td><code>spread</code> senza <code>Math.max(0.5,...)</code>. Data interpolata restituisce <code>deltaT: null</code> e <code>thermalAvg: null</code> (prima fallback a 0.65).</td>
-  </tr>
-  <tr>
-    <td><code>src/components/AlpiumWindgram.tsx</code></td>
-    <td><span class="badge badge-yellow">Fix importante</span></td>
-    <td><code>spread</code> senza <code>Math.max(1,...)</code>. Rimossa curva sinusoidale per thermalTop/rateo — ora usa dati reali.</td>
-  </tr>
-  <tr>
-    <td><code>src/components/TomorrowWindgram.tsx</code></td>
-    <td><span class="badge badge-yellow">Fix importante</span></td>
-    <td><code>spread</code> senza <code>Math.max(1,...)</code> in 4 punti di calcolo.</td>
-  </tr>
-  <tr>
-    <td><code>src/components/TomorrowrowWindgram.tsx</code></td>
-    <td><span class="badge badge-yellow">Fix importante</span></td>
-    <td><code>spread</code> senza <code>Math.max(1,...)</code> in 2 punti di calcolo.</td>
-  </tr>
-  <tr>
-    <td><code>src/components/SmartAlerts.tsx</code></td>
     <td><span class="badge badge-green">Fix critico</span></td>
-    <td><code>spread</code> senza <code>Math.max(0.5,...)</code>.</td>
-  </tr>
-  <tr>
-    <td><code>src/utils/expertoMeteo.ts</code></td>
-    <td><span class="badge badge-green">Fix critico</span></td>
-    <td><code>spread</code>, <code>avgSpread</code>, <code>hSpread</code> tutti senza <code>Math.max(0.5,...)</code>.</td>
-  </tr>
-  <tr>
-    <td><code>src/utils/indiceVolabilita.ts</code></td>
-    <td><span class="badge badge-green">Fix critico</span></td>
-    <td><code>spread</code> senza <code>Math.max(0.5,...)</code>.</td>
-  </tr>
-  <tr>
-    <td><code>src/services/termicheEngine.ts</code></td>
-    <td><span class="badge badge-yellow">Fix importante</span></td>
-    <td><code>spread</code> e <code>deltaPoten</code> senza minimi artificiali.</td>
-  </tr>
-  <tr>
-    <td><code>src/utils/termiche.ts</code></td>
-    <td><span class="badge badge-green">Fix critico</span></td>
-    <td>Rimossi fallback <code>?? 5</code>, <code>?? 30</code>, <code>?? 50</code>, <code>?? 0</code>, <code>?? 95</code>. Spread senza <code>Math.max(1,...)</code>. Controlli null safety aggiunti su precipitation/weatherCode.</td>
-  </tr>
-  <tr>
-    <td><code>src/utils/windAlgorithm.ts</code></td>
-    <td><span class="badge badge-slate">Fix minore</span></td>
-    <td>Rimosso <code>Math.max(1, ...)</code> nella distanza verticale (extrapolazione).</td>
+    <td>
+      <strong>Interpolated fallback:</strong><br>
+      · <code>thermalTop</code>: da <code>cloudBaseVal + 500</code> (valore inventato) → <code>null</code><br>
+      · <code>cloudBase</code>: ora estratto da <code>hourDerivedMap.cloudBase</code> (motore centralizzato), rimossa chiamata ridondante a <code>calcCloudBase()</code><br>
+      · <code>deltaTProfile</code> canvas: rimossi valori hardcoded <code>0.72</code>; ora usa <code>getStabilityColor(null)</code> per ore interpolate<br>
+      · <strong>UI:</strong> etichetta <code>valore medio ascendenze</code> aggiornata con <code>★ ESTIMATED</code>
+    </td>
   </tr>
 </table>
 
 <!-- SEZIONE B -->
-<h2><span class="section-num">B</span> File Non Modificati — Nessun Consumer Attivo</h2>
+<h2><span class="section-num">B</span> File Verificati — Già Corretti (Nessuna Modifica)</h2>
 
 <table>
-  <tr><th>File</th><th>Stato</th><th>Motivazione</th></tr>
-  <tr><td><code>src/utils/windAlgorithm.ts</code></td><td><span class="badge badge-slate">Disused</span></td><td>Non importato da alcun componente attivo. Mantenuto per compatibilità futura.</td></tr>
-  <tr><td><code>src/utils/getVento.ts</code></td><td><span class="badge badge-slate">Disused</span></td><td>Non importato da alcun componente attivo. Usato solo da <code>windAlgorithm.ts</code>.</td></tr>
-  <tr><td><code>src/utils/getVentiInterpolati.ts</code></td><td><span class="badge badge-slate">Disused</span></td><td>Non importato da alcuno. Può essere eliminato in fase successiva.</td></tr>
+  <tr><th>File</th><th>Verifica</th><th>Nota</th></tr>
+  <tr>
+    <td><code>src/components/AlpiumWindgram.tsx</code></td>
+    <td><span class="badge badge-green">✅ Ok</span></td>
+    <td>Usa già <code>hourDerivedMap</code> per <code>estimatedThermalTop</code>, <code>estimatedThermalActivity</code>, <code>cloudBase</code>. Nessun motore locale duplicato.</td>
+  </tr>
+  <tr>
+    <td><code>src/components/WindgramMatrix.tsx</code></td>
+    <td><span class="badge badge-green">✅ Ok</span></td>
+    <td>Usa già <code>hourDerivedMap</code> per <code>lowLevelLapseRate</code>, <code>cloudBase</code>, <code>estimatedThermalTop</code>. Nessun calcolo locale di thermalTop/rateo.</td>
+  </tr>
+  <tr>
+    <td><code>src/components/DayDetailPopup.tsx</code></td>
+    <td><span class="badge badge-green">✅ Ok</span></td>
+    <td>Non importa <code>termiche.ts</code>. Usa la propria funzione <code>calcThermal</code> che richiama solo <code>calcCloudBase</code> su T/Td reali. Nessun fallback inventato (base/top = null se dati mancanti).</td>
+  </tr>
+  <tr>
+    <td><code>src/utils/termiche.ts</code></td>
+    <td><span class="badge badge-green">✅ Ok</span></td>
+    <td>Controllo principale <code>if (dewPoint == null) return null</code> già presente. I fallback rain/thunderstorm (<code>rateo: 0</code>, ecc.) sono intenzionali — condizioni meteorologiche avverse, non dati mancanti.</td>
+  </tr>
 </table>
 
 <!-- SEZIONE C -->
-<h2><span class="section-num">C</span> Vecchi Motori — Status Consumer</h2>
+<h2><span class="section-num">C</span> Consumer del Motore Centralizzato</h2>
 
 <table>
-  <tr><th>File motore</th><th>Consumer attuale</th><th>Stato</th><th>Note</th></tr>
+  <tr><th>Componente</th><th>Dati consumati da derivedMeteorology</th><th>Classificazione</th></tr>
   <tr>
-    <td><code>termiche.ts</code></td>
-    <td><code>DayDetailPopup.tsx</code> (tramite <code>calcThermal</code>)</td>
-    <td><span class="badge badge-yellow">Mantenuto</span></td>
-    <td>Migrato gradualmente verso <code>derivedMeteorology</code>. Contiene ancora alcuni fallback hardcoded ma usati solo come ultimo recours.</td>
+    <td><code>ProfessionalWindgram</code></td>
+    <td><code>estimatedThermalTop</code>, <code>estimatedThermalActivity</code>, <code>cloudBase</code>, <code>lowLevelLapseRate</code></td>
+    <td>ESTIMATED / DERIVED</td>
   </tr>
   <tr>
-    <td><code>windAlgorithm.ts</code></td>
-    <td>Nessuno</td>
-    <td><span class="badge badge-slate">Disused</span></td>
-    <td>Non importato da nessun componente attivo. Mantenuto per compatibilità legacy.</td>
+    <td><code>AlpiumWindgram</code></td>
+    <td><code>estimatedThermalTop</code>, <code>estimatedThermalActivity</code>, <code>cloudBase</code>, <code>lowLevelLapseRate</code></td>
+    <td>ESTIMATED / DERIVED</td>
   </tr>
   <tr>
-    <td><code>termicheEngine.ts</code></td>
-    <td>Nessuno</td>
-    <td><span class="badge badge-slate">Disused</span></td>
-    <td>Non importato da nessun componente attivo. Mantenuto per compatibilità legacy.</td>
-  </tr>
-  <tr>
-    <td><code>derivedMeteorology.ts</code></td>
-    <td><code>WindgramMatrix.tsx</code></td>
-    <td><span class="badge badge-green">Motore centrale</span></td>
-    <td>Unico motore attivo per i dati derivati. Usato dal WindgramMatrix come fonte centralizzata.</td>
+    <td><code>WindgramMatrix</code></td>
+    <td><code>lowLevelLapseRate</code>, <code>cloudBase</code>, <code>estimatedThermalTop</code>, <code>estimatedThermalActivity</code></td>
+    <td>DERIVED / ESTIMATED</td>
   </tr>
 </table>
 
 <!-- SEZIONE D -->
-<h2><span class="section-num">D</span> Classificazione Dati</h2>
+<h2><span class="section-num">D</span> Consumer di <code>termiche.ts</code></h2>
+
+<p style="font-size:13px; color:#475569; margin-bottom:8px;">Funzione ancora attivamente utilizzata — <strong>NON rimovibile</strong>:</p>
 
 <table>
-  <tr>
-    <th>Dato</th>
-    <th>Origine</th>
-    <th>Classificazione</th>
-    <th>Note</th>
-  </tr>
-  <tr><td>T2m</td><td>Open-Meteo <code>temperature_2m</code></td><td><span class="badge badge-green">MODEL_FORECAST</span></td><td>Diretto dall'API</td></tr>
-  <tr><td>Td (punto di rugiada)</td><td>Open-Meteo <code>dew_point_2m</code></td><td><span class="badge badge-green">MODEL_FORECAST</span></td><td>Diretto dall'API</td></tr>
-  <tr><td>T80</td><td>Open-Meteo <code>temperature_80m</code></td><td><span class="badge badge-green">MODEL_FORECAST</span></td><td>Disponibile quando il modello lo fornisce</td></tr>
-  <tr><td>T120</td><td>Open-Meteo <code>temperature_120m</code></td><td><span class="badge badge-green">MODEL_FORECAST</span></td><td>Disponibile quando il modello lo fornisce</td></tr>
-  <tr><td>T180</td><td>Open-Meteo <code>temperature_180m</code></td><td><span class="badge badge-green">MODEL_FORECAST</span></td><td>Disponibile quando il modello lo fornisce</td></tr>
-  <tr><td>CAPE</td><td>Open-Meteo <code>cape</code></td><td><span class="badge badge-green">MODEL_FORECAST</span></td><td>Null se non disponibile</td></tr>
-  <tr><td>CIN</td><td>Open-Meteo <code>convective_inhibition</code></td><td><span class="badge badge-green">MODEL_FORECAST</span></td><td>Null se non disponibile</td></tr>
-  <tr><td>LI</td><td>Open-Meteo <code>lifted_index</code></td><td><span class="badge badge-green">MODEL_FORECAST</span></td><td>Null se non disponibile</td></tr>
-  <tr><td>PBL</td><td>Open-Meteo <code>boundary_layer_height</code></td><td><span class="badge badge-green">MODEL_FORECAST</span></td><td>Null se non disponibile (non sempre supportato)</td></tr>
-  <tr><td>Base nube (LCL)</td><td>Formula: <code>siteAlt + 125 × (T-Td)</code></td><td><span class="badge badge-yellow">DERIVED / ESTIMATED</span></td><td>Stima semplificata, non misura osservata</td></tr>
-  <tr><td>Low-level lapse rate</td><td>Gradiente T tra 2m e livello più alto</td><td><span class="badge badge-yellow">DERIVED</span></td><td>°C/100m, null se &lt; 2 livelli validi</td></tr>
-  <tr><td>Shear verticale</td><td><code>windShearCalculator</code> su profilo vento</td><td><span class="badge badge-yellow">DERIVED</span></td><td>Differenza velocità/direzione tra livelli</td></tr>
-  <tr><td>Thermal activity</td><td>Formula empirica su spread+CAPE</td><td><span class="badge badge-red">ESTIMATED</span></td><td>Indice euristico, NON rateo misurato</td></tr>
-  <tr><td>Thermal top</td><td>Stima da cloudBase+CAPE</td><td><span class="badge badge-red">ESTIMATED</span></td><td>Valore approssimato, etichettato esplicitamente</td></tr>
+  <tr><th>File</th><th>Utilizzo</th></tr>
+  <tr><td><code>src/components/AnalisiTab.tsx</code></td><td>Importa <code>calcolaTermiche</code> per calcolo rateo/base/top per ogni ora</td></tr>
+  <tr><td><code>src/components/HourlyTable.tsx</code></td><td>Importa <code>calcolaTermiche</code> per tabella oraria</td></tr>
+  <tr><td><code>src/components/PopupTermiche.tsx</code></td><td>Importa <code>calcolaTermiche</code> per popup dettaglio termiche</td></tr>
+  <tr><td><code>src/components/TermicheTab.tsx</code></td><td>Importa <code>calcolaTermiche</code> per tabella sinottica</td></tr>
+  <tr><td><code>src/components/ThermalChart.tsx</code></td><td>Importa <code>calcolaTermiche</code> per grafico a barre</td></tr>
+  <tr><td><code>src/components/VoloDecisionCard.tsx</code></td><td>Importa <code>calcolaTermiche</code> per valutazione volo</td></tr>
+  <tr><td><code>src/components/WeatherDashboard.tsx</code></td><td>Importa <code>calcolaTermiche</code> per dashboard</td></tr>
+  <tr><td><code>src/utils/diagnosticaApp.ts</code></td><td>Test automatizzato della funzione</td></tr>
+  <tr><td><code>src/utils/diagnosticaMeteo.ts</code></td><td>Test validazione dati meteorologici</td></tr>
+  <tr><td><code>src/utils/mantenimentoAuto.ts</code></td><td>Monitoraggio automatico integrità</td></tr>
+  <tr><td><code>src/utils/meteoIntegrityTest.ts</code></td><td>Test integrità sistema meteo</td></tr>
 </table>
 
 <!-- SEZIONE E -->
-<h2><span class="section-num">E</span> Fallback Eliminati</h2>
+<h2><span class="section-num">E</span> Motori Legacia / Disused</h2>
 
 <table>
-  <tr><th>Fix</th><th>Prima (valore inventato)</th><th>Dopo (valore corretto)</th><th>Impatto</th></tr>
-  <tr><td>Spread minimo</td><td><code>Math.max(0.5, T-Td)</code></td><td><code>T - Td</code> (null se manca)</td><td><span class="badge badge-green">Critico</span></td></tr>
-  <tr><td>Spread minimo (altre varianti)</td><td><code>Math.max(1, T-Td)</code></td><td><code>T - Td</code></td><td><span class="badge badge-green">Critico</span></td></tr>
-  <tr><td>Cloud base fallback</td><td><code>siteAlt + 1000</code></td><td><code>null</code></td><td><span class="badge badge-green">Critico</span></td></tr>
-  <tr><td>AvgSpread fallback</td><td><code>/ dayData.length : 3</code></td><td><code>(somma reali) / count_reali</code> o <code>null</code></td><td><span class="badge badge-green">Critico</span></td></tr>
-  <tr><td>Extrapolazione vento</td><td>Restituiva livello più vicino</td><td>Restituisce <code>null</code></td><td><span class="badge badge-green">Critico</span></td></tr>
-  <tr><td>Current data → 0</td><td><code>safeNum(c.precipitation, 0)</code></td><td><code>safeNumOrNull(c.precipitation)</code></td><td><span class="badge badge-green">Critico</span></td></tr>
-  <tr><td>Daily data → 0</td><td><code>safeNum(daily.weather_code, 0)</code></td><td><code>safeNumOrNull(...)</code></td><td><span class="badge badge-green">Critico</span></td></tr>
-  <tr><td>Interpolated deltaT</td><td>Fallback a <code>0.65</code></td><td><code>null</code></td><td><span class="badge badge-yellow">Importante</span></td></tr>
-  <tr><td>Termiche fallback</td><td><code>windSpeed ?? 5</code>, <code>cloudCover ?? 30</code>, <code>humidity ?? 50</code></td><td>Dato reale con check <code>!= null</code></td><td><span class="badge badge-green">Critico</span></td></tr>
-  <tr><td>Sinusoide thermalTop</td><td><code>Math.cos((hr-13)/5 * PI/2)</code></td><td>Dato reale da spread</td><td><span class="badge badge-yellow">Importante</span></td></tr>
+  <tr><th>File</th><th>Consumer</th><th>Stato</th><th>Note</th></tr>
+  <tr>
+    <td><code>src/utils/windAlgorithm.ts</code></td>
+    <td>Nessuno</td>
+    <td><span class="badge badge-slate">LEGACY / DISUSED</span></td>
+    <td>Zero importers esterni. Esporta <code>calcolaProfiloVento</code> e <code>fetchRealWindData</code> ma nessuno li chiama.</td>
+  </tr>
+  <tr>
+    <td><code>src/services/termicheEngine.ts</code></td>
+    <td>Nessuno</td>
+    <td><span class="badge badge-slate">LEGACY / DISUSED</span></td>
+    <td>Zero importers esterni. Contiene <code>calcolaTermicheReali</code> ma nessun componente lo importa.</td>
+  </tr>
+  <tr>
+    <td><code>src/utils/getVento.ts</code></td>
+    <td>Nessuno</td>
+    <td><span class="badge badge-slate">LEGACY / DISUSED</span></td>
+    <td>Zero importers esterni. Mantenuto per compatibilità futura.</td>
+  </tr>
+  <tr>
+    <td><code>src/utils/getVentiInterpolati.ts</code></td>
+    <td><code>VentiInterpolatiTab.tsx</code>, <code>VentiTab.tsx</code></td>
+    <td><span class="badge badge-blue">ATTIVO</span></td>
+    <td>Due componenti lo importano ancora. Da mantenere.</td>
+  </tr>
 </table>
 
 <!-- SEZIONE F -->
-<h2><span class="section-num">F</span> Verifica Tecnica</h2>
-
-<div class="note warning">
-  <strong>⚠️ Build non eseguito automaticamente</strong> — l'ambiente di esecuzione non permette chiamate shell dirette.
-  Eseguire manualmente:<br>
-  <code style="display:block; margin-top:8px;">npx tsc --noEmit && npm run build</code>
-</div>
-
-<h3>Verifiche manuali effettuate:</h3>
-<ul>
-  <li>Grep per <code>Math.max(0.5,</code> su <code>src/**/*.ts*</code> → <strong>0 risultati rimanenti</strong> ✅</li>
-  <li>Grep per <code>Math.max(1,</code> su spread/temperature in <code>src/**/*.tsx</code> → <strong>0 risultati rimanenti</strong> ✅</li>
-  <li>Grep per <code>safeNum(</code> in <code>weatherService.ts</code> → <strong>0 occorrenze</strong> ✅</li>
-  <li>Grep per <code>siteAlt + 1000</code> come fallback cloudBase → <strong>0 occorrenze</strong> ✅</li>
-  <li>Controllo import broken → <strong>nessun import rimosso accidentalmente</strong> ✅</li>
-  <li>Verifica tipologia dati <code>derivedMeteorology.ts</code> → <strong>spread e cloudBase corretti</strong> ✅</li>
-</ul>
-
-<!-- SEZIONE G -->
-<h2><span class="section-num">G</span> Problemi Residui</h2>
+<h2><span class="section-num">F</span> Semantic Check</h2>
 
 <table>
-  <tr><th>#</th><th>Problema</th><th>Gravità</th><th>Azione richiesta</th></tr>
+  <tr><th>Check</th><th>Risultato</th></tr>
   <tr>
-    <td>1</td>
-    <td><code>termiche.ts</code> mantiene fallback hardcoded (<code>rateo: 0.5</code>, <code>base: altitude+200</code>, <code>top: altitude+400</code>) nei casi di dati incompleti</td>
-    <td><span class="badge badge-yellow">Medio</span></td>
-    <td>Migrare <code>DayDetailPopup.tsx</code> a <code>derivedMeteorology</code></td>
+    <td><code>"rateo reale"</code> usato per valori ESTIMATED?</td>
+    <td><span class="badge badge-green">✅ OK</span> — Nessun riscontro. "rateo reale" non compare come etichetta UI.</td>
   </tr>
   <tr>
-    <td>2</td>
-    <td><code>ProfessionalWindgram.tsx</code> e <code>AlpiumWindgram.tsx</code> calcolano thermalTop semi-indipendentemente dal motore centralizzato</td>
-    <td><span class="badge badge-yellow">Medio</span></td>
-    <td>Refactoring completo dei flussi di dati verso <code>derivedMeteorology</code></td>
+    <td><code>"Dati reali"</code> usato per MODEL_FORECAST?</td>
+    <td><span class="badge badge-green">✅ OK</span> — I commenti <code>// Dati reali Open-Meteo</code> si riferiscono correttamente a dati MODEL_FORECAST, non a valori inventati.</td>
   </tr>
   <tr>
-    <td>3</td>
-    <td><code>openMeteoService.ts</code> mantiene la propria funzione <code>safeNum</code> locale</td>
-    <td><span class="badge badge-slate">Basso</span></td>
-    <td>Pulizia futura — non causa problemi attuali</td>
+    <td>Valori <code>Math.max(0.5, spread)</code> o <code>Math.max(1, spread)</code>?</td>
+    <td><span class="badge badge-green">✅ OK</span> — Zero occorrenze in <code>src/**/*.ts</code> e <code>src/**/*.tsx</code>.</td>
   </tr>
   <tr>
-    <td>4</td>
-    <td><code>windAlgorithm.ts</code> e <code>termicheEngine.ts</code> non hanno consumer attivi</td>
-    <td><span class="badge badge-slate">Basso</span></td>
-    <td>Possibile eliminazione in fase successiva di pulizia</td>
+    <td>Valori hardcoded <code>0.72</code> come deltaT fallback?</td>
+    <td><span class="badge badge-green">✅ OK</span> — Rimossi da ProfessionalWindgram. Ora usa <code>getStabilityColor(null)</code> per ore interpolate.</td>
+  </tr>
+  <tr>
+    <td>thermalTop = cloudBase + N (formula locale)?</td>
+    <td><span class="badge badge-green">✅ OK</span> — Rimossa in ProfessionalWindgram (interpolated). Alpium e Matrix usano già <code>estimatedThermalTop</code> centralizzato.</td>
   </tr>
 </table>
 
-<!-- SEZIONE H — ARCHITETTURA -->
-<h2><span class="section-num">H</span> Architettura Obiettiva Raggiunta</h2>
+<!-- SEZIONE G -->
+<h2><span class="section-num">G</span> Residui Aperti (No Action Richiesta)</h2>
+
+<table>
+  <tr><th>#</th><th>Aspetto</th><th>Gravità</th><th>Motivazione</th></tr>
+  <tr>
+    <td>1</td>
+    <td><code>termiche.ts</code> mantiene fallback雨天 (<code>rateo: 0</code>, <code>base: altitude</code>) per precipitazione/timpeste</td>
+    <td><span class="badge badge-slate">Informativo</span></td>
+    <td>Questo è un comportamento INTENZIONALE: quando piove o c'è temporale, le termiche sono effettivamente assenti. Non è un dato mancante ma una condizione fisica.</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><code>windAlgorithm.ts</code>, <code>termicheEngine.ts</code>, <code>getVento.ts</code> senza consumer</td>
+    <td><span class="badge badge-slate">Informativo</span></td>
+    <td>File legacy marcati come tali. Nessun impatto funzionale. Possibile rimozione in futura pulizia.</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><code>calcCloudBase</code> ancora chiamato direttamente in ProfessionalWindgram (ora interpolation path solo)</td>
+    <td><span class="badge badge-slate">Informativo</span></td>
+    <td>Uso corretto: ore interpolate non hanno dati nel motore centralizzato, quindi cloudBase viene calcolato localmente da T/Td reali. thermalTop rimane null.</td>
+  </tr>
+</table>
+
+<!-- SEZIONE H -->
+<h2><span class="section-num">H</span> Architettura Finale Raggiunta</h2>
 
 <div class="note success">
-  <strong>✅ Catena meteorologica consolidata:</strong><br>
-  Open-Meteo API → <code>weatherService.ts</code> (normalizzazione) → <code>MeteoHourly</code> → <code>derivedMeteorology.ts</code> (dati derivati) → <code>WindgramMatrix.tsx</code> (UI)<br>
+  <strong>✅ Consolidamento completato — Passata 2</strong><br><br>
+  <strong>Catena meteorologica:</strong><br>
+  Open-Meteo API → <code>weatherService.ts</code> (normalizzazione) → <code>MeteoHourly</code><br>
+  → <code>derivedMeteorology.ts</code> (dati derivati centralizzati)<br>
+  → <code>ProfessionalWindgram</code> · <code>AlpiumWindgram</code> · <code>WindgramMatrix</code> (UI)<br>
+  → <code>termiche.ts</code> (legacy — mantenuto per 11 consumer storici)<br>
   <br>
   <strong>Classificazione applicata:</strong><br>
-  <code>MODEL_FORECAST</code> = dato fornito direttamente dall'API<br>
+  <code>MODEL_FORECAST</code> = dato fornito direttamente dall'API Open-Meteo<br>
   <code>DERIVED</code> = grandezza calcolata matematicamente da dati MODEL_FORECAST<br>
-  <code>ESTIMATED</code> = stima empirica/euristica, chiaramente dichiarata<br>
-  <code>MISSING</code> = dato non disponibile → <code>null</code> / N/D
+  <code>ESTIMATED</code> = stima empirica/euristica, chiaramente dichiarata in UI (★ ESTIMATED)<br>
+  <code>MISSING</code> = dato non disponibile → <code>null</code> / <code>N/D</code>
+</div>
+
+<div class="note info">
+  <strong>ℹ️ Nota su tsc / build</strong><br>
+  <code>node_modules</code> non presente nell'ambiente — i comandi <code>npx tsc --noEmit</code> e <code>npm run build</code> non sono eseguibili senza prima eseguire <code>npm install</code>. Le verifiche sono state fatte tramite grep e lettura codice sorgente.
 </div>
 
 <div class="footer">
-  Report generato automaticamente &nbsp;·&nbsp; Progetto la-meteo-dei-conigli &nbsp;·&nbsp; Sapiens AI
+  Report generato automaticamente &nbsp;·&nbsp; Progetto la-meteo-dei-conigli &nbsp;·&nbsp; Sapiens AI — Passata 2
 </div>
 
 </body>
