@@ -22,8 +22,8 @@ function dirToIcon(dir: number): string {
   return dirs[Math.round(dir / 45) % 8];
 }
 
-function getFlightRating(daily: MeteoDaily, current: HourData | MeteoCurrent | null): number {
-  if (!daily) return 0;
+function getFlightRating(daily: MeteoDaily, current: HourData | MeteoCurrent | null): number | null {
+  if (!daily) return null;
   let score = 5;
   const wind = daily.windSpeedMax ?? null;
   if (wind !== null) {
@@ -32,13 +32,17 @@ function getFlightRating(daily: MeteoDaily, current: HourData | MeteoCurrent | n
     else if (wind <= 25) score -= 1;
     else score -= 2;
   }
-  const rain = daily.precipitationSum ?? 0;
-  if (rain <= 0.2) score += 1;
-  else if (rain <= 2) score -= 1;
-  else score -= 2;
-  const cloudCover = (current as any)?.cloudCover ?? 30;
-  if (cloudCover <= 30) score += 1;
-  else if (cloudCover > 70) score -= 1;
+  const rain = daily.precipitationSum !== undefined ? daily.precipitationSum : null;
+  if (rain !== null) {
+    if (rain <= 0.2) score += 1;
+    else if (rain <= 2) score -= 1;
+    else score -= 2;
+  }
+  const cloudCover = (current as any)?.cloudCover ?? null;
+  if (cloudCover !== null) {
+    if (cloudCover <= 30) score += 1;
+    else if (cloudCover > 70) score -= 1;
+  }
   const cape = (current as any)?.cape ?? null;
   if (cape !== null) {
     if (cape >= 200 && cape <= 1000) score += 1;
@@ -47,6 +51,12 @@ function getFlightRating(daily: MeteoDaily, current: HourData | MeteoCurrent | n
   const uv = daily.uvIndexMax ?? null;
   if (uv !== null && uv > 8) score -= 1;
   return Math.max(1, Math.min(10, Math.round(score)));
+}
+
+function getFlightRatingAndVerdict(daily: MeteoDaily | undefined, current: HourData | MeteoCurrent | null): { rating: number | null; verdict: ReturnType<typeof getFlightVerdict> } {
+  const rating = daily ? getFlightRating(daily, current) : null;
+  const verdict = rating !== null ? getFlightVerdict(rating) : { label: "DATI INSUFFICIENTI", color: "text-slate-400", bg: "bg-slate-700/50", ring: "ring-slate-500/30" };
+  return { rating, verdict };
 }
 
 function getWeatherEmoji(code: number): string {
@@ -102,7 +112,7 @@ export default function PrevisioniGiornaliere({
   const temp = currentData?.temperature ?? null;
   const feelsLike = (currentData as any)?.feelsLike ?? null;
   const dewPoint = (currentData as any)?.dewPoint ?? null;
-  const spread = temp !== null && dewPoint !== null ? temp - dewPoint : 3;
+  const spread = temp !== null && dewPoint !== null ? temp - dewPoint : null;
   const windSpeed = currentData?.windSpeed ?? null;
   const windGusts = (currentData as any)?.windGusts ?? null;
   const windDir = currentData?.windDir ?? null;
@@ -112,21 +122,27 @@ export default function PrevisioniGiornaliere({
   const cape = (currentData as any)?.cape ?? null;
   const uvIndex = currentData?.uvIndex ?? null;
 
-  // Thermal rate from real CAPE when available, otherwise estimate from spread
-  const thermalRate = cape !== null
-    ? Math.max(0.1, Math.min(3, spread * 0.15 + (cape > 0 ? cape / 5000 : 0)))
-    : Math.max(0.1, Math.min(3, spread * 0.15));
-  const cloudBase = site.altitude + Math.round(spread * 125);
+  // Thermal rate: calcolato solo se spread è disponibile
+  const thermalRate = spread !== null
+    ? cape !== null
+      ? Math.max(0.1, Math.min(3, spread * 0.15 + (cape > 0 ? cape / 5000 : 0)))
+      : Math.max(0.1, Math.min(3, spread * 0.15))
+    : null;
+  // Cloud base: calcolata solo se spread è disponibile
+  const cloudBase = spread !== null ? site.altitude + Math.round(spread * 125) : null;
   // Freezing level: usa dato API quando disponibile, altrimenti N/D
   const zeroCLevel = (currentData as any)?.freezingLevel ?? null;
-  const topThermal = cape !== null ? Math.round(cloudBase + thermalRate * 2000) : null;
+  // Top termica: richiede sia cape che thermalRate che cloudBase
+  const topThermal = (cape !== null && thermalRate !== null && cloudBase !== null)
+    ? Math.round(cloudBase + thermalRate * 2000)
+    : null;
 
   const daily = enrichedDaily[selectedDay] ?? enrichedDaily[0];
-  const flightRating = getFlightRating(daily, currentData);
-  const verdict = getFlightVerdict(flightRating);
+  const { rating: flightRating, verdict } = getFlightRatingAndVerdict(daily, currentData);
+  const hasValidRating = flightRating !== null;
 
-  // Animated counter for hero score
-  const animatedScore = useAnimatedValue(flightRating);
+  // Animated counter for hero score (default to 0 when no valid rating)
+  const animatedScore = useAnimatedValue(hasValidRating ? flightRating! : 0);
 
   return (
     <div className="space-y-6">
@@ -163,10 +179,16 @@ export default function PrevisioniGiornaliere({
           <div className="grid grid-cols-[auto_1fr_1fr] gap-8 items-center mb-6">
             {/* VOTO GIGANTE ANIMATO */}
             <div className="flex flex-col items-center">
-              <div className="text-[120px] leading-none font-black text-emerald-400 drop-shadow-[0_0_40px_rgba(16,185,129,0.6)] transition-all duration-700">
-                {animatedScore}
-              </div>
-              <div className="text-xl text-emerald-500/50 font-black">/ 10</div>
+              {hasValidRating ? (
+                <>
+                  <div className="text-[120px] leading-none font-black text-emerald-400 drop-shadow-[0_0_40px_rgba(16,185,129,0.6)] transition-all duration-700">
+                    {animatedScore}
+                  </div>
+                  <div className="text-xl text-emerald-500/50 font-black">/ 10</div>
+                </>
+              ) : (
+                <div className="text-[100px] leading-none font-black text-slate-500">N/D</div>
+              )}
               <div className="mt-2 text-xs text-slate-500 font-bold uppercase tracking-widest">Voto Volo</div>
             </div>
 
@@ -273,20 +295,20 @@ export default function PrevisioniGiornaliere({
           <AeroCard
             icon={<ArrowUp className="w-5 h-5" />}
             title="Rateo Termico"
-            value={`${thermalRate.toFixed(1)} m/s`}
-            subtitle={thermalRate >= 1.5 ? "Termiche forti" : thermalRate >= 0.8 ? "Termiche discrete" : "Termiche deboli"}
+            value={thermalRate !== null ? `${thermalRate.toFixed(1)} m/s` : "N/D"}
+            subtitle={thermalRate !== null ? (thermalRate >= 1.5 ? "Termiche forti" : thermalRate >= 0.8 ? "Termiche discrete" : "Termiche deboli") : "Dato non disponibile"}
             accent="purple"
-            barValue={thermalRate}
+            barValue={thermalRate ?? undefined}
             barMax={3}
             detail={<div className="text-[10px] text-slate-400">Ascendenza media</div>}
           />
           <AeroCard
             icon={<Cloud className="w-5 h-5" />}
             title="Base Cumuli"
-            value={`${cloudBase.toLocaleString()} m`}
-            subtitle={`+${cloudBase - site.altitude}m sopra campo`}
+            value={cloudBase !== null ? `${cloudBase.toLocaleString()} m` : "N/D"}
+            subtitle={cloudBase !== null ? `+${cloudBase - site.altitude}m sopra campo` : "Dato non disponibile"}
             accent="sky"
-            barValue={cloudBase}
+            barValue={cloudBase ?? undefined}
             barMax={4000}
             detail={<div className="text-[10px] text-slate-400">Quota inizio nubi</div>}
           />
@@ -306,7 +328,7 @@ export default function PrevisioniGiornaliere({
             value={cape !== null ? `${Math.round(cape)} J/kg` : "N/D"}
             subtitle={cape !== null ? (cape > 1000 ? "Instabilità alta" : cape > 300 ? "Moderata" : "Stabile") : "Dato non disponibile"}
             accent="amber"
-            barValue={cape ?? 0}
+            barValue={cape !== null ? cape : undefined}
             barMax={2000}
             detail={<div className="text-[10px] text-slate-400">Energia termica</div>}
           />
@@ -316,17 +338,17 @@ export default function PrevisioniGiornaliere({
             value={topThermal !== null ? `${topThermal.toLocaleString()} m` : "N/D"}
             subtitle={topThermal !== null ? `+${topThermal - site.altitude}m dal suolo` : "Dato non disponibile"}
             accent="emerald"
-            barValue={topThermal ?? 0}
+            barValue={topThermal !== null ? topThermal : undefined}
             barMax={6000}
             detail={<div className="text-[10px] text-slate-400">Massima quota</div>}
           />
           <AeroCard
             icon={<Sun className="w-5 h-5" />}
             title="UV Indice"
-            value={`${Math.round(uvIndex)}`}
-            subtitle={uvIndex > 8 ? "Estremo" : uvIndex > 6 ? "Molto alto" : uvIndex > 3 ? "Alto" : "Basso"}
+            value={uvIndex !== null ? `${Math.round(uvIndex)}` : "N/D"}
+            subtitle={uvIndex !== null ? (uvIndex > 8 ? "Estremo" : uvIndex > 6 ? "Molto alto" : uvIndex > 3 ? "Alto" : "Basso") : "Dato non disponibile"}
             accent="rose"
-            barValue={uvIndex}
+            barValue={uvIndex !== null ? uvIndex : undefined}
             barMax={11}
             detail={<div className="text-[10px] text-slate-400">Protezione solare</div>}
           />
@@ -346,8 +368,8 @@ export default function PrevisioniGiornaliere({
             const d = enrichedDaily[idx];
             const isActive = selectedDay === idx;
             const label = dateLabels[idx] || tabName;
-            const isRainy = d && d.precipitationSum > 0.5;
-            const rating = getFlightRating(d, currentData);
+            const isRainy = d && d.precipitationSum !== undefined && d.precipitationSum > 0.5;
+            const rating = d ? getFlightRating(d, currentData) : null;
 
             return (
               <button
@@ -366,7 +388,7 @@ export default function PrevisioniGiornaliere({
                 <div className="flex items-center justify-between mb-3">
                   <span className={`text-4xl transition-transform duration-300 hover:scale-110`}>{d ? getWeatherEmoji(d.weatherCode) : "☀️"}</span>
                   <div className={`text-sm font-black px-3 py-1 rounded-full transition-all duration-300 ${isActive ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-700/50 text-slate-400'}`}>
-                    {rating}/10
+                    {rating !== null ? `${rating}/10` : "N/D"}
                   </div>
                 </div>
                 <div className="font-black text-white text-lg">{tabName}</div>
