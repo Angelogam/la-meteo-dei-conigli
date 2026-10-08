@@ -1,7 +1,7 @@
 "use client";
 
 import { DECOLLI } from "@/data/decolli";
-import { fetchHourly } from "@/lib/openMeteoClient";
+import { fetchCurrent, fetchHourly } from "@/lib/openMeteoClient";
 
 export type Decollo = {
   name: string;
@@ -28,19 +28,46 @@ const OPENWEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_KEY || "";
 const TOMORROW_API_KEY = import.meta.env.VITE_TOMORROW_KEY || "";
 
 async function getOpenMeteo(lat: number, lon: number) {
+  const today = new Date().toISOString().split("T")[0];
+  const hourlyParams = "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,cape,freezing_level_height";
+
   try {
-    const today = new Date().toISOString().split("T")[0];
-    const data = await fetchHourly(lat, lon, "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,cape,freezing_level_height", today, today);
+    const data = await fetchHourly(lat, lon, hourlyParams, today, today);
     const t = data.hourly?.temperature_2m?.[0];
-    if (t === undefined || t === null) return null;
+    if (t !== undefined && t !== null) {
+      const temperatures = (data.hourly?.temperature_2m ?? []).map(Number).filter(Number.isFinite);
+      const clouds = (data.hourly?.cloud_cover ?? []).map(Number).filter(Number.isFinite);
+      const rainValues = (data.hourly?.precipitation ?? []).map(Number).filter(Number.isFinite);
+      return {
+        temp: Number(t),
+        rain: data.hourly?.precipitation?.[0] !== undefined ? Number(data.hourly.precipitation[0]) : null,
+        cloud: data.hourly?.cloud_cover?.[0] !== undefined ? Number(data.hourly.cloud_cover[0]) : null,
+        wind: data.hourly?.wind_speed_10m?.[0] !== undefined ? Number(data.hourly.wind_speed_10m[0]) : null,
+        dir: data.hourly?.wind_direction_10m?.[0] !== undefined ? Number(data.hourly.wind_direction_10m[0]) : null,
+        cape: data.hourly?.cape?.[0] !== undefined ? Number(data.hourly.cape[0]) : null,
+        freezingLevel: data.hourly?.freezing_level_height?.[0] !== undefined ? Number(data.hourly.freezing_level_height[0]) : null,
+        tMax: temperatures.length > 0 ? Math.max(...temperatures) : null,
+        tMin: temperatures.length > 0 ? Math.min(...temperatures) : null,
+        cloudDaily: clouds.length > 0 ? Math.max(...clouds) : null,
+        rainDaily: rainValues.length > 0 ? rainValues.reduce((sum, value) => sum + value, 0) : null
+      };
+    }
+  } catch {
+    // Riprova con i dati correnti se il recupero orario non è disponibile.
+  }
+
+  try {
+    const data = await fetchCurrent(lat, lon, "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,cape");
+    const current = data.current;
+    if (current?.temperature_2m === undefined || current?.temperature_2m === null) return null;
     return {
-      temp: data.hourly?.temperature_2m?.[0] !== undefined ? Number(data.hourly.temperature_2m[0]) : null,
-      rain: data.hourly?.precipitation?.[0] !== undefined ? Number(data.hourly.precipitation[0]) : null,
-      cloud: data.hourly?.cloud_cover?.[0] !== undefined ? Number(data.hourly.cloud_cover[0]) : null,
-      wind: data.hourly?.wind_speed_10m?.[0] !== undefined ? Number(data.hourly.wind_speed_10m[0]) : null,
-      dir: data.hourly?.wind_direction_10m?.[0] !== undefined ? Number(data.hourly.wind_direction_10m[0]) : null,
-      cape: data.hourly?.cape?.[0] !== undefined ? Number(data.hourly.cape[0]) : null,
-      freezingLevel: data.hourly?.freezing_level_height?.[0] !== undefined ? Number(data.hourly.freezing_level_height[0]) : null,
+      temp: Number(current.temperature_2m),
+      rain: current.precipitation !== undefined ? Number(current.precipitation) : null,
+      cloud: current.cloud_cover !== undefined ? Number(current.cloud_cover) : null,
+      wind: current.wind_speed_10m !== undefined ? Number(current.wind_speed_10m) : null,
+      dir: current.wind_direction_10m !== undefined ? Number(current.wind_direction_10m) : null,
+      cape: current.cape !== undefined ? Number(current.cape) : null,
+      freezingLevel: null,
       tMax: null,
       tMin: null,
       cloudDaily: null,

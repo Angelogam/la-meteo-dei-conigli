@@ -60,8 +60,9 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
           const indice = hasAggressive ? aggressive.indice : null;
           const indiceLabel = hasAggressive ? aggressive.indiceLabel : "N/D";
 
-          const dirLabel = hasAggressive ? getCardinalDir(parseFloat(aggressive.wind)) : "N/D";
-          const dirArrow = hasAggressive ? getWindArrow(parseFloat(aggressive.wind)) : "→";
+          const direction = hasAggressive ? aggressive.dir : "N/D";
+          const dirLabel = direction !== "N/D" ? getCardinalDir(parseFloat(String(direction))) : "N/D";
+          const dirArrow = direction !== "N/D" ? getWindArrow(parseFloat(String(direction))) : "→";
 
           // Colore indice
           const indiceColor = indice === null ? "text-slate-400" :
@@ -119,7 +120,7 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
                   <div className="flex items-center gap-1.5">
                     {ICONA_STATO[stato] || ICONA_STATO.offline}
                     <span className="font-bold text-white capitalize">{aggressive?.stato || "N/D"}</span>
-                    <span className="font-extrabold text-amber-300 tabular-nums">{temp}°C</span>
+                    <span className="font-extrabold text-amber-300 tabular-nums">{temp === "N/D" ? "N/D" : `${temp}°C`}</span>
                     {parseFloat(rain) > 0 && (
                       <span className="text-[10px] font-bold text-rose-300 bg-rose-950/60 px-1.5 py-0.2 rounded border border-rose-500/40">
                         {rain}mm
@@ -129,7 +130,7 @@ export default function DecolliCard({ decolli, selectedId, onSelect, selectedDay
 
                   <div className="flex items-center gap-1 text-slate-200">
                     <Wind size={13} className="text-cyan-400 shrink-0" />
-                    <span className="font-bold tabular-nums text-white">{wind} km/h</span>
+                    <span className="font-bold tabular-nums text-white">{wind === "N/D" ? "N/D" : `${wind} km/h`}</span>
                     <span className="text-slate-400 font-mono text-[11px]">{dirArrow} {dirLabel}</span>
                   </div>
                 </div>
