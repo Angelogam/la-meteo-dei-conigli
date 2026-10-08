@@ -275,6 +275,29 @@ export default function WindgramMatrix({
     return map;
   }, [hourDerivedInfo, activeAltitudes, altitude]);
 
+  // Fascia convettiva oraria: usa esclusivamente il top termiche STIMATO
+  // dal motore centrale. La curva segue l'evoluzione oraria del modello;
+  // non viene inventata una sinusoide quando mancano i dati.
+  const thermalTopRow = useMemo(() => {
+    const map: Record<number, number> = {};
+    DISPLAY_HOURS.forEach((hr) => {
+      const top = hourDerivedInfo[hr]?.estimatedThermalTop;
+      if (top == null || !Number.isFinite(top)) return;
+      let bestIdx = -1;
+      let bestDiff = Infinity;
+      activeAltitudes.forEach((a, idx) => {
+        const diff = Math.abs(a - top);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          bestIdx = idx;
+        }
+      });
+      if (bestIdx >= 0) map[hr] = bestIdx;
+    });
+    return map;
+  }, [hourDerivedInfo, activeAltitudes]);
+
+
   const dataSourceBadge = hasRealAltitudeData ? (
     <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold flex items-center gap-1">
       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -408,12 +431,20 @@ export default function WindgramMatrix({
                         const isSelectedCol = hr === selectedHour;
                         const bg = getCellBgColor(alt, hr);
                         const showCloud = cloudBaseRow[hr] === rowIdx;
+                        const topRow = thermalTopRow[hr];
+                        const topInfo = hourDerivedInfo[hr]?.estimatedThermalTop ?? null;
+                        const inThermalBand = topInfo != null && alt >= baseDecolloFloor && alt <= topInfo;
+                        const isThermalTopCell = topRow === rowIdx;
                         return (
                           <td
                             key={`cell-${alt}-${hr}`}
                             onClick={() => onHourSelect?.(hr)}
+                            title={topInfo != null ? `Top termiche stimato: ${Math.round(topInfo)} m s.l.m.` : "Top termiche non disponibile"}
                             style={{
-                              backgroundColor: isSelectedCol ? "#eff6ff" : "transparent",
+                              backgroundColor: isSelectedCol
+                                ? (inThermalBand ? "rgba(250, 204, 21, 0.28)" : "#eff6ff")
+                                : (inThermalBand ? "rgba(250, 204, 21, 0.20)" : "transparent"),
+                              boxShadow: isThermalTopCell ? "inset 0 3px 0 #eab308" : undefined,
                             }}
                             className={`py-1.5 px-1 border-r border-slate-100 cursor-pointer transition-colors relative ${
                               isSelectedCol ? "ring-1 ring-sky-400/90" : "hover:brightness-95"
@@ -465,6 +496,10 @@ export default function WindgramMatrix({
                 <div className="flex items-center gap-1">
                   <div className="w-2.5 h-1.5 rounded bg-gradient-to-b from-[#b5d5e4] via-[#82b1cc] to-[#6a9cba] border border-[#6a9cba]/60" />
                   <span className="text-slate-700 font-medium text-[9px]">Stabile/Neutro</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2.5 h-1.5 rounded bg-yellow-300 border border-yellow-500" />
+                  <span className="text-slate-700 font-medium text-[9px]">Fascia termica stimata · linea gialla = top</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
