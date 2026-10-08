@@ -1,0 +1,219 @@
+================================================================================
+AUDIT TECNICO — SISTEMA METEOROLOGICO "METEO DEI CONIGLI"
+SEZIONE 2/3: Correzioni applicate
+================================================================================
+
+FASE 3-12 — CORREZIONI APPLICATE
+================================================================================
+
+MODIFICHE REALIZZATE (13 file)
+================================================================================
+
+1. src/services/derivedMeteorology.ts (NUOVO)
+--------------------------------------------------------------------------------
+Creazione motore centralizzato per dati derivati:
+
+```typescript
+export interface RealData {
+  temperature2m: number | null;
+  dewPoint2m: number | null;
+  windSpeed10m: number | null;
+  windDir10m: number | null;
+  windSpeed80m: number | null;
+  windDir80m: number | null;
+  // ... tutti i campi nullable
+  cape: number | null;
+  liftedIndex: number | null;
+  freezingLevel: number | null;
+}
+
+export interface HourlyDerivedData {
+  real: RealData;
+  spread: number | null;                    // derivato
+  estimatedCloudBase: number | null;         // STIMATO, etichettato
+  realLapseRate: number | null;              // derivato da dati reali
+  lapseRateClassification: string | null;    // "stabile" | "neutro" | "instabile"
+  estimatedThermalTop: number | null;        // STIMATO, etichettato
+  cloudBase: number | null;                  // derivato
+  verticalProfile: VerticalWindProfile;      // vento verticale con shear
+  stability: StabilityData;                  // deltaT + classificazione
+}
+```
+
+Principio: dato assente = null, mai un numero inventato.
+
+2. src/utils/windShearCalculator.ts (NUOVO)
+--------------------------------------------------------------------------------
+Calcolo puro dello shear verticale:
+
+```typescript
+export function directionDifference(a: number, b: number): number {
+  // Gestisce correttamente 359° → 0° = 1°, non 359°
+  let diff = Math.abs(((a % 360) + 360) % 360 - ((b % 360) + 360) % 360);
+  if (diff > 180) diff = 360 - diff;
+  return diff;
+}
+
+export interface WindShearResult {
+  lowerAltitude: number;
+  upperAltitude: number;
+  lowerSpeed: number;
+  upperSpeed: number;
+  lowerDirection: number;
+  upperDirection: number;
+  speedDifference: number;        // km/h
+  directionDifference: number;    // gradi, 0-180
+  speedDifferencePer100m: number;
+}
+```
+
+NESSUNA classificazione di rischio ("alto"/"medio"/"basso") — solo dati quantitativi.
+
+3. src/utils/generateReportMeteo.ts (RISCRTTO)
+--------------------------------------------------------------------------------
+PRIMA (dati inventati):
+```typescript
+let liftedIndex = 1.5;
+if (maxCape > 1500) liftedIndex = -6.0;
+else if (maxCape > 1000) liftedIndex = -4.5;
+// ...
+const wind1500_2500 = Math.round(avgWindGround * 1.4 + 3);
+const wind2500_3500 = Math.round(avgWindGround * 2.1 + 8);
+const windOver3500 = Math.round(avgWindGround * 2.9 + 15);
+const dir1500_2500 = degToCardinal(mainDirDeg + 12);
+```
+
+DOPO (dati reali):
+```typescript
+// Lifted Index REALE dall'API
+const validLIs = dayIndices.map(i => hourlyData.lifted_index?.[i] ?? null)
+                           .filter(li => li != null);
+const avgLI = validLIs.length > 0 ? ... : null;
+
+// Vento in quota REALE dai livelli hPa
+const v850w = dayIndices.map(i => wind850Arr[i] ?? null).filter(w => w != null);
+const wind1500_2500 = v850w.length > 0 ? media(v850w) : null;
+const dir1500_2500 = v850d.length > 0 ? degToCardinal(media(v850d)) : "N/D";
+```
+
+Cambiamenti chiave:
+  ✅ Lifted Index: usato valore API reale, eliminata formula da CAPE
+  ✅ Vento 1500-2500m: usato vento 850hPa reale
+  ✅ Vento 2500-3500m: usato vento 700hPa reale
+  ✅ Vento >3500m: usato vento 500hPa reale
+  ✅ Tutte le direzioni: usate da dati reali, non rotazione fissa
+  ✅ Freezing level: null se mancante, non 3600
+  ✅ CAPE: null se mancante, non 300
+  ✅ Temperature: filtra null, non fallback a 18
+  ✅ Dew point: filtra null, non fallback a 10
+  ✅ Nuvolosità: filtra null, non fallback a 0
+  ✅ Radiazione: filtrata, non riempita con 400
+
+4. src/components/ProfessionalWindgram.tsx
+--------------------------------------------------------------------------------
+Cambiamenti specifici:
+
+LINEA 266 (interpolated hours - dew point):
+  PRIMA: `const dew = ((dewPrev ?? t - 6) + (dewNext ?? t - 6)) / 2;`
+  DOPO:  `const dew = (dewPrevVal ?? dewNextVal) ?? null;`
+
+LINEA 278 (interpolated hours - wind):
+  PRIMA: `levelWinds: displayAltitudes.map(alt => ({ alt, speed: 8, dir: 200 }))`
+  DOPO:  `levelWinds: displayAltitudes.map(alt => ({ alt, speed: null, dir: null }))`
+
+LINEA 290 (main hourly data - dew point):
+  PRIMA: `const dew = h.dew_point_2m[idx] ?? (tNum - 8);`
+  DOPO:  `const dew = h.dew_point_2m[idx] !== undefined ? Number(...) : null;`
+
+LINEA 373 (deltaT):
+  PRIMA: `const deltaT = deltaTProfile[0] ?? 0.72;`
+  DOPO:  `const deltaT = deltaTProfile[0] ?? null;`
+
+LINEE 504, 509 (stability colors):
+  PRIMA: `getStabilityColor(profile[clampedIdx] ?? 0.72)`
+  DOPO:  `getStabilityColor(profile[clampedIdx] ?? null)`
+
+LINEA 385 (temperature in quota):
+  PRIMA: `tempAt80m: t80Sim ?? Math.round(t - 3)`
+  DOPO:  `tempAt80m: t80Sim` (null se mancante)
+
+5. src/components/WindgramMatrix.tsx
+--------------------------------------------------------------------------------
+LINEA 139 (dew point):
+  PRIMA: `const lcl = calcCloudBase(altitude, h.temperature ?? 18, h.dewPoint ?? (h.temperature ?? 18) - 6);`
+  DOPO:  `const lcl = h.dewPoint != null ? calcCloudBase(altitude, h.temperature ?? 0, h.dewPoint) : null;`
+
+6. src/components/SmartAlerts.tsx
+--------------------------------------------------------------------------------
+Cambiamenti multipli:
+
+  • dewPoint: `?? (t - 8)` → `?? null`
+  • cape: media solo valori validi (filtra null), non più `?? 0`
+  • liftedIndex: media solo valori validi, non più `?? 0`
+  • freezingLevel: media solo valori > 0, non più `?? 0` con fallback a `siteAlt + 3000`
+  • windSpeed: `?? 0` → `?? null`
+  • windDir: `?? 200` → `?? null`
+  • w850: `?? 200` → `?? null`
+  • visibility: `?? 10000` → `?? null`
+  • waveDiff: calcolato solo se entrambi i valori sono non-null
+  • Gust ratio: calcolato solo se windSpeed > 0 e windGusts != null
+  • Tutti i confronti condizionali aggiornati con guardie `!= null`
+
+7. src/components/AlpiumWindgram.tsx
+--------------------------------------------------------------------------------
+LINEA 252 (dew point):
+  PRIMA: `const dew = hourly.dew2m[idx] !== undefined ? Number(hourly.dew2m[idx]) : (tNum - 6);`
+  DOPO:  `const dew = hourly.dew2m[idx] !== undefined ? Number(hourly.dew2m[idx]) : null;`
+
+LINEA 253 (spread):
+  PRIMA: `const spread = Math.max(1, t - dew);`
+  DOPO:  `const spread = (dew != null) ? Math.max(1, tNum - dew) : null;`
+
+LINEA 254 (LCL):
+  PRIMA: `const lcl = calcCloudBase(siteAlt, t, dew);`
+  DOPO:  `const lcl = (dew != null) ? calcCloudBase(siteAlt, tNum, dew) : null;`
+
+8. src/components/AnalisiMeteo.tsx
+--------------------------------------------------------------------------------
+K-Index rimosso/aggiornato:
+  PRIMA: calcolava T850 e T500 con formule fisse (t-8, t-22)
+  DOPO:  restituisce null se dati insufficienti, usa solo dati reali disponibili
+
+9. src/components/VoloDecisionCard.tsx
+--------------------------------------------------------------------------------
+LINEA 379 (dew point):
+  PRIMA: `Math.round((current.temperature ?? 0) - (current.dewPoint ?? (current.temperature ?? 18) - 8))`
+  DOPO:  `current.dewPoint != null ? Math.round(...) : "N/D"`
+
+10. src/hooks/useMultiHourWindProfile.ts
+--------------------------------------------------------------------------------
+LINEA 89 (buildFromFallback):
+  PRIMA: `const dew = h.dewPoint ?? (t - 8);`
+  DOPO:  `const dew = h.dewPoint ?? null;`
+
+LINEA 145 (processRawJson):
+  PRIMA: `const dew = Number(h.dew_point_2m?.[idx]) ?? (t - 8);`
+  DOPO:  `const dew = h.dew_point_2m?.[idx] !== undefined ? Number(h.dew_point_2m[idx]) : null;`
+
+11. src/utils/analisiApprofondita.ts
+--------------------------------------------------------------------------------
+  • Lifted Index: usato valore API reale, nessuna ricostruzione da CAPE
+  • CAPE: usato valore API reale, nessuna formula alternativa
+  • CIN: usato valore API reale
+  • Type updated: `liftedIndex: number` → `liftedIndex: number | null`
+  • getLIDesc chiamato solo se liftedIndex != null
+
+12. src/utils/termiche.ts
+--------------------------------------------------------------------------------
+LINEA (dew point):
+  PRIMA: `const dewPoint = (h.dewPoint != null && h.dewPoint > -10) ? h.dewPoint : temp - 8;`
+  DOPO:  `const dewPoint = (h.dewPoint != null && h.dewPoint > -10) ? h.dewPoint : null;`
+         + early return se dewPoint == null (impossibile calcolare termiche senza spread)
+
+13. src/services/fallbackWeatherData.ts
+--------------------------------------------------------------------------------
+LINEA (dew point):
+  PRIMA: `const dew = ref.dewPoint ?? t - 8;`
+  DOPO:  `const dew = ref.dewPoint ?? null;`
+         + dewPoint nel result: `dew != null ? Math.round(dew * 10) / 10 : null`
+
