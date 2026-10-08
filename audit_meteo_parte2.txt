@@ -1,0 +1,135 @@
+AUDIT METEOROLOGICO — PARTE 2/3
+═══════════════════════════════════
+
+D. DATI VENTO VERTICALE — Livelli richiesti
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Livello   | OMService | WeatherSvc | ProfWind | MultiHour | Alpium | Rasoft | WindAlgo
+----------|-----------|------------|----------|-----------|--------|--------|---------
+10m       | ✅        | ✅         | ✅       | ✅        | ✅     | ✅     | ✅
+80m       | ✅        | ✅         | ❌       | ✅        | ✅     | ✅     | ✅
+120m      | ✅        | ✅         | ❌       | ✅        | ✅     | ✅     | ✅
+180m      | ✅        | ✅         | ✅       | ✅        | ❌     | ❌     | ✅
+925 hPa   | ✅        | ✅         | ✅       | ✅        | ✅     | ✅     | ❌
+850 hPa   | ✅        | ✅         | ✅       | ✅        | ✅     | ✅     | ❌
+700 hPa   | ✅        | ✅         | ✅       | ✅        | ✅     | ✅     | ❌
+600 hPa   | ✅        | ✅         | ✅       | ✅        | ✅     | ✅     | ❌
+500 hPa   | ✅        | ✅         | ✅       | ✅        | ✅     | ✅     | ❌
+975 hPa   | ❌        | ❌         | ❌       | ❌        | ❌     | ❌     | ❌
+950 hPa   | ❌        | ❌         | ❌       | ❌        | ✅(temp)| ❌     | ❌
+900 hPa   | ❌        | ❌         | ❌       | ❌        | ✅(temp)| ❌     | ❌
+875 hPa   | ❌        | ❌         | ❌       | ❌        | ❌     | ❌     | ❌
+800 hPa   | ❌        | ❌         | ❌       | ❌        | ✅(temp)| ❌     | ❌
+750 hPa   | ❌        | ❌         | ❌       | ❌        | ✅(temp)| ❌     | ❌
+650 hPa   | ❌        | ❌         | ❌       | ❌        | ✅(temp)| ❌     | ❌
+550 hPa   | ❌        | ❌         | ❌       | ❌        | ✅(temp)| ❌     | ❌
+
+E. TEMPERATURA VERTICALE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Livello        | Richiesto? | Da quale componente?
+---------------|------------|------------------------------------------
+temperature_2m | ✅         | Tutti i service
+temperature_80m| ✅         | OMService, WeatherSvc, useMultiHour
+temperature_120m| ✅        | OMService, WeatherSvc, useMultiHour
+temperature_180m| ✅        | ProfessionalWindgram, useStabilita (NON service centrali!)
+temperature_925hPa| ✅      | useStabilita, AlpiumWindgram
+temperature_850hPa| ✅      | useStabilita, AlpiumWindgram
+temperature_700hPa| ✅      | useStabilita, AlpiumWindgram
+temperature_600hPa| ✅      | useStabilita, AlpiumWindgram
+temperature_500hPa| ✅      | useStabilita, AlpiumWindgram
+temperature_550hPa| ✅      | Solo AlpiumWindgram
+temperature_650hPa| ✅      | Solo AlpiumWindgram
+temperature_750hPa| ✅      | Solo AlpiumWindgram
+temperature_800hPa| ✅      | Solo AlpiumWindgram
+temperature_900hPa| ✅      | Solo AlpiumWindgram
+temperature_950hPa| ✅      | Solo AlpiumWindgram
+temperature_975hPa| ✅      | Solo AlpiumWindgram
+temperature_1000hPa| ✅     | Solo AlpiumWindgram
+
+F. UMIDITÀ VERTICALE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Variabile                      | Richiesta? | Note
+-------------------------------|------------|----------------------------------
+relative_humidity_2m           | ✅         | Service centrali, RasoftWindgram
+relative_humidity_80m/120m/180m| ❌         | Non richiesta da nessuno
+relative_humidity a livelli hPa| ❌         | Non richiesta da nessuno
+dew_point a livelli hPa        | ❌         | Non richiesta da nessuno
+
+G. CONVEZIONE / STABILITÀ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Variabile              | OMService | WeatherSvc | ProfWind | Stabilita | Alpium | Rasoft
+-----------------------|-----------|------------|----------|-----------|--------|-------
+CAPE                   | ✅        | ✅         | ✅       | ✅        | ✅     | ✅
+CIN (convective_inh.)  | ✅        | ✅         | ❌       | ❌        | ❌     | ❌
+Lifted Index           | ✅        | ✅         | ❌       | ✅        | ❌     | ❌
+freezing_level_height  | ✅        | ✅         | ✅       | ❌        | ❌     | ✅
+boundary_layer_height  | ❌        | ❌         | ❌       | ❌        | ❌     | ❌
+
+H. NUVOLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Variabile        | OMService | WeatherSvc | ProfWind | Rasoft
+-----------------|-----------|------------|----------|--------
+cloud_cover      | ✅        | ✅         | ✅       | ✅
+cloud_cover_low  | ✅        | ✅         | ❌       | ❌
+cloud_cover_mid  | ✅        | ✅         | ❌       | ❌
+cloud_cover_high | ✅        | ✅         | ❌       | ❌
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+I. DOCUMENTAZIONE UFFICIALE OPEN-METEO — Verifica
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Variabile                    | Supportata? | Modelli   | Hourly/Daily | Note
+-----------------------------|-------------|-----------|--------------|------
+boundary_layer_height        | ✅ Sì       | GFS,ICON,AROME | hourly   | Non sempre disponibile
+geopotential_height          | ✅ Sì       | GFS,ICON  | daily        | Solo daily aggregation
+wind_speed_925hPa            | ✅ Sì       | GFS,ICON  | hourly       | NON da AROME
+wind_speed_850hPa            | ✅ Sì       | GFS,ICON  | hourly       | NON da AROME
+wind_speed_700hPa            | ✅ Sì       | GFS,ICON  | hourly       | NON da AROME
+wind_speed_600hPa            | ✅ Sì       | GFS,ICON  | hourly       | NON da AROME
+wind_speed_500hPa            | ✅ Sì       | GFS,ICON  | hourly       | NON da AROME
+temperature_180m             | ⚠️ NON VERIF.| ?        | hourly       | Disponibile in alcuni set
+temperature_80m              | ✅ Sì       | GFS,ICON  | hourly       | ✅
+temperature_120m             | ✅ Sì       | GFS,ICON  | hourly       | ✅
+temperature_925hPa           | ✅ Sì       | GFS,ICON  | hourly       | NON da AROME
+temperature_850hPa           | ✅ Sì       | GFS,ICON  | hourly       | NON da AROME
+temperature_700hPa           | ✅ Sì       | GFS,ICON  | hourly       | NON da AROME
+temperature_600hPa           | ✅ Sì       | GFS,ICON  | hourly       | NON da AROME
+temperature_500hPa           | ✅ Sì       | GFS,ICON  | hourly       | NON da AROME
+relative_humidity a hPa      | ⚠️ NON VERIF.| ?       | hourly       | Potrebbe esistere
+CAPE                         | ✅ Sì       | GFS,ICON,AROME | hourly  | ✅
+CIN                          | ✅ Sì       | GFS,ICON,AROME | hourly  | ✅
+lifted_index                 | ✅ Sì       | GFS,ICON,AROME | hourly  | ✅
+freezing_level_height        | ✅ Sì       | GFS,ICON,AROME | hourly+daily | ✅
+cloud_cover (tutti i livelli)| ✅ Sì       | Tutti     | hourly+daily | ✅
+geopotential_height          | ✅ Sì       | GFS,ICON  | daily        | Per calcolo quota reale
+
+Tutte le variabili sopra sono gratuite sull'endpoint /v1/forecast.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+J. QUOTE DEI LIVELLI DI PRESSIONE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Quote usate nel codice (deriveMeteorology.ts, useMultiHourWindProfile.ts):
+
+  925 hPa → 760 m
+  850 hPa → 1450 m
+  700 hPa → 3000 m
+  600 hPa → 4200 m
+  500 hPa → 5500 m
+
+Note: ProfessionalWindgram.tsx usa 500 hPa → 5000 m (DISALLINEAMENTO!)
+
+Giudizio: APPROSSIMAZIONE
+
+Motivazione: Un livello di pressione non corrisponde a una quota fissa.
+850 hPa può essere a 1450m in inverno e 1550m in estate.
+Le quote ISA sono un'approssimazione accettabile ma non quote reali.
+Il codice è onesto chiamandole "estimatedAltitudeM".
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
