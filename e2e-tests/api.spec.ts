@@ -81,4 +81,19 @@ test.describe("API smoke and contract checks", () => {
   test("people API rejects page size above maximum", async ({ request }) => {
     expect((await request.get("/api/people?limit=101")).status()).toBe(400);
   });
+
+  test("people API rejects an empty JSON object", async ({ request }) => {
+    const response = await request.post("/api/people", { data: {} });
+    expect(response.status()).toBe(400);
+  });
+
+  test("people API rejects invalid email without creating a record", async ({ request }) => {
+    const response = await request.post("/api/people", { data: { name: "API test", email: "not-an-email" } });
+    expect(response.status()).toBe(400);
+  });
+
+  test("people API rejects non-string fields", async ({ request }) => {
+    const response = await request.post("/api/people", { data: { name: "API test", phone: 12345 } });
+    expect(response.status()).toBe(400);
+  });
 });
