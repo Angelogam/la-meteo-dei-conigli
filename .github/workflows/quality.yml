@@ -29,8 +29,8 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Reconcile stale lockfile and install dependencies
-        run: npm install --legacy-peer-deps
+      - name: Regenerate lockfile and install dependencies
+        run: npm install
 
       - name: Commit refreshed lockfile on branch pushes
         if: github.event_name == 'push' && github.ref == 'refs/heads/design/premium-responsive-shell'
