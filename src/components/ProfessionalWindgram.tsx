@@ -509,7 +509,19 @@ export default function ProfessionalWindgram({
 
   const thermalTopCurve = useMemo(() => {
     if (hourlyData.length === 0) return "";
-    return hourlyData.map((h, i) => `${i === 0 ? "M" : "L"} ${getXFromHourIdx(i)},${getYFromAlt(h.thermalTop)}`).join(" ");
+    // Interrompe la curva quando il modello non fornisce una quota convettiva utilizzabile.
+    // Non collega i vuoti con valori zero o quote inventate.
+    let drawing = false;
+    const segments: string[] = [];
+    hourlyData.forEach((h, i) => {
+      if (h.thermalTop == null || !Number.isFinite(h.thermalTop)) {
+        drawing = false;
+        return;
+      }
+      segments.push(`${drawing ? "L" : "M"} ${getXFromHourIdx(i)},${getYFromAlt(h.thermalTop)}`);
+      drawing = true;
+    });
+    return segments.join(" ");
   }, [hourlyData]);
 
   const avgZeroThermal = useMemo(() => {
@@ -824,7 +836,7 @@ export default function ProfessionalWindgram({
               ))}
             </div>
             <div className="text-center text-[9px] text-slate-500 font-mono mt-1.5">
-              Fonte: Open-Meteo GFS/AROME · Temperature reali a livelli hPa · Lapse rate calcolato algoritmicamente
+              Fonte: Open-Meteo · modello automatico · livelli di pressione e gradienti con quota approssimata
             </div>
           </div>
         </div>
