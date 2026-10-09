@@ -124,7 +124,7 @@ export function generateReportMeteo({
   const cinText = minCin != null ? `CIN minimo ${fmt(minCin)} J/kg` : "CIN N/D";
 
   const paragrafoTermico =
-    `Temperatura prevista ${tempText}. La base nube è una stima LCL calcolata ora per ora da temperatura e punto di rugiada: ${baseText}. Il top termico mostrato dal grafico è una stima: usa il top convettivo modellistico quando disponibile, altrimenti una stima empirica di 400 m sopra la base nube: ${topText}. ${activityText}. ${capeText}; ${liText}; ${cinText}. CAPE e indice di attività non sono misure dirette del rateo in volo e non determinano da soli la quota massima raggiungibile.`;
+    `Temperatura prevista ${tempText}. La base nube è una stima LCL calcolata ora per ora da temperatura e punto di rugiada: ${baseText}. La sommità termica mostrata dal grafico è una stima: usa l'altezza dello strato limite modellata (PBL) se disponibile, altrimenti una stima empirica di 400 m sopra la base nube: ${topText}. ${activityText}. ${capeText}; ${liText}; ${cinText}. CAPE e indice di attività non sono misure dirette del rateo in volo e non determinano da soli la quota massima raggiungibile.`;
 
   const paragrafoVento =
     `Vento previsto al suolo: media ${fmt(avgWind)} km/h da ${degToCardinal(avgDir)}, massimo orario ${fmt(maxWind)} km/h e raffica massima modellata ${fmt(maxGust)} km/h. ${levelText("850 hPa (quota approssimativa ~1.500 m s.l.m.)", w850)}; ${levelText("700 hPa (~3.000 m)", w700)}; ${levelText("500 hPa (~5.500 m)", w500)}. Le quote associate ai livelli di pressione sono approssimative; il vento in quota descrive il flusso del modello e non misura direttamente la turbolenza sul decollo. Verificare la direzione rispetto al pendio e all'esposizione locale.`;
