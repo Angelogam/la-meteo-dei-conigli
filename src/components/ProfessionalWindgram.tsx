@@ -38,30 +38,25 @@ const computeDisplayAltitudes = (siteAlt: number): number[] => {
   return result;
 };
 
-const STABILITY_COLORS = [
-  { val: -0.20, color: "#8b5cf6" },
-  { val: 0.00, color: "#3b82f6" },
-  { val: 0.16, color: "#06b6d4" },
-  { val: 0.32, color: "#10b981" },
-  { val: 0.48, color: "#84cc16" },
-  { val: 0.65, color: "#eab308" },
-  { val: 0.82, color: "#f97316" },
-  { val: 0.98, color: "#ef4444" },
-  { val: 1.20, color: "#dc2626" },
-];
+// Classi discrete del gradiente termico ambientale (°C/100 m).
+// Sono categorie indicative, NON una diagnosi completa della convezione.
+const STABILITY_COLORS = {
+  stable: "#3478d4",
+  veryStable: "#8054c7",
+  mixed: "#45a66b",
+  unstable: "#f28e2b",
+  veryUnstable: "#d73027",
+  missing: "#cbd5e1",
+};
 
 function getStabilityColor(deltaT: number | null | undefined): string {
-  // Grigio = nessun gradiente calcolabile; non fingere stabilità neutra.
-  if (deltaT == null || !Number.isFinite(deltaT)) return "#cbd5e1";
-  if (deltaT <= -0.1) return STABILITY_COLORS[0].color;
-  if (deltaT <= 0.08) return STABILITY_COLORS[1].color;
-  if (deltaT <= 0.24) return STABILITY_COLORS[2].color;
-  if (deltaT <= 0.40) return STABILITY_COLORS[3].color;
-  if (deltaT <= 0.56) return STABILITY_COLORS[4].color;
-  if (deltaT <= 0.73) return STABILITY_COLORS[5].color;
-  if (deltaT <= 0.90) return STABILITY_COLORS[6].color;
-  if (deltaT <= 1.10) return STABILITY_COLORS[7].color;
-  return STABILITY_COLORS[8].color;
+  if (deltaT == null || !Number.isFinite(deltaT)) return STABILITY_COLORS.missing;
+  // Inversione o gradiente nullo: ambiente stabile.
+  if (deltaT <= 0.0) return STABILITY_COLORS.veryStable;
+  if (deltaT < 0.4) return STABILITY_COLORS.stable;
+  if (deltaT < 0.7) return STABILITY_COLORS.mixed;
+  if (deltaT < 0.98) return STABILITY_COLORS.unstable;
+  return STABILITY_COLORS.veryUnstable;
 }
 
 function getBarbAngle(dirDeg: number): number {
@@ -876,11 +871,13 @@ export default function ProfessionalWindgram({
                 <span key={idx}>{item.val.toFixed(2)}</span>
               ))}
             </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-semibold mt-2 text-slate-700">
-              <span className="inline-flex items-center gap-1"><span className="inline-block w-4 h-3 border border-slate-400" style={{ backgroundImage: "repeating-linear-gradient(135deg, white 0 3px, #94a3b8 3px 4px)" }} /> Pioggia prevista (retinatura bianca)</span>
-              <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full" style={{ background: "#d73027" }} /> Instabilità forte</span>
-              <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full" style={{ background: "#3478d4" }} /> Stabilità</span>
-              <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full" style={{ background: "#8054c7" }} /> Stabilità marcata</span>
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] font-semibold mt-2 text-slate-700">
+              <span className="inline-flex items-center gap-1"><span className="inline-block w-4 h-3 border border-slate-400" style={{ backgroundImage: "repeating-linear-gradient(135deg, white 0 3px, #94a3b8 3px 4px)" }} /> Pioggia prevista</span>
+              <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm" style={{ background: "#d73027" }} /> Instabilità molto forte (&ge; 0,98)</span>
+              <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm" style={{ background: "#f28e2b" }} /> Instabilità (0,70–0,97)</span>
+              <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm" style={{ background: "#45a66b" }} /> Intermedia (0,40–0,69)</span>
+              <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm" style={{ background: "#3478d4" }} /> Stabile (0–0,39)</span>
+              <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm" style={{ background: "#8054c7" }} /> Inversione / stabile</span>
             </div>
             <div className="text-center text-[9px] text-slate-500 font-mono mt-1.5">
               Colonne orarie non sfumate · gradiente termico ambientale stimato · non è una misura diretta di turbolenza
