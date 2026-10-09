@@ -74,7 +74,7 @@ export default defineHandler(() => ({
             },
           } } },
         },
-        responses: { "200": { description: "Persona creata" }, "400": { description: "Payload non valido" } },
+        responses: { "201": { description: "Persona creata" }, "400": { description: "Payload non valido" }, "409": { description: "Limite archivio raggiunto" } },
       },
     },
   },
