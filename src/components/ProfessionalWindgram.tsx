@@ -566,27 +566,18 @@ export default function ProfessionalWindgram({
       const profileLen = hourlyData[0]?.deltaTProfile?.length ?? 13;
       const clampedIdx = Math.min(profileIdx, profileLen - 1);
 
-      const gradient = ctx.createLinearGradient(0, 0, plotW, 0);
-      hourlyData.forEach((h, colIdx) => {
-        const xAbs = getXFromHourIdx(colIdx);
-        const xRel = xAbs - margin.left;
-        const frac = xRel / plotW;
-        const profile = h.deltaTProfile;
+      // Celle orarie nette: niente interpolazione cromatica fra ore diverse.
+      // Ogni colonna mostra il gradiente calcolato fra livelli verticali del modello.
+      const cellW = plotW / HOURS.length;
+      hourlyData.forEach((hourData, colIdx) => {
+        const profile = hourData.deltaTProfile;
         const color = profile && profile.length > 0
           ? getStabilityColor(profile[clampedIdx] ?? null)
-          : getStabilityColor(null); // neutral stable for interpolated hours
-        gradient.addColorStop(frac, color);
+          : getStabilityColor(null);
+        ctx.globalAlpha = 0.88;
+        ctx.fillStyle = color;
+        ctx.fillRect(colIdx * cellW, yTop, cellW + 0.6, yBottom - yTop);
       });
-      const lastHour = hourlyData[hourlyData.length - 1];
-      const lastProfile = lastHour.deltaTProfile;
-      const lastColor = lastProfile && lastProfile.length > 0
-        ? getStabilityColor(lastProfile[clampedIdx] ?? null)
-        : getStabilityColor(null);
-      gradient.addColorStop(1, lastColor);
-
-      ctx.fillStyle = gradient;
-      ctx.globalAlpha = 0.8;
-      ctx.fillRect(0, yTop, plotW, yBottom - yTop);
     }
   }, [hourlyData]);
 
@@ -686,6 +677,10 @@ export default function ProfessionalWindgram({
                 <line x1="0" y1="0" x2="0" y2="4" stroke="#ca8a04" strokeWidth="0.8" strokeDasharray="1.5 1" opacity="0.6" />
                 <line x1="0" y1="0" x2="4" y2="0" stroke="#ca8a04" strokeWidth="0.8" strokeDasharray="1.5 1" opacity="0.6" />
               </pattern>
+              <pattern id="rainHatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+                <rect width="9" height="9" fill="#ffffff" fillOpacity="0.16" />
+                <line x1="0" y1="0" x2="0" y2="9" stroke="#ffffff" strokeWidth="2.4" strokeOpacity="0.95" />
+              </pattern>
             </defs>
 
             <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#0f172a" strokeWidth="1.2" />
@@ -718,6 +713,39 @@ export default function ProfessionalWindgram({
               const x = getXFromHourIdx(i);
               return (
                 <line key={`vline-${i}`} x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#e2e8f0" strokeWidth="0.5" opacity="0.4" />
+              );
+            })}
+
+            {/* Pioggia: retinatura bianca sulle ore con precipitazione prevista.
+                È un indicatore temporale, non una quota verticale della pioggia. */}
+            {hourlyData.map((h, i) => {
+              const hasRain = h.precip != null && Number.isFinite(h.precip) && h.precip >= 0.2;
+              if (!hasRain) return null;
+              const cellW = plotW / HOURS.length;
+              return (
+                <g key={`rain-${i}`}>
+                  <rect
+                    x={margin.left + i * cellW}
+                    y={margin.top}
+                    width={cellW}
+                    height={plotH}
+                    fill="url(#rainHatch)"
+                    stroke="#ffffff"
+                    strokeOpacity="0.9"
+                    strokeWidth="1"
+                  />
+                  <text
+                    x={margin.left + (i + 0.5) * cellW}
+                    y={margin.top + 14}
+                    textAnchor="middle"
+                    fontSize="10"
+                    fontWeight="900"
+                    fill="#334155"
+                    stroke="#ffffff"
+                    strokeWidth="2.5"
+                    paintOrder="stroke"
+                  >PIOGGIA {h.precip.toFixed(1)} mm</text>
+                </g>
               );
             })}
 
@@ -848,8 +876,14 @@ export default function ProfessionalWindgram({
                 <span key={idx}>{item.val.toFixed(2)}</span>
               ))}
             </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-semibold mt-2 text-slate-700">
+              <span className="inline-flex items-center gap-1"><span className="inline-block w-4 h-3 border border-slate-400" style={{ backgroundImage: "repeating-linear-gradient(135deg, white 0 3px, #94a3b8 3px 4px)" }} /> Pioggia prevista (retinatura bianca)</span>
+              <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full" style={{ background: "#d73027" }} /> Instabilità forte</span>
+              <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full" style={{ background: "#3478d4" }} /> Stabilità</span>
+              <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full" style={{ background: "#8054c7" }} /> Stabilità marcata</span>
+            </div>
             <div className="text-center text-[9px] text-slate-500 font-mono mt-1.5">
-              Fonte: Open-Meteo · modello automatico · livelli di pressione e gradienti con quota approssimata
+              Colonne orarie non sfumate · gradiente termico ambientale stimato · non è una misura diretta di turbolenza
             </div>
           </div>
         </div>
