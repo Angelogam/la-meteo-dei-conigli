@@ -412,3 +412,108 @@ body {
     transition-duration: .01ms !important;
   }
 }
+
+
+.app-brand-header {
+  position: relative;
+  z-index: 40;
+  border-bottom: 1px solid rgba(56, 189, 248, .18);
+  background: rgba(3, 12, 27, .88);
+  box-shadow: 0 8px 34px rgba(0,0,0,.2);
+  backdrop-filter: blur(22px) saturate(1.35);
+}
+
+.app-brand-inner {
+  width: min(100%, 1760px);
+  min-height: 76px;
+  margin: 0 auto;
+  padding: .7rem clamp(.85rem, 2.2vw, 2rem);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.app-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: .85rem;
+  min-width: 0;
+  color: #f4f9ff;
+  text-decoration: none;
+}
+
+.app-brand-logo {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 16px rgba(56, 189, 248, .25));
+  animation: brand-float 5s ease-in-out infinite;
+}
+
+.app-brand-copy {
+  display: flex;
+  flex-direction: column;
+  gap: .12rem;
+  min-width: 0;
+}
+
+.app-brand-copy strong {
+  font-size: clamp(1.05rem, 1.7vw, 1.4rem);
+  line-height: 1.2;
+  letter-spacing: -.035em;
+  font-weight: 850;
+}
+
+.app-brand-copy small {
+  color: #86a7c6;
+  font-size: .63rem;
+  font-weight: 750;
+  letter-spacing: .16em;
+}
+
+.app-brand-status {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  padding: .55rem .85rem;
+  border: 1px solid rgba(56, 189, 248, .2);
+  border-radius: 999px;
+  color: #b6d8ed;
+  background: rgba(10, 36, 63, .64);
+  font-size: .76rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.app-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #35e0b3;
+  box-shadow: 0 0 0 4px rgba(53,224,179,.1), 0 0 14px rgba(53,224,179,.65);
+}
+
+@keyframes brand-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+@media (max-width: 640px) {
+  .app-brand-inner {
+    min-height: 62px;
+    padding: .5rem .75rem;
+    gap: .5rem;
+  }
+
+  .app-brand-mark { gap: .5rem; }
+  .app-brand-logo { width: 42px; height: 42px; }
+  .app-brand-copy strong { font-size: 1rem; }
+  .app-brand-copy small { font-size: .5rem; letter-spacing: .09em; }
+  .app-brand-status {
+    padding: .45rem;
+    font-size: 0;
+    gap: 0;
+  }
+  .app-brand-status .app-status-dot { width: 8px; height: 8px; }
+}
