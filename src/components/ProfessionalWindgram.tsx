@@ -50,7 +50,9 @@ const STABILITY_COLORS = [
   { val: 1.20, color: "#dc2626" },
 ];
 
-function getStabilityColor(deltaT: number): string {
+function getStabilityColor(deltaT: number | null | undefined): string {
+  // Grigio = nessun gradiente calcolabile; non fingere stabilità neutra.
+  if (deltaT == null || !Number.isFinite(deltaT)) return "#cbd5e1";
   if (deltaT <= -0.1) return STABILITY_COLORS[0].color;
   if (deltaT <= 0.08) return STABILITY_COLORS[1].color;
   if (deltaT <= 0.24) return STABILITY_COLORS[2].color;
@@ -630,11 +632,17 @@ export default function ProfessionalWindgram({
                 {stabilitDataa.time.length}h · t2m={stabilitDataa.temperature_2m?.[0] ?? '—'}°C · t180={stabilitDataa.temperature_180m?.[0] ?? '—'}°C
               </span>
             )}
-            {hourlyData.length > 0 && (
-              <span className="font-bold" style={{ color: getStabilityColor(hourlyData.reduce((a,b)=>a+b.deltaT,0)/hourlyData.length) }}>
-                ΔT medio: {(hourlyData.reduce((a,b)=>a+b.deltaT,0)/hourlyData.length).toFixed(2)}
-              </span>
-            )}
+            {hourlyData.length > 0 && (() => {
+              const validDeltaT = hourlyData.map((h) => h.deltaT).filter((v): v is number => v != null && Number.isFinite(v));
+              const avgDeltaT = validDeltaT.length
+                ? validDeltaT.reduce((sum, value) => sum + value, 0) / validDeltaT.length
+                : null;
+              return (
+                <span className="font-bold" style={{ color: getStabilityColor(avgDeltaT) }}>
+                  ΔT medio: {avgDeltaT == null ? "N/D" : avgDeltaT.toFixed(2)}
+                </span>
+              );
+            })()}
           </div>
         </div>
 
