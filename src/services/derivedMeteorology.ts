@@ -340,16 +340,13 @@ export function computeHourlyDerived(hourly: MeteoHourly, siteAltitude: number):
   // Null se non disponibile (non sempre supportato da tutti i modelli)
   const boundaryLayerHeight = real.boundaryLayerHeight;
 
-  // La sommità delle nubi convettive NON equivale alla quota massima delle termiche:
-  // non usarla come sostituto. Quando disponibile, il top dello strato limite (PBL)
-  // è un riferimento modellistico più pertinente; è espresso come altezza sopra il terreno.
-  // Se manca, lasciamo una stima empirica prudente sopra la base LCL, sempre dichiarata come stima.
+  // Il top dello strato limite è un proxy modellistico della zona di rimescolamento,
+  // NON la quota garantita di termica. Se il modello non fornisce PBL, non inventiamo
+  // una quota aggiungendo metri alla base nube.
   const estimatedThermalTop: number | null =
     real.boundaryLayerHeight != null && Number.isFinite(real.boundaryLayerHeight) && real.boundaryLayerHeight > 0
       ? Math.round(siteAltitude + real.boundaryLayerHeight)
-      : cloudBase != null
-        ? Math.round(cloudBase + 400)
-        : null;
+      : null;
 
   // ESTIMATED thermal activity index — euristiche, NON rateo termico reale misurato
   let estimatedThermalActivity: number | null = null;
