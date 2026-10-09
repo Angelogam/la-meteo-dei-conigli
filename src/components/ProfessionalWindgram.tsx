@@ -129,6 +129,7 @@ export default function ProfessionalWindgram({
         cloudCover: stabilitDataa.cloud_cover?.[idx] != null ? Number(stabilitDataa.cloud_cover[idx]) : null,
         shortwaveRadiation: stabilitDataa.shortwave_radiation?.[idx] != null ? Number(stabilitDataa.shortwave_radiation[idx]) : null,
         boundaryLayerHeight: stabilitDataa.boundary_layer_height?.[idx] != null ? Number(stabilitDataa.boundary_layer_height[idx]) : null,
+        convectiveCloudTop: stabilitDataa.convective_cloud_top?.[idx] != null ? Number(stabilitDataa.convective_cloud_top[idx]) : null,
         pressure: stabilitDataa.pressure_msl?.[idx] != null ? Number(stabilitDataa.pressure_msl[idx]) : null,
         surfacePressure: stabilitDataa.surface_pressure?.[idx] != null ? Number(stabilitDataa.surface_pressure[idx]) : null,
         windSpeed925: stabilitDataa.wind_speed_925hPa?.[idx] != null ? Number(stabilitDataa.wind_speed_925hPa[idx]) : null,
@@ -191,7 +192,7 @@ export default function ProfessionalWindgram({
           "wind_speed_80m", "wind_direction_80m", "wind_speed_120m", "wind_direction_120m",
           "wind_speed_180m", "wind_direction_180m",
           "temperature_180m", "surface_pressure", "shortwave_radiation",
-          "freezing_level_height", "cape", "lifted_index",
+          "freezing_level_height", "cape", "lifted_index", "convective_cloud_top",
         ].join(",");
 
         const json = await fetchHourly(latitude, longitude, hourlyParams, dayStr, dayStr);
@@ -443,7 +444,7 @@ export default function ProfessionalWindgram({
 
   const reportGenerato = useMemo<GeneratedReport | null>(() => {
     if (!data?.hourly) return null;
-    return generateReportMeteo({ siteName, altitude, dateObj, hourlyData: data.hourly });
+    return generateReportMeteo({ siteName, altitude, dateObj, hourlyData: data.hourly, derivedByHour: hourDerivedMap });
   }, [data, siteName, altitude, dateObj]);
 
   const handleCopyReport = () => {
@@ -830,10 +831,10 @@ export default function ProfessionalWindgram({
       </div>
 
       {reportGenerato && (() => {
-        const scoreColor = reportGenerato.score >= 7 ? "text-emerald-400" : reportGenerato.score >= 5 ? "text-amber-400" : "text-rose-400";
-        const scoreLabel = reportGenerato.score >= 7 ? "Ottimo" : reportGenerato.score >= 5 ? "Discreto" : "Critico";
-        const scoreBg = reportGenerato.score >= 7 ? "from-emerald-500/15 to-emerald-600/5 border-emerald-500/30" : reportGenerato.score >= 5 ? "from-amber-500/15 to-amber-600/5 border-amber-500/30" : "from-rose-500/15 to-rose-600/5 border-rose-500/30";
-        const barColor = reportGenerato.score >= 7 ? "from-emerald-400 to-emerald-500" : reportGenerato.score >= 5 ? "from-amber-400 to-amber-500" : "from-rose-400 to-rose-500";
+        const scoreColor = reportGenerato.score >= 7 ? "text-emerald-400" : reportGenerato.score >= 5 ? "text-amber-400" : "text-slate-400";
+        const scoreLabel = reportGenerato.score >= 7 ? "Buona" : reportGenerato.score >= 5 ? "Parziale" : "Limitata";
+        const scoreBg = reportGenerato.score >= 7 ? "from-emerald-500/15 to-emerald-600/5 border-emerald-500/30" : reportGenerato.score >= 5 ? "from-amber-500/15 to-amber-600/5 border-amber-500/30" : "from-slate-500/15 to-slate-600/5 border-slate-500/30";
+        const barColor = reportGenerato.score >= 7 ? "from-emerald-400 to-emerald-500" : reportGenerato.score >= 5 ? "from-amber-400 to-amber-500" : "from-slate-400 to-slate-500";
         return (
         <div className="bg-slate-900 border border-slate-700/50 rounded-3xl overflow-hidden shadow-2xl">
 
@@ -847,7 +848,7 @@ export default function ProfessionalWindgram({
                 <div>
                   <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest mb-1">Bollettino aerologico</p>
                   <h4 className="text-base font-black text-white leading-tight">{reportGenerato.titolo.replace("REPORT METEO ", "")}</h4>
-                  <p className="text-xs text-slate-500 mt-1">Decollo {altitude} m slm · Modello GFS/AROME</p>
+                  <p className="text-xs text-slate-500 mt-1">Decollo {altitude} m slm · Modello Open-Meteo (selezione automatica)</p>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-2 shrink-0">
@@ -866,7 +867,7 @@ export default function ProfessionalWindgram({
           {/* ══ SCORE BAR ══ */}
           <div className="px-6 pt-4 pb-0">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Voto complessivo</span>
+              <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Copertura dei dati</span>
               <span className="text-[10px] text-slate-500 font-semibold">0 — 10</span>
             </div>
             <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
@@ -961,7 +962,7 @@ export default function ProfessionalWindgram({
                 <ShieldCheck className="w-4 h-4 text-emerald-400" style={{ animation: "floatIcon 2.5s ease-in-out infinite" }} />
               </div>
               <div>
-                <span className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-widest block mb-1">Giudizio finale</span>
+                <span className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-widest block mb-1">Sintesi tecnica</span>
                 <p className="text-xs text-emerald-200/90 leading-[1.7] font-medium">{reportGenerato.giudizioFinale}</p>
               </div>
             </div>
