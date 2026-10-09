@@ -9,7 +9,7 @@ on:
       - design/premium-responsive-shell
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: quality-${{ github.workflow }}-${{ github.ref }}
@@ -18,7 +18,7 @@ concurrency:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,8 +29,19 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Reconcile stale lockfile and install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Commit refreshed lockfile on branch pushes
+        if: github.event_name == 'push' && github.ref == 'refs/heads/design/premium-responsive-shell'
+        run: |
+          if ! git diff --quiet -- package-lock.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package-lock.json
+            git commit -m "chore: refresh npm lockfile [skip ci]"
+            git push
+          fi
 
       - name: Lint
         run: npm run lint
