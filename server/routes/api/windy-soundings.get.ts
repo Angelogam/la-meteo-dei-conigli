@@ -4,6 +4,8 @@ import { getQuery, createError } from "nitro/h3";
 const WINDY_PLUGIN_URL = "https://windy-plugins.com/2727410/windy-plugin-pg-soundings/1.6.2/plugin.min.js";
 const WINDY_PLUGIN_NAME = "Windy Plugin PG Soundings";
 const WINDY_PLUGIN_VERSION = "1.6.2";
+const PLUGIN_TIMEOUT_MS = 8_000;
+const MAX_PLUGIN_BYTES = 2_000_000;
 
 interface SoundingSite {
   name: string;
@@ -21,45 +23,62 @@ const SOUNDING_SITES: SoundingSite[] = [
   { name: "Pian dell'Alpe", lat: 45.063962, lon: 7.028267, elevation: 1990 },
 ];
 
+function slugify(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export default defineHandler(async (event) => {
   const query = getQuery(event);
-  const site = query.site as string | undefined;
-  const action = query.action as string | undefined;
+  const siteValue = query.site;
+  const actionValue = query.action;
+  const site = typeof siteValue === "string" ? siteValue.trim() : undefined;
+  const action = typeof actionValue === "string" ? actionValue.trim() : undefined;
 
-  // Restituisce il JS del plugin (proxy)
   if (action === "plugin") {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), PLUGIN_TIMEOUT_MS);
     try {
-      const res = await fetch(WINDY_PLUGIN_URL, {
+      const response = await fetch(WINDY_PLUGIN_URL, {
+        signal: controller.signal,
         headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; MeteoConigli/1.0)",
-          "Accept": "*/*",
+          "User-Agent": "MeteoConigli/1.1 (+https://la-meteo-dei-conigli-mrcq.vercel.app)",
+          "Accept": "application/javascript, text/javascript, */*",
         },
       });
-      if (!res.ok) {
-        throw createError({
-          statusCode: res.status,
-          statusMessage: `Errore nel fetch del plugin: ${res.statusText}`,
-        });
+      if (!response.ok) {
+        throw createError({ statusCode: 502, statusMessage: "Il provider Windy non ha restituito il plugin" });
       }
-      const js = await res.text();
+      const js = await response.text();
+      if (js.length === 0 || js.length > MAX_PLUGIN_BYTES) {
+        throw createError({ statusCode: 502, statusMessage: "Dimensione del plugin Windy non valida" });
+      }
       return {
+        ok: true,
         name: WINDY_PLUGIN_NAME,
         version: WINDY_PLUGIN_VERSION,
         url: WINDY_PLUGIN_URL,
         js,
       };
-    } catch (err: any) {
-      throw createError({
-        statusCode: 502,
-        statusMessage: "Errore proxy plugin Windy",
-        data: { detail: err.message },
-      });
+    } catch (error: unknown) {
+      const err = error as { statusCode?: number; name?: string };
+      if (err?.statusCode) throw error;
+      if (err?.name === "AbortError") {
+        throw createError({ statusCode: 504, statusMessage: "Timeout del provider Windy" });
+      }
+      throw createError({ statusCode: 502, statusMessage: "Provider Windy temporaneamente non raggiungibile" });
+    } finally {
+      clearTimeout(timer);
     }
   }
 
-  // Restituisce la lista dei siti disponibili per sounding
   if (action === "sites") {
     return {
+      ok: true,
       plugin: WINDY_PLUGIN_NAME,
       version: WINDY_PLUGIN_VERSION,
       url: WINDY_PLUGIN_URL,
@@ -67,34 +86,29 @@ export default defineHandler(async (event) => {
     };
   }
 
-  // Restituisce i dati di un sito specifico
   if (site) {
-    const found = SOUNDING_SITES.find(
-      (s) => s.name.toLowerCase().replace(/\s/g, "-") === site.toLowerCase()
-    );
+    const slug = slugify(site);
+    const found = SOUNDING_SITES.find((candidate) => slugify(candidate.name) === slug);
     if (!found) {
       throw createError({
         statusCode: 404,
-        statusMessage: `Sito "${site}" non trovato`,
-        data: { available: SOUNDING_SITES.map((s) => s.name) },
+        statusMessage: "Sito sounding non trovato",
+        data: { available: SOUNDING_SITES.map((candidate) => ({ name: candidate.name, slug: slugify(candidate.name) })) },
       });
     }
     return {
+      ok: true,
       plugin: WINDY_PLUGIN_NAME,
       version: WINDY_PLUGIN_VERSION,
       url: WINDY_PLUGIN_URL,
       site: found,
-      embedUrl: `https://windy-plugins.com/2727410/windy-plugin-pg-soundings/1.6.2/`,
-      config: {
-        lat: found.lat,
-        lon: found.lon,
-        elevation: found.elevation,
-      },
+      embedUrl: "https://windy-plugins.com/2727410/windy-plugin-pg-soundings/1.6.2/",
+      config: { lat: found.lat, lon: found.lon, elevation: found.elevation },
     };
   }
 
-  // Default: info generale
   return {
+    ok: true,
     name: WINDY_PLUGIN_NAME,
     version: WINDY_PLUGIN_VERSION,
     url: WINDY_PLUGIN_URL,
@@ -104,6 +118,6 @@ export default defineHandler(async (event) => {
       "GET /api/windy-soundings?action=sites",
       "GET /api/windy-soundings?site=montoso-decollo-basso",
     ],
-    sites: SOUNDING_SITES,
+    sites: SOUNDING_SITES.map((candidate) => ({ ...candidate, slug: slugify(candidate.name) })),
   };
 });
