@@ -48,7 +48,7 @@ export default function DayStoryboard({ dayData, siteName, selectedHour, onHourS
       rain: average(hours.map(h => h.precipitation)),
       maxWind: hours.reduce<number | null>((max, h) => h.windSpeed == null ? max : Math.max(max ?? h.windSpeed, h.windSpeed), null),
     };
-  }), [dayData]);
+  }), [dayData, periods]);
 
   const valid = dayData.filter(h => h.temperature != null || h.windSpeed != null);
   const chart = valid.filter(h => {
