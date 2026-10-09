@@ -193,7 +193,7 @@ export interface MeteoHourly {
   radiation: number | null;
   cin: number | null;
   boundaryLayerHeight: number | null;
-  convectiveCloudTop: number | null;
+  convectiveCloudTop?: number | null;
   // Pressure level winds
   windSpeed925: number | null;
   windDir925: number | null;
