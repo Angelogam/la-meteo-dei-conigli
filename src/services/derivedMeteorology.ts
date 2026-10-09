@@ -302,7 +302,11 @@ export interface HourlyDerivedData {
  * Computa tutti i dati derivati per un'ora, partendo dai dati orari API.
  * Nessun valore inventato: se un dato manca, il derivato è null.
  */
-export function computeHourlyDerived(hourly: MeteoHourly, siteAltitude: number): HourlyDerivedData | null {
+export function computeHourlyDerived(
+  hourly: MeteoHourly,
+  siteAltitude: number,
+  modelGroundAltitude: number = siteAltitude,
+): HourlyDerivedData | null {
   const real = extractRealData(hourly);
 
   // Se mancano i dati fondamentali (temperatura e dew point), non possiamo derivare nulla
@@ -345,7 +349,7 @@ export function computeHourlyDerived(hourly: MeteoHourly, siteAltitude: number):
   // una quota aggiungendo metri alla base nube.
   const estimatedThermalTop: number | null =
     real.boundaryLayerHeight != null && Number.isFinite(real.boundaryLayerHeight) && real.boundaryLayerHeight > 0
-      ? Math.round(siteAltitude + real.boundaryLayerHeight)
+      ? Math.round(modelGroundAltitude + real.boundaryLayerHeight)
       : null;
 
   // ESTIMATED thermal activity index — euristiche, NON rateo termico reale misurato
