@@ -737,3 +737,70 @@ button, a, [role="button"] {
     grid-column: auto;
   }
 }
+
+
+/* Navigation and launch cards: consistent component language */
+.dashboard-sidebar .bg-slate-900\/90,
+.dashboard-content .bg-slate-900\/90 {
+  border-radius: 18px;
+}
+.dashboard-sidebar h2,
+.dashboard-sidebar h3 {
+  letter-spacing: -.02em;
+}
+.dashboard-sidebar button:focus-visible,
+.dashboard-content button:focus-visible,
+.mobile-bottom-nav a:focus-visible,
+.mobile-bottom-nav button:focus-visible {
+  outline: 2px solid #67e8f9;
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  /* Compact analysis tabs: less decoration, more usable labels. */
+  .details-section > .grid.grid-cols-4 {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .35rem;
+    padding: .45rem;
+    border-radius: 17px;
+    background: rgba(5, 20, 38, .95);
+    box-shadow: 0 12px 28px rgba(0,0,0,.2);
+  }
+  .details-section > .grid.grid-cols-4 > button {
+    min-width: 0;
+    min-height: 72px;
+    padding: .45rem .15rem;
+    gap: .3rem;
+    border-width: 1px;
+    border-radius: 12px;
+    transform: none !important;
+  }
+  .details-section > .grid.grid-cols-4 > button svg {
+    width: 23px;
+    height: 23px;
+  }
+  .details-section > .grid.grid-cols-4 > button > span,
+  .details-section > .grid.grid-cols-4 > button p,
+  .details-section > .grid.grid-cols-4 > button .text-xs {
+    font-size: .62rem;
+    line-height: 1.2;
+    text-align: center;
+  }
+  .details-section > .grid.grid-cols-4 > button .absolute {
+    pointer-events: none;
+  }
+
+  /* Refresh controls remain easy to tap without crowding headings. */
+  .dashboard-sidebar button[title="Aggiorna dati"] {
+    min-width: 40px;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .dashboard-sidebar .flex.items-center.gap-1\.5.text-\[10px\] {
+    flex-wrap: wrap;
+    line-height: 1.4;
+  }
+}
