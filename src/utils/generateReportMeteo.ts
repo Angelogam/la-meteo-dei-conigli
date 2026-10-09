@@ -71,6 +71,7 @@ export function generateReportMeteo({
   const li = get("lifted_index");
   const cin = get("convective_inhibition");
   const freezing = get("freezing_level_height");
+  const pbl = get("boundary_layer_height");
   const codes = get("weather_code");
   const hours = times.map((t, i) => ({ i, hour: Number(t.split("T")[1]?.slice(0, 2)) }))
     .filter(({ hour }) => Number.isFinite(hour) && hour >= 8 && hour <= 19);
@@ -91,6 +92,45 @@ export function generateReportMeteo({
   const maxCape = cp.filter((v): v is number => v != null).reduce<number | null>((m, v) => m == null ? v : Math.max(m, v), null);
   const avgLi = mean(lis), minCin = cins.filter((v): v is number => v != null).reduce<number | null>((m, v) => m == null ? v : Math.min(m, v), null);
   const avgFreeze = mean(fr.filter((v) => v != null && v > 0));
+  const avgPbl = mean(select(pbl).filter((v) => v != null && v > 0));
+  const maxPbl = select(pbl).filter((v): v is number => v != null && Number.isFinite(v))
+    .reduce<number | null>((m, v) => m == null ? v : Math.max(m, v), null);
+
+  // Gradiente ambientale calcolato solo tra livelli verticali effettivamente restituiti dal modello.
+  // Un valore negativo indica inversione (temperatura crescente con la quota); non è da solo
+  // una diagnosi completa di instabilità del pacchetto d'aria.
+  const profileLapses: number[] = [];
+  const profileInversions: Array<{ low: number; high: number }> = [];
+  hours.filter(({ hour }) => hour >= 10 && hour <= 16).forEach(({ i }) => {
+    const levels: Array<{ z: number; t: number }> = [];
+    const add = (z: unknown, temp: unknown) => {
+      if (z == null || temp == null) return;
+      const zz = Number(z), tt = Number(temp);
+      if (Number.isFinite(zz) && Number.isFinite(tt) && zz > altitude + 30) levels.push({ z: zz, t: tt });
+    };
+    add(altitude + 2, temps[i]);
+    add(altitude + 80, hourlyData?.temperature_80m?.[i]);
+    add(altitude + 120, hourlyData?.temperature_120m?.[i]);
+    add(altitude + 180, hourlyData?.temperature_180m?.[i]);
+    [925, 850, 800, 750, 700, 650, 600, 550, 500].forEach((hpa) =>
+      add(hourlyData?.[`geopotential_height_${hpa}hPa`]?.[i], hourlyData?.[`temperature_${hpa}hPa`]?.[i])
+    );
+    levels.sort((a, b) => a.z - b.z);
+    for (let j = 0; j < levels.length - 1; j++) {
+      const lower = levels[j], upper = levels[j + 1];
+      const dz = upper.z - lower.z;
+      if (dz < 50) continue;
+      const lapse = (lower.t - upper.t) / dz * 100;
+      if (Number.isFinite(lapse)) {
+        profileLapses.push(lapse);
+        if (lapse < -0.05) profileInversions.push({ low: lower.z, high: upper.z });
+      }
+    }
+  });
+  const lapseMin = profileLapses.length ? Math.min(...profileLapses) : null;
+  const lapseMax = profileLapses.length ? Math.max(...profileLapses) : null;
+  const inversionBottom = profileInversions.length ? Math.min(...profileInversions.map((v) => v.low)) : null;
+  const inversionTop = profileInversions.length ? Math.max(...profileInversions.map((v) => v.high)) : null;
 
   const derivedHours = hours.map(({ i, hour }) => {
     const h = Number(times[i].split("T")[1]?.slice(0, 2));
@@ -117,14 +157,21 @@ export function generateReportMeteo({
     `${label}: ${fmt(v.speed)} km/h${v.direction != null ? ` da ${degToCardinal(v.direction)}` : ""}`;
   const tempText = tempMin != null && tempMax != null ? `${fmt(tempMin)}–${fmt(tempMax)} °C` : "N/D";
   const baseText = baseMin != null && baseMax != null ? `${fmt(baseMin)}–${fmt(baseMax)} m s.l.m.` : "N/D: T/Td o dati derivati insufficienti";
-  const topText = topMin != null && topMax != null ? `${fmt(topMin)}–${fmt(topMax)} m s.l.m. (stima)` : "N/D: dati insufficienti";
+  const topText = topMin != null && topMax != null ? `${fmt(topMin)}–${fmt(topMax)} m s.l.m. (proxy del top dello strato limite modellato, non quota garantita delle termiche)` : "N/D: il modello non fornisce un top dello strato limite utilizzabile";
+  const pblText = avgPbl != null ? `spessore medio dello strato limite ${fmt(avgPbl)} m AGL (massimo ${fmt(maxPbl)} m AGL)` : "spessore dello strato limite N/D";
+  const lapseText = lapseMin != null && lapseMax != null
+    ? `gradiente ambientale tra livelli disponibili ${fmt(lapseMin, 2)}–${fmt(lapseMax, 2)} °C/100 m`
+    : "gradiente verticale N/D: mancano livelli termici validi";
+  const inversionText = inversionBottom != null && inversionTop != null
+    ? `sono presenti segmenti con inversione modellata tra circa ${fmt(inversionBottom)} e ${fmt(inversionTop)} m s.l.m.; questi strati possono limitare il rimescolamento`
+    : "non è stata rilevata un'inversione nei segmenti verticali disponibili; i dati mancanti non escludono strati stabili";
   const activityText = peakActivity != null ? `indice empirico mostrato nel grafico fino a ${fmt(peakActivity, 1)} m/s (non misurato)${peakHour != null ? ` (massimo intorno alle ${String(peakHour).padStart(2, "0")}:00)` : ""}` : "indice di attività N/D";
   const capeText = maxCape != null ? `CAPE massimo ${fmt(maxCape)} J/kg` : "CAPE N/D";
   const liText = avgLi != null ? `Lifted Index medio ${fmt(avgLi, 1)} K` : "Lifted Index N/D";
   const cinText = minCin != null ? `CIN minimo ${fmt(minCin)} J/kg` : "CIN N/D";
 
   const paragrafoTermico =
-    `Temperatura prevista ${tempText}. La base nube è una stima LCL calcolata ora per ora da temperatura e punto di rugiada: ${baseText}. La sommità termica mostrata dal grafico è una stima: usa l'altezza dello strato limite modellata (PBL) se disponibile, altrimenti una stima empirica di 400 m sopra la base nube: ${topText}. ${activityText}. ${capeText}; ${liText}; ${cinText}. CAPE e indice di attività non sono misure dirette del rateo in volo e non determinano da soli la quota massima raggiungibile.`;
+    `Temperatura prevista ${tempText}. La base nube è una stima LCL da temperatura e punto di rugiada: ${baseText}. Il riferimento di quota in cima al grafico è ${topText}. ${pblText}. ${activityText}. Il rateo medio termico visualizzato è un indice euristico, non un dato misurato. ${capeText}; ${liText}; ${cinText}. CAPE e indice di attività non determinano da soli la quota massima raggiungibile.`;
 
   const paragrafoVento =
     `Vento previsto al suolo: media ${fmt(avgWind)} km/h da ${degToCardinal(avgDir)}, massimo orario ${fmt(maxWind)} km/h e raffica massima modellata ${fmt(maxGust)} km/h. ${levelText("850 hPa (quota approssimativa ~1.500 m s.l.m.)", w850)}; ${levelText("700 hPa (~3.000 m)", w700)}; ${levelText("500 hPa (~5.500 m)", w500)}. Le quote associate ai livelli di pressione sono approssimative; il vento in quota descrive il flusso del modello e non misura direttamente la turbolenza sul decollo. Verificare la direzione rispetto al pendio e all'esposizione locale.`;
@@ -135,7 +182,7 @@ export function generateReportMeteo({
   const freezeText = avgFreeze != null ? `zero termico medio modellato ${fmt(avgFreeze)} m s.l.m.` : "zero termico N/D";
   const thunderCode = wc.some((v) => v != null && v >= 95);
   const paragrafoInstabilita =
-    `Nel periodo 08–19: ${rainText}; ${cloudText}; ${freezeText}. ${thunderCode ? "Il codice meteo modellato include almeno un'ora con codice temporale: controllare evoluzione e aggiornamenti." : "Nessun codice meteo temporalesco è presente nelle ore selezionate; questo non esclude sviluppi locali."} ${maxCape != null && maxCape >= 1000 ? "Il CAPE raggiunge valori elevati, indicativi di potenziale convettivo, non di una probabilità certa di temporali." : "Il CAPE da solo non basta per valutare tutta l'instabilità: va letto insieme a CIN, profilo termico, nubi e precipitazioni."}`;
+    `Struttura verticale prevista nelle ore centrali: ${lapseText}; ${inversionText}. ${rainText}; ${cloudText}; ${freezeText}. ${thunderCode ? "Il codice meteo modellato include almeno un'ora con codice temporalesco: controllare evoluzione e aggiornamenti." : "Nessun codice meteo temporalesco nelle ore selezionate; ciò non esclude sviluppi locali."} ${maxCape != null && maxCape >= 1000 ? "Il CAPE indica potenziale convettivo, non una probabilità certa di temporali." : "CAPE e CIN vanno letti insieme al profilo verticale, alle nubi e alle precipitazioni."} Le fasce di colore descrivono il gradiente termico ambientale tra livelli del modello; non sono una misura diretta della turbolenza né una diagnosi completa dell'instabilità condizionale.`;
 
   const paragrafoStrategia =
     `Come leggere il windgram: le frecce e i numeri mostrano direzione e velocità del vento ai diversi livelli; le fasce colorate rappresentano la struttura termica stimata dal modello; la curva delle termiche compare solo quando è disponibile una stima di quota supportata dai dati. Per decidere sul decollo servono anche osservazioni locali, manica a vento, orientamento del sito e andamento reale delle raffiche. Questo bollettino descrive una previsione modellistica: non è un'autorizzazione al volo né sostituisce la valutazione del pilota.`;
