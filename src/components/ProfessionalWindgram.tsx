@@ -871,15 +871,15 @@ export default function ProfessionalWindgram({
                   <FileText className="w-6 h-6 text-slate-300" />
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest mb-1">Bollettino aerologico</p>
+                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest mb-1">Lettura tecnica del windgram</p>
                   <h4 className="text-base font-black text-white leading-tight">{reportGenerato.titolo.replace("REPORT METEO ", "")}</h4>
                   <p className="text-xs text-slate-500 mt-1">Decollo {altitude} m slm · Modello Open-Meteo (selezione automatica)</p>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-2 shrink-0">
                 <div className={`bg-gradient-to-br ${scoreBg} border rounded-2xl px-4 py-2.5 text-center`}>
-                  <div className={`text-2xl font-black tabular-nums ${scoreColor}`}>{reportGenerato.score}/10</div>
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Dati {scoreLabel}</div>
+                  <div className={`text-2xl font-black tabular-nums ${scoreColor}`}>{reportGenerato.score * 10}%</div>
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Copertura</div>
                 </div>
                 <button onClick={handleCopyReport} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-semibold text-slate-400 transition-all border border-slate-700/60">
                   {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
@@ -893,7 +893,7 @@ export default function ProfessionalWindgram({
           <div className="px-6 pt-4 pb-0">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Copertura dei dati</span>
-              <span className="text-[10px] text-slate-500 font-semibold">0 — 10</span>
+              <span className="text-[10px] text-slate-500 font-semibold">0 — 100%</span>
             </div>
             <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
               <div
