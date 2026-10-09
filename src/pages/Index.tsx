@@ -8,6 +8,7 @@ import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
 import HourlyTable from "@/components/HourlyTable";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
+import DayStoryboard from "@/components/DayStoryboard";
 import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
@@ -139,6 +140,13 @@ export default function Index() {
                   nomeDecollo={site.site_name}
                 />
                 </section>
+
+                <DayStoryboard
+                  dayData={filteredDayData}
+                  siteName={site.site_name}
+                  selectedHour={selectedHour}
+                  onHourSelect={setSelectedHour}
+                />
 
                 <HourlyTable
                   dayData={filteredDayData}
