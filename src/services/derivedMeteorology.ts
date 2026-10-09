@@ -340,12 +340,13 @@ export function computeHourlyDerived(hourly: MeteoHourly, siteAltitude: number):
   // Null se non disponibile (non sempre supportato da tutti i modelli)
   const boundaryLayerHeight = real.boundaryLayerHeight;
 
-  // Top convettivo ESTIMATO: usa il parametro modellistico se presente; altrimenti usa una
-  // stima empirica esplicita di +400 m dalla base nube. Non dipende dal CAPE, che da solo
-  // non determina la quota massima delle termiche. La UI e il report devono mantenerlo etichettato ESTIMATED.
+  // La sommità delle nubi convettive NON equivale alla quota massima delle termiche:
+  // non usarla come sostituto. Quando disponibile, il top dello strato limite (PBL)
+  // è un riferimento modellistico più pertinente; è espresso come altezza sopra il terreno.
+  // Se manca, lasciamo una stima empirica prudente sopra la base LCL, sempre dichiarata come stima.
   const estimatedThermalTop: number | null =
-    real.convectiveCloudTop != null && real.convectiveCloudTop > 0
-      ? Math.round(siteAltitude + real.convectiveCloudTop)
+    real.boundaryLayerHeight != null && Number.isFinite(real.boundaryLayerHeight) && real.boundaryLayerHeight > 0
+      ? Math.round(siteAltitude + real.boundaryLayerHeight)
       : cloudBase != null
         ? Math.round(cloudBase + 400)
         : null;
