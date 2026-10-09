@@ -340,14 +340,15 @@ export function computeHourlyDerived(hourly: MeteoHourly, siteAltitude: number):
   // Null se non disponibile (non sempre supportato da tutti i modelli)
   const boundaryLayerHeight = real.boundaryLayerHeight;
 
-  // Top nubi convettive: usa il valore del modello se presente.
-  // Open-Meteo lo fornisce come altezza sopra il terreno: convertiamo in quota s.l.m.
-  // CAPE da solo non determina la quota massima delle termiche; se il modello non dà il top,
-  // lasciamo null invece di aggiungere metri arbitrari alla base nube.
+  // Top convettivo ESTIMATO: usa il parametro modellistico se presente; altrimenti usa una
+  // stima empirica esplicita di +400 m dalla base nube. Non dipende dal CAPE, che da solo
+  // non determina la quota massima delle termiche. La UI e il report devono mantenerlo etichettato ESTIMATED.
   const estimatedThermalTop: number | null =
     real.convectiveCloudTop != null && real.convectiveCloudTop > 0
       ? Math.round(siteAltitude + real.convectiveCloudTop)
-      : null;
+      : cloudBase != null
+        ? Math.round(cloudBase + 400)
+        : null;
 
   // ESTIMATED thermal activity index — euristiche, NON rateo termico reale misurato
   let estimatedThermalActivity: number | null = null;
