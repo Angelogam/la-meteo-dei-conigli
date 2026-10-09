@@ -171,33 +171,46 @@ export default function ProfessionalWindgram({
     setLoading(true);
     setError(null);
 
-    // Se rawData è disponibile, usalo
-    if (rawData && rawData.hourly) {
-      setData(rawData);
-      setLoading(false);
-      return;
-    }
-
-    // Fallback: se non c'è rawData, cerca nei dati orari passati
+    // Il windgram richiede un sounding verticale completo. I dati condivisi dalla homepage
+    // spesso non includono temperature e altezze geopotenziali ai livelli di pressione:
+    // in quel caso non si deve disegnare una fascia d'instabilità inventata.
     (async () => {
       try {
-        const today = new Date();
-        const targetDate = new Date(today);
-        targetDate.setDate(today.getDate() + selectedDay);
-        const dayStr = targetDate.toISOString().split("T")[0];
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + selectedDay);
+        const dayStr = [
+          targetDate.getFullYear(),
+          String(targetDate.getMonth() + 1).padStart(2, "0"),
+          String(targetDate.getDate()).padStart(2, "0"),
+        ].join("-");
 
         const hourlyParams = [
           "temperature_2m", "relative_humidity_2m", "dew_point_2m", "precipitation",
-          "cloud_cover", "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",
-          "wind_speed_80m", "wind_direction_80m", "wind_speed_120m", "wind_direction_120m",
-          "wind_speed_180m", "wind_direction_180m",
-          "temperature_180m", "surface_pressure", "shortwave_radiation",
-          "freezing_level_height", "cape", "lifted_index", "convective_cloud_top",
+          "precipitation_probability", "weather_code", "cloud_cover", "cloud_cover_low",
+          "cloud_cover_mid", "cloud_cover_high", "wind_speed_10m", "wind_direction_10m",
+          "wind_gusts_10m", "wind_speed_80m", "wind_direction_80m", "wind_speed_120m",
+          "wind_direction_120m", "wind_speed_180m", "wind_direction_180m", "temperature_80m",
+          "temperature_120m", "temperature_180m", "surface_pressure", "pressure_msl",
+          "shortwave_radiation", "freezing_level_height", "cape", "convective_inhibition",
+          "lifted_index", "boundary_layer_height", "convective_cloud_base", "convective_cloud_top",
+          "temperature_925hPa", "temperature_850hPa", "temperature_800hPa",
+          "temperature_750hPa", "temperature_700hPa", "temperature_650hPa",
+          "temperature_600hPa", "temperature_550hPa", "temperature_500hPa",
+          "geopotential_height_925hPa", "geopotential_height_850hPa", "geopotential_height_800hPa",
+          "geopotential_height_750hPa", "geopotential_height_700hPa", "geopotential_height_650hPa",
+          "geopotential_height_600hPa", "geopotential_height_550hPa", "geopotential_height_500hPa",
+          "wind_speed_925hPa", "wind_direction_925hPa", "wind_speed_850hPa", "wind_direction_850hPa",
+          "wind_speed_700hPa", "wind_direction_700hPa", "wind_speed_600hPa", "wind_direction_600hPa",
+          "wind_speed_500hPa", "wind_direction_500hPa",
         ].join(",");
 
-        const json = await fetchHourly(latitude, longitude, hourlyParams, dayStr, dayStr);
+        const sounding = await fetchHourly(latitude, longitude, hourlyParams, dayStr, dayStr);
         if (isMounted) {
-          setData(json);
+          // Conserva eventuali campi extra condivisi, ma i livelli verticali vengono dal sounding dedicato.
+          const merged = rawData?.hourly
+            ? { ...rawData, ...sounding, hourly: { ...rawData.hourly, ...sounding.hourly } }
+            : sounding;
+          setData(merged);
           setLoading(false);
         }
       } catch (err) {
@@ -366,62 +379,50 @@ export default function ProfessionalWindgram({
       // THERMAL_AVG: ESTIMATED — indice euristico di attività termica (m/s)
       const thermalAvg = derived?.estimatedThermalActivity ?? null;
 
-      // ─── Atmospheric lapse-rate profile for air-mass coloring ───
-      // Pattern (matches Alpium reference):
-      //   1000-1800 m  → yellow (unstable, ground-heated boundary layer)
-      //   1800-3000 m  → green (neutral/transition)
-      //   3000-4200 m  → blue/purple (stable, free atmosphere + inversion)
-      // Real Open-Meteo data modulates each layer's intensity.
+      // Profilo verticale della temperatura dell'ambiente, dai livelli reali del modello.
+      // ΔT/100 m = (T inferiore - T superiore) / differenza di quota * 100.
+      // Non sintetizziamo fasce gialle/verdi/blu in base all'ora: senza livelli validi
+      // il dato resta null. Questo è il gradiente ambientale, non un parcel sounding completo.
+      const soundingLevels: Array<{ alt: number; temp: number }> = [];
+      const addLevel = (alt: unknown, temp: unknown) => {
+        const z = Number(alt), value = Number(temp);
+        if (alt != null && temp != null && Number.isFinite(z) && Number.isFinite(value)) {
+          soundingLevels.push({ alt: z, temp: value });
+        }
+      };
+      addLevel(altitude + 2, t);
+      addLevel(altitude + 80, data.hourly.temperature_80m?.[idx]);
+      addLevel(altitude + 120, data.hourly.temperature_120m?.[idx]);
+      addLevel(altitude + 180, data.hourly.temperature_180m?.[idx]);
+      const pressureLevels = [925, 850, 800, 750, 700, 650, 600, 550, 500];
+      pressureLevels.forEach((hpa) => {
+        const z = data.hourly[`geopotential_height_${hpa}hPa`]?.[idx];
+        const temp = data.hourly[`temperature_${hpa}hPa`]?.[idx];
+        // Escludi livelli sotto il terreno del sito: in montagna possono essere interni al suolo.
+        if (z != null && Number(z) > altitude + 50) addLevel(z, temp);
+      });
+      soundingLevels.sort((a, b) => a.alt - b.alt);
+      const uniqueLevels = soundingLevels.filter((level, i, arr) =>
+        i === 0 || Math.abs(level.alt - arr[i - 1].alt) > 20
+      );
 
-      // 1. Real base lapse rate — consumo dal motore centralizzato quando disponibile
-      let baseLapseRate = derived?.lowLevelLapseRate ?? null;
-      if (baseLapseRate == null && t180Num != null && t180Num !== t) {
-        baseLapseRate = Math.abs(t - t180Num) / 180 * 100;
-      } else if (baseLapseRate == null) {
-        const hoursFromPeak = Math.abs(targetHour - 14);
-        const solarFactor = Math.max(0, 1 - hoursFromPeak / 6);
-        baseLapseRate = 0.65 + solarFactor * 0.3;
-      }
-      baseLapseRate = Math.max(0.2, Math.min(1.2, baseLapseRate));
-
-      // 2. Layered lapse-rate model per altitude (in °C/100m)
-      // Pattern: unstable near ground (yellow) → neutral mid (green) → stable aloft (blue/purple)
-      // Driven by real t2m–t180m data + inversion cap at thermal top.
-      function calcDeltaTAt(alt: number): number {
-        const r = (alt - minAlt) / (maxAlt - minAlt); // 0..1
-
-        // Surface heating contribution (decays exponentially with height)
-        const surfaceHeat = baseLapseRate * Math.exp(-r * 2.2);
-
-        // Standard free-atmosphere lapse (dominates at high altitude)
-        const freeAtmos = 0.55 * Math.max(0, (r - 0.2) / 0.8);
-
-        // Thermal-top inversion: strong stable cap above convection height
-        const inversion = alt > thermalTop ? -0.45 * Math.min(1, (alt - thermalTop) / 400) : 0;
-
-        // Cloud-base suppression of convection
-        const cloudSuppression = alt > cloudBase ? -0.18 : 0;
-
-        // Afternoon solar boost near surface
-        const hoursFromPeak = Math.abs(targetHour - 14);
-        const solarBoost = hoursFromPeak < 4
-          ? (1 - hoursFromPeak / 4) * baseLapseRate * 0.15 * Math.max(0, 1 - r * 1.5)
-          : 0;
-
-        // Rain suppresses convection throughout
-        const rainSuppress = precip > 0.3 ? -0.12 : 0;
-
-        const deltaT = surfaceHeat + freeAtmos + inversion + cloudSuppression + solarBoost + rainSuppress;
-        return Math.max(-0.25, Math.min(1.25, deltaT));
+      function calcDeltaTAt(alt: number): number | null {
+        if (uniqueLevels.length < 2) return null;
+        for (let i = 0; i < uniqueLevels.length - 1; i++) {
+          const lower = uniqueLevels[i], upper = uniqueLevels[i + 1];
+          if (alt >= lower.alt && alt <= upper.alt && upper.alt > lower.alt) {
+            const lapse = ((lower.temp - upper.temp) / (upper.alt - lower.alt)) * 100;
+            return Number.isFinite(lapse) ? Math.max(-0.25, Math.min(1.25, lapse)) : null;
+          }
+        }
+        return null;
       }
 
-      // 3. Build 250m-resolved profile
-      const deltaTProfile: number[] = [];
+      const deltaTProfile: Array<number | null> = [];
       for (let alt = minAlt; alt <= maxAlt; alt += 250) {
         deltaTProfile.push(calcDeltaTAt(alt));
       }
-      // Usa deltaT reale quando disponibile, altrimenti null
-      const deltaT = deltaTProfile[0] ?? null;
+      const deltaT = calcDeltaTAt(minAlt);
 
       const levelWinds = displayAltitudes.map((alt) => {
         const interp = interpolateAtAltitude(targetHour, alt);
