@@ -740,6 +740,7 @@ export default function ProfessionalWindgram({
             )}
 
             {hourlyData.map((h, i) => {
+              if (h.thermalTop == null || !Number.isFinite(h.thermalTop)) return null;
               const x = getXFromHourIdx(i);
               const y = getYFromAlt(h.thermalTop);
               return (
@@ -754,7 +755,7 @@ export default function ProfessionalWindgram({
             })}
 
             {hourlyData.map((h, i) => {
-              if (i === 0 || i === hourlyData.length - 1) return null;
+              if (i === 0 || i === hourlyData.length - 1 || h.thermalTop == null || !Number.isFinite(h.thermalTop)) return null;
               const x = getXFromHourIdx(i);
               const y = getYFromAlt(h.thermalTop) - 60;
               return (
@@ -766,7 +767,7 @@ export default function ProfessionalWindgram({
             })}
 
             {hourlyData.map((h, i) => {
-              if (i === 0 || i === hourlyData.length - 1) return null;
+              if (i === 0 || i === hourlyData.length - 1 || h.thermalTop == null || !Number.isFinite(h.thermalTop)) return null;
               const x = getXFromHourIdx(i);
               const paraY = getYFromAlt(h.thermalTop);
               const badgeY = paraY + 12;
@@ -844,7 +845,7 @@ export default function ProfessionalWindgram({
 
       {reportGenerato && (() => {
         const scoreColor = reportGenerato.score >= 7 ? "text-emerald-400" : reportGenerato.score >= 5 ? "text-amber-400" : "text-slate-400";
-        const scoreLabel = reportGenerato.score >= 7 ? "Buona" : reportGenerato.score >= 5 ? "Parziale" : "Limitata";
+        const scoreLabel = reportGenerato.score >= 7 ? "Completi" : reportGenerato.score >= 5 ? "Parziali" : "Limitati";
         const scoreBg = reportGenerato.score >= 7 ? "from-emerald-500/15 to-emerald-600/5 border-emerald-500/30" : reportGenerato.score >= 5 ? "from-amber-500/15 to-amber-600/5 border-amber-500/30" : "from-slate-500/15 to-slate-600/5 border-slate-500/30";
         const barColor = reportGenerato.score >= 7 ? "from-emerald-400 to-emerald-500" : reportGenerato.score >= 5 ? "from-amber-400 to-amber-500" : "from-slate-400 to-slate-500";
         return (
@@ -865,8 +866,8 @@ export default function ProfessionalWindgram({
               </div>
               <div className="flex flex-col items-end gap-2 shrink-0">
                 <div className={`bg-gradient-to-br ${scoreBg} border rounded-2xl px-4 py-2.5 text-center`}>
-                  <div className={`text-2xl font-black tabular-nums ${scoreColor}`}>{reportGenerato.score}</div>
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{scoreLabel}</div>
+                  <div className={`text-2xl font-black tabular-nums ${scoreColor}`}>{reportGenerato.score}/10</div>
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Dati {scoreLabel}</div>
                 </div>
                 <button onClick={handleCopyReport} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-semibold text-slate-400 transition-all border border-slate-700/60">
                   {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
@@ -943,7 +944,7 @@ export default function ProfessionalWindgram({
                 </div>
                 <div>
                   <span className="text-[10px] text-emerald-400/60 font-bold uppercase tracking-widest mr-2">04</span>
-                  <span className="text-sm font-black text-emerald-200">Finestra &amp; Tattica</span>
+                  <span className="text-sm font-black text-emerald-200">Come leggere il grafico</span>
                 </div>
               </div>
               <p className="text-sm text-slate-300 leading-[1.85] font-normal pl-11">{reportGenerato.paragrafoStrategia}</p>
