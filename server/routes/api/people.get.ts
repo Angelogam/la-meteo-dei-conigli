@@ -3,36 +3,56 @@ import { getQuery, createError } from "nitro/h3";
 import fs from "node:fs";
 import path from "node:path";
 
-const DATA_FILE = path.resolve("./server/data/people.json");
+interface PersonRecord {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  notes?: string;
+  createdAt: string;
+}
 
-function readPeople() {
-  if (!fs.existsSync(DATA_FILE)) {
-    return [];
-  }
+const DATA_FILE = path.resolve("./server/data/people.json");
+const DEFAULT_LIMIT = 25;
+const MAX_LIMIT = 100;
+
+function readPeople(): PersonRecord[] {
+  if (!fs.existsSync(DATA_FILE)) return [];
   try {
-    const data = fs.readFileSync(DATA_FILE, "utf-8");
-    return JSON.parse(data) as any[];
+    const parsed: unknown = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
+    if (!Array.isArray(parsed)) throw new Error("Archivio persone non valido");
+    return parsed as PersonRecord[];
   } catch {
-    return [];
+    throw createError({ statusCode: 500, statusMessage: "Archivio persone non leggibile" });
   }
 }
 
-export default defineHandler(async (event) => {
-  const query = getQuery(event);
-  const limit = query.limit ? parseInt(query.limit as string) : 50;
-  const offset = query.offset ? parseInt(query.offset as string) : 0;
+function parseInteger(value: unknown, fallback: number, name: string, min: number, max: number) {
+  if (value === undefined || value === null || value === "") return fallback;
+  if (typeof value !== "string" || !/^\d+$/.test(value)) {
+    throw createError({ statusCode: 400, statusMessage: `Parametro ${name} non valido`, data: { parameter: name } });
+  }
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < min || parsed > max) {
+    throw createError({ statusCode: 400, statusMessage: `Parametro ${name} fuori intervallo`, data: { parameter: name, min, max } });
+  }
+  return parsed;
+}
 
+export default defineHandler((event) => {
+  const query = getQuery(event);
+  const limit = parseInteger(query.limit, DEFAULT_LIMIT, "limit", 1, MAX_LIMIT);
+  const offset = parseInteger(query.offset, 0, "offset", 0, 1_000_000);
   const people = readPeople();
-  const total = people.length;
-  const items = people.slice(offset, offset + Math.min(limit, 100));
 
   return {
     ok: true,
-    total,
+    data: people.slice(offset, offset + limit),
+    meta: { total: people.length, limit, offset, hasMore: offset + limit < people.length },
+    // Compatibility fields for existing clients.
+    total: people.length,
     limit,
     offset,
-    items,
-    dataFile: DATA_FILE,
-    fileExists: fs.existsSync(DATA_FILE),
+    items: people.slice(offset, offset + limit),
   };
 });
