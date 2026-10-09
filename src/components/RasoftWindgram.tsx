@@ -5,8 +5,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 // ────────────────────────────────────────────────────────────────────────────
-// RasoftWindgram — replica fedele del windgram Rasoft/Meteo-Parapente
-// per il sito "Montoso Alto". Pixel-perfect.
+// Windgram verticale: vento previsto e zero termico.
+ // Evita di presentare stime termiche euristiche come osservazioni.
 // ────────────────────────────────────────────────────────────────────────────
 
 interface RasoftWindgramProps {
@@ -81,7 +81,7 @@ interface HourRow {
   hour: number;
   idx: number;
   time: string;
-  wind: { alt: number; speed: number; dir: number }[];
+  wind: { alt: number; speed: number | null; dir: number | null }[];
   thermal: number;
   sunPct: number;
   cloudPct: number;
@@ -89,7 +89,7 @@ interface HourRow {
   cloudMid: number;
   cloudHigh: number;
   cape: number;
-  freezing: number;
+  freezing: number | null;
   temp2m: number;
   dew2m: number;
   cloudBase: number;
@@ -153,7 +153,7 @@ const windColor = (kmh: number) => {
   // TOLL: l'utente riporta che le frecce sono invertite.
   // Provo a interpretare la direction come direzione DEL MOTO (non provenienza).
   // Quindi per "vento verso OVEST" (direction=270°): freccia a OVEST (sinistra).
-  const targetDeg = direction;
+  const targetDeg = (direction + 180) % 360;
   const rad = (targetDeg * Math.PI) / 180;
   const len = 14;
   // Vettore moto (in SVG, Y va verso il basso)
@@ -438,13 +438,13 @@ export default function RasoftWindgram({
         idx,
         time: data.time[idx],
         wind: [
-          { alt: altitude, speed: data.wind_speed_10m[idx] ?? 0, dir: data.wind_direction_10m[idx] ?? 0 },
-          { alt: altitude + 80, speed: data.wind_speed_80m[idx] ?? 0, dir: data.wind_direction_80m[idx] ?? 0 },
-          { alt: altitude + 120, speed: data.wind_speed_120m[idx] ?? 0, dir: data.wind_direction_120m[idx] ?? 0 },
-          { alt: 1450, speed: data.wind_speed_850hPa[idx] ?? 0, dir: data.wind_direction_850hPa[idx] ?? 0 },
-          { alt: 3100, speed: data.wind_speed_700hPa[idx] ?? 0, dir: data.wind_direction_700hPa[idx] ?? 0 },
-          { alt: 4400, speed: data.wind_speed_600hPa[idx] ?? 0, dir: data.wind_direction_600hPa[idx] ?? 0 },
-          { alt: 5800, speed: data.wind_speed_500hPa[idx] ?? 0, dir: data.wind_direction_500hPa[idx] ?? 0 },
+          { alt: altitude, speed: data.wind_speed_10m[idx] ?? null, dir: data.wind_direction_10m[idx] ?? null },
+          { alt: altitude + 80, speed: data.wind_speed_80m[idx] ?? null, dir: data.wind_direction_80m[idx] ?? null },
+          { alt: altitude + 120, speed: data.wind_speed_120m[idx] ?? null, dir: data.wind_direction_120m[idx] ?? null },
+          { alt: 1450, speed: data.wind_speed_850hPa[idx] ?? null, dir: data.wind_direction_850hPa[idx] ?? null },
+          { alt: 3100, speed: data.wind_speed_700hPa[idx] ?? null, dir: data.wind_direction_700hPa[idx] ?? null },
+          { alt: 4400, speed: data.wind_speed_600hPa[idx] ?? null, dir: data.wind_direction_600hPa[idx] ?? null },
+          { alt: 5800, speed: data.wind_speed_500hPa[idx] ?? null, dir: data.wind_direction_500hPa[idx] ?? null },
         ],
         thermal,
         sunPct,
@@ -453,7 +453,7 @@ export default function RasoftWindgram({
         cloudMid: data.cloud_cover_mid[idx] ?? 0,
         cloudHigh: data.cloud_cover_high[idx] ?? 0,
         cape,
-        freezing: data.freezing_level_height[idx] ?? 4000,
+        freezing: data.freezing_level_height[idx] ?? null,
         temp2m: t,
         dew2m: td,
         cloudBase,
@@ -493,10 +493,12 @@ export default function RasoftWindgram({
   // Zero termico
   const freezingPoints = useMemo(
     () =>
-      rows.map((r) => ({
-        x: xToPx(r.hour),
-        y: yToPx(Math.min(Y_MAX, r.freezing)),
-      })),
+      rows
+        .filter((r) => r.freezing != null && Number.isFinite(r.freezing))
+        .map((r) => ({
+          x: xToPx(r.hour),
+          y: yToPx(Math.min(Y_MAX, r.freezing as number)),
+        })),
     [rows],
   );
 
@@ -604,26 +606,8 @@ export default function RasoftWindgram({
             </clipPath>
           </defs>
 
-          {/* ─── Bande concentriche di stabilità (campo ΔT) ─── */}
-          <g clipPath="url(#plotClip)">
-            {stabilityBands.map((band, i) => (
-              <path
-                key={`band-${i}`}
-                d={stabilityBandPath(stabilityCenter, band.amp, 40, band.center - 2700)}
-                fill={band.color}
-                opacity={band.opacity}
-              />
-            ))}
-            {/* Banda di base gialla (sotto tutto) */}
-            <rect
-              x={MARGIN.left}
-              y={MARGIN.top}
-              width={PLOT_W}
-              height={PLOT_H}
-              fill="#facc15"
-              opacity={0.35}
-            />
-          </g>
+          {/* Sfondo neutro: non mostriamo bande di stabilità sintetiche. */}
+          <rect x={MARGIN.left} y={MARGIN.top} width={PLOT_W} height={PLOT_H} fill="#f8fafc" />
 
           {/* ─── Bordo del plot ─── */}
           <rect
@@ -791,27 +775,21 @@ export default function RasoftWindgram({
                       {rows.map((r) => (
                         <g key={`wb-${r.hour}`}>
                           {r.wind.map((w, i) => (
-                            <WindArrow
-                              key={`wb-${r.hour}-${i}`}
-                              cx={xToPx(r.hour)}
-                              cy={yToPx(w.alt)}
-                              speed={w.speed}
-                              direction={w.dir}
-                            />
+                            w.speed != null && w.dir != null && Number.isFinite(w.speed) && Number.isFinite(w.dir) ? (
+                              <WindArrow
+                                key={`wb-${r.hour}-${i}`}
+                                cx={xToPx(r.hour)}
+                                cy={yToPx(w.alt)}
+                                speed={w.speed}
+                                direction={w.dir}
+                              />
+                            ) : null
                           ))}
                         </g>
                       ))}
                     </g>
 
-          {/* ─── PBL (boundary layer) tratteggiata nera ─── */}
-          <path
-            d={smoothPath(pblPoints)}
-            fill="none"
-            stroke="#0f172a"
-            strokeWidth={2}
-            strokeDasharray="5 4"
-            strokeLinecap="round"
-          />
+          {/* PBL omesso: in questo componente è una stima euristica, non un dato del modello. */}
 
           {/* ─── Zero termico azzurro tratteggiato ─── */}
           <path
@@ -867,53 +845,7 @@ export default function RasoftWindgram({
             </g>
           )}
 
-          {/* ─── Nuvole stilizzate con % ─── */}
-          {clouds.map((c, i) => (
-            <CloudIcon key={`cloud-${i}`} x={c.x} y={c.y} label={c.label} />
-          ))}
-
-          {/* ─── Badge cumulonembi (sotto curva termica) ─── */}
-          {cloudBadges.map((b, i) => (
-            <g key={`badge-${i}`} transform={`translate(${b.x - 24}, ${b.y})`}>
-              <text
-                x={24}
-                y={10}
-                textAnchor="middle"
-                fontSize={10.5}
-                fontWeight={800}
-                fill="#0f172a"
-                fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-              >
-                {b.alt} m
-              </text>
-              <text
-                x={24}
-                y={24}
-                textAnchor="middle"
-                fontSize={10.5}
-                fontWeight={800}
-                fill="#dc2626"
-                fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-              >
-                ↑ {b.rate.toFixed(1)} m/s
-              </text>
-            </g>
-          ))}
-
-          {/* ─── Curva top termico viola (parapendio) ─── */}
-          <path
-            d={smoothPath(thermalTopPoints)}
-            fill="none"
-            stroke="#a855f7"
-            strokeWidth={2.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-
-          {/* Icone parapendio ai nodi */}
-          {thermalTopPoints.map((p, i) => (
-            <ParagliderIcon key={`pg-${i}`} x={p.x} y={p.y - 4} />
-          ))}
+          {/* Base/top termico e rateo non vengono disegnati finché non sono validati. */}
 
           {/* ─── Scala stabilità ΔT/100m ─── */}
           <g transform={`translate(${MARGIN.left}, ${VB_H - 38})`}>

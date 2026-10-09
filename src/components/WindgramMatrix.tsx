@@ -275,15 +275,38 @@ export default function WindgramMatrix({
     return map;
   }, [hourDerivedInfo, activeAltitudes, altitude]);
 
+  // Fascia convettiva oraria: usa esclusivamente il top termiche STIMATO
+  // dal motore centrale. La curva segue l'evoluzione oraria del modello;
+  // non viene inventata una sinusoide quando mancano i dati.
+  const thermalTopRow = useMemo(() => {
+    const map: Record<number, number> = {};
+    DISPLAY_HOURS.forEach((hr) => {
+      const top = hourDerivedInfo[hr]?.estimatedThermalTop;
+      if (top == null || !Number.isFinite(top)) return;
+      let bestIdx = -1;
+      let bestDiff = Infinity;
+      activeAltitudes.forEach((a, idx) => {
+        const diff = Math.abs(a - top);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          bestIdx = idx;
+        }
+      });
+      if (bestIdx >= 0) map[hr] = bestIdx;
+    });
+    return map;
+  }, [hourDerivedInfo, activeAltitudes]);
+
+
   const dataSourceBadge = hasRealAltitudeData ? (
     <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold flex items-center gap-1">
       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-      Vento modello · quote 1000-3000m
+      Vento previsto · profilo verticale
     </span>
   ) : hasRealPressureData ? (
     <span className="px-2 py-0.5 rounded bg-sky-100 text-sky-700 text-[10px] font-bold flex items-center gap-1">
       <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
-      Vento modello · livelli hPa
+      Vento previsto · livelli di pressione
     </span>
   ) : (
     <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px] font-bold flex items-center gap-1">
@@ -302,7 +325,7 @@ export default function WindgramMatrix({
 
   if (profileLoading) {
     return (
-      <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
+      <div className="w-full max-w-full mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
         <div className="w-full bg-white text-slate-900 border border-slate-200/80 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
           <div className="p-4 sm:p-5 pb-3 flex items-center justify-center gap-3">
             <div className="w-6 h-6 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" />
@@ -315,7 +338,7 @@ export default function WindgramMatrix({
 
   if (profileError) {
     return (
-      <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
+      <div className="w-full max-w-full mx-auto bg-slate-900/60 p-2 sm:p-4 rounded-3xl">
         <div className="w-full bg-white text-slate-900 border border-red-500/40 rounded-[26px] shadow-2xl overflow-hidden font-sans select-none">
           <div className="p-4 sm:p-5 pb-3 text-center text-red-500">
             <p className="font-bold">Errore caricamento windgram</p>
@@ -327,7 +350,7 @@ export default function WindgramMatrix({
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-slate-900/60 p-1.5 sm:p-2 rounded-2xl">
+    <div className="w-full max-w-full mx-auto bg-slate-900/60 p-1.5 sm:p-2 rounded-2xl">
       <div className="w-full bg-white text-slate-900 border border-slate-200/80 rounded-2xl shadow-2xl overflow-hidden font-sans select-none">
         <div className="p-2 sm:p-3 pb-2">
             <div className="flex items-center justify-between gap-2 mb-2">
@@ -342,46 +365,35 @@ export default function WindgramMatrix({
                   <p className="text-[10px] text-sky-700 font-semibold">{headerDate}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-[9px] flex-wrap">
-                <span className={`px-1.5 py-0.5 rounded font-bold ${windProfileMap.size > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                  {windProfileMap.size > 0 ? `✓ ${windProfileMap.size}h vento` : '⏳ carico vento…'}
-                </span>
-                <span className={`px-1.5 py-0.5 rounded font-bold ${profileError ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'}`}>
-                  {profileError ? `✗ ${profileError.slice(0, 20)}` : '✓ OK'}
-                </span>
+              <div className="flex items-center gap-2 text-[10px] flex-wrap justify-end">
                 {dataSourceBadge}
               </div>
             </div>
 
-          <div className="overflow-x-auto border-t border-b border-slate-200 bg-white">
-            {/* Debug row */}
-            <div className="px-2 py-1 text-[9px] text-slate-400 bg-slate-50 flex items-center gap-3">
-              <span>Map: {windProfileMap.size}h</span>
-              <span>Rows: {activeAltitudes.length}</span>
-              <span>Hours: {DISPLAY_HOURS.length}</span>
-              <span className={windProfileMap.size > 0 ? "text-emerald-500" : "text-amber-500"}>
-                {windProfileMap.size > 0 ? "✓ vento pronto" : "⏳ attesa dati..."}
-              </span>
-            </div>
-            <table className="w-full text-center border-collapse text-xs">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600">
+            <span><strong>Ora</strong> in alto · <strong>Quota</strong> a sinistra</span>
+            <span>Freccia = direzione del vento · Numero = km/h</span>
+          </div>
+          <div className="overflow-x-auto border border-slate-200 rounded-lg bg-white">
+            <table className="w-full min-w-[900px] text-center border-collapse text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-700 bg-slate-200 font-bold">
-                  <th className="py-1 px-1 text-center w-10 sticky left-0 z-50 bg-slate-300 border-r-2 border-slate-500 text-slate-900 text-[10px] shadow-[2px_0_5px_rgba(0,0,0,0.2)]">
+                  <th className="py-2 px-2 text-center w-14 sticky left-0 z-50 bg-slate-800 border-r border-slate-600 text-white text-xs shadow-[2px_0_5px_rgba(0,0,0,0.12)]">
                     Quota
                   </th>
                   {DISPLAY_HOURS.map((hr) => (
                     <th
                       key={`th-${hr}`}
                       onClick={() => onHourSelect?.(hr)}
-                      className={`py-1 px-1 font-bold cursor-pointer transition-colors border-r border-slate-200/60 ${
+                      className={`py-2 px-2 font-bold cursor-pointer transition-colors border-r border-slate-200 ${
                         hr === selectedHour
                           ? "bg-sky-100 text-sky-900 ring-1 ring-sky-400"
                           : "hover:bg-slate-200/60 text-slate-800"
                       }`}
                     >
                       <div className="flex flex-col items-center gap-0">
-                        <span className="text-[10px]">{hr}h</span>
-                        <span className="text-[8px] font-normal text-slate-500 leading-none">
+                        <span className="text-xs">{String(hr).padStart(2, "0")}:00</span>
+                        <span className="text-[10px] font-normal text-slate-500 leading-none">
                           {getHourTemperature(hourlyMap, hr)}
                         </span>
                       </div>
@@ -401,7 +413,7 @@ export default function WindgramMatrix({
                       } ${isDecolloLevel ? "bg-emerald-50" : ""}`}
                     >
                       <td
-                        className={`py-0.5 px-1 text-center font-bold sticky left-0 z-40 border-r-2 border-slate-500 text-[9px] tabular-nums whitespace-nowrap shadow-[2px_0_3px_rgba(0,0,0,0.12)] ${
+                        className={`py-1.5 px-2 text-center font-bold sticky left-0 z-40 border-r border-slate-300 text-xs tabular-nums whitespace-nowrap shadow-[2px_0_3px_rgba(0,0,0,0.08)] ${
                           isMajorLevel
                             ? "bg-slate-200 text-slate-900"
                             : isDecolloLevel
@@ -419,23 +431,37 @@ export default function WindgramMatrix({
                         const isSelectedCol = hr === selectedHour;
                         const bg = getCellBgColor(alt, hr);
                         const showCloud = cloudBaseRow[hr] === rowIdx;
+                        const topRow = thermalTopRow[hr];
+                        const topInfo = hourDerivedInfo[hr]?.estimatedThermalTop ?? null;
+                        const inThermalBand = topInfo != null && alt >= baseDecolloFloor && alt <= topInfo;
+                        const isThermalTopCell = topRow === rowIdx;
+                        const thermalFraction = inThermalBand && topInfo != null
+                          ? Math.max(0, Math.min(1, (alt - baseDecolloFloor) / Math.max(1, topInfo - baseDecolloFloor)))
+                          : 0;
+                        // Gradiente verticale leggibile: giallo pallido alla base, giallo-arancio vicino al top stimato.
+                        const thermalAlpha = 0.16 + thermalFraction * 0.34;
+                        const thermalColor = `rgba(245, ${Math.round(220 - thermalFraction * 75)}, 35, ${thermalAlpha})`;
                         return (
                           <td
                             key={`cell-${alt}-${hr}`}
                             onClick={() => onHourSelect?.(hr)}
+                            title={topInfo != null ? `Fascia termica stimata: ${baseDecolloFloor}–${Math.round(topInfo)} m s.l.m.` : "Top termiche non disponibile"}
                             style={{
-                              backgroundColor: bg.kind === "none" ? "transparent" : bg.color,
+                              backgroundColor: isSelectedCol
+                                ? (inThermalBand ? thermalColor : "#eff6ff")
+                                : (inThermalBand ? thermalColor : "transparent"),
+                              boxShadow: isThermalTopCell ? "inset 0 3px 0 #f59e0b" : undefined,
                             }}
-                            className={`py-0.5 px-0.5 border-r border-slate-200/60 cursor-pointer transition-colors relative ${
+                            className={`py-1.5 px-1 border-r border-slate-100 cursor-pointer transition-colors relative ${
                               isSelectedCol ? "ring-1 ring-sky-400/90" : "hover:brightness-95"
                             }`}
                           >
-                            <div className="flex items-center justify-center gap-0.5 h-full relative min-h-[18px]">
+                            <div className="flex items-center justify-center gap-1 h-full relative min-h-[24px]">
                               {w ? (
                                 <>
                                   <WindArrowIcon deg={w.dir} color={wColor} />
                                   <span
-                                    className="font-bold text-[10px] tabular-nums tracking-tighter relative z-10 leading-none"
+                                    className="font-semibold text-xs sm:text-sm tabular-nums relative z-10 leading-none"
                                     style={{ color: wColor.text }}
                                     title={w ? `Open-Meteo: ${w.speed} km/h da ${w.dir}°` : "N/D"}
                                   >
@@ -466,7 +492,7 @@ export default function WindgramMatrix({
             </table>
           </div>
 
-          <div className="p-1.5 bg-slate-50 border-t border-slate-100">
+          <div className="p-3 bg-slate-50 border-t border-slate-100">
             <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-1">
@@ -477,9 +503,13 @@ export default function WindgramMatrix({
                   <div className="w-2.5 h-1.5 rounded bg-gradient-to-b from-[#b5d5e4] via-[#82b1cc] to-[#6a9cba] border border-[#6a9cba]/60" />
                   <span className="text-slate-700 font-medium text-[9px]">Stabile/Neutro</span>
                 </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2.5 h-1.5 rounded bg-yellow-300 border border-yellow-500" />
+                  <span className="text-slate-700 font-medium text-[9px]">Fascia termica stimata · linea gialla = top</span>
+                </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[8px] font-mono text-slate-500">Freccia=dir · Numero=km/h</span>
+                <span className="text-[10px] font-mono text-slate-500">Freccia = direzione · numero = km/h</span>
               </div>
             </div>
 

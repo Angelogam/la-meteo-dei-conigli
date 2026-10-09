@@ -43,6 +43,7 @@ export interface RealData {
   cloudCover: number | null;
   shortwaveRadiation: number | null;
   boundaryLayerHeight: number | null;
+  convectiveCloudTop: number | null;
   pressureMsl: number | null;
   surfacePressure: number | null;
 }
@@ -79,7 +80,8 @@ export function extractRealData(hourly: MeteoHourly): RealData {
     freezingLevel: hourly.freezingLevel,
     cloudCover: hourly.cloudCover,
     shortwaveRadiation: hourly.shortwaveRadiation,
-    boundaryLayerHeight: hourly.boundaryLayerHeight, // MODEL_FORECAST — disponibile su GFS/ICON, non sempre su AROME
+    boundaryLayerHeight: hourly.boundaryLayerHeight, // MODEL_FORECAST — disponibile su alcuni modelli
+    convectiveCloudTop: hourly.convectiveCloudTop ?? null,
     pressureMsl: hourly.pressure,
     surfacePressure: hourly.surfacePressure,
   };
@@ -300,7 +302,11 @@ export interface HourlyDerivedData {
  * Computa tutti i dati derivati per un'ora, partendo dai dati orari API.
  * Nessun valore inventato: se un dato manca, il derivato è null.
  */
-export function computeHourlyDerived(hourly: MeteoHourly, siteAltitude: number): HourlyDerivedData | null {
+export function computeHourlyDerived(
+  hourly: MeteoHourly,
+  siteAltitude: number,
+  modelGroundAltitude: number = siteAltitude,
+): HourlyDerivedData | null {
   const real = extractRealData(hourly);
 
   // Se mancano i dati fondamentali (temperatura e dew point), non possiamo derivare nulla
@@ -338,15 +344,13 @@ export function computeHourlyDerived(hourly: MeteoHourly, siteAltitude: number):
   // Null se non disponibile (non sempre supportato da tutti i modelli)
   const boundaryLayerHeight = real.boundaryLayerHeight;
 
-  // ESTIMATED thermal top — formula empirica, NON dato osservato
-  let estimatedThermalTop: number | null = null;
-  if (cloudBase != null && real.cape != null) {
-    const capeFactor = Math.min(800, real.cape * 0.1);
-    const spreadFactor = spread * 50;
-    estimatedThermalTop = Math.round(Math.min(5000, cloudBase + capeFactor + spreadFactor));
-  } else if (cloudBase != null) {
-    estimatedThermalTop = Math.round(cloudBase + 400);
-  }
+  // Il top dello strato limite è un proxy modellistico della zona di rimescolamento,
+  // NON la quota garantita di termica. Se il modello non fornisce PBL, non inventiamo
+  // una quota aggiungendo metri alla base nube.
+  const estimatedThermalTop: number | null =
+    real.boundaryLayerHeight != null && Number.isFinite(real.boundaryLayerHeight) && real.boundaryLayerHeight > 0
+      ? Math.round(modelGroundAltitude + real.boundaryLayerHeight)
+      : null;
 
   // ESTIMATED thermal activity index — euristiche, NON rateo termico reale misurato
   let estimatedThermalActivity: number | null = null;
