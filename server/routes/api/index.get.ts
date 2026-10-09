@@ -1,6 +1,8 @@
+import { defineHandler } from "nitro";
+
 const API_VERSION = "1.1.0";
 
-export default defineEventHandler(() => ({
+export default defineHandler(() => ({
   ok: true,
   service: "La Meteo dei Conigli API",
   version: API_VERSION,
