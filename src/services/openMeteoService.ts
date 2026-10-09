@@ -35,6 +35,7 @@ const HOURLY_PARAMS = [
   "wind_direction_180m",
   "temperature_180m",
   "boundary_layer_height",
+  "convective_cloud_top",
   "wind_speed_925hPa",
   "wind_direction_925hPa",
   "wind_speed_850hPa",
@@ -192,6 +193,7 @@ export interface MeteoHourly {
   radiation: number | null;
   cin: number | null;
   boundaryLayerHeight: number | null;
+  convectiveCloudTop: number | null;
   // Pressure level winds
   windSpeed925: number | null;
   windDir925: number | null;
@@ -348,6 +350,7 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
         radiation: safeNumOrNull(json.hourly.shortwave_radiation?.[i]),
         cin: safeNumOrNull(json.hourly.convective_inhibition?.[i]),
         boundaryLayerHeight: boundaryLayerHeight,
+        convectiveCloudTop: safeNumOrNull(json.hourly.convective_cloud_top?.[i]),
         windSpeed925: safeNumOrNull(json.hourly.wind_speed_925hPa?.[i]),
         windDir925: safeNumOrNull(json.hourly.wind_direction_925hPa?.[i]),
         windSpeed850: safeNumOrNull(json.hourly.wind_speed_850hPa?.[i]),
