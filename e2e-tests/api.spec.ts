@@ -66,6 +66,14 @@ test.describe("API smoke and contract checks", () => {
     }
   });
 
+  test("known sounding site slug resolves despite accents and punctuation", async ({ request }) => {
+    const response = await request.get("/api/windy-soundings?site=montoso-decollo-basso");
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body.site.name).toContain("Montoso");
+    expect(body.config.lat).toBeCloseTo(44.764372, 5);
+  });
+
   test("unknown sounding site returns 404", async ({ request }) => {
     expect((await request.get("/api/windy-soundings?site=not-a-real-site")).status()).toBe(404);
   });
