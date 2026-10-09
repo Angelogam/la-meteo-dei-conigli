@@ -145,7 +145,10 @@ export default function ProfessionalWindgram({
         windSpeed500: stabilitDataa.wind_speed_500hPa?.[idx] != null ? Number(stabilitDataa.wind_speed_500hPa[idx]) : null,
         windDir500: stabilitDataa.wind_direction_500hPa?.[idx] != null ? Number(stabilitDataa.wind_direction_500hPa[idx]) : null,
       };
-      const derived = computeHourlyDerived(raw as any, altitude);
+      const modelGroundAltitude = data?.elevation != null && Number.isFinite(Number(data.elevation))
+        ? Number(data.elevation)
+        : altitude;
+      const derived = computeHourlyDerived(raw as any, altitude, modelGroundAltitude);
       if (derived) map.set(hr, derived);
     });
     return map;
