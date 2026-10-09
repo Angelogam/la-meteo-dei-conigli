@@ -804,3 +804,96 @@ button, a, [role="button"] {
     line-height: 1.4;
   }
 }
+
+
+/* ===== HOURLY STORYBOARD / VISUAL FORECAST ===== */
+.storyboard-panel {
+  min-width: 0;
+  padding: clamp(1rem, 2.2vw, 1.6rem);
+  border: 1px solid rgba(56,189,248,.22);
+  border-radius: 24px;
+  background:
+    radial-gradient(ellipse at 0 0, rgba(14,165,233,.1), transparent 44%),
+    linear-gradient(145deg, rgba(7,26,48,.96), rgba(3,13,28,.98));
+  box-shadow: 0 20px 52px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.035);
+}
+.storyboard-heading, .story-chart-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+}
+.storyboard-eyebrow, .story-chart-kicker {
+  margin: 0 0 .35rem;
+  color: #67dff5;
+  font-size: .65rem;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+.storyboard-heading h2, .story-chart-title h3 {
+  margin: 0;
+  color: #f3f8ff;
+  font-size: clamp(1.2rem, 2.2vw, 1.7rem);
+  font-weight: 800;
+  letter-spacing: -.04em;
+}
+.storyboard-subtitle { margin: .35rem 0 0; color: #91a9c3; font-size: .82rem; }
+.storyboard-legend { display:flex; align-items:center; gap:.45rem; color:#a6bad0; font-size:.7rem; white-space:nowrap; }
+.legend-temp, .legend-wind { width:8px; height:8px; border-radius:50%; display:inline-block; }
+.legend-temp { background:#fb923c; }
+.legend-wind { background:#38bdf8; margin-left:.45rem; }
+.storyboard-periods { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.8rem; margin-top:1.25rem; }
+.story-period {
+  text-align:left; min-width:0; padding:1rem; border:1px solid rgba(125,160,190,.17);
+  border-radius:18px; background:linear-gradient(150deg,rgba(14,38,63,.85),rgba(5,20,38,.9));
+  color:#e7f1fc; transition:border-color .2s, transform .2s, background .2s;
+}
+.story-period:hover { border-color:rgba(56,189,248,.48); transform:translateY(-2px); }
+.story-period:focus-visible, .story-hour-buttons button:focus-visible { outline:2px solid #67e8f9; outline-offset:3px; }
+.story-period-top { display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+.story-period-icon { display:flex; align-items:center; justify-content:center; width:35px; height:35px; border-radius:12px; background:rgba(56,189,248,.12); color:#67e8f9; }
+.story-period-icon svg { width:19px; height:19px; }
+.story-period.midday .story-period-icon { color:#fbbf24; background:rgba(251,191,36,.12); }
+.story-period.evening .story-period-icon { color:#c4b5fd; background:rgba(167,139,250,.12); }
+.story-period-time { color:#8da7c2; font-size:.7rem; font-variant-numeric:tabular-nums; }
+.story-period h3 { margin:.8rem 0 .15rem; font-size:1.02rem; font-weight:800; }
+.story-weather { min-height:2.2em; margin:0; color:#9fb5cb; font-size:.75rem; }
+.story-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.6rem .4rem; margin-top:.9rem; }
+.story-metrics span { display:flex; align-items:center; gap:.35rem; min-width:0; color:#b8cadd; font-size:.72rem; }
+.story-metrics svg { width:14px; height:14px; flex-shrink:0; color:#7dd3fc; }
+.story-metrics span:first-child svg { color:#fdba74; }
+.story-metrics b { font-weight:750; color:#f4f8ff; white-space:nowrap; }
+.story-period-note { display:block; margin-top:.9rem; padding-top:.65rem; border-top:1px solid rgba(148,163,184,.13); color:#718ba6; font-size:.68rem; }
+.story-chart-card { margin-top:1rem; padding:1rem; border-radius:18px; background:rgba(2,12,26,.62); border:1px solid rgba(148,163,184,.13); }
+.story-chart-title { align-items:center; }
+.story-chart-title h3 { font-size:1rem; }
+.story-chart-range { color:#fbbf24; font-size:.75rem; font-weight:700; white-space:nowrap; }
+.story-chart-scroll { min-width:0; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-top:.75rem; }
+.story-temp-chart { display:block; width:100%; min-width:500px; height:130px; overflow:visible; }
+.story-hour-buttons { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(42px,1fr); min-width:500px; gap:.25rem; margin-top:.4rem; }
+.story-hour-buttons button { display:flex; flex-direction:column; align-items:center; gap:.22rem; min-height:58px; padding:.4rem .15rem; border:1px solid transparent; border-radius:10px; background:rgba(15,35,56,.6); color:#8fa8c1; }
+.story-hour-buttons button span { font-size:.65rem; }
+.story-hour-buttons button b { color:#f7bd81; font-size:.8rem; }
+.story-hour-buttons button small { color:#83cbed; font-size:.6rem; white-space:nowrap; }
+.story-hour-buttons button.active { border-color:rgba(56,189,248,.7); background:rgba(14,116,144,.25); box-shadow:inset 0 0 0 1px rgba(56,189,248,.12); }
+.storyboard-disclaimer { margin:.85rem 0 0; color:#7188a1; font-size:.7rem; line-height:1.6; }
+.storyboard-empty { margin-top:1rem; padding:1.5rem; border:1px dashed rgba(148,163,184,.25); border-radius:16px; color:#a6bad0; text-align:center; }
+
+@media (max-width: 640px) {
+  .storyboard-panel { padding:.85rem; border-radius:20px; }
+  .storyboard-heading { display:block; }
+  .storyboard-legend { margin-top:.7rem; }
+  .storyboard-subtitle { font-size:.75rem; }
+  .storyboard-periods { grid-template-columns:minmax(0,1fr); gap:.55rem; margin-top:.85rem; }
+  .story-period { padding:.8rem; border-radius:15px; }
+  .story-period-top { justify-content:flex-start; }
+  .story-period-time { margin-left:auto; }
+  .story-period h3 { margin:.4rem 0 .1rem; }
+  .story-weather { min-height:0; }
+  .story-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); margin-top:.65rem; }
+  .story-period-note { margin-top:.65rem; }
+  .story-chart-card { padding:.7rem; border-radius:15px; }
+  .story-chart-title { align-items:flex-start; }
+  .story-chart-range { padding-top:.15rem; }
+  .story-temp-chart { height:105px; }
+}
