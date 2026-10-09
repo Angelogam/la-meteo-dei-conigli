@@ -1,5 +1,5 @@
 import { defineHandler } from "nitro";
-import { readBody, createError } from "nitro/h3";
+import { readBody, createError, setResponseStatus } from "nitro/h3";
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -86,5 +86,6 @@ export default defineHandler(async (event) => {
     throw createError({ statusCode: 500, statusMessage: "Impossibile salvare la persona" });
   }
 
+  setResponseStatus(event, 201);
   return { ok: true, data: person, person, meta: { total: people.length } };
 });
