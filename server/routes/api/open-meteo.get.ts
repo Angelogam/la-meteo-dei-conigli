@@ -3,6 +3,44 @@ import { getQuery, createError } from "nitro/h3";
 
 const OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast";
 const TIMEOUT_MS = 12_000;
+const MAX_RESPONSE_BYTES = 5_000_000;
+
+async function readLimitedBody(response: Response): Promise<string> {
+  const contentLength = Number(response.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > MAX_RESPONSE_BYTES) {
+    throw createError({ statusCode: 502, statusMessage: "Risposta troppo grande dal servizio meteo" });
+  }
+
+  if (!response.body) {
+    throw createError({ statusCode: 502, statusMessage: "Risposta vuota dal servizio meteo" });
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > MAX_RESPONSE_BYTES) {
+        await reader.cancel();
+        throw createError({ statusCode: 502, statusMessage: "Risposta troppo grande dal servizio meteo" });
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(bytes);
+}
 const ALLOWED = [
   "latitude", "longitude", "timezone", "hourly", "daily", "current",
   "forecast_days", "forecast_hours", "start_date", "end_date", "models",
@@ -61,7 +99,7 @@ export default defineHandler(async (event) => {
       });
     }
 
-    const body = await response.text();
+    const body = await readLimitedBody(response);
     try { JSON.parse(body); } catch {
       throw createError({ statusCode: 502, statusMessage: "Risposta non valida dal servizio meteo" });
     }
