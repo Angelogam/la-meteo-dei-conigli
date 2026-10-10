@@ -113,6 +113,13 @@ test.describe("API smoke and contract checks", () => {
     expect((await request.get("/api/people?limit=101")).status()).toBe(400);
   });
 
+  test("person detail returns 404 for an unknown id", async ({ request }) => {
+    const response = await request.get("/api/people/person-does-not-exist-api-test");
+    expect(response.status()).toBe(404);
+    const body = await response.json();
+    expect(body.statusMessage).toContain("Persona non trovata");
+  });
+
   test("people API rejects unsupported payload fields", async ({ request }) => {
     const response = await request.post("/api/people", { data: { name: "API test", unexpected: true } });
     expect(response.status()).toBe(400);
