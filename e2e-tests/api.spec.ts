@@ -129,6 +129,16 @@ test.describe("API smoke and contract checks", () => {
     expect((await request.get("/api/windy-soundings?site=not-a-real-site")).status()).toBe(404);
   });
 
+  test("Windy rejects unsupported actions and unknown query parameters", async ({ request }) => {
+    expect((await request.get("/api/windy-soundings?action=invalid")).status()).toBe(400);
+    expect((await request.get("/api/windy-soundings?debug=true")).status()).toBe(400);
+  });
+
+  test("Windy rejects repeated and conflicting query parameters", async ({ request }) => {
+    expect((await request.get("/api/windy-soundings?action=sites&action=plugin")).status()).toBe(400);
+    expect((await request.get("/api/windy-soundings?action=sites&site=montoso-decollo-basso")).status()).toBe(400);
+  });
+
   test("people API rejects negative offset", async ({ request }) => {
     expect((await request.get("/api/people?offset=-1")).status()).toBe(400);
   });
