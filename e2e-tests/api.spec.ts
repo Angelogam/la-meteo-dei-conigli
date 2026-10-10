@@ -33,6 +33,15 @@ test.describe("API smoke and contract checks", () => {
     expect(body.paths["/windy-soundings"].get).toBeTruthy();
     expect(body.paths["/people"].post).toBeTruthy();
     expect(body.paths["/people/{id}"].get).toBeTruthy();
+
+    const weatherParameters = body.paths["/open-meteo"].get.parameters;
+    const documentedWeatherParameters = weatherParameters.map((parameter: { name: string }) => parameter.name);
+    expect(documentedWeatherParameters).toEqual(expect.arrayContaining([
+      "latitude", "longitude", "current", "hourly", "daily", "timezone",
+      "models", "start_date", "end_date", "forecast_days", "forecast_hours",
+      "temperature_unit", "wind_speed_unit", "precipitation_unit",
+    ]));
+    expect(body.paths["/windy-soundings"].get.responses["504"]).toBeTruthy();
   });
 
   test("Open-Meteo rejects missing coordinates", async ({ request }) => {
