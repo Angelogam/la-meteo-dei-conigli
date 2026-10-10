@@ -42,7 +42,7 @@ export default defineHandler(() => ({
         ],
         responses: {
           "200": { description: "Previsione JSON del provider" },
-          "400": { description: "Coordinate o parametri non validi" },
+          "400": { description: "Coordinate non valide, parametro non supportato o ripetuto, oppure valore fuori formato/intervallo" },
           "429": { description: "Limite provider raggiunto" },
           "502": { description: "Provider non disponibile o risposta non valida" },
           "504": { description: "Timeout provider" },
