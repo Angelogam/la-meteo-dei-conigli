@@ -69,7 +69,7 @@ function requiredCoordinate(value: string | undefined, name: string, min: number
 function validateIntegerParameter(url: URL, name: "forecast_days" | "forecast_hours", min: number, max: number) {
   const value = url.searchParams.get(name);
   if (value === null) return;
-  if (!/^\\d+$/.test(value)) {
+  if (!/^\d+$/.test(value)) {
     throw createError({ statusCode: 400, statusMessage: `Parametro ${name} non valido`, data: { parameter: name, min, max } });
   }
   const parsed = Number(value);
