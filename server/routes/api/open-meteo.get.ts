@@ -92,7 +92,7 @@ function validateDateRange(url: URL) {
   for (const [name, value] of [["start_date", startDate], ["end_date", endDate]] as const) {
     if (value === null) continue;
     const parsed = new Date(`${value}T00:00:00.000Z`);
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(value) || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
       throw createError({ statusCode: 400, statusMessage: `Parametro ${name} non valido: usare YYYY-MM-DD`, data: { parameter: name } });
     }
   }
