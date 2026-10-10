@@ -41,7 +41,7 @@ export function generateSmartAlerts(
   const windDir = current.windDir ?? null;
   const w850 = hourly[6]?.windDir850 ?? null;
   const waveDiff = (w850 != null && windDir != null)
-    ? (() => { let d = Math.abs(w850 - windDir); return d > 180 ? 360 - d : d; })()
+    ? (() => { const d = Math.abs(w850 - windDir); return d > 180 ? 360 - d : d; })()
     : null;
   const validFreezes = hourly.map(h => h.freezingLevel).filter((f): f is number => f != null && f > 0);
   const avgFreezingLevel = validFreezes.length > 0 ? validFreezes.reduce((s, h) => s + h, 0) / validFreezes.length : null;
