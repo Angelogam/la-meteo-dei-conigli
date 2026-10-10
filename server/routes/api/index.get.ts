@@ -14,8 +14,9 @@ export default defineHandler(() => ({
     { method: "GET", path: "/api/openapi", description: "Specifica OpenAPI 3.1" },
     { method: "GET", path: "/api/open-meteo", description: "Proxy validato per Open-Meteo" },
     { method: "GET", path: "/api/windy-soundings", description: "Siti sounding e metadati plugin" },
-    { method: "GET", path: "/api/people", description: "Elenco paginato persone" },
-    { method: "POST", path: "/api/people", description: "Crea una persona" },
+    { method: "GET", path: "/api/people", description: "Elenco paginato persone dimostrative" },
+    { method: "POST", path: "/api/people", description: "Crea una persona dimostrativa; non inviare dati personali reali" },
+    { method: "GET", path: "/api/people/:id", description: "Dettaglio persona dimostrativa" },
   ],
   conventions: {
     success: "JSON con ok:true e data/meta dove applicabile",
