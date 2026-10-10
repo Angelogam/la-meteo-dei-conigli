@@ -16,11 +16,11 @@
     "start": "node .output/server/index.mjs"
   },
   "dependencies": {
-    "@capacitor/android": "^6.2.1",
+    "@capacitor/android": "^7.4.4",
     "@capacitor/cli": "7.4.4",
-    "@capacitor/core": "^6.2.1",
+    "@capacitor/core": "^7.4.4",
     "@capacitor/ios": "7.4.4",
-    "@capacitor/network": "^8.0.1",
+    "@capacitor/network": "^7.0.2",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
@@ -59,7 +59,7 @@
     "input-otp": "^1.2.4",
     "jiti": "^2.7.0",
     "lucide-react": "^0.462.0",
-    "next-themes": "^0.3.0",
+    "next-themes": "^0.4.6",
     "nitro": "3.0.260903-beta",
     "react": "^19.2.3",
     "react-day-picker": "^9.13.0",
@@ -72,7 +72,7 @@
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
-    "vaul": "^0.9.3",
+    "vaul": "^1.1.2",
     "zod": "^3.25.0"
   },
   "devDependencies": {
@@ -83,7 +83,6 @@
     "@types/node": "^22.5.5",
     "@types/react": "^19.2.8",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^4.3.0",
     "@vitejs/plugin-react-swc": "^4.3.0",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.9.0",
@@ -95,5 +94,6 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vite": "^8.0.0"
-  }
+  },
+  "packageManager": "pnpm@10.28.0"
 }

@@ -1,0 +1,63 @@
+name: Quality checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - ui/windgram-homepage-redesign
+      - design/premium-responsive-shell
+
+permissions:
+  contents: write
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Sync pnpm lockfile and install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Commit refreshed pnpm lockfile on branch pushes
+        if: github.event_name == 'push' && github.ref == 'refs/heads/design/premium-responsive-shell'
+        run: |
+          if ! git diff --quiet -- pnpm-lock.yaml; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add pnpm-lock.yaml
+            git commit -m "chore: sync pnpm lockfile [skip ci]"
+            git push
+          fi
+
+      - name: Lint API and forecast components
+        run: pnpm exec eslint server/routes/api/index.get.ts server/routes/api/health.get.ts server/routes/api/openapi.get.ts server/routes/api/open-meteo.get.ts server/routes/api/windy-soundings.get.ts server/routes/api/people.get.ts server/routes/api/people.post.ts src/components/DayStoryboard.tsx e2e-tests/api.spec.ts playwright.api.config.ts
+
+      - name: Full repository lint baseline (report-only)
+        run: pnpm run lint
+        continue-on-error: true
+
+      - name: Production build
+        run: pnpm run build
+
+      - name: API regression tests
+        run: pnpm exec playwright test --config=playwright.api.config.ts

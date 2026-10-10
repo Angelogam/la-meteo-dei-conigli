@@ -74,9 +74,9 @@ function getWeatherEmoji(code: number): string {
 }
 
 function getFlightVerdict(rating: number): { label: string; color: string; bg: string; ring: string } {
-  if (rating >= 8) return { label: "VOLO CONSENTITO", color: "text-emerald-400", bg: "bg-emerald-500/10", ring: "ring-emerald-500/50" };
-  if (rating >= 5) return { label: "VOLO POSSIBILE", color: "text-amber-400", bg: "bg-amber-500/10", ring: "ring-amber-500/50" };
-  return { label: "VOLO SCONSIGLIATO", color: "text-red-400", bg: "bg-red-500/10", ring: "ring-red-500/50" };
+  if (rating >= 8) return { label: "QUADRO INDICATIVO FAVOREVOLE", color: "text-emerald-400", bg: "bg-emerald-500/10", ring: "ring-emerald-500/50" };
+  if (rating >= 5) return { label: "DA VALUTARE", color: "text-amber-400", bg: "bg-amber-500/10", ring: "ring-amber-500/50" };
+  return { label: "CRITICITÀ DA VERIFICARE", color: "text-red-400", bg: "bg-red-500/10", ring: "ring-red-500/50" };
 }
 
 function useAnimatedValue(target: number, duration = 1000): number {
