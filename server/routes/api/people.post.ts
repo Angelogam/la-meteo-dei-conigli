@@ -52,6 +52,16 @@ export default defineHandler(async (event) => {
   }
 
   const input = body as Record<string, unknown>;
+  const allowedFields = new Set(["name", "email", "phone", "notes"]);
+  const unknownFields = Object.keys(input).filter((key) => !allowedFields.has(key));
+  if (unknownFields.length > 0) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Il payload contiene campi non supportati",
+      data: { fields: unknownFields },
+    });
+  }
+
   const name = optionalText(input.name, "name", 120);
   if (!name) throw createError({ statusCode: 400, statusMessage: "Il nome è obbligatorio" });
 
