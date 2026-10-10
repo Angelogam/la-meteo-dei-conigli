@@ -32,6 +32,7 @@ test.describe("API smoke and contract checks", () => {
     expect(body.paths["/open-meteo"].get).toBeTruthy();
     expect(body.paths["/windy-soundings"].get).toBeTruthy();
     expect(body.paths["/people"].post).toBeTruthy();
+    expect(body.paths["/people/{id}"].get).toBeTruthy();
   });
 
   test("Open-Meteo rejects missing coordinates", async ({ request }) => {
