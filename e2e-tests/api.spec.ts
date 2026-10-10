@@ -56,6 +56,16 @@ test.describe("API smoke and contract checks", () => {
     expect(response.status()).toBe(400);
   });
 
+  test("Open-Meteo rejects invalid forecast day ranges", async ({ request }) => {
+    expect((await request.get("/api/open-meteo?latitude=44&longitude=7&forecast_days=0")).status()).toBe(400);
+    expect((await request.get("/api/open-meteo?latitude=44&longitude=7&forecast_days=abc")).status()).toBe(400);
+  });
+
+  test("Open-Meteo rejects unsupported measurement units", async ({ request }) => {
+    expect((await request.get("/api/open-meteo?latitude=44&longitude=7&wind_speed_unit=knots")).status()).toBe(400);
+    expect((await request.get("/api/open-meteo?latitude=44&longitude=7&temperature_unit=kelvin")).status()).toBe(400);
+  });
+
   test("Windy sounding sites have valid coordinates", async ({ request }) => {
     const response = await request.get("/api/windy-soundings?action=sites");
     expect(response.status()).toBe(200);
