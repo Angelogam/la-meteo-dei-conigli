@@ -7,6 +7,42 @@ const WINDY_PLUGIN_VERSION = "1.6.2";
 const PLUGIN_TIMEOUT_MS = 8_000;
 const MAX_PLUGIN_BYTES = 2_000_000;
 
+async function readLimitedPlugin(response: Response): Promise<string> {
+  const contentLength = Number(response.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > MAX_PLUGIN_BYTES) {
+    throw createError({ statusCode: 502, statusMessage: "Dimensione del plugin Windy non valida" });
+  }
+  if (!response.body) {
+    throw createError({ statusCode: 502, statusMessage: "Risposta vuota dal provider Windy" });
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > MAX_PLUGIN_BYTES) {
+        await reader.cancel();
+        throw createError({ statusCode: 502, statusMessage: "Dimensione del plugin Windy non valida" });
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(bytes);
+}
+
 interface SoundingSite {
   name: string;
   lat: number;
@@ -53,9 +89,9 @@ export default defineHandler(async (event) => {
       if (!response.ok) {
         throw createError({ statusCode: 502, statusMessage: "Il provider Windy non ha restituito il plugin" });
       }
-      const js = await response.text();
-      if (js.length === 0 || js.length > MAX_PLUGIN_BYTES) {
-        throw createError({ statusCode: 502, statusMessage: "Dimensione del plugin Windy non valida" });
+      const js = await readLimitedPlugin(response);
+      if (js.trim().length === 0) {
+        throw createError({ statusCode: 502, statusMessage: "Risposta vuota dal provider Windy" });
       }
       return {
         ok: true,
