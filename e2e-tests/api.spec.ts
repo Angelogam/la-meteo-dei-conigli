@@ -151,6 +151,10 @@ test.describe("API smoke and contract checks", () => {
     expect((await request.get("/api/people?limit=101")).status()).toBe(400);
   });
 
+  test("people API rejects unsupported list query parameters", async ({ request }) => {
+    expect((await request.get("/api/people?debug=true")).status()).toBe(400);
+  });
+
   test("person detail returns 404 for an unknown id", async ({ request }) => {
     const response = await request.get("/api/people/person-does-not-exist-api-test");
     expect(response.status()).toBe(404);
