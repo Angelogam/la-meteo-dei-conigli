@@ -50,7 +50,7 @@ jobs:
           fi
 
       - name: Lint API and forecast components
-        run: pnpm exec eslint server/routes/api/index.get.ts server/routes/api/health.get.ts server/routes/api/openapi.get.ts server/routes/api/open-meteo.get.ts server/routes/api/windy-soundings.get.ts server/routes/api/people.get.ts server/routes/api/people.post.ts 'server/routes/api/people.[id].get.ts' src/components/DayStoryboard.tsx e2e-tests/api.spec.ts playwright.api.config.ts
+        run: pnpm exec eslint server/routes/api/index.get.ts server/routes/api/health.get.ts server/routes/api/openapi.get.ts server/routes/api/open-meteo.get.ts server/routes/api/windy-soundings.get.ts server/routes/api/people.get.ts server/routes/api/people.post.ts 'server/routes/api/people/[id].get.ts' src/components/DayStoryboard.tsx e2e-tests/api.spec.ts playwright.api.config.ts
 
       - name: Full repository lint baseline (report-only)
         run: pnpm run lint
