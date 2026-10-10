@@ -41,6 +41,15 @@ function parseInteger(value: unknown, fallback: number, name: string, min: numbe
 
 export default defineHandler((event) => {
   const query = getQuery(event);
+  const unsupportedParameters = Object.keys(query).filter((key) => key !== "limit" && key !== "offset");
+  if (unsupportedParameters.length > 0) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "La richiesta contiene parametri non supportati",
+      data: { parameters: unsupportedParameters },
+    });
+  }
+
   const limit = parseInteger(query.limit, DEFAULT_LIMIT, "limit", 1, MAX_LIMIT);
   const offset = parseInteger(query.offset, 0, "offset", 0, 1_000_000);
   const people = readPeople();
