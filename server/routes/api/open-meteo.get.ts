@@ -47,11 +47,15 @@ const ALLOWED = [
   "temperature_unit", "wind_speed_unit", "precipitation_unit",
 ] as const;
 
-function queryValue(value: unknown): string | undefined {
-  if (typeof value === "string") return value.trim() || undefined;
-  if (Array.isArray(value) && value.every(item => typeof item === "string")) {
-    return value.join(",").trim() || undefined;
+function queryValue(value: unknown, name: string): string | undefined {
+  if (Array.isArray(value)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `Parametro ${name} ripetuto: specificarlo una sola volta`,
+      data: { parameter: name },
+    });
   }
+  if (typeof value === "string") return value.trim() || undefined;
   return undefined;
 }
 
@@ -104,10 +108,21 @@ function validateDateRange(url: URL) {
 
 export default defineHandler(async (event) => {
   const query = getQuery(event);
+  const unsupportedParameters = Object.keys(query).filter(
+    (key) => !ALLOWED.includes(key as (typeof ALLOWED)[number]),
+  );
+  if (unsupportedParameters.length > 0) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "La richiesta contiene parametri non supportati",
+      data: { parameters: unsupportedParameters },
+    });
+  }
+
   const url = new URL(OPEN_METEO_URL);
 
   for (const key of ALLOWED) {
-    const value = queryValue(query[key]);
+    const value = queryValue(query[key], key);
     if (value) {
       if (value.length > 4_000) {
         throw createError({ statusCode: 400, statusMessage: `Parametro ${key} troppo lungo`, data: { parameter: key } });
@@ -143,8 +158,19 @@ export default defineHandler(async (event) => {
     }
 
     const body = await readLimitedBody(response);
-    try { JSON.parse(body); } catch {
+    let parsedBody: unknown;
+    try {
+      parsedBody = JSON.parse(body);
+    } catch {
       throw createError({ statusCode: 502, statusMessage: "Risposta non valida dal servizio meteo" });
+    }
+    if (
+      parsedBody === null ||
+      typeof parsedBody !== "object" ||
+      Array.isArray(parsedBody) ||
+      (parsedBody as { error?: unknown }).error === true
+    ) {
+      throw createError({ statusCode: 502, statusMessage: "Il servizio meteo ha restituito dati non validi" });
     }
 
     return new Response(body, {
