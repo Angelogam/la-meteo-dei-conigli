@@ -27,9 +27,13 @@ export default defineHandler(() => ({
         parameters: [
           { name: "latitude", in: "query", required: true, schema: { type: "number", minimum: -90, maximum: 90 } },
           { name: "longitude", in: "query", required: true, schema: { type: "number", minimum: -180, maximum: 180 } },
+          { name: "current", in: "query", schema: { type: "string" } },
           { name: "hourly", in: "query", schema: { type: "string" } },
           { name: "daily", in: "query", schema: { type: "string" } },
           { name: "timezone", in: "query", schema: { type: "string" } },
+          { name: "models", in: "query", schema: { type: "string" } },
+          { name: "start_date", in: "query", schema: { type: "string", format: "date" } },
+          { name: "end_date", in: "query", schema: { type: "string", format: "date" } },
           { name: "forecast_days", in: "query", schema: { type: "integer", minimum: 1, maximum: 16 } },
           { name: "forecast_hours", in: "query", schema: { type: "integer", minimum: 1, maximum: 384 } },
           { name: "temperature_unit", in: "query", schema: { type: "string", enum: ["celsius", "fahrenheit"] } },
@@ -52,7 +56,12 @@ export default defineHandler(() => ({
           { name: "action", in: "query", schema: { type: "string", enum: ["sites", "plugin"] } },
           { name: "site", in: "query", schema: { type: "string" } },
         ],
-        responses: { "200": { description: "Metadati plugin o siti disponibili" }, "404": { description: "Sito non trovato" }, "502": { description: "Plugin remoto non raggiungibile" } },
+        responses: {
+          "200": { description: "Metadati plugin o siti disponibili" },
+          "404": { description: "Sito non trovato" },
+          "502": { description: "Plugin remoto non raggiungibile o risposta non valida" },
+          "504": { description: "Timeout del provider Windy" },
+        },
       },
     },
     "/people": {
