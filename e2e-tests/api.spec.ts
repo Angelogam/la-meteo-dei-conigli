@@ -48,6 +48,18 @@ test.describe("API smoke and contract checks", () => {
     expect((await request.get("/api/open-meteo")).status()).toBe(400);
   });
 
+  test("Open-Meteo rejects unsupported query parameters instead of silently ignoring them", async ({ request }) => {
+    const response = await request.get("/api/open-meteo?latitude=44&longitude=7&debug=true");
+    expect(response.status()).toBe(400);
+    const body = await response.json();
+    expect(body.statusMessage ?? body.message).toContain("parametri non supportati");
+  });
+
+  test("Open-Meteo rejects repeated query parameters as ambiguous", async ({ request }) => {
+    expect((await request.get("/api/open-meteo?latitude=44&latitude=45&longitude=7")).status()).toBe(400);
+    expect((await request.get("/api/open-meteo?latitude=44&longitude=7&hourly=temperature_2m&hourly=wind_speed_10m")).status()).toBe(400);
+  });
+
   test("Open-Meteo rejects out-of-range latitude", async ({ request }) => {
     expect((await request.get("/api/open-meteo?latitude=91&longitude=7")).status()).toBe(400);
   });
