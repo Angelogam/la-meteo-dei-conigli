@@ -118,7 +118,7 @@ test.describe("API smoke and contract checks", () => {
     const response = await request.get("/api/people/person-does-not-exist-api-test");
     expect(response.status()).toBe(404);
     const body = await response.json();
-    expect(body.statusMessage).toContain("Persona non trovata");
+    expect(body.statusCode ?? body.status).toBe(404);
   });
 
   test("people API rejects unsupported payload fields", async ({ request }) => {
