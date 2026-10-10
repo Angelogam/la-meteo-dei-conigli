@@ -83,6 +83,12 @@ test.describe("API smoke and contract checks", () => {
     expect((await request.get("/api/open-meteo?latitude=44&longitude=7&temperature_unit=kelvin")).status()).toBe(400);
   });
 
+  test("Open-Meteo validates ISO dates and date range ordering", async ({ request }) => {
+    expect((await request.get("/api/open-meteo?latitude=44&longitude=7&start_date=2026-02-30")).status()).toBe(400);
+    expect((await request.get("/api/open-meteo?latitude=44&longitude=7&end_date=2026%2F10%2F11")).status()).toBe(400);
+    expect((await request.get("/api/open-meteo?latitude=44&longitude=7&start_date=2026-10-12&end_date=2026-10-11")).status()).toBe(400);
+  });
+
   test("Windy sounding sites have valid coordinates", async ({ request }) => {
     const response = await request.get("/api/windy-soundings?action=sites");
     expect(response.status()).toBe(200);
