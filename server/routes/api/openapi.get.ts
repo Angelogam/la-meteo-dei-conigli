@@ -19,7 +19,7 @@ export default defineHandler(() => ({
   ],
   paths: {
     "/health": { get: { tags: ["System"], summary: "Stato API", responses: { "200": { description: "API raggiungibile" } } } },
-    "/openapi": { get: { tags: ["System"], summary: "Specifica OpenAPI", responses: { "200": { description: "Documento OpenAPI 3.1" } } },
+    "/openapi": { get: { tags: ["System"], summary: "Specifica OpenAPI", responses: { "200": { description: "Documento OpenAPI 3.1" } } } },
     "/open-meteo": {
       get: {
         tags: ["Weather"], summary: "Proxy Open-Meteo",
