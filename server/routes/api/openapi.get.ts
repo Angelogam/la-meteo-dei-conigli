@@ -31,6 +31,10 @@ export default defineHandler(() => ({
           { name: "daily", in: "query", schema: { type: "string" } },
           { name: "timezone", in: "query", schema: { type: "string" } },
           { name: "forecast_days", in: "query", schema: { type: "integer", minimum: 1, maximum: 16 } },
+          { name: "forecast_hours", in: "query", schema: { type: "integer", minimum: 1, maximum: 384 } },
+          { name: "temperature_unit", in: "query", schema: { type: "string", enum: ["celsius", "fahrenheit"] } },
+          { name: "wind_speed_unit", in: "query", schema: { type: "string", enum: ["kmh", "ms", "mph", "kn"] } },
+          { name: "precipitation_unit", in: "query", schema: { type: "string", enum: ["mm", "inch"] } },
         ],
         responses: {
           "200": { description: "Previsione JSON del provider" },
