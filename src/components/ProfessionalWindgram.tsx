@@ -49,6 +49,14 @@ const STABILITY_COLORS = {
   missing: "#cbd5e1",
 };
 
+const STABILITY_LEGEND = [
+  { val: -0.2, color: STABILITY_COLORS.veryStable },
+  { val: 0.0, color: STABILITY_COLORS.stable },
+  { val: 0.4, color: STABILITY_COLORS.mixed },
+  { val: 0.7, color: STABILITY_COLORS.unstable },
+  { val: 0.98, color: STABILITY_COLORS.veryUnstable },
+];
+
 function getStabilityColor(deltaT: number | null | undefined): string {
   if (deltaT == null || !Number.isFinite(deltaT)) return STABILITY_COLORS.missing;
   // Inversione o gradiente nullo: ambiente stabile.
@@ -862,12 +870,12 @@ export default function ProfessionalWindgram({
               <span>→ Instabile</span>
             </div>
             <div className="w-full h-3.5 rounded-sm flex overflow-hidden border border-slate-400">
-              {STABILITY_COLORS.map((item, idx) => (
+              {STABILITY_LEGEND.map((item, idx) => (
                 <div key={idx} className="flex-1 h-full" style={{ backgroundColor: item.color }} />
               ))}
             </div>
             <div className="flex justify-between text-[9px] font-mono font-bold text-slate-700 mt-1 px-1">
-              {STABILITY_COLORS.map((item, idx) => (
+              {STABILITY_LEGEND.map((item, idx) => (
                 <span key={idx}>{item.val.toFixed(2)}</span>
               ))}
             </div>
