@@ -50,6 +50,12 @@ test.describe("API smoke and contract checks", () => {
     expect((await request.get("/api/open-meteo?latitude=north&longitude=7")).status()).toBe(400);
   });
 
+  test("Open-Meteo rejects oversized query parameters", async ({ request }) => {
+    const oversizedHourly = "temperature_2m,".repeat(300);
+    const response = await request.get(`/api/open-meteo?latitude=44&longitude=7&hourly=${encodeURIComponent(oversizedHourly)}`);
+    expect(response.status()).toBe(400);
+  });
+
   test("Windy sounding sites have valid coordinates", async ({ request }) => {
     const response = await request.get("/api/windy-soundings?action=sites");
     expect(response.status()).toBe(200);
