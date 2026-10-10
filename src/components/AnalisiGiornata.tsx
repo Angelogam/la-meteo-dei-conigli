@@ -61,14 +61,14 @@ export default function AnalisiGiornata({
     }
 
     // Calcola metriche reali dai dati
-    const tempMax = Math.max(...oreGiorno.map((h: any) => h.temperature ?? 0));
+    const tempMax = Math.max(...oreGiorno.map((h: HourData) => h.temperature ?? 0));
     const tempMedia = oreGiorno.reduce((s: number, h: any) => s + (h.temperature ?? 0), 0) / oreGiorno.length;
     const ventoMedio = oreGiorno.reduce((s: number, h: any) => s + (h.windSpeed ?? 0), 0) / oreGiorno.length;
-    const ventoMax = Math.max(...oreGiorno.map((h: any) => h.windSpeed ?? 0));
+    const ventoMax = Math.max(...oreGiorno.map((h: HourData) => h.windSpeed ?? 0));
     const coperturaMedia = oreGiorno.reduce((s: number, h: any) => s + (h.cloudCover ?? 0), 0) / oreGiorno.length;
     const pioggiaTot = oreGiorno.reduce((s: number, h: any) => s + (h.precipitation ?? 0), 0);
-    const oreConPioggia = oreGiorno.filter((h: any) => (h.precipitation ?? 0) > 0.3).length;
-    const oreSerene = oreGiorno.filter((h: any) => (h.cloudCover ?? 0) < 25).length;
+    const oreConPioggia = oreGiorno.filter((h: HourData) => (h.precipitation ?? 0) > 0.3).length;
+    const oreSerene = oreGiorno.filter((h: HourData) => (h.cloudCover ?? 0) < 25).length;
     const umiditaMedia = oreGiorno.reduce((s: number, h: any) => s + (h.humidity ?? 50), 0) / oreGiorno.length;
 
     // Calcola punteggio realistico
