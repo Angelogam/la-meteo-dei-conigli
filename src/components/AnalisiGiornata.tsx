@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useMemo } from "react";
+import type { HourData, DailyData } from "@/types/meteo";
+import type { MeteoCurrent } from "@/services/openMeteoService";
 import {
   Sun,
   CloudSun,
@@ -11,11 +13,11 @@ import {
 } from "lucide-react";
 
 interface AnalisiGiornataProps {
-  currentData: any;
-  dayData: any[];
+  currentData: MeteoCurrent | null;
+  dayData: HourData[];
   thermalDelta: number;
   cape?: { cape: number; cin: number; liftedIndex: number } | null;
-  dailyForecasts: any[];
+  dailyForecasts: DailyData[];
   cloudCover: number;
   reportDate: string;
 }
@@ -40,7 +42,7 @@ export default function AnalisiGiornata({
     }
 
     // Filtra solo ore diurne 9-19
-    const oreGiorno = dayData.filter((h: any) => {
+    const oreGiorno = dayData.filter((h: HourData) => {
       const hr = h.time?.getHours?.() ?? h.hour ?? 0;
       return hr >= 9 && hr <= 19;
     });
