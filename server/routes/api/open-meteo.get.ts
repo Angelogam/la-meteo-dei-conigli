@@ -66,6 +66,25 @@ function requiredCoordinate(value: string | undefined, name: string, min: number
   return number;
 }
 
+function validateIntegerParameter(url: URL, name: "forecast_days" | "forecast_hours", min: number, max: number) {
+  const value = url.searchParams.get(name);
+  if (value === null) return;
+  if (!/^\\d+$/.test(value)) {
+    throw createError({ statusCode: 400, statusMessage: `Parametro ${name} non valido`, data: { parameter: name, min, max } });
+  }
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < min || parsed > max) {
+    throw createError({ statusCode: 400, statusMessage: `Parametro ${name} fuori intervallo`, data: { parameter: name, min, max } });
+  }
+}
+
+function validateEnumParameter(url: URL, name: "temperature_unit" | "wind_speed_unit" | "precipitation_unit", allowed: readonly string[]) {
+  const value = url.searchParams.get(name);
+  if (value !== null && !allowed.includes(value)) {
+    throw createError({ statusCode: 400, statusMessage: `Parametro ${name} non valido`, data: { parameter: name, allowed } });
+  }
+}
+
 export default defineHandler(async (event) => {
   const query = getQuery(event);
   const url = new URL(OPEN_METEO_URL);
@@ -82,6 +101,11 @@ export default defineHandler(async (event) => {
 
   requiredCoordinate(url.searchParams.get("latitude") ?? undefined, "latitude", -90, 90);
   requiredCoordinate(url.searchParams.get("longitude") ?? undefined, "longitude", -180, 180);
+  validateIntegerParameter(url, "forecast_days", 1, 16);
+  validateIntegerParameter(url, "forecast_hours", 1, 384);
+  validateEnumParameter(url, "temperature_unit", ["celsius", "fahrenheit"]);
+  validateEnumParameter(url, "wind_speed_unit", ["kmh", "ms", "mph", "kn"]);
+  validateEnumParameter(url, "precipitation_unit", ["mm", "inch"]);
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
