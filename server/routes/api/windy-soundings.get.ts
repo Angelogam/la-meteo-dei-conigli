@@ -70,10 +70,44 @@ function slugify(value: string): string {
 
 export default defineHandler(async (event) => {
   const query = getQuery(event);
+  const unsupportedParameters = Object.keys(query).filter((key) => key !== "action" && key !== "site");
+  if (unsupportedParameters.length > 0) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "La richiesta contiene parametri non supportati",
+      data: { parameters: unsupportedParameters },
+    });
+  }
+
+  for (const key of ["action", "site"] as const) {
+    if (Array.isArray(query[key])) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: `Parametro ${key} ripetuto: specificarlo una sola volta`,
+        data: { parameter: key },
+      });
+    }
+  }
+
   const siteValue = query.site;
   const actionValue = query.action;
   const site = typeof siteValue === "string" ? siteValue.trim() : undefined;
   const action = typeof actionValue === "string" ? actionValue.trim() : undefined;
+
+  if (action && action !== "plugin" && action !== "sites") {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Azione Windy non valida",
+      data: { parameter: "action", allowed: ["plugin", "sites"] },
+    });
+  }
+  if (action && site) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Usare action oppure site, non entrambi",
+      data: { parameters: ["action", "site"] },
+    });
+  }
 
   if (action === "plugin") {
     const controller = new AbortController();
