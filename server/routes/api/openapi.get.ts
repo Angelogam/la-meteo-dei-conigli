@@ -58,6 +58,7 @@ export default defineHandler(() => ({
         ],
         responses: {
           "200": { description: "Metadati plugin o siti disponibili" },
+          "400": { description: "Parametro sconosciuto, azione non valida o combinazione ambigua" },
           "404": { description: "Sito non trovato" },
           "502": { description: "Plugin remoto non raggiungibile o risposta non valida" },
           "504": { description: "Timeout del provider Windy" },
