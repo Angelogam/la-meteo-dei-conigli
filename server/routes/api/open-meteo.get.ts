@@ -85,6 +85,23 @@ function validateEnumParameter(url: URL, name: "temperature_unit" | "wind_speed_
   }
 }
 
+function validateDateRange(url: URL) {
+  const startDate = url.searchParams.get("start_date");
+  const endDate = url.searchParams.get("end_date");
+
+  for (const [name, value] of [["start_date", startDate], ["end_date", endDate]] as const) {
+    if (value === null) continue;
+    const parsed = new Date(`${value}T00:00:00.000Z`);
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(value) || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
+      throw createError({ statusCode: 400, statusMessage: `Parametro ${name} non valido: usare YYYY-MM-DD`, data: { parameter: name } });
+    }
+  }
+
+  if (startDate !== null && endDate !== null && startDate > endDate) {
+    throw createError({ statusCode: 400, statusMessage: "start_date deve essere precedente o uguale a end_date", data: { parameter: "start_date", endDate } });
+  }
+}
+
 export default defineHandler(async (event) => {
   const query = getQuery(event);
   const url = new URL(OPEN_METEO_URL);
@@ -106,6 +123,8 @@ export default defineHandler(async (event) => {
   validateEnumParameter(url, "temperature_unit", ["celsius", "fahrenheit"]);
   validateEnumParameter(url, "wind_speed_unit", ["kmh", "ms", "mph", "kn"]);
   validateEnumParameter(url, "precipitation_unit", ["mm", "inch"]);
+
+  validateDateRange(url);
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
