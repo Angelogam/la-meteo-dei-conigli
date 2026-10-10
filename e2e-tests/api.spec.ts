@@ -96,6 +96,11 @@ test.describe("API smoke and contract checks", () => {
     expect((await request.get("/api/people?limit=101")).status()).toBe(400);
   });
 
+  test("people API rejects unsupported payload fields", async ({ request }) => {
+    const response = await request.post("/api/people", { data: { name: "API test", unexpected: true } });
+    expect(response.status()).toBe(400);
+  });
+
   test("people API rejects an empty JSON object", async ({ request }) => {
     const response = await request.post("/api/people", { data: {} });
     expect(response.status()).toBe(400);
