@@ -22,14 +22,6 @@ import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 import { DECOLLI } from "@/data/decolli";
 
 export default function Index() {
-  const [appMounted, setAppMounted] = useState(false);
-  const [fetchStarted, setFetchStarted] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setAppMounted(true), 50);
-    return () => clearTimeout(t);
-  }, []);
-
   const {
     selectedId,
     setSelectedId,
@@ -75,12 +67,6 @@ export default function Index() {
     return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
   }, [selectedDay]);
 
-  useEffect(() => {
-    if (!appMounted || fetchStarted) return;
-    setFetchStarted(true);
-    loadWeather();
-  }, [appMounted, fetchStarted, loadWeather]);
-
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <Header />
@@ -107,7 +93,7 @@ export default function Index() {
               lastUpdate={aggressiveLastUpdate ?? lastUpdate}
               countdown={countdown}
               updating={updating || aggressiveUpdating}
-              onRefresh={() => { loadWeather(); loadAggressiveWeather(); setFetchStarted(false); }}
+              onRefresh={() => { loadWeather(); loadAggressiveWeather(); }}
             />
 
             <DecolliCard
