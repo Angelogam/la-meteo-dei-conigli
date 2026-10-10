@@ -15,11 +15,11 @@ export default defineHandler(() => ({
     { name: "System", description: "Stato e documentazione" },
     { name: "Weather", description: "Previsioni meteorologiche" },
     { name: "Soundings", description: "Siti sounding e configurazione plugin" },
-    { name: "People", description: "Archivio persone dimostrativo" },
+    { name: "People", description: "Archivio persone dimostrativo; non usare per dati personali in produzione senza autenticazione e storage persistente" },
   ],
   paths: {
     "/health": { get: { tags: ["System"], summary: "Stato API", responses: { "200": { description: "API raggiungibile" } } } },
-    "/openapi": { get: { tags: ["System"], summary: "Specifica OpenAPI", responses: { "200": { description: "Documento OpenAPI 3.1" } } } },
+    "/openapi": { get: { tags: ["System"], summary: "Specifica OpenAPI", responses: { "200": { description: "Documento OpenAPI 3.1" } } },
     "/open-meteo": {
       get: {
         tags: ["Weather"], summary: "Proxy Open-Meteo",
@@ -65,7 +65,8 @@ export default defineHandler(() => ({
         responses: { "200": { description: "Lista paginata" }, "400": { description: "Paginazione non valida" } },
       },
       post: {
-        tags: ["People"], summary: "Crea una persona",
+        tags: ["People"], summary: "Crea una persona dimostrativa",
+        description: "Endpoint dimostrativo senza autenticazione. Non inviare dati personali reali.",
         requestBody: {
           required: true,
           content: { "application/json": { schema: {
@@ -79,6 +80,20 @@ export default defineHandler(() => ({
           } } },
         },
         responses: { "201": { description: "Persona creata" }, "400": { description: "Payload non valido" }, "409": { description: "Limite archivio raggiunto" } },
+      },
+    },
+    "/people/{id}": {
+      get: {
+        tags: ["People"], summary: "Dettaglio persona dimostrativa",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string" } },
+        ],
+        responses: {
+          "200": { description: "Persona trovata" },
+          "400": { description: "ID mancante" },
+          "404": { description: "Persona non trovata" },
+          "500": { description: "Archivio non leggibile" },
+        },
       },
     },
   },
