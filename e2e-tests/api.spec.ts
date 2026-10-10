@@ -61,6 +61,13 @@ test.describe("API smoke and contract checks", () => {
     expect((await request.get("/api/open-meteo?latitude=44&longitude=7&forecast_days=abc")).status()).toBe(400);
   });
 
+  test("Open-Meteo rejects malformed and out-of-range forecast hours", async ({ request }) => {
+    expect((await request.get("/api/open-meteo?latitude=44&longitude=7&forecast_hours=abc")).status()).toBe(400);
+    expect((await request.get("/api/open-meteo?latitude=44&longitude=7&forecast_hours=1.5")).status()).toBe(400);
+    expect((await request.get("/api/open-meteo?latitude=44&longitude=7&forecast_hours=0")).status()).toBe(400);
+    expect((await request.get("/api/open-meteo?latitude=44&longitude=7&forecast_hours=385")).status()).toBe(400);
+  });
+
   test("Open-Meteo rejects unsupported measurement units", async ({ request }) => {
     expect((await request.get("/api/open-meteo?latitude=44&longitude=7&wind_speed_unit=knots")).status()).toBe(400);
     expect((await request.get("/api/open-meteo?latitude=44&longitude=7&temperature_unit=kelvin")).status()).toBe(400);
