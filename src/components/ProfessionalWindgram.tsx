@@ -448,7 +448,7 @@ export default function ProfessionalWindgram({
         levelWinds,
         deltaTProfile,
       };
-    });
+    }).filter((entry) => entry != null);
   }, [data, altitude, displayAltitudes, interpolateAtAltitude, getDeltaTAtAlt, hourDerivedMap]);
 
   const reportGenerato = useMemo<GeneratedReport | null>(() => {
