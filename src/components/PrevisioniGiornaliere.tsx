@@ -114,6 +114,7 @@ export default function PrevisioniGiornaliere({
   enrichedDaily,
   dateLabels,
   currentData,
+  dayData,
   site,
   selectedDay,
   onSelectDay,
@@ -380,7 +381,7 @@ export default function PrevisioniGiornaliere({
             const isActive = selectedDay === idx;
             const label = dateLabels[idx] || tabName;
             const isRainy = d && d.precipitationSum !== undefined && d.precipitationSum > 0.5;
-            const rating = d ? getFlightRating(d, currentData) : null;
+            const rating = d ? getFlightRating(d, dayData) : null;
 
             return (
               <button
