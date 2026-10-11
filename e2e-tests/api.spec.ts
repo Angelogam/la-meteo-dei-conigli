@@ -14,6 +14,27 @@ test.describe("API smoke and contract checks", () => {
     ]));
   });
 
+  test("API version stays consistent across root, health and OpenAPI", async ({ request }) => {
+    const [rootResponse, healthResponse, openApiResponse] = await Promise.all([
+      request.get("/api"),
+      request.get("/api/health"),
+      request.get("/api/openapi"),
+    ]);
+
+    expect(rootResponse.status()).toBe(200);
+    expect(healthResponse.status()).toBe(200);
+    expect(openApiResponse.status()).toBe(200);
+
+    const [root, health, openApi] = await Promise.all([
+      rootResponse.json(),
+      healthResponse.json(),
+      openApiResponse.json(),
+    ]);
+
+    expect(health.version).toBe(root.version);
+    expect(openApi.info.version).toBe(root.version);
+  });
+
   test("health reports an ISO timestamp without claiming upstream availability", async ({ request }) => {
     const response = await request.get("/api/health");
     expect(response.status()).toBe(200);
