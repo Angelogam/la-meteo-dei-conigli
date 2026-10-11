@@ -650,11 +650,11 @@ export default function ProfessionalWindgram({
           <div className="grid grid-cols-12 gap-1 px-1">
             {hourlyData.map((h, i) => (
               <div key={i} className="text-center">
-                <div className="font-black text-sm leading-tight" style={{ color: h.thermalAvg >= 1.6 ? "#b91c1c" : "#0f172a" }}>
-                  {h.thermalAvg.toFixed(1)}
+                <div className="font-black text-sm leading-tight" style={{ color: h?.thermalAvg != null && h.thermalAvg >= 1.6 ? "#b91c1c" : "#0f172a" }}>
+                  {h?.thermalAvg != null && Number.isFinite(h.thermalAvg) ? h.thermalAvg.toFixed(1) : "—"}
                 </div>
-                <div className="text-[9px] leading-tight" style={{ color: h.sunPct >= 70 ? "#b45309" : "#94a3b8" }}>
-                  sole {h.sunPct}%
+                <div className="text-[9px] leading-tight" style={{ color: h?.sunPct != null && h.sunPct >= 70 ? "#b45309" : "#94a3b8" }}>
+                  sole {h?.sunPct ?? "—"}%
                 </div>
               </div>
             ))}
@@ -814,7 +814,7 @@ export default function ProfessionalWindgram({
               const x = getXFromHourIdx(i);
               const paraY = getYFromAlt(h.thermalTop);
               const badgeY = paraY + 12;
-              const rateoColor = h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
+              const rateoColor = h.thermalAvg != null && h.thermalAvg >= 1.5 ? "#b91c1c" : h.thermalAvg != null && h.thermalAvg >= 1.0 ? "#b45309" : "#0f172a";
               return (
                 <g key={`badge-${i}`} transform={`translate(${x}, ${badgeY})`}>
                   <rect x="-35" y="0" width="70" height="14" rx="3" fill="#ffffff" opacity="0.95" stroke="#7e22ce" strokeWidth="0.5" />
@@ -823,7 +823,7 @@ export default function ProfessionalWindgram({
                   </text>
                   <rect x="-40" y="16" width="80" height="14" rx="3" fill="#ffffff" opacity="0.95" stroke="#7e22ce" strokeWidth="0.5" />
                   <text x="0" y="27" fill={rateoColor} fontSize="11" fontWeight="900" textAnchor="middle" fontFamily="monospace">
-                    ↑{h.thermalAvg.toFixed(1)} m/s
+                    ↑{h.thermalAvg != null && Number.isFinite(h.thermalAvg) ? h.thermalAvg.toFixed(1) : "—"} m/s
                   </text>
                 </g>
               );
