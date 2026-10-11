@@ -81,6 +81,19 @@ test.describe("API smoke and contract checks", () => {
     expect((await request.get("/api/open-meteo?latitude=44&longitude=7&hourly=temperature_2m&hourly=wind_speed_10m")).status()).toBe(400);
   });
 
+  test("Open-Meteo rejects repeated date and unit parameters", async ({ request }) => {
+    const urls = [
+      "/api/open-meteo?latitude=44&longitude=7&start_date=2026-10-11&start_date=2026-10-12",
+      "/api/open-meteo?latitude=44&longitude=7&wind_speed_unit=kmh&wind_speed_unit=ms",
+      "/api/open-meteo?latitude=44&longitude=7&forecast_days=2&forecast_days=3",
+    ];
+
+    const responses = await Promise.all(urls.map((url) => request.get(url)));
+    for (const response of responses) {
+      expect(response.status()).toBe(400);
+    }
+  });
+
   test("Open-Meteo rejects out-of-range latitude", async ({ request }) => {
     expect((await request.get("/api/open-meteo?latitude=91&longitude=7")).status()).toBe(400);
   });
