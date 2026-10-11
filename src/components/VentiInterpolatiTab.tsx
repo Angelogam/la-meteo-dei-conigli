@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Wind, Calendar, MapPin, TrendingUp } from "lucide-react";
 import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
 import ProfessionalWindgram from "@/components/ProfessionalWindgram";
@@ -63,9 +63,16 @@ export default function VentiInterpolatiTab({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [oraSelezionata, setOraSelezionata] = useState(oraCorrente);
+  const oraCorrenteRef = useRef(oraCorrente);
+  oraCorrenteRef.current = oraCorrente;
 
   useEffect(() => {
-    if (!lat || !lon || !quotaDecollo) return;
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(quotaDecollo) || quotaDecollo <= 0) {
+      setError("Coordinate o quota di decollo non valide.");
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
     const oggi = new Date();
     const targetDate = new Date(oggi);
     targetDate.setDate(oggi.getDate() + selectedDay);
@@ -76,20 +83,28 @@ export default function VentiInterpolatiTab({
 
     getVentiInterpolati(lat, lon, quotaDecollo, dayStr)
       .then((result) => {
+        if (cancelled) return;
         setData(result);
         setLoading(false);
         if (result.ventoOrario.length > 0) {
+          const requestedHour = oraCorrenteRef.current;
           const closest = result.ventoOrario.reduce((prev, curr) =>
-            Math.abs(curr.ora - oraCorrente) < Math.abs(prev.ora - oraCorrente) ? curr : prev
+            Math.abs(curr.ora - requestedHour) < Math.abs(prev.ora - requestedHour) ? curr : prev
           );
           setOraSelezionata(closest.ora);
         }
+        if (result.ventoOrario.length === 0) {
+          setError("Nessun dato di vento disponibile per questo giorno.");
+        }
       })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : "Errore");
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Errore nel caricamento dei venti.");
         setLoading(false);
       });
-  }, [lat, lon, quotaDecollo, selectedDay, oraCorrente]);
+
+    return () => { cancelled = true; };
+  }, [lat, lon, quotaDecollo, selectedDay]);
 
   const oggi = new Date();
   const targetDate = new Date(oggi);
@@ -161,6 +176,19 @@ export default function VentiInterpolatiTab({
           </div>
         </div>
       </div>
+
+      {loading && (
+        <div role="status" className="rounded-xl border border-cyan-400/20 bg-slate-900/70 px-4 py-5 text-sm text-cyan-100">
+          <span className="inline-block mr-2 animate-spin" aria-hidden="true">◌</span>
+          Caricamento del profilo dei venti…
+        </div>
+      )}
+      {error && (
+        <div role="alert" className="rounded-xl border border-amber-400/30 bg-amber-950/20 px-4 py-4 text-sm text-amber-100">
+          <div className="font-semibold">Dati dei venti non disponibili</div>
+          <p className="mt-1 text-amber-100/80">{error}</p>
+        </div>
+      )}
 
       {data && (
         <>
