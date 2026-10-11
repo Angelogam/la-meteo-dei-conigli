@@ -1,5 +1,5 @@
 import { defineHandler } from "nitro";
-import { getQuery, createError } from "nitro/h3";
+import { getQuery, createError, setHeader } from "nitro/h3";
 
 const WINDY_PLUGIN_URL = "https://windy-plugins.com/2727410/windy-plugin-pg-soundings/1.6.2/plugin.min.js";
 const WINDY_PLUGIN_NAME = "Windy Plugin PG Soundings";
@@ -127,6 +127,8 @@ export default defineHandler(async (event) => {
       if (js.trim().length === 0) {
         throw createError({ statusCode: 502, statusMessage: "Risposta vuota dal provider Windy" });
       }
+      // The plugin URL is pinned to a version; edge-cache the validated payload to avoid repeated upstream latency.
+      setHeader(event, "Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
       return {
         ok: true,
         name: WINDY_PLUGIN_NAME,
@@ -147,6 +149,8 @@ export default defineHandler(async (event) => {
   }
 
   if (action === "sites") {
+    // Site metadata is static and safe to cache for longer than forecast data.
+    setHeader(event, "Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
     return {
       ok: true,
       plugin: WINDY_PLUGIN_NAME,
@@ -166,6 +170,7 @@ export default defineHandler(async (event) => {
         data: { available: SOUNDING_SITES.map((candidate) => ({ name: candidate.name, slug: slugify(candidate.name) })) },
       });
     }
+    setHeader(event, "Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
     return {
       ok: true,
       plugin: WINDY_PLUGIN_NAME,
@@ -177,6 +182,7 @@ export default defineHandler(async (event) => {
     };
   }
 
+  setHeader(event, "Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
   return {
     ok: true,
     name: WINDY_PLUGIN_NAME,
