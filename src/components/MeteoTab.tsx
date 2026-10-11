@@ -184,9 +184,8 @@ function metricCard({
   );
 }
 
-export default function MeteoTab({ currentData, dayData, site, thermalDelta, modelName, selectedDay = 0, cape: propCape, liftedIndex: propLi, cin: propCin }: MeteoTabProps) {
-
-  if (!currentData || dayData.length === 0) {
+export default function MeteoTab(props: MeteoTabProps) {
+  if (!props.currentData || props.dayData.length === 0) {
     return (
       <div className="rounded-2xl bg-slate-900 border border-slate-700/50 p-12 text-center">
         <Cloud className="w-10 h-10 text-slate-600 mx-auto mb-3" />
@@ -194,6 +193,11 @@ export default function MeteoTab({ currentData, dayData, site, thermalDelta, mod
       </div>
     );
   }
+
+  return <MeteoTabContent {...props} currentData={props.currentData} />;
+}
+
+function MeteoTabContent({ currentData, dayData, site, thermalDelta, modelName, selectedDay = 0, cape: propCape, liftedIndex: propLi, cin: propCin }: Omit<MeteoTabProps, "currentData"> & { currentData: MeteoCurrent }) {
 
   const { alt: siteAlt, name: siteName, orientation } = site;
   // Temperature: usa dato API reale, non inventato
