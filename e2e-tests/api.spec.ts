@@ -138,6 +138,20 @@ test.describe("API smoke and contract checks", () => {
     }
   });
 
+  test("static Windy sounding metadata is edge-cacheable", async ({ request }) => {
+    const [sitesResponse, siteResponse, metadataResponse] = await Promise.all([
+      request.get("/api/windy-soundings?action=sites"),
+      request.get("/api/windy-soundings?site=montoso-decollo-basso"),
+      request.get("/api/windy-soundings"),
+    ]);
+
+    for (const response of [sitesResponse, siteResponse, metadataResponse]) {
+      expect(response.status()).toBe(200);
+      expect(response.headers()["cache-control"]).toContain("s-maxage=3600");
+      expect(response.headers()["cache-control"]).toContain("stale-while-revalidate=86400");
+    }
+  });
+
   test("known sounding site slug resolves despite accents and punctuation", async ({ request }) => {
     const response = await request.get("/api/windy-soundings?site=montoso-decollo-basso");
     expect(response.status()).toBe(200);
