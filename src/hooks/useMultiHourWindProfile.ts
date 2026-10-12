@@ -284,7 +284,9 @@ export function useMultiHourWindProfile({
         const today = new Date();
         const targetDate = new Date(today);
         targetDate.setDate(today.getDate() + selectedDay);
-        const dayStr = targetDate.toISOString().split("T")[0];
+        // Usa la data di calendario locale, coerente con il matching di processRawJson.
+        // toISOString() converte in UTC e può spostare il giorno previsto.
+        const dayStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}-${String(targetDate.getDate()).padStart(2, "0")}`;
 
         const windParams = [
           "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",
