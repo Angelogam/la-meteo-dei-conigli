@@ -64,7 +64,13 @@ test.describe("Meteo dei Conigli - Paragliding Launch Weather Journey", () => {
     // Switch to Termiche tab
     const termicheTab = page.locator("button:has-text('Termiche')").first();
     await termicheTab.click();
-    await expect(page.locator("text=Previsione termiche").or(page.locator("text=Dettaglio orario termiche")).first()).toBeVisible({ timeout: 10000 });
+    // The thermal tab can legitimately have no computed rows for a forecast day.
+    // In that case, verify its explicit empty state instead of requiring the data heading.
+    const thermalState = page
+      .getByText("Previsione termiche", { exact: false })
+      .or(page.getByText("Dettaglio orario termiche", { exact: true }))
+      .or(page.getByText("Nessun dato termico disponibile per oggi.", { exact: true }));
+    await expect(thermalState.first()).toBeVisible({ timeout: 10000 });
 
     // Switch to Analisi tab
     const analisiTab = page.locator("button:has-text('Analisi')").first();
