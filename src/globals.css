@@ -1843,3 +1843,17 @@ button, a, [role="button"] {
   }
 }
 
+.app-brand-status svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  color: #67e8f9;
+}
+
+@media (max-width: 640px) {
+  .app-brand-status svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
