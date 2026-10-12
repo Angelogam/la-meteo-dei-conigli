@@ -82,22 +82,22 @@ export default function DecolliCard({
   });
 
   return (
-    <div className="bg-slate-900/90 border border-slate-700/60 rounded-2xl p-3 md:p-4 shadow-xl">
+    <section className="launch-list-card bg-slate-900/90 border border-slate-700/60 rounded-2xl p-3 md:p-4 shadow-xl" aria-labelledby="launch-list-title">
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-3">
+      <div className="launch-list-header flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
-          <h2 className="text-sm md:text-base font-bold text-white flex items-center gap-2">
+          <h2 id="launch-list-title" className="launch-list-title text-sm md:text-base font-bold text-white flex items-center gap-2">
             Scegli il decollo
             {!datiCaricati && !isUpdating && (
               <AlertTriangle size={14} className="text-amber-400" aria-label="Dati meteo non disponibili" />
             )}
           </h2>
-          <p className="mt-0.5 text-xs leading-relaxed text-slate-400">
+          <p className="launch-list-subtitle mt-0.5 text-xs leading-relaxed text-slate-400">
             Confronta le condizioni dei siti monitorati.
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[10px] text-cyan-200 bg-cyan-950/50 border border-cyan-500/30 px-2 py-1 rounded-full font-medium">
+          <span className="launch-source-pill text-[10px] text-cyan-200 bg-cyan-950/50 border border-cyan-500/30 px-2 py-1 rounded-full font-medium">
             Multi-fonte
           </span>
 
@@ -105,7 +105,7 @@ export default function DecolliCard({
       </div>
 
       {/* Info bar */}
-      <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-slate-400 mb-3 bg-slate-800/60 rounded-xl px-2.5 py-1.5 border border-slate-700/40">
+      <div className="launch-list-info flex items-center gap-1.5 text-[10px] md:text-xs text-slate-400 mb-3 bg-slate-800/60 rounded-xl px-2.5 py-1.5 border border-slate-700/40">
         <Clock size={12} />
         <span className="font-medium">{dt.date}</span>
         <span className="text-slate-600">·</span>
@@ -131,7 +131,7 @@ export default function DecolliCard({
       </div>
 
       {/* Lista card */}
-      <div className="space-y-2.5 max-h-80 md:max-h-96 overflow-y-auto pr-1 scrollbar-thin">
+      <div className="launch-list-items space-y-2.5 max-h-80 md:max-h-96 overflow-y-auto pr-1 scrollbar-thin">
         {decolli.map((item) => {
           const isSelected = item.id === selectedId;
           const aggressive = item.aggressiveWeather ?? null;
@@ -181,7 +181,7 @@ export default function DecolliCard({
               onClick={() => onSelect(item)}
               aria-pressed={isSelected}
               className={`
-                w-full rounded-2xl p-3 text-left transition-all border-2 cursor-pointer relative overflow-hidden
+                launch-option w-full rounded-2xl p-3 text-left transition-all border-2 cursor-pointer relative overflow-hidden
                 ${isSelected
                   ? "bg-slate-800/90 border-emerald-400 shadow-md ring-1 ring-emerald-400/40"
                   : isOffline
@@ -193,10 +193,10 @@ export default function DecolliCard({
               {/* Header */}
               <div className="flex items-start justify-between gap-2 mb-1.5">
                 <div className="min-w-0">
-                  <div className="text-sm font-bold text-white truncate flex items-center gap-1.5">
-                    <span>{item.site_name || item.name}</span>
-                    <span className="text-slate-400">—</span>
-                    <span className="text-slate-300">{item.location_name || item.valley}</span>
+                  <div className="launch-option-title text-sm font-bold text-white flex min-w-0 items-center gap-1.5">
+                    <span className="min-w-0 truncate">{item.site_name || item.name}</span>
+                    <span className="shrink-0 text-slate-500">·</span>
+                    <span className="min-w-0 truncate font-medium text-slate-300">{item.location_name || item.valley}</span>
                   </div>
                   <div className="text-[10px] text-slate-400 truncate">
                     {item.orientation || item.exposure} · {item.elevation_m || item.altitude}m
@@ -255,7 +255,7 @@ export default function DecolliCard({
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }
 
