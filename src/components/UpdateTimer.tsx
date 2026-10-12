@@ -30,7 +30,7 @@ export default function UpdateTimer({ lastUpdate, updating, onRefresh }: UpdateT
         <button
           type="button"
           aria-busy={updating}
-          onClick={onRefresh
+          onClick={onRefresh}
           disabled={updating}
           className={`weather-refresh-button flex items-center gap-2 px-3 py-2 rounded-lg font-bold text-sm transition-all shrink-0 ${
             updating
