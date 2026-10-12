@@ -76,7 +76,9 @@ export default function VentiInterpolatiTab({
     const oggi = new Date();
     const targetDate = new Date(oggi);
     targetDate.setDate(oggi.getDate() + selectedDay);
-    const dayStr = targetDate.toISOString().split("T")[0];
+    // Mantieni il giorno locale: toISOString() converte in UTC e può selezionare
+    // il giorno precedente/successivo rispetto alle ore del sito.
+    const dayStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}-${String(targetDate.getDate()).padStart(2, "0")}`;
 
     setLoading(true);
     setError(null);
