@@ -1571,3 +1571,192 @@ button, a, [role="button"] {
   }
 }
 
+/* ===== LAUNCH SELECTOR AND REFRESH CARD ===== */
+.dashboard-sidebar .weather-refresh-card {
+  border-color: rgba(125, 211, 252, .2);
+  border-radius: 18px;
+  background: linear-gradient(140deg, rgba(8, 29, 53, .95), rgba(4, 16, 33, .97));
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .16), inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.weather-refresh-inner {
+  justify-content: space-between;
+}
+
+.weather-refresh-summary > svg {
+  width: 35px;
+  height: 35px;
+  padding: 7px;
+  border: 1px solid rgba(52, 211, 153, .2);
+  border-radius: 12px;
+  background: rgba(6, 78, 59, .25);
+}
+
+.weather-refresh-summary .text-xs {
+  color: #8db5cd;
+  line-height: 1.45;
+}
+
+.weather-refresh-button {
+  min-height: 42px;
+  border: 1px solid rgba(52, 211, 153, .28);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #047857, #065f46);
+  box-shadow: 0 7px 18px rgba(6, 95, 70, .22), inset 0 1px 0 rgba(255,255,255,.1);
+  white-space: nowrap;
+  font-size: .76rem;
+}
+
+.weather-refresh-button:hover:not(:disabled) {
+  border-color: rgba(110, 231, 183, .7);
+  background: linear-gradient(135deg, #059669, #047857);
+}
+
+.weather-refresh-button:focus-visible {
+  outline: 2px solid #6ee7b7;
+  outline-offset: 3px;
+}
+
+.dashboard-sidebar .launch-list-card {
+  padding: clamp(.85rem, 1.5vw, 1.15rem) !important;
+  border-color: rgba(125, 211, 252, .19);
+  border-radius: 20px !important;
+  background: linear-gradient(155deg, rgba(8, 29, 53, .96), rgba(3, 14, 30, .98)) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, .18), inset 0 1px 0 rgba(255,255,255,.035);
+}
+
+.launch-list-header {
+  padding-bottom: .8rem;
+  border-bottom: 1px solid rgba(148, 163, 184, .13);
+}
+
+.launch-list-title {
+  letter-spacing: -.025em;
+}
+
+.launch-list-subtitle {
+  max-width: 34ch;
+}
+
+.launch-source-pill {
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.launch-list-info {
+  gap: .4rem .5rem;
+  line-height: 1.45;
+  padding: .6rem .7rem;
+  border-color: rgba(148, 163, 184, .14);
+  background: rgba(2, 12, 26, .38);
+}
+
+.launch-list-info > span {
+  min-width: 0;
+}
+
+.launch-list-items {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, .45) rgba(3, 15, 32, .55);
+  overscroll-behavior: contain;
+}
+
+.launch-option {
+  padding: .8rem !important;
+  border-width: 1px !important;
+  border-radius: 16px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+.launch-option[aria-pressed="true"] {
+  border-color: rgba(52, 211, 153, .8) !important;
+  background: linear-gradient(145deg, rgba(6, 78, 59, .36), rgba(8, 29, 53, .94)) !important;
+  box-shadow: 0 0 0 1px rgba(52, 211, 153, .16), 0 8px 20px rgba(0, 0, 0, .14), inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.launch-option:focus-visible {
+  outline: 2px solid #67e8f9;
+  outline-offset: 2px;
+}
+
+.launch-option-title {
+  line-height: 1.35;
+}
+
+.launch-option-title > span:first-child {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .weather-refresh-card {
+    padding: .75rem !important;
+    border-radius: 16px !important;
+  }
+
+  .weather-refresh-inner {
+    gap: .65rem;
+  }
+
+  .weather-refresh-summary {
+    gap: .55rem;
+  }
+
+  .weather-refresh-summary > svg {
+    width: 32px;
+    height: 32px;
+    padding: 6px;
+    border-radius: 11px;
+  }
+
+  .weather-refresh-summary .text-sm {
+    font-size: .82rem;
+  }
+
+  .weather-refresh-summary .text-xs {
+    max-width: 16ch;
+    font-size: .65rem;
+  }
+
+  .weather-refresh-button {
+    gap: .35rem;
+    min-height: 42px;
+    padding: .55rem .65rem !important;
+    font-size: .69rem;
+  }
+
+  .weather-refresh-button svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .dashboard-sidebar .launch-list-card {
+    padding: .8rem !important;
+    border-radius: 18px !important;
+  }
+
+  .launch-option {
+    padding: .72rem !important;
+    border-radius: 14px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .weather-refresh-inner {
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .weather-refresh-summary {
+    flex-basis: 100%;
+  }
+
+  .weather-refresh-summary .text-xs {
+    max-width: none;
+  }
+
+  .weather-refresh-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
