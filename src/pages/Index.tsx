@@ -134,7 +134,6 @@ export default function Index() {
               decolli={mergedDecolli}
               selectedId={selectedId}
               selectedDay={selectedDay}
-              onRefresh={loadAggressiveWeather}
               isUpdating={aggressiveUpdating}
               error={aggressiveError}
               onSelect={(item) => {
