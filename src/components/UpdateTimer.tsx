@@ -16,9 +16,9 @@ export default function UpdateTimer({ lastUpdate, updating, onRefresh }: UpdateT
     : "--:--";
 
   return (
-    <div className="bg-slate-900/80 border border-slate-700/60 rounded-xl p-4">
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
+    <section className="weather-refresh-card bg-slate-900/80 border border-slate-700/60 rounded-xl p-4" aria-label="Aggiornamento dati meteo">
+      <div className="weather-refresh-inner flex items-center gap-3">
+        <div className="weather-refresh-summary flex items-center gap-2 flex-1 min-w-0">
           <CloudSun className="w-6 h-6 text-emerald-400 shrink-0" />
           <div className="min-w-0">
             <div className="text-sm font-bold text-white">Dati meteo</div>
@@ -28,9 +28,11 @@ export default function UpdateTimer({ lastUpdate, updating, onRefresh }: UpdateT
           </div>
         </div>
         <button
-          onClick={onRefresh}
+          type="button"
+          aria-busy={updating}
+          onClick={onRefresh
           disabled={updating}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg font-bold text-sm transition-all shrink-0 ${
+          className={`weather-refresh-button flex items-center gap-2 px-3 py-2 rounded-lg font-bold text-sm transition-all shrink-0 ${
             updating
               ? "bg-slate-700 text-slate-400 cursor-not-allowed"
               : "bg-emerald-600 hover:bg-emerald-500 text-white shadow"
@@ -40,6 +42,6 @@ export default function UpdateTimer({ lastUpdate, updating, onRefresh }: UpdateT
           {updating ? "Aggiornamento…" : "Aggiorna tutto"}
         </button>
       </div>
-    </div>
+    </section>
   );
 }
