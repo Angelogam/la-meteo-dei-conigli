@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Wind, Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, Zap, Info, RefreshCw } from "lucide-react";
+import { Wind, Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, Zap, Info } from "lucide-react";
 import type { Decollo } from "@/data/decolli";
 
 export interface AggressiveWeatherData {
@@ -23,7 +23,6 @@ interface DecolliCardProps {
   selectedId: string;
   onSelect: (item: Decollo) => void;
   selectedDay?: number;
-  onRefresh?: () => void;
   isUpdating?: boolean;
   error?: string | null;
 }
@@ -72,7 +71,6 @@ export default function DecolliCard({
   selectedId,
   onSelect,
   selectedDay = 0,
-  onRefresh,
   isUpdating,
   error,
 }: DecolliCardProps) {
@@ -102,18 +100,7 @@ export default function DecolliCard({
           <span className="text-[10px] text-cyan-200 bg-cyan-950/50 border border-cyan-500/30 px-2 py-1 rounded-full font-medium">
             Multi-fonte
           </span>
-          {onRefresh && (
-            <button
-              type="button"
-              onClick={onRefresh}
-              disabled={isUpdating}
-              className="p-2 rounded-xl border border-slate-700/70 bg-slate-800/60 hover:bg-slate-700/70 transition-colors disabled:opacity-50"
-              title="Aggiorna le condizioni dei decolli"
-              aria-label="Aggiorna le condizioni dei decolli"
-            >
-              <RefreshCw size={14} className={`text-slate-300 ${isUpdating ? "animate-spin" : ""}`} />
-            </button>
-          )}
+
         </div>
       </div>
 
