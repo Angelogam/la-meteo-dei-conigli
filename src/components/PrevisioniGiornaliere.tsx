@@ -442,14 +442,12 @@ export default function PrevisioniGiornaliere({
                 {d && (
                   <>
                     <div className="flex items-baseline gap-1 mb-2">
-                      <span className="text-lg font-bold text-amber-300">{d.temperatureMax !== null ? `${Math.round(d.temperatureMax)}°` : "N/D"}</span>
+                      <span className="text-lg font-bold text-amber-300">{d.temperatureMax != null && Number.isFinite(d.temperatureMax) ? `${Math.round(d.temperatureMax)}°` : "N/D"}</span>
                       <span className="text-xs text-slate-600">/</span>
-                      <span className="text-lg font-bold text-sky-300">{d.temperatureMin !== null ? `${Math.round(d.temperatureMin)}°` : "N/D"}</span>
+                      <span className="text-lg font-bold text-sky-300">{d.temperatureMin != null && Number.isFinite(d.temperatureMin) ? `${Math.round(d.temperatureMin)}°` : "N/D"}</span>
                     </div>
                     <div className="forecast-day-condition text-[10px] text-slate-400 mb-1">
-                      {d.precipitationSum > 0.5
-                        ? `🌧️ Precipitazioni attese · ${d.precipitationSum.toLocaleString("it-IT", { maximumFractionDigits: 1 })} mm`
-                        : `${getWeatherEmoji(d.weatherCode)} ${getWeatherLabel(d.weatherCode)}`}
+                      {`${getWeatherEmoji(d.weatherCode)} ${getWeatherLabel(d.weatherCode)}${d.precipitationSum != null && Number.isFinite(d.precipitationSum) && d.precipitationSum > 0.5 ? ` · ${d.precipitationSum.toLocaleString("it-IT", { maximumFractionDigits: 1 })} mm attesi` : ""}`}
                     </div>
                     <div className="text-[9px] text-slate-500">
                       Vento max: {d.windSpeedMax !== null ? `${Math.round(d.windSpeedMax)} km/h` : "N/D"}
