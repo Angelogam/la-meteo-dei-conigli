@@ -11,9 +11,9 @@ interface UpdateTimerProps {
 }
 
 export default function UpdateTimer({ lastUpdate, updating, onRefresh }: UpdateTimerProps) {
-  const formattedTime = lastUpdate
-    ? lastUpdate.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
-    : "--:--";
+  const updateStatus = lastUpdate
+    ? `Ultimo aggiornamento alle ${lastUpdate.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}`
+    : "In attesa del primo aggiornamento";
 
   return (
     <section className="weather-refresh-card bg-slate-900/80 border border-slate-700/60 rounded-xl p-4" aria-label="Aggiornamento dati meteo">
@@ -23,7 +23,7 @@ export default function UpdateTimer({ lastUpdate, updating, onRefresh }: UpdateT
           <div className="min-w-0">
             <div className="text-sm font-bold text-white">Dati meteo</div>
             <div className="text-xs text-emerald-300 mt-0.5">
-              Ultimo aggiornamento alle {formattedTime}
+              {updateStatus}
             </div>
           </div>
         </div>
