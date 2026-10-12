@@ -21,9 +21,9 @@ export default function UpdateTimer({ lastUpdate, updating, onRefresh }: UpdateT
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <CloudSun className="w-6 h-6 text-emerald-400 shrink-0" />
           <div className="min-w-0">
-            <div className="text-sm font-bold text-white">Open-Meteo</div>
+            <div className="text-sm font-bold text-white">Dati meteo</div>
             <div className="text-xs text-emerald-300 mt-0.5">
-              Ultimo aggiornamento: {formattedTime}
+              Ultimo aggiornamento alle {formattedTime}
             </div>
           </div>
         </div>
@@ -37,7 +37,7 @@ export default function UpdateTimer({ lastUpdate, updating, onRefresh }: UpdateT
           }`}
         >
           <RefreshCw className={`w-4 h-4 ${updating ? "animate-spin" : ""}`} />
-          {updating ? "..." : "Aggiorna"}
+          {updating ? "Aggiornamento…" : "Aggiorna tutto"}
         </button>
       </div>
     </div>
