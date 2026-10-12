@@ -27,6 +27,30 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     expect(pageErrors, "Venti tab must not crash the React application").toEqual([]);
   });
 
+  test("homepage briefing, forecast-day selection, and wind shortcut work", async ({ page }) => {
+    const pageErrors: string[] = [];
+    page.on("pageerror", (error) => pageErrors.push(error.message));
+
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Il tuo briefing di volo." })).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator(".launch-hero")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Scegli il decollo" })).toBeVisible();
+
+    const forecastCards = page.locator(".forecast-day-card");
+    await expect(forecastCards).toHaveCount(3, { timeout: 30_000 });
+    await expect(page.locator('.forecast-day-card[aria-pressed="true"]')).toHaveCount(1);
+
+    const tomorrow = page.getByRole("button", { name: /Mostra le previsioni per domani/i });
+    await tomorrow.click();
+    await expect(tomorrow).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator('.forecast-day-card[aria-pressed="true"]')).toHaveCount(1);
+
+    await page.getByRole("button", { name: "Esplora i venti" }).click();
+    await expect(page.getByTestId("tab-venti")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator('section[aria-live="polite"]')).not.toBeEmpty();
+    expect(pageErrors, "The homepage briefing must not produce browser errors").toEqual([]);
+  });
+
   test("dashboard has no horizontal page overflow on a narrow mobile viewport", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 800 });
     await page.goto("/");
