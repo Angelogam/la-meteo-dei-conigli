@@ -164,6 +164,63 @@ export default function VentiInterpolatiTab({
         rawData={rawData}
       />
 
+      {oraData && (() => {
+        const ventoAnimato = oraData.quote?.[quotaDecollo] ?? oraData.quote?.[quotaDecollo + 10] ?? Object.values(oraData.quote ?? {})[0];
+        if (!ventoAnimato) return null;
+        const direzione = ((ventoAnimato.dir % 360) + 360) % 360;
+        const durata = Math.max(1.4, Math.min(5, 5 - ventoAnimato.speed / 12));
+        return (
+          <section
+            aria-label="Visualizzazione animata del vento selezionato"
+            className="wind-flow-panel relative overflow-hidden rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950/50 p-4 md:p-5"
+          >
+            <style>{`
+              @keyframes wind-dash-flow { to { stroke-dashoffset: -180; } }
+              @keyframes wind-particle-flow { 0% { transform: translateX(-20px); opacity: 0; } 15% { opacity: .9; } 85% { opacity: .9; } 100% { transform: translateX(28px); opacity: 0; } }
+              .wind-flow-line { animation: wind-dash-flow var(--wind-duration, 3s) linear infinite; }
+              .wind-flow-particle { animation: wind-particle-flow var(--wind-duration, 3s) ease-in-out infinite; }
+              @media (prefers-reduced-motion: reduce) { .wind-flow-line, .wind-flow-particle { animation: none !important; } }
+            `}</style>
+            <div className="relative z-10 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-[.22em] text-cyan-300">Flusso del vento · animazione</div>
+                <div className="mt-1 text-sm text-slate-300">Profilo selezionato alle {String(oraSelezionata).padStart(2, "0")}:00</div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <div className="text-2xl font-semibold tabular-nums text-white">{Math.round(ventoAnimato.speed)} <span className="text-xs font-normal text-slate-400">km/h</span></div>
+                  <div className="text-xs text-cyan-200">{getDirAbbrev(direzione)} · {Math.round(direzione)}°</div>
+                </div>
+                <div
+                  aria-hidden="true"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-300/30 bg-cyan-300/10 text-xl text-cyan-200"
+                  style={{ transform: `rotate(${direzione}deg)` }}
+                >↑</div>
+              </div>
+            </div>
+            <svg className="mt-3 block h-28 w-full md:h-36" viewBox="0 0 720 140" role="img" aria-label={`Linee animate illustrative del vento, velocità ${Math.round(ventoAnimato.speed)} chilometri orari, direzione ${Math.round(direzione)} gradi`}>
+              <defs>
+                <linearGradient id="wind-flow-gradient" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.08" />
+                  <stop offset="50%" stopColor="#67e8f9" stopOpacity="0.9" />
+                  <stop offset="100%" stopColor="#34d399" stopOpacity="0.15" />
+                </linearGradient>
+              </defs>
+              {[28, 58, 88, 118].map((y, i) => (
+                <g key={y} style={{ "--wind-duration": `${durata + i * 0.22}s` } as React.CSSProperties}>
+                  <path d={`M -30 ${y} C 90 ${y - 24}, 150 ${y + 24}, 260 ${y} S 440 ${y - 24}, 560 ${y} S 680 ${y + 18}, 760 ${y - 2}`} fill="none" stroke="url(#wind-flow-gradient)" strokeWidth={i === 1 ? 2.5 : 1.5} strokeLinecap="round" strokeDasharray={i === 1 ? "18 12" : "9 16"} className="wind-flow-line" />
+                  <circle cx={120 + i * 125} cy={y - 3} r={i === 1 ? 3 : 2} fill={i === 2 ? "#34d399" : "#67e8f9"} className="wind-flow-particle" style={{ animationDelay: `${i * -0.7}s` }} />
+                </g>
+              ))}
+            </svg>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-500">
+              <span>Visualizzazione illustrativa basata sui dati orari selezionati</span>
+              <span>Quota di riferimento: {quotaDecollo} m</span>
+            </div>
+          </section>
+        );
+      })()}
+
       <div className="bg-slate-800/60 border border-blue-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
         <MapPin className="w-5 h-5 text-blue-400 shrink-0" />
         <div>
