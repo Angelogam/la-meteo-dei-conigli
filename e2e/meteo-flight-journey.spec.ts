@@ -6,8 +6,9 @@ test.describe("Meteo dei Conigli - Paragliding Launch Weather Journey", () => {
     await page.goto("/");
 
     // 2. Verify main application header and branding
-    const headerTitle = page.locator("h1");
-    await expect(headerTitle).toContainText("Meteo dei Conigli");
+    const brandLink = page.getByRole("link", { name: "La Meteo dei Conigli, home" });
+    await expect(brandLink).toBeVisible();
+    await expect(brandLink).toContainText("La Meteo dei Conigli");
 
     // 3. Wait for initial weather data loading to complete (main content visible)
     await expect(page.locator("h2").first()).toBeVisible({ timeout: 15000 });
