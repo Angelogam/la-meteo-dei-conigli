@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { ArrowDownRight, CalendarDays, Wind } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
@@ -74,6 +75,38 @@ export default function Index() {
       <Header />
 
       <main className="app-main flex-1 w-full max-w-[1800px] mx-auto px-3 sm:px-4 lg:px-6 py-4 md:py-6 space-y-5">
+        <section className="dashboard-intro" aria-labelledby="dashboard-intro-title">
+          <div className="dashboard-intro-copy">
+            <div className="dashboard-intro-kicker">
+              <span className="dashboard-intro-kicker-dot" aria-hidden="true" />
+              METEO · AEROLOGIA · VOLO LIBERO
+            </div>
+            <h1 id="dashboard-intro-title">Il tuo briefing di volo.</h1>
+            <p>Condizioni al decollo, andamento della giornata e vento in quota, in un’unica vista.</p>
+          </div>
+          <div className="dashboard-intro-actions">
+            <div className="dashboard-date-chip">
+              <CalendarDays aria-hidden="true" />
+              <span className="dashboard-date-copy">
+                <small>Giorno selezionato</small>
+                <strong>{dateLabel}</strong>
+              </span>
+            </div>
+            <button
+              type="button"
+              className="dashboard-intro-cta"
+              onClick={() => {
+                setActiveTab("venti");
+                document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+            >
+              <Wind aria-hidden="true" />
+              <span>Esplora i venti</span>
+              <ArrowDownRight aria-hidden="true" />
+            </button>
+          </div>
+        </section>
+
         {site && (
           <section id="overview" className="overview-section">
             <SiteHeader
