@@ -1760,3 +1760,86 @@ button, a, [role="button"] {
   }
 }
 
+/* ===== FORECAST DAY CARDS ===== */
+.forecast-hero {
+  border-color: rgba(56, 189, 248, .27) !important;
+  box-shadow: 0 22px 54px rgba(0, 0, 0, .23), 0 10px 36px rgba(8, 47, 73, .14);
+}
+
+.forecast-hero-accent {
+  background-size: 200% 100%;
+}
+
+.forecast-day-card {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 180px;
+  border-radius: 17px !important;
+  border-color: rgba(125, 163, 190, .18) !important;
+  background: linear-gradient(150deg, rgba(10, 32, 56, .87), rgba(4, 17, 34, .95)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease, transform .2s ease;
+}
+
+.forecast-day-card:hover {
+  border-color: rgba(103, 232, 249, .42) !important;
+}
+
+.forecast-day-card[aria-pressed="true"] {
+  border: 2px solid rgba(103, 232, 249, .78) !important;
+  background:
+    radial-gradient(ellipse at 0 0, rgba(8, 145, 178, .18), transparent 65%),
+    linear-gradient(150deg, rgba(8, 47, 73, .94), rgba(3, 19, 38, .98)) !important;
+  box-shadow: 0 10px 28px rgba(8, 47, 73, .22), inset 0 1px 0 rgba(255,255,255,.055);
+}
+
+.forecast-day-card:focus-visible {
+  outline: 2px solid #67e8f9;
+  outline-offset: 3px;
+}
+
+.forecast-day-index {
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
+  white-space: nowrap;
+}
+
+.forecast-day-index-label {
+  font-size: .61rem;
+  font-weight: 750;
+  opacity: .8;
+  letter-spacing: .02em;
+}
+
+.forecast-day-condition {
+  min-height: 2.5em;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .forecast-day-card {
+    min-height: 0;
+    padding: .85rem !important;
+    border-radius: 15px !important;
+  }
+
+  .forecast-day-card[aria-pressed="true"] {
+    box-shadow: 0 8px 20px rgba(8, 47, 73, .19), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+
+  .forecast-day-condition {
+    min-height: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .forecast-day-card,
+  .forecast-hero-accent {
+    transition: none;
+    animation: none !important;
+  }
+}
+
