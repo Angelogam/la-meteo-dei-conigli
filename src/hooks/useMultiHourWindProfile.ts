@@ -139,15 +139,21 @@ function buildFromFallback(hourly: HourData[], siteAlt: number, selectedDay: num
  * MATCHING: usa la DATA COMPLETA per identificare l'ora corretta.
  */
 function processRawJson(json: any, siteAlt: number, selectedDay: number): Map<number, HourWindData> {
-  const times: string[] = json.hourly.time;
-  const h = json.hourly;
   const hourDataMap = new Map<number, HourWindData>();
+  const hourly = json?.hourly;
+  if (!hourly || !Array.isArray(hourly.time)) return hourDataMap;
+  const times: string[] = hourly.time;
+  const h = hourly;
 
-  // Calcola la data target per il matching corretto
+  // Usa la data locale del sito/utente: toISOString() converte in UTC e può
+  // spostare il giorno quando il fuso orario è diverso da UTC.
   const targetDayStr = (() => {
     const d = new Date();
     d.setDate(d.getDate() + selectedDay);
-    return d.toISOString().split("T")[0];
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   })();
 
   DEFAULT_HOURS.forEach((targetHour) => {
@@ -278,7 +284,9 @@ export function useMultiHourWindProfile({
         const today = new Date();
         const targetDate = new Date(today);
         targetDate.setDate(today.getDate() + selectedDay);
-        const dayStr = targetDate.toISOString().split("T")[0];
+        // Usa la data di calendario locale, coerente con il matching di processRawJson.
+        // toISOString() converte in UTC e può spostare il giorno previsto.
+        const dayStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}-${String(targetDate.getDate()).padStart(2, "0")}`;
 
         const windParams = [
           "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",

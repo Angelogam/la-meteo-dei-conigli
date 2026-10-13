@@ -5,7 +5,7 @@ import { DECOLLI } from "@/data/decolli";
 
 export default function DebugMeteo() {
   const [logs, setLogs] = useState<string[]>([]);
-  const [rawData, setRawData] = useState<any>(null);
+  const [rawData, setRawData] = useState<unknown>(null);
 
   useEffect(() => {
     const fetchDebug = async () => {

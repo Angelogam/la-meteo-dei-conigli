@@ -22,9 +22,9 @@ export default function ApiHealthCheck() {
           setStatus("error");
           setDetails(`${res.status} ${res.statusText} — ${text.substring(0, 200)}`);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         setStatus("error");
-        setDetails(`Errore di rete: ${err.message}`);
+        setDetails(`Errore di rete: ${err instanceof Error ? err.message : String(err)}`);
         console.error("[API Health] Error:", err);
       }
     }

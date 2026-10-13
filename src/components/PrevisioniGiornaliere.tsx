@@ -22,12 +22,22 @@ function dirToIcon(dir: number): string {
   return dirs[Math.round(dir / 45) % 8];
 }
 
-function getFlightRating(daily: MeteoDaily | undefined, current: HourData | MeteoCurrent | null): number | null {
+function getFlightRating(daily: MeteoDaily | undefined, dayData: HourData[]): number | null {
   if (!daily) return null;
 
   const wind = daily.windSpeedMax ?? null;
   const rain = daily.precipitationSum ?? null;
-  const cloudCover = (current as any)?.cloudCover ?? null;
+  const daylight = dayData.filter((hour) => hour.isDay === true);
+  const relevantHours = daylight.length > 0 ? daylight : dayData;
+  const cloudValues = relevantHours
+    .map((hour) => hour.cloudCover)
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  const capeValues = relevantHours
+    .map((hour) => hour.cape)
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  const cloudCover = cloudValues.length > 0
+    ? cloudValues.reduce((sum, value) => sum + value, 0) / cloudValues.length
+    : null;
 
   if (wind === null || rain === null || cloudCover === null) return null;
 
@@ -44,7 +54,7 @@ function getFlightRating(daily: MeteoDaily | undefined, current: HourData | Mete
   if (cloudCover <= 30) score += 1;
   else if (cloudCover > 70) score -= 1;
 
-  const cape = (current as any)?.cape ?? null;
+  const cape = capeValues.length > 0 ? Math.max(...capeValues) : null;
   if (cape !== null) {
     if (cape >= 200 && cape <= 1000) score += 1;
     else if (cape > 1500) score -= 1;
@@ -54,29 +64,55 @@ function getFlightRating(daily: MeteoDaily | undefined, current: HourData | Mete
   return Math.max(1, Math.min(10, Math.round(score)));
 }
 
-function getFlightRatingAndVerdict(daily: MeteoDaily | undefined, current: HourData | MeteoCurrent | null): { rating: number | null; verdict: ReturnType<typeof getFlightVerdict> } {
-  const rating = daily ? getFlightRating(daily, current) : null;
+function getFlightRatingAndVerdict(daily: MeteoDaily | undefined, dayData: HourData[]): { rating: number | null; verdict: ReturnType<typeof getFlightVerdict> } {
+  const rating = daily ? getFlightRating(daily, dayData) : null;
   const verdict = rating !== null ? getFlightVerdict(rating) : { label: "DATI INSUFFICIENTI", color: "text-slate-400", bg: "bg-slate-700/50", ring: "ring-slate-500/30" };
   return { rating, verdict };
 }
 
-function getWeatherEmoji(code: number): string {
-  if (code >= 95) return "⛈️";
-  if (code >= 80) return "🌧️";
-  if (code >= 71) return "❄️";
-  if (code >= 61) return "🌧️";
-  if (code >= 51) return "🌦️";
-  if (code >= 45) return "🌫️";
-  if (code >= 20) return "☁️";
-  if (code >= 10) return "⛅";
-  if (code >= 5) return "🌤️";
-  return "☀️";
+function getWeatherEmoji(code: number | null | undefined): string {
+  if (code == null) return "—";
+  if (code === 0) return "☀️";
+  if (code === 1) return "🌤️";
+  if (code === 2) return "⛅";
+  if (code === 3) return "☁️";
+  if (code === 45 || code === 48) return "🌫️";
+  if ([51, 53, 55, 56, 57].includes(code)) return "🌦️";
+  if ([61, 63, 65, 66, 67].includes(code)) return "🌧️";
+  if ([71, 73, 75, 77].includes(code)) return "❄️";
+  if ([80, 81, 82].includes(code)) return "🌧️";
+  if (code === 85 || code === 86) return "🌨️";
+  if ([95, 96, 99].includes(code)) return "⛈️";
+  return "—";
+}
+
+function getWeatherLabel(code: number | null | undefined): string {
+  if (code == null) return "Condizione non disponibile";
+  if (code === 0) return "Sereno";
+  if (code === 1) return "Prevalentemente sereno";
+  if (code === 2) return "Parzialmente nuvoloso";
+  if (code === 3) return "Coperto";
+  if (code === 45 || code === 48) return "Nebbia";
+  if ([51, 53, 55, 56, 57].includes(code)) return "Pioviggine";
+  if ([61, 63, 65, 66, 67].includes(code)) return "Pioggia";
+  if ([71, 73, 75, 77].includes(code)) return "Neve";
+  if ([80, 81, 82].includes(code)) return "Rovesci";
+  if (code === 85 || code === 86) return "Rovesci di neve";
+  if ([95, 96, 99].includes(code)) return "Temporale";
+  return "Condizione non riconosciuta";
+}
+
+function hoursForForecastDay(hours: HourData[], dayOffset: number): HourData[] {
+  const target = new Date();
+  target.setDate(target.getDate() + dayOffset);
+  const targetDate = target.toDateString();
+  return hours.filter((hour) => new Date(hour.time).toDateString() === targetDate);
 }
 
 function getFlightVerdict(rating: number): { label: string; color: string; bg: string; ring: string } {
-  if (rating >= 8) return { label: "VOLO CONSENTITO", color: "text-emerald-400", bg: "bg-emerald-500/10", ring: "ring-emerald-500/50" };
-  if (rating >= 5) return { label: "VOLO POSSIBILE", color: "text-amber-400", bg: "bg-amber-500/10", ring: "ring-amber-500/50" };
-  return { label: "VOLO SCONSIGLIATO", color: "text-red-400", bg: "bg-red-500/10", ring: "ring-red-500/50" };
+  if (rating >= 8) return { label: "QUADRO INDICATIVO FAVOREVOLE", color: "text-emerald-400", bg: "bg-emerald-500/10", ring: "ring-emerald-500/50" };
+  if (rating >= 5) return { label: "DA VALUTARE", color: "text-amber-400", bg: "bg-amber-500/10", ring: "ring-amber-500/50" };
+  return { label: "CRITICITÀ DA VERIFICARE", color: "text-red-400", bg: "bg-red-500/10", ring: "ring-red-500/50" };
 }
 
 function useAnimatedValue(target: number, duration = 1000): number {
@@ -104,6 +140,7 @@ export default function PrevisioniGiornaliere({
   enrichedDaily,
   dateLabels,
   currentData,
+  dayData,
   site,
   selectedDay,
   onSelectDay,
@@ -139,7 +176,8 @@ export default function PrevisioniGiornaliere({
     : null;
 
   const daily = enrichedDaily[selectedDay] ?? enrichedDaily[0];
-  const { rating: flightRating, verdict } = getFlightRatingAndVerdict(daily, currentData);
+  const selectedDayHours = hoursForForecastDay(dayData, selectedDay);
+  const { rating: flightRating, verdict } = getFlightRatingAndVerdict(daily, selectedDayHours);
   const hasValidRating = flightRating !== null;
 
   // Animated counter for hero score (default to 0 when no valid rating)
@@ -150,10 +188,10 @@ export default function PrevisioniGiornaliere({
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* HERO — ANIMATED: barra verde luminosa in alto             */}
       {/* ═══════════════════════════════════════════════════════════ */}
-      <div className="relative rounded-3xl overflow-hidden bg-slate-900 border border-emerald-500/40 shadow-2xl shadow-emerald-500/20">
+      <div className="forecast-hero relative rounded-3xl overflow-hidden bg-slate-900 border border-cyan-500/30 shadow-2xl shadow-cyan-950/30">
         {/* Striscia verde luminosa in cima — animata */}
         <div
-          className="h-2 bg-gradient-to-r from-emerald-400 via-emerald-300 to-sky-400"
+          className="forecast-hero-accent h-2 bg-gradient-to-r from-cyan-400 via-sky-300 to-cyan-400"
           style={{ animation: 'shimmer 3s linear infinite', backgroundSize: '200% 100%' }}
         />
 
@@ -162,7 +200,7 @@ export default function PrevisioniGiornaliere({
           <div className="flex items-center gap-3">
             <span className="text-2xl shrink-0" style={{ animation: 'bounce 2s ease-in-out infinite' }}>🛩️</span>
             <div>
-              <div className="text-[10px] font-black text-emerald-400/80 uppercase tracking-[0.3em]">
+              <div className="text-[10px] font-black text-cyan-300/90 uppercase tracking-[0.3em]">
                 PREVISIONI METEO
               </div>
               <div className="text-base font-bold text-white">{site.name}</div>
@@ -190,7 +228,7 @@ export default function PrevisioniGiornaliere({
               ) : (
                 <div className="text-4xl leading-none font-black text-slate-500">N/D</div>
               )}
-              <div className="mt-2 text-[10px] text-slate-500 font-bold uppercase tracking-wider">Indice sintetico</div>
+              <div className="mt-2 text-[10px] text-slate-500 font-bold uppercase tracking-wider" title="Indicatore meteo sintetico; non sostituisce la valutazione delle condizioni reali sul posto">Indice meteo indicativo</div>
             </div>
 
             {/* TEMPERATURA */}
@@ -288,7 +326,7 @@ export default function PrevisioniGiornaliere({
       {/* ═══════════════════════════════════════════════════════════ */}
       <div>
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-1 h-6 bg-emerald-500 rounded-full" />
+          <div className="w-1 h-6 bg-cyan-400 rounded-full" />
           <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Parametri di Volo</div>
           <span className="text-[9px] text-slate-600 ml-auto">Clicca per espandere</span>
         </div>
@@ -362,7 +400,7 @@ export default function PrevisioniGiornaliere({
       <div>
         <div className="flex items-center gap-2 mb-3">
           <div className="w-1 h-6 bg-emerald-500 rounded-full" />
-          <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Previsioni 3 Giorni</div>
+          <div className="text-[10px] font-black text-cyan-300 uppercase tracking-widest">Previsioni per 3 giorni</div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {tabs.map((tabName, idx) => {
@@ -370,14 +408,18 @@ export default function PrevisioniGiornaliere({
             const isActive = selectedDay === idx;
             const label = dateLabels[idx] || tabName;
             const isRainy = d && d.precipitationSum !== undefined && d.precipitationSum > 0.5;
-            const rating = d ? getFlightRating(d, currentData) : null;
+            const hoursForDay = hoursForForecastDay(dayData, idx);
+            const rating = d ? getFlightRating(d, hoursForDay) : null;
 
             return (
               <button
                 key={idx}
+                type="button"
                 onClick={() => onSelectDay(idx)}
+                aria-pressed={isActive}
+                aria-label={`Mostra le previsioni per ${tabName.toLowerCase()}, ${label}`}
                 className={`
-                  relative rounded-xl p-3 sm:p-4 text-left transition-colors duration-200
+                  forecast-day-card relative rounded-xl p-3 sm:p-4 text-left transition-colors duration-200
                   ${isActive
                     ? 'bg-emerald-950/60 border-2 border-emerald-400 shadow-md shadow-emerald-900/20'
                     : isRainy
@@ -387,9 +429,12 @@ export default function PrevisioniGiornaliere({
                 `}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className={`text-2xl`}>{d ? getWeatherEmoji(d.weatherCode) : "☀️"}</span>
-                  <div className={`text-sm font-black px-3 py-1 rounded-full transition-all duration-300 ${isActive ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-700/50 text-slate-400'}`}>
-                    {rating !== null ? `${rating}/10` : "N/D"}
+                  <span className={`text-2xl`}>{getWeatherEmoji(d?.weatherCode)}</span>
+                  <div
+                    className={`forecast-day-index text-sm font-black px-3 py-1 rounded-full transition-all duration-300 ${isActive ? 'bg-cyan-500/15 text-cyan-200 border border-cyan-400/30' : 'bg-slate-700/50 text-slate-400'}`}
+                    title="Indice meteo indicativo, non è un giudizio di sicurezza del volo"
+                  >
+                    <span className="forecast-day-index-label">Indice </span>{rating !== null ? `${rating}/10` : "N/D"}
                   </div>
                 </div>
                 <div className="font-black text-white text-lg">{tabName}</div>
@@ -397,12 +442,12 @@ export default function PrevisioniGiornaliere({
                 {d && (
                   <>
                     <div className="flex items-baseline gap-1 mb-2">
-                      <span className="text-lg font-bold text-amber-300">{d.temperatureMax !== null ? `${Math.round(d.temperatureMax)}°` : "N/D"}</span>
+                      <span className="text-lg font-bold text-amber-300">{d.temperatureMax != null && Number.isFinite(d.temperatureMax) ? `${Math.round(d.temperatureMax)}°` : "N/D"}</span>
                       <span className="text-xs text-slate-600">/</span>
-                      <span className="text-lg font-bold text-sky-300">{d.temperatureMin !== null ? `${Math.round(d.temperatureMin)}°` : "N/D"}</span>
+                      <span className="text-lg font-bold text-sky-300">{d.temperatureMin != null && Number.isFinite(d.temperatureMin) ? `${Math.round(d.temperatureMin)}°` : "N/D"}</span>
                     </div>
-                    <div className="text-[10px] text-slate-400 mb-1">
-                      {d.precipitationSum > 0.5 ? '🌧️ Pioggia attesa' : '☀️ Sereno'}
+                    <div className="forecast-day-condition text-[10px] text-slate-400 mb-1">
+                      {`${getWeatherEmoji(d.weatherCode)} ${getWeatherLabel(d.weatherCode)}${d.precipitationSum != null && Number.isFinite(d.precipitationSum) && d.precipitationSum > 0.5 ? ` · ${d.precipitationSum.toLocaleString("it-IT", { maximumFractionDigits: 1 })} mm attesi` : ""}`}
                     </div>
                     <div className="text-[9px] text-slate-500">
                       Vento max: {d.windSpeedMax !== null ? `${Math.round(d.windSpeedMax)} km/h` : "N/D"}

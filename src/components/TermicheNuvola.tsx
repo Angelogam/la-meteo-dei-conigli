@@ -48,10 +48,10 @@ const TermicheNuvola: React.FC<{ data: ThermalData[] }> = ({ data }) => {
 
           {/* Dati */}
           <div className="mt-3 text-center text-xs text-gray-300">
-            <div className="text-[#22c55e] font-semibold">{t.speed.toFixed(1)} m/s</div>
+            <div className="text-[#22c55e] font-semibold">{t.speed.toFixed(1)} m/s</div>
             <div>{getLabel(t.speed)}</div>
-            <div className="text-[#22c55e]">Base {Math.round(t.base)} m</div>
-            <div className="text-red-400">Top {Math.round(t.top)} m</div>
+            <div className="text-[#22c55e]">Base {Math.round(t.base)} m</div>
+            <div className="text-red-400">Top {Math.round(t.top)} m</div>
           </div>
         </div>
       ))}
