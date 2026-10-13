@@ -5,24 +5,10 @@ import { Wind, Calendar, MapPin } from "lucide-react";
 import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
 import ProfessionalWindgram from "@/components/ProfessionalWindgram";
 import SectionErrorBoundary from "@/components/SectionErrorBoundary";
-import {
-} from "recharts";
 
-function getSpeedColor(speed: number): string {
-  if (speed <= 8) return "text-emerald-300";
-  if (speed <= 15) return "text-lime-300";
-  if (speed <= 22) return "text-amber-300";
-  if (speed <= 30) return "text-orange-300";
-  return "text-red-400";
-}
 
-function getSpeedBarColor(speed: number): string {
-  if (speed <= 8) return "bg-emerald-400";
-  if (speed <= 15) return "bg-lime-400";
-  if (speed <= 22) return "bg-amber-400";
-  if (speed <= 30) return "bg-orange-400";
-  return "bg-red-400";
-}
+
+
 
 function getDirAbbrev(deg: number): string {
   const abbrevs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
