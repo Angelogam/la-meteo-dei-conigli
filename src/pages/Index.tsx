@@ -192,6 +192,8 @@ export default function Index() {
                       />
                     </section>
 
+
+
                     {site.id === "montoso-decollo-basso" && (
                       <section className="flight-aux-chart min-w-0">
                         <RasoftWindgram latitude={site.lat} longitude={site.lon} altitude={site.elevation_m} siteName="Montoso Alto" selectedDay={selectedDay} />
