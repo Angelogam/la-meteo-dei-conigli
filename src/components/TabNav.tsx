@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Activity, ArrowRight, CloudSun, Flame, Wind, type LucideIcon } from "lucide-react";
 
 type Tab = "meteo" | "venti" | "termiche" | "analisi";
