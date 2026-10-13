@@ -101,7 +101,7 @@ test("desktop briefing fits the viewport without clipping the launch or forecast
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Il tuo briefing di volo." })).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(".launch-hero")).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator(".forecast-hero")).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator(".flight-forecast-module .forecast-day-card").first()).toBeVisible({ timeout: 30_000 });
 
   const layout = await page.evaluate(() => {
     const selectors = [
