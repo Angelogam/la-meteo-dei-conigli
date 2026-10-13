@@ -126,7 +126,6 @@ export default function Index() {
             />
           </section>
         )}
-
         <div className="flight-desk-layout">
           <aside id="decollli" className="flight-desk-sidebar dashboard-sidebar w-full min-w-0 space-y-3">
             <UpdateTimer
@@ -151,6 +150,13 @@ export default function Index() {
           <div className="flight-desk-main dashboard-content flex-1 min-w-0 space-y-5">
             {site && (
               <>
+                <DayStoryboard
+                  dayData={filteredDayData}
+                  siteName={site.site_name}
+                  selectedHour={selectedHour}
+                  onHourSelect={setSelectedHour}
+                />
+
                 <section className="forecast-section min-w-0">
                   <PrevisioniGiornaliere
                     enrichedDaily={enrichedDaily}
@@ -223,13 +229,6 @@ export default function Index() {
                   )}
                 </section>
 
-                <DayStoryboard
-                  dayData={filteredDayData}
-                  siteName={site.site_name}
-                  selectedHour={selectedHour}
-                  onHourSelect={setSelectedHour}
-                />
-
                 <HourlyTable
                   dayData={filteredDayData}
                   altitude={site.elevation_m}
@@ -239,7 +238,7 @@ export default function Index() {
                   siteName={site.site_name}
                 />
 
-                <section id="windgram-section" className="windgram-section min-w-0 overflow-hidden rounded-2xl border border-emerald-400/25 bg-slate-900/70 p-3 sm:p-4 shadow-xl shadow-black/10">
+                <section id="windgram-section" className="windgram-section windgram-featured min-w-0 overflow-hidden rounded-2xl border border-emerald-400/25 bg-slate-900/70 p-3 sm:p-4 shadow-xl shadow-black/10">
                   <Windgram
                     dayData={filteredDayData}
                     siteName={site.site_name}
