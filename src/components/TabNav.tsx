@@ -159,7 +159,7 @@ export default function TabNav({ activeTab, onTabChange }: TabNavProps) {
   const [pressedTab, setPressedTab] = useState<Tab | null>(null);
 
   return (
-    <div className="grid grid-cols-4 gap-3 bg-slate-800/90 rounded-2xl p-2.5 border border-slate-700/60 shadow-2xl">
+    <div className="analysis-tabs grid grid-cols-4 gap-3 bg-slate-800/90 rounded-2xl p-2.5 border border-slate-700/60 shadow-2xl">
       {(Object.keys(tabMeta) as Tab[]).map((tabId) => {
         const isActive = tabId === activeTab;
         const isHovered = hoveredTab === tabId;

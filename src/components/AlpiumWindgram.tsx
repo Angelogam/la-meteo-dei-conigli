@@ -280,7 +280,7 @@ export default function AlpiumWindgram({
         windSpeed500: hourly.windSpeed["500hPa"]?.[idx] ?? null,
         windDir500: hourly.windDir["500hPa"]?.[idx] ?? null,
       };
-      const derived = computeHourlyDerived(raw as any, siteAlt);
+      const derived = computeHourlyDerived(raw as Parameters<typeof computeHourlyDerived>[0], siteAlt);
       if (derived) map.set(hr, derived);
     });
     return map;

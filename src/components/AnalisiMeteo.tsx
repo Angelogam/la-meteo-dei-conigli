@@ -92,32 +92,11 @@ export default function AnalisiMeteo({ currentData, dayData, site, cape, liftedI
     return "";
   }, [dayData]);
 
-  // K-Index: indicatore rischio temporali
-  // K = T850 - T500 + Td850 - (T2m - Td2m)
-  // Stimato da dati reali disponibili
-  const kIndex = useMemo(() => {
-    if (dayData.length < 3) return null;
-    const central = dayData[Math.floor(dayData.length / 2)];
-    const t2m = central.temperature ?? null;
-    const td2m = central.dewPoint ?? null;
-    if (t2m == null || td2m == null) return null; // Nessun dato sufficiente per K-Index
-    const spread = t2m - td2m;
-
-    // K-Index: K = T850 - T500 + Td850 - (T2m - Td2m)
-    // Usiamo dati reali quando disponibili, altrimenti stimiamo con null
-    const t850Real = central.temp80m ?? null; // proxy approssimativo per 850hPa
-    const t500Real = central.windSpeed850 != null ? (t2m - 15) : null; // stima conservativa se non disponibile
-
-    if (central.windSpeed850 != null && t850Real != null) {
-      // Abbiamo dati vento 850hPa: usa temperatura reale a 80m come proxy per 850hPa
-      const td850 = t850Real - Math.min(10, spread * 0.5);
-      const k = t850Real - (t2m - 20) + td850 - spread;
-      return Math.round(k * 10) / 10;
-    }
-
-    // Dato insufficiente per K-Index affidabile
-    return null;
-  }, [dayData]);
+  // K-Index: richiede T850, T500 e Td850 misurate a livelli di pressione.
+  // I dati disponibili qui non contengono queste tre variabili: temperature a 80 m
+  // e velocità del vento a 850 hPa non sono sostituti meteorologicamente validi.
+  // Mostrare N/D è preferibile a presentare un indice sintetico come dato reale.
+  const kIndex = useMemo(() => null, []);
 
   if (!dayData || dayData.length < 3) {
     return (

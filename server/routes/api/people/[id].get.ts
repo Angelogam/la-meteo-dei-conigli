@@ -1,20 +1,25 @@
 import { defineHandler } from "nitro";
-import { getRouterParam } from "nitro/h3";
+import { getRouterParam, createError } from "nitro/h3";
 import fs from "node:fs";
 import path from "node:path";
 
 const DATA_FILE = path.resolve("./server/data/people.json");
 
 function readPeople() {
+  if (!fs.existsSync(DATA_FILE)) return [];
   try {
     const data = fs.readFileSync(DATA_FILE, "utf-8");
-    return JSON.parse(data);
+    const parsed: unknown = JSON.parse(data);
+    if (!Array.isArray(parsed)) {
+      throw new Error("Archivio persone non valido");
+    }
+    return parsed as Array<{ id: string; [key: string]: unknown }>;
   } catch {
-    return [];
+    throw createError({ statusCode: 500, statusMessage: "Archivio persone non leggibile" });
   }
 }
 
-export default defineHandler(async (event) => {
+export default defineHandler((event) => {
   const id = getRouterParam(event, "id");
   if (!id) {
     throw createError({ statusCode: 400, statusMessage: "ID mancante" });

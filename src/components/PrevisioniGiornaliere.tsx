@@ -22,12 +22,22 @@ function dirToIcon(dir: number): string {
   return dirs[Math.round(dir / 45) % 8];
 }
 
-function getFlightRating(daily: MeteoDaily | undefined, current: HourData | MeteoCurrent | null): number | null {
+function getFlightRating(daily: MeteoDaily | undefined, dayData: HourData[]): number | null {
   if (!daily) return null;
 
   const wind = daily.windSpeedMax ?? null;
   const rain = daily.precipitationSum ?? null;
-  const cloudCover = (current as any)?.cloudCover ?? null;
+  const daylight = dayData.filter((hour) => hour.isDay === true);
+  const relevantHours = daylight.length > 0 ? daylight : dayData;
+  const cloudValues = relevantHours
+    .map((hour) => hour.cloudCover)
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  const capeValues = relevantHours
+    .map((hour) => hour.cape)
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  const cloudCover = cloudValues.length > 0
+    ? cloudValues.reduce((sum, value) => sum + value, 0) / cloudValues.length
+    : null;
 
   if (wind === null || rain === null || cloudCover === null) return null;
 
@@ -44,7 +54,7 @@ function getFlightRating(daily: MeteoDaily | undefined, current: HourData | Mete
   if (cloudCover <= 30) score += 1;
   else if (cloudCover > 70) score -= 1;
 
-  const cape = (current as any)?.cape ?? null;
+  const cape = capeValues.length > 0 ? Math.max(...capeValues) : null;
   if (cape !== null) {
     if (cape >= 200 && cape <= 1000) score += 1;
     else if (cape > 1500) score -= 1;
@@ -54,8 +64,8 @@ function getFlightRating(daily: MeteoDaily | undefined, current: HourData | Mete
   return Math.max(1, Math.min(10, Math.round(score)));
 }
 
-function getFlightRatingAndVerdict(daily: MeteoDaily | undefined, current: HourData | MeteoCurrent | null): { rating: number | null; verdict: ReturnType<typeof getFlightVerdict> } {
-  const rating = daily ? getFlightRating(daily, current) : null;
+function getFlightRatingAndVerdict(daily: MeteoDaily | undefined, dayData: HourData[]): { rating: number | null; verdict: ReturnType<typeof getFlightVerdict> } {
+  const rating = daily ? getFlightRating(daily, dayData) : null;
   const verdict = rating !== null ? getFlightVerdict(rating) : { label: "DATI INSUFFICIENTI", color: "text-slate-400", bg: "bg-slate-700/50", ring: "ring-slate-500/30" };
   return { rating, verdict };
 }
@@ -74,9 +84,9 @@ function getWeatherEmoji(code: number): string {
 }
 
 function getFlightVerdict(rating: number): { label: string; color: string; bg: string; ring: string } {
-  if (rating >= 8) return { label: "VOLO CONSENTITO", color: "text-emerald-400", bg: "bg-emerald-500/10", ring: "ring-emerald-500/50" };
-  if (rating >= 5) return { label: "VOLO POSSIBILE", color: "text-amber-400", bg: "bg-amber-500/10", ring: "ring-amber-500/50" };
-  return { label: "VOLO SCONSIGLIATO", color: "text-red-400", bg: "bg-red-500/10", ring: "ring-red-500/50" };
+  if (rating >= 8) return { label: "QUADRO INDICATIVO FAVOREVOLE", color: "text-emerald-400", bg: "bg-emerald-500/10", ring: "ring-emerald-500/50" };
+  if (rating >= 5) return { label: "DA VALUTARE", color: "text-amber-400", bg: "bg-amber-500/10", ring: "ring-amber-500/50" };
+  return { label: "CRITICITÀ DA VERIFICARE", color: "text-red-400", bg: "bg-red-500/10", ring: "ring-red-500/50" };
 }
 
 function useAnimatedValue(target: number, duration = 1000): number {
@@ -104,6 +114,7 @@ export default function PrevisioniGiornaliere({
   enrichedDaily,
   dateLabels,
   currentData,
+  dayData,
   site,
   selectedDay,
   onSelectDay,
@@ -139,7 +150,7 @@ export default function PrevisioniGiornaliere({
     : null;
 
   const daily = enrichedDaily[selectedDay] ?? enrichedDaily[0];
-  const { rating: flightRating, verdict } = getFlightRatingAndVerdict(daily, currentData);
+  const { rating: flightRating, verdict } = getFlightRatingAndVerdict(daily, dayData);
   const hasValidRating = flightRating !== null;
 
   // Animated counter for hero score (default to 0 when no valid rating)
@@ -370,7 +381,7 @@ export default function PrevisioniGiornaliere({
             const isActive = selectedDay === idx;
             const label = dateLabels[idx] || tabName;
             const isRainy = d && d.precipitationSum !== undefined && d.precipitationSum > 0.5;
-            const rating = d ? getFlightRating(d, currentData) : null;
+            const rating = d ? getFlightRating(d, dayData) : null;
 
             return (
               <button

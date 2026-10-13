@@ -1,10 +1,16 @@
 import React from "react";
 import { Activity } from "lucide-react";
+import type { HourData } from "@/types/meteo";
+
+interface AnalisiApprofonditaResult {
+  confidenza: number;
+  oreTemporale: number;
+}
 
 interface AnalisiApprofonditaCardProps {
-  analisi: any;
+  analisi: AnalisiApprofonditaResult | null;
   siteName?: string;
-  dayData?: any[];
+  dayData?: HourData[];
 }
 
 export default function AnalisiApprofonditaCard({ analisi, siteName, dayData }: AnalisiApprofonditaCardProps) {

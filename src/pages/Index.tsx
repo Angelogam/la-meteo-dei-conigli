@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
@@ -8,6 +8,7 @@ import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
 import HourlyTable from "@/components/HourlyTable";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
+import DayStoryboard from "@/components/DayStoryboard";
 import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
@@ -21,14 +22,6 @@ import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 import { DECOLLI } from "@/data/decolli";
 
 export default function Index() {
-  const [appMounted, setAppMounted] = useState(false);
-  const [fetchStarted, setFetchStarted] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setAppMounted(true), 50);
-    return () => clearTimeout(t);
-  }, []);
-
   const {
     selectedId,
     setSelectedId,
@@ -74,25 +67,33 @@ export default function Index() {
     return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
   }, [selectedDay]);
 
-  useEffect(() => {
-    if (!appMounted || fetchStarted) return;
-    setFetchStarted(true);
-    loadWeather();
-  }, [appMounted, fetchStarted, loadWeather]);
-
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <Header />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6" style={{ marginTop: 80 }}>
-        <div className="flex flex-col lg:flex-row gap-6">
+      <main className="app-main flex-1 w-full mx-auto px-3 md:px-6 py-4 md:py-6 space-y-5">
+        {site && (
+          <section id="overview" className="overview-section">
+            <SiteHeader
+              site_name={site.site_name}
+              location_name={site.location_name}
+              orientation={site.orientation}
+              elevation_m={site.elevation_m}
+              currentData={currentData as any}
+              sunrise={enrichedDaily[selectedDay]?.sunrise?.slice(0, 5)}
+              sunset={enrichedDaily[selectedDay]?.sunset?.slice(0, 5)}
+              uvIndex={enrichedDaily[selectedDay]?.uvIndexMax ?? currentData?.uvIndex}
+            />
+          </section>
+        )}
+        <div className="dashboard-layout">
           {/* SIDEBAR */}
-          <aside className="w-full lg:w-80 shrink-0 space-y-3">
+          <aside id="decollli" className="dashboard-sidebar w-full lg:w-80 shrink-0 space-y-3">
             <UpdateTimer
               lastUpdate={aggressiveLastUpdate ?? lastUpdate}
               countdown={countdown}
               updating={updating || aggressiveUpdating}
-              onRefresh={() => { loadWeather(); loadAggressiveWeather(); setFetchStarted(false); }}
+              onRefresh={() => { loadWeather(); loadAggressiveWeather(); }}
             />
 
             <DecolliCard
@@ -110,20 +111,10 @@ export default function Index() {
           </aside>
 
           {/* MAIN CONTENT */}
-          <div className="flex-1 min-w-0 space-y-6">
+          <div className="dashboard-content flex-1 min-w-0 space-y-5">
             {site && (
               <>
-                <SiteHeader
-                  site_name={site.site_name}
-                  location_name={site.location_name}
-                  orientation={site.orientation}
-                  elevation_m={site.elevation_m}
-                  currentData={currentData as any}
-                  sunrise={enrichedDaily[selectedDay]?.sunrise?.slice(0, 5)}
-                  sunset={enrichedDaily[selectedDay]?.sunset?.slice(0, 5)}
-                  uvIndex={enrichedDaily[selectedDay]?.uvIndexMax ?? currentData?.uvIndex}
-                />
-
+                <section className="forecast-section">
                 <PrevisioniGiornaliere
                   enrichedDaily={enrichedDaily}
                   dateLabels={dateLabels}
@@ -133,6 +124,14 @@ export default function Index() {
                   selectedDay={selectedDay}
                   onSelectDay={setSelectedDay}
                   nomeDecollo={site.site_name}
+                />
+                </section>
+
+                <DayStoryboard
+                  dayData={filteredDayData}
+                  siteName={site.site_name}
+                  selectedHour={selectedHour}
+                  onHourSelect={setSelectedHour}
                 />
 
                 <HourlyTable
@@ -144,7 +143,7 @@ export default function Index() {
                   siteName={site.site_name}
                 />
 
-                <div className="bg-slate-800/30 border border-emerald-500/30 rounded-2xl p-4">
+                <div id="windgram-section" className="windgram-section bg-slate-800/30 border border-emerald-500/30 rounded-2xl p-4">
                   <Windgram
                     dayData={filteredDayData}
                     siteName={site.site_name}
@@ -170,7 +169,7 @@ export default function Index() {
                   />
                 )}
 
-                <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+                <div id="details-section" className="details-section"><TabNav activeTab={activeTab} onTabChange={setActiveTab} /></div>
 
                 {activeTab === "meteo" && (
                   <MeteoTab
@@ -225,6 +224,12 @@ export default function Index() {
           </div>
         </div>
       </main>
+      <nav className="mobile-bottom-nav" aria-label="Navigazione rapida">
+        <a href="#overview" aria-label="Home"><span>⌂</span><small>Home</small></a>
+        <a href="#decollli" aria-label="Decolli"><span>⌖</span><small>Decolli</small></a>
+        <a href="#windgram-section" aria-label="Windgram"><span>〰</span><small>Windgram</small></a>
+        <button type="button" onClick={() => { setActiveTab("analisi"); document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} aria-label="Analisi"><span>◉</span><small>Analisi</small></button>
+      </nav>
       <Footer />
       <DiagnosticaPanel />
     </div>

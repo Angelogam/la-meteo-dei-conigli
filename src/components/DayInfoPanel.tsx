@@ -45,21 +45,21 @@ function generateHourlyData(currentData: any, dayDataArray?: any[]) {
       (h: any) => h.time?.getHours() === ora
     ) : undefined;
 
-    const t = hData?.temperature ?? currentData?.temp ?? 20;
-    const ws = hData?.windSpeed ?? currentData?.windSpeed ?? 10;
-    const cc = hData?.cloudCover ?? currentData?.cloudCover ?? 30;
-    const hum = hData?.humidity ?? currentData?.humidity ?? 50;
+    const t = hData?.temperature ?? currentData?.temperature ?? currentData?.temp ?? null;
+    const ws = hData?.windSpeed ?? currentData?.windSpeed ?? null;
+    const cc = hData?.cloudCover ?? currentData?.cloudCover ?? null;
+    const hum = hData?.humidity ?? currentData?.humidity ?? null;
 
-    // Emoji base
-    let emoji = "☀️";
-    if (cc > 80) emoji = "☁️";
-    else if (cc > 50) emoji = "⛅";
-    else if (cc > 20) emoji = "🌤️";
+    // Non inventare condizioni meteo quando la fonte non contiene un valore.
+    let emoji = "🌤️";
+    if (cc != null && cc > 80) emoji = "☁️";
+    else if (cc != null && cc > 50) emoji = "⛅";
+    else if (cc != null && cc <= 20) emoji = "☀️";
 
-    // Condizioni
-    const tempStr = `${Math.round(t)}°C`;
-    const ventoStr = `${Math.round(ws)} km/h`;
-    const cloudStr = cc > 50 ? "nuvoloso" : cc > 20 ? "poco nuvoloso" : "sereno";
+    // Condizioni: N/D indica un dato assente, non una stima sintetica.
+    const tempStr = t == null ? "N/D" : `${Math.round(t)}°C`;
+    const ventoStr = ws == null ? "N/D" : `${Math.round(ws)} km/h`;
+    const cloudStr = cc == null ? "nuvolosità N/D" : cc > 50 ? "nuvoloso" : cc > 20 ? "poco nuvoloso" : "sereno";
 
     // Note
     let note = "";
@@ -73,9 +73,9 @@ function generateHourlyData(currentData: any, dayDataArray?: any[]) {
       note = "Termiche in calo, atmosfera tranquilla";
     }
 
-    if (ws > 20) note += " · vento sostenuto";
-    else if (ws < 5) note += " · vento debole";
-    if (hum > 70) note += " · aria umida";
+    if (ws != null && ws > 20) note += " · vento sostenuto";
+    else if (ws != null && ws < 5) note += " · vento debole";
+    if (hum != null && hum > 70) note += " · aria umida";
 
     return {
       ora,
