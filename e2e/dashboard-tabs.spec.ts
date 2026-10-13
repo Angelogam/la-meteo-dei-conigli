@@ -37,7 +37,7 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     await expect(page.getByRole("heading", { name: "Scegli il decollo" })).toBeVisible();
     await expect(page.locator(".flight-nav-rail")).toBeVisible();
     await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible();
-    await expect(page.locator(".story-temp-chart")).toBeVisible();
+    await expect(page.locator(".story-chart-module").first()).toBeVisible();
     await expect(page.locator(".flight-forecast-module .forecast-day-card")).toHaveCount(3);
     await expect(page.locator(".flight-desk-main > #windgram-section")).toBeVisible();
     const graphOrder = await page.locator(".flight-desk-main").evaluate((root) => {
@@ -52,7 +52,27 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     expect(graphOrder.forecast).toBeGreaterThan(graphOrder.graph);
     expect(graphOrder.windgram).toBeGreaterThan(graphOrder.forecast);
     await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible();
-    await expect(page.locator(".story-temp-chart")).toBeVisible();
+    await expect(page.locator(".story-chart-module")).toHaveCount(2);
+    await expect(page.locator(".story-chart-module").first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Tutta la giornata" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Mattina" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Ore centrali" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Pomeriggio" })).toBeVisible();
+
+    const rangeButton = page.getByRole("button", { name: "Mattina" });
+    await rangeButton.click();
+    await expect(rangeButton).toHaveAttribute("aria-pressed", "true");
+
+    const seriesControls = page.getByRole("group", { name: "Mostra o nascondi serie" });
+    const temperatureToggle = seriesControls.getByRole("button", { name: "Temperatura" });
+    await temperatureToggle.click();
+    await expect(temperatureToggle).toHaveAttribute("aria-pressed", "false");
+    await temperatureToggle.click();
+    await expect(temperatureToggle).toHaveAttribute("aria-pressed", "true");
+
+    const hourButton = page.getByRole("button", { name: /Seleziona le condizioni delle ore/ }).first();
+    await hourButton.click();
+    await expect(hourButton).toHaveAttribute("aria-pressed", "true");
 
     const dashboardOrder = await page.locator(".flight-desk-main").evaluate((container) => {
       const children = Array.from(container.children);
