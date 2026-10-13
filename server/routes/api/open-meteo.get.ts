@@ -92,6 +92,24 @@ function validateEnumParameter(url: URL, name: "temperature_unit" | "wind_speed_
 function validateDateRange(url: URL) {
   const startDate = url.searchParams.get("start_date");
   const endDate = url.searchParams.get("end_date");
+  const forecastDays = url.searchParams.get("forecast_days");
+
+  // Open-Meteo accepts either a complete explicit date range or forecast_days,
+  // not a mixture. A half-specified range is almost always a caller bug.
+  if ((startDate === null) !== (endDate === null)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "start_date ed end_date devono essere specificate insieme",
+      data: { parameters: ["start_date", "end_date"] },
+    });
+  }
+  if (forecastDays !== null && (startDate !== null || endDate !== null)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Usare forecast_days oppure start_date/end_date, non entrambi",
+      data: { parameters: ["forecast_days", "start_date", "end_date"] },
+    });
+  }
 
   for (const [name, value] of [["start_date", startDate], ["end_date", endDate]] as const) {
     if (value === null) continue;
