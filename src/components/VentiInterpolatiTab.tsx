@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Wind, Calendar, MapPin, TrendingUp } from "lucide-react";
 import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
 import ProfessionalWindgram from "@/components/ProfessionalWindgram";
+import SectionErrorBoundary from "@/components/SectionErrorBoundary";
 
 function getSpeedColor(speed: number): string {
   if (speed <= 8) return "text-emerald-300";
@@ -157,14 +158,16 @@ export default function VentiInterpolatiTab({
   return (
     <div className="space-y-6">
       {/* Windgram Professionale integrato con dati reali */}
-      <ProfessionalWindgram
-        latitude={lat}
-        longitude={lon}
-        altitude={quotaDecollo}
-        siteName={siteName}
-        selectedDay={selectedDay}
-        rawData={rawData}
-      />
+      <SectionErrorBoundary title="Il grafico dei venti non è riuscito a caricarsi">
+        <ProfessionalWindgram
+          latitude={lat}
+          longitude={lon}
+          altitude={quotaDecollo}
+          siteName={siteName}
+          selectedDay={selectedDay}
+          rawData={rawData}
+        />
+      </SectionErrorBoundary>
 
       {oraData && (() => {
         const ventoAnimato = oraData.quote?.[quotaDecollo] ?? oraData.quote?.[quotaDecollo + 10] ?? Object.values(oraData.quote ?? {})[0];
