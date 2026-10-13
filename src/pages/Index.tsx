@@ -159,50 +159,6 @@ export default function Index() {
                   />
                 </section>
 
-                <DayStoryboard
-                  dayData={filteredDayData}
-                  siteName={site.site_name}
-                  selectedHour={selectedHour}
-                  onHourSelect={setSelectedHour}
-                />
-
-                <HourlyTable
-                  dayData={filteredDayData}
-                  altitude={site.elevation_m}
-                  selectedHour={selectedHour}
-                  onHourSelect={setSelectedHour}
-                  dayLabel={dateLabel}
-                  siteName={site.site_name}
-                />
-
-                <section id="windgram-section" className="windgram-section min-w-0 overflow-hidden rounded-2xl border border-emerald-400/25 bg-slate-900/70 p-3 sm:p-4 shadow-xl shadow-black/10">
-                  <Windgram
-                    dayData={filteredDayData}
-                    siteName={site.site_name}
-                    altitude={site.elevation_m}
-                    selectedHour={selectedHour}
-                    onHourSelect={setSelectedHour}
-                    selectedDay={selectedDay}
-                    dateLabel={dateLabel}
-                    lat={site.lat}
-                    lon={site.lon}
-                    fallbackData={filteredDayData}
-                    rawData={rawApiResponse}
-                  />
-                </section>
-
-                {site.id === "montoso-decollo-basso" && (
-                  <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-700/70 bg-slate-900/60 p-3 sm:p-4">
-                    <RasoftWindgram
-                      latitude={site.lat}
-                      longitude={site.lon}
-                      altitude={site.elevation_m}
-                      siteName="Montoso Alto"
-                      selectedDay={selectedDay}
-                    />
-                  </section>
-                )}
-
                 <section id="details-section" className="details-section scroll-mt-4">
                   <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
                 </section>
@@ -261,6 +217,52 @@ export default function Index() {
                     </div>
                   )}
                 </section>
+
+                <DayStoryboard
+                  dayData={filteredDayData}
+                  siteName={site.site_name}
+                  selectedHour={selectedHour}
+                  onHourSelect={setSelectedHour}
+                />
+
+                <HourlyTable
+                  dayData={filteredDayData}
+                  altitude={site.elevation_m}
+                  selectedHour={selectedHour}
+                  onHourSelect={setSelectedHour}
+                  dayLabel={dateLabel}
+                  siteName={site.site_name}
+                />
+
+                <section id="windgram-section" className="windgram-section min-w-0 overflow-hidden rounded-2xl border border-emerald-400/25 bg-slate-900/70 p-3 sm:p-4 shadow-xl shadow-black/10">
+                  <Windgram
+                    dayData={filteredDayData}
+                    siteName={site.site_name}
+                    altitude={site.elevation_m}
+                    selectedHour={selectedHour}
+                    onHourSelect={setSelectedHour}
+                    selectedDay={selectedDay}
+                    dateLabel={dateLabel}
+                    lat={site.lat}
+                    lon={site.lon}
+                    fallbackData={filteredDayData}
+                    rawData={rawApiResponse}
+                  />
+                </section>
+
+                {site.id === "montoso-decollo-basso" && (
+                  <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-700/70 bg-slate-900/60 p-3 sm:p-4">
+                    <RasoftWindgram
+                      latitude={site.lat}
+                      longitude={site.lon}
+                      altitude={site.elevation_m}
+                      siteName="Montoso Alto"
+                      selectedDay={selectedDay}
+                    />
+                  </section>
+                )}
+
+
               </>
             )}
           </div>
