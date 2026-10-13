@@ -324,10 +324,10 @@ export default function PrevisioniGiornaliere({
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* PREVISIONI GIORNALIERE                                         */}
       {/* ═══════════════════════════════════════════════════════════ */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-1 h-6 bg-emerald-500 rounded-full" />
-          <div className="text-[10px] font-black text-cyan-300 uppercase tracking-widest">Previsioni per i prossimi tre giorni</div>
+      <div className="flight-section forecast-days-section">
+        <div className="flight-section-heading-row">
+          <span className="flight-section-marker" aria-hidden="true" />
+          <div><h2 className="flight-section-heading">Previsioni per i prossimi tre giorni</h2><p className="flight-section-subtitle">Scegli un giorno per aggiornare il briefing e le analisi.</p></div>
         </div>
         <div className="forecast-days-grid grid grid-cols-1 sm:grid-cols-3 gap-3">
           {tabs.map((tabName, idx) => {
@@ -390,11 +390,10 @@ export default function PrevisioniGiornaliere({
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* AEROCARDS — 6 parametri di volo                           */}
       {/* ═══════════════════════════════════════════════════════════ */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-1 h-6 bg-cyan-400 rounded-full" />
-          <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Parametri aerologici</div>
-          <span className="text-[9px] text-slate-600 ml-auto">Dettagli dei parametri</span>
+      <div className="flight-section aerology-section">
+        <div className="flight-section-heading-row">
+          <span className="flight-section-marker is-green" aria-hidden="true" />
+          <div><h2 className="flight-section-heading">Parametri aerologici</h2><p className="flight-section-subtitle">Indicatori stimati: leggili insieme alle condizioni reali sul posto.</p></div>
         </div>
         <div className="flight-parameter-grid grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
           <AeroCard
