@@ -2477,3 +2477,342 @@ body {
   .flight-parameter-grid { grid-template-columns: minmax(0, 1fr) !important; }
   .forecast-summary-stat { padding: .65rem !important; }
 }
+
+
+/* ===== PREMIUM FLIGHT DESK — composition and visual hierarchy ===== */
+.flight-desk-layout {
+  display: grid;
+  grid-template-columns: minmax(310px, 340px) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(1rem, 1.7vw, 1.55rem);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.flight-desk-sidebar,
+.flight-desk-main {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.flight-desk-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: sticky;
+  top: .85rem;
+}
+.flight-desk-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem !important;
+}
+.flight-desk-main > *,
+.flight-desk-main .forecast-section,
+.flight-desk-main .forecast-dashboard-stack {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.flight-desk-sidebar .weather-refresh-card {
+  padding: 1rem !important;
+  border-radius: 18px !important;
+}
+.flight-desk-sidebar .launch-list-card {
+  padding: 1rem !important;
+  border-radius: 21px !important;
+}
+.flight-desk-sidebar .launch-list-title {
+  font-size: 1rem;
+  line-height: 1.25;
+}
+.flight-desk-sidebar .launch-list-subtitle {
+  max-width: 30ch;
+  font-size: .76rem;
+  line-height: 1.5;
+}
+.flight-desk-sidebar .launch-list-info {
+  padding: .65rem .7rem;
+  font-size: .7rem;
+  line-height: 1.45;
+}
+.flight-desk-sidebar .launch-list-items {
+  max-height: min(680px, 72vh) !important;
+  padding-right: .25rem;
+}
+.flight-desk-sidebar .launch-option {
+  padding: .85rem !important;
+  border-radius: 15px !important;
+}
+.flight-desk-sidebar .launch-option-title {
+  font-size: .82rem;
+  line-height: 1.35;
+}
+.flight-desk-sidebar .launch-option .text-\[10px\],
+.flight-desk-sidebar .launch-option .text-\[9px\] {
+  font-size: .68rem !important;
+  line-height: 1.4;
+}
+.flight-desk-sidebar .launch-option .text-xs {
+  font-size: .72rem;
+}
+
+.forecast-dashboard-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.3rem !important;
+}
+.forecast-hero {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(113, 190, 223, .24) !important;
+  border-radius: 23px !important;
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(13, 148, 172, .1), transparent 55%),
+    linear-gradient(145deg, rgba(10, 25, 43, .98), rgba(5, 15, 28, .99)) !important;
+  box-shadow: 0 18px 42px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.045) !important;
+}
+.forecast-hero-accent { height: 3px !important; }
+.forecast-hero > .px-4.py-3 {
+  padding: 1rem 1.2rem !important;
+  background: rgba(8, 20, 34, .74) !important;
+}
+.forecast-hero > .p-4 {
+  padding: clamp(.9rem, 1.4vw, 1.25rem) !important;
+}
+.forecast-main-grid {
+  display: grid !important;
+  grid-template-columns: minmax(90px, 110px) repeat(2, minmax(0, 1fr)) !important;
+  gap: .85rem !important;
+  margin-bottom: .85rem !important;
+}
+.forecast-main-grid > * { min-width: 0; }
+.forecast-score-card {
+  align-items: center;
+  justify-content: center;
+  padding: .5rem .2rem;
+}
+.forecast-score-card .text-6xl {
+  font-size: clamp(3rem, 3.8vw, 3.9rem) !important;
+  letter-spacing: -.07em;
+}
+.forecast-main-grid > :nth-child(2),
+.forecast-main-grid > :nth-child(3) {
+  border-radius: 16px !important;
+  border-color: rgba(134, 175, 207, .17) !important;
+  background: linear-gradient(145deg, rgba(15, 33, 53, .82), rgba(8, 21, 36, .9)) !important;
+  padding: 1rem !important;
+}
+.forecast-main-grid > :nth-child(2) .text-3xl {
+  font-size: clamp(2rem, 2.4vw, 2.6rem) !important;
+  line-height: 1.1;
+}
+.forecast-main-grid > :nth-child(3) .text-5xl {
+  font-size: clamp(2.25rem, 2.8vw, 3rem) !important;
+  line-height: 1.1;
+}
+.forecast-main-grid .text-xs {
+  font-size: .72rem;
+}
+.forecast-summary-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: .7rem !important;
+}
+.forecast-summary-stat {
+  border-radius: 15px !important;
+  border-color: rgba(134, 175, 207, .14) !important;
+  background: linear-gradient(145deg, rgba(18, 34, 53, .88), rgba(9, 21, 36, .92)) !important;
+  padding: .85rem .6rem !important;
+}
+.forecast-summary-stat > div:nth-child(2) {
+  font-size: clamp(1.2rem, 1.45vw, 1.55rem) !important;
+  line-height: 1.15;
+}
+.forecast-summary-stat > div:nth-child(3) {
+  color: #9bb1c7 !important;
+  font-size: .65rem !important;
+  letter-spacing: .09em;
+}
+.forecast-summary-stat > div:nth-child(4) {
+  color: #6f879e !important;
+  font-size: .62rem !important;
+}
+.flight-section {
+  width: 100%;
+  min-width: 0;
+}
+.flight-section-heading-row {
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+  margin: .15rem 0 .9rem;
+}
+.flight-section-marker {
+  flex: 0 0 4px;
+  width: 4px;
+  height: 2rem;
+  margin-top: .1rem;
+  border-radius: 99px;
+  background: linear-gradient(180deg, #67e8f9, #0284c7);
+  box-shadow: 0 0 16px rgba(34,211,238,.15);
+}
+.flight-section-marker.is-green {
+  background: linear-gradient(180deg, #6ee7b7, #059669);
+}
+.flight-section-heading {
+  margin: 0;
+  color: #eff8ff;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -.025em;
+}
+.flight-section-subtitle {
+  margin: .25rem 0 0;
+  color: #90a8c0;
+  font-size: .75rem;
+  line-height: 1.45;
+}
+.forecast-days-section .forecast-days-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: .75rem !important;
+}
+.forecast-day-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 220px;
+  padding: 1.05rem !important;
+  border-radius: 18px !important;
+  border-color: rgba(134, 175, 207, .17) !important;
+  background: linear-gradient(150deg, rgba(15, 33, 52, .91), rgba(7, 19, 33, .98)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+  transition: border-color .18s ease, background .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+.forecast-day-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(103, 232, 249, .45) !important;
+}
+.forecast-day-card[aria-pressed="true"] {
+  border: 1px solid rgba(103, 232, 249, .74) !important;
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(8, 145, 178, .17), transparent 70%),
+    linear-gradient(145deg, rgba(10, 40, 60, .98), rgba(5, 20, 35, .99)) !important;
+  box-shadow: 0 10px 30px rgba(2, 132, 199, .12), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.forecast-day-card > .font-black.text-lg {
+  font-size: 1.05rem;
+  letter-spacing: -.02em;
+}
+.forecast-day-card > .text-\[10px\] {
+  font-size: .72rem !important;
+  margin-bottom: .8rem !important;
+  color: #93abc2 !important;
+}
+.forecast-day-card .forecast-day-condition {
+  font-size: .76rem !important;
+  line-height: 1.5;
+}
+.forecast-day-card > .text-\[9px\] {
+  margin-top: auto;
+  padding-top: .65rem;
+  font-size: .7rem !important;
+  color: #aec2d4 !important;
+}
+.forecast-day-index {
+  padding: .35rem .6rem !important;
+  font-size: .75rem !important;
+}
+.aerology-section .flight-parameter-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: .85rem !important;
+}
+.aerology-section [data-testid^="aerocard"] {
+  height: 100%;
+  min-width: 0;
+  border-radius: 18px !important;
+  border-color: rgba(125, 181, 214, .2) !important;
+  background: linear-gradient(150deg, rgba(12, 29, 48, .95), rgba(5, 15, 28, .99)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+.aerology-section [data-testid^="aerocard"] > div {
+  height: 100%;
+  padding: 1.05rem !important;
+}
+.aerology-section [data-testid^="aerocard"] .text-\[10px\] {
+  font-size: .68rem !important;
+  letter-spacing: .09em;
+  line-height: 1.4;
+}
+.aerology-section [data-testid^="aerocard"] .text-2xl {
+  font-size: clamp(1.15rem, 1.35vw, 1.45rem) !important;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.aerology-section [data-testid^="aerocard"] .text-xs {
+  font-size: .74rem !important;
+  line-height: 1.45;
+}
+.aerology-section [data-testid^="aerocard"]:hover {
+  transform: translateY(-1px) !important;
+}
+.flight-desk-main .windgram-section {
+  border-radius: 22px !important;
+}
+
+@media (max-width: 1360px) {
+  .flight-desk-layout { grid-template-columns: minmax(290px, 310px) minmax(0, 1fr); }
+  .flight-desk-main { gap: 1rem !important; }
+  .forecast-main-grid { grid-template-columns: minmax(80px, 90px) repeat(2, minmax(0, 1fr)) !important; }
+  .forecast-main-grid > :nth-child(2),
+  .forecast-main-grid > :nth-child(3) { padding: .85rem !important; }
+  .aerology-section .flight-parameter-grid { gap: .65rem !important; }
+}
+@media (max-width: 1100px) {
+  .flight-desk-layout { grid-template-columns: minmax(0, 1fr); }
+  .flight-desk-sidebar { position: static; }
+  .flight-desk-sidebar .launch-list-items {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .65rem;
+    max-height: none !important;
+    overflow: visible;
+  }
+  .flight-desk-sidebar .launch-option { margin: 0 !important; }
+}
+@media (max-width: 720px) {
+  .flight-desk-layout { gap: .95rem; }
+  .flight-desk-sidebar .launch-list-items { grid-template-columns: minmax(0, 1fr); }
+  .forecast-main-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .forecast-score-card {
+    grid-column: auto;
+    flex-direction: row !important;
+    justify-content: flex-start;
+    align-items: center;
+    gap: .7rem;
+    padding: .6rem .75rem;
+    border: 1px solid rgba(134, 175, 207, .14);
+    border-radius: 14px;
+    background: rgba(3, 14, 27, .45);
+  }
+  .forecast-score-card .text-6xl { font-size: 2.75rem !important; }
+  .forecast-score-card .mt-2 { margin-top: 0; max-width: 120px; }
+  .forecast-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .forecast-days-section .forecast-days-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .forecast-day-card { min-height: 0; }
+  .aerology-section .flight-parameter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 380px) {
+  .aerology-section .flight-parameter-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .flight-section-heading { font-size: .98rem; }
+  .forecast-hero > .p-4 { padding: .7rem !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .forecast-day-card { transition: none !important; }
+  .forecast-day-card:hover { transform: none; }
+}
