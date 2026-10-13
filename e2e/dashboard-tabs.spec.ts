@@ -167,3 +167,65 @@ test("desktop briefing fits the viewport without clipping the launch or forecast
     `Dashboard panels extend past their available width: ${JSON.stringify(layout)}`,
   ).toEqual([]);
 });
+
+test("wide desktop keeps the right rail visible and temperature scale readable", async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1050 });
+  await page.goto("/");
+  await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator(".flight-right-rail")).toBeVisible({ timeout: 30_000 });
+  await page.getByRole("button", { name: "Pomeriggio" }).click();
+  const dewPointToggle = page.getByRole("group", { name: "Mostra o nascondi serie" }).getByRole("button", { name: "Rugiada" });
+  await dewPointToggle.click();
+  await expect(dewPointToggle).toHaveAttribute("aria-pressed", "false");
+
+  const dimensions = await page.evaluate(() => {
+    const viewport = document.documentElement.clientWidth;
+    const selectors = [
+      ".flight-app-body",
+      ".flight-page-column",
+      ".flight-panels-grid",
+      ".flight-desk-main",
+      ".flight-right-rail",
+      ".flight-right-rail .flight-site-list",
+    ];
+    const boxes = selectors.flatMap((selector) => {
+      const element = document.querySelector<HTMLElement>(selector);
+      if (!element) return [];
+      const rect = element.getBoundingClientRect();
+      return [{
+        selector,
+        left: Math.round(rect.left),
+        right: Math.round(rect.right),
+        width: Math.round(rect.width),
+        scrollWidth: element.scrollWidth,
+        clientWidth: element.clientWidth,
+      }];
+    });
+    const ticks = Array.from(document.querySelectorAll(".temperature-module .recharts-yAxis .recharts-cartesian-axis-tick-value"))
+      .map((node) => Number((node.textContent ?? "").replace(/°/g, "").trim()))
+      .filter(Number.isFinite);
+    return {
+      viewport,
+      documentWidth: document.documentElement.scrollWidth,
+      rootWidth: document.getElementById("root")?.clientWidth ?? -1,
+      rootScrollWidth: document.getElementById("root")?.scrollWidth ?? -1,
+      boxes,
+      temperatureTickSpan: ticks.length >= 2 ? Math.max(...ticks) - Math.min(...ticks) : null,
+    };
+  });
+
+  expect(dimensions.documentWidth, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
+  expect(dimensions.rootScrollWidth, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.rootWidth + 1);
+  const clipped = dimensions.boxes.filter((box) => box.left < -1 || box.right > dimensions.viewport + 1 || box.scrollWidth > box.clientWidth + 16);
+  expect(clipped, JSON.stringify(dimensions)).toEqual([]);
+  expect(dimensions.temperatureTickSpan, JSON.stringify(dimensions)).not.toBeNull();
+  expect(dimensions.temperatureTickSpan!, "Temperature axis should fit the visible temperature series, not hidden dew-point values").toBeLessThanOrEqual(10);
+
+  for (const width of [1440, 1280]) {
+    await page.setViewportSize({ width, height: 1050 });
+    const rail = await page.locator(".flight-right-rail").boundingBox();
+    const viewport = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(rail, `Right rail missing at ${width}px`).not.toBeNull();
+    expect(rail!.x + rail!.width, `Right rail clipped at ${width}px`).toBeLessThanOrEqual(viewport + 1);
+  }
+});
