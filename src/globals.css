@@ -3963,3 +3963,138 @@ body {
   .story-module-kicker { font-size: .51rem; }
   .story-selected-hour { grid-template-columns: repeat(2, minmax(0,1fr)); }
 }
+
+
+/* ===== FINAL DESKTOP CONSTRAINTS: keep the entire right rail in view ===== */
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+#root {
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  overflow-x: clip;
+}
+.flight-website-shell {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+.flight-app-body {
+  display: grid;
+  grid-template-columns: 184px minmax(0, 1fr);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+.flight-page-column {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+.flight-page.app-main {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding-inline: clamp(.7rem, 1.25vw, 1.25rem) !important;
+  box-sizing: border-box;
+}
+.flight-panels-grid.dashboard-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 285px);
+  gap: clamp(.65rem, 1vw, 1rem);
+  align-items: start;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.flight-panels-grid.dashboard-layout > .flight-desk-main,
+.flight-panels-grid.dashboard-layout > .flight-right-rail {
+  display: flex;
+  flex-direction: column;
+  gap: .9rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+.flight-panels-grid.dashboard-layout > .flight-right-rail > *,
+.flight-right-rail .flight-site-list,
+.flight-right-rail .flight-site-list > *,
+.flight-right-rail .launch-list-card,
+.flight-right-rail .weather-refresh-card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.flight-right-rail .flight-site-data dd {
+  min-width: 0;
+  max-width: 58%;
+  overflow-wrap: anywhere;
+}
+.flight-right-rail .launch-list-items {
+  max-width: 100%;
+  min-width: 0;
+}
+.flight-desk-main > .storyboard-panel {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.story-chart-grid,
+.story-chart-module,
+.story-recharts-area,
+.story-chart-stats,
+.story-selected-hour {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1280px) and (min-width: 1021px) {
+  .flight-app-body { grid-template-columns: 160px minmax(0, 1fr); }
+  .flight-panels-grid.dashboard-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 265px);
+    gap: .7rem;
+  }
+  .flight-page.app-main { padding-inline: .8rem !important; }
+}
+@media (max-width: 1020px) {
+  .flight-app-body { grid-template-columns: minmax(0, 1fr); }
+  .flight-nav-rail {
+    position: sticky;
+    top: 64px;
+    z-index: 30;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+  .flight-panels-grid.dashboard-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(235px, 285px);
+  }
+  .flight-right-rail { position: static; }
+}
+@media (max-width: 760px) {
+  .flight-panels-grid.dashboard-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .flight-panels-grid.dashboard-layout > .flight-right-rail {
+    position: static;
+  }
+}
