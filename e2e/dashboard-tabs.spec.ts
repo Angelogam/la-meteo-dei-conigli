@@ -35,6 +35,18 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     await expect(page.getByRole("heading", { name: "Il tuo briefing di volo." })).toBeVisible({ timeout: 30_000 });
     await expect(page.locator(".launch-hero")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Scegli il decollo" })).toBeVisible();
+    await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible();
+    await expect(page.locator(".story-temp-chart")).toBeVisible();
+
+    const dashboardOrder = await page.locator(".flight-desk-main").evaluate((container) => {
+      const children = Array.from(container.children);
+      return {
+        chart: children.findIndex((child) => child.classList.contains("storyboard-panel")),
+        forecast: children.findIndex((child) => child.classList.contains("forecast-section")),
+      };
+    });
+    expect(dashboardOrder.chart, "The hourly graph must appear before the weather cards").toBeGreaterThanOrEqual(0);
+    expect(dashboardOrder.forecast, "The forecast cards must exist in the main dashboard").toBeGreaterThan(dashboardOrder.chart);
 
     const forecastCards = page.locator(".forecast-day-card");
     await expect(forecastCards).toHaveCount(3, { timeout: 30_000 });
