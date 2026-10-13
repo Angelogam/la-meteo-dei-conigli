@@ -4000,8 +4000,7 @@ body,
   overflow-x: clip;
 }
 .flight-page.app-main {
-  display: flex;
-  flex-direction: column;
+  display: block;
   width: 100%;
   max-width: 100%;
   min-width: 0;
