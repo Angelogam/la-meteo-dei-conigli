@@ -4097,3 +4097,238 @@ body,
     position: static;
   }
 }
+
+
+
+/* ===== OPEN-SOURCE DASHBOARD UI ADAPTATION =====
+   Restrained dashboard surfaces and spacing, preserving the app's dark-theme contrast.
+*/
+:root {
+  --app-ink: #071426;
+  --app-panel: #0b1c31;
+  --app-panel-strong: #08172a;
+  --app-line: rgba(148, 180, 210, .18);
+  --app-cyan: #67d8ee;
+  --app-blue: #60a5fa;
+  --app-surface: #0b1c31;
+  --app-surface-raised: #10243b;
+  --app-text-muted: #a4b5c9;
+}
+
+body {
+  color: #edf5ff;
+  background: #071426;
+  -webkit-font-smoothing: antialiased;
+}
+
+.flight-website-shell {
+  color: #edf5ff;
+  background: #071426;
+}
+
+.app-brand-header {
+  background: rgba(5, 17, 33, .94);
+  border-bottom-color: rgba(148, 180, 210, .16);
+  box-shadow: 0 4px 18px rgba(0,0,0,.12);
+}
+
+.app-brand-copy small { color: #9bb0c7; }
+.app-brand-status {
+  color: #c8d9eb;
+  background: #10243b;
+  border-color: rgba(148, 180, 210, .18);
+}
+
+.flight-nav-rail {
+  background: #08172a;
+  border-right: 1px solid rgba(148, 180, 210, .15);
+  box-shadow: 2px 0 12px rgba(0,0,0,.08);
+}
+
+.flight-nav-caption { color: #8da3bb; }
+.flight-nav-item { color: #b4c5d8; border-radius: 10px; }
+.flight-nav-item:hover { background: #102a43; color: #8ce5f5; }
+.flight-nav-item.is-active {
+  color: #9beaf8;
+  background: rgba(8, 145, 178, .16);
+  box-shadow: inset 3px 0 #38bdf8;
+}
+.flight-nav-current {
+  color: #e5effb;
+  background: #0b1c31;
+  border: 1px solid rgba(148, 180, 210, .16);
+  border-radius: 14px;
+}
+
+.flight-desk-main,
+.dashboard-content { color: #edf5ff; }
+
+.dashboard-content .bg-slate-900\/90,
+.dashboard-sidebar .bg-slate-900\/90 {
+  background: #0b1c31;
+  border-color: rgba(148, 180, 210, .16);
+  box-shadow: 0 4px 18px rgba(0,0,0,.1);
+}
+
+.dashboard-content .bg-slate-800\/30 {
+  background: #0a1a2e;
+  border-color: rgba(148, 180, 210, .18);
+  box-shadow: 0 6px 22px rgba(0,0,0,.12);
+}
+
+.dashboard-content .rounded-2xl,
+.dashboard-sidebar .rounded-2xl {
+  border-radius: 16px;
+}
+
+.header-decollo {
+  box-shadow: 0 12px 34px rgba(0,0,0,.18);
+}
+
+.flight-subsection-heading h2,
+.flight-subsection-heading h3 { color: #edf5ff; }
+
+.flight-subsection-heading span,
+.flight-subsection-heading small { color: #9bb0c7; }
+
+.flight-tab-content {
+  border: 1px solid rgba(148, 180, 210, .17);
+  border-radius: 18px;
+  background: #0b1c31;
+  padding: clamp(.85rem, 1.5vw, 1.25rem);
+  box-shadow: 0 5px 20px rgba(0,0,0,.12);
+}
+
+.flight-forecast-module,
+.windgram-featured {
+  border-color: rgba(148, 180, 210, .17) !important;
+  box-shadow: 0 5px 20px rgba(0,0,0,.12);
+}
+
+button, [role="tab"], a {
+  transition: background-color .16s ease, border-color .16s ease, color .16s ease;
+}
+
+@media (min-width: 1024px) {
+  .flight-app-body { gap: 1.1rem; }
+  .flight-panels-grid { gap: 1.1rem; }
+  .flight-desk-main { gap: 1.1rem; }
+}
+
+@media (max-width: 640px) {
+  .flight-tab-content { padding: .75rem; border-radius: 14px; }
+  .flight-nav-item { min-height: 42px; }
+}
+
+/* ===== DASHBOARD READABILITY PASS =====
+   Tighten the content grid and keep interactive chart labels inside the viewport.
+*/
+.flight-page-titlebar,
+.flight-tab-content,
+.flight-desk-main,
+.flight-right-rail,
+.flight-tab-content section {
+  min-width: 0;
+}
+
+.flight-page-titlebar {
+  gap: clamp(1rem, 2vw, 2rem);
+}
+
+.flight-page-titlebar h1 {
+  max-width: 18ch;
+  line-height: 1.08;
+  letter-spacing: -.035em;
+  text-wrap: balance;
+}
+
+.flight-page-titlebar p {
+  max-width: 58ch;
+  color: #a7b9ce;
+}
+
+.analysis-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .65rem;
+  margin-top: .85rem;
+}
+
+.analysis-tabs .analysis-tab {
+  min-width: 0;
+  min-height: 78px;
+  padding: .8rem;
+  border: 1px solid rgba(148, 180, 210, .18);
+  border-radius: 14px;
+  background: #0a1a2d;
+  color: #c8d7e8;
+  transition: border-color .16s ease, background .16s ease, transform .16s ease;
+}
+
+.analysis-tabs .analysis-tab:hover {
+  border-color: rgba(103, 216, 238, .45);
+  background: #10243a;
+}
+
+.analysis-tabs .analysis-tab.is-active {
+  border-color: rgba(103, 216, 238, .7);
+  background: linear-gradient(145deg, rgba(8, 145, 178, .2), #0d2035 75%);
+  box-shadow: inset 0 0 0 1px rgba(103, 216, 238, .08);
+}
+
+.analysis-tabs .analysis-tab-copy {
+  min-width: 0;
+}
+
+.analysis-tabs .analysis-tab-copy strong {
+  display: block;
+  color: #eef7ff;
+  font-size: .85rem;
+}
+
+.analysis-tabs .analysis-tab-copy small {
+  display: block;
+  margin-top: .15rem;
+  color: #91a7be;
+  font-size: .68rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.flight-tab-content .recharts-wrapper,
+.flight-tab-content .recharts-surface {
+  max-width: 100%;
+}
+
+.flight-tab-content .recharts-tooltip-wrapper {
+  z-index: 60 !important;
+  pointer-events: none;
+}
+
+.wind-flow-panel {
+  border-color: rgba(103, 216, 238, .2);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .12);
+}
+
+@media (max-width: 1100px) {
+  .analysis-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .analysis-tabs {
+    gap: .45rem;
+  }
+  .analysis-tabs .analysis-tab {
+    min-height: 68px;
+    padding: .65rem .55rem;
+    gap: .45rem;
+  }
+  .analysis-tabs .analysis-tab-arrow {
+    display: none;
+  }
+  .flight-page-titlebar h1 {
+    font-size: clamp(1.8rem, 8vw, 2.5rem);
+  }
+}

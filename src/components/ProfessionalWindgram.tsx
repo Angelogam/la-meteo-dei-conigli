@@ -246,8 +246,10 @@ export default function ProfessionalWindgram({
     return margin.top + plotH - ((clamped - minAlt) / (maxAlt - minAlt)) * plotH;
   };
 
+  // Ogni ora occupa una colonna: il simbolo del vento va al centro della colonna,
+  // come nei windgram aerologici, senza schiacciare la prima e l'ultima ora sui bordi.
   const getXFromHourIdx = (idx: number) => {
-    return margin.left + (idx / (HOURS.length - 1)) * plotW;
+    return margin.left + ((idx + 0.5) / HOURS.length) * plotW;
   };
 
   // Calcolo del lapse rate reale per ogni quota usando i dati di temperatura a livelli hPa
@@ -572,7 +574,9 @@ export default function ProfessionalWindgram({
       // Celle orarie nette: niente interpolazione cromatica fra ore diverse.
       // Ogni colonna mostra il gradiente calcolato fra livelli verticali del modello.
       const cellW = plotW / HOURS.length;
-      hourlyData.forEach((hourData, colIdx) => {
+      hourlyData.forEach((hourData) => {
+        const colIdx = HOURS.indexOf(hourData.hour);
+        if (colIdx < 0) return;
         const profile = hourData.deltaTProfile;
         const color = profile && profile.length > 0
           ? getStabilityColor(profile[clampedIdx] ?? null)
@@ -616,59 +620,16 @@ export default function ProfessionalWindgram({
           </p>
         </div>
 
-        {/* Stato dati stabilità */}
-        <div className="mb-2 p-2 bg-slate-50 border border-slate-200 rounded-lg text-[9px] font-mono">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="font-bold text-slate-500">Stabilità:</span>
-            <span className={loading ? "text-amber-600 font-bold" : "text-emerald-600 font-bold"}>
-              {loading ? "⏳ caricamento..." : "✓ dati pronti"}
-            </span>
-            {error && <span className="text-red-500 font-bold">✗ {error}</span>}
-            {stabilitDataa?.time && (
-              <span className="text-sky-600 font-bold">
-                {stabilitDataa.time.length}h · t2m={stabilitDataa.temperature_2m?.[0] ?? '—'}°C · t180={stabilitDataa.temperature_180m?.[0] ?? '—'}°C
-              </span>
-            )}
-            {hourlyData.length > 0 && (() => {
-              const validDeltaT = hourlyData.map((h) => h.deltaT).filter((v): v is number => v != null && Number.isFinite(v));
-              const avgDeltaT = validDeltaT.length
-                ? validDeltaT.reduce((sum, value) => sum + value, 0) / validDeltaT.length
-                : null;
-              return (
-                <span className="font-bold" style={{ color: getStabilityColor(avgDeltaT) }}>
-                  ΔT medio: {avgDeltaT == null ? "N/D" : avgDeltaT.toFixed(2)}
-                </span>
-              );
-            })()}
-          </div>
-        </div>
-
-        <div className="mb-2">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1 px-1">
-            <span>valore medio ascendenze (m/s) <span className="text-[9px] font-normal text-slate-400">★ ESTIMATED</span></span>
-          </div>
-          <div className="grid grid-cols-12 gap-1 px-1">
-            {hourlyData.map((h, i) => (
-              <div key={i} className="text-center">
-                <div className="font-black text-sm leading-tight" style={{ color: h?.thermalAvg != null && h.thermalAvg >= 1.6 ? "#b91c1c" : "#0f172a" }}>
-                  {h?.thermalAvg != null && Number.isFinite(h.thermalAvg) ? h.thermalAvg.toFixed(1) : "—"}
-                </div>
-                <div className="text-[9px] leading-tight" style={{ color: h?.sunPct != null && h.sunPct >= 70 ? "#b45309" : "#94a3b8" }}>
-                  sole {h?.sunPct ?? "—"}%
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
+        {/* Grafico aerologico: nessun pannello diagnostico aggiuntivo sopra il windgram. */}
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 pb-1">
           <div className="relative" style={{ overflow: "visible" }}>
             <canvas
               ref={canvasRef}
               width={plotW}
               height={plotH}
-              className="absolute top-0 left-0"
-              style={{ width: plotW, height: plotH, zIndex: 0 }}
+              className="absolute"
+              aria-hidden="true"
+              style={{ left: margin.left, top: margin.top, width: plotW, height: plotH, zIndex: 0, pointerEvents: "none" }}
             />
             <svg
               viewBox={`0 0 ${width} ${height}`}
@@ -712,10 +673,10 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {HOURS.map((_, i) => {
-              const x = getXFromHourIdx(i);
+            {Array.from({ length: HOURS.length + 1 }, (_, i) => {
+              const x = margin.left + (i / HOURS.length) * plotW;
               return (
-                <line key={`vline-${i}`} x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#e2e8f0" strokeWidth="0.5" opacity="0.4" />
+                <line key={`vline-${i}`} x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#cbd5e1" strokeWidth={i === 0 || i === HOURS.length ? 0.8 : 0.55} opacity={i === 0 || i === HOURS.length ? 0.8 : 0.55} />
               );
             })}
 
@@ -725,10 +686,12 @@ export default function ProfessionalWindgram({
               const hasRain = h.precip != null && Number.isFinite(h.precip) && h.precip >= 0.2;
               if (!hasRain) return null;
               const cellW = plotW / HOURS.length;
+              const hourIndex = HOURS.indexOf(h.hour);
+              if (hourIndex < 0) return null;
               return (
-                <g key={`rain-${i}`}>
+                <g key={`rain-${h.hour}`}>
                   <rect
-                    x={margin.left + i * cellW}
+                    x={margin.left + hourIndex * cellW}
                     y={margin.top}
                     width={cellW}
                     height={plotH}
@@ -738,7 +701,7 @@ export default function ProfessionalWindgram({
                     strokeWidth="1"
                   />
                   <text
-                    x={margin.left + (i + 0.5) * cellW}
+                    x={margin.left + (hourIndex + 0.5) * cellW}
                     y={margin.top + 14}
                     textAnchor="middle"
                     fontSize="10"
@@ -773,11 +736,7 @@ export default function ProfessionalWindgram({
               </text>
             </g>
 
-            <path
-              d={`M ${getXFromHourIdx(0)},${getYFromAlt(1800)} Q ${getXFromHourIdx(5)},${getYFromAlt(2600)} ${getXFromHourIdx(10)},${getYFromAlt(2200)}`}
-              fill="none" stroke="#0f172a" strokeWidth="1.5" strokeDasharray="4 3"
-            />
-
+            {/* Rimossa la curva termica fittizia: vengono mostrate solo curve calcolate dai dati. */}
             {thermalTopCurve && (
               <path d={thermalTopCurve} fill="none" stroke="#9333ea" strokeWidth="2" strokeLinecap="round" />
             )}

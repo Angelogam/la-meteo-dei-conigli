@@ -1,25 +1,14 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { Wind, Calendar, MapPin, TrendingUp } from "lucide-react";
+import { Wind, Calendar, MapPin } from "lucide-react";
 import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
 import ProfessionalWindgram from "@/components/ProfessionalWindgram";
+import SectionErrorBoundary from "@/components/SectionErrorBoundary";
 
-function getSpeedColor(speed: number): string {
-  if (speed <= 8) return "text-emerald-300";
-  if (speed <= 15) return "text-lime-300";
-  if (speed <= 22) return "text-amber-300";
-  if (speed <= 30) return "text-orange-300";
-  return "text-red-400";
-}
 
-function getSpeedBarColor(speed: number): string {
-  if (speed <= 8) return "bg-emerald-400";
-  if (speed <= 15) return "bg-lime-400";
-  if (speed <= 22) return "bg-amber-400";
-  if (speed <= 30) return "bg-orange-400";
-  return "bg-red-400";
-}
+
+
 
 function getDirAbbrev(deg: number): string {
   const abbrevs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
@@ -82,6 +71,8 @@ export default function VentiInterpolatiTab({
 
     setLoading(true);
     setError(null);
+    setData(null);
+    setOraSelezionata(oraCorrenteRef.current);
 
     getVentiInterpolati(lat, lon, quotaDecollo, dayStr)
       .then((result) => {
@@ -107,6 +98,14 @@ export default function VentiInterpolatiTab({
 
     return () => { cancelled = true; };
   }, [lat, lon, quotaDecollo, selectedDay]);
+
+  useEffect(() => {
+    if (!data?.ventoOrario.length) return;
+    const closest = data.ventoOrario.reduce((prev, curr) =>
+      Math.abs(curr.ora - oraCorrente) < Math.abs(prev.ora - oraCorrente) ? curr : prev
+    );
+    if (closest.ora !== oraSelezionata) setOraSelezionata(closest.ora);
+  }, [oraCorrente, data, oraSelezionata]);
 
   const oggi = new Date();
   const targetDate = new Date(oggi);
@@ -152,19 +151,19 @@ export default function VentiInterpolatiTab({
     return quote.sort((a, b) => a.quota - b.quota);
   }, [oraData, quotaDecollo]);
 
-  const maxSpeed = useMemo(() => Math.max(...quoteVisibili.map((q) => q.speed), 1), [quoteVisibili]);
-
   return (
     <div className="space-y-6">
       {/* Windgram Professionale integrato con dati reali */}
-      <ProfessionalWindgram
-        latitude={lat}
-        longitude={lon}
-        altitude={quotaDecollo}
-        siteName={siteName}
-        selectedDay={selectedDay}
-        rawData={rawData}
-      />
+      <SectionErrorBoundary title="Il grafico dei venti non è riuscito a caricarsi">
+        <ProfessionalWindgram
+          latitude={lat}
+          longitude={lon}
+          altitude={quotaDecollo}
+          siteName={siteName}
+          selectedDay={selectedDay}
+          rawData={rawData}
+        />
+      </SectionErrorBoundary>
 
       {oraData && (() => {
         const ventoAnimato = oraData.quote?.[quotaDecollo] ?? oraData.quote?.[quotaDecollo + 10] ?? Object.values(oraData.quote ?? {})[0];
@@ -273,64 +272,7 @@ export default function VentiInterpolatiTab({
               <span className="text-xs text-slate-500">—</span>
             )}
           </div>
-          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
-            {data.ventoOrario.map((v) => (
-              <button
-                key={v.ora}
-                onClick={() => {
-                  setOraSelezionata(v.ora);
-                  onOraChange?.(v.ora);
-                }}
-                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-                  v.ora === oraSelezionata
-                    ? "bg-blue-600/30 border-blue-400/50 text-blue-200"
-                    : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700/40"
-                }`}
-              >
-                {String(v.ora).padStart(2, "0")}:00
-              </button>
-            ))}
-          </div>
 
-          <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingUp className="w-4 h-4 text-cyan-400" />
-              <h4 className="text-xs font-bold text-cyan-300 uppercase tracking-wider">
-                Profilo verticale · {String(oraSelezionata).padStart(2, "0")}:00
-              </h4>
-              <span className="text-[10px] text-slate-500 ml-auto">{quotaDecollo}m → 4000m · step 250m</span>
-            </div>
-
-            <div className="space-y-1">
-              {quoteVisibili.map((q) => {
-                const pct = Math.max(6, (q.speed / maxSpeed) * 100);
-                const isDecollo = Math.abs(q.quota - quotaDecollo) < 150;
-                return (
-                  <div key={q.quota} className="grid grid-cols-[3.5rem_1fr_4.5rem] gap-2 items-center">
-                    <span className="text-[10px] md:text-xs font-mono text-slate-500 text-right">
-                      {q.quota}m
-                      {isDecollo && <span className="text-emerald-400 ml-0.5">🪂</span>}
-                    </span>
-                    <div className="h-4 md:h-5 bg-slate-800/60 rounded-full overflow-hidden relative">
-                      <div
-                        className={`h-full rounded-full ${getSpeedBarColor(q.speed)} transition-all`}
-                        style={{ width: `${pct}%` }}
-                      >
-                        <span className="absolute inset-0 flex items-center justify-end pr-2 text-[9px] md:text-[10px] text-white font-bold">
-                          {q.speed >= 15 && Math.round(q.speed)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 text-[10px] md:text-xs font-mono">
-                      <span className={getSpeedColor(q.speed)}>{Math.round(q.speed)}</span>
-                      <span className="text-slate-500">km/h</span>
-                      <span className="text-slate-400">{getDirArrow(q.dir)}{getDirAbbrev(q.dir)}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
         </>
       )}
     </div>
