@@ -74,17 +74,23 @@ export default function DayStoryboard({ dayData, siteName, selectedHour, onHourS
     return hour >= 7 && hour <= 20 && (h.temperature != null || h.windSpeed != null);
   });
   const temps = chart.map(h => h.temperature).filter((v): v is number => v != null && Number.isFinite(v));
+  const dewPoints = chart.map(h => h.dewPoint).filter((v): v is number => v != null && Number.isFinite(v));
   const winds = chart.map(h => h.windSpeed).filter((v): v is number => v != null && Number.isFinite(v));
-  const minT = temps.length ? Math.floor(Math.min(...temps) - 1) : 0;
-  const maxT = temps.length ? Math.ceil(Math.max(...temps) + 1) : 1;
+  const allTemperatures = [...temps, ...dewPoints];
+  const minT = allTemperatures.length ? Math.floor(Math.min(...allTemperatures) - 1) : 0;
+  const maxT = allTemperatures.length ? Math.ceil(Math.max(...allTemperatures) + 1) : 1;
   const maxWind = winds.length ? Math.max(10, Math.ceil(Math.max(...winds) / 5) * 5) : 10;
   const xFor = (_h: HourData, index: number) => chart.length <= 1 ? 50 : 8 + index * 84 / (chart.length - 1);
-  const tempY = (h: HourData) => h.temperature == null || !Number.isFinite(h.temperature)
-    ? null : 46 - ((h.temperature - minT) / Math.max(1, maxT - minT)) * 34;
-  const windY = (h: HourData) => h.windSpeed == null || !Number.isFinite(h.windSpeed)
-    ? null : 46 - (h.windSpeed / maxWind) * 34;
+  const temperatureY = (value: number) => 45 - ((value - minT) / Math.max(1, maxT - minT)) * 31;
+  const tempY = (h: HourData) => h.temperature == null || !Number.isFinite(h.temperature) ? null : temperatureY(h.temperature);
+  const dewY = (h: HourData) => h.dewPoint == null || !Number.isFinite(h.dewPoint) ? null : temperatureY(h.dewPoint);
   const tempSegments = lineSegments(chart, tempY, xFor);
-  const windSegments = lineSegments(chart, windY, xFor);
+  const dewSegments = lineSegments(chart, dewY, xFor);
+  const windBars = chart.flatMap((h, i) => {
+    if (h.windSpeed == null || !Number.isFinite(h.windSpeed)) return [];
+    const barHeight = Math.max(0.8, (Math.max(0, h.windSpeed) / maxWind) * 12);
+    return [{ x: xFor(h, i) - Math.min(0.7, 20 / Math.max(1, chart.length)), y: 52 - barHeight, width: Math.min(1.4, 36 / Math.max(1, chart.length)), height: barHeight, hour: new Date(h.time).getHours() }];
+  });
   const hasData = dayData.length > 0;
 
   return (
@@ -97,6 +103,7 @@ export default function DayStoryboard({ dayData, siteName, selectedHour, onHourS
         </div>
         <div className="storyboard-legend" aria-label="Legenda del grafico">
           <span className="legend-temp" /> Temperatura (°C)
+          <span className="legend-dew" /> Punto di rugiada (°C)
           <span className="legend-wind" /> Vento (km/h)
         </div>
       </div>
@@ -136,8 +143,9 @@ export default function DayStoryboard({ dayData, siteName, selectedHour, onHourS
             <div className="story-chart-scroll">
               <svg className="story-temp-chart" viewBox="0 0 100 56" preserveAspectRatio="none" role="img" aria-label="Grafico orario di temperatura e vento. L'asse verticale del vento è normalizzato sulla scala indicata.">
                 {[12, 23, 34, 45].map(y => <line key={y} x1="5" y1={y} x2="95" y2={y} stroke="rgba(148,163,184,.16)" strokeWidth=".25" vectorEffect="non-scaling-stroke" />)}
+                {windBars.map((bar) => <rect key={`windbar-${bar.hour}`} x={bar.x} y={bar.y} width={bar.width} height={bar.height} rx=".25" fill="#10b981" fillOpacity=".88" />)}
+                {dewSegments.map((segment, i) => <polyline key={`dew-${i}`} points={segment} fill="none" stroke="#38bdf8" strokeWidth=".9" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="1.4 1.2" vectorEffect="non-scaling-stroke" />)}
                 {tempSegments.map((segment, i) => <polyline key={`temp-${i}`} points={segment} fill="none" stroke="#fb923c" strokeWidth="1.15" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />)}
-                {windSegments.map((segment, i) => <polyline key={`wind-${i}`} points={segment} fill="none" stroke="#38bdf8" strokeWidth=".95" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="2 1.5" vectorEffect="non-scaling-stroke" />)}
                 {chart.map((h, i) => {
                   const hour = new Date(h.time).getHours();
                   const y = tempY(h);

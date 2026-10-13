@@ -35,6 +35,22 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     await expect(page.getByRole("heading", { name: "Il tuo briefing di volo." })).toBeVisible({ timeout: 30_000 });
     await expect(page.locator(".launch-hero")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Scegli il decollo" })).toBeVisible();
+    await expect(page.locator(".flight-nav-rail")).toBeVisible();
+    await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible();
+    await expect(page.locator(".story-temp-chart")).toBeVisible();
+    await expect(page.locator(".flight-forecast-module .forecast-day-card")).toHaveCount(3);
+    await expect(page.locator(".flight-desk-main > #windgram-section")).toBeVisible();
+    const graphOrder = await page.locator(".flight-desk-main").evaluate((root) => {
+      const children = Array.from(root.children);
+      return {
+        graph: children.findIndex((child) => child.classList.contains("storyboard-panel")),
+        forecast: children.findIndex((child) => child.classList.contains("forecast-section")),
+        windgram: children.findIndex((child) => child.id === "windgram-section"),
+      };
+    });
+    expect(graphOrder.graph).toBeGreaterThanOrEqual(0);
+    expect(graphOrder.forecast).toBeGreaterThan(graphOrder.graph);
+    expect(graphOrder.windgram).toBeGreaterThan(graphOrder.forecast);
     await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible();
     await expect(page.locator(".story-temp-chart")).toBeVisible();
 
@@ -85,7 +101,7 @@ test("desktop briefing fits the viewport without clipping the launch or forecast
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Il tuo briefing di volo." })).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(".launch-hero")).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator(".forecast-hero")).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator(".flight-forecast-module .forecast-day-card").first()).toBeVisible({ timeout: 30_000 });
 
   const layout = await page.evaluate(() => {
     const selectors = [
