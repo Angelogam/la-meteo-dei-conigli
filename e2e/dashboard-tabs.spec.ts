@@ -175,7 +175,6 @@ test("wide desktop keeps the right rail visible and temperature scale readable",
   await expect(page.locator(".flight-right-rail")).toBeVisible({ timeout: 30_000 });
   await page.getByRole("button", { name: "Pomeriggio" }).click();
   const dewPointToggle = page.getByRole("group", { name: "Mostra o nascondi serie" }).getByRole("button", { name: "Rugiada" });
-  await dewPointToggle.click();
   await expect(dewPointToggle).toHaveAttribute("aria-pressed", "false");
 
   const dimensions = await page.evaluate(() => {
@@ -220,6 +219,11 @@ test("wide desktop keeps the right rail visible and temperature scale readable",
   expect(clipped, JSON.stringify(dimensions)).toEqual([]);
   expect(dimensions.temperatureTickSpan, JSON.stringify(dimensions)).not.toBeNull();
   expect(dimensions.temperatureTickSpan!, "Temperature axis should fit the visible temperature series, not hidden dew-point values").toBeLessThanOrEqual(10);
+
+  await dewPointToggle.click();
+  await expect(dewPointToggle).toHaveAttribute("aria-pressed", "true");
+  await dewPointToggle.click();
+  await expect(dewPointToggle).toHaveAttribute("aria-pressed", "false");
 
   for (const width of [1440, 1280]) {
     await page.setViewportSize({ width, height: 1050 });

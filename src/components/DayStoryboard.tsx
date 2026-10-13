@@ -115,7 +115,7 @@ export default function DayStoryboard({
 }: DayStoryboardProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>("giornata");
   const [showTemperature, setShowTemperature] = useState(true);
-  const [showDewPoint, setShowDewPoint] = useState(true);
+  const [showDewPoint, setShowDewPoint] = useState(false);
   const [showWind, setShowWind] = useState(true);
   const [showGusts, setShowGusts] = useState(true);
 
@@ -234,7 +234,7 @@ export default function DayStoryboard({
           <div className="story-chart-grid">
             <section className="story-chart-module temperature-module" aria-labelledby="temperature-chart-title">
               <div className="story-chart-module-heading">
-                <div><span className="story-module-kicker">TEMPERATURA</span><h3 id="temperature-chart-title">Temperatura e punto di rugiada</h3></div>
+                <div><span className="story-module-kicker">TEMPERATURA</span><h3 id="temperature-chart-title">{showDewPoint ? "Temperatura e punto di rugiada" : "Andamento della temperatura"}</h3></div>
                 <span className="story-module-unit">°C</span>
               </div>
               {hasTemperature ? (
