@@ -3021,3 +3021,542 @@ body {
   }
   .flight-desk-main > .storyboard-panel .story-temp-chart { height: 150px; }
 }
+
+
+/* ===== TARGET DESIGN: editorial weather website with graphs first ===== */
+.flight-website-shell {
+  min-height: 100vh;
+  color: #edf6ff;
+  background:
+    radial-gradient(ellipse at 42% -10%, rgba(10, 87, 130, .16), transparent 44rem),
+    linear-gradient(180deg, #06101d 0%, #040b16 60%, #030813 100%);
+}
+.flight-app-body {
+  display: grid;
+  grid-template-columns: 184px minmax(0, 1fr);
+  width: 100%;
+  max-width: 1920px;
+  min-width: 0;
+  margin: 0 auto;
+  align-items: start;
+}
+.flight-page-column,
+.flight-page,
+.flight-panels-grid,
+.flight-desk-main,
+.flight-right-rail {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.flight-page-column { width: 100%; }
+.flight-page.app-main {
+  width: 100%;
+  max-width: none !important;
+  margin: 0;
+  padding: clamp(.8rem, 1.35vw, 1.35rem) !important;
+  gap: 1rem !important;
+}
+.flight-nav-rail {
+  position: sticky;
+  top: 66px;
+  display: flex;
+  min-width: 0;
+  height: calc(100vh - 66px);
+  flex-direction: column;
+  gap: .65rem;
+  padding: 1.05rem .75rem;
+  overflow-y: auto;
+  border-right: 1px solid rgba(106, 158, 193, .16);
+  background:
+    radial-gradient(ellipse at 0 100%, rgba(15, 64, 103, .24), transparent 55%),
+    linear-gradient(180deg, rgba(5, 18, 33, .98), rgba(3, 10, 21, .99));
+}
+.flight-nav-caption {
+  padding: .2rem .6rem;
+  color: #6f91ad;
+  font-size: .61rem;
+  font-weight: 850;
+  letter-spacing: .16em;
+}
+.flight-primary-nav {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+}
+.flight-nav-item {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  width: 100%;
+  min-height: 42px;
+  padding: .68rem .72rem;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: #a7bdd1;
+  font-size: .82rem;
+  font-weight: 700;
+  text-align: left;
+  transition: background .18s ease, color .18s ease, border-color .18s ease;
+}
+.flight-nav-item svg {
+  flex: 0 0 19px;
+  width: 19px;
+  height: 19px;
+  color: #7faac7;
+}
+.flight-nav-item:hover {
+  border-color: rgba(89, 168, 208, .18);
+  background: rgba(18, 52, 79, .55);
+  color: #f1f8ff;
+}
+.flight-nav-item.is-active {
+  border-color: rgba(56, 156, 222, .28);
+  background: linear-gradient(110deg, rgba(9, 96, 175, .7), rgba(6, 54, 104, .72));
+  color: #e5f5ff;
+  box-shadow: inset 3px 0 0 #44b8f0, 0 8px 18px rgba(2, 30, 65, .2);
+}
+.flight-nav-item.is-active svg { color: #9cdefe; }
+.flight-nav-divider {
+  height: 1px;
+  margin: .35rem .15rem;
+  background: rgba(116, 158, 191, .18);
+}
+.flight-nav-current {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  padding: .75rem .65rem;
+  border: 1px solid rgba(94, 161, 199, .18);
+  border-radius: 13px;
+  background: linear-gradient(145deg, rgba(12, 35, 57, .9), rgba(5, 18, 33, .95));
+}
+.flight-nav-current-icon {
+  display: grid;
+  width: 33px;
+  height: 33px;
+  place-items: center;
+  border-radius: 10px;
+  color: #89d8fc;
+  background: rgba(7, 113, 177, .2);
+}
+.flight-nav-current-icon svg { width: 18px; height: 18px; }
+.flight-nav-current strong { overflow-wrap: anywhere; color: #f0f7ff; font-size: .77rem; line-height: 1.35; }
+.flight-nav-current small { color: #8da9c1; font-size: .68rem; }
+.flight-live-indicator { display: flex; align-items: center; gap: .38rem; color: #7dbba8; font-size: .62rem; font-weight: 750; }
+.flight-live-indicator i,
+.flight-side-live i {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 8px rgba(74, 222, 128, .36);
+}
+.flight-nav-motto {
+  margin-top: auto;
+  padding: 1rem .25rem .45rem;
+  color: #68839b;
+  font-family: Georgia, serif;
+  font-size: .77rem;
+  font-style: italic;
+  line-height: 1.6;
+  text-align: center;
+}
+.flight-page-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+  padding: .15rem .15rem .8rem;
+  border-bottom: 1px solid rgba(117, 161, 193, .14);
+}
+.flight-page-titlebar h1 {
+  margin: .25rem 0 .12rem;
+  color: #f5f9ff;
+  font-size: clamp(1.15rem, 1.65vw, 1.55rem);
+  font-weight: 850;
+  line-height: 1.2;
+  letter-spacing: -.045em;
+}
+.flight-page-titlebar p {
+  margin: 0;
+  color: #8fa8c0;
+  font-size: .76rem;
+  line-height: 1.4;
+}
+.flight-page-titlebar .dashboard-intro-kicker {
+  color: #8edcf3;
+  font-size: .58rem;
+  letter-spacing: .17em;
+}
+.flight-page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .6rem;
+  flex: 0 0 auto;
+}
+.flight-page-actions .dashboard-date-chip {
+  min-height: 40px;
+  padding: .45rem .7rem;
+  border-color: rgba(102, 158, 194, .17);
+  border-radius: 12px;
+  background: rgba(6, 23, 40, .72);
+}
+.flight-page-actions .dashboard-intro-cta {
+  min-height: 40px;
+  padding: .65rem .85rem;
+  border-radius: 12px;
+  font-size: .75rem;
+}
+.flight-page .overview-section { margin: 0 0 .95rem; min-width: 0; }
+.flight-page .launch-hero.header-decollo {
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(1rem, 1.6vw, 1.5rem) !important;
+  border-radius: 19px !important;
+  border-color: rgba(106, 174, 214, .3) !important;
+  box-shadow: 0 18px 38px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.flight-panels-grid.dashboard-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(270px, 310px);
+  gap: clamp(.8rem, 1.1vw, 1.15rem);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  align-items: start;
+}
+.flight-desk-main.dashboard-content {
+  display: flex;
+  flex-direction: column;
+  gap: .9rem !important;
+  width: 100%;
+  min-width: 0;
+}
+.flight-right-rail {
+  position: sticky;
+  top: 78px;
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+  width: 100%;
+  min-width: 0;
+}
+.flight-right-rail .weather-refresh-card {
+  padding: .85rem !important;
+  border-radius: 14px !important;
+}
+.flight-right-rail .launch-list-card {
+  border-radius: 17px !important;
+  padding: .85rem !important;
+}
+.flight-right-rail .launch-list-items {
+  max-height: min(460px, 55vh) !important;
+}
+.flight-side-card {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid rgba(110, 162, 194, .19);
+  border-radius: 17px;
+  background:
+    radial-gradient(ellipse at 0 0, rgba(12, 78, 117, .13), transparent 58%),
+    linear-gradient(145deg, rgba(9, 27, 46, .96), rgba(4, 15, 28, .98));
+  box-shadow: 0 14px 30px rgba(0,0,0,.14), inset 0 1px 0 rgba(255,255,255,.035);
+}
+.flight-side-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: .8rem;
+}
+.flight-side-card-heading > div > span {
+  display: block;
+  margin-bottom: .2rem;
+  color: #6fc8e9;
+  font-size: .57rem;
+  font-weight: 850;
+  letter-spacing: .16em;
+}
+.flight-side-card-heading h2 {
+  margin: 0;
+  color: #f0f7ff;
+  font-size: .98rem;
+  line-height: 1.25;
+  font-weight: 800;
+  letter-spacing: -.025em;
+}
+.flight-side-card-heading > svg { width: 19px; height: 19px; color: #72bfe6; }
+.flight-side-live {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  flex: 0 0 auto;
+  padding: .27rem .5rem;
+  border: 1px solid rgba(74, 222, 128, .15);
+  border-radius: 999px;
+  color: #7ddca7;
+  background: rgba(12, 96, 65, .16);
+  font-size: .6rem;
+  font-weight: 750;
+}
+.flight-site-data { display: flex; flex-direction: column; gap: .15rem; margin: 0; }
+.flight-site-data > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .65rem;
+  padding: .5rem 0;
+  border-bottom: 1px solid rgba(118, 160, 189, .11);
+}
+.flight-site-data > div:last-child { border-bottom: 0; padding-bottom: 0; }
+.flight-site-data dt {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  min-width: 0;
+  color: #88a5bf;
+  font-size: .67rem;
+}
+.flight-site-data dt svg { width: 14px; height: 14px; flex: 0 0 14px; color: #72bfe6; }
+.flight-site-data dd {
+  margin: 0;
+  color: #e4effa;
+  font-size: .68rem;
+  font-weight: 750;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.flight-quick-params {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: .5rem;
+}
+.flight-quick-param {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: .18rem;
+  padding: .7rem;
+  border: 1px solid rgba(115, 161, 191, .12);
+  border-radius: 12px;
+  background: rgba(9, 25, 42, .7);
+}
+.flight-quick-param > span {
+  min-height: 1.6em;
+  color: #829bb3;
+  font-size: .59rem;
+  font-weight: 750;
+  line-height: 1.25;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.flight-quick-param strong {
+  color: #f2f8ff;
+  font-size: clamp(.92rem, 1vw, 1.13rem);
+  line-height: 1.25;
+  letter-spacing: -.025em;
+  overflow-wrap: anywhere;
+}
+.flight-quick-param small { color: #6f879e; font-size: .57rem; line-height: 1.35; }
+.flight-param-note { margin: .75rem 0 0; color: #7189a1; font-size: .61rem; line-height: 1.55; }
+
+.flight-desk-main > .storyboard-panel {
+  order: 0;
+  width: 100%;
+  min-width: 0;
+  padding: 1rem 1.05rem .8rem;
+  border: 1px solid rgba(58, 157, 203, .29);
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse at 0 0, rgba(8, 113, 169, .11), transparent 50%),
+    linear-gradient(145deg, rgba(7, 24, 42, .98), rgba(3, 13, 25, .99));
+  box-shadow: 0 16px 34px rgba(0,0,0,.17), inset 0 1px 0 rgba(255,255,255,.04);
+}
+.flight-desk-main > .storyboard-panel .storyboard-heading h2 {
+  font-size: clamp(1.25rem, 1.8vw, 1.55rem);
+  letter-spacing: -.045em;
+}
+.flight-desk-main > .storyboard-panel .storyboard-subtitle { font-size: .73rem; }
+.flight-desk-main > .storyboard-panel .storyboard-periods { display: none !important; }
+.flight-desk-main > .storyboard-panel .storyboard-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .42rem;
+  padding: .4rem .6rem;
+  border: 1px solid rgba(109, 155, 187, .15);
+  border-radius: 999px;
+  background: rgba(3, 13, 25, .54);
+  white-space: nowrap;
+  font-size: .62rem;
+}
+.flight-desk-main > .storyboard-panel .story-chart-card {
+  margin-top: .7rem;
+  padding: .7rem .2rem .2rem;
+  border: 0;
+  border-top: 1px solid rgba(117, 161, 193, .12);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.flight-desk-main > .storyboard-panel .story-chart-title { border-bottom: 0; padding: .1rem .2rem 0; }
+.flight-desk-main > .storyboard-panel .story-chart-title h3 { font-size: .92rem; }
+.flight-desk-main > .storyboard-panel .story-chart-range { font-size: .64rem; white-space: normal; }
+.flight-desk-main > .storyboard-panel .story-temp-chart {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: clamp(170px, 18vw, 230px);
+}
+.flight-desk-main > .storyboard-panel .story-hour-buttons {
+  min-width: 0;
+  grid-auto-columns: minmax(36px, 1fr);
+  gap: .24rem;
+  overflow-x: auto;
+}
+.flight-desk-main > .storyboard-panel .story-hour-buttons button {
+  min-width: 36px;
+  min-height: 53px;
+  padding: .32rem .1rem;
+  border-radius: 8px;
+}
+.flight-desk-main > .storyboard-panel .storyboard-disclaimer { font-size: .62rem; }
+
+.flight-forecast-module.forecast-section,
+.flight-forecast-module .forecast-dashboard-stack { display: contents !important; }
+.flight-forecast-module .forecast-hero,
+.flight-forecast-module .aerology-section { display: none !important; }
+.flight-forecast-module .forecast-days-section { width: 100%; min-width: 0; }
+.flight-forecast-module .flight-section-heading-row { margin: .1rem 0 .7rem; }
+.flight-forecast-module .flight-section-heading {
+  font-size: 1.04rem;
+  font-weight: 850;
+  letter-spacing: -.03em;
+}
+.flight-forecast-module .flight-section-subtitle { font-size: .67rem; }
+.flight-forecast-module .forecast-days-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: .65rem !important;
+}
+.flight-forecast-module .forecast-day-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 204px;
+  padding: .85rem !important;
+  border: 1px solid rgba(103, 151, 184, .21) !important;
+  border-radius: 15px !important;
+  background: linear-gradient(150deg, rgba(11, 30, 50, .95), rgba(4, 17, 32, .99)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+}
+.flight-forecast-module .forecast-day-card[aria-pressed="true"] {
+  border-color: rgba(56, 189, 248, .74) !important;
+  background: radial-gradient(ellipse at 0 0, rgba(3, 105, 161, .22), transparent 72%), linear-gradient(150deg, rgba(8, 38, 60, .98), rgba(4, 17, 31, .99)) !important;
+  box-shadow: inset 0 0 0 1px rgba(56,189,248,.08), 0 8px 24px rgba(0,0,0,.12);
+}
+.flight-forecast-module .forecast-day-card > .font-black.text-lg { font-size: .92rem; }
+.flight-forecast-module .forecast-day-card .forecast-day-condition { font-size: .68rem !important; line-height: 1.5; }
+.flight-forecast-module .forecast-day-card .text-\[10px\] { font-size: .63rem !important; }
+.flight-forecast-module .forecast-day-card .text-\[9px\] { font-size: .6rem !important; margin-top: auto; padding-top: .5rem; }
+.flight-forecast-module .forecast-day-index { font-size: .65rem !important; padding: .25rem .42rem !important; }
+.flight-desk-main .windgram-featured {
+  width: 100%;
+  min-width: 0;
+  padding: 1rem !important;
+  border: 1px solid rgba(57, 157, 203, .26) !important;
+  border-radius: 18px !important;
+  background: linear-gradient(145deg, rgba(7, 23, 41, .98), rgba(3, 13, 25, .99)) !important;
+  box-shadow: 0 16px 34px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.035);
+}
+.flight-subsection-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: .7rem;
+  margin-bottom: .7rem;
+}
+.flight-subsection-heading span {
+  display: block;
+  color: #6fcde9;
+  font-size: .58rem;
+  font-weight: 850;
+  letter-spacing: .16em;
+}
+.flight-subsection-heading h2 { margin: .2rem 0 0; color: #f2f8ff; font-size: 1rem; font-weight: 850; }
+.flight-subsection-heading small { color: #7690a8; font-size: .65rem; }
+.flight-tab-content,
+.flight-hourly-section,
+.flight-aux-chart {
+  min-width: 0;
+  padding: .95rem;
+  border: 1px solid rgba(104, 154, 188, .16);
+  border-radius: 17px;
+  background: linear-gradient(145deg, rgba(8, 24, 41, .92), rgba(4, 15, 27, .97));
+}
+.flight-page .analysis-tabs { margin-bottom: .3rem; }
+
+@media (max-width: 1280px) {
+  .flight-app-body { grid-template-columns: 160px minmax(0,1fr); }
+  .flight-panels-grid.dashboard-layout { grid-template-columns: minmax(0,1fr) minmax(250px,278px); gap: .75rem; }
+  .flight-nav-rail { padding-inline: .55rem; }
+  .flight-quick-param { padding: .6rem; }
+}
+@media (max-width: 1020px) {
+  .flight-app-body { grid-template-columns: 1fr; }
+  .flight-nav-rail {
+    position: sticky;
+    top: 64px;
+    z-index: 30;
+    height: auto;
+    padding: .45rem .65rem;
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid rgba(106,158,193,.16);
+    background: rgba(4, 13, 25, .97);
+    backdrop-filter: blur(15px);
+  }
+  .flight-nav-caption,
+  .flight-nav-divider,
+  .flight-nav-current,
+  .flight-nav-motto { display: none; }
+  .flight-primary-nav { flex-direction: row; gap: .35rem; justify-content: space-between; }
+  .flight-nav-item { justify-content: center; min-height: 40px; padding: .5rem; gap: .4rem; font-size: .74rem; }
+  .flight-nav-item svg { width: 17px; height: 17px; flex-basis: 17px; }
+  .flight-page.app-main { padding: .85rem !important; }
+  .flight-panels-grid.dashboard-layout { grid-template-columns: minmax(0,1fr) minmax(250px,300px); }
+  .flight-right-rail { position: static; }
+}
+@media (max-width: 760px) {
+  .flight-page-titlebar { align-items: flex-start; flex-direction: column; gap: .65rem; }
+  .flight-page-titlebar h1 { font-size: 1.25rem; }
+  .flight-page-actions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
+  .flight-page-actions .dashboard-date-chip { flex: 1 1 150px; }
+  .flight-panels-grid.dashboard-layout { grid-template-columns: minmax(0,1fr); }
+  .flight-right-rail { display: grid; grid-template-columns: minmax(0,1fr); }
+  .flight-right-rail .launch-list-items { max-height: 390px !important; }
+  .flight-desk-main > .storyboard-panel { padding: .8rem; border-radius: 16px; }
+  .flight-desk-main > .storyboard-panel .storyboard-heading { display: block; }
+  .flight-desk-main > .storyboard-panel .storyboard-legend { margin-top: .6rem; justify-content: flex-start; width: fit-content; max-width: 100%; white-space: normal; }
+  .flight-desk-main > .storyboard-panel .story-temp-chart { height: 160px; }
+  .flight-forecast-module .forecast-days-grid { grid-template-columns: minmax(0,1fr) !important; }
+  .flight-forecast-module .forecast-day-card { min-height: 0; }
+  .flight-site-info-card { padding: .85rem; }
+  .flight-site-data > div { gap: .5rem; }
+  .flight-quick-params { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 420px) {
+  .flight-nav-item { flex-direction: column; gap: .15rem; font-size: .62rem; padding: .35rem .15rem; }
+  .flight-page.app-main { padding: .65rem !important; }
+  .flight-page-actions .dashboard-intro-cta { flex: 1 1 auto; justify-content: center; }
+  .flight-quick-params { grid-template-columns: minmax(0,1fr); }
+  .flight-site-data dd { font-size: .62rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flight-nav-item { transition: none !important; }
+}
