@@ -574,7 +574,9 @@ export default function ProfessionalWindgram({
       // Celle orarie nette: niente interpolazione cromatica fra ore diverse.
       // Ogni colonna mostra il gradiente calcolato fra livelli verticali del modello.
       const cellW = plotW / HOURS.length;
-      hourlyData.forEach((hourData, colIdx) => {
+      hourlyData.forEach((hourData) => {
+        const colIdx = HOURS.indexOf(hourData.hour);
+        if (colIdx < 0) return;
         const profile = hourData.deltaTProfile;
         const color = profile && profile.length > 0
           ? getStabilityColor(profile[clampedIdx] ?? null)
