@@ -67,3 +67,55 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     ).toBeLessThanOrEqual(dimensions.viewport + 1);
   });
 });
+
+test("desktop briefing fits the viewport without clipping the launch or forecast panels", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Il tuo briefing di volo." })).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator(".launch-hero")).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator(".forecast-hero")).toBeVisible({ timeout: 30_000 });
+
+  const layout = await page.evaluate(() => {
+    const selectors = [
+      ".app-main",
+      ".overview-section",
+      ".launch-hero",
+      ".dashboard-layout",
+      ".dashboard-sidebar",
+      ".dashboard-content",
+      ".forecast-section",
+      ".forecast-hero",
+      ".forecast-main-grid",
+      ".forecast-summary-grid",
+      ".flight-parameter-grid",
+    ];
+    const elements = selectors.flatMap((selector) => {
+      const element = document.querySelector<HTMLElement>(selector);
+      if (!element) return [];
+      const rect = element.getBoundingClientRect();
+      return [{ selector, left: Math.round(rect.left), right: Math.round(rect.right), width: Math.round(rect.width), clientWidth: element.clientWidth, scrollWidth: element.scrollWidth }];
+    });
+    return {
+      viewport: document.documentElement.clientWidth,
+      documentWidth: document.documentElement.scrollWidth,
+      rootWidth: document.getElementById("root")?.clientWidth ?? -1,
+      rootScrollWidth: document.getElementById("root")?.scrollWidth ?? -1,
+      elements,
+    };
+  });
+
+  expect(
+    layout.documentWidth,
+    `Horizontal document overflow: ${JSON.stringify(layout)}`,
+  ).toBeLessThanOrEqual(layout.viewport + 1);
+  expect(
+    layout.rootScrollWidth,
+    `Root children overflow their viewport: ${JSON.stringify(layout)}`,
+  ).toBeLessThanOrEqual(layout.rootWidth + 1);
+
+  const clipped = layout.elements.filter((element) => element.left < -1 || element.right > layout.viewport + 1 || element.scrollWidth > element.clientWidth + 24);
+  expect(
+    clipped,
+    `Dashboard panels extend past their available width: ${JSON.stringify(layout)}`,
+  ).toEqual([]);
+});
