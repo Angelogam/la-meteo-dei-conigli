@@ -91,6 +91,7 @@ export default function ProfessionalWindgram({
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
+  const [selectedChartHour, setSelectedChartHour] = useState<number>(12);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Venti multi-livello — usa i dati condivisi se disponibili
@@ -810,16 +811,62 @@ export default function ProfessionalWindgram({
               </g>
             ))}
 
-            {HOURS.map((h, i) => (
-              <text key={`hr-${h}`} x={getXFromHourIdx(i)} y={margin.top + plotH + 20} fill="#0f172a" fontSize="12" fontWeight="900" textAnchor="middle" fontFamily="monospace">
-                {String(h).padStart(2, "0")}:00
-              </text>
-            ))}
+            {HOURS.map((h, i) => {
+              const x = getXFromHourIdx(i);
+              const active = selectedChartHour === h;
+              return (
+                <g key={`hr-${h}`} role="button" tabIndex={0} aria-label={`Seleziona le ${h}:00`}
+                  onClick={() => setSelectedChartHour(h)}
+                  onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedChartHour(h); } }}
+                  style={{ cursor: "pointer", outline: "none" }}>
+                  <rect x={x - plotW / HOURS.length / 2 + 1} y={margin.top + plotH + 2} width={plotW / HOURS.length - 2} height="28" rx="5" fill={active ? "#cffafe" : "transparent"} />
+                  <text x={x} y={margin.top + plotH + 20} fill={active ? "#0369a1" : "#0f172a"} fontSize="12" fontWeight={active ? "1000" : "800"} textAnchor="middle" fontFamily="monospace">
+                    {String(h).padStart(2, "0")}:00
+                  </text>
+                </g>
+              );
+            })}
 
             <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#0f172a" strokeWidth="0.8" />
             </svg>
           </div>
         </div>
+
+        {(() => {
+          const selected = hourlyData.find((entry) => entry.hour === selectedChartHour);
+          if (!selected) return null;
+          const groundSpeed = selected.windGround;
+          const direction = selected.windDirGround;
+          const windLevels = selected.levelWinds.filter((level) => level.speed != null && Number.isFinite(level.speed));
+          return (
+            <section aria-live="polite" aria-label={`Dettaglio vento alle ${selectedChartHour}:00`} className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-xl border border-cyan-200 bg-slate-50 p-3">
+              <div className="col-span-2 sm:col-span-4 flex items-center justify-between gap-2">
+                <div className="text-xs font-extrabold uppercase tracking-wider text-slate-600">Dettaglio ora selezionata</div>
+                <div className="rounded-full bg-cyan-100 px-3 py-1 text-sm font-black text-cyan-900">{String(selectedChartHour).padStart(2, "0")}:00</div>
+              </div>
+              <div className="rounded-lg bg-white p-2 border border-slate-200">
+                <div className="text-[10px] font-bold uppercase text-slate-500">Vento al suolo</div>
+                <div className="text-xl font-black text-slate-900">{groundSpeed != null && Number.isFinite(groundSpeed) ? groundSpeed : "—"} <span className="text-xs font-semibold">km/h</span></div>
+                <div className="text-xs text-slate-600">{direction != null && Number.isFinite(direction) ? `${getDirLetter(direction)} · ${direction}°` : "Direzione n/d"}</div>
+              </div>
+              <div className="rounded-lg bg-white p-2 border border-slate-200">
+                <div className="text-[10px] font-bold uppercase text-slate-500">Temperatura</div>
+                <div className="text-xl font-black text-slate-900">{Number.isFinite(selected.tempGround) ? selected.tempGround : "—"} <span className="text-xs font-semibold">°C</span></div>
+                <div className="text-xs text-slate-600">a quota decollo</div>
+              </div>
+              <div className="rounded-lg bg-white p-2 border border-slate-200">
+                <div className="text-[10px] font-bold uppercase text-slate-500">Nuvolosità</div>
+                <div className="text-xl font-black text-slate-900">{selected.cloudCover != null && Number.isFinite(selected.cloudCover) ? Math.round(selected.cloudCover) : "—"}<span className="text-xs font-semibold">%</span></div>
+                <div className="text-xs text-slate-600">copertura prevista</div>
+              </div>
+              <div className="rounded-lg bg-white p-2 border border-slate-200">
+                <div className="text-[10px] font-bold uppercase text-slate-500">Venti in quota</div>
+                <div className="text-xl font-black text-slate-900">{windLevels.length}</div>
+                <div className="text-xs text-slate-600">livelli con dati</div>
+              </div>
+            </section>
+          );
+        })()}
 
         <div className="mt-2 pt-2 border-t border-slate-200">
           <div className="w-full max-w-2xl px-2">
