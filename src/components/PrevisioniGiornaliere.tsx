@@ -322,13 +322,79 @@ export default function PrevisioniGiornaliere({
       </div>
 
       {/* ═══════════════════════════════════════════════════════════ */}
+      {/* PREVISIONI GIORNALIERE                                         */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-1 h-6 bg-emerald-500 rounded-full" />
+          <div className="text-[10px] font-black text-cyan-300 uppercase tracking-widest">Previsioni per i prossimi tre giorni</div>
+        </div>
+        <div className="forecast-days-grid grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {tabs.map((tabName, idx) => {
+            const d = enrichedDaily[idx];
+            const isActive = selectedDay === idx;
+            const label = dateLabels[idx] || tabName;
+            const isRainy = d && d.precipitationSum !== undefined && d.precipitationSum > 0.5;
+            const hoursForDay = hoursForForecastDay(dayData, idx);
+            const rating = d ? getFlightRating(d, hoursForDay) : null;
+
+            return (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => onSelectDay(idx)}
+                aria-pressed={isActive}
+                aria-label={`Mostra le previsioni per ${tabName.toLowerCase()}, ${label}`}
+                className={`
+                  forecast-day-card relative rounded-xl p-3 sm:p-4 text-left transition-colors duration-200
+                  ${isActive
+                    ? 'bg-emerald-950/60 border-2 border-emerald-400 shadow-md shadow-emerald-900/20'
+                    : isRainy
+                    ? 'bg-rose-950/20 border border-rose-500/30 hover:border-rose-500/50 hover:shadow-[0_0_20px_rgba(244,63,94,0.15)]'
+                    : 'bg-slate-800/40 border border-slate-700/50 hover:border-slate-600 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,255,255,0.05)]'
+                  }
+                `}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className={`text-2xl`}>{getWeatherEmoji(d?.weatherCode)}</span>
+                  <div
+                    className={`forecast-day-index text-sm font-black px-3 py-1 rounded-full transition-all duration-300 ${isActive ? 'bg-cyan-500/15 text-cyan-200 border border-cyan-400/30' : 'bg-slate-700/50 text-slate-400'}`}
+                    title="Indice meteo indicativo, non è un giudizio di sicurezza del volo"
+                  >
+                    <span className="forecast-day-index-label">Indice </span>{rating !== null ? `${rating}/10` : "N/D"}
+                  </div>
+                </div>
+                <div className="font-black text-white text-lg">{tabName}</div>
+                <div className="text-[10px] text-slate-500 mb-3">{label}</div>
+                {d && (
+                  <>
+                    <div className="flex items-baseline gap-1 mb-2">
+                      <span className="text-lg font-bold text-amber-300">{d.temperatureMax != null && Number.isFinite(d.temperatureMax) ? `${Math.round(d.temperatureMax)}°` : "N/D"}</span>
+                      <span className="text-xs text-slate-600">/</span>
+                      <span className="text-lg font-bold text-sky-300">{d.temperatureMin != null && Number.isFinite(d.temperatureMin) ? `${Math.round(d.temperatureMin)}°` : "N/D"}</span>
+                    </div>
+                    <div className="forecast-day-condition text-[10px] text-slate-400 mb-1">
+                      {`${getWeatherEmoji(d.weatherCode)} ${getWeatherLabel(d.weatherCode)}${d.precipitationSum != null && Number.isFinite(d.precipitationSum) && d.precipitationSum > 0.5 ? ` · ${d.precipitationSum.toLocaleString("it-IT", { maximumFractionDigits: 1 })} mm attesi` : ""}`}
+                    </div>
+                    <div className="text-[9px] text-slate-500">
+                      Vento max: {d.windSpeedMax !== null ? `${Math.round(d.windSpeedMax)} km/h` : "N/D"}
+                    </div>
+                  </>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════ */}
       {/* AEROCARDS — 6 parametri di volo                           */}
       {/* ═══════════════════════════════════════════════════════════ */}
       <div>
         <div className="flex items-center gap-2 mb-3">
           <div className="w-1 h-6 bg-cyan-400 rounded-full" />
-          <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Parametri di Volo</div>
-          <span className="text-[9px] text-slate-600 ml-auto">Clicca per espandere</span>
+          <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Parametri aerologici</div>
+          <span className="text-[9px] text-slate-600 ml-auto">Dettagli dei parametri</span>
         </div>
         <div className="flight-parameter-grid grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
           <AeroCard
@@ -394,71 +460,6 @@ export default function PrevisioniGiornaliere({
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════ */}
-      {/* PREVISIONI 3 GIORNI                                        */}
-      {/* ═══════════════════════════════════════════════════════════ */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-1 h-6 bg-emerald-500 rounded-full" />
-          <div className="text-[10px] font-black text-cyan-300 uppercase tracking-widest">Previsioni per 3 giorni</div>
-        </div>
-        <div className="forecast-days-grid grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {tabs.map((tabName, idx) => {
-            const d = enrichedDaily[idx];
-            const isActive = selectedDay === idx;
-            const label = dateLabels[idx] || tabName;
-            const isRainy = d && d.precipitationSum !== undefined && d.precipitationSum > 0.5;
-            const hoursForDay = hoursForForecastDay(dayData, idx);
-            const rating = d ? getFlightRating(d, hoursForDay) : null;
-
-            return (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => onSelectDay(idx)}
-                aria-pressed={isActive}
-                aria-label={`Mostra le previsioni per ${tabName.toLowerCase()}, ${label}`}
-                className={`
-                  forecast-day-card relative rounded-xl p-3 sm:p-4 text-left transition-colors duration-200
-                  ${isActive
-                    ? 'bg-emerald-950/60 border-2 border-emerald-400 shadow-md shadow-emerald-900/20'
-                    : isRainy
-                    ? 'bg-rose-950/20 border border-rose-500/30 hover:border-rose-500/50 hover:shadow-[0_0_20px_rgba(244,63,94,0.15)]'
-                    : 'bg-slate-800/40 border border-slate-700/50 hover:border-slate-600 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,255,255,0.05)]'
-                  }
-                `}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <span className={`text-2xl`}>{getWeatherEmoji(d?.weatherCode)}</span>
-                  <div
-                    className={`forecast-day-index text-sm font-black px-3 py-1 rounded-full transition-all duration-300 ${isActive ? 'bg-cyan-500/15 text-cyan-200 border border-cyan-400/30' : 'bg-slate-700/50 text-slate-400'}`}
-                    title="Indice meteo indicativo, non è un giudizio di sicurezza del volo"
-                  >
-                    <span className="forecast-day-index-label">Indice </span>{rating !== null ? `${rating}/10` : "N/D"}
-                  </div>
-                </div>
-                <div className="font-black text-white text-lg">{tabName}</div>
-                <div className="text-[10px] text-slate-500 mb-3">{label}</div>
-                {d && (
-                  <>
-                    <div className="flex items-baseline gap-1 mb-2">
-                      <span className="text-lg font-bold text-amber-300">{d.temperatureMax != null && Number.isFinite(d.temperatureMax) ? `${Math.round(d.temperatureMax)}°` : "N/D"}</span>
-                      <span className="text-xs text-slate-600">/</span>
-                      <span className="text-lg font-bold text-sky-300">{d.temperatureMin != null && Number.isFinite(d.temperatureMin) ? `${Math.round(d.temperatureMin)}°` : "N/D"}</span>
-                    </div>
-                    <div className="forecast-day-condition text-[10px] text-slate-400 mb-1">
-                      {`${getWeatherEmoji(d.weatherCode)} ${getWeatherLabel(d.weatherCode)}${d.precipitationSum != null && Number.isFinite(d.precipitationSum) && d.precipitationSum > 0.5 ? ` · ${d.precipitationSum.toLocaleString("it-IT", { maximumFractionDigits: 1 })} mm attesi` : ""}`}
-                    </div>
-                    <div className="text-[9px] text-slate-500">
-                      Vento max: {d.windSpeedMax !== null ? `${Math.round(d.windSpeedMax)} km/h` : "N/D"}
-                    </div>
-                  </>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }
