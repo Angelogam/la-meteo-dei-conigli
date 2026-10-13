@@ -1,20 +1,11 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { Wind, Calendar, MapPin, TrendingUp } from "lucide-react";
+import { Wind, Calendar, MapPin } from "lucide-react";
 import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
 import ProfessionalWindgram from "@/components/ProfessionalWindgram";
 import SectionErrorBoundary from "@/components/SectionErrorBoundary";
 import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Scatter,
-  ScatterChart,
-  Tooltip,
-  XAxis,
-  YAxis,
 } from "recharts";
 
 function getSpeedColor(speed: number): string {
@@ -174,8 +165,6 @@ export default function VentiInterpolatiTab({
     return quote.sort((a, b) => a.quota - b.quota);
   }, [oraData, quotaDecollo]);
 
-  const maxSpeed = useMemo(() => Math.max(...quoteVisibili.map((q) => q.speed), 1), [quoteVisibili]);
-
   return (
     <div className="space-y-6">
       {/* Windgram Professionale integrato con dati reali */}
@@ -297,107 +286,7 @@ export default function VentiInterpolatiTab({
               <span className="text-xs text-slate-500">—</span>
             )}
           </div>
-          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
-            {data.ventoOrario.map((v) => (
-              <button
-                key={v.ora}
-                onClick={() => {
-                  setOraSelezionata(v.ora);
-                  onOraChange?.(v.ora);
-                }}
-                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-                  v.ora === oraSelezionata
-                    ? "bg-blue-600/30 border-blue-400/50 text-blue-200"
-                    : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700/40"
-                }`}
-              >
-                {String(v.ora).padStart(2, "0")}:00
-              </button>
-            ))}
-          </div>
 
-          <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingUp className="w-4 h-4 text-cyan-400" />
-              <h4 className="text-xs font-bold text-cyan-300 uppercase tracking-wider">
-                Profilo verticale · {String(oraSelezionata).padStart(2, "0")}:00
-              </h4>
-              <span className="text-[10px] text-slate-500 ml-auto">{quotaDecollo}m → 4000m · step 250m</span>
-            </div>
-
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-              <section className="min-w-0 rounded-2xl border border-cyan-400/20 bg-slate-950/55 p-3 sm:p-4" aria-labelledby="wind-speed-altitude-title">
-                <div className="mb-2 flex items-start justify-between gap-3">
-                  <div>
-                    <h5 id="wind-speed-altitude-title" className="text-sm font-bold text-white">Velocità in funzione della quota</h5>
-                    <p className="text-xs text-slate-400">Seleziona un’ora qui sopra per aggiornare il profilo.</p>
-                  </div>
-                  <span className="shrink-0 rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-2 py-1 text-[10px] font-bold text-emerald-200">km/h</span>
-                </div>
-                {quoteVisibili.length > 0 ? (
-                  <div className="h-[260px] w-full" role="img" aria-label="Grafico interattivo della velocità del vento rispetto alla quota">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={quoteVisibili} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-                        <CartesianGrid stroke="rgba(148,163,184,.14)" strokeDasharray="3 5" />
-                        <XAxis type="number" dataKey="quota" domain={["dataMin", "dataMax"]} tickFormatter={(value: number) => `${value} m`} tick={{ fill: "#94a3b8", fontSize: 10 }} tickLine={false} axisLine={{ stroke: "rgba(148,163,184,.2)" }} />
-                        <YAxis type="number" dataKey="speed" domain={[0, Math.max(10, Math.ceil(maxSpeed / 5) * 5)]} tick={{ fill: "#94a3b8", fontSize: 10 }} tickLine={false} axisLine={false} width={36} />
-                        <Tooltip
-                          allowEscapeViewBox={{ x: true, y: true }}
-                          wrapperStyle={{ zIndex: 50, pointerEvents: "none", outline: "none", maxWidth: "min(260px, calc(100vw - 32px))" }}
-                          cursor={{ stroke: "rgba(103,232,249,.35)", strokeDasharray: "4 4" }}
-                          contentStyle={{ background: "#071629", border: "1px solid rgba(103,232,249,.3)", borderRadius: 12, color: "#f8fafc", boxShadow: "0 12px 32px rgba(0,0,0,.45)", padding: "10px 12px", fontSize: 12 }}
-                          labelFormatter={(value) => `Quota: ${value} m`}
-                          formatter={(value, name) => [`${Math.round(Number(value))} km/h`, name === "speed" ? "Velocità" : String(name)]}
-                        />
-                        <Line dataKey="speed" name="Velocità" type="monotone" stroke="#34d399" strokeWidth={2.5} dot={{ r: 3, fill: "#34d399", stroke: "#071629", strokeWidth: 1.5 }} activeDot={{ r: 6, fill: "#a7f3d0", stroke: "#064e3b", strokeWidth: 2 }} isAnimationActive={false} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <div className="flex h-[260px] items-center justify-center rounded-xl border border-dashed border-slate-700 text-sm text-slate-400">Profilo vento non disponibile per quest’ora.</div>
-                )}
-              </section>
-
-              <section className="min-w-0 rounded-2xl border border-sky-400/20 bg-slate-950/55 p-3 sm:p-4" aria-labelledby="wind-direction-altitude-title">
-                <div className="mb-2 flex items-start justify-between gap-3">
-                  <div>
-                    <h5 id="wind-direction-altitude-title" className="text-sm font-bold text-white">Direzione del vento per quota</h5>
-                    <p className="text-xs text-slate-400">Ogni punto è un livello del modello; passa sopra per i valori.</p>
-                  </div>
-                  <span className="shrink-0 rounded-lg border border-sky-400/20 bg-sky-400/10 px-2 py-1 text-[10px] font-bold text-sky-200">gradi °</span>
-                </div>
-                {quoteVisibili.length > 0 ? (
-                  <div className="h-[260px] w-full" role="img" aria-label="Grafico interattivo a punti della direzione del vento rispetto alla quota">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart margin={{ top: 8, right: 16, bottom: 8, left: 4 }}>
-                        <CartesianGrid stroke="rgba(148,163,184,.14)" strokeDasharray="3 5" />
-                        <XAxis type="number" dataKey="dir" name="Direzione" domain={[0, 360]} ticks={[0, 90, 180, 270, 360]} tick={{ fill: "#94a3b8", fontSize: 10 }} tickLine={false} axisLine={{ stroke: "rgba(148,163,184,.2)" }} />
-                        <YAxis type="number" dataKey="quota" name="Quota" domain={["dataMin", "dataMax"]} tickFormatter={(value: number) => `${value} m`} tick={{ fill: "#94a3b8", fontSize: 10 }} tickLine={false} axisLine={false} width={56} />
-                        <Tooltip
-                          allowEscapeViewBox={{ x: true, y: true }}
-                          wrapperStyle={{ zIndex: 50, pointerEvents: "none", outline: "none", maxWidth: "min(260px, calc(100vw - 32px))" }}
-                          cursor={{ strokeDasharray: "4 4", stroke: "rgba(103,232,249,.4)" }}
-                          contentStyle={{ background: "#071629", border: "1px solid rgba(103,232,249,.3)", borderRadius: 12, color: "#f8fafc", boxShadow: "0 12px 32px rgba(0,0,0,.45)", padding: "10px 12px", fontSize: 12 }}
-                          formatter={(value, name) => {
-                            if (name === "Direzione") return [`${Math.round(Number(value))}°`, "Direzione"];
-                            if (name === "Velocità") return [`${Math.round(Number(value))} km/h`, "Velocità"];
-                            return [value, name];
-                          }}
-                          labelFormatter={(_, payload) => {
-                            const point = payload?.[0]?.payload as { quota?: number } | undefined;
-                            return point?.quota == null ? "Profilo vento" : `Quota: ${point.quota} m`;
-                          }}
-                        />
-                        <Scatter data={quoteVisibili} name="Direzione" dataKey="dir" fill="#60a5fa" shape="circle" />
-                      </ScatterChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <div className="flex h-[260px] items-center justify-center rounded-xl border border-dashed border-slate-700 text-sm text-slate-400">Direzione vento non disponibile per quest’ora.</div>
-                )}
-              </section>
-            </div>
-          </div>
         </>
       )}
     </div>
