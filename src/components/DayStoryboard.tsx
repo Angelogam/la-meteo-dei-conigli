@@ -47,13 +47,36 @@ const TIME_RANGES: { id: TimeRange; label: string; start: number; end: number }[
 const fmt = (value: number | null | undefined, digits = 1) =>
   value == null || !Number.isFinite(value) ? "N/D" : value.toFixed(digits);
 
-function rangeTemperature(points: ChartPoint[]): [number, number] {
-  const values = points.flatMap((point) => [point.temperature, point.dewPoint])
-    .filter((value): value is number => value != null && Number.isFinite(value));
+function rangeTemperature(
+  points: ChartPoint[],
+  includeTemperature: boolean,
+  includeDewPoint: boolean,
+): [number, number] {
+  const values = points.flatMap((point) => [
+    includeTemperature ? point.temperature : null,
+    includeDewPoint ? point.dewPoint : null,
+  ]).filter((value): value is number => value != null && Number.isFinite(value));
+
   if (!values.length) return [0, 10];
-  const min = Math.floor(Math.min(...values) - 1);
-  const max = Math.ceil(Math.max(...values) + 1);
-  return min === max ? [min - 1, max + 1] : [min, max];
+
+  const rawMin = Math.min(...values);
+  const rawMax = Math.max(...values);
+  const rawSpan = rawMax - rawMin;
+  // Keep a little breathing room, but never flatten a normal afternoon trend
+  // against the top of an axis widened by a hidden or unrelated series.
+  const padding = Math.max(0.75, rawSpan * 0.16);
+  let min = Math.floor(rawMin - padding);
+  let max = Math.ceil(rawMax + padding);
+
+  // A minimum useful range keeps small temperature changes visible without
+  // making the scale misleadingly dramatic.
+  if (max - min < 4) {
+    const centre = (rawMin + rawMax) / 2;
+    min = Math.floor(centre - 2);
+    max = min + 4;
+  }
+
+  return [min, max];
 }
 
 function WeatherTooltip({
@@ -118,7 +141,7 @@ export default function DayStoryboard({
 
   const activeRange = TIME_RANGES.find((range) => range.id === timeRange) ?? TIME_RANGES[0];
   const chartData = allPoints.filter((point) => point.hour >= activeRange.start && point.hour <= activeRange.end);
-  const temperatureDomain = rangeTemperature(chartData);
+  const temperatureDomain = rangeTemperature(chartData, showTemperature, showDewPoint);
   const windValues = chartData.flatMap((point) => [point.windSpeed, point.windGusts])
     .filter((value): value is number => value != null && Number.isFinite(value));
   const windDomain = Math.max(5, Math.ceil(Math.max(0, ...windValues) / 5) * 5);
@@ -196,15 +219,15 @@ export default function DayStoryboard({
           <div className="story-chart-stats">
             <div className="story-chart-stat">
               <span className="story-stat-icon is-temp"><Thermometer aria-hidden="true" /></span>
-              <span><small>Massima prevista</small><strong>{maxTemperature.length ? Math.max(...maxTemperature).toFixed(1) + " °C" : "N/D"}</strong></span>
+              <span><small>Massima nell’intervallo</small><strong>{maxTemperature.length ? Math.max(...maxTemperature).toFixed(1) + " °C" : "N/D"}</strong></span>
             </div>
             <div className="story-chart-stat">
               <span className="story-stat-icon is-wind"><Wind aria-hidden="true" /></span>
-              <span><small>Vento massimo</small><strong>{maxWind.length ? Math.max(...maxWind).toFixed(0) + " km/h" : "N/D"}</strong></span>
+              <span><small>Vento max · intervallo</small><strong>{maxWind.length ? Math.max(...maxWind).toFixed(0) + " km/h" : "N/D"}</strong></span>
             </div>
             <div className="story-chart-stat">
               <span className="story-stat-icon is-gust"><Activity aria-hidden="true" /></span>
-              <span><small>Raffica massima</small><strong>{maxGust.length ? Math.max(...maxGust).toFixed(0) + " km/h" : "N/D"}</strong></span>
+              <span><small>Raffica max · intervallo</small><strong>{maxGust.length ? Math.max(...maxGust).toFixed(0) + " km/h" : "N/D"}</strong></span>
             </div>
           </div>
 
