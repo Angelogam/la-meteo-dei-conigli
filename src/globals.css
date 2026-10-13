@@ -3560,3 +3560,23 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .flight-nav-item { transition: none !important; }
 }
+
+.flight-desk-main > .storyboard-panel .legend-dew {
+  display: inline-block;
+  width: 8px;
+  height: 3px;
+  border-radius: 4px;
+  background: #38bdf8;
+  margin-left: .35rem;
+}
+.flight-desk-main > .storyboard-panel .legend-temp {
+  width: 9px;
+  height: 3px;
+  border-radius: 4px;
+}
+.flight-desk-main > .storyboard-panel .legend-wind {
+  width: 9px;
+  height: 5px;
+  border-radius: 2px;
+  background: #10b981;
+}
