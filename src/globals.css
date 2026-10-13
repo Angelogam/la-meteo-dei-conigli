@@ -4099,92 +4099,81 @@ body,
 }
 
 
+
 /* ===== OPEN-SOURCE DASHBOARD UI ADAPTATION =====
-   Inspired by the spacing, responsive grids and restrained surfaces used in
-   MIT-licensed React/Vite shadcn dashboard starters. Keep existing app/data logic.
+   Restrained dashboard surfaces and spacing, preserving the app's dark-theme contrast.
 */
 :root {
-  --app-ink: #0b1728;
-  --app-panel: #ffffff;
-  --app-panel-strong: #f8fafc;
-  --app-line: #dce5ef;
-  --app-cyan: #087ea4;
-  --app-blue: #2563eb;
-  --app-surface: #ffffff;
-  --app-surface-raised: #f8fafc;
-  --app-text-muted: #64748b;
+  --app-ink: #071426;
+  --app-panel: #0b1c31;
+  --app-panel-strong: #08172a;
+  --app-line: rgba(148, 180, 210, .18);
+  --app-cyan: #67d8ee;
+  --app-blue: #60a5fa;
+  --app-surface: #0b1c31;
+  --app-surface-raised: #10243b;
+  --app-text-muted: #a4b5c9;
 }
 
 body {
-  color: #15243a;
-  background: #f3f6fb;
+  color: #edf5ff;
+  background: #071426;
   -webkit-font-smoothing: antialiased;
 }
 
 .flight-website-shell {
-  color: #15243a;
-  background: #f3f6fb;
+  color: #edf5ff;
+  background: #071426;
 }
 
 .app-brand-header {
-  background: rgba(255,255,255,.94);
-  border-bottom-color: #dce5ef;
-  box-shadow: 0 2px 12px rgba(15,23,42,.045);
+  background: rgba(5, 17, 33, .94);
+  border-bottom-color: rgba(148, 180, 210, .16);
+  box-shadow: 0 4px 18px rgba(0,0,0,.12);
 }
 
-.app-brand-mark { color: #12233a; }
-.app-brand-copy small { color: #64748b; }
+.app-brand-copy small { color: #9bb0c7; }
 .app-brand-status {
-  color: #31516b;
-  background: #f1f7fb;
-  border-color: #dce8f1;
+  color: #c8d9eb;
+  background: #10243b;
+  border-color: rgba(148, 180, 210, .18);
 }
 
 .flight-nav-rail {
-  background: #fff;
-  border-right: 1px solid #e2e8f0;
-  box-shadow: 2px 0 12px rgba(15,23,42,.025);
+  background: #08172a;
+  border-right: 1px solid rgba(148, 180, 210, .15);
+  box-shadow: 2px 0 12px rgba(0,0,0,.08);
 }
 
-.flight-nav-caption { color: #7b8ba0; }
-.flight-nav-item { color: #53657b; border-radius: 10px; }
-.flight-nav-item:hover { background: #f1f7fb; color: #0e7490; }
+.flight-nav-caption { color: #8da3bb; }
+.flight-nav-item { color: #b4c5d8; border-radius: 10px; }
+.flight-nav-item:hover { background: #102a43; color: #8ce5f5; }
 .flight-nav-item.is-active {
-  color: #075985;
-  background: #e5f5fb;
-  box-shadow: inset 3px 0 #0891b2;
+  color: #9beaf8;
+  background: rgba(8, 145, 178, .16);
+  box-shadow: inset 3px 0 #38bdf8;
 }
 .flight-nav-current {
-  color: #23364d;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  color: #e5effb;
+  background: #0b1c31;
+  border: 1px solid rgba(148, 180, 210, .16);
   border-radius: 14px;
 }
 
 .flight-desk-main,
-.dashboard-content { color: #17283e; }
-
-.overview-section,
-.forecast-section,
-.windgram-section,
-.details-section,
-.flight-tab-content,
-.flight-forecast-module,
-.flight-aux-chart {
-  min-width: 0;
-}
+.dashboard-content { color: #edf5ff; }
 
 .dashboard-content .bg-slate-900\/90,
 .dashboard-sidebar .bg-slate-900\/90 {
-  background: #fff;
-  border-color: #e1e8f0;
-  box-shadow: 0 3px 12px rgba(15,23,42,.035);
+  background: #0b1c31;
+  border-color: rgba(148, 180, 210, .16);
+  box-shadow: 0 4px 18px rgba(0,0,0,.1);
 }
 
 .dashboard-content .bg-slate-800\/30 {
-  background: #fff;
-  border-color: #e1e8f0;
-  box-shadow: 0 3px 14px rgba(15,23,42,.04);
+  background: #0a1a2e;
+  border-color: rgba(148, 180, 210, .18);
+  box-shadow: 0 6px 22px rgba(0,0,0,.12);
 }
 
 .dashboard-content .rounded-2xl,
@@ -4193,28 +4182,27 @@ body {
 }
 
 .header-decollo {
-  border: 1px solid rgba(255,255,255,.45) !important;
-  box-shadow: 0 10px 30px rgba(15,23,42,.12);
+  box-shadow: 0 12px 34px rgba(0,0,0,.18);
 }
 
 .flight-subsection-heading h2,
-.flight-subsection-heading h3 { color: #15243a; }
+.flight-subsection-heading h3 { color: #edf5ff; }
 
 .flight-subsection-heading span,
-.flight-subsection-heading small { color: #64748b; }
+.flight-subsection-heading small { color: #9bb0c7; }
 
 .flight-tab-content {
-  border: 1px solid #e1e8f0;
+  border: 1px solid rgba(148, 180, 210, .17);
   border-radius: 18px;
-  background: #fff;
+  background: #0b1c31;
   padding: clamp(.85rem, 1.5vw, 1.25rem);
-  box-shadow: 0 3px 14px rgba(15,23,42,.035);
+  box-shadow: 0 5px 20px rgba(0,0,0,.12);
 }
 
 .flight-forecast-module,
 .windgram-featured {
-  border-color: #e1e8f0 !important;
-  box-shadow: 0 3px 14px rgba(15,23,42,.04);
+  border-color: rgba(148, 180, 210, .17) !important;
+  box-shadow: 0 5px 20px rgba(0,0,0,.12);
 }
 
 button, [role="tab"], a {
@@ -4222,28 +4210,12 @@ button, [role="tab"], a {
 }
 
 @media (min-width: 1024px) {
-  .flight-app-body { gap: 1.25rem; }
-  .flight-panels-grid { gap: 1.25rem; }
-  .flight-desk-main { gap: 1.25rem; }
-}
-
-@media (max-width: 1023px) {
-  .flight-nav-rail {
-    position: sticky;
-    top: 0;
-    z-index: 30;
-    width: 100%;
-    border-right: 0;
-    border-bottom: 1px solid #e2e8f0;
-    box-shadow: 0 3px 12px rgba(15,23,42,.04);
-  }
+  .flight-app-body { gap: 1.1rem; }
+  .flight-panels-grid { gap: 1.1rem; }
+  .flight-desk-main { gap: 1.1rem; }
 }
 
 @media (max-width: 640px) {
   .flight-tab-content { padding: .75rem; border-radius: 14px; }
   .flight-nav-item { min-height: 42px; }
-}
-
-@media (prefers-color-scheme: dark) {
-  /* The interface stays intentionally light for legibility; no automatic inversion. */
 }
