@@ -147,59 +147,34 @@
 
 /* ===== MOBILE FIRST ===== */
 @media (max-width: 768px) {
-
   body {
-    background: #f5f5f5;
-    padding: 10px;
+    background: #020617;
+    padding: 0;
   }
 
-  /* CARD GENERICA */
   .card {
-    background: #ffffff;
-    padding: 12px !important;
-    margin-bottom: 14px !important;
-    border-radius: 14px !important;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    width: 100% !important;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 14px;
+    width: 100%;
   }
 
-  /* HEADER DECOLLO */
   .header-decollo {
-    padding: 14px !important;
-    text-align: center;
+    padding: 14px;
   }
 
-  .header-decollo h2 {
-    font-size: 1.3rem !important;
-  }
-
-  .header-decollo p {
-    font-size: 0.95rem !important;
-  }
-
-  .header-decollo div {
-    display: flex;
-    flex-direction: column !important;
-    gap: 6px !important;
-    font-size: 0.9rem !important;
-  }
-
-  /* METEO GIORNI */
   .giorni-container {
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
 
-  /* VENTO QUOTA */
   .vento-quota-row {
     display: flex;
     justify-content: space-between;
     padding: 6px 0;
-    font-size: 0.9rem;
   }
 
-  /* FINESTRA ORARIA */
   .grid-oraria {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -208,28 +183,8 @@
     padding: 10px 0;
   }
 
-  .grid-oraria strong {
-    font-size: 1rem !important;
-  }
-
-  .grid-oraria span {
-    font-size: 0.85rem !important;
-  }
-
-  /* ANALISI */
   .analisi-card {
-    padding: 14px !important;
-    font-size: 0.95rem !important;
-    line-height: 1.35;
-  }
-
-  /* TITOLI */
-  h2, h3, h4 {
-    font-size: 1.2rem !important;
-    margin-bottom: 10px !important;
-  }
-
-  p, span {
-    font-size: 0.9rem !important;
+    padding: 14px;
+    line-height: 1.45;
   }
 }
