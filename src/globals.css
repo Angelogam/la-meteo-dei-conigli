@@ -2816,3 +2816,208 @@ body {
   .forecast-day-card { transition: none !important; }
   .forecast-day-card:hover { transform: none; }
 }
+
+
+/* ===== WEATHER WEBSITE EXPERIENCE: charts first, data second ===== */
+.flight-desk-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem !important;
+}
+.flight-desk-main > .storyboard-panel {
+  order: -1;
+  width: 100%;
+  min-width: 0;
+  padding: clamp(1rem, 1.8vw, 1.45rem);
+  border: 1px solid rgba(74, 185, 220, .32);
+  border-radius: 24px;
+  background:
+    radial-gradient(ellipse at 8% 0%, rgba(8, 145, 178, .16), transparent 38%),
+    radial-gradient(ellipse at 100% 100%, rgba(37, 99, 235, .10), transparent 42%),
+    linear-gradient(145deg, rgba(8, 24, 42, .98), rgba(4, 13, 25, .99));
+  box-shadow: 0 20px 48px rgba(0, 0, 0, .22), inset 0 1px 0 rgba(255, 255, 255, .055);
+}
+.flight-desk-main > .storyboard-panel .storyboard-eyebrow {
+  margin-bottom: .45rem;
+  color: #7ee7f5;
+  font-size: .66rem;
+  letter-spacing: .17em;
+}
+.flight-desk-main > .storyboard-panel .storyboard-heading h2 {
+  font-size: clamp(1.45rem, 2.2vw, 1.9rem);
+  letter-spacing: -.045em;
+  line-height: 1.15;
+}
+.flight-desk-main > .storyboard-panel .storyboard-subtitle {
+  margin-top: .45rem;
+  color: #9eb5cb;
+  font-size: .82rem;
+}
+.flight-desk-main > .storyboard-panel .storyboard-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  padding: .55rem .75rem;
+  border: 1px solid rgba(126, 178, 207, .16);
+  border-radius: 999px;
+  background: rgba(3, 14, 26, .5);
+  color: #bfd1e1;
+}
+.flight-desk-main > .storyboard-panel .storyboard-periods {
+  margin-top: 1.1rem;
+  gap: .7rem;
+}
+.flight-desk-main > .storyboard-panel .story-period {
+  position: relative;
+  padding: .95rem;
+  border-color: rgba(126, 178, 207, .18);
+  border-radius: 16px;
+  background: linear-gradient(150deg, rgba(15, 36, 58, .88), rgba(6, 19, 34, .96));
+}
+.flight-desk-main > .storyboard-panel .story-period:hover {
+  border-color: rgba(103, 232, 249, .5);
+  background: linear-gradient(150deg, rgba(17, 47, 70, .94), rgba(6, 22, 38, .98));
+}
+.flight-desk-main > .storyboard-panel .story-period h3 {
+  margin-top: .65rem;
+  color: #f3f8ff;
+  font-size: .98rem;
+}
+.flight-desk-main > .storyboard-panel .story-weather {
+  color: #a8bfd2;
+}
+.flight-desk-main > .storyboard-panel .story-metrics {
+  gap: .65rem .45rem;
+}
+.flight-desk-main > .storyboard-panel .story-period-note {
+  color: #7f9ab2;
+}
+.flight-desk-main > .storyboard-panel .story-chart-card {
+  margin-top: .85rem;
+  padding: 1.1rem;
+  border-color: rgba(126, 178, 207, .17);
+  border-radius: 19px;
+  background:
+    linear-gradient(180deg, rgba(5, 16, 29, .92), rgba(3, 12, 23, .97));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035);
+}
+.flight-desk-main > .storyboard-panel .story-chart-title {
+  align-items: center;
+  padding: 0 .15rem .75rem;
+  border-bottom: 1px solid rgba(126, 178, 207, .12);
+}
+.flight-desk-main > .storyboard-panel .story-chart-title h3 {
+  font-size: 1.08rem;
+  color: #edf7ff;
+}
+.flight-desk-main > .storyboard-panel .story-chart-range {
+  padding: .4rem .65rem;
+  border: 1px solid rgba(251, 191, 36, .18);
+  border-radius: 999px;
+  background: rgba(120, 74, 12, .12);
+  color: #fcd68a;
+  font-size: .72rem;
+}
+.flight-desk-main > .storyboard-panel .story-chart-scroll {
+  padding-top: 1rem;
+}
+.flight-desk-main > .storyboard-panel .story-temp-chart {
+  height: 190px;
+  min-width: 520px;
+  filter: drop-shadow(0 0 8px rgba(56, 189, 248, .08));
+}
+.flight-desk-main > .storyboard-panel .story-hour-buttons {
+  gap: .35rem;
+  margin-top: .55rem;
+}
+.flight-desk-main > .storyboard-panel .story-hour-buttons button {
+  min-height: 64px;
+  border-color: rgba(126, 178, 207, .08);
+  border-radius: 10px;
+  background: rgba(11, 28, 46, .8);
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+.flight-desk-main > .storyboard-panel .story-hour-buttons button:hover {
+  border-color: rgba(103, 232, 249, .3);
+  transform: translateY(-1px);
+}
+.flight-desk-main > .storyboard-panel .story-hour-buttons button.active {
+  border-color: rgba(103, 232, 249, .7);
+  background: linear-gradient(160deg, rgba(8, 91, 116, .35), rgba(8, 30, 48, .92));
+}
+.flight-desk-main > .storyboard-panel .story-hour-buttons button b {
+  color: #fdc18b;
+  font-size: .85rem;
+}
+.flight-desk-main > .storyboard-panel .story-hour-buttons button small {
+  color: #8dd8f4;
+  font-size: .63rem;
+}
+.flight-desk-main > .storyboard-panel .storyboard-disclaimer {
+  margin: .75rem .1rem 0;
+  color: #7891a9;
+  font-size: .69rem;
+}
+.flight-desk-main .windgram-featured {
+  width: 100%;
+  min-width: 0;
+  margin-top: .25rem;
+  border-color: rgba(74, 185, 220, .26) !important;
+  border-radius: 23px !important;
+  background:
+    radial-gradient(ellipse at 0 0, rgba(8, 145, 178, .1), transparent 38%),
+    linear-gradient(145deg, rgba(8, 24, 42, .97), rgba(4, 13, 25, .99)) !important;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, .2), inset 0 1px 0 rgba(255,255,255,.04);
+}
+.flight-desk-main .forecast-dashboard-stack {
+  gap: 1.2rem !important;
+}
+.flight-desk-main .forecast-hero {
+  border-radius: 22px !important;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, .18), inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+.flight-desk-main .forecast-hero-accent {
+  height: 3px !important;
+}
+.flight-desk-main .forecast-main-grid > :nth-child(2),
+.flight-desk-main .forecast-main-grid > :nth-child(3) {
+  border-radius: 16px !important;
+  border-color: rgba(126, 178, 207, .16) !important;
+  background: linear-gradient(145deg, rgba(15, 34, 54, .85), rgba(7, 19, 33, .95)) !important;
+}
+.flight-desk-main .forecast-summary-stat {
+  border-radius: 15px !important;
+  background: linear-gradient(145deg, rgba(17, 33, 51, .9), rgba(7, 19, 33, .96)) !important;
+}
+@media (max-width: 640px) {
+  .flight-desk-main > .storyboard-panel {
+    padding: .85rem;
+    border-radius: 19px;
+  }
+  .flight-desk-main > .storyboard-panel .storyboard-heading h2 {
+    font-size: 1.35rem;
+  }
+  .flight-desk-main > .storyboard-panel .storyboard-legend {
+    justify-content: flex-start;
+    width: fit-content;
+    max-width: 100%;
+    white-space: normal;
+    border-radius: 13px;
+  }
+  .flight-desk-main > .storyboard-panel .story-period {
+    padding: .8rem;
+  }
+  .flight-desk-main > .storyboard-panel .story-chart-card {
+    padding: .7rem;
+  }
+  .flight-desk-main > .storyboard-panel .story-chart-title {
+    display: block;
+  }
+  .flight-desk-main > .storyboard-panel .story-chart-range {
+    display: inline-block;
+    margin-top: .55rem;
+    white-space: normal;
+  }
+  .flight-desk-main > .storyboard-panel .story-temp-chart { height: 150px; }
+}
