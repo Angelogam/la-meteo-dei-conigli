@@ -342,8 +342,10 @@ export default function VentiInterpolatiTab({
                         <XAxis type="number" dataKey="quota" domain={["dataMin", "dataMax"]} tickFormatter={(value: number) => `${value} m`} tick={{ fill: "#94a3b8", fontSize: 10 }} tickLine={false} axisLine={{ stroke: "rgba(148,163,184,.2)" }} />
                         <YAxis type="number" dataKey="speed" domain={[0, Math.max(10, Math.ceil(maxSpeed / 5) * 5)]} tick={{ fill: "#94a3b8", fontSize: 10 }} tickLine={false} axisLine={false} width={36} />
                         <Tooltip
+                          allowEscapeViewBox={{ x: true, y: true }}
+                          wrapperStyle={{ zIndex: 50, pointerEvents: "none", outline: "none", maxWidth: "min(260px, calc(100vw - 32px))" }}
                           cursor={{ stroke: "rgba(103,232,249,.35)", strokeDasharray: "4 4" }}
-                          contentStyle={{ background: "#071629", border: "1px solid rgba(103,232,249,.3)", borderRadius: 12, color: "#f8fafc" }}
+                          contentStyle={{ background: "#071629", border: "1px solid rgba(103,232,249,.3)", borderRadius: 12, color: "#f8fafc", boxShadow: "0 12px 32px rgba(0,0,0,.45)", padding: "10px 12px", fontSize: 12 }}
                           labelFormatter={(value) => `Quota: ${value} m`}
                           formatter={(value, name) => [`${Math.round(Number(value))} km/h`, name === "speed" ? "Velocità" : String(name)]}
                         />
@@ -372,8 +374,10 @@ export default function VentiInterpolatiTab({
                         <XAxis type="number" dataKey="dir" name="Direzione" domain={[0, 360]} ticks={[0, 90, 180, 270, 360]} tick={{ fill: "#94a3b8", fontSize: 10 }} tickLine={false} axisLine={{ stroke: "rgba(148,163,184,.2)" }} />
                         <YAxis type="number" dataKey="quota" name="Quota" domain={["dataMin", "dataMax"]} tickFormatter={(value: number) => `${value} m`} tick={{ fill: "#94a3b8", fontSize: 10 }} tickLine={false} axisLine={false} width={56} />
                         <Tooltip
+                          allowEscapeViewBox={{ x: true, y: true }}
+                          wrapperStyle={{ zIndex: 50, pointerEvents: "none", outline: "none", maxWidth: "min(260px, calc(100vw - 32px))" }}
                           cursor={{ strokeDasharray: "4 4", stroke: "rgba(103,232,249,.4)" }}
-                          contentStyle={{ background: "#071629", border: "1px solid rgba(103,232,249,.3)", borderRadius: 12, color: "#f8fafc" }}
+                          contentStyle={{ background: "#071629", border: "1px solid rgba(103,232,249,.3)", borderRadius: 12, color: "#f8fafc", boxShadow: "0 12px 32px rgba(0,0,0,.45)", padding: "10px 12px", fontSize: 12 }}
                           formatter={(value, name) => {
                             if (name === "Direzione") return [`${Math.round(Number(value))}°`, "Direzione"];
                             if (name === "Velocità") return [`${Math.round(Number(value))} km/h`, "Velocità"];
