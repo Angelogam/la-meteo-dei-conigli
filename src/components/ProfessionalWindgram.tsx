@@ -832,6 +832,36 @@ export default function ProfessionalWindgram({
           </div>
         </div>
 
+        <section aria-label="Andamento orario del vento al suolo" className="mt-2 rounded-xl border border-slate-200 bg-white p-3">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-black text-slate-900">Vento al suolo · andamento orario</h3>
+              <p className="text-xs text-slate-500">Seleziona una colonna per leggere i dettagli dell'ora</p>
+            </div>
+            <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">km/h</span>
+          </div>
+          <div className="grid grid-cols-6 gap-1 sm:grid-cols-12" role="group" aria-label="Seleziona ora del vento">
+            {hourlyData.map((entry) => {
+              const hasValue = entry.windGround != null && Number.isFinite(entry.windGround);
+              const speed = hasValue ? Math.max(0, entry.windGround as number) : 0;
+              const maxSpeed = Math.max(1, ...hourlyData.map((item) => item.windGround != null && Number.isFinite(item.windGround) ? Math.max(0, item.windGround) : 0));
+              const barHeight = hasValue ? Math.max(6, (speed / maxSpeed) * 54) : 4;
+              const active = selectedChartHour === entry.hour;
+              return (
+                <button key={entry.hour} type="button" onClick={() => setSelectedChartHour(entry.hour)}
+                  aria-pressed={active} aria-label={`${String(entry.hour).padStart(2, "0")}:00, vento ${hasValue ? `${speed} km/h` : "non disponibile"}`}
+                  className={`flex min-w-0 flex-col items-center justify-end rounded-lg px-1 pt-2 pb-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600 ${active ? "bg-cyan-50 ring-1 ring-cyan-500" : "hover:bg-slate-50"}`}>
+                  <span className="mb-1 text-[10px] font-bold tabular-nums text-slate-700">{hasValue ? speed : "—"}</span>
+                  <div className="flex h-14 w-full items-end justify-center">
+                    <div className={`w-3/5 max-w-5 rounded-t-sm ${!hasValue ? "bg-slate-200" : active ? "bg-cyan-600" : "bg-sky-400"}`} style={{ height: `${barHeight}px` }} />
+                  </div>
+                  <span className={`mt-1 text-[10px] font-bold ${active ? "text-cyan-800" : "text-slate-500"}`}>{String(entry.hour).padStart(2, "0")}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
         {(() => {
           const selected = hourlyData.find((entry) => entry.hour === selectedChartHour);
           if (!selected) return null;
