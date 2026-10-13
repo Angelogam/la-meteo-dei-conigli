@@ -3580,3 +3580,386 @@ body {
   border-radius: 2px;
   background: #10b981;
 }
+
+
+/* ===== INTERACTIVE WEATHER LAB — Recharts controls, tooltips and scales ===== */
+.flight-desk-main > .storyboard-panel {
+  padding: clamp(1rem, 1.5vw, 1.4rem) !important;
+  overflow: visible;
+  border: 1px solid rgba(66, 174, 222, .35) !important;
+  border-radius: 21px !important;
+  background:
+    radial-gradient(ellipse at 10% 0%, rgba(6, 125, 181, .15), transparent 42%),
+    radial-gradient(ellipse at 100% 100%, rgba(22, 101, 159, .08), transparent 38%),
+    linear-gradient(145deg, #091d32, #061323 72%, #04101f) !important;
+  box-shadow: 0 22px 48px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+.flight-desk-main > .storyboard-panel .storyboard-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.flight-desk-main > .storyboard-panel .storyboard-eyebrow {
+  margin: 0 0 .45rem;
+  color: #70d9f3;
+  font-size: .63rem;
+  font-weight: 900;
+  letter-spacing: .17em;
+}
+.flight-desk-main > .storyboard-panel .storyboard-heading h2 {
+  margin: 0;
+  color: #f3f8ff;
+  font-size: clamp(1.35rem, 2vw, 1.85rem);
+  font-weight: 850;
+  letter-spacing: -.05em;
+  line-height: 1.16;
+}
+.flight-desk-main > .storyboard-panel .storyboard-subtitle {
+  margin: .38rem 0 0;
+  color: #8da8c0;
+  font-size: .76rem;
+  line-height: 1.45;
+}
+.storyboard-live-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  flex: 0 0 auto;
+  margin-top: .15rem;
+  padding: .42rem .65rem;
+  border: 1px solid rgba(74, 222, 128, .2);
+  border-radius: 999px;
+  background: rgba(5, 75, 57, .18);
+  color: #8ce0b8;
+  font-size: .65rem;
+  font-weight: 800;
+}
+.story-live-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 9px rgba(74,222,128,.45);
+}
+.storyboard-control-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .65rem;
+  padding: .7rem;
+  border: 1px solid rgba(116, 166, 199, .16);
+  border-radius: 15px;
+  background: rgba(3, 13, 25, .54);
+}
+.story-range-controls,
+.story-series-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .3rem;
+}
+.story-range-controls button,
+.story-series-controls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  min-height: 32px;
+  padding: .4rem .6rem;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: #92acc3;
+  font-size: .67rem;
+  font-weight: 750;
+  white-space: nowrap;
+  transition: color .16s ease, background .16s ease, border-color .16s ease, opacity .16s ease;
+}
+.story-range-controls button:hover,
+.story-series-controls button:hover {
+  color: #e9f7ff;
+  background: rgba(27, 59, 84, .56);
+}
+.story-range-controls button.is-active {
+  border-color: rgba(70, 178, 226, .34);
+  color: #e7f7ff;
+  background: linear-gradient(135deg, rgba(6, 109, 166, .36), rgba(9, 53, 89, .64));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+.story-series-controls button:not(.is-on) { opacity: .48; }
+.story-series-controls button:focus-visible,
+.story-range-controls button:focus-visible,
+.story-hour-buttons button:focus-visible {
+  outline: 2px solid #67e8f9;
+  outline-offset: 2px;
+}
+.story-series-controls i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+}
+.story-series-controls .temperature-toggle i { background: #fb923c; }
+.story-series-controls .dew-toggle i { background: #38bdf8; }
+.story-series-controls .wind-toggle i { background: #10b981; }
+.story-series-controls .gust-toggle i { background: #60a5fa; }
+.story-chart-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .55rem;
+  margin: .75rem 0;
+}
+.story-chart-stat {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  min-width: 0;
+  padding: .65rem .75rem;
+  border: 1px solid rgba(110, 159, 191, .14);
+  border-radius: 13px;
+  background: linear-gradient(140deg, rgba(16, 38, 60, .8), rgba(7, 21, 37, .8));
+}
+.story-stat-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(19, 53, 79, .7);
+}
+.story-stat-icon svg { width: 16px; height: 16px; }
+.story-stat-icon.is-temp { color: #fdba74; background: rgba(194, 65, 12, .15); }
+.story-stat-icon.is-wind { color: #6ee7b7; background: rgba(5, 150, 105, .14); }
+.story-stat-icon.is-gust { color: #93c5fd; background: rgba(37, 99, 235, .15); }
+.story-chart-stat > span:last-child { display: flex; flex-direction: column; min-width: 0; gap: .12rem; }
+.story-chart-stat small {
+  color: #8ca6be;
+  font-size: .62rem;
+  line-height: 1.3;
+}
+.story-chart-stat strong {
+  color: #f4f9ff;
+  font-size: clamp(.9rem, 1.15vw, 1.12rem);
+  line-height: 1.2;
+  font-weight: 850;
+  letter-spacing: -.025em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.story-chart-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .65rem;
+  min-width: 0;
+}
+.story-chart-module {
+  min-width: 0;
+  padding: .85rem .85rem .45rem;
+  border: 1px solid rgba(110, 159, 191, .16);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(6, 19, 34, .87), rgba(4, 14, 26, .93));
+}
+.story-chart-module-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .8rem;
+  margin-bottom: .2rem;
+}
+.story-module-kicker {
+  color: #6fbfdc;
+  font-size: .57rem;
+  font-weight: 900;
+  letter-spacing: .16em;
+}
+.story-chart-module-heading h3 {
+  margin: .18rem 0 0;
+  color: #eaf4ff;
+  font-size: .91rem;
+  line-height: 1.3;
+  font-weight: 850;
+  letter-spacing: -.025em;
+}
+.story-module-unit {
+  display: inline-flex;
+  align-items: center;
+  padding: .28rem .5rem;
+  border: 1px solid rgba(116, 166, 199, .15);
+  border-radius: 999px;
+  background: rgba(11, 29, 47, .65);
+  color: #92acc3;
+  font-size: .62rem;
+  font-weight: 800;
+}
+.story-recharts-area {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+.story-recharts-area .recharts-wrapper:focus,
+.story-recharts-area .recharts-surface:focus { outline: none; }
+.story-recharts-area .recharts-cartesian-axis-tick-value { font-variant-numeric: tabular-nums; }
+.story-recharts-area .recharts-active-dot { filter: drop-shadow(0 0 4px rgba(103,232,249,.35)); }
+.story-chart-tooltip {
+  min-width: 195px;
+  padding: .7rem .8rem;
+  border: 1px solid rgba(114, 189, 222, .3);
+  border-radius: 12px;
+  background: rgba(4, 16, 30, .97);
+  box-shadow: 0 16px 40px rgba(0,0,0,.38);
+  backdrop-filter: blur(14px);
+}
+.story-chart-tooltip-title {
+  margin-bottom: .45rem;
+  padding-bottom: .4rem;
+  border-bottom: 1px solid rgba(132, 169, 196, .16);
+  color: #8be4fa;
+  font-size: .74rem;
+  font-weight: 850;
+}
+.story-tooltip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .9rem;
+  padding: .16rem 0;
+  font-size: .66rem;
+}
+.story-tooltip-row > span { display: inline-flex; align-items: center; gap: .4rem; color: #9ab0c5; }
+.story-tooltip-row strong { color: #eff7ff; font-size: .68rem; font-variant-numeric: tabular-nums; }
+.tooltip-dot { display: inline-block; width: 6px; height: 6px; flex: 0 0 6px; border-radius: 50%; }
+.tooltip-dot.is-temperature { background: #fb923c; }
+.tooltip-dot.is-dew { background: #38bdf8; }
+.tooltip-dot.is-wind { background: #10b981; }
+.tooltip-dot.is-gust { background: #60a5fa; }
+.tooltip-dot.is-humidity { background: #67e8f9; }
+.tooltip-dot.is-cloud { background: #a5b4fc; }
+.tooltip-dot.is-rain { background: #818cf8; }
+.tooltip-dot.is-direction { background: #c4b5fd; }
+.story-selected-hour {
+  display: grid;
+  grid-template-columns: minmax(104px, 1.1fr) repeat(4, minmax(0, 1fr));
+  gap: .4rem;
+  margin-top: .7rem;
+  padding: .6rem;
+  border: 1px solid rgba(79, 172, 212, .23);
+  border-radius: 13px;
+  background: linear-gradient(100deg, rgba(7, 65, 95, .27), rgba(5, 25, 43, .6));
+}
+.story-selected-hour-title,
+.story-selected-value {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: .18rem;
+  min-width: 0;
+  padding: .15rem .5rem;
+}
+.story-selected-hour-title { border-right: 1px solid rgba(121, 167, 194, .16); }
+.story-selected-hour-title span {
+  color: #6ecce7;
+  font-size: .54rem;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+.story-selected-hour-title strong {
+  color: #f3f8ff;
+  font-size: 1rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.story-selected-value {
+  display: grid;
+  grid-template-columns: 15px minmax(0, 1fr);
+  align-items: center;
+  column-gap: .35rem;
+}
+.story-selected-value svg {
+  grid-row: span 2;
+  width: 14px;
+  height: 14px;
+  color: #65c5e9;
+}
+.story-selected-value > span { color: #839eb7; font-size: .58rem; }
+.story-selected-value > strong {
+  color: #eaf5ff;
+  font-size: .72rem;
+  line-height: 1.25;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.flight-desk-main > .storyboard-panel .story-hour-buttons {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(48px, 1fr);
+  grid-template-columns: none;
+  gap: .35rem;
+  width: 100%;
+  min-width: 0;
+  margin-top: .65rem;
+  padding: .15rem .08rem .45rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(65, 150, 188, .5) transparent;
+}
+.flight-desk-main > .storyboard-panel .story-hour-buttons button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .22rem;
+  min-width: 48px;
+  min-height: 58px;
+  padding: .38rem .25rem;
+  border: 1px solid rgba(104, 155, 187, .16);
+  border-radius: 10px;
+  background: rgba(10, 27, 45, .85);
+  color: #8ea9c1;
+}
+.flight-desk-main > .storyboard-panel .story-hour-buttons button span { font-size: .61rem; }
+.flight-desk-main > .storyboard-panel .story-hour-buttons button b { color: #fdba74; font-size: .75rem; font-weight: 850; }
+.flight-desk-main > .storyboard-panel .story-hour-buttons button small { color: #79c8ed; font-size: .58rem; }
+.flight-desk-main > .storyboard-panel .story-hour-buttons button.active,
+.flight-desk-main > .storyboard-panel .story-hour-buttons button[aria-pressed="true"] {
+  border-color: rgba(56, 189, 248, .75);
+  background: linear-gradient(160deg, rgba(4, 94, 139, .45), rgba(7, 29, 49, .98));
+  box-shadow: 0 0 0 1px rgba(56,189,248,.08), 0 4px 14px rgba(0,0,0,.15);
+}
+.flight-desk-main > .storyboard-panel .storyboard-disclaimer {
+  margin: .5rem .1rem 0;
+  color: #718ba3;
+  font-size: .62rem;
+  line-height: 1.5;
+}
+@media (max-width: 900px) {
+  .storyboard-control-row { align-items: flex-start; flex-direction: column; }
+  .story-series-controls { width: 100%; }
+  .story-selected-hour { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .story-selected-hour-title { border-right: 0; border-bottom: 1px solid rgba(121,167,194,.16); padding-bottom: .4rem; }
+}
+@media (max-width: 560px) {
+  .flight-desk-main > .storyboard-panel { padding: .75rem !important; }
+  .flight-desk-main > .storyboard-panel .storyboard-heading { gap: .5rem; }
+  .storyboard-live-stat { font-size: .57rem; padding: .32rem .42rem; }
+  .storyboard-control-row { padding: .5rem; }
+  .story-range-controls { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); width: 100%; }
+  .story-range-controls button { font-size: .62rem; }
+  .story-series-controls button { flex: 1 1 auto; font-size: .61rem; padding: .36rem .4rem; }
+  .story-chart-stats { gap: .35rem; }
+  .story-chart-stat { align-items: flex-start; flex-direction: column; gap: .35rem; padding: .55rem; }
+  .story-stat-icon { width: 27px; height: 27px; flex-basis: 27px; }
+  .story-chart-stat small { font-size: .57rem; }
+  .story-chart-stat strong { font-size: .88rem; }
+  .story-chart-module { padding: .6rem .5rem .35rem; }
+  .story-chart-module-heading h3 { font-size: .8rem; }
+  .story-module-kicker { font-size: .51rem; }
+  .story-selected-hour { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}

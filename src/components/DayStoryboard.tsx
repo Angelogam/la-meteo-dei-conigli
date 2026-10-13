@@ -1,7 +1,18 @@
-"use client";
-
-import React, { useMemo } from "react";
-import { Cloud, CloudRain, Sun, Thermometer, Wind, Sunrise, Sunset } from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { Activity, Droplets, Gauge, Thermometer, Wind } from "lucide-react";
 import type { HourData } from "@/types/meteo";
 
 interface DayStoryboardProps {
@@ -11,156 +22,276 @@ interface DayStoryboardProps {
   onHourSelect: (hour: number) => void;
 }
 
-type Period = { title: string; time: string; start: number; end: number; icon: React.ReactNode; tone: string; note: string };
+type TimeRange = "giornata" | "mattina" | "centrale" | "pomeriggio";
 
-const PERIODS: Period[] = [
-  { title: "Mattina", time: "08–11", start: 8, end: 11, icon: <Sunrise />, tone: "morning", note: "Avvio della giornata" },
-  { title: "Centrale", time: "12–15", start: 12, end: 15, icon: <Sun />, tone: "midday", note: "Fascia di massimo riscaldamento" },
-  { title: "Pomeriggio", time: "16–19", start: 16, end: 19, icon: <Sunset />, tone: "evening", note: "Evoluzione nel pomeriggio" },
+interface ChartPoint {
+  label: string;
+  hour: number;
+  temperature: number | null;
+  dewPoint: number | null;
+  windSpeed: number | null;
+  windGusts: number | null;
+  humidity: number | null;
+  precipitation: number | null;
+  cloudCover: number | null;
+  windDir: number | null;
+}
+
+const TIME_RANGES: { id: TimeRange; label: string; start: number; end: number }[] = [
+  { id: "giornata", label: "Tutta la giornata", start: 7, end: 20 },
+  { id: "mattina", label: "Mattina", start: 7, end: 11 },
+  { id: "centrale", label: "Ore centrali", start: 12, end: 15 },
+  { id: "pomeriggio", label: "Pomeriggio", start: 16, end: 20 },
 ];
 
-function average(values: Array<number | null | undefined>): number | null {
-  const valid = values.filter((v): v is number => typeof v === "number" && Number.isFinite(v));
-  return valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : null;
+const fmt = (value: number | null | undefined, digits = 1) =>
+  value == null || !Number.isFinite(value) ? "N/D" : value.toFixed(digits);
+
+function rangeTemperature(points: ChartPoint[]): [number, number] {
+  const values = points.flatMap((point) => [point.temperature, point.dewPoint])
+    .filter((value): value is number => value != null && Number.isFinite(value));
+  if (!values.length) return [0, 10];
+  const min = Math.floor(Math.min(...values) - 1);
+  const max = Math.ceil(Math.max(...values) + 1);
+  return min === max ? [min - 1, max + 1] : [min, max];
 }
 
-function fmt(value: number | null, digits = 0): string {
-  return value === null || !Number.isFinite(value) ? "—" : value.toFixed(digits);
+function WeatherTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload?: ChartPoint; name?: string; value?: number | string | null; color?: string }>;
+  label?: string | number;
+}) {
+  if (!active || !payload?.length) return null;
+  const point = payload[0]?.payload;
+  if (!point) return null;
+
+  return (
+    <div className="story-chart-tooltip">
+      <div className="story-chart-tooltip-title">Ore {label}:00</div>
+      <div className="story-tooltip-row"><span><i className="tooltip-dot is-temperature" />Temperatura</span><strong>{fmt(point.temperature)} °C</strong></div>
+      <div className="story-tooltip-row"><span><i className="tooltip-dot is-dew" />Punto di rugiada</span><strong>{fmt(point.dewPoint)} °C</strong></div>
+      <div className="story-tooltip-row"><span><i className="tooltip-dot is-wind" />Vento medio</span><strong>{fmt(point.windSpeed, 0)} km/h</strong></div>
+      <div className="story-tooltip-row"><span><i className="tooltip-dot is-gust" />Raffiche</span><strong>{fmt(point.windGusts, 0)} km/h</strong></div>
+      <div className="story-tooltip-row"><span><i className="tooltip-dot is-humidity" />Umidità</span><strong>{fmt(point.humidity, 0)}%</strong></div>
+      <div className="story-tooltip-row"><span><i className="tooltip-dot is-cloud" />Nuvolosità</span><strong>{fmt(point.cloudCover, 0)}%</strong></div>
+      <div className="story-tooltip-row"><span><i className="tooltip-dot is-rain" />Precipitazioni</span><strong>{fmt(point.precipitation, 1)} mm/h</strong></div>
+      <div className="story-tooltip-row"><span><i className="tooltip-dot is-direction" />Direzione</span><strong>{point.windDir == null ? "N/D" : Math.round(point.windDir) + "°"}</strong></div>
+    </div>
+  );
 }
 
-function weatherLabel(cloud: number | null, rain: number | null): string {
-  if (rain !== null && rain >= 0.5) return "Possibili precipitazioni";
-  if (cloud === null) return "Dati incompleti";
-  if (cloud >= 80) return "Cielo molto nuvoloso";
-  if (cloud >= 45) return "Nuvolosità variabile";
-  return "Più spazio al sole";
-}
+export default function DayStoryboard({
+  dayData,
+  siteName,
+  selectedHour,
+  onHourSelect,
+}: DayStoryboardProps) {
+  const [timeRange, setTimeRange] = useState<TimeRange>("giornata");
+  const [showTemperature, setShowTemperature] = useState(true);
+  const [showDewPoint, setShowDewPoint] = useState(true);
+  const [showWind, setShowWind] = useState(true);
+  const [showGusts, setShowGusts] = useState(true);
 
-function lineSegments<T>(items: T[], getY: (item: T) => number | null, getX: (item: T, index: number) => number): string[] {
-  const segments: string[] = [];
-  let current: string[] = [];
-  items.forEach((item, index) => {
-    const y = getY(item);
-    if (y === null || !Number.isFinite(y)) {
-      if (current.length) segments.push(current.join(" "));
-      current = [];
-      return;
-    }
-    current.push(`${getX(item, index)},${y}`);
-  });
-  if (current.length) segments.push(current.join(" "));
-  return segments.filter(segment => segment.includes(" "));
-}
+  const allPoints = useMemo<ChartPoint[]>(() => dayData
+    .map((item) => {
+      const date = new Date(item.time);
+      const hour = date.getHours();
+      return {
+        label: String(hour).padStart(2, "0"),
+        hour,
+        temperature: item.temperature,
+        dewPoint: item.dewPoint,
+        windSpeed: item.windSpeed,
+        windGusts: item.windGusts,
+        humidity: item.humidity,
+        precipitation: item.precipitation,
+        cloudCover: item.cloudCover,
+        windDir: item.windDir,
+      };
+    })
+    .filter((item) => item.hour >= 7 && item.hour <= 20)
+    .sort((a, b) => a.hour - b.hour), [dayData]);
 
-export default function DayStoryboard({ dayData, siteName, selectedHour, onHourSelect }: DayStoryboardProps) {
-  const timeline = useMemo(() => PERIODS.map((p) => {
-    const hours = dayData.filter((h) => {
-      const hour = new Date(h.time).getHours();
-      return hour >= p.start && hour <= p.end;
-    });
-    return {
-      ...p,
-      hours,
-      temp: average(hours.map(h => h.temperature)),
-      wind: average(hours.map(h => h.windSpeed)),
-      gust: average(hours.map(h => h.windGusts)),
-      cloud: average(hours.map(h => h.cloudCover)),
-      rain: average(hours.map(h => h.precipitation)),
-    };
-  }), [dayData]);
+  const activeRange = TIME_RANGES.find((range) => range.id === timeRange) ?? TIME_RANGES[0];
+  const chartData = allPoints.filter((point) => point.hour >= activeRange.start && point.hour <= activeRange.end);
+  const temperatureDomain = rangeTemperature(chartData);
+  const windValues = chartData.flatMap((point) => [point.windSpeed, point.windGusts])
+    .filter((value): value is number => value != null && Number.isFinite(value));
+  const windDomain = Math.max(5, Math.ceil(Math.max(0, ...windValues) / 5) * 5);
+  const maxTemperature = chartData.map((point) => point.temperature).filter((v): v is number => v != null && Number.isFinite(v));
+  const maxWind = chartData.map((point) => point.windSpeed).filter((v): v is number => v != null && Number.isFinite(v));
+  const maxGust = chartData.map((point) => point.windGusts).filter((v): v is number => v != null && Number.isFinite(v));
+  const selectedPoint = chartData.find((point) => point.hour === selectedHour) ?? null;
+  const hasTemperature = chartData.some((point) => point.temperature != null || point.dewPoint != null);
+  const hasWind = chartData.some((point) => point.windSpeed != null || point.windGusts != null);
 
-  const chart = dayData.filter((h) => {
-    const hour = new Date(h.time).getHours();
-    return hour >= 7 && hour <= 20 && (h.temperature != null || h.windSpeed != null);
-  });
-  const temps = chart.map(h => h.temperature).filter((v): v is number => v != null && Number.isFinite(v));
-  const dewPoints = chart.map(h => h.dewPoint).filter((v): v is number => v != null && Number.isFinite(v));
-  const winds = chart.map(h => h.windSpeed).filter((v): v is number => v != null && Number.isFinite(v));
-  const allTemperatures = [...temps, ...dewPoints];
-  const minT = allTemperatures.length ? Math.floor(Math.min(...allTemperatures) - 1) : 0;
-  const maxT = allTemperatures.length ? Math.ceil(Math.max(...allTemperatures) + 1) : 1;
-  const maxWind = winds.length ? Math.max(10, Math.ceil(Math.max(...winds) / 5) * 5) : 10;
-  const xFor = (_h: HourData, index: number) => chart.length <= 1 ? 50 : 8 + index * 84 / (chart.length - 1);
-  const temperatureY = (value: number) => 45 - ((value - minT) / Math.max(1, maxT - minT)) * 31;
-  const tempY = (h: HourData) => h.temperature == null || !Number.isFinite(h.temperature) ? null : temperatureY(h.temperature);
-  const dewY = (h: HourData) => h.dewPoint == null || !Number.isFinite(h.dewPoint) ? null : temperatureY(h.dewPoint);
-  const tempSegments = lineSegments(chart, tempY, xFor);
-  const dewSegments = lineSegments(chart, dewY, xFor);
-  const windBars = chart.flatMap((h, i) => {
-    if (h.windSpeed == null || !Number.isFinite(h.windSpeed)) return [];
-    const barHeight = Math.max(0.8, (Math.max(0, h.windSpeed) / maxWind) * 12);
-    return [{ x: xFor(h, i) - Math.min(0.7, 20 / Math.max(1, chart.length)), y: 52 - barHeight, width: Math.min(1.4, 36 / Math.max(1, chart.length)), height: barHeight, hour: new Date(h.time).getHours() }];
-  });
-  const hasData = dayData.length > 0;
+  const chooseRange = (range: typeof TIME_RANGES[number]) => {
+    setTimeRange(range.id);
+    const first = allPoints.find((point) => point.hour >= range.start && point.hour <= range.end);
+    if (first) onHourSelect(first.hour);
+  };
+
+  const chooseChartHour = (state: { activeLabel?: string | number } | null | undefined) => {
+    if (state?.activeLabel == null) return;
+    const hour = Number(state.activeLabel);
+    if (Number.isInteger(hour) && hour >= 0 && hour <= 23) onHourSelect(hour);
+  };
+
+  const tickInterval = chartData.length > 10 ? 1 : 0;
 
   return (
     <section className="storyboard-panel" aria-labelledby="storyboard-title">
       <div className="storyboard-heading">
         <div>
-          <p className="storyboard-eyebrow">LA GIORNATA, ORA PER ORA</p>
-          <h2 id="storyboard-title">Come evolve il meteo</h2>
-          <p className="storyboard-subtitle">{siteName} · valori medi delle fasce orarie disponibili</p>
+          <p className="storyboard-eyebrow">PREVISIONE INTERATTIVA · ORA PER ORA</p>
+          <h2 id="storyboard-title">Esplora il meteo di {siteName}</h2>
+          <p className="storyboard-subtitle">Seleziona un intervallo o un’ora: grafici e riepilogo si aggiornano insieme.</p>
         </div>
-        <div className="storyboard-legend" aria-label="Legenda del grafico">
-          <span className="legend-temp" /> Temperatura (°C)
-          <span className="legend-dew" /> Punto di rugiada (°C)
-          <span className="legend-wind" /> Vento (km/h)
+        <div className="storyboard-live-stat">
+          <span className="story-live-indicator" />
+          {chartData.length ? chartData.length + " ore disponibili" : "In attesa dei dati"}
         </div>
       </div>
 
-      {!hasData ? (
-        <div className="storyboard-empty" role="status">Le previsioni orarie non sono ancora disponibili. Riprova tra poco.</div>
+      {!allPoints.length ? (
+        <div className="storyboard-empty" role="status">
+          Le previsioni orarie non sono ancora disponibili. Riprova tra poco.
+        </div>
       ) : (
         <>
-          <div className="storyboard-periods">
-            {timeline.map((p) => {
-              const targetHour = p.hours.length
-                ? new Date(p.hours.reduce((best, item) => Math.abs(new Date(item.time).getHours() - (p.start + 1)) < Math.abs(new Date(best.time).getHours() - (p.start + 1)) ? item : best).time).getHours()
-                : p.start + 1;
-              return (
-                <button key={p.title} type="button" className={`story-period ${p.tone}`} onClick={() => onHourSelect(targetHour)} aria-label={`Seleziona la fascia ${p.title}`}>
-                  <div className="story-period-top"><span className="story-period-icon">{p.icon}</span><span className="story-period-time">{p.time}</span></div>
-                  <h3>{p.title}</h3>
-                  <p className="story-weather">{weatherLabel(p.cloud, p.rain)}</p>
-                  <div className="story-metrics">
-                    <span><Thermometer /> <b>{fmt(p.temp, 1)}°C</b></span>
-                    <span><Wind /> <b>{fmt(p.wind)} km/h</b></span>
-                    <span><Cloud /> <b>{fmt(p.cloud)}%</b></span>
-                    {p.gust !== null && <span><Wind /> <b>Raffiche {fmt(p.gust)} km/h</b></span>}
-                    {p.rain !== null && p.rain > 0 && <span><CloudRain /> <b>{fmt(p.rain, 1)} mm/h</b></span>}
-                  </div>
-                  <span className="story-period-note">{p.note}</span>
+          <div className="storyboard-control-row">
+            <div className="story-range-controls" role="group" aria-label="Intervallo temporale del grafico">
+              {TIME_RANGES.map((range) => (
+                <button
+                  key={range.id}
+                  type="button"
+                  className={timeRange === range.id ? "is-active" : ""}
+                  aria-pressed={timeRange === range.id}
+                  onClick={() => chooseRange(range)}
+                >
+                  {range.label}
                 </button>
-              );
-            })}
+              ))}
+            </div>
+            <div className="story-series-controls" role="group" aria-label="Mostra o nascondi serie">
+              <button type="button" className={showTemperature ? "is-on temperature-toggle" : "temperature-toggle"} aria-pressed={showTemperature} onClick={() => setShowTemperature((value) => !value)}>
+                <i />Temperatura
+              </button>
+              <button type="button" className={showDewPoint ? "is-on dew-toggle" : "dew-toggle"} aria-pressed={showDewPoint} onClick={() => setShowDewPoint((value) => !value)}>
+                <i />Rugiada
+              </button>
+              <button type="button" className={showWind ? "is-on wind-toggle" : "wind-toggle"} aria-pressed={showWind} onClick={() => setShowWind((value) => !value)}>
+                <i />Vento
+              </button>
+              <button type="button" className={showGusts ? "is-on gust-toggle" : "gust-toggle"} aria-pressed={showGusts} onClick={() => setShowGusts((value) => !value)}>
+                <i />Raffiche
+              </button>
+            </div>
           </div>
 
-          <div className="story-chart-card">
-            <div className="story-chart-title">
-              <div><span className="story-chart-kicker">ANDAMENTO PREVISTO</span><h3>Temperatura e vento</h3></div>
-              <span className="story-chart-range">{temps.length ? `${minT}° – ${maxT}°C` : "Temperatura N/D"} · vento fino a {maxWind} km/h</span>
+          <div className="story-chart-stats">
+            <div className="story-chart-stat">
+              <span className="story-stat-icon is-temp"><Thermometer aria-hidden="true" /></span>
+              <span><small>Massima prevista</small><strong>{maxTemperature.length ? Math.max(...maxTemperature).toFixed(1) + " °C" : "N/D"}</strong></span>
             </div>
-            <div className="story-chart-scroll">
-              <svg className="story-temp-chart" viewBox="0 0 100 56" preserveAspectRatio="none" role="img" aria-label="Grafico orario di temperatura e vento. L'asse verticale del vento è normalizzato sulla scala indicata.">
-                {[12, 23, 34, 45].map(y => <line key={y} x1="5" y1={y} x2="95" y2={y} stroke="rgba(148,163,184,.16)" strokeWidth=".25" vectorEffect="non-scaling-stroke" />)}
-                {windBars.map((bar) => <rect key={`windbar-${bar.hour}`} x={bar.x} y={bar.y} width={bar.width} height={bar.height} rx=".25" fill="#10b981" fillOpacity=".88" />)}
-                {dewSegments.map((segment, i) => <polyline key={`dew-${i}`} points={segment} fill="none" stroke="#38bdf8" strokeWidth=".9" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="1.4 1.2" vectorEffect="non-scaling-stroke" />)}
-                {tempSegments.map((segment, i) => <polyline key={`temp-${i}`} points={segment} fill="none" stroke="#fb923c" strokeWidth="1.15" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />)}
-                {chart.map((h, i) => {
-                  const hour = new Date(h.time).getHours();
-                  const y = tempY(h);
-                  return y === null ? null : <circle key={h.time.toString()} cx={xFor(h, i)} cy={y} r={hour === selectedHour ? 1.45 : .7} fill={hour === selectedHour ? "#fff" : "#fb923c"} stroke={hour === selectedHour ? "#38bdf8" : "#fb923c"} strokeWidth=".35" vectorEffect="non-scaling-stroke" />;
-                })}
-              </svg>
-              <div className="story-hour-buttons">
-                {chart.map((h) => {
-                  const hour = new Date(h.time).getHours();
-                  return <button type="button" key={h.time.toString()} className={hour === selectedHour ? "active" : ""} aria-pressed={hour === selectedHour} onClick={() => onHourSelect(hour)}><span>{String(hour).padStart(2, "0")}</span><b>{h.temperature == null ? "—" : `${Math.round(h.temperature)}°`}</b><small>{h.windSpeed == null ? "—" : `${Math.round(h.windSpeed)} km/h`}</small></button>;
-                })}
-              </div>
+            <div className="story-chart-stat">
+              <span className="story-stat-icon is-wind"><Wind aria-hidden="true" /></span>
+              <span><small>Vento massimo</small><strong>{maxWind.length ? Math.max(...maxWind).toFixed(0) + " km/h" : "N/D"}</strong></span>
+            </div>
+            <div className="story-chart-stat">
+              <span className="story-stat-icon is-gust"><Activity aria-hidden="true" /></span>
+              <span><small>Raffica massima</small><strong>{maxGust.length ? Math.max(...maxGust).toFixed(0) + " km/h" : "N/D"}</strong></span>
             </div>
           </div>
-          <p className="storyboard-disclaimer">Sintesi descrittiva dei dati di previsione, non un giudizio automatico sull'idoneità al volo. Valuta anche vento in quota, raffiche, evoluzione locale e bollettini ufficiali.</p>
+
+          <div className="story-chart-grid">
+            <section className="story-chart-module temperature-module" aria-labelledby="temperature-chart-title">
+              <div className="story-chart-module-heading">
+                <div><span className="story-module-kicker">TEMPERATURA</span><h3 id="temperature-chart-title">Temperatura e punto di rugiada</h3></div>
+                <span className="story-module-unit">°C</span>
+              </div>
+              {hasTemperature ? (
+                <div className="story-recharts-area" role="img" aria-label="Grafico interattivo di temperatura e punto di rugiada. Seleziona un punto per cambiare l’ora del briefing.">
+                  <ResponsiveContainer width="100%" height={250}>
+                    <AreaChart data={chartData} syncId="weather-hours" margin={{ top: 8, right: 12, bottom: 0, left: -14 }} onClick={(state) => chooseChartHour(state)}>
+                      <defs>
+                        <linearGradient id="temperatureFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#fb923c" stopOpacity={0.28} />
+                          <stop offset="95%" stopColor="#fb923c" stopOpacity={0.01} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid vertical={false} stroke="rgba(133,164,191,.13)" strokeDasharray="3 5" />
+                      <XAxis dataKey="label" tick={{ fill: "#8ca6bd", fontSize: 11 }} tickLine={false} axisLine={{ stroke: "rgba(133,164,191,.18)" }} interval={tickInterval} />
+                      <YAxis yAxisId="temperature" type="number" domain={temperatureDomain} tick={{ fill: "#8ca6bd", fontSize: 10 }} tickLine={false} axisLine={false} width={43} unit="°" />
+                      <Tooltip content={<WeatherTooltip />} cursor={{ stroke: "rgba(148,210,239,.4)", strokeDasharray: "4 4" }} />
+                      {selectedPoint && <ReferenceLine x={selectedPoint.label} stroke="#72d9f7" strokeDasharray="4 4" strokeOpacity={0.8} yAxisId="temperature" />}
+                      {showTemperature && <Area yAxisId="temperature" type="monotone" dataKey="temperature" name="Temperatura" stroke="#fb923c" strokeWidth={2.8} fill="url(#temperatureFill)" connectNulls={false} activeDot={{ r: 5, stroke: "#f8fafc", strokeWidth: 2, fill: "#fb923c" }} isAnimationActive={false} />}
+                      {showDewPoint && <Line yAxisId="temperature" type="monotone" dataKey="dewPoint" name="Punto di rugiada" stroke="#38bdf8" strokeWidth={2} strokeDasharray="5 4" dot={false} activeDot={{ r: 4, stroke: "#e0f2fe", strokeWidth: 2, fill: "#38bdf8" }} connectNulls={false} isAnimationActive={false} />}
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="storyboard-empty compact" role="status">Temperature non disponibili per l’intervallo scelto.</div>
+              )}
+            </section>
+
+            <section className="story-chart-module wind-module" aria-labelledby="wind-chart-title">
+              <div className="story-chart-module-heading">
+                <div><span className="story-module-kicker">VENTO AL SUOLO</span><h3 id="wind-chart-title">Velocità e raffiche</h3></div>
+                <span className="story-module-unit">km/h</span>
+              </div>
+              {hasWind ? (
+                <div className="story-recharts-area" role="img" aria-label="Grafico a barre interattivo di vento medio e raffiche. Seleziona un’ora per aggiornare il briefing.">
+                  <ResponsiveContainer width="100%" height={170}>
+                    <BarChart data={chartData} syncId="weather-hours" margin={{ top: 8, right: 12, bottom: 0, left: -14 }} barGap={3} onClick={(state) => chooseChartHour(state)}>
+                      <CartesianGrid vertical={false} stroke="rgba(133,164,191,.13)" strokeDasharray="3 5" />
+                      <XAxis dataKey="label" tick={{ fill: "#8ca6bd", fontSize: 11 }} tickLine={false} axisLine={{ stroke: "rgba(133,164,191,.18)" }} interval={tickInterval} />
+                      <YAxis domain={[0, windDomain]} tick={{ fill: "#8ca6bd", fontSize: 10 }} tickLine={false} axisLine={false} width={43} unit="" />
+                      <Tooltip content={<WeatherTooltip />} cursor={{ fill: "rgba(56,189,248,.06)" }} />
+                      {selectedPoint && <ReferenceLine x={selectedPoint.label} stroke="#72d9f7" strokeDasharray="4 4" strokeOpacity={0.8} />}
+                      {showWind && <Bar dataKey="windSpeed" name="Vento medio" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={18} isAnimationActive={false} />}
+                      {showGusts && <Bar dataKey="windGusts" name="Raffiche" fill="#60a5fa" radius={[4, 4, 0, 0]} maxBarSize={18} isAnimationActive={false} />}
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="storyboard-empty compact" role="status">Vento non disponibile per l’intervallo scelto.</div>
+              )}
+            </section>
+          </div>
+
+          {selectedPoint && (
+            <div className="story-selected-hour" aria-live="polite">
+              <div className="story-selected-hour-title"><span>ORA SELEZIONATA</span><strong>{selectedPoint.label}:00</strong></div>
+              <div className="story-selected-value"><Thermometer aria-hidden="true" /><span>Temperatura</span><strong>{fmt(selectedPoint.temperature)} °C</strong></div>
+              <div className="story-selected-value"><Droplets aria-hidden="true" /><span>Umidità</span><strong>{fmt(selectedPoint.humidity, 0)}%</strong></div>
+              <div className="story-selected-value"><Wind aria-hidden="true" /><span>Vento</span><strong>{fmt(selectedPoint.windSpeed, 0)} km/h</strong></div>
+              <div className="story-selected-value"><Gauge aria-hidden="true" /><span>Direzione</span><strong>{selectedPoint.windDir == null ? "N/D" : Math.round(selectedPoint.windDir) + "°"}</strong></div>
+            </div>
+          )}
+
+          <div className="story-hour-buttons" role="group" aria-label="Seleziona un’ora">
+            {chartData.map((point) => (
+              <button
+                type="button"
+                key={point.label}
+                className={point.hour === selectedHour ? "active" : ""}
+                aria-pressed={point.hour === selectedHour}
+                aria-label={"Seleziona le condizioni delle ore " + point.label}
+                onClick={() => onHourSelect(point.hour)}
+              >
+                <span>{point.label}</span>
+                <b>{point.temperature == null ? "—" : Math.round(point.temperature) + "°"}</b>
+                <small>{point.windSpeed == null ? "—" : Math.round(point.windSpeed) + " km/h"}</small>
+              </button>
+            ))}
+          </div>
+
+          <p className="storyboard-disclaimer">Grafici basati sulle previsioni orarie disponibili. Seleziona un’ora per aggiornare il briefing; controlla anche vento in quota, raffiche, condizioni locali e bollettini ufficiali. I grafici non sono un giudizio automatico sull’idoneità al volo.</p>
         </>
       )}
     </section>
