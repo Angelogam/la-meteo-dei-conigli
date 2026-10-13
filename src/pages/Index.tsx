@@ -22,6 +22,11 @@ import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 
+function formatClock(value?: string): string | undefined {
+  if (!value) return undefined;
+  return value.includes("T") ? value.slice(11, 16) : value.slice(0, 5);
+}
+
 export default function Index() {
   const {
     selectedId,
@@ -115,15 +120,15 @@ export default function Index() {
               orientation={site.orientation}
               elevation_m={site.elevation_m}
               currentData={currentData as any}
-              sunrise={enrichedDaily[selectedDay]?.sunrise?.slice(0, 5)}
-              sunset={enrichedDaily[selectedDay]?.sunset?.slice(0, 5)}
+              sunrise={formatClock(enrichedDaily[selectedDay]?.sunrise)}
+              sunset={formatClock(enrichedDaily[selectedDay]?.sunset)}
               uvIndex={enrichedDaily[selectedDay]?.uvIndexMax ?? currentData?.uvIndex}
             />
           </section>
         )}
 
         <div className="dashboard-layout">
-          <aside id="decollli" className="dashboard-sidebar w-full lg:w-80 xl:w-96 shrink-0 space-y-3">
+          <aside id="decollli" className="dashboard-sidebar w-full min-w-0 space-y-3">
             <UpdateTimer
               lastUpdate={aggressiveLastUpdate ?? lastUpdate}
               countdown={countdown}
