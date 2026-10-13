@@ -184,7 +184,7 @@ export default function PrevisioniGiornaliere({
   const animatedScore = useAnimatedValue(hasValidRating ? flightRating! : 0);
 
   return (
-    <div className="space-y-6">
+    <div className="forecast-dashboard-stack space-y-6 min-w-0 w-full">
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* HERO — ANIMATED: barra verde luminosa in alto             */}
       {/* ═══════════════════════════════════════════════════════════ */}
@@ -215,9 +215,9 @@ export default function PrevisioniGiornaliere({
 
         <div className="p-4">
           {/* RIGA VOTO + TEMP + VENTO */}
-          <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr_1fr] gap-3 items-stretch mb-4">
+          <div className="forecast-main-grid grid grid-cols-1 sm:grid-cols-[120px_1fr_1fr] gap-3 items-stretch mb-4">
             {/* VOTO GIGANTE ANIMATO */}
-            <div className="flex flex-col items-center">
+            <div className="forecast-score-card flex flex-col items-center">
               {hasValidRating ? (
                 <>
                   <div className="text-6xl leading-none font-black text-slate-100 transition-all duration-300">
@@ -299,7 +299,7 @@ export default function PrevisioniGiornaliere({
           </div>
 
           {/* 4 STATISTICHE ORIZZONTALI */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="forecast-summary-grid grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[
               { icon: "💧", label: "Umidità", value: humidity !== null ? `${humidity}%` : "N/D", color: humidity !== null ? "text-sky-400" : "text-slate-500", sub: humidity !== null ? "Rilevata" : "—" },
               { icon: "📊", label: "Pressione", value: pressure !== null ? `${Math.round(pressure)} hPa` : "N/D", color: pressure !== null ? "text-amber-400" : "text-slate-500", sub: pressure !== null ? "MSL" : "—" },
@@ -308,7 +308,7 @@ export default function PrevisioniGiornaliere({
             ].map((stat, i) => (
               <div
                 key={i}
-                className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-3 text-center"
+                className="forecast-summary-stat bg-slate-800/40 rounded-xl border border-slate-700/50 p-3 text-center"
                 style={{ animationDelay: `${i * 60}ms` }}
               >
                 <div className="text-xl mb-1">{stat.icon}</div>
@@ -330,7 +330,7 @@ export default function PrevisioniGiornaliere({
           <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Parametri di Volo</div>
           <span className="text-[9px] text-slate-600 ml-auto">Clicca per espandere</span>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
+        <div className="flight-parameter-grid grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
           <AeroCard
             icon={<ArrowUp className="w-5 h-5" />}
             title="Rateo Termico"
@@ -402,7 +402,7 @@ export default function PrevisioniGiornaliere({
           <div className="w-1 h-6 bg-emerald-500 rounded-full" />
           <div className="text-[10px] font-black text-cyan-300 uppercase tracking-widest">Previsioni per 3 giorni</div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="forecast-days-grid grid grid-cols-1 sm:grid-cols-3 gap-3">
           {tabs.map((tabName, idx) => {
             const d = enrichedDaily[idx];
             const isActive = selectedDay === idx;
