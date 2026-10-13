@@ -127,8 +127,8 @@ export default function Index() {
           </section>
         )}
 
-        <div className="dashboard-layout">
-          <aside id="decollli" className="dashboard-sidebar w-full min-w-0 space-y-3">
+        <div className="flight-desk-layout">
+          <aside id="decollli" className="flight-desk-sidebar dashboard-sidebar w-full min-w-0 space-y-3">
             <UpdateTimer
               lastUpdate={aggressiveLastUpdate ?? lastUpdate}
               countdown={countdown}
@@ -148,7 +148,7 @@ export default function Index() {
             />
           </aside>
 
-          <div className="dashboard-content flex-1 min-w-0 space-y-5">
+          <div className="flight-desk-main dashboard-content flex-1 min-w-0 space-y-5">
             {site && (
               <>
                 <section className="forecast-section min-w-0">
