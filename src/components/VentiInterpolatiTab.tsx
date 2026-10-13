@@ -94,6 +94,8 @@ export default function VentiInterpolatiTab({
 
     setLoading(true);
     setError(null);
+    setData(null);
+    setOraSelezionata(oraCorrenteRef.current);
 
     getVentiInterpolati(lat, lon, quotaDecollo, dayStr)
       .then((result) => {
@@ -119,6 +121,14 @@ export default function VentiInterpolatiTab({
 
     return () => { cancelled = true; };
   }, [lat, lon, quotaDecollo, selectedDay]);
+
+  useEffect(() => {
+    if (!data?.ventoOrario.length) return;
+    const closest = data.ventoOrario.reduce((prev, curr) =>
+      Math.abs(curr.ora - oraCorrente) < Math.abs(prev.ora - oraCorrente) ? curr : prev
+    );
+    if (closest.ora !== oraSelezionata) setOraSelezionata(closest.ora);
+  }, [oraCorrente, data, oraSelezionata]);
 
   const oggi = new Date();
   const targetDate = new Date(oggi);
@@ -327,10 +337,10 @@ export default function VentiInterpolatiTab({
                 {quoteVisibili.length > 0 ? (
                   <div className="h-[260px] w-full" role="img" aria-label="Grafico interattivo della velocità del vento rispetto alla quota">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={quoteVisibili} layout="vertical" margin={{ top: 8, right: 16, bottom: 8, left: 4 }}>
+                      <LineChart data={quoteVisibili} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
                         <CartesianGrid stroke="rgba(148,163,184,.14)" strokeDasharray="3 5" />
-                        <XAxis type="number" dataKey="speed" domain={[0, Math.max(10, Math.ceil(maxSpeed / 5) * 5)]} tick={{ fill: "#94a3b8", fontSize: 10 }} tickLine={false} axisLine={{ stroke: "rgba(148,163,184,.2)" }} />
-                        <YAxis type="number" dataKey="quota" domain={["dataMin", "dataMax"]} tickFormatter={(value: number) => `${value} m`} tick={{ fill: "#94a3b8", fontSize: 10 }} tickLine={false} axisLine={false} width={56} />
+                        <XAxis type="number" dataKey="quota" domain={["dataMin", "dataMax"]} tickFormatter={(value: number) => `${value} m`} tick={{ fill: "#94a3b8", fontSize: 10 }} tickLine={false} axisLine={{ stroke: "rgba(148,163,184,.2)" }} />
+                        <YAxis type="number" dataKey="speed" domain={[0, Math.max(10, Math.ceil(maxSpeed / 5) * 5)]} tick={{ fill: "#94a3b8", fontSize: 10 }} tickLine={false} axisLine={false} width={36} />
                         <Tooltip
                           cursor={{ stroke: "rgba(103,232,249,.35)", strokeDasharray: "4 4" }}
                           contentStyle={{ background: "#071629", border: "1px solid rgba(103,232,249,.3)", borderRadius: 12, color: "#f8fafc" }}
