@@ -620,51 +620,7 @@ export default function ProfessionalWindgram({
           </p>
         </div>
 
-        {/* Stato dati stabilità */}
-        <div className="mb-2 p-2 bg-slate-50 border border-slate-200 rounded-lg text-[9px] font-mono">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="font-bold text-slate-500">Stabilità:</span>
-            <span className={loading ? "text-amber-600 font-bold" : "text-emerald-600 font-bold"}>
-              {loading ? "⏳ caricamento..." : "✓ dati pronti"}
-            </span>
-            {error && <span className="text-red-500 font-bold">✗ {error}</span>}
-            {stabilitDataa?.time && (
-              <span className="text-sky-600 font-bold">
-                {stabilitDataa.time.length}h · t2m={stabilitDataa.temperature_2m?.[0] ?? '—'}°C · t180={stabilitDataa.temperature_180m?.[0] ?? '—'}°C
-              </span>
-            )}
-            {hourlyData.length > 0 && (() => {
-              const validDeltaT = hourlyData.map((h) => h.deltaT).filter((v): v is number => v != null && Number.isFinite(v));
-              const avgDeltaT = validDeltaT.length
-                ? validDeltaT.reduce((sum, value) => sum + value, 0) / validDeltaT.length
-                : null;
-              return (
-                <span className="font-bold" style={{ color: getStabilityColor(avgDeltaT) }}>
-                  ΔT medio: {avgDeltaT == null ? "N/D" : avgDeltaT.toFixed(2)}
-                </span>
-              );
-            })()}
-          </div>
-        </div>
-
-        <div className="mb-2">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1 px-1">
-            <span>valore medio ascendenze (m/s) <span className="text-[9px] font-normal text-slate-400">★ ESTIMATED</span></span>
-          </div>
-          <div className="grid grid-cols-12 gap-1 px-1">
-            {hourlyData.map((h, i) => (
-              <div key={i} className="text-center">
-                <div className="font-black text-sm leading-tight" style={{ color: h?.thermalAvg != null && h.thermalAvg >= 1.6 ? "#b91c1c" : "#0f172a" }}>
-                  {h?.thermalAvg != null && Number.isFinite(h.thermalAvg) ? h.thermalAvg.toFixed(1) : "—"}
-                </div>
-                <div className="text-[9px] leading-tight" style={{ color: h?.sunPct != null && h.sunPct >= 70 ? "#b45309" : "#94a3b8" }}>
-                  sole {h?.sunPct ?? "—"}%
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
+        {/* Grafico aerologico: nessun pannello diagnostico aggiuntivo sopra il windgram. */}
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 pb-1">
           <div className="relative" style={{ overflow: "visible" }}>
             <canvas
@@ -780,11 +736,7 @@ export default function ProfessionalWindgram({
               </text>
             </g>
 
-            <path
-              d={`M ${getXFromHourIdx(0)},${getYFromAlt(1800)} Q ${getXFromHourIdx(5)},${getYFromAlt(2600)} ${getXFromHourIdx(10)},${getYFromAlt(2200)}`}
-              fill="none" stroke="#0f172a" strokeWidth="1.5" strokeDasharray="4 3"
-            />
-
+            {/* Rimossa la curva termica fittizia: vengono mostrate solo curve calcolate dai dati. */}
             {thermalTopCurve && (
               <path d={thermalTopCurve} fill="none" stroke="#9333ea" strokeWidth="2" strokeLinecap="round" />
             )}
