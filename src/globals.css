@@ -2199,3 +2199,72 @@ body {
   .analysis-tab, .analysis-tab-icon, .analysis-tab-arrow { transition: none !important; }
   .analysis-tab:hover { transform: none; }
 }
+
+
+/* ===== LAYOUT REGRESSION FIX: grid children must stay inside their tracks ===== */
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  column-gap: clamp(1rem, 1.7vw, 1.5rem);
+  align-items: start;
+  width: 100%;
+}
+.dashboard-layout > .dashboard-sidebar {
+  width: 100% !important;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  position: sticky;
+  top: .85rem;
+}
+.dashboard-layout > .dashboard-content {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.dashboard-content > *,
+.dashboard-content .forecast-section,
+.forecast-section > .space-y-6,
+.forecast-section .forecast-hero,
+.forecast-section .grid {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.dashboard-content .forecast-hero {
+  width: 100%;
+}
+.dashboard-sidebar .launch-list-card,
+.dashboard-sidebar .weather-refresh-card {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.dashboard-sidebar .launch-list-info {
+  flex-wrap: wrap;
+}
+.dashboard-sidebar .launch-list-info .truncate {
+  max-width: 100%;
+}
+
+@media (max-width: 1023px) {
+  .dashboard-layout {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 1rem;
+  }
+  .dashboard-layout > .dashboard-sidebar {
+    position: static;
+    width: 100% !important;
+    max-width: 100%;
+  }
+  .dashboard-layout > .dashboard-content {
+    grid-column: 1;
+    width: 100%;
+  }
+}
+@media (max-width: 640px) {
+  .dashboard-layout { row-gap: .85rem; }
+  .dashboard-content > * { border-radius: 17px; }
+  .dashboard-content .forecast-hero { border-radius: 19px !important; }
+}
