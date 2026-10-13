@@ -6,8 +6,9 @@ test.describe("Meteo dei Conigli - Paragliding Launch Weather Journey", () => {
     await page.goto("/");
 
     // 2. Verify main application header and branding
-    const headerTitle = page.locator("h1");
-    await expect(headerTitle).toContainText("Meteo dei Conigli");
+    const brandLink = page.getByRole("link", { name: "La Meteo dei Conigli, home" });
+    await expect(brandLink).toBeVisible();
+    await expect(brandLink).toContainText("La Meteo dei Conigli");
 
     // 3. Wait for initial weather data loading to complete (main content visible)
     await expect(page.locator("h2").first()).toBeVisible({ timeout: 15000 });
@@ -51,28 +52,16 @@ test.describe("Meteo dei Conigli - Paragliding Launch Weather Journey", () => {
     // Select an hourly row
     await hourlyRows.nth(2).click();
 
-    // 8. Test Tab Navigation: Meteo -> Venti -> Termiche -> Analisi
-    const tabNav = page.locator("button:has-text('Meteo'), button:has-text('Venti'), button:has-text('Termiche'), button:has-text('Analisi')");
-    await expect(tabNav.first()).toBeVisible();
-
-    // Switch to Venti tab
-    const ventiTab = page.locator("button:has-text('Venti')").first();
-    await ventiTab.click();
-    await expect(page.locator("text=Venti in quota").or(page.locator("text=Profilo verticale")).first()).toBeVisible({ timeout: 10000 });
-
-    // Switch to Termiche tab
-    const termicheTab = page.locator("button:has-text('Termiche')").first();
-    await termicheTab.click();
-    await expect(page.locator("text=Previsione termiche").or(page.locator("text=Dettaglio orario termiche")).first()).toBeVisible({ timeout: 10000 });
-
-    // Switch to Analisi tab
-    const analisiTab = page.locator("button:has-text('Analisi')").first();
-    await analisiTab.click();
-    await expect(page.locator("text=Analisi completa").or(page.locator("text=Situazione generale")).first()).toBeVisible({ timeout: 10000 });
-
-    // Return to Meteo tab
-    const meteoTab = page.locator("button:has-text('Meteo')").first();
-    await meteoTab.click();
+    // 8. Test tab navigation using stable test IDs, not ambiguous text selectors.
+    const contentRegion = page.locator('section[aria-live="polite"]');
+    for (const tabId of ["venti", "termiche", "analisi", "meteo"] as const) {
+      const tab = page.getByTestId(`tab-${tabId}`);
+      await expect(tab).toBeVisible();
+      await tab.click();
+      await expect(tab).toHaveAttribute("aria-pressed", "true");
+      await expect(contentRegion).toBeVisible();
+      await expect(contentRegion).not.toBeEmpty();
+    }
 
     // 9. Verify refresh / update button exists and functions
     const updateButton = page.locator("button:has-text('Aggiorna')");

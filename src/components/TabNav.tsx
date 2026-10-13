@@ -172,6 +172,7 @@ export default function TabNav({ activeTab, onTabChange }: TabNavProps) {
           <button
             key={tabId}
             data-testid={`tab-${tabId}`}
+            aria-pressed={isActive}
             onClick={() => onTabChange(tabId)}
             onMouseEnter={() => setHoveredTab(tabId)}
             onMouseLeave={() => setHoveredTab(null)}

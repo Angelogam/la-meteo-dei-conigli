@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Wind, Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, Zap, Info, RefreshCw } from "lucide-react";
+import React from "react";
+import { Wind, Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, Zap, Info } from "lucide-react";
 import type { Decollo } from "@/data/decolli";
 
 export interface AggressiveWeatherData {
@@ -23,7 +23,6 @@ interface DecolliCardProps {
   selectedId: string;
   onSelect: (item: Decollo) => void;
   selectedDay?: number;
-  onRefresh?: () => void;
   isUpdating?: boolean;
   error?: string | null;
 }
@@ -72,47 +71,41 @@ export default function DecolliCard({
   selectedId,
   onSelect,
   selectedDay = 0,
-  onRefresh,
   isUpdating,
   error,
 }: DecolliCardProps) {
-  const [showDebug, setShowDebug] = useState(false);
   const dt = getDateTime(selectedDay);
 
-  const datiCaricati = decolli.some(d => {
-    const agg = d.aggressiveWeather;
-    return agg && agg.stato !== "Offline" && agg.stato !== "Errore";
+  const datiCaricati = decolli.some((d) => {
+    const stato = d.aggressiveWeather?.stato?.toLowerCase();
+    return stato != null && !["offline", "errore", "n/d"].includes(stato);
   });
 
   return (
-    <div className="bg-slate-900/90 border border-slate-700/60 rounded-2xl p-3 md:p-4 shadow-xl">
+    <section className="launch-list-card bg-slate-900/90 border border-slate-700/60 rounded-2xl p-3 md:p-4 shadow-xl" aria-labelledby="launch-list-title">
       {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-sm md:text-base font-bold text-white flex items-center gap-2">
-          Decolli
-          {!datiCaricati && !isUpdating && (
-            <AlertTriangle size={14} className="text-amber-500" />
-          )}
-        </h2>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-emerald-300 bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded-full font-mono">
-            Ibrido Aggressivo 15m
+      <div className="launch-list-header flex items-start justify-between gap-3 mb-3">
+        <div className="min-w-0">
+          <h2 id="launch-list-title" className="launch-list-title text-sm md:text-base font-bold text-white flex items-center gap-2">
+            Scegli il decollo
+            {!datiCaricati && !isUpdating && (
+              <AlertTriangle size={14} className="text-amber-400" aria-label="Dati meteo non disponibili" />
+            )}
+          </h2>
+          <p className="launch-list-subtitle mt-0.5 text-xs leading-relaxed text-slate-400">
+            Confronta le condizioni dei siti monitorati.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="launch-source-pill text-[10px] text-cyan-200 bg-cyan-950/50 border border-cyan-500/30 px-2 py-1 rounded-full font-medium">
+            Multi-fonte
           </span>
-          {onRefresh && (
-            <button
-              onClick={onRefresh}
-              disabled={isUpdating}
-              className="p-1 rounded-lg hover:bg-slate-700/60 transition-colors disabled:opacity-50"
-              title="Aggiorna dati"
-            >
-              <RefreshCw size={14} className={`text-slate-400 ${isUpdating ? "animate-spin" : ""}`} />
-            </button>
-          )}
+
         </div>
       </div>
 
       {/* Info bar */}
-      <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-slate-400 mb-3 bg-slate-800/60 rounded-xl px-2.5 py-1.5 border border-slate-700/40">
+      <div className="launch-list-info flex items-center gap-1.5 text-[10px] md:text-xs text-slate-400 mb-3 bg-slate-800/60 rounded-xl px-2.5 py-1.5 border border-slate-700/40">
         <Clock size={12} />
         <span className="font-medium">{dt.date}</span>
         <span className="text-slate-600">·</span>
@@ -137,42 +130,8 @@ export default function DecolliCard({
         )}
       </div>
 
-      {/* Debug toggle */}
-      <div className="flex justify-end mb-2">
-        <button
-          onClick={() => setShowDebug(!showDebug)}
-          className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
-        >
-          {showDebug ? "Nascondi debug" : "Debug dati"}
-        </button>
-      </div>
-
-      {showDebug && (
-        <div className="mb-3 p-2 bg-slate-800/80 rounded-lg text-[10px] font-mono text-slate-400 max-h-32 overflow-y-auto">
-          <div className="mb-1 text-slate-300">Stato caricamento dati:</div>
-          <div>Card totali: {decolli.length}</div>
-          <div>Con dati validi: {decolli.filter(d => {
-            const a = d.aggressiveWeather;
-            return a && a.stato !== "Offline" && a.stato !== "Errore" && a.stato !== "N/D";
-          }).length}</div>
-          <div>Offline: {decolli.filter(d => {
-            const a = d.aggressiveWeather;
-            return a && (a.stato === "Offline" || a.stato === "Errore" || a.stato === "N/D");
-          }).length}</div>
-          {decolli.slice(0, 3).map(d => {
-            const a = d.aggressiveWeather;
-            return (
-              <div key={d.id} className="text-slate-500">
-                • {d.site_name || d.name}: stato={a?.stato ?? "null"} temp={a?.temp ?? "N/D"} wind={a?.wind ?? "N/D"}
-              </div>
-            );
-          })}
-          {decolli.length > 3 && <div className="text-slate-600">...e altri {decolli.length - 3}</div>}
-        </div>
-      )}
-
       {/* Lista card */}
-      <div className="space-y-2.5 max-h-80 md:max-h-96 overflow-y-auto pr-1 scrollbar-thin">
+      <div className="launch-list-items space-y-2.5 max-h-80 md:max-h-96 overflow-y-auto pr-1 scrollbar-thin">
         {decolli.map((item) => {
           const isSelected = item.id === selectedId;
           const aggressive = item.aggressiveWeather ?? null;
@@ -188,7 +147,6 @@ export default function DecolliCard({
           const baseNubi = hasData ? aggressive.baseNubi : null;
           const termiche = hasData ? aggressive.termiche : null;
           const indice = hasData ? aggressive.indice : null;
-          const indiceLabel = hasData ? aggressive.indiceLabel : "N/D";
 
           const direction = dir;
           const dirLabel = (direction !== null && direction !== "N/D" && direction !== "--" && direction !== "")
@@ -221,8 +179,9 @@ export default function DecolliCard({
             <button
               key={item.id}
               onClick={() => onSelect(item)}
+              aria-pressed={isSelected}
               className={`
-                w-full rounded-2xl p-3 text-left transition-all border-2 cursor-pointer relative overflow-hidden
+                launch-option w-full rounded-2xl p-3 text-left transition-all border-2 cursor-pointer relative overflow-hidden
                 ${isSelected
                   ? "bg-slate-800/90 border-emerald-400 shadow-md ring-1 ring-emerald-400/40"
                   : isOffline
@@ -234,18 +193,22 @@ export default function DecolliCard({
               {/* Header */}
               <div className="flex items-start justify-between gap-2 mb-1.5">
                 <div className="min-w-0">
-                  <div className="text-sm font-bold text-white truncate flex items-center gap-1.5">
-                    <span>{item.site_name || item.name}</span>
-                    <span className="text-slate-400">—</span>
-                    <span className="text-slate-300">{item.location_name || item.valley}</span>
+                  <div className="launch-option-title text-sm font-bold text-white flex min-w-0 items-center gap-1.5">
+                    <span className="min-w-0 truncate">{item.site_name || item.name}</span>
+                    <span className="shrink-0 text-slate-500">·</span>
+                    <span className="min-w-0 truncate font-medium text-slate-300">{item.location_name || item.valley}</span>
                   </div>
                   <div className="text-[10px] text-slate-400 truncate">
                     {item.orientation || item.exposure} · {item.elevation_m || item.altitude}m
                   </div>
                 </div>
 
-                {/* Badge Indice Volabilità */}
-                <div className={`flex items-center gap-1 px-2 py-1 rounded-full border text-[11px] font-black shrink-0 ${indiceBg} ${indiceColor}`}>
+                {/* Indicatore sintetico, da leggere insieme ai dettagli meteo */}
+                <div
+                  className={`flex items-center gap-1 px-2 py-1 rounded-full border text-[11px] font-black shrink-0 ${indiceBg} ${indiceColor}`}
+                  aria-label={indice !== null ? `Indice meteo indicativo ${indice} su 10` : "Indice meteo non disponibile"}
+                  title="Indice sintetico indicativo, non è un giudizio di sicurezza del volo"
+                >
                   {indice !== null ? (
                     <>
                       <span>{indice}</span>
@@ -292,7 +255,7 @@ export default function DecolliCard({
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }
 

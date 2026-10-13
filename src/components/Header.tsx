@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Wind } from "lucide-react";
 
 export const Header = () => {
   return (
@@ -14,8 +15,8 @@ export const Header = () => {
           </span>
         </a>
         <div className="app-brand-status">
-          <span className="app-status-dot" />
-          <span>Analisi meteo per il volo</span>
+          <Wind aria-hidden="true" />
+          <span>Briefing per il volo libero</span>
         </div>
       </div>
     </header>
