@@ -246,8 +246,10 @@ export default function ProfessionalWindgram({
     return margin.top + plotH - ((clamped - minAlt) / (maxAlt - minAlt)) * plotH;
   };
 
+  // Ogni ora occupa una colonna: il simbolo del vento va al centro della colonna,
+  // come nei windgram aerologici, senza schiacciare la prima e l'ultima ora sui bordi.
   const getXFromHourIdx = (idx: number) => {
-    return margin.left + (idx / (HOURS.length - 1)) * plotW;
+    return margin.left + ((idx + 0.5) / HOURS.length) * plotW;
   };
 
   // Calcolo del lapse rate reale per ogni quota usando i dati di temperatura a livelli hPa
@@ -667,8 +669,9 @@ export default function ProfessionalWindgram({
               ref={canvasRef}
               width={plotW}
               height={plotH}
-              className="absolute top-0 left-0"
-              style={{ width: plotW, height: plotH, zIndex: 0 }}
+              className="absolute"
+              aria-hidden="true"
+              style={{ left: margin.left, top: margin.top, width: plotW, height: plotH, zIndex: 0, pointerEvents: "none" }}
             />
             <svg
               viewBox={`0 0 ${width} ${height}`}
@@ -712,10 +715,10 @@ export default function ProfessionalWindgram({
               );
             })}
 
-            {HOURS.map((_, i) => {
-              const x = getXFromHourIdx(i);
+            {Array.from({ length: HOURS.length + 1 }, (_, i) => {
+              const x = margin.left + (i / HOURS.length) * plotW;
               return (
-                <line key={`vline-${i}`} x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#e2e8f0" strokeWidth="0.5" opacity="0.4" />
+                <line key={`vline-${i}`} x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#cbd5e1" strokeWidth={i === 0 || i === HOURS.length ? 0.8 : 0.55} opacity={i === 0 || i === HOURS.length ? 0.8 : 0.55} />
               );
             })}
 
@@ -725,10 +728,12 @@ export default function ProfessionalWindgram({
               const hasRain = h.precip != null && Number.isFinite(h.precip) && h.precip >= 0.2;
               if (!hasRain) return null;
               const cellW = plotW / HOURS.length;
+              const hourIndex = HOURS.indexOf(h.hour);
+              if (hourIndex < 0) return null;
               return (
-                <g key={`rain-${i}`}>
+                <g key={`rain-${h.hour}`}>
                   <rect
-                    x={margin.left + i * cellW}
+                    x={margin.left + hourIndex * cellW}
                     y={margin.top}
                     width={cellW}
                     height={plotH}
@@ -738,7 +743,7 @@ export default function ProfessionalWindgram({
                     strokeWidth="1"
                   />
                   <text
-                    x={margin.left + (i + 0.5) * cellW}
+                    x={margin.left + (hourIndex + 0.5) * cellW}
                     y={margin.top + 14}
                     textAnchor="middle"
                     fontSize="10"
