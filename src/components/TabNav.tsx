@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Activity, ArrowRight, CloudSun, Flame, Wind } from "lucide-react";
+import { Activity, ArrowRight, CloudSun, Flame, Wind, type LucideIcon } from "lucide-react";
 
 type Tab = "meteo" | "venti" | "termiche" | "analisi";
 
@@ -14,7 +14,7 @@ const tabs: {
   id: Tab;
   label: string;
   description: string;
-  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  icon: LucideIcon;
 }[] = [
   { id: "meteo", label: "Meteo", description: "Condizioni al decollo", icon: CloudSun },
   { id: "venti", label: "Venti", description: "Direzione e quota", icon: Wind },
