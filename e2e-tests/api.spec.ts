@@ -135,6 +135,20 @@ test.describe("API smoke and contract checks", () => {
     expect((await request.get("/api/open-meteo?latitude=44&longitude=7&start_date=2026-10-12&end_date=2026-10-11")).status()).toBe(400);
   });
 
+  test("Open-Meteo requires start_date and end_date together", async ({ request }) => {
+    const response = await request.get("/api/open-meteo?latitude=44&longitude=7&start_date=2026-10-12");
+    expect(response.status()).toBe(400);
+    const body = await response.json();
+    expect(body.statusMessage ?? body.message).toContain("devono essere specificate insieme");
+  });
+
+  test("Open-Meteo rejects mixed forecast_days and explicit date ranges", async ({ request }) => {
+    const response = await request.get("/api/open-meteo?latitude=44&longitude=7&forecast_days=2&start_date=2026-10-12&end_date=2026-10-13");
+    expect(response.status()).toBe(400);
+    const body = await response.json();
+    expect(body.statusMessage ?? body.message).toContain("non entrambi");
+  });
+
   test("Windy sounding sites have valid coordinates", async ({ request }) => {
     const response = await request.get("/api/windy-soundings?action=sites");
     expect(response.status()).toBe(200);
