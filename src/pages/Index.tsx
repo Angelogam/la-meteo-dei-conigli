@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import "@/styles/dashboard-polish.css";
 import { Activity, ArrowDownRight, CalendarDays, CloudSun, Compass, Eye, Home, MapPin, Mountain, Sun, Thermometer, Wind } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
