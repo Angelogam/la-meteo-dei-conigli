@@ -1,0 +1,143 @@
+/* Visual refresh: presentation only. No weather calculations or data flow are changed. */
+.flight-website-shell {
+  color: #e7f2ff;
+  background:
+    radial-gradient(ellipse at 72% 0%, rgba(14, 165, 233, .13), transparent 34rem),
+    radial-gradient(ellipse at 12% 34%, rgba(20, 184, 166, .07), transparent 28rem),
+    #050b17;
+}
+.flight-app-body { gap: 0; }
+.flight-nav-rail {
+  background: linear-gradient(180deg, rgba(8, 20, 39, .98), rgba(4, 11, 24, .98));
+  border-right: 1px solid rgba(125, 211, 252, .13);
+  box-shadow: 14px 0 38px rgba(0,0,0,.12);
+}
+.flight-nav-caption { color: #7190ae; letter-spacing: .19em; font-size: .62rem; }
+.flight-nav-item {
+  border: 1px solid transparent;
+  border-radius: 13px;
+  color: #a9bfd5;
+  transition: background .18s ease, color .18s ease, border-color .18s ease, transform .18s ease;
+}
+.flight-nav-item:hover { background: rgba(56,189,248,.08); color: #f1f8ff; transform: translateX(2px); }
+.flight-nav-item.is-active {
+  color: #e8fbff;
+  border-color: rgba(34,211,238,.25);
+  background: linear-gradient(105deg, rgba(8,145,178,.24), rgba(14,116,144,.08));
+  box-shadow: inset 3px 0 #22d3ee, 0 8px 22px rgba(8,145,178,.08);
+}
+.flight-nav-current, .flight-side-card, .flight-forecast-module, .windgram-featured,
+.flight-aux-chart, .flight-hourly-section, .flight-tab-content > * {
+  border-color: rgba(125,211,252,.16) !important;
+}
+.flight-nav-current {
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(14,38,64,.85), rgba(7,19,37,.9));
+  box-shadow: inset 0 1px rgba(255,255,255,.04);
+}
+.flight-page { max-width: 1720px; }
+.flight-page-titlebar {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(125,211,252,.2);
+  border-radius: 25px;
+  padding: clamp(1.2rem, 2.5vw, 2rem);
+  background:
+    radial-gradient(ellipse at 88% 15%, rgba(6,182,212,.18), transparent 35%),
+    linear-gradient(125deg, rgba(12,29,53,.97), rgba(6,17,34,.94) 68%, rgba(7,30,49,.96));
+  box-shadow: 0 20px 55px rgba(0,0,0,.2), inset 0 1px rgba(255,255,255,.05);
+}
+.flight-page-titlebar:after {
+  content: "";
+  position: absolute;
+  width: 210px; height: 210px; right: -90px; bottom: -150px;
+  border: 1px solid rgba(103,232,249,.17); border-radius: 50%;
+  box-shadow: 0 0 0 24px rgba(103,232,249,.025), 0 0 0 50px rgba(103,232,249,.02);
+  pointer-events: none;
+}
+.flight-page-titlebar h1 { color: #f4faff; letter-spacing: -.045em; text-wrap: balance; }
+.flight-page-titlebar p { color: #9bb3ca; }
+.dashboard-intro-kicker { color: #7de8f4; letter-spacing: .2em; }
+.dashboard-intro-kicker-dot { box-shadow: 0 0 14px rgba(45,212,191,.85); }
+.dashboard-date-chip {
+  border: 1px solid rgba(125,211,252,.2);
+  border-radius: 15px;
+  background: rgba(2,12,28,.55);
+  box-shadow: inset 0 1px rgba(255,255,255,.04);
+}
+.dashboard-intro-cta {
+  border: 1px solid rgba(103,232,249,.3);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0891b2, #0369a1);
+  box-shadow: 0 9px 24px rgba(2,132,199,.18);
+  transition: transform .18s ease, filter .18s ease;
+}
+.dashboard-intro-cta:hover { transform: translateY(-1px); filter: brightness(1.1); }
+.dashboard-layout { gap: 1.25rem; }
+.flight-desk-main { display: flex; flex-direction: column; gap: 1.1rem; }
+.overview-section, .forecast-section, .windgram-section, .details-section,
+.flight-hourly-section, .flight-aux-chart { scroll-margin-top: 1rem; }
+.windgram-featured {
+  position: relative;
+  border-radius: 22px !important;
+  background: linear-gradient(145deg, rgba(12,27,48,.97), rgba(5,14,29,.98)) !important;
+  box-shadow: 0 16px 40px rgba(0,0,0,.19), inset 0 1px rgba(255,255,255,.035);
+}
+.flight-subsection-heading { margin-bottom: .8rem; }
+.flight-subsection-heading > div > span { color: #67d8ed; letter-spacing: .19em; }
+.flight-subsection-heading h2 { color: #f0f8ff; letter-spacing: -.025em; }
+.flight-subsection-heading small { color: #829db8; }
+.flight-side-card {
+  border-radius: 20px !important;
+  background: linear-gradient(150deg, rgba(12,27,48,.96), rgba(6,15,30,.97)) !important;
+  box-shadow: 0 12px 32px rgba(0,0,0,.15), inset 0 1px rgba(255,255,255,.035);
+}
+.flight-side-card-heading h2 { color: #eff8ff; }
+.flight-side-card-heading > div > span { color: #75cfe4; letter-spacing: .16em; }
+.flight-site-data > div { border-bottom-color: rgba(148,163,184,.12) !important; }
+.flight-site-data dt { color: #8fa9c3; }
+.flight-site-data dd { color: #e5f2ff; }
+.flight-quick-param {
+  border: 1px solid rgba(125,211,252,.13);
+  border-radius: 13px;
+  background: rgba(2,12,27,.48);
+  padding: .75rem;
+}
+.flight-quick-param > span { color: #8ea9c3; }
+.flight-quick-param strong { color: #effaff; }
+.flight-quick-param small { color: #6f8aa7; }
+.flight-param-note { color: #7892ad; }
+.flight-site-list { min-width: 0; }
+.flight-tab-content { min-width: 0; }
+.flight-tab-content > * { border-radius: 20px; }
+.flight-hourly-section {
+  border: 1px solid rgba(125,211,252,.16);
+  border-radius: 20px;
+  padding: clamp(.8rem, 1.6vw, 1.25rem);
+  background: linear-gradient(145deg, rgba(10,24,43,.88), rgba(5,14,28,.92));
+}
+.mobile-bottom-nav {
+  background: rgba(4,12,26,.94);
+  border-top: 1px solid rgba(125,211,252,.17);
+  box-shadow: 0 -10px 30px rgba(0,0,0,.22);
+  backdrop-filter: blur(18px);
+}
+.mobile-bottom-nav a, .mobile-bottom-nav button { color: #8da9c4; }
+.mobile-bottom-nav a:hover, .mobile-bottom-nav button:hover { color: #67e8f9; }
+@media (min-width: 1280px) {
+  .dashboard-layout { grid-template-columns: minmax(0, 1fr) minmax(285px, 340px); }
+}
+@media (max-width: 900px) {
+  .dashboard-layout { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-sidebar { position: static; }
+  .flight-page-titlebar { border-radius: 20px; }
+}
+@media (max-width: 600px) {
+  .flight-page-titlebar { padding: 1rem; }
+  .flight-page-actions { width: 100%; }
+  .dashboard-date-chip, .dashboard-intro-cta { width: 100%; justify-content: center; }
+  .flight-side-card { border-radius: 16px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flight-nav-item, .dashboard-intro-cta { transition: none !important; }
+}
