@@ -114,7 +114,7 @@ function useAlpiumData(lat: number, lon: number, siteAlt: number, selectedDay: n
     const today = new Date();
     const target = new Date(today);
     target.setDate(today.getDate() + selectedDay);
-    const dayStr = target.toISOString().split("T")[0];
+    const dayStr = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}-${String(target.getDate()).padStart(2, "0")}`;
 
     // Temperature per ogni livello di pressione per il lapse rate
     const tempFields = [
@@ -415,32 +415,32 @@ export default function AlpiumWindgram({
 
   // ============ RENDER ============
   return (
-    <div className="w-full bg-[#0a0e1a] p-2 sm:p-4 rounded-2xl">
-      <div className="bg-[#0f1424] border border-slate-800 rounded-2xl overflow-hidden">
+    <div className="w-full bg-white p-2 sm:p-4 rounded-2xl text-slate-800">
+      <div className="bg-white border border-slate-300 rounded-2xl overflow-hidden">
         {/* HEADER */}
         <div className="px-4 pt-4 pb-2 flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
               <Wind className="w-5 h-5 text-sky-400" />
               Windgram
             </h3>
-            <p className="text-sm text-slate-300 font-semibold">
+            <p className="text-sm text-slate-700 font-semibold">
               {siteName} &mdash; {dateLabel ?? "previsione"}
             </p>
             <p className="text-[10px] text-slate-500 mt-0.5">
               plotted {new Date().toISOString().slice(0, 16).replace("T", " ")} UTC &middot; model ground {siteAlt} m
             </p>
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-400">
-            <span className="px-2 py-1 rounded bg-slate-800">6 km &middot; default</span>
-            <button className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700">⬇ PNG</button>
+          <div className="flex items-center gap-2 text-xs text-slate-600">
+            <span className="px-2 py-1 rounded bg-slate-100 border border-slate-200">Profilo verticale</span>
+            
           </div>
         </div>
 
         {/* TABELLA ORE / TEMPERATURA / VENTO AL SUOLO */}
         <div className="px-4">
           <svg width="100%" viewBox={`0 0 ${W} 70`} preserveAspectRatio="none" className="block">
-            <rect x={margin.left} y={0} width={plotW} height={70} fill="#1e293b" />
+            <rect x={margin.left} y={0} width={plotW} height={70} fill="#f1f5f9" />
             {/* Temperature e sole */}
             {DISPLAY_HOURS.map((hr, i) => {
               const x = margin.left + (i / (DISPLAY_HOURS.length - 1)) * plotW;
@@ -454,28 +454,12 @@ export default function AlpiumWindgram({
                   <text x={x} y={18} textAnchor="middle" className="text-[14px] font-bold" fill={tempColor}>
                     {isNaN(temp) ? "—" : temp.toFixed(1)}
                   </text>
-                  {/* Icona sole in base alla copertura nuvolosa */}
-                  <g transform={`translate(${x - 8}, 28)`}>
-                    <circle cx="6" cy="6" r="4" fill="#fbbf24" opacity={1 - (d?.cloud ?? 0) / 100 * 0.7} />
-                    {/* Raggi */}
-                    {Array.from({ length: 8 }).map((_, k) => {
-                      const ang = (k * Math.PI) / 4;
-                      return (
-                        <line
-                          key={k}
-                          x1={6 + Math.cos(ang) * 6}
-                          y1={6 + Math.sin(ang) * 6}
-                          x2={6 + Math.cos(ang) * 9}
-                          y2={6 + Math.sin(ang) * 9}
-                          stroke="#fbbf24"
-                          strokeWidth="1.2"
-                          opacity={1 - (d?.cloud ?? 0) / 100 * 0.8}
-                        />
-                      );
-                    })}
-                  </g>
-                  <text x={x} y={56} textAnchor="middle" className="text-[10px]" fill="#94a3b8">
-                    sole %
+                  {/* Icona cielo basata sulla copertura nuvolosa reale */}
+                  <text x={x} y={37} textAnchor="middle" fontSize="18">
+                    {(d?.cloud ?? 0) < 15 ? "☀" : (d?.cloud ?? 0) < 40 ? "🌤" : (d?.cloud ?? 0) < 75 ? "☁" : "☁"}
+                  </text>
+                  <text x={x} y={56} textAnchor="middle" className="text-[10px]" fill="#475569">
+                    {d?.cloud == null ? "n/d" : `${Math.round(d.cloud)}% nubi`}
                   </text>
                 </g>
               );
@@ -504,7 +488,7 @@ export default function AlpiumWindgram({
             ))}
 
             {/* Bordo area plot */}
-            <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#334155" strokeWidth="1" />
+            <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#64748b" strokeWidth="1" />
 
             {/* LINEE ORIZZONTALI QUOTE hPa */}
             {PRESSURE_LEVELS.map((lv) => (
@@ -514,7 +498,7 @@ export default function AlpiumWindgram({
                   y1={altToY(lv.alt)}
                   x2={margin.left + plotW}
                   y2={altToY(lv.alt)}
-                  stroke="#475569"
+                  stroke="#94a3b8"
                   strokeWidth="0.5"
                   strokeDasharray="2 3"
                 />
@@ -532,7 +516,7 @@ export default function AlpiumWindgram({
               const x = hourToX(hr);
               return (
                 <g key={`hour-${hr}`}>
-                  <line x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#1e293b" strokeWidth="0.5" />
+                  <line x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#cbd5e1" strokeWidth="0.7" />
                   <text x={x} y={H - margin.bottom + 18} textAnchor="middle" className="text-[11px] font-bold" fill="#cbd5e1">
                     {String(hr).padStart(2, "0")}:00
                   </text>
@@ -664,7 +648,7 @@ export default function AlpiumWindgram({
 
         {/* LEGENDA SCALA INSTABILITÀ */}
         <div className="px-4 py-3">
-          <div className="flex items-center justify-center gap-3 flex-wrap text-[10px] text-slate-400">
+          <div className="flex items-center justify-center gap-3 flex-wrap text-[10px] text-slate-700">
             <span>Stabile ←</span>
             {[
               { c: "#3b5fa0", v: "-0.20" },
@@ -685,7 +669,7 @@ export default function AlpiumWindgram({
             <span>→ Instabile</span>
           </div>
           <p className="text-center text-[9px] text-slate-500 mt-1">ΔT / 100 m</p>
-          <p className="text-center text-[10px] text-slate-400 mt-2">
+          <p className="text-center text-[10px] text-slate-600 mt-2">
             Fonte: Open-Meteo GFS &middot; hPa levels &middot; Stile grafico Alpium
           </p>
         </div>
