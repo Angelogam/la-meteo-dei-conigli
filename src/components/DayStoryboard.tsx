@@ -141,7 +141,7 @@ export default function DayStoryboard({
     .sort((a, b) => a.hour - b.hour), [dayData]);
 
   const activeRange = TIME_RANGES.find((range) => range.id === timeRange) ?? TIME_RANGES[0];
-  const chartData = allPoints.filter((point) => point.hour >= activeRange.start && point.hour <= activeRange.end);
+  const chartData = useMemo(() => allPoints.filter((point) => point.hour >= activeRange.start && point.hour <= activeRange.end), [allPoints, activeRange.start, activeRange.end]);
   const temperatureDomain = rangeTemperature(chartData, showTemperature, showDewPoint);
   const windValues = chartData.flatMap((point) => [point.windSpeed, point.windGusts])
     .filter((value): value is number => value != null && Number.isFinite(value));
