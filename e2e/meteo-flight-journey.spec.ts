@@ -43,14 +43,21 @@ test.describe("Meteo dei Conigli - Paragliding Launch Weather Journey", () => {
     const oggiButton = page.locator("button:has-text('Oggi')").first();
     await oggiButton.click();
 
-    // 7. Verify and interact with the Hourly Table
-    const hourlyRows = page.locator("table tbody tr");
-    await expect(hourlyRows.first()).toBeVisible({ timeout: 10000 });
-    const rowCount = await hourlyRows.count();
-    expect(rowCount).toBeGreaterThan(0);
+    // 7. Verify and interact with the redesigned hourly timeline (replaces the old table)
+    const timeline = page.locator(".story-hourly-timeline");
+    await expect(timeline).toBeVisible({ timeout: 10000 });
+    const hourButtons = timeline.locator("button[aria-label*='Seleziona le condizioni delle ore']");
+    await expect(hourButtons.first()).toBeVisible();
+    expect(await hourButtons.count()).toBeGreaterThan(0);
+    await hourButtons.first().click();
+    await expect(hourButtons.first()).toHaveAttribute("aria-pressed", "true");
 
-    // Select an hourly row
-    await hourlyRows.nth(2).click();
+    const playControl = timeline.getByRole("button", { name: /Riproduci|Pausa/ });
+    await expect(playControl).toBeVisible();
+    await playControl.click();
+    await expect(playControl).toHaveAttribute("aria-pressed", "true");
+    await playControl.click();
+    await expect(playControl).toHaveAttribute("aria-pressed", "false");
 
     // 8. Test tab navigation using stable test IDs, not ambiguous text selectors.
     const contentRegion = page.locator('section[aria-live="polite"]');
