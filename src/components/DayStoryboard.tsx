@@ -334,23 +334,6 @@ export default function DayStoryboard({
             </div>
           )}
 
-          <div className="story-hour-buttons" role="group" aria-label="Seleziona un’ora">
-            {chartData.map((point) => (
-              <button
-                type="button"
-                key={point.label}
-                className={point.hour === selectedHour ? "active" : ""}
-                aria-pressed={point.hour === selectedHour}
-                aria-label={"Seleziona le condizioni delle ore " + point.label}
-                onClick={() => onHourSelect(point.hour)}
-              >
-                <span>{point.label}</span>
-                <b>{point.temperature == null ? "—" : Math.round(point.temperature) + "°"}</b>
-                <small>{point.windSpeed == null ? "—" : Math.round(point.windSpeed) + " km/h"}</small>
-              </button>
-            ))}
-          </div>
-
           <p className="storyboard-disclaimer">Grafici basati sulle previsioni orarie disponibili. Seleziona un’ora per aggiornare il briefing; controlla anche vento in quota, raffiche, condizioni locali e bollettini ufficiali. I grafici non sono un giudizio automatico sull’idoneità al volo.</p>
         </>
       )}
