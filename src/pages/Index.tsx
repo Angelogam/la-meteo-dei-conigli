@@ -7,8 +7,6 @@ import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
 import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
-import HourlyTable from "@/components/HourlyTable";
-import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import DayStoryboard from "@/components/DayStoryboard";
 import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
@@ -163,19 +161,6 @@ export default function Index() {
                 {site && (
                   <>
                     <DayStoryboard dayData={filteredDayData} siteName={site.site_name} selectedHour={selectedHour} onHourSelect={setSelectedHour} />
-                    <section className="forecast-section flight-forecast-module min-w-0">
-                      <PrevisioniGiornaliere
-                        enrichedDaily={enrichedDaily}
-                        dateLabels={dateLabels}
-                        currentData={currentData}
-                        dayData={dayData}
-                        site={{ name: site.site_name, altitude: site.elevation_m, exposure: site.orientation }}
-                        selectedDay={selectedDay}
-                        onSelectDay={setSelectedDay}
-                        nomeDecollo={site.site_name}
-                      />
-                    </section>
-
                     <section id="windgram-section" className="windgram-section windgram-featured min-w-0 overflow-hidden rounded-2xl p-3 sm:p-4">
                       <Windgram
                         dayData={filteredDayData}
@@ -233,10 +218,6 @@ export default function Index() {
                       )}
                     </section>
 
-                    <section className="flight-hourly-section min-w-0">
-                      <div className="flight-subsection-heading"><div><span>DETTAGLIO ORARIO</span><h2>Previsioni ora per ora</h2></div><small>{dateLabel}</small></div>
-                      <HourlyTable dayData={filteredDayData} altitude={site.elevation_m} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabel} siteName={site.site_name} />
-                    </section>
                   </>
                 )}
               </div>
