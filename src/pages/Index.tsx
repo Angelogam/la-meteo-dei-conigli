@@ -7,8 +7,6 @@ import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
 import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
-import HourlyTable from "@/components/HourlyTable";
-import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import DayStoryboard from "@/components/DayStoryboard";
 import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
@@ -163,19 +161,37 @@ export default function Index() {
                 {site && (
                   <>
                     <DayStoryboard dayData={filteredDayData} siteName={site.site_name} selectedHour={selectedHour} onHourSelect={setSelectedHour} />
-                    <section className="forecast-section flight-forecast-module min-w-0">
-                      <PrevisioniGiornaliere
-                        enrichedDaily={enrichedDaily}
-                        dateLabels={dateLabels}
-                        currentData={currentData}
-                        dayData={dayData}
-                        site={{ name: site.site_name, altitude: site.elevation_m, exposure: site.orientation }}
-                        selectedDay={selectedDay}
-                        onSelectDay={setSelectedDay}
-                        nomeDecollo={site.site_name}
-                      />
+                    <section className="forecast-section flight-forecast-module" aria-labelledby="forecast-days-title">
+                      <div className="flight-subsection-heading">
+                        <div><span>PREVISIONE A COLPO D’OCCHIO</span><h2 id="forecast-days-title">Scegli la giornata</h2></div>
+                        <small>Le schede aggiornano grafici e windgram</small>
+                      </div>
+                      <div className="forecast-day-strip">
+                        {[0, 1, 2].map((dayOffset) => {
+                          const day = new Date();
+                          day.setDate(day.getDate() + dayOffset);
+                          const dayLabel = dayOffset === 0 ? "Oggi" : dayOffset === 1 ? "Domani" : "Dopodomani";
+                          const dateText = day.toLocaleDateString("it-IT", { day: "numeric", month: "short" });
+                          const points = (dayData ?? []).filter((hour) => new Date(hour.time).toDateString() === day.toDateString());
+                          const temperatures = points.map((hour) => hour.temperature).filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+                          const winds = points.map((hour) => hour.windSpeed).filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+                          const maxWind = winds.length ? Math.round(Math.max(...winds)) : null;
+                          const minTemp = temperatures.length ? Math.round(Math.min(...temperatures)) : null;
+                          const maxTemp = temperatures.length ? Math.round(Math.max(...temperatures)) : null;
+                          return (
+                            <button type="button" key={dayOffset}
+                              className={"forecast-day-card" + (selectedDay === dayOffset ? " is-selected" : "")}
+                              aria-pressed={selectedDay === dayOffset}
+                              aria-label={"Mostra le previsioni per " + (dayOffset === 0 ? "oggi" : dayOffset === 1 ? "domani" : "dopodomani")}
+                              onClick={() => setSelectedDay(dayOffset)}>
+                              <span className="forecast-day-card-top"><strong>{dayLabel}</strong><small>{dateText}</small></span>
+                              <span className="forecast-day-card-temp">{minTemp !== null && maxTemp !== null ? String(minTemp) + "° / " + String(maxTemp) + "°" : "Dati in caricamento"}</span>
+                              <span className="forecast-day-card-wind"><Wind aria-hidden="true" size={16} /> {maxWind !== null ? "Vento max " + maxWind + " km/h" : "Vento non disponibile"}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </section>
-
                     <section id="windgram-section" className="windgram-section windgram-featured min-w-0 overflow-hidden rounded-2xl p-3 sm:p-4">
                       <Windgram
                         dayData={filteredDayData}
@@ -233,10 +249,6 @@ export default function Index() {
                       )}
                     </section>
 
-                    <section className="flight-hourly-section min-w-0">
-                      <div className="flight-subsection-heading"><div><span>DETTAGLIO ORARIO</span><h2>Previsioni ora per ora</h2></div><small>{dateLabel}</small></div>
-                      <HourlyTable dayData={filteredDayData} altitude={site.elevation_m} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabel} siteName={site.site_name} />
-                    </section>
                   </>
                 )}
               </div>
