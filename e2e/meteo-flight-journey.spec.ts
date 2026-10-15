@@ -46,7 +46,7 @@ test.describe("Meteo dei Conigli - Paragliding Launch Weather Journey", () => {
     // 7. Verify and interact with the redesigned hourly timeline (replaces the old table)
     const timeline = page.locator(".story-hourly-timeline");
     await expect(timeline).toBeVisible({ timeout: 10000 });
-    const hourButtons = timeline.locator("button[aria-label*='Seleziona le condizioni delle ore']");
+    const hourButtons = timeline.locator(".story-hour-chip");
     await expect(hourButtons.first()).toBeVisible();
     expect(await hourButtons.count()).toBeGreaterThan(0);
     await hourButtons.first().click();
