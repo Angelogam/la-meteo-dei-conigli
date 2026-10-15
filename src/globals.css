@@ -4368,3 +4368,44 @@ button, [role="tab"], a {
 @media (prefers-reduced-motion: reduce) {
   .story-hour-chip, .story-play-control { transition: none !important; }
 }
+
+
+/* Compact three-day selector for the redesigned flight briefing */
+.forecast-day-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+.forecast-day-strip .forecast-day-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 1rem;
+  border: 1px solid #dbe5ee;
+  border-radius: 1rem;
+  background: #fff;
+  color: #172b3b;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+.forecast-day-strip .forecast-day-card:hover { transform: translateY(-1px); }
+.forecast-day-strip .forecast-day-card[aria-pressed="true"] {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.14);
+  background: #f0f9ff;
+}
+.forecast-day-card-top { display: flex; width: 100%; justify-content: space-between; gap: 0.5rem; align-items: baseline; }
+.forecast-day-card-top strong { font-size: 0.95rem; }
+.forecast-day-card-top small { color: #64748b; font-size: 0.78rem; }
+.forecast-day-card-temp { font-size: 1.25rem; font-weight: 750; letter-spacing: -0.03em; }
+.forecast-day-card-wind { display: flex; align-items: center; gap: 0.35rem; color: #526779; font-size: 0.78rem; }
+@media (max-width: 600px) {
+  .forecast-day-strip { grid-template-columns: 1fr; gap: 0.5rem; }
+  .forecast-day-strip .forecast-day-card { padding: 0.8rem 0.9rem; gap: 0.35rem; }
+  .forecast-day-card-top { align-items: center; }
+  .forecast-day-card-temp { font-size: 1.05rem; }
+}
