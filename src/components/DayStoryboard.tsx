@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -118,6 +118,7 @@ export default function DayStoryboard({
   const [showDewPoint, setShowDewPoint] = useState(false);
   const [showWind, setShowWind] = useState(true);
   const [showGusts, setShowGusts] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const allPoints = useMemo<ChartPoint[]>(() => dayData
     .map((item) => {
@@ -164,7 +165,18 @@ export default function DayStoryboard({
     if (Number.isInteger(hour) && hour >= 0 && hour <= 23) onHourSelect(hour);
   };
 
+  useEffect(() => {
+    if (!isPlaying || chartData.length < 2) return;
+    const timer = window.setInterval(() => {
+      const currentIndex = chartData.findIndex((point) => point.hour === selectedHour);
+      const next = chartData[(currentIndex + 1 + chartData.length) % chartData.length];
+      if (next) onHourSelect(next.hour);
+    }, 1600);
+    return () => window.clearInterval(timer);
+  }, [isPlaying, chartData, selectedHour, onHourSelect]);
+
   const tickInterval = chartData.length > 10 ? 1 : 0;
+
 
   return (
     <section className="storyboard-panel" aria-labelledby="storyboard-title">
@@ -213,6 +225,31 @@ export default function DayStoryboard({
               <button type="button" className={showGusts ? "is-on gust-toggle" : "gust-toggle"} aria-pressed={showGusts} onClick={() => setShowGusts((value) => !value)}>
                 <i />Raffiche
               </button>
+            </div>
+          </div>
+
+          <div className="story-hourly-timeline" aria-label="Evoluzione oraria del cielo e del vento">
+            <div className="story-hourly-timeline-heading">
+              <div><strong>Evoluzione della giornata</strong><span>Seleziona un'ora oppure avvia l'animazione</span></div>
+              <button type="button" className="story-play-control" aria-pressed={isPlaying} onClick={() => setIsPlaying((playing) => !playing)}>
+                {isPlaying ? "Ⅱ Pausa" : "▶ Riproduci"}
+              </button>
+            </div>
+            <div className="story-hourly-timeline-scroll">
+              {chartData.map((point) => {
+                const cloud = point.cloudCover;
+                const sky = cloud == null ? "·" : cloud < 15 ? "☀️" : cloud < 40 ? "🌤️" : cloud < 75 ? "⛅" : "☁️";
+                const active = point.hour === selectedHour;
+                const direction = point.windDir == null ? null : Math.round(point.windDir);
+                return (
+                  <button key={point.hour} type="button" className={active ? "story-hour-chip is-active" : "story-hour-chip"} aria-pressed={active} onClick={() => onHourSelect(point.hour)}>
+                    <span className="story-hour-chip-time">{point.label}:00</span>
+                    <span className="story-hour-chip-sky" aria-label={cloud == null ? "Nuvolosità non disponibile" : `Copertura nuvolosa ${Math.round(cloud)} percento`}>{sky}</span>
+                    <span className="story-hour-chip-temp">{fmt(point.temperature, 0)}°</span>
+                    <span className="story-hour-chip-wind"><span style={{ display: "inline-block", transform: `rotate(${direction ?? 0}deg)` }}>↑</span> {fmt(point.windSpeed, 0)}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
