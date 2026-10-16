@@ -19,7 +19,7 @@ Il backend `/api/ai-briefing` usa per impostazione predefinita llmfaucet. Le seg
 - `LLMFAUCET_MODEL`: lasciare vuota per usare `auto:fast`.
 - `LLMFAUCET_API_KEY`: lasciare vuota per usare l'accesso anonimo documentato (`free`). Se si crea una chiave personale su llmfaucet, inserirla qui come variabile segreta server-side.
 
-Per impostare una chiave personale, apri Vercel → progetto → Settings → Environment Variables e aggiungi `LLMFAUCET_API_KEY) per gli ambienti desiderati. Non inserirla nel codice React, nei file pubblici `.env), nei commit GitHub o nella chat. Dopo aver cambiato le variabili, esegui un nuovo deployment.
+Per impostare una chiave personale, apri Vercel → progetto → Settings → Environment Variables e aggiungi `LLMFAUCET_API_KEY` per gli ambienti desiderati. Non inserirla nel codice React, nei file pubblici `.env`, nei commit GitHub o nella chat. Dopo aver cambiato le variabili, esegui un nuovo deployment.
 
 ## Flusso e sicurezza
 
