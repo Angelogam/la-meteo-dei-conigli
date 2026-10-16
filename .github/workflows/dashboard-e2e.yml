@@ -43,6 +43,9 @@ jobs:
       - name: Run dashboard browser smoke tests
         run: pnpm exec playwright test --config=playwright.config.ts
 
+      - name: Run API contract and regression tests
+        run: pnpm exec playwright test --config=playwright-api.config.ts
+
       - name: Upload Playwright report on failure
         if: failure()
         uses: actions/upload-artifact@v4
