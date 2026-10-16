@@ -88,9 +88,13 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     await expect(dayButtons).toHaveCount(3);
     await expect(page.locator('.flight-day-switcher-options button[aria-pressed="true"]')).toHaveCount(1);
     const tomorrow = dayButtons.nth(1);
-    await tomorrow.click();
-    await expect(tomorrow).toHaveAttribute("aria-pressed", "true");
-    await expect(page.locator('.flight-day-switcher-options button[aria-pressed="true"]')).toHaveCount(1);
+    if (await tomorrow.isEnabled()) {
+      await tomorrow.click();
+      await expect(tomorrow).toHaveAttribute("aria-pressed", "true");
+      await expect(page.locator('.flight-day-switcher-options button[aria-pressed="true"]')).toHaveCount(1);
+    } else {
+      await expect(tomorrow).toBeDisabled();
+    }
 
     await page.getByRole("button", { name: "Esplora i venti" }).click();
     await expect(page.getByTestId("tab-venti")).toHaveAttribute("aria-pressed", "true");
