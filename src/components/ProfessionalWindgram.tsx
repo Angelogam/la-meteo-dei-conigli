@@ -165,7 +165,13 @@ export default function ProfessionalWindgram({
     return d;
   }, [selectedDay]);
 
-  const dateStr = useMemo(() => dateObj.toISOString().split("T")[0], [dateObj]);
+  // Usa la data del calendario locale: toISOString() converte in UTC e può mostrare il giorno precedente in Italia.
+  const dateStr = useMemo(() => {
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+    const day = String(dateObj.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }, [dateObj]);
 
   const formattedDateTitle = useMemo(() => {
     const days = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
