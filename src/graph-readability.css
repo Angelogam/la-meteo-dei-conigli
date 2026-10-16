@@ -1,33 +1,45 @@
-/* Gentle chart surfaces: reduce glare while keeping labels and grid lines readable. */
-.story-chart-module,
-.windgram-featured,
-.flight-tab-content .recharts-wrapper {
-  background-color: rgba(10, 26, 44, 0.72);
-}
-
+/* Visible, low-glare chart treatment across the interactive forecast dashboard. */
 .story-chart-module {
+  background-color: #0b1b2d !important;
   background-image: linear-gradient(
-    180deg,
-    rgba(24, 48, 70, 0.42) 0%,
-    rgba(7, 21, 37, 0.12) 100%
-  );
+    145deg,
+    rgba(34, 68, 91, 0.58) 0%,
+    rgba(14, 35, 55, 0.86) 48%,
+    rgba(6, 19, 34, 0.96) 100%
+  ) !important;
+  border-color: rgba(121, 190, 219, 0.24);
+  box-shadow: inset 0 1px 0 rgba(194, 229, 245, 0.035), 0 8px 22px rgba(0, 0, 0, 0.12);
 }
 
 .story-recharts-area {
   border-radius: 12px;
   background: linear-gradient(
     180deg,
-    rgba(103, 216, 238, 0.035) 0%,
-    rgba(103, 216, 238, 0.008) 100%
+    rgba(36, 72, 94, 0.24) 0%,
+    rgba(12, 31, 49, 0.10) 56%,
+    rgba(5, 17, 30, 0.03) 100%
   );
 }
 
 .story-chart-module .recharts-cartesian-grid line {
-  stroke: rgba(148, 180, 210, 0.13);
+  stroke: rgba(157, 194, 218, 0.17);
 }
 
 .story-chart-module .recharts-cartesian-axis-tick-value {
-  fill: #a9bfd4;
+  fill: #b4c9dc;
+}
+
+.story-chart-tooltip {
+  backdrop-filter: blur(16px);
+  border-color: rgba(116, 204, 232, 0.38);
+}
+
+.windgram-featured {
+  background-image: linear-gradient(
+    145deg,
+    rgba(18, 43, 64, 0.55),
+    rgba(7, 21, 37, 0.22)
+  );
 }
 
 @media (prefers-reduced-motion: reduce) {
