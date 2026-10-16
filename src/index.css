@@ -278,3 +278,46 @@
 @media (max-width: 560px) {
   .launch-hero { border-radius: 16px !important; background-position: center, center, 60% center, center !important; }
 }
+
+/* Softer chart surfaces: blend bright plot backgrounds into the night palette. */
+.flight-website-shell .recharts-wrapper,
+.flight-website-shell .recharts-responsive-container { color: #dbeafe; }
+.flight-website-shell .recharts-cartesian-grid-horizontal line,
+.flight-website-shell .recharts-cartesian-grid-vertical line {
+  stroke: rgba(148, 163, 184, .13) !important;
+}
+.flight-website-shell .recharts-text,
+.flight-website-shell .recharts-cartesian-axis-tick-value,
+.flight-website-shell .recharts-legend-item-text { fill: #b8c9e2 !important; color: #b8c9e2 !important; }
+.flight-website-shell .recharts-tooltip-wrapper > div,
+.flight-website-shell .recharts-default-tooltip {
+  color: #eaf2ff !important;
+  border: 1px solid rgba(129, 140, 248, .3) !important;
+  border-radius: 12px !important;
+  background: rgba(7, 19, 39, .96) !important;
+  box-shadow: 0 12px 28px rgba(0,0,0,.28) !important;
+}
+.flight-website-shell .recharts-default-tooltip .recharts-tooltip-label { color: #f8fafc !important; }
+.flight-website-shell .recharts-default-tooltip .recharts-tooltip-item { color: #c7d2fe !important; }
+.flight-website-shell .recharts-surface { overflow: visible; }
+.flight-website-shell canvas { max-width: 100%; }
+.flight-website-shell .chart-container,
+.flight-website-shell .windgram-chart,
+.flight-website-shell .windgram-plot,
+.flight-website-shell .chart-panel {
+  background: linear-gradient(180deg, rgba(30, 58, 92, .28), rgba(8, 24, 47, .12)) !important;
+  border-color: rgba(148, 163, 184, .16) !important;
+  border-radius: 14px;
+}
+.flight-website-shell svg [fill="#fff"],
+.flight-website-shell svg [fill="#ffffff"],
+.flight-website-shell svg [fill="white"] { fill: rgba(226, 235, 249, .08); }
+.flight-website-shell .recharts-cartesian-axis-line,
+.flight-website-shell .recharts-cartesian-axis-tick-line { stroke: rgba(148, 163, 184, .22) !important; }
+.flight-website-shell .recharts-reference-line line { stroke: rgba(165, 180, 252, .45) !important; }
+@media (prefers-reduced-transparency: reduce) {
+  .flight-website-shell .chart-container,
+  .flight-website-shell .windgram-chart,
+  .flight-website-shell .windgram-plot,
+  .flight-website-shell .chart-panel { background: #0b1c33 !important; }
+}
