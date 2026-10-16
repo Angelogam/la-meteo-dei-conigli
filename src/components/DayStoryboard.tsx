@@ -100,11 +100,11 @@ function WeatherTooltip({
   return (
     <div className="story-chart-tooltip">
       <div className="story-chart-tooltip-title">Ore {label}:00</div>
-      <div className="story-tooltip-row"><span><i className="tooltip-dot is-temperature" />Temperatura</span><strong>{fmt(point.temperature)} °C</strong></div>
-      <div className="story-tooltip-row"><span><i className="tooltip-dot is-dew" />Punto di rugiada</span><strong>{fmt(point.dewPoint)} °C</strong></div>
+      <div className="story-tooltip-row"><span><i className="tooltip-dot is-temperature" />Vento al suolo</span><strong>{fmt(point.windSpeed, 0)} km/h</strong></div>
+      <div className="story-tooltip-row"><span><i className="tooltip-dot is-dew" />Vento a 80 m</span><strong>{fmt(point.wind80m, 0)} km/h</strong></div>
       <div className="story-tooltip-row"><span><i className="tooltip-dot is-wind" />Vento medio</span><strong>{fmt(point.windSpeed, 0)} km/h</strong></div>
       <div className="story-tooltip-row"><span><i className="tooltip-dot is-gust" />Raffiche</span><strong>{fmt(point.windGusts, 0)} km/h</strong></div>
-      <div className="story-tooltip-row"><span><i className="tooltip-dot is-humidity" />Umidità</span><strong>{fmt(point.humidity, 0)}%</strong></div>
+      <div className="story-tooltip-row"><span><i className="tooltip-dot is-humidity" />Vento a 120 m</span><strong>{fmt(point.wind120m, 0)} km/h</strong></div>
       <div className="story-tooltip-row"><span><i className="tooltip-dot is-cloud" />Nuvolosità</span><strong>{fmt(point.cloudCover, 0)}%</strong></div>
       <div className="story-tooltip-row"><span><i className="tooltip-dot is-rain" />Precipitazioni</span><strong>{fmt(point.precipitation, 1)} mm/h</strong></div>
       <div className="story-tooltip-row"><span><i className="tooltip-dot is-direction" />Direzione</span><strong>{point.windDir == null ? "N/D" : Math.round(point.windDir) + "°"}</strong></div>
@@ -212,10 +212,10 @@ export default function DayStoryboard({
             </div>
             <div className="story-series-controls" role="group" aria-label="Mostra o nascondi serie">
               <button type="button" className={showTemperature ? "is-on temperature-toggle" : "temperature-toggle"} aria-pressed={showTemperature} onClick={() => setShowTemperature((value) => !value)}>
-                <i />Temperatura
+                <i />Suolo
               </button>
               <button type="button" className={showDewPoint ? "is-on dew-toggle" : "dew-toggle"} aria-pressed={showDewPoint} onClick={() => setShowDewPoint((value) => !value)}>
-                <i />Rugiada
+                <i />Quota 80/120 m
               </button>
               <button type="button" className={showWind ? "is-on wind-toggle" : "wind-toggle"} aria-pressed={showWind} onClick={() => setShowWind((value) => !value)}>
                 <i />Vento
