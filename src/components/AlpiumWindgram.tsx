@@ -451,7 +451,7 @@ export default function AlpiumWindgram({
               const temp = d?.temp ?? NaN;
               const isRed = temp >= 25;
               const isOrange = temp >= 18 && temp < 25;
-              const tempColor = isRed ? "#ef4444" : isOrange ? "#f97316" : "#cbd5e1";
+              const tempColor = isRed ? "#ef4444" : isOrange ? "#f97316" : "#475569";
               return (
                 <g key={`hdr-${hr}`}>
                   <text x={x} y={18} textAnchor="middle" className="text-[14px] font-bold" fill={tempColor}>
@@ -505,7 +505,7 @@ export default function AlpiumWindgram({
                   strokeWidth="0.5"
                   strokeDasharray="2 3"
                 />
-                <text x={margin.left - 8} y={altToY(lv.alt) + 4} textAnchor="end" className="text-[11px] font-bold" fill="#94a3b8">
+                <text x={margin.left - 8} y={altToY(lv.alt) + 4} textAnchor="end" className="text-[11px] font-bold" fill="#475569">
                   {lv.hpa} hPa
                 </text>
                 <text x={margin.left + plotW + 6} y={altToY(lv.alt) + 4} textAnchor="start" className="text-[10px]" fill="#64748b">
@@ -520,7 +520,7 @@ export default function AlpiumWindgram({
               return (
                 <g key={`hour-${hr}`}>
                   <line x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#cbd5e1" strokeWidth="0.7" />
-                  <text x={x} y={H - margin.bottom + 18} textAnchor="middle" className="text-[11px] font-bold" fill="#cbd5e1">
+                  <text x={x} y={H - margin.bottom + 18} textAnchor="middle" className="text-[11px] font-bold" fill="#334155">
                     {String(hr).padStart(2, "0")}:00
                   </text>
                 </g>
@@ -558,10 +558,10 @@ export default function AlpiumWindgram({
               const x = hourToX(hr);
               return (
                 <g key={`zero-${hr}`}>
-                  <line x1={x} y1={altToY(z)} x2={x} y2={altToY(z)} stroke="#7dd3fc" strokeWidth="1.5" strokeDasharray="3 2" />
+                  <line x1={x} y1={altToY(z)} x2={x} y2={altToY(z)} stroke="#0284c7" strokeWidth="1.5" strokeDasharray="3 2" />
                   {/* Fiocco di neve */}
                   <g transform={`translate(${x}, ${altToY(z) - 10})`} opacity="0.95">
-                    <text textAnchor="middle" y="4" className="text-[14px]" fill="#7dd3fc">❄</text>
+                    <text textAnchor="middle" y="4" className="text-[14px]" fill="#0284c7">❄</text>
                   </g>
                 </g>
               );
@@ -606,13 +606,13 @@ export default function AlpiumWindgram({
                   <path
                     d={`M ${x - 6} ${yTop + 4} Q ${x} ${yTop - 4} ${x + 6} ${yTop + 4}`}
                     fill="none"
-                    stroke="#c084fc"
+                    stroke="#7e22ce"
                     strokeWidth="1.2"
                   />
-                  <text x={x} y={yTop - 14} textAnchor="middle" className="text-[9px] font-bold" fill="#e9d5ff">
+                  <text x={x} y={yTop - 14} textAnchor="middle" className="text-[9px] font-bold" fill="#7e22ce">
                     {Math.round(thermalTop)} m
                   </text>
-                  <text x={x} y={yTop - 4} textAnchor="middle" className="text-[9px]" fill="#c084fc">
+                  <text x={x} y={yTop - 4} textAnchor="middle" className="text-[9px]" fill="#7e22ce">
                     ↑{d.estimatedThermalActivity?.toFixed(1) ?? "?"} m/s
                   </text>
                 </g>
