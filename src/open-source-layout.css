@@ -434,3 +434,167 @@ a:focus-visible,
   .flight-brief-metric strong { font-size: .95rem; }
   .flight-brief-metric em { display: none; }
 }
+
+
+/* VISUAL PASS 2 — stronger hierarchy for charts, forecast controls and flight profile. */
+.flight-page-titlebar {
+  position: relative;
+  isolation: isolate;
+}
+.flight-page-titlebar::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: -1rem;
+  right: -1rem;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(113,217,244,.34), rgba(113,217,244,.08) 45%, transparent);
+}
+.flight-page-titlebar h1 {
+  background: linear-gradient(100deg, #f5fbff 0%, #d9f4ff 62%, #a9dff2 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+}
+.flight-page-titlebar p {
+  max-width: 62ch;
+  line-height: 1.65;
+}
+.flight-brief-strip {
+  animation: briefing-enter .55s cubic-bezier(.2,.75,.25,1) both;
+}
+.flight-brief-metric {
+  position: relative;
+  overflow: hidden;
+  min-height: 94px;
+  transition: transform .2s ease, border-color .2s ease, background .2s ease;
+}
+.flight-brief-metric::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(125deg, rgba(255,255,255,.035), transparent 52%);
+}
+.flight-brief-metric:hover {
+  transform: translateY(-2px);
+  border-color: rgba(113,217,244,.28);
+  background: linear-gradient(145deg, rgba(37,75,98,.62), rgba(9,29,46,.72));
+}
+.flight-brief-metric strong {
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+}
+.flight-quick-params {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .6rem;
+  margin-top: .9rem;
+}
+.flight-quick-param {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .22rem;
+  padding: .8rem !important;
+  border-radius: 13px !important;
+  background:
+    radial-gradient(ellipse at 0 0, rgba(113,217,244,.09), transparent 75%),
+    linear-gradient(145deg, rgba(23,53,75,.78), rgba(8,25,41,.92)) !important;
+  transition: border-color .2s ease, transform .2s ease;
+}
+.flight-quick-param:hover {
+  transform: translateY(-1px);
+  border-color: rgba(113,217,244,.28) !important;
+}
+.flight-quick-param > span {
+  color: #a6bfd3;
+  font-size: .7rem;
+  line-height: 1.4;
+}
+.flight-quick-param > strong {
+  color: #f0f8ff;
+  font-size: 1.05rem;
+  font-weight: 850;
+  line-height: 1.25;
+  letter-spacing: -.025em;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.flight-quick-param > small {
+  color: #718da5;
+  font-size: .64rem;
+  line-height: 1.4;
+}
+.flight-param-note {
+  margin-top: .8rem;
+  padding: .65rem .75rem;
+  border-left: 2px solid rgba(113,217,244,.36);
+  border-radius: 0 9px 9px 0;
+  background: rgba(113,217,244,.045);
+  color: #8fa9bf;
+  font-size: .69rem;
+  line-height: 1.55;
+}
+.flight-side-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .8rem;
+  padding-bottom: .8rem;
+  border-bottom: 1px solid rgba(132,194,222,.11);
+  margin-bottom: .35rem;
+}
+.flight-site-data > div {
+  transition: background .18s ease;
+}
+.flight-site-data > div:hover {
+  background: rgba(113,217,244,.035);
+}
+.flight-chart-card,
+.storyboard-panel,
+.story-chart-module,
+.flight-forecast-module,
+.flight-tab-content,
+.windgram-featured,
+.flight-hourly-section {
+  scroll-margin-top: 1rem;
+}
+.flight-forecast-module,
+.windgram-featured,
+.flight-tab-content,
+.flight-hourly-section,
+.flight-side-card {
+  position: relative;
+}
+.flight-forecast-module::before,
+.windgram-featured::before,
+.flight-tab-content::before,
+.flight-hourly-section::before {
+  content: "";
+  position: absolute;
+  inset: 0 12% auto;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(133,211,238,.22), transparent);
+}
+.flight-nav-item:focus-visible,
+.dashboard-intro-cta:focus-visible {
+  outline: 2px solid #8ce8fb !important;
+  outline-offset: 3px;
+}
+@keyframes briefing-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 760px) {
+  .flight-brief-metric { min-height: 78px; }
+  .flight-quick-params { gap: .45rem; }
+  .flight-quick-param { padding: .7rem !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flight-brief-strip { animation: none !important; }
+  .flight-brief-metric,
+  .flight-quick-param { transition: none !important; }
+}
