@@ -31,11 +31,12 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: "Metodo non consentito." });
   }
 
-  const baseUrl = process.env.LLAMAFILE_BASE_URL?.trim();
-  if (!baseUrl) {
-    return res.status(503).json({
-      error: "Il servizio AI non è ancora configurato. Su Vercel imposta LLAMAFILE_BASE_URL con l'indirizzo raggiungibile del server llamafile e ridistribuisci.",
-    });
+  // llmfaucet is the hosted, OpenAI-compatible AI gateway. The default endpoint
+  // works with its documented anonymous access; an optional private key can be
+  // configured server-side without ever exposing it to the browser.
+  const baseUrl = (process.env.LLMFAUCET_BASE_URL || "https://api.llmfaucet.dev/v1").trim();
+  if (!/^https:\/\//i.test(baseUrl)) {
+    return res.status(500).json({ error: "LLMFAUCET_BASE_URL deve essere un indirizzo HTTPS." });
   }
 
   const body = (req.body ?? {}) as RequestBody;
@@ -75,14 +76,15 @@ export default async function handler(req: any, res: any) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 55000);
   try {
+    const apiKey = process.env.LLMFAUCET_API_KEY?.trim() || "free";
     const upstream = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(process.env.LLAMAFILE_API_KEY ? { Authorization: `Bearer ${process.env.LLAMAFILE_API_KEY}` } : {}),
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: process.env.LLAMAFILE_MODEL || "local-model",
+        model: process.env.LLMFAUCET_MODEL?.trim() || "auto:fast",
         messages: [
           { role: "system", content: "Sei un assistente meteorologico prudente. Non sostituisci il giudizio del pilota né i bollettini ufficiali." },
           { role: "user", content: prompt },
@@ -93,20 +95,26 @@ export default async function handler(req: any, res: any) {
       signal: controller.signal,
     });
     if (!upstream.ok) {
-      return res.status(502).json({ error: `Il server AI ha risposto con errore HTTP ${upstream.status}. Controlla l'indirizzo e il modello llamafile.` });
+      const retryAfter = upstream.headers.get("retry-after");
+      return res.status(502).json({
+        error: upstream.status === 429
+          ? "Il servizio AI gratuito ha raggiunto il limite temporaneo. Riprova più tardi."
+          : `Il servizio AI remoto ha risposto con errore HTTP ${upstream.status}. Riprova più tardi.`,
+        ...(retryAfter ? { retryAfter } : {}),
+      });
     }
     const payload = await upstream.json() as any;
     const briefing = payload?.choices?.[0]?.message?.content;
     if (typeof briefing !== "string" || !briefing.trim()) {
-      return res.status(502).json({ error: "La risposta del server AI non contiene testo." });
+      return res.status(502).json({ error: "La risposta del servizio AI remoto non contiene testo." });
     }
     return res.status(200).json({ briefing: briefing.trim().slice(0, 12000) });
   } catch (error) {
     const timedOut = error instanceof Error && error.name === "AbortError";
     return res.status(502).json({
       error: timedOut
-        ? "Il server AI ha impiegato troppo tempo a rispondere."
-        : "Non riesco a raggiungere il server llamafile. Verifica che sia online e accessibile da Vercel.",
+        ? "Il servizio AI remoto ha impiegato troppo tempo a rispondere."
+        : "Non riesco a raggiungere il servizio AI remoto. Riprova più tardi.",
     });
   } finally {
     clearTimeout(timeout);
