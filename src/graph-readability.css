@@ -1,51 +1,214 @@
-/* Visible, low-glare chart treatment across the interactive forecast dashboard. */
+/* METEO DEI CONIGLI — visual redesign
+   Calm aerology workspace: softer chart canvases, clearer hierarchy, less glare. */
+:root {
+  --meteo-bg: #071321;
+  --meteo-panel: #0d2033;
+  --meteo-panel-raised: #112940;
+  --meteo-line: rgba(145, 190, 218, .20);
+  --meteo-line-soft: rgba(145, 190, 218, .12);
+  --meteo-text: #edf6ff;
+  --meteo-muted: #9db2c7;
+  --meteo-cyan: #78d7ee;
+}
+
+html, body, #root {
+  background: var(--meteo-bg);
+}
+
+body {
+  background-image:
+    radial-gradient(ellipse at 78% 0%, rgba(35, 91, 124, .16), transparent 38%),
+    linear-gradient(180deg, #081725 0%, #071321 65%, #091827 100%);
+}
+
+.flight-website-shell,
+.flight-page-column {
+  background: transparent;
+}
+
+.flight-app-body {
+  gap: 0 !important;
+}
+
+.flight-nav-rail {
+  background: linear-gradient(180deg, rgba(8, 22, 38, .98), rgba(7, 19, 33, .98)) !important;
+  border-right: 1px solid var(--meteo-line-soft) !important;
+}
+
+.flight-nav-item {
+  border: 1px solid transparent;
+  transition: background .18s ease, border-color .18s ease, color .18s ease;
+}
+
+.flight-nav-item:hover {
+  background: rgba(47, 105, 139, .18) !important;
+  border-color: rgba(120, 215, 238, .15);
+}
+
+.flight-nav-item.is-active {
+  background: linear-gradient(100deg, rgba(28, 105, 143, .30), rgba(15, 44, 67, .48)) !important;
+  border-color: rgba(120, 215, 238, .32);
+  box-shadow: inset 3px 0 #78d7ee, 0 5px 18px rgba(0, 0, 0, .10);
+}
+
+.flight-page.app-main {
+  padding-top: clamp(1rem, 1.7vw, 1.6rem) !important;
+}
+
+.flight-page-titlebar {
+  padding: clamp(.8rem, 1.6vw, 1.3rem) 0;
+}
+
+.flight-page-titlebar h1 {
+  letter-spacing: -.045em;
+  text-shadow: 0 2px 20px rgba(72, 165, 201, .10);
+}
+
+.flight-page-titlebar p {
+  color: #a9bdcf;
+}
+
+/* Main dashboard panels: soft layered surfaces rather than flat black blocks. */
+.header-decollo,
+.overview-section,
+.flight-forecast-module,
+.windgram-featured,
+.flight-tab-content,
+.flight-hourly-section,
+.flight-side-card,
+.flight-nav-current,
+.flight-parameters-card,
+.flight-site-info-card,
+.flight-site-list > * {
+  border-color: var(--meteo-line) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .12), inset 0 1px 0 rgba(220, 243, 255, .025);
+}
+
+.windgram-featured,
+.flight-tab-content,
+.flight-side-card,
+.flight-hourly-section {
+  background-color: rgba(12, 31, 49, .82) !important;
+  background-image: linear-gradient(145deg, rgba(31, 63, 85, .24), rgba(7, 21, 36, .18)) !important;
+  backdrop-filter: blur(10px);
+}
+
+.flight-tab-content {
+  padding: clamp(.9rem, 1.6vw, 1.35rem) !important;
+}
+
+.flight-side-card {
+  border-radius: 16px !important;
+}
+
+/* Hourly-story charts: make the gradient visibly present, but keep the plot readable. */
+.storyboard-panel {
+  background: linear-gradient(145deg, rgba(17, 42, 62, .96), rgba(8, 24, 40, .97)) !important;
+  border: 1px solid var(--meteo-line) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .14), inset 0 1px 0 rgba(220, 243, 255, .035);
+}
+
+.storyboard-control-row {
+  background: rgba(5, 17, 30, .54) !important;
+  border-color: var(--meteo-line-soft) !important;
+}
+
+.story-chart-stat {
+  background: linear-gradient(135deg, rgba(25, 54, 76, .86), rgba(11, 29, 46, .90)) !important;
+  border-color: var(--meteo-line) !important;
+}
+
 .story-chart-module {
-  background-color: #0b1b2d !important;
+  position: relative;
+  overflow: hidden;
+  background-color: #0c2033 !important;
   background-image: linear-gradient(
-    145deg,
-    rgba(34, 68, 91, 0.58) 0%,
-    rgba(14, 35, 55, 0.86) 48%,
-    rgba(6, 19, 34, 0.96) 100%
+    135deg,
+    rgba(43, 82, 106, .62) 0%,
+    rgba(20, 48, 70, .74) 35%,
+    rgba(8, 25, 42, .97) 100%
   ) !important;
-  border-color: rgba(121, 190, 219, 0.24);
-  box-shadow: inset 0 1px 0 rgba(194, 229, 245, 0.035), 0 8px 22px rgba(0, 0, 0, 0.12);
+  border-color: rgba(130, 192, 220, .27) !important;
+  box-shadow: inset 0 1px 0 rgba(220, 243, 255, .035), 0 8px 24px rgba(0, 0, 0, .12);
+}
+
+.story-chart-module::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(115, 202, 230, .045), transparent 52%);
+}
+
+.story-chart-module-heading,
+.story-recharts-area {
+  position: relative;
+  z-index: 1;
 }
 
 .story-recharts-area {
   border-radius: 12px;
-  background: linear-gradient(
-    180deg,
-    rgba(36, 72, 94, 0.24) 0%,
-    rgba(12, 31, 49, 0.10) 56%,
-    rgba(5, 17, 30, 0.03) 100%
-  );
+  background: linear-gradient(180deg, rgba(52, 93, 116, .24), rgba(8, 24, 40, .08) 72%, rgba(5, 17, 30, .02));
 }
 
 .story-chart-module .recharts-cartesian-grid line {
-  stroke: rgba(157, 194, 218, 0.17);
+  stroke: rgba(165, 202, 224, .18) !important;
 }
 
 .story-chart-module .recharts-cartesian-axis-tick-value {
-  fill: #b4c9dc;
+  fill: #b6cbdc !important;
 }
 
 .story-chart-tooltip {
+  background: rgba(7, 22, 37, .97) !important;
+  border-color: rgba(120, 215, 238, .38) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .30) !important;
   backdrop-filter: blur(16px);
-  border-color: rgba(116, 204, 232, 0.38);
 }
 
-.windgram-featured {
-  background-image: linear-gradient(
-    145deg,
-    rgba(18, 43, 64, 0.55),
-    rgba(7, 21, 37, 0.22)
-  );
+.story-selected-hour {
+  background: linear-gradient(105deg, rgba(17, 62, 86, .50), rgba(9, 29, 47, .84)) !important;
+  border-color: rgba(120, 215, 238, .28) !important;
+}
+
+.story-module-unit {
+  background: rgba(24, 54, 76, .7) !important;
+}
+
+/* Secondary forecast and data cards share the same restrained surface language. */
+.flight-quick-param,
+.flight-chart-card,
+.analysis-tab,
+.wind-flow-panel {
+  border-color: var(--meteo-line) !important;
+}
+
+.flight-quick-param {
+  background: linear-gradient(140deg, rgba(23, 51, 73, .8), rgba(9, 27, 44, .82));
+  border: 1px solid var(--meteo-line-soft);
+  border-radius: 13px;
+}
+
+button:focus-visible, a:focus-visible, [role="tab"]:focus-visible {
+  outline: 2px solid var(--meteo-cyan);
+  outline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+  .story-chart-module {
+    border-radius: 13px;
+  }
+  .flight-tab-content {
+    padding: .75rem !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .story-chart-module,
-  .story-recharts-area {
-    animation: none !important;
-    transition: none !important;
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
   }
 }
