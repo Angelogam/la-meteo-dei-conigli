@@ -95,9 +95,9 @@ function speedColor(speed: number): string {
 function useAlpiumData(lat: number, lon: number, siteAlt: number, selectedDay: number) {
   const [hourly, setHourly] = useState<{
     times: string[];
-    windSpeed: Record<string, number[]>;
-    windDir: Record<string, number[]>;
-    temp: Record<string, number[]>;
+    windSpeed: Record<string, (number | null)[]>;
+    windDir: Record<string, (number | null)[]>;
+    temp: Record<string, (number | null)[]>;
     temp2m: number[];
     dew2m: number[];
     cloud: number[];
@@ -114,7 +114,7 @@ function useAlpiumData(lat: number, lon: number, siteAlt: number, selectedDay: n
     const today = new Date();
     const target = new Date(today);
     target.setDate(today.getDate() + selectedDay);
-    const dayStr = target.toISOString().split("T")[0];
+    const dayStr = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}-${String(target.getDate()).padStart(2, "0")}`;
 
     // Temperature per ogni livello di pressione per il lapse rate
     const tempFields = [
@@ -213,8 +213,8 @@ export default function AlpiumWindgram({
   // ============ DATI PER CELLA (alt, hour) ============
   // Per ogni coppia (hpaLevel, hour): speed, dir, temp
   const cellData = useMemo(() => {
-    if (!hourly) return new Map<string, { speed: number; dir: number; temp: number }>();
-    const m = new Map<string, { speed: number; dir: number; temp: number }>();
+    if (!hourly) return new Map<string, { speed: number | null; dir: number | null; temp: number | null }>();
+    const m = new Map<string, { speed: number | null; dir: number | null; temp: number | null }>();
 
     PRESSURE_LEVELS.forEach((lv) => {
       const hpaKey = `${lv.hpa}hPa`;
@@ -229,9 +229,10 @@ export default function AlpiumWindgram({
       DISPLAY_HOURS.forEach((hr) => {
         const idx = hourIndices.get(hr);
         if (idx === undefined) return;
-        const speed = speedArr?.[idx] ?? 0;
-        const dir = dirArr?.[idx] ?? 0;
-        const temp = tempArr?.[idx] ?? NaN;
+        // Dati mancanti restano mancanti: non trasformarli in vento calmo o direzione nord.
+        const speed = speedArr?.[idx] ?? null;
+        const dir = dirArr?.[idx] ?? null;
+        const temp = tempArr?.[idx] ?? null;
         m.set(`${lv.hpa}-${hr}`, { speed, dir, temp });
       });
     });
@@ -344,15 +345,15 @@ export default function AlpiumWindgram({
 
   // ============ HEADER: temperature, sole, vento al suolo ============
   const headerData = useMemo(() => {
-    if (!hourly) return new Map<number, { temp: number; cloud: number; gust: number }>();
-    const m = new Map<number, { temp: number; cloud: number; gust: number }>();
+    if (!hourly) return new Map<number, { temp: number | null; cloud: number | null; gust: number | null }>();
+    const m = new Map<number, { temp: number | null; cloud: number | null; gust: number | null }>();
     DISPLAY_HOURS.forEach((hr) => {
       const idx = hourIndices.get(hr);
       if (idx === undefined) return;
       m.set(hr, {
-        temp: hourly.temp2m[idx] ?? NaN,
-        cloud: hourly.cloud[idx] ?? 0,
-        gust: hourly.gust10[idx] ?? 0,
+        temp: hourly.temp2m[idx] ?? null,
+        cloud: hourly.cloud[idx] ?? null,
+        gust: hourly.gust10[idx] ?? null,
       });
     });
     return m;
@@ -380,6 +381,7 @@ export default function AlpiumWindgram({
         // Calcola lapse rate attorno a questa quota
         const tBelow = getTempAtAlt(hourly, idx, alt - 200, siteAlt);
         const tAbove = getTempAtAlt(hourly, idx, alt + 200, siteAlt);
+        if (!Number.isFinite(tBelow) || !Number.isFinite(tAbove)) continue;
         const dt = lapseRateCper100m(tBelow, alt - 200, tAbove, alt + 200);
         const color = instabilityColor(dt);
         const opacity = instabilityOpacity(dt);
@@ -399,48 +401,48 @@ export default function AlpiumWindgram({
 
   if (loading) {
     return (
-      <div className="w-full bg-slate-900 p-6 rounded-2xl flex items-center justify-center gap-3">
-        <Loader2 className="w-6 h-6 text-sky-400 animate-spin" />
-        <span className="text-slate-300">Caricamento windgram Alpium...</span>
+      <div className="w-full bg-white border border-slate-200 p-6 rounded-2xl flex items-center justify-center gap-3 text-slate-700">
+        <Loader2 className="w-6 h-6 text-sky-600 animate-spin" />
+        <span className="text-slate-600">Caricamento windgram Alpium...</span>
       </div>
     );
   }
   if (error || !hourly) {
     return (
-      <div className="w-full bg-slate-900 p-6 rounded-2xl text-center text-red-400">
-        Errore: {error ?? "dati non disponibili"}
+      <div className="w-full bg-white border border-red-200 p-6 rounded-2xl text-center text-red-700">
+        <p className="font-semibold">Windgram non disponibile</p>
+        <p className="text-sm mt-1 text-slate-600">{error ?? "Dati non disponibili"}</p>
       </div>
     );
   }
 
   // ============ RENDER ============
   return (
-    <div className="w-full bg-[#0a0e1a] p-2 sm:p-4 rounded-2xl">
-      <div className="bg-[#0f1424] border border-slate-800 rounded-2xl overflow-hidden">
+    <div className="w-full bg-white p-2 sm:p-4 rounded-2xl text-slate-800">
+      <div className="bg-white border border-slate-300 rounded-2xl overflow-hidden">
         {/* HEADER */}
         <div className="px-4 pt-4 pb-2 flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
               <Wind className="w-5 h-5 text-sky-400" />
               Windgram
             </h3>
-            <p className="text-sm text-slate-300 font-semibold">
+            <p className="text-sm text-slate-700 font-semibold">
               {siteName} &mdash; {dateLabel ?? "previsione"}
             </p>
             <p className="text-[10px] text-slate-500 mt-0.5">
               plotted {new Date().toISOString().slice(0, 16).replace("T", " ")} UTC &middot; model ground {siteAlt} m
             </p>
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-400">
-            <span className="px-2 py-1 rounded bg-slate-800">6 km &middot; default</span>
-            <button className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700">⬇ PNG</button>
+          <div className="flex items-center gap-2 text-xs text-slate-600">
+            <span className="px-2 py-1 rounded bg-slate-100 border border-slate-200">Profilo verticale</span>
           </div>
         </div>
 
         {/* TABELLA ORE / TEMPERATURA / VENTO AL SUOLO */}
         <div className="px-4">
           <svg width="100%" viewBox={`0 0 ${W} 70`} preserveAspectRatio="none" className="block">
-            <rect x={margin.left} y={0} width={plotW} height={70} fill="#1e293b" />
+            <rect x={margin.left} y={0} width={plotW} height={70} fill="#f1f5f9" />
             {/* Temperature e sole */}
             {DISPLAY_HOURS.map((hr, i) => {
               const x = margin.left + (i / (DISPLAY_HOURS.length - 1)) * plotW;
@@ -448,34 +450,18 @@ export default function AlpiumWindgram({
               const temp = d?.temp ?? NaN;
               const isRed = temp >= 25;
               const isOrange = temp >= 18 && temp < 25;
-              const tempColor = isRed ? "#ef4444" : isOrange ? "#f97316" : "#cbd5e1";
+              const tempColor = isRed ? "#ef4444" : isOrange ? "#f97316" : "#475569";
               return (
                 <g key={`hdr-${hr}`}>
                   <text x={x} y={18} textAnchor="middle" className="text-[14px] font-bold" fill={tempColor}>
                     {isNaN(temp) ? "—" : temp.toFixed(1)}
                   </text>
-                  {/* Icona sole in base alla copertura nuvolosa */}
-                  <g transform={`translate(${x - 8}, 28)`}>
-                    <circle cx="6" cy="6" r="4" fill="#fbbf24" opacity={1 - (d?.cloud ?? 0) / 100 * 0.7} />
-                    {/* Raggi */}
-                    {Array.from({ length: 8 }).map((_, k) => {
-                      const ang = (k * Math.PI) / 4;
-                      return (
-                        <line
-                          key={k}
-                          x1={6 + Math.cos(ang) * 6}
-                          y1={6 + Math.sin(ang) * 6}
-                          x2={6 + Math.cos(ang) * 9}
-                          y2={6 + Math.sin(ang) * 9}
-                          stroke="#fbbf24"
-                          strokeWidth="1.2"
-                          opacity={1 - (d?.cloud ?? 0) / 100 * 0.8}
-                        />
-                      );
-                    })}
-                  </g>
-                  <text x={x} y={56} textAnchor="middle" className="text-[10px]" fill="#94a3b8">
-                    sole %
+                  {/* Icona cielo basata sulla copertura nuvolosa reale */}
+                  <text x={x} y={37} textAnchor="middle" fontSize="18">
+                    {d?.cloud == null ? "—" : d.cloud < 15 ? "☀" : d.cloud < 40 ? "🌤" : "☁"}
+                  </text>
+                  <text x={x} y={56} textAnchor="middle" className="text-[10px]" fill="#475569">
+                    {d?.cloud == null ? "n/d" : `${Math.round(d.cloud)}% nubi`}
                   </text>
                 </g>
               );
@@ -504,7 +490,7 @@ export default function AlpiumWindgram({
             ))}
 
             {/* Bordo area plot */}
-            <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#334155" strokeWidth="1" />
+            <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#64748b" strokeWidth="1" />
 
             {/* LINEE ORIZZONTALI QUOTE hPa */}
             {PRESSURE_LEVELS.map((lv) => (
@@ -514,11 +500,11 @@ export default function AlpiumWindgram({
                   y1={altToY(lv.alt)}
                   x2={margin.left + plotW}
                   y2={altToY(lv.alt)}
-                  stroke="#475569"
+                  stroke="#94a3b8"
                   strokeWidth="0.5"
                   strokeDasharray="2 3"
                 />
-                <text x={margin.left - 8} y={altToY(lv.alt) + 4} textAnchor="end" className="text-[11px] font-bold" fill="#94a3b8">
+                <text x={margin.left - 8} y={altToY(lv.alt) + 4} textAnchor="end" className="text-[11px] font-bold" fill="#475569">
                   {lv.hpa} hPa
                 </text>
                 <text x={margin.left + plotW + 6} y={altToY(lv.alt) + 4} textAnchor="start" className="text-[10px]" fill="#64748b">
@@ -532,8 +518,8 @@ export default function AlpiumWindgram({
               const x = hourToX(hr);
               return (
                 <g key={`hour-${hr}`}>
-                  <line x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#1e293b" strokeWidth="0.5" />
-                  <text x={x} y={H - margin.bottom + 18} textAnchor="middle" className="text-[11px] font-bold" fill="#cbd5e1">
+                  <line x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#cbd5e1" strokeWidth="0.7" />
+                  <text x={x} y={H - margin.bottom + 18} textAnchor="middle" className="text-[11px] font-bold" fill="#334155">
                     {String(hr).padStart(2, "0")}:00
                   </text>
                 </g>
@@ -544,7 +530,7 @@ export default function AlpiumWindgram({
             {PRESSURE_LEVELS.map((lv) =>
               DISPLAY_HOURS.map((hr) => {
                 const d = cellData.get(`${lv.hpa}-${hr}`);
-                if (!d) return null;
+                if (!d || d.speed == null || d.dir == null || !Number.isFinite(d.speed) || !Number.isFinite(d.dir)) return null;
                 const x = hourToX(hr);
                 const y = altToY(lv.alt);
                 const color = speedColor(d.speed);
@@ -571,10 +557,10 @@ export default function AlpiumWindgram({
               const x = hourToX(hr);
               return (
                 <g key={`zero-${hr}`}>
-                  <line x1={x} y1={altToY(z)} x2={x} y2={altToY(z)} stroke="#7dd3fc" strokeWidth="1.5" strokeDasharray="3 2" />
+                  <line x1={x} y1={altToY(z)} x2={x} y2={altToY(z)} stroke="#0284c7" strokeWidth="1.5" strokeDasharray="3 2" />
                   {/* Fiocco di neve */}
                   <g transform={`translate(${x}, ${altToY(z) - 10})`} opacity="0.95">
-                    <text textAnchor="middle" y="4" className="text-[14px]" fill="#7dd3fc">❄</text>
+                    <text textAnchor="middle" y="4" className="text-[14px]" fill="#0284c7">❄</text>
                   </g>
                 </g>
               );
@@ -664,7 +650,7 @@ export default function AlpiumWindgram({
 
         {/* LEGENDA SCALA INSTABILITÀ */}
         <div className="px-4 py-3">
-          <div className="flex items-center justify-center gap-3 flex-wrap text-[10px] text-slate-400">
+          <div className="flex items-center justify-center gap-3 flex-wrap text-[10px] text-slate-700">
             <span>Stabile ←</span>
             {[
               { c: "#3b5fa0", v: "-0.20" },
@@ -685,8 +671,8 @@ export default function AlpiumWindgram({
             <span>→ Instabile</span>
           </div>
           <p className="text-center text-[9px] text-slate-500 mt-1">ΔT / 100 m</p>
-          <p className="text-center text-[10px] text-slate-400 mt-2">
-            Fonte: Open-Meteo GFS &middot; hPa levels &middot; Stile grafico Alpium
+          <p className="text-center text-[10px] text-slate-600 mt-2">
+            Fonte: Open-Meteo &middot; livelli di pressione disponibili &middot; Stile grafico Alpium
           </p>
         </div>
       </div>
@@ -722,7 +708,8 @@ function getTempAtAlt(
   });
   points.sort((a, b) => a.alt - b.alt);
 
-  if (points.length === 0) return 15 - (alt - siteAlt) * 0.0065;
+  // Nessun profilo termico disponibile: non inventare una temperatura standard.
+  if (points.length === 0) return NaN;
 
   if (alt <= points[0].alt) return points[0].temp;
   if (alt >= points[points.length - 1].alt) return points[points.length - 1].temp;
