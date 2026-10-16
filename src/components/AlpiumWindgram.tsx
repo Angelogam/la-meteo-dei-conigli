@@ -346,7 +346,7 @@ export default function AlpiumWindgram({
   // ============ HEADER: temperature, sole, vento al suolo ============
   const headerData = useMemo(() => {
     if (!hourly) return new Map<number, { temp: number | null; cloud: number | null; gust: number | null }>();
-    const m = new Map<number, { temp: number; cloud: number; gust: number }>();
+    const m = new Map<number, { temp: number | null; cloud: number | null; gust: number | null }>();
     DISPLAY_HOURS.forEach((hr) => {
       const idx = hourIndices.get(hr);
       if (idx === undefined) return;
