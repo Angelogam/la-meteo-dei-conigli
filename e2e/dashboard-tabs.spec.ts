@@ -38,18 +38,19 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     await expect(page.locator(".flight-nav-rail")).toBeVisible();
     await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible();
     await expect(page.locator(".story-chart-module").first()).toBeVisible();
-    await expect(page.locator(".flight-forecast-module .forecast-day-card")).toHaveCount(3);
+    await expect(page.locator(".flight-day-switcher")).toBeVisible();
+    await expect(page.locator(".flight-day-switcher-options button")).toHaveCount(3);
     await expect(page.locator(".flight-desk-main > #windgram-section")).toBeVisible();
     const graphOrder = await page.locator(".flight-desk-main").evaluate((root) => {
       const children = Array.from(root.children);
       return {
         graph: children.findIndex((child) => child.classList.contains("storyboard-panel")),
-        forecast: children.findIndex((child) => child.classList.contains("forecast-section")),
+        daySwitcher: children.findIndex((child) => child.classList.contains("flight-day-switcher")),
         windgram: children.findIndex((child) => child.id === "windgram-section"),
       };
     });
     expect(graphOrder.graph).toBeGreaterThanOrEqual(0);
-    expect(graphOrder.forecast).toBeGreaterThan(graphOrder.graph);
+    expect(graphOrder.daySwitcher).toBeGreaterThan(graphOrder.graph);
     expect(graphOrder.windgram).toBeGreaterThan(graphOrder.forecast);
     await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible();
     await expect(page.locator(".story-chart-module")).toHaveCount(2);
@@ -82,16 +83,15 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
       };
     });
     expect(dashboardOrder.chart, "The hourly graph must appear before the weather cards").toBeGreaterThanOrEqual(0);
-    expect(dashboardOrder.forecast, "The forecast cards must exist in the main dashboard").toBeGreaterThan(dashboardOrder.chart);
+    expect(dashboardOrder.daySwitcher, "The compact day selector must follow the hourly graph").toBeGreaterThan(dashboardOrder.chart);
 
-    const forecastCards = page.locator(".forecast-day-card");
-    await expect(forecastCards).toHaveCount(3, { timeout: 30_000 });
-    await expect(page.locator('.forecast-day-card[aria-pressed="true"]')).toHaveCount(1);
-
-    const tomorrow = page.getByRole("button", { name: /Mostra le previsioni per domani/i });
+    const dayButtons = page.locator(".flight-day-switcher-options button");
+    await expect(dayButtons).toHaveCount(3);
+    await expect(page.locator('.flight-day-switcher-options button[aria-pressed="true"]')).toHaveCount(1);
+    const tomorrow = dayButtons.nth(1);
     await tomorrow.click();
     await expect(tomorrow).toHaveAttribute("aria-pressed", "true");
-    await expect(page.locator('.forecast-day-card[aria-pressed="true"]')).toHaveCount(1);
+    await expect(page.locator('.flight-day-switcher-options button[aria-pressed="true"]')).toHaveCount(1);
 
     await page.getByRole("button", { name: "Esplora i venti" }).click();
     await expect(page.getByTestId("tab-venti")).toHaveAttribute("aria-pressed", "true");
@@ -121,7 +121,7 @@ test("desktop briefing fits the viewport without clipping the launch or forecast
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Il tuo briefing di volo." })).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(".launch-hero")).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator(".flight-forecast-module .forecast-day-card").first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator(".flight-day-switcher-options button").first()).toBeVisible({ timeout: 30_000 });
 
   const layout = await page.evaluate(() => {
     const selectors = [
@@ -131,11 +131,8 @@ test("desktop briefing fits the viewport without clipping the launch or forecast
       ".dashboard-layout",
       ".dashboard-sidebar",
       ".dashboard-content",
-      ".forecast-section",
-      ".forecast-hero",
-      ".forecast-main-grid",
-      ".forecast-summary-grid",
-      ".flight-parameter-grid",
+      ".flight-day-switcher",
+      ".flight-day-switcher-options",
     ];
     const elements = selectors.flatMap((selector) => {
       const element = document.querySelector<HTMLElement>(selector);
@@ -173,8 +170,9 @@ test("wide desktop keeps the right rail visible and temperature scale readable",
   await page.goto("/");
   await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(".flight-right-rail")).toBeVisible({ timeout: 30_000 });
-  await page.getByRole("button", { name: "Pomeriggio" }).click();
-  const dewPointToggle = page.getByRole("group", { name: "Mostra o nascondi serie" }).getByRole("button", { name: "Rugiada" });
+  const afternoonButton = page.getByRole("button", { name: "Pomeriggio" });
+  if (await afternoonButton.isVisible().catch(() => false)) await afternoonButton.click();
+  const dewPointToggle = page.getByRole("group", { name: "Mostra o nascondi serie" }).getByRole("button", { name: "Quota 80/120 m" });
   await expect(dewPointToggle).toHaveAttribute("aria-pressed", "false");
 
   const dimensions = await page.evaluate(() => {
