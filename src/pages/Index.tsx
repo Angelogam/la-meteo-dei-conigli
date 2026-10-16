@@ -144,6 +144,34 @@ export default function Index() {
             </section>
 
             {site && (
+              <section className="flight-brief-strip" aria-label="Riepilogo rapido delle condizioni di volo">
+                <div className="flight-brief-heading">
+                  <span>BRIEFING RAPIDO</span>
+                  <small>{dateLabel} · {String(selectedHour).padStart(2, "0")}:00</small>
+                </div>
+                <div className="flight-brief-metrics">
+                  <article className="flight-brief-metric">
+                    <span className="flight-brief-icon flight-brief-icon-temp"><Thermometer aria-hidden="true" /></span>
+                    <div><small>Temperatura</small><strong>{currentTemp !== null ? currentTemp.toLocaleString("it-IT", { maximumFractionDigits: 1 }) + " °C" : "N/D"}</strong><em>Al decollo</em></div>
+                  </article>
+                  <article className="flight-brief-metric">
+                    <span className="flight-brief-icon flight-brief-icon-wind"><Wind aria-hidden="true" /></span>
+                    <div><small>Vento al suolo</small><strong>{typeof current?.windSpeed === "number" ? Math.round(current.windSpeed) + " km/h" : "N/D"}</strong><em>{typeof current?.windDir === "number" ? Math.round(current.windDir) + "° di direzione" : "Direzione non disponibile"}</em></div>
+                  </article>
+                  <article className="flight-brief-metric">
+                    <span className="flight-brief-icon flight-brief-icon-cloud"><Mountain aria-hidden="true" /></span>
+                    <div><small>Base cumuli · stima</small><strong>{cloudBaseEstimate !== null ? cloudBaseEstimate.toLocaleString("it-IT") + " m" : "N/D"}</strong><em>Quota indicativa</em></div>
+                  </article>
+                  <article className="flight-brief-metric">
+                    <span className="flight-brief-icon flight-brief-icon-cape"><Activity aria-hidden="true" /></span>
+                    <div><small>Instabilità CAPE</small><strong>{typeof current?.cape === "number" ? Math.round(current.cape).toLocaleString("it-IT") + " J/kg" : "N/D"}</strong><em>Indice del modello</em></div>
+                  </article>
+                </div>
+                <p>Riepilogo indicativo: verifica sempre vento, meteo locale e bollettini ufficiali prima del decollo.</p>
+              </section>
+            )}
+
+            {site && (
               <section id="overview" className="overview-section">
                 <SiteHeader
                   site_name={site.site_name}
