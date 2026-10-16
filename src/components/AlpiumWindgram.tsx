@@ -401,16 +401,17 @@ export default function AlpiumWindgram({
 
   if (loading) {
     return (
-      <div className="w-full bg-slate-900 p-6 rounded-2xl flex items-center justify-center gap-3">
-        <Loader2 className="w-6 h-6 text-sky-400 animate-spin" />
-        <span className="text-slate-300">Caricamento windgram Alpium...</span>
+      <div className="w-full bg-white border border-slate-200 p-6 rounded-2xl flex items-center justify-center gap-3 text-slate-700">
+        <Loader2 className="w-6 h-6 text-sky-600 animate-spin" />
+        <span className="text-slate-600">Caricamento windgram Alpium...</span>
       </div>
     );
   }
   if (error || !hourly) {
     return (
-      <div className="w-full bg-slate-900 p-6 rounded-2xl text-center text-red-400">
-        Errore: {error ?? "dati non disponibili"}
+      <div className="w-full bg-white border border-red-200 p-6 rounded-2xl text-center text-red-700">
+        <p className="font-semibold">Windgram non disponibile</p>
+        <p className="text-sm mt-1 text-slate-600">{error ?? "Dati non disponibili"}</p>
       </div>
     );
   }
