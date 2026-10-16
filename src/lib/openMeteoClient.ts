@@ -7,7 +7,7 @@
 import { getMeteoBaseUrl, OPEN_METEO_DIRECT } from "@/config/apiConfig";
 
 const TIMEOUT_MS = 8000;
-// Modello ICON per l'Europa — stesso usato da meteo-parapente.com
+// Non forzare un modello: Open-Meteo seleziona il modello predefinito per coordinate e disponibilità.
 const DEFAULT_MODELS = "";
 
 const RESPONSE_CACHE_TTL_MS = 2 * 60 * 1000;
@@ -97,7 +97,7 @@ function buildUrl(params: {
     search.set("forecast_days", params.forecast_days.toString());
   }
   if (params.forecast_hours) search.set("forecast_hours", params.forecast_hours.toString());
-  // Usa modello ICON per l'Europa (stesso del sito meteo-parapente.com)
+  // Imposta il modello solo se il chiamante ne specifica uno.
   if (params.models) search.set("models", params.models);
   return `${baseUrl}?${search.toString()}`;
 }
