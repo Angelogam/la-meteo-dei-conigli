@@ -1,0 +1,356 @@
+/*
+ * Open-source-inspired redesign for La Meteo dei Conigli.
+ * Keeps the existing React weather/data components and changes their presentation only.
+ * Inspired by common MIT-licensed React weather dashboard patterns; no third-party source copied.
+ */
+:root {
+  --flight-ink: #eaf5ff;
+  --flight-muted: #9eb6cb;
+  --flight-line: rgba(132, 194, 222, .19);
+  --flight-cyan: #71d9f4;
+  --flight-panel: #0d2032;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 72% -12%, rgba(45, 139, 174, .19), transparent 40%),
+    radial-gradient(ellipse at 12% 55%, rgba(20, 75, 107, .13), transparent 42%),
+    #06111e !important;
+}
+
+.flight-website-shell {
+  background: transparent !important;
+  color: var(--flight-ink);
+}
+
+.flight-app-body {
+  gap: 0 !important;
+}
+
+.flight-nav-rail {
+  width: 172px !important;
+  flex: 0 0 172px !important;
+  padding: 1.15rem .7rem !important;
+  background: linear-gradient(180deg, rgba(7, 23, 39, .98), rgba(5, 16, 29, .98)) !important;
+  border-right: 1px solid rgba(126, 190, 219, .16) !important;
+}
+
+.flight-nav-caption {
+  color: #7799b6 !important;
+  font-size: .61rem !important;
+  letter-spacing: .17em !important;
+  padding: .5rem .55rem !important;
+}
+
+.flight-primary-nav {
+  gap: .35rem !important;
+}
+
+.flight-nav-item {
+  min-height: 43px !important;
+  padding: .7rem .7rem !important;
+  border-radius: 12px !important;
+  color: #a8bfd3 !important;
+  border: 1px solid transparent !important;
+  transition: background .18s ease, color .18s ease, border-color .18s ease !important;
+}
+
+.flight-nav-item svg {
+  width: 17px !important;
+  height: 17px !important;
+}
+
+.flight-nav-item:hover,
+.flight-nav-item.is-active {
+  color: #e8faff !important;
+  border-color: rgba(113, 217, 244, .30) !important;
+  background: linear-gradient(110deg, rgba(31, 116, 151, .31), rgba(16, 47, 69, .56)) !important;
+  box-shadow: inset 3px 0 var(--flight-cyan);
+}
+
+.flight-nav-current {
+  padding: .85rem !important;
+  border-radius: 15px !important;
+  background: linear-gradient(145deg, rgba(19, 49, 71, .85), rgba(9, 27, 44, .95)) !important;
+  border: 1px solid var(--flight-line) !important;
+}
+
+.flight-nav-motto {
+  color: #6f8ba4 !important;
+}
+
+.flight-page-column {
+  min-width: 0;
+  background: transparent !important;
+}
+
+.flight-page.app-main {
+  max-width: none !important;
+  padding: clamp(1rem, 2vw, 1.75rem) clamp(.85rem, 1.7vw, 1.7rem) 2rem !important;
+  gap: 1.15rem !important;
+}
+
+.flight-page-titlebar {
+  padding: .15rem 0 1.15rem !important;
+  margin-bottom: .1rem;
+  border-bottom: 1px solid rgba(132, 194, 222, .13);
+}
+
+.flight-page-titlebar h1 {
+  font-size: clamp(1.65rem, 2.4vw, 2.25rem) !important;
+  font-weight: 850 !important;
+  letter-spacing: -.055em !important;
+}
+
+.flight-page-titlebar p {
+  margin-top: .3rem !important;
+  color: var(--flight-muted) !important;
+}
+
+.dashboard-intro-kicker {
+  color: var(--flight-cyan) !important;
+  letter-spacing: .17em !important;
+}
+
+.dashboard-date-chip {
+  background: rgba(13, 34, 53, .82) !important;
+  border-color: var(--flight-line) !important;
+  border-radius: 13px !important;
+}
+
+.dashboard-intro-cta {
+  min-height: 43px !important;
+  border-radius: 13px !important;
+  background: linear-gradient(135deg, #26799c, #18506f) !important;
+  border: 1px solid rgba(122, 218, 242, .34) !important;
+  box-shadow: 0 8px 24px rgba(16, 106, 145, .17) !important;
+}
+
+.header-decollo {
+  border-radius: 21px !important;
+  border-color: rgba(131, 199, 226, .28) !important;
+  min-height: 190px;
+  padding: clamp(1rem, 2vw, 1.55rem) !important;
+  background:
+    linear-gradient(90deg, rgba(5, 17, 31, .90), rgba(5, 21, 38, .64) 57%, rgba(5, 18, 32, .50)),
+    linear-gradient(0deg, rgba(4, 16, 29, .54), rgba(4, 16, 29, .02)),
+    url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2000&q=85') center 48% / cover !important;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, .22), inset 0 1px 0 rgba(230, 247, 255, .08) !important;
+}
+
+.header-decollo h2 {
+  font-size: clamp(1.7rem, 2.5vw, 2.45rem) !important;
+  letter-spacing: -.055em !important;
+}
+
+.dashboard-layout.flight-panels-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 300px) !important;
+  gap: 1rem !important;
+  align-items: start !important;
+}
+
+.flight-desk-main.dashboard-content {
+  gap: 1rem !important;
+}
+
+.flight-forecast-module,
+.windgram-featured,
+.flight-tab-content,
+.flight-hourly-section,
+.flight-side-card,
+.flight-parameters-card,
+.flight-site-info-card,
+.flight-site-list > * {
+  border: 1px solid var(--flight-line) !important;
+  border-radius: 18px !important;
+  background: linear-gradient(145deg, rgba(16, 39, 59, .95), rgba(7, 23, 39, .97)) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .13), inset 0 1px 0 rgba(223, 243, 255, .025) !important;
+}
+
+.flight-forecast-module {
+  padding: clamp(.8rem, 1.35vw, 1.25rem) !important;
+}
+
+.flight-side-card {
+  padding: 1rem !important;
+}
+
+.flight-side-card-heading h2,
+.flight-subsection-heading h2 {
+  letter-spacing: -.035em !important;
+}
+
+.flight-side-card-heading > div > span,
+.flight-subsection-heading > div > span {
+  color: var(--flight-cyan) !important;
+  letter-spacing: .15em !important;
+}
+
+.flight-site-data > div {
+  border-color: rgba(132, 194, 222, .12) !important;
+  padding: .68rem 0 !important;
+}
+
+.flight-site-data dt {
+  color: #91abc2 !important;
+}
+
+.flight-site-data dd {
+  color: #e3f1fc !important;
+}
+
+.flight-quick-param,
+.flight-chart-card {
+  border: 1px solid rgba(132, 194, 222, .15) !important;
+  border-radius: 13px !important;
+  background: linear-gradient(140deg, rgba(26, 58, 79, .75), rgba(10, 29, 46, .9)) !important;
+}
+
+.flight-tab-content {
+  padding: 1rem !important;
+}
+
+.windgram-featured,
+.flight-hourly-section {
+  padding: 1rem !important;
+}
+
+.storyboard-panel,
+.story-chart-module {
+  border-radius: 17px !important;
+  border: 1px solid rgba(128, 193, 221, .22) !important;
+  background:
+    radial-gradient(ellipse at 12% 0%, rgba(75, 141, 170, .20), transparent 58%),
+    linear-gradient(145deg, #122e43, #0b2033 58%, #081827) !important;
+  box-shadow: inset 0 1px 0 rgba(232, 247, 255, .045), 0 10px 25px rgba(0, 0, 0, .12) !important;
+}
+
+.story-chart-module {
+  padding: 1rem !important;
+}
+
+.story-recharts-area {
+  border-radius: 13px !important;
+  background: linear-gradient(180deg, rgba(93, 151, 178, .13), rgba(10, 29, 46, .04)) !important;
+}
+
+.story-chart-module .recharts-cartesian-grid line {
+  stroke: rgba(168, 207, 226, .16) !important;
+}
+
+.story-chart-module .recharts-cartesian-axis-tick-value {
+  fill: #b5cadb !important;
+}
+
+.story-chart-tooltip {
+  background: rgba(5, 19, 33, .97) !important;
+  border: 1px solid rgba(113, 217, 244, .38) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 15px 36px rgba(0, 0, 0, .30) !important;
+}
+
+.story-selected-hour {
+  border-radius: 13px !important;
+  border-color: rgba(113, 217, 244, .25) !important;
+  background: linear-gradient(110deg, rgba(23, 75, 98, .46), rgba(8, 27, 44, .9)) !important;
+}
+
+button:focus-visible,
+a:focus-visible,
+[role="tab"]:focus-visible {
+  outline: 2px solid var(--flight-cyan) !important;
+  outline-offset: 3px;
+}
+
+@media (max-width: 1100px) {
+  .flight-nav-rail {
+    width: 138px !important;
+    flex-basis: 138px !important;
+  }
+  .dashboard-layout.flight-panels-grid {
+    grid-template-columns: minmax(0, 1fr) 245px !important;
+  }
+}
+
+@media (max-width: 850px) {
+  .flight-nav-rail {
+    width: 74px !important;
+    flex-basis: 74px !important;
+    padding: .8rem .45rem !important;
+  }
+  .flight-nav-caption,
+  .flight-nav-item span,
+  .flight-nav-current strong,
+  .flight-nav-current small,
+  .flight-live-indicator,
+  .flight-nav-motto {
+    display: none !important;
+  }
+  .flight-nav-item {
+    justify-content: center !important;
+    padding: .7rem .35rem !important;
+  }
+  .flight-nav-current {
+    display: flex;
+    justify-content: center;
+    padding: .65rem .3rem !important;
+  }
+  .dashboard-layout.flight-panels-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .flight-right-rail {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .8rem !important;
+    position: static !important;
+  }
+  .flight-right-rail > * {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .flight-nav-rail {
+    display: none !important;
+  }
+  .flight-page.app-main {
+    padding: .8rem .65rem 1.25rem !important;
+  }
+  .flight-page-titlebar {
+    align-items: flex-start !important;
+    gap: .8rem !important;
+  }
+  .flight-page-titlebar h1 {
+    font-size: 1.55rem !important;
+  }
+  .flight-page-actions {
+    flex-wrap: wrap;
+  }
+  .header-decollo {
+    min-height: 0;
+    padding: .9rem !important;
+    border-radius: 17px !important;
+  }
+  .flight-right-rail {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .flight-forecast-module,
+  .flight-tab-content,
+  .windgram-featured,
+  .flight-hourly-section {
+    padding: .7rem !important;
+    border-radius: 15px !important;
+  }
+  .story-chart-module {
+    padding: .7rem !important;
+    border-radius: 14px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
