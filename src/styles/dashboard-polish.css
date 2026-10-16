@@ -141,3 +141,42 @@
 @media (prefers-reduced-motion: reduce) {
   .flight-nav-item, .dashboard-intro-cta { transition: none !important; }
 }
+
+
+/* Compact day switcher replaces the oversized daily forecast dashboard. */
+.flight-day-switcher {
+  display: grid;
+  grid-template-columns: minmax(180px, .7fr) minmax(0, 2fr);
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.15rem;
+  border: 1px solid rgba(125,211,252,.17);
+  border-radius: 20px;
+  background: linear-gradient(130deg, rgba(12,28,49,.96), rgba(5,15,30,.96));
+  box-shadow: 0 12px 30px rgba(0,0,0,.14), inset 0 1px rgba(255,255,255,.035);
+}
+.flight-day-switcher-copy { display: flex; flex-direction: column; gap: .25rem; min-width: 0; }
+.flight-day-switcher-copy > span { color: #67d8ed; font-size: .62rem; font-weight: 800; letter-spacing: .18em; }
+.flight-day-switcher-copy > strong { color: #f0f8ff; font-size: 1rem; }
+.flight-day-switcher-copy > small { color: #829db8; font-size: .75rem; }
+.flight-day-switcher-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .55rem; }
+.flight-day-switcher-options button {
+  display: flex; flex-direction: column; align-items: flex-start; gap: .3rem;
+  min-width: 0; padding: .75rem .9rem; border-radius: 13px;
+  border: 1px solid rgba(125,211,252,.16); background: rgba(2,12,27,.42);
+  color: #a9bfd5; text-align: left; transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+.flight-day-switcher-options button:hover:not(:disabled) { border-color: rgba(103,232,249,.45); transform: translateY(-1px); }
+.flight-day-switcher-options button.is-active {
+  border-color: rgba(103,232,249,.55); color: #effcff;
+  background: linear-gradient(135deg, rgba(8,145,178,.3), rgba(3,105,161,.15));
+  box-shadow: inset 3px 0 #22d3ee;
+}
+.flight-day-switcher-options button strong { color: inherit; font-size: .78rem; font-weight: 650; }
+.flight-day-switcher-options button:disabled { opacity: .38; cursor: not-allowed; }
+@media (max-width: 700px) {
+  .flight-day-switcher { grid-template-columns: minmax(0, 1fr); padding: .9rem; gap: .75rem; }
+  .flight-day-switcher-options { gap: .4rem; }
+  .flight-day-switcher-options button { padding: .65rem .55rem; }
+  .flight-day-switcher-options button strong { font-size: .7rem; }
+}
