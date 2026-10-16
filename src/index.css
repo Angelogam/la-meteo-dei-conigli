@@ -180,3 +180,101 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+
+/* Natural paragliding look: real landscape, restrained color, readable data. */
+.launch-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  color: #f8fafc !important;
+  border: 1px solid rgba(191, 219, 254, .3) !important;
+  border-radius: 22px !important;
+  background:
+    linear-gradient(90deg, rgba(4, 17, 37, .91) 0%, rgba(5, 25, 48, .76) 48%, rgba(5, 20, 42, .28) 100%),
+    linear-gradient(0deg, rgba(2, 12, 27, .72), transparent 68%),
+    url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2000&q=85') center 48% / cover,
+    #0b2340 !important;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .22) !important;
+}
+.launch-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  background: linear-gradient(90deg, #60a5fa, #818cf8 48%, rgba(129,140,248,0));
+  opacity: .8;
+  pointer-events: none;
+}
+.launch-hero .launch-hero-kicker,
+.launch-hero .launch-hero-section-label { color: #bfdbfe !important; letter-spacing: .14em; }
+.launch-hero h2 { color: #fff !important; text-shadow: 0 2px 14px rgba(0,0,0,.3); }
+.launch-hero .launch-hero-meta,
+.launch-hero .launch-hero-condition-copy strong,
+.launch-hero .launch-hero-condition-temp { color: #f8fafc !important; }
+.launch-hero .launch-hero-meta span { color: #dbeafe !important; }
+.launch-hero .launch-hero-meta svg { color: #bfdbfe !important; }
+.launch-hero .launch-hero-mark,
+.launch-hero .launch-hero-condition-icon,
+.launch-hero .launch-metric-icon {
+  color: #dbeafe !important;
+  background: rgba(15, 45, 79, .72) !important;
+  border: 1px solid rgba(191, 219, 254, .3);
+  backdrop-filter: blur(8px);
+}
+.launch-hero .launch-metric { border-color: rgba(191, 219, 254, .2) !important; background: rgba(5, 20, 42, .56) !important; }
+.launch-hero .launch-metric small,
+.launch-hero .launch-metric-detail { color: #c6d8ef !important; }
+.launch-hero .launch-metric strong { color: #fff !important; }
+.launch-hero .launch-hero-data-note { color: #dbeafe !important; }
+
+.ai-briefing-panel {
+  color: #e8efff !important;
+  border: 1px solid rgba(129, 140, 248, .36) !important;
+  border-radius: 20px !important;
+  background: linear-gradient(155deg, rgba(13, 28, 57, .98), rgba(16, 24, 54, .97) 58%, rgba(31, 24, 66, .97)) !important;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, .2) !important;
+}
+.ai-briefing-panel h2 { color: #f8fafc !important; }
+.ai-briefing-panel p { color: #b9c9e4 !important; }
+.ai-briefing-panel .text-slate-950,
+.ai-briefing-panel .text-slate-800 { color: #e7efff !important; }
+.ai-briefing-panel .text-slate-600,
+.ai-briefing-panel .text-slate-500 { color: #a8bbda !important; }
+.ai-briefing-panel .bg-white\/80,
+.ai-briefing-panel .bg-white\/90,
+.ai-briefing-panel .bg-white { background: rgba(8, 20, 43, .8) !important; }
+.ai-briefing-panel .border-slate-200,
+.ai-briefing-panel .border-slate-200\/80,
+.ai-briefing-panel .border-indigo-100 { border-color: rgba(129, 140, 248, .24) !important; }
+.ai-briefing-panel .border-indigo-200 { border-color: rgba(165, 180, 252, .32) !important; }
+.ai-briefing-panel .text-indigo-700 { color: #c7d2fe !important; }
+.ai-briefing-panel .bg-indigo-50 { background: rgba(49, 46, 129, .3) !important; }
+.ai-briefing-panel .shadow-inner { box-shadow: inset 0 1px 12px rgba(0, 0, 0, .14) !important; }
+.ai-briefing-panel .ai-briefing-panel button { box-shadow: none; }
+
+.flight-nav-rail {
+  background:
+    linear-gradient(180deg, rgba(3, 13, 29, .97), rgba(5, 17, 36, .96)),
+    #06152b !important;
+  border-right-color: rgba(148, 163, 184, .17) !important;
+}
+.flight-website-shell {
+  background:
+    radial-gradient(ellipse at 72% -12%, rgba(79, 70, 229, .13), transparent 34rem),
+    radial-gradient(ellipse at 5% 40%, rgba(14, 165, 233, .06), transparent 28rem),
+    #06101f !important;
+}
+.forecast-section, .windgram-featured, .flight-side-card, .flight-site-list {
+  border-color: rgba(148, 163, 184, .2) !important;
+  background: linear-gradient(145deg, rgba(13, 30, 55, .96), rgba(7, 20, 39, .97)) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .13), inset 0 1px 0 rgba(255,255,255,.025) !important;
+}
+.forecast-day-card { border-color: rgba(148, 163, 184, .22) !important; background: rgba(10, 27, 50, .84) !important; }
+.forecast-day-card.is-selected { border-color: #818cf8 !important; background: linear-gradient(145deg, rgba(49, 46, 129, .48), rgba(10, 31, 59, .92)) !important; }
+@media (max-width: 850px) {
+  .launch-hero { background-position: center, center, 58% center, center !important; }
+}
+@media (max-width: 560px) {
+  .launch-hero { border-radius: 16px !important; background-position: center, center, 60% center, center !important; }
+}
