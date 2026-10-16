@@ -35,6 +35,11 @@ interface ChartPoint {
   precipitation: number | null;
   cloudCover: number | null;
   windDir: number | null;
+  wind80m: number | null;
+  wind120m: number | null;
+  precipitationProbability: number | null;
+  cape: number | null;
+  radiation: number | null;
 }
 
 const TIME_RANGES: { id: TimeRange; label: string; start: number; end: number }[] = [
@@ -134,6 +139,11 @@ export default function DayStoryboard({
         precipitation: item.precipitation,
         cloudCover: item.cloudCover,
         windDir: item.windDir,
+      wind80m: item.windSpeed80m ?? null,
+      wind120m: item.windSpeed120m ?? null,
+      precipitationProbability: item.precipitationProba ?? null,
+      cape: item.cape ?? null,
+      radiation: item.radiation ?? null,
       };
     })
     .filter((item) => item.hour >= 7 && item.hour <= 20)
@@ -141,15 +151,15 @@ export default function DayStoryboard({
 
   const activeRange = TIME_RANGES.find((range) => range.id === timeRange) ?? TIME_RANGES[0];
   const chartData = allPoints.filter((point) => point.hour >= activeRange.start && point.hour <= activeRange.end);
-  const temperatureDomain = rangeTemperature(chartData, showTemperature, showDewPoint);
+  const temperatureDomain = (() => { const vals = chartData.flatMap(p => [p.windSpeed, p.wind80m, p.wind120m]).filter((v): v is number => v != null && Number.isFinite(v)); return [0, Math.max(10, Math.ceil(Math.max(0, ...vals) / 5) * 5)] as [number, number]; })();
   const windValues = chartData.flatMap((point) => [point.windSpeed, point.windGusts])
     .filter((value): value is number => value != null && Number.isFinite(value));
   const windDomain = Math.max(5, Math.ceil(Math.max(0, ...windValues) / 5) * 5);
-  const maxTemperature = chartData.map((point) => point.temperature).filter((v): v is number => v != null && Number.isFinite(v));
+  const maxTemperature = chartData.map((point) => point.windSpeed).filter((v): v is number => v != null && Number.isFinite(v));
   const maxWind = chartData.map((point) => point.windSpeed).filter((v): v is number => v != null && Number.isFinite(v));
   const maxGust = chartData.map((point) => point.windGusts).filter((v): v is number => v != null && Number.isFinite(v));
   const selectedPoint = chartData.find((point) => point.hour === selectedHour) ?? null;
-  const hasTemperature = chartData.some((point) => point.temperature != null || point.dewPoint != null);
+  const hasTemperature = chartData.some((point) => point.windSpeed != null || point.wind80m != null || point.wind120m != null);
   const hasWind = chartData.some((point) => point.windSpeed != null || point.windGusts != null);
 
   const chooseRange = (range: typeof TIME_RANGES[number]) => {
@@ -170,9 +180,9 @@ export default function DayStoryboard({
     <section className="storyboard-panel" aria-labelledby="storyboard-title">
       <div className="storyboard-heading">
         <div>
-          <p className="storyboard-eyebrow">PREVISIONE INTERATTIVA · ORA PER ORA</p>
-          <h2 id="storyboard-title">Esplora il meteo di {siteName}</h2>
-          <p className="storyboard-subtitle">Seleziona un intervallo o un’ora: grafici e riepilogo si aggiornano insieme.</p>
+          <p className="storyboard-eyebrow">METEO PER IL VOLO LIBERO · ORA PER ORA</p>
+          <h2 id="storyboard-title">Quando e come cambia il vento a {siteName}</h2>
+          <p className="storyboard-subtitle">Confronta vento al suolo e ai primi livelli, raffiche e rotazione del vento. I dati in quota sono mostrati solo quando il modello li fornisce.</p>
         </div>
         <div className="storyboard-live-stat">
           <span className="story-live-indicator" />
@@ -219,7 +229,7 @@ export default function DayStoryboard({
           <div className="story-chart-stats">
             <div className="story-chart-stat">
               <span className="story-stat-icon is-temp"><Thermometer aria-hidden="true" /></span>
-              <span><small>Massima nell’intervallo</small><strong>{maxTemperature.length ? Math.max(...maxTemperature).toFixed(1) + " °C" : "N/D"}</strong></span>
+              <span><small>Vento max al suolo</small><strong>{maxTemperature.length ? Math.max(...maxTemperature).toFixed(0) + " km/h" : "N/D"}</strong></span>
             </div>
             <div className="story-chart-stat">
               <span className="story-stat-icon is-wind"><Wind aria-hidden="true" /></span>
@@ -234,11 +244,11 @@ export default function DayStoryboard({
           <div className="story-chart-grid">
             <section className="story-chart-module temperature-module" aria-labelledby="temperature-chart-title">
               <div className="story-chart-module-heading">
-                <div><span className="story-module-kicker">TEMPERATURA</span><h3 id="temperature-chart-title">{showDewPoint ? "Temperatura e punto di rugiada" : "Andamento della temperatura"}</h3></div>
-                <span className="story-module-unit">°C</span>
+                <div><span className="story-module-kicker">GRADIENTE DEL VENTO</span><h3 id="temperature-chart-title">Vento al suolo e ai primi livelli</h3></div>
+                <span className="story-module-unit">km/h</span>
               </div>
               {hasTemperature ? (
-                <div className="story-recharts-area" role="img" aria-label="Grafico interattivo di temperatura e punto di rugiada. Seleziona un punto per cambiare l’ora del briefing.">
+                <div className="story-recharts-area" role="img" aria-label="Confronto interattivo della velocità del vento al suolo, a 80 metri e a 120 metri. Seleziona un punto per cambiare l’ora del briefing.">
                   <ResponsiveContainer width="100%" height={250}>
                     <AreaChart data={chartData} syncId="weather-hours" margin={{ top: 8, right: 12, bottom: 0, left: -14 }} onClick={(state) => chooseChartHour(state)}>
                       <defs>
@@ -249,10 +259,10 @@ export default function DayStoryboard({
                       </defs>
                       <CartesianGrid vertical={false} stroke="rgba(133,164,191,.13)" strokeDasharray="3 5" />
                       <XAxis dataKey="label" tick={{ fill: "#8ca6bd", fontSize: 11 }} tickLine={false} axisLine={{ stroke: "rgba(133,164,191,.18)" }} interval={tickInterval} />
-                      <YAxis yAxisId="temperature" type="number" domain={temperatureDomain} tick={{ fill: "#8ca6bd", fontSize: 10 }} tickLine={false} axisLine={false} width={43} unit="°" />
+                      <YAxis yAxisId="temperature" type="number" domain={temperatureDomain} tick={{ fill: "#8ca6bd", fontSize: 10 }} tickLine={false} axisLine={false} width={43} />
                       <Tooltip content={<WeatherTooltip />} cursor={{ stroke: "rgba(148,210,239,.4)", strokeDasharray: "4 4" }} />
                       {selectedPoint && <ReferenceLine x={selectedPoint.label} stroke="#72d9f7" strokeDasharray="4 4" strokeOpacity={0.8} yAxisId="temperature" />}
-                      {showTemperature && <Area yAxisId="temperature" type="monotone" dataKey="temperature" name="Temperatura" stroke="#fb923c" strokeWidth={2.8} fill="url(#temperatureFill)" connectNulls={false} activeDot={{ r: 5, stroke: "#f8fafc", strokeWidth: 2, fill: "#fb923c" }} isAnimationActive={false} />}
+                      {showTemperature && <Area yAxisId="temperature" type="monotone" dataKey="windSpeed" name="Vento al suolo" stroke="#34d399" strokeWidth={2.5} fill="url(#temperatureFill)" connectNulls={false} activeDot={{ r: 4, fill: "#34d399" }} isAnimationActive={false} />}{showDewPoint && <Line yAxisId="temperature" type="monotone" dataKey="wind80m" name="Vento a 80 m" stroke="#38bdf8" strokeWidth={2} dot={false} connectNulls={false} isAnimationActive={false} />}{showDewPoint && <Line yAxisId="temperature" type="monotone" dataKey="wind120m" name="Vento a 120 m" stroke="#c4b5fd" strokeWidth={2} strokeDasharray="5 4" dot={false} connectNulls={false} isAnimationActive={false} />}{!showTemperature && showDewPoint && <Line yAxisId="temperature" type="monotone" dataKey="wind80m" name="Vento a 80 m" stroke="#38bdf8" strokeWidth={2} dot={false} connectNulls={false} isAnimationActive={false} />}{!showTemperature && !showDewPoint && <Line yAxisId="temperature" type="monotone" dataKey="wind120m" name="Vento a 120 m" stroke="#c4b5fd" strokeWidth={2} dot={false} connectNulls={false} isAnimationActive={false} />}
                       {showDewPoint && <Line yAxisId="temperature" type="monotone" dataKey="dewPoint" name="Punto di rugiada" stroke="#38bdf8" strokeWidth={2} strokeDasharray="5 4" dot={false} activeDot={{ r: 4, stroke: "#e0f2fe", strokeWidth: 2, fill: "#38bdf8" }} connectNulls={false} isAnimationActive={false} />}
                     </AreaChart>
                   </ResponsiveContainer>
@@ -264,7 +274,7 @@ export default function DayStoryboard({
 
             <section className="story-chart-module wind-module" aria-labelledby="wind-chart-title">
               <div className="story-chart-module-heading">
-                <div><span className="story-module-kicker">VENTO AL SUOLO</span><h3 id="wind-chart-title">Velocità e raffiche</h3></div>
+                <div><span className="story-module-kicker">RAFFICHE E VARIAZIONI</span><h3 id="wind-chart-title">Vento medio contro raffiche</h3></div>
                 <span className="story-module-unit">km/h</span>
               </div>
               {hasWind ? (
@@ -290,8 +300,8 @@ export default function DayStoryboard({
           {selectedPoint && (
             <div className="story-selected-hour" aria-live="polite">
               <div className="story-selected-hour-title"><span>ORA SELEZIONATA</span><strong>{selectedPoint.label}:00</strong></div>
-              <div className="story-selected-value"><Thermometer aria-hidden="true" /><span>Temperatura</span><strong>{fmt(selectedPoint.temperature)} °C</strong></div>
-              <div className="story-selected-value"><Droplets aria-hidden="true" /><span>Umidità</span><strong>{fmt(selectedPoint.humidity, 0)}%</strong></div>
+              <div className="story-selected-value"><Thermometer aria-hidden="true" /><span>Vento a 80 m</span><strong>{fmt(selectedPoint.wind80m, 0)} km/h</strong></div>
+              <div className="story-selected-value"><Droplets aria-hidden="true" /><span>Vento a 120 m</span><strong>{fmt(selectedPoint.wind120m, 0)} km/h</strong></div>
               <div className="story-selected-value"><Wind aria-hidden="true" /><span>Vento</span><strong>{fmt(selectedPoint.windSpeed, 0)} km/h</strong></div>
               <div className="story-selected-value"><Gauge aria-hidden="true" /><span>Direzione</span><strong>{selectedPoint.windDir == null ? "N/D" : Math.round(selectedPoint.windDir) + "°"}</strong></div>
             </div>
@@ -314,7 +324,7 @@ export default function DayStoryboard({
             ))}
           </div>
 
-          <p className="storyboard-disclaimer">Grafici basati sulle previsioni orarie disponibili. Seleziona un’ora per aggiornare il briefing; controlla anche vento in quota, raffiche, condizioni locali e bollettini ufficiali. I grafici non sono un giudizio automatico sull’idoneità al volo.</p>
+          <p className="storyboard-disclaimer">Vento a 80/120 m disponibile solo se presente nei dati del modello: non equivale al vento reale lungo tutta la traiettoria. Per scegliere il decollo confronta anche direzione rispetto all’esposizione, windgram verticale, raffiche, gradiente e bollettini locali. Nessun indicatore sostituisce la valutazione del pilota.</p>
         </>
       )}
     </section>
