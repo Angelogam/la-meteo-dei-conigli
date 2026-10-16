@@ -95,9 +95,9 @@ function speedColor(speed: number): string {
 function useAlpiumData(lat: number, lon: number, siteAlt: number, selectedDay: number) {
   const [hourly, setHourly] = useState<{
     times: string[];
-    windSpeed: Record<string, number[]>;
-    windDir: Record<string, number[]>;
-    temp: Record<string, number[]>;
+    windSpeed: Record<string, (number | null)[]>;
+    windDir: Record<string, (number | null)[]>;
+    temp: Record<string, (number | null)[]>;
     temp2m: number[];
     dew2m: number[];
     cloud: number[];
@@ -213,8 +213,8 @@ export default function AlpiumWindgram({
   // ============ DATI PER CELLA (alt, hour) ============
   // Per ogni coppia (hpaLevel, hour): speed, dir, temp
   const cellData = useMemo(() => {
-    if (!hourly) return new Map<string, { speed: number; dir: number; temp: number }>();
-    const m = new Map<string, { speed: number; dir: number; temp: number }>();
+    if (!hourly) return new Map<string, { speed: number | null; dir: number | null; temp: number | null }>();
+    const m = new Map<string, { speed: number | null; dir: number | null; temp: number | null }>();
 
     PRESSURE_LEVELS.forEach((lv) => {
       const hpaKey = `${lv.hpa}hPa`;
@@ -229,9 +229,10 @@ export default function AlpiumWindgram({
       DISPLAY_HOURS.forEach((hr) => {
         const idx = hourIndices.get(hr);
         if (idx === undefined) return;
-        const speed = speedArr?.[idx] ?? 0;
-        const dir = dirArr?.[idx] ?? 0;
-        const temp = tempArr?.[idx] ?? NaN;
+        // Dati mancanti restano mancanti: non trasformarli in vento calmo o direzione nord.
+        const speed = speedArr?.[idx] ?? null;
+        const dir = dirArr?.[idx] ?? null;
+        const temp = tempArr?.[idx] ?? null;
         m.set(`${lv.hpa}-${hr}`, { speed, dir, temp });
       });
     });
@@ -344,15 +345,15 @@ export default function AlpiumWindgram({
 
   // ============ HEADER: temperature, sole, vento al suolo ============
   const headerData = useMemo(() => {
-    if (!hourly) return new Map<number, { temp: number; cloud: number; gust: number }>();
+    if (!hourly) return new Map<number, { temp: number | null; cloud: number | null; gust: number | null }>();
     const m = new Map<number, { temp: number; cloud: number; gust: number }>();
     DISPLAY_HOURS.forEach((hr) => {
       const idx = hourIndices.get(hr);
       if (idx === undefined) return;
       m.set(hr, {
-        temp: hourly.temp2m[idx] ?? NaN,
-        cloud: hourly.cloud[idx] ?? 0,
-        gust: hourly.gust10[idx] ?? 0,
+        temp: hourly.temp2m[idx] ?? null,
+        cloud: hourly.cloud[idx] ?? null,
+        gust: hourly.gust10[idx] ?? null,
       });
     });
     return m;
@@ -380,6 +381,7 @@ export default function AlpiumWindgram({
         // Calcola lapse rate attorno a questa quota
         const tBelow = getTempAtAlt(hourly, idx, alt - 200, siteAlt);
         const tAbove = getTempAtAlt(hourly, idx, alt + 200, siteAlt);
+        if (!Number.isFinite(tBelow) || !Number.isFinite(tAbove)) continue;
         const dt = lapseRateCper100m(tBelow, alt - 200, tAbove, alt + 200);
         const color = instabilityColor(dt);
         const opacity = instabilityOpacity(dt);
@@ -456,7 +458,7 @@ export default function AlpiumWindgram({
                   </text>
                   {/* Icona cielo basata sulla copertura nuvolosa reale */}
                   <text x={x} y={37} textAnchor="middle" fontSize="18">
-                    {(d?.cloud ?? 0) < 15 ? "☀" : (d?.cloud ?? 0) < 40 ? "🌤" : (d?.cloud ?? 0) < 75 ? "☁" : "☁"}
+                    {d?.cloud == null ? "—" : d.cloud < 15 ? "☀" : d.cloud < 40 ? "🌤" : "☁"}
                   </text>
                   <text x={x} y={56} textAnchor="middle" className="text-[10px]" fill="#475569">
                     {d?.cloud == null ? "n/d" : `${Math.round(d.cloud)}% nubi`}
@@ -528,7 +530,7 @@ export default function AlpiumWindgram({
             {PRESSURE_LEVELS.map((lv) =>
               DISPLAY_HOURS.map((hr) => {
                 const d = cellData.get(`${lv.hpa}-${hr}`);
-                if (!d) return null;
+                if (!d || d.speed == null || d.dir == null || !Number.isFinite(d.speed) || !Number.isFinite(d.dir)) return null;
                 const x = hourToX(hr);
                 const y = altToY(lv.alt);
                 const color = speedColor(d.speed);
@@ -670,7 +672,7 @@ export default function AlpiumWindgram({
           </div>
           <p className="text-center text-[9px] text-slate-500 mt-1">ΔT / 100 m</p>
           <p className="text-center text-[10px] text-slate-600 mt-2">
-            Fonte: Open-Meteo GFS &middot; hPa levels &middot; Stile grafico Alpium
+            Fonte: Open-Meteo &middot; livelli di pressione disponibili &middot; Stile grafico Alpium
           </p>
         </div>
       </div>
@@ -706,7 +708,8 @@ function getTempAtAlt(
   });
   points.sort((a, b) => a.alt - b.alt);
 
-  if (points.length === 0) return 15 - (alt - siteAlt) * 0.0065;
+  // Nessun profilo termico disponibile: non inventare una temperatura standard.
+  if (points.length === 0) return NaN;
 
   if (alt <= points[0].alt) return points[0].temp;
   if (alt >= points[points.length - 1].alt) return points[points.length - 1].temp;
