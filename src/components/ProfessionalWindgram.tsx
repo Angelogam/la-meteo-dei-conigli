@@ -91,6 +91,7 @@ export default function ProfessionalWindgram({
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
+  const [selectedChartHour, setSelectedChartHour] = useState<number>(12);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Venti multi-livello — usa i dati condivisi se disponibili
@@ -810,16 +811,92 @@ export default function ProfessionalWindgram({
               </g>
             ))}
 
-            {HOURS.map((h, i) => (
-              <text key={`hr-${h}`} x={getXFromHourIdx(i)} y={margin.top + plotH + 20} fill="#0f172a" fontSize="12" fontWeight="900" textAnchor="middle" fontFamily="monospace">
-                {String(h).padStart(2, "0")}:00
-              </text>
-            ))}
+            {HOURS.map((h, i) => {
+              const x = getXFromHourIdx(i);
+              const active = selectedChartHour === h;
+              return (
+                <g key={`hr-${h}`} role="button" tabIndex={0} aria-label={`Seleziona le ${h}:00`}
+                  onClick={() => setSelectedChartHour(h)}
+                  onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedChartHour(h); } }}
+                  style={{ cursor: "pointer", outline: "none" }}>
+                  <rect x={x - plotW / HOURS.length / 2 + 1} y={margin.top + plotH + 2} width={plotW / HOURS.length - 2} height="28" rx="5" fill={active ? "#cffafe" : "transparent"} />
+                  <text x={x} y={margin.top + plotH + 20} fill={active ? "#0369a1" : "#0f172a"} fontSize="12" fontWeight={active ? "1000" : "800"} textAnchor="middle" fontFamily="monospace">
+                    {String(h).padStart(2, "0")}:00
+                  </text>
+                </g>
+              );
+            })}
 
             <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#0f172a" strokeWidth="0.8" />
             </svg>
           </div>
         </div>
+
+        <section aria-label="Andamento orario del vento al suolo" className="mt-2 rounded-xl border border-slate-200 bg-white p-3">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-black text-slate-900">Vento al suolo · andamento orario</h3>
+              <p className="text-xs text-slate-500">Seleziona una colonna per leggere i dettagli dell'ora</p>
+            </div>
+            <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">km/h</span>
+          </div>
+          <div className="grid grid-cols-6 gap-1 sm:grid-cols-12" role="group" aria-label="Seleziona ora del vento">
+            {hourlyData.map((entry) => {
+              const hasValue = entry.windGround != null && Number.isFinite(entry.windGround);
+              const speed = hasValue ? Math.max(0, entry.windGround as number) : 0;
+              const maxSpeed = Math.max(1, ...hourlyData.map((item) => item.windGround != null && Number.isFinite(item.windGround) ? Math.max(0, item.windGround) : 0));
+              const barHeight = hasValue ? Math.max(6, (speed / maxSpeed) * 54) : 4;
+              const active = selectedChartHour === entry.hour;
+              return (
+                <button key={entry.hour} type="button" onClick={() => setSelectedChartHour(entry.hour)}
+                  aria-pressed={active} aria-label={`${String(entry.hour).padStart(2, "0")}:00, vento ${hasValue ? `${speed} km/h` : "non disponibile"}`}
+                  className={`flex min-w-0 flex-col items-center justify-end rounded-lg px-1 pt-2 pb-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600 ${active ? "bg-cyan-50 ring-1 ring-cyan-500" : "hover:bg-slate-50"}`}>
+                  <span className="mb-1 text-[10px] font-bold tabular-nums text-slate-700">{hasValue ? speed : "—"}</span>
+                  <div className="flex h-14 w-full items-end justify-center">
+                    <div className={`w-3/5 max-w-5 rounded-t-sm ${!hasValue ? "bg-slate-200" : active ? "bg-cyan-600" : "bg-sky-400"}`} style={{ height: `${barHeight}px` }} />
+                  </div>
+                  <span className={`mt-1 text-[10px] font-bold ${active ? "text-cyan-800" : "text-slate-500"}`}>{String(entry.hour).padStart(2, "0")}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {(() => {
+          const selected = hourlyData.find((entry) => entry.hour === selectedChartHour);
+          if (!selected) return null;
+          const groundSpeed = selected.windGround;
+          const direction = selected.windDirGround;
+          const windLevels = selected.levelWinds.filter((level) => level.speed != null && Number.isFinite(level.speed));
+          return (
+            <section aria-live="polite" aria-label={`Dettaglio vento alle ${selectedChartHour}:00`} className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-xl border border-cyan-200 bg-slate-50 p-3">
+              <div className="col-span-2 sm:col-span-4 flex items-center justify-between gap-2">
+                <div className="text-xs font-extrabold uppercase tracking-wider text-slate-600">Dettaglio ora selezionata</div>
+                <div className="rounded-full bg-cyan-100 px-3 py-1 text-sm font-black text-cyan-900">{String(selectedChartHour).padStart(2, "0")}:00</div>
+              </div>
+              <div className="rounded-lg bg-white p-2 border border-slate-200">
+                <div className="text-[10px] font-bold uppercase text-slate-500">Vento al suolo</div>
+                <div className="text-xl font-black text-slate-900">{groundSpeed != null && Number.isFinite(groundSpeed) ? groundSpeed : "—"} <span className="text-xs font-semibold">km/h</span></div>
+                <div className="text-xs text-slate-600">{direction != null && Number.isFinite(direction) ? `${getDirLetter(direction)} · ${direction}°` : "Direzione n/d"}</div>
+              </div>
+              <div className="rounded-lg bg-white p-2 border border-slate-200">
+                <div className="text-[10px] font-bold uppercase text-slate-500">Temperatura</div>
+                <div className="text-xl font-black text-slate-900">{Number.isFinite(selected.tempGround) ? selected.tempGround : "—"} <span className="text-xs font-semibold">°C</span></div>
+                <div className="text-xs text-slate-600">a quota decollo</div>
+              </div>
+              <div className="rounded-lg bg-white p-2 border border-slate-200">
+                <div className="text-[10px] font-bold uppercase text-slate-500">Nuvolosità</div>
+                <div className="text-xl font-black text-slate-900">{selected.cloudCover != null && Number.isFinite(selected.cloudCover) ? Math.round(selected.cloudCover) : "—"}<span className="text-xs font-semibold">%</span></div>
+                <div className="text-xs text-slate-600">copertura prevista</div>
+              </div>
+              <div className="rounded-lg bg-white p-2 border border-slate-200">
+                <div className="text-[10px] font-bold uppercase text-slate-500">Venti in quota</div>
+                <div className="text-xl font-black text-slate-900">{windLevels.length}</div>
+                <div className="text-xs text-slate-600">livelli con dati</div>
+              </div>
+            </section>
+          );
+        })()}
 
         <div className="mt-2 pt-2 border-t border-slate-200">
           <div className="w-full max-w-2xl px-2">

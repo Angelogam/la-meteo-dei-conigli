@@ -4332,3 +4332,116 @@ button, [role="tab"], a {
     font-size: clamp(1.8rem, 8vw, 2.5rem);
   }
 }
+
+
+/* ===== VISUAL REFRESH: METEO DEI CONIGLI =====
+   Refine hierarchy, spacing, contrast and chart containers without changing
+   weather calculations or adding decorative/fictitious data.
+*/
+:root {
+  --weather-bg: #071426;
+  --weather-panel: #0c1d31;
+  --weather-panel-raised: #102740;
+  --weather-border: rgba(155, 185, 215, .19);
+  --weather-muted: #a9bbcf;
+  --weather-cyan: #71dff1;
+}
+body, .flight-website-shell {
+  background: var(--weather-bg);
+  color: #eef6ff;
+}
+.flight-page {
+  max-width: 1680px;
+}
+.flight-page-titlebar {
+  padding: clamp(1rem, 2.2vw, 1.8rem);
+  border: 1px solid var(--weather-border);
+  border-radius: 22px;
+  background:
+    radial-gradient(ellipse at 90% 0%, rgba(14, 165, 233, .12), transparent 42%),
+    linear-gradient(135deg, #0d2138, #09182b 72%);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .14);
+}
+.flight-page-titlebar h1 {
+  color: #f5f9ff;
+  letter-spacing: -.04em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+.flight-page-titlebar p { color: var(--weather-muted); }
+.dashboard-intro-kicker { color: var(--weather-cyan); letter-spacing: .14em; }
+.dashboard-date-chip {
+  background: rgba(7, 20, 38, .7);
+  border: 1px solid var(--weather-border);
+  border-radius: 14px;
+}
+.dashboard-intro-cta {
+  border: 1px solid rgba(113, 223, 241, .35);
+  border-radius: 13px;
+  background: rgba(8, 145, 178, .15);
+  color: #b9f3fc;
+}
+.dashboard-intro-cta:hover { background: rgba(8, 145, 178, .25); }
+.flight-nav-rail {
+  background: #08172a;
+  border-right: 1px solid var(--weather-border);
+}
+.flight-nav-item { border-radius: 11px; }
+.flight-nav-item.is-active {
+  background: rgba(8, 145, 178, .17);
+  color: #a9f0fb;
+  box-shadow: inset 3px 0 var(--weather-cyan);
+}
+.flight-subsection-heading { margin-bottom: .8rem; }
+.flight-subsection-heading h2 { letter-spacing: -.025em; }
+.flight-tab-content {
+  min-width: 0;
+  padding: clamp(.75rem, 1.6vw, 1.3rem);
+  border: 1px solid var(--weather-border);
+  border-radius: 20px;
+  background: linear-gradient(145deg, #0c1d31, #09192b);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .12);
+}
+.windgram-featured {
+  border: 1px solid var(--weather-border) !important;
+  border-radius: 20px !important;
+  background: #f8fafc;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .16);
+}
+.flight-side-card {
+  border: 1px solid var(--weather-border);
+  border-radius: 18px;
+  background: linear-gradient(145deg, #0e2137, #0a192b);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .12);
+}
+.flight-site-data dt { color: #a9bbcf; }
+.flight-site-data dd { color: #edf6ff; font-variant-numeric: tabular-nums; }
+.flight-quick-param {
+  border: 1px solid rgba(155, 185, 215, .13);
+  border-radius: 12px;
+  background: rgba(5, 17, 31, .35);
+  padding: .75rem;
+}
+.flight-quick-param strong { color: #f1f8ff; font-variant-numeric: tabular-nums; }
+.flight-quick-param small { color: #91a8c0; }
+.flight-tab-content .recharts-responsive-container { min-width: 0; }
+.flight-tab-content .recharts-tooltip-wrapper { z-index: 30 !important; }
+button:focus-visible, a:focus-visible, [role="tab"]:focus-visible {
+  outline: 2px solid var(--weather-cyan);
+  outline-offset: 3px;
+}
+@media (max-width: 900px) {
+  .flight-page-titlebar { border-radius: 17px; }
+  .flight-page-actions { flex-wrap: wrap; }
+}
+@media (max-width: 640px) {
+  .flight-page-titlebar { padding: 1rem; gap: .9rem; }
+  .flight-tab-content { padding: .7rem; border-radius: 15px; }
+  .windgram-featured { border-radius: 15px !important; }
+  .flight-quick-param { padding: .6rem; }
+  .mobile-bottom-nav {
+    background: rgba(6, 18, 32, .96);
+    border-top: 1px solid var(--weather-border);
+    backdrop-filter: blur(14px);
+  }
+}
