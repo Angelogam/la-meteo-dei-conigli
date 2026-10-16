@@ -9,7 +9,6 @@ import DecolliCard from "@/components/DecolliCard";
 import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
 import HourlyTable from "@/components/HourlyTable";
-import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import DayStoryboard from "@/components/DayStoryboard";
 import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
@@ -192,17 +191,27 @@ export default function Index() {
                 {site && (
                   <>
                     <DayStoryboard dayData={filteredDayData} siteName={site.site_name} selectedHour={selectedHour} onHourSelect={setSelectedHour} />
-                    <section className="forecast-section flight-forecast-module min-w-0">
-                      <PrevisioniGiornaliere
-                        enrichedDaily={enrichedDaily}
-                        dateLabels={dateLabels}
-                        currentData={currentData}
-                        dayData={dayData}
-                        site={{ name: site.site_name, altitude: site.elevation_m, exposure: site.orientation }}
-                        selectedDay={selectedDay}
-                        onSelectDay={setSelectedDay}
-                        nomeDecollo={site.site_name}
-                      />
+                    <section className="flight-day-switcher" aria-label="Seleziona il giorno delle previsioni">
+                      <div className="flight-day-switcher-copy">
+                        <span>ORIZZONTE METEO</span>
+                        <strong>Seleziona il giorno</strong>
+                        <small>Dettaglio orario e windgram si aggiornano insieme</small>
+                      </div>
+                      <div className="flight-day-switcher-options" role="group" aria-label="Giorno della previsione">
+                        {["Oggi", "Domani", "Dopodomani"].map((label, index) => (
+                          <button
+                            key={label}
+                            type="button"
+                            aria-pressed={selectedDay === index}
+                            className={selectedDay === index ? "is-active" : ""}
+                            onClick={() => setSelectedDay(index)}
+                            disabled={index >= enrichedDaily.length}
+                          >
+                            <span>{label}</span>
+                            <strong>{dateLabels[index] ?? "—"}</strong>
+                          </button>
+                        ))}
+                      </div>
                     </section>
 
                     <section id="windgram-section" className="windgram-section windgram-featured min-w-0 overflow-hidden rounded-2xl p-3 sm:p-4">
