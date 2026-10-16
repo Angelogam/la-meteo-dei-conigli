@@ -8,6 +8,7 @@ import DecolliCard from "@/components/DecolliCard";
 import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
 import DayStoryboard from "@/components/DayStoryboard";
+import AiFlightBriefing from "@/components/AiFlightBriefing";
 import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
@@ -254,6 +255,16 @@ export default function Index() {
               </div>
 
               <aside className="dashboard-sidebar flight-right-rail" aria-label="Riepilogo del decollo">
+                {site && (
+                  <section className="flight-ai-panel" aria-label="Briefing meteo con intelligenza artificiale">
+                    <AiFlightBriefing
+                      siteName={site.site_name}
+                      altitude={site.elevation_m}
+                      dateLabel={dateLabel}
+                      dayData={filteredDayData}
+                    />
+                  </section>
+                )}
                 <UpdateTimer
                   lastUpdate={aggressiveLastUpdate ?? lastUpdate}
                   countdown={countdown}
