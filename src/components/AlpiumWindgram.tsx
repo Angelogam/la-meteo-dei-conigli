@@ -424,7 +424,7 @@ export default function AlpiumWindgram({
         <div className="px-4 pt-4 pb-2 flex items-center justify-between flex-wrap gap-2">
           <div>
             <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-              <Wind className="w-5 h-5 text-sky-400" />
+              <Wind className="w-5 h-5 text-sky-600" />
               Windgram
             </h3>
             <p className="text-sm text-slate-700 font-semibold">
@@ -577,7 +577,7 @@ export default function AlpiumWindgram({
                   return `${i === 0 ? "M" : "L"} ${x} ${y}`;
                 }).join(" ")
               }
-              stroke="#facc15"
+              stroke="#ca8a04"
               strokeWidth="2"
               fill="none"
               opacity="0.85"
@@ -605,13 +605,13 @@ export default function AlpiumWindgram({
                   <path
                     d={`M ${x - 6} ${yTop + 4} Q ${x} ${yTop - 4} ${x + 6} ${yTop + 4}`}
                     fill="none"
-                    stroke="#c084fc"
+                    stroke="#7e22ce"
                     strokeWidth="1.2"
                   />
-                  <text x={x} y={yTop - 14} textAnchor="middle" className="text-[9px] font-bold" fill="#e9d5ff">
+                  <text x={x} y={yTop - 14} textAnchor="middle" className="text-[9px] font-bold" fill="#7e22ce">
                     {Math.round(thermalTop)} m
                   </text>
-                  <text x={x} y={yTop - 4} textAnchor="middle" className="text-[9px]" fill="#c084fc">
+                  <text x={x} y={yTop - 4} textAnchor="middle" className="text-[9px]" fill="#7e22ce">
                     ↑{d.estimatedThermalActivity?.toFixed(1) ?? "?"} m/s
                   </text>
                 </g>
