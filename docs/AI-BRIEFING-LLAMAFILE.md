@@ -1,42 +1,42 @@
-# Avvio di llamafile su Windows e collegamento a Vercel
+# Collegare il briefing AI remoto a Vercel con llmfaucet
 
-Questa guida completa la PR #20. Il codice dell'app è predisposto, ma il servizio AI deve essere avviato e raggiungibile prima che il pulsante funzioni online.
+Questa guida descrive il collegamento del briefing AI di La Meteo dei Conigli a llmfaucet, un gateway remoto compatibile con l'API OpenAI. Non serve installare un modello sul PC e non serve mantenere il computer acceso.
 
-## Importante: cosa posso configurare dal repository
+## Servizio remoto
 
-Posso preparare codice e istruzioni in GitHub. Non posso avviare un processo sul tuo PC, creare un servizio cloud nel tuo account o salvare variabili nel tuo progetto Vercel senza accesso esplicito a quegli ambienti. Non incollare token o password in GitHub o in chat.
+- API base URL: `https://api.llmfaucet.dev/v1`
+- Modello selettore predefinito: `auto:fast`
+- Autenticazione anonima documentata: `Authorization: Bearer free`
+- Il gateway dichiara un limite gratuito condiviso di 20 richieste al giorno per IP anonimo. La capacità e i limiti possono cambiare; il servizio è indicato per prototipi e sperimentazione, non per attività critiche.
 
-## 1. Avviare llamafile su Windows
+Documentazione ufficiale: https://github.com/llmfaucet/llmfaucet
 
-1. Segui le istruzioni aggiornate del progetto ufficiale: https://github.com/mozilla-ai/llamafile
-2. Scarica un modello llamafile compatibile con la memoria del PC e verifica la licenza del modello.
-3. Avvia il file seguendo le istruzioni incluse nel download. In modalità server, l'API compatibile OpenAI è normalmente disponibile sotto `/v1`, ad esempio `http://127.0.0.1:8080/v1`.
-4. Dal PC verifica `http://127.0.0.1:8080/v1/models` oppure usa il comando di test indicato dalla documentazione della versione scaricata.
+## Configurazione del progetto Vercel
 
-L'indirizzo `127.0.0.1` o `localhost` **non è raggiungibile da Vercel**: lì indica il server cloud di Vercel, non il tuo PC.
+Il backend `/api/ai-briefing` usa per impostazione predefinita llmfaucet. Le seguenti variabili sono facoltative:
 
-## 2. Rendere il servizio raggiungibile in modo sicuro
+- `LLMFAUCET_BASE_URL`: lasciare vuota per usare `https://api.llmfaucet.dev/v1`. Se impostata, deve essere un URL HTTPS che termina in `/v1`.
+- `LLMFAUCET_MODEL`: lasciare vuota per usare `auto:fast`.
+- `LLMFAUCET_API_KEY`: lasciare vuota per usare l'accesso anonimo documentato (`free`). Se si crea una chiave personale su llmfaucet, inserirla qui come variabile segreta server-side.
 
-Scegli una soluzione:
-- **Server privato o cloud che controlli:** esponi l'API tramite HTTPS, autenticazione e limiti di richieste.
-- **PC Windows sempre acceso:** configura un tunnel privato autenticato tramite un provider affidabile, senza aprire direttamente la porta 8080 su Internet. Il PC deve restare acceso e connesso.
-- **Servizio gestito:** usa un endpoint di inferenza compatibile con l'API OpenAI, se preferisci non gestire un server.
+Per impostare una chiave personale, apri Vercel → progetto → Settings → Environment Variables e aggiungi `LLMFAUCET_API_KEY) per gli ambienti desiderati. Non inserirla nel codice React, nei file pubblici `.env), nei commit GitHub o nella chat. Dopo aver cambiato le variabili, esegui un nuovo deployment.
 
-Non pubblicare un endpoint llamafile aperto e senza autenticazione. Non disabilitare firewall o protezioni di Windows.
+## Flusso e sicurezza
 
-## 3. Configurare Vercel
+1. Il browser invia i dati orari selezionati al backend `/api/ai-briefing`.
+2. Il backend Vercel invia i dati a llmfaucet con una richiesta HTTPS.
+3. Il risultato del modello torna al backend e viene mostrato nel pannello AI.
 
-Nel progetto Vercel apri **Settings → Environment Variables** e imposta:
-- `LLAMAFILE_BASE_URL`: URL HTTPS della base API raggiungibile dal backend, con `/v1` finale, ad esempio `https://ai.example.net/v1`.
-- `LLAMAFILE_MODEL`: nome esposto dal server, se necessario.
-- `LLAMAFILE_API_KEY`: token se il server è protetto da Bearer token.
+La chiave, se configurata, resta nel backend e non viene esposta al browser. Il servizio remoto riceve i dati meteo inviati per generare il briefing; non inviare dati personali non necessari. Il gateway gratuito può essere soggetto a limiti, code, indisponibilità o cambiamenti nei provider.
 
-Salva le variabili per l'ambiente corretto e fai un nuovo deploy. Non mettere queste variabili nel codice React, in file pubblici `.env` o nel repository.
+## Test
 
-## 4. Testare l'app
+1. Apri la distribuzione Vercel e seleziona un decollo e un giorno con dati orari.
+2. Premi **Analizza le previsioni**.
+3. Se il servizio restituisce un errore, controlla i log della funzione Vercel `/api/ai-briefing` e riprova dopo qualche minuto se si tratta di un limite temporaneo.
 
-Apri la distribuzione Vercel, seleziona un decollo e una giornata con dati e premi **Analizza le previsioni**. Se compare un errore, controlla i log della funzione `/api/ai-briefing` e che il server AI sia raggiungibile dal backend.
+Il briefing aiuta a leggere i dati meteorologici ma non certifica la sicurezza del volo, non sostituisce i bollettini ufficiali e non autorizza il decollo.
 
-## Costi e limiti
+## Stato di verifica
 
-Eseguire il modello sul tuo PC può evitare il costo per singola chiamata di un servizio AI esterno, ma richiede risorse hardware, elettricità e che il PC resti acceso. Un server cloud può avere costi. Il briefing è un aiuto alla lettura delle previsioni, non un via libera al volo.
+Il codice è stato aggiornato per puntare al gateway remoto. Questo aggiornamento non equivale a un test end-to-end: prima di considerarlo funzionante occorre eseguire build/checks del progetto e provare una richiesta dal deployment. La PR rimane aperta e non unita.
