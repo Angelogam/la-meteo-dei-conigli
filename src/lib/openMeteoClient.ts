@@ -7,8 +7,39 @@
 import { getMeteoBaseUrl, OPEN_METEO_DIRECT } from "@/config/apiConfig";
 
 const TIMEOUT_MS = 8000;
-// Modello ICON per l'Europa — stesso usato da meteo-parapente.com
+// Non forzare un modello: Open-Meteo seleziona il modello predefinito per coordinate e disponibilità.
 const DEFAULT_MODELS = "";
+
+const RESPONSE_CACHE_TTL_MS = 2 * 60 * 1000;
+const RESPONSE_CACHE_MAX_ENTRIES = 80;
+const responseCache = new Map<string, { expiresAt: number; value: any }>();
+const pendingRequests = new Map<string, Promise<any>>();
+
+/** Riusa brevemente risposte identiche e accorpa richieste simultanee. */
+async function requestJson(url: string): Promise<any> {
+  const now = Date.now();
+  const cached = responseCache.get(url);
+  if (cached && cached.expiresAt > now) return cached.value;
+  if (cached) responseCache.delete(url);
+  const pending = pendingRequests.get(url);
+  if (pending) return pending;
+
+  const request = (async () => {
+    const res = await fetchWithTimeout(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const value = await res.json();
+    responseCache.set(url, { value, expiresAt: Date.now() + RESPONSE_CACHE_TTL_MS });
+    if (responseCache.size > RESPONSE_CACHE_MAX_ENTRIES) {
+      const oldestKey = responseCache.keys().next().value;
+      if (oldestKey) responseCache.delete(oldestKey);
+    }
+    return value;
+  })();
+
+  pendingRequests.set(url, request);
+  try { return await request; }
+  finally { pendingRequests.delete(url); }
+}
 
 async function fetchWithTimeout(url: string, timeoutMs: number = TIMEOUT_MS): Promise<Response> {
   const controller = new AbortController();
@@ -66,7 +97,7 @@ function buildUrl(params: {
     search.set("forecast_days", params.forecast_days.toString());
   }
   if (params.forecast_hours) search.set("forecast_hours", params.forecast_hours.toString());
-  // Usa modello ICON per l'Europa (stesso del sito meteo-parapente.com)
+  // Imposta il modello solo se il chiamante ne specifica uno.
   if (params.models) search.set("models", params.models);
   return `${baseUrl}?${search.toString()}`;
 }
@@ -118,9 +149,7 @@ export async function fetchHourly(
 ): Promise<any> {
   const url = buildUrl({ latitude: lat, longitude: lon, hourly: params, start_date, end_date, models: DEFAULT_MODELS });
   try {
-    const res = await fetchWithTimeout(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    return await requestJson(url);
   } catch (err) {
     // Fallback: riprova direttamente su Open-Meteo se il proxy ha fallito
     if (url.includes("localhost:3000") || url.includes("/api/open-meteo")) {
@@ -144,9 +173,7 @@ export async function fetchDaily(
 ): Promise<any> {
   const url = buildUrl({ latitude: lat, longitude: lon, daily: params, forecast_days: days, models: DEFAULT_MODELS });
   try {
-    const res = await fetchWithTimeout(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    return await requestJson(url);
   } catch (err) {
     if (url.includes("localhost:3000") || url.includes("/api/open-meteo")) {
       const directUrl = buildDirectUrl({ latitude: lat, longitude: lon, daily: params, forecast_days: days, models: DEFAULT_MODELS });
@@ -164,9 +191,7 @@ export async function fetchDaily(
 export async function fetchCurrent(lat: number, lon: number, params: string): Promise<any> {
   const url = buildUrl({ latitude: lat, longitude: lon, current: params, forecast_days: 1, models: DEFAULT_MODELS });
   try {
-    const res = await fetchWithTimeout(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    return await requestJson(url);
   } catch (err) {
     if (url.includes("localhost:3000") || url.includes("/api/open-meteo")) {
       const directUrl = buildDirectUrl({ latitude: lat, longitude: lon, current: params, forecast_days: 1, models: DEFAULT_MODELS });
@@ -198,9 +223,7 @@ export async function fetchFull(
     models: DEFAULT_MODELS,
   });
   try {
-    const res = await fetchWithTimeout(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    return await requestJson(url);
   } catch (err) {
     if (url.includes("localhost:3000") || url.includes("/api/open-meteo")) {
       const directUrl = buildDirectUrl({
