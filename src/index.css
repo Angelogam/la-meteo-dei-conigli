@@ -321,3 +321,117 @@
   .flight-website-shell .windgram-plot,
   .flight-website-shell .chart-panel { background: #0b1c33 !important; }
 }
+
+
+/* Shared finish for every analysis tab: Meteo, Venti, Termiche and Analisi. */
+.flight-tab-content {
+  color: #e6eefb;
+  animation: fadeIn .22s ease-out;
+}
+.flight-tab-content > *,
+.flight-tab-content section,
+.flight-tab-content article {
+  min-width: 0;
+}
+.flight-tab-content [class*="bg-white"],
+.flight-tab-content [class*="bg-gray-50"],
+.flight-tab-content [class*="bg-slate-50"],
+.flight-tab-content [class*="bg-zinc-50"] {
+  background: linear-gradient(145deg, rgba(21, 39, 66, .96), rgba(9, 23, 43, .97)) !important;
+  border-color: rgba(148, 163, 184, .22) !important;
+  color: #e5eefc !important;
+}
+.flight-tab-content [class*="text-slate-900"],
+.flight-tab-content [class*="text-slate-800"],
+.flight-tab-content [class*="text-gray-900"],
+.flight-tab-content [class*="text-gray-800"],
+.flight-tab-content [class*="text-zinc-900"] { color: #f1f6ff !important; }
+.flight-tab-content [class*="text-slate-700"],
+.flight-tab-content [class*="text-slate-600"],
+.flight-tab-content [class*="text-gray-700"],
+.flight-tab-content [class*="text-gray-600"],
+.flight-tab-content [class*="text-zinc-700"],
+.flight-tab-content [class*="text-zinc-600"] { color: #b8c9e2 !important; }
+.flight-tab-content [class*="border-slate-200"],
+.flight-tab-content [class*="border-gray-200"],
+.flight-tab-content [class*="border-zinc-200"] { border-color: rgba(148, 163, 184, .2) !important; }
+.flight-tab-content [class*="shadow"] { --tw-shadow-color: rgba(0, 0, 0, .18); }
+.flight-tab-content table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.flight-tab-content th {
+  color: #c7d2fe !important;
+  background: rgba(49, 46, 129, .22) !important;
+  border-bottom: 1px solid rgba(129, 140, 248, .25) !important;
+}
+.flight-tab-content td {
+  color: #dbe7f8;
+  border-bottom-color: rgba(148, 163, 184, .12) !important;
+}
+.flight-tab-content tbody tr:nth-child(even) td { background: rgba(148, 163, 184, .035); }
+.flight-tab-content tbody tr:hover td { background: rgba(96, 165, 250, .07); }
+.flight-tab-content input,
+.flight-tab-content select,
+.flight-tab-content textarea {
+  color: #edf4ff !important;
+  background: rgba(7, 19, 39, .82) !important;
+  border-color: rgba(148, 163, 184, .3) !important;
+}
+.flight-tab-content input::placeholder,
+.flight-tab-content textarea::placeholder { color: #7f96b8 !important; }
+.flight-tab-content button:not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-violet"]):not([class*="bg-emerald"]):not([class*="bg-red"]) {
+  border-color: rgba(148, 163, 184, .22);
+}
+.flight-tab-content .recharts-wrapper,
+.flight-tab-content .recharts-responsive-container { max-width: 100%; }
+.flight-tab-content .recharts-cartesian-grid-horizontal line,
+.flight-tab-content .recharts-cartesian-grid-vertical line { stroke: rgba(148, 163, 184, .14) !important; }
+.flight-tab-content .recharts-text,
+.flight-tab-content .recharts-cartesian-axis-tick-value { fill: #b8c9e2 !important; }
+.flight-tab-content .recharts-tooltip-wrapper > div,
+.flight-tab-content .recharts-default-tooltip {
+  color: #eaf2ff !important;
+  background: rgba(7, 19, 39, .97) !important;
+  border: 1px solid rgba(129, 140, 248, .3) !important;
+  border-radius: 12px !important;
+}
+.flight-tab-content .recharts-default-tooltip .recharts-tooltip-label { color: #f8fafc !important; }
+.flight-tab-content .recharts-default-tooltip .recharts-tooltip-item { color: #c7d2fe !important; }
+#details-section { padding-top: 5px; }
+#details-section .flight-subsection-heading { margin-bottom: 14px; }
+#details-section [role="tablist"],
+#details-section .tab-nav,
+#details-section nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#details-section [role="tab"],
+#details-section .tab-nav button,
+#details-section nav button {
+  min-height: 42px;
+  padding: 10px 15px;
+  border: 1px solid rgba(148, 163, 184, .22);
+  border-radius: 12px;
+  color: #afc2df;
+  background: rgba(10, 26, 49, .82);
+  font-weight: 650;
+}
+#details-section [role="tab"][aria-selected="true"],
+#details-section [role="tab"][data-state="active"],
+#details-section .tab-nav button[aria-pressed="true"],
+#details-section nav button[aria-current="page"] {
+  color: #fff;
+  border-color: rgba(129, 140, 248, .7);
+  background: linear-gradient(110deg, rgba(37, 99, 235, .82), rgba(79, 70, 229, .8));
+  box-shadow: 0 5px 16px rgba(49, 46, 129, .18);
+}
+.flight-aux-chart { overflow: hidden; border-radius: 18px; }
+@media (max-width: 700px) {
+  .flight-tab-content { font-size: 14px; }
+  .flight-tab-content table { display: block; overflow-x: auto; white-space: nowrap; }
+  #details-section [role="tablist"],
+  #details-section .tab-nav,
+  #details-section nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #details-section [role="tab"],
+  #details-section .tab-nav button,
+  #details-section nav button { width: 100%; padding: 10px 8px; font-size: 12px; }
+}
