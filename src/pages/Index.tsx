@@ -193,12 +193,6 @@ export default function Index() {
                         })}
                       </div>
                     </section>
-                    <AiFlightBriefing
-                      siteName={site.site_name}
-                      altitude={site.elevation_m}
-                      dateLabel={dateLabel}
-                      dayData={filteredDayData}
-                    />
                     <section id="windgram-section" className="windgram-section windgram-featured min-w-0 overflow-hidden rounded-2xl p-3 sm:p-4">
                       <Windgram
                         dayData={filteredDayData}
@@ -261,6 +255,16 @@ export default function Index() {
               </div>
 
               <aside className="dashboard-sidebar flight-right-rail" aria-label="Riepilogo del decollo">
+                {site && (
+                  <section className="flight-ai-panel" aria-label="Briefing meteo con intelligenza artificiale">
+                    <AiFlightBriefing
+                      siteName={site.site_name}
+                      altitude={site.elevation_m}
+                      dateLabel={dateLabel}
+                      dayData={filteredDayData}
+                    />
+                  </section>
+                )}
                 <UpdateTimer
                   lastUpdate={aggressiveLastUpdate ?? lastUpdate}
                   countdown={countdown}
