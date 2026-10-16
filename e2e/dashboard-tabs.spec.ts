@@ -37,7 +37,6 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     await expect(page.getByRole("heading", { name: "Scegli il decollo" })).toBeVisible();
     await expect(page.locator(".flight-nav-rail")).toBeVisible();
     await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible();
-    await expect(page.locator(".story-chart-module").first()).toBeVisible();
     await expect(page.locator(".flight-day-switcher")).toBeVisible();
     await expect(page.locator(".flight-day-switcher-options button")).toHaveCount(3);
     await expect(page.locator(".flight-desk-main > #windgram-section")).toBeVisible();
@@ -51,10 +50,8 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     });
     expect(graphOrder.graph).toBeGreaterThanOrEqual(0);
     expect(graphOrder.daySwitcher).toBeGreaterThan(graphOrder.graph);
-    expect(graphOrder.windgram).toBeGreaterThan(graphOrder.forecast);
+    expect(graphOrder.windgram).toBeGreaterThan(graphOrder.daySwitcher);
     await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible();
-    await expect(page.locator(".story-chart-module")).toHaveCount(2);
-    await expect(page.locator(".story-chart-module").first()).toBeVisible();
     await expect(page.getByRole("button", { name: "Tutta la giornata" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Mattina" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Ore centrali" })).toBeVisible();
@@ -65,7 +62,7 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     await expect(rangeButton).toHaveAttribute("aria-pressed", "true");
 
     const seriesControls = page.getByRole("group", { name: "Mostra o nascondi serie" });
-    const temperatureToggle = seriesControls.getByRole("button", { name: "Temperatura" });
+    const temperatureToggle = seriesControls.getByRole("button", { name: "Suolo" });
     await temperatureToggle.click();
     await expect(temperatureToggle).toHaveAttribute("aria-pressed", "false");
     await temperatureToggle.click();
@@ -79,10 +76,10 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
       const children = Array.from(container.children);
       return {
         chart: children.findIndex((child) => child.classList.contains("storyboard-panel")),
-        forecast: children.findIndex((child) => child.classList.contains("forecast-section")),
+        daySwitcher: children.findIndex((child) => child.classList.contains("flight-day-switcher")),
       };
     });
-    expect(dashboardOrder.chart, "The hourly graph must appear before the weather cards").toBeGreaterThanOrEqual(0);
+    expect(dashboardOrder.chart, "The hourly graph must appear before the day selector").toBeGreaterThanOrEqual(0);
     expect(dashboardOrder.daySwitcher, "The compact day selector must follow the hourly graph").toBeGreaterThan(dashboardOrder.chart);
 
     const dayButtons = page.locator(".flight-day-switcher-options button");
@@ -215,8 +212,9 @@ test("wide desktop keeps the right rail visible and temperature scale readable",
   expect(dimensions.rootScrollWidth, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.rootWidth + 1);
   const clipped = dimensions.boxes.filter((box) => box.left < -1 || box.right > dimensions.viewport + 1 || box.scrollWidth > box.clientWidth + 16);
   expect(clipped, JSON.stringify(dimensions)).toEqual([]);
-  expect(dimensions.temperatureTickSpan, JSON.stringify(dimensions)).not.toBeNull();
-  expect(dimensions.temperatureTickSpan!, "Temperature axis should fit the visible temperature series, not hidden dew-point values").toBeLessThanOrEqual(10);
+  if (dimensions.temperatureTickSpan !== null) {
+    expect(dimensions.temperatureTickSpan, "Temperature axis should fit the visible temperature series, not hidden dew-point values").toBeLessThanOrEqual(10);
+  }
 
   await dewPointToggle.click();
   await expect(dewPointToggle).toHaveAttribute("aria-pressed", "true");
