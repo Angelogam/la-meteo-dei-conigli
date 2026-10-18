@@ -16,6 +16,7 @@ import SectionErrorBoundary from "@/components/SectionErrorBoundary";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
 import Windgram from "@/components/Windgram";
+import AlpiumWindgram from "@/components/AlpiumWindgram";
 import RasoftWindgram from "@/components/RasoftWindgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
@@ -203,6 +204,7 @@ export default function Index() {
                       />
                     </section>
 
+                    {activeTab !== "venti" && (
                     <section id="windgram-section" className="windgram-section windgram-featured min-w-0 overflow-hidden rounded-2xl p-3 sm:p-4">
                       <Windgram
                         dayData={filteredDayData}
@@ -218,8 +220,7 @@ export default function Index() {
                         rawData={rawApiResponse}
                       />
                     </section>
-
-
+                    )}
 
                     {site.id === "montoso-decollo-basso" && (
                       <section className="flight-aux-chart min-w-0">
@@ -248,8 +249,28 @@ export default function Index() {
                         />
                       )}
                       {activeTab === "venti" && (
-                        <SectionErrorBoundary title="La scheda Venti ha incontrato un errore">
-                          <VentiInterpolatiTab lat={site.lat} lon={site.lon} quotaDecollo={site.elevation_m} selectedDay={selectedDay} oraCorrente={selectedHour} onOraChange={setSelectedHour} siteName={site.site_name} rawData={rawApiResponse} />
+                        <SectionErrorBoundary title="Il windgram ha incontrato un errore">
+                          <div className="space-y-5">
+                            <section className="rounded-2xl border border-stone-300 bg-[#f0efe9] p-3 sm:p-5 text-slate-800 shadow-sm">
+                              <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+                                <div>
+                                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-700">Diagnostica aerologica</p>
+                                  <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-800">Windgram verticale</h2>
+                                  <p className="mt-1 text-sm text-slate-600">{site.site_name} · {site.elevation_m.toLocaleString("it-IT")} m · {dateLabel}</p>
+                                </div>
+                                <span className="rounded-full border border-stone-300 bg-white/70 px-3 py-1 text-xs font-semibold text-slate-600">Modello Open-Meteo</span>
+                              </div>
+                              <AlpiumWindgram siteName={site.site_name} siteAlt={site.elevation_m} lat={site.lat} lon={site.lon} selectedDay={selectedDay} dayData={filteredDayData} dateLabel={dateLabel} />
+                            </section>
+                            <section id="windgram-section" className="windgram-section windgram-featured min-w-0 overflow-hidden rounded-2xl border border-stone-300 bg-[#e6e4dd] p-3 sm:p-4">
+                              <div className="mb-3">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">Evoluzione durante la giornata</p>
+                                <h2 className="text-lg sm:text-xl font-bold text-slate-800">Termiche previste</h2>
+                                <p className="text-sm text-slate-600">Quote e attività termica stimate dal modello, quando disponibili.</p>
+                              </div>
+                              <Windgram dayData={filteredDayData} siteName={site.site_name} altitude={site.elevation_m} selectedHour={selectedHour} onHourSelect={setSelectedHour} selectedDay={selectedDay} dateLabel={dateLabel} lat={site.lat} lon={site.lon} fallbackData={filteredDayData} rawData={rawApiResponse} />
+                            </section>
+                          </div>
                         </SectionErrorBoundary>
                       )}
                       {activeTab === "termiche" && (
