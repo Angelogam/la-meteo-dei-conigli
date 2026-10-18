@@ -609,15 +609,26 @@ export default function ProfessionalWindgram({
   }
 
   return (
-    <div className="space-y-3">
-      <div className="bg-white text-slate-900 rounded-[20px] p-2 sm:p-3 shadow-2xl border border-slate-200 overflow-hidden font-sans select-none">
-        <div className="text-center pb-1">
-          <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-            {siteName.toLowerCase()} &middot; {formattedDateTitle.toLowerCase()}
-          </h2>
-          <p className="text-[10px] text-slate-500 font-mono mt-0.5">
-            plotted {dateStr} 00:00 UTC · model ground {Math.round(altitude + 5)} m · SRTM {Math.round(altitude)} m
-          </p>
+    <div className="space-y-4">
+      <div className="bg-slate-900 text-slate-100 rounded-3xl p-3 sm:p-5 shadow-2xl border border-slate-800 backdrop-blur-md font-sans select-none">
+        <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-slate-800">
+          <div>
+            <h2 className="text-base sm:text-lg font-black text-white tracking-tight flex items-center gap-2">
+              <Wind className="w-5 h-5 text-cyan-400" />
+              {siteName} &middot; <span className="text-cyan-300 font-semibold">{formattedDateTitle}</span>
+            </h2>
+            <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+              Windgram Aerologico &middot; Decollo {Math.round(altitude)}m &middot; Open-Meteo ICON/GFS
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs font-semibold">
+            <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700/60">
+              Passo 250m
+            </span>
+            <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              Live Sounding
+            </span>
+          </div>
         </div>
 
         {/* Grafico aerologico: nessun pannello diagnostico aggiuntivo sopra il windgram. */}

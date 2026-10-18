@@ -159,32 +159,34 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
       const now = new Date();
       const oraCorrente = now.getHours();
       const isAdesso = ora === oraCorrente;
-      const probPioggia = h.precipitationProba ?? 0;
-      const humidity = h.humidity ?? null;
-      const dew = h.dewPoint ?? null;
-      const pressure = h.pressure ?? null;
-      const visibility = h.visibility ?? null;
-      const uv = h.uvIndex ?? null;
-      const cape = h.cape ?? null;
-      const windDir = h.windDir ?? null;
-      const windGusts = h.windGusts ?? null;
+      const probPioggia = h.precipitationProbability ?? h.precipitationProba ?? null;
+      const humidity = h.humidity != null ? Math.round(h.humidity) : null;
+      const dew = h.dewPoint != null ? Math.round(h.dewPoint) : null;
+      const pressure = h.pressure != null ? Math.round(h.pressure) : null;
+      const visibility = h.visibility != null ? Math.round(h.visibility / 1000) : null;
+      const uv = h.uvIndex != null ? Math.round(h.uvIndex * 10) / 10 : null;
+      const cape = h.cape != null ? Math.round(h.cape) : null;
+      const windDir = h.windDir != null ? h.windDir : null;
+      const windSpeed = h.windSpeed != null ? Math.round(h.windSpeed) : null;
+      const windGusts = h.windGusts != null && h.windGusts > 0 ? Math.round(h.windGusts) : null;
+      const cloudCover = h.cloudCover != null ? Math.round(h.cloudCover) : null;
 
       return {
         ora,
         icona: h.weatherCode,
-        temperatura: h.temperature !== null && h.temperature !== undefined ? Math.round(h.temperature) : null,
-        feelsLike: h.apparentTemp !== null && h.apparentTemp !== undefined ? Math.round(h.apparentTemp) : null,
-        vento: Math.round(h.windSpeed),
-        ventoTesto: ventoTesto(h.windSpeed),
-        direzione: direzioneVento(windDir),
+        temperatura: h.temperature != null ? Math.round(h.temperature) : null,
+        feelsLike: h.apparentTemp != null ? Math.round(h.apparentTemp) : null,
+        vento: windSpeed,
+        ventoTesto: windSpeed != null ? ventoTesto(windSpeed) : "N/D",
+        direzione: windDir != null ? direzioneVento(windDir) : "N/D",
         windDirDeg: windDir,
-        raffiche: windGusts > 0 ? Math.round(windGusts) : null,
+        raffiche: windGusts,
         termiche: t.rateo,
-        nuvole: Math.round(h.cloudCover),
-        nuvoleLow: Math.round(h.cloudCoverLow ?? 0),
-        nuvoleMid: Math.round(h.cloudCoverMid ?? 0),
-        nuvoleHigh: Math.round(h.cloudCoverHigh ?? 0),
-        pioggia: h.precipitation > 0 ? h.precipitation.toFixed(1) : null,
+        nuvole: cloudCover,
+        nuvoleLow: h.cloudCoverLow != null ? Math.round(h.cloudCoverLow) : 0,
+        nuvoleMid: h.cloudCoverMid != null ? Math.round(h.cloudCoverMid) : 0,
+        nuvoleHigh: h.cloudCoverHigh != null ? Math.round(h.cloudCoverHigh) : 0,
+        pioggia: h.precipitation != null && h.precipitation > 0 ? h.precipitation.toFixed(1) : (h.precipitation === 0 ? "0.0" : null),
         probPioggia,
         voloIcona: v.icon,
         voloTesto: v.label,
@@ -307,16 +309,22 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                     <div className="flex flex-col gap-0.5">
                       <div className="flex items-center gap-1.5">
                         <Wind className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                        <span className="text-sm font-bold text-sky-300 tabular-nums">{r.vento} <span className="text-slate-500 text-xs font-medium">km/h</span></span>
+                        <span className="text-sm font-bold text-sky-300 tabular-nums">
+                          {r.vento != null ? `${r.vento} km/h` : "N/D"}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1.5 ml-5">
                         <span className="text-xs text-slate-400 font-medium">{r.direzione}</span>
-                        <span className="text-xs text-slate-600">·</span>
-                        <span className="text-xs text-slate-500">{r.ventoTesto}</span>
+                        {r.ventoTesto !== "N/D" && (
+                          <>
+                            <span className="text-xs text-slate-600">·</span>
+                            <span className="text-xs text-slate-500">{r.ventoTesto}</span>
+                          </>
+                        )}
                       </div>
                       {r.raffiche !== null && (
-                        <div className="ml-5 text-[10px] text-rose-400/70 font-medium">
-                          🌪️ {r.raffiche} km/h
+                        <div className="ml-5 text-[10px] text-rose-400/80 font-semibold">
+                          Raffiche {r.raffiche} km/h
                         </div>
                       )}
                     </div>
@@ -325,17 +333,23 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                   {/* Nuvole con barre */}
                   <td className="px-3 py-3">
                     <div className="flex flex-col gap-1">
-                      <span className="text-sm font-black text-slate-200 tabular-nums">{r.nuvole}%</span>
-                      <div className="flex gap-0.5 h-1.5">
-                        <div className="flex-1 rounded-full bg-sky-500/60" style={{ width: `${r.nuvoleLow}%`, maxWidth: "100%" }} />
-                        <div className="flex-1 rounded-full bg-violet-500/60" style={{ width: `${r.nuvoleMid}%`, maxWidth: "100%" }} />
-                        <div className="flex-1 rounded-full bg-slate-400/40" style={{ width: `${r.nuvoleHigh}%`, maxWidth: "100%" }} />
-                      </div>
-                      <div className="flex gap-2 text-[9px] text-slate-500 font-medium">
-                        <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-sky-500 inline-block" />B</span>
-                        <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block" />M</span>
-                        <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-slate-400 inline-block" />A</span>
-                      </div>
+                      <span className="text-sm font-black text-slate-200 tabular-nums">
+                        {r.nuvole != null ? `${r.nuvole}%` : "N/D"}
+                      </span>
+                      {r.nuvole != null && (
+                        <>
+                          <div className="flex gap-0.5 h-1.5">
+                            <div className="flex-1 rounded-full bg-sky-500/60" style={{ width: `${r.nuvoleLow}%`, maxWidth: "100%" }} />
+                            <div className="flex-1 rounded-full bg-violet-500/60" style={{ width: `${r.nuvoleMid}%`, maxWidth: "100%" }} />
+                            <div className="flex-1 rounded-full bg-slate-400/40" style={{ width: `${r.nuvoleHigh}%`, maxWidth: "100%" }} />
+                          </div>
+                          <div className="flex gap-2 text-[9px] text-slate-500 font-medium">
+                            <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-sky-500 inline-block" />B</span>
+                            <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block" />M</span>
+                            <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-slate-400 inline-block" />A</span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </td>
 
@@ -356,11 +370,15 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                     <div className="flex flex-col">
                       <div className="flex items-center gap-1.5">
                         <Droplets className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                        <span className="text-sm font-bold text-sky-300 tabular-nums">{r.humidity}%</span>
+                        <span className="text-sm font-bold text-sky-300 tabular-nums">
+                          {r.humidity != null ? `${r.humidity}%` : "N/D"}
+                        </span>
                       </div>
-                      <span className="text-[10px] text-slate-500 font-medium ml-5">
-                        Rdg. {r.dew}°C
-                      </span>
+                      {r.dew != null && (
+                        <span className="text-[10px] text-slate-500 font-medium ml-5">
+                          Rdg. {r.dew}°C
+                        </span>
+                      )}
                     </div>
                   </td>
 
@@ -369,14 +387,18 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                     <div className="flex flex-col items-start gap-1">
                       <div className="flex items-center gap-1.5">
                         <Sun className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                        <span className={`text-sm font-black tabular-nums ${uvColor(r.uv)}`}>{r.uv}</span>
+                        <span className={`text-sm font-black tabular-nums ${r.uv != null ? uvColor(r.uv) : "text-slate-500"}`}>
+                          {r.uv != null ? r.uv : "N/D"}
+                        </span>
                       </div>
-                      <div className="w-12 h-1 bg-slate-700/50 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${r.uv >= 8 ? "bg-rose-500" : r.uv >= 5 ? "bg-amber-500" : "bg-emerald-500"}`}
-                          style={{ width: `${Math.min(100, r.uv * 9)}%` }}
-                        />
-                      </div>
+                      {r.uv != null && (
+                        <div className="w-12 h-1 bg-slate-700/50 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${r.uv >= 8 ? "bg-rose-500" : r.uv >= 5 ? "bg-amber-500" : "bg-emerald-500"}`}
+                            style={{ width: `${Math.min(100, r.uv * 9)}%` }}
+                          />
+                        </div>
+                      )}
                     </div>
                   </td>
 
