@@ -190,7 +190,7 @@ export default function Index() {
               <div className="flight-desk-main dashboard-content min-w-0">
                 {site && (
                   <>
-                    <DayStoryboard dayData={filteredDayData} siteName={site.site_name} selectedHour={selectedHour} onHourSelect={setSelectedHour} />
+                    {/* Rimosso il vecchio pannello con grafici generici del vento: il windgram verticale è nella sezione dedicata qui sotto. */}
                     <section className="forecast-section flight-forecast-module min-w-0">
                       <PrevisioniGiornaliere
                         enrichedDaily={enrichedDaily}
