@@ -844,3 +844,97 @@ body:has(.venti-layout) .details-section { animation: venti-arrive .36s ease-out
   body:has(.venti-layout) .venti-windgram-card,
   body:has(.venti-layout) .venti-thermal-card { animation: none !important; }
 }
+
+
+/* Venti — compact data strip, smoother chart panels, no duplicate report panel. */
+body:has(.venti-layout) .venti-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .7rem;
+  margin: .2rem 0 1.1rem;
+}
+body:has(.venti-layout) .venti-summary-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: .28rem;
+  padding: .85rem .95rem;
+  border: 1px solid #d0d5c9;
+  border-radius: 15px;
+  background: linear-gradient(145deg, rgba(250,249,243,.94), rgba(232,235,225,.96));
+  box-shadow: 0 5px 16px rgba(45, 61, 45, .035), inset 0 1px 0 rgba(255,255,255,.9);
+}
+body:has(.venti-layout) .venti-summary-card > span {
+  color: #718071;
+  font-size: .61rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  line-height: 1.35;
+}
+body:has(.venti-layout) .venti-summary-card > strong {
+  color: #2d4434;
+  font-size: clamp(1.2rem, 1.85vw, 1.65rem);
+  font-weight: 850;
+  line-height: 1.15;
+  letter-spacing: -.045em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+body:has(.venti-layout) .venti-summary-card > small {
+  color: #778376;
+  font-size: .69rem;
+  line-height: 1.45;
+}
+body:has(.venti-layout) .venti-windgram-card .space-y-4 > div:nth-child(2) {
+  display: none !important;
+}
+body:has(.venti-layout) .venti-windgram-card .space-y-4 > div:first-child {
+  border-radius: 17px !important;
+  border-color: #cdd2c7 !important;
+  box-shadow: 0 5px 16px rgba(40, 53, 41, .04) !important;
+}
+body:has(.venti-layout) .venti-windgram-card .space-y-4 > div:first-child h2 {
+  color: #2c4032 !important;
+}
+body:has(.venti-layout) .venti-windgram-card .space-y-4 > div:first-child .text-sky-600,
+body:has(.venti-layout) .venti-windgram-card .space-y-4 > div:first-child .text-sky-700 {
+  color: #53785b !important;
+}
+body:has(.venti-layout) .venti-windgram-card .space-y-4 > div:first-child .bg-emerald-100 {
+  background: #dfe9dc !important;
+  border-color: #c2d4bf !important;
+}
+body:has(.venti-layout) .venti-windgram-card .space-y-4 > div:first-child .text-emerald-800 {
+  color: #436a4c !important;
+}
+body:has(.venti-layout) .venti-windgram-card .space-y-4 > div:first-child .text-slate-500,
+body:has(.venti-layout) .venti-windgram-card .space-y-4 > div:first-child .text-slate-600 {
+  color: #718071 !important;
+}
+body:has(.venti-layout) .venti-thermal-card .overflow-x-auto,
+body:has(.venti-layout) .venti-thermal-card .overflow-hidden {
+  border-color: #d0d5c9 !important;
+}
+body:has(.venti-layout) .venti-thermal-card .text-sky-600,
+body:has(.venti-layout) .venti-thermal-card .text-sky-700 {
+  color: #53785b !important;
+}
+body:has(.venti-layout) .venti-thermal-card .bg-sky-50 {
+  background: #dfe9dc !important;
+}
+body:has(.venti-layout) .venti-thermal-card .text-sky-800 {
+  color: #365a40 !important;
+}
+body:has(.venti-layout) .dashboard-content .venti-layout .rounded-2xl:hover {
+  transform: none;
+}
+@media (max-width: 850px) {
+  body:has(.venti-layout) .venti-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 420px) {
+  body:has(.venti-layout) .venti-summary-grid { gap: .45rem; }
+  body:has(.venti-layout) .venti-summary-card { padding: .68rem; border-radius: 12px; }
+  body:has(.venti-layout) .venti-summary-card > span { font-size: .55rem; letter-spacing: .08em; }
+  body:has(.venti-layout) .venti-summary-card > strong { font-size: 1.12rem; }
+  body:has(.venti-layout) .venti-summary-card > small { font-size: .63rem; }
+}
