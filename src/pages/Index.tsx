@@ -138,8 +138,16 @@ export default function Index() {
                   <CalendarDays aria-hidden="true" />
                   <span className="dashboard-date-copy"><small>Giorno selezionato</small><strong>{dateLabel}</strong></span>
                 </div>
-                <button type="button" className="dashboard-intro-cta" onClick={() => { setActiveTab("venti"); document.getElementById("windgram-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
-                  <Wind aria-hidden="true" /><span>Esplora i venti</span><ArrowDownRight aria-hidden="true" />
+                <button type="button" className="dashboard-intro-cta" onClick={() => {
+                  if (activeTab === "venti") {
+                    setActiveTab("meteo");
+                    document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  } else {
+                    setActiveTab("venti");
+                    document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
+                }}>
+                  {activeTab === "venti" ? <><CloudSun aria-hidden="true" /><span>Torna al meteo</span></> : <><Wind aria-hidden="true" /><span>Esplora i venti</span><ArrowDownRight aria-hidden="true" /></>}
                 </button>
               </div>
             </section>
@@ -234,6 +242,28 @@ export default function Index() {
                                 <p className="mt-1 text-sm text-slate-600">{site.site_name} · quota decollo {site.elevation_m.toLocaleString("it-IT")} m</p>
                               </div>
                               <span className="rounded-full border border-[#c7c8bf] bg-[#f4f2ec] px-3 py-1 text-xs font-semibold text-slate-600">Dati del modello</span>
+                            </div>
+                            <div className="venti-summary-grid" aria-label="Riepilogo delle condizioni">
+                              <article className="venti-summary-card">
+                                <span>VENTO AL DECOLLO</span>
+                                <strong>{typeof current?.windSpeed === "number" ? Math.round(current.windSpeed) + " km/h" : "N/D"}</strong>
+                                <small>{typeof current?.windDir === "number" ? Math.round(current.windDir) + "°" : "Direzione N/D"}{typeof current?.windGusts === "number" ? " · raffiche " + Math.round(current.windGusts) : ""}</small>
+                              </article>
+                              <article className="venti-summary-card">
+                                <span>TEMPERATURA</span>
+                                <strong>{currentTemp !== null ? currentTemp.toLocaleString("it-IT", { maximumFractionDigits: 1 }) + " °C" : "N/D"}</strong>
+                                <small>Al decollo</small>
+                              </article>
+                              <article className="venti-summary-card">
+                                <span>BASE NUBE · STIMA</span>
+                                <strong>{cloudBaseEstimate !== null ? cloudBaseEstimate.toLocaleString("it-IT") + " m" : "N/D"}</strong>
+                                <small>Quota indicativa, non misurata</small>
+                              </article>
+                              <article className="venti-summary-card">
+                                <span>CAPE</span>
+                                <strong>{typeof current?.cape === "number" ? Math.round(current.cape).toLocaleString("it-IT") + " J/kg" : "N/D"}</strong>
+                                <small>Indice convettivo del modello</small>
+                              </article>
                             </div>
                             <ProfessionalWindgram latitude={site.lat} longitude={site.lon} altitude={site.elevation_m} siteName={site.site_name} selectedDay={selectedDay} rawData={rawApiResponse} />
                           </section>
