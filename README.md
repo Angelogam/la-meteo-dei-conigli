@@ -32,6 +32,23 @@ La risposta del proxy meteo mantiene il formato del provider Open-Meteo. Sono ri
 
 Le previsioni sono dati modellistici e non certificano la sicurezza o l'idoneità al volo.
 
+## Assistente meteo con LLM gratuito
+
+La scheda **Analisi** include il componente `AiMeteoBriefing`, che invia al backend soltanto i dati orari meteo necessari per richiedere una sintesi in italiano tramite OpenRouter e il router `openrouter/free`.
+
+L'assistente è opzionale e genera il testo solo quando l'utente preme il pulsante. La chiave API resta sul server e non viene mai inserita nel bundle del browser.
+
+### Configurazione
+
+1. Crea una chiave API su [OpenRouter](https://openrouter.ai/keys).
+2. In Vercel, apri il progetto usato per la preview e vai in **Settings → Environment Variables**.
+3. Aggiungi `OPENROUTER_API_KEY` con la chiave come valore; seleziona Preview e/o Production secondo l'ambiente da testare.
+4. Salva e fai redeploy della preview dopo aver aggiunto la variabile.
+
+Per lo sviluppo locale, copia `.env.example` in `.env` e inserisci la chiave solo nel file locale (mai nel repository). Senza questa variabile, l'endpoint risponde con un errore esplicito di configurazione e la UI lo mostra all'utente.
+
+L'uso gratuito dipende dalla disponibilità e dai limiti dei modelli gratuiti offerti da OpenRouter; non è garantito un servizio senza interruzioni. Il briefing riassume previsioni modellistiche: non dichiara il volo sicuro e non sostituisce le osservazioni sul posto o i bollettini ufficiali. I campi assenti restano assenti, non vengono convertiti in zero.
+
 ## Test e qualità
 
 ```bash
