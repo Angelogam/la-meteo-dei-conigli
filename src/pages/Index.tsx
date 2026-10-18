@@ -16,6 +16,7 @@ import ProfessionalWindgram from "@/components/ProfessionalWindgram";
 import SectionErrorBoundary from "@/components/SectionErrorBoundary";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
+import AiMeteoBriefing from "@/components/AiMeteoBriefing";
 import Windgram from "@/components/Windgram";
 import RasoftWindgram from "@/components/RasoftWindgram";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
@@ -281,7 +282,10 @@ export default function Index() {
                         <TermicheTab currentData={currentData as any} dayData={filteredDayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name }} selectedDay={selectedDay} />
                       )}
                       {activeTab === "analisi" && (
-                        <AnalisiMeteo currentData={currentData as any} dayData={filteredDayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name, exposure: site.orientation }} cape={currentData?.cape} liftedIndex={currentData?.liftedIndex} cin={currentData?.cin} rawData={rawApiResponse} />
+                        <div className="space-y-5">
+                          <AiMeteoBriefing dayData={filteredDayData} siteName={site.site_name} altitude={site.elevation_m} />
+                          <AnalisiMeteo currentData={currentData as any} dayData={filteredDayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name, exposure: site.orientation }} cape={currentData?.cape} liftedIndex={currentData?.liftedIndex} cin={currentData?.cin} rawData={rawApiResponse} />
+                        </div>
                       )}
                     </section>
 
