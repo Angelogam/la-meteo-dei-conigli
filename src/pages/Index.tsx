@@ -127,11 +127,11 @@ export default function Index() {
 
         <div className="flight-page-column">
           <main className="app-main flight-page flex-1 w-full min-w-0 max-w-none mx-auto px-3 sm:px-4 xl:px-6 py-4 space-y-4">
-            <section className="flight-page-titlebar" aria-labelledby="dashboard-intro-title">
+            <section className={"flight-page-titlebar " + (activeTab === "venti" ? "venti-titlebar" : "")} aria-labelledby="dashboard-intro-title">
               <div>
-                <div className="dashboard-intro-kicker"><span className="dashboard-intro-kicker-dot" aria-hidden="true" />METEO · AEROLOGIA · VOLO LIBERO</div>
-                <h1 id="dashboard-intro-title">Il tuo briefing di volo.</h1>
-                <p>Grafici meteo, vento in quota e condizioni dei decolli.</p>
+                <div className="dashboard-intro-kicker"><span className="dashboard-intro-kicker-dot" aria-hidden="true" />{activeTab === "venti" ? "AEROLOGIA · VENTO IN QUOTA · TERMICHE" : "METEO · AEROLOGIA · VOLO LIBERO"}</div>
+                <h1 id="dashboard-intro-title">{activeTab === "venti" ? "Leggi il cielo, quota per quota." : "Il tuo briefing di volo."}</h1>
+                <p>{activeTab === "venti" ? "Un profilo verticale chiaro, poi l’evoluzione delle termiche durante la giornata." : "Grafici meteo, vento in quota e condizioni dei decolli."}</p>
               </div>
               <div className="flight-page-actions">
                 <div className="dashboard-date-chip">
@@ -144,7 +144,7 @@ export default function Index() {
               </div>
             </section>
 
-            {site && (
+            {activeTab !== "venti" && site && (
               <section className="flight-brief-strip" aria-label="Riepilogo rapido delle condizioni di volo">
                 <div className="flight-brief-heading">
                   <span>BRIEFING RAPIDO</span>
@@ -172,7 +172,7 @@ export default function Index() {
               </section>
             )}
 
-            {site && (
+            {activeTab !== "venti" && site && (
               <section id="overview" className="overview-section">
                 <SiteHeader
                   site_name={site.site_name}
@@ -225,8 +225,8 @@ export default function Index() {
 
                     {activeTab === "venti" && (
                       <SectionErrorBoundary title="Windgram verticale non disponibile">
-                        <div className="space-y-5">
-                          <section className="overflow-hidden rounded-2xl border border-[#c7c8bf] bg-[#e9e7df] p-3 text-slate-800 shadow-sm sm:p-5">
+                        <div className="venti-layout space-y-5">
+                          <section className="venti-windgram-card overflow-hidden rounded-2xl border border-[#c7c8bf] bg-[#e9e7df] p-3 text-slate-800 shadow-sm sm:p-5">
                             <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                               <div>
                                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-800">Profilo aerologico · {dateLabel}</p>
@@ -237,7 +237,7 @@ export default function Index() {
                             </div>
                             <ProfessionalWindgram latitude={site.lat} longitude={site.lon} altitude={site.elevation_m} siteName={site.site_name} selectedDay={selectedDay} rawData={rawApiResponse} />
                           </section>
-                          <section className="overflow-hidden rounded-2xl border border-[#c7c8bf] bg-[#e3e1d9] p-3 shadow-sm sm:p-5">
+                          <section className="venti-thermal-card overflow-hidden rounded-2xl border border-[#c7c8bf] bg-[#e3e1d9] p-3 shadow-sm sm:p-5">
                             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-800">Evoluzione diurna</p>
                             <h2 className="mt-1 text-lg font-bold text-slate-800 sm:text-xl">Termiche previste</h2>
                             <p className="mb-3 mt-1 text-sm text-slate-600">Quote e velocità ascensionali solo quando supportate dai dati disponibili.</p>
@@ -247,7 +247,7 @@ export default function Index() {
                       </SectionErrorBoundary>
                     )}
 
-                    {site.id === "montoso-decollo-basso" && (
+                    {activeTab !== "venti" && site.id === "montoso-decollo-basso" && (
                       <section className="flight-aux-chart min-w-0">
                         <RasoftWindgram latitude={site.lat} longitude={site.lon} altitude={site.elevation_m} siteName="Montoso Alto" selectedDay={selectedDay} />
                       </section>
@@ -273,11 +273,7 @@ export default function Index() {
                           cin={currentData?.cin}
                         />
                       )}
-                      {activeTab === "venti" && (
-                        <SectionErrorBoundary title="La scheda Venti ha incontrato un errore">
-                          <VentiInterpolatiTab lat={site.lat} lon={site.lon} quotaDecollo={site.elevation_m} selectedDay={selectedDay} oraCorrente={selectedHour} onOraChange={setSelectedHour} siteName={site.site_name} rawData={rawApiResponse} />
-                        </SectionErrorBoundary>
-                      )}
+                      {/* La vista Venti completa è già montata sopra: niente secondo grafico duplicato qui. */}
                       {activeTab === "termiche" && (
                         <TermicheTab currentData={currentData as any} dayData={filteredDayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name }} selectedDay={selectedDay} />
                       )}
