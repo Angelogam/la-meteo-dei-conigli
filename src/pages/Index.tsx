@@ -12,7 +12,7 @@ import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import DayStoryboard from "@/components/DayStoryboard";
 import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
-import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
+import ProfessionalWindgram from "@/components/ProfessionalWindgram";
 import SectionErrorBoundary from "@/components/SectionErrorBoundary";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
@@ -190,6 +190,7 @@ export default function Index() {
               <div className="flight-desk-main dashboard-content min-w-0">
                 {site && (
                   <>
+                    {activeTab !== "venti" && <>
                     <DayStoryboard dayData={filteredDayData} siteName={site.site_name} selectedHour={selectedHour} onHourSelect={setSelectedHour} />
                     <section className="forecast-section flight-forecast-module min-w-0">
                       <PrevisioniGiornaliere
@@ -219,8 +220,31 @@ export default function Index() {
                         rawData={rawApiResponse}
                       />
                     </section>
+                    </>}
 
-
+                    {activeTab === "venti" && (
+                      <SectionErrorBoundary title="Windgram verticale non disponibile">
+                        <div className="space-y-5">
+                          <section className="overflow-hidden rounded-2xl border border-[#c7c8bf] bg-[#e9e7df] p-3 text-slate-800 shadow-sm sm:p-5">
+                            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                              <div>
+                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-800">Profilo aerologico · {dateLabel}</p>
+                                <h2 className="mt-1 text-xl font-bold tracking-tight sm:text-2xl">Windgram verticale</h2>
+                                <p className="mt-1 text-sm text-slate-600">{site.site_name} · quota decollo {site.elevation_m.toLocaleString("it-IT")} m</p>
+                              </div>
+                              <span className="rounded-full border border-[#c7c8bf] bg-[#f4f2ec] px-3 py-1 text-xs font-semibold text-slate-600">Dati del modello</span>
+                            </div>
+                            <ProfessionalWindgram latitude={site.lat} longitude={site.lon} altitude={site.elevation_m} siteName={site.site_name} selectedDay={selectedDay} rawData={rawApiResponse} />
+                          </section>
+                          <section className="overflow-hidden rounded-2xl border border-[#c7c8bf] bg-[#e3e1d9] p-3 shadow-sm sm:p-5">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-800">Evoluzione diurna</p>
+                            <h2 className="mt-1 text-lg font-bold text-slate-800 sm:text-xl">Termiche previste</h2>
+                            <p className="mb-3 mt-1 text-sm text-slate-600">Quote e velocità ascensionali solo quando supportate dai dati disponibili.</p>
+                            <Windgram dayData={filteredDayData} siteName={site.site_name} altitude={site.elevation_m} selectedHour={selectedHour} onHourSelect={setSelectedHour} selectedDay={selectedDay} dateLabel={dateLabel} lat={site.lat} lon={site.lon} fallbackData={filteredDayData} rawData={rawApiResponse} />
+                          </section>
+                        </div>
+                      </SectionErrorBoundary>
+                    )}
 
                     {site.id === "montoso-decollo-basso" && (
                       <section className="flight-aux-chart min-w-0">
