@@ -415,32 +415,32 @@ export default function AlpiumWindgram({
 
   // ============ RENDER ============
   return (
-    <div className="w-full bg-[#0a0e1a] p-2 sm:p-4 rounded-2xl">
-      <div className="bg-[#0f1424] border border-slate-800 rounded-2xl overflow-hidden">
+    <div className="w-full bg-[#e7e5df] p-2 sm:p-4 rounded-2xl">
+      <div className="bg-[#f3f1eb] border border-[#cbc9c0] rounded-2xl overflow-hidden">
         {/* HEADER */}
         <div className="px-4 pt-4 pb-2 flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-              <Wind className="w-5 h-5 text-sky-400" />
+            <h3 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+              <Wind className="w-5 h-5 text-emerald-700" />
               Windgram
             </h3>
-            <p className="text-sm text-slate-300 font-semibold">
+            <p className="text-sm text-slate-700 font-semibold">
               {siteName} &mdash; {dateLabel ?? "previsione"}
             </p>
             <p className="text-[10px] text-slate-500 mt-0.5">
               plotted {new Date().toISOString().slice(0, 16).replace("T", " ")} UTC &middot; model ground {siteAlt} m
             </p>
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-400">
-            <span className="px-2 py-1 rounded bg-slate-800">6 km &middot; default</span>
-            <button className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700">⬇ PNG</button>
+          <div className="flex items-center gap-2 text-xs text-slate-600">
+            <span className="px-2 py-1 rounded bg-stone-200 text-slate-700">6 km &middot; default</span>
+            <button className="px-2 py-1 rounded bg-stone-200 text-slate-700 hover:bg-stone-300">⬇ PNG</button>
           </div>
         </div>
 
         {/* TABELLA ORE / TEMPERATURA / VENTO AL SUOLO */}
         <div className="px-4">
           <svg width="100%" viewBox={`0 0 ${W} 70`} preserveAspectRatio="none" className="block">
-            <rect x={margin.left} y={0} width={plotW} height={70} fill="#1e293b" />
+            <rect x={margin.left} y={0} width={plotW} height={70} fill="#e8e6df" />
             {/* Temperature e sole */}
             {DISPLAY_HOURS.map((hr, i) => {
               const x = margin.left + (i / (DISPLAY_HOURS.length - 1)) * plotW;
@@ -474,7 +474,7 @@ export default function AlpiumWindgram({
                       );
                     })}
                   </g>
-                  <text x={x} y={56} textAnchor="middle" className="text-[10px]" fill="#94a3b8">
+                  <text x={x} y={56} textAnchor="middle" className="text-[10px]" fill="#475569">
                     sole %
                   </text>
                 </g>
@@ -514,14 +514,14 @@ export default function AlpiumWindgram({
                   y1={altToY(lv.alt)}
                   x2={margin.left + plotW}
                   y2={altToY(lv.alt)}
-                  stroke="#475569"
+                  stroke="#a8aaa4"
                   strokeWidth="0.5"
                   strokeDasharray="2 3"
                 />
-                <text x={margin.left - 8} y={altToY(lv.alt) + 4} textAnchor="end" className="text-[11px] font-bold" fill="#94a3b8">
+                <text x={margin.left - 8} y={altToY(lv.alt) + 4} textAnchor="end" className="text-[11px] font-bold" fill="#475569">
                   {lv.hpa} hPa
                 </text>
-                <text x={margin.left + plotW + 6} y={altToY(lv.alt) + 4} textAnchor="start" className="text-[10px]" fill="#64748b">
+                <text x={margin.left + plotW + 6} y={altToY(lv.alt) + 4} textAnchor="start" className="text-[10px]" fill="#647067">
                   {lv.alt} m
                 </text>
               </g>
@@ -532,8 +532,8 @@ export default function AlpiumWindgram({
               const x = hourToX(hr);
               return (
                 <g key={`hour-${hr}`}>
-                  <line x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#1e293b" strokeWidth="0.5" />
-                  <text x={x} y={H - margin.bottom + 18} textAnchor="middle" className="text-[11px] font-bold" fill="#cbd5e1">
+                  <line x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#d1d0c9" strokeWidth="0.5" />
+                  <text x={x} y={H - margin.bottom + 18} textAnchor="middle" className="text-[11px] font-bold" fill="#475569">
                     {String(hr).padStart(2, "0")}:00
                   </text>
                 </g>
@@ -663,8 +663,8 @@ export default function AlpiumWindgram({
         </div>
 
         {/* LEGENDA SCALA INSTABILITÀ */}
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-center gap-3 flex-wrap text-[10px] text-slate-400">
+        <div className="px-4 py-3 bg-[#f3f1eb]">
+          <div className="flex items-center justify-center gap-3 flex-wrap text-[10px] text-slate-600">
             <span>Stabile ←</span>
             {[
               { c: "#3b5fa0", v: "-0.20" },
