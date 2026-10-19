@@ -38,7 +38,7 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     await expect(page.getByRole("heading", { name: "Scegli il decollo" })).toBeVisible();
     await expect(page.locator(".flight-nav-rail")).toBeVisible();
 
-    const raisedTools = page.locator(".flight-desk-main > .launch-windgram-top");
+    const raisedTools = page.locator("main > .launch-windgram-top");
     await expect(raisedTools).toBeVisible({ timeout: 30_000 });
     // Keep the external XC Therm map as a separate panel and the native chart below it.
     const xcThermMap = page.getByTestId("xctherm-launch-map");
@@ -79,17 +79,26 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     await expect(page.locator(".story-hour-buttons")).toHaveCount(0);
 
     await expect(page.locator(".flight-forecast-module .forecast-day-card")).toHaveCount(3, { timeout: 30_000 });
-    const order = await page.locator(".flight-desk-main").evaluate((root) => {
+    const pageOrder = await page.locator("main").evaluate((root) => {
       const children = Array.from(root.children);
       return {
         tools: children.findIndex((child) => child.classList.contains("launch-windgram-top")),
+        dashboard: children.findIndex((child) => child.classList.contains("dashboard-layout")),
+      };
+    });
+    expect(pageOrder.tools, "Map and windgram must be a full-width section").toBeGreaterThanOrEqual(0);
+    expect(pageOrder.dashboard, "Dashboard columns must follow the full-width windgram").toBeGreaterThan(pageOrder.tools);
+    await expect(page.locator(".dashboard-layout .launch-windgram-top")).toHaveCount(0);
+
+    const contentOrder = await page.locator(".flight-desk-main").evaluate((root) => {
+      const children = Array.from(root.children);
+      return {
         forecast: children.findIndex((child) => child.classList.contains("forecast-section")),
         details: children.findIndex((child) => child.classList.contains("details-section")),
       };
     });
-    expect(order.tools, "Map and windgram must be the first dashboard panel").toBeGreaterThanOrEqual(0);
-    expect(order.forecast, "Daily forecast must follow map and windgram").toBeGreaterThan(order.tools);
-    expect(order.details, "Analysis tabs must follow daily forecast").toBeGreaterThan(order.forecast);
+    expect(contentOrder.forecast, "Daily forecast must precede analysis tabs").toBeGreaterThanOrEqual(0);
+    expect(contentOrder.details, "Analysis tabs must follow daily forecast").toBeGreaterThan(contentOrder.forecast);
 
     const forecastCards = page.locator(".forecast-day-card");
     await expect(forecastCards).toHaveCount(3, { timeout: 30_000 });
@@ -236,16 +245,16 @@ test("API Mega List catalog links all source categories and its search filters l
   await page.goto("/catalogo-api");
   await expect(page.getByRole("heading", { name: "API Mega List" })).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(".api-mega-category")).toHaveCount(23);
-  const aiCollection = page.getByRole("link", { name: "Apri raccolta Intelligenza artificiale su GitHub" });
-  await expect(aiCollection).toHaveAttribute("href", /ai-apis-1555\/README\.md/);
+  const aiCollection = page.locator(".api-mega-category").filter({ hasText: "Intelligenza artificiale" });
+  await expect(aiCollection).toHaveAttribute("href", /tree\/main\/ai-apis-1555$/);
 
   const search = page.getByRole("textbox", { name: "Cerca una categoria" });
   await search.fill("intelligenza");
   await expect(page.locator(".api-mega-category")).toHaveCount(1);
-  await expect(page.getByRole("heading", { name: "Intelligenza artificiale" })).toBeVisible();
+  await expect(page.locator(".api-mega-category").filter({ hasText: "Intelligenza artificiale" })).toBeVisible();
 
   await search.fill("categoria-che-non-esiste");
   await expect(page.locator(".api-mega-category")).toHaveCount(0);
-  await expect(page.getByText("Nessuna categoria corrisponde alla ricerca.")).toBeVisible();
+  await expect(page.getByText("Nessuna categoria trovata. Prova con un altro termine.")).toBeVisible();
   expect(pageErrors, "The catalog page should not cause browser errors").toEqual([]);
 });
