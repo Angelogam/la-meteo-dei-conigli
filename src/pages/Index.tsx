@@ -195,6 +195,7 @@ export default function Index() {
                   oraCorrente={selectedHour}
                   onOraChange={setSelectedHour}
                   siteName={site.site_name}
+                  siteId={site.id}
                   rawData={rawApiResponse}
                 />
               </section>
