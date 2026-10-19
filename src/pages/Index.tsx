@@ -131,19 +131,6 @@ export default function Index() {
 
 
             {site && (
-              <section id="flight-site-list" className="flight-site-list" aria-label="Selezione del decollo">
-                <DecolliCard
-                  decolli={mergedDecolli}
-                  selectedId={selectedId}
-                  selectedDay={selectedDay}
-                  isUpdating={aggressiveUpdating}
-                  error={aggressiveError}
-                  onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}
-                />
-              </section>
-            )}
-
-            {site && (
               <section id="overview" className="overview-section">
                 <SiteHeader
                   site_name={site.site_name}
@@ -170,6 +157,19 @@ export default function Index() {
                   siteName={site.site_name}
                   siteId={site.id}
                   rawData={rawApiResponse}
+                />
+              </section>
+            )}
+
+            {site && (
+              <section id="flight-site-list" className="flight-site-list" aria-label="Selezione del decollo">
+                <DecolliCard
+                  decolli={mergedDecolli}
+                  selectedId={selectedId}
+                  selectedDay={selectedDay}
+                  isUpdating={aggressiveUpdating}
+                  error={aggressiveError}
+                  onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}
                 />
               </section>
             )}
