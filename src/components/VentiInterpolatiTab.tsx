@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Wind, Calendar, MapPin } from "lucide-react";
 import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
 import ProfessionalWindgram from "@/components/ProfessionalWindgram";
+import LaunchForecastWidgets from "@/components/LaunchForecastWidgets";
 import SectionErrorBoundary from "@/components/SectionErrorBoundary";
 
 function getDirAbbrev(deg: number): string {
@@ -111,7 +112,17 @@ export default function VentiInterpolatiTab({
         </div>
       </div>
 
-      {/* 2. WINDGRAM AEROLOGICO PRINCIPALE IN PALETTE GRIGIO-PERLA */}
+      {/* Mappa meteo ICON-D2 centrata sulle coordinate del decollo selezionato nell'API. */}
+      <SectionErrorBoundary title="La mappa XC Therm non è riuscita a caricarsi">
+        <LaunchForecastWidgets
+          lat={lat}
+          lon={lon}
+          altitude={quotaDecollo}
+          siteName={siteName || "Decollo selezionato"}
+        />
+      </SectionErrorBoundary>
+
+      {/* Windgram aerologico Open-Meteo del medesimo decollo. */}
       <SectionErrorBoundary title="Il grafico dei venti non è riuscito a caricarsi">
         <ProfessionalWindgram
           latitude={lat}
