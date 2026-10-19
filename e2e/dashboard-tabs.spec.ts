@@ -40,10 +40,21 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
 
     const raisedTools = page.locator(".flight-desk-main > .launch-windgram-top");
     await expect(raisedTools).toBeVisible({ timeout: 30_000 });
-    // The map is now rendered by our native aerological chart; no external provider iframe/logo.
-    await expect(page.getByTestId("launch-forecast-widget")).toHaveCount(0);
-    await expect(page.locator('iframe[src*="xctherm.com"]')).toHaveCount(0);
+    // Keep the external XC Therm map as a separate panel and the native chart below it.
+    const xcThermMap = page.getByTestId("xctherm-launch-map");
+    await expect(xcThermMap).toBeVisible({ timeout: 30_000 });
+    const mapFrame = xcThermMap.locator('iframe[src*="xctherm.com/icon"]');
+    await expect(mapFrame).toBeVisible();
+    const mapSource = await mapFrame.getAttribute("src");
+    expect(mapSource).toBeTruthy();
+    const mapUrl = new URL(mapSource!);
+    expect(mapUrl.origin).toBe("https://xctherm.com");
+    expect(Number(mapUrl.searchParams.get("lat"))).toBeGreaterThanOrEqual(-90);
+    expect(Number(mapUrl.searchParams.get("lat"))).toBeLessThanOrEqual(90);
+    expect(Number(mapUrl.searchParams.get("lon"))).toBeGreaterThanOrEqual(-180);
+    expect(Number(mapUrl.searchParams.get("lon"))).toBeLessThanOrEqual(180);
     await expect(page.getByTestId("alpium-windgram-page")).toBeVisible();
+    await expect(page.locator(".alpium-windgram")).toBeVisible();
 
     // The windgram must contain real SVG heatmap cells behind wind arrows/thermal curves.
     const windgram = page.locator(".alpium-windgram");
@@ -167,8 +178,8 @@ test("wide desktop keeps the right rail visible and native windgram unclipped", 
   await page.setViewportSize({ width: 1600, height: 1050 });
   await page.goto("/");
   await expect(page.locator(".launch-windgram-top")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("xctherm-launch-map")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId("alpium-windgram-page")).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator('iframe[src*="xctherm.com"]')).toHaveCount(0);
   await expect(page.locator(".flight-right-rail")).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(".storyboard-panel")).toHaveCount(0);
   await expect(page.locator(".story-chart-module")).toHaveCount(0);
