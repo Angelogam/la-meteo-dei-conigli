@@ -92,7 +92,7 @@ export default function ProfessionalWindgram({
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
-remove canvas ref  const { interpolateAtAltitude } = useMultiHourWindProfile({
+  const { interpolateAtAltitude } = useMultiHourWindProfile({
     lat: latitude,
     lon: longitude,
     siteAlt: altitude,
