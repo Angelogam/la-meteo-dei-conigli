@@ -14,6 +14,9 @@ test("Venti tab keeps its own content visible while wind data loads", async ({ p
 
   // The selected launch should show the XC Therm map and native windgram as separate panels.
   await expect(page.getByTestId("xctherm-launch-map")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByTestId("flybubble-forecast-panel")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText("Widget specifico non ancora verificato")).toBeVisible();
+  await expect(page.locator('iframe[src*="weather.flybubble.com/it/embed/15841"]')).toHaveCount(0);
   await expect(page.getByTestId("alpium-windgram-page")).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".alpium-windgram")).toBeVisible({ timeout: 10_000 });
   await expect(page.getByTestId("windgram-fallback-notice")).toBeVisible({ timeout: 10_000 });
