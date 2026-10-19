@@ -36,53 +36,20 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     await expect(page.locator(".launch-hero")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Scegli il decollo" })).toBeVisible();
     await expect(page.locator(".flight-nav-rail")).toBeVisible();
-    await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible();
-    await expect(page.locator(".story-chart-module").first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator(".launch-windgram-top")).toBeVisible({ timeout: 30_000 });
     await expect(page.locator(".flight-forecast-module .forecast-day-card")).toHaveCount(3, { timeout: 30_000 });
     await expect(page.locator(".flight-desk-main > #windgram-section")).toBeVisible();
-    const graphOrder = await page.locator(".flight-desk-main").evaluate((root) => {
+    await expect(page.locator(".storyboard-panel")).toHaveCount(0);
+    await expect(page.locator(".story-chart-module")).toHaveCount(0);
+    const dashboardOrder = await page.locator(".flight-desk-main").evaluate((root) => {
       const children = Array.from(root.children);
       return {
-        graph: children.findIndex((child) => child.classList.contains("storyboard-panel")),
-        forecast: children.findIndex((child) => child.classList.contains("forecast-section")),
-        windgram: children.findIndex((child) => child.id === "windgram-section"),
-      };
-    });
-    expect(graphOrder.graph).toBeGreaterThanOrEqual(0);
-    expect(graphOrder.forecast).toBeGreaterThan(graphOrder.graph);
-    expect(graphOrder.windgram).toBeGreaterThan(graphOrder.forecast);
-    await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible();
-    await expect(page.locator(".story-chart-module")).toHaveCount(2, { timeout: 30_000 });
-    await expect(page.locator(".story-chart-module").first()).toBeVisible();
-    await expect(page.getByRole("button", { name: "Tutta la giornata" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Mattina" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Ore centrali" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Pomeriggio" })).toBeVisible();
-
-    const rangeButton = page.getByRole("button", { name: "Mattina" });
-    await rangeButton.click();
-    await expect(rangeButton).toHaveAttribute("aria-pressed", "true");
-
-    const seriesControls = page.getByRole("group", { name: "Mostra o nascondi serie" });
-    const temperatureToggle = seriesControls.getByRole("button", { name: "Temperatura" });
-    await temperatureToggle.click();
-    await expect(temperatureToggle).toHaveAttribute("aria-pressed", "false");
-    await temperatureToggle.click();
-    await expect(temperatureToggle).toHaveAttribute("aria-pressed", "true");
-
-    const hourButton = page.getByRole("button", { name: /Seleziona le condizioni delle ore/ }).first();
-    await hourButton.click();
-    await expect(hourButton).toHaveAttribute("aria-pressed", "true");
-
-    const dashboardOrder = await page.locator(".flight-desk-main").evaluate((container) => {
-      const children = Array.from(container.children);
-      return {
-        chart: children.findIndex((child) => child.classList.contains("storyboard-panel")),
+        windgram: children.findIndex((child) => child.classList.contains("launch-windgram-top")),
         forecast: children.findIndex((child) => child.classList.contains("forecast-section")),
       };
     });
-    expect(dashboardOrder.chart, "The hourly graph must appear before the weather cards").toBeGreaterThanOrEqual(0);
-    expect(dashboardOrder.forecast, "The forecast cards must exist in the main dashboard").toBeGreaterThan(dashboardOrder.chart);
+    expect(dashboardOrder.windgram, "Map and windgram must appear before the daily forecast").toBeGreaterThanOrEqual(0);
+    expect(dashboardOrder.forecast, "The daily forecast must follow map and windgram").toBeGreaterThan(dashboardOrder.windgram);
 
     const forecastCards = page.locator(".forecast-day-card");
     await expect(forecastCards).toHaveCount(3, { timeout: 30_000 });
@@ -171,9 +138,9 @@ test("desktop briefing fits the viewport without clipping the launch or forecast
 test("wide desktop keeps the right rail visible and temperature scale readable", async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1050 });
   await page.goto("/");
-  await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator(".launch-windgram-top")).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(".flight-right-rail")).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator(".story-chart-module").first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator(".storyboard-panel, .story-chart-module")).toHaveCount(0);
   await page.getByRole("button", { name: "Pomeriggio" }).click();
   const dewPointToggle = page.getByRole("group", { name: "Mostra o nascondi serie" }).getByRole("button", { name: "Rugiada" });
   await expect(dewPointToggle).toHaveAttribute("aria-pressed", "false");
