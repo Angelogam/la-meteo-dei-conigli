@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Activity, ArrowDownRight, CalendarDays, CloudSun, Compass, Eye, Home, MapPin, Mountain, Sun, Thermometer, Wind } from "lucide-react";
+import { Activity, ArrowDownRight, CalendarDays, CloudSun, Compass, Database, Eye, Home, MapPin, Mountain, Sun, Thermometer, Wind } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
@@ -109,6 +109,9 @@ export default function Index() {
               <Activity aria-hidden="true" /><span>Analisi</span>
             </button>
           </nav>
+          <a className="flight-nav-item api-catalog-nav-link" href="/catalogo-api">
+            <Database aria-hidden="true" /><span>Catalogo API</span>
+          </a>
           <div className="flight-nav-divider" />
           <div className="flight-nav-caption">DECOLLO ATTIVO</div>
           <div className="flight-nav-current">
