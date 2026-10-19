@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, MapPinned, Wind, Info } from "lucide-react";
 
 interface LaunchForecastWidgetsProps {
@@ -16,8 +16,11 @@ export default function LaunchForecastWidgets({
   altitude,
   siteName,
 }: LaunchForecastWidgetsProps) {
+  const [mapReady, setMapReady] = useState(false);
   const validCoordinates = Number.isFinite(lat) && Number.isFinite(lon)
     && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+
+  useEffect(() => { setMapReady(false); }, [lat, lon]);
 
   const xcThermUrl = useMemo(() => {
     if (!validCoordinates) return "https://xctherm.com/icon?lang=it";
@@ -62,16 +65,27 @@ export default function LaunchForecastWidgets({
 
       {validCoordinates ? (
         <div
-          className="launch-xctherm-frame"
+          className={`launch-xctherm-frame ${mapReady ? "is-ready" : "is-loading"}`}
           key={`${lat.toFixed(5)}-${lon.toFixed(5)}`}
         >
           <iframe
             title={`Mappa XC Therm di vento, nuvolosità e precipitazioni per ${siteName}`}
             src={xcThermUrl}
+            width="100%"
+            height="100%"
             loading="lazy"
             allowFullScreen
+            allow="geolocation"
             referrerPolicy="strict-origin-when-cross-origin"
+            onLoad={() => window.setTimeout(() => setMapReady(true), 1800)}
           />
+          {!mapReady && (
+            <div className="launch-xctherm-loading" role="status" aria-live="polite">
+              <span className="launch-xctherm-spinner" aria-hidden="true" />
+              <strong>Caricamento mappa XC Therm…</strong>
+              <span>Se non compare, apri la mappa in una nuova scheda.</span>
+            </div>
+          )}
         </div>
       ) : (
         <div className="launch-widget-empty" role="status">
