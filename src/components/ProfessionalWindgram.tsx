@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { RefreshCw, FileText, Check, Copy, AlertTriangle, ShieldCheck, Wind, Thermometer, Cloud, ArrowUp } from "lucide-react";
 import { fetchHourly } from "@/lib/openMeteoClient";
 import { generateReportMeteo, type GeneratedReport } from "@/utils/generateReportMeteo";
@@ -38,15 +38,14 @@ const computeDisplayAltitudes = (siteAlt: number): number[] => {
   return result;
 };
 
-// Classi discrete del gradiente termico ambientale (°C/100 m).
-// Palette grigio-perla / toni meteorologici riposanti (senza nero profondo né bianco abbagliante)
+// Palette delle masse d'aria ispirata ad Alpium: inversione, stabilità, mix e instabilità.
 const STABILITY_COLORS = {
-  stable: "#dbeafe",       // Azzurro perla molto chiaro (Stabile)
-  veryStable: "#e2e8f0",   // Grigio perla chiaro (Molto stabile/Inversione)
-  mixed: "#dcfce7",        // Verde perla tenue (Intermedia)
-  unstable: "#ffedd5",     // Arancio perla tenue (Instabile)
-  veryUnstable: "#fecdd3", // Rosa/Rosso perla tenue (Molto instabile)
-  missing: "#f1f5f9",      // Grigio neutro perla per dati assenti
+  veryStable: "#d7e2f2",   // Azzurro-grigio: inversione/stabilità marcata
+  stable: "#dce9fb",       // Azzurro: stabile
+  mixed: "#c9f4d5",        // Verde: gradiente intermedio
+  unstable: "#fff08a",     // Giallo: instabilità crescente
+  veryUnstable: "#f6cbd1", // Rosa: gradiente molto ripido
+  missing: "#f3f5f8",      // Fondo neutro quando manca un profilo attendibile
 };
 
 const STABILITY_LEGEND = [
@@ -90,9 +89,7 @@ export default function ProfessionalWindgram({
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  const { interpolateAtAltitude } = useMultiHourWindProfile({
+rimuovi ref canvas  const { interpolateAtAltitude } = useMultiHourWindProfile({
     lat: latitude,
     lon: longitude,
     siteAlt: altitude,
@@ -386,49 +383,6 @@ export default function ProfessionalWindgram({
     return Math.round(hourlyData.reduce((acc, h) => acc + h.zeroThermal, 0) / hourlyData.length);
   }, [hourlyData]);
 
-  // Disegna sfondo sul canvas con toni grigio-perla
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const w = canvas.width;
-    const h = canvas.height;
-    ctx.fillStyle = "#f8fafc";
-    ctx.fillRect(0, 0, w, h);
-
-    if (hourlyData.length === 0) return;
-
-    const quotaStep = 100;
-    const numSteps = Math.ceil((maxAlt - minAlt) / quotaStep);
-
-    for (let i = 0; i < numSteps; i++) {
-      const altLow = minAlt + i * quotaStep;
-      const altHigh = Math.min(altLow + quotaStep, maxAlt);
-      const yTop = getYFromAlt(altHigh) - margin.top;
-      const yBottom = getYFromAlt(altLow) - margin.top;
-      if (yBottom - yTop < 0.5) continue;
-
-      const profileIdx = Math.round((altLow - minAlt) / 250);
-      const profileLen = hourlyData[0]?.deltaTProfile?.length ?? 13;
-      const clampedIdx = Math.min(profileIdx, profileLen - 1);
-
-      const cellW = plotW / HOURS.length;
-      hourlyData.forEach((hourData) => {
-        const colIdx = HOURS.indexOf(hourData.hour);
-        if (colIdx < 0) return;
-        const profile = hourData.deltaTProfile;
-        const color = profile && profile.length > 0
-          ? getStabilityColor(profile[clampedIdx] ?? null)
-          : getStabilityColor(null);
-        ctx.globalAlpha = 0.95;
-        ctx.fillStyle = color;
-        ctx.fillRect(colIdx * cellW, yTop, cellW + 0.6, yBottom - yTop);
-      });
-    }
-  }, [hourlyData]);
-
   if (loading) {
     return (
       <div className="bg-slate-100 border border-slate-300 rounded-3xl p-10 flex flex-col items-center justify-center text-slate-700 shadow-sm">
@@ -450,7 +404,7 @@ export default function ProfessionalWindgram({
   }
 
   return (
-    <div className="space-y-4 font-sans select-none">
+    <div className="alpium-windgram space-y-4 font-sans select-none">
       {/* PANNELLO PRINCIPALE WINDGRAM - STYLE ALPIUM (Grigio perla) */}
       <div className="bg-slate-100 text-slate-800 rounded-2xl p-3 sm:p-5 shadow-sm border border-slate-300 backdrop-blur-md">
 
@@ -462,7 +416,7 @@ export default function ProfessionalWindgram({
               {siteName} &middot; <span className="text-sky-700 font-semibold">{formattedDateTitle}</span>
             </h2>
             <p className="text-[11px] text-slate-600 font-mono mt-0.5">
-              Windgram Aerologico Vertice &middot; Decollo {Math.round(altitude)}m &middot; Sounding Open-Meteo
+              Windgram aerologico &middot; Decollo {Math.round(altitude)} m &middot; Profilo previsto Open-Meteo
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs font-semibold">
@@ -470,7 +424,7 @@ export default function ProfessionalWindgram({
               Passo 250m
             </span>
             <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300">
-              Live Sounding
+              Previsione del modello
             </span>
           </div>
         </div>
@@ -478,14 +432,6 @@ export default function ProfessionalWindgram({
         {/* Grafico Aerologico SVG + Canvas */}
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 pb-1 mt-3">
           <div className="relative" style={{ overflow: "visible" }}>
-            <canvas
-              ref={canvasRef}
-              width={plotW}
-              height={plotH}
-              className="absolute"
-              aria-hidden="true"
-              style={{ left: margin.left, top: margin.top, width: plotW, height: plotH, zIndex: 0, pointerEvents: "none" }}
-            />
             <svg
               viewBox={`0 0 ${width} ${height}`}
               className="w-full h-auto min-w-[1000px]"
@@ -498,7 +444,49 @@ export default function ProfessionalWindgram({
                 </pattern>
               </defs>
 
-              <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#94a3b8" strokeWidth="1" />
+              {/* Fondo base del sounding */}
+              <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill={STABILITY_COLORS.missing} />
+
+              {/* Masse d'aria stile Alpium: celle orarie × fasce di quota, disegnate nell'SVG
+                  per rimanere visibili e allineate con griglia, barbule e curve su ogni browser. */}
+              {hourlyData.flatMap((hourData) => {
+                const hourIndex = HOURS.indexOf(hourData.hour);
+                if (hourIndex < 0) return [];
+                const cellW = plotW / HOURS.length;
+                const profile = hourData.deltaTProfile;
+                return Array.from({ length: Math.ceil((maxAlt - minAlt) / 100) }, (_, bandIndex) => {
+                  const altLow = minAlt + bandIndex * 100;
+                  const altHigh = Math.min(altLow + 100, maxAlt);
+                  const sampleAltitude = altLow + (altHigh - altLow) / 2;
+                  const profileIndex = Math.max(0, Math.min(
+                    (profile?.length ?? 1) - 1,
+                    Math.round((sampleAltitude - minAlt) / 250),
+                  ));
+                  const deltaT = profile?.[profileIndex] ?? null;
+                  const color = getStabilityColor(deltaT);
+                  return (
+                    <rect
+                      key={`air-mass-${hourData.hour}-${bandIndex}`}
+                      data-testid="windgram-stability-cell"
+                      data-stability-color={color}
+                      data-hour={hourData.hour}
+                      data-altitude-low={altLow}
+                      data-altitude-high={altHigh}
+                      x={margin.left + hourIndex * cellW}
+                      y={getYFromAlt(altHigh)}
+                      width={cellW + 0.4}
+                      height={Math.max(0.5, getYFromAlt(altLow) - getYFromAlt(altHigh))}
+                      fill={color}
+                      fillOpacity={0.98}
+                      stroke="#ffffff"
+                      strokeOpacity={0.26}
+                      strokeWidth="0.45"
+                    />
+                  );
+                });
+              })}
+
+              <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#8c9bad" strokeWidth="1" />
 
               {/* Livelli di Pressione */}
               {PRESSURE_LEVELS.map((lvl) => {
