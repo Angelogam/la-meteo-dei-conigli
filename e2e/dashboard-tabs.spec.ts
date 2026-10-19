@@ -163,11 +163,12 @@ test("desktop briefing fits the viewport without clipping the launch or forecast
   ).toEqual([]);
 });
 
-test("wide desktop keeps the right rail visible and raised map/windgram unclipped", async ({ page }) => {
+test("wide desktop keeps the right rail visible and native windgram unclipped", async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1050 });
   await page.goto("/");
   await expect(page.locator(".launch-windgram-top")).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByTestId("launch-forecast-widget")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("alpium-windgram-page")).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('iframe[src*="xctherm.com"]')).toHaveCount(0);
   await expect(page.locator(".flight-right-rail")).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(".storyboard-panel")).toHaveCount(0);
   await expect(page.locator(".story-chart-module")).toHaveCount(0);
@@ -182,7 +183,7 @@ test("wide desktop keeps the right rail visible and raised map/windgram unclippe
       ".flight-right-rail",
       ".flight-right-rail .flight-site-list",
       ".launch-windgram-top",
-      ".launch-forecast-widget",
+      ".alpium-windgram",
       ".forecast-section",
     ];
     const boxes = selectors.flatMap((selector) => {
@@ -213,4 +214,27 @@ test("wide desktop keeps the right rail visible and raised map/windgram unclippe
     box.left < -1 || box.right > layout.viewport + 1 || box.scrollWidth > box.clientWidth + 16
   );
   expect(clipped, JSON.stringify(layout)).toEqual([]);
+});
+
+
+test("API Mega List catalog links all source categories and its search filters locally", async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/catalogo-api");
+  await expect(page.getByRole("heading", { name: "API Mega List" })).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator(".api-mega-category")).toHaveCount(23);
+  const aiCollection = page.getByRole("link", { name: "Apri raccolta Intelligenza artificiale su GitHub" });
+  await expect(aiCollection).toHaveAttribute("href", /ai-apis-1555\/README\.md/);
+
+  const search = page.getByRole("textbox", { name: "Cerca una categoria" });
+  await search.fill("intelligenza");
+  await expect(page.locator(".api-mega-category")).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "Intelligenza artificiale" })).toBeVisible();
+
+  await search.fill("categoria-che-non-esiste");
+  await expect(page.locator(".api-mega-category")).toHaveCount(0);
+  await expect(page.getByText("Nessuna categoria corrisponde alla ricerca.")).toBeVisible();
+  expect(pageErrors, "The catalog page should not cause browser errors").toEqual([]);
 });
