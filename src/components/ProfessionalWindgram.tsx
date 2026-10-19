@@ -395,7 +395,7 @@ export default function ProfessionalWindgram({
 
     const w = canvas.width;
     const h = canvas.height;
-    ctx.fillStyle = "#eeeee7";
+    ctx.fillStyle = "#f8fafc";
     ctx.fillRect(0, 0, w, h);
 
     if (hourlyData.length === 0) return;
@@ -450,7 +450,7 @@ export default function ProfessionalWindgram({
   }
 
   return (
-    <div className="alpium-windgram space-y-4 font-sans select-none">
+    <div className="space-y-4 font-sans select-none">
       {/* PANNELLO PRINCIPALE WINDGRAM - STYLE ALPIUM (Grigio perla) */}
       <div className="bg-slate-100 text-slate-800 rounded-2xl p-3 sm:p-5 shadow-sm border border-slate-300 backdrop-blur-md">
 
@@ -462,7 +462,7 @@ export default function ProfessionalWindgram({
               {siteName} &middot; <span className="text-sky-700 font-semibold">{formattedDateTitle}</span>
             </h2>
             <p className="text-[11px] text-slate-600 font-mono mt-0.5">
-              Windgram aerologico &middot; Decollo {Math.round(altitude)} m &middot; Previsione Open-Meteo
+              Windgram Aerologico Vertice &middot; Decollo {Math.round(altitude)}m &middot; Sounding Open-Meteo
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs font-semibold">
@@ -470,7 +470,7 @@ export default function ProfessionalWindgram({
               Passo 250m
             </span>
             <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300">
-              Previsione del modello
+              Live Sounding
             </span>
           </div>
         </div>

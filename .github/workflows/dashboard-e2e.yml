@@ -43,15 +43,6 @@ jobs:
       - name: Run dashboard browser smoke tests
         run: pnpm exec playwright test --config=playwright.config.ts
 
-      - name: Upload Venti tab screenshot for visual review
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: venti-widget-preview
-          path: test-results/venti-widget-preview.png
-          if-no-files-found: warn
-          retention-days: 7
-
       - name: Upload Playwright report on failure
         if: failure()
         uses: actions/upload-artifact@v4
