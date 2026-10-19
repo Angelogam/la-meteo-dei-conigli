@@ -9,16 +9,13 @@ import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
 import HourlyTable from "@/components/HourlyTable";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
-import DayStoryboard from "@/components/DayStoryboard";
-import TabNav from "@/components/TabNav";
+remove old storyboard importimport TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import SectionErrorBoundary from "@/components/SectionErrorBoundary";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
-import Windgram from "@/components/Windgram";
-import RasoftWindgram from "@/components/RasoftWindgram";
-import DiagnosticaPanel from "@/components/DiagnosticaPanel";
+remove legacy windgram importremove duplicate Montoso windgram importimport DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 
@@ -103,7 +100,7 @@ export default function Index() {
             <button type="button" className={"flight-nav-item " + (activeTab === "meteo" ? "is-active" : "")} aria-pressed={activeTab === "meteo"} onClick={() => { setActiveTab("meteo"); document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
               <CloudSun aria-hidden="true" /><span>Meteo</span>
             </button>
-            <button type="button" className={"flight-nav-item " + (activeTab === "venti" ? "is-active" : "")} aria-pressed={activeTab === "venti"} onClick={() => { setActiveTab("venti"); document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
+            <button type="button" className={"flight-nav-item " + (activeTab === "venti" ? "is-active" : "")} aria-pressed={activeTab === "venti"} onClick={() => { setActiveTab("venti"); document.getElementById("windgram-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
               <Wind aria-hidden="true" /><span>Venti</span>
             </button>
             <button type="button" className={"flight-nav-item " + (activeTab === "termiche" ? "is-active" : "")} aria-pressed={activeTab === "termiche"} onClick={() => { setActiveTab("termiche"); document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
@@ -190,7 +187,19 @@ export default function Index() {
               <div className="flight-desk-main dashboard-content min-w-0">
                 {site && (
                   <>
-                    <DayStoryboard dayData={filteredDayData} siteName={site.site_name} selectedHour={selectedHour} onHourSelect={setSelectedHour} />
+                    <section id="windgram-section" className="launch-windgram-top min-w-0" aria-label="Mappa meteo e windgram del decollo selezionato">
+                      <VentiInterpolatiTab
+                        lat={site.lat}
+                        lon={site.lon}
+                        quotaDecollo={site.elevation_m}
+                        selectedDay={selectedDay}
+                        oraCorrente={selectedHour}
+                        onOraChange={setSelectedHour}
+                        siteName={site.site_name}
+                        rawData={rawApiResponse}
+                      />
+                    </section>
+
                     <section className="forecast-section flight-forecast-module min-w-0">
                       <PrevisioniGiornaliere
                         enrichedDaily={enrichedDaily}
@@ -204,33 +213,9 @@ export default function Index() {
                       />
                     </section>
 
-                    <section id="windgram-section" className="windgram-section windgram-featured min-w-0 overflow-hidden rounded-2xl p-3 sm:p-4">
-                      <Windgram
-                        dayData={filteredDayData}
-                        siteName={site.site_name}
-                        altitude={site.elevation_m}
-                        selectedHour={selectedHour}
-                        onHourSelect={setSelectedHour}
-                        selectedDay={selectedDay}
-                        dateLabel={dateLabel}
-                        lat={site.lat}
-                        lon={site.lon}
-                        fallbackData={filteredDayData}
-                        rawData={rawApiResponse}
-                      />
-                    </section>
-
-
-
-                    {site.id === "montoso-decollo-basso" && (
-                      <section className="flight-aux-chart min-w-0">
-                        <RasoftWindgram latitude={site.lat} longitude={site.lon} altitude={site.elevation_m} siteName="Montoso Alto" selectedDay={selectedDay} />
-                      </section>
-                    )}
-
                     <section id="details-section" className="details-section scroll-mt-4">
                       <div className="flight-subsection-heading"><div><span>STRUMENTI DI ANALISI</span><h2>Meteo e aerologia</h2></div><small>Seleziona una scheda</small></div>
-                      <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+                      <TabNav activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); if (tab === "venti") document.getElementById("windgram-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
                     </section>
 
                     <section className="flight-tab-content min-w-0" aria-live="polite">
@@ -249,9 +234,16 @@ export default function Index() {
                         />
                       )}
                       {activeTab === "venti" && (
-                        <SectionErrorBoundary title="La scheda Venti ha incontrato un errore">
-                          <VentiInterpolatiTab lat={site.lat} lon={site.lon} quotaDecollo={site.elevation_m} selectedDay={selectedDay} oraCorrente={selectedHour} onOraChange={setSelectedHour} siteName={site.site_name} rawData={rawApiResponse} />
-                        </SectionErrorBoundary>
+                        <div className="launch-windgram-shortcut" role="status">
+                          <Wind aria-hidden="true" />
+                          <div>
+                            <strong>Mappa e windgram sono già in alto</strong>
+                            <p>La mappa meteo e il profilo verticale del decollo selezionato sono sopra le previsioni giornaliere.</p>
+                          </div>
+                          <button type="button" onClick={() => document.getElementById("windgram-section")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+                            Vai al windgram
+                          </button>
+                        </div>
                       )}
                       {activeTab === "termiche" && (
                         <TermicheTab currentData={currentData as any} dayData={filteredDayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name }} selectedDay={selectedDay} />
