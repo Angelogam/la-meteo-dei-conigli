@@ -9,13 +9,12 @@ import SiteHeader from "@/components/SiteHeader";
 import UpdateTimer from "@/components/UpdateTimer";
 import HourlyTable from "@/components/HourlyTable";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
-remove old storyboard importimport TabNav from "@/components/TabNav";
+import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
-import SectionErrorBoundary from "@/components/SectionErrorBoundary";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
-remove legacy windgram importremove duplicate Montoso windgram importimport DiagnosticaPanel from "@/components/DiagnosticaPanel";
+import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 
