@@ -17,7 +17,7 @@ interface WindgramProps {
   rawData?: any; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
 }
 
-const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+const HOURS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
 
 const PRESSURE_LEVELS = [
   { hpa: 600, alt: 4000 },
@@ -530,6 +530,7 @@ rimuovi ref canvas  const { interpolateAtAltitude } = useMultiHourWindProfile({
                 const y = getYFromAlt(alt);
                 return (
                   <g key={`alt-${alt}`}>
+                    <line x1={margin.left} y1={y} x2={margin.left + plotW} y2={y} stroke="#8190a0" strokeWidth="0.45" opacity="0.42" />
                     <line x1={margin.left + plotW} y1={y} x2={margin.left + plotW + 4} y2={y} stroke="#475569" strokeWidth="0.8" />
                     <text x={margin.left + plotW + 6} y={y + 4} fill="#334155" fontSize="11" fontWeight="800" textAnchor="start" fontFamily="monospace">
                       {alt} m
@@ -671,7 +672,7 @@ rimuovi ref canvas  const { interpolateAtAltitude } = useMultiHourWindProfile({
 
               {/* Parapendio su Thermal Top */}
               {hourlyData.map((h, i) => {
-                if (h.thermalTop == null || !Number.isFinite(h.thermalTop)) return null;
+                if (h.thermalTop == null || !Number.isFinite(h.thermalTop) || h.thermalTop < minAlt || h.thermalTop > maxAlt) return null;
                 const x = getXFromHourIdx(i);
                 const y = getYFromAlt(h.thermalTop);
                 return (
