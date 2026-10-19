@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Activity, ArrowDownRight, CalendarDays, CloudSun, Compass, Database, Eye, Home, MapPin, Mountain, Sun, Thermometer, Wind } from "lucide-react";
+import { Activity, ArrowDownRight, CalendarDays, CloudSun, Database, Home, Mountain, Thermometer, Wind } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
@@ -71,20 +71,7 @@ export default function Index() {
     return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
   }, [selectedDay]);
 
-  const current = currentData as any;
-  const currentTemp = typeof current?.temperature === "number" ? current.temperature : null;
-  const currentDewPoint = typeof current?.dewPoint === "number" ? current.dewPoint : null;
-  const cloudBaseEstimate = site && currentTemp !== null && currentDewPoint !== null
-    ? site.elevation_m + Math.round(Math.max(0, currentTemp - currentDewPoint) * 125)
-    : null;
-  const quickParams = [
-    { label: "CAPE", value: typeof current?.cape === "number" ? String(Math.round(current.cape)) + " J/kg" : "N/D", note: "Instabilità convettiva" },
-    { label: "Base cumuli · stima", value: cloudBaseEstimate !== null ? cloudBaseEstimate.toLocaleString("it-IT") + " m" : "N/D", note: "Stima da temperatura e rugiada" },
-    { label: "Zero termico", value: typeof current?.freezingLevel === "number" ? Math.round(current.freezingLevel).toLocaleString("it-IT") + " m" : "N/D", note: "Quota prevista" },
-    { label: "Vento a 80 m", value: typeof current?.windSpeed80m === "number" ? String(Math.round(current.windSpeed80m)) + " km/h" : "N/D", note: "Modello meteo" },
-    { label: "Vento a 120 m", value: typeof current?.windSpeed120m === "number" ? String(Math.round(current.windSpeed120m)) + " km/h" : "N/D", note: "Modello meteo" },
-    { label: "Indice UV", value: typeof current?.uvIndex === "number" ? String(Math.round(current.uvIndex)) : "N/D", note: "Valore previsto" },
-  ];
+
 
   return (
     <div className="flight-website-shell min-h-screen">
@@ -142,33 +129,6 @@ export default function Index() {
               </div>
             </section>
 
-            {site && (
-              <section className="flight-brief-strip" aria-label="Riepilogo rapido delle condizioni di volo">
-                <div className="flight-brief-heading">
-                  <span>BRIEFING RAPIDO</span>
-                  <small>{dateLabel} · {String(selectedHour).padStart(2, "0")}:00</small>
-                </div>
-                <div className="flight-brief-metrics">
-                  <article className="flight-brief-metric">
-                    <span className="flight-brief-icon flight-brief-icon-temp"><Thermometer aria-hidden="true" /></span>
-                    <div><small>Temperatura</small><strong>{currentTemp !== null ? currentTemp.toLocaleString("it-IT", { maximumFractionDigits: 1 }) + " °C" : "N/D"}</strong><em>Al decollo</em></div>
-                  </article>
-                  <article className="flight-brief-metric">
-                    <span className="flight-brief-icon flight-brief-icon-wind"><Wind aria-hidden="true" /></span>
-                    <div><small>Vento al suolo</small><strong>{typeof current?.windSpeed === "number" ? Math.round(current.windSpeed) + " km/h" : "N/D"}</strong><em>{typeof current?.windDir === "number" ? Math.round(current.windDir) + "° di direzione" : "Direzione non disponibile"}</em></div>
-                  </article>
-                  <article className="flight-brief-metric">
-                    <span className="flight-brief-icon flight-brief-icon-cloud"><Mountain aria-hidden="true" /></span>
-                    <div><small>Base cumuli · stima</small><strong>{cloudBaseEstimate !== null ? cloudBaseEstimate.toLocaleString("it-IT") + " m" : "N/D"}</strong><em>Quota indicativa</em></div>
-                  </article>
-                  <article className="flight-brief-metric">
-                    <span className="flight-brief-icon flight-brief-icon-cape"><Activity aria-hidden="true" /></span>
-                    <div><small>Instabilità CAPE</small><strong>{typeof current?.cape === "number" ? Math.round(current.cape).toLocaleString("it-IT") + " J/kg" : "N/D"}</strong><em>Indice del modello</em></div>
-                  </article>
-                </div>
-                <p>Riepilogo indicativo: verifica sempre vento, meteo locale e bollettini ufficiali prima del decollo.</p>
-              </section>
-            )}
 
             {site && (
               <section id="overview" className="overview-section">
@@ -197,6 +157,19 @@ export default function Index() {
                   siteName={site.site_name}
                   siteId={site.id}
                   rawData={rawApiResponse}
+                />
+              </section>
+            )}
+
+            {site && (
+              <section id="flight-site-list" className="flight-site-list" aria-label="Selezione del decollo">
+                <DecolliCard
+                  decolli={mergedDecolli}
+                  selectedId={selectedId}
+                  selectedDay={selectedDay}
+                  isUpdating={aggressiveUpdating}
+                  error={aggressiveError}
+                  onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}
                 />
               </section>
             )}
@@ -266,54 +239,7 @@ export default function Index() {
                 )}
               </div>
 
-              <aside className="dashboard-sidebar flight-right-rail" aria-label="Riepilogo del decollo">
-                <UpdateTimer
-                  lastUpdate={aggressiveLastUpdate ?? lastUpdate}
-                  countdown={countdown}
-                  updating={updating || aggressiveUpdating}
-                  onRefresh={() => { loadWeather(); loadAggressiveWeather(); }}
-                />
 
-                {site && (
-                  <section className="flight-side-card flight-site-info-card" aria-labelledby="flight-site-info-title">
-                    <div className="flight-side-card-heading">
-                      <div><span>IL DECOLLO</span><h2 id="flight-site-info-title">Dati del sito</h2></div>
-                      <span className="flight-side-live"><i />Attivo</span>
-                    </div>
-                    <dl className="flight-site-data">
-                      <div><dt><MapPin aria-hidden="true" />Coordinate</dt><dd>{site.lat.toFixed(4)}, {site.lon.toFixed(4)}</dd></div>
-                      <div><dt><Mountain aria-hidden="true" />Altitudine</dt><dd>{site.elevation_m.toLocaleString("it-IT")} m s.l.m.</dd></div>
-                      <div><dt><Compass aria-hidden="true" />Esposizione</dt><dd>{site.orientation || "N/D"}</dd></div>
-                      <div><dt><Sun aria-hidden="true" />Alba · tramonto</dt><dd>{formatClock(enrichedDaily[selectedDay]?.sunrise) ?? "N/D"} · {formatClock(enrichedDaily[selectedDay]?.sunset) ?? "N/D"}</dd></div>
-                      <div><dt><Eye aria-hidden="true" />Visibilità</dt><dd>{typeof current?.visibility === "number" ? (current.visibility >= 10000 ? "10+ km" : (current.visibility / 1000).toLocaleString("it-IT", { maximumFractionDigits: 1 }) + " km") : "N/D"}</dd></div>
-                      <div><dt><Wind aria-hidden="true" />Vento attuale</dt><dd>{typeof current?.windSpeed === "number" ? Math.round(current.windSpeed) + " km/h" : "N/D"}{typeof current?.windDir === "number" ? " · " + Math.round(current.windDir) + "°" : ""}</dd></div>
-                    </dl>
-                  </section>
-                )}
-
-                <section id="flight-site-list" className="flight-site-list">
-                  <DecolliCard
-                    decolli={mergedDecolli}
-                    selectedId={selectedId}
-                    selectedDay={selectedDay}
-                    isUpdating={aggressiveUpdating}
-                    error={aggressiveError}
-                    onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}
-                  />
-                </section>
-
-                <section className="flight-side-card flight-parameters-card" aria-labelledby="flight-parameters-title">
-                  <div className="flight-side-card-heading"><div><span>PROFILO AEROLOGICO</span><h2 id="flight-parameters-title">Parametri di volo</h2></div><Activity aria-hidden="true" /></div>
-                  <div className="flight-quick-params">
-                    {quickParams.map((item) => (
-                      <div className="flight-quick-param" key={item.label}>
-                        <span>{item.label}</span><strong>{item.value}</strong><small>{item.note}</small>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="flight-param-note">Le stime non sostituiscono il controllo sul posto e i bollettini ufficiali.</p>
-                </section>
-              </aside>
             </div>
           </main>
 
