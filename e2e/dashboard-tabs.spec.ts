@@ -23,6 +23,22 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     const ventiContent = page.locator("section[aria-live='polite']");
     await expect(ventiContent).toBeVisible();
     await expect(ventiContent).not.toBeEmpty();
+
+    // The external map must mount as part of the Venti tab and carry coordinates
+    // for the selected API launch, not the hard-coded sample coordinates.
+    const forecastWidget = page.getByTestId("launch-forecast-widget");
+    await expect(forecastWidget).toBeVisible({ timeout: 10_000 });
+    const mapFrame = forecastWidget.locator(".launch-xctherm-frame iframe");
+    await expect(mapFrame).toBeVisible();
+    const mapSrc = await mapFrame.getAttribute("src");
+    expect(mapSrc).toBeTruthy();
+    const mapUrl = new URL(mapSrc!);
+    expect(mapUrl.origin).toBe("https://xctherm.com");
+    expect(Number(mapUrl.searchParams.get("lat"))).toBeGreaterThanOrEqual(-90);
+    expect(Number(mapUrl.searchParams.get("lat"))).toBeLessThanOrEqual(90);
+    expect(Number(mapUrl.searchParams.get("lon"))).toBeGreaterThanOrEqual(-180);
+    expect(Number(mapUrl.searchParams.get("lon"))).toBeLessThanOrEqual(180);
+    expect(mapUrl.searchParams.get("lang")).toBe("it");
     await expect(page.getByText("La scheda Venti ha incontrato un errore")).toHaveCount(0);
     expect(pageErrors, "Venti tab must not crash the React application").toEqual([]);
   });
