@@ -746,3 +746,71 @@ a:focus-visible,
   .launch-widget-open { transition: none; }
   .launch-widget-open:hover { transform: none; }
 }
+
+
+/* Alpium-inspired windgram treatment and resilient external map loading state. */
+.alpium-windgram { min-width: 0; color: #2f4135; }
+.alpium-windgram > .bg-slate-100 {
+  border-color: #cbd2c6 !important;
+  background: linear-gradient(145deg, #f2f1e9 0%, #e8eae1 100%) !important;
+  box-shadow: 0 8px 24px rgba(29, 49, 35, .06), inset 0 1px 0 rgba(255,255,255,.72) !important;
+  border-radius: 19px !important;
+}
+.alpium-windgram > .bg-slate-100 > .flex.items-center.justify-between {
+  border-color: #ccd3c7 !important;
+}
+.alpium-windgram h2 { color: #2c4032 !important; }
+.alpium-windgram .text-slate-900,
+.alpium-windgram .text-slate-800 { color: #304436 !important; }
+.alpium-windgram .text-slate-700 { color: #536658 !important; }
+.alpium-windgram .text-slate-600 { color: #6c7b6d !important; }
+.alpium-windgram .text-sky-600,
+.alpium-windgram .text-sky-700 { color: #5a826b !important; }
+.alpium-windgram .bg-emerald-100 { background: #dfe9dc !important; }
+.alpium-windgram .text-emerald-800 { color: #416a4c !important; }
+.alpium-windgram canvas { opacity: .92; }
+.alpium-windgram svg { border-radius: 7px; }
+.alpium-windgram .border-slate-300,
+.alpium-windgram .border-slate-400 { border-color: #c8d0c4 !important; }
+.alpium-windgram .bg-white { background: #f7f6ef !important; }
+.alpium-windgram .bg-slate-200 { background: #e3e7dd !important; }
+.alpium-windgram .border-slate-200 { border-color: #d9ded4 !important; }
+
+.launch-xctherm-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .65rem;
+  padding: 1.5rem;
+  text-align: center;
+  color: #34493b;
+  background: linear-gradient(145deg, #e5e8e0, #d9e0df);
+  transition: opacity .35s ease, visibility .35s ease;
+}
+.launch-xctherm-frame.is-ready .launch-xctherm-loading {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.launch-xctherm-loading strong { font-size: .95rem; font-weight: 850; }
+.launch-xctherm-loading > span:last-child { max-width: 34rem; color: #64766a; font-size: .76rem; line-height: 1.5; }
+.launch-xctherm-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(74, 116, 88, .22);
+  border-top-color: #4a7458;
+  border-radius: 50%;
+  animation: xctherm-spinner .85s linear infinite;
+}
+@keyframes xctherm-spinner { to { transform: rotate(360deg); } }
+@media (max-width: 640px) {
+  .alpium-windgram > .bg-slate-100 { border-radius: 14px !important; padding: .7rem !important; }
+  .alpium-windgram .text-emerald-800 { font-size: .62rem !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .launch-xctherm-loading, .launch-xctherm-spinner { transition: none; animation: none; }
+}
