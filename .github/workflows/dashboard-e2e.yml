@@ -43,6 +43,15 @@ jobs:
       - name: Run dashboard browser smoke tests
         run: pnpm exec playwright test --config=playwright.config.ts
 
+      - name: Upload Alpium-style windgram screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: alpium-windgram-colored-masses
+          path: test-results/alpium-windgram-colored-masses.png
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Upload Playwright report on failure
         if: failure()
         uses: actions/upload-artifact@v4
