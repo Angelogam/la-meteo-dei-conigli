@@ -197,7 +197,8 @@ export async function fetchFull(
   lon: number,
   hourlyParams: string,
   dailyParams: string,
-  currentParams: string
+  currentParams: string,
+  forecastDays: number = 3
 ): Promise<{ hourly: any; daily: any; current: any }> {
   const url = buildUrl({
     latitude: lat,
@@ -205,7 +206,7 @@ export async function fetchFull(
     hourly: hourlyParams,
     daily: dailyParams,
     current: currentParams,
-    forecast_days: 3,
+    forecast_days: forecastDays,
     models: DEFAULT_MODELS,
   });
   const directUrl = (url.includes("localhost:3000") || url.includes("/api/open-meteo"))
