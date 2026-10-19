@@ -186,7 +186,7 @@ export default function Index() {
               <div className="flight-desk-main dashboard-content min-w-0">
                 {site && (
                   <>
-                    <section id="windgram-section" className="launch-windgram-top min-w-0" aria-label="Mappa meteo e windgram del decollo selezionato">
+                    <section id="windgram-section" className="launch-windgram-top min-w-0" aria-label="Windgram aerologico del decollo selezionato">
                       <VentiInterpolatiTab
                         lat={site.lat}
                         lon={site.lon}
@@ -235,11 +235,11 @@ export default function Index() {
                         <div className="launch-windgram-shortcut" role="status">
                           <Wind aria-hidden="true" />
                           <div>
-                            <strong>Mappa e windgram sono già in alto</strong>
-                            <p>La mappa meteo e il profilo verticale seguono il decollo selezionato nella tua API.</p>
+                            <strong>Il windgram aerologico è già in alto</strong>
+                            <p>Il profilo verticale e le masse d’aria colorate corrispondono al decollo selezionato nella tua API.</p>
                           </div>
                           <button type="button" onClick={() => document.getElementById("windgram-section")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
-                            Vai a mappa e windgram
+                            Vai al windgram
                           </button>
                         </div>
                       )}
