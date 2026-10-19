@@ -186,18 +186,18 @@ export default function Index() {
             )}
 
             {site && (
-            <section id="windgram-section" className="launch-windgram-top min-w-0" aria-label="Windgram aerologico del decollo selezionato">
-              <VentiInterpolatiTab
-                lat={site.lat}
-                lon={site.lon}
-                quotaDecollo={site.elevation_m}
-                selectedDay={selectedDay}
-                oraCorrente={selectedHour}
-                onOraChange={setSelectedHour}
-                siteName={site.site_name}
-                rawData={rawApiResponse}
-              />
-            </section>
+              <section id="windgram-section" className="launch-windgram-top min-w-0" aria-label="Windgram aerologico del decollo selezionato">
+                <VentiInterpolatiTab
+                  lat={site.lat}
+                  lon={site.lon}
+                  quotaDecollo={site.elevation_m}
+                  selectedDay={selectedDay}
+                  oraCorrente={selectedHour}
+                  onOraChange={setSelectedHour}
+                  siteName={site.site_name}
+                  rawData={rawApiResponse}
+                />
+              </section>
             )}
 
             <div className="dashboard-layout flight-panels-grid">
