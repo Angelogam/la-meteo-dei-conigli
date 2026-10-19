@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { RefreshCw, FileText, Check, Copy, AlertTriangle, ShieldCheck, Wind, Thermometer, Cloud, ArrowUp } from "lucide-react";
 import { fetchHourly } from "@/lib/openMeteoClient";
 import { generateReportMeteo, type GeneratedReport } from "@/utils/generateReportMeteo";
@@ -17,26 +17,24 @@ interface WindgramProps {
   rawData?: any; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
 }
 
-const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 
 const PRESSURE_LEVELS = [
-  { hpa: 500, alt: 5500 },
-  { hpa: 550, alt: 5000 },
-  { hpa: 600, alt: 4200 },
-  { hpa: 650, alt: 3600 },
+  { hpa: 600, alt: 4000 },
+  { hpa: 650, alt: 3500 },
   { hpa: 700, alt: 3000 },
   { hpa: 750, alt: 2500 },
   { hpa: 800, alt: 2000 },
   { hpa: 850, alt: 1500 },
+  { hpa: 900, alt: 1000 },
 ];
 
-const ALT_TICKS = [6000, 5500, 5000, 4500, 4000, 3500, 3000, 2500, 2000, 1500, 1000];
+const ALT_TICKS = [4000, 3500, 3000, 2500, 2000, 1500, 1000];
 
 const computeDisplayAltitudes = (siteAlt: number): number[] => {
-  // Mostra i livelli al decollo e sopra: niente estensioni sintetiche sotto il sito.
-  const base = Math.min(6000, Math.ceil(siteAlt / 250) * 250);
+  const base = Math.floor(siteAlt / 250) * 250;
   const result: number[] = [];
-  for (let alt = 6000; alt >= base; alt -= 250) result.push(alt);
+  for (let alt = 4000; alt >= base; alt -= 250) result.push(alt);
   return result;
 };
 
@@ -92,6 +90,8 @@ export default function ProfessionalWindgram({
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
   const { interpolateAtAltitude } = useMultiHourWindProfile({
     lat: latitude,
     lon: longitude,
@@ -221,17 +221,13 @@ export default function ProfessionalWindgram({
   }, [latitude, longitude, selectedDay, rawData]);
 
   const width = 1200;
-  const height = 950;
-  const margin = { top: 102, right: 150, bottom: 78, left: 95 };
+  const height = 880;
+  const margin = { top: 65, right: 150, bottom: 70, left: 95 };
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
-  // Il diagramma segue la quota del decollo e arriva a 6000 m come nel riferimento.
-  const minAlt = Math.min(5750, Math.max(500, Math.floor(altitude / 10) * 10));
-  const maxAlt = 6000;
-  const stabilitySteps = Math.ceil((maxAlt - minAlt) / 100);
-  const visiblePressureLevels = PRESSURE_LEVELS.filter((level) => level.alt >= minAlt && level.alt <= maxAlt);
-  const visibleAltitudeTicks = ALT_TICKS.filter((tick) => tick >= minAlt && tick <= maxAlt);
+  const minAlt = 1000;
+  const maxAlt = 4200;
 
   const getYFromAlt = (alt: number) => {
     const clamped = Math.min(maxAlt, Math.max(minAlt, alt));
@@ -254,20 +250,17 @@ export default function ProfessionalWindgram({
       const t = h.temperature_2m[idx];
       if (t === undefined || t === null) return null as any;
       const tNum = Number(t);
-      const dew = h.dew_point_2m?.[idx] != null ? Number(h.dew_point_2m[idx]) : null;
-      const rad = h.shortwave_radiation?.[idx] != null ? Number(h.shortwave_radiation[idx]) : null;
-      const cloud = h.cloud_cover?.[idx] != null ? Number(h.cloud_cover[idx]) : null;
-      const cloudLow = h.cloud_cover_low?.[idx] != null ? Number(h.cloud_cover_low[idx]) : null;
-      const cloudMid = h.cloud_cover_mid?.[idx] != null ? Number(h.cloud_cover_mid[idx]) : null;
-      const cloudHigh = h.cloud_cover_high?.[idx] != null ? Number(h.cloud_cover_high[idx]) : null;
-      const precip = h.precipitation?.[idx] != null ? Number(h.precipitation[idx]) : null;
-      const wind10 = h.wind_speed_10m?.[idx] != null ? Number(h.wind_speed_10m[idx]) : null;
-      const windDir10 = h.wind_direction_10m?.[idx] != null ? Number(h.wind_direction_10m[idx]) : null;
-      const freeze = h.freezing_level_height?.[idx] != null ? Number(h.freezing_level_height[idx]) : null;
+      const dew = h.dew_point_2m[idx] !== undefined ? Number(h.dew_point_2m[idx]) : null;
+      const rad = h.shortwave_radiation?.[idx] !== undefined ? Number(h.shortwave_radiation[idx]) : null;
+      const cloud = h.cloud_cover?.[idx] !== undefined ? Number(h.cloud_cover[idx]) : null;
+      const precip = h.precipitation?.[idx] !== undefined ? Number(h.precipitation[idx]) : 0;
+      const wind10 = h.wind_speed_10m?.[idx] !== undefined ? Number(h.wind_speed_10m[idx]) : null;
+      const windDir10 = h.wind_direction_10m?.[idx] !== undefined ? Number(h.wind_direction_10m[idx]) : null;
+      const freeze = h.freezing_level_height?.[idx] !== undefined ? Number(h.freezing_level_height[idx]) : null;
 
       const derived = hourDerivedMap.get(targetHour);
       const cloudBase = derived?.cloudBase ?? null;
-      const cloudPct = cloud != null && Number.isFinite(cloud) ? Math.round(cloud) : null;
+      const cloudPct = Math.max(2, Math.min(95, Math.round(cloud ?? 0)));
 
       const thermalTop = derived?.estimatedThermalTop ?? null;
       const thermalAvg = derived?.estimatedThermalActivity ?? null;
@@ -313,22 +306,18 @@ export default function ProfessionalWindgram({
 
       const levelWinds = displayAltitudes.map((alt) => {
         const interp = interpolateAtAltitude(targetHour, alt);
-        // Non riempire livelli mancanti col vento al suolo: omettere un vettore è più corretto.
-        return { alt, speed: interp?.speed ?? null, dir: interp?.dir ?? null };
+        return { alt, speed: interp?.speed ?? wind10, dir: interp?.dir ?? windDir10 };
       });
 
       return {
         hour: targetHour,
         thermalAvg,
         tempGround: Math.round(tNum),
-        windGround: wind10 != null ? Math.round(wind10) : null,
-        windDirGround: windDir10 != null ? Math.round(windDir10) : null,
+        windGround: Math.round(wind10 ?? 0),
+        windDirGround: Math.round(windDir10 ?? 0),
         precip,
         cloudCover: cloud,
-        cloudLow,
-        cloudMid,
-        cloudHigh,
-        zeroThermal: freeze != null && Number.isFinite(freeze) ? Math.round(freeze) : null,
+        zeroThermal: Math.round(freeze ?? 0),
         thermalTop,
         cloudBase,
         cloudPct,
@@ -374,25 +363,15 @@ export default function ProfessionalWindgram({
 
   const zeroThermalPath = useMemo(() => {
     if (hourlyData.length === 0) return "";
-    const segments: string[] = [];
-    let drawing = false;
-    hourlyData.forEach((h, i) => {
-      if (h.zeroThermal == null || !Number.isFinite(h.zeroThermal) || h.zeroThermal < minAlt || h.zeroThermal > maxAlt) {
-        drawing = false;
-        return;
-      }
-      segments.push(`${drawing ? "L" : "M"} ${getXFromHourIdx(i)},${getYFromAlt(h.zeroThermal)}`);
-      drawing = true;
-    });
-    return segments.join(" ");
-  }, [hourlyData, minAlt, maxAlt]);
+    return hourlyData.map((h, i) => `${getXFromHourIdx(i)},${getYFromAlt(h.zeroThermal)}`).join(" ");
+  }, [hourlyData]);
 
   const thermalTopCurve = useMemo(() => {
     if (hourlyData.length === 0) return "";
     let drawing = false;
     const segments: string[] = [];
     hourlyData.forEach((h, i) => {
-      if (h.thermalTop == null || !Number.isFinite(h.thermalTop) || h.thermalTop < minAlt || h.thermalTop > maxAlt) {
+      if (h.thermalTop == null || !Number.isFinite(h.thermalTop)) {
         drawing = false;
         return;
       }
@@ -400,15 +379,55 @@ export default function ProfessionalWindgram({
       drawing = true;
     });
     return segments.join(" ");
-  }, [hourlyData, minAlt, maxAlt]);
+  }, [hourlyData]);
 
   const avgZeroThermal = useMemo(() => {
-    const values = hourlyData
-      .map((h) => h.zeroThermal)
-      .filter((value): value is number => value != null && Number.isFinite(value) && value >= minAlt && value <= maxAlt);
-    if (values.length === 0) return null;
-    return Math.round(values.reduce((acc, value) => acc + value, 0) / values.length);
-  }, [hourlyData, minAlt, maxAlt]);
+    if (hourlyData.length === 0) return 3000;
+    return Math.round(hourlyData.reduce((acc, h) => acc + h.zeroThermal, 0) / hourlyData.length);
+  }, [hourlyData]);
+
+  // Disegna sfondo sul canvas con toni grigio-perla
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.fillStyle = "#f8fafc";
+    ctx.fillRect(0, 0, w, h);
+
+    if (hourlyData.length === 0) return;
+
+    const quotaStep = 100;
+    const numSteps = Math.ceil((maxAlt - minAlt) / quotaStep);
+
+    for (let i = 0; i < numSteps; i++) {
+      const altLow = minAlt + i * quotaStep;
+      const altHigh = Math.min(altLow + quotaStep, maxAlt);
+      const yTop = getYFromAlt(altHigh) - margin.top;
+      const yBottom = getYFromAlt(altLow) - margin.top;
+      if (yBottom - yTop < 0.5) continue;
+
+      const profileIdx = Math.round((altLow - minAlt) / 250);
+      const profileLen = hourlyData[0]?.deltaTProfile?.length ?? 13;
+      const clampedIdx = Math.min(profileIdx, profileLen - 1);
+
+      const cellW = plotW / HOURS.length;
+      hourlyData.forEach((hourData) => {
+        const colIdx = HOURS.indexOf(hourData.hour);
+        if (colIdx < 0) return;
+        const profile = hourData.deltaTProfile;
+        const color = profile && profile.length > 0
+          ? getStabilityColor(profile[clampedIdx] ?? null)
+          : getStabilityColor(null);
+        ctx.globalAlpha = 0.95;
+        ctx.fillStyle = color;
+        ctx.fillRect(colIdx * cellW, yTop, cellW + 0.6, yBottom - yTop);
+      });
+    }
+  }, [hourlyData]);
 
   if (loading) {
     return (
@@ -431,7 +450,7 @@ export default function ProfessionalWindgram({
   }
 
   return (
-    <div className="alpium-windgram space-y-4 font-sans select-none">
+    <div className="space-y-4 font-sans select-none">
       {/* PANNELLO PRINCIPALE WINDGRAM - STYLE ALPIUM (Grigio perla) */}
       <div className="bg-slate-100 text-slate-800 rounded-2xl p-3 sm:p-5 shadow-sm border border-slate-300 backdrop-blur-md">
 
@@ -443,7 +462,7 @@ export default function ProfessionalWindgram({
               {siteName} &middot; <span className="text-sky-700 font-semibold">{formattedDateTitle}</span>
             </h2>
             <p className="text-[11px] text-slate-600 font-mono mt-0.5">
-              Windgram aerologico &middot; Decollo {Math.round(altitude)}m &middot; Profilo previsto Open-Meteo
+              Windgram Aerologico Vertice &middot; Decollo {Math.round(altitude)}m &middot; Sounding Open-Meteo
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs font-semibold">
@@ -451,7 +470,7 @@ export default function ProfessionalWindgram({
               Passo 250m
             </span>
             <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300">
-              Previsione del modello
+              Live Sounding
             </span>
           </div>
         </div>
@@ -459,79 +478,30 @@ export default function ProfessionalWindgram({
         {/* Grafico Aerologico SVG + Canvas */}
         <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 pb-1 mt-3">
           <div className="relative" style={{ overflow: "visible" }}>
+            <canvas
+              ref={canvasRef}
+              width={plotW}
+              height={plotH}
+              className="absolute"
+              aria-hidden="true"
+              style={{ left: margin.left, top: margin.top, width: plotW, height: plotH, zIndex: 0, pointerEvents: "none" }}
+            />
             <svg
               viewBox={`0 0 ${width} ${height}`}
               className="w-full h-auto min-w-[1000px]"
               style={{ shapeRendering: "geometricPrecision", position: "relative", zIndex: 1 }}
             >
               <defs>
-                <pattern id="cloudHatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                  <line x1="0" y1="0" x2="0" y2="8" stroke="#596b5c" strokeWidth="1.5" strokeOpacity="0.48" />
-                </pattern>
                 <pattern id="rainHatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
                   <rect width="9" height="9" fill="#ffffff" fillOpacity="0.3" />
                   <line x1="0" y1="0" x2="0" y2="9" stroke="#0284c7" strokeWidth="2" strokeOpacity="0.4" />
                 </pattern>
               </defs>
 
-              <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="#eeeee7" stroke="#94a3b8" strokeWidth="1" />
+              <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#94a3b8" strokeWidth="1" />
 
-              {/* Heatmap di stabilità: ogni cella usa il gradiente disponibile per quell'ora/quota. */}
-              {hourlyData.flatMap((hourData) => {
-                const hourIndex = HOURS.indexOf(hourData.hour);
-                if (hourIndex < 0) return [];
-                const cellW = plotW / HOURS.length;
-                const profile = hourData.deltaTProfile;
-                return Array.from({ length: stabilitySteps }, (_, step) => {
-                  const altLow = minAlt + step * 100;
-                  const altHigh = Math.min(altLow + 100, maxAlt);
-                  const profileIndex = Math.min(
-                    Math.max(0, Math.round((altLow - minAlt) / 250)),
-                    Math.max(0, (profile?.length ?? 1) - 1),
-                  );
-                  const color = profile && profile.length > 0
-                    ? getStabilityColor(profile[profileIndex] ?? null)
-                    : getStabilityColor(null);
-                  return (
-                    <rect
-                      key={`stability-${hourData.hour}-${step}`}
-                      x={margin.left + hourIndex * cellW}
-                      y={getYFromAlt(altHigh)}
-                      width={cellW + 0.5}
-                      height={Math.max(0.5, getYFromAlt(altLow) - getYFromAlt(altHigh))}
-                      fill={color}
-                      fillOpacity={0.94}
-                    />
-                  );
-                });
-              })}
-
-              {/* Tratteggio nuvoloso soltanto nelle fasce fornite dal modello (cloud cover low/mid). */}
-              {hourlyData.flatMap((hourData) => {
-                const hourIndex = HOURS.indexOf(hourData.hour);
-                if (hourIndex < 0) return [];
-                const cellW = plotW / HOURS.length;
-                const bands = [
-                  { id: "low", cover: hourData.cloudLow, bottom: minAlt, top: Math.min(2000, maxAlt) },
-                  { id: "mid", cover: hourData.cloudMid, bottom: Math.max(2000, minAlt), top: Math.min(6000, maxAlt) },
-                ];
-                return bands
-                  .filter((band) => band.cover != null && Number.isFinite(band.cover) && band.cover >= 45 && band.top > band.bottom)
-                  .map((band) => (
-                    <rect
-                      key={`cloud-${hourData.hour}-${band.id}`}
-                      x={margin.left + hourIndex * cellW}
-                      y={getYFromAlt(band.top)}
-                      width={cellW + 0.5}
-                      height={Math.max(0.5, getYFromAlt(band.bottom) - getYFromAlt(band.top))}
-                      fill="url(#cloudHatch)"
-                      fillOpacity={Math.min(0.78, Math.max(0.18, (band.cover ?? 0) / 100))}
-                    />
-                  ));
-              })}
-
-              {/* Livelli di pressione approssimati, filtrati sull'intervallo visibile. */}
-              {visiblePressureLevels.map((lvl) => {
+              {/* Livelli di Pressione */}
+              {PRESSURE_LEVELS.map((lvl) => {
                 const y = getYFromAlt(lvl.alt);
                 return (
                   <g key={`grid-${lvl.hpa}`}>
@@ -544,7 +514,7 @@ export default function ProfessionalWindgram({
               })}
 
               {/* Ticks Altitudine */}
-              {visibleAltitudeTicks.map((alt) => {
+              {ALT_TICKS.map((alt) => {
                 const y = getYFromAlt(alt);
                 return (
                   <g key={`alt-${alt}`}>
@@ -563,24 +533,6 @@ export default function ProfessionalWindgram({
                   <line key={`vline-${i}`} x1={x} y1={margin.top} x2={x} y2={margin.top + plotH} stroke="#94a3b8" strokeWidth={i === 0 || i === HOURS.length ? 1 : 0.5} opacity={0.6} />
                 );
               })}
-
-              {/* Righe superiori: ascendenza stimata e copertura nuvolosa per ora. */}
-              <text x={margin.left + plotW / 2} y={margin.top - 76} fill="#68786b" fontSize="11" fontWeight="800" textAnchor="middle">
-                Ascendenza stimata (m/s)
-              </text>
-              {hourlyData.map((h, i) => (
-                <text key={`rate-meta-${h.hour}`} x={getXFromHourIdx(i)} y={margin.top - 54} fill="#a35f2c" fontSize="12" fontWeight="900" textAnchor="middle">
-                  {h.thermalAvg != null && Number.isFinite(h.thermalAvg) ? h.thermalAvg.toFixed(1) : "—"}
-                </text>
-              ))}
-              <text x={margin.left + plotW / 2} y={margin.top - 29} fill="#7b6c58" fontSize="10" fontWeight="800" textAnchor="middle">
-                Copertura nuvolosa totale (%)
-              </text>
-              {hourlyData.map((h, i) => (
-                <text key={`cloud-meta-${h.hour}`} x={getXFromHourIdx(i)} y={margin.top - 8} fill={h.cloudPct != null ? "#a35f2c" : "#899187"} fontSize="11" fontWeight="800" textAnchor="middle">
-                  {h.cloudPct != null ? h.cloudPct : "—"}
-                </text>
-              ))}
 
               {/* Precipitazioni */}
               {hourlyData.map((h) => {
@@ -615,10 +567,9 @@ export default function ProfessionalWindgram({
 
               {/* Isoterma Zero Termico */}
               {zeroThermalPath && (
-                <path d={zeroThermalPath} fill="none" stroke="#6c94a4" strokeWidth="1.8" strokeDasharray="5 3" strokeLinecap="round" />
+                <polyline points={zeroThermalPath} fill="none" stroke="#0284c7" strokeWidth="1.8" strokeDasharray="5 3" strokeLinecap="round" />
               )}
               {hourlyData.map((h, i) => {
-                if (h.zeroThermal == null || !Number.isFinite(h.zeroThermal) || h.zeroThermal < minAlt || h.zeroThermal > maxAlt) return null;
                 const x = getXFromHourIdx(i);
                 const y = getYFromAlt(h.zeroThermal);
                 return (
@@ -629,14 +580,12 @@ export default function ProfessionalWindgram({
                 );
               })}
 
-              {avgZeroThermal != null && (
-                <g transform={`translate(${margin.left + plotW - 130}, ${getYFromAlt(avgZeroThermal) - 12})`}>
-                  <rect x="0" y="0" width="125" height="22" rx="4" fill="#6c94a4" opacity="0.95" />
-                  <text x="62" y="15" fill="#ffffff" fontSize="10" fontWeight="800" textAnchor="middle" fontFamily="monospace">
-                    0 °C · {avgZeroThermal.toLocaleString("it-IT")} m
-                  </text>
-                </g>
-              )}
+              <g transform={`translate(${margin.left + plotW - 130}, ${getYFromAlt(avgZeroThermal) - 12})`}>
+                <rect x="0" y="0" width="125" height="22" rx="4" fill="#0284c7" opacity="0.9" />
+                <text x="62" y="15" fill="#ffffff" fontSize="10" fontWeight="800" textAnchor="middle" fontFamily="monospace">
+                  0 °C · {avgZeroThermal} m
+                </text>
+              </g>
 
               {/* Curva del Thermal Top (Sviluppo verticale convettivo) */}
               {thermalTopCurve && (
@@ -645,7 +594,7 @@ export default function ProfessionalWindgram({
 
               {/* Parapendio su Thermal Top */}
               {hourlyData.map((h, i) => {
-                if (h.thermalTop == null || !Number.isFinite(h.thermalTop) || h.thermalTop < minAlt || h.thermalTop > maxAlt) return null;
+                if (h.thermalTop == null || !Number.isFinite(h.thermalTop)) return null;
                 const x = getXFromHourIdx(i);
                 const y = getYFromAlt(h.thermalTop);
                 return (
@@ -657,11 +606,22 @@ export default function ProfessionalWindgram({
                 );
               })}
 
-              {/* La copertura è indicata dalla fascia tratteggiata, non trasformata in un cumulo non previsto dal modello. */}
+              {/* Nuvoletta Cumulo sopra la quota */}
+              {hourlyData.map((h, i) => {
+                if (i === 0 || i === hourlyData.length - 1 || h.thermalTop == null || !Number.isFinite(h.thermalTop)) return null;
+                const x = getXFromHourIdx(i);
+                const y = getYFromAlt(h.thermalTop) - 50;
+                return (
+                  <g key={`cloud-${i}`} transform={`translate(${x}, ${y})`}>
+                    <path d="M -20,8 A 9,9 0 0,1 -10,-5 A 12,12 0 0,1 8,-7 A 10,10 0 0,1 20,3 A 6,6 0 0,1 19,9 L -18,9 A 6,6 0 0,1 -20,8 Z" fill="#ffffff" stroke="#64748b" strokeWidth="2" />
+                    <text x="0" y="7" fill="#1e293b" fontSize="10" fontWeight="900" textAnchor="middle">{h.cloudPct}%</text>
+                  </g>
+                );
+              })}
 
               {/* Badge Base Cumuli & Rateo ascensionale */}
               {hourlyData.map((h, i) => {
-                if (i === 0 || i === hourlyData.length - 1 || h.thermalTop == null || !Number.isFinite(h.thermalTop) || h.thermalTop < minAlt || h.thermalTop > maxAlt || h.cloudBase == null || h.thermalAvg == null) return null;
+                if (i === 0 || i === hourlyData.length - 1 || h.thermalTop == null || !Number.isFinite(h.thermalTop)) return null;
                 const x = getXFromHourIdx(i);
                 const paraY = getYFromAlt(h.thermalTop);
                 const badgeY = paraY + 10;
@@ -683,17 +643,15 @@ export default function ProfessionalWindgram({
               {hourlyData.map((calc, i) => (
                 <g key={`col-${i}`}>
                   {calc.levelWinds.map((windLevel) => {
-                    if (windLevel.speed == null || windLevel.dir == null || !Number.isFinite(windLevel.speed) || !Number.isFinite(windLevel.dir)) return null;
                     const x = getXFromHourIdx(i);
                     const y = getYFromAlt(windLevel.alt);
                     const currentHourData = hourlyData[i];
-                    const isNearThermal = currentHourData.thermalTop != null
-                      && Math.abs(y - getYFromAlt(currentHourData.thermalTop)) < 15;
+                    const isNearThermal = Math.abs(y - getYFromAlt(currentHourData.thermalTop)) < 15;
                     return (
                       <g key={`wb-${i}-${Math.round(windLevel.alt)}`}>
                         {renderWindBarb(x, y, windLevel.speed, windLevel.dir)}
                         {!isNearThermal && (
-                          <text x={x + 22} y={y + 3} fill="#2f4b3a" fontSize="11" fontWeight="700" textAnchor="start" fontFamily="monospace">
+                          <text x={x + 22} y={y + 3} fill="#1e293b" fontSize="11" fontWeight="700" textAnchor="start" fontFamily="monospace">
                             {Math.round(windLevel.speed)}/{getDirLetter(windLevel.dir)}
                           </text>
                         )}

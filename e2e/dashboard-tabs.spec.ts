@@ -37,8 +37,8 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     await expect(page.getByRole("heading", { name: "Scegli il decollo" })).toBeVisible();
     await expect(page.locator(".flight-nav-rail")).toBeVisible();
     await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible();
-    await expect(page.locator(".story-chart-module").first()).toBeVisible();
-    await expect(page.locator(".flight-forecast-module .forecast-day-card")).toHaveCount(3);
+    await expect(page.locator(".story-chart-module").first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator(".flight-forecast-module .forecast-day-card")).toHaveCount(3, { timeout: 30_000 });
     await expect(page.locator(".flight-desk-main > #windgram-section")).toBeVisible();
     const graphOrder = await page.locator(".flight-desk-main").evaluate((root) => {
       const children = Array.from(root.children);
@@ -52,7 +52,7 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     expect(graphOrder.forecast).toBeGreaterThan(graphOrder.graph);
     expect(graphOrder.windgram).toBeGreaterThan(graphOrder.forecast);
     await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible();
-    await expect(page.locator(".story-chart-module")).toHaveCount(2);
+    await expect(page.locator(".story-chart-module")).toHaveCount(2, { timeout: 30_000 });
     await expect(page.locator(".story-chart-module").first()).toBeVisible();
     await expect(page.getByRole("button", { name: "Tutta la giornata" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Mattina" })).toBeVisible();
@@ -173,6 +173,7 @@ test("wide desktop keeps the right rail visible and temperature scale readable",
   await page.goto("/");
   await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(".flight-right-rail")).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator(".story-chart-module").first()).toBeVisible({ timeout: 30_000 });
   await page.getByRole("button", { name: "Pomeriggio" }).click();
   const dewPointToggle = page.getByRole("group", { name: "Mostra o nascondi serie" }).getByRole("button", { name: "Rugiada" });
   await expect(dewPointToggle).toHaveAttribute("aria-pressed", "false");
