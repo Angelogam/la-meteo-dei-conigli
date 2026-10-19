@@ -917,3 +917,99 @@ a:focus-visible,
 @media (prefers-reduced-motion: reduce) {
   .api-mega-category { transition: none; }
 }
+
+
+/* XC Therm map is an independent embedded panel above the native windgram. */
+.xctherm-launch-map {
+  width: 100%;
+  min-width: 0;
+  padding: clamp(.85rem, 1.7vw, 1.25rem);
+  border: 1px solid rgba(127, 173, 195, .24);
+  border-radius: 18px;
+  color: #deebf1;
+  background: linear-gradient(145deg, #102b3d, #0a1e2c);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .13);
+}
+.xctherm-launch-map-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: .8rem;
+}
+.xctherm-launch-map-kicker {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin: 0 0 .4rem;
+  color: #91c8b8;
+  font-size: .63rem;
+  font-weight: 850;
+  letter-spacing: .13em;
+}
+.xctherm-launch-map-header h3 {
+  margin: 0;
+  color: #eef7fa;
+  font-size: clamp(1rem, 1.7vw, 1.32rem);
+  font-weight: 850;
+  letter-spacing: -.025em;
+}
+.xctherm-launch-map-header p:last-child {
+  margin: .34rem 0 0;
+  color: #9bb4c3;
+  font-size: .72rem;
+}
+.xctherm-open-map {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  min-height: 38px;
+  padding: .55rem .75rem;
+  border: 1px solid rgba(136, 190, 177, .3);
+  border-radius: 10px;
+  color: #e8f7f2;
+  background: rgba(49, 105, 91, .55);
+  font-size: .72rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+.xctherm-open-map:hover { background: rgba(59, 125, 104, .7); }
+.xctherm-launch-map-frame {
+  width: 100%;
+  min-width: 0;
+  height: clamp(540px, 68vh, 760px);
+  overflow: hidden;
+  border: 1px solid rgba(150, 180, 193, .32);
+  border-radius: 13px;
+  background: #dbe3e2;
+}
+.xctherm-launch-map-frame iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 540px;
+  border: 0;
+}
+.xctherm-launch-map-caption {
+  margin: .65rem .1rem 0;
+  color: #8faabb;
+  font-size: .68rem;
+  line-height: 1.55;
+}
+.xctherm-launch-map-error {
+  padding: 1rem;
+  border: 1px solid rgba(227, 174, 105, .3);
+  border-radius: 12px;
+  color: #eacb9d;
+  background: rgba(113, 77, 31, .15);
+  font-size: .8rem;
+}
+@media (max-width: 640px) {
+  .xctherm-launch-map { padding: .7rem; border-radius: 14px; }
+  .xctherm-launch-map-header { align-items: stretch; flex-direction: column; }
+  .xctherm-open-map { width: 100%; }
+  .xctherm-launch-map-frame { height: 570px; min-height: 570px; border-radius: 10px; }
+  .xctherm-launch-map-frame iframe { min-height: 570px; }
+}
