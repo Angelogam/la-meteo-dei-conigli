@@ -2,6 +2,7 @@
 
 import { Calendar, MapPin, Wind } from "lucide-react";
 import ProfessionalWindgram from "@/components/ProfessionalWindgram";
+import LaunchForecastWidgets from "@/components/LaunchForecastWidgets";
 
 interface VentiInterpolatiTabProps {
   lat: number;
@@ -24,8 +25,7 @@ function formatDateShort(date: Date): string {
 
 /**
  * Vista aerologica del decollo selezionato.
- * Usa esclusivamente il windgram nativo Open-Meteo: niente iframe esterni o
- * loghi di provider terzi sopra la matrice del profilo atmosferico.
+ * Mantiene la mappa XC Therm separata dal windgram aerologico nativo, come richiesto.
  */
 export default function VentiInterpolatiTab({
   lat,
@@ -57,6 +57,13 @@ export default function VentiInterpolatiTab({
           </p>
         </div>
       </div>
+
+      <LaunchForecastWidgets
+        lat={lat}
+        lon={lon}
+        altitude={quotaDecollo}
+        siteName={siteName || "Decollo selezionato"}
+      />
 
       <ProfessionalWindgram
         latitude={lat}
