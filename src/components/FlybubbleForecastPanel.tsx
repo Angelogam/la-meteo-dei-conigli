@@ -13,9 +13,9 @@ interface FlybubbleForecastPanelProps {
  * Flybubble embed IDs are site-specific. Only add IDs after verifying the
  * matching Flybubble page; never reuse another launch's ID as a fallback.
  */
-const FLYBUBBLE_EMBED_IDS: Record<string, string> = {
-  // Intentionally empty until matching Piemonte launch IDs are verified.
-  // Example format: "verified-site-key": "verified-numeric-id",
+const FLYBUBBLE_SITES: Record<string, { embedUrl: string; forecastUrl: string }> = {
+  // Intentionally empty until matching Piemonte embed and forecast URLs are verified.
+  // Example: "site-id": { embedUrl: "exact-embed-url", forecastUrl: "exact-forecast-url" },
 };
 
 export default function FlybubbleForecastPanel({
@@ -24,9 +24,9 @@ export default function FlybubbleForecastPanel({
   lat,
   lon,
 }: FlybubbleForecastPanelProps) {
-  const embedId = FLYBUBBLE_EMBED_IDS[siteId];
-  const embedUrl = embedId ? `https://weather.flybubble.com/it/embed/${embedId}` : null;
-  const forecastUrl = embedId ? `https://weather.flybubble.com/it/${siteId}-${embedId}` : "https://weather.flybubble.com/it";
+  const flybubbleSite = FLYBUBBLE_SITES[siteId];
+  const embedUrl = flybubbleSite?.embedUrl ?? null;
+  const forecastUrl = flybubbleSite?.forecastUrl ?? "https://weather.flybubble.com/it";
 
   return (
     <section className="flybubble-panel" aria-labelledby="flybubble-panel-title" data-testid="flybubble-forecast-panel">
