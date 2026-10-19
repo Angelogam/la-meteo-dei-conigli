@@ -3,6 +3,7 @@
 import { Calendar, MapPin, Wind } from "lucide-react";
 import ProfessionalWindgram from "@/components/ProfessionalWindgram";
 import LaunchForecastWidgets from "@/components/LaunchForecastWidgets";
+import FlybubbleForecastPanel from "@/components/FlybubbleForecastPanel";
 
 interface VentiInterpolatiTabProps {
   lat: number;
