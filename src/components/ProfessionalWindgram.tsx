@@ -443,7 +443,7 @@ export default function ProfessionalWindgram({
               {siteName} &middot; <span className="text-sky-700 font-semibold">{formattedDateTitle}</span>
             </h2>
             <p className="text-[11px] text-slate-600 font-mono mt-0.5">
-              Windgram Aerologico Vertice &middot; Decollo {Math.round(altitude)}m &middot; Sounding Open-Meteo
+              Windgram aerologico &middot; Decollo {Math.round(altitude)}m &middot; Profilo previsto Open-Meteo
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs font-semibold">
@@ -451,7 +451,7 @@ export default function ProfessionalWindgram({
               Passo 250m
             </span>
             <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300">
-              Live Sounding
+              Previsione del modello
             </span>
           </div>
         </div>
