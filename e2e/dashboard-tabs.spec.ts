@@ -1,4 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { installOpenMeteoMock } from "./helpers/mockOpenMeteo";
+test.beforeEach(async ({ page }) => {
+  await installOpenMeteoMock(page);
+});
+
 
 const tabIds = ["meteo", "venti", "termiche", "analisi"] as const;
 
