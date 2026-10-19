@@ -389,7 +389,7 @@ rimuovi ref canvas  const { interpolateAtAltitude } = useMultiHourWindProfile({
     let drawing = false;
     const segments: string[] = [];
     hourlyData.forEach((h, i) => {
-      if (h.thermalTop == null || !Number.isFinite(h.thermalTop)) {
+      if (h.thermalTop == null || !Number.isFinite(h.thermalTop) || h.thermalTop < minAlt || h.thermalTop > maxAlt) {
         drawing = false;
         return;
       }
@@ -445,7 +445,7 @@ rimuovi ref canvas  const { interpolateAtAltitude } = useMultiHourWindProfile({
           </div>
           <div className="flex items-center gap-2 text-xs font-semibold">
             <span className="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 border border-slate-300">
-              Passo 250m
+              Fasce 100 m
             </span>
             <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300">
               Previsione del modello
@@ -685,7 +685,7 @@ rimuovi ref canvas  const { interpolateAtAltitude } = useMultiHourWindProfile({
 
               {/* Nuvoletta Cumulo sopra la quota */}
               {hourlyData.map((h, i) => {
-                if (i === 0 || i === hourlyData.length - 1 || h.thermalTop == null || !Number.isFinite(h.thermalTop)) return null;
+                if (i === 0 || i === hourlyData.length - 1 || h.thermalTop == null || !Number.isFinite(h.thermalTop) || h.thermalTop < minAlt || h.thermalTop > maxAlt || h.cloudPct == null) return null;
                 const x = getXFromHourIdx(i);
                 const y = getYFromAlt(h.thermalTop) - 50;
                 return (
@@ -698,7 +698,7 @@ rimuovi ref canvas  const { interpolateAtAltitude } = useMultiHourWindProfile({
 
               {/* Badge Base Cumuli & Rateo ascensionale */}
               {hourlyData.map((h, i) => {
-                if (i === 0 || i === hourlyData.length - 1 || h.thermalTop == null || !Number.isFinite(h.thermalTop)) return null;
+                if (i === 0 || i === hourlyData.length - 1 || h.thermalTop == null || !Number.isFinite(h.thermalTop) || h.thermalTop < minAlt || h.thermalTop > maxAlt || h.cloudBase == null) return null;
                 const x = getXFromHourIdx(i);
                 const paraY = getYFromAlt(h.thermalTop);
                 const badgeY = paraY + 10;
