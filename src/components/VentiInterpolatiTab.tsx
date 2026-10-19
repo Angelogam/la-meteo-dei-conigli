@@ -68,6 +68,8 @@ export default function VentiInterpolatiTab({
         siteName={siteName || "Decollo selezionato"}
       />
 
+      <FlybubbleForecastPanel siteId={siteId || `${lat.toFixed(4)}-${lon.toFixed(4)}`} siteName={siteName || "Decollo selezionato"} lat={lat} lon={lon} />
+
       <ProfessionalWindgram
         latitude={lat}
         longitude={lon}
