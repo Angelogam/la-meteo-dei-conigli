@@ -34,7 +34,6 @@ export default function VentiInterpolatiTab({
   quotaDecollo,
   selectedDay,
   siteName,
-  siteId,
   rawData,
 }: VentiInterpolatiTabProps) {
   const targetDate = new Date();
