@@ -1038,6 +1038,61 @@ a:focus-visible,
   border: 1px dashed rgba(132,194,222,.22);
   border-radius: 12px;
 }
+
+.api-mega-featured {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid rgba(128, 200, 169, .25);
+  border-radius: 17px;
+  background:
+    radial-gradient(ellipse at 85% 0%, rgba(83, 156, 124, .14), transparent 45%),
+    linear-gradient(135deg, rgba(17, 48, 47, .86), rgba(8, 30, 38, .92));
+}
+.api-mega-featured-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(128, 200, 169, .28);
+  border-radius: 13px;
+  background: rgba(81, 145, 110, .13);
+  color: #9fd5bc;
+}
+.api-mega-featured-copy { flex: 1 1 auto; min-width: 0; }
+.api-mega-featured .api-mega-kicker { margin-bottom: .28rem; }
+.api-mega-featured h2 {
+  margin: 0;
+  color: #eaf9ef;
+  font-size: 1rem;
+  font-weight: 850;
+}
+.api-mega-featured p {
+  margin: .35rem 0 0;
+  color: #a4c4b7;
+  font-size: .75rem;
+  line-height: 1.6;
+}
+.api-mega-featured > a {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  padding: .65rem .8rem;
+  border: 1px solid rgba(128, 200, 169, .3);
+  border-radius: 10px;
+  background: rgba(69, 123, 95, .3);
+  color: #e4f8eb;
+  font-size: .72rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+.api-mega-featured > a:hover { background: rgba(76, 142, 103, .43); }
+
 .api-mega-notice {
   display: flex;
   align-items: flex-start;
@@ -1057,6 +1112,10 @@ a:focus-visible,
   .api-mega-categories { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 720px) {
+  .api-mega-featured { align-items: flex-start; flex-wrap: wrap; padding: .9rem; }
+  .api-mega-featured-copy { flex-basis: calc(100% - 60px); }
+  .api-mega-featured > a { margin-left: 60px; }
+
   .api-mega-hero-row,
   .api-mega-directory-heading { align-items: stretch; flex-direction: column; }
   .api-mega-source-button { width: fit-content; }
