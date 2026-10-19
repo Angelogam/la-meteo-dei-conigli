@@ -621,11 +621,11 @@ a:focus-visible,
   align-items: center;
   gap: .85rem;
   padding: .9rem 1.05rem;
-  border: 1px solid #cad3dd;
+  border: 1px solid #b5c9d4;
   border-radius: 16px;
-  color: #2f4052;
-  background: linear-gradient(135deg, #f4f7fa, #e8edf2);
-  box-shadow: 0 7px 22px rgba(36, 54, 73, .055), inset 0 1px 0 rgba(255,255,255,.8);
+  color: #294456;
+  background: linear-gradient(135deg, #e0ebf1 0%, #cfdee6 55%, #dce8ec 100%);
+  box-shadow: 0 9px 24px rgba(18, 42, 59, .12), inset 0 1px 0 rgba(255,255,255,.46);
 }
 .alpium-launch-icon {
   display: grid;
@@ -659,27 +659,27 @@ a:focus-visible,
   font-size: .72rem;
   line-height: 1.5;
 }
-.alpium-windgram { min-width: 0; color: #2f4135; }
+.alpium-windgram { min-width: 0; color: #294354; }
 .alpium-windgram > .bg-slate-100 {
-  border-color: #cbd2c6 !important;
-  background: linear-gradient(145deg, #f2f1e9 0%, #e8eae1 100%) !important;
-  box-shadow: 0 8px 24px rgba(29, 49, 35, .06), inset 0 1px 0 rgba(255,255,255,.72) !important;
+  border-color: #b8cbd5 !important;
+  background: linear-gradient(145deg, #dfe9ef 0%, #d0dfe6 52%, #e0e9eb 100%) !important;
+  box-shadow: 0 12px 28px rgba(14, 37, 53, .13), inset 0 1px 0 rgba(255,255,255,.5) !important;
   border-radius: 19px !important;
 }
 .alpium-windgram h2,
 .alpium-windgram .text-slate-900,
-.alpium-windgram .text-slate-800 { color: #304436 !important; }
-.alpium-windgram .text-slate-700 { color: #536658 !important; }
-.alpium-windgram .text-slate-600 { color: #6c7b6d !important; }
+.alpium-windgram .text-slate-800 { color: #294354 !important; }
+.alpium-windgram .text-slate-700 { color: #435d6d !important; }
+.alpium-windgram .text-slate-600 { color: #5d7584 !important; }
 .alpium-windgram .text-sky-600,
-.alpium-windgram .text-sky-700 { color: #5a826b !important; }
-.alpium-windgram .bg-emerald-100 { background: #dfe9dc !important; }
-.alpium-windgram .text-emerald-800 { color: #416a4c !important; }
+.alpium-windgram .text-sky-700 { color: #34789a !important; }
+.alpium-windgram .bg-emerald-100 { background: #d8e7e4 !important; }
+.alpium-windgram .text-emerald-800 { color: #35645d !important; }
 .alpium-windgram .border-slate-300,
-.alpium-windgram .border-slate-400 { border-color: #c8d0c4 !important; }
-.alpium-windgram .bg-white { background: #f7f6ef !important; }
-.alpium-windgram .bg-slate-200 { background: #e3e7dd !important; }
-.alpium-windgram .border-slate-200 { border-color: #d9ded4 !important; }
+.alpium-windgram .border-slate-400 { border-color: #b8cbd5 !important; }
+.alpium-windgram .bg-white { background: #e9f0f3 !important; }
+.alpium-windgram .bg-slate-200 { background: #d2dfe6 !important; }
+.alpium-windgram .border-slate-200 { border-color: #c7d6de !important; }
 .alpium-windgram svg [data-testid="windgram-stability-cell"] { shape-rendering: crispEdges; }
 
 .launch-windgram-shortcut {
