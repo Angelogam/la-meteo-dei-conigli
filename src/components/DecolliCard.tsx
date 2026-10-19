@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Wind, Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, Zap, Info, Search, MapPin } from "lucide-react";
+import { Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, Zap, Info, Search, MapPin } from "lucide-react";
 import type { Decollo } from "@/data/decolli";
 
 export interface AggressiveWeatherData {
