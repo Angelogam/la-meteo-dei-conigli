@@ -1,4 +1,9 @@
 import { test, expect } from "@playwright/test";
+import { installOpenMeteoMock } from "./helpers/mockOpenMeteo";
+test.beforeEach(async ({ page }) => {
+  await installOpenMeteoMock(page);
+});
+
 
 test.describe("Meteo dei Conigli - Paragliding Launch Weather Journey", () => {
   test("user can inspect launch site weather, toggle forecast days, and navigate aerological tabs", async ({ page }) => {

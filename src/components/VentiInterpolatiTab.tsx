@@ -3,6 +3,7 @@
 import { Calendar, MapPin, Wind } from "lucide-react";
 import ProfessionalWindgram from "@/components/ProfessionalWindgram";
 import LaunchForecastWidgets from "@/components/LaunchForecastWidgets";
+import FlybubbleForecastPanel from "@/components/FlybubbleForecastPanel";
 
 interface VentiInterpolatiTabProps {
   lat: number;
@@ -12,6 +13,7 @@ interface VentiInterpolatiTabProps {
   oraCorrente?: number;
   onOraChange?: (ora: number) => void;
   siteName?: string;
+  siteId?: string;
   rawData?: any;
 }
 
@@ -33,6 +35,7 @@ export default function VentiInterpolatiTab({
   quotaDecollo,
   selectedDay,
   siteName,
+  siteId,
   rawData,
 }: VentiInterpolatiTabProps) {
   const targetDate = new Date();
@@ -64,6 +67,8 @@ export default function VentiInterpolatiTab({
         altitude={quotaDecollo}
         siteName={siteName || "Decollo selezionato"}
       />
+
+      <FlybubbleForecastPanel siteId={siteId || `${lat.toFixed(4)}-${lon.toFixed(4)}`} siteName={siteName || "Decollo selezionato"} lat={lat} lon={lon} />
 
       <ProfessionalWindgram
         latitude={lat}
