@@ -13,6 +13,7 @@ interface VentiInterpolatiTabProps {
   oraCorrente?: number;
   onOraChange?: (ora: number) => void;
   siteName?: string;
+  siteId?: string;
   rawData?: any;
 }
 
@@ -34,6 +35,7 @@ export default function VentiInterpolatiTab({
   quotaDecollo,
   selectedDay,
   siteName,
+  siteId,
   rawData,
 }: VentiInterpolatiTabProps) {
   const targetDate = new Date();
