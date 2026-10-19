@@ -29,8 +29,6 @@ const PRESSURE_LEVELS = [
   { hpa: 900, alt: 1000 },
 ];
 
-const ALT_TICKS = [4200, 4000, 3800, 3600, 3400, 3200, 3000, 2800, 2600, 2400, 2200, 2000, 1800, 1600, 1400, 1200, 1000, 800, 600, 400, 200];
-
 const computeDisplayAltitudes = (siteAlt: number): number[] => {
   const base = Math.floor(siteAlt / 250) * 250;
   const result: number[] = [];
@@ -223,8 +221,14 @@ export default function ProfessionalWindgram({
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
-  const minAlt = 200;
+  // Parte dalla quota del decollo arrotondata ai 200 m inferiori:
+  // evita una grande zona vuota sotto il terreno del sito.
+  const minAlt = Math.max(200, Math.floor(altitude / 200) * 200);
   const maxAlt = 4200;
+  const altitudeTicks = Array.from(
+    { length: Math.max(1, Math.floor((maxAlt - minAlt) / 200) + 1) },
+    (_, index) => maxAlt - index * 200,
+  );
 
   const getYFromAlt = (alt: number) => {
     const clamped = Math.min(maxAlt, Math.max(minAlt, alt));
@@ -526,7 +530,7 @@ export default function ProfessionalWindgram({
               })}
 
               {/* Ticks Altitudine */}
-              {ALT_TICKS.map((alt) => {
+              {altitudeTicks.map((alt) => {
                 const y = getYFromAlt(alt);
                 return (
                   <g key={`alt-${alt}`}>
