@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { installOpenMeteoMock } from "./helpers/mockOpenMeteo";
 
 test("Venti tab keeps its own content visible while wind data loads", async ({ page }) => {
+  // The shared forecast fixture succeeds; only the expensive pressure-level enrichment is rate-limited.
+  await installOpenMeteoMock(page, { failSounding: true });
   const pageErrors: string[] = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
 
@@ -12,6 +15,8 @@ test("Venti tab keeps its own content visible while wind data loads", async ({ p
   // The selected launch should show the XC Therm map and native windgram as separate panels.
   await expect(page.getByTestId("xctherm-launch-map")).toBeVisible({ timeout: 10_000 });
   await expect(page.getByTestId("alpium-windgram-page")).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator(".alpium-windgram")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByTestId("windgram-fallback-notice")).toBeVisible({ timeout: 10_000 });
   await expect(page.getByRole("heading", { name: /Windgram aerologico/i }).first()).toBeVisible({
     timeout: 10_000,
   });
