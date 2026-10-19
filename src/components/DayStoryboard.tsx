@@ -212,10 +212,10 @@ export default function DayStoryboard({
             </div>
             <div className="story-series-controls" role="group" aria-label="Mostra o nascondi serie">
               <button type="button" className={showTemperature ? "is-on temperature-toggle" : "temperature-toggle"} aria-pressed={showTemperature} onClick={() => setShowTemperature((value) => !value)}>
-                <i />Suolo
+                <i />Temperatura
               </button>
               <button type="button" className={showDewPoint ? "is-on dew-toggle" : "dew-toggle"} aria-pressed={showDewPoint} onClick={() => setShowDewPoint((value) => !value)}>
-                <i />Quota 80/120 m
+                <i />Rugiada
               </button>
               <button type="button" className={showWind ? "is-on wind-toggle" : "wind-toggle"} aria-pressed={showWind} onClick={() => setShowWind((value) => !value)}>
                 <i />Vento
