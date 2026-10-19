@@ -41,6 +41,16 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     expect(mapUrl.searchParams.get("lang")).toBe("it");
     await expect(page.getByText("La scheda Venti ha incontrato un errore")).toHaveCount(0);
     expect(pageErrors, "Venti tab must not crash the React application").toEqual([]);
+
+    // Capture the real Venti tab output from Chromium so the implementation can
+    // be visually reviewed from the workflow artifact (not a fabricated mockup).
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await forecastWidget.scrollIntoViewIfNeeded();
+    await page.locator(".flight-tab-content").screenshot({
+      path: "test-results/venti-widget-preview.png",
+      animations: "disabled",
+      timeout: 30_000,
+    });
   });
 
   test("homepage briefing, forecast-day selection, and wind shortcut work", async ({ page }) => {
