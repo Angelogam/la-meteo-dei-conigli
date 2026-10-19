@@ -27,34 +27,53 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     expect(pageErrors, "Venti tab must not crash the React application").toEqual([]);
   });
 
-  test("homepage briefing, forecast-day selection, and wind shortcut work", async ({ page }) => {
+  test("homepage raises map and windgram and removes the obsolete dual-chart block", async ({ page }) => {
     const pageErrors: string[] = [];
     page.on("pageerror", (error) => pageErrors.push(error.message));
 
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Il tuo briefing di volo." })).toBeVisible({ timeout: 30_000 });
     await expect(page.locator(".launch-hero")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Scegli il decollo" })).toBeVisible();
     await expect(page.locator(".flight-nav-rail")).toBeVisible();
-    await expect(page.locator(".launch-windgram-top")).toBeVisible({ timeout: 30_000 });
-    await expect(page.locator(".flight-forecast-module .forecast-day-card")).toHaveCount(3, { timeout: 30_000 });
-    await expect(page.locator(".flight-desk-main > #windgram-section")).toBeVisible();
+
+    const raisedTools = page.locator(".flight-desk-main > .launch-windgram-top");
+    await expect(raisedTools).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("launch-forecast-widget")).toBeVisible();
+    const mapFrame = page.locator(".launch-xctherm-frame iframe");
+    await expect(mapFrame).toBeVisible();
+    const mapSource = await mapFrame.getAttribute("src");
+    expect(mapSource).toBeTruthy();
+    const mapUrl = new URL(mapSource!);
+    expect(mapUrl.origin).toBe("https://xctherm.com");
+    expect(Number(mapUrl.searchParams.get("lat"))).toBeGreaterThanOrEqual(-90);
+    expect(Number(mapUrl.searchParams.get("lat"))).toBeLessThanOrEqual(90);
+    expect(Number(mapUrl.searchParams.get("lon"))).toBeGreaterThanOrEqual(-180);
+    expect(Number(mapUrl.searchParams.get("lon"))).toBeLessThanOrEqual(180);
+
+    // This is the exact block requested for removal: charts, selected-hour summary and hour tiles.
     await expect(page.locator(".storyboard-panel")).toHaveCount(0);
     await expect(page.locator(".story-chart-module")).toHaveCount(0);
-    const dashboardOrder = await page.locator(".flight-desk-main").evaluate((root) => {
+    await expect(page.locator(".story-selected-hour")).toHaveCount(0);
+    await expect(page.locator(".story-hour-buttons")).toHaveCount(0);
+
+    await expect(page.locator(".flight-forecast-module .forecast-day-card")).toHaveCount(3, { timeout: 30_000 });
+    const order = await page.locator(".flight-desk-main").evaluate((root) => {
       const children = Array.from(root.children);
       return {
-        windgram: children.findIndex((child) => child.classList.contains("launch-windgram-top")),
+        tools: children.findIndex((child) => child.classList.contains("launch-windgram-top")),
         forecast: children.findIndex((child) => child.classList.contains("forecast-section")),
+        details: children.findIndex((child) => child.classList.contains("details-section")),
       };
     });
-    expect(dashboardOrder.windgram, "Map and windgram must appear before the daily forecast").toBeGreaterThanOrEqual(0);
-    expect(dashboardOrder.forecast, "The daily forecast must follow map and windgram").toBeGreaterThan(dashboardOrder.windgram);
+    expect(order.tools, "Map and windgram must be the first dashboard panel").toBeGreaterThanOrEqual(0);
+    expect(order.forecast, "Daily forecast must follow map and windgram").toBeGreaterThan(order.tools);
+    expect(order.details, "Analysis tabs must follow daily forecast").toBeGreaterThan(order.forecast);
 
     const forecastCards = page.locator(".forecast-day-card");
     await expect(forecastCards).toHaveCount(3, { timeout: 30_000 });
     await expect(page.locator('.forecast-day-card[aria-pressed="true"]')).toHaveCount(1);
-
     const tomorrow = page.getByRole("button", { name: /Mostra le previsioni per domani/i });
     await tomorrow.click();
     await expect(tomorrow).toHaveAttribute("aria-pressed", "true");
@@ -62,7 +81,7 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
 
     await page.getByRole("button", { name: "Esplora i venti" }).click();
     await expect(page.getByTestId("tab-venti")).toHaveAttribute("aria-pressed", "true");
-    await expect(page.locator('section[aria-live="polite"]')).not.toBeEmpty();
+    await expect(page.locator(".launch-windgram-shortcut")).toBeVisible();
     expect(pageErrors, "The homepage briefing must not produce browser errors").toEqual([]);
   });
 
@@ -135,17 +154,16 @@ test("desktop briefing fits the viewport without clipping the launch or forecast
   ).toEqual([]);
 });
 
-test("wide desktop keeps the right rail visible and temperature scale readable", async ({ page }) => {
+test("wide desktop keeps the right rail visible and raised map/windgram unclipped", async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1050 });
   await page.goto("/");
   await expect(page.locator(".launch-windgram-top")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("launch-forecast-widget")).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(".flight-right-rail")).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator(".storyboard-panel, .story-chart-module")).toHaveCount(0);
-  await page.getByRole("button", { name: "Pomeriggio" }).click();
-  const dewPointToggle = page.getByRole("group", { name: "Mostra o nascondi serie" }).getByRole("button", { name: "Rugiada" });
-  await expect(dewPointToggle).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator(".storyboard-panel")).toHaveCount(0);
+  await expect(page.locator(".story-chart-module")).toHaveCount(0);
 
-  const dimensions = await page.evaluate(() => {
+  const layout = await page.evaluate(() => {
     const viewport = document.documentElement.clientWidth;
     const selectors = [
       ".flight-app-body",
@@ -154,6 +172,9 @@ test("wide desktop keeps the right rail visible and temperature scale readable",
       ".flight-desk-main",
       ".flight-right-rail",
       ".flight-right-rail .flight-site-list",
+      ".launch-windgram-top",
+      ".launch-forecast-widget",
+      ".forecast-section",
     ];
     const boxes = selectors.flatMap((selector) => {
       const element = document.querySelector<HTMLElement>(selector);
@@ -168,36 +189,19 @@ test("wide desktop keeps the right rail visible and temperature scale readable",
         clientWidth: element.clientWidth,
       }];
     });
-    const ticks = Array.from(document.querySelectorAll(".temperature-module .recharts-yAxis .recharts-cartesian-axis-tick-value"))
-      .map((node) => Number((node.textContent ?? "").replace(/°/g, "").trim()))
-      .filter(Number.isFinite);
     return {
       viewport,
       documentWidth: document.documentElement.scrollWidth,
       rootWidth: document.getElementById("root")?.clientWidth ?? -1,
       rootScrollWidth: document.getElementById("root")?.scrollWidth ?? -1,
       boxes,
-      temperatureTickSpan: ticks.length >= 2 ? Math.max(...ticks) - Math.min(...ticks) : null,
     };
   });
 
-  expect(dimensions.documentWidth, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
-  expect(dimensions.rootScrollWidth, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.rootWidth + 1);
-  const clipped = dimensions.boxes.filter((box) => box.left < -1 || box.right > dimensions.viewport + 1 || box.scrollWidth > box.clientWidth + 16);
-  expect(clipped, JSON.stringify(dimensions)).toEqual([]);
-  expect(dimensions.temperatureTickSpan, JSON.stringify(dimensions)).not.toBeNull();
-  expect(dimensions.temperatureTickSpan!, "Temperature axis should fit the visible temperature series, not hidden dew-point values").toBeLessThanOrEqual(10);
-
-  await dewPointToggle.click();
-  await expect(dewPointToggle).toHaveAttribute("aria-pressed", "true");
-  await dewPointToggle.click();
-  await expect(dewPointToggle).toHaveAttribute("aria-pressed", "false");
-
-  for (const width of [1440, 1280]) {
-    await page.setViewportSize({ width, height: 1050 });
-    const rail = await page.locator(".flight-right-rail").boundingBox();
-    const viewport = await page.evaluate(() => document.documentElement.clientWidth);
-    expect(rail, `Right rail missing at ${width}px`).not.toBeNull();
-    expect(rail!.x + rail!.width, `Right rail clipped at ${width}px`).toBeLessThanOrEqual(viewport + 1);
-  }
+  expect(layout.documentWidth, JSON.stringify(layout)).toBeLessThanOrEqual(layout.viewport + 1);
+  expect(layout.rootScrollWidth, JSON.stringify(layout)).toBeLessThanOrEqual(layout.rootWidth + 1);
+  const clipped = layout.boxes.filter((box) =>
+    box.left < -1 || box.right > layout.viewport + 1 || box.scrollWidth > box.clientWidth + 16
+  );
+  expect(clipped, JSON.stringify(layout)).toEqual([]);
 });
