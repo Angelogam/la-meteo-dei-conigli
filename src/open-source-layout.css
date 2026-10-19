@@ -814,3 +814,57 @@ a:focus-visible,
 @media (prefers-reduced-motion: reduce) {
   .launch-xctherm-loading, .launch-xctherm-spinner { transition: none; animation: none; }
 }
+
+
+/* The site-specific map and aerological windgram replace the obsolete two-chart storyboard. */
+.launch-windgram-top {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  scroll-margin-top: 1rem;
+}
+.launch-windgram-top > .space-y-6 {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(.85rem, 1.4vw, 1.2rem);
+  min-width: 0;
+}
+.launch-windgram-top .launch-forecast-widget,
+.launch-windgram-top .alpium-windgram {
+  width: 100%;
+  min-width: 0;
+}
+.launch-windgram-shortcut {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  flex-wrap: wrap;
+  padding: .85rem 1rem;
+  border: 1px solid rgba(124, 166, 144, .25);
+  border-radius: 14px;
+  color: #dcebe0;
+  background: linear-gradient(135deg, rgba(28, 55, 42, .8), rgba(19, 39, 33, .84));
+}
+.launch-windgram-shortcut > svg {
+  flex: 0 0 auto;
+  color: #91c1a0;
+}
+.launch-windgram-shortcut > div { flex: 1 1 240px; min-width: 0; }
+.launch-windgram-shortcut strong { display: block; font-size: .82rem; font-weight: 850; }
+.launch-windgram-shortcut p { margin: .2rem 0 0; color: #a5c0af; font-size: .72rem; line-height: 1.5; }
+.launch-windgram-shortcut button {
+  flex: 0 0 auto;
+  padding: .55rem .8rem;
+  border: 1px solid rgba(149, 196, 161, .34);
+  border-radius: 9px;
+  color: #eff8f0;
+  background: rgba(65, 111, 78, .58);
+  font-size: .72rem;
+  font-weight: 800;
+}
+.launch-windgram-shortcut button:hover { background: rgba(76, 132, 91, .72); }
+@media (max-width: 640px) {
+  .launch-windgram-shortcut { align-items: flex-start; padding: .75rem; }
+  .launch-windgram-shortcut button { width: 100%; }
+}
