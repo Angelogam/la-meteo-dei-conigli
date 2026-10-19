@@ -52,6 +52,22 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     expect(Number(mapUrl.searchParams.get("lon"))).toBeGreaterThanOrEqual(-180);
     expect(Number(mapUrl.searchParams.get("lon"))).toBeLessThanOrEqual(180);
 
+    // The windgram must contain real SVG heatmap cells behind wind arrows/thermal curves.
+    const windgram = page.locator(".alpium-windgram");
+    await expect(windgram).toBeVisible({ timeout: 30_000 });
+    const heatmapCells = windgram.getByTestId("windgram-stability-cell");
+    await expect(heatmapCells.first()).toBeVisible({ timeout: 30_000 });
+    expect(await heatmapCells.count(), "Alpium-style altitude/hour background cells must render").toBeGreaterThan(100);
+    const paletteCount = await heatmapCells.evaluateAll((elements) =>
+      new Set(elements.map((element) => element.getAttribute("data-stability-color"))).size
+    );
+    expect(paletteCount, "The atmospheric background should include colored stability masses").toBeGreaterThan(1);
+    await windgram.screenshot({
+      path: "test-results/alpium-windgram-colored-masses.png",
+      animations: "disabled",
+      timeout: 30_000,
+    });
+
     // This is the exact block requested for removal: charts, selected-hour summary and hour tiles.
     await expect(page.locator(".storyboard-panel")).toHaveCount(0);
     await expect(page.locator(".story-chart-module")).toHaveCount(0);
