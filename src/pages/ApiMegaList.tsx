@@ -104,7 +104,7 @@ export default function ApiMegaList() {
   const listedCount = CATEGORIES.reduce((total, item) => total + item.count, 0);
 
   return (
-    <div className="flight-website-shell api-mega-page min-h-screen">
+    <div id="overview" className="flight-website-shell api-mega-page min-h-screen">
       <Header />
       <main className="api-mega-content">
         <a className="api-mega-back" href="/">
@@ -182,6 +182,18 @@ export default function ApiMegaList() {
             })}
           </div>
           {filtered.length === 0 && <p className="api-mega-empty">Nessuna categoria corrisponde alla ricerca.</p>}
+        </section>
+
+        <section className="api-mega-featured" aria-labelledby="api-mega-featured-heading">
+          <div className="api-mega-featured-mark"><Boxes size={20} aria-hidden="true" /></div>
+          <div className="api-mega-featured-copy">
+            <span className="api-mega-kicker">RACCOLTA IN EVIDENZA NELLA FONTE</span>
+            <h2 id="api-mega-featured-heading">ApyHub Utility APIs</h2>
+            <p>La repository evidenzia una raccolta separata di 200 API per AI, file, estrazione dati, validazione e utilità applicative.</p>
+          </div>
+          <a href="https://github.com/cporter202/API-mega-list/tree/main/00-featured-apis/apyhub-utility-apis" target="_blank" rel="noreferrer">
+            Apri raccolta <ArrowUpRight size={16} aria-hidden="true" />
+          </a>
         </section>
 
         <section className="api-mega-candidates" aria-labelledby="api-mega-candidates-heading">
