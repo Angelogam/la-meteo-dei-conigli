@@ -1,7 +1,7 @@
 "use client";
 
 import { DECOLLI } from "@/data/decolli";
-import { fetchCurrent, fetchHourly, fetchDaily } from "@/lib/openMeteoClient";
+import { fetchFull } from "@/lib/openMeteoClient";
 
 export type Decollo = {
   name: string;
@@ -51,37 +51,24 @@ function findCurrentIndex(times: unknown[], now = new Date()): number {
 }
 
 async function getOpenMeteo(lat: number, lon: number) {
-  const today = new Date().toISOString().split("T")[0];
-  const hourlyParams = "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,cape,freezing_level_height";
-
   try {
-    const today = new Date().toISOString().split("T")[0];
+    // Hourly and daily variables are returned together, reducing upstream calls per launch.
+    const forecast = await fetchFull(
+      lat,
+      lon,
+      "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,cape,freezing_level_height",
+      "temperature_2m_max,temperature_2m_min,cloud_cover_mean,precipitation_sum",
+      "",
+      1,
+    );
 
-    const [hourlyData, dailyData] = await Promise.all([
-      fetchHourly(
-        lat,
-        lon,
-        "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,cape,freezing_level_height",
-        today,
-        today
-      ),
-      fetchDaily(
-        lat,
-        lon,
-        "temperature_2m_max,temperature_2m_min,cloud_cover_mean,precipitation_sum",
-        1
-      ),
-    ]);
-
-    const times = hourlyData.hourly?.time ?? [];
+    const times = forecast.hourly?.time ?? [];
     if (!Array.isArray(times) || times.length === 0) return null;
-
     const i = findCurrentIndex(times);
     if (i < 0) return null;
 
-    const h = hourlyData.hourly;
-    const d = dailyData.daily;
-
+    const h = forecast.hourly;
+    const d = forecast.daily;
     return {
       temp: numOrNull(h.temperature_2m?.[i]),
       rain: numOrNull(h.precipitation?.[i]),
