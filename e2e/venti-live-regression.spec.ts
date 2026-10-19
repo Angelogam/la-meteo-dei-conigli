@@ -9,12 +9,13 @@ test("Venti tab keeps its own content visible while wind data loads", async ({ p
   await expect(ventiTab).toBeVisible({ timeout: 30_000 });
   await ventiTab.click();
 
-  // The native Alpium-style windgram header must render without an external map iframe.
+  // The selected launch should show the XC Therm map and native windgram as separate panels.
+  await expect(page.getByTestId("xctherm-launch-map")).toBeVisible({ timeout: 10_000 });
   await expect(page.getByTestId("alpium-windgram-page")).toBeVisible({ timeout: 10_000 });
   await expect(page.getByRole("heading", { name: /Windgram aerologico/i }).first()).toBeVisible({
     timeout: 10_000,
   });
-  await expect(page.locator('iframe[src*="xctherm.com"]')).toHaveCount(0);
+  await expect(page.locator('iframe[src*="xctherm.com/icon"]')).toBeVisible({ timeout: 10_000 });
 
   const tabContent = page.locator(".flight-tab-content");
   await expect(tabContent).toBeVisible();
