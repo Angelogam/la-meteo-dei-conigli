@@ -102,16 +102,16 @@ export default function Index() {
             <button type="button" className="flight-nav-item" onClick={() => document.getElementById("overview")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
               <Home aria-hidden="true" /><span>Home</span>
             </button>
-            <button type="button" className={"flight-nav-item " + (activeTab === "meteo" ? "is-active" : "")} aria-pressed={activeTab === "meteo"} onClick={() => { setActiveTab("meteo"); document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
+            <button type="button" className={"flight-nav-item " + (activeTab === "meteo" ? "is-active" : "")} aria-pressed={activeTab === "meteo"} onClick={() => { setActiveTab("meteo"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
               <CloudSun aria-hidden="true" /><span>Meteo</span>
             </button>
-            <button type="button" className={"flight-nav-item " + (activeTab === "venti" ? "is-active" : "")} aria-pressed={activeTab === "venti"} onClick={() => { setActiveTab("venti"); document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
+            <button type="button" className={"flight-nav-item " + (activeTab === "venti" ? "is-active" : "")} aria-pressed={activeTab === "venti"} onClick={() => { setActiveTab("venti"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
               <Wind aria-hidden="true" /><span>Venti</span>
             </button>
-            <button type="button" className={"flight-nav-item " + (activeTab === "termiche" ? "is-active" : "")} aria-pressed={activeTab === "termiche"} onClick={() => { setActiveTab("termiche"); document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
+            <button type="button" className={"flight-nav-item " + (activeTab === "termiche" ? "is-active" : "")} aria-pressed={activeTab === "termiche"} onClick={() => { setActiveTab("termiche"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
               <Thermometer aria-hidden="true" /><span>Termiche</span>
             </button>
-            <button type="button" className={"flight-nav-item " + (activeTab === "analisi" ? "is-active" : "")} aria-pressed={activeTab === "analisi"} onClick={() => { setActiveTab("analisi"); document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
+            <button type="button" className={"flight-nav-item " + (activeTab === "analisi" ? "is-active" : "")} aria-pressed={activeTab === "analisi"} onClick={() => { setActiveTab("analisi"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
               <Activity aria-hidden="true" /><span>Analisi</span>
             </button>
           </nav>
@@ -142,7 +142,7 @@ export default function Index() {
                 <button type="button" className="dashboard-intro-cta" onClick={() => {
                   const nextTab = activeTab === "venti" ? "meteo" : "venti";
                   setActiveTab(nextTab);
-                  document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  window.scrollTo({ top: 0, behavior: "smooth" });
                 }}>
                   {activeTab === "venti" ? <><CloudSun aria-hidden="true" /><span>Torna al meteo</span></> : <><Wind aria-hidden="true" /><span>Esplora i venti</span><ArrowDownRight aria-hidden="true" /></>}
                 </button>
@@ -392,7 +392,7 @@ export default function Index() {
             <a href="#overview" aria-label="Home"><span>⌂</span><small>Home</small></a>
             <a href="#flight-site-list" aria-label="Decolli"><span>⌖</span><small>Decolli</small></a>
             <a href="#windgram-section" aria-label="Windgram"><span>〰</span><small>Windgram</small></a>
-            <button type="button" onClick={() => { setActiveTab("analisi"); document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} aria-label="Analisi"><span>◉</span><small>Analisi</small></button>
+            <button type="button" onClick={() => { setActiveTab("analisi"); window.scrollTo({ top: 0, behavior: "smooth" }); }} aria-label="Analisi"><span>◉</span><small>Analisi</small></button>
           </nav>
           <Footer />
         </div>
