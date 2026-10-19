@@ -1244,3 +1244,94 @@ a:focus-visible,
   .launch-compare-condition { min-width: 65px; }
   .launch-compare-selected { position: absolute; top: .8rem; right: .85rem; }
 }
+
+
+/* Flight-focused desktop layout: live weather maps left, launch selector pinned right. */
+.flight-hero-banner {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 190px;
+  align-items: flex-end !important;
+  padding: clamp(1.2rem, 2.4vw, 2rem) !important;
+  border: 1px solid rgba(159, 218, 238, .28);
+  border-radius: 22px;
+  background:
+    linear-gradient(90deg, rgba(4, 17, 30, .94) 0%, rgba(5, 20, 35, .82) 43%, rgba(5, 20, 35, .28) 100%),
+    linear-gradient(0deg, rgba(4, 15, 27, .38), rgba(4, 15, 27, .05)),
+    url('https://commons.wikimedia.org/wiki/Special:FilePath/Paragliding_in_the_Alps_(Unsplash).jpg?width=1600') center 43% / cover;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, .2), inset 0 1px 0 rgba(236, 249, 255, .08);
+}
+.flight-hero-banner h1 { max-width: 18ch; color: #f4fbff !important; text-shadow: 0 2px 18px rgba(0,0,0,.28); }
+.flight-hero-banner p { max-width: 54ch; color: #d1e4ef !important; }
+.flight-hero-banner .dashboard-intro-kicker { color: #a8f0fa !important; }
+.flight-hero-banner .dashboard-date-chip { background: rgba(4, 21, 36, .72) !important; backdrop-filter: blur(10px); }
+.flight-top-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 370px);
+  align-items: start;
+  gap: 1rem;
+  min-width: 0;
+}
+.flight-primary-column { grid-column: 1; grid-row: 1; display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.flight-launch-sidebar {
+  grid-column: 2;
+  grid-row: 1;
+  position: sticky;
+  top: 1rem;
+  align-self: start;
+  min-width: 0;
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(112, 177, 202, .45) transparent;
+  z-index: 5;
+}
+.flight-launch-sidebar .launch-compare-panel { border-radius: 18px !important; box-shadow: 0 18px 38px rgba(0,0,0,.22) !important; }
+.flight-launch-sidebar .launch-compare-header { align-items: flex-start; gap: .6rem; padding: 1rem; }
+.flight-launch-sidebar .launch-compare-header h2 { font-size: 1rem; }
+.flight-launch-sidebar .launch-compare-description { font-size: .72rem; }
+.flight-launch-sidebar .launch-compare-count strong { font-size: 1.15rem; }
+.flight-launch-sidebar .launch-compare-tools { display: flex; flex-direction: column; align-items: stretch; padding: 0 1rem .8rem; }
+.flight-launch-sidebar .launch-compare-search { max-width: none; flex-basis: auto; }
+.flight-launch-sidebar .launch-compare-update { font-size: .64rem; }
+.flight-launch-sidebar .launch-compare-row { align-items: flex-start; flex-direction: column; gap: .45rem; padding: .75rem 1rem; }
+.flight-launch-sidebar .launch-compare-site-name { white-space: normal; line-height: 1.35; }
+.flight-launch-sidebar .launch-compare-site-meta { flex-wrap: wrap; line-height: 1.45; }
+.flight-launch-sidebar .launch-compare-weather { width: 100%; flex-wrap: wrap; justify-content: flex-start; gap: .55rem; }
+.flight-launch-sidebar .launch-compare-selected { position: absolute; top: .75rem; right: .8rem; }
+.flight-launch-sidebar .launch-compare-toggle { position: sticky; bottom: 0; border-top: 1px solid rgba(128, 161, 179, .15); }
+.flybubble-live-map { overflow: hidden; }
+.flybubble-live-map .flybubble-panel-header { align-items: center; }
+.flybubble-live-map .flybubble-panel-title h2 { margin: .12rem 0 .25rem; color: #edf8ff; font-size: 1.2rem; font-weight: 850; letter-spacing: -.035em; }
+.flybubble-live-map .flybubble-panel-title p:last-child { margin: 0; color: #a9c0d0; font-size: .76rem; line-height: 1.5; }
+.flybubble-open-link { display: inline-flex; align-items: center; gap: .35rem; flex: 0 0 auto; padding: .6rem .75rem; border: 1px solid rgba(113, 217, 244, .3); border-radius: 10px; color: #eafaff; background: rgba(16, 63, 86, .7); font-size: .72rem; font-weight: 750; text-decoration: none; }
+.flybubble-open-link svg { width: 14px; height: 14px; }
+.flybubble-live-map .flybubble-frame-wrap { height: clamp(430px, 58vw, 690px); padding: .6rem; background: #071523; }
+.flybubble-live-map .flybubble-frame { display: block; width: 100%; height: 100%; min-height: 0; border: 0; border-radius: 12px; background: #fff; }
+.flybubble-live-map .flybubble-panel-footer { justify-content: space-between; }
+@media (max-width: 1150px) {
+  .flight-top-dashboard-grid { grid-template-columns: minmax(0, 1fr) minmax(275px, 320px); gap: .75rem; }
+  .flight-launch-sidebar .launch-compare-weather { gap: .45rem; }
+  .flybubble-open-link { font-size: .67rem; }
+}
+@media (max-width: 900px) {
+  .flight-top-dashboard-grid { grid-template-columns: minmax(0, 1fr); }
+  .flight-launch-sidebar { grid-column: 1; grid-row: 1; position: static; max-height: none; overflow: visible; order: 0; }
+  .flight-primary-column { grid-column: 1; grid-row: 2; }
+  .flight-launch-sidebar .launch-compare-row { align-items: center; flex-direction: row; }
+  .flight-launch-sidebar .launch-compare-weather { width: auto; justify-content: flex-end; }
+  .flight-launch-sidebar .launch-compare-selected { position: static; }
+}
+@media (max-width: 640px) {
+  .flight-hero-banner { min-height: 240px; align-items: flex-start !important; flex-direction: column; justify-content: space-between; background-position: 58% center; }
+  .flight-hero-banner h1 { font-size: 1.75rem !important; }
+  .flight-hero-banner .flight-page-actions { width: 100%; }
+  .flight-top-dashboard-grid { gap: .8rem; }
+  .flybubble-live-map .flybubble-panel-header { align-items: flex-start; }
+  .flybubble-open-link { width: 100%; justify-content: center; }
+  .flybubble-live-map .flybubble-frame-wrap { height: 470px; padding: .4rem; }
+  .flight-launch-sidebar .launch-compare-row { align-items: flex-start; flex-direction: column; }
+  .flight-launch-sidebar .launch-compare-weather { justify-content: flex-start; }
+}
