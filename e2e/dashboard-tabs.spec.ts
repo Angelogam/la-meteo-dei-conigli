@@ -42,8 +42,19 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     await expect(page.getByText("La scheda Venti ha incontrato un errore")).toHaveCount(0);
     expect(pageErrors, "Venti tab must not crash the React application").toEqual([]);
 
-    // Capture the real Venti tab output from Chromium so the implementation can
-    // be visually reviewed from the workflow artifact (not a fabricated mockup).
+    // Let the external map's own JS tiles render before capturing the real page.
+    await expect(forecastWidget.locator(".launch-xctherm-frame")).toHaveClass(/is-ready/, { timeout: 20_000 });
+    await page.waitForTimeout(6000);
+    const xcthermFrame = page.frame({ url: /xctherm\.com\/icon/ });
+    const frameTextLength = xcthermFrame
+      ? await xcthermFrame.locator("body").innerText().then((value) => value.trim().length).catch(() => 0)
+      : 0;
+    // Store this in the page for the screenshot, to make the embed state reviewable.
+    await forecastWidget.evaluate((node, loadedTextLength) => {
+      node.setAttribute("data-xctherm-text-length", String(loadedTextLength));
+    }, frameTextLength);
+
+    // Capture the real Venti tab output from Chromium for visual review.
     await page.setViewportSize({ width: 1440, height: 1000 });
     await forecastWidget.scrollIntoViewIfNeeded();
     await page.locator(".flight-tab-content").screenshot({
