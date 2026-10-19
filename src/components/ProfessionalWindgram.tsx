@@ -395,7 +395,7 @@ export default function ProfessionalWindgram({
 
     const w = canvas.width;
     const h = canvas.height;
-    ctx.fillStyle = "#f8fafc";
+    ctx.fillStyle = "#eeeee7";
     ctx.fillRect(0, 0, w, h);
 
     if (hourlyData.length === 0) return;
@@ -450,7 +450,7 @@ export default function ProfessionalWindgram({
   }
 
   return (
-    <div className="space-y-4 font-sans select-none">
+    <div className="alpium-windgram space-y-4 font-sans select-none">
       {/* PANNELLO PRINCIPALE WINDGRAM - STYLE ALPIUM (Grigio perla) */}
       <div className="bg-slate-100 text-slate-800 rounded-2xl p-3 sm:p-5 shadow-sm border border-slate-300 backdrop-blur-md">
 
