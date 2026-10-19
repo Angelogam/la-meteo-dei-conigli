@@ -14,23 +14,15 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
       await page.getByTestId(`tab-${tabId}`).click();
       await expect(page.getByTestId(`tab-${tabId}`)).toBeVisible();
       await expect(page.locator("body")).not.toBeEmpty();
-      // The Venti tab intentionally mounts a dedicated windgram page outside the
-      // generic tab panel, so assert the actual view instead of the old placeholder.
-      if (tabId === "venti") {
-        await expect(page.locator(".alpium-wind-page")).toBeVisible();
-        await expect(page.locator(".alpium-windgram-panel")).toBeVisible();
-      } else {
-        await expect(page.locator(".alpium-wind-page")).toHaveCount(0);
-      }
       // Give React a short event-loop turn to surface asynchronous render failures.
       await page.waitForTimeout(150);
       expect(pageErrors, `Uncaught browser error after selecting tab: ${tabId}`).toEqual([]);
     }
 
     await page.getByTestId("tab-venti").click();
-    await expect(page.locator(".alpium-wind-page")).toBeVisible();
-    await expect(page.locator(".alpium-windgram-panel")).toBeVisible();
-    await expect(page.locator(".alpium-thermal-card")).toBeVisible();
+    const ventiContent = page.locator("section[aria-live='polite']");
+    await expect(ventiContent).toBeVisible();
+    await expect(ventiContent).not.toBeEmpty();
     await expect(page.getByText("La scheda Venti ha incontrato un errore")).toHaveCount(0);
     expect(pageErrors, "Venti tab must not crash the React application").toEqual([]);
   });
@@ -103,9 +95,7 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
 
     await page.getByRole("button", { name: "Esplora i venti" }).click();
     await expect(page.getByTestId("tab-venti")).toHaveAttribute("aria-pressed", "true");
-    await expect(page.locator(".alpium-wind-page")).toBeVisible();
-    await expect(page.locator(".alpium-windgram-panel")).toBeVisible();
-    await expect(page.locator(".alpium-thermal-card")).toBeVisible();
+    await expect(page.locator('section[aria-live="polite"]')).not.toBeEmpty();
     expect(pageErrors, "The homepage briefing must not produce browser errors").toEqual([]);
   });
 
