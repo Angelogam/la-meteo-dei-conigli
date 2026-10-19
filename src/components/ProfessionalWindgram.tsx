@@ -36,6 +36,35 @@ const computeDisplayAltitudes = (siteAlt: number): number[] => {
   return result;
 };
 
+/** Select only the requested calendar day from shared Open-Meteo data. */
+function selectRawHourlyDay(rawData: any, selectedDay: number): any | null {
+  const times = rawData?.hourly?.time;
+  if (!Array.isArray(times) || times.length === 0) return null;
+
+  const targetDate = new Date();
+  targetDate.setDate(targetDate.getDate() + selectedDay);
+  const targetKey = [
+    targetDate.getFullYear(),
+    String(targetDate.getMonth() + 1).padStart(2, "0"),
+    String(targetDate.getDate()).padStart(2, "0"),
+  ].join("-");
+  const indexes = times
+    .map((time: unknown, index: number) => String(time).slice(0, 10) === targetKey ? index : -1)
+    .filter((index: number) => index >= 0);
+  if (indexes.length === 0) return null;
+
+  const hourly = Object.fromEntries(
+    Object.entries(rawData.hourly).map(([key, values]) => [
+      key,
+      Array.isArray(values) && values.length === times.length
+        ? indexes.map((index: number) => values[index])
+        : values,
+    ]),
+  );
+
+  return { ...rawData, hourly };
+}
+
 // Palette delle masse d'aria ispirata ad Alpium: inversione, stabilità, mix e instabilità.
 const STABILITY_COLORS = {
   veryStable: "#d7e2f2",   // Azzurro-grigio: inversione/stabilità marcata
@@ -86,6 +115,7 @@ export default function ProfessionalWindgram({
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const { interpolateAtAltitude } = useMultiHourWindProfile({
     lat: latitude,
@@ -163,8 +193,15 @@ export default function ProfessionalWindgram({
 
   useEffect(() => {
     let isMounted = true;
-    setLoading(true);
+    const sharedDayData = selectRawHourlyDay(rawData, selectedDay);
+    const hasSharedHourlyData = Boolean(sharedDayData?.hourly?.time?.length);
+
+    // Show the already-fetched homepage forecast immediately while enriching it with
+    // pressure-level sounding variables in the background.
+    setLoading(!hasSharedHourlyData);
     setError(null);
+    setWarning(null);
+    if (hasSharedHourlyData) setData(sharedDayData);
 
     (async () => {
       try {
@@ -198,15 +235,24 @@ export default function ProfessionalWindgram({
 
         const sounding = await fetchHourly(latitude, longitude, hourlyParams, dayStr, dayStr);
         if (isMounted) {
-          const merged = rawData?.hourly
-            ? { ...rawData, ...sounding, hourly: { ...rawData.hourly, ...sounding.hourly } }
+          const sharedForSelectedDay = selectRawHourlyDay(rawData, selectedDay);
+          const merged = sharedForSelectedDay?.hourly
+            ? { ...sharedForSelectedDay, ...sounding, hourly: { ...sharedForSelectedDay.hourly, ...sounding.hourly } }
             : sounding;
           setData(merged);
+          setError(null);
+          setWarning(null);
           setLoading(false);
         }
       } catch (err) {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : "Errore dati");
+          if (hasSharedHourlyData) {
+            setData(sharedDayData);
+            setError(null);
+            setWarning("Profilo verticale avanzato non disponibile in questo momento. Il grafico continua a usare i dati orari già caricati; alcune informazioni in quota possono mancare.");
+          } else {
+            setError(err instanceof Error ? err.message : "Errore dati");
+          }
           setLoading(false);
         }
       }
@@ -433,6 +479,15 @@ export default function ProfessionalWindgram({
 
   return (
     <div className="alpium-windgram space-y-4 font-sans select-none">
+      {warning && (
+        <div
+          role="status"
+          data-testid="windgram-fallback-notice"
+          className="rounded-xl border border-amber-300/40 bg-amber-100/75 px-3 py-2 text-xs leading-relaxed text-slate-700"
+        >
+          {warning}
+        </div>
+      )}
       {/* PANNELLO PRINCIPALE WINDGRAM - STYLE ALPIUM (Grigio perla) */}
       <div className="bg-slate-100 text-slate-800 rounded-2xl p-3 sm:p-5 shadow-sm border border-slate-300 backdrop-blur-md">
 
