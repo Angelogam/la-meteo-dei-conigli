@@ -29,7 +29,7 @@ const PRESSURE_LEVELS = [
   { hpa: 900, alt: 1000 },
 ];
 
-const ALT_TICKS = [4000, 3500, 3000, 2500, 2000, 1500, 1000];
+const ALT_TICKS = [4200, 4000, 3800, 3600, 3400, 3200, 3000, 2800, 2600, 2400, 2200, 2000, 1800, 1600, 1400, 1200, 1000, 800, 600, 400, 200];
 
 const computeDisplayAltitudes = (siteAlt: number): number[] => {
   const base = Math.floor(siteAlt / 250) * 250;
@@ -218,12 +218,12 @@ rimuovi ref canvas  const { interpolateAtAltitude } = useMultiHourWindProfile({
   }, [latitude, longitude, selectedDay, rawData]);
 
   const width = 1200;
-  const height = 880;
-  const margin = { top: 65, right: 150, bottom: 70, left: 95 };
+  const height = 1040;
+  const margin = { top: 200, right: 150, bottom: 78, left: 95 };
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
-  const minAlt = 1000;
+  const minAlt = 200;
   const maxAlt = 4200;
 
   const getYFromAlt = (alt: number) => {
@@ -249,15 +249,20 @@ rimuovi ref canvas  const { interpolateAtAltitude } = useMultiHourWindProfile({
       const tNum = Number(t);
       const dew = h.dew_point_2m[idx] !== undefined ? Number(h.dew_point_2m[idx]) : null;
       const rad = h.shortwave_radiation?.[idx] !== undefined ? Number(h.shortwave_radiation[idx]) : null;
-      const cloud = h.cloud_cover?.[idx] !== undefined ? Number(h.cloud_cover[idx]) : null;
-      const precip = h.precipitation?.[idx] !== undefined ? Number(h.precipitation[idx]) : 0;
-      const wind10 = h.wind_speed_10m?.[idx] !== undefined ? Number(h.wind_speed_10m[idx]) : null;
-      const windDir10 = h.wind_direction_10m?.[idx] !== undefined ? Number(h.wind_direction_10m[idx]) : null;
-      const freeze = h.freezing_level_height?.[idx] !== undefined ? Number(h.freezing_level_height[idx]) : null;
+      const cloud = h.cloud_cover?.[idx] != null ? Number(h.cloud_cover[idx]) : null;
+      const cloudLow = h.cloud_cover_low?.[idx] != null ? Number(h.cloud_cover_low[idx]) : null;
+      const cloudMid = h.cloud_cover_mid?.[idx] != null ? Number(h.cloud_cover_mid[idx]) : null;
+      const cloudHigh = h.cloud_cover_high?.[idx] != null ? Number(h.cloud_cover_high[idx]) : null;
+      const precip = h.precipitation?.[idx] != null ? Number(h.precipitation[idx]) : null;
+      const wind10 = h.wind_speed_10m?.[idx] != null ? Number(h.wind_speed_10m[idx]) : null;
+      const windDir10 = h.wind_direction_10m?.[idx] != null ? Number(h.wind_direction_10m[idx]) : null;
+      const wind80 = h.wind_speed_80m?.[idx] != null ? Number(h.wind_speed_80m[idx]) : null;
+      const windDir80 = h.wind_direction_80m?.[idx] != null ? Number(h.wind_direction_80m[idx]) : null;
+      const freeze = h.freezing_level_height?.[idx] != null ? Number(h.freezing_level_height[idx]) : null;
 
       const derived = hourDerivedMap.get(targetHour);
       const cloudBase = derived?.cloudBase ?? null;
-      const cloudPct = Math.max(2, Math.min(95, Math.round(cloud ?? 0)));
+      const cloudPct = cloud != null && Number.isFinite(cloud) ? Math.max(0, Math.min(100, Math.round(cloud))) : null;
 
       const thermalTop = derived?.estimatedThermalTop ?? null;
       const thermalAvg = derived?.estimatedThermalActivity ?? null;
@@ -297,24 +302,30 @@ rimuovi ref canvas  const { interpolateAtAltitude } = useMultiHourWindProfile({
       }
 
       const deltaTProfile: Array<number | null> = [];
-      for (let alt = minAlt; alt <= maxAlt; alt += 250) {
+      for (let alt = minAlt; alt <= maxAlt; alt += 100) {
         deltaTProfile.push(calcDeltaTAt(alt));
       }
 
       const levelWinds = displayAltitudes.map((alt) => {
         const interp = interpolateAtAltitude(targetHour, alt);
-        return { alt, speed: interp?.speed ?? wind10, dir: interp?.dir ?? windDir10 };
+        // Non estendere il vento al suolo alle quote senza un dato verticale.
+        return { alt, speed: interp?.speed ?? null, dir: interp?.dir ?? null };
       });
 
       return {
         hour: targetHour,
         thermalAvg,
         tempGround: Math.round(tNum),
-        windGround: Math.round(wind10 ?? 0),
-        windDirGround: Math.round(windDir10 ?? 0),
-        precip,
+        windGround: wind10 != null && Number.isFinite(wind10) ? Math.round(wind10) : null,
+        windDirGround: windDir10 != null && Number.isFinite(windDir10) ? Math.round(windDir10) : null,
+        wind80: wind80 != null && Number.isFinite(wind80) ? Math.round(wind80) : null,
+        windDir80: windDir80 != null && Number.isFinite(windDir80) ? Math.round(windDir80) : null,
+        cloudLow,
+        cloudMid,
+        cloudHigh,
+        precip: precip != null && Number.isFinite(precip) ? precip : null,
         cloudCover: cloud,
-        zeroThermal: Math.round(freeze ?? 0),
+        zeroThermal: freeze != null && Number.isFinite(freeze) ? Math.round(freeze) : null,
         thermalTop,
         cloudBase,
         cloudPct,
@@ -360,8 +371,18 @@ rimuovi ref canvas  const { interpolateAtAltitude } = useMultiHourWindProfile({
 
   const zeroThermalPath = useMemo(() => {
     if (hourlyData.length === 0) return "";
-    return hourlyData.map((h, i) => `${getXFromHourIdx(i)},${getYFromAlt(h.zeroThermal)}`).join(" ");
-  }, [hourlyData]);
+    let drawing = false;
+    const segments: string[] = [];
+    hourlyData.forEach((h, i) => {
+      if (h.zeroThermal == null || !Number.isFinite(h.zeroThermal) || h.zeroThermal < minAlt || h.zeroThermal > maxAlt) {
+        drawing = false;
+        return;
+      }
+      segments.push(`${drawing ? "L" : "M"} ${getXFromHourIdx(i)},${getYFromAlt(h.zeroThermal)}`);
+      drawing = true;
+    });
+    return segments.join(" ");
+  }, [hourlyData, minAlt, maxAlt]);
 
   const thermalTopCurve = useMemo(() => {
     if (hourlyData.length === 0) return "";
@@ -379,9 +400,12 @@ rimuovi ref canvas  const { interpolateAtAltitude } = useMultiHourWindProfile({
   }, [hourlyData]);
 
   const avgZeroThermal = useMemo(() => {
-    if (hourlyData.length === 0) return 3000;
-    return Math.round(hourlyData.reduce((acc, h) => acc + h.zeroThermal, 0) / hourlyData.length);
-  }, [hourlyData]);
+    const valid = hourlyData
+      .map((h) => h.zeroThermal)
+      .filter((value): value is number => value != null && Number.isFinite(value) && value >= minAlt && value <= maxAlt);
+    if (valid.length === 0) return null;
+    return Math.round(valid.reduce((acc, value) => acc + value, 0) / valid.length);
+  }, [hourlyData, minAlt, maxAlt]);
 
   if (loading) {
     return (
@@ -460,7 +484,7 @@ rimuovi ref canvas  const { interpolateAtAltitude } = useMultiHourWindProfile({
                   const sampleAltitude = altLow + (altHigh - altLow) / 2;
                   const profileIndex = Math.max(0, Math.min(
                     (profile?.length ?? 1) - 1,
-                    Math.round((sampleAltitude - minAlt) / 250),
+                    Math.round((sampleAltitude - minAlt) / 100),
                   ));
                   const deltaT = profile?.[profileIndex] ?? null;
                   const color = getStabilityColor(deltaT);
@@ -514,6 +538,68 @@ rimuovi ref canvas  const { interpolateAtAltitude } = useMultiHourWindProfile({
                 );
               })}
 
+              {/* Righe superiori del sounding: nuvole per fascia e vento ai primi livelli. */}
+              <text transform={`translate(${margin.left - 70}, 83) rotate(-90)`} fill="#526579" fontSize="11" fontWeight="900" textAnchor="middle" letterSpacing="1.2">NUVOLE</text>
+              <text transform={`translate(${margin.left - 70}, 158) rotate(-90)`} fill="#526579" fontSize="11" fontWeight="900" textAnchor="middle" letterSpacing="1.2">VENTO</text>
+              {[
+                { label: "H", y: 30 },
+                { label: "M", y: 60 },
+                { label: "B", y: 90 },
+              ].map((row) => (
+                <text key={`cloud-row-label-${row.label}`} x={margin.left - 12} y={row.y + 18} fill="#334155" fontSize="11" fontWeight="900" textAnchor="end">{row.label}</text>
+              ))}
+              {[
+                { label: "SUOLO", y: 130 },
+                { label: "80 m", y: 163 },
+              ].map((row) => (
+                <text key={`wind-row-label-${row.label}`} x={margin.left - 12} y={row.y + 18} fill="#334155" fontSize="9" fontWeight="900" textAnchor="end">{row.label}</text>
+              ))}
+              <text x={margin.left + plotW} y="18" fill="#687889" fontSize="10" fontWeight="800" textAnchor="end">Vento: km/h · Nuvole: % copertura</text>
+              {hourlyData.flatMap((h) => {
+                const hourIndex = HOURS.indexOf(h.hour);
+                if (hourIndex < 0) return [];
+                const cellW = plotW / HOURS.length;
+                const x = margin.left + hourIndex * cellW;
+                const cloudRows = [
+                  { key: "high", y: 30, value: h.cloudHigh },
+                  { key: "mid", y: 60, value: h.cloudMid },
+                  { key: "low", y: 90, value: h.cloudLow },
+                ];
+                const cloudCells = cloudRows.map((row) => {
+                  const cover = row.value;
+                  const fill = cover == null || !Number.isFinite(cover)
+                    ? "#f3f5f8"
+                    : cover >= 75 ? "#b5bdc9" : cover >= 45 ? "#d0d7e1" : cover >= 15 ? "#e5eaf1" : "#f6f8fb";
+                  return (
+                    <g key={`cloud-${h.hour}-${row.key}`}>
+                      <rect x={x} y={row.y} width={cellW} height="28" fill={fill} stroke="#c1cad5" strokeWidth=".65" />
+                      <text x={x + cellW / 2} y={row.y + 18} fill="#3c4a5c" fontSize="9" fontWeight="800" textAnchor="middle">
+                        {cover != null && Number.isFinite(cover) ? `${Math.round(cover)}` : ""}
+                      </text>
+                    </g>
+                  );
+                });
+                const windRows = [
+                  { key: "ground", y: 130, speed: h.windGround, dir: h.windDirGround },
+                  { key: "80m", y: 163, speed: h.wind80, dir: h.windDir80 },
+                ];
+                const windCells = windRows.map((row) => {
+                  const speed = row.speed;
+                  const fill = speed == null ? "#f3f5f8" : speed >= 30 ? "#9fd8ec" : speed >= 18 ? "#bfe6ef" : speed >= 8 ? "#d5efef" : "#e4f3f1";
+                  const centerX = x + cellW / 2;
+                  return (
+                    <g key={`wind-${h.hour}-${row.key}`}>
+                      <rect x={x} y={row.y} width={cellW} height="28" fill={fill} stroke="#c1cad5" strokeWidth=".65" />
+                      {speed != null && row.dir != null && Number.isFinite(speed) && Number.isFinite(row.dir) && renderWindBarb(centerX - 9, row.y + 13, speed, row.dir)}
+                      <text x={x + cellW - 4} y={row.y + 24} fill="#34485a" fontSize="8" fontWeight="800" textAnchor="end">
+                        {speed != null && Number.isFinite(speed) ? Math.round(speed) : ""}
+                      </text>
+                    </g>
+                  );
+                });
+                return [...cloudCells, ...windCells];
+              })}
+
               {/* Griglia Oraria */}
               {Array.from({ length: HOURS.length + 1 }, (_, i) => {
                 const x = margin.left + (i / HOURS.length) * plotW;
@@ -555,9 +641,10 @@ rimuovi ref canvas  const { interpolateAtAltitude } = useMultiHourWindProfile({
 
               {/* Isoterma Zero Termico */}
               {zeroThermalPath && (
-                <polyline points={zeroThermalPath} fill="none" stroke="#0284c7" strokeWidth="1.8" strokeDasharray="5 3" strokeLinecap="round" />
+                <path d={zeroThermalPath} fill="none" stroke="#0284c7" strokeWidth="1.8" strokeDasharray="5 3" strokeLinecap="round" />
               )}
               {hourlyData.map((h, i) => {
+                if (h.zeroThermal == null || !Number.isFinite(h.zeroThermal) || h.zeroThermal < minAlt || h.zeroThermal > maxAlt) return null;
                 const x = getXFromHourIdx(i);
                 const y = getYFromAlt(h.zeroThermal);
                 return (
@@ -568,12 +655,14 @@ rimuovi ref canvas  const { interpolateAtAltitude } = useMultiHourWindProfile({
                 );
               })}
 
-              <g transform={`translate(${margin.left + plotW - 130}, ${getYFromAlt(avgZeroThermal) - 12})`}>
-                <rect x="0" y="0" width="125" height="22" rx="4" fill="#0284c7" opacity="0.9" />
-                <text x="62" y="15" fill="#ffffff" fontSize="10" fontWeight="800" textAnchor="middle" fontFamily="monospace">
-                  0 °C · {avgZeroThermal} m
-                </text>
-              </g>
+              {avgZeroThermal != null && (
+                <g transform={`translate(${margin.left + plotW - 130}, ${getYFromAlt(avgZeroThermal) - 12})`}>
+                  <rect x="0" y="0" width="125" height="22" rx="4" fill="#0284c7" opacity="0.9" />
+                  <text x="62" y="15" fill="#ffffff" fontSize="10" fontWeight="800" textAnchor="middle" fontFamily="monospace">
+                    0 °C · {avgZeroThermal.toLocaleString("it-IT")} m
+                  </text>
+                </g>
+              )}
 
               {/* Curva del Thermal Top (Sviluppo verticale convettivo) */}
               {thermalTopCurve && (
@@ -631,10 +720,11 @@ rimuovi ref canvas  const { interpolateAtAltitude } = useMultiHourWindProfile({
               {hourlyData.map((calc, i) => (
                 <g key={`col-${i}`}>
                   {calc.levelWinds.map((windLevel) => {
+                    if (windLevel.speed == null || windLevel.dir == null || !Number.isFinite(windLevel.speed) || !Number.isFinite(windLevel.dir)) return null;
                     const x = getXFromHourIdx(i);
                     const y = getYFromAlt(windLevel.alt);
                     const currentHourData = hourlyData[i];
-                    const isNearThermal = Math.abs(y - getYFromAlt(currentHourData.thermalTop)) < 15;
+                    const isNearThermal = currentHourData.thermalTop != null && Math.abs(y - getYFromAlt(currentHourData.thermalTop)) < 15;
                     return (
                       <g key={`wb-${i}-${Math.round(windLevel.alt)}`}>
                         {renderWindBarb(x, y, windLevel.speed, windLevel.dir)}
