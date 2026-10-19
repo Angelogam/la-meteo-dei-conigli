@@ -12,7 +12,9 @@ import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import DayStoryboard from "@/components/DayStoryboard";
 import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
-import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
+import ProfessionalWindgram from "@/components/ProfessionalWindgram";
+import DailyThermalChart from "@/components/DailyThermalChart";
+import { Card, CardContent } from "@/components/ui/card";
 import SectionErrorBoundary from "@/components/SectionErrorBoundary";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
@@ -126,24 +128,28 @@ export default function Index() {
 
         <div className="flight-page-column">
           <main className="app-main flight-page flex-1 w-full min-w-0 max-w-none mx-auto px-3 sm:px-4 xl:px-6 py-4 space-y-4">
-            <section className="flight-page-titlebar" aria-labelledby="dashboard-intro-title">
+            <section className={"flight-page-titlebar " + (activeTab === "venti" ? "alpium-titlebar" : "")} aria-labelledby="dashboard-intro-title">
               <div>
-                <div className="dashboard-intro-kicker"><span className="dashboard-intro-kicker-dot" aria-hidden="true" />METEO · AEROLOGIA · VOLO LIBERO</div>
-                <h1 id="dashboard-intro-title">Il tuo briefing di volo.</h1>
-                <p>Grafici meteo, vento in quota e condizioni dei decolli.</p>
+                <div className="dashboard-intro-kicker"><span className="dashboard-intro-kicker-dot" aria-hidden="true" />{activeTab === "venti" ? "WINDGRAM · PROFILO VERTICALE · TERMICHE" : "METEO · AEROLOGIA · VOLO LIBERO"}</div>
+                <h1 id="dashboard-intro-title">{activeTab === "venti" ? "Il vento, quota per quota." : "Il tuo briefing di volo."}</h1>
+                <p>{activeTab === "venti" ? "Analisi oraria del vento in quota e dell'evoluzione termica, in una vista dedicata." : "Grafici meteo, vento in quota e condizioni dei decolli."}</p>
               </div>
               <div className="flight-page-actions">
                 <div className="dashboard-date-chip">
                   <CalendarDays aria-hidden="true" />
                   <span className="dashboard-date-copy"><small>Giorno selezionato</small><strong>{dateLabel}</strong></span>
                 </div>
-                <button type="button" className="dashboard-intro-cta" onClick={() => { setActiveTab("venti"); document.getElementById("windgram-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
-                  <Wind aria-hidden="true" /><span>Esplora i venti</span><ArrowDownRight aria-hidden="true" />
+                <button type="button" className="dashboard-intro-cta" onClick={() => {
+                  const nextTab = activeTab === "venti" ? "meteo" : "venti";
+                  setActiveTab(nextTab);
+                  document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}>
+                  {activeTab === "venti" ? <><CloudSun aria-hidden="true" /><span>Torna al meteo</span></> : <><Wind aria-hidden="true" /><span>Esplora i venti</span><ArrowDownRight aria-hidden="true" /></>}
                 </button>
               </div>
             </section>
 
-            {site && (
+            {activeTab !== "venti" && site && (
               <section className="flight-brief-strip" aria-label="Riepilogo rapido delle condizioni di volo">
                 <div className="flight-brief-heading">
                   <span>BRIEFING RAPIDO</span>
@@ -171,7 +177,7 @@ export default function Index() {
               </section>
             )}
 
-            {site && (
+            {activeTab !== "venti" && site && (
               <section id="overview" className="overview-section">
                 <SiteHeader
                   site_name={site.site_name}
@@ -188,7 +194,7 @@ export default function Index() {
 
             <div className="dashboard-layout flight-panels-grid">
               <div className="flight-desk-main dashboard-content min-w-0">
-                {site && (
+                {site && activeTab !== "venti" && (
                   <>
                     <DayStoryboard dayData={filteredDayData} siteName={site.site_name} selectedHour={selectedHour} onHourSelect={setSelectedHour} />
                     <section className="forecast-section flight-forecast-module min-w-0">
@@ -248,11 +254,6 @@ export default function Index() {
                           cin={currentData?.cin}
                         />
                       )}
-                      {activeTab === "venti" && (
-                        <SectionErrorBoundary title="La scheda Venti ha incontrato un errore">
-                          <VentiInterpolatiTab lat={site.lat} lon={site.lon} quotaDecollo={site.elevation_m} selectedDay={selectedDay} oraCorrente={selectedHour} onOraChange={setSelectedHour} siteName={site.site_name} rawData={rawApiResponse} />
-                        </SectionErrorBoundary>
-                      )}
                       {activeTab === "termiche" && (
                         <TermicheTab currentData={currentData as any} dayData={filteredDayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name }} selectedDay={selectedDay} />
                       )}
@@ -266,6 +267,73 @@ export default function Index() {
                       <HourlyTable dayData={filteredDayData} altitude={site.elevation_m} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabel} siteName={site.site_name} />
                     </section>
                   </>
+                )}
+
+                {site && activeTab === "venti" && (
+                  <div className="alpium-wind-page">
+                    <section id="details-section" className="details-section alpium-tabs-section scroll-mt-4">
+                      <div className="flight-subsection-heading">
+                        <div><span>STRUMENTI DI ANALISI</span><h2>Profilo aerologico</h2></div>
+                        <small>{dateLabel} · {site.elevation_m.toLocaleString("it-IT")} m</small>
+                      </div>
+                      <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+                    </section>
+
+                    <section className="alpium-summary-grid" aria-label="Riepilogo meteo del decollo">
+                      <article className="alpium-summary-card">
+                        <span>DECOLLO</span>
+                        <strong>{site.site_name}</strong>
+                        <small>{site.elevation_m.toLocaleString("it-IT")} m s.l.m.</small>
+                      </article>
+                      <article className="alpium-summary-card">
+                        <span>VENTO AL SUOLO</span>
+                        <strong>{typeof current?.windSpeed === "number" ? Math.round(current.windSpeed) + " km/h" : "N/D"}</strong>
+                        <small>{typeof current?.windDir === "number" ? Math.round(current.windDir) + "° di provenienza" : "Direzione non disponibile"}</small>
+                      </article>
+                      <article className="alpium-summary-card">
+                        <span>RAFFICHE</span>
+                        <strong>{typeof current?.windGusts === "number" ? Math.round(current.windGusts) + " km/h" : "N/D"}</strong>
+                        <small>Previsione al decollo</small>
+                      </article>
+                      <article className="alpium-summary-card">
+                        <span>CAPE</span>
+                        <strong>{typeof current?.cape === "number" ? Math.round(current.cape).toLocaleString("it-IT") + " J/kg" : "N/D"}</strong>
+                        <small>Indice convettivo del modello</small>
+                      </article>
+                    </section>
+
+                    <Card className="alpium-windgram-panel">
+                      <CardContent className="alpium-windgram-panel-content">
+                        <div className="alpium-windgram-viewport">
+                          <SectionErrorBoundary title="Il windgram verticale non è riuscito a caricarsi">
+                            <ProfessionalWindgram
+                              latitude={site.lat}
+                              longitude={site.lon}
+                              altitude={site.elevation_m}
+                              siteName={site.site_name}
+                              selectedDay={selectedDay}
+                              rawData={rawApiResponse}
+                            />
+                          </SectionErrorBoundary>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <DailyThermalChart
+                      dayData={filteredDayData}
+                      altitude={site.elevation_m}
+                      siteName={site.site_name}
+                      dateLabel={dateLabel}
+                    />
+
+                    <section className="alpium-hourly-panel">
+                      <div className="alpium-hourly-heading">
+                        <div><span className="alpium-section-kicker">DATI ORARI</span><h2>Previsioni del decollo</h2></div>
+                        <small>{dateLabel}</small>
+                      </div>
+                      <HourlyTable dayData={filteredDayData} altitude={site.elevation_m} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabel} siteName={site.site_name} />
+                    </section>
+                  </div>
                 )}
               </div>
 
