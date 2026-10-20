@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Activity, ArrowDownRight, CalendarDays, CloudSun, Database, Home, Mountain, Thermometer, Wind } from "lucide-react";
+import { Activity, ArrowDownRight, CalendarDays, CloudSun, Home, Mountain, Thermometer, Wind } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
@@ -96,9 +96,6 @@ export default function Index() {
               <Activity aria-hidden="true" /><span>Analisi</span>
             </button>
           </nav>
-          <a className="flight-nav-item api-catalog-nav-link" href="/catalogo-api">
-            <Database aria-hidden="true" /><span>Catalogo API</span>
-          </a>
           <div className="flight-nav-divider" />
           <div className="flight-nav-caption">DECOLLO ATTIVO</div>
           <div className="flight-nav-current">
@@ -112,7 +109,7 @@ export default function Index() {
 
         <div className="flight-page-column">
           <main className="app-main flight-page flex-1 w-full min-w-0 max-w-none mx-auto px-3 sm:px-4 xl:px-6 py-4 space-y-4">
-            <section className="flight-page-titlebar" aria-labelledby="dashboard-intro-title">
+            <section className="flight-page-titlebar flight-hero-banner" aria-labelledby="dashboard-intro-title">
               <div>
                 <div className="dashboard-intro-kicker"><span className="dashboard-intro-kicker-dot" aria-hidden="true" />METEO · AEROLOGIA · VOLO LIBERO</div>
                 <h1 id="dashboard-intro-title">Il tuo briefing di volo.</h1>
@@ -146,6 +143,26 @@ export default function Index() {
             )}
 
             {site && (
+              <div className="flight-top-dashboard-grid">
+                <div className="flight-primary-column">
+                  <section className="flybubble-panel flybubble-live-map" aria-labelledby="flybubble-heading">
+                    <header className="flybubble-panel-header">
+                      <div className="flybubble-panel-icon" aria-hidden="true"><Wind /></div>
+                      <div className="flybubble-panel-title">
+                        <p className="flybubble-panel-kicker">MAPPA METEO INTERATTIVA</p>
+                        <h2 id="flybubble-heading">Flybubble Weather</h2>
+                        <p>Vento, attività termica e panoramica delle condizioni per il volo libero.</p>
+                      </div>
+                      <a className="flybubble-open-link" href="https://weather.flybubble.com/it#/0/12" target="_blank" rel="noreferrer">Apri a schermo intero <ArrowDownRight aria-hidden="true" /></a>
+                    </header>
+                    <div className="flybubble-frame-wrap">
+                      <iframe className="flybubble-frame" src="https://weather.flybubble.com/it#/0/12" title="Mappa interattiva Flybubble Weather" loading="lazy" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />
+                    </div>
+                    <div className="flybubble-panel-footer">
+                      <span>Servizio esterno Flybubble. La copertura dei siti e delle previsioni può variare in base all’area.</span>
+                      <a href="https://weather.flybubble.com/it#/0/12" target="_blank" rel="noreferrer">Apri Flybubble <ArrowDownRight aria-hidden="true" /></a>
+                    </div>
+                  </section>
               <section id="windgram-section" className="launch-windgram-top min-w-0" aria-label="Windgram aerologico del decollo selezionato">
                 <VentiInterpolatiTab
                   lat={site.lat}
@@ -159,21 +176,6 @@ export default function Index() {
                   rawData={rawApiResponse}
                 />
               </section>
-            )}
-
-            {site && (
-              <section id="flight-site-list" className="flight-site-list" aria-label="Selezione del decollo">
-                <DecolliCard
-                  decolli={mergedDecolli}
-                  selectedId={selectedId}
-                  selectedDay={selectedDay}
-                  isUpdating={aggressiveUpdating}
-                  error={aggressiveError}
-                  onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}
-                />
-              </section>
-            )}
-
             <div className="dashboard-layout flight-panels-grid">
               <div className="flight-desk-main dashboard-content min-w-0">
                 {site && (
@@ -241,6 +243,19 @@ export default function Index() {
 
 
             </div>
+                </div>
+                <aside id="flight-site-list" className="flight-launch-sidebar" aria-label="Selezione del decollo">
+                  <DecolliCard
+                    decolli={mergedDecolli}
+                    selectedId={selectedId}
+                    selectedDay={selectedDay}
+                    isUpdating={aggressiveUpdating}
+                    error={aggressiveError}
+                    onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}
+                  />
+                </aside>
+              </div>
+            )}
           </main>
 
           <nav className="mobile-bottom-nav" aria-label="Navigazione rapida">
