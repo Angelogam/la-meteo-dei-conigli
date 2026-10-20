@@ -266,6 +266,8 @@ export function generateRealisticHourly(
       temp120m: Math.round(temp120m * 10) / 10,
       apparentTemp: Math.round((temp + windSpeed * 0.1) * 10) / 10,
       precipitationProba: Math.round(precipProb),
+      temperature180m: null,
+      boundaryLayerHeight: null,
       evapotranspiration: Math.round(radiation * 0.002 * 100) / 100,
       et0: Math.round(radiation * 0.0015 * 100) / 100,
       soilTemp: Math.round((temp - 2) * 10) / 10,
@@ -415,6 +417,6 @@ export function generateRealisticCurrent(
     surfacePressure: ref.surfacePressure ?? null,
     liftedIndex: ref.liftedIndex ?? null,
     cin: ref.cin ?? null,
-    isDay: ref.isDay ? 1 : 0,
+    isDay: ref.isDay,
   };
 }

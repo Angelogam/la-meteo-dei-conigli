@@ -209,7 +209,7 @@ export interface VerticalWindProfile {
   /** Vento ai livelli di pressione disponibili. */
   pressureLevels: WindObservation[];
   /** Shear tra livelli adiacenti. */
-  shearBetweenLevels: { from: number; to: number; result: import("./windShearCalculator").WindShearResult }[];
+  shearBetweenLevels: { from: number; to: number; result: import("@/utils/windShearCalculator").WindShearResult }[];
 }
 
 /**
