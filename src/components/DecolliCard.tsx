@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, CloudSnow, Zap, Info, Search, MapPin, Thermometer, Wind } from "lucide-react";
 import type { Decollo } from "@/data/decolli";
 
@@ -72,16 +72,6 @@ function getWeatherStatus(weather: AggressiveWeatherData | null | undefined) {
   return getStatoDisplay(weather?.stato);
 }
 
-function LaunchPhoto({ lat, lon, name }: { lat: number; lon: number; name: string }) {
-  const [photo, setPhoto] = useState<{ url: string; title: string; page: string } | null>(null);
-  const [loaded, setLoaded] = useState(false);
-  useEffect(() => { let cancelled = false; if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
-    const params = new URLSearchParams({ action: 'query', generator: 'geosearch', ggscoord: lat + '|' + lon, ggsradius: '5000', ggsnamespace: '6', ggslimit: '10', prop: 'imageinfo', iiprop: 'url|extmetadata', iiurlwidth: '420', format: 'json', origin: '*' });
-    fetch('https://commons.wikimedia.org/w/api.php?' + params.toString()).then((r) => r.ok ? r.json() : Promise.reject()).then((data) => { const pages = Object.values(data && data.query && data.query.pages || {}) as any[]; const match = pages.find((p) => p && (p.thumbnail && p.thumbnail.source || p.imageinfo && p.imageinfo[0] && (p.imageinfo[0].thumburl || p.imageinfo[0].url))); if (!cancelled && match) { const info = match.imageinfo && match.imageinfo[0] || {}; setPhoto({ url: match.thumbnail && match.thumbnail.source || info.thumburl || info.url, title: String(info.extmetadata && info.extmetadata.ObjectName && info.extmetadata.ObjectName.value || match.title || name).replace(/<[^>]*>/g, ''), page: info.descriptionurl || 'https://commons.wikimedia.org/wiki/' + encodeURIComponent(String(match.title || '').replace(/ /g, '_')) }); } }).catch(() => {}).finally(() => { if (!cancelled) setLoaded(true); }); return () => { cancelled = true; }; }, [lat, lon, name]);
-  if (!photo) return <div className="launch-photo-fallback" aria-label={'Foto non disponibile per ' + name}><MapPin size={21} aria-hidden="true" /><span>{loaded ? 'Foto non trovata vicino al GPS' : 'Cerco foto vicino al GPS…'}</span></div>;
-  return <a className="launch-photo-link" href={photo.page} target="_blank" rel="noreferrer" title={'Apri la foto originale: ' + photo.title} onClick={(event) => event.stopPropagation()}><img className="launch-photo-image" src={photo.url} alt={'Paesaggio vicino al decollo ' + name} loading="lazy" /><span className="launch-photo-credit">Wikimedia Commons</span></a>;
-}
-
 export default function DecolliCard({
   decolli, selectedId, onSelect, selectedDay = 0, isUpdating = false, error,
 }: DecolliCardProps) {
@@ -145,7 +135,7 @@ export default function DecolliCard({
               aria-pressed={selected}
               className={"launch-compare-row" + (selected ? " is-selected" : "")}
             >
-              <div className="launch-compare-photo-head"><LaunchPhoto lat={item.lat} lon={item.lon} name={item.site_name || item.name} /><div className="launch-compare-site-header"><span className="launch-compare-site-name">{item.site_name || item.name}</span><span className="launch-compare-site-meta"><MapPin size={12} aria-hidden="true" />{item.location_name || item.valley} · <strong>{item.elevation_m || item.altitude} m s.l.m.</strong></span><span className="launch-compare-site-orientation">Esposizione {item.orientation || item.exposure || "N/D"}</span></div></div>
+              <div className="launch-compare-site-header"><span className="launch-compare-site-name">{item.site_name || item.name}</span><span className="launch-compare-site-meta"><MapPin size={12} aria-hidden="true" />{item.location_name || item.valley} · <strong>{item.elevation_m || item.altitude} m s.l.m.</strong></span><span className="launch-compare-site-orientation">Esposizione {item.orientation || item.exposure || "N/D"}</span></div>
               <div className="launch-compare-weather-grid">
                 <div className="launch-compare-weather-item launch-compare-condition"><span className="launch-compare-icon">{status.icon}</span><span className="launch-compare-value">{status.label}</span><span className="launch-compare-label">CONDIZIONI</span></div>
                 <div className="launch-compare-weather-item"><Thermometer size={14} aria-hidden="true" /><span className="launch-compare-value">{temp === null ? "N/D" : temp.toFixed(0) + "°C"}</span><span className="launch-compare-label">TEMPERATURA</span></div>
