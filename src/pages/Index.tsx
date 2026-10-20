@@ -109,7 +109,7 @@ export default function Index() {
 
         <div className="flight-page-column">
           <main className="app-main flight-page flex-1 w-full min-w-0 max-w-none mx-auto px-3 sm:px-4 xl:px-6 py-4 space-y-4">
-            <section className="flight-page-titlebar flight-hero-banner" aria-labelledby="dashboard-intro-title">
+            <section className="flight-page-titlebar flight-hero-banner flight-premium-cover" aria-labelledby="dashboard-intro-title">
               <div>
                 <div className="dashboard-intro-kicker"><span className="dashboard-intro-kicker-dot" aria-hidden="true" />METEO · AEROLOGIA · VOLO LIBERO</div>
                 <h1 id="dashboard-intro-title">Il tuo briefing di volo.</h1>
