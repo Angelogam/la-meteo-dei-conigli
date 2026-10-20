@@ -1570,3 +1570,105 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .forecast-day-card-premium > div:first-child > span:first-child { animation: none !important; }
 }
+
+
+/* FIX: weather comparison cards must show their data, not clipped pill-shaped labels. */
+.launch-compare-panel { min-width: 0; }
+.launch-compare-rows { overflow-y: auto; max-height: min(72vh, 980px); }
+.launch-compare-row {
+  display: flex !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  align-items: stretch !important;
+  flex-direction: column !important;
+  gap: .7rem !important;
+  padding: 1rem !important;
+  text-align: left !important;
+  white-space: normal !important;
+  overflow: visible !important;
+}
+.launch-compare-site-header { display:flex; width:100%; min-width:0; flex-direction:column; align-items:flex-start; gap:.28rem; }
+.launch-compare-site-name { display:block; width:100%; white-space:normal !important; overflow-wrap:anywhere; line-height:1.25 !important; font-size:.95rem !important; }
+.launch-compare-site-meta { display:flex; flex-wrap:wrap; align-items:center; gap:.35rem; line-height:1.4; font-size:.7rem !important; }
+.launch-compare-altitude { color:#e4f3e9; font-weight:800; }
+.launch-compare-weather-grid { display:grid !important; width:100%; grid-template-columns:repeat(3,minmax(0,1fr)) !important; gap:.45rem !important; margin-top:.1rem !important; }
+.launch-compare-weather-item {
+  display:flex !important; min-width:0; min-height:66px !important; height:auto !important;
+  align-items:flex-start !important; justify-content:center !important; flex-direction:column !important;
+  gap:.2rem !important; padding:.55rem !important; border:1px solid rgba(191,220,211,.10);
+  border-radius:11px !important; overflow-wrap:anywhere; text-align:left;
+}
+.launch-compare-condition { grid-column:span 3; min-height:58px !important; flex-direction:row !important; align-items:center !important; justify-content:flex-start !important; gap:.65rem !important; }
+.launch-compare-icon svg { width:23px !important; height:23px !important; }
+.launch-compare-value { color:#f5f8f2 !important; font-size:.85rem !important; font-weight:850 !important; line-height:1.2; }
+.launch-compare-label { color:#a9c4bc !important; font-size:.57rem !important; font-weight:800 !important; letter-spacing:.06em; line-height:1.25; }
+.launch-compare-index { position:absolute; right:.85rem; top:.8rem; padding:.2rem .45rem; font-size:.7rem; }
+.launch-compare-selected { position:absolute; right:.9rem; bottom:.8rem; color:#a8ead1; font-weight:900; }
+@media (max-width: 560px) {
+  .launch-compare-row { padding:.8rem !important; }
+  .launch-compare-weather-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+  .launch-compare-condition { grid-column:span 2; }
+  .launch-compare-value { font-size:.82rem !important; }
+}
+
+
+/* Flight Pro launch cards: readable metrics and real dashboard hierarchy. */
+.launch-compare-panel { min-width: 0; }
+.launch-compare-rows { display:flex !important; flex-direction:column !important; gap:.7rem !important; padding:.25rem .75rem 1rem !important; overflow-y:auto !important; max-height:min(72vh,980px); }
+.launch-compare-row {
+ display:flex !important; width:100% !important; min-width:0 !important; height:auto !important; min-height:0 !important;
+ flex-direction:column !important; align-items:stretch !important; gap:.7rem !important; padding:.95rem !important;
+ text-align:left !important; white-space:normal !important; overflow:visible !important; border-radius:16px !important;
+ background:linear-gradient(145deg,rgba(27,55,65,.96),rgba(12,34,44,.98)) !important;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 7px 20px rgba(0,0,0,.12) !important;
+}
+.launch-compare-site-header { display:flex !important; width:100%; min-width:0; flex-direction:column !important; align-items:flex-start !important; gap:.32rem !important; }
+.launch-compare-site-name { display:block !important; width:100%; font-size:1rem !important; line-height:1.25 !important; white-space:normal !important; overflow-wrap:anywhere !important; }
+.launch-compare-site-meta { display:flex !important; flex-wrap:wrap; align-items:center; gap:.32rem !important; font-size:.7rem !important; line-height:1.4 !important; }
+.launch-compare-altitude { color:#d9f1e6 !important; font-weight:800; }
+.launch-compare-weather-grid { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:.45rem !important; width:100%; margin:0 !important; }
+.launch-compare-weather-item {
+ display:flex !important; min-width:0 !important; min-height:65px !important; height:auto !important; flex-direction:column !important;
+ align-items:flex-start !important; justify-content:center !important; gap:.2rem !important; padding:.55rem !important;
+ border:1px solid rgba(178,220,211,.12) !important; border-radius:11px !important; background:rgba(4,20,27,.38) !important;
+ overflow-wrap:anywhere !important; text-align:left !important;
+}
+.launch-compare-condition { grid-column:1/-1; min-height:54px !important; flex-direction:row !important; align-items:center !important; justify-content:flex-start !important; gap:.65rem !important; }
+.launch-compare-icon svg { width:24px !important; height:24px !important; }
+.launch-compare-value { color:#f4faf4 !important; font-size:.84rem !important; font-weight:850 !important; line-height:1.2 !important; }
+.launch-compare-label { color:#a9c6c0 !important; font-size:.56rem !important; font-weight:800 !important; letter-spacing:.07em !important; line-height:1.2 !important; }
+.launch-compare-wind-arrow { color:#83dfc0; font-size:1.1rem; line-height:1; }
+.launch-compare-index { position:absolute; top:.85rem; right:.85rem; padding:.2rem .45rem; border-radius:99px; font-size:.68rem; }
+.launch-compare-selected { position:absolute; right:.85rem; bottom:.8rem; color:#a8ead1; font-weight:900; }
+@media (min-width: 1100px) {
+ .flight-top-dashboard-grid { display:grid !important; grid-template-columns:minmax(0,1fr) minmax(340px,390px) !important; gap:1rem !important; align-items:start !important; }
+ .flight-primary-column { min-width:0 !important; }
+ .flight-launch-sidebar { position:sticky !important; top:1rem; min-width:0 !important; max-height:calc(100vh - 2rem); }
+ .launch-compare-rows { max-height:calc(100vh - 250px) !important; }
+}
+@media (max-width: 560px) {
+ .launch-compare-weather-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+ .launch-compare-row { padding:.8rem !important; }
+}
+
+
+/* GPS-linked real landscape thumbnails in launch cards */
+.launch-compare-photo-head { display:grid !important; grid-template-columns:92px minmax(0,1fr) !important; align-items:center !important; gap:.8rem !important; min-width:0; }
+.launch-photo-link,.launch-photo-fallback { display:flex; position:relative; width:92px; height:78px; overflow:hidden; align-items:center; justify-content:center; border-radius:12px; background:linear-gradient(145deg,#294e55,#142b35); border:1px solid rgba(174,220,207,.18); color:#a9cfc2; }
+.launch-photo-image { width:100%; height:100%; object-fit:cover; transition:transform .35s ease; }
+.launch-photo-link:hover .launch-photo-image { transform:scale(1.06); }
+.launch-photo-fallback { flex-direction:column; gap:.25rem; padding:.3rem; text-align:center; font-size:.55rem; line-height:1.2; }
+.launch-photo-credit { position:absolute; inset:auto 0 0; padding:.15rem .25rem; color:#fff; background:linear-gradient(transparent,rgba(0,0,0,.75)); font-size:.48rem; text-align:center; }
+.launch-compare-site-header { min-width:0; display:flex !important; flex-direction:column !important; align-items:flex-start !important; gap:.3rem !important; }
+.launch-compare-site-name { white-space:normal !important; overflow-wrap:anywhere; line-height:1.2 !important; }
+.launch-compare-site-meta { display:flex; flex-wrap:wrap; gap:.25rem; line-height:1.35; }
+.launch-compare-site-orientation { color:#94b8ae; font-size:.65rem; }
+.launch-compare-weather-grid { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:.45rem !important; width:100%; }
+.launch-compare-weather-item { display:flex !important; flex-direction:column !important; align-items:flex-start !important; justify-content:center !important; gap:.2rem !important; min-width:0; min-height:62px !important; height:auto !important; padding:.55rem !important; border-radius:11px !important; background:rgba(4,20,27,.38); border:1px solid rgba(178,220,211,.12); overflow-wrap:anywhere; }
+.launch-compare-condition { grid-column:1/-1; flex-direction:row !important; align-items:center !important; justify-content:flex-start !important; min-height:50px !important; }
+.launch-compare-value { color:#f4faf4 !important; font-size:.82rem !important; font-weight:850 !important; line-height:1.2 !important; }
+.launch-compare-label { color:#a9c6c0 !important; font-size:.56rem !important; font-weight:800 !important; letter-spacing:.06em; }
+@media (min-width:1100px) { .flight-top-dashboard-grid { display:grid !important; grid-template-columns:minmax(0,1fr) minmax(350px,410px) !important; gap:1rem !important; align-items:start !important; } .flight-primary-column { min-width:0 !important; } .flight-launch-sidebar { position:sticky !important; top:1rem; min-width:0 !important; } }
+@media (max-width:560px) { .launch-compare-photo-head { grid-template-columns:80px minmax(0,1fr) !important; gap:.6rem !important; } .launch-photo-link,.launch-photo-fallback { width:80px; height:72px; } }
