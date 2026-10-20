@@ -1217,22 +1217,22 @@ a:focus-visible,
 }
 .launch-compare-row:hover { background: rgba(71, 115, 138, .2); border-color: rgba(120, 201, 196, .58); }
 .launch-compare-row.is-selected { background: linear-gradient(90deg, rgba(43, 117, 130, .32), rgba(29, 77, 95, .2)); border-color: #78c9c4; box-shadow: inset 3px 0 #78c9c4; }
-.launch-compare-site { display: flex; flex: 1 1 200px; flex-direction: column; min-width: 0; gap: .35rem; }
-.launch-compare-site-name { overflow: hidden; color: #edf6fa; font-size: .96rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
-.launch-compare-site-meta { display: flex; align-items: center; gap: .25rem; min-width: 0; color: #a7bdc9; font-size: .74rem; line-height: 1.35; }
+.launch-compare-site { display: flex; flex: 1 1 200px; flex-direction: column; min-width: 0; gap: .35rem; align-items: center; }
+.launch-compare-site-name { overflow: hidden; color: #edf6fa; font-size: .96rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
+.launch-compare-site-meta { display: flex; align-items: center; justify-content: center; gap: .25rem; min-width: 0; color: #a7bdc9; font-size: .74rem; line-height: 1.35; }
 .launch-compare-site-meta svg { flex: 0 0 auto; }
-.launch-compare-weather { display: flex; flex: 0 1 600px; align-items: center; justify-content: flex-end; gap: .45rem; min-width: 0; }
+.launch-compare-weather { display: flex; flex: 0 1 600px; align-items: center; justify-content: center; gap: .45rem; min-width: 0; }
 .launch-compare-condition { display: inline-flex; align-items: center; gap: .3rem; min-width: 80px; color: #c7d8df; font-size: .78rem; }
 .launch-compare-wind { display: inline-flex; align-items: center; gap: .22rem; min-width: 76px; color: #e9f8ff; font-size: .78rem; font-variant-numeric: tabular-nums; text-align: right; }
 .launch-compare-direction { min-width: 98px; color: #b7cbd5; font-size: .7rem; }
 .launch-compare-metric { display: inline-flex; align-items: center; gap: .2rem; min-width: 68px; color: #f0d29b; font-size: .74rem; font-variant-numeric: tabular-nums; }
 .launch-compare-temp { min-width: 35px; color: #edc98e; font-size: .75rem; text-align: right; }
 .launch-compare-base { display: inline-flex; align-items: center; gap: .22rem; min-width: 44px; color: #b7a9e7; font-size: .7rem; }
-.launch-compare-index { min-width: 34px; padding: .16rem .34rem; border: 1px solid rgba(139, 170, 184, .2); border-radius: 5px; font-size: .68rem; font-weight: 800; text-align: center; }
+.launch-compare-index { min-width: 34px; padding: .16rem .34rem; border: 1px solid rgba(139, 170, 184, .2); border-radius: 5px; font-size: .68rem; font-weight: 800; text-align: center; display: inline-flex; align-items: center; justify-content: center; }
 .launch-compare-index.is-low { color: #9cdec5; background: rgba(37, 107, 83, .18); }
 .launch-compare-index.is-mid { color: #f0d08b; background: rgba(124, 91, 33, .18); }
 .launch-compare-index.is-high { color: #f1aaa1; background: rgba(137, 54, 48, .2); }
-.launch-compare-selected { flex: 0 0 auto; color: #84d6c5; font-size: .62rem; font-weight: 750; }
+.launch-compare-selected { flex: 0 0 auto; color: #84d6c5; font-size: .62rem; font-weight: 750; text-align: center; }
 .launch-compare-empty { padding: .5rem; color: #9eb3c0; font-size: .68rem; }
 .launch-compare-toggle { display: none; }
 .launch-compare-toggle:hover { background: rgba(25, 63, 81, .8); }
@@ -1242,10 +1242,10 @@ a:focus-visible,
   .launch-compare-search { max-width: none; flex-basis: auto; }
   .launch-compare-update { font-size: .65rem; }
   .launch-compare-row { align-items: center; flex-direction: row; gap: .6rem; padding: .9rem 1.1rem; }
-  .launch-compare-weather { justify-content: flex-start; flex-wrap: wrap; gap: .4rem; width: 100%; }
+  .launch-compare-weather { justify-content: center; flex-wrap: wrap; gap: .4rem; width: 100%; }
   .launch-compare-condition { min-width: 68px; font-size: .72rem; }
-  .launch-compare-site-name { font-size: .88rem; }
-  .launch-compare-site-meta { font-size: .7rem; }
+  .launch-compare-site-name { font-size: .88rem; text-align: center; }
+  .launch-compare-site-meta { font-size: .7rem; justify-content: center; }
   .launch-compare-metric { font-size: .7rem; }
   .launch-compare-wind { font-size: .72rem; }
   .launch-compare-direction { font-size: .66rem; min-width: 88px; }
@@ -1304,8 +1304,8 @@ a:focus-visible,
 .flight-launch-sidebar .launch-compare-search { max-width: none; flex-basis: auto; }
 .flight-launch-sidebar .launch-compare-update { font-size: .64rem; }
 .flight-launch-sidebar .launch-compare-row { align-items: center; flex-direction: row; gap: .6rem; padding: .9rem 1.1rem; }
-.flight-launch-sidebar .launch-compare-site-name { white-space: normal; line-height: 1.2; }
-.flight-launch-sidebar .launch-compare-site-meta { flex-wrap: wrap; line-height: 1.2; }
+.flight-launch-sidebar .launch-compare-site-name { white-space: normal; line-height: 1.2; text-align: center; }
+.flight-launch-sidebar .launch-compare-site-meta { flex-wrap: wrap; line-height: 1.2; justify-content: center; }
 .flight-launch-sidebar .launch-compare-weather { width: auto; flex-wrap: nowrap; justify-content: flex-end; gap: .3rem; }
 .flight-launch-sidebar .launch-compare-selected { position: static; font-size: .54rem; }
 .flight-launch-sidebar .launch-compare-toggle { display: none; }
@@ -1330,8 +1330,8 @@ a:focus-visible,
   .flight-launch-sidebar .launch-compare-row { align-items: center; flex-direction: row; gap: .5rem; padding: .7rem .9rem; }
   .flight-launch-sidebar .launch-compare-weather { width: auto; justify-content: flex-end; }
   .flight-launch-sidebar .launch-compare-selected { position: static; font-size: .6rem; }
-  .flight-launch-sidebar .launch-compare-site-name { font-size: .84rem; }
-  .flight-launch-sidebar .launch-compare-site-meta { font-size: .68rem; }
+  .flight-launch-sidebar .launch-compare-site-name { font-size: .84rem; text-align: center; }
+  .flight-launch-sidebar .launch-compare-site-meta { font-size: .68rem; justify-content: center; }
   .flight-launch-sidebar .launch-compare-metric { font-size: .68rem; }
   .flight-launch-sidebar .launch-compare-wind { font-size: .7rem; }
   .flight-launch-sidebar .launch-compare-direction { font-size: .64rem; min-width: 82px; }
@@ -1346,8 +1346,8 @@ a:focus-visible,
   .flybubble-live-map .flybubble-frame-wrap { height: 470px; padding: .4rem; }
   .flight-launch-sidebar .launch-compare-row { align-items: center; flex-direction: row; gap: .55rem; padding: .7rem .9rem; }
   .flight-launch-sidebar .launch-compare-weather { justify-content: flex-end; }
-  .flight-launch-sidebar .launch-compare-site-name { font-size: .84rem; }
-  .flight-launch-sidebar .launch-compare-site-meta { font-size: .68rem; }
+  .flight-launch-sidebar .launch-compare-site-name { font-size: .84rem; text-align: center; }
+  .flight-launch-sidebar .launch-compare-site-meta { font-size: .68rem; justify-content: center; }
   .flight-launch-sidebar .launch-compare-metric { font-size: .68rem; }
   .flight-launch-sidebar .launch-compare-wind { font-size: .7rem; }
   .flight-launch-sidebar .launch-compare-direction { font-size: .64rem; min-width: 82px; }
