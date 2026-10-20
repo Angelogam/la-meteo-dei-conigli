@@ -1651,17 +1651,7 @@ body {
 @media (max-width: 560px) {
  .launch-compare-weather-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
  .launch-compare-row { padding:.8rem !important; }
-}
-
-
-/* GPS-linked real landscape thumbnails in launch cards */
-.launch-compare-photo-head { display:grid !important; grid-template-columns:92px minmax(0,1fr) !important; align-items:center !important; gap:.8rem !important; min-width:0; }
-.launch-photo-link,.launch-photo-fallback { display:flex; position:relative; width:92px; height:78px; overflow:hidden; align-items:center; justify-content:center; border-radius:12px; background:linear-gradient(145deg,#294e55,#142b35); border:1px solid rgba(174,220,207,.18); color:#a9cfc2; }
-.launch-photo-image { width:100%; height:100%; object-fit:cover; transition:transform .35s ease; }
-.launch-photo-link:hover .launch-photo-image { transform:scale(1.06); }
-.launch-photo-fallback { flex-direction:column; gap:.25rem; padding:.3rem; text-align:center; font-size:.55rem; line-height:1.2; }
-.launch-photo-credit { position:absolute; inset:auto 0 0; padding:.15rem .25rem; color:#fff; background:linear-gradient(transparent,rgba(0,0,0,.75)); font-size:.48rem; text-align:center; }
-.launch-compare-site-header { min-width:0; display:flex !important; flex-direction:column !important; align-items:flex-start !important; gap:.3rem !important; }
+}.launch-compare-site-header { min-width:0; display:flex !important; flex-direction:column !important; align-items:flex-start !important; gap:.3rem !important; }
 .launch-compare-site-name { white-space:normal !important; overflow-wrap:anywhere; line-height:1.2 !important; }
 .launch-compare-site-meta { display:flex; flex-wrap:wrap; gap:.25rem; line-height:1.35; }
 .launch-compare-site-orientation { color:#94b8ae; font-size:.65rem; }
@@ -1671,4 +1661,4 @@ body {
 .launch-compare-value { color:#f4faf4 !important; font-size:.82rem !important; font-weight:850 !important; line-height:1.2 !important; }
 .launch-compare-label { color:#a9c6c0 !important; font-size:.56rem !important; font-weight:800 !important; letter-spacing:.06em; }
 @media (min-width:1100px) { .flight-top-dashboard-grid { display:grid !important; grid-template-columns:minmax(0,1fr) minmax(350px,410px) !important; gap:1rem !important; align-items:start !important; } .flight-primary-column { min-width:0 !important; } .flight-launch-sidebar { position:sticky !important; top:1rem; min-width:0 !important; } }
-@media (max-width:560px) { .launch-compare-photo-head { grid-template-columns:80px minmax(0,1fr) !important; gap:.6rem !important; } .launch-photo-link,.launch-photo-fallback { width:80px; height:72px; } }
+@media (max-width:560px) {}
