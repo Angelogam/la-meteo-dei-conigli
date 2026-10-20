@@ -1372,3 +1372,201 @@ a:focus-visible,
   .flight-launch-sidebar .launch-compare-weather-item { font-size: .6rem; padding: .15rem .2rem; }
   .flight-launch-sidebar .launch-compare-direction { font-size: .58rem; }
 }
+
+
+/* PREMIUM FRONT PAGE — warm alpine daylight, clear hierarchy, living forecast cards */
+:root {
+  --flight-ink: #f7f8f4;
+  --flight-muted: #d3dedf;
+  --flight-line: rgba(190, 216, 220, .25);
+  --flight-cyan: #9ce5e7;
+  --flight-panel: #182e3b;
+}
+body {
+  background:
+    radial-gradient(ellipse at 70% 0%, rgba(192, 164, 117, .12), transparent 42%),
+    linear-gradient(180deg, #101d27 0%, #172b35 48%, #101e27 100%) !important;
+}
+.flight-page-titlebar.flight-premium-cover {
+  min-height: clamp(250px, 28vw, 390px);
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: space-between;
+  gap: 2rem;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(1.5rem, 3.2vw, 3.25rem) !important;
+  margin: 0 0 1.2rem !important;
+  border: 1px solid rgba(235, 241, 229, .34) !important;
+  border-radius: 25px !important;
+  background:
+    linear-gradient(90deg, rgba(12, 27, 35, .74) 0%, rgba(12, 27, 35, .34) 47%, rgba(12, 27, 35, .06) 100%),
+    linear-gradient(0deg, rgba(8, 21, 28, .65), transparent 70%),
+    url('https://commons.wikimedia.org/wiki/Special:FilePath/Paragliding_in_the_Alps_(Unsplash).jpg?width=2000') center 48% / cover no-repeat !important;
+  box-shadow: 0 24px 60px rgba(3, 12, 17, .25);
+}
+.flight-page-titlebar.flight-premium-cover::before {
+  content: "";
+  position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(110deg, rgba(10, 27, 34, .20), transparent 65%);
+}
+.flight-page-titlebar.flight-premium-cover h1 {
+  max-width: 760px;
+  font-size: clamp(2.25rem, 5vw, 4.6rem) !important;
+  line-height: .98 !important;
+  letter-spacing: -.065em !important;
+  text-wrap: balance;
+  color: #fff !important;
+  background: none !important;
+  -webkit-text-fill-color: #fff;
+  text-shadow: 0 3px 22px rgba(0,0,0,.34);
+}
+.flight-page-titlebar.flight-premium-cover p {
+  color: rgba(255,255,255,.9) !important;
+  font-size: clamp(.9rem, 1.3vw, 1.08rem);
+  text-shadow: 0 2px 12px rgba(0,0,0,.4);
+}
+.flight-page-titlebar.flight-premium-cover .dashboard-intro-kicker {
+  color: #d8fbf1 !important;
+  text-shadow: 0 1px 12px rgba(0,0,0,.45);
+}
+.flight-page-titlebar.flight-premium-cover .dashboard-date-chip {
+  color: #fff !important;
+  background: rgba(18, 39, 47, .68) !important;
+  border-color: rgba(255,255,255,.32) !important;
+  backdrop-filter: blur(14px);
+}
+.flight-page-titlebar.flight-premium-cover .dashboard-date-chip small { color: #d3e6e6 !important; }
+.flight-page-titlebar.flight-premium-cover .dashboard-intro-cta {
+  color: #17323a !important;
+  background: linear-gradient(135deg, #d6f2df, #a7dcd9) !important;
+  border: 1px solid rgba(255,255,255,.58) !important;
+  box-shadow: 0 10px 28px rgba(4, 19, 25, .22) !important;
+}
+.header-decollo {
+  background:
+    linear-gradient(90deg, rgba(12, 28, 35, .72), rgba(12, 28, 35, .26) 70%),
+    url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2000&q=90') center 48% / cover !important;
+  border-color: rgba(218, 232, 226, .3) !important;
+}
+.flight-forecast-module {
+  background: linear-gradient(145deg, rgba(35, 57, 64, .97), rgba(21, 39, 48, .98)) !important;
+  border-color: rgba(187, 214, 212, .22) !important;
+}
+.flight-section-heading, .flight-section-heading-row h2 {
+  color: #f2f5ef !important;
+}
+.flight-section-subtitle { color: #b5c9ca !important; }
+.forecast-days-grid { gap: .85rem !important; }
+.forecast-day-card-premium {
+  min-height: 190px;
+  overflow: hidden;
+  border-radius: 19px !important;
+  border-color: rgba(194, 217, 211, .22) !important;
+  background: linear-gradient(145deg, rgba(42, 65, 70, .96), rgba(22, 43, 51, .98)) !important;
+  box-shadow: 0 12px 30px rgba(0,0,0,.14), inset 0 1px 0 rgba(255,255,255,.045);
+  transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease !important;
+}
+.forecast-day-card-premium:hover {
+  transform: translateY(-4px);
+  border-color: rgba(174, 235, 220, .65) !important;
+  box-shadow: 0 18px 38px rgba(0,0,0,.2) !important;
+}
+.forecast-day-card-premium[aria-pressed="true"] {
+  border: 1px solid #a8e4d3 !important;
+  background: linear-gradient(145deg, rgba(43, 92, 82, .98), rgba(22, 59, 58, .99)) !important;
+  box-shadow: inset 0 0 0 1px rgba(191, 245, 222, .24), 0 14px 30px rgba(8, 28, 27, .2) !important;
+}
+.forecast-day-card-premium > div:first-child > span:first-child {
+  display: inline-flex;
+  transform-origin: 50% 75%;
+  filter: drop-shadow(0 5px 9px rgba(0,0,0,.16));
+  animation: forecast-weather-float 3.2s ease-in-out infinite;
+}
+.forecast-day-card-premium:nth-child(2) > div:first-child > span:first-child { animation-delay: -.8s; }
+.forecast-day-card-premium:nth-child(3) > div:first-child > span:first-child { animation-delay: -1.6s; }
+.forecast-day-card-premium .forecast-day-index {
+  backdrop-filter: blur(8px);
+}
+.forecast-day-card-premium .text-slate-500,
+.forecast-day-card-premium .text-slate-600 { color: #b5c7c7 !important; }
+.forecast-day-card-premium .text-white,
+.forecast-day-card-premium .text-slate-100 { color: #f7f8f4 !important; }
+.forecast-day-card-premium .text-sky-400 { color: #8dd6ed !important; }
+.forecast-day-card-premium .text-amber-400 { color: #f5c98b !important; }
+.forecast-day-card-premium .text-emerald-400 { color: #a8e4c5 !important; }
+.launch-list-card.launch-compare-panel {
+  border-radius: 20px !important;
+  border: 1px solid rgba(191, 215, 210, .22) !important;
+  background: linear-gradient(155deg, #263d44, #182d35 72%) !important;
+  box-shadow: 0 18px 38px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+.launch-compare-header { padding: 1rem 1rem .8rem !important; }
+.launch-compare-kicker { color: #a4ded4 !important; }
+.launch-compare-header h2 { color: #f5f7f1 !important; font-size: 1.12rem !important; letter-spacing: -.035em; }
+.launch-compare-description { color: #b5c8c9 !important; line-height: 1.5 !important; }
+.launch-compare-count {
+  border-radius: 13px !important;
+  background: rgba(173, 220, 208, .1) !important;
+  border: 1px solid rgba(173, 220, 208, .18) !important;
+  color: #e4f4eb !important;
+}
+.launch-compare-tools { gap: .5rem !important; padding: 0 1rem .85rem !important; }
+.launch-compare-search {
+  border-radius: 12px !important;
+  background: rgba(8, 23, 30, .48) !important;
+  border: 1px solid rgba(188, 216, 212, .22) !important;
+}
+.launch-compare-search input { color: #f4f7f2 !important; }
+.launch-compare-search input::placeholder { color: #a2b7b9 !important; }
+.launch-compare-update { color: #c0d4d3 !important; }
+.launch-compare-rows { display: flex; flex-direction: column; gap: .55rem !important; padding: 0 .75rem .85rem !important; }
+.launch-compare-row {
+  position: relative;
+  border: 1px solid rgba(192, 216, 211, .16) !important;
+  border-radius: 14px !important;
+  padding: .8rem !important;
+  background: linear-gradient(135deg, rgba(63, 87, 88, .42), rgba(24, 44, 51, .7)) !important;
+  box-shadow: none !important;
+  transition: transform .18s ease, border-color .18s ease, background .18s ease !important;
+}
+.launch-compare-row:hover { transform: translateY(-2px); border-color: rgba(167, 226, 213, .52) !important; }
+.launch-compare-row.is-selected {
+  border-color: #9be0ce !important;
+  background: linear-gradient(135deg, rgba(46, 100, 86, .76), rgba(24, 60, 55, .88)) !important;
+  box-shadow: inset 3px 0 #9be0ce !important;
+}
+.launch-compare-site-name { color: #f6f8f2 !important; font-size: .88rem !important; font-weight: 850 !important; }
+.launch-compare-site-meta { color: #b2c8c8 !important; }
+.launch-compare-weather-grid { gap: .35rem !important; margin-top: .65rem !important; }
+.launch-compare-weather-item {
+  min-height: 28px;
+  border-radius: 8px !important;
+  background: rgba(6, 22, 28, .27) !important;
+  color: #d7e5e1 !important;
+}
+.launch-compare-label { color: #dbe8e2 !important; }
+.launch-compare-index { border-radius: 999px !important; }
+.flight-nav-rail {
+  background: linear-gradient(180deg, #182b31, #14252c) !important;
+  border-color: rgba(197, 221, 214, .14) !important;
+}
+.flight-nav-item:hover, .flight-nav-item.is-active {
+  background: linear-gradient(110deg, rgba(55, 125, 111, .34), rgba(28, 67, 63, .5)) !important;
+  border-color: rgba(159, 226, 208, .36) !important;
+  box-shadow: inset 3px 0 #9be0ce !important;
+  color: #f0faf3 !important;
+}
+@keyframes forecast-weather-float {
+  0%, 100% { transform: translateY(0) rotate(-3deg) scale(1); }
+  50% { transform: translateY(-5px) rotate(3deg) scale(1.08); }
+}
+@media (max-width: 760px) {
+  .flight-page-titlebar.flight-premium-cover { min-height: 310px; align-items: flex-start !important; flex-direction: column; justify-content: flex-end; }
+  .flight-page-titlebar.flight-premium-cover .flight-page-actions { width: 100%; }
+  .forecast-day-card-premium { min-height: 175px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .forecast-day-card-premium > div:first-child > span:first-child { animation: none !important; }
+}
