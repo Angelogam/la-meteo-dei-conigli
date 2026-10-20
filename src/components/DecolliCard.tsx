@@ -1,8 +1,50 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, CloudSnow, Zap, Info, Search, MapPin, Thermometer, Wind, ArrowRight, Star } from "lucide-react";
+import { Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, CloudSnow, Zap, Info, Search, MapPin, ArrowRight, Star } from "lucide-react";
 import type { Decollo } from "@/data/decolli";
+
+/* ── Icone meteo con stile realistico (SVG inline) ── */
+const RainIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="rg" x1="12" y1="4" x2="12" y2="20" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#7dd3fc"/><stop offset="1" stopColor="#0284c7"/>
+      </linearGradient>
+      <linearGradient id="cg" x1="8" y1="6" x2="16" y2="12" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#e2e8f0"/><stop offset="1" stopColor="#94a3b8"/>
+      </linearGradient>
+    </defs>
+    <path d="M4 14c0-3.3 2.7-6 6-6 .3 0 .7 0 1 .1C11.6 5.5 13.7 4 16 4c3.3 0 6 2.7 6 6 0 .3 0 .7-.1 1 .5.3.9.8.9 1.5 0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3 0-.7.4-1.2.9-1.5C4.7 14.7 4 13.5 4 14z" fill="url(#cg)" stroke="#64748b" strokeWidth="1"/>
+    <line x1="8" y1="17" x2="7" y2="21" stroke="url(#rg)" strokeWidth="1.5" strokeLinecap="round"/>
+    <line x1="12" y1="17" x2="11" y2="21" stroke="url(#rg)" strokeWidth="1.5" strokeLinecap="round"/>
+    <line x1="16" y1="17" x2="15" y2="21" stroke="url(#rg)" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
+const CloudIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="cg2" x1="8" y1="6" x2="16" y2="14" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#f1f5f9"/><stop offset="1" stopColor="#94a3b8"/>
+      </linearGradient>
+    </defs>
+    <path d="M4 16c0-3.3 2.7-6 6-6 .3 0 .7 0 1 .1C11.6 7.5 13.7 6 16 6c3.3 0 6 2.7 6 6 0 .3 0 .7-.1 1 .5.3.9.8.9 1.5 0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3 0-.7.4-1.2.9-1.5C4.7 16.7 4 15.5 4 16z" fill="url(#cg2)" stroke="#64748b" strokeWidth="1"/>
+  </svg>
+);
+
+const TempIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="tg" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#fca5a5"/><stop offset=".5" stopColor="#ef4444"/><stop offset="1" stopColor="#7f1d1d"/>
+      </linearGradient>
+    </defs>
+    <rect x="10" y="2" width="4" height="14" rx="2" fill="url(#tg)" stroke="#7f1d1d" strokeWidth="1"/>
+    <circle cx="12" cy="19" r="3.5" fill="url(#tg)" stroke="#7f1d1d" strokeWidth="1"/>
+    <line x1="12" y1="6" x2="12" y2="12" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" opacity=".7"/>
+  </svg>
+);
 
 export interface AggressiveWeatherData {
   temp: string | number;
@@ -180,15 +222,15 @@ export default function DecolliCard({
                 </div>
                 <div className="launch-compare-metrics">
                   <span className="launch-compare-metric" title="Pioggia">
-                    <CloudRain size={11} aria-hidden="true" />
+                    <RainIcon />
                     <span>{rain === null ? "—" : rain.toFixed(1)} mm</span>
                   </span>
                   <span className="launch-compare-metric" title="Nuvolosità">
-                    <Cloud size={11} aria-hidden="true" />
+                    <CloudIcon />
                     <span>{cloud === null ? "—" : Math.round(cloud) + " %"}</span>
                   </span>
                   <span className="launch-compare-metric" title="Zero termico">
-                    <Thermometer size={11} aria-hidden="true" />
+                    <TempIcon />
                     <span>{estimatedFreezingLevel === null ? "—" : estimatedFreezingLevel + " m"}</span>
                   </span>
                 </div>

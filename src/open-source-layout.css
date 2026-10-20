@@ -1290,8 +1290,11 @@ a:focus-visible,
   background: rgba(255,255,255,.04);
   border: 1px solid rgba(128,190,204,.12);
   white-space: nowrap;
+  transition: background .15s ease, border-color .15s ease;
 }
-.launch-compare-metric svg { flex: 0 0 auto; opacity: .85; }
+.launch-compare-metric:hover { background: rgba(255,255,255,.08); border-color: rgba(120,201,196,.3); }
+.launch-compare-metric svg { flex: 0 0 auto; opacity: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,.3)); transition: transform .15s ease; }
+.launch-compare-metric:hover svg { transform: scale(1.15); }
 
 /* Actions destra */
 .launch-compare-actions {
@@ -1324,6 +1327,7 @@ a:focus-visible,
   .launch-compare-metrics { gap: .4rem; }
   .launch-compare-metric { font-size: .6rem; padding: .1rem .22rem; gap: .18rem; }
   .launch-compare-metric svg { width: 10px; height: 10px; }
+  .launch-compare-metric svg { filter: drop-shadow(0 1px 2px rgba(0,0,0,.3)); }
   .launch-compare-star { padding: .15rem; }
   .launch-compare-arrow { width: 13px; height: 13px; }
 }
