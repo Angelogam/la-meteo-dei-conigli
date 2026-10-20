@@ -1206,25 +1206,26 @@ a:focus-visible,
 .launch-compare-update { display: inline-flex; align-items: center; gap: .35rem; color: #8099a8; font-size: .68rem; }
 .launch-compare-message { margin: 0 1.1rem .75rem; color: #c2d0d8; font-size: .74rem; }
 .launch-compare-message.is-error { color: #f2aaa4; }
-.launch-compare-rows { max-height: min(62vh, 720px); overflow-y: auto; border-top: 1px solid rgba(128, 161, 179, .15); scrollbar-width: thin; scrollbar-color: rgba(120, 201, 196, .55) rgba(8, 25, 35, .65); }
+.launch-compare-rows { max-height: min(62vh, 720px); overflow-y: auto; border-top: 0; scrollbar-width: thin; scrollbar-color: rgba(120, 201, 196, .55) rgba(8, 25, 35, .65); }
 .launch-compare-row {
   display: flex; position: relative; align-items: center; justify-content: space-between; gap: 1rem;
-  width: 100%; min-width: 0; padding: .48rem .75rem;
-  border: 0; border-bottom: 1px solid rgba(128, 161, 179, .12);
-  color: inherit; background: transparent; text-align: left; cursor: pointer;
-  transition: background .15s ease;
+  width: calc(100% - 1.2rem); min-width: 0; margin: .45rem .6rem; padding: .75rem .85rem;
+  border: 1px solid rgba(128, 190, 204, .28); border-radius: 12px;
+  color: inherit; background: rgba(8, 25, 37, .7); text-align: left; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .16);
+  transition: background .15s ease, border-color .15s ease, transform .15s ease;
 }
-.launch-compare-row:hover { background: rgba(71, 115, 138, .12); }
-.launch-compare-row.is-selected { background: linear-gradient(90deg, rgba(43, 117, 130, .2), rgba(29, 77, 95, .1)); box-shadow: inset 3px 0 #78c9c4; }
-.launch-compare-site { display: flex; flex: 1 1 250px; flex-direction: column; min-width: 0; gap: .24rem; }
-.launch-compare-site-name { overflow: hidden; color: #edf6fa; font-size: .76rem; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
-.launch-compare-site-meta { display: flex; align-items: center; gap: .3rem; min-width: 0; color: #91a9b8; font-size: .62rem; }
+.launch-compare-row:hover { background: rgba(71, 115, 138, .2); border-color: rgba(120, 201, 196, .58); transform: translateY(-1px); }
+.launch-compare-row.is-selected { background: linear-gradient(90deg, rgba(43, 117, 130, .32), rgba(29, 77, 95, .2)); border-color: #78c9c4; box-shadow: inset 3px 0 #78c9c4, 0 5px 18px rgba(38, 125, 136, .2); }
+.launch-compare-site { display: flex; flex: 1 1 250px; flex-direction: column; min-width: 0; gap: .3rem; }
+.launch-compare-site-name { overflow: hidden; color: #edf6fa; font-size: .92rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.launch-compare-site-meta { display: flex; align-items: center; gap: .35rem; min-width: 0; color: #a7bdc9; font-size: .74rem; }
 .launch-compare-site-meta svg { flex: 0 0 auto; }
 .launch-compare-weather { display: flex; flex: 0 1 610px; align-items: center; justify-content: flex-end; gap: clamp(.45rem, 1.5vw, 1.1rem); min-width: 0; }
-.launch-compare-condition { display: inline-flex; align-items: center; gap: .35rem; min-width: 74px; color: #b8cbd5; font-size: .7rem; }
-.launch-compare-wind { display: inline-flex; align-items: center; gap: .25rem; min-width: 68px; color: #e9f8ff; font-size: .72rem; font-variant-numeric: tabular-nums; text-align: right; }
-.launch-compare-direction { min-width: 92px; color: #a5bdca; font-size: .62rem; }
-.launch-compare-metric { display: inline-flex; align-items: center; gap: .22rem; min-width: 58px; color: #edc98e; font-size: .68rem; font-variant-numeric: tabular-nums; }
+.launch-compare-condition { display: inline-flex; align-items: center; gap: .4rem; min-width: 92px; color: #c7d8df; font-size: .8rem; }
+.launch-compare-wind { display: inline-flex; align-items: center; gap: .3rem; min-width: 76px; color: #e9f8ff; font-size: .8rem; font-variant-numeric: tabular-nums; text-align: right; }
+.launch-compare-direction { min-width: 112px; color: #b7cbd5; font-size: .72rem; }
+.launch-compare-metric { display: inline-flex; align-items: center; gap: .25rem; min-width: 68px; color: #f0d29b; font-size: .76rem; font-variant-numeric: tabular-nums; }
 .launch-compare-temp { min-width: 35px; color: #edc98e; font-size: .75rem; text-align: right; }
 .launch-compare-base { display: inline-flex; align-items: center; gap: .25rem; min-width: 40px; color: #b7a9e7; font-size: .68rem; }
 .launch-compare-index { min-width: 35px; padding: .23rem .38rem; border: 1px solid rgba(139, 170, 184, .2); border-radius: 6px; font-size: .66rem; font-weight: 800; text-align: center; }
