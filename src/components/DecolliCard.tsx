@@ -1,235 +1,189 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Clock, Search, ArrowRight, Star, Wind, Thermometer, RefreshCw } from "lucide-react";
+import { Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, CloudSnow, Zap, Info, Search, MapPin, Thermometer, Wind } from "lucide-react";
 import type { Decollo } from "@/data/decolli";
-import type { MeteoDecollo } from "@/hooks/useThreeSourceWeather";
 
-/* ── Helpers ── */
-function toNum(v: string | number | null | undefined): number | null {
-  if (v === null || v === undefined || v === "" || v === "N/D" || v === "--") return null;
-  const n = Number.parseFloat(String(v));
-  return Number.isFinite(n) ? n : null;
-}
-
-function getWindCardinal(deg: number): string {
-  const dirs = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"];
-  return dirs[Math.round((((deg % 360) + 360) % 360) / 45) % 8];
-}
-
-/* ── SVG weather icons ── */
-const RainIcon = () => (
-  <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-    <defs>
-      <linearGradient id="rg" x1="12" y1="4" x2="12" y2="20" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#7dd3fc"/><stop offset="1" stopColor="#0284c7"/>
-      </linearGradient>
-      <linearGradient id="cg" x1="8" y1="6" x2="16" y2="12" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#e2e8f0"/><stop offset="1" stopColor="#94a3b8"/>
-      </linearGradient>
-    </defs>
-    <path d="M4 14c0-3.3 2.7-6 6-6 .3 0 .7 0 1 .1C11.6 5.5 13.7 4 16 4c3.3 0 6 2.7 6 6 0 .3 0 .7-.1 1 .5.3.9.8.9 1.5 0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3 0-.7.4-1.2.9-1.5C4.7 14.7 4 13.5 4 14z" fill="url(#cg)" stroke="#64748b" strokeWidth="1"/>
-    <line x1="8" y1="17" x2="7" y2="21" stroke="url(#rg)" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="12" y1="17" x2="11" y2="21" stroke="url(#rg)" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="16" y1="17" x2="15" y2="21" stroke="url(#rg)" strokeWidth="1.5" strokeLinecap="round"/>
-  </svg>
-);
-
-const CloudIcon = () => (
-  <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-    <defs>
-      <linearGradient id="cg2" x1="8" y1="6" x2="16" y2="14" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#f1f5f9"/><stop offset="1" stopColor="#94a3b8"/>
-      </linearGradient>
-    </defs>
-    <path d="M4 16c0-3.3 2.7-6 6-6 .3 0 .7 0 1 .1C11.6 7.5 13.7 6 16 6c3.3 0 6 2.7 6 6 0 .3 0 .7-.1 1 .5.3.9.8.9 1.5 0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3 0-.7.4-1.2.9-1.5C4.7 16.7 4 15.5 4 16z" fill="url(#cg2)" stroke="#64748b" strokeWidth="1"/>
-  </svg>
-);
-
-const TempIcon = () => (
-  <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-    <defs>
-      <linearGradient id="tg" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#fca5a5"/><stop offset=".5" stopColor="#ef4444"/><stop offset="1" stopColor="#7f1d1d"/>
-      </linearGradient>
-    </defs>
-    <rect x="10" y="2" width="4" height="14" rx="2" fill="url(#tg)" stroke="#7f1d1d" strokeWidth="1"/>
-    <circle cx="12" cy="19" r="3.5" fill="url(#tg)" stroke="#7f1d1d" strokeWidth="1"/>
-    <line x1="12" y1="6" x2="12" y2="12" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" opacity=".7"/>
-  </svg>
-);
-
-/* ── Hero images per site ── */
-const HERO_IMAGES: Record<string, string> = {
-  "Malanotte": "https://images.unsplash.com/photo-1551632811-561732d1e306?w=120&h=90&fit=crop&q=80",
-  "Colle di Tenda": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=120&h=90&fit=crop&q=80",
-  "Boves": "https://images.unsplash.com/photo-1464822759023-fed622ff2c8b?w=120&h=90&fit=crop&q=80",
-  "Monte Male": "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=120&h=90&fit=crop&q=80",
-  "Iretta": "https://images.unsplash.com/photo-1486870591958-9b9d0d1dda29?w=120&h=90&fit=crop&q=80",
-  "Pratoni di Val Mala": "https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5?w=120&h=90&fit=crop&q=80",
-  "Monte Birrone": "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=120&h=90&fit=crop&q=80",
-  "Colle dell'Agnello": "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=120&h=90&fit=crop&q=80",
-  "Pian Munè": "https://images.unsplash.com/photo-1485594050903-8e8ee5322c03?w=120&h=90&fit=crop&q=80",
-  "Martiniana Po": "https://images.unsplash.com/photo-1491555103944-8c2a772256e7?w=120&h=90&fit=crop&q=80",
-  "Rucas Alto": "https://images.unsplash.com/photo-1465056836900-8f1e940b3fc9?w=120&h=90&fit=crop&q=80",
-  "Montoso": "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=120&h=90&fit=crop&q=80",
-  "Monte Vandalino": "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=120&h=90&fit=crop&q=80",
-  "Pian dell'Alpe": "https://images.unsplash.com/photo-1500534623283-312a7ada7f2e?w=120&h=90&fit=crop&q=80",
-  "Roletto": "https://images.unsplash.com/photo-1470071459604-3b5e3267c02b?w=120&h=90&fit=crop&q=80",
-  "Piossasco": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=120&h=90&fit=crop&q=80",
-  "Truccetti": "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=120&h=90&fit=crop&q=80",
-  "Val della Torre": "https://images.unsplash.com/photo-1446329813274-7c9036bd9a1f?w=120&h=90&fit=crop&q=80",
-  "Rocca Canavese": "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=120&h=90&fit=crop&q=80",
-  "Santa Elisabetta": "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=120&h=90&fit=crop&q=80",
-  "Monte Cavallaria": "https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?w=120&h=90&fit=crop&q=80",
-  "Andrate": "https://images.unsplash.com/photo-1464822759023-fed622ff2c8b?w=120&h=90&fit=crop&q=80",
-};
-
-function getHeroImage(name: string): string {
-  const key = Object.keys(HERO_IMAGES).find(k => name.toLowerCase().includes(k.toLowerCase()));
-  return key ? HERO_IMAGES[key] : "https://images.unsplash.com/photo-1551632811-561732d1e306?w=120&h=90&fit=crop&q=80";
+export interface AggressiveWeatherData {
+  temp: string | number;
+  rain: string | number;
+  cloud: string | number;
+  wind: string | number;
+  dir: string | number;
+  stato: string;
+  baseNubi: string;
+  termiche: string;
+  indice: number | null;
+  indiceLabel: string;
+  freezingLevel?: number | null;
+  weatherCode?: number | null;
+  fonte: string;
 }
 
 interface DecolliCardProps {
-  decolli: (Decollo & { aggressiveWeather?: MeteoDecollo | null })[];
+  decolli: (Decollo & { aggressiveWeather?: AggressiveWeatherData | null })[];
   selectedId: string;
   onSelect: (item: Decollo) => void;
   selectedDay?: number;
   isUpdating?: boolean;
   error?: string | null;
-  onRefresh?: () => void;
+}
+
+const ICONA_STATO: Record<string, React.ReactNode> = {
+  sereno: <Sun className="h-4 w-4 text-amber-400" />,
+  variabile: <Cloud className="h-4 w-4 text-amber-300" />,
+  nuvoloso: <Cloud className="h-4 w-4 text-slate-400" />,
+  pioggia: <CloudRain className="h-4 w-4 text-blue-400" />,
+  temporale: <Zap className="h-4 w-4 text-purple-400" />,
+  coperto: <Cloud className="h-4 w-4 text-slate-400" />,
+  neve: <CloudSnow className="h-4 w-4 text-sky-200" />,
+  offline: <AlertTriangle className="h-4 w-4 text-slate-500" />,
+  "n/d": <Info className="h-4 w-4 text-slate-400" />,
+  errore: <AlertTriangle className="h-4 w-4 text-red-400" />,
+};
+
+function numberOrNull(value: string | number | null | undefined): number | null {
+  if (value === null || value === undefined || value === "" || value === "N/D" || value === "--") return null;
+  const n = Number.parseFloat(String(value));
+  return Number.isFinite(n) ? n : null;
+}
+
+function getStatoDisplay(stato?: string | null) {
+  if (!stato) return { icon: ICONA_STATO["n/d"], label: "N/D" };
+  const key = stato.toLowerCase().trim();
+  if (key === "error") return { icon: ICONA_STATO.errore, label: "Errore" };
+  return { icon: ICONA_STATO[key] ?? ICONA_STATO.offline, label: stato };
+}
+
+function getCardinalDir(deg: number): string {
+  return ["Nord", "Nord-Nord Est", "Nord Est", "Est-Nord Est", "Est", "Est-Sud Est", "Sud Est", "Sud-Sud Est", "Sud", "Sud-Sud Ovest", "Sud Ovest", "Ovest-Sud Ovest", "Ovest", "Ovest-Nord Ovest", "Nord Ovest", "Nord-Nord Ovest"][Math.round((((deg % 360) + 360) % 360) / 22.5) % 16];
+}
+
+function getWeatherStatus(weather: AggressiveWeatherData | null | undefined) {
+  const code = weather?.weatherCode;
+  if (code !== null && code !== undefined) {
+    if ([71, 73, 75, 77, 85, 86].includes(code)) return { icon: ICONA_STATO.neve, label: "Neve" };
+    if ([95, 96, 99].includes(code)) return { icon: ICONA_STATO.temporale, label: "Temporale" };
+    if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return { icon: ICONA_STATO.pioggia, label: "Pioggia" };
+    if ([0, 1].includes(code)) return { icon: ICONA_STATO.sereno, label: "Sereno" };
+    if (code === 2) return { icon: ICONA_STATO.variabile, label: "Parzialmente nuvoloso" };
+    if (code === 3) return { icon: ICONA_STATO.coperto, label: "Coperto" };
+  }
+  return getStatoDisplay(weather?.stato);
 }
 
 export default function DecolliCard({
-  decolli, selectedId, onSelect, selectedDay = 0, isUpdating = false, error, onRefresh,
+  decolli, selectedId, onSelect, selectedDay = 0, isUpdating = false, error,
 }: DecolliCardProps) {
   const [query, setQuery] = useState("");
-
+  const dt = getDateTime(selectedDay);
   const filtered = useMemo(() => {
     const q = query.trim().toLocaleLowerCase("it-IT");
-    if (!q) return decolli;
-    return decolli.filter((item) => [
-      item.site_name, item.location_name, item.orientation,
-    ].some((v) => String(v ?? "").toLocaleLowerCase("it-IT").includes(q)));
+    return decolli.filter((item) => !q || [
+      item.site_name, item.location_name, item.orientation, item.elevation_m,
+    ].some((value) => String(value ?? "").toLocaleLowerCase("it-IT").includes(q)));
   }, [decolli, query]);
-
-  const dt = useMemo(() => {
-    const today = new Date();
-    const target = new Date(today);
-    target.setDate(today.getDate() + selectedDay);
-    const giorni = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
-    const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
-    return `${giorni[target.getDay()]} ${target.getDate()} ${mesi[target.getMonth()]}`;
-  }, [selectedDay]);
+  const visible = filtered;
+  const loadedCount = decolli.filter((d) => {
+    const status = d.aggressiveWeather?.stato?.toLowerCase();
+    return status && !["offline", "errore", "n/d"].includes(status);
+  }).length;
 
   return (
-    <section className="dc-panel" aria-labelledby="dc-title">
-      {/* Panel header */}
-      <div className="dc-header">
-        <div className="dc-header-left">
-          <h2 id="dc-title" className="dc-title">Decolli</h2>
-          <span className="dc-count">{decolli.length} siti</span>
+    <section className="launch-list-card launch-compare-panel" aria-labelledby="launch-list-title">
+      <header className="launch-compare-header">
+        <div>
+          <p className="launch-compare-kicker">SITI MONITORATI</p>
+          <h2 id="launch-list-title">Confronta i decolli</h2>
+          <p className="launch-compare-description">Scegli un sito per aggiornare mappa e previsioni. Il confronto è sintetico, non è un giudizio di sicurezza.</p>
         </div>
-        <div className="dc-header-right">
-          <button type="button" className="dc-sort-btn" aria-label="Ordina">▼</button>
+        <div className="launch-compare-count">
+          <strong>{decolli.length}</strong><span>decolli</span>
+          <small>{loadedCount} con dati</small>
         </div>
-      </div>
+      </header>
 
-      {/* Search bar */}
-      <div className="dc-search">
-        <Search size={14} className="dc-search-icon" />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Cerca decollo…"
-          aria-label="Cerca decollo"
-        />
+      <div className="launch-compare-tools">
+        <label className="launch-compare-search">
+          <Search aria-hidden="true" size={14} />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cerca decollo, valle o esposizione…" aria-label="Cerca un decollo" />
+        </label>
+        <span className="launch-compare-update"><Clock aria-hidden="true" size={11} />{dt.date}</span>
       </div>
+      {error && <p className="launch-compare-message is-error">{error}</p>}
+      {!loadedCount && !isUpdating && <p className="launch-compare-message">I dati comparativi di alcuni siti non sono disponibili in questo momento; le previsioni del sito selezionato restano separate.</p>}
 
-      {/* Site list */}
-      <div className="dc-list" role="list" aria-label="Lista decolli">
-        {filtered.map((item) => {
+      <div className="launch-compare-rows" role="list" aria-label="Elenco dei decolli">
+        {visible.map((item) => {
           const selected = item.id === selectedId;
-          const w = item.aggressiveWeather;
-          const temp = toNum(w?.temp);
-          const wind = toNum(w?.wind);
-          const windDir = toNum(w?.dir);
-          const rain = toNum(w?.rain);
-          const cloud = toNum(w?.cloud);
-          const fz = toNum(w?.freezingLevel) ?? (temp !== null ? Math.round(item.elevation_m + temp * 125) : null);
-
+          const weather = item.aggressiveWeather;
+          const wind = numberOrNull(weather?.wind);
+          const temp = numberOrNull(weather?.temp);
+          const direction = numberOrNull(weather?.dir);
+          const index = numberOrNull(weather?.indice);
+          const status = getWeatherStatus(weather);
+          const base = weather?.baseNubi;
+          const freezingLevel = numberOrNull(weather?.freezingLevel);
+          const estimatedFreezingLevel = freezingLevel ?? (temp !== null ? Math.round(item.elevation_m + temp * 125) : null);
           return (
             <button
-              key={item.id}
               type="button"
               role="listitem"
+              key={item.id}
               onClick={() => onSelect(item)}
               aria-pressed={selected}
-              className={`dc-row${selected ? " is-selected" : ""}`}
+              className={"launch-compare-row" + (selected ? " is-selected" : "")}
             >
-              {/* Thumbnail */}
-              <div className="dc-thumb">
-                <img src={getHeroImage(item.site_name || item.name)} alt={item.site_name || item.name} loading="lazy" />
-                {selected && <span className="dc-thumb-dot" />}
+              <div className="launch-compare-site-header">
+                <span className="launch-compare-site-name">{item.site_name || item.name}</span>
+                <span className="launch-compare-site-meta"><MapPin size={11} aria-hidden="true" />{item.location_name || item.valley} · {item.elevation_m || item.altitude}m</span>
               </div>
-
-              {/* Site info */}
-              <div className="dc-info">
-                <div className="dc-name">{item.site_name || item.name}</div>
-                <div className="dc-meta">
-                  {item.elevation_m || item.altitude} m s.l.m.
+              <div className="launch-compare-weather-grid">
+                <div className="launch-compare-weather-item launch-compare-condition">
+                  <span className="launch-compare-icon">{status.icon}</span>
+                  <span className="launch-compare-label">{status.label}</span>
+                </div>
+                <div className="launch-compare-weather-item launch-compare-metric" title="Temperatura attuale">
+                  <Thermometer size={14} aria-hidden="true" className="launch-compare-icon" />
+                  <span className="launch-compare-value">{temp === null ? "—" : temp.toFixed(0) + "°C"}</span>
+                </div>
+                <div className="launch-compare-weather-item launch-compare-metric" title="Zero termico">
+                  <span className="launch-compare-icon" aria-hidden="true">❄️</span>
+                  <span className="launch-compare-value">{estimatedFreezingLevel === null ? "—" : estimatedFreezingLevel + "m"}</span>
+                </div>
+                <div className="launch-compare-weather-item launch-compare-wind" title="Velocità del vento">
+                  <Wind size={14} aria-hidden="true" className="launch-compare-icon" />
+                  <span className="launch-compare-value">{wind === null ? "—" : wind.toFixed(0) + " km/h"}</span>
+                </div>
+                <div className="launch-compare-weather-item launch-compare-direction" title="Direzione del vento">
+                  <span className="launch-compare-value">{direction === null ? "—" : getCardinalDir(direction)}</span>
+                </div>
+                <div className="launch-compare-weather-item launch-compare-base" title="Base nubi">
+                  <Layers size={14} aria-hidden="true" className="launch-compare-icon" />
+                  <span className="launch-compare-value">{base || "—"}</span>
                 </div>
               </div>
-
-              {/* Weather metrics */}
-              <div className="dc-weather">
-                <div className="dc-w-item">
-                  <span className="dc-w-label">
-                    <Thermometer size={10} />
-                    {temp !== null ? `${Math.round(temp)}°C` : "—"}
-                  </span>
-                </div>
-                <div className="dc-w-item">
-                  <span className="dc-w-label">
-                    <Wind size={10} />
-                    {wind !== null ? `${Math.round(wind)} km/h ${windDir !== null ? getWindCardinal(windDir) : ""}` : "—"}
-                  </span>
-                </div>
-                <div className="dc-w-row">
-                  <span className="dc-w-item"><RainIcon /><span>{rain === null ? "—" : `${rain.toFixed(1)} mm`}</span></span>
-                  <span className="dc-w-item"><CloudIcon /><span>{cloud === null ? "—" : `${Math.round(cloud)}%`}</span></span>
-                  <span className="dc-w-item"><TempIcon /><span>{fz === null ? "—" : `${fz}m`}</span></span>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="dc-actions">
-                <button type="button" className="dc-star" aria-label="Preferito"><Star size={13} /></button>
-                <span className="dc-arrow"><ArrowRight size={14} /></span>
-              </div>
+              {index !== null && (
+                <span className={"launch-compare-index " + (index >= 8 ? "is-high" : index >= 5 ? "is-mid" : "is-low")} title="Indice sintetico indicativo">
+                  <span className="launch-compare-label" style={{fontSize: '.56rem', textTransform: 'none', letterSpacing: 0, color: 'inherit'}}>Indice</span>
+                  {index}/10
+                </span>
+              )}
+              {selected && <span className="launch-compare-selected">✓</span>}
             </button>
           );
         })}
-
-        {filtered.length === 0 && (
-          <p className="dc-empty">Nessun decollo trovato.</p>
-        )}
-      </div>
-
-      {error && <p className="dc-error">{error}</p>}
-
-      {/* Footer */}
-      <div className="dc-footer">
-        <span className="dc-footer-time">
-          <Clock size={11} />
-          {dt}
-        </span>
-        <button type="button" className="dc-footer-refresh" onClick={onRefresh} disabled={isUpdating}>
-          <RefreshCw size={12} className={isUpdating ? "dc-spin" : ""} />
-          Aggiorna
-        </button>
-        <a href="#" className="dc-see-all">Vedi tutti →</a>
+        {!visible.length && <p className="launch-compare-empty">Nessun decollo corrisponde alla ricerca.</p>}
       </div>
     </section>
   );
+}
+
+function getDateTime(selectedDay: number): { date: string; ora: string } {
+  const today = new Date();
+  const target = new Date(today);
+  target.setDate(today.getDate() + selectedDay);
+  const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+  const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+  return { date: giorni[target.getDay()] + " " + target.getDate() + " " + mesi[target.getMonth()], ora: today.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) };
 }
