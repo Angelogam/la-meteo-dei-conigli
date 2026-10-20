@@ -210,37 +210,26 @@ export default function DecolliCard({
               className={"launch-compare-row" + (selected ? " is-selected" : "")}
             >
               {/* Thumbnail immagine */}
-              <div className="launch-compare-thumb">
+              <div className="lc-thumb">
                 <img src={getHeroImage(item.site_name || item.name)} alt={item.site_name || item.name} loading="lazy" />
-                {selected && <span className="launch-compare-thumb-dot" aria-hidden="true" />}
+                {selected && <span className="lc-thumb-dot" aria-hidden="true" />}
               </div>
-              {/* Info principale */}
-              <div className="launch-compare-info">
-                <div className="launch-compare-info-top">
-                  <span className="launch-compare-name">{item.site_name || item.name}</span>
-                  <span className="launch-compare-altitude">{item.elevation_m || item.altitude} m s.l.m.</span>
+              {/* Info centrale */}
+              <div className="lc-info">
+                <div className="lc-info-top">
+                  <span className="lc-name">{item.site_name || item.name}</span>
+                  <span className="lc-alt">{item.elevation_m || item.altitude} m s.l.m.</span>
                 </div>
-                <div className="launch-compare-metrics">
-                  <span className="launch-compare-metric" title="Pioggia">
-                    <RainIcon />
-                    <span>{rain === null ? "—" : rain.toFixed(1)} mm</span>
-                  </span>
-                  <span className="launch-compare-metric" title="Nuvolosità">
-                    <CloudIcon />
-                    <span>{cloud === null ? "—" : Math.round(cloud) + " %"}</span>
-                  </span>
-                  <span className="launch-compare-metric" title="Zero termico">
-                    <TempIcon />
-                    <span>{estimatedFreezingLevel === null ? "—" : estimatedFreezingLevel + " m"}</span>
-                  </span>
+                <div className="lc-metrics">
+                  <span className="lc-m" title="Pioggia"><RainIcon /><span>{rain === null ? "—" : rain.toFixed(1)} mm</span></span>
+                  <span className="lc-m" title="Nuvolosità"><CloudIcon /><span>{cloud === null ? "—" : Math.round(cloud) + " %"}</span></span>
+                  <span className="lc-m" title="Zero termico"><TempIcon /><span>{estimatedFreezingLevel === null ? "—" : estimatedFreezingLevel + " m"}</span></span>
                 </div>
               </div>
-              {/* Freccia + stella */}
-              <div className="launch-compare-actions">
-                <button type="button" className="launch-compare-star" aria-label="Aggiungi ai preferiti">
-                  <Star size={14} aria-hidden="true" />
-                </button>
-                <ArrowRight size={15} className="launch-compare-arrow" aria-hidden="true" />
+              {/* Actions destra */}
+              <div className="lc-actions">
+                <button type="button" className="lc-star" aria-label="Aggiungi ai preferiti"><Star size={13} aria-hidden="true" /></button>
+                <span className="lc-arrow"><ArrowRight size={14} aria-hidden="true" /></span>
               </div>
             </button>
           );
