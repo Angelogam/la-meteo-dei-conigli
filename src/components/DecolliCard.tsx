@@ -105,10 +105,10 @@ export default function DecolliCard({
 
       <div className="launch-compare-tools">
         <label className="launch-compare-search">
-          <Search aria-hidden="true" size={14} />
+          <Search aria-hidden="true" size={12} />
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cerca decollo, valle o esposizione…" aria-label="Cerca un decollo" />
         </label>
-        <span className="launch-compare-update"><Clock aria-hidden="true" size={13} />{dt.date}{isUpdating ? " · aggiornamento…" : " · aggiornamento periodico"}</span>
+        <span className="launch-compare-update"><Clock aria-hidden="true" size={10} />{dt.date}</span>
       </div>
       {error && <p className="launch-compare-message is-error">{error}</p>}
       {!loadedCount && !isUpdating && <p className="launch-compare-message">I dati comparativi di alcuni siti non sono disponibili in questo momento; le previsioni del sito selezionato restano separate.</p>}
@@ -124,7 +124,7 @@ export default function DecolliCard({
           const status = getWeatherStatus(weather);
           const base = weather?.baseNubi;
           const freezingLevel = numberOrNull(weather?.freezingLevel);
-          const estimatedFreezingLevel = freezingLevel ?? (temp !== null ? item.elevation_m + temp * 125 : null);
+          const estimatedFreezingLevel = freezingLevel ?? (temp !== null ? Math.round(item.elevation_m + temp * 125) : null);
           return (
             <button
               type="button"
@@ -136,18 +136,18 @@ export default function DecolliCard({
             >
               <span className="launch-compare-site">
                 <span className="launch-compare-site-name">{item.site_name || item.name}</span>
-                <span className="launch-compare-site-meta"><MapPin size={10} aria-hidden="true" />{item.location_name || item.valley} <span>·</span> {item.orientation || item.exposure} <span>·</span> {item.elevation_m || item.altitude} m</span>
+                <span className="launch-compare-site-meta"><MapPin size={7} aria-hidden="true" />{item.location_name || item.valley} · {item.elevation_m || item.altitude}m</span>
               </span>
               <span className="launch-compare-weather">
                 <span className="launch-compare-condition">{status.icon}<span>{status.label}</span></span>
-                <span className="launch-compare-metric" title="Temperatura attuale"><Thermometer size={10} aria-hidden="true" />{temp === null ? "—" : temp.toFixed(0) + "°C"}</span>
-                <span className="launch-compare-metric" title="Zero termico stimato"><span aria-hidden="true">❄️</span>{estimatedFreezingLevel === null ? "—" : Math.round(estimatedFreezingLevel) + " m"}</span>
-                <span className="launch-compare-wind" title="Velocità del vento"><Wind size={10} aria-hidden="true" />{wind === null ? "—" : wind.toFixed(0) + " km/h"}</span>
+                <span className="launch-compare-metric" title="Temperatura attuale"><Thermometer size={8} aria-hidden="true" />{temp === null ? "—" : temp.toFixed(0) + "°"}</span>
+                <span className="launch-compare-metric" title="Zero termico stimato"><span aria-hidden="true">❄️</span>{estimatedFreezingLevel === null ? "—" : estimatedFreezingLevel + "m"}</span>
+                <span className="launch-compare-wind" title="Velocità del vento"><Wind size={8} aria-hidden="true" />{wind === null ? "—" : wind.toFixed(0) + "k"}</span>
                 <span className="launch-compare-direction" title="Direzione del vento">{direction === null ? "—" : getCardinalDir(direction)}</span>
-                <span className="launch-compare-base" title="Base nubi stimata"><Layers size={10} aria-hidden="true" />{base || "—"}</span>
+                <span className="launch-compare-base" title="Base nubi stimata"><Layers size={8} aria-hidden="true" />{base || "—"}</span>
                 {index !== null && <span className={"launch-compare-index " + (index >= 8 ? "is-high" : index >= 5 ? "is-mid" : "is-low")} title="Indice sintetico indicativo">{index}/10</span>}
               </span>
-              {selected && <span className="launch-compare-selected">Selezionato</span>}
+              {selected && <span className="launch-compare-selected">✓</span>}
             </button>
           );
         })}
