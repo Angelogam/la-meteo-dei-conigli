@@ -674,6 +674,93 @@ html, body {
   50% { opacity: 0.4; }
 }
 
+/* ── Detail sections (windgram, tabs, hourly) ── */
+.detail-columns {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+.detail-site-header,
+.detail-windgram,
+.detail-tabs,
+.detail-hourly {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+.detail-venti-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+.detail-venti-icon {
+  color: var(--cyan);
+  flex: 0 0 auto;
+}
+.analysis-tabs {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.analysis-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color .15s, border-color .15s, background .15s;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+}
+.analysis-tab:hover {
+  color: var(--text-primary);
+  background: rgba(113, 217, 244, 0.06);
+}
+.analysis-tab.is-active {
+  color: var(--green-light);
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.08);
+}
+.analysis-tab-icon-svg { width: 16px; height: 16px; }
+.analysis-tab-copy { display: flex; flex-direction: column; gap: 0.05rem; min-width: 0; }
+.analysis-tab-copy strong {
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.analysis-tab-copy small {
+  font-size: 0.58rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.analysis-tab-arrow {
+  flex: 0 0 auto;
+  opacity: 0;
+  transition: opacity .15s, transform .15s;
+}
+.analysis-tab.is-active .analysis-tab-arrow,
+.analysis-tab:hover .analysis-tab-arrow {
+  opacity: 1;
+}
+.analysis-tab.is-active .analysis-tab-arrow { transform: translateX(2px); }
+.detail-tab-content {
+  padding: 1rem;
+}
+
 /* ═══════════════════════════════════════════════════════════
    PREVISIONI METEO
    ═══════════════════════════════════════════════════════════ */

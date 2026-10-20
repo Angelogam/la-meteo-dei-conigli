@@ -1,18 +1,26 @@
 "use client";
 
 import { useMemo, useState, useCallback } from "react";
-import { ArrowRight, MapPin, Thermometer, Droplets, Wind, Mountain, Clock, RefreshCw, ChevronRight, Layers, Cloud, CloudSun, CloudRain, Star, Sun } from "lucide-react";
+import { ArrowRight, MapPin, Thermometer, Droplets, Wind, Mountain, Clock, RefreshCw, ChevronRight, Layers, Cloud, CloudSun, CloudRain, Star, Sun, Activity, Flame } from "lucide-react";
 import type { MeteoCurrent, MeteoDaily } from "@/services/openMeteoService";
 import type { Decollo } from "@/data/decolli";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
+import SiteHeader from "@/components/SiteHeader";
+import TabNav from "@/components/TabNav";
+import MeteoTab from "@/components/MeteoTab";
+import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
+import TermicheTab from "@/components/TermicheTab";
+import AnalisiMeteo from "@/components/AnalisiMeteo";
+import HourlyTable from "@/components/HourlyTable";
+import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
+import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 
 /* ── Weather SVG icons for forecast ── */
 const WeatherIcon = ({ code, size = 28 }: { code: number | null; size?: number }) => {
-  const cls = `w-${size / 4} h-${size / 4}`;
   if (code === null) return <Cloud size={size} className="text-slate-500" />;
   if (code >= 95) return <CloudRain size={size} className="text-purple-400" />;
   if (code >= 80) return <CloudRain size={size} className="text-sky-400" />;
@@ -24,22 +32,22 @@ const WeatherIcon = ({ code, size = 28 }: { code: number | null; size?: number }
   return <Sun size={size} className="text-amber-400" />;
 };
 
+function formatClock(value?: string): string | undefined {
+  if (!value) return undefined;
+  return value.includes("T") ? value.slice(11, 16) : value.slice(0, 5);
+}
+
 /* ── Main page ── */
 export default function Index() {
   const {
-    selectedId, setSelectedId, selectedDay, setSelectedDay, setSelectedHour,
-    site, dayData, currentData, enrichedDaily,
+    selectedId, setSelectedId, updating, selectedDay, setSelectedDay, selectedHour,
+    setActiveTab, activeTab, site, dayData, currentData, thermalDelta,
+    enrichedDaily, dateLabels, rawApiResponse,
   } = useWeatherData();
 
   const { mergedDecolli, lastUpdate: aggressiveLastUpdate, error: aggressiveError, updating: aggressiveUpdating, loadWeather: loadAgg } = useThreeSourceWeather();
 
   const [selectedDayIdx, setSelectedDayIdx] = useState(0);
-  const _dateLabel = useMemo(() => {
-    const d = new Date(); d.setDate(d.getDate() + selectedDayIdx);
-    const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
-    const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
-    return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
-  }, [selectedDayIdx]);
 
   const todayForecast = enrichedDaily[selectedDayIdx] ?? enrichedDaily[0];
   const tomorrowForecast = enrichedDaily[selectedDayIdx + 1];
@@ -51,6 +59,23 @@ export default function Index() {
     setSelectedId(item.id);
     setSelectedHour(new Date().getHours());
   }, [setSelectedId, setSelectedHour]);
+
+  const handleTabChange = useCallback((tab: string) => {
+    setActiveTab(tab as any);
+  }, [setActiveTab]);
+
+  const filteredDayData = useMemo(() => {
+    if (!dayData || dayData.length === 0) return [];
+    const today = new Date();
+    const target = new Date(today);
+    target.setDate(today.getDate() + selectedDay);
+    const targetStr = target.toDateString();
+    return dayData.filter((h: any) => new Date(h.time).toDateString() === targetStr);
+  }, [dayData, selectedDay]);
+
+  const sunrise = formatClock(enrichedDaily[selectedDay]?.sunrise);
+  const sunset = formatClock(enrichedDaily[selectedDay]?.sunset);
+  const uvIndex = enrichedDaily[selectedDay]?.uvIndexMax ?? currentData?.uvIndex;
 
   return (
     <div className="app-shell">
@@ -115,7 +140,7 @@ export default function Index() {
               <p className="hero-kicker">METEO · AEROLOGIA · VOLO LIBERO</p>
               <h1>Il meteo giusto<br />per il <span className="hero-highlight">tuo volo</span></h1>
               <p>Previsioni, decolli e condizioni in tempo reale per vivere la libertà del volo libero.</p>
-              <p className="hero-quote">“Il cielo non è il limite… è solo l&apos;inizio!”</p>
+              <p className="hero-quote">"Il cielo non è il limite… è solo l&apos;inizio!"</p>
             </div>
           </section>
 
@@ -133,7 +158,6 @@ export default function Index() {
                 </div>
               </div>
               <div className="map-frame">
-                {/* Simplified weather map placeholder using flybubble iframe */}
                 <iframe
                   src="https://weather.flybubble.com/it#/0/12"
                   title="Mappa meteo interattiva"
@@ -142,13 +166,11 @@ export default function Index() {
                   allowFullScreen
                   referrerPolicy="strict-origin-when-cross-origin"
                 />
-                {/* Map controls overlay */}
                 <div className="map-controls">
                   <button type="button" className="map-ctrl-btn">+</button>
                   <button type="button" className="map-ctrl-btn">−</button>
                   <button type="button" className="map-ctrl-btn map-ctrl-center"><MapPin size={14} /></button>
                 </div>
-                {/* Map legend */}
                 <div className="map-legend">
                   <div className="map-legend-bar">
                     <div className="map-legend-seg" style={{ background: "#22c55e" }} />
@@ -159,10 +181,9 @@ export default function Index() {
                   <span className="map-legend-label">km/h</span>
                   <span className="map-legend-max">60</span>
                 </div>
-                {/* Tooltip-like info */}
                 {site && (
                   <div className="map-tooltip">
-                    <MapPin size={13} className="mr-1" />
+                    <MapPin size={13} />
                     <span>{site.site_name}</span>
                     <span className="map-tooltip-alt">{site.elevation_m} m s.l.m.</span>
                   </div>
@@ -308,8 +329,7 @@ export default function Index() {
                             </div>
                           );
                         });
-                      })()}
-                    </div>
+                      })()}\n                    </div>
                     {/* Mini metrics */}
                     <div className="forecast-card-metrics">
                       <div className="forecast-m">
@@ -331,6 +351,100 @@ export default function Index() {
             </div>
           </section>
 
+          {/* ── Detailed sections (below forecast) ── */}
+          {site && (
+            <div className="detail-columns">
+              <div className="detail-main">
+                {/* Site Header */}
+                <section className="detail-site-header">
+                  <SiteHeader
+                    site_name={site.site_name}
+                    location_name={site.location_name}
+                    orientation={site.orientation}
+                    elevation_m={site.elevation_m}
+                    currentData={currentData as any}
+                    sunrise={sunrise}
+                    sunset={sunset}
+                    uvIndex={uvIndex}
+                  />
+                </section>
+
+                {/* Windgram */}
+                <section className="detail-windgram">
+                  <VentiInterpolatiTab
+                    lat={site.lat}
+                    lon={site.lon}
+                    quotaDecollo={site.elevation_m}
+                    selectedDay={selectedDay}
+                    oraCorrente={selectedHour}
+                    onOraChange={(h) => setSelectedHour(h)}
+                    siteName={site.site_name}
+                    siteId={site.id}
+                    rawData={rawApiResponse}
+                  />
+                </section>
+
+                {/* Tabs */}
+                <section className="detail-tabs">
+                  <TabNav activeTab={activeTab} onTabChange={handleTabChange} />
+                  <div className="detail-tab-content">
+                    {activeTab === "meteo" && (
+                      <MeteoTab
+                        currentData={currentData}
+                        dayData={filteredDayData}
+                        site={{ alt: site.elevation_m, name: site.site_name }}
+                        thermalDelta={thermalDelta}
+                        modelName="Open-Meteo"
+                        selectedHour={selectedHour}
+                        selectedDay={selectedDay}
+                        cape={currentData?.cape}
+                        liftedIndex={currentData?.liftedIndex}
+                        cin={currentData?.cin}
+                      />
+                    )}
+                    {activeTab === "venti" && (
+                      <div className="detail-venti-info">
+                        <Wind size={18} className="detail-venti-icon" />
+                        <p>Il windgram è visibile sopra. I dati di vento interpolati vengono calcolati dal modello Open-Meteo per la quota del decollo selezionato.</p>
+                      </div>
+                    )}
+                    {activeTab === "termiche" && (
+                      <TermicheTab
+                        currentData={currentData as any}
+                        dayData={filteredDayData}
+                        site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name }}
+                        selectedDay={selectedDay}
+                      />
+                    )}
+                    {activeTab === "analisi" && (
+                      <AnalisiMeteo
+                        currentData={currentData as any}
+                        dayData={filteredDayData}
+                        site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name, exposure: site.orientation }}
+                        cape={currentData?.cape}
+                        liftedIndex={currentData?.liftedIndex}
+                        cin={currentData?.cin}
+                        rawData={rawApiResponse}
+                      />
+                    )}
+                  </div>
+                </section>
+
+                {/* Hourly table */}
+                <section className="detail-hourly">
+                  <HourlyTable
+                    dayData={filteredDayData}
+                    altitude={site.elevation_m}
+                    selectedHour={selectedHour}
+                    onHourSelect={setSelectedHour}
+                    dayLabel={dateLabels[selectedDay] || "Oggi"}
+                    siteName={site.site_name}
+                  />
+                </section>
+              </div>
+            </div>
+          )}
+
         </main>
 
         {/* ── RIGHT SIDEBAR (launch sites) ── */}
@@ -349,6 +463,7 @@ export default function Index() {
       </div>
 
       <Footer />
+      <DiagnosticaPanel />
     </div>
   );
 }
