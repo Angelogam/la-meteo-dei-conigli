@@ -346,7 +346,7 @@ export default function PrevisioniGiornaliere({
                 aria-pressed={isActive}
                 aria-label={`Mostra le previsioni per ${tabName.toLowerCase()}, ${label}`}
                 className={`
-                  forecast-day-card relative rounded-xl p-3 sm:p-4 text-left transition-colors duration-200
+                  forecast-day-card forecast-day-card-premium relative rounded-xl p-3 sm:p-4 text-left transition-colors duration-200
                   ${isActive
                     ? 'bg-emerald-950/60 border-2 border-emerald-400 shadow-md shadow-emerald-900/20'
                     : isRainy
