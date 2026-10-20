@@ -143,6 +143,21 @@ export default function Index() {
             )}
 
             {site && (
+              <section className="forecast-section flight-forecast-module min-w-0">
+                <PrevisioniGiornaliere
+                  enrichedDaily={enrichedDaily}
+                  dateLabels={dateLabels}
+                  currentData={currentData}
+                  dayData={dayData}
+                  site={{ name: site.site_name, altitude: site.elevation_m, exposure: site.orientation }}
+                  selectedDay={selectedDay}
+                  onSelectDay={setSelectedDay}
+                  nomeDecollo={site.site_name}
+                />
+              </section>
+            )}
+
+            {site && (
               <div className="flight-top-dashboard-grid">
                 <div className="flight-primary-column">
                   <section className="flybubble-panel flybubble-live-map" aria-labelledby="flybubble-heading">
@@ -180,19 +195,6 @@ export default function Index() {
               <div className="flight-desk-main dashboard-content min-w-0">
                 {site && (
                   <>
-                    <section className="forecast-section flight-forecast-module min-w-0">
-                      <PrevisioniGiornaliere
-                        enrichedDaily={enrichedDaily}
-                        dateLabels={dateLabels}
-                        currentData={currentData}
-                        dayData={dayData}
-                        site={{ name: site.site_name, altitude: site.elevation_m, exposure: site.orientation }}
-                        selectedDay={selectedDay}
-                        onSelectDay={setSelectedDay}
-                        nomeDecollo={site.site_name}
-                      />
-                    </section>
-
                     <section id="details-section" className="details-section scroll-mt-4">
                       <div className="flight-subsection-heading"><div><span>STRUMENTI DI ANALISI</span><h2>Meteo e aerologia</h2></div><small>Seleziona una scheda</small></div>
                       <TabNav activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); if (tab === "venti") document.getElementById("windgram-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
