@@ -151,7 +151,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
   const rows = useMemo(() => {
     const ore = Array.from({ length: 11 }, (_, i) => i + 9);
     return ore.map((ora) => {
-      const h = dayData.find(d => d.time.getHours() === ora);
+      const h = dayData.find(d => new Date(d.time).getHours() === ora);
       if (!h) return null;
       const t = calcolaTermiche(h, altitude);
       if (!t) return null;
