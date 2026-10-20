@@ -136,7 +136,7 @@ export default function DecolliCard({
             >
               <div className="launch-compare-site-header">
                 <span className="launch-compare-site-name">{item.site_name || item.name}</span>
-                <span className="launch-compare-site-meta"><MapPin size={9} aria-hidden="true" />{item.location_name || item.valley} · {item.elevation_m || item.altitude}m</span>
+                <span className="launch-compare-site-meta"><MapPin size={11} aria-hidden="true" />{item.location_name || item.valley} · {item.elevation_m || item.altitude}m</span>
               </div>
               <div className="launch-compare-weather-grid">
                 <div className="launch-compare-weather-item launch-compare-condition">
@@ -144,26 +144,31 @@ export default function DecolliCard({
                   <span className="launch-compare-label">{status.label}</span>
                 </div>
                 <div className="launch-compare-weather-item launch-compare-metric" title="Temperatura attuale">
-                  <Thermometer size={9} aria-hidden="true" />
-                  <span>{temp === null ? "—" : temp.toFixed(0) + "°"}</span>
+                  <Thermometer size={14} aria-hidden="true" className="launch-compare-icon" />
+                  <span className="launch-compare-value">{temp === null ? "—" : temp.toFixed(0) + "°C"}</span>
                 </div>
                 <div className="launch-compare-weather-item launch-compare-metric" title="Zero termico">
-                  <span aria-hidden="true">❄️</span>
-                  <span>{estimatedFreezingLevel === null ? "—" : estimatedFreezingLevel + "m"}</span>
+                  <span className="launch-compare-icon" aria-hidden="true">❄️</span>
+                  <span className="launch-compare-value">{estimatedFreezingLevel === null ? "—" : estimatedFreezingLevel + "m"}</span>
                 </div>
                 <div className="launch-compare-weather-item launch-compare-wind" title="Velocità del vento">
-                  <Wind size={9} aria-hidden="true" />
-                  <span>{wind === null ? "—" : wind.toFixed(0) + "k"}</span>
+                  <Wind size={14} aria-hidden="true" className="launch-compare-icon" />
+                  <span className="launch-compare-value">{wind === null ? "—" : wind.toFixed(0) + " km/h"}</span>
                 </div>
                 <div className="launch-compare-weather-item launch-compare-direction" title="Direzione del vento">
-                  {direction === null ? "—" : getCardinalDir(direction)}
+                  <span className="launch-compare-value">{direction === null ? "—" : getCardinalDir(direction)}</span>
                 </div>
                 <div className="launch-compare-weather-item launch-compare-base" title="Base nubi">
-                  <Layers size={9} aria-hidden="true" />
-                  <span>{base || "—"}</span>
+                  <Layers size={14} aria-hidden="true" className="launch-compare-icon" />
+                  <span className="launch-compare-value">{base || "—"}</span>
                 </div>
               </div>
-              {index !== null && <span className={"launch-compare-index " + (index >= 8 ? "is-high" : index >= 5 ? "is-mid" : "is-low")} title="Indice sintetico indicativo">{index}/10</span>}
+              {index !== null && (
+                <span className={"launch-compare-index " + (index >= 8 ? "is-high" : index >= 5 ? "is-mid" : "is-low")} title="Indice sintetico indicativo">
+                  <span className="launch-compare-label" style={{fontSize: '.56rem', textTransform: 'none', letterSpacing: 0, color: 'inherit'}}>Indice</span>
+                  {index}/10
+                </span>
+              )}
               {selected && <span className="launch-compare-selected">✓</span>}
             </button>
           );
