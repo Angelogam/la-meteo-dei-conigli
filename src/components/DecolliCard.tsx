@@ -62,6 +62,8 @@ function getCardinalDir(deg: number): string {
 function getWeatherStatus(weather: AggressiveWeatherData | null | undefined) {
   const code = weather?.weatherCode;
   if (code !== null && code !== undefined) {
+    if ([45, 48].includes(code)) return { icon: <Cloud className="h-4 w-4 text-slate-300" />, label: "Nebbia" };
+    if ([51, 53, 55, 56, 57].includes(code)) return { icon: ICONA_STATO.variabile, label: "Pioviggine" };
     if ([71, 73, 75, 77, 85, 86].includes(code)) return { icon: ICONA_STATO.neve, label: "Neve" };
     if ([95, 96, 99].includes(code)) return { icon: ICONA_STATO.temporale, label: "Temporale" };
     if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return { icon: ICONA_STATO.pioggia, label: "Pioggia" };
@@ -136,7 +138,7 @@ export default function DecolliCard({
             >
               <div className="launch-compare-site-header">
                 <span className="launch-compare-site-name">{item.site_name || item.name}</span>
-                <span className="launch-compare-site-meta"><MapPin size={9} aria-hidden="true" />{item.location_name || item.valley} · {item.elevation_m || item.altitude}m</span>
+                <span className="launch-compare-site-meta"><MapPin size={12} aria-hidden="true" />{item.location_name || item.valley} <span className="launch-compare-altitude">{item.elevation_m || item.altitude} m s.l.m.</span></span>
               </div>
               <div className="launch-compare-weather-grid">
                 <div className="launch-compare-weather-item launch-compare-condition">
@@ -156,7 +158,7 @@ export default function DecolliCard({
                   <span>{wind === null ? "—" : wind.toFixed(0) + "k"}</span>
                 </div>
                 <div className="launch-compare-weather-item launch-compare-direction" title="Direzione del vento">
-                  {direction === null ? "—" : getCardinalDir(direction)}
+                  <span className="launch-compare-value">{direction === null ? "N/D" : getCardinalDir(direction)}</span><span className="launch-compare-label">DIREZIONE</span>
                 </div>
                 <div className="launch-compare-weather-item launch-compare-base" title="Base nubi">
                   <Layers size={9} aria-hidden="true" />
