@@ -135,7 +135,17 @@ export default function DecolliCard({
               aria-pressed={selected}
               className={"launch-compare-row" + (selected ? " is-selected" : "")}
             >
-              <div className="launch-compare-site-header"><span className="launch-compare-site-name">{item.site_name || item.name}</span><span className="launch-compare-site-meta"><MapPin size={12} aria-hidden="true" />{item.location_name || item.valley} · <strong>{item.elevation_m || item.altitude} m s.l.m.</strong></span><span className="launch-compare-site-orientation">Esposizione {item.orientation || item.exposure || "N/D"}</span></div>
+              <div className="launch-compare-card-top">
+                <div className="launch-compare-site-header">
+                  <span className="launch-compare-site-name">{item.site_name || item.name}</span>
+                  <span className="launch-compare-site-meta"><MapPin size={12} aria-hidden="true" /><span>{item.location_name || item.valley || "Località non indicata"}</span><span className="launch-compare-altitude">{item.elevation_m || item.altitude} m s.l.m.</span></span>
+                  <span className="launch-compare-site-orientation">Esposizione {item.orientation || item.exposure || "N/D"}</span>
+                </div>
+                <div className="launch-compare-card-badges">
+                  {index !== null && <span className={"launch-compare-index " + (index >= 8 ? "is-high" : index >= 5 ? "is-mid" : "is-low")} title="Indice sintetico indicativo"><small>Indice</small><strong>{index}/10</strong></span>}
+                  {selected && <span className="launch-compare-selected"><span aria-hidden="true">✓</span> Selezionato</span>}
+                </div>
+              </div>
               <div className="launch-compare-weather-grid">
                 <div className="launch-compare-weather-item launch-compare-condition"><span className="launch-compare-icon">{status.icon}</span><span className="launch-compare-value">{status.label}</span><span className="launch-compare-label">CONDIZIONI</span></div>
                 <div className="launch-compare-weather-item"><Thermometer size={14} aria-hidden="true" /><span className="launch-compare-value">{temp === null ? "N/D" : temp.toFixed(0) + "°C"}</span><span className="launch-compare-label">TEMPERATURA</span></div>
@@ -146,13 +156,7 @@ export default function DecolliCard({
                 <div className="launch-compare-weather-item"><Layers size={14} aria-hidden="true" /><span className="launch-compare-value">{base || "N/D"}</span><span className="launch-compare-label">BASE NUBI</span></div>
                 <div className="launch-compare-weather-item"><span aria-hidden="true">❄</span><span className="launch-compare-value">{freezingLevel === null ? "N/D" : Math.round(freezingLevel).toLocaleString("it-IT") + " m"}</span><span className="launch-compare-label">ZERO TERMICO</span></div>
               </div>
-              {index !== null && (
-                <span className={"launch-compare-index " + (index >= 8 ? "is-high" : index >= 5 ? "is-mid" : "is-low")} title="Indice sintetico indicativo">
-                  <span className="launch-compare-label" style={{fontSize: '.56rem', textTransform: 'none', letterSpacing: 0, color: 'inherit'}}>Indice</span>
-                  {index}/10
-                </span>
-              )}
-              {selected && <span className="launch-compare-selected">✓</span>}
+
             </button>
           );
         })}
