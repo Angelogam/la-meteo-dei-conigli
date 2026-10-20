@@ -1570,3 +1570,45 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .forecast-day-card-premium > div:first-child > span:first-child { animation: none !important; }
 }
+
+
+/* FIX: weather comparison cards must show their data, not clipped pill-shaped labels. */
+.launch-compare-panel { min-width: 0; }
+.launch-compare-rows { overflow-y: auto; max-height: min(72vh, 980px); }
+.launch-compare-row {
+  display: flex !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  align-items: stretch !important;
+  flex-direction: column !important;
+  gap: .7rem !important;
+  padding: 1rem !important;
+  text-align: left !important;
+  white-space: normal !important;
+  overflow: visible !important;
+}
+.launch-compare-site-header { display:flex; width:100%; min-width:0; flex-direction:column; align-items:flex-start; gap:.28rem; }
+.launch-compare-site-name { display:block; width:100%; white-space:normal !important; overflow-wrap:anywhere; line-height:1.25 !important; font-size:.95rem !important; }
+.launch-compare-site-meta { display:flex; flex-wrap:wrap; align-items:center; gap:.35rem; line-height:1.4; font-size:.7rem !important; }
+.launch-compare-altitude { color:#e4f3e9; font-weight:800; }
+.launch-compare-weather-grid { display:grid !important; width:100%; grid-template-columns:repeat(3,minmax(0,1fr)) !important; gap:.45rem !important; margin-top:.1rem !important; }
+.launch-compare-weather-item {
+  display:flex !important; min-width:0; min-height:66px !important; height:auto !important;
+  align-items:flex-start !important; justify-content:center !important; flex-direction:column !important;
+  gap:.2rem !important; padding:.55rem !important; border:1px solid rgba(191,220,211,.10);
+  border-radius:11px !important; overflow-wrap:anywhere; text-align:left;
+}
+.launch-compare-condition { grid-column:span 3; min-height:58px !important; flex-direction:row !important; align-items:center !important; justify-content:flex-start !important; gap:.65rem !important; }
+.launch-compare-icon svg { width:23px !important; height:23px !important; }
+.launch-compare-value { color:#f5f8f2 !important; font-size:.85rem !important; font-weight:850 !important; line-height:1.2; }
+.launch-compare-label { color:#a9c4bc !important; font-size:.57rem !important; font-weight:800 !important; letter-spacing:.06em; line-height:1.25; }
+.launch-compare-index { position:absolute; right:.85rem; top:.8rem; padding:.2rem .45rem; font-size:.7rem; }
+.launch-compare-selected { position:absolute; right:.9rem; bottom:.8rem; color:#a8ead1; font-weight:900; }
+@media (max-width: 560px) {
+  .launch-compare-row { padding:.8rem !important; }
+  .launch-compare-weather-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+  .launch-compare-condition { grid-column:span 2; }
+  .launch-compare-value { font-size:.82rem !important; }
+}
