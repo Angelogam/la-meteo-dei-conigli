@@ -1211,64 +1211,104 @@ a:focus-visible,
 .launch-compare-rows::-webkit-scrollbar { width: 6px; }
 .launch-compare-rows::-webkit-scrollbar-track { background: rgba(8, 25, 35, .65); }
 .launch-compare-rows::-webkit-scrollbar-thumb { background: rgba(120, 201, 196, .55); border-radius: 3px; }
+/* ═══════════════════════════════════════════════════════════
+   CARD DECOLLO — layout orizzontale stile template
+   ═══════════════════════════════════════════════════════════ */
 .launch-compare-row {
-  display: flex; position: relative; align-items: center; flex-direction: column; gap: .85rem;
-  width: calc(100% - 1.2rem); min-width: 0; margin: .25rem .6rem; padding: 1.6rem 1.1rem 1.4rem;
-  border: 1px solid rgba(128, 190, 204, .28); border-radius: 14px;
-  color: inherit; background: linear-gradient(160deg, rgba(12, 32, 48, .9), rgba(6, 18, 30, .95)); text-align: center; cursor: pointer;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, .22), inset 0 1px 0 rgba(255,255,255,.04);
-  transition: background .2s ease, border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+  display: flex; align-items: center; gap: .7rem;
+  width: calc(100% - 1.2rem); min-width: 0; margin: .2rem .6rem;
+  padding: .55rem .6rem;
+  border: 1px solid rgba(128, 190, 204, .22); border-radius: 12px;
+  color: inherit; background: rgba(10, 28, 42, .88);
+  cursor: pointer; text-align: left;
+  box-shadow: 0 2px 12px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.04);
+  transition: background .18s ease, border-color .18s ease, transform .15s ease, box-shadow .18s ease;
   overflow: hidden;
 }
 .launch-compare-row::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-  background: linear-gradient(90deg, transparent, rgba(120,201,196,.4), transparent);
-  opacity: 0; transition: opacity .2s ease;
+  content: ''; position: absolute; inset: 0;
+  border-radius: 12px; opacity: 0;
+  background: linear-gradient(90deg, rgba(16, 185, 129, .08), transparent 60%);
+  transition: opacity .2s ease;
+  pointer-events: none;
 }
-.launch-compare-row:hover { background: linear-gradient(160deg, rgba(20, 50, 70, .92), rgba(10, 30, 48, .96)); border-color: rgba(120, 201, 196, .55); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255,255,255,.06); }
+.launch-compare-row:hover {
+  background: rgba(16, 40, 58, .95);
+  border-color: rgba(120, 201, 196, .45);
+  transform: translateX(2px);
+  box-shadow: 0 4px 20px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.06);
+}
 .launch-compare-row:hover::before { opacity: 1; }
-.launch-compare-row.is-selected { background: linear-gradient(160deg, rgba(30, 70, 85, .92), rgba(18, 45, 60, .96)); border-color: #78c9c4; box-shadow: inset 3px 0 #78c9c4, 0 4px 20px rgba(38, 125, 136, .25); }
-.launch-compare-row.is-selected::before { opacity: 1; background: linear-gradient(90deg, transparent, rgba(120,201,196,.8), transparent); }
-.launch-compare-site-header { display: flex; flex-direction: column; align-items: center; gap: .3rem; width: 100%; min-width: 0; }
-.launch-compare-site-name { color: #f0fbff; font-size: 1.08rem; font-weight: 800; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; min-width: 0; letter-spacing: -.01em; }
-.launch-compare-site-meta { display: flex; align-items: center; justify-content: center; gap: .3rem; color: #8fb4c4; font-size: .76rem; line-height: 1.3; white-space: nowrap; }
-.launch-compare-site-meta svg { flex: 0 0 auto; opacity: .8; }
-@keyframes pulse-glow { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .85; transform: scale(1.08); } }
-@keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@keyframes float-up { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
-.launch-compare-weather-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: .4rem .5rem;
-  width: 100%;
-  max-width: 440px;
+.launch-compare-row.is-selected {
+  background: linear-gradient(90deg, rgba(6, 70, 50, .9), rgba(10, 35, 50, .95));
+  border-color: rgba(16, 185, 129, .7);
+  box-shadow: inset 3px 0 #10b981, 0 2px 16px rgba(16,185,129,.2);
 }
-.launch-compare-weather-item {
-  display: flex; flex-direction: column; align-items: center; gap: .12rem;
-  color: #c7d8df; font-size: .74rem; text-align: center;
-  padding: .4rem .35rem .3rem; border-radius: 10px;
+.launch-compare-row.is-selected::before { opacity: 0; }
+
+/* Thumbnail immagine */
+.launch-compare-thumb {
+  flex: 0 0 72px; width: 72px; height: 52px;
+  border-radius: 8px; overflow: hidden; position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  background: rgba(0,0,0,.3);
+}
+.launch-compare-thumb img {
+  width: 100%; height: 100%; object-fit: cover;
+  display: block; transition: transform .3s ease;
+}
+.launch-compare-row:hover .launch-compare-thumb img { transform: scale(1.08); }
+.launch-compare-thumb-dot {
+  position: absolute; bottom: 3px; right: 3px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #10b981; box-shadow: 0 0 6px #10b981;
+}
+
+/* Info centrale */
+.launch-compare-info {
+  flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: .2rem;
+}
+.launch-compare-info-top {
+  display: flex; align-items: baseline; gap: .4rem; flex-wrap: wrap;
+}
+.launch-compare-name {
+  color: #e8f7fc; font-size: .82rem; font-weight: 750;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  letter-spacing: -.01em;
+}
+.launch-compare-altitude {
+  color: #6db3c8; font-size: .64rem; font-weight: 600;
+  white-space: nowrap; flex-shrink: 0;
+}
+.launch-compare-metrics {
+  display: flex; align-items: center; gap: .55rem; flex-wrap: wrap;
+}
+.launch-compare-metric {
+  display: inline-flex; align-items: center; gap: .22rem;
+  color: #9ec7d6; font-size: .66rem; font-weight: 500;
+  padding: .12rem .3rem; border-radius: 4px;
   background: rgba(255,255,255,.04);
-  border: 1px solid rgba(128,190,204,.15);
-  min-width: 0;
-  transition: background .2s ease, border-color .2s ease, transform .2s ease;
+  border: 1px solid rgba(128,190,204,.12);
+  white-space: nowrap;
 }
-.launch-compare-weather-item:hover { background: rgba(255,255,255,.07); border-color: rgba(120,201,196,.4); transform: translateY(-1px); }
-.launch-compare-icon { font-size: 1.2rem; line-height: 1; display: flex; align-items: center; justify-content: center; height: 1.4em; }
-.launch-compare-label { font-size: .64rem; color: #8ab0c0; line-height: 1.2; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
-.launch-compare-value { font-size: .82rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; }
-.launch-compare-condition .launch-compare-icon { animation: pulse-glow 2.5s ease-in-out infinite; }
-.launch-compare-wind .launch-compare-icon { animation: spin-slow 3s linear infinite; }
-.launch-compare-metric .launch-compare-icon { animation: float-up 2s ease-in-out infinite; }
-.launch-compare-wind .launch-compare-value { color: #a8eaff; }
-.launch-compare-direction .launch-compare-value { color: #8ec8df; font-size: .72rem; }
-.launch-compare-base .launch-compare-value { color: #c4b0ee; }
-.launch-compare-temp { display: none; }
-.launch-compare-index { padding: .25rem .55rem; border: 1px solid rgba(139, 170, 184, .2); border-radius: 8px; font-size: .74rem; font-weight: 800; text-align: center; display: inline-flex; align-items: center; justify-content: center; margin-top: .2rem; background: rgba(255,255,255,.04); transition: background .2s ease; }
-.launch-compare-index:hover { background: rgba(255,255,255,.08); }
-.launch-compare-index.is-low { color: #9cdec5; background: rgba(37, 107, 83, .18); }
-.launch-compare-index.is-mid { color: #f0d08b; background: rgba(124, 91, 33, .18); }
-.launch-compare-index.is-high { color: #f1aaa1; background: rgba(137, 54, 48, .2); }
-.launch-compare-selected { color: #84d6c5; font-size: .6rem; font-weight: 750; text-align: center; display: block; margin-top: .1rem; }
+.launch-compare-metric svg { flex: 0 0 auto; opacity: .85; }
+
+/* Actions destra */
+.launch-compare-actions {
+  display: flex; align-items: center; gap: .35rem; flex-shrink: 0;
+}
+.launch-compare-star {
+  background: none; border: 0; padding: .2rem; cursor: pointer;
+  color: rgba(180, 200, 210, .4); transition: color .15s ease, transform .15s ease;
+  border-radius: 4px; display: flex; align-items: center;
+}
+.launch-compare-star:hover { color: #facc15; transform: scale(1.15); }
+.launch-compare-arrow {
+  color: rgba(120, 201, 196, .5); transition: color .15s ease, transform .15s ease;
+  flex-shrink: 0;
+}
+.launch-compare-row:hover .launch-compare-arrow { color: #78c9c4; transform: translateX(2px); }
+.launch-compare-row.is-selected .launch-compare-arrow { color: #10b981; }
 .launch-compare-empty { padding: .5rem; color: #9eb3c0; font-size: .68rem; }
 .launch-compare-toggle { display: none; }
 .launch-compare-toggle:hover { background: rgba(25, 63, 81, .8); }
@@ -1277,18 +1317,15 @@ a:focus-visible,
   .launch-compare-tools { align-items: stretch; flex-direction: column; padding: 0 .85rem .7rem; }
   .launch-compare-search { max-width: none; flex-basis: auto; }
   .launch-compare-update { font-size: .65rem; }
-  .launch-compare-row { align-items: center; flex-direction: column; gap: .65rem; padding: 1.1rem 1.2rem; }
-  .launch-compare-weather-grid { grid-template-columns: repeat(3, 1fr); gap: .35rem .45rem; }
-  .launch-compare-condition { font-size: .7rem; }
-  .launch-compare-site-name { font-size: .96rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-  .launch-compare-site-meta { font-size: .72rem; justify-content: center; white-space: nowrap; overflow: hidden; }
-  .launch-compare-weather-item { font-size: .7rem; padding: .35rem .3rem; }
-  .launch-compare-value { font-size: .78rem; }
-  .launch-compare-wind { font-size: .72rem; }
-  .launch-compare-direction { font-size: .66rem; }
-  .launch-compare-icon { font-size: 1.1rem; }
-  .launch-compare-label { font-size: .6rem; }
-  .launch-compare-selected { position: static; }
+  .launch-compare-row { gap: .55rem; padding: .45rem .5rem; }
+  .launch-compare-thumb { flex: 0 0 56px; width: 56px; height: 42px; border-radius: 6px; }
+  .launch-compare-name { font-size: .76rem; }
+  .launch-compare-altitude { font-size: .6rem; }
+  .launch-compare-metrics { gap: .4rem; }
+  .launch-compare-metric { font-size: .6rem; padding: .1rem .22rem; gap: .18rem; }
+  .launch-compare-metric svg { width: 10px; height: 10px; }
+  .launch-compare-star { padding: .15rem; }
+  .launch-compare-arrow { width: 13px; height: 13px; }
 }
 
 
@@ -1342,13 +1379,11 @@ a:focus-visible,
 .flight-launch-sidebar .launch-compare-tools { display: flex; flex-direction: column; align-items: stretch; padding: 0 .8rem .5rem; }
 .flight-launch-sidebar .launch-compare-search { max-width: none; flex-basis: auto; }
 .flight-launch-sidebar .launch-compare-update { font-size: .64rem; }
-.flight-launch-sidebar .launch-compare-row { align-items: center; flex-direction: column; gap: .55rem; padding: .85rem .9rem; }
-.flight-launch-sidebar .launch-compare-site-header { display: flex; flex-direction: column; align-items: center; gap: .2rem; width: 100%; }
-.flight-launch-sidebar .launch-compare-site-name { white-space: nowrap; text-align: center; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-.flight-launch-sidebar .launch-compare-site-meta { white-space: nowrap; line-height: 1.2; justify-content: center; overflow: hidden; }
-.flight-launch-sidebar .launch-compare-weather-grid { grid-template-columns: repeat(3, 1fr); gap: .25rem .35rem; width: 100%; max-width: none; }
-.flight-launch-sidebar .launch-compare-weather-item { padding: .2rem .2rem; font-size: .62rem; }
-.flight-launch-sidebar .launch-compare-selected { position: static; font-size: .54rem; }
+.flight-launch-sidebar .launch-compare-row { align-items: center; flex-direction: row; gap: .6rem; padding: .5rem .6rem; }
+.flight-launch-sidebar .launch-compare-thumb { flex: 0 0 60px; width: 60px; height: 44px; border-radius: 7px; }
+.flight-launch-sidebar .launch-compare-name { font-size: .78rem; }
+.flight-launch-sidebar .launch-compare-altitude { font-size: .62rem; }
+.flight-launch-sidebar .launch-compare-metric { font-size: .62rem; padding: .1rem .25rem; }
 .flight-launch-sidebar .launch-compare-toggle { display: none; }
 .flybubble-live-map { overflow: hidden; }
 .flybubble-live-map .flybubble-panel-header { align-items: center; }
@@ -1367,16 +1402,12 @@ a:focus-visible,
   .flight-top-dashboard-grid { grid-template-columns: minmax(0, 1fr); }
   .flight-launch-sidebar { grid-column: 1; grid-row: 1; position: static; max-height: none; overflow: visible; order: 0; }
   .flight-primary-column { grid-column: 1; grid-row: 2; }
-  .flight-launch-sidebar .launch-compare-row { align-items: center; flex-direction: column; gap: .55rem; padding: .85rem 1rem; }
-  .flight-launch-sidebar .launch-compare-weather-grid { grid-template-columns: repeat(3, 1fr); gap: .3rem .4rem; }
+  .flight-launch-sidebar .launch-compare-row { align-items: center; flex-direction: row; gap: .55rem; padding: .45rem .55rem; }
+  .flight-launch-sidebar .launch-compare-thumb { flex: 0 0 52px; width: 52px; height: 38px; border-radius: 6px; }
   .flight-launch-sidebar .launch-compare-selected { position: static; font-size: .6rem; }
-  .flight-launch-sidebar .launch-compare-site-name { font-size: .92rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-  .flight-launch-sidebar .launch-compare-site-meta { font-size: .7rem; justify-content: center; white-space: nowrap; overflow: hidden; }
-  .flight-launch-sidebar .launch-compare-weather-item { font-size: .68rem; padding: .3rem .28rem; }
-  .flight-launch-sidebar .launch-compare-value { font-size: .76rem; }
-  .flight-launch-sidebar .launch-compare-icon { font-size: 1.05rem; }
-  .flight-launch-sidebar .launch-compare-direction { font-size: .64rem; }
-  .flight-launch-sidebar .launch-compare-label { font-size: .58rem; }
+  .flight-launch-sidebar .launch-compare-name { font-size: .74rem; }
+  .flight-launch-sidebar .launch-compare-altitude { font-size: .6rem; }
+  .flight-launch-sidebar .launch-compare-metric { font-size: .6rem; padding: .08rem .2rem; }
 }
 @media (max-width: 640px) {
   .flight-hero-banner { min-height: 240px; align-items: flex-start !important; flex-direction: column; justify-content: space-between; background-position: 58% center; }
@@ -1386,13 +1417,10 @@ a:focus-visible,
   .flybubble-live-map .flybubble-panel-header { align-items: flex-start; }
   .flybubble-open-link { width: 100%; justify-content: center; }
   .flybubble-live-map .flybubble-frame-wrap { height: 470px; padding: .4rem; }
-  .flight-launch-sidebar .launch-compare-row { align-items: center; flex-direction: column; gap: .5rem; padding: .7rem .9rem; }
-  .flight-launch-sidebar .launch-compare-weather-grid { grid-template-columns: repeat(3, 1fr); gap: .25rem .35rem; }
-  .flight-launch-sidebar .launch-compare-site-name { font-size: .86rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-  .flight-launch-sidebar .launch-compare-site-meta { font-size: .66rem; justify-content: center; white-space: nowrap; overflow: hidden; }
-  .flight-launch-sidebar .launch-compare-weather-item { font-size: .64rem; padding: .25rem .22rem; }
-  .flight-launch-sidebar .launch-compare-value { font-size: .72rem; }
-  .flight-launch-sidebar .launch-compare-icon { font-size: .95rem; }
-  .flight-launch-sidebar .launch-compare-direction { font-size: .62rem; }
-  .flight-launch-sidebar .launch-compare-label { font-size: .56rem; }
+  .flight-launch-sidebar .launch-compare-row { align-items: center; flex-direction: row; gap: .45rem; padding: .4rem .5rem; }
+  .flight-launch-sidebar .launch-compare-thumb { flex: 0 0 46px; width: 46px; height: 34px; border-radius: 5px; }
+  .flight-launch-sidebar .launch-compare-name { font-size: .7rem; }
+  .flight-launch-sidebar .launch-compare-altitude { font-size: .56rem; }
+  .flight-launch-sidebar .launch-compare-metric { font-size: .56rem; padding: .06rem .18rem; gap: .15rem; }
+  .flight-launch-sidebar .launch-compare-metric svg { width: 10px; height: 10px; }
 }

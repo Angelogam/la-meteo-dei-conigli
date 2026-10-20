@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, CloudSnow, Zap, Info, Search, MapPin, Thermometer, Wind } from "lucide-react";
+import { Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, CloudSnow, Zap, Info, Search, MapPin, Thermometer, Wind, ArrowRight, Star } from "lucide-react";
 import type { Decollo } from "@/data/decolli";
 
 export interface AggressiveWeatherData {
@@ -27,6 +27,37 @@ interface DecolliCardProps {
   selectedDay?: number;
   isUpdating?: boolean;
   error?: string | null;
+}
+
+// Immagini hero per i decolli (montagna / parapendio da Unsplash)
+const HERO_IMAGES: Record<string, string> = {
+  "Malanotte": "https://images.unsplash.com/photo-1551632811-561732d1e306?w=200&h=140&fit=crop&q=80",
+  "Colle di Tenda": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=200&h=140&fit=crop&q=80",
+  "Boves": "https://images.unsplash.com/photo-1464822759023-fed622ff2c8b?w=200&h=140&fit=crop&q=80",
+  "Monte Male": "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=200&h=140&fit=crop&q=80",
+  "Iretta": "https://images.unsplash.com/photo-1486870591958-9b9d0d1dda29?w=200&h=140&fit=crop&q=80",
+  "Pratoni di Val Mala": "https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5?w=200&h=140&fit=crop&q=80",
+  "Monte Birrone": "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=200&h=140&fit=crop&q=80",
+  "Colle dell'Agnello": "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=200&h=140&fit=crop&q=80",
+  "Pian Munè": "https://images.unsplash.com/photo-1485594050903-8e8ee5322c03?w=200&h=140&fit=crop&q=80",
+  "Martiniana Po": "https://images.unsplash.com/photo-1491555103944-8c2a772256e7?w=200&h=140&fit=crop&q=80",
+  "Rucas Alto": "https://images.unsplash.com/photo-1465056836900-8f1e940b3fc9?w=200&h=140&fit=crop&q=80",
+  "Montoso": "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=200&h=140&fit=crop&q=80",
+  "Monte Vandalino": "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=200&h=140&fit=crop&q=80",
+  "Pian dell'Alpe": "https://images.unsplash.com/photo-1500534623283-312a7ada7f2e?w=200&h=140&fit=crop&q=80",
+  "Roletto": "https://images.unsplash.com/photo-1470071459604-3b5e3267c02b?w=200&h=140&fit=crop&q=80",
+  "Piossasco": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=200&h=140&fit=crop&q=80",
+  "Truccetti": "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=200&h=140&fit=crop&q=80",
+  "Val della Torre": "https://images.unsplash.com/photo-1446329813274-7c9036bd9a1f?w=200&h=140&fit=crop&q=80",
+  "Rocca Canavese": "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=200&h=140&fit=crop&q=80",
+  "Santa Elisabetta": "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=200&h=140&fit=crop&q=80",
+  "Monte Cavallaria": "https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?w=200&h=140&fit=crop&q=80",
+  "Andrate": "https://images.unsplash.com/photo-1464822759023-fed622ff2c8b?w=200&h=140&fit=crop&q=80",
+};
+
+function getHeroImage(name: string): string {
+  const key = Object.keys(HERO_IMAGES).find(k => name.toLowerCase().includes(k.toLowerCase()));
+  return key ? HERO_IMAGES[key] : "https://images.unsplash.com/photo-1551632811-561732d1e306?w=200&h=140&fit=crop&q=80";
 }
 
 const ICONA_STATO: Record<string, React.ReactNode> = {
@@ -123,6 +154,8 @@ export default function DecolliCard({
           const index = numberOrNull(weather?.indice);
           const status = getWeatherStatus(weather);
           const base = weather?.baseNubi;
+          const rain = numberOrNull(weather?.rain);
+          const cloud = numberOrNull(weather?.cloud);
           const freezingLevel = numberOrNull(weather?.freezingLevel);
           const estimatedFreezingLevel = freezingLevel ?? (temp !== null ? Math.round(item.elevation_m + temp * 125) : null);
           return (
@@ -134,42 +167,39 @@ export default function DecolliCard({
               aria-pressed={selected}
               className={"launch-compare-row" + (selected ? " is-selected" : "")}
             >
-              <div className="launch-compare-site-header">
-                <span className="launch-compare-site-name">{item.site_name || item.name}</span>
-                <span className="launch-compare-site-meta"><MapPin size={11} aria-hidden="true" />{item.location_name || item.valley} · {item.elevation_m || item.altitude}m</span>
+              {/* Thumbnail immagine */}
+              <div className="launch-compare-thumb">
+                <img src={getHeroImage(item.site_name || item.name)} alt={item.site_name || item.name} loading="lazy" />
+                {selected && <span className="launch-compare-thumb-dot" aria-hidden="true" />}
               </div>
-              <div className="launch-compare-weather-grid">
-                <div className="launch-compare-weather-item launch-compare-condition">
-                  <span className="launch-compare-icon">{status.icon}</span>
-                  <span className="launch-compare-label">{status.label}</span>
+              {/* Info principale */}
+              <div className="launch-compare-info">
+                <div className="launch-compare-info-top">
+                  <span className="launch-compare-name">{item.site_name || item.name}</span>
+                  <span className="launch-compare-altitude">{item.elevation_m || item.altitude} m s.l.m.</span>
                 </div>
-                <div className="launch-compare-weather-item launch-compare-metric" title="Temperatura attuale">
-                  <Thermometer size={14} aria-hidden="true" className="launch-compare-icon" />
-                  <span className="launch-compare-value">{temp === null ? "—" : temp.toFixed(0) + "°C"}</span>
-                </div>
-                <div className="launch-compare-weather-item launch-compare-metric" title="Zero termico">
-                  <span className="launch-compare-icon" aria-hidden="true">❄️</span>
-                  <span className="launch-compare-value">{estimatedFreezingLevel === null ? "—" : estimatedFreezingLevel + "m"}</span>
-                </div>
-                <div className="launch-compare-weather-item launch-compare-wind" title="Velocità del vento">
-                  <Wind size={14} aria-hidden="true" className="launch-compare-icon" />
-                  <span className="launch-compare-value">{wind === null ? "—" : wind.toFixed(0) + " km/h"}</span>
-                </div>
-                <div className="launch-compare-weather-item launch-compare-direction" title="Direzione del vento">
-                  <span className="launch-compare-value">{direction === null ? "—" : getCardinalDir(direction)}</span>
-                </div>
-                <div className="launch-compare-weather-item launch-compare-base" title="Base nubi">
-                  <Layers size={14} aria-hidden="true" className="launch-compare-icon" />
-                  <span className="launch-compare-value">{base || "—"}</span>
+                <div className="launch-compare-metrics">
+                  <span className="launch-compare-metric" title="Pioggia">
+                    <CloudRain size={11} aria-hidden="true" />
+                    <span>{rain === null ? "—" : rain.toFixed(1)} mm</span>
+                  </span>
+                  <span className="launch-compare-metric" title="Nuvolosità">
+                    <Cloud size={11} aria-hidden="true" />
+                    <span>{cloud === null ? "—" : Math.round(cloud) + " %"}</span>
+                  </span>
+                  <span className="launch-compare-metric" title="Zero termico">
+                    <Thermometer size={11} aria-hidden="true" />
+                    <span>{estimatedFreezingLevel === null ? "—" : estimatedFreezingLevel + " m"}</span>
+                  </span>
                 </div>
               </div>
-              {index !== null && (
-                <span className={"launch-compare-index " + (index >= 8 ? "is-high" : index >= 5 ? "is-mid" : "is-low")} title="Indice sintetico indicativo">
-                  <span className="launch-compare-label" style={{fontSize: '.56rem', textTransform: 'none', letterSpacing: 0, color: 'inherit'}}>Indice</span>
-                  {index}/10
-                </span>
-              )}
-              {selected && <span className="launch-compare-selected">✓</span>}
+              {/* Freccia + stella */}
+              <div className="launch-compare-actions">
+                <button type="button" className="launch-compare-star" aria-label="Aggiungi ai preferiti">
+                  <Star size={14} aria-hidden="true" />
+                </button>
+                <ArrowRight size={15} className="launch-compare-arrow" aria-hidden="true" />
+              </div>
             </button>
           );
         })}
