@@ -21,6 +21,8 @@ export type MeteoDecollo = {
   termiche: string;
   indice: number | null;
   indiceLabel: string;
+  freezingLevel: number | null;
+  weatherCode: number | null;
   fonte: string;
 };
 
@@ -56,7 +58,7 @@ async function getOpenMeteo(lat: number, lon: number) {
     const forecast = await fetchFull(
       lat,
       lon,
-      "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,cape,freezing_level_height",
+      "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,cape,freezing_level_height,weather_code",
       "temperature_2m_max,temperature_2m_min,cloud_cover_mean,precipitation_sum",
       "",
       1,
@@ -77,6 +79,7 @@ async function getOpenMeteo(lat: number, lon: number) {
       dir: numOrNull(h.wind_direction_10m?.[i]),
       cape: numOrNull(h.cape?.[i]),
       freezingLevel: numOrNull(h.freezing_level_height?.[i]),
+      weatherCode: numOrNull(h.weather_code?.[i]),
       tMax: numOrNull(d?.temperature_2m_max?.[0]),
       tMin: numOrNull(d?.temperature_2m_min?.[0]),
       cloudDaily: numOrNull(d?.cloud_cover_mean?.[0]),
@@ -157,6 +160,7 @@ const WEIGHTS = {
 
 function statoAggressivo(openMeteo: any, openWeather: any, tomorrow: any): string {
   if (openWeather?.stato === "Thunderstorm") return "Temporale";
+  if ([71, 73, 75, 77, 85, 86].includes(openMeteo?.weatherCode)) return "Neve";
 
   const rains = [openMeteo?.rain, openWeather?.rain, tomorrow?.rain]
     .filter((v): v is number => Number.isFinite(v));
@@ -300,6 +304,8 @@ export async function getMeteoDecolloAggressivo(d: Decollo): Promise<MeteoDecoll
     termiche,
     indice: indice ?? 0,
     indiceLabel: labelIndice(indice),
+    freezingLevel: openMeteo?.freezingLevel ?? null,
+    weatherCode: openMeteo?.weatherCode ?? null,
     fonte: "Open-Meteo + OpenWeather + Tomorrow.io",
   };
 }
@@ -333,6 +339,8 @@ export async function getAllMeteoDecolliAggressivo(): Promise<Map<string, MeteoD
           termiche: "N/D",
           indice: 0,
           indiceLabel: "N/D",
+          freezingLevel: null,
+          weatherCode: null,
           fonte: "Nessuna fonte disponibile",
         });
       }

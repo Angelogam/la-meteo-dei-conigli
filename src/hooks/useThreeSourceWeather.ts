@@ -23,6 +23,8 @@ function offlineFallback(name: string): MeteoDecollo {
     termiche: "N/D",
     indice: null,
     indiceLabel: "N/D",
+    freezingLevel: null,
+    weatherCode: null,
     fonte: `Nessun dato disponibile (${name})`
   };
 }

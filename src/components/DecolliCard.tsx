@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, Zap, Info, Search, MapPin } from "lucide-react";
+import { Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, CloudSnow, Zap, Info, Search, MapPin, Thermometer, Wind } from "lucide-react";
 import type { Decollo } from "@/data/decolli";
 
 export interface AggressiveWeatherData {
@@ -15,6 +15,8 @@ export interface AggressiveWeatherData {
   termiche: string;
   indice: number | null;
   indiceLabel: string;
+  freezingLevel?: number | null;
+  weatherCode?: number | null;
   fonte: string;
 }
 
@@ -34,6 +36,7 @@ const ICONA_STATO: Record<string, React.ReactNode> = {
   pioggia: <CloudRain className="h-4 w-4 text-blue-400" />,
   temporale: <Zap className="h-4 w-4 text-purple-400" />,
   coperto: <Cloud className="h-4 w-4 text-slate-400" />,
+  neve: <CloudSnow className="h-4 w-4 text-sky-200" />,
   offline: <AlertTriangle className="h-4 w-4 text-slate-500" />,
   "n/d": <Info className="h-4 w-4 text-slate-400" />,
   errore: <AlertTriangle className="h-4 w-4 text-red-400" />,
@@ -53,14 +56,26 @@ function getStatoDisplay(stato?: string | null) {
 }
 
 function getCardinalDir(deg: number): string {
-  return ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][Math.round((((deg % 360) + 360) % 360) / 45) % 8];
+  return ["Nord", "Nord-Nord Est", "Nord Est", "Est-Nord Est", "Est", "Est-Sud Est", "Sud Est", "Sud-Sud Est", "Sud", "Sud-Sud Ovest", "Sud Ovest", "Ovest-Sud Ovest", "Ovest", "Ovest-Nord Ovest", "Nord Ovest", "Nord-Nord Ovest"][Math.round((((deg % 360) + 360) % 360) / 22.5) % 16];
+}
+
+function getWeatherStatus(weather: AggressiveWeatherData | null | undefined) {
+  const code = weather?.weatherCode;
+  if (code !== null && code !== undefined) {
+    if ([71, 73, 75, 77, 85, 86].includes(code)) return { icon: ICONA_STATO.neve, label: "Neve" };
+    if ([95, 96, 99].includes(code)) return { icon: ICONA_STATO.temporale, label: "Temporale" };
+    if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return { icon: ICONA_STATO.pioggia, label: "Pioggia" };
+    if ([0, 1].includes(code)) return { icon: ICONA_STATO.sereno, label: "Sereno" };
+    if (code === 2) return { icon: ICONA_STATO.variabile, label: "Parzialmente nuvoloso" };
+    if (code === 3) return { icon: ICONA_STATO.coperto, label: "Coperto" };
+  }
+  return getStatoDisplay(weather?.stato);
 }
 
 export default function DecolliCard({
   decolli, selectedId, onSelect, selectedDay = 0, isUpdating = false, error,
 }: DecolliCardProps) {
   const [query, setQuery] = useState("");
-  const [showAll, setShowAll] = useState(false);
   const dt = getDateTime(selectedDay);
   const filtered = useMemo(() => {
     const q = query.trim().toLocaleLowerCase("it-IT");
@@ -68,7 +83,7 @@ export default function DecolliCard({
       item.site_name, item.location_name, item.orientation, item.elevation_m,
     ].some((value) => String(value ?? "").toLocaleLowerCase("it-IT").includes(q)));
   }, [decolli, query]);
-  const visible = showAll || query.trim() ? filtered : filtered.slice(0, 6);
+  const visible = filtered;
   const loadedCount = decolli.filter((d) => {
     const status = d.aggressiveWeather?.stato?.toLowerCase();
     return status && !["offline", "errore", "n/d"].includes(status);
@@ -106,8 +121,10 @@ export default function DecolliCard({
           const temp = numberOrNull(weather?.temp);
           const direction = numberOrNull(weather?.dir);
           const index = numberOrNull(weather?.indice);
-          const status = getStatoDisplay(weather?.stato);
+          const status = getWeatherStatus(weather);
           const base = weather?.baseNubi;
+          const freezingLevel = numberOrNull(weather?.freezingLevel);
+          const estimatedFreezingLevel = freezingLevel ?? (temp !== null ? item.elevation_m + temp * 125 : null);
           return (
             <button
               type="button"
@@ -123,9 +140,10 @@ export default function DecolliCard({
               </span>
               <span className="launch-compare-weather">
                 <span className="launch-compare-condition">{status.icon}<span>{status.label}</span></span>
-                <strong className="launch-compare-wind">{wind === null ? "—" : wind.toFixed(0) + " km/h"}</strong>
-                <span className="launch-compare-direction">{direction === null ? "—" : getCardinalDir(direction)}</span>
-                <span className="launch-compare-temp">{temp === null ? "—" : temp.toFixed(0) + "°"}</span>
+                <span className="launch-compare-metric" title="Temperatura attuale"><Thermometer size={12} aria-hidden="true" />{temp === null ? "—" : temp.toFixed(0) + "°C"}</span>
+                <span className="launch-compare-metric" title="Zero termico stimato"><span aria-hidden="true">❄️</span>{estimatedFreezingLevel === null ? "—" : Math.round(estimatedFreezingLevel) + " m"}</span>
+                <span className="launch-compare-wind" title="Velocità del vento"><Wind size={12} aria-hidden="true" />{wind === null ? "—" : wind.toFixed(0) + " km/h"}</span>
+                <span className="launch-compare-direction" title="Direzione del vento">{direction === null ? "—" : getCardinalDir(direction)}</span>
                 <span className="launch-compare-base" title="Base nubi stimata"><Layers size={12} aria-hidden="true" />{base || "—"}</span>
                 {index !== null && <span className={"launch-compare-index " + (index >= 8 ? "is-high" : index >= 5 ? "is-mid" : "is-low")} title="Indice sintetico indicativo">{index}/10</span>}
               </span>
@@ -135,11 +153,6 @@ export default function DecolliCard({
         })}
         {!visible.length && <p className="launch-compare-empty">Nessun decollo corrisponde alla ricerca.</p>}
       </div>
-      {!query.trim() && filtered.length > 6 && (
-        <button type="button" className="launch-compare-toggle" onClick={() => setShowAll((value) => !value)}>
-          {showAll ? "Mostra meno" : "Mostra tutti i " + filtered.length + " decolli"}
-        </button>
-      )}
     </section>
   );
 }
