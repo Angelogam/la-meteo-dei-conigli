@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useCallback } from "react";
-import { ArrowRight, MapPin, Thermometer, Droplets, Wind, Mountain, Clock, RefreshCw, ChevronRight, Layers, Cloud, CloudSun, CloudRain, Star } from "lucide-react";
+import { ArrowRight, MapPin, Thermometer, Droplets, Wind, Mountain, Clock, RefreshCw, ChevronRight, Layers, Cloud, CloudSun, CloudRain, Star, Sun } from "lucide-react";
 import type { MeteoCurrent, MeteoDaily } from "@/services/openMeteoService";
 import type { Decollo } from "@/data/decolli";
 import { Header } from "@/components/Header";
@@ -27,7 +27,7 @@ const WeatherIcon = ({ code, size = 28 }: { code: number | null; size?: number }
 /* ── Main page ── */
 export default function Index() {
   const {
-    selectedId, setSelectedId, selectedDay, setSelectedDay, selectedHour, setSelectedHour,
+    selectedId, setSelectedId, selectedDay, setSelectedDay, setSelectedHour,
     site, dayData, currentData, enrichedDaily,
   } = useWeatherData();
 

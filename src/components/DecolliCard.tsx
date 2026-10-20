@@ -96,11 +96,12 @@ interface DecolliCardProps {
   onSelect: (item: Decollo) => void;
   selectedDay?: number;
   isUpdating?: boolean;
+  error?: string | null;
   onRefresh?: () => void;
 }
 
 export default function DecolliCard({
-  decolli, selectedId, onSelect, selectedDay = 0, isUpdating = false, onRefresh,
+  decolli, selectedId, onSelect, selectedDay = 0, isUpdating = false, error, onRefresh,
 }: DecolliCardProps) {
   const [query, setQuery] = useState("");
 
@@ -214,6 +215,8 @@ export default function DecolliCard({
           <p className="dc-empty">Nessun decollo trovato.</p>
         )}
       </div>
+
+      {error && <p className="dc-error">{error}</p>}
 
       {/* Footer */}
       <div className="dc-footer">
