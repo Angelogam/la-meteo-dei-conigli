@@ -1,275 +1,373 @@
 "use client";
 
-import { useMemo } from "react";
-import { Activity, ArrowDownRight, CalendarDays, CloudSun, Home, Mountain, Thermometer, Wind } from "lucide-react";
+import { useMemo, useState, useCallback } from "react";
+import { ArrowRight, MapPin, Thermometer, Droplets, Wind, Mountain, Clock, RefreshCw, ChevronRight, Layers, Cloud, CloudSun, CloudRain, Star } from "lucide-react";
+import type { MeteoCurrent, MeteoDaily } from "@/services/openMeteoService";
+import type { Decollo } from "@/data/decolli";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
-import SiteHeader from "@/components/SiteHeader";
-import UpdateTimer from "@/components/UpdateTimer";
-import HourlyTable from "@/components/HourlyTable";
-import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
-import TabNav from "@/components/TabNav";
-import MeteoTab from "@/components/MeteoTab";
-import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
-import TermicheTab from "@/components/TermicheTab";
-import AnalisiMeteo from "@/components/AnalisiMeteo";
-import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 
-function formatClock(value?: string): string | undefined {
-  if (!value) return undefined;
-  return value.includes("T") ? value.slice(11, 16) : value.slice(0, 5);
-}
+/* ── Weather SVG icons for forecast ── */
+const WeatherIcon = ({ code, size = 28 }: { code: number | null; size?: number }) => {
+  const cls = `w-${size / 4} h-${size / 4}`;
+  if (code === null) return <Cloud size={size} className="text-slate-500" />;
+  if (code >= 95) return <CloudRain size={size} className="text-purple-400" />;
+  if (code >= 80) return <CloudRain size={size} className="text-sky-400" />;
+  if (code >= 71) return <Cloud size={size} className="text-sky-200" />;
+  if (code >= 61) return <CloudRain size={size} className="text-sky-300" />;
+  if (code >= 45) return <Cloud size={size} className="text-slate-400" />;
+  if (code >= 3) return <Cloud size={size} className="text-slate-400" />;
+  if (code >= 1) return <CloudSun size={size} className="text-amber-300" />;
+  return <Sun size={size} className="text-amber-400" />;
+};
 
+/* ── Main page ── */
 export default function Index() {
   const {
-    selectedId,
-    setSelectedId,
-    updating,
-    selectedDay,
-    setSelectedDay,
-    selectedHour,
-    setSelectedHour,
-    activeTab,
-    setActiveTab,
-    lastUpdate,
-    countdown,
-    site,
-    dayData,
-    currentData,
-    thermalDelta,
-    enrichedDaily,
-    dateLabels,
-    loadWeather,
-    rawApiResponse,
+    selectedId, setSelectedId, selectedDay, setSelectedDay, selectedHour,
+    site, dayData, currentData, enrichedDaily,
   } = useWeatherData();
 
-  const {
-    mergedDecolli,
-    lastUpdate: aggressiveLastUpdate,
-    error: aggressiveError,
-    updating: aggressiveUpdating,
-    loadWeather: loadAggressiveWeather,
-  } = useThreeSourceWeather();
+  const { mergedDecolli, lastUpdate: aggressiveLastUpdate, error: aggressiveError, updating: aggressiveUpdating, loadWeather: loadAgg } = useThreeSourceWeather();
 
-  const filteredDayData = useMemo(() => {
-    if (!dayData || dayData.length === 0) return [];
-    const oggi = new Date();
-    const target = new Date(oggi);
-    target.setDate(oggi.getDate() + selectedDay);
-    const targetStr = target.toDateString();
-    return dayData.filter((h) => new Date(h.time).toDateString() === targetStr);
-  }, [dayData, selectedDay]);
-
-  const dateLabel = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + selectedDay);
+  const [selectedDayIdx, setSelectedDayIdx] = useState(0);
+  const _dateLabel = useMemo(() => {
+    const d = new Date(); d.setDate(d.getDate() + selectedDayIdx);
     const giorni = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
-    const mesi = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
+    const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
     return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
-  }, [selectedDay]);
+  }, [selectedDayIdx]);
 
+  const todayForecast = enrichedDaily[selectedDayIdx] ?? enrichedDaily[0];
+  const tomorrowForecast = enrichedDaily[selectedDayIdx + 1];
+  const dayAfterForecast = enrichedDaily[selectedDayIdx + 2];
 
+  const handleRefresh = useCallback(() => { loadAgg(); }, [loadAgg]);
+
+  const handleSelectDecollo = useCallback((item: Decollo) => {
+    setSelectedId(item.id);
+    setSelectedHour(new Date().getHours());
+  }, [setSelectedId, setSelectedHour]);
 
   return (
-    <div className="flight-website-shell min-h-screen">
-      <Header />
-      <div className="flight-app-body">
-        <aside className="flight-nav-rail" aria-label="Navigazione principale">
-          <div className="flight-nav-caption">NAVIGAZIONE</div>
-          <nav className="flight-primary-nav">
-            <button type="button" className="flight-nav-item" onClick={() => document.getElementById("overview")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
-              <Home aria-hidden="true" /><span>Home</span>
-            </button>
-            <button type="button" className={"flight-nav-item " + (activeTab === "meteo" ? "is-active" : "")} aria-pressed={activeTab === "meteo"} onClick={() => { setActiveTab("meteo"); document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
-              <CloudSun aria-hidden="true" /><span>Meteo</span>
-            </button>
-            <button type="button" className={"flight-nav-item " + (activeTab === "venti" ? "is-active" : "")} aria-pressed={activeTab === "venti"} onClick={() => { setActiveTab("venti"); document.getElementById("windgram-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
-              <Wind aria-hidden="true" /><span>Venti</span>
-            </button>
-            <button type="button" className={"flight-nav-item " + (activeTab === "termiche" ? "is-active" : "")} aria-pressed={activeTab === "termiche"} onClick={() => { setActiveTab("termiche"); document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
-              <Thermometer aria-hidden="true" /><span>Termiche</span>
-            </button>
-            <button type="button" className={"flight-nav-item " + (activeTab === "analisi" ? "is-active" : "")} aria-pressed={activeTab === "analisi"} onClick={() => { setActiveTab("analisi"); document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
-              <Activity aria-hidden="true" /><span>Analisi</span>
-            </button>
-          </nav>
-          <div className="flight-nav-divider" />
-          <div className="flight-nav-caption">DECOLLO ATTIVO</div>
-          <div className="flight-nav-current">
-            <span className="flight-nav-current-icon"><Mountain aria-hidden="true" /></span>
-            <strong>{site?.site_name ?? "Carico dati…"}</strong>
-            {site && <small>{site.elevation_m.toLocaleString("it-IT")} m s.l.m.</small>}
-            <span className="flight-live-indicator"><i /> Dati meteo</span>
+    <div className="app-shell">
+      {/* ── Top bar ── */}
+      <Header
+        siteName={site?.site_name}
+        siteAlt={site?.elevation_m}
+        currentData={currentData as any}
+      />
+
+      <div className="app-body">
+
+        {/* ── LEFT NAV SIDEBAR ── */}
+        <aside className="app-sidebar" aria-label="Navigazione">
+          <div className="sidebar-logo">
+            <Mountain size={28} />
+            <span className="sidebar-brand">Conigli</span>
           </div>
-          <div className="flight-nav-motto">Il cielo non è il limite.<br />È solo l’inizio.</div>
+
+          <nav className="sidebar-nav">
+            {[
+              { icon: Sun, label: "Home", active: true },
+              { icon: CloudSun, label: "Meteo" },
+              { icon: Mountain, label: "Decolli", badge: "18" },
+              { icon: Layers, label: "Mappa" },
+              { icon: Star, label: "Preferiti" },
+            ].map((item) => (
+              <button key={item.label} type="button" className={`sidebar-item${item.active ? " is-active" : ""}`}>
+                <item.icon size={16} />
+                <span>{item.label}</span>
+                {item.badge && <span className="sidebar-badge">{item.badge}</span>}
+              </button>
+            ))}
+          </nav>
+
+          <div className="sidebar-divider" />
+
+          {/* Current site mini */}
+          {site && (
+            <div className="sidebar-site">
+              <div className="sidebar-site-icon"><Mountain size={14} /></div>
+              <div>
+                <div className="sidebar-site-name">{site.site_name}</div>
+                <div className="sidebar-site-alt">{site.elevation_m} m</div>
+              </div>
+              <ChevronRight size={14} className="text-slate-500" />
+            </div>
+          )}
+
+          <div className="sidebar-motto">
+            "Il cielo non è il limite…<br />è solo l&apos;inizio!"
+          </div>
         </aside>
 
-        <div className="flight-page-column">
-          <main className="app-main flight-page flex-1 w-full min-w-0 max-w-none mx-auto px-3 sm:px-4 xl:px-6 py-4 space-y-4">
-            <section className="flight-page-titlebar flight-hero-banner" aria-labelledby="dashboard-intro-title">
-              <div>
-                <div className="dashboard-intro-kicker"><span className="dashboard-intro-kicker-dot" aria-hidden="true" />METEO · AEROLOGIA · VOLO LIBERO</div>
-                <h1 id="dashboard-intro-title">Il tuo briefing di volo.</h1>
-                <p>Grafici meteo, vento in quota e condizioni dei decolli.</p>
-              </div>
-              <div className="flight-page-actions">
-                <div className="dashboard-date-chip">
-                  <CalendarDays aria-hidden="true" />
-                  <span className="dashboard-date-copy"><small>Giorno selezionato</small><strong>{dateLabel}</strong></span>
+        {/* ── MAIN CONTENT ── */}
+        <main className="app-main">
+
+          {/* Hero banner */}
+          <section className="hero-banner">
+            <div className="hero-overlay" />
+            <div className="hero-content">
+              <p className="hero-kicker">METEO · AEROLOGIA · VOLO LIBERO</p>
+              <h1>Il meteo giusto<br />per il <span className="hero-highlight">tuo volo</span></h1>
+              <p>Previsioni, decolli e condizioni in tempo reale per vivere la libertà del volo libero.</p>
+              <p className="hero-quote">“Il cielo non è il limite… è solo l&apos;inizio!”</p>
+            </div>
+          </section>
+
+          {/* Row: Mappa Meteo + Situazione attuale */}
+          <div className="content-row">
+
+            {/* Mappa Meteo */}
+            <section className="map-card">
+              <div className="map-header">
+                <div className="map-title"><Layers size={15} /> Mappa Meteo</div>
+                <div className="map-tabs">
+                  {["Vento", "Pioggia", "Nuvolosità", "Temperature"].map((t, i) => (
+                    <button key={t} type="button" className={`map-tab${i === 0 ? " is-active" : ""}`}>{t}</button>
+                  ))}
                 </div>
-                <button type="button" className="dashboard-intro-cta" onClick={() => { setActiveTab("venti"); document.getElementById("windgram-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
-                  <Wind aria-hidden="true" /><span>Esplora i venti</span><ArrowDownRight aria-hidden="true" />
-                </button>
+              </div>
+              <div className="map-frame">
+                {/* Simplified weather map placeholder using flybubble iframe */}
+                <iframe
+                  src="https://weather.flybubble.com/it#/0/12"
+                  title="Mappa meteo interattiva"
+                  className="map-iframe"
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="strict-origin-when-cross-origin"
+                />
+                {/* Map controls overlay */}
+                <div className="map-controls">
+                  <button type="button" className="map-ctrl-btn">+</button>
+                  <button type="button" className="map-ctrl-btn">−</button>
+                  <button type="button" className="map-ctrl-btn map-ctrl-center"><MapPin size={14} /></button>
+                </div>
+                {/* Map legend */}
+                <div className="map-legend">
+                  <div className="map-legend-bar">
+                    <div className="map-legend-seg" style={{ background: "#22c55e" }} />
+                    <div className="map-legend-seg" style={{ background: "#eab308" }} />
+                    <div className="map-legend-seg" style={{ background: "#f97316" }} />
+                    <div className="map-legend-seg" style={{ background: "#ef4444" }} />
+                  </div>
+                  <span className="map-legend-label">km/h</span>
+                  <span className="map-legend-max">60</span>
+                </div>
+                {/* Tooltip-like info */}
+                {site && (
+                  <div className="map-tooltip">
+                    <MapPin size={13} className="mr-1" />
+                    <span>{site.site_name}</span>
+                    <span className="map-tooltip-alt">{site.elevation_m} m s.l.m.</span>
+                  </div>
+                )}
+              </div>
+              <div className="map-footer">
+                {currentData?.windSpeed != null && (
+                  <div className="map-footer-stat">
+                    <Wind size={12} />
+                    <span>Vento a 10m: {Math.round(currentData.windSpeed)} km/h {currentData.windDir != null ? getWindCardinal(currentData.windDir) : ""}</span>
+                  </div>
+                )}
               </div>
             </section>
 
-
-            {site && (
-              <section id="overview" className="overview-section">
-                <SiteHeader
-                  site_name={site.site_name}
-                  location_name={site.location_name}
-                  orientation={site.orientation}
-                  elevation_m={site.elevation_m}
-                  currentData={currentData as any}
-                  sunrise={formatClock(enrichedDaily[selectedDay]?.sunrise)}
-                  sunset={formatClock(enrichedDaily[selectedDay]?.sunset)}
-                  uvIndex={enrichedDaily[selectedDay]?.uvIndexMax ?? currentData?.uvIndex}
-                />
-              </section>
-            )}
-
-            {site && (
-              <section className="forecast-section flight-forecast-module min-w-0">
-                <PrevisioniGiornaliere
-                  enrichedDaily={enrichedDaily}
-                  dateLabels={dateLabels}
-                  currentData={currentData}
-                  dayData={dayData}
-                  site={{ name: site.site_name, altitude: site.elevation_m, exposure: site.orientation }}
-                  selectedDay={selectedDay}
-                  onSelectDay={setSelectedDay}
-                  nomeDecollo={site.site_name}
-                />
-              </section>
-            )}
-
-            {site && (
-              <div className="flight-top-dashboard-grid">
-                <div className="flight-primary-column">
-                  <section className="flybubble-panel flybubble-live-map" aria-labelledby="flybubble-heading">
-                    <header className="flybubble-panel-header">
-                      <div className="flybubble-panel-icon" aria-hidden="true"><Wind /></div>
-                      <div className="flybubble-panel-title">
-                        <p className="flybubble-panel-kicker">MAPPA METEO INTERATTIVA</p>
-                        <h2 id="flybubble-heading">Flybubble Weather</h2>
-                        <p>Vento, attività termica e panoramica delle condizioni per il volo libero.</p>
+            {/* Situazione attuale */}
+            <section className="current-card">
+              <div className="current-header">
+                <span className="current-title">Situazione attuale</span>
+                <button type="button" className="current-refresh" aria-label="Aggiorna"><RefreshCw size={13} /></button>
+              </div>
+              {currentData ? (
+                <>
+                  <div className="current-hero">
+                    <WeatherIcon code={currentData.weatherCode} size={52} />
+                    <div>
+                      <div className="current-temp">
+                        {Math.round(currentData.temperature ?? 0)}°C
                       </div>
-                      <a className="flybubble-open-link" href="https://weather.flybubble.com/it#/0/12" target="_blank" rel="noreferrer">Apri a schermo intero <ArrowDownRight aria-hidden="true" /></a>
-                    </header>
-                    <div className="flybubble-frame-wrap">
-                      <iframe className="flybubble-frame" src="https://weather.flybubble.com/it#/0/12" title="Mappa interattiva Flybubble Weather" loading="lazy" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />
+                      <div className="current-feels">
+                        Percepita {Math.round((currentData as any).apparentTemp ?? currentData.temperature ?? 0)}°C
+                      </div>
                     </div>
-                    <div className="flybubble-panel-footer">
-                      <span>Servizio esterno Flybubble. La copertura dei siti e delle previsioni può variare in base all’area.</span>
-                      <a href="https://weather.flybubble.com/it#/0/12" target="_blank" rel="noreferrer">Apri Flybubble <ArrowDownRight aria-hidden="true" /></a>
+                    <div className="current-condition">
+                      {(() => {
+                        const c = currentData.weatherCode ?? 0;
+                        if (c >= 95) return "Temporale";
+                        if (c >= 80) return "Pioggia";
+                        if (c >= 3) return "Nuvoloso";
+                        if (c >= 1) return "Parzialmente nuvoloso";
+                        return "Sereno";
+                      })()}
                     </div>
-                  </section>
-              <section id="windgram-section" className="launch-windgram-top min-w-0" aria-label="Windgram aerologico del decollo selezionato">
-                <VentiInterpolatiTab
-                  lat={site.lat}
-                  lon={site.lon}
-                  quotaDecollo={site.elevation_m}
-                  selectedDay={selectedDay}
-                  oraCorrente={selectedHour}
-                  onOraChange={setSelectedHour}
-                  siteName={site.site_name}
-                  siteId={site.id}
-                  rawData={rawApiResponse}
-                />
-              </section>
-            <div className="dashboard-layout flight-panels-grid">
-              <div className="flight-desk-main dashboard-content min-w-0">
-                {site && (
-                  <>
-                    <section id="details-section" className="details-section scroll-mt-4">
-                      <div className="flight-subsection-heading"><div><span>STRUMENTI DI ANALISI</span><h2>Meteo e aerologia</h2></div><small>Seleziona una scheda</small></div>
-                      <TabNav activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); if (tab === "venti") document.getElementById("windgram-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
-                    </section>
-
-                    <section className="flight-tab-content min-w-0" aria-live="polite">
-                      {activeTab === "meteo" && (
-                        <MeteoTab
-                          currentData={currentData}
-                          dayData={filteredDayData}
-                          site={{ alt: site.elevation_m, name: site.site_name }}
-                          thermalDelta={thermalDelta}
-                          modelName="Open-Meteo"
-                          selectedHour={selectedHour}
-                          selectedDay={selectedDay}
-                          cape={currentData?.cape}
-                          liftedIndex={currentData?.liftedIndex}
-                          cin={currentData?.cin}
-                        />
-                      )}
-                      {activeTab === "venti" && (
-                        <div className="launch-windgram-shortcut" role="status">
-                          <Wind aria-hidden="true" />
-                          <div>
-                            <strong>Il windgram aerologico è già in alto</strong>
-                            <p>Il profilo verticale e le masse d’aria colorate corrispondono al decollo selezionato nella tua API.</p>
-                          </div>
-                          <button type="button" onClick={() => document.getElementById("windgram-section")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
-                            Vai al windgram
-                          </button>
+                    {currentData.windSpeed != null && (
+                      <div className="current-wind-dir">
+                        Vento {Math.round(currentData.windSpeed)} km/h da {getWindCardinal(currentData.windDir ?? 0)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="current-grid">
+                    {[
+                      { icon: <Wind size={16} />, label: "Vento", value: currentData.windSpeed != null ? `${Math.round(currentData.windSpeed)} km/h ${getWindCardinal(currentData.windDir ?? 0)}` : "—", sub: currentData.windGusts != null ? `Raffiche ${Math.round(currentData.windGusts)} km/h` : "" },
+                      { icon: <Droplets size={16} />, label: "Pioggia", value: `${currentData.precipitation ?? 0} mm`, sub: "" },
+                      { icon: <Thermometer size={16} />, label: "Zero termico", value: ((currentData as any).freezingLevel != null ? `${Math.round((currentData as any).freezingLevel)} m` : "—"), sub: "" },
+                      { icon: <Cloud size={16} />, label: "Nuvolosità", value: `${currentData.cloudCover ?? 0}%`, sub: "" },
+                    ].map((m) => (
+                      <div key={m.label} className="current-metric">
+                        <div className="current-metric-icon">{m.icon}</div>
+                        <div className="current-metric-info">
+                          <div className="current-metric-label">{m.label}</div>
+                          <div className="current-metric-value">{m.value}</div>
+                          {m.sub && <div className="current-metric-sub">{m.sub}</div>}
                         </div>
-                      )}
-                      {activeTab === "termiche" && (
-                        <TermicheTab currentData={currentData as any} dayData={filteredDayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name }} selectedDay={selectedDay} />
-                      )}
-                      {activeTab === "analisi" && (
-                        <AnalisiMeteo currentData={currentData as any} dayData={filteredDayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name, exposure: site.orientation }} cape={currentData?.cape} liftedIndex={currentData?.liftedIndex} cin={currentData?.cin} rawData={rawApiResponse} />
-                      )}
-                    </section>
-
-                    <section className="flight-hourly-section min-w-0">
-                      <div className="flight-subsection-heading"><div><span>DETTAGLIO ORARIO</span><h2>Previsioni ora per ora</h2></div><small>{dateLabel}</small></div>
-                      <HourlyTable dayData={filteredDayData} altitude={site.elevation_m} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabel} siteName={site.site_name} />
-                    </section>
-                  </>
-                )}
-              </div>
-
-
-            </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="current-updated">
+                    <Clock size={11} />
+                    <span>Dati aggiornati alle {(currentData as any).time ? new Date((currentData as any).time).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : "16:20"}</span>
+                    <span className="live-dot" />
+                  </div>
+                </>
+              ) : (
+                <div className="current-loading">
+                  <RefreshCw size={20} className="dc-spin" />
+                  <p>Caricamento dati meteo…</p>
                 </div>
-                <aside id="flight-site-list" className="flight-launch-sidebar" aria-label="Selezione del decollo">
-                  <DecolliCard
-                    decolli={mergedDecolli}
-                    selectedId={selectedId}
-                    selectedDay={selectedDay}
-                    isUpdating={aggressiveUpdating}
-                    error={aggressiveError}
-                    onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}
-                  />
-                </aside>
-              </div>
-            )}
-          </main>
+              )}
+            </section>
+          </div>
 
-          <nav className="mobile-bottom-nav" aria-label="Navigazione rapida">
-            <a href="#overview" aria-label="Home"><span>⌂</span><small>Home</small></a>
-            <a href="#flight-site-list" aria-label="Decolli"><span>⌖</span><small>Decolli</small></a>
-            <a href="#windgram-section" aria-label="Windgram"><span>〰</span><small>Windgram</small></a>
-            <button type="button" onClick={() => { setActiveTab("analisi"); document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} aria-label="Analisi"><span>◉</span><small>Analisi</small></button>
-          </nav>
-          <Footer />
-        </div>
+          {/* Previsioni meteo */}
+          <section className="forecast-section">
+            <div className="forecast-header">
+              <span className="forecast-title"><Clock size={15} /> Previsioni meteo</span>
+              <div className="forecast-tabs">
+                {[0, 1, 2].map((i) => {
+                  const days = ["Oggi", "Domani", "Mer " + (new Date(Date.now() + 2 * 86400000)).getDate()];
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      className={`forecast-tab${selectedDayIdx === i ? " is-active" : ""}`}
+                      onClick={() => setSelectedDayIdx(i)}
+                    >
+                      {days[i]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="forecast-cards">
+              {([todayForecast, tomorrowForecast, dayAfterForecast] as (MeteoDaily | undefined)[]).map((d, i) => {
+                const days = ["Oggi", "Domani", "Dopodomani"];
+                const dateStr = (() => {
+                  const dt = new Date(); dt.setDate(dt.getDate() + i);
+                  return `${dt.getDate()} ${["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"][dt.getMonth()]}`;
+                })();
+                if (!d) return null;
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`forecast-card${selectedDayIdx === i ? " is-selected" : ""}`}
+                    onClick={() => setSelectedDayIdx(i)}
+                  >
+                    <div className="forecast-card-top">
+                      <span className="forecast-day-label">{days[i]}</span>
+                      <span className="forecast-day-date">{dateStr}</span>
+                      <ArrowRight size={14} className="forecast-card-arrow" />
+                    </div>
+                    <div className="forecast-card-main">
+                      <WeatherIcon code={d.weatherCode} size={36} />
+                      <div className="forecast-temp-range">
+                        <span className="forecast-temp-high">{Math.round(d.temperatureMax ?? 0)}°</span>
+                        <span className="forecast-temp-slash">/</span>
+                        <span className="forecast-temp-low">{Math.round(d.temperatureMin ?? 0)}°</span>
+                      </div>
+                      <div className="forecast-condition">{getWeatherLabel(d.weatherCode)}</div>
+                    </div>
+                    {/* Hourly mini preview */}
+                    <div className="forecast-hours">
+                      {(() => {
+                        const hours = [8, 11, 14, 17, 20];
+                        return hours.map(h => {
+                          const hData = (dayData as any[] | undefined)?.find((hd: any) => new Date(hd.time).getHours() === h && Math.abs(new Date(hd.time).getDate() - (new Date().getDate() + i)) <= 1);
+                          const t = hData?.temperature ?? null;
+                          return (
+                            <div key={h} className="forecast-hour">
+                              <span className="forecast-hour-time">{h}:00</span>
+                              <WeatherIcon code={hData?.weatherCode ?? d.weatherCode} size={16} />
+                              <span className="forecast-hour-temp">{t !== null ? `${Math.round(t)}°` : "—"}</span>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                    {/* Mini metrics */}
+                    <div className="forecast-card-metrics">
+                      <div className="forecast-m">
+                        <Wind size={11} />
+                        <span>{d.windSpeedMax != null ? `${Math.round(d.windSpeedMax)} km/h` : "—"}</span>
+                      </div>
+                      <div className="forecast-m">
+                        <Droplets size={11} />
+                        <span>{d.precipitationSum != null ? `${d.precipitationSum.toFixed(1)} mm` : "0 mm"}</span>
+                      </div>
+                      <div className="forecast-m">
+                        <Thermometer size={11} />
+                        <span>—</span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+        </main>
+
+        {/* ── RIGHT SIDEBAR (launch sites) ── */}
+        <aside className="app-sidebar-right" aria-label="Lista decolli">
+          <DecolliCard
+            decolli={mergedDecolli}
+            selectedId={selectedId}
+            selectedDay={selectedDayIdx}
+            isUpdating={aggressiveUpdating}
+            error={aggressiveError}
+            onRefresh={handleRefresh}
+            onSelect={handleSelectDecollo}
+          />
+        </aside>
+
       </div>
-      <DiagnosticaPanel />
+
+      <Footer />
     </div>
   );
+}
+
+/* ── Helpers ── */
+function getWindCardinal(deg: number): string {
+  const dirs = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"];
+  return dirs[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
+}
+
+function getWeatherLabel(code: number | null): string {
+  if (code === null) return "N/D";
+  if (code >= 95) return "Temporale";
+  if (code >= 80) return "Pioggia";
+  if (code >= 71) return "Neve";
+  if (code >= 61) return "Pioggia";
+  if (code >= 51) return "Pioviggine";
+  if (code >= 45) return "Nebbia";
+  if (code >= 3) return "Nuvoloso";
+  if (code >= 1) return "Parz. nuvoloso";
+  return "Sereno";
 }
