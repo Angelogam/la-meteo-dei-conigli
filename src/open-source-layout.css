@@ -1612,3 +1612,43 @@ body {
   .launch-compare-condition { grid-column:span 2; }
   .launch-compare-value { font-size:.82rem !important; }
 }
+
+
+/* Flight Pro launch cards: readable metrics and real dashboard hierarchy. */
+.launch-compare-panel { min-width: 0; }
+.launch-compare-rows { display:flex !important; flex-direction:column !important; gap:.7rem !important; padding:.25rem .75rem 1rem !important; overflow-y:auto !important; max-height:min(72vh,980px); }
+.launch-compare-row {
+ display:flex !important; width:100% !important; min-width:0 !important; height:auto !important; min-height:0 !important;
+ flex-direction:column !important; align-items:stretch !important; gap:.7rem !important; padding:.95rem !important;
+ text-align:left !important; white-space:normal !important; overflow:visible !important; border-radius:16px !important;
+ background:linear-gradient(145deg,rgba(27,55,65,.96),rgba(12,34,44,.98)) !important;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 7px 20px rgba(0,0,0,.12) !important;
+}
+.launch-compare-site-header { display:flex !important; width:100%; min-width:0; flex-direction:column !important; align-items:flex-start !important; gap:.32rem !important; }
+.launch-compare-site-name { display:block !important; width:100%; font-size:1rem !important; line-height:1.25 !important; white-space:normal !important; overflow-wrap:anywhere !important; }
+.launch-compare-site-meta { display:flex !important; flex-wrap:wrap; align-items:center; gap:.32rem !important; font-size:.7rem !important; line-height:1.4 !important; }
+.launch-compare-altitude { color:#d9f1e6 !important; font-weight:800; }
+.launch-compare-weather-grid { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:.45rem !important; width:100%; margin:0 !important; }
+.launch-compare-weather-item {
+ display:flex !important; min-width:0 !important; min-height:65px !important; height:auto !important; flex-direction:column !important;
+ align-items:flex-start !important; justify-content:center !important; gap:.2rem !important; padding:.55rem !important;
+ border:1px solid rgba(178,220,211,.12) !important; border-radius:11px !important; background:rgba(4,20,27,.38) !important;
+ overflow-wrap:anywhere !important; text-align:left !important;
+}
+.launch-compare-condition { grid-column:1/-1; min-height:54px !important; flex-direction:row !important; align-items:center !important; justify-content:flex-start !important; gap:.65rem !important; }
+.launch-compare-icon svg { width:24px !important; height:24px !important; }
+.launch-compare-value { color:#f4faf4 !important; font-size:.84rem !important; font-weight:850 !important; line-height:1.2 !important; }
+.launch-compare-label { color:#a9c6c0 !important; font-size:.56rem !important; font-weight:800 !important; letter-spacing:.07em !important; line-height:1.2 !important; }
+.launch-compare-wind-arrow { color:#83dfc0; font-size:1.1rem; line-height:1; }
+.launch-compare-index { position:absolute; top:.85rem; right:.85rem; padding:.2rem .45rem; border-radius:99px; font-size:.68rem; }
+.launch-compare-selected { position:absolute; right:.85rem; bottom:.8rem; color:#a8ead1; font-weight:900; }
+@media (min-width: 1100px) {
+ .flight-top-dashboard-grid { display:grid !important; grid-template-columns:minmax(0,1fr) minmax(340px,390px) !important; gap:1rem !important; align-items:start !important; }
+ .flight-primary-column { min-width:0 !important; }
+ .flight-launch-sidebar { position:sticky !important; top:1rem; min-width:0 !important; max-height:calc(100vh - 2rem); }
+ .launch-compare-rows { max-height:calc(100vh - 250px) !important; }
+}
+@media (max-width: 560px) {
+ .launch-compare-weather-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+ .launch-compare-row { padding:.8rem !important; }
+}
