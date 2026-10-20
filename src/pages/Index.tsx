@@ -27,7 +27,7 @@ const WeatherIcon = ({ code, size = 28 }: { code: number | null; size?: number }
 /* ── Main page ── */
 export default function Index() {
   const {
-    selectedId, setSelectedId, selectedDay, setSelectedDay, selectedHour,
+    selectedId, setSelectedId, selectedDay, setSelectedDay, selectedHour, setSelectedHour,
     site, dayData, currentData, enrichedDaily,
   } = useWeatherData();
 
