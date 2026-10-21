@@ -5,6 +5,7 @@
  * per garantire coerenza, gestione errori e uso del proxy locale.
  */
 import { getMeteoBaseUrl, OPEN_METEO_DIRECT } from "@/config/apiConfig";
+import type { OpenMeteoRawResponse } from "@/types/meteo";
 
 const TIMEOUT_MS = 8000;
 // Modello ICON per l'Europa — stesso usato da meteo-parapente.com
@@ -115,7 +116,7 @@ export async function fetchHourly(
   params: string,
   start_date?: string,
   end_date?: string
-): Promise<any> {
+): Promise<OpenMeteoRawResponse> {
   const url = buildUrl({ latitude: lat, longitude: lon, hourly: params, start_date, end_date, models: DEFAULT_MODELS });
   try {
     const res = await fetchWithTimeout(url);
@@ -141,7 +142,7 @@ export async function fetchDaily(
   lon: number,
   params: string,
   days: number = 3
-): Promise<any> {
+): Promise<OpenMeteoRawResponse> {
   const url = buildUrl({ latitude: lat, longitude: lon, daily: params, forecast_days: days, models: DEFAULT_MODELS });
   try {
     const res = await fetchWithTimeout(url);
@@ -161,7 +162,7 @@ export async function fetchDaily(
 /**
  * Fetch dati correnti
  */
-export async function fetchCurrent(lat: number, lon: number, params: string): Promise<any> {
+export async function fetchCurrent(lat: number, lon: number, params: string): Promise<OpenMeteoRawResponse> {
   const url = buildUrl({ latitude: lat, longitude: lon, current: params, forecast_days: 1, models: DEFAULT_MODELS });
   try {
     const res = await fetchWithTimeout(url);
@@ -187,7 +188,7 @@ export async function fetchFull(
   hourlyParams: string,
   dailyParams: string,
   currentParams: string
-): Promise<{ hourly: any; daily: any; current: any }> {
+): Promise<OpenMeteoRawResponse> {
   const url = buildUrl({
     latitude: lat,
     longitude: lon,

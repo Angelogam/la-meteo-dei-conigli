@@ -53,7 +53,7 @@ export function transformHourlyData(raw: RawMeteoResponse["hourly"]): HourData[]
     const uvIndex = safeNumOrNull(raw.uv_index?.[i]);
     const visibility = safeNumOrNull(raw.visibility?.[i]);
     const directRadiation = safeNumOrNull(raw.direct_radiation?.[i]);
-    const diffuseRadiation = safeNumOrNull((raw as any).diffuse_radiation?.[i]);
+    const diffuseRadiation = safeNumOrNull(raw.diffuse_radiation?.[i]);
     const shortwaveRadiation = safeNumOrNull(raw.shortwave_radiation?.[i]);
     const cape = safeNumOrNull(raw.cape?.[i]);
     const cin = safeNumOrNull(raw.convective_inhibition?.[i]);

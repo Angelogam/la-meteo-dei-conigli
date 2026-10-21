@@ -99,6 +99,129 @@ export interface HourData {
   windDir500hPa?: number | null;
 }
 
+/** Serie numerica grezza di Open-Meteo (valori possibilmente mancanti). */
+export type RawSeries = (number | null)[];
+
+/**
+ * Blocco `hourly` della risposta grezza di Open-Meteo.
+ * I campi sono opzionali perché il payload dipende dai parametri richiesti.
+ */
+export interface OpenMeteoRawHourly {
+  time?: string[];
+  temperature_2m?: RawSeries;
+  temperature_80m?: RawSeries;
+  temperature_120m?: RawSeries;
+  temperature_180m?: RawSeries;
+  dew_point_2m?: RawSeries;
+  relative_humidity_2m?: RawSeries;
+  apparent_temperature?: RawSeries;
+  precipitation?: RawSeries;
+  precipitation_probability?: RawSeries;
+  rain?: RawSeries;
+  snowfall?: RawSeries;
+  weather_code?: RawSeries;
+  cloud_cover?: RawSeries;
+  cloudcover?: RawSeries;
+  cloud_cover_low?: RawSeries;
+  cloud_cover_mid?: RawSeries;
+  cloud_cover_high?: RawSeries;
+  pressure_msl?: RawSeries;
+  surface_pressure?: RawSeries;
+  wind_speed_10m?: RawSeries;
+  wind_direction_10m?: RawSeries;
+  wind_gusts_10m?: RawSeries;
+  wind_speed_80m?: RawSeries;
+  wind_direction_80m?: RawSeries;
+  wind_speed_120m?: RawSeries;
+  wind_direction_120m?: RawSeries;
+  wind_speed_180m?: RawSeries;
+  wind_direction_180m?: RawSeries;
+  wind_speed_925hPa?: RawSeries;
+  wind_direction_925hPa?: RawSeries;
+  wind_speed_850hPa?: RawSeries;
+  wind_direction_850hPa?: RawSeries;
+  wind_speed_700hPa?: RawSeries;
+  wind_direction_700hPa?: RawSeries;
+  wind_speed_600hPa?: RawSeries;
+  wind_direction_600hPa?: RawSeries;
+  wind_speed_500hPa?: RawSeries;
+  wind_direction_500hPa?: RawSeries;
+  freezing_level_height?: RawSeries;
+  cape?: RawSeries;
+  convective_inhibition?: RawSeries;
+  lifted_index?: RawSeries;
+  boundary_layer_height?: RawSeries;
+  shortwave_radiation?: RawSeries;
+  direct_radiation?: RawSeries;
+  sunshine_duration?: RawSeries;
+  uv_index?: RawSeries;
+  visibility?: RawSeries;
+  is_day?: RawSeries;
+  [key: string]: RawSeries | string[] | undefined;
+}
+
+/** Blocco `daily` della risposta grezza di Open-Meteo. */
+export interface OpenMeteoRawDaily {
+  time?: string[];
+  weather_code?: RawSeries;
+  temperature_2m_max?: RawSeries;
+  temperature_2m_min?: RawSeries;
+  temperature_2m_mean?: RawSeries;
+  apparent_temperature_max?: RawSeries;
+  apparent_temperature_min?: RawSeries;
+  precipitation_sum?: RawSeries;
+  precipitation_probability_max?: RawSeries;
+  precipitation_hours?: RawSeries;
+  rain_sum?: RawSeries;
+  snowfall_sum?: RawSeries;
+  wind_speed_10m_max?: RawSeries;
+  wind_gusts_10m_max?: RawSeries;
+  wind_direction_10m_dominant?: RawSeries;
+  uv_index_max?: RawSeries;
+  daylight_duration?: RawSeries;
+  sunshine_duration?: RawSeries;
+  shortwave_radiation_sum?: RawSeries;
+  freezing_level_height_max?: RawSeries;
+  sunrise?: string[];
+  sunset?: string[];
+  [key: string]: RawSeries | string[] | undefined;
+}
+
+/** Blocco `current` della risposta grezza di Open-Meteo. */
+export interface OpenMeteoRawCurrent {
+  time?: string;
+  temperature_2m?: number | null;
+  relative_humidity_2m?: number | null;
+  dew_point_2m?: number | null;
+  precipitation?: number | null;
+  weather_code?: number | null;
+  cloud_cover?: number | null;
+  cloud_cover_low?: number | null;
+  cloud_cover_mid?: number | null;
+  cloud_cover_high?: number | null;
+  wind_speed_10m?: number | null;
+  wind_direction_10m?: number | null;
+  wind_gusts_10m?: number | null;
+  cape?: number | null;
+  convective_inhibition?: number | null;
+  apparent_temperature?: number | null;
+  uv_index?: number | null;
+  visibility?: number | null;
+  is_day?: number | null;
+  [key: string]: number | string | null | undefined;
+}
+
+/** Risposta grezza di Open-Meteo condivisa tra i componenti. */
+export interface OpenMeteoRawResponse {
+  latitude?: number;
+  longitude?: number;
+  elevation?: number;
+  timezone?: string;
+  hourly?: OpenMeteoRawHourly;
+  daily?: OpenMeteoRawDaily;
+  current?: OpenMeteoRawCurrent;
+}
+
 export interface DailyData {
   date: Date;
   weatherCode: number;

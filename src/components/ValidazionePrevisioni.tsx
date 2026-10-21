@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { DECOLLI } from "@/data/decolli";
 import { fetchHourly } from "@/lib/openMeteoClient";
+import type { OpenMeteoRawResponse } from "@/types/meteo";
 import { CheckCircle, XCircle, AlertTriangle, Loader2, Bug, Activity, Clock, TrendingUp } from "lucide-react";
 
 const CLIMA_MENSILE: Record<number, { tempMax: [number, number]; ventoMedio: [number, number]; pioggiaMax: number; deltaMin: number }> = {
@@ -85,7 +86,7 @@ export default function ValidazionePrevisioni() {
 
           try {
             const startTime = performance.now();
-            let raw: any;
+            let raw: OpenMeteoRawResponse;
             try {
               raw = await fetchHourly(d.lat, d.lon, "temperature_2m,wind_speed_10m,wind_gusts_10m,precipitation,cloud_cover,relative_humidity_2m", dataStr, dataStr);
             } catch (err) {

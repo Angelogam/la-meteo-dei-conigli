@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef } from "react";
+import type { OpenMeteoRawResponse } from "@/types/meteo";
 import { RefreshCw, FileText, Check, Copy, AlertTriangle, ShieldCheck, Wind, Thermometer, Cloud, ArrowUp } from "lucide-react";
 import { fetchHourly } from "@/lib/openMeteoClient";
 import { generateReportMeteo, type GeneratedReport } from "@/utils/generateReportMeteo";
@@ -14,7 +15,7 @@ interface WindgramProps {
   altitude?: number;
   siteName?: string;
   selectedDay?: number;
-  rawData?: any; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
+  rawData?: OpenMeteoRawResponse | null; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
 }
 
 const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
@@ -87,7 +88,7 @@ export default function ProfessionalWindgram({
   selectedDay = 0,
   rawData,
 }: WindgramProps) {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<OpenMeteoRawResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
@@ -151,7 +152,7 @@ export default function ProfessionalWindgram({
       const modelGroundAltitude = data?.elevation != null && Number.isFinite(Number(data.elevation))
         ? Number(data.elevation)
         : altitude;
-      const derived = computeHourlyDerived(raw as any, altitude, modelGroundAltitude);
+      const derived = computeHourlyDerived(raw, altitude, modelGroundAltitude);
       if (derived) map.set(hr, derived);
     });
     return map;
@@ -275,9 +276,10 @@ export default function ProfessionalWindgram({
         const hr = parseInt(t.split("T")[1].split(":")[0], 10);
             const readings: { alt: number; temp: number }[] = [];
             tempFields.forEach((f) => {
-              const val = stabilitDataa[f.key]?.[idx];
-              if (val != null && !isNaN(val)) {
-                readings.push({ alt: f.alt, temp: Number(val) });
+              const rawVal = stabilitDataa[f.key]?.[idx];
+              const val = Number(rawVal);
+              if (rawVal != null && Number.isFinite(val)) {
+                readings.push({ alt: f.alt, temp: val });
               }
             });
             // Se non ci sono letture valide, non aggiungere nulla per questo orario
@@ -329,7 +331,7 @@ export default function ProfessionalWindgram({
           const tPrev = p.temperature_2m?.[prevIdx];
           const tNext = p.temperature_2m?.[nextIdx];
           // Both must be valid numbers for interpolation
-          if (tPrev === undefined || tNext === undefined) return null as any;
+          if (tPrev === undefined || tNext === undefined) return null;
           const t = (Number(tPrev) + Number(tNext)) / 2;
           const dewPrev = p.dew_point_2m?.[prevIdx];
           const dewNext = p.dew_point_2m?.[nextIdx];
@@ -355,12 +357,12 @@ export default function ProfessionalWindgram({
           };
         }
         // Nessun dato vicino: nascondi l'ora
-        return null as any;
+        return null;
       }
 
       const h = data.hourly;
       const t = h.temperature_2m[idx];
-      if (t === undefined || t === null) return null as any; // Skip if no temperature data
+      if (t === undefined || t === null) return null; // Skip if no temperature data
       const tNum = Number(t);
       // Usa dew point REALE dall'API, nessun fallback inventato
       const dew = h.dew_point_2m[idx] !== undefined ? Number(h.dew_point_2m[idx]) : null;

@@ -43,7 +43,7 @@ export default function AnalisiGiornata({
 
     // Filtra solo ore diurne 9-19
     const oreGiorno = dayData.filter((h: HourData) => {
-      const hr = h.time?.getHours?.() ?? h.hour ?? 0;
+      const hr = h.time?.getHours?.() ?? 0;
       return hr >= 9 && hr <= 19;
     });
 
@@ -62,14 +62,14 @@ export default function AnalisiGiornata({
 
     // Calcola metriche reali dai dati
     const tempMax = Math.max(...oreGiorno.map((h: HourData) => h.temperature ?? 0));
-    const tempMedia = oreGiorno.reduce((s: number, h: any) => s + (h.temperature ?? 0), 0) / oreGiorno.length;
-    const ventoMedio = oreGiorno.reduce((s: number, h: any) => s + (h.windSpeed ?? 0), 0) / oreGiorno.length;
+    const tempMedia = oreGiorno.reduce((s: number, h: HourData) => s + (h.temperature ?? 0), 0) / oreGiorno.length;
+    const ventoMedio = oreGiorno.reduce((s: number, h: HourData) => s + (h.windSpeed ?? 0), 0) / oreGiorno.length;
     const ventoMax = Math.max(...oreGiorno.map((h: HourData) => h.windSpeed ?? 0));
-    const coperturaMedia = oreGiorno.reduce((s: number, h: any) => s + (h.cloudCover ?? 0), 0) / oreGiorno.length;
-    const pioggiaTot = oreGiorno.reduce((s: number, h: any) => s + (h.precipitation ?? 0), 0);
+    const coperturaMedia = oreGiorno.reduce((s: number, h: HourData) => s + (h.cloudCover ?? 0), 0) / oreGiorno.length;
+    const pioggiaTot = oreGiorno.reduce((s: number, h: HourData) => s + (h.precipitation ?? 0), 0);
     const oreConPioggia = oreGiorno.filter((h: HourData) => (h.precipitation ?? 0) > 0.3).length;
     const oreSerene = oreGiorno.filter((h: HourData) => (h.cloudCover ?? 0) < 25).length;
-    const umiditaMedia = oreGiorno.reduce((s: number, h: any) => s + (h.humidity ?? 50), 0) / oreGiorno.length;
+    const umiditaMedia = oreGiorno.reduce((s: number, h: HourData) => s + (h.humidity ?? 50), 0) / oreGiorno.length;
 
     // Calcola punteggio realistico
     let punteggio = 50; // parte da 50 (neutro)

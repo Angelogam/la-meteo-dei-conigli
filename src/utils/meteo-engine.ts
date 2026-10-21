@@ -84,7 +84,53 @@ function computeConfidence(values: Numeric[], maxCount: number): number {
 // 3. ADAPTERS CON GESTIONE ERRORI
 // -----------------------------
 
-export function fromOpenMeteo(json: any): RawPoint[] {
+interface OpenMeteoHourly {
+  time?: string[];
+  temperature_2m?: Numeric[];
+  wind_speed_10m?: Numeric[];
+  wind_direction_10m?: Numeric[];
+  wind_gusts_10m?: Numeric[];
+  cloud_base?: Numeric[];
+  cloud_cover?: Numeric[];
+  rain?: Numeric[];
+  thermal_strength?: Numeric[];
+}
+
+export interface OpenMeteoJson {
+  hourly?: OpenMeteoHourly;
+}
+
+interface OpenWeatherItem {
+  dt_txt?: string;
+  main?: { temp?: number };
+  wind?: { speed?: number; deg?: number; gust?: number };
+  clouds?: { all?: number };
+  rain?: { '1h'?: number };
+}
+
+export interface OpenWeatherJson {
+  list?: OpenWeatherItem[];
+}
+
+interface TomorrowInterval {
+  time?: string;
+  values?: {
+    temperature?: number;
+    windSpeed?: number;
+    windDirection?: number;
+    windGust?: number;
+    cloudBase?: number;
+    cloudCover?: number;
+    rainIntensity?: number;
+    thermalUpdraft?: number;
+  };
+}
+
+export interface TomorrowJson {
+  timelines?: { hourly?: TomorrowInterval[] };
+}
+
+export function fromOpenMeteo(json: OpenMeteoJson): RawPoint[] {
   if (!json?.hourly?.time) return [];
   try {
     return json.hourly.time.map((t: string, i: number) => ({
@@ -104,10 +150,10 @@ export function fromOpenMeteo(json: any): RawPoint[] {
   }
 }
 
-export function fromOpenWeather(json: any): RawPoint[] {
+export function fromOpenWeather(json: OpenWeatherJson): RawPoint[] {
   if (!json?.list) return [];
   try {
-    return json.list.map((item: any) => ({
+    return json.list.map((item) => ({
       time: item.dt_txt,
       temp: item.main?.temp ?? null,
       wind: item.wind?.speed ?? null,
@@ -124,10 +170,10 @@ export function fromOpenWeather(json: any): RawPoint[] {
   }
 }
 
-export function fromTomorrow(json: any): RawPoint[] {
+export function fromTomorrow(json: TomorrowJson): RawPoint[] {
   if (!json?.timelines?.hourly) return [];
   try {
-    return json.timelines.hourly.map((h: any) => ({
+    return json.timelines.hourly.map((h) => ({
       time: h.time,
       temp: h.values?.temperature ?? null,
       wind: h.values?.windSpeed ?? null,
@@ -229,9 +275,9 @@ function mergeRawPoints(rawPoints: RawPoint[]): UnifiedPoint[] {
 
 export function buildUnifiedForecast(
   siteSlug: string,
-  openMeteoData: any,
-  openWeatherData: any,
-  tomorrowData: any
+  openMeteoData: OpenMeteoJson | null,
+  openWeatherData: OpenWeatherJson | null,
+  tomorrowData: TomorrowJson | null
 ): UnifiedForecast {
   const raw: RawPoint[] = [
     ...fromOpenMeteo(openMeteoData),
@@ -329,9 +375,9 @@ export function buildReport(site: Site, forecast: UnifiedForecast): string {
 // -----------------------------
 
 export async function fetchAllSources(site: Site): Promise<{
-  openMeteo: any;
-  openWeather: any;
-  tomorrow: any;
+  openMeteo: OpenMeteoJson | null;
+  openWeather: OpenWeatherJson | null;
+  tomorrow: TomorrowJson | null;
 }> {
   const baseUrl = getMeteoBaseUrl();
   const params = new URLSearchParams({

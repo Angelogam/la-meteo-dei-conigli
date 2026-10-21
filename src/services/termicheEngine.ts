@@ -1,5 +1,7 @@
 "use client";
 
+import type { HourData } from "@/types/meteo";
+
 export interface TermicheReali {
   hour: number;
   base: number;
@@ -19,7 +21,7 @@ const GRADIENTE_SECCO = 0.98;
 const LCL_FACTOR = 125;
 
 export function calcolaTermicheReali(
-  weather: any,
+  weather: Partial<HourData> | null,
   altitude: number
 ): TermicheReali {
   const alt = altitude ?? 1000;
@@ -183,7 +185,7 @@ export function calcolaTermicheReali(
 }
 
 export function calcolaTermicheMultiple(
-  hourlyData: any[],
+  hourlyData: HourData[],
   altitude: number
 ): TermicheReali[] {
   if (!hourlyData || hourlyData.length === 0) return [];

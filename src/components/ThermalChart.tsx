@@ -53,7 +53,7 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude, s
     const targetDate = new Date(today);
     targetDate.setDate(today.getDate() + selectedDay);
 
-    const dayHours = (hourlyData || []).filter((d: any) => {
+    const dayHours = (hourlyData || []).filter((d: HourData) => {
       const t = new Date(d.time);
       return t.getFullYear() === targetDate.getFullYear() &&
              t.getMonth() === targetDate.getMonth() &&
@@ -72,7 +72,7 @@ export default function ThermalChart({ hourlyData, selectedHour, siteAltitude, s
     }
 
     return HOURS_LOCAL.map((localHour) => {
-      const weatherData = dayHours.find((d: any) => {
+      const weatherData = dayHours.find((d: HourData) => {
         const t = new Date(d.time);
         return t.getHours() === localHour;
       });

@@ -63,7 +63,7 @@ export function useMeteoCompleto(lat: number, lon: number, altitude: number): Da
         // Race con timeout per non bloccare
         const result = await Promise.race([
           weatherService.fetchWithFallback(lat, lon),
-          new Promise<{ data: any }>((_, reject) =>
+          new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error("Timeout daily")), 6000)
           ),
         ]);

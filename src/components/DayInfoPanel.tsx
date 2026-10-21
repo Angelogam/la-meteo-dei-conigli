@@ -13,6 +13,7 @@ import {
   Calendar,
   Sparkles,
 } from "lucide-react";
+import type { HourData } from "@/types/meteo";
 import {
   generateSituazioneGenerale,
   generateProfiloTermico,
@@ -20,9 +21,17 @@ import {
   generateInterpretazione,
 } from "@/utils/analisiDescriptions";
 
+interface DayInfoPanelCurrent {
+  temperature?: number | null;
+  temp?: number | null;
+  windSpeed?: number | null;
+  cloudCover?: number | null;
+  humidity?: number | null;
+}
+
 interface DayInfoPanelProps {
-  currentData: any;
-  dayData?: any;
+  currentData: DayInfoPanelCurrent | null;
+  dayData?: HourData[];
   site?: { name: string; alt: number };
   selectedDate?: string;
 }
@@ -36,13 +45,13 @@ function getCurrentTime(): string {
 }
 
 /** Genera condizioni e note per ogni ora dalle 9:00 alle 19:00 */
-function generateHourlyData(currentData: any, dayDataArray?: any[]) {
+function generateHourlyData(currentData: DayInfoPanelCurrent | null, dayDataArray?: HourData[]) {
   const ore = Array.from({ length: 11 }, (_, i) => i + 9); // 9-19
 
   return ore.map((ora) => {
     // Cerca il dato orario corrispondente — dayDataArray è un array di ore
     const hData = Array.isArray(dayDataArray) ? dayDataArray.find(
-      (h: any) => h.time?.getHours() === ora
+      (h: HourData) => h.time?.getHours() === ora
     ) : undefined;
 
     const t = hData?.temperature ?? currentData?.temperature ?? currentData?.temp ?? null;
@@ -95,8 +104,10 @@ export default function DayInfoPanel({ currentData, dayData, site, selectedDate 
   });
   const nowTime = getCurrentTime();
 
-  const situazioneLinee = generateSituazioneGenerale(currentData, dayData);
-  const termicoLinee = generateProfiloTermico(currentData, dayData);
+  // `dayData` è una serie oraria: i generatori si aspettano un riepilogo giornaliero,
+  // quindi non va passato (verrebbe letto come oggetto vuoto).
+  const situazioneLinee = generateSituazioneGenerale(currentData);
+  const termicoLinee = generateProfiloTermico(currentData);
   const ventoLinee = generateVentoQuota(currentData);
   const interpretazioneLinee = generateInterpretazione(currentData);
 

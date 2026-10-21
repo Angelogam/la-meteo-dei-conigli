@@ -24,6 +24,19 @@ interface MeteoTesterPanelProps {
   onClose?: () => void;
 }
 
+/** Riga generica mostrata nel pannello: supporta sia TestResult sia i risultati sintetici. */
+interface TesterResultRow {
+  success?: boolean;
+  ok?: boolean;
+  siteName?: string;
+  nome?: string;
+  responseTimeMs?: number;
+  rt?: number;
+  warnings?: unknown[];
+  err?: string;
+  temp?: number;
+}
+
 function Card({
   title,
   icon,
@@ -39,7 +52,7 @@ function Card({
   title: string;
   icon: React.ReactNode;
   subtitle: string;
-  results: any[];
+  results: TesterResultRow[];
   resultsLength: number;
   summary: string | null;
   isRunning: boolean;
@@ -112,7 +125,7 @@ function Card({
 
       {resultsLength > 0 && (
         <div className="space-y-1 max-h-64 overflow-y-auto">
-          {results.map((r: any, i: number) => (
+          {results.map((r, i: number) => (
             <div
               key={i}
               className={`rounded-xl px-3 py-2.5 border text-xs flex items-center gap-3 transition-all ${

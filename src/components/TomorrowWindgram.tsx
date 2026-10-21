@@ -168,30 +168,6 @@ export default function TomorrowWindgram({ decollo, selectedDay = 0 }: TomorrowW
     return Math.round(decollo.elevation + (avgSurfaceTemp / 0.0065));
   }, [filteredData, decollo.elevation]);
 
-  if (loading) {
-    return (
-      <div className="bg-slate-900/80 border border-slate-700/60 rounded-2xl p-6 shadow-xl">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-6 h-6 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" />
-          <h3 className="text-white font-bold text-lg">Windgram — {decollo.name}</h3>
-        </div>
-        <p className="text-slate-400 text-sm">Caricamento dati vento in quota da Tomorrow.io...</p>
-      </div>
-    );
-  }
-
-  if (error || !filteredData.length) {
-    return (
-      <div className="bg-slate-900/80 border border-red-500/40 rounded-2xl p-6 shadow-xl">
-        <div className="flex items-center gap-3 mb-2">
-          <AlertTriangle className="w-6 h-6 text-red-400" />
-          <h3 className="text-white font-bold text-lg">Windgram — {decollo.name}</h3>
-        </div>
-        <p className="text-red-300 text-sm">{error || "Nessun dato disponibile per questo giorno"}</p>
-      </div>
-    );
-  }
-
   // SVG Dimensions
   const width = 1000;
   const height = 660;
@@ -316,6 +292,32 @@ export default function TomorrowWindgram({ decollo, selectedDay = 0 }: TomorrowW
   }, [times, filteredData, decollo.elevation]);
 
   const avgZeroThermal = zeroThermal || 4381;
+
+  // Gli stati di caricamento/errore vengono gestiti dopo tutti gli hook,
+  // così l'ordine di chiamata degli hook resta stabile tra i render.
+  if (loading) {
+    return (
+      <div className="bg-slate-900/80 border border-slate-700/60 rounded-2xl p-6 shadow-xl">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-6 h-6 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" />
+          <h3 className="text-white font-bold text-lg">Windgram — {decollo.name}</h3>
+        </div>
+        <p className="text-slate-400 text-sm">Caricamento dati vento in quota da Tomorrow.io...</p>
+      </div>
+    );
+  }
+
+  if (error || !filteredData.length) {
+    return (
+      <div className="bg-slate-900/80 border border-red-500/40 rounded-2xl p-6 shadow-xl">
+        <div className="flex items-center gap-3 mb-2">
+          <AlertTriangle className="w-6 h-6 text-red-400" />
+          <h3 className="text-white font-bold text-lg">Windgram — {decollo.name}</h3>
+        </div>
+        <p className="text-red-300 text-sm">{error || "Nessun dato disponibile per questo giorno"}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

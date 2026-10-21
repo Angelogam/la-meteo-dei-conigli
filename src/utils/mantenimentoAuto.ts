@@ -44,7 +44,7 @@ export async function diagnosticaCompleta(): Promise<ReportDiagnostica> {
 
   const apiErrors: string[] = [];
   let apiOkCount = 0;
-  let tempiRisposta: number[] = [];
+  const tempiRisposta: number[] = [];
 
   const sitiTest = DECOLLI.slice(0, 2);
   for (const site of sitiTest) {

@@ -3,7 +3,8 @@ import fs from 'fs';
 import path from 'path';
 
 async function scrape() {
-  const results: Record<string, string> = {};
+  /** @type {Record<string, string>} */
+  const results = {};
   
   const sites = [
     {
@@ -51,8 +52,9 @@ async function scrape() {
       console.log(`  -> Got ${text.length} chars`);
       await page.close();
     } catch (e) {
-      results[site.name] = `ERROR: ${e.message}`;
-      console.error(`  -> Error: ${e.message}`);
+      const message = e instanceof Error ? e.message : String(e);
+      results[site.name] = `ERROR: ${message}`;
+      console.error(`  -> Error: ${message}`);
     }
   }
   

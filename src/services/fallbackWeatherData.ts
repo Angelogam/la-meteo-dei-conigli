@@ -172,6 +172,7 @@ export function generateRealisticHourly(
     const lapseRate = calcRealLapseRate(temp, null, altitude);
     const temp80m = temp - lapseRate * 0.78; // 78m di differenza
     const temp120m = temp - lapseRate * 1.18; // 118m di differenza
+    const temp180m = temp - lapseRate * 1.78; // 178m di differenza
     
     // Vento a quote superiori (increasing con la quota)
     const windFactor80 = 1.15 + Math.random() * 0.1;
@@ -264,6 +265,8 @@ export function generateRealisticHourly(
       virtualTemp: Math.round((temp + 273) * 10) / 10,
       temp80m: Math.round(temp80m * 10) / 10,
       temp120m: Math.round(temp120m * 10) / 10,
+      temperature180m: Math.round(temp180m * 10) / 10,
+      boundaryLayerHeight: Math.round(clamp(200 + radiation * 1.2, 100, 2500)),
       apparentTemp: Math.round((temp + windSpeed * 0.1) * 10) / 10,
       precipitationProba: Math.round(precipProb),
       evapotranspiration: Math.round(radiation * 0.002 * 100) / 100,
@@ -415,6 +418,6 @@ export function generateRealisticCurrent(
     surfacePressure: ref.surfacePressure ?? null,
     liftedIndex: ref.liftedIndex ?? null,
     cin: ref.cin ?? null,
-    isDay: ref.isDay ? 1 : 0,
+    isDay: ref.isDay ?? false,
   };
 }

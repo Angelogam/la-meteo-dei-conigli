@@ -2,21 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { fetchHourly } from "@/lib/openMeteoClient";
-
-interface HourData {
-  hour: number;
-  temp: number;
-  dew: number;
-  cloud: number;
-  freeze: number;
-  cape: number;
-  levels: any[];
-  cloudBase: number;
-  maxRealAltitude: number;
-}
+import type { OpenMeteoRawHourly } from "@/types/meteo";
 
 interface MasseAriaData {
-  hourly: any;
+  hourly: OpenMeteoRawHourly | null;
   loading: boolean;
   error: string | null;
 }
@@ -26,7 +15,7 @@ export function useStabilitaMasseAria(
   lon: number,
   selectedDay: number
 ): MasseAriaData {
-  const [hourly, setHourly] = useState<any>(null);
+  const [hourly, setHourly] = useState<OpenMeteoRawHourly | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import type { HourData, DailyData } from "@/types/meteo";
+import type { HourData, DailyData, OpenMeteoRawResponse } from "@/types/meteo";
 import { DECOLLI } from "@/data/decolli";
 import { fetchPrevisioniGiornaliere, type MeteoCurrent, type MeteoHourly, type MeteoDaily } from "@/services/openMeteoService";
 import { calcolaStatoMeteo, calcolaPrecipProssimeOre, type StatoMeteo, type StatoMeteoResult } from "@/utils/statoMeteo";
@@ -55,7 +55,7 @@ export function useWeatherData() {
   const [currentData, setCurrentData] = useState<MeteoCurrent | null>(null);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   // Raw JSON response — condiviso da tutti i componenti per evitare chiamate duplicate
-  const [rawApiResponse, setRawApiResponse] = useState<any>(null);
+  const [rawApiResponse, setRawApiResponse] = useState<OpenMeteoRawResponse | null>(null);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);

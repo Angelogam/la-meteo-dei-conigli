@@ -168,7 +168,27 @@ const WEIGHTS = {
   rain: { om: 0.3, ow: 0.4, tw: 0.3 },
 };
 
-function statoAggressivo(openMeteo: any, openWeather: any, tomorrow: any): string {
+/** Forma comune (parziale) dei dati restituiti dai tre provider dopo la normalizzazione. */
+interface FusedWeatherSource {
+  temp?: number | null;
+  rain?: number | null;
+  cloud?: number | null;
+  wind?: number | null;
+  dir?: number | null;
+  stato?: string | null;
+  cape?: number | null;
+  freezingLevel?: number | null;
+  tMax?: number | null;
+  tMin?: number | null;
+  cloudDaily?: number | null;
+  rainDaily?: number | null;
+}
+
+function statoAggressivo(
+  openMeteo: FusedWeatherSource | null,
+  openWeather: FusedWeatherSource | null,
+  tomorrow: FusedWeatherSource | null
+): string {
   if (openWeather?.stato === "Thunderstorm") return "Temporale";
 
   const rains = [openMeteo?.rain, openWeather?.rain, tomorrow?.rain]
@@ -252,9 +272,9 @@ export async function getMeteoDecolloAggressivo(d: Decollo): Promise<MeteoDecoll
   console.log(`[3S] Fetching weather for ${d.name} (${d.lat}, ${d.lon})`);
 
   const [openMeteo, openWeather, tomorrow] = await Promise.all([
-    getOpenMeteo(d.lat, d.lon).catch((e: any) => { console.warn(`[3S] OpenMeteo failed for ${d.name}:`, e?.message || e); return null; }),
-    getOpenWeather(d.lat, d.lon).catch((e: any) => { console.warn(`[3S] OpenWeather failed for ${d.name}:`, e?.message || e); return null; }),
-    getTomorrow(d.lat, d.lon).catch((e: any) => { console.warn(`[3S] Tomorrow failed for ${d.name}:`, e?.message || e); return null; })
+    getOpenMeteo(d.lat, d.lon).catch((e) => { console.warn(`[3S] OpenMeteo failed for ${d.name}:`, e instanceof Error ? e.message : e); return null; }),
+    getOpenWeather(d.lat, d.lon).catch((e) => { console.warn(`[3S] OpenWeather failed for ${d.name}:`, e instanceof Error ? e.message : e); return null; }),
+    getTomorrow(d.lat, d.lon).catch((e) => { console.warn(`[3S] Tomorrow failed for ${d.name}:`, e instanceof Error ? e.message : e); return null; })
   ]);
 
   const sourcesAvailable = [openMeteo, openWeather, tomorrow].filter(s => s !== null).length;

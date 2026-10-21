@@ -1,6 +1,7 @@
 "use client";
 
 import { fetchHourly } from "@/lib/openMeteoClient";
+import type { OpenMeteoRawResponse } from "@/types/meteo";
 import React, { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -75,6 +76,47 @@ interface OMData {
   freezing_level_height: number[];
   cape: number[];
   relative_humidity_2m: number[];
+}
+
+/** Converte una serie grezza (numeri, stringhe o null) in numeri, con 0 come fallback. */
+function toNumberSeries(values: Array<number | string | null> | undefined): number[] {
+  if (!Array.isArray(values)) return [];
+  return values.map((value) => (typeof value === "number" ? value : 0));
+}
+
+/**
+ * Appiattisce la risposta Open-Meteo ({ hourly: { ... } }) nella forma attesa dal windgram.
+ * Il payload restituito da fetchHourly contiene il blocco `hourly`, non le serie a livello top.
+ */
+function toOMData(json: OpenMeteoRawResponse): OMData {
+  const hourly = json.hourly ?? {};
+  return {
+    time: hourly.time ?? [],
+    temperature_2m: toNumberSeries(hourly.temperature_2m),
+    dew_point_2m: toNumberSeries(hourly.dew_point_2m),
+    cloud_cover: toNumberSeries(hourly.cloud_cover),
+    cloud_cover_low: toNumberSeries(hourly.cloud_cover_low),
+    cloud_cover_mid: toNumberSeries(hourly.cloud_cover_mid),
+    cloud_cover_high: toNumberSeries(hourly.cloud_cover_high),
+    shortwave_radiation: toNumberSeries(hourly.shortwave_radiation),
+    wind_speed_10m: toNumberSeries(hourly.wind_speed_10m),
+    wind_direction_10m: toNumberSeries(hourly.wind_direction_10m),
+    wind_speed_80m: toNumberSeries(hourly.wind_speed_80m),
+    wind_direction_80m: toNumberSeries(hourly.wind_direction_80m),
+    wind_speed_120m: toNumberSeries(hourly.wind_speed_120m),
+    wind_direction_120m: toNumberSeries(hourly.wind_direction_120m),
+    wind_speed_850hPa: toNumberSeries(hourly.wind_speed_850hPa),
+    wind_direction_850hPa: toNumberSeries(hourly.wind_direction_850hPa),
+    wind_speed_700hPa: toNumberSeries(hourly.wind_speed_700hPa),
+    wind_direction_700hPa: toNumberSeries(hourly.wind_direction_700hPa),
+    wind_speed_600hPa: toNumberSeries(hourly.wind_speed_600hPa),
+    wind_direction_600hPa: toNumberSeries(hourly.wind_direction_600hPa),
+    wind_speed_500hPa: toNumberSeries(hourly.wind_speed_500hPa),
+    wind_direction_500hPa: toNumberSeries(hourly.wind_direction_500hPa),
+    freezing_level_height: toNumberSeries(hourly.freezing_level_height),
+    cape: toNumberSeries(hourly.cape),
+    relative_humidity_2m: toNumberSeries(hourly.relative_humidity_2m),
+  };
 }
 
 interface HourRow {
@@ -387,9 +429,9 @@ export default function RasoftWindgram({
     });
 
     fetchHourly(latitude, longitude, params.toString().replace("latitude=" + latitude + "&longitude=" + longitude + "&", ""), targetDate, targetDate)
-      .then((json: OMData) => {
+      .then((json) => {
         if (cancelled) return;
-        setData(json);
+        setData(toOMData(json));
         setLoading(false);
       })
       .catch((e) => {

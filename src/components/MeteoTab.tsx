@@ -327,7 +327,7 @@ function MeteoTabContent({ currentData, dayData, site, thermalDelta, modelName, 
 
   // === Animated values ===
   const animatedScore = useAnimatedValue(signal === "green" ? 9 : signal === "yellow" ? 6 : 2);
-  const animatedTemp = t !== null ? useAnimatedValue(Math.round(t)) : useAnimatedValue(0);
+  const animatedTemp = useAnimatedValue(t !== null ? Math.round(t) : 0);
   const animatedWind = useAnimatedValue(Math.round(windSpeed));
   const animatedHumidity = usePercentAnimatedValue(humidity);
   const animatedVisibility = usePercentAnimatedValue(Math.min(100, (visibility / 15000) * 100));

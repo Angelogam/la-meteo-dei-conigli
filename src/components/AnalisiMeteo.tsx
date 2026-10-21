@@ -5,7 +5,7 @@ import {
   MapPin, Calendar, Sparkles, Zap, Layers, Clock, Eye, Droplets, Gauge,
   FileText, Mountain, ArrowUpRight, ArrowDownRight, AlertCircle, Copy
 } from "lucide-react";
-import type { HourData } from "@/types/meteo";
+import type { HourData, OpenMeteoRawResponse, RawSeries } from "@/types/meteo";
 import type { MeteoCurrent } from "@/services/openMeteoService";
 import { calcolaAnalisiApprofondita } from "@/utils/analisiApprofondita";
 import AnalisiApprofonditaCard from "./AnalisiApprofonditaCard";
@@ -20,7 +20,7 @@ interface AnalisiMeteoProps {
   cape?: number | null;
   liftedIndex?: number | null;
   cin?: number | null;
-  rawData?: any; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
+  rawData?: OpenMeteoRawResponse | null; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
 }
 
 function formatDateShort(date: Date): string {
@@ -56,10 +56,13 @@ export default function AnalisiMeteo({ currentData, dayData, site, cape, liftedI
     });
     if (filteredTimes.length === 0) return null;
 
-    const buildArray = (key: string): any[] => {
+    const buildArray = (key: string): RawSeries => {
       const arr = rawHourly[key];
       if (!Array.isArray(arr)) return [];
-      return filteredIndices.map((i: number) => arr[i]);
+      return filteredIndices.map((i: number) => {
+        const value = arr[i];
+        return typeof value === "number" ? value : null;
+      });
     };
 
     const hourlyData = {

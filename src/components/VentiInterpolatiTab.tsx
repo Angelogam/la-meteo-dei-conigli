@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef } from "react";
+import type { OpenMeteoRawResponse } from "@/types/meteo";
 import { Wind, Calendar, MapPin } from "lucide-react";
 import { getVentiInterpolati, type VentiInterpolatiData } from "@/utils/getVentiInterpolati";
 import ProfessionalWindgram from "@/components/ProfessionalWindgram";
@@ -35,7 +36,7 @@ interface VentiInterpolatiTabProps {
   oraCorrente?: number;
   onOraChange?: (ora: number) => void;
   siteName?: string;
-  rawData?: any; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
+  rawData?: OpenMeteoRawResponse | null; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
 }
 
 export default function VentiInterpolatiTab({

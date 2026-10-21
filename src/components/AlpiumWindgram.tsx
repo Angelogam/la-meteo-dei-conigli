@@ -95,13 +95,13 @@ function speedColor(speed: number): string {
 function useAlpiumData(lat: number, lon: number, siteAlt: number, selectedDay: number) {
   const [hourly, setHourly] = useState<{
     times: string[];
-    windSpeed: Record<string, number[]>;
-    windDir: Record<string, number[]>;
-    temp: Record<string, number[]>;
-    temp2m: number[];
-    dew2m: number[];
-    cloud: number[];
-    gust10: number[];
+    windSpeed: Record<string, (number | null)[]>;
+    windDir: Record<string, (number | null)[]>;
+    temp: Record<string, (number | null)[]>;
+    temp2m: (number | null)[];
+    dew2m: (number | null)[];
+    cloud: (number | null)[];
+    gust10: (number | null)[];
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -141,22 +141,29 @@ function useAlpiumData(lat: number, lon: number, siteAlt: number, selectedDay: n
       .then((j) => {
         if (!mounted) return;
         const times: string[] = j.hourly.time;
-        const windSpeed: Record<string, number[]> = {};
-        const windDir: Record<string, number[]> = {};
-        const temp: Record<string, number[]> = {};
+        const windSpeed: Record<string, (number | null)[]> = {};
+        const windDir: Record<string, (number | null)[]> = {};
+        const temp: Record<string, (number | null)[]> = {};
+
+        // Normalizza le serie grezze: solo numeri validi, il resto diventa null.
+        const toSeries = (key: string): (number | null)[] => {
+          const values = j.hourly?.[key];
+          if (!Array.isArray(values)) return [];
+          return values.map((value) => (typeof value === "number" ? value : null));
+        };
 
         [
           "10m", "80m", "120m", "925hPa", "850hPa", "700hPa", "600hPa", "500hPa",
         ].forEach((k) => {
-          windSpeed[k] = j.hourly[`wind_speed_${k}`] ?? [];
-          windDir[k] = j.hourly[`wind_direction_${k}`] ?? [];
+          windSpeed[k] = toSeries(`wind_speed_${k}`);
+          windDir[k] = toSeries(`wind_direction_${k}`);
         });
 
         [
           "500hPa", "550hPa", "600hPa", "650hPa", "700hPa", "750hPa",
           "800hPa", "850hPa", "900hPa", "925hPa", "950hPa", "975hPa", "1000hPa",
         ].forEach((k) => {
-          temp[k] = j.hourly[`temperature_${k}`] ?? [];
+          temp[k] = toSeries(`temperature_${k}`);
         });
 
         setHourly({
@@ -164,10 +171,10 @@ function useAlpiumData(lat: number, lon: number, siteAlt: number, selectedDay: n
           windSpeed,
           windDir,
           temp,
-          temp2m: j.hourly.temperature_2m ?? [],
-          dew2m: j.hourly.dew_point_2m ?? [],
-          cloud: j.hourly.cloud_cover ?? [],
-          gust10: j.hourly.wind_gusts_10m ?? [],
+          temp2m: toSeries("temperature_2m"),
+          dew2m: toSeries("dew_point_2m"),
+          cloud: toSeries("cloud_cover"),
+          gust10: toSeries("wind_gusts_10m"),
         });
         setLoading(false);
       })

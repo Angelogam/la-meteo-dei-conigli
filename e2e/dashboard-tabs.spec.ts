@@ -64,11 +64,12 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     await expect(rangeButton).toHaveAttribute("aria-pressed", "true");
 
     const seriesControls = page.getByRole("group", { name: "Mostra o nascondi serie" });
-    const temperatureToggle = seriesControls.getByRole("button", { name: "Temperatura" });
-    await temperatureToggle.click();
-    await expect(temperatureToggle).toHaveAttribute("aria-pressed", "false");
-    await temperatureToggle.click();
-    await expect(temperatureToggle).toHaveAttribute("aria-pressed", "true");
+    const groundWindToggle = seriesControls.getByRole("button", { name: "Suolo" });
+    await expect(groundWindToggle).toHaveAttribute("aria-pressed", "true");
+    await groundWindToggle.click();
+    await expect(groundWindToggle).toHaveAttribute("aria-pressed", "false");
+    await groundWindToggle.click();
+    await expect(groundWindToggle).toHaveAttribute("aria-pressed", "true");
 
     const hourButton = page.getByRole("button", { name: /Seleziona le condizioni delle ore/ }).first();
     await hourButton.click();
@@ -174,8 +175,9 @@ test("wide desktop keeps the right rail visible and temperature scale readable",
   await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(".flight-right-rail")).toBeVisible({ timeout: 30_000 });
   await page.getByRole("button", { name: "Pomeriggio" }).click();
-  const dewPointToggle = page.getByRole("group", { name: "Mostra o nascondi serie" }).getByRole("button", { name: "Rugiada" });
-  await expect(dewPointToggle).toHaveAttribute("aria-pressed", "false");
+  const seriesControls = page.getByRole("group", { name: "Mostra o nascondi serie" });
+  const windAloftToggle = seriesControls.getByRole("button", { name: "Quota 80/120 m" });
+  await expect(windAloftToggle).toHaveAttribute("aria-pressed", "false");
 
   const dimensions = await page.evaluate(() => {
     const viewport = document.documentElement.clientWidth;
@@ -201,7 +203,7 @@ test("wide desktop keeps the right rail visible and temperature scale readable",
       }];
     });
     const ticks = Array.from(document.querySelectorAll(".temperature-module .recharts-yAxis .recharts-cartesian-axis-tick-value"))
-      .map((node) => Number((node.textContent ?? "").replace(/°/g, "").trim()))
+      .map((node) => Number((node.textContent ?? "").replace(/[°a-zA-Z/ ]/g, "").trim()))
       .filter(Number.isFinite);
     return {
       viewport,
@@ -217,13 +219,21 @@ test("wide desktop keeps the right rail visible and temperature scale readable",
   expect(dimensions.rootScrollWidth, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.rootWidth + 1);
   const clipped = dimensions.boxes.filter((box) => box.left < -1 || box.right > dimensions.viewport + 1 || box.scrollWidth > box.clientWidth + 16);
   expect(clipped, JSON.stringify(dimensions)).toEqual([]);
-  expect(dimensions.temperatureTickSpan, JSON.stringify(dimensions)).not.toBeNull();
-  expect(dimensions.temperatureTickSpan!, "Temperature axis should fit the visible temperature series, not hidden dew-point values").toBeLessThanOrEqual(10);
+  const readWindAxisTicks = () => page.evaluate(() => Array.from(document.querySelectorAll(".temperature-module .recharts-yAxis .recharts-cartesian-axis-tick-value"))
+    .map((node) => Number((node.textContent ?? "").replace(/[°a-zA-Z/ ]/g, "").trim()))
+    .filter(Number.isFinite));
 
-  await dewPointToggle.click();
-  await expect(dewPointToggle).toHaveAttribute("aria-pressed", "true");
-  await dewPointToggle.click();
-  await expect(dewPointToggle).toHaveAttribute("aria-pressed", "false");
+  expect(dimensions.temperatureTickSpan, JSON.stringify(dimensions)).not.toBeNull();
+  expect(dimensions.temperatureTickSpan!, "The wind axis must span the plotted range").toBeGreaterThan(0);
+
+  const ticksWithSeriesHidden = await readWindAxisTicks();
+  await windAloftToggle.click();
+  await expect(windAloftToggle).toHaveAttribute("aria-pressed", "true");
+  await expect
+    .poll(() => readWindAxisTicks(), { message: "Showing a wind layer must not rescale the axis" })
+    .toEqual(ticksWithSeriesHidden);
+  await windAloftToggle.click();
+  await expect(windAloftToggle).toHaveAttribute("aria-pressed", "false");
 
   for (const width of [1440, 1280]) {
     await page.setViewportSize({ width, height: 1050 });

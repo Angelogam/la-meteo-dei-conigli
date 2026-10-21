@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Wind, Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, Zap, Info } from "lucide-react";
+import { Wind, Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, Zap, Info, MapPin } from "lucide-react";
 import type { Decollo } from "@/data/decolli";
 
 export interface AggressiveWeatherData {
@@ -149,12 +149,16 @@ export default function DecolliCard({
           const indice = hasData ? aggressive.indice : null;
 
           const direction = dir;
-          const dirLabel = (direction !== null && direction !== "N/D" && direction !== "--" && direction !== "")
-            ? getCardinalDir(parseFloat(String(direction)))
+          const dirDegrees = (direction !== null && direction !== "N/D" && direction !== "--" && direction !== "")
+            ? parseFloat(String(direction))
+            : null;
+          const dirLabel = dirDegrees !== null && Number.isFinite(dirDegrees)
+            ? getCardinalDir(dirDegrees)
             : "N/D";
-          const dirArrow = (direction !== null && direction !== "N/D" && direction !== "--" && direction !== "")
-            ? getWindArrow(parseFloat(String(direction)))
-            : "→";
+          const hasDirection = dirDegrees !== null && Number.isFinite(dirDegrees);
+          const lat = Number(item.lat);
+          const lon = Number(item.lon);
+          const hasCoords = Number.isFinite(lat) && Number.isFinite(lon);
 
           // Colore indice
           const indiceColor = indice === null ? "text-slate-400" :
@@ -198,9 +202,15 @@ export default function DecolliCard({
                     <span className="shrink-0 text-slate-500">·</span>
                     <span className="min-w-0 truncate font-medium text-slate-300">{item.location_name || item.valley}</span>
                   </div>
-                  <div className="text-[10px] text-slate-400 truncate">
+                  <div className="launch-option-meta text-[10px] text-slate-400 truncate">
                     {item.orientation || item.exposure} · {item.elevation_m || item.altitude}m
                   </div>
+                  {hasCoords && (
+                    <div className="launch-option-coords text-[9px] font-mono text-slate-500 truncate" title={`Coordinate GPS del decollo: ${lat.toFixed(4)}, ${lon.toFixed(4)}`}>
+                      <MapPin size={9} aria-hidden="true" className="inline-block align-[-1px] mr-0.5 text-slate-500" />
+                      {lat.toFixed(4)}, {lon.toFixed(4)}
+                    </div>
+                  )}
                 </div>
 
                 {/* Indicatore sintetico, da leggere insieme ai dettagli meteo */}
@@ -222,22 +232,32 @@ export default function DecolliCard({
 
               {/* Dati Meteo */}
               <div className="mt-2 pt-2 border-t border-slate-700/40 space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs">
                   <div className="flex items-center gap-1.5 min-w-0">
                     {statoIcon}
-                    <span className={`font-bold capitalize truncate ${statoColor}`}>{statoLabel}</span>
+                    <span className={`font-bold capitalize whitespace-nowrap ${statoColor}`}>{statoLabel}</span>
                     {formatTemp(temp)}
                     {!isOffline && rainValue > 0 && (
-                      <span className="text-[10px] font-bold text-rose-300 bg-rose-950/60 px-1.5 py-0.2 rounded border border-rose-500/40">
+                      <span className="text-[10px] font-bold text-rose-300 bg-rose-950/60 px-1.5 py-0.2 rounded border border-rose-500/40 whitespace-nowrap">
                         {rainValue.toFixed(1)}mm
                       </span>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-1 text-slate-200 shrink-0">
+                  <div className="ml-auto flex items-center gap-1 text-slate-200 shrink-0">
                     <Wind size={13} className="text-cyan-400 shrink-0" />
                     {formatWind(wind)}
-                    <span className="text-slate-400 font-mono text-[11px]">{dirArrow} {dirLabel}</span>
+                    <span
+                      className="launch-wind-dial"
+                      aria-hidden="true"
+                      title={hasDirection ? `Provenienza del vento: ${Math.round(dirDegrees)}°` : "Direzione del vento non disponibile"}
+                    >
+                      <span
+                        className="launch-wind-needle"
+                        style={hasDirection ? { transform: `rotate(${dirDegrees}deg)` } : undefined}
+                      />
+                    </span>
+                    <span className="text-slate-400 font-mono text-[11px]" title="Settore di provenienza del vento">{dirLabel}</span>
                   </div>
                 </div>
 
@@ -271,9 +291,4 @@ function getDateTime(selectedDay: number): { date: string; ora: string } {
 function getCardinalDir(deg: number): string {
   const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   return dirs[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
-}
-
-function getWindArrow(deg: number): string {
-  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
-  return arrows[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
 }

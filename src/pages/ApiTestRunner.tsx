@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { DECOLLI } from "@/data/decolli";
 import { fetchHourly } from "@/lib/openMeteoClient";
+import type { OpenMeteoRawResponse } from "@/types/meteo";
 import {
   Play,
   CheckCircle,
@@ -184,7 +185,7 @@ export default function ApiTestRunner() {
 
     // Test completo: Fetch tutti i dati
     const fetchStart = Date.now();
-    let json: any;
+    let json: OpenMeteoRawResponse;
     try {
       json = await fetchHourly(selectedSite.lat, selectedSite.lon, "temperature_2m,relative_humidity_2m,precipitation,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m");
       const fetchTime = Date.now() - fetchStart;
