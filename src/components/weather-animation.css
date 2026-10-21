@@ -37,3 +37,50 @@
 @keyframes weather-lightning-flash{0%,68%,72%,100%{opacity:.2}69%,71%{opacity:1}}
 @keyframes weather-fog-slide{from{transform:translateX(-3px);opacity:.5}to{transform:translateX(4px);opacity:1}}
 @media(prefers-reduced-motion:reduce){.weather-scene *,.weather-scene::before,.weather-scene::after{animation:none!important;transition:none!important}}
+
+/* Premium daily forecast polish: layered sky glow and a gentle card lift. */
+.weather-scene {
+  flex-basis: 84px;
+  width: 84px;
+  height: 64px;
+  border-radius: 16px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.13), 0 9px 22px rgba(0,0,0,.19);
+  transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
+}
+.weather-scene::before {
+  content: "";
+  position: absolute;
+  inset: -30% -20%;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 72% 12%, rgba(255,255,255,.16), transparent 45%);
+  animation: weather-sky-shift 8s ease-in-out infinite alternate;
+}
+.weather-scene > svg, .weather-scene > span { z-index: 1; }
+.weather-scene--clear::after, .weather-scene--partly::after {
+  content: "";
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  left: 4px;
+  top: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,210,105,.2), rgba(255,210,105,0) 70%);
+  animation: weather-sun-aura 4s ease-in-out infinite;
+  pointer-events: none;
+}
+.forecast-day-card-premium:hover .weather-scene {
+  transform: translateY(-2px) scale(1.025);
+  border-color: rgba(151,208,239,.42);
+}
+.forecast-day-card-premium[aria-pressed="true"] .weather-scene {
+  box-shadow: 0 0 0 2px rgba(118,222,245,.12), 0 10px 24px rgba(0,0,0,.22);
+}
+@keyframes weather-sky-shift { from { transform: translateX(-3%) translateY(0); opacity:.55; } to { transform: translateX(4%) translateY(2%); opacity:1; } }
+@keyframes weather-sun-aura { 0%,100% { opacity:.55; transform:scale(.92); } 50% { opacity:1; transform:scale(1.12); } }
+@media(max-width:600px) {
+  .weather-scene { flex-basis:76px; width:76px; height:58px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .weather-scene,.weather-scene::before,.weather-scene::after { transition:none!important; animation:none!important; }
+}
