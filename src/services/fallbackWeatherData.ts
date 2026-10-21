@@ -418,6 +418,6 @@ export function generateRealisticCurrent(
     surfacePressure: ref.surfacePressure ?? null,
     liftedIndex: ref.liftedIndex ?? null,
     cin: ref.cin ?? null,
-    isDay: ref.isDay ?? false,
+    isDay: ref.isDay,
   };
 }

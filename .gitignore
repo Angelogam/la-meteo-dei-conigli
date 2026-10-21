@@ -24,6 +24,8 @@ dist-ssr
 *.sw?
 .dyad/
 
+.output
+
 # Large files
 *.msi
 *.exe

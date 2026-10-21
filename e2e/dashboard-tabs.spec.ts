@@ -1,4 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { installOpenMeteoMock } from "./helpers/mockOpenMeteo";
+test.beforeEach(async ({ page }) => {
+  await installOpenMeteoMock(page);
+});
+
 
 const tabIds = ["meteo", "venti", "termiche", "analisi"] as const;
 
@@ -27,68 +32,82 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     expect(pageErrors, "Venti tab must not crash the React application").toEqual([]);
   });
 
-  test("homepage briefing, forecast-day selection, and wind shortcut work", async ({ page }) => {
+  test("homepage raises map and windgram and removes the obsolete dual-chart block", async ({ page }) => {
     const pageErrors: string[] = [];
     page.on("pageerror", (error) => pageErrors.push(error.message));
 
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Il tuo briefing di volo." })).toBeVisible({ timeout: 30_000 });
     await expect(page.locator(".launch-hero")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Scegli il decollo" })).toBeVisible();
     await expect(page.locator(".flight-nav-rail")).toBeVisible();
-    await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible();
-    await expect(page.locator(".story-chart-module").first()).toBeVisible();
-    await expect(page.locator(".flight-forecast-module .forecast-day-card")).toHaveCount(3);
-    await expect(page.locator(".flight-desk-main > #windgram-section")).toBeVisible();
-    const graphOrder = await page.locator(".flight-desk-main").evaluate((root) => {
+
+    const raisedTools = page.locator("main > .launch-windgram-top");
+    await expect(raisedTools).toBeVisible({ timeout: 30_000 });
+    // Keep the external XC Therm map as a separate panel and the native chart below it.
+    const xcThermMap = page.getByTestId("xctherm-launch-map");
+    await expect(xcThermMap).toBeVisible({ timeout: 30_000 });
+    const mapFrame = xcThermMap.locator('iframe[src*="xctherm.com/icon"]');
+    await expect(mapFrame).toBeVisible();
+    const mapSource = await mapFrame.getAttribute("src");
+    expect(mapSource).toBeTruthy();
+    const mapUrl = new URL(mapSource!);
+    expect(mapUrl.origin).toBe("https://xctherm.com");
+    expect(Number(mapUrl.searchParams.get("lat"))).toBeGreaterThanOrEqual(-90);
+    expect(Number(mapUrl.searchParams.get("lat"))).toBeLessThanOrEqual(90);
+    expect(Number(mapUrl.searchParams.get("lon"))).toBeGreaterThanOrEqual(-180);
+    expect(Number(mapUrl.searchParams.get("lon"))).toBeLessThanOrEqual(180);
+    await expect(page.getByTestId("alpium-windgram-page")).toBeVisible();
+    await expect(page.locator(".alpium-windgram")).toBeVisible();
+
+    // The windgram must contain real SVG heatmap cells behind wind arrows/thermal curves.
+    const windgram = page.locator(".alpium-windgram");
+    await expect(windgram).toBeVisible({ timeout: 30_000 });
+    const heatmapCells = windgram.getByTestId("windgram-stability-cell");
+    await expect(heatmapCells.first()).toBeVisible({ timeout: 30_000 });
+    expect(await heatmapCells.count(), "Alpium-style altitude/hour background cells must render").toBeGreaterThan(100);
+    const paletteCount = await heatmapCells.evaluateAll((elements) =>
+      new Set(elements.map((element) => element.getAttribute("data-stability-color"))).size
+    );
+    expect(paletteCount, "The atmospheric background should include colored stability masses").toBeGreaterThan(1);
+    await windgram.screenshot({
+      path: "test-results/alpium-windgram-colored-masses.png",
+      animations: "disabled",
+      timeout: 30_000,
+    });
+
+    // This is the exact block requested for removal: charts, selected-hour summary and hour tiles.
+    await expect(page.locator(".storyboard-panel")).toHaveCount(0);
+    await expect(page.locator(".story-chart-module")).toHaveCount(0);
+    await expect(page.locator(".story-selected-hour")).toHaveCount(0);
+    await expect(page.locator(".story-hour-buttons")).toHaveCount(0);
+
+    await expect(page.locator(".flight-forecast-module .forecast-day-card")).toHaveCount(3, { timeout: 30_000 });
+    const pageOrder = await page.locator("main").evaluate((root) => {
       const children = Array.from(root.children);
       return {
-        graph: children.findIndex((child) => child.classList.contains("storyboard-panel")),
-        forecast: children.findIndex((child) => child.classList.contains("forecast-section")),
-        windgram: children.findIndex((child) => child.id === "windgram-section"),
+        tools: children.findIndex((child) => child.classList.contains("launch-windgram-top")),
+        dashboard: children.findIndex((child) => child.classList.contains("dashboard-layout")),
       };
     });
-    expect(graphOrder.graph).toBeGreaterThanOrEqual(0);
-    expect(graphOrder.forecast).toBeGreaterThan(graphOrder.graph);
-    expect(graphOrder.windgram).toBeGreaterThan(graphOrder.forecast);
-    await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible();
-    await expect(page.locator(".story-chart-module")).toHaveCount(2);
-    await expect(page.locator(".story-chart-module").first()).toBeVisible();
-    await expect(page.getByRole("button", { name: "Tutta la giornata" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Mattina" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Ore centrali" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Pomeriggio" })).toBeVisible();
+    expect(pageOrder.tools, "Map and windgram must be a full-width section").toBeGreaterThanOrEqual(0);
+    expect(pageOrder.dashboard, "Dashboard columns must follow the full-width windgram").toBeGreaterThan(pageOrder.tools);
+    await expect(page.locator(".dashboard-layout .launch-windgram-top")).toHaveCount(0);
 
-    const rangeButton = page.getByRole("button", { name: "Mattina" });
-    await rangeButton.click();
-    await expect(rangeButton).toHaveAttribute("aria-pressed", "true");
-
-    const seriesControls = page.getByRole("group", { name: "Mostra o nascondi serie" });
-    const groundWindToggle = seriesControls.getByRole("button", { name: "Suolo" });
-    await expect(groundWindToggle).toHaveAttribute("aria-pressed", "true");
-    await groundWindToggle.click();
-    await expect(groundWindToggle).toHaveAttribute("aria-pressed", "false");
-    await groundWindToggle.click();
-    await expect(groundWindToggle).toHaveAttribute("aria-pressed", "true");
-
-    const hourButton = page.getByRole("button", { name: /Seleziona le condizioni delle ore/ }).first();
-    await hourButton.click();
-    await expect(hourButton).toHaveAttribute("aria-pressed", "true");
-
-    const dashboardOrder = await page.locator(".flight-desk-main").evaluate((container) => {
-      const children = Array.from(container.children);
+    const contentOrder = await page.locator(".flight-desk-main").evaluate((root) => {
+      const children = Array.from(root.children);
       return {
-        chart: children.findIndex((child) => child.classList.contains("storyboard-panel")),
         forecast: children.findIndex((child) => child.classList.contains("forecast-section")),
+        details: children.findIndex((child) => child.classList.contains("details-section")),
       };
     });
-    expect(dashboardOrder.chart, "The hourly graph must appear before the weather cards").toBeGreaterThanOrEqual(0);
-    expect(dashboardOrder.forecast, "The forecast cards must exist in the main dashboard").toBeGreaterThan(dashboardOrder.chart);
+    expect(contentOrder.forecast, "Daily forecast must precede analysis tabs").toBeGreaterThanOrEqual(0);
+    expect(contentOrder.details, "Analysis tabs must follow daily forecast").toBeGreaterThan(contentOrder.forecast);
 
     const forecastCards = page.locator(".forecast-day-card");
     await expect(forecastCards).toHaveCount(3, { timeout: 30_000 });
     await expect(page.locator('.forecast-day-card[aria-pressed="true"]')).toHaveCount(1);
-
     const tomorrow = page.getByRole("button", { name: /Mostra le previsioni per domani/i });
     await tomorrow.click();
     await expect(tomorrow).toHaveAttribute("aria-pressed", "true");
@@ -96,7 +115,7 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
 
     await page.getByRole("button", { name: "Esplora i venti" }).click();
     await expect(page.getByTestId("tab-venti")).toHaveAttribute("aria-pressed", "true");
-    await expect(page.locator('section[aria-live="polite"]')).not.toBeEmpty();
+    await expect(page.locator(".launch-windgram-shortcut")).toBeVisible();
     expect(pageErrors, "The homepage briefing must not produce browser errors").toEqual([]);
   });
 
@@ -169,17 +188,17 @@ test("desktop briefing fits the viewport without clipping the launch or forecast
   ).toEqual([]);
 });
 
-test("wide desktop keeps the right rail visible and temperature scale readable", async ({ page }) => {
+test("wide desktop keeps the right rail visible and native windgram unclipped", async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1050 });
   await page.goto("/");
-  await expect(page.locator(".flight-desk-main > .storyboard-panel")).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator(".launch-windgram-top")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("xctherm-launch-map")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("alpium-windgram-page")).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(".flight-right-rail")).toBeVisible({ timeout: 30_000 });
-  await page.getByRole("button", { name: "Pomeriggio" }).click();
-  const seriesControls = page.getByRole("group", { name: "Mostra o nascondi serie" });
-  const windAloftToggle = seriesControls.getByRole("button", { name: "Quota 80/120 m" });
-  await expect(windAloftToggle).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator(".storyboard-panel")).toHaveCount(0);
+  await expect(page.locator(".story-chart-module")).toHaveCount(0);
 
-  const dimensions = await page.evaluate(() => {
+  const layout = await page.evaluate(() => {
     const viewport = document.documentElement.clientWidth;
     const selectors = [
       ".flight-app-body",
@@ -188,6 +207,9 @@ test("wide desktop keeps the right rail visible and temperature scale readable",
       ".flight-desk-main",
       ".flight-right-rail",
       ".flight-right-rail .flight-site-list",
+      ".launch-windgram-top",
+      ".alpium-windgram",
+      ".forecast-section",
     ];
     const boxes = selectors.flatMap((selector) => {
       const element = document.querySelector<HTMLElement>(selector);
@@ -202,44 +224,42 @@ test("wide desktop keeps the right rail visible and temperature scale readable",
         clientWidth: element.clientWidth,
       }];
     });
-    const ticks = Array.from(document.querySelectorAll(".temperature-module .recharts-yAxis .recharts-cartesian-axis-tick-value"))
-      .map((node) => Number((node.textContent ?? "").replace(/[°a-zA-Z/ ]/g, "").trim()))
-      .filter(Number.isFinite);
     return {
       viewport,
       documentWidth: document.documentElement.scrollWidth,
       rootWidth: document.getElementById("root")?.clientWidth ?? -1,
       rootScrollWidth: document.getElementById("root")?.scrollWidth ?? -1,
       boxes,
-      temperatureTickSpan: ticks.length >= 2 ? Math.max(...ticks) - Math.min(...ticks) : null,
     };
   });
 
-  expect(dimensions.documentWidth, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
-  expect(dimensions.rootScrollWidth, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.rootWidth + 1);
-  const clipped = dimensions.boxes.filter((box) => box.left < -1 || box.right > dimensions.viewport + 1 || box.scrollWidth > box.clientWidth + 16);
-  expect(clipped, JSON.stringify(dimensions)).toEqual([]);
-  const readWindAxisTicks = () => page.evaluate(() => Array.from(document.querySelectorAll(".temperature-module .recharts-yAxis .recharts-cartesian-axis-tick-value"))
-    .map((node) => Number((node.textContent ?? "").replace(/[°a-zA-Z/ ]/g, "").trim()))
-    .filter(Number.isFinite));
+  expect(layout.documentWidth, JSON.stringify(layout)).toBeLessThanOrEqual(layout.viewport + 1);
+  expect(layout.rootScrollWidth, JSON.stringify(layout)).toBeLessThanOrEqual(layout.rootWidth + 1);
+  const clipped = layout.boxes.filter((box) =>
+    box.left < -1 || box.right > layout.viewport + 1 || box.scrollWidth > box.clientWidth + 16
+  );
+  expect(clipped, JSON.stringify(layout)).toEqual([]);
+});
 
-  expect(dimensions.temperatureTickSpan, JSON.stringify(dimensions)).not.toBeNull();
-  expect(dimensions.temperatureTickSpan!, "The wind axis must span the plotted range").toBeGreaterThan(0);
 
-  const ticksWithSeriesHidden = await readWindAxisTicks();
-  await windAloftToggle.click();
-  await expect(windAloftToggle).toHaveAttribute("aria-pressed", "true");
-  await expect
-    .poll(() => readWindAxisTicks(), { message: "Showing a wind layer must not rescale the axis" })
-    .toEqual(ticksWithSeriesHidden);
-  await windAloftToggle.click();
-  await expect(windAloftToggle).toHaveAttribute("aria-pressed", "false");
+test("API Mega List catalog links all source categories and its search filters locally", async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
 
-  for (const width of [1440, 1280]) {
-    await page.setViewportSize({ width, height: 1050 });
-    const rail = await page.locator(".flight-right-rail").boundingBox();
-    const viewport = await page.evaluate(() => document.documentElement.clientWidth);
-    expect(rail, `Right rail missing at ${width}px`).not.toBeNull();
-    expect(rail!.x + rail!.width, `Right rail clipped at ${width}px`).toBeLessThanOrEqual(viewport + 1);
-  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/catalogo-api");
+  await expect(page.getByRole("heading", { name: "API Mega List" })).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator(".api-mega-category")).toHaveCount(23);
+  const aiCollection = page.locator(".api-mega-category").filter({ hasText: "Intelligenza artificiale" });
+  await expect(aiCollection).toHaveAttribute("href", /tree\/main\/ai-apis-1555$/);
+
+  const search = page.getByRole("textbox", { name: "Cerca una categoria" });
+  await search.fill("intelligenza");
+  await expect(page.locator(".api-mega-category")).toHaveCount(1);
+  await expect(page.locator(".api-mega-category").filter({ hasText: "Intelligenza artificiale" })).toBeVisible();
+
+  await search.fill("categoria-che-non-esiste");
+  await expect(page.locator(".api-mega-category")).toHaveCount(0);
+  await expect(page.getByText("Nessuna categoria trovata. Prova con un altro termine.")).toBeVisible();
+  expect(pageErrors, "The catalog page should not cause browser errors").toEqual([]);
 });

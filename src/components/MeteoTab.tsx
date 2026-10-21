@@ -94,17 +94,16 @@ function dirLabel(deg: number) {
 }
 
 function getWeatherDescription(code: number): string {
-  if (code >= 95) return "Temporale";
-  if (code >= 80) return "Pioggia";
-  if (code >= 71) return "Neve";
-  if (code >= 61) return "Pioggia leggera";
-  if (code >= 51) return "Piombo";
-  if (code >= 45) return "Nebbia";
-  if (code >= 30) return "Nuvoloso";
-  if (code >= 20) return "Temporale lontano";
-  if (code >= 10) return "Parzialmente nuvoloso";
-  if (code >= 5) return "Nubi sparse";
-  return "Sereno";
+  if ([95, 96, 99].includes(code)) return "Temporale";
+  if ([85, 86, 71, 73, 75, 77].includes(code)) return "Neve";
+  if ([80, 81, 82, 61, 63, 65, 66, 67].includes(code)) return "Pioggia";
+  if ([51, 53, 55, 56, 57].includes(code)) return "Pioviggine";
+  if ([45, 48].includes(code)) return "Nebbia";
+  if (code === 3) return "Coperto";
+  if (code === 2) return "Parzialmente nuvoloso";
+  if (code === 1) return "Prevalentemente sereno";
+  if (code === 0) return "Sereno";
+  return "Condizione non disponibile";
 }
 
 function getCloudCoverLabel(pct: number) {
@@ -327,7 +326,7 @@ function MeteoTabContent({ currentData, dayData, site, thermalDelta, modelName, 
 
   // === Animated values ===
   const animatedScore = useAnimatedValue(signal === "green" ? 9 : signal === "yellow" ? 6 : 2);
-  const animatedTemp = useAnimatedValue(t !== null ? Math.round(t) : 0);
+  const animatedTemp = useAnimatedValue(Math.round(t ?? 0));
   const animatedWind = useAnimatedValue(Math.round(windSpeed));
   const animatedHumidity = usePercentAnimatedValue(humidity);
   const animatedVisibility = usePercentAnimatedValue(Math.min(100, (visibility / 15000) * 100));
@@ -434,8 +433,9 @@ function MeteoTabContent({ currentData, dayData, site, thermalDelta, modelName, 
               <span className={`text-xs font-black tracking-widest`}>{signalLabel}</span>
             </div>
             <div className="flex items-center gap-1.5 text-xs">
-              {weatherCode >= 95 ? <Zap className="w-3 h-3 text-rose-400" style={{ animation: 'pulse 1.5s cubic-bezier(0.4,0,0.6,1) infinite' }} /> :
-               weatherCode >= 80 ? <CloudRain className="w-3 h-3 text-orange-400" /> :
+              {[95, 96, 99].includes(weatherCode) ? <Zap className="w-3 h-3 text-rose-400" style={{ animation: 'pulse 1.5s cubic-bezier(0.4,0,0.6,1) infinite' }} /> :
+               [85, 86, 71, 73, 75, 77].includes(weatherCode) ? <CloudSnow className="w-3 h-3 text-slate-200" /> :
+               [80, 81, 82, 61, 63, 65, 66, 67].includes(weatherCode) ? <CloudRain className="w-3 h-3 text-orange-400" /> :
                weatherCode >= 30 ? <Cloud className="w-3 h-3 text-slate-400" /> :
                weatherCode >= 10 ? <Cloud className="w-3 h-3 text-amber-300" /> :
                <Sun className="w-3 h-3 text-amber-400" />}
@@ -481,7 +481,7 @@ function MeteoTabContent({ currentData, dayData, site, thermalDelta, modelName, 
                   <span className="text-xl text-amber-400/60 font-black">°C</span>
                 </div>
               </div>
-              <span className="text-3xl opacity-80">{weatherCode >= 95 ? '⛈️' : weatherCode >= 80 ? '🌧️' : weatherCode >= 30 ? '☁️' : weatherCode >= 10 ? '🌤️' : '☀️'}</span>
+              <span className="text-3xl opacity-80">{[95, 96, 99].includes(weatherCode) ? '⛈️' : [85, 86, 71, 73, 75, 77].includes(weatherCode) ? '❄️' : [80, 81, 82, 61, 63, 65, 66, 67].includes(weatherCode) ? '🌧️' : weatherCode >= 30 ? '☁️' : weatherCode >= 10 ? '🌤️' : '☀️'}</span>
             </div>
             <div className="space-y-2">
               {[

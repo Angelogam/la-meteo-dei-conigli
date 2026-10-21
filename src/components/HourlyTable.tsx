@@ -5,6 +5,8 @@ import type { HourData } from "@/types/meteo";
 import { calcolaTermiche } from "@/utils/termiche";
 import { getVoloStatus } from "@/utils/volo";
 import { Calendar, MapPin, Wind, Droplets, Thermometer, Eye, Sun, Cloud, Zap } from "lucide-react";
+import WeatherAnimation from "./WeatherAnimation";
+import "./hourly-weather-timeline.css";
 
 interface HourlyTableProps {
   dayData: HourData[];
@@ -110,16 +112,13 @@ function FogIcon({ className = "" }: { className?: string }) {
 }
 
 function getWeatherAnimation(code: number, className: string) {
-  if (code >= 95) return <StormIcon className={className} />;
-  if (code >= 80) return <RainIcon className={className} />;
-  if (code >= 71) return <SnowIcon className={className} />;
-  if (code >= 61) return <RainIcon className={className} />;
-  if (code >= 51) return <RainIcon className={className} />;
-  if (code >= 45) return <FogIcon className={className} />;
-  if (code >= 30) return <CloudIcon className={className} dark />;
-  if (code >= 20) return <CloudIcon className={className} />;
-  if (code >= 10) return <SunCloudIcon className={className} />;
-  if (code >= 3) return <SunCloudIcon className={className} />;
+  // Open-Meteo uses WMO weather codes; classify discrete ranges explicitly.
+  if ([95, 96, 99].includes(code)) return <StormIcon className={className} />;
+  if ([85, 86, 71, 73, 75, 77].includes(code)) return <SnowIcon className={className} />;
+  if ([80, 81, 82, 61, 63, 65, 66, 67, 51, 53, 55, 56, 57].includes(code)) return <RainIcon className={className} />;
+  if ([45, 48].includes(code)) return <FogIcon className={className} />;
+  if (code === 3) return <CloudIcon className={className} dark />;
+  if (code === 2 || code === 1) return <SunCloudIcon className={className} />;
   return <SunIcon className={className} />;
 }
 
@@ -151,7 +150,7 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
   const rows = useMemo(() => {
     const ore = Array.from({ length: 11 }, (_, i) => i + 9);
     return ore.map((ora) => {
-      const h = dayData.find(d => d.time.getHours() === ora);
+      const h = dayData.find(d => new Date(d.time).getHours() === ora);
       if (!h) return null;
       const t = calcolaTermiche(h, altitude);
       if (!t) return null;
@@ -159,32 +158,34 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
       const now = new Date();
       const oraCorrente = now.getHours();
       const isAdesso = ora === oraCorrente;
-      const probPioggia = h.precipitationProba ?? 0;
-      const humidity = h.humidity ?? null;
-      const dew = h.dewPoint ?? null;
-      const pressure = h.pressure ?? null;
-      const visibility = h.visibility ?? null;
-      const uv = h.uvIndex ?? null;
-      const cape = h.cape ?? null;
-      const windDir = h.windDir ?? null;
-      const windGusts = h.windGusts ?? null;
+      const probPioggia = h.precipitationProba ?? null;
+      const humidity = h.humidity != null ? Math.round(h.humidity) : null;
+      const dew = h.dewPoint != null ? Math.round(h.dewPoint) : null;
+      const pressure = h.pressure != null ? Math.round(h.pressure) : null;
+      const visibility = h.visibility != null ? Math.round(h.visibility / 1000) : null;
+      const uv = h.uvIndex != null ? Math.round(h.uvIndex * 10) / 10 : null;
+      const cape = h.cape != null ? Math.round(h.cape) : null;
+      const windDir = h.windDir != null ? h.windDir : null;
+      const windSpeed = h.windSpeed != null ? Math.round(h.windSpeed) : null;
+      const windGusts = h.windGusts != null && h.windGusts > 0 ? Math.round(h.windGusts) : null;
+      const cloudCover = h.cloudCover != null ? Math.round(h.cloudCover) : null;
 
       return {
         ora,
         icona: h.weatherCode,
-        temperatura: h.temperature !== null && h.temperature !== undefined ? Math.round(h.temperature) : null,
-        feelsLike: h.apparentTemp !== null && h.apparentTemp !== undefined ? Math.round(h.apparentTemp) : null,
-        vento: Math.round(h.windSpeed),
-        ventoTesto: ventoTesto(h.windSpeed),
-        direzione: direzioneVento(windDir),
+        temperatura: h.temperature != null ? Math.round(h.temperature) : null,
+        feelsLike: h.apparentTemp != null ? Math.round(h.apparentTemp) : null,
+        vento: windSpeed,
+        ventoTesto: windSpeed != null ? ventoTesto(windSpeed) : "N/D",
+        direzione: windDir != null ? direzioneVento(windDir) : "N/D",
         windDirDeg: windDir,
-        raffiche: windGusts > 0 ? Math.round(windGusts) : null,
+        raffiche: windGusts,
         termiche: t.rateo,
-        nuvole: Math.round(h.cloudCover),
-        nuvoleLow: Math.round(h.cloudCoverLow ?? 0),
-        nuvoleMid: Math.round(h.cloudCoverMid ?? 0),
-        nuvoleHigh: Math.round(h.cloudCoverHigh ?? 0),
-        pioggia: h.precipitation > 0 ? h.precipitation.toFixed(1) : null,
+        nuvole: cloudCover,
+        nuvoleLow: h.cloudCoverLow != null ? Math.round(h.cloudCoverLow) : 0,
+        nuvoleMid: h.cloudCoverMid != null ? Math.round(h.cloudCoverMid) : 0,
+        nuvoleHigh: h.cloudCoverHigh != null ? Math.round(h.cloudCoverHigh) : 0,
+        pioggia: h.precipitation != null && h.precipitation > 0 ? h.precipitation.toFixed(1) : (h.precipitation === 0 ? "0.0" : null),
         probPioggia,
         voloIcona: v.icon,
         voloTesto: v.label,
@@ -234,6 +235,39 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
         </div>
         <span className="text-xs text-slate-400 font-medium bg-slate-700/50 px-3 py-1 rounded-full">{dataLabel}</span>
       </div>
+
+      {/* Animated hour-by-hour weather timeline */}
+      <section className="hourly-weather-timeline" aria-label="Andamento meteo animato ora per ora">
+        <div className="hourly-timeline-heading">
+          <div>
+            <span className="hourly-timeline-kicker">IL CIELO NELLE PROSSIME ORE</span>
+            <p>Seleziona un’ora per sincronizzare i dettagli del briefing.</p>
+          </div>
+          <span className="hourly-timeline-live"><i /> DATI ORARI</span>
+        </div>
+        <div className="hourly-timeline-track">
+          {rows.map((r) => {
+            const active = r.ora === selectedHour;
+            return (
+              <button
+                type="button"
+                key={r.ora}
+                className={`hourly-weather-moment ${active ? "is-active" : ""} ${r.isAdesso ? "is-now" : ""}`}
+                onClick={() => onHourSelect(r.ora)}
+                aria-pressed={active}
+                aria-label={`${String(r.ora).padStart(2, "0")}:00, ${r.temperatura != null ? `${r.temperatura} gradi` : "temperatura non disponibile"}, vento ${r.vento ?? "non disponibile"} chilometri orari`}
+              >
+                <span className="hourly-moment-time">{String(r.ora).padStart(2, "0")}:00</span>
+                <WeatherAnimation code={typeof r.icona === "number" ? r.icona : null} />
+                <strong className="hourly-moment-temp">{r.temperatura != null ? `${r.temperatura}°` : "—"}</strong>
+                <span className="hourly-moment-wind"><Wind aria-hidden="true" />{r.vento != null ? `${r.vento}` : "—"} <small>km/h</small></span>
+                <span className="hourly-moment-cloud">{r.nuvole != null ? `Nuvole ${r.nuvole}%` : "Nuvole N/D"}</span>
+                {r.isAdesso && <span className="hourly-moment-now">ORA</span>}
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       {/* Scrollable table */}
       <div className="overflow-x-auto">
@@ -307,16 +341,22 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                     <div className="flex flex-col gap-0.5">
                       <div className="flex items-center gap-1.5">
                         <Wind className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                        <span className="text-sm font-bold text-sky-300 tabular-nums">{r.vento} <span className="text-slate-500 text-xs font-medium">km/h</span></span>
+                        <span className="text-sm font-bold text-sky-300 tabular-nums">
+                          {r.vento != null ? `${r.vento} km/h` : "N/D"}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1.5 ml-5">
                         <span className="text-xs text-slate-400 font-medium">{r.direzione}</span>
-                        <span className="text-xs text-slate-600">·</span>
-                        <span className="text-xs text-slate-500">{r.ventoTesto}</span>
+                        {r.ventoTesto !== "N/D" && (
+                          <>
+                            <span className="text-xs text-slate-600">·</span>
+                            <span className="text-xs text-slate-500">{r.ventoTesto}</span>
+                          </>
+                        )}
                       </div>
                       {r.raffiche !== null && (
-                        <div className="ml-5 text-[10px] text-rose-400/70 font-medium">
-                          🌪️ {r.raffiche} km/h
+                        <div className="ml-5 text-[10px] text-rose-400/80 font-semibold">
+                          Raffiche {r.raffiche} km/h
                         </div>
                       )}
                     </div>
@@ -325,17 +365,23 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                   {/* Nuvole con barre */}
                   <td className="px-3 py-3">
                     <div className="flex flex-col gap-1">
-                      <span className="text-sm font-black text-slate-200 tabular-nums">{r.nuvole}%</span>
-                      <div className="flex gap-0.5 h-1.5">
-                        <div className="flex-1 rounded-full bg-sky-500/60" style={{ width: `${r.nuvoleLow}%`, maxWidth: "100%" }} />
-                        <div className="flex-1 rounded-full bg-violet-500/60" style={{ width: `${r.nuvoleMid}%`, maxWidth: "100%" }} />
-                        <div className="flex-1 rounded-full bg-slate-400/40" style={{ width: `${r.nuvoleHigh}%`, maxWidth: "100%" }} />
-                      </div>
-                      <div className="flex gap-2 text-[9px] text-slate-500 font-medium">
-                        <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-sky-500 inline-block" />B</span>
-                        <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block" />M</span>
-                        <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-slate-400 inline-block" />A</span>
-                      </div>
+                      <span className="text-sm font-black text-slate-200 tabular-nums">
+                        {r.nuvole != null ? `${r.nuvole}%` : "N/D"}
+                      </span>
+                      {r.nuvole != null && (
+                        <>
+                          <div className="flex gap-0.5 h-1.5">
+                            <div className="flex-1 rounded-full bg-sky-500/60" style={{ width: `${r.nuvoleLow}%`, maxWidth: "100%" }} />
+                            <div className="flex-1 rounded-full bg-violet-500/60" style={{ width: `${r.nuvoleMid}%`, maxWidth: "100%" }} />
+                            <div className="flex-1 rounded-full bg-slate-400/40" style={{ width: `${r.nuvoleHigh}%`, maxWidth: "100%" }} />
+                          </div>
+                          <div className="flex gap-2 text-[9px] text-slate-500 font-medium">
+                            <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-sky-500 inline-block" />B</span>
+                            <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block" />M</span>
+                            <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-slate-400 inline-block" />A</span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </td>
 
@@ -356,11 +402,15 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                     <div className="flex flex-col">
                       <div className="flex items-center gap-1.5">
                         <Droplets className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                        <span className="text-sm font-bold text-sky-300 tabular-nums">{r.humidity}%</span>
+                        <span className="text-sm font-bold text-sky-300 tabular-nums">
+                          {r.humidity != null ? `${r.humidity}%` : "N/D"}
+                        </span>
                       </div>
-                      <span className="text-[10px] text-slate-500 font-medium ml-5">
-                        Rdg. {r.dew}°C
-                      </span>
+                      {r.dew != null && (
+                        <span className="text-[10px] text-slate-500 font-medium ml-5">
+                          Rdg. {r.dew}°C
+                        </span>
+                      )}
                     </div>
                   </td>
 
@@ -369,14 +419,18 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
                     <div className="flex flex-col items-start gap-1">
                       <div className="flex items-center gap-1.5">
                         <Sun className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                        <span className={`text-sm font-black tabular-nums ${uvColor(r.uv)}`}>{r.uv}</span>
+                        <span className={`text-sm font-black tabular-nums ${r.uv != null ? uvColor(r.uv) : "text-slate-500"}`}>
+                          {r.uv != null ? r.uv : "N/D"}
+                        </span>
                       </div>
-                      <div className="w-12 h-1 bg-slate-700/50 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${r.uv >= 8 ? "bg-rose-500" : r.uv >= 5 ? "bg-amber-500" : "bg-emerald-500"}`}
-                          style={{ width: `${Math.min(100, r.uv * 9)}%` }}
-                        />
-                      </div>
+                      {r.uv != null && (
+                        <div className="w-12 h-1 bg-slate-700/50 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${r.uv >= 8 ? "bg-rose-500" : r.uv >= 5 ? "bg-amber-500" : "bg-emerald-500"}`}
+                            style={{ width: `${Math.min(100, r.uv * 9)}%` }}
+                          />
+                        </div>
+                      )}
                     </div>
                   </td>
 

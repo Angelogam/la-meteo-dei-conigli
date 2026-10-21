@@ -1,7 +1,7 @@
 "use client";
 
 import { DECOLLI } from "@/data/decolli";
-import { fetchCurrent, fetchHourly, fetchDaily } from "@/lib/openMeteoClient";
+import { fetchFull } from "@/lib/openMeteoClient";
 
 export type Decollo = {
   name: string;
@@ -21,6 +21,8 @@ export type MeteoDecollo = {
   termiche: string;
   indice: number | null;
   indiceLabel: string;
+  freezingLevel: number | null;
+  weatherCode: number | null;
   fonte: string;
 };
 
@@ -51,37 +53,24 @@ function findCurrentIndex(times: unknown[], now = new Date()): number {
 }
 
 async function getOpenMeteo(lat: number, lon: number) {
-  const today = new Date().toISOString().split("T")[0];
-  const hourlyParams = "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,cape,freezing_level_height";
-
   try {
-    const today = new Date().toISOString().split("T")[0];
+    // Hourly and daily variables are returned together, reducing upstream calls per launch.
+    const forecast = await fetchFull(
+      lat,
+      lon,
+      "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,cape,freezing_level_height,weather_code",
+      "temperature_2m_max,temperature_2m_min,cloud_cover_mean,precipitation_sum",
+      "",
+      1,
+    );
 
-    const [hourlyData, dailyData] = await Promise.all([
-      fetchHourly(
-        lat,
-        lon,
-        "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,cape,freezing_level_height",
-        today,
-        today
-      ),
-      fetchDaily(
-        lat,
-        lon,
-        "temperature_2m_max,temperature_2m_min,cloud_cover_mean,precipitation_sum",
-        1
-      ),
-    ]);
-
-    const times = hourlyData.hourly?.time ?? [];
+    const times = forecast.hourly?.time ?? [];
     if (!Array.isArray(times) || times.length === 0) return null;
-
     const i = findCurrentIndex(times);
     if (i < 0) return null;
 
-    const h = hourlyData.hourly;
-    const d = dailyData.daily;
-
+    const h = forecast.hourly;
+    const d = forecast.daily;
     return {
       temp: numOrNull(h.temperature_2m?.[i]),
       rain: numOrNull(h.precipitation?.[i]),
@@ -90,6 +79,7 @@ async function getOpenMeteo(lat: number, lon: number) {
       dir: numOrNull(h.wind_direction_10m?.[i]),
       cape: numOrNull(h.cape?.[i]),
       freezingLevel: numOrNull(h.freezing_level_height?.[i]),
+      weatherCode: numOrNull(h.weather_code?.[i]),
       tMax: numOrNull(d?.temperature_2m_max?.[0]),
       tMin: numOrNull(d?.temperature_2m_min?.[0]),
       cloudDaily: numOrNull(d?.cloud_cover_mean?.[0]),
@@ -176,6 +166,7 @@ interface FusedWeatherSource {
   wind?: number | null;
   dir?: number | null;
   stato?: string | null;
+  weatherCode?: number | null;
   cape?: number | null;
   freezingLevel?: number | null;
   tMax?: number | null;
@@ -190,6 +181,7 @@ function statoAggressivo(
   tomorrow: FusedWeatherSource | null
 ): string {
   if (openWeather?.stato === "Thunderstorm") return "Temporale";
+  if ([71, 73, 75, 77, 85, 86].includes(openMeteo?.weatherCode)) return "Neve";
 
   const rains = [openMeteo?.rain, openWeather?.rain, tomorrow?.rain]
     .filter((v): v is number => Number.isFinite(v));
@@ -333,6 +325,8 @@ export async function getMeteoDecolloAggressivo(d: Decollo): Promise<MeteoDecoll
     termiche,
     indice: indice ?? 0,
     indiceLabel: labelIndice(indice),
+    freezingLevel: openMeteo?.freezingLevel ?? null,
+    weatherCode: openMeteo?.weatherCode ?? null,
     fonte: "Open-Meteo + OpenWeather + Tomorrow.io",
   };
 }
@@ -366,6 +360,8 @@ export async function getAllMeteoDecolliAggressivo(): Promise<Map<string, MeteoD
           termiche: "N/D",
           indice: 0,
           indiceLabel: "N/D",
+          freezingLevel: null,
+          weatherCode: null,
           fonte: "Nessuna fonte disponibile",
         });
       }

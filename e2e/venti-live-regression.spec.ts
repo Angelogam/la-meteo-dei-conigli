@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { installOpenMeteoMock } from "./helpers/mockOpenMeteo";
 
 test("Venti tab keeps its own content visible while wind data loads", async ({ page }) => {
+  // The shared forecast fixture succeeds; only the expensive pressure-level enrichment is rate-limited.
+  await installOpenMeteoMock(page, { failSounding: true });
   const pageErrors: string[] = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
 
@@ -9,12 +12,18 @@ test("Venti tab keeps its own content visible while wind data loads", async ({ p
   await expect(ventiTab).toBeVisible({ timeout: 30_000 });
   await ventiTab.click();
 
-  // This heading is rendered by VentiInterpolatiTab before its asynchronous
-  // forecast request completes. It catches a blank/crashed tab without relying
-  // on a particular API response or on network timing.
-  await expect(page.getByText("Venti in quota dettagliati")).toBeVisible({
+  // The selected launch should show the XC Therm map and native windgram as separate panels.
+  await expect(page.getByTestId("xctherm-launch-map")).toBeVisible({ timeout: 10_000 });
+  // Do not render a large empty Flybubble card until a matching Piemonte forecast URL is verified.
+  await expect(page.getByTestId("flybubble-forecast-panel")).toHaveCount(0);
+  await expect(page.locator('iframe[src*="weather.flybubble.com/it/embed/15841"]')).toHaveCount(0);
+  await expect(page.getByTestId("alpium-windgram-page")).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator(".alpium-windgram")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByTestId("windgram-fallback-notice")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole("heading", { name: /Windgram aerologico/i }).first()).toBeVisible({
     timeout: 10_000,
   });
+  await expect(page.locator('iframe[src*="xctherm.com/icon"]')).toBeVisible({ timeout: 10_000 });
 
   const tabContent = page.locator(".flight-tab-content");
   await expect(tabContent).toBeVisible();

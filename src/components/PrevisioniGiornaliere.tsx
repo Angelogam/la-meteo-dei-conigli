@@ -5,7 +5,7 @@ import type { HourData } from "@/types/meteo";
 import type { MeteoCurrent, MeteoDaily } from "@/services/openMeteoService";
 import { ArrowUp, Cloud, Thermometer, Zap, Sun, Wind } from "lucide-react";
 import AeroCard from "./AeroCard";
-import WeatherGlyph from "./WeatherGlyph";
+import WeatherAnimation from "./WeatherAnimation";
 
 interface PrevisioniGiornaliereProps {
   enrichedDaily: MeteoDaily[];
@@ -171,11 +171,11 @@ export default function PrevisioniGiornaliere({
   const animatedScore = useAnimatedValue(hasValidRating ? flightRating! : 0);
 
   return (
-    <div className="forecast-dashboard-stack space-y-6 min-w-0 w-full">
+    <div className="forecast-dashboard-stack flex flex-col space-y-6 min-w-0 w-full">
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* HERO — ANIMATED: barra verde luminosa in alto             */}
       {/* ═══════════════════════════════════════════════════════════ */}
-      <div className="forecast-hero relative rounded-3xl overflow-hidden bg-slate-900 border border-cyan-500/30 shadow-2xl shadow-cyan-950/30">
+      <div className="forecast-hero order-2 relative rounded-3xl overflow-hidden bg-slate-900 border border-cyan-500/30 shadow-2xl shadow-cyan-950/30">
         {/* Striscia verde luminosa in cima — animata */}
         <div
           className="forecast-hero-accent h-2 bg-gradient-to-r from-cyan-400 via-sky-300 to-cyan-400"
@@ -311,7 +311,7 @@ export default function PrevisioniGiornaliere({
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* PREVISIONI GIORNALIERE                                         */}
       {/* ═══════════════════════════════════════════════════════════ */}
-      <div className="flight-section forecast-days-section">
+      <div className="flight-section forecast-days-section order-1">
         <div className="flight-section-heading-row">
           <span className="flight-section-marker" aria-hidden="true" />
           <div><h2 className="flight-section-heading">Previsioni per i prossimi tre giorni</h2><p className="flight-section-subtitle">Scegli un giorno per aggiornare il briefing e le analisi.</p></div>
@@ -333,7 +333,7 @@ export default function PrevisioniGiornaliere({
                 aria-pressed={isActive}
                 aria-label={`Mostra le previsioni per ${tabName.toLowerCase()}, ${label}`}
                 className={`
-                  forecast-day-card relative flex h-full flex-col rounded-xl p-3 sm:p-4 text-left transition-colors duration-200
+                  forecast-day-card forecast-day-card-premium relative rounded-xl p-3 sm:p-4 text-left transition-colors duration-200
                   ${isActive
                     ? 'bg-emerald-950/60 border-2 border-emerald-400 shadow-md shadow-emerald-900/20'
                     : isRainy
@@ -342,10 +342,8 @@ export default function PrevisioniGiornaliere({
                   }
                 `}
               >
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <span className="forecast-glyph-tile">
-                    <WeatherGlyph code={d?.weatherCode} size={50} />
-                  </span>
+                <div className="flex items-center justify-between mb-3">
+                  <WeatherAnimation code={d?.weatherCode ?? null} />
                   <div
                     className={`forecast-day-index text-sm font-black px-3 py-1 rounded-full transition-all duration-300 ${isActive ? 'bg-cyan-500/15 text-cyan-200 border border-cyan-400/30' : 'bg-slate-700/50 text-slate-400'}`}
                     title="Indice meteo indicativo, non è un giudizio di sicurezza del volo"

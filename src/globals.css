@@ -4522,21 +4522,3 @@ button, [role="tab"], a {
   .launch-wind-needle { transition: none; }
 }
 
-/* Riquadro del glifo meteo nelle schede giornaliere */
-.forecast-glyph-tile {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 58px;
-  height: 58px;
-  flex: 0 0 auto;
-  border-radius: 18px;
-  border: 1px solid rgba(125, 211, 252, .16);
-  background: radial-gradient(circle at 32% 22%, rgba(56, 189, 248, .18), rgba(8, 23, 42, .82) 72%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
-}
-
-.forecast-day-card[aria-pressed="true"] .forecast-glyph-tile {
-  border-color: rgba(52, 211, 153, .38);
-  background: radial-gradient(circle at 32% 22%, rgba(52, 211, 153, .2), rgba(6, 40, 34, .82) 72%);
-}
