@@ -5,6 +5,8 @@ import type { HourData } from "@/types/meteo";
 import { calcolaTermiche } from "@/utils/termiche";
 import { getVoloStatus } from "@/utils/volo";
 import { Calendar, MapPin, Wind, Droplets, Thermometer, Eye, Sun, Cloud, Zap } from "lucide-react";
+import WeatherAnimation from "./WeatherAnimation";
+import "./hourly-weather-timeline.css";
 
 interface HourlyTableProps {
   dayData: HourData[];
@@ -236,6 +238,39 @@ export default function HourlyTable({ dayData, altitude, selectedHour, onHourSel
         </div>
         <span className="text-xs text-slate-400 font-medium bg-slate-700/50 px-3 py-1 rounded-full">{dataLabel}</span>
       </div>
+
+      {/* Animated hour-by-hour weather timeline */}
+      <section className="hourly-weather-timeline" aria-label="Andamento meteo animato ora per ora">
+        <div className="hourly-timeline-heading">
+          <div>
+            <span className="hourly-timeline-kicker">IL CIELO NELLE PROSSIME ORE</span>
+            <p>Seleziona un’ora per sincronizzare i dettagli del briefing.</p>
+          </div>
+          <span className="hourly-timeline-live"><i /> DATI ORARI</span>
+        </div>
+        <div className="hourly-timeline-track">
+          {rows.map((r) => {
+            const active = r.ora === selectedHour;
+            return (
+              <button
+                type="button"
+                key={r.ora}
+                className={`hourly-weather-moment ${active ? "is-active" : ""} ${r.isAdesso ? "is-now" : ""}`}
+                onClick={() => onHourSelect(r.ora)}
+                aria-pressed={active}
+                aria-label={`${String(r.ora).padStart(2, "0")}:00, ${r.temperatura != null ? `${r.temperatura} gradi` : "temperatura non disponibile"}, vento ${r.vento ?? "non disponibile"} chilometri orari`}
+              >
+                <span className="hourly-moment-time">{String(r.ora).padStart(2, "0")}:00</span>
+                <WeatherAnimation code={typeof r.icona === "number" ? r.icona : null} />
+                <strong className="hourly-moment-temp">{r.temperatura != null ? `${r.temperatura}°` : "—"}</strong>
+                <span className="hourly-moment-wind"><Wind aria-hidden="true" />{r.vento != null ? `${r.vento}` : "—"} <small>km/h</small></span>
+                <span className="hourly-moment-cloud">{r.nuvole != null ? `Nuvole ${r.nuvole}%` : "Nuvole N/D"}</span>
+                {r.isAdesso && <span className="hourly-moment-now">ORA</span>}
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       {/* Scrollable table */}
       <div className="overflow-x-auto">
