@@ -6,15 +6,14 @@ import type { HourData } from "@/types/meteo";
 import { getVoloStatus } from "@/utils/volo";
 
 function getWeatherEmoji(code: number): string {
-  if (code >= 95) return "⛈️";
-  if (code >= 80) return "🌧️";
-  if (code >= 71) return "❄️";
-  if (code >= 61) return "🌧️";
-  if (code >= 51) return "🌦️";
-  if (code >= 45) return "🌫️";
-  if (code >= 20) return "☁️";
-  if (code >= 10) return "⛅";
-  if (code >= 5) return "🌤️";
+  if ([95, 96, 99].includes(code)) return "⛈️";
+  if ([85, 86, 71, 73, 75, 77].includes(code)) return "❄️";
+  if ([80, 81, 82, 61, 63, 65, 66, 67].includes(code)) return "🌧️";
+  if ([51, 53, 55, 56, 57].includes(code)) return "🌦️";
+  if ([45, 48].includes(code)) return "🌫️";
+  if (code === 3) return "☁️";
+  if (code === 2) return "⛅";
+  if (code === 1) return "🌤️";
   return "☀️";
 }
 
