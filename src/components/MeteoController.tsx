@@ -86,11 +86,14 @@ export default function MeteoController({ lat = 44.2587, lon = 7.7943 }: { lat?:
 
   const weatherCode = c.weatherCode;
   let iconaMeteo = "☀️";
-  if (weatherCode >= 95) iconaMeteo = "⛈️";
-  else if (weatherCode >= 80) iconaMeteo = "🌧️";
-  else if (weatherCode >= 61) iconaMeteo = "🌧️";
-  else if (weatherCode >= 51) iconaMeteo = "🌦️";
-  else if (weatherCode >= 45) iconaMeteo = "🌫️";
+  if ([95, 96, 99].includes(weatherCode)) iconaMeteo = "⛈️";
+  else if ([85, 86, 71, 73, 75, 77].includes(weatherCode)) iconaMeteo = "❄️";
+  else if ([80, 81, 82, 61, 63, 65, 66, 67].includes(weatherCode)) iconaMeteo = "🌧️";
+  else if ([51, 53, 55, 56, 57].includes(weatherCode)) iconaMeteo = "🌦️";
+  else if ([45, 48].includes(weatherCode)) iconaMeteo = "🌫️";
+  else if (weatherCode === 3) iconaMeteo = "☁️";
+  else if (weatherCode === 2) iconaMeteo = "⛅";
+  else if (weatherCode === 1) iconaMeteo = "🌤️";
   else if (weatherCode >= 20) iconaMeteo = "☁️";
   else if (weatherCode >= 10) iconaMeteo = "⛅";
   else iconaMeteo = "☀️";
