@@ -433,8 +433,9 @@ function MeteoTabContent({ currentData, dayData, site, thermalDelta, modelName, 
               <span className={`text-xs font-black tracking-widest`}>{signalLabel}</span>
             </div>
             <div className="flex items-center gap-1.5 text-xs">
-              {weatherCode >= 95 ? <Zap className="w-3 h-3 text-rose-400" style={{ animation: 'pulse 1.5s cubic-bezier(0.4,0,0.6,1) infinite' }} /> :
-               weatherCode >= 80 ? <CloudRain className="w-3 h-3 text-orange-400" /> :
+              {[95, 96, 99].includes(weatherCode) ? <Zap className="w-3 h-3 text-rose-400" style={{ animation: 'pulse 1.5s cubic-bezier(0.4,0,0.6,1) infinite' }} /> :
+               [85, 86, 71, 73, 75, 77].includes(weatherCode) ? <CloudSnow className="w-3 h-3 text-slate-200" /> :
+               [80, 81, 82, 61, 63, 65, 66, 67].includes(weatherCode) ? <CloudRain className="w-3 h-3 text-orange-400" /> :
                weatherCode >= 30 ? <Cloud className="w-3 h-3 text-slate-400" /> :
                weatherCode >= 10 ? <Cloud className="w-3 h-3 text-amber-300" /> :
                <Sun className="w-3 h-3 text-amber-400" />}
@@ -480,7 +481,7 @@ function MeteoTabContent({ currentData, dayData, site, thermalDelta, modelName, 
                   <span className="text-xl text-amber-400/60 font-black">°C</span>
                 </div>
               </div>
-              <span className="text-3xl opacity-80">{weatherCode >= 95 ? '⛈️' : weatherCode >= 80 ? '🌧️' : weatherCode >= 30 ? '☁️' : weatherCode >= 10 ? '🌤️' : '☀️'}</span>
+              <span className="text-3xl opacity-80">{[95, 96, 99].includes(weatherCode) ? '⛈️' : [85, 86, 71, 73, 75, 77].includes(weatherCode) ? '❄️' : [80, 81, 82, 61, 63, 65, 66, 67].includes(weatherCode) ? '🌧️' : weatherCode >= 30 ? '☁️' : weatherCode >= 10 ? '🌤️' : '☀️'}</span>
             </div>
             <div className="space-y-2">
               {[
