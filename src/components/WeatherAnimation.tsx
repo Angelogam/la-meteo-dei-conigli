@@ -1,5 +1,6 @@
 "use client";
 
+import "./weather-animation.css";
 import { Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Moon, Snowflake, Sun } from "lucide-react";
 
 type WeatherAnimationProps = {
