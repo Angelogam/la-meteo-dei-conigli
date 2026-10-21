@@ -94,7 +94,7 @@ export async function diagnosticaCompletaApp(): Promise<RisultatoDiagnostica> {
     let sitiOk = 0;
     let tempOk = true;
     let ventoOk = true;
-    let nuvoleOk = true;
+    const nuvoleOk = true;
 
     for (const site of sitiTest) {
       try {

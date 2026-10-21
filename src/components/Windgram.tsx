@@ -2,7 +2,7 @@
 
 import React from "react";
 import WindgramMatrix from "@/components/WindgramMatrix";
-import type { HourData } from "@/types/meteo";
+import type { HourData, OpenMeteoRawResponse } from "@/types/meteo";
 
 interface WindgramProps {
   dayData: HourData[];
@@ -15,7 +15,7 @@ interface WindgramProps {
   lat?: number;
   lon?: number;
   fallbackData?: HourData[];
-  rawData?: any; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
+  rawData?: OpenMeteoRawResponse | null; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
 }
 
 export default function Windgram({

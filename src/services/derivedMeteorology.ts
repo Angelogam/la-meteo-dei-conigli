@@ -52,7 +52,7 @@ export interface RealData {
  * Estrae i dati reali da un oggetto MeteoHourly.
  * Tutti i campi sono null se l'API non li fornisce.
  */
-export function extractRealData(hourly: MeteoHourly): RealData {
+export function extractRealData(hourly: Partial<MeteoHourly>): RealData {
   return {
     temperature2m: hourly.temperature,
     dewPoint2m: hourly.dewPoint,
@@ -303,7 +303,7 @@ export interface HourlyDerivedData {
  * Nessun valore inventato: se un dato manca, il derivato è null.
  */
 export function computeHourlyDerived(
-  hourly: MeteoHourly,
+  hourly: Partial<MeteoHourly>,
   siteAltitude: number,
   modelGroundAltitude: number = siteAltitude,
 ): HourlyDerivedData | null {

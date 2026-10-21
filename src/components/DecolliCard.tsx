@@ -126,6 +126,9 @@ export default function DecolliCard({
           const freezingLevel = numberOrNull(weather?.freezingLevel);
           const rain = numberOrNull(weather?.rain);
           const cloud = numberOrNull(weather?.cloud);
+          const lat = Number(item.lat);
+          const lon = Number(item.lon);
+          const hasCoords = Number.isFinite(lat) && Number.isFinite(lon);
           return (
             <button
               type="button"
@@ -140,6 +143,12 @@ export default function DecolliCard({
                   <span className="launch-compare-site-name">{item.site_name || item.name}</span>
                   <span className="launch-compare-site-meta"><MapPin size={12} aria-hidden="true" /><span>{item.location_name || item.valley || "Località non indicata"}</span><span className="launch-compare-altitude">{item.elevation_m || item.altitude} m s.l.m.</span></span>
                   <span className="launch-compare-site-orientation">Esposizione {item.orientation || item.exposure || "N/D"}</span>
+                  {hasCoords && (
+                    <span className="launch-compare-coords" title={`Coordinate GPS del decollo: ${lat.toFixed(4)}, ${lon.toFixed(4)}`}>
+                      <MapPin size={11} aria-hidden="true" />
+                      {lat.toFixed(4)}, {lon.toFixed(4)}
+                    </span>
+                  )}
                 </div>
                 <div className="launch-compare-card-badges">
                   {index !== null && <span className={"launch-compare-index " + (index >= 8 ? "is-high" : index >= 5 ? "is-mid" : "is-low")} title="Indice sintetico indicativo"><small>Indice</small><strong>{index}/10</strong></span>}
@@ -154,6 +163,7 @@ export default function DecolliCard({
                 <div className="launch-compare-weather-item"><CloudRain size={14} aria-hidden="true" /><span className="launch-compare-value">{rain === null ? "N/D" : rain <= 0.1 ? "No pioggia" : rain.toFixed(1) + " mm"}</span><span className="launch-compare-label">PIOGGIA</span></div>
                 <div className="launch-compare-weather-item"><Cloud size={14} aria-hidden="true" /><span className="launch-compare-value">{cloud === null ? "N/D" : Math.round(cloud) + "%"}</span><span className="launch-compare-label">NUVOLOSITÀ</span></div>
                 <div className="launch-compare-weather-item"><Layers size={14} aria-hidden="true" /><span className="launch-compare-value">{base || "N/D"}</span><span className="launch-compare-label">BASE NUBI</span></div>
+                <div className="launch-compare-weather-item"><Thermometer size={14} aria-hidden="true" /><span className="launch-compare-value">{weather?.termiche || "N/D"}</span><span className="launch-compare-label">TERMICHE</span></div>
                 <div className="launch-compare-weather-item"><span aria-hidden="true">❄</span><span className="launch-compare-value">{freezingLevel === null ? "N/D" : Math.round(freezingLevel).toLocaleString("it-IT") + " m"}</span><span className="launch-compare-label">ZERO TERMICO</span></div>
               </div>
 

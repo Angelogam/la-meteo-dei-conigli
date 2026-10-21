@@ -60,3 +60,7 @@ android/app/build/**
 *.pkg
 android/jdk*
 android/app/build/**
+
+# Build output and local verification artifacts
+.output
+artifacts

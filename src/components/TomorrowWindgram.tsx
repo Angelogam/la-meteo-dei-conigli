@@ -293,6 +293,8 @@ export default function TomorrowWindgram({ decollo, selectedDay = 0 }: TomorrowW
 
   const avgZeroThermal = zeroThermal || 4381;
 
+  // Gli stati di caricamento/errore vengono gestiti dopo tutti gli hook,
+  // così l'ordine di chiamata degli hook resta stabile tra i render.
   if (loading) {
     return (
       <div className="bg-slate-900/80 border border-slate-700/60 rounded-2xl p-6 shadow-xl">

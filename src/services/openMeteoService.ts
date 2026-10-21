@@ -1,6 +1,6 @@
 "use client";
 
-import type { HourData } from "@/types/meteo";
+import type { HourData, OpenMeteoRawResponse } from "@/types/meteo";
 import { fetchFull, fetchCurrent as fetchCurrentFromClient } from "@/lib/openMeteoClient";
 
 const HOURLY_PARAMS = [
@@ -98,6 +98,8 @@ const CURRENT_PARAMS = [
   "uv_index",
   "visibility",
   "is_day",
+  "pressure_msl",
+  "surface_pressure",
 ].join(",");
 
 function safeNum(v: unknown, fallback: number = 0): number {
@@ -240,7 +242,7 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
   hourly: MeteoHourly[];
   daily: MeteoDaily[];
   current: MeteoCurrent | null;
-  rawJson?: any;
+  rawJson?: OpenMeteoRawResponse;
 }> {
   try {
     const json = await fetchFull(lat, lon, HOURLY_PARAMS, DAILY_PARAMS, CURRENT_PARAMS);
@@ -266,6 +268,8 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
           apparentTemp: safeNumOrNull(c.apparent_temperature),
           uvIndex: safeNumOrNull(c.uv_index),
           visibility: safeNumOrNull(c.visibility),
+          pressure: safeNumOrNull(c.pressure_msl),
+          surfacePressure: safeNumOrNull(c.surface_pressure),
           isDay: c.is_day != null ? !!c.is_day : null,
     } : null;
 
@@ -396,7 +400,7 @@ export async function fetchPrevisioniGiornaliere(lat: number, lon: number): Prom
       });
     }
 
-    return { hourly, daily, current, rawJson: json };
+    return { hourly, daily, current, rawJson: json as OpenMeteoRawResponse };
   } catch {
     return { hourly: [], daily: [], current: null };
   }

@@ -1,11 +1,13 @@
 "use client";
 
+import type { OpenMeteoRawResponse } from "@/types/meteo";
+
 /**
  * DEBUG TEST — Verifica che i dati reali di Open-Meteo siano corretti
  * Esegui: fetch('https://api.open-meteo.com/v1/forecast?latitude=44.2587&longitude=7.7943&hourly=temperature_2m,dewpoint_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,cloudcover,pressure_msl,uv_index,weathercode,soil_temperature_0_to_7cm,soil_moisture_0_to_7cm&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max&timezone=Europe/Rome&forecast_days=5')
  */
 
-export function debugMeteoData(data: any) {
+export function debugMeteoData(data: OpenMeteoRawResponse | null) {
   if (!data) {
     console.error("❌ DEBUG: NESSUN DATO!");
     return false;
@@ -23,7 +25,7 @@ export function debugMeteoData(data: any) {
   }
 
   // 2. Verifica temperature
-  const temps = data.hourly.temperature_2m?.filter((t: any) => t != null) || [];
+  const temps = data.hourly.temperature_2m?.filter((t) => t != null) || [];
   if (temps.length === 0) {
     errors.push("Nessuna temperatura disponibile");
   } else {
@@ -36,7 +38,7 @@ export function debugMeteoData(data: any) {
   }
 
   // 3. Verifica vento
-  const winds = data.hourly.wind_speed_10m?.filter((w: any) => w != null) || [];
+  const winds = data.hourly.wind_speed_10m?.filter((w) => w != null) || [];
   if (winds.length === 0) {
     errors.push("Nessun dato vento");
   } else {
@@ -46,7 +48,7 @@ export function debugMeteoData(data: any) {
   }
 
   // 4. Verifica precipitazioni
-  const precips = data.hourly.precipitation?.filter((p: any) => p != null) || [];
+  const precips = data.hourly.precipitation?.filter((p) => p != null) || [];
   if (precips.length > 0) {
     const totPrecip = precips.reduce((s: number, p: number) => s + p, 0);
     console.log(`✅ Precipitazioni totali: ${totPrecip.toFixed(1)} mm`);
@@ -57,21 +59,21 @@ export function debugMeteoData(data: any) {
   console.log(`✅ Giorni previsti: ${days}`);
 
   // 6. Verifica weather codes
-  const codes = data.hourly.weathercode?.filter((c: any) => c != null) || [];
+  const codes = data.hourly.weathercode?.filter((c) => c != null) || [];
   if (codes.length > 0) {
     const uniqueCodes = [...new Set(codes)];
     console.log(`✅ Weather codes: [${uniqueCodes.join(", ")}]`);
   }
 
   // 7. Verifica cloud cover
-  const clouds = data.hourly.cloudcover?.filter((c: any) => c != null) || [];
+  const clouds = data.hourly.cloudcover?.filter((c) => c != null) || [];
   if (clouds.length > 0) {
     const avgCloud = clouds.reduce((s: number, c: number) => s + c, 0) / clouds.length;
     console.log(`✅ Nuvolosità media: ${avgCloud.toFixed(0)}%`);
   }
 
   // 8. Verifica dew point
-  const dews = data.hourly.dewpoint_2m?.filter((d: any) => d != null) || [];
+  const dews = data.hourly.dewpoint_2m?.filter((d) => d != null) || [];
   if (dews.length > 0) {
     console.log(`✅ Dew points: ${dews.length} valori`);
   }

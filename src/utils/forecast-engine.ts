@@ -64,7 +64,53 @@ function avg(arr: number[], fallback: number): number {
 // 3. ADAPTERS API
 // -----------------------------
 
-export function fromOpenMeteo(json: any): RawForecastPoint[] {
+interface OpenMeteoHourly {
+  time?: string[];
+  temperature_2m?: (number | null)[];
+  windspeed_10m?: (number | null)[];
+  wind_speed_10m?: (number | null)[];
+  winddirection_10m?: (number | null)[];
+  wind_direction_10m?: (number | null)[];
+  gusts_10m?: (number | null)[];
+  cloudcover?: (number | null)[];
+  cloud_cover?: (number | null)[];
+  rain?: (number | null)[];
+  precipitation?: (number | null)[];
+}
+
+export interface OpenMeteoJson {
+  hourly?: OpenMeteoHourly;
+}
+
+interface OpenWeatherItem {
+  dt_txt?: string;
+  main?: { temp?: number };
+  wind?: { speed?: number; deg?: number; gust?: number };
+  clouds?: { all?: number };
+  rain?: { '1h'?: number };
+}
+
+export interface OpenWeatherJson {
+  list?: OpenWeatherItem[];
+}
+
+interface TomorrowInterval {
+  time?: string;
+  values?: {
+    temperature?: number;
+    windSpeed?: number;
+    windDirection?: number;
+    windGust?: number;
+    cloudCover?: number;
+    rainIntensity?: number;
+  };
+}
+
+export interface TomorrowJson {
+  timelines?: { hourly?: TomorrowInterval[] };
+}
+
+export function fromOpenMeteo(json: OpenMeteoJson): RawForecastPoint[] {
   if (!json?.hourly?.time) return [];
   return json.hourly.time.map((time: string, i: number) => ({
     source: 'open-meteo',
@@ -78,9 +124,9 @@ export function fromOpenMeteo(json: any): RawForecastPoint[] {
   }));
 }
 
-export function fromOpenWeather(json: any): RawForecastPoint[] {
+export function fromOpenWeather(json: OpenWeatherJson): RawForecastPoint[] {
   if (!json?.list) return [];
-  return json.list.map((item: any) => ({
+  return json.list.map((item) => ({
     source: 'openweather',
     time: item.dt_txt,
     temp: item.main?.temp ?? null,
@@ -92,9 +138,9 @@ export function fromOpenWeather(json: any): RawForecastPoint[] {
   }));
 }
 
-export function fromTomorrow(json: any): RawForecastPoint[] {
+export function fromTomorrow(json: TomorrowJson): RawForecastPoint[] {
   if (!json?.timelines?.hourly) return [];
-  return json.timelines.hourly.map((h: any) => ({
+  return json.timelines.hourly.map((h) => ({
     source: 'tomorrow',
     time: h.time,
     temp: h.values?.temperature ?? null,
@@ -168,9 +214,9 @@ function mergePoints(points: RawForecastPoint[]): UnifiedForecastPoint[] {
 
 export function buildUnifiedForecast(
   siteSlug: string,
-  openMeteoJson: any,
-  openWeatherJson: any,
-  tomorrowJson: any,
+  openMeteoJson: OpenMeteoJson,
+  openWeatherJson: OpenWeatherJson,
+  tomorrowJson: TomorrowJson,
 ): UnifiedForecast {
   const raw: RawForecastPoint[] = [
     ...fromOpenMeteo(openMeteoJson),
@@ -227,9 +273,9 @@ export const allSites: Site[] = DECOLLI.map(d => ({
 // -----------------------------
 
 export async function loadAllForecasts(fetcher: {
-  openMeteo: (lat: number, lon: number) => Promise<any>;
-  openWeather: (lat: number, lon: number) => Promise<any>;
-  tomorrow: (lat: number, lon: number) => Promise<any>;
+  openMeteo: (lat: number, lon: number) => Promise<OpenMeteoJson>;
+  openWeather: (lat: number, lon: number) => Promise<OpenWeatherJson>;
+  tomorrow: (lat: number, lon: number) => Promise<TomorrowJson>;
 }) {
   for (const site of allSites) {
     try {

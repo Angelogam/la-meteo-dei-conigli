@@ -56,14 +56,14 @@ export default function VoloDecisionCard({ dayData, selectedHour, altitude, site
 
   // ── 计算 ──────────────────────────────────────────────────────────────
   const current = dayData[selectedHour] || dayData[0];
-  const currentThermal = calcolaTermiche(current as any, altitude);
+  const currentThermal = calcolaTermiche(current, altitude);
   const thermalRateo = currentThermal?.rateo ?? 0;
 
-  const ventoMedia = dayData.slice(selectedHour, Math.min(selectedHour + 3, dayData.length)).reduce((s: number, h: any) => s + (h.windSpeed || 0), 0) / Math.min(3, dayData.length - selectedHour);
-  const rafficheMedia = dayData.slice(selectedHour, Math.min(selectedHour + 3, dayData.length)).reduce((s: number, h: any) => s + (h.windGusts || 0), 0) / Math.min(3, dayData.length - selectedHour);
+  const ventoMedia = dayData.slice(selectedHour, Math.min(selectedHour + 3, dayData.length)).reduce((s: number, h: HourData) => s + (h.windSpeed || 0), 0) / Math.min(3, dayData.length - selectedHour);
+  const rafficheMedia = dayData.slice(selectedHour, Math.min(selectedHour + 3, dayData.length)).reduce((s: number, h: HourData) => s + (h.windGusts || 0), 0) / Math.min(3, dayData.length - selectedHour);
   const spreadVento = rafficheMedia - ventoMedia;
 
-  const pioggiaProb = dayData.slice(selectedHour, Math.min(selectedHour + 6, dayData.length)).filter((h: any) => h.precipitation > 0.3).length / Math.min(6, dayData.length - selectedHour) * 100;
+  const pioggiaProb = dayData.slice(selectedHour, Math.min(selectedHour + 6, dayData.length)).filter((h: HourData) => h.precipitation > 0.3).length / Math.min(6, dayData.length - selectedHour) * 100;
   const liftedIndex = current.liftedIndex ?? null;
   const cape = current.cape ?? null;
   const baseNuvole = current.dewPoint != null && current.temperature != null
@@ -92,7 +92,7 @@ export default function VoloDecisionCard({ dayData, selectedHour, altitude, site
   else { voto = 10; votoLabel = "极佳"; votoColor = "emerald"; }
 
   // 飞行窗口
-  const oreVolo = dayData.filter((h: any) => {
+  const oreVolo = dayData.filter((h: HourData) => {
     const ora = new Date(h.time).getHours();
     return ora >= 9 && ora <= 18 && h.windSpeed < 25 && h.precipitation < 0.5;
   });

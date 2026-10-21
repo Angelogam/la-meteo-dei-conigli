@@ -60,7 +60,7 @@ export const weatherService = {
     daily: MeteoDaily[];
     model: string;
   }> {
-    const json: any = await fetchFull(lat, lon, HOURLY_PARAMS, DAILY_PARAMS, CURRENT_PARAMS);
+    const json = await fetchFull(lat, lon, HOURLY_PARAMS, DAILY_PARAMS, CURRENT_PARAMS);
 
     const hourly: MeteoHourly[] = [];
     for (let i = 0; i < json.hourly.time.length; i++) {

@@ -9,12 +9,12 @@ interface AuditResult {
   test: string;
   status: "PASS" | "FAIL" | "WARN";
   message: string;
-  details?: any;
+  details?: unknown;
 }
 
 const results: AuditResult[] = [];
 
-function addResult(category: string, test: string, status: "PASS" | "FAIL" | "WARN", message: string, details?: any) {
+function addResult(category: string, test: string, status: "PASS" | "FAIL" | "WARN", message: string, details?: unknown) {
   results.push({ category, test, status, message, details });
 }
 
@@ -248,7 +248,7 @@ export async function runFullAudit(): Promise<AuditResult[]> {
 }
 
 if (typeof window !== "undefined") {
-  (window as any).runAudit = runFullAudit;
+  (window as Window & { runAudit?: typeof runFullAudit }).runAudit = runFullAudit;
   console.log("🔧 Audit disponibile: esegui runAudit() in console");
 }
 

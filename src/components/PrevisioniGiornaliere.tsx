@@ -71,22 +71,6 @@ function getFlightRatingAndVerdict(daily: MeteoDaily | undefined, dayData: HourD
   return { rating, verdict };
 }
 
-function getWeatherEmoji(code: number | null | undefined): string {
-  if (code == null) return "—";
-  if (code === 0) return "☀️";
-  if (code === 1) return "🌤️";
-  if (code === 2) return "⛅";
-  if (code === 3) return "☁️";
-  if (code === 45 || code === 48) return "🌫️";
-  if ([51, 53, 55, 56, 57].includes(code)) return "🌦️";
-  if ([61, 63, 65, 66, 67].includes(code)) return "🌧️";
-  if ([71, 73, 75, 77].includes(code)) return "❄️";
-  if ([80, 81, 82].includes(code)) return "🌧️";
-  if (code === 85 || code === 86) return "🌨️";
-  if ([95, 96, 99].includes(code)) return "⛈️";
-  return "—";
-}
-
 function getWeatherLabel(code: number | null | undefined): string {
   if (code == null) return "Condizione non disponibile";
   if (code === 0) return "Sereno";
@@ -148,18 +132,20 @@ export default function PrevisioniGiornaliere({
 }: PrevisioniGiornaliereProps) {
   const tabs = ["Oggi", "Domani", "Dopodomani"];
 
-  const temp = currentData?.temperature ?? null;
-  const feelsLike = (currentData as any)?.feelsLike ?? null;
-  const dewPoint = (currentData as any)?.dewPoint ?? null;
+  // HourData e MeteoCurrent espongono campi parzialmente diversi: li leggiamo tutti come opzionali.
+  const current = currentData as (Partial<HourData> & Partial<MeteoCurrent>) | null;
+  const temp = current?.temperature ?? null;
+  const feelsLike = current?.feelsLike ?? current?.apparentTemp ?? null;
+  const dewPoint = current?.dewPoint ?? null;
   const spread = temp !== null && dewPoint !== null ? temp - dewPoint : null;
-  const windSpeed = currentData?.windSpeed ?? null;
-  const windGusts = (currentData as any)?.windGusts ?? null;
-  const windDir = currentData?.windDir ?? null;
-  const humidity = currentData?.humidity ?? null;
-  const pressure = (currentData as any)?.surfacePressure ?? null;
-  const visibility = (currentData as any)?.visibility ?? null;
-  const cape = (currentData as any)?.cape ?? null;
-  const uvIndex = currentData?.uvIndex ?? null;
+  const windSpeed = current?.windSpeed ?? null;
+  const windGusts = current?.windGusts ?? null;
+  const windDir = current?.windDir ?? null;
+  const humidity = current?.humidity ?? null;
+  const pressure = current?.surfacePressure ?? null;
+  const visibility = current?.visibility ?? null;
+  const cape = current?.cape ?? null;
+  const uvIndex = current?.uvIndex ?? null;
 
   // Thermal rate: calcolato solo se spread è disponibile
   const thermalRate = spread !== null
@@ -170,7 +156,7 @@ export default function PrevisioniGiornaliere({
   // Cloud base: calcolata solo se spread è disponibile
   const cloudBase = spread !== null ? site.altitude + Math.round(spread * 125) : null;
   // Freezing level: usa dato API quando disponibile, altrimenti N/D
-  const zeroCLevel = (currentData as any)?.freezingLevel ?? null;
+  const zeroCLevel = current?.freezingLevel ?? null;
   // Top termica: richiede sia cape che thermalRate che cloudBase
   const topThermal = (cape !== null && thermalRate !== null && cloudBase !== null)
     ? Math.round(cloudBase + thermalRate * 2000)
@@ -377,7 +363,7 @@ export default function PrevisioniGiornaliere({
                     <div className="forecast-day-condition text-[10px] text-slate-400 mb-1">
                       {`${getWeatherLabel(d.weatherCode)}${d.precipitationSum != null && Number.isFinite(d.precipitationSum) && d.precipitationSum > 0.5 ? ` · ${d.precipitationSum.toLocaleString("it-IT", { maximumFractionDigits: 1 })} mm attesi` : ""}`}
                     </div>
-                    <div className="text-[9px] text-slate-500">
+                    <div className="mt-auto pt-2 text-[9px] text-slate-500">
                       Vento max: {d.windSpeedMax !== null ? `${Math.round(d.windSpeedMax)} km/h` : "N/D"}
                     </div>
                   </>

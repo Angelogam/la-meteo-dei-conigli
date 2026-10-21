@@ -1,5 +1,6 @@
 "use client";
 
+import type { OpenMeteoRawResponse } from "@/types/meteo";
 import { Calendar, MapPin, Wind } from "lucide-react";
 import ProfessionalWindgram from "@/components/ProfessionalWindgram";
 import LaunchForecastWidgets from "@/components/LaunchForecastWidgets";
@@ -13,7 +14,7 @@ interface VentiInterpolatiTabProps {
   onOraChange?: (ora: number) => void;
   siteName?: string;
   siteId?: string;
-  rawData?: any;
+  rawData?: OpenMeteoRawResponse | null; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
 }
 
 function formatDateShort(date: Date): string {

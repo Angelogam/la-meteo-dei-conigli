@@ -48,7 +48,7 @@ function esposizioneToGradi(esposizione: string | undefined | null): number {
 }
 
 function diffAngolare(a: number, b: number): number {
-  let d = Math.abs(a - b) % 360;
+  const d = Math.abs(a - b) % 360;
   return d > 180 ? 360 - d : d;
 }
 

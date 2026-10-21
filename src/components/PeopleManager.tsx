@@ -68,8 +68,9 @@ export default function PeopleManager() {
       setPhone("");
       setNotes("");
       loadPeople();
-    } catch (err: any) {
-      setMessage({ type: "error", text: err.message || "Errore nel salvataggio" });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Errore nel salvataggio";
+      setMessage({ type: "error", text: message });
     } finally {
       setSaving(false);
     }

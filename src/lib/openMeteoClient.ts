@@ -5,13 +5,14 @@
  * per garantire coerenza, gestione errori e uso del proxy locale.
  */
 import { getMeteoBaseUrl, OPEN_METEO_DIRECT } from "@/config/apiConfig";
+import type { OpenMeteoRawResponse } from "@/types/meteo";
 
 const TIMEOUT_MS = 8000;
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minuti cache in-memory
 const DEFAULT_MODELS = "";
 
-const cacheMap = new Map<string, { data: any; ts: number }>();
-const pendingPromises = new Map<string, Promise<any>>();
+const cacheMap = new Map<string, { data: unknown; ts: number }>();
+const pendingPromises = new Map<string, Promise<unknown>>();
 
 async function fetchWithTimeout(url: string, timeoutMs: number = TIMEOUT_MS): Promise<Response> {
   const controller = new AbortController();
@@ -23,29 +24,29 @@ async function fetchWithTimeout(url: string, timeoutMs: number = TIMEOUT_MS): Pr
   }
 }
 
-async function fetchCachedJson(primaryUrl: string, fallbackUrl?: string): Promise<any> {
+async function fetchCachedJson<T>(primaryUrl: string, fallbackUrl?: string): Promise<T> {
   const cacheKey = primaryUrl;
   const cached = cacheMap.get(cacheKey);
   if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
-    return cached.data;
+    return cached.data as T;
   }
 
   if (pendingPromises.has(cacheKey)) {
-    return pendingPromises.get(cacheKey)!;
+    return pendingPromises.get(cacheKey)! as Promise<T>;
   }
 
-  const promise = (async () => {
+  const promise = (async (): Promise<T> => {
     try {
       const res = await fetchWithTimeout(primaryUrl);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = (await res.json()) as T;
       cacheMap.set(cacheKey, { data, ts: Date.now() });
       return data;
     } catch (err) {
       if (fallbackUrl) {
         const res = await fetchWithTimeout(fallbackUrl);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const data = (await res.json()) as T;
         cacheMap.set(cacheKey, { data, ts: Date.now() });
         return data;
       }
@@ -154,12 +155,12 @@ export async function fetchHourly(
   params: string,
   start_date?: string,
   end_date?: string
-): Promise<any> {
+): Promise<OpenMeteoRawResponse> {
   const url = buildUrl({ latitude: lat, longitude: lon, hourly: params, start_date, end_date, models: DEFAULT_MODELS });
   const directUrl = (url.includes("localhost:3000") || url.includes("/api/open-meteo"))
     ? buildDirectUrl({ latitude: lat, longitude: lon, hourly: params, start_date, end_date, models: DEFAULT_MODELS })
     : undefined;
-  return fetchCachedJson(url, directUrl);
+  return fetchCachedJson<OpenMeteoRawResponse>(url, directUrl);
 }
 
 /**
@@ -170,23 +171,23 @@ export async function fetchDaily(
   lon: number,
   params: string,
   days: number = 3
-): Promise<any> {
+): Promise<OpenMeteoRawResponse> {
   const url = buildUrl({ latitude: lat, longitude: lon, daily: params, forecast_days: days, models: DEFAULT_MODELS });
   const directUrl = (url.includes("localhost:3000") || url.includes("/api/open-meteo"))
     ? buildDirectUrl({ latitude: lat, longitude: lon, daily: params, forecast_days: days, models: DEFAULT_MODELS })
     : undefined;
-  return fetchCachedJson(url, directUrl);
+  return fetchCachedJson<OpenMeteoRawResponse>(url, directUrl);
 }
 
 /**
  * Fetch dati correnti
  */
-export async function fetchCurrent(lat: number, lon: number, params: string): Promise<any> {
+export async function fetchCurrent(lat: number, lon: number, params: string): Promise<OpenMeteoRawResponse> {
   const url = buildUrl({ latitude: lat, longitude: lon, current: params, forecast_days: 1, models: DEFAULT_MODELS });
   const directUrl = (url.includes("localhost:3000") || url.includes("/api/open-meteo"))
     ? buildDirectUrl({ latitude: lat, longitude: lon, current: params, forecast_days: 1, models: DEFAULT_MODELS })
     : undefined;
-  return fetchCachedJson(url, directUrl);
+  return fetchCachedJson<OpenMeteoRawResponse>(url, directUrl);
 }
 
 /**
@@ -199,7 +200,7 @@ export async function fetchFull(
   dailyParams: string,
   currentParams: string,
   forecastDays: number = 3
-): Promise<{ hourly: any; daily: any; current: any }> {
+): Promise<OpenMeteoRawResponse> {
   const url = buildUrl({
     latitude: lat,
     longitude: lon,
@@ -220,7 +221,7 @@ export async function fetchFull(
         models: DEFAULT_MODELS,
       })
     : undefined;
-  return fetchCachedJson(url, directUrl);
+  return fetchCachedJson<OpenMeteoRawResponse>(url, directUrl);
 }
 
 export { safeNum, safeNumOrNull, buildUrl, buildDirectUrl };

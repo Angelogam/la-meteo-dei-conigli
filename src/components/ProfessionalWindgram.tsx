@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
+import type { OpenMeteoRawResponse } from "@/types/meteo";
 import { RefreshCw, FileText, Check, Copy, AlertTriangle, ShieldCheck, Wind, Thermometer, Cloud, ArrowUp } from "lucide-react";
 import { fetchHourly } from "@/lib/openMeteoClient";
 import { generateReportMeteo, type GeneratedReport } from "@/utils/generateReportMeteo";
@@ -14,7 +15,7 @@ interface WindgramProps {
   altitude?: number;
   siteName?: string;
   selectedDay?: number;
-  rawData?: any; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
+  rawData?: OpenMeteoRawResponse | null; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
 }
 
 const HOURS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
@@ -37,9 +38,12 @@ const computeDisplayAltitudes = (siteAlt: number): number[] => {
 };
 
 /** Select only the requested calendar day from shared Open-Meteo data. */
-function selectRawHourlyDay(rawData: any, selectedDay: number): any | null {
+function selectRawHourlyDay(
+  rawData: OpenMeteoRawResponse | null | undefined,
+  selectedDay: number,
+): OpenMeteoRawResponse | null {
   const times = rawData?.hourly?.time;
-  if (!Array.isArray(times) || times.length === 0) return null;
+  if (!rawData?.hourly || !Array.isArray(times) || times.length === 0) return null;
 
   const targetDate = new Date();
   targetDate.setDate(targetDate.getDate() + selectedDay);
@@ -62,7 +66,7 @@ function selectRawHourlyDay(rawData: any, selectedDay: number): any | null {
     ]),
   );
 
-  return { ...rawData, hourly };
+  return { ...rawData, hourly: hourly as OpenMeteoRawResponse["hourly"] };
 }
 
 // Palette delle masse d'aria ispirata ad Alpium: inversione, stabilità, mix e instabilità.
@@ -112,7 +116,7 @@ export default function ProfessionalWindgram({
   selectedDay = 0,
   rawData,
 }: WindgramProps) {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<OpenMeteoRawResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
@@ -171,7 +175,7 @@ export default function ProfessionalWindgram({
       const modelGroundAltitude = data?.elevation != null && Number.isFinite(Number(data.elevation))
         ? Number(data.elevation)
         : altitude;
-      const derived = computeHourlyDerived(raw as any, altitude, modelGroundAltitude);
+      const derived = computeHourlyDerived(raw, altitude, modelGroundAltitude);
       if (derived) map.set(hr, derived);
     });
     return map;
@@ -291,11 +295,11 @@ export default function ProfessionalWindgram({
 
     return HOURS.map((targetHour) => {
       const idx = times.findIndex((t) => parseInt(t.split("T")[1].split(":")[0], 10) === targetHour);
-      if (idx === -1) return null as any;
+      if (idx === -1) return null;
 
       const h = data.hourly;
       const t = h.temperature_2m[idx];
-      if (t === undefined || t === null) return null as any;
+      if (t === undefined || t === null) return null;
       const tNum = Number(t);
       const dew = h.dew_point_2m[idx] !== undefined ? Number(h.dew_point_2m[idx]) : null;
       const rad = h.shortwave_radiation?.[idx] !== undefined ? Number(h.shortwave_radiation[idx]) : null;

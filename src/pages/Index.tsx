@@ -16,6 +16,8 @@ import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
+import type { HourData } from "@/types/meteo";
+import type { MeteoCurrent } from "@/services/openMeteoService";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 
@@ -71,7 +73,6 @@ export default function Index() {
     const mesi = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
     return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
   }, [selectedDay]);
-
 
 
   return (
@@ -136,7 +137,7 @@ export default function Index() {
                   location_name={site.location_name}
                   orientation={site.orientation}
                   elevation_m={site.elevation_m}
-                  currentData={currentData as any}
+                  currentData={currentData}
                   sunrise={formatClock(enrichedDaily[selectedDay]?.sunrise)}
                   sunset={formatClock(enrichedDaily[selectedDay]?.sunset)}
                   uvIndex={enrichedDaily[selectedDay]?.uvIndexMax ?? currentData?.uvIndex}
@@ -230,10 +231,10 @@ export default function Index() {
                         </div>
                       )}
                       {activeTab === "termiche" && (
-                        <TermicheTab currentData={currentData as any} dayData={filteredDayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name }} selectedDay={selectedDay} />
+                        <TermicheTab currentData={currentData} dayData={filteredDayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name }} selectedDay={selectedDay} />
                       )}
                       {activeTab === "analisi" && (
-                        <AnalisiMeteo currentData={currentData as any} dayData={filteredDayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name, exposure: site.orientation }} cape={currentData?.cape} liftedIndex={currentData?.liftedIndex} cin={currentData?.cin} rawData={rawApiResponse} />
+                        <AnalisiMeteo currentData={currentData} dayData={filteredDayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name, exposure: site.orientation }} cape={currentData?.cape} liftedIndex={currentData?.liftedIndex} cin={currentData?.cin} rawData={rawApiResponse} />
                       )}
                     </section>
 

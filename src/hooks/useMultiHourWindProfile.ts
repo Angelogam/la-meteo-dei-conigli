@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { fetchHourly } from "@/lib/openMeteoClient";
-import type { HourData } from "@/types/meteo";
+import type { HourData, OpenMeteoRawResponse } from "@/types/meteo";
 import { calcCloudBase } from "@/utils/calcCloudBase";
 
 interface WindLevel {
@@ -67,7 +67,7 @@ interface UseMultiHourWindProfileProps {
   siteAlt: number;
   selectedDay: number;
   fallbackData?: HourData[];
-  rawData?: any; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
+  rawData?: OpenMeteoRawResponse | null; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
 }
 
 /**
@@ -138,7 +138,7 @@ function buildFromFallback(hourly: HourData[], siteAlt: number, selectedDay: num
  * Elabora il JSON grezzo di Open-Meteo e restituisce la mappa vento-oraria.
  * MATCHING: usa la DATA COMPLETA per identificare l'ora corretta.
  */
-function processRawJson(json: any, siteAlt: number, selectedDay: number): Map<number, HourWindData> {
+function processRawJson(json: OpenMeteoRawResponse | null, siteAlt: number, selectedDay: number): Map<number, HourWindData> {
   const hourDataMap = new Map<number, HourWindData>();
   const hourly = json?.hourly;
   if (!hourly || !Array.isArray(hourly.time)) return hourDataMap;

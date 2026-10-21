@@ -3,8 +3,17 @@
 import React, { useState, useEffect } from "react";
 import { RefreshCw, CheckCircle, XCircle, Plus, Trash2 } from "lucide-react";
 
+interface PersonRecord {
+  id: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  notes?: string;
+  createdAt?: string;
+}
+
 export default function ApiTest() {
-  const [people, setPeople] = useState<any[]>([]);
+  const [people, setPeople] = useState<PersonRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string; detail?: string } | null>(null);
@@ -23,9 +32,10 @@ export default function ApiTest() {
       } else {
         setMessage({ type: "error", text: "❌ Errore nel caricamento" });
       }
-    } catch (err: any) {
-      setMessage({ type: "error", text: `❌ Errore: ${err.message}` });
-      setRawResponse(err.toString());
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setMessage({ type: "error", text: `❌ Errore: ` });
+      setRawResponse(message);
     } finally {
       setLoading(false);
     }
@@ -54,8 +64,9 @@ export default function ApiTest() {
         setMessage({ type: "error", text: `❌ Errore: ${data.statusMessage || "Errore sconosciuto"}` });
       }
       setRawResponse(JSON.stringify(data, null, 2));
-    } catch (err: any) {
-      setMessage({ type: "error", text: `❌ Errore: ${err.message}` });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setMessage({ type: "error", text: `❌ Errore: ` });
     } finally {
       setSaving(false);
     }
@@ -67,8 +78,9 @@ export default function ApiTest() {
       // Ricaricando senza aggiungere nulla
       await loadPeople();
       setMessage({ type: "success", text: "📋 Lista ricaricata" });
-    } catch (err: any) {
-      setMessage({ type: "error", text: `❌ Errore: ${err.message}` });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setMessage({ type: "error", text: `❌ Errore: ` });
     }
   }
 

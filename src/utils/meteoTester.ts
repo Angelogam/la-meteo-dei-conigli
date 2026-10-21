@@ -13,6 +13,33 @@ import { getMeteoBaseUrl } from "@/config/apiConfig";
  * 4. Segnala anomalie
  */
 
+/** Serie orarie/giornaliere restituite da Open-Meteo (solo i campi usati dal tester). */
+interface OpenMeteoSeries {
+  time?: string[];
+  weather_code?: (number | null)[];
+  temperature_2m?: (number | null)[];
+  relative_humidity_2m?: (number | null)[];
+  precipitation?: (number | null)[];
+  cloud_cover?: (number | null)[];
+  wind_speed_10m?: (number | null)[];
+  wind_direction_10m?: (number | null)[];
+  pressure_msl?: (number | null)[];
+  temperature_2m_max?: (number | null)[];
+  temperature_2m_min?: (number | null)[];
+  precipitation_sum?: (number | null)[];
+  wind_speed_10m_max?: (number | null)[];
+}
+
+export interface OpenMeteoRawData {
+  latitude?: number;
+  longitude?: number;
+  elevation?: number;
+  hourly?: OpenMeteoSeries;
+  daily?: OpenMeteoSeries;
+}
+
+type ValidatedValue = number | null | undefined;
+
 export interface TestResult {
   siteId: string;
   siteName: string;
@@ -20,15 +47,15 @@ export interface TestResult {
   success: boolean;
   errors: string[];
   warnings: string[];
-  rawData: any;
+  rawData: OpenMeteoRawData | null;
   validation: FieldValidation;
   responseTimeMs: number;
 }
 
 interface FieldValidation {
-  daily: { field: string; value: any; expected: string; ok: boolean }[];
-  hourly: { field: string; value: any; expected: string; ok: boolean }[];
-  current: { field: string; value: any; expected: string; ok: boolean }[];
+  daily: { field: string; value: ValidatedValue; expected: string; ok: boolean }[];
+  hourly: { field: string; value: ValidatedValue; expected: string; ok: boolean }[];
+  current: { field: string; value: ValidatedValue; expected: string; ok: boolean }[];
 }
 
 const VALIDATION_RULES = {
@@ -109,7 +136,7 @@ export async function testSingleSite(site: SiteCoord): Promise<TestResult> {
       };
     }
 
-    const raw = await res.json();
+    const raw = (await res.json()) as OpenMeteoRawData;
     const responseTimeMs = Math.round(performance.now() - startTime);
     const validation = validateRawData(raw, site);
 
@@ -176,10 +203,10 @@ export async function testSingleSite(site: SiteCoord): Promise<TestResult> {
   }
 }
 
-function validateRawData(raw: any, site: SiteCoord): FieldValidation {
-  const daily: { field: string; value: any; expected: string; ok: boolean }[] = [];
-  const hourly: { field: string; value: any; expected: string; ok: boolean }[] = [];
-  const current: { field: string; value: any; expected: string; ok: boolean }[] = [];
+function validateRawData(raw: OpenMeteoRawData, site: SiteCoord): FieldValidation {
+  const daily: { field: string; value: ValidatedValue; expected: string; ok: boolean }[] = [];
+  const hourly: { field: string; value: ValidatedValue; expected: string; ok: boolean }[] = [];
+  const current: { field: string; value: ValidatedValue; expected: string; ok: boolean }[] = [];
 
   // Daily validations
   if (raw.daily?.time?.length > 0) {
@@ -264,7 +291,7 @@ export async function testAllSites(sites: SiteCoord[], onProgress?: (result: Tes
 
 // Confronta i dati ricevuti con quelli visualizzati nelle palette
 export function crossCheckPaletteData(
-  rawData: any,
+  rawData: OpenMeteoRawData | null,
   paletteValues: {
     temperature?: number;
     humidity?: number;
@@ -274,8 +301,8 @@ export function crossCheckPaletteData(
     windDir?: number;
     precipitation?: number;
   }
-): { field: string; raw: any; palette: any; match: boolean; tolerance: string }[] {
-  const checks: { field: string; raw: any; palette: any; match: boolean; tolerance: string }[] = [];
+): { field: string; raw: ValidatedValue; palette: ValidatedValue; match: boolean; tolerance: string }[] {
+  const checks: { field: string; raw: ValidatedValue; palette: ValidatedValue; match: boolean; tolerance: string }[] = [];
 
   // Prende la prima ora dei dati orari per confronto
   const rawHour = rawData?.hourly;
@@ -316,8 +343,8 @@ export async function quickHealthCheck(site: SiteCoord): Promise<{ alive: boolea
     const res = await fetch(`${BASE_URL}?${params.toString()}`);
     const rt = Math.round(performance.now() - start);
     if (!res.ok) return { alive: false, responseTime: rt, status: `HTTP ${res.status}` };
-    const data = await res.json();
-    const hasData = data?.hourly?.time?.length > 0;
+    const data = (await res.json()) as OpenMeteoRawData;
+    const hasData = (data.hourly?.time?.length ?? 0) > 0;
     return { alive: hasData, responseTime: rt, status: hasData ? `OK (${data.hourly.time.length} ore)` : "NO_DATA" };
   } catch (err) {
     return { alive: false, responseTime: Math.round(performance.now() - start), status: `ERR: ${err instanceof Error ? err.message : String(err)}` };

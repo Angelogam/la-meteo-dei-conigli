@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import type { HourData } from "@/types/meteo";
+import type { HourData, OpenMeteoRawResponse } from "@/types/meteo";
 import { Wind } from "lucide-react";
 import { useMultiHourWindProfile } from "@/hooks/useMultiHourWindProfile";
 import { computeHourlyDerived } from "@/services/derivedMeteorology";
@@ -56,7 +56,7 @@ interface WindgramMatrixProps {
   lat?: number;
   lon?: number;
   fallbackData?: HourData[];
-  rawData?: any; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
+  rawData?: OpenMeteoRawResponse | null; // JSON grezzo Open-Meteo — condiviso per evitare chiamate duplicate
 }
 
 function getHourTemperature(hourlyMap: Map<number, HourData>, hr: number): string {
@@ -130,7 +130,7 @@ export default function WindgramMatrix({
           windSpeed500: stabilitaData.wind_speed_500hPa?.[idx] != null ? Number(stabilitaData.wind_speed_500hPa[idx]) : null,
           windDir500: stabilitaData.wind_direction_500hPa?.[idx] != null ? Number(stabilitaData.wind_direction_500hPa[idx]) : null,
         };
-        const derived = computeHourlyDerived(hourlyRaw as any, altitude);
+        const derived = computeHourlyDerived(hourlyRaw, altitude);
         map.set(hr, derived);
       });
       return map;

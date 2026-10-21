@@ -1,6 +1,7 @@
 "use client";
 
 import type { HourlyDerivedData } from "@/services/derivedMeteorology";
+import type { OpenMeteoRawHourly } from "@/types/meteo";
 
 function degToCardinal(deg: number | null): string {
   if (deg == null || !Number.isFinite(deg)) return "N/D";
@@ -31,7 +32,7 @@ interface ReportMeteoParams {
   siteName: string;
   altitude: number;
   dateObj: Date;
-  hourlyData: any;
+  hourlyData: OpenMeteoRawHourly;
   /** Stessi dati derivati usati dal windgram, indicizzati per ora locale. */
   derivedByHour?: Map<number, HourlyDerivedData | null>;
 }
@@ -59,7 +60,11 @@ export function generateReportMeteo({
   const times: string[] = hourlyData?.time ?? [];
   if (!times.length) return null;
 
-  const get = (key: string): Array<number | null> => hourlyData?.[key] ?? [];
+  const get = (key: string): Array<number | null> => {
+    const series = hourlyData?.[key];
+    if (!Array.isArray(series)) return [];
+    return series.map((value) => (typeof value === "number" ? value : null));
+  };
   const temps = get("temperature_2m");
   const dew = get("dew_point_2m");
   const winds = get("wind_speed_10m");

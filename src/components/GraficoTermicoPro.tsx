@@ -26,9 +26,16 @@ const GraficoTermicoPro: React.FC<{ data: ThermalData[] }> = ({ data }) => {
     return "#dc2626";
   };
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const { hour, speed, base, top } = payload[0].payload;
+  const CustomTooltip = ({
+    active,
+    payload,
+  }: {
+    active?: boolean;
+    payload?: { payload?: ThermalData }[];
+  }) => {
+    const point = payload?.[0]?.payload;
+    if (active && point) {
+      const { hour, speed, base, top } = point;
       const label =
         speed < 0.8
           ? "Debole"
