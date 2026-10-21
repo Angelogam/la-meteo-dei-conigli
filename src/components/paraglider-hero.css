@@ -73,3 +73,37 @@
 @media (prefers-reduced-motion: reduce) {
  .paraglider-flyer,.paraglider-cloud { animation:none !important; }
 }
+
+/* Cinematic depth pass: atmospheric haze, distant ridges and natural glider banking. */
+.flight-hero-banner.flight-premium-cover::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(5,17,28,.94) 0%, rgba(5,19,30,.72) 34%, rgba(5,19,30,.14) 76%, rgba(5,19,30,.06) 100%),
+    linear-gradient(0deg, rgba(4,17,26,.44), transparent 62%);
+}
+.paraglider-hero-scene::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 28% 0 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(27,55,57,.10) 36%, rgba(10,31,32,.22) 100%);
+  pointer-events: none;
+}
+.paraglider-mountain-back {
+  filter: drop-shadow(0 -8px 14px rgba(235,242,220,.08));
+}
+.paraglider-mountain-front {
+  filter: drop-shadow(0 -12px 22px rgba(20,44,42,.14));
+}
+.paraglider-flyer--one { filter: drop-shadow(0 6px 7px rgba(10,26,31,.28)); }
+.paraglider-flyer--two { opacity: .92; filter: drop-shadow(0 4px 5px rgba(10,26,31,.2)); }
+.paraglider-flyer--three { filter: drop-shadow(0 3px 4px rgba(10,26,31,.16)); }
+@media (max-width: 700px) {
+  .flight-hero-banner.flight-premium-cover::after {
+    background: linear-gradient(90deg, rgba(5,17,28,.91), rgba(5,19,30,.48)), linear-gradient(0deg, rgba(4,17,26,.35), transparent 65%);
+  }
+}
