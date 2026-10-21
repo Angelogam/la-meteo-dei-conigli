@@ -5,6 +5,7 @@ import type { HourData } from "@/types/meteo";
 import type { MeteoCurrent, MeteoDaily } from "@/services/openMeteoService";
 import { ArrowUp, Cloud, Thermometer, Zap, Sun, Wind } from "lucide-react";
 import AeroCard from "./AeroCard";
+import WeatherAnimation from "./WeatherAnimation";
 
 interface PrevisioniGiornaliereProps {
   enrichedDaily: MeteoDaily[];
@@ -356,7 +357,7 @@ export default function PrevisioniGiornaliere({
                 `}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className={`text-2xl`}>{getWeatherEmoji(d?.weatherCode)}</span>
+                  <WeatherAnimation code={d?.weatherCode ?? null} />
                   <div
                     className={`forecast-day-index text-sm font-black px-3 py-1 rounded-full transition-all duration-300 ${isActive ? 'bg-cyan-500/15 text-cyan-200 border border-cyan-400/30' : 'bg-slate-700/50 text-slate-400'}`}
                     title="Indice meteo indicativo, non è un giudizio di sicurezza del volo"
@@ -374,7 +375,7 @@ export default function PrevisioniGiornaliere({
                       <span className="text-lg font-bold text-sky-300">{d.temperatureMin != null && Number.isFinite(d.temperatureMin) ? `${Math.round(d.temperatureMin)}°` : "N/D"}</span>
                     </div>
                     <div className="forecast-day-condition text-[10px] text-slate-400 mb-1">
-                      {`${getWeatherEmoji(d.weatherCode)} ${getWeatherLabel(d.weatherCode)}${d.precipitationSum != null && Number.isFinite(d.precipitationSum) && d.precipitationSum > 0.5 ? ` · ${d.precipitationSum.toLocaleString("it-IT", { maximumFractionDigits: 1 })} mm attesi` : ""}`}
+                      {`${getWeatherLabel(d.weatherCode)}${d.precipitationSum != null && Number.isFinite(d.precipitationSum) && d.precipitationSum > 0.5 ? ` · ${d.precipitationSum.toLocaleString("it-IT", { maximumFractionDigits: 1 })} mm attesi` : ""}`}
                     </div>
                     <div className="text-[9px] text-slate-500">
                       Vento max: {d.windSpeedMax !== null ? `${Math.round(d.windSpeedMax)} km/h` : "N/D"}
