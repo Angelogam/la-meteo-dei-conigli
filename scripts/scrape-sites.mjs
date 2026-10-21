@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 async function scrape() {
-  const results: Record<string, string> = {};
+  const results = {};
   
   const sites = [
     {
