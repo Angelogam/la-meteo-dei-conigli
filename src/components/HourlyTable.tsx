@@ -112,16 +112,13 @@ function FogIcon({ className = "" }: { className?: string }) {
 }
 
 function getWeatherAnimation(code: number, className: string) {
-  if (code >= 95) return <StormIcon className={className} />;
-  if (code >= 80) return <RainIcon className={className} />;
-  if (code >= 71) return <SnowIcon className={className} />;
-  if (code >= 61) return <RainIcon className={className} />;
-  if (code >= 51) return <RainIcon className={className} />;
-  if (code >= 45) return <FogIcon className={className} />;
-  if (code >= 30) return <CloudIcon className={className} dark />;
-  if (code >= 20) return <CloudIcon className={className} />;
-  if (code >= 10) return <SunCloudIcon className={className} />;
-  if (code >= 3) return <SunCloudIcon className={className} />;
+  // Open-Meteo uses WMO weather codes; classify discrete ranges explicitly.
+  if ([95, 96, 99].includes(code)) return <StormIcon className={className} />;
+  if ([85, 86, 71, 73, 75, 77].includes(code)) return <SnowIcon className={className} />;
+  if ([80, 81, 82, 61, 63, 65, 66, 67, 51, 53, 55, 56, 57].includes(code)) return <RainIcon className={className} />;
+  if ([45, 48].includes(code)) return <FogIcon className={className} />;
+  if (code === 3) return <CloudIcon className={className} dark />;
+  if (code === 2 || code === 1) return <SunCloudIcon className={className} />;
   return <SunIcon className={className} />;
 }
 
