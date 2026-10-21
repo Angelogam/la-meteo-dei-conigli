@@ -35,7 +35,7 @@ export default function WeatherAnimation({ code }: WeatherAnimationProps) {
   return (
     <span className={`weather-scene weather-scene--${kind}`} role="img" aria-label={label}>
       <span className="weather-scene-sky" aria-hidden="true" />
-      {(kind === "clear" || kind === "partly" || kind === "unknown") && (
+      {(kind === "clear" || kind === "partly") && (
         <Sun className="weather-scene-sun" aria-hidden="true" />
       )}
       {kind === "partly" && <CloudSun className="weather-scene-cloud weather-scene-cloud--front" aria-hidden="true" />}
