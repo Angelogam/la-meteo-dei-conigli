@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import ParagliderHero from "@/components/ParagliderHero";
 import { Activity, ArrowDownRight, CalendarDays, CloudSun, Home, Mountain, Thermometer, Wind } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -111,8 +110,8 @@ export default function Index() {
 
         <div className="flight-page-column">
           <main className="app-main flight-page flex-1 w-full min-w-0 max-w-none mx-auto px-3 sm:px-4 xl:px-6 py-4 space-y-4">
-            <section className="flight-page-titlebar flight-hero-banner flight-premium-cover p-0 overflow-hidden" aria-label="La Meteo dei Conigli, parapendii in volo">
-              <img src="/parapendio-banner.jpg" alt="La Meteo dei Conigli — panorama alpino con parapendii in volo" className="block h-auto w-full rounded-2xl" />
+            <section className="mx-auto w-full max-w-[1106px] overflow-hidden" aria-label="La Meteo dei Conigli, parapendii in volo">
+              <img src="/parapendio-banner.jpg" alt="La Meteo dei Conigli — panorama alpino con parapendii in volo" className="block h-auto w-full rounded-xl" width="553" height="144" fetchPriority="high" decoding="async" />
             </section>
 
 
