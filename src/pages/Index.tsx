@@ -111,22 +111,8 @@ export default function Index() {
 
         <div className="flight-page-column">
           <main className="app-main flight-page flex-1 w-full min-w-0 max-w-none mx-auto px-3 sm:px-4 xl:px-6 py-4 space-y-4">
-            <section className="flight-page-titlebar flight-hero-banner flight-premium-cover" aria-labelledby="dashboard-intro-title">
-              <ParagliderHero />
-              <div>
-                <div className="dashboard-intro-kicker"><span className="dashboard-intro-kicker-dot" aria-hidden="true" />METEO · AEROLOGIA · VOLO LIBERO</div>
-                <h1 id="dashboard-intro-title">Il tuo briefing di volo.</h1>
-                <p>Grafici meteo, vento in quota e condizioni dei decolli.</p>
-              </div>
-              <div className="flight-page-actions">
-                <div className="dashboard-date-chip">
-                  <CalendarDays aria-hidden="true" />
-                  <span className="dashboard-date-copy"><small>Giorno selezionato</small><strong>{dateLabel}</strong></span>
-                </div>
-                <button type="button" className="dashboard-intro-cta" onClick={() => { setActiveTab("venti"); document.getElementById("windgram-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
-                  <Wind aria-hidden="true" /><span>Esplora i venti</span><ArrowDownRight aria-hidden="true" />
-                </button>
-              </div>
+            <section className="flight-page-titlebar flight-hero-banner flight-premium-cover p-0 overflow-hidden" aria-label="La Meteo dei Conigli, parapendii in volo">
+              <img src="/parapendio-banner.jpg" alt="La Meteo dei Conigli — panorama alpino con parapendii in volo" className="block h-auto w-full rounded-2xl" />
             </section>
 
 
