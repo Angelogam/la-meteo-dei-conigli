@@ -6,8 +6,8 @@ import { createError } from "nitro/h3";
  * ripetuti vengono rifiutati, coordinate validate con range espliciti.
  */
 
-export function rejectUnknownParameters(url: URL, allowed: readonly string[]) {
-  const unknown = [...url.searchParams.keys()].filter((key) => !allowed.includes(key));
+export function rejectUnknownParameters(query: Record<string, unknown>, allowed: readonly string[]) {
+  const unknown = Object.keys(query).filter((key) => !allowed.includes(key));
   if (unknown.length > 0) {
     throw createError({
       statusCode: 400,

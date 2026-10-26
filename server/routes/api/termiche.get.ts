@@ -24,9 +24,8 @@ function num(value: unknown): number | null {
 export default defineHandler(async (event) => {
   setResponseHeader(event, "Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
 
-  const url = new URL(event.node.req.url ?? "/", "http://localhost");
-  rejectUnknownParameters(url, ALLOWED);
   const query = getQuery(event);
+  rejectUnknownParameters(query, ALLOWED);
 
   const latitude = parseCoordinate(singleQuery(query, "latitude"), "latitude", -90, 90);
   const longitude = parseCoordinate(singleQuery(query, "longitude"), "longitude", -180, 180);
