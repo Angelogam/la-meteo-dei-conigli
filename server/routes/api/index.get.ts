@@ -1,6 +1,6 @@
 import { defineHandler } from "nitro";
 
-const API_VERSION = "1.1.0";
+const API_VERSION = "1.2.0";
 
 export default defineHandler(() => ({
   ok: true,
@@ -14,6 +14,9 @@ export default defineHandler(() => ({
     { method: "GET", path: "/api/openapi", description: "Specifica OpenAPI 3.1" },
     { method: "GET", path: "/api/open-meteo", description: "Proxy validato per Open-Meteo" },
     { method: "GET", path: "/api/windy-soundings", description: "Siti sounding e metadati plugin" },
+    { method: "GET", path: "/api/volabilita", description: "Indice di volabilità 1-10 per coordinate ed esposizione del decollo" },
+    { method: "GET", path: "/api/termiche", description: "Termiche orarie stimate (rateo, base, top)" },
+    { method: "GET", path: "/api/venti-decollo", description: "Validazione vento in superficie rispetto all'esposizione del decollo" },
     { method: "GET", path: "/api/people", description: "Elenco paginato persone dimostrative" },
     { method: "POST", path: "/api/people", description: "Crea una persona dimostrativa; non inviare dati personali reali" },
     { method: "GET", path: "/api/people/:id", description: "Dettaglio persona dimostrativa" },

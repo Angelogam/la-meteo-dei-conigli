@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
 import SiteHeader from "@/components/SiteHeader";
+import HeroFotografico from "@/components/HeroFotografico";
 import UpdateTimer from "@/components/UpdateTimer";
 import HourlyTable from "@/components/HourlyTable";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
@@ -110,9 +111,14 @@ export default function Index() {
 
         <div className="flight-page-column">
           <main className="app-main flight-page flex-1 w-full min-w-0 max-w-none mx-auto px-3 sm:px-4 xl:px-6 py-4 space-y-4">
-            <section className="mx-auto w-full max-w-[1106px] overflow-hidden" aria-label="La Meteo dei Conigli, parapendii in volo">
-              <img src="/parapendio-banner.jpg" alt="La Meteo dei Conigli — panorama alpino con parapendii in volo" className="block h-auto w-full rounded-xl" width="553" height="144" fetchPriority="high" decoding="async" />
-            </section>
+            <HeroFotografico
+              siteName={site?.site_name}
+              elevation={site?.elevation_m}
+              temperature={currentData?.temperature ?? undefined}
+              windSpeed={currentData?.windSpeed ?? undefined}
+              windDir={currentData?.windDir ?? undefined}
+              isLoading={!site}
+            />
 
 
             {site && (

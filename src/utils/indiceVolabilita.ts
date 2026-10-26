@@ -120,6 +120,9 @@ export function calcolaIndiceVolabilita(p: ParametriVolabilita): RisultatoVolabi
   // A. VENTO AL SUOLO (ideale 8-16 km/h)
   if (p.windSpeed < 3) {
     punteggio += 1.5; motivi.push("Vento quasi nullo (decollo a corsa)");
+  } else if (p.windSpeed < 5) {
+    // Fix gap 3-5 km/h: prima cadeva nel ramo "vento forte"
+    punteggio += 0.5; motivi.push("Vento leggero, decollo a corsa");
   } else if (p.windSpeed >= 5 && p.windSpeed <= 15) {
     // ideale: +0
   } else if (p.windSpeed > 15 && p.windSpeed <= 20) {

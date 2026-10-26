@@ -1,6 +1,6 @@
 import { defineHandler } from "nitro";
 
-const API_VERSION = "1.1.0";
+const API_VERSION = "1.2.0";
 
 export default defineHandler(() => ({
   ok: true,

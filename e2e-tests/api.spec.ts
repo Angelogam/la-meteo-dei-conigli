@@ -230,3 +230,90 @@ test.describe("API smoke and contract checks", () => {
     expect(response.status()).toBe(400);
   });
 });
+
+test.describe("Aerologia endpoints (volabilita, termiche, venti-decollo)", () => {
+  const BASE = "?latitude=44.76&longitude=7.25";
+
+  test("volabilita returns a 1-10 index with motivations", async ({ request }) => {
+    const response = await request.get(`/api/volabilita${BASE}&altitude=1300&exposure=S`);
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body.ok).toBe(true);
+    expect(body.data.indice).toBeGreaterThanOrEqual(1);
+    expect(body.data.indice).toBeLessThanOrEqual(10);
+    expect(typeof body.data.label).toBe("string");
+    expect(["ottimo", "buono", "discreto", "impegnativo", "rischioso", "pericoloso"]).toContain(body.data.severity);
+    expect(Array.isArray(body.data.motivi)).toBe(true);
+    expect(["frontale", "diagonale", "laterale", "di_coda", "sconosciuto"]).toContain(body.data.windRelativo);
+    expect(body.data.baseNubiM).toBeGreaterThan(0);
+    expect(body.meta.source).toBe("open-meteo");
+  });
+
+  test("volabilita rejects missing coordinates and unknown parameters", async ({ request }) => {
+    expect((await request.get("/api/volabilita")).status()).toBe(400);
+    expect((await request.get("/api/volabilita?latitude=44&longitude=7&debug=true")).status()).toBe(400);
+    expect((await request.get("/api/volabilita?latitude=91&longitude=7")).status()).toBe(400);
+    expect((await request.get("/api/volabilita?latitude=44&latitude=45&longitude=7")).status()).toBe(400);
+  });
+
+  test("volabilita rejects invalid exposure", async ({ request }) => {
+    expect((await request.get(`/api/volabilita${BASE}&exposure=XYZ`)).status()).toBe(400);
+  });
+
+  test("termiche returns hourly series with best window", async ({ request }) => {
+    const response = await request.get(`/api/termiche${BASE}&altitude=1300&days=1`);
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body.ok).toBe(true);
+    expect(Array.isArray(body.data.ore)).toBe(true);
+    for (const ora of body.data.ore.slice(0, 5)) {
+      expect(typeof ora.rateo).toBe("number");
+      expect(ora.rateo).toBeGreaterThanOrEqual(0);
+      expect(ora.rateo).toBeLessThanOrEqual(4.5);
+      expect(ora.top).toBeGreaterThan(ora.base);
+      expect(ora.forza).toBeLessThanOrEqual(10);
+    }
+    expect(body.data.finestraMigliore === null || typeof body.data.finestraMigliore.rateoMs === "number").toBe(true);
+  });
+
+  test("termiche rejects out-of-range days and coordinates", async ({ request }) => {
+    expect((await request.get(`/api/termiche${BASE}&days=4`)).status()).toBe(400);
+    expect((await request.get(`/api/termiche${BASE}&days=0`)).status()).toBe(400);
+    expect((await request.get(`/api/termiche?latitude=44&longitude=181`)).status()).toBe(400);
+  });
+
+  test("venti-decollo classifies wind relative to exposure", async ({ request }) => {
+    const response = await request.get(`/api/venti-decollo${BASE}&exposure=SO`);
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body.ok).toBe(true);
+    expect(["frontale", "diagonale", "laterale", "di_coda", "sconosciuto"]).toContain(body.data.windRelativo);
+    expect(["ideale", "buono", "attenzione", "sconsigliato", "pericoloso"]).toContain(body.data.classificazione);
+    expect(typeof body.data.decolloConsigliato).toBe("boolean");
+    expect(body.data.direzioneGradi).toBeGreaterThanOrEqual(0);
+    expect(body.data.direzioneGradi).toBeLessThanOrEqual(360);
+    expect(Array.isArray(body.data.motivi)).toBe(true);
+  });
+
+  test("venti-decollo rejects invalid exposure and repeated parameters", async ({ request }) => {
+    expect((await request.get(`/api/venti-decollo${BASE}&exposure=NOVT`)).status()).toBe(400);
+    expect((await request.get("/api/venti-decollo?latitude=44&longitude=7&exposure=S&exposure=N")).status()).toBe(400);
+  });
+
+  test("aerologia endpoints are edge-cacheable", async ({ request }) => {
+    for (const path of ["/api/volabilita", "/api/termiche", "/api/venti-decollo"]) {
+      const response = await request.get(`${path}${BASE}`);
+      expect(response.headers()["cache-control"]).toContain("s-maxage=300");
+      expect(response.headers()["cache-control"]).toContain("stale-while-revalidate=600");
+    }
+  });
+
+  test("OpenAPI documents the aerologia endpoints", async ({ request }) => {
+    const response = await request.get("/api/openapi");
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body.paths["/volabilita"].get).toBeTruthy();
+    expect(body.paths["/termiche"].get).toBeTruthy();
+    expect(body.paths["/venti-decollo"].get).toBeTruthy();
+  });
+});

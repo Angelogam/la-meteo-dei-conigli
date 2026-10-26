@@ -1,6 +1,6 @@
 import { defineHandler } from "nitro";
 
-const apiVersion = "1.1.0";
+const apiVersion = "1.2.0";
 
 export default defineHandler(() => ({
   openapi: "3.1.0",
@@ -14,6 +14,7 @@ export default defineHandler(() => ({
   tags: [
     { name: "System", description: "Stato e documentazione" },
     { name: "Weather", description: "Previsioni meteorologiche" },
+    { name: "Aerologia", description: "Indici derivati per il volo libero: volabilità, termiche, validazione vento decollo" },
     { name: "Soundings", description: "Siti sounding e configurazione plugin" },
     { name: "People", description: "Archivio persone dimostrativo; non usare per dati personali in produzione senza autenticazione e storage persistente" },
   ],
@@ -43,6 +44,66 @@ export default defineHandler(() => ({
         responses: {
           "200": { description: "Previsione JSON del provider" },
           "400": { description: "Coordinate non valide, parametro non supportato o ripetuto, oppure valore fuori formato/intervallo" },
+          "429": { description: "Limite provider raggiunto" },
+          "502": { description: "Provider non disponibile o risposta non valida" },
+          "504": { description: "Timeout provider" },
+        },
+      },
+    },
+    "/volabilita": {
+      get: {
+        tags: ["Aerologia"], summary: "Indice di volabilità 1-10",
+        description: "Combina vento, raffiche, esposizione del decollo, nuvolosità, base nubi e instabilità in un indice di volabilità. Formula identica a quella dell'app.",
+        parameters: [
+          { name: "latitude", in: "query", required: true, schema: { type: "number", minimum: -90, maximum: 90 } },
+          { name: "longitude", in: "query", required: true, schema: { type: "number", minimum: -180, maximum: 180 } },
+          { name: "altitude", in: "query", schema: { type: "number", minimum: 0, maximum: 8849, default: 0 }, description: "Quota decollo in metri slm" },
+          { name: "exposure", in: "query", schema: { type: "string", default: "S" }, description: "Orientamento del decollo (N, NE, ..., SO, NO, anche composte come S/SE)" },
+          { name: "timezone", in: "query", schema: { type: "string", default: "auto" } },
+        ],
+        responses: {
+          "200": { description: "Indice di volabilità con motivazioni e condizioni correnti" },
+          "400": { description: "Parametri mancanti, non validi, ripetuti o non supportati" },
+          "429": { description: "Limite provider raggiunto" },
+          "502": { description: "Provider non disponibile o risposta non valida" },
+          "504": { description: "Timeout provider" },
+        },
+      },
+    },
+    "/termiche": {
+      get: {
+        tags: ["Aerologia"], summary: "Termiche orarie stimate",
+        description: "Rateo (m/s), base LCL e top termico per le ore future, calcolati dai dati orari Open-Meteo. Le stime sono empiriche.",
+        parameters: [
+          { name: "latitude", in: "query", required: true, schema: { type: "number", minimum: -90, maximum: 90 } },
+          { name: "longitude", in: "query", required: true, schema: { type: "number", minimum: -180, maximum: 180 } },
+          { name: "altitude", in: "query", schema: { type: "number", minimum: 0, maximum: 8849, default: 0 }, description: "Quota decollo in metri slm" },
+          { name: "days", in: "query", schema: { type: "integer", minimum: 1, maximum: 3, default: 1 }, description: "Giorni di orizzonte da includere" },
+          { name: "timezone", in: "query", schema: { type: "string", default: "auto" } },
+        ],
+        responses: {
+          "200": { description: "Serie oraria delle termiche con finestra migliore" },
+          "400": { description: "Parametri mancanti, non validi, ripetuti o non supportati" },
+          "429": { description: "Limite provider raggiunto" },
+          "502": { description: "Provider non disponibile o risposta non valida" },
+          "504": { description: "Timeout provider" },
+        },
+      },
+    },
+    "/venti-decollo": {
+      get: {
+        tags: ["Aerologia"], summary: "Validazione vento in decollo",
+        description: "Confronta il vento in superficie con l'esposizione del decollo: relazione frontale/diagonale/laterale/di coda, classificazione e consiglio di decollo.",
+        parameters: [
+          { name: "latitude", in: "query", required: true, schema: { type: "number", minimum: -90, maximum: 90 } },
+          { name: "longitude", in: "query", required: true, schema: { type: "number", minimum: -180, maximum: 180 } },
+          { name: "altitude", in: "query", schema: { type: "number", minimum: 0, maximum: 8849, default: 0 }, description: "Quota decollo in metri slm" },
+          { name: "exposure", in: "query", schema: { type: "string", default: "S" }, description: "Orientamento del decollo (N, NE, ..., SO, NO, anche composte come S/SE)" },
+          { name: "timezone", in: "query", schema: { type: "string", default: "auto" } },
+        ],
+        responses: {
+          "200": { description: "Esito della validazione vento con motivazioni" },
+          "400": { description: "Parametri mancanti, non validi, ripetuti o non supportati" },
           "429": { description: "Limite provider raggiunto" },
           "502": { description: "Provider non disponibile o risposta non valida" },
           "504": { description: "Timeout provider" },

@@ -1,0 +1,267 @@
+/* Hero fotografico — La Meteo dei Conigli */
+
+.hero-foto {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  min-height: clamp(340px, 42vw, 540px);
+  border: 1px solid rgba(182, 220, 233, .23);
+  border-radius: 24px;
+  box-shadow: 0 22px 55px rgba(0, 0, 0, .28), inset 0 1px rgba(255, 255, 255, .07);
+  background: #0a1626;
+}
+
+.hero-foto__img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 62% 38%;
+  animation: hero-foto-kenburns 46s ease-in-out infinite alternate;
+}
+
+.hero-foto__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, rgba(4, 11, 22, .38) 0%, rgba(4, 11, 22, 0) 30%, rgba(4, 11, 22, 0) 52%, rgba(4, 11, 22, .82) 100%),
+    linear-gradient(102deg, rgba(4, 11, 22, .88) 0%, rgba(4, 11, 22, .58) 34%, rgba(4, 11, 22, .12) 62%, rgba(4, 11, 22, 0) 78%);
+}
+
+/* ---------- parapendii animati ---------- */
+
+.hero-foto__glider {
+  position: absolute;
+  z-index: 0;
+  width: clamp(58px, 6vw, 96px);
+  height: auto;
+  opacity: .82;
+  filter: drop-shadow(0 4px 6px rgba(4, 11, 22, .45));
+  pointer-events: none;
+}
+
+.hero-foto__glider--one {
+  top: 16%;
+  left: 46%;
+  animation: hero-foto-drift-one 58s linear infinite;
+}
+
+.hero-foto__glider--two {
+  top: 30%;
+  left: 68%;
+  width: clamp(38px, 4vw, 62px);
+  opacity: .6;
+  animation: hero-foto-drift-two 74s linear infinite;
+  animation-delay: -30s;
+}
+
+.hero-foto-glider-wing {
+  fill: rgba(248, 250, 242, .92);
+  stroke: rgba(255, 255, 255, .65);
+  stroke-width: 1.6;
+}
+
+.hero-foto-glider-line { fill: none; stroke: rgba(20, 34, 48, .8); stroke-width: 1.5; }
+.hero-foto-glider-pilot-head { fill: rgba(20, 34, 48, .9); }
+.hero-foto-glider-pilot { fill: none; stroke: rgba(20, 34, 48, .9); stroke-width: 3; stroke-linecap: round; }
+
+/* ---------- contenuto ---------- */
+
+.hero-foto__content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: clamp(1.4rem, 3.4vw, 2.8rem);
+  display: flex;
+  flex-direction: column;
+  gap: .55rem;
+  max-width: 760px;
+}
+
+.hero-foto__kicker {
+  margin: 0;
+  color: #8fd0ea;
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+}
+
+.hero-foto__title {
+  margin: 0;
+  color: #ffffff;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.1rem, 5vw, 3.6rem);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -.015em;
+  text-shadow: 0 4px 26px rgba(2, 8, 16, .55);
+}
+
+.hero-foto__motto {
+  margin: 0;
+  color: #cfe3ef;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: clamp(1rem, 1.8vw, 1.22rem);
+  text-shadow: 0 2px 14px rgba(2, 8, 16, .5);
+}
+
+/* ---------- chips meteo ---------- */
+
+.hero-foto__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+  margin-top: .55rem;
+}
+
+.hero-foto__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .42rem;
+  padding: .42rem .78rem;
+  border: 1px solid rgba(182, 220, 233, .3);
+  border-radius: 999px;
+  background: rgba(6, 16, 29, .55);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  color: #edf6ff;
+  font-size: .84rem;
+  line-height: 1;
+}
+
+.hero-foto__chip svg { width: 15px; height: 15px; color: #8fd0ea; }
+.hero-foto__chip strong { font-weight: 650; }
+.hero-foto__chip small { color: #9db8c9; font-size: .76rem; }
+
+.hero-foto__chip--live { gap: .38rem; font-size: .76rem; letter-spacing: .08em; text-transform: uppercase; }
+
+.hero-foto__live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, .18);
+  animation: hero-foto-pulse 2.2s ease-in-out infinite;
+}
+
+.hero-foto__chip-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(143, 208, 234, .3);
+  border-top-color: #8fd0ea;
+  border-radius: 50%;
+  animation: hero-foto-spin .9s linear infinite;
+}
+
+/* ---------- azioni ---------- */
+
+.hero-foto__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin-top: .9rem;
+}
+
+.hero-foto__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .62rem 1.15rem;
+  border: 1px solid rgba(125, 211, 252, .45);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(14, 116, 174, .85), rgba(12, 74, 110, .85));
+  color: #f0f9ff;
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+  box-shadow: 0 8px 22px rgba(2, 8, 16, .35);
+}
+
+.hero-foto__cta svg { width: 16px; height: 16px; }
+
+.hero-foto__cta:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, rgba(14, 130, 194, .95), rgba(12, 84, 124, .95));
+  box-shadow: 0 10px 26px rgba(2, 8, 16, .45);
+}
+
+.hero-foto__cta--ghost {
+  background: rgba(6, 16, 29, .45);
+  border-color: rgba(182, 220, 233, .35);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  color: #dbeafe;
+}
+
+.hero-foto__cta--ghost:hover { background: rgba(10, 26, 43, .65); }
+
+/* ---------- credit ---------- */
+
+.hero-foto__credit {
+  position: absolute;
+  z-index: 1;
+  right: .9rem;
+  bottom: .55rem;
+  margin: 0;
+  color: rgba(237, 246, 255, .5);
+  font-size: .68rem;
+  letter-spacing: .05em;
+  text-shadow: 0 1px 6px rgba(2, 8, 16, .6);
+}
+
+/* ---------- animazioni ---------- */
+
+@keyframes hero-foto-kenburns {
+  from { transform: scale(1) translateX(0); }
+  to { transform: scale(1.07) translateX(-1.4%); }
+}
+
+@keyframes hero-foto-drift-one {
+  0% { transform: translate(0, 0) rotate(2deg); }
+  50% { transform: translate(-16vw, 2.2vh) rotate(-1.5deg); }
+  100% { transform: translate(-32vw, .6vh) rotate(2deg); }
+}
+
+@keyframes hero-foto-drift-two {
+  0% { transform: translate(0, 0) rotate(-2deg); }
+  50% { transform: translate(12vw, -1.8vh) rotate(1.5deg); }
+  100% { transform: translate(24vw, .4vh) rotate(-2deg); }
+}
+
+@keyframes hero-foto-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .45; }
+}
+
+@keyframes hero-foto-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 640px) {
+  .hero-foto { min-height: 330px; border-radius: 18px; }
+  .hero-foto__content { padding: 1.1rem 1rem 1.2rem; }
+  .hero-foto__img { object-position: 58% 30%; }
+  .hero-foto__glider--one { left: 60%; top: 12%; }
+  .hero-foto__glider--two { display: none; }
+  .hero-foto__credit { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-foto__img,
+  .hero-foto__glider,
+  .hero-foto__live-dot,
+  .hero-foto__chip-spinner {
+    animation: none;
+  }
+}
