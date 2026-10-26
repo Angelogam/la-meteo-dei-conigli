@@ -29,7 +29,7 @@ export interface RisultatoVolabilita {
   windRelativo: "frontale" | "diagonale" | "laterale" | "di_coda" | "sconosciuto";
 }
 
-function esposizioneToGradi(esposizione: string | undefined | null): number {
+export function esposizioneToGradi(esposizione: string | undefined | null): number {
   const m: Record<string, number> = {
     "N": 0, "NNE": 22.5, "NE": 45, "ENE": 67.5,
     "E": 90, "ESE": 112.5, "SE": 135, "SSE": 157.5,

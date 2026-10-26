@@ -24,6 +24,24 @@ export type MeteoDecollo = {
   freezingLevel: number | null;
   weatherCode: number | null;
   fonte: string;
+  /** Serie oraria Open-Meteo (fino a 3 giorni): alimenta timeline, windgram e verdetto di volo. */
+  hourly?: HourlyPoint[];
+};
+
+/** Un'ora della serie oraria Open-Meteo per un decollo. */
+export type HourlyPoint = {
+  /** Ora locale in formato "2026-10-27T14:00" (timezone Europe/Rome). */
+  time: string;
+  wind: number | null;
+  gusts: number | null;
+  dir: number | null;
+  temp: number | null;
+  dew: number | null;
+  rain: number | null;
+  cloud: number | null;
+  code: number | null;
+  cape: number | null;
+  freezing: number | null;
 };
 
 const OPENWEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_KEY || "";
@@ -55,13 +73,15 @@ function findCurrentIndex(times: unknown[], now = new Date()): number {
 async function getOpenMeteo(lat: number, lon: number) {
   try {
     // Hourly and daily variables are returned together, reducing upstream calls per launch.
+    // dew_point_2m serve alla base nubi (LCL), wind_gusts_10m all'indice di volabilità;
+    // 3 giorni per alimentare le timeline orarie del selettore giorni.
     const forecast = await fetchFull(
       lat,
       lon,
-      "temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,cape,freezing_level_height,weather_code",
+      "temperature_2m,dew_point_2m,precipitation,cloud_cover,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cape,freezing_level_height,weather_code",
       "temperature_2m_max,temperature_2m_min,cloud_cover_mean,precipitation_sum",
       "",
-      1,
+      3,
     );
 
     const times = forecast.hourly?.time ?? [];
@@ -71,6 +91,19 @@ async function getOpenMeteo(lat: number, lon: number) {
 
     const h = forecast.hourly;
     const d = forecast.daily;
+    const hourly: HourlyPoint[] = times.map((t, idx) => ({
+      time: String(t),
+      wind: numOrNull(h.wind_speed_10m?.[idx]),
+      gusts: numOrNull(h.wind_gusts_10m?.[idx]),
+      dir: numOrNull(h.wind_direction_10m?.[idx]),
+      temp: numOrNull(h.temperature_2m?.[idx]),
+      dew: numOrNull(h.dew_point_2m?.[idx]),
+      rain: numOrNull(h.precipitation?.[idx]),
+      cloud: numOrNull(h.cloud_cover?.[idx]),
+      code: numOrNull(h.weather_code?.[idx]),
+      cape: numOrNull(h.cape?.[idx]),
+      freezing: numOrNull(h.freezing_level_height?.[idx]),
+    }));
     return {
       temp: numOrNull(h.temperature_2m?.[i]),
       rain: numOrNull(h.precipitation?.[i]),
@@ -84,6 +117,7 @@ async function getOpenMeteo(lat: number, lon: number) {
       tMin: numOrNull(d?.temperature_2m_min?.[0]),
       cloudDaily: numOrNull(d?.cloud_cover_mean?.[0]),
       rainDaily: numOrNull(d?.precipitation_sum?.[0]),
+      hourly,
     };
   } catch {
     return null;
@@ -328,6 +362,7 @@ export async function getMeteoDecolloAggressivo(d: Decollo): Promise<MeteoDecoll
     freezingLevel: openMeteo?.freezingLevel ?? null,
     weatherCode: openMeteo?.weatherCode ?? null,
     fonte: "Open-Meteo + OpenWeather + Tomorrow.io",
+    hourly: openMeteo?.hourly,
   };
 }
 
@@ -363,6 +398,7 @@ export async function getAllMeteoDecolliAggressivo(): Promise<Map<string, MeteoD
           freezingLevel: null,
           weatherCode: null,
           fonte: "Nessuna fonte disponibile",
+          hourly: undefined,
         });
       }
     }

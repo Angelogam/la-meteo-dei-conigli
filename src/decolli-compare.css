@@ -434,3 +434,201 @@
   .flight-launch-sidebar .dxc-rows { padding: .1rem .8rem .9rem; }
   .flight-launch-sidebar .dxc-count strong { font-size: .98rem; }
 }
+
+/* ============================================================
+   Fase B — card briefing di volo
+   ============================================================ */
+
+@keyframes dxc-card-in {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: none; }
+}
+
+.dxc-brief { animation: dxc-card-in .4s ease both; }
+.dxc-brief .dxc-grid.dxc-foot { margin-top: .6rem; }
+
+/* --- Verdetto di volo --- */
+.dxc-verdict {
+  display: flex; align-items: center; gap: .45rem; flex-wrap: nowrap;
+  margin-top: .6rem; padding: .42rem .6rem; border-radius: 11px;
+  font-family: "Sora", sans-serif;
+}
+.dxc-verdict.is-good { background: rgba(16, 185, 129, .11); border: 1px solid rgba(52, 211, 153, .32); }
+.dxc-verdict.is-fair { background: rgba(245, 158, 11, .1); border: 1px solid rgba(251, 191, 36, .3); }
+.dxc-verdict.is-bad { background: rgba(239, 68, 68, .11); border: 1px solid rgba(248, 113, 113, .34); }
+
+@keyframes dxc-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, .45); }
+  55% { box-shadow: 0 0 0 5px rgba(52, 211, 153, 0); }
+}
+.dxc-verdict-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+.dxc-verdict.is-good .dxc-verdict-dot { background: #34d399; animation: dxc-pulse 2.4s ease-out infinite; }
+.dxc-verdict.is-fair .dxc-verdict-dot { background: #fbbf24; }
+.dxc-verdict.is-bad .dxc-verdict-dot { background: #f87171; }
+
+.dxc-verdict-label { font-size: .8rem; font-weight: 700; letter-spacing: -.01em; color: #f1f5fb; }
+.dxc-verdict.is-good .dxc-verdict-label { color: #a7f3d0; }
+.dxc-verdict.is-fair .dxc-verdict-label { color: #fde68a; }
+.dxc-verdict.is-bad .dxc-verdict-label { color: #fecaca; }
+
+.dxc-relchip {
+  font-size: .54rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase;
+  padding: .16rem .42rem; border-radius: 999px; white-space: nowrap;
+}
+.dxc-relchip.is-good { color: #6ee7b7; background: rgba(52, 211, 153, .14); border: 1px solid rgba(52, 211, 153, .35); }
+.dxc-relchip.is-fair { color: #fcd34d; background: rgba(251, 191, 36, .13); border: 1px solid rgba(251, 191, 36, .32); }
+.dxc-relchip.is-bad { color: #fca5a5; background: rgba(248, 113, 113, .15); border: 1px solid rgba(248, 113, 113, .38); }
+
+.dxc-verdict-hour {
+  margin-left: auto; font-size: .62rem; font-weight: 700; letter-spacing: .05em;
+  color: #8ba3c4; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+
+.dxc-motivi {
+  display: block; margin-top: .42rem; font-size: .67rem; line-height: 1.45;
+  color: rgba(182, 198, 222, .92);
+}
+
+/* --- Timeline oraria interattiva --- */
+.dxc-tl-wrap { margin-top: .65rem; }
+.dxc-tl-head { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.dxc-tl-title {
+  font-size: .55rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+  color: #6b83a6;
+}
+.dxc-window {
+  font-size: .56rem; font-weight: 800; letter-spacing: .05em;
+  padding: .14rem .5rem; border-radius: 999px; white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.dxc-window.is-good { color: #6ee7b7; background: rgba(52, 211, 153, .13); border: 1px solid rgba(52, 211, 153, .35); }
+.dxc-window.is-fair { color: #fcd34d; background: rgba(251, 191, 36, .12); border: 1px solid rgba(251, 191, 36, .32); }
+.dxc-window.is-bad { color: #fca5a5; background: rgba(248, 113, 113, .12); border: 1px solid rgba(248, 113, 113, .35); }
+.dxc-tl-state { margin-left: auto; display: inline-flex; align-items: center; gap: .22rem; font-size: .58rem; color: #8ba3c4; }
+.dxc-tl-state svg { width: 12px; height: 12px; }
+.dxc-tl-state em { font-style: normal; }
+
+.dxc-tl { display: flex; align-items: flex-end; gap: 3px; height: 48px; margin-top: .45rem; }
+.dxc-hr {
+  flex: 1 1 0; min-width: 0; position: relative; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px;
+  padding: 3px 0 1px; border-radius: 6px;
+  transition: transform .16s ease, background .2s ease;
+}
+.dxc-hr:hover { transform: translateY(-2px); background: rgba(148, 197, 255, .09); }
+.dxc-hr-bar { width: 100%; max-width: 15px; min-height: 6px; border-radius: 3px; transition: height .3s ease; }
+.dxc-hr.is-good .dxc-hr-bar { background: linear-gradient(180deg, #34d399, #059669); }
+.dxc-hr.is-fair .dxc-hr-bar { background: linear-gradient(180deg, #fbbf24, #d97706); }
+.dxc-hr.is-bad .dxc-hr-bar { background: linear-gradient(180deg, #f87171, #dc2626); }
+.dxc-hr.is-active { background: rgba(148, 197, 255, .15); outline: 1px solid rgba(148, 197, 255, .55); }
+.dxc-hr.is-active .dxc-hr-bar { box-shadow: 0 0 10px rgba(148, 197, 255, .55); }
+.dxc-hr.is-inwin { background: rgba(52, 211, 153, .05); }
+.dxc-hr.is-now::after {
+  content: ""; position: absolute; top: 2px; right: 3px;
+  width: 4px; height: 4px; border-radius: 50%; background: #38bdf8;
+  box-shadow: 0 0 6px rgba(56, 189, 248, .8);
+}
+.dxc-hr small {
+  height: 10px; line-height: 10px; font-size: .5rem; font-weight: 600;
+  color: rgba(139, 163, 196, .85); font-variant-numeric: tabular-nums;
+}
+
+/* --- Riga aerologica: bussola + windgram --- */
+.dxc-aero {
+  display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: .5rem;
+  margin-top: .65rem; align-items: stretch;
+}
+.dxc-aero-block {
+  display: flex; flex-direction: column; align-items: center; gap: .3rem;
+  background: rgba(2, 8, 20, .38); border: 1px solid rgba(148, 197, 255, .09);
+  border-radius: 12px; padding: .5rem .4rem .45rem;
+}
+.dxc-aero-block small { font-size: .58rem; color: #8ba3c4; text-align: center; line-height: 1.3; }
+
+.dxc-compass { position: relative; display: block; width: 64px; height: 64px; }
+.dxc-cp-ring { fill: rgba(148, 197, 255, .05); stroke: rgba(148, 197, 255, .28); stroke-width: 1; }
+.dxc-cp-wedge { fill: rgba(56, 189, 248, .16); stroke: rgba(56, 189, 248, .5); stroke-width: 1; }
+.dxc-cp-txt { fill: rgba(139, 163, 196, .9); font-size: 6.5px; font-weight: 700; text-anchor: middle; font-family: "Inter", sans-serif; }
+.dxc-cp-arrow {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  transition: transform .9s cubic-bezier(.22, .9, .3, 1.08); will-change: transform;
+}
+.dxc-cp-arrow svg { width: 11px; height: 38px; animation: dxc-flutter 2.8s ease-in-out infinite; }
+.dxc-compass.is-good .dxc-cp-arrow path { fill: #34d399; }
+.dxc-compass.is-fair .dxc-cp-arrow path { fill: #fbbf24; }
+.dxc-compass.is-bad .dxc-cp-arrow path { fill: #f87171; }
+
+@keyframes dxc-flutter {
+  0%, 100% { transform: translateY(0); opacity: .95; }
+  50% { transform: translateY(1.6px); opacity: .68; }
+}
+
+.dxc-aero-wgram .dxc-wgram { flex: 1 1 auto; }
+.dxc-wgram {
+  position: relative; display: block; width: 100%; height: 84px;
+  background: linear-gradient(180deg, rgba(56, 189, 248, .07), rgba(2, 8, 20, 0) 65%);
+  border-radius: 8px; overflow: hidden;
+}
+.dxc-wg-line { position: absolute; left: 0; right: 0; border-top: 1px dashed rgba(148, 197, 255, .4); }
+.dxc-wg-line small {
+  position: absolute; right: 3px; bottom: 1px; font-size: .5rem; font-weight: 600;
+  line-height: 12px; padding: 0 3px; border-radius: 3px;
+  color: #c7d2fe; background: rgba(2, 8, 20, .6); font-variant-numeric: tabular-nums;
+  font-family: "Inter", sans-serif;
+}
+.dxc-wg-line.is-decollo { border-top-style: solid; border-color: rgba(251, 146, 60, .7); }
+.dxc-wg-line.is-decollo small { color: #fdba74; }
+.dxc-wg-line.is-base { border-color: rgba(167, 139, 250, .6); }
+.dxc-wg-line.is-base small { color: #c4b5fd; }
+.dxc-wg-line.is-freeze { border-color: rgba(125, 211, 252, .55); }
+.dxc-wg-line.is-freeze small { color: #bae6fd; }
+/* linee vicine al bordo superiore: etichetta sotto la linea per non essere tagliata */
+.dxc-wg-line.is-high small { bottom: auto; top: 1px; }
+
+.dxc-wg-bubbles { position: absolute; left: 20%; width: 22%; overflow: hidden; pointer-events: none; }
+.dxc-wg-bubbles i {
+  position: absolute; left: 50%; margin-left: -3px; bottom: 0;
+  width: 6px; height: 6px; border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle at 35% 30%, #fcd34d, #f97316 72%);
+  animation: dxc-rise 2.8s linear infinite;
+}
+.dxc-wg-bubbles i:nth-child(2) { left: 28%; animation-delay: .95s; }
+.dxc-wg-bubbles i:nth-child(3) { left: 72%; animation-delay: 1.9s; }
+
+@keyframes dxc-rise {
+  0% { bottom: 0; opacity: 0; }
+  12% { opacity: .95; }
+  80% { opacity: .8; }
+  100% { bottom: calc(100% - 7px); opacity: 0; }
+}
+
+.dxc-wg-still {
+  position: absolute; left: 0; right: 0; bottom: 0; text-align: center;
+  font-size: .52rem; color: rgba(139, 163, 196, .65); padding: 3px 0;
+}
+
+/* --- Avviso vento in coda --- */
+.dxc-warning {
+  display: flex; align-items: center; gap: .35rem; margin-top: .55rem;
+  font-size: .64rem; font-weight: 600; line-height: 1.35;
+  color: #fecaca; background: rgba(239, 68, 68, .12);
+  border: 1px solid rgba(248, 113, 113, .4); border-radius: 9px; padding: .4rem .55rem;
+}
+.dxc-warning svg { flex: 0 0 auto; }
+
+/* --- Responsive Fase B --- */
+@media (max-width: 760px) {
+  .dxc-verdict { padding: .4rem .5rem; }
+  .dxc-verdict-label { font-size: .76rem; }
+  .dxc-aero { grid-template-columns: 104px minmax(0, 1fr); }
+  .dxc-tl { height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dxc-brief { animation: none; }
+  .dxc-verdict.is-good .dxc-verdict-dot { animation: none; }
+  .dxc-cp-arrow svg { animation: none; }
+  .dxc-wg-bubbles i { animation: none; opacity: .5; }
+  .dxc-cp-arrow { transition: none; }
+  .dxc-hr, .dxc-hr-bar { transition: none; }
+}
