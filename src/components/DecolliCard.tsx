@@ -220,40 +220,77 @@ function Compass({ expDeg, dir, relCls }: { expDeg: number; dir: number | null; 
   );
 }
 
-/* ---------- Mini windgram: decollo, base nubi, zero termico, bolle termiche ---------- */
+/* ---------- Profilo d'aria: colonna atmosferica leggibile e animata ---------- */
 
-function ThermalColumn({ alt, base, freezing, rateo }: { alt: number; base: number | null; freezing: number | null; rateo: number | null }) {
-  const top = Math.max(freezing ?? 0, base ?? 0, alt + 900) + 250;
-  const bottom = Math.max(0, alt - 220);
+function fmtQuota(v: number | null | undefined): string {
+  if (v === null || v === undefined || !Number.isFinite(v)) return "—";
+  return Math.round(v).toLocaleString("it-IT") + " m";
+}
+
+function AirProfile({ alt, base, freezing, rateo, cloud }: { alt: number; base: number | null; freezing: number | null; rateo: number | null; cloud: number | null }) {
+  const hasBase = base !== null && base > alt + 60;
+  const canRise = (rateo ?? 0) > 0.2 && hasBase;
+  const top = Math.max(freezing ?? 0, base ?? 0, alt + 900) + 350;
+  const bottom = Math.max(0, alt - 170);
   const span = Math.max(1, top - bottom);
-  const pct = (v: number) => Math.max(3, Math.min(96, ((v - bottom) / span) * 100));
+  const pct = (v: number) => Math.max(2, Math.min(96, ((v - bottom) / span) * 100));
   const altP = pct(alt);
-  const baseP = base !== null && base > alt + 60 ? pct(base) : null;
+  const baseP = hasBase && base !== null ? pct(base) : null;
   const freezeP = freezing !== null && freezing > alt ? pct(freezing) : null;
-  const canRise = (rateo ?? 0) > 0.2 && baseP !== null;
+  // Copertura nuvolosa → intensità della nebbia sopra la base
+  const haze = cloud === null ? 0.55 : Math.min(1, Math.max(0.18, (cloud - 8) / 70));
+  // Evita che le etichette si sovrappongano quando le quote sono vicine
+  const baseShift = baseP !== null && baseP - altP < 12;
+  const freezeShift = freezeP !== null && (baseP !== null ? freezeP - baseP < 10 : freezeP - altP < 12);
+  const baseTop = baseP !== null && baseP > 86;
+  const freezeTop = freezeP !== null && freezeP > 86;
   return (
-    <span className="dxc-wgram" aria-hidden="true">
-      <span className="dxc-wg-line is-decollo" style={{ bottom: altP + "%" }}>
-        <small>{Math.round(alt)} m</small>
-      </span>
-      {baseP !== null && (
-        <span className={"dxc-wg-line is-base" + (baseP > 68 ? " is-high" : "")} style={{ bottom: baseP + "%" }}>
-          <small>nubi {Math.round(base)} m</small>
+    <div className="dxc-air" aria-hidden="true">
+      <div className="dxc-air-sky" />
+      {baseP !== null && <div className="dxc-air-clouds" style={{ bottom: baseP + "%", opacity: haze }} />}
+      {canRise && baseP !== null && (
+        <div className="dxc-air-thermal" style={{ bottom: altP + "%", height: Math.max(9, baseP - altP) + "%" }}>
+          <i /><i /><i /><i />
+        </div>
+      )}
+      {canRise && baseP !== null && (
+        <span
+          className="dxc-air-glider"
+          style={{ bottom: "calc(" + altP + "% + " + Math.max(6, (baseP - altP) * 0.5) + "%)" }}
+        >
+          <svg viewBox="0 0 44 20">
+            <path d="M22 2 C31 2 39 7 42 12 C36 9 29 8 22 8 C15 8 8 9 2 12 C5 7 13 2 22 2 Z" />
+            <line x1="22" y1="8" x2="22" y2="15" />
+            <circle cx="22" cy="16.5" r="2.4" />
+          </svg>
         </span>
       )}
+      <div className="dxc-air-ground" style={{ height: altP + "%" }} />
       {freezeP !== null && (
-        <span className={"dxc-wg-line is-freeze" + (freezeP > 68 ? " is-high" : "")} style={{ bottom: freezeP + "%" }}>
-          <small>0° {Math.round(freezing)} m</small>
-        </span>
+        <div
+          className={"dxc-air-line is-freeze" + (freezeTop ? " is-under" : "") + (freezeShift ? " is-shift" : "")}
+          style={{ bottom: freezeP + "%" }}
+        >
+          <span className="dxc-air-chip"><Snowflake />0° · {fmtQuota(freezing)}</span>
+        </div>
       )}
-      {canRise ? (
-        <span className="dxc-wg-bubbles" style={{ bottom: altP + "%", height: Math.max(14, (baseP ?? altP) - altP) + "%" }}>
-          <i /><i /><i />
-        </span>
-      ) : (
-        <span className="dxc-wg-still">{(rateo ?? 0) <= 0.2 ? "aria stabile" : "nubi sul decollo"}</span>
+      {baseP !== null && (
+        <div
+          className={"dxc-air-line is-base" + (baseTop ? " is-under" : "") + (baseShift ? " is-shift" : "")}
+          style={{ bottom: baseP + "%" }}
+        >
+          <span className="dxc-air-chip"><Cloud />Base nubi · {fmtQuota(base)}</span>
+        </div>
       )}
-    </span>
+      <div className="dxc-air-line is-ground" style={{ bottom: altP + "%" }}>
+        <span className="dxc-air-chip"><MapPin />Decollo · {fmtQuota(alt)}</span>
+      </div>
+      {!canRise && (
+        <div className="dxc-air-still" style={{ bottom: "calc(" + altP + "% + 4px)" }}>
+          {(rateo ?? 0) <= 0.2 ? "Aria stabile · termiche assenti" : "Nubi sul decollo"}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -299,7 +336,7 @@ function HeadBlock({ item, selected, index }: { item: CardItem; selected: boolea
 
 /* ---------- Fallback offline: griglia compatta come prima della fase B ---------- */
 
-function FallbackCard({ item, selected, onSelect }: { item: CardItem; selected: boolean; onSelect: (item: Decollo) => void }) {
+function FallbackCard({ item, selected, onSelect, idx }: { item: CardItem; selected: boolean; onSelect: (item: Decollo) => void; idx: number }) {
   const weather = item.aggressiveWeather;
   const wind = numberOrNull(weather?.wind);
   const temp = numberOrNull(weather?.temp);
@@ -318,6 +355,7 @@ function FallbackCard({ item, selected, onSelect }: { item: CardItem; selected: 
       onClick={() => onSelect(item)}
       aria-pressed={selected}
       className={"dxc-card" + (selected ? " is-selected" : "")}
+      style={{ "--dxc-i": String(Math.min(idx, 11)) } as React.CSSProperties}
     >
       <HeadBlock item={item} selected={selected} index={index} />
       <div className="dxc-condition">
@@ -400,9 +438,10 @@ interface LaunchCardProps {
   selectedDay: number;
   dayKey: string;
   nowHour: number;
+  idx: number;
 }
 
-function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour }: LaunchCardProps) {
+function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour, idx }: LaunchCardProps) {
   const weather = item.aggressiveWeather;
   const quota = Number(item.elevation_m ?? item.altitude ?? 0) || 0;
   const esposizione = item.orientation || item.exposure || "";
@@ -430,7 +469,7 @@ function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour }: 
   }, [evaluated, nowHour]);
 
   if (!weather || !evaluated.length) {
-    return <FallbackCard item={item} selected={selected} onSelect={onSelect} />;
+    return <FallbackCard item={item} selected={selected} onSelect={onSelect} idx={idx} />;
   }
 
   const activeHour = previewHour ?? (selectedDay === 0 ? nearNow : best?.start ?? nearNow);
@@ -451,6 +490,8 @@ function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour }: 
     onSelect(item);
   };
 
+  const canRise = (active.rateo ?? 0) > 0.2 && active.baseNubiM !== null && active.baseNubiM > quota + 60;
+
   return (
     <button
       type="button"
@@ -458,16 +499,17 @@ function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour }: 
       onClick={onCardClick}
       aria-pressed={selected}
       className={"dxc-card dxc-brief" + (selected ? " is-selected" : "")}
+      style={{ "--dxc-i": String(Math.min(idx, 11)) } as React.CSSProperties}
     >
       <HeadBlock item={item} selected={selected} index={active.indice} />
 
       <div className={"dxc-verdict " + active.classe}>
         <span className="dxc-verdict-dot" aria-hidden="true" />
-        <strong className="dxc-verdict-label">{active.label}</strong>
+        <strong className="dxc-verdict-label dxc-fade" key={"v" + active.hour}>{active.label}</strong>
         <span className={"dxc-relchip " + rel.cls}>{rel.label}</span>
-        <span className="dxc-verdict-hour">{hourLabel}</span>
+        <span className="dxc-verdict-hour dxc-fade" key={"h" + active.hour}>{hourLabel}</span>
       </div>
-      <span className="dxc-motivi">{motivi || "Modello Open-Meteo · confronto indicativo, non è un giudizio di sicurezza"}</span>
+      <span className="dxc-motivi"><span className="dxc-fade" key={"m" + active.hour}>{motivi || "Modello Open-Meteo · confronto indicativo, non è un giudizio di sicurezza"}</span></span>
 
       <div className="dxc-tl-wrap">
         <div className="dxc-tl-head">
@@ -481,8 +523,8 @@ function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour }: 
           )}
           <span className="dxc-tl-state">{status.icon}<em>{status.label}</em></span>
         </div>
-        <div className="dxc-tl" role="presentation">
-          {tlHours.map((v) => {
+        <div className="dxc-tl" role="presentation" key={dayKey}>
+          {tlHours.map((v, bi) => {
             const inWin = best !== null && v.hour >= best.start && v.hour <= best.end;
             const barH = Math.round(6 + Math.min(1, (v.wind ?? 0) / 40) * 20);
             return (
@@ -497,7 +539,7 @@ function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour }: 
                 }
                 title={v.hour + ":00 · " + v.label + " · vento " + Math.round(v.wind ?? 0) + " km/h" + (v.gusts ? " (raffiche " + Math.round(v.gusts) + ")" : "")}
               >
-                <span className="dxc-hr-bar" style={{ height: barH + "px" }} />
+                <span className="dxc-hr-bar" style={{ height: barH + "px", animationDelay: bi * 16 + "ms" }} />
                 <small>{v.hour % 3 === 0 ? v.hour : "\u00A0"}</small>
               </span>
             );
@@ -505,14 +547,27 @@ function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour }: 
         </div>
       </div>
 
-      <div className="dxc-aero">
-        <div className="dxc-aero-block">
-          <Compass expDeg={expDeg} dir={active.dir} relCls={rel.cls} />
-          <small>Vento da {active.dir === null ? "N/D" : getCardinalDir(active.dir)}</small>
+      <div className="dxc-airblock">
+        <div className="dxc-air-head">
+          <span className="dxc-air-kicker">Profilo d’aria</span>
+          <span className={"dxc-air-therm dxc-fade" + (canRise ? "" : " is-off")} key={"t" + active.hour}>
+            <Flame size={10} aria-hidden="true" />
+            {canRise ? "Termiche +" + (active.rateo ?? 0).toFixed(1).replace(".", ",") + " m/s" : "Termiche assenti"}
+          </span>
         </div>
-        <div className="dxc-aero-block dxc-aero-wgram">
-          <ThermalColumn alt={quota} base={active.baseNubiM} freezing={active.freezing} rateo={active.rateo} />
-          <small>Termiche {(active.rateo ?? 0) > 0 ? active.rateo.toFixed(1) + " m/s" : "assenti"}</small>
+        <AirProfile alt={quota} base={active.baseNubiM} freezing={active.freezing} rateo={active.rateo} cloud={active.cloud} />
+        <span className="dxc-air-cap">Le bolle arancioni sono le termiche che salgono fino alla base delle nubi · la linea tratteggiata è lo zero termico.</span>
+      </div>
+
+      <div className="dxc-windstrip">
+        <Compass expDeg={expDeg} dir={active.dir} relCls={rel.cls} />
+        <div className="dxc-windstrip-txt">
+          <strong className="dxc-fade" key={"w" + active.hour}>Vento da {active.dir === null ? "N/D" : getCardinalDir(active.dir)}</strong>
+          <span className="dxc-fade" key={"ws" + active.hour}>
+            {active.wind === null ? "Vento N/D" : Math.round(active.wind) + " km/h sul decollo"}
+            {active.gusts !== null ? " · raffiche " + Math.round(active.gusts) + " km/h" : ""}
+          </span>
+          <em>Il settore evidenziato è l’esposizione del pendio ({esposizione || "N/D"})</em>
         </div>
       </div>
 
@@ -526,28 +581,28 @@ function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour }: 
         <span className="dxc-tile">
           <span className="dxc-chip dxc-chip-temp"><Thermometer aria-hidden="true" /></span>
           <span className="dxc-tile-text">
-            <span className="dxc-value">{active.temp === null ? "N/D" : Math.round(active.temp) + "°C"}</span>
+            <span className="dxc-value dxc-fade" key={"tt" + active.hour}>{active.temp === null ? "N/D" : Math.round(active.temp) + "°C"}</span>
             <span className="dxc-label">Temp</span>
           </span>
         </span>
         <span className="dxc-tile">
           <span className="dxc-chip dxc-chip-wind"><Wind aria-hidden="true" /></span>
           <span className="dxc-tile-text">
-            <span className="dxc-value">{active.gusts === null ? "N/D" : Math.round(active.gusts) + " km/h"}</span>
+            <span className="dxc-value dxc-fade" key={"tg" + active.hour}>{active.gusts === null ? "N/D" : Math.round(active.gusts) + " km/h"}</span>
             <span className="dxc-label">Raffiche</span>
           </span>
         </span>
         <span className="dxc-tile">
           <span className="dxc-chip dxc-chip-rain"><CloudRain aria-hidden="true" /></span>
           <span className="dxc-tile-text">
-            <span className="dxc-value">{active.rain === null ? "N/D" : active.rain <= 0.1 ? "No" : active.rain.toFixed(1) + " mm"}</span>
+            <span className="dxc-value dxc-fade" key={"tr" + active.hour}>{active.rain === null ? "N/D" : active.rain <= 0.1 ? "No" : active.rain.toFixed(1).replace(".", ",") + " mm"}</span>
             <span className="dxc-label">Pioggia</span>
           </span>
         </span>
         <span className="dxc-tile">
           <span className="dxc-chip dxc-chip-cloud"><Cloud aria-hidden="true" /></span>
           <span className="dxc-tile-text">
-            <span className="dxc-value">{active.cloud === null ? "N/D" : Math.round(active.cloud) + "%"}</span>
+            <span className="dxc-value dxc-fade" key={"tc" + active.hour}>{active.cloud === null ? "N/D" : Math.round(active.cloud) + "%"}</span>
             <span className="dxc-label">Nubi</span>
           </span>
         </span>
@@ -602,10 +657,11 @@ export default function DecolliCard({
       {!loadedCount && !isUpdating && <p className="dxc-message">I dati comparativi di alcuni siti non sono disponibili in questo momento; le previsioni del sito selezionato restano separate.</p>}
 
       <div className="dxc-rows" role="list" aria-label="Elenco dei decolli">
-        {filtered.map((item) => (
+        {filtered.map((item, idx) => (
           <LaunchCard
             key={item.id}
             item={item}
+            idx={idx}
             selected={item.id === selectedId}
             onSelect={onSelect}
             selectedDay={selectedDay}

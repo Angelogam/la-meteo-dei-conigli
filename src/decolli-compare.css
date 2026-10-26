@@ -395,13 +395,6 @@
 }
 .dxc-chip-condition svg { animation: dxc-pulse 2.8s ease-in-out infinite; }
 
-@media (prefers-reduced-motion: reduce) {
-  .dxc-card, .dxc-tile, .dxc-index-bar span { transition: none; }
-  .dxc-chip-condition svg { animation: none; }
-  .dxc-card:hover { transform: none; }
-  .dxc-tile:hover { transform: none; }
-}
-
 /* ---------- Messaggi ---------- */
 .dxc-empty { padding: .6rem .4rem; color: #8ba3c4; font-size: .7rem; text-align: center; }
 
@@ -440,11 +433,12 @@
    ============================================================ */
 
 @keyframes dxc-card-in {
-  from { opacity: 0; transform: translateY(7px); }
+  from { opacity: 0; transform: translateY(9px); }
   to { opacity: 1; transform: none; }
 }
 
-.dxc-brief { animation: dxc-card-in .4s ease both; }
+/* Entrata scaglionata: ogni card arriva con un piccolo ritardo */
+.dxc-card { animation: dxc-card-in .45s ease both; animation-delay: calc(var(--dxc-i, 0) * 55ms); }
 .dxc-brief .dxc-grid.dxc-foot { margin-top: .6rem; }
 
 /* --- Verdetto di volo --- */
@@ -457,14 +451,22 @@
 .dxc-verdict.is-fair { background: rgba(245, 158, 11, .1); border: 1px solid rgba(251, 191, 36, .3); }
 .dxc-verdict.is-bad { background: rgba(239, 68, 68, .11); border: 1px solid rgba(248, 113, 113, .34); }
 
-@keyframes dxc-pulse {
+@keyframes dxc-dotpulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, .45); }
   55% { box-shadow: 0 0 0 5px rgba(52, 211, 153, 0); }
 }
+@keyframes dxc-dotpulse-amber {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, .45); }
+  55% { box-shadow: 0 0 0 5px rgba(251, 191, 36, 0); }
+}
+@keyframes dxc-dotpulse-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, .5); }
+  55% { box-shadow: 0 0 0 5px rgba(248, 113, 113, 0); }
+}
 .dxc-verdict-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
-.dxc-verdict.is-good .dxc-verdict-dot { background: #34d399; animation: dxc-pulse 2.4s ease-out infinite; }
-.dxc-verdict.is-fair .dxc-verdict-dot { background: #fbbf24; }
-.dxc-verdict.is-bad .dxc-verdict-dot { background: #f87171; }
+.dxc-verdict.is-good .dxc-verdict-dot { background: #34d399; animation: dxc-dotpulse 2.4s ease-out infinite; }
+.dxc-verdict.is-fair .dxc-verdict-dot { background: #fbbf24; animation: dxc-dotpulse-amber 2.4s ease-out infinite; }
+.dxc-verdict.is-bad .dxc-verdict-dot { background: #f87171; animation: dxc-dotpulse-red 2.4s ease-out infinite; }
 
 .dxc-verdict-label { font-size: .8rem; font-weight: 700; letter-spacing: -.01em; color: #f1f5fb; }
 .dxc-verdict.is-good .dxc-verdict-label { color: #a7f3d0; }
@@ -501,7 +503,13 @@
   padding: .14rem .5rem; border-radius: 999px; white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
-.dxc-window.is-good { color: #6ee7b7; background: rgba(52, 211, 153, .13); border: 1px solid rgba(52, 211, 153, .35); }
+.dxc-window.is-good { color: #6ee7b7; background: rgba(52, 211, 153, .13); border: 1px solid rgba(52, 211, 153, .35); position: relative; overflow: hidden; }
+.dxc-window.is-good::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 38%; left: -48%;
+  background: linear-gradient(100deg, transparent, rgba(110, 231, 183, .32), transparent);
+  animation: dxc-shine 3.4s ease-in-out infinite;
+}
+@keyframes dxc-shine { 0% { left: -48%; } 55%, 100% { left: 118%; } }
 .dxc-window.is-fair { color: #fcd34d; background: rgba(251, 191, 36, .12); border: 1px solid rgba(251, 191, 36, .32); }
 .dxc-window.is-bad { color: #fca5a5; background: rgba(248, 113, 113, .12); border: 1px solid rgba(248, 113, 113, .35); }
 .dxc-tl-state { margin-left: auto; display: inline-flex; align-items: center; gap: .22rem; font-size: .58rem; color: #8ba3c4; }
@@ -527,24 +535,21 @@
   content: ""; position: absolute; top: 2px; right: 3px;
   width: 4px; height: 4px; border-radius: 50%; background: #38bdf8;
   box-shadow: 0 0 6px rgba(56, 189, 248, .8);
+  animation: dxc-nowpulse 2s ease-in-out infinite;
+}
+@keyframes dxc-nowpulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.6); opacity: .55; }
 }
 .dxc-hr small {
   height: 10px; line-height: 10px; font-size: .5rem; font-weight: 600;
   color: rgba(139, 163, 196, .85); font-variant-numeric: tabular-nums;
 }
+/* Le barre crescono dall'alto verso il basso all'ingresso (e al cambio giorno) */
+.dxc-hr-bar { transform-origin: bottom; animation: dxc-bar-in .5s ease both; }
+@keyframes dxc-bar-in { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 
-/* --- Riga aerologica: bussola + windgram --- */
-.dxc-aero {
-  display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: .5rem;
-  margin-top: .65rem; align-items: stretch;
-}
-.dxc-aero-block {
-  display: flex; flex-direction: column; align-items: center; gap: .3rem;
-  background: rgba(2, 8, 20, .38); border: 1px solid rgba(148, 197, 255, .09);
-  border-radius: 12px; padding: .5rem .4rem .45rem;
-}
-.dxc-aero-block small { font-size: .58rem; color: #8ba3c4; text-align: center; line-height: 1.3; }
-
+/* --- Bussola vento vs esposizione --- */
 .dxc-compass { position: relative; display: block; width: 64px; height: 64px; }
 .dxc-cp-ring { fill: rgba(148, 197, 255, .05); stroke: rgba(148, 197, 255, .28); stroke-width: 1; }
 .dxc-cp-wedge { fill: rgba(56, 189, 248, .16); stroke: rgba(56, 189, 248, .5); stroke-width: 1; }
@@ -563,48 +568,151 @@
   50% { transform: translateY(1.6px); opacity: .68; }
 }
 
-.dxc-aero-wgram .dxc-wgram { flex: 1 1 auto; }
-.dxc-wgram {
-  position: relative; display: block; width: 100%; height: 84px;
-  background: linear-gradient(180deg, rgba(56, 189, 248, .07), rgba(2, 8, 20, 0) 65%);
-  border-radius: 8px; overflow: hidden;
+/* ============================================================
+   Profilo d'aria — colonna atmosferica animata e leggibile
+   (sostituisce il vecchio mini windgram dxc-wgram)
+   ============================================================ */
+.dxc-airblock { margin-top: .7rem; }
+.dxc-air-head {
+  display: flex; align-items: center; justify-content: space-between; gap: .4rem;
+  margin-bottom: .4rem;
 }
-.dxc-wg-line { position: absolute; left: 0; right: 0; border-top: 1px dashed rgba(148, 197, 255, .4); }
-.dxc-wg-line small {
-  position: absolute; right: 3px; bottom: 1px; font-size: .5rem; font-weight: 600;
-  line-height: 12px; padding: 0 3px; border-radius: 3px;
-  color: #c7d2fe; background: rgba(2, 8, 20, .6); font-variant-numeric: tabular-nums;
-  font-family: "Inter", sans-serif;
+.dxc-air-kicker {
+  font-size: .55rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+  color: #6b83a6;
 }
-.dxc-wg-line.is-decollo { border-top-style: solid; border-color: rgba(251, 146, 60, .7); }
-.dxc-wg-line.is-decollo small { color: #fdba74; }
-.dxc-wg-line.is-base { border-color: rgba(167, 139, 250, .6); }
-.dxc-wg-line.is-base small { color: #c4b5fd; }
-.dxc-wg-line.is-freeze { border-color: rgba(125, 211, 252, .55); }
-.dxc-wg-line.is-freeze small { color: #bae6fd; }
-/* linee vicine al bordo superiore: etichetta sotto la linea per non essere tagliata */
-.dxc-wg-line.is-high small { bottom: auto; top: 1px; }
+.dxc-air-therm {
+  display: inline-flex; align-items: center; gap: .28rem;
+  font-size: .6rem; font-weight: 800; color: #fdba74;
+  font-variant-numeric: tabular-nums;
+  padding: .16rem .5rem; border-radius: 999px;
+  background: rgba(251, 146, 60, .12); border: 1px solid rgba(251, 146, 60, .34);
+}
+.dxc-air-therm svg { width: 10px; height: 10px; }
+.dxc-air-therm.is-off {
+  color: #8ba3c4; background: rgba(148, 197, 255, .07); border-color: rgba(148, 197, 255, .18);
+}
 
-.dxc-wg-bubbles { position: absolute; left: 20%; width: 22%; overflow: hidden; pointer-events: none; }
-.dxc-wg-bubbles i {
-  position: absolute; left: 50%; margin-left: -3px; bottom: 0;
-  width: 6px; height: 6px; border-radius: 50%; opacity: 0;
-  background: radial-gradient(circle at 35% 30%, #fcd34d, #f97316 72%);
-  animation: dxc-rise 2.8s linear infinite;
+.dxc-air {
+  position: relative; display: block; width: 100%; height: 176px;
+  border-radius: 14px; overflow: hidden;
+  border: 1px solid rgba(148, 197, 255, .11);
+  background: linear-gradient(180deg, rgba(56, 189, 248, .11), rgba(2, 8, 20, .3) 62%, rgba(2, 8, 20, .55));
 }
-.dxc-wg-bubbles i:nth-child(2) { left: 28%; animation-delay: .95s; }
-.dxc-wg-bubbles i:nth-child(3) { left: 72%; animation-delay: 1.9s; }
-
+/* cielo: bagliore in alto + griglia altitudini discreta */
+.dxc-air-sky {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(90% 34% at 50% 0%, rgba(125, 211, 252, .14), transparent 70%),
+    repeating-linear-gradient(0deg, rgba(148, 197, 255, .055) 0 1px, transparent 1px 34px);
+}
+/* velo di nubi sopra la base (opacità guidata dalla copertura reale) */
+.dxc-air-clouds {
+  position: absolute; left: 0; right: 0; top: 0; z-index: 1;
+  transition: bottom .6s cubic-bezier(.4, 0, .2, 1), opacity .6s ease;
+  background: linear-gradient(180deg, rgba(226, 232, 240, .36), rgba(226, 232, 240, .14) 45%, rgba(226, 232, 240, 0));
+}
+/* strato termico tra decollo e base nubi */
+.dxc-air-thermal {
+  position: absolute; left: 15%; width: 48%; z-index: 1;
+  border-radius: 10px;
+  transition: bottom .6s cubic-bezier(.4, 0, .2, 1), height .6s cubic-bezier(.4, 0, .2, 1);
+  background: linear-gradient(180deg, rgba(251, 146, 60, .03), rgba(251, 146, 60, .17));
+}
+.dxc-air-thermal i {
+  position: absolute; bottom: -4px; width: 8px; height: 8px; border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle at 35% 30%, #fde68a, #f97316 75%);
+  box-shadow: 0 0 9px rgba(249, 115, 22, .8);
+  animation: dxc-rise 3.2s linear infinite;
+}
+.dxc-air-thermal i:nth-child(1) { left: 10%; }
+.dxc-air-thermal i:nth-child(2) { left: 44%; width: 6px; height: 6px; animation-delay: .8s; }
+.dxc-air-thermal i:nth-child(3) { left: 68%; width: 7px; height: 7px; animation-delay: 1.6s; }
+.dxc-air-thermal i:nth-child(4) { left: 27%; animation-delay: 2.4s; }
 @keyframes dxc-rise {
-  0% { bottom: 0; opacity: 0; }
-  12% { opacity: .95; }
-  80% { opacity: .8; }
-  100% { bottom: calc(100% - 7px); opacity: 0; }
+  0% { bottom: -4px; opacity: 0; transform: translateX(0) scale(.8); }
+  10% { opacity: 1; }
+  50% { transform: translateX(5px) scale(1); }
+  88% { opacity: .8; }
+  100% { bottom: calc(100% - 2px); opacity: 0; transform: translateX(-4px) scale(1.18); }
+}
+/* parapendio che plana nello strato termico */
+.dxc-air-glider {
+  position: absolute; left: 0; right: 0; z-index: 3;
+  display: flex; justify-content: center; pointer-events: none;
+  transition: bottom .6s cubic-bezier(.4, 0, .2, 1);
+  animation: dxc-glide 4.6s ease-in-out infinite;
+}
+.dxc-air-glider svg { width: 30px; height: 14px; filter: drop-shadow(0 2px 5px rgba(0, 0, 0, .45)); }
+.dxc-air-glider path { fill: #a5f3fc; }
+.dxc-air-glider line { stroke: rgba(165, 243, 252, .7); stroke-width: 1.2; }
+.dxc-air-glider circle { fill: #67e8f9; }
+@keyframes dxc-glide {
+  0%, 100% { transform: translate(0, 0); }
+  30% { transform: translate(9px, -3px); }
+  65% { transform: translate(-9px, 2px); }
+}
+/* terreno sotto la quota di decollo */
+.dxc-air-ground {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+  transition: height .6s cubic-bezier(.4, 0, .2, 1);
+  background:
+    linear-gradient(180deg, rgba(251, 146, 60, .26), rgba(11, 21, 38, .92) 30%, #081222 92%),
+    repeating-linear-gradient(115deg, rgba(148, 197, 255, .05) 0 2px, transparent 2px 10px);
+}
+/* linee di quota con etichetta-chip sempre leggibile */
+.dxc-air-line {
+  position: absolute; left: 0; right: 0; z-index: 4; pointer-events: none;
+  transition: bottom .6s cubic-bezier(.4, 0, .2, 1);
+}
+.dxc-air-line.is-freeze { border-top: 1px dashed rgba(125, 211, 252, .7); }
+.dxc-air-line.is-base { border-top: 1px dotted rgba(196, 181, 253, .8); }
+.dxc-air-line.is-ground { border-top: 1px solid rgba(251, 146, 60, .9); }
+.dxc-air-chip {
+  position: absolute; left: 6px; bottom: 2px;
+  display: inline-flex; align-items: center; gap: .26rem;
+  font-size: .57rem; font-weight: 700; letter-spacing: .02em;
+  padding: .16rem .45rem; border-radius: 7px;
+  color: #e6eefc; background: rgba(3, 12, 26, .82);
+  border: 1px solid rgba(148, 197, 255, .15);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.dxc-air-chip svg { width: 9px; height: 9px; flex: 0 0 auto; }
+.dxc-air-line.is-freeze .dxc-air-chip { color: #bae6fd; border-color: rgba(125, 211, 252, .34); }
+.dxc-air-line.is-base .dxc-air-chip { color: #ddd6fe; border-color: rgba(196, 181, 253, .34); }
+.dxc-air-line.is-ground .dxc-air-chip { color: #fdba74; border-color: rgba(251, 146, 60, .45); background: rgba(30, 15, 2, .85); }
+/* etichette spostate a destra quando due quote sono vicine */
+.dxc-air-line.is-shift .dxc-air-chip { left: auto; right: 6px; }
+/* etichette sotto la linea quando la linea è quasi al bordo superiore */
+.dxc-air-line.is-under .dxc-air-chip { bottom: auto; top: 2px; }
+.dxc-air-still {
+  position: absolute; left: 0; right: 0; z-index: 4; text-align: center;
+  font-size: .57rem; font-weight: 600; color: rgba(139, 163, 196, .9);
+  transition: bottom .6s cubic-bezier(.4, 0, .2, 1);
+}
+.dxc-air-cap {
+  display: block; margin-top: .38rem;
+  font-size: .56rem; line-height: 1.45; color: rgba(107, 131, 166, .95);
 }
 
-.dxc-wg-still {
-  position: absolute; left: 0; right: 0; bottom: 0; text-align: center;
-  font-size: .52rem; color: rgba(139, 163, 196, .65); padding: 3px 0;
+/* --- Striscia vento: bussola + testo spiegato --- */
+.dxc-windstrip {
+  display: flex; align-items: center; gap: .7rem;
+  margin-top: .6rem; padding: .55rem .65rem;
+  border: 1px solid rgba(148, 197, 255, .1); border-radius: 12px;
+  background: rgba(2, 8, 20, .38);
+}
+.dxc-windstrip .dxc-compass { flex: 0 0 auto; }
+.dxc-windstrip-txt { display: flex; flex-direction: column; gap: .14rem; min-width: 0; }
+.dxc-windstrip-txt strong { color: #eef5ff; font-size: .78rem; font-weight: 700; line-height: 1.2; }
+.dxc-windstrip-txt span { color: #8ba3c4; font-size: .62rem; line-height: 1.35; font-variant-numeric: tabular-nums; }
+.dxc-windstrip-txt em { color: #64799c; font-size: .55rem; font-style: normal; line-height: 1.35; }
+
+/* --- Valori che cambiano con l'ora selezionata --- */
+.dxc-fade { display: inline-block; animation: dxc-fadein .38s ease both; }
+@keyframes dxc-fadein {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
 }
 
 /* --- Avviso vento in coda --- */
@@ -620,15 +728,24 @@
 @media (max-width: 760px) {
   .dxc-verdict { padding: .4rem .5rem; }
   .dxc-verdict-label { font-size: .76rem; }
-  .dxc-aero { grid-template-columns: 104px minmax(0, 1fr); }
   .dxc-tl { height: 44px; }
+  .dxc-air { height: 152px; }
+  .dxc-air-chip { font-size: .54rem; }
+  .dxc-windstrip { gap: .55rem; padding: .5rem .55rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dxc-brief { animation: none; }
-  .dxc-verdict.is-good .dxc-verdict-dot { animation: none; }
+  .dxc-card { animation: none; }
+  .dxc-verdict.is-good .dxc-verdict-dot,
+  .dxc-verdict.is-fair .dxc-verdict-dot,
+  .dxc-verdict.is-bad .dxc-verdict-dot { animation: none; }
   .dxc-cp-arrow svg { animation: none; }
-  .dxc-wg-bubbles i { animation: none; opacity: .5; }
   .dxc-cp-arrow { transition: none; }
-  .dxc-hr, .dxc-hr-bar { transition: none; }
+  .dxc-hr, .dxc-hr-bar { transition: none; animation: none; }
+  .dxc-air-thermal i { animation: none; opacity: .55; }
+  .dxc-air-glider { animation: none; }
+  .dxc-fade { animation: none; }
+  .dxc-window.is-good::after { animation: none; display: none; }
+  .dxc-hr.is-now::after { animation: none; }
+  .dxc-air-line, .dxc-air-clouds, .dxc-air-thermal, .dxc-air-ground, .dxc-air-glider, .dxc-air-still { transition: none; }
 }
