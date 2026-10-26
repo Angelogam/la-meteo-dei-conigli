@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Clock, Layers, AlertTriangle, Sun, Cloud, CloudRain, CloudSnow, Zap, Info, Search, MapPin, Thermometer, Wind } from "lucide-react";
+import { Clock, Cloud, CloudRain, CloudSnow, Flame, Info, Layers, MapPin, Navigation, Search, Snowflake, Sun, Thermometer, Wind, Zap, AlertTriangle } from "lucide-react";
 import type { Decollo } from "@/data/decolli";
 
 export interface AggressiveWeatherData {
@@ -72,6 +72,11 @@ function getWeatherStatus(weather: AggressiveWeatherData | null | undefined) {
   return getStatoDisplay(weather?.stato);
 }
 
+function getIndexClass(index: number): string {
+  // Indice inverso: valori bassi = condizioni migliori (2 = "Perfetto").
+  return index <= 4 ? "is-good" : index <= 6 ? "is-fair" : "is-bad";
+}
+
 export default function DecolliCard({
   decolli, selectedId, onSelect, selectedDay = 0, isUpdating = false, error,
 }: DecolliCardProps) {
@@ -90,30 +95,31 @@ export default function DecolliCard({
   }).length;
 
   return (
-    <section className="launch-list-card launch-compare-panel" aria-labelledby="launch-list-title">
-      <header className="launch-compare-header">
+    <section className="dxc-panel" aria-labelledby="dxc-title">
+      <header className="dxc-header">
         <div>
-          <p className="launch-compare-kicker">SITI MONITORATI</p>
-          <h2 id="launch-list-title">Confronta i decolli</h2>
-          <p className="launch-compare-description">Scegli un sito per aggiornare mappa e previsioni. Il confronto è sintetico, non è un giudizio di sicurezza.</p>
+          <p className="dxc-kicker">SITI MONITORATI</p>
+          <h2 className="dxc-title" id="dxc-title">Confronta i decolli</h2>
+          <p className="dxc-description">Scegli un sito per aggiornare mappa e previsioni. Il confronto è sintetico, non è un giudizio di sicurezza.</p>
         </div>
-        <div className="launch-compare-count">
-          <strong>{decolli.length}</strong><span>decolli</span>
+        <div className="dxc-count">
+          <strong>{decolli.length}</strong>
+          <span>decolli</span>
           <small>{loadedCount} con dati</small>
         </div>
       </header>
 
-      <div className="launch-compare-tools">
-        <label className="launch-compare-search">
-          <Search aria-hidden="true" size={14} />
+      <div className="dxc-tools">
+        <label className="dxc-search">
+          <Search aria-hidden="true" size={15} />
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cerca decollo, valle o esposizione…" aria-label="Cerca un decollo" />
         </label>
-        <span className="launch-compare-update"><Clock aria-hidden="true" size={11} />{dt.date}</span>
+        <span className="dxc-update"><Clock aria-hidden="true" size={12} />{dt.date}</span>
       </div>
-      {error && <p className="launch-compare-message is-error">{error}</p>}
-      {!loadedCount && !isUpdating && <p className="launch-compare-message">I dati comparativi di alcuni siti non sono disponibili in questo momento; le previsioni del sito selezionato restano separate.</p>}
+      {error && <p className="dxc-message is-error">{error}</p>}
+      {!loadedCount && !isUpdating && <p className="dxc-message">I dati comparativi di alcuni siti non sono disponibili in questo momento; le previsioni del sito selezionato restano separate.</p>}
 
-      <div className="launch-compare-rows" role="list" aria-label="Elenco dei decolli">
+      <div className="dxc-rows" role="list" aria-label="Elenco dei decolli">
         {visible.map((item) => {
           const selected = item.id === selectedId;
           const weather = item.aggressiveWeather;
@@ -136,41 +142,109 @@ export default function DecolliCard({
               key={item.id}
               onClick={() => onSelect(item)}
               aria-pressed={selected}
-              className={"launch-compare-row" + (selected ? " is-selected" : "")}
+              className={"dxc-card" + (selected ? " is-selected" : "")}
             >
-              <div className="launch-compare-card-top">
-                <div className="launch-compare-site-header">
-                  <span className="launch-compare-site-name">{item.site_name || item.name}</span>
-                  <span className="launch-compare-site-meta"><MapPin size={12} aria-hidden="true" /><span>{item.location_name || item.valley || "Località non indicata"}</span><span className="launch-compare-altitude">{item.elevation_m || item.altitude} m s.l.m.</span></span>
-                  <span className="launch-compare-site-orientation">Esposizione {item.orientation || item.exposure || "N/D"}</span>
-                  {hasCoords && (
-                    <span className="launch-compare-coords" title={`Coordinate GPS del decollo: ${lat.toFixed(4)}, ${lon.toFixed(4)}`}>
-                      <MapPin size={11} aria-hidden="true" />
-                      {lat.toFixed(4)}, {lon.toFixed(4)}
+              <div className="dxc-card-head">
+                <div className="dxc-site-block">
+                  <span className="dxc-site-name">{item.site_name || item.name}</span>
+                  <span className="dxc-site-meta">
+                    <MapPin size={11} aria-hidden="true" />
+                    <span>{item.location_name || item.valley || "Località non indicata"}</span>
+                    <span className="dxc-altitude">{item.elevation_m || item.altitude} m s.l.m.</span>
+                  </span>
+                  <span className="dxc-site-sub">
+                    <span>Esposizione {item.orientation || item.exposure || "N/D"}</span>
+                    {hasCoords && (
+                      <span className="dxc-coords" title={`Coordinate GPS del decollo: ${lat.toFixed(4)}, ${lon.toFixed(4)}`}>
+                        {lat.toFixed(4)}, {lon.toFixed(4)}
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <div className="dxc-badges">
+                  {index !== null && (
+                    <span className={"dxc-index " + getIndexClass(index)} title="Indice sintetico indicativo">
+                      <small>Indice</small>
+                      <strong>{index}/10</strong>
+                      <span className="dxc-index-bar"><span style={{ width: Math.max(6, index * 10) + "%" }} /></span>
                     </span>
                   )}
+                  {selected && <span className="dxc-selected-chip"><span aria-hidden="true">✓</span> Selezionato</span>}
                 </div>
-                <div className="launch-compare-card-badges">
-                  {index !== null && <span className={"launch-compare-index " + (index >= 8 ? "is-high" : index >= 5 ? "is-mid" : "is-low")} title="Indice sintetico indicativo"><small>Indice</small><strong>{index}/10</strong></span>}
-                  {selected && <span className="launch-compare-selected"><span aria-hidden="true">✓</span> Selezionato</span>}
-                </div>
-              </div>
-              <div className="launch-compare-weather-grid">
-                <div className="launch-compare-weather-item launch-compare-condition"><span className="launch-compare-icon">{status.icon}</span><span className="launch-compare-value">{status.label}</span><span className="launch-compare-label">CONDIZIONI</span></div>
-                <div className="launch-compare-weather-item"><Thermometer size={14} aria-hidden="true" /><span className="launch-compare-value">{temp === null ? "N/D" : temp.toFixed(0) + "°C"}</span><span className="launch-compare-label">TEMPERATURA</span></div>
-                <div className="launch-compare-weather-item"><Wind size={14} aria-hidden="true" /><span className="launch-compare-value">{wind === null ? "N/D" : wind.toFixed(0) + " km/h"}</span><span className="launch-compare-label">VENTO</span></div>
-                <div className="launch-compare-weather-item"><span className="launch-compare-wind-arrow" style={{ transform: direction === null ? undefined : "rotate(" + direction + "deg)" }}>➤</span><span className="launch-compare-value">{direction === null ? "N/D" : getCardinalDir(direction)}</span><span className="launch-compare-label">DIREZIONE</span></div>
-                <div className="launch-compare-weather-item"><CloudRain size={14} aria-hidden="true" /><span className="launch-compare-value">{rain === null ? "N/D" : rain <= 0.1 ? "No pioggia" : rain.toFixed(1) + " mm"}</span><span className="launch-compare-label">PIOGGIA</span></div>
-                <div className="launch-compare-weather-item"><Cloud size={14} aria-hidden="true" /><span className="launch-compare-value">{cloud === null ? "N/D" : Math.round(cloud) + "%"}</span><span className="launch-compare-label">NUVOLOSITÀ</span></div>
-                <div className="launch-compare-weather-item"><Layers size={14} aria-hidden="true" /><span className="launch-compare-value">{base || "N/D"}</span><span className="launch-compare-label">BASE NUBI</span></div>
-                <div className="launch-compare-weather-item"><Thermometer size={14} aria-hidden="true" /><span className="launch-compare-value">{weather?.termiche || "N/D"}</span><span className="launch-compare-label">TERMICHE</span></div>
-                <div className="launch-compare-weather-item"><span aria-hidden="true">❄</span><span className="launch-compare-value">{freezingLevel === null ? "N/D" : Math.round(freezingLevel).toLocaleString("it-IT") + " m"}</span><span className="launch-compare-label">ZERO TERMICO</span></div>
               </div>
 
+              <div className="dxc-condition">
+                <span className="dxc-chip dxc-chip-condition">{status.icon}</span>
+                <span className="dxc-cond-text">
+                  <span className="dxc-value">{status.label}</span>
+                  <span className="dxc-label">Condizioni</span>
+                </span>
+              </div>
+
+              <div className="dxc-grid">
+                <span className="dxc-tile">
+                  <span className="dxc-chip dxc-chip-temp"><Thermometer aria-hidden="true" /></span>
+                  <span className="dxc-tile-text">
+                    <span className="dxc-value">{temp === null ? "N/D" : temp.toFixed(0) + "°C"}</span>
+                    <span className="dxc-label">Temperatura</span>
+                  </span>
+                </span>
+                <span className="dxc-tile">
+                  <span className="dxc-chip dxc-chip-wind"><Wind aria-hidden="true" /></span>
+                  <span className="dxc-tile-text">
+                    <span className="dxc-value">{wind === null ? "N/D" : wind.toFixed(0) + " km/h"}</span>
+                    <span className="dxc-label">Vento</span>
+                  </span>
+                </span>
+                <span className="dxc-tile">
+                  <span className="dxc-chip dxc-chip-dir">
+                    <Navigation aria-hidden="true" style={direction === null ? undefined : { transform: "rotate(" + direction + "deg)" }} />
+                  </span>
+                  <span className="dxc-tile-text">
+                    <span className="dxc-value is-dir">{direction === null ? "N/D" : getCardinalDir(direction)}</span>
+                    <span className="dxc-label">Direzione</span>
+                  </span>
+                </span>
+                <span className="dxc-tile">
+                  <span className="dxc-chip dxc-chip-rain"><CloudRain aria-hidden="true" /></span>
+                  <span className="dxc-tile-text">
+                    <span className="dxc-value">{rain === null ? "N/D" : rain <= 0.1 ? "No pioggia" : rain.toFixed(1) + " mm"}</span>
+                    <span className="dxc-label">Pioggia</span>
+                  </span>
+                </span>
+                <span className="dxc-tile">
+                  <span className="dxc-chip dxc-chip-cloud"><Cloud aria-hidden="true" /></span>
+                  <span className="dxc-tile-text">
+                    <span className="dxc-value">{cloud === null ? "N/D" : Math.round(cloud) + "%"}</span>
+                    <span className="dxc-label">Nuvolosità</span>
+                  </span>
+                </span>
+                <span className="dxc-tile">
+                  <span className="dxc-chip dxc-chip-base"><Layers aria-hidden="true" /></span>
+                  <span className="dxc-tile-text">
+                    <span className="dxc-value">{base || "N/D"}</span>
+                    <span className="dxc-label">Base nubi</span>
+                  </span>
+                </span>
+                <span className="dxc-tile">
+                  <span className="dxc-chip dxc-chip-thermal"><Flame aria-hidden="true" /></span>
+                  <span className="dxc-tile-text">
+                    <span className="dxc-value">{weather?.termiche || "N/D"}</span>
+                    <span className="dxc-label">Termiche</span>
+                  </span>
+                </span>
+                <span className="dxc-tile">
+                  <span className="dxc-chip dxc-chip-freeze"><Snowflake aria-hidden="true" /></span>
+                  <span className="dxc-tile-text">
+                    <span className="dxc-value">{freezingLevel === null ? "N/D" : Math.round(freezingLevel).toLocaleString("it-IT") + " m"}</span>
+                    <span className="dxc-label">Zero termico</span>
+                  </span>
+                </span>
+              </div>
             </button>
           );
         })}
-        {!visible.length && <p className="launch-compare-empty">Nessun decollo corrisponde alla ricerca.</p>}
+        {!visible.length && <p className="dxc-empty">Nessun decollo corrisponde alla ricerca.</p>}
       </div>
     </section>
   );
