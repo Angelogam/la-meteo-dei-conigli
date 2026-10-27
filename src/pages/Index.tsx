@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Activity, ArrowDownRight, CalendarDays, CloudSun, Home, Mountain, Thermometer, Wind } from "lucide-react";
+import { Activity, CloudSun, Home, Mountain, Thermometer, Wind } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
@@ -15,6 +15,7 @@ import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
+import CartinaMeteo from "@/components/CartinaMeteo";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import type { HourData } from "@/types/meteo";
 import type { MeteoCurrent } from "@/services/openMeteoService";
@@ -154,24 +155,11 @@ export default function Index() {
             {site && (
               <div className="flight-top-dashboard-grid">
                 <div className="flight-primary-column">
-                  <section className="flybubble-panel flybubble-live-map" aria-labelledby="flybubble-heading">
-                    <header className="flybubble-panel-header">
-                      <div className="flybubble-panel-icon" aria-hidden="true"><Wind /></div>
-                      <div className="flybubble-panel-title">
-                        <p className="flybubble-panel-kicker">MAPPA METEO INTERATTIVA</p>
-                        <h2 id="flybubble-heading">Flybubble Weather</h2>
-                        <p>Vento, attività termica e panoramica delle condizioni per il volo libero.</p>
-                      </div>
-                      <a className="flybubble-open-link" href="https://weather.flybubble.com/it#/0/12" target="_blank" rel="noreferrer">Apri a schermo intero <ArrowDownRight aria-hidden="true" /></a>
-                    </header>
-                    <div className="flybubble-frame-wrap">
-                      <iframe className="flybubble-frame" src="https://weather.flybubble.com/it#/0/12" title="Mappa interattiva Flybubble Weather" loading="lazy" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />
-                    </div>
-                    <div className="flybubble-panel-footer">
-                      <span>Servizio esterno Flybubble. La copertura dei siti e delle previsioni può variare in base all’area.</span>
-                      <a href="https://weather.flybubble.com/it#/0/12" target="_blank" rel="noreferrer">Apri Flybubble <ArrowDownRight aria-hidden="true" /></a>
-                    </div>
-                  </section>
+                  <CartinaMeteo
+                    decolli={mergedDecolli}
+                    selectedId={selectedId}
+                    onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}
+                  />
               <section id="windgram-section" className="launch-windgram-top min-w-0" aria-label="Windgram aerologico del decollo selezionato">
                 <VentiInterpolatiTab
                   lat={site.lat}

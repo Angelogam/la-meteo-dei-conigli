@@ -36,6 +36,8 @@ export type WindLevel = {
   gh: number;
   /** Vento in km/h. */
   ws: number;
+  /** Direzione meteorologica del vento in gradi (da cui proviene), se disponibile. */
+  wd?: number | null;
   /** Temperatura dell'aria in °C (solo livelli chiave per il profilo termico). */
   t?: number | null;
 };
@@ -94,7 +96,7 @@ async function getOpenMeteo(lat: number, lon: number) {
     // a 4 livelli chiave per ricavare top termica e inversioni dal profilo reale.
     const pressureLevels = [925, 900, 850, 800, 750, 700, 650, 600, 550];
     const soundingVars = pressureLevels
-      .map((hpa) => `wind_speed_${hpa}hPa,geopotential_height_${hpa}hPa`)
+      .map((hpa) => `wind_speed_${hpa}hPa,geopotential_height_${hpa}hPa,wind_direction_${hpa}hPa`)
       .join(",") + ",temperature_925hPa,temperature_850hPa,temperature_700hPa,temperature_550hPa";
     const forecast = await fetchFull(
       lat,
@@ -118,10 +120,11 @@ async function getOpenMeteo(lat: number, lon: number) {
         const gh = numOrNull((h as Record<string, unknown>)[`geopotential_height_${hpa}hPa`]?.[idx]);
         const ws = numOrNull((h as Record<string, unknown>)[`wind_speed_${hpa}hPa`]?.[idx]);
         if (gh === null || ws === null) continue;
+        const wd = numOrNull((h as Record<string, unknown>)[`wind_direction_${hpa}hPa`]?.[idx]);
         const tempKey = [`925`, `850`, `700`, `550`].includes(String(hpa))
           ? numOrNull((h as Record<string, unknown>)[`temperature_${hpa}hPa`]?.[idx])
           : null;
-        levels.push({ hpa, gh, ws, t: tempKey });
+        levels.push({ hpa, gh, ws, wd, t: tempKey });
       }
       return {
         time: String(t),

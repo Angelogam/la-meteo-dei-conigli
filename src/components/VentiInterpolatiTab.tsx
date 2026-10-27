@@ -3,7 +3,6 @@
 import type { OpenMeteoRawResponse } from "@/types/meteo";
 import { Calendar, MapPin, Wind } from "lucide-react";
 import ProfessionalWindgram from "@/components/ProfessionalWindgram";
-import LaunchForecastWidgets from "@/components/LaunchForecastWidgets";
 
 interface VentiInterpolatiTabProps {
   lat: number;
@@ -26,8 +25,8 @@ function formatDateShort(date: Date): string {
 }
 
 /**
- * Vista aerologica del decollo selezionato.
- * Mantiene la mappa XC Therm separata dal windgram aerologico nativo, come richiesto.
+ * Vista aerologica del decollo selezionato: windgram nativo dell'app.
+ * La cartina interattiva dei decolli è nella pagina centrale (CartinaMeteo).
  */
 export default function VentiInterpolatiTab({
   lat,
@@ -59,14 +58,6 @@ export default function VentiInterpolatiTab({
           </p>
         </div>
       </div>
-
-      <LaunchForecastWidgets
-        lat={lat}
-        lon={lon}
-        altitude={quotaDecollo}
-        siteName={siteName || "Decollo selezionato"}
-      />
-
 
       <ProfessionalWindgram
         latitude={lat}
