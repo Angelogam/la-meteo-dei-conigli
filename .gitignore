@@ -64,3 +64,5 @@ android/app/build/**
 # Build output and local verification artifacts
 .output
 artifacts
+
+*.tsbuildinfo

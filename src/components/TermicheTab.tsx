@@ -5,6 +5,8 @@ import { HourData } from "@/types/meteo";
 import type { MeteoCurrent } from "@/services/openMeteoService";
 import { calcolaTermiche } from "@/utils/termiche";
 import { Wind, Cloud, Droplets, TrendingUp, AlertTriangle, MapPin, Calendar } from "lucide-react";
+import TermicheDayFlight, { type TDayHour } from "@/components/TermicheDayFlight";
+import "./termiche-day.css";
 
 interface TermicheTabProps {
   currentData: HourData | MeteoCurrent | null;
@@ -33,7 +35,7 @@ export default function TermicheTab({ dayData, site, selectedDay = 0 }: Termiche
     year: "numeric"
   }), [selectedDate]);
 
-  const oreConDati = useMemo(() => {
+  const fasce = useMemo<TDayHour[]>(() => {
     const ore = Array.from({ length: 14 }, (_, i) => i + 8);
     return ore
       .map(ora => {
@@ -41,18 +43,30 @@ export default function TermicheTab({ dayData, site, selectedDay = 0 }: Termiche
         if (!h) return null;
         const t = calcolaTermiche(h, site.alt);
         if (!t) return null;
-        return { ora: `${String(ora).padStart(2, "0")}:00`, rateo: t.rateo, base: t.base, top: t.top, forza: t.forza, attendibilita: t.attendibilita, temp: h.temperature, vento: h.windSpeed, nuvole: h.cloudCover, umidita: h.humidity };
+        return {
+          hour: ora,
+          rateo: t.rateo,
+          base: t.base,
+          top: t.top,
+          temp: h.temperature,
+          wind: h.windSpeed,
+          gusts: h.windGusts,
+          dir: h.windDir,
+          cloud: h.cloudCover,
+          humidity: h.humidity,
+          freeze: h.freezingLevel,
+        };
       })
-      .filter(Boolean);
+      .filter(Boolean) as TDayHour[];
   }, [dayData, site.alt]);
 
-  const maxRateo = useMemo(() => Math.max(...oreConDati.map(o => o!.rateo), 0.1), [oreConDati]);
+  const maxRateo = useMemo(() => Math.max(...fasce.map(o => o.rateo), 0.1), [fasce]);
   const mediaRateo = useMemo(() => {
-    const vals = oreConDati.map(o => o!.rateo);
+    const vals = fasce.map(o => o.rateo);
     return vals.length > 0 ? (vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
-  }, [oreConDati]);
+  }, [fasce]);
 
-  if (oreConDati.length === 0) {
+  if (fasce.length === 0) {
     return (
       <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-8 text-center">
         <AlertTriangle className="w-10 h-10 text-slate-500 mx-auto mb-3" />
@@ -88,7 +102,7 @@ export default function TermicheTab({ dayData, site, selectedDay = 0 }: Termiche
           </div>
           <div className="bg-slate-900/60 rounded-xl p-3 text-center">
             <p className="text-xs text-slate-400 mb-1">Ore attive</p>
-            <p className="text-xl font-bold text-emerald-400">{oreConDati.filter(o => o!.rateo >= 0.5).length}</p>
+            <p className="text-xl font-bold text-emerald-400">{fasce.filter(o => o.rateo >= 0.5).length}</p>
           </div>
           <div className="bg-slate-900/60 rounded-xl p-3 text-center">
             <p className="text-xs text-slate-400 mb-1">Giudizio</p>
@@ -99,15 +113,24 @@ export default function TermicheTab({ dayData, site, selectedDay = 0 }: Termiche
         </div>
       </div>
 
+      <TermicheDayFlight
+        key={selectedDay}
+        hours={fasce}
+        siteAlt={site.alt}
+        siteName={site.name}
+        selectedDay={selectedDay}
+      />
+
       <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-700/30">
           <TrendingUp className="w-4 h-4 text-orange-400" />
           <span className="text-sm font-bold text-slate-200">Dettaglio orario termiche</span>
+          <span className="text-[11px] text-slate-500 ml-auto hidden sm:inline">i valori del grafico animato, riga per riga</span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-full text-[13px]">
             <thead>
-              <tr className="border-b border-slate-700/30 text-slate-500">
+              <tr className="border-b border-slate-700/30 text-slate-400 text-[11px] uppercase tracking-wider">
                 <th className="p-3 text-left">Ora</th>
                 <th className="p-3 text-left">Rateo</th>
                 <th className="p-3 text-left">Base</th>
@@ -119,9 +142,9 @@ export default function TermicheTab({ dayData, site, selectedDay = 0 }: Termiche
               </tr>
             </thead>
             <tbody>
-              {oreConDati.map((r) => r && (
-                <tr key={r.ora} className="border-b border-slate-700/20 hover:bg-slate-700/30 transition-colors">
-                  <td className="p-3 font-bold text-white">{r.ora}</td>
+              {fasce.map((r) => (
+                <tr key={r.hour} className="border-b border-slate-700/20 hover:bg-slate-700/30 transition-colors">
+                  <td className="p-3 font-bold text-white tabular-nums">{String(r.hour).padStart(2, "0")}:00</td>
                   <td className="p-3">
                     <div className="flex items-center gap-2">
                       <div className="w-16 h-2 bg-slate-700 rounded-full overflow-hidden">
@@ -133,23 +156,23 @@ export default function TermicheTab({ dayData, site, selectedDay = 0 }: Termiche
                           }}
                         />
                       </div>
-                      <span className="font-bold text-orange-300 tabular-nums">{r.rateo.toFixed(1)} m/s</span>
+                      <span className="font-bold text-orange-300 tabular-nums">{r.rateo.toFixed(1).replace(".", ",")} m/s</span>
                     </div>
                   </td>
-                  <td className="p-3 text-slate-300">{r.base} m</td>
-                  <td className="p-3 text-sky-300">{r.top} m</td>
-                  <td className="p-3 text-amber-300">{Math.round(r.temp)}°C</td>
-                  <td className="p-3 text-sky-300">
+                  <td className="p-3 text-slate-300 tabular-nums">{Math.round(r.base)} m</td>
+                  <td className="p-3 text-sky-300 tabular-nums">{Math.round(r.top)} m</td>
+                  <td className="p-3 text-amber-300 tabular-nums">{r.temp !== null ? Math.round(r.temp) + "°C" : "N/D"}</td>
+                  <td className="p-3 text-sky-300 tabular-nums">
                     <Wind className="w-3 h-3 inline mr-1" />
-                    {Math.round(r.vento)} km/h
+                    {r.wind !== null ? Math.round(r.wind) + " km/h" : "N/D"}
                   </td>
-                  <td className="p-3 text-slate-300">
+                  <td className="p-3 text-slate-300 tabular-nums">
                     <Cloud className="w-3 h-3 inline mr-1" />
-                    {Math.round(r.nuvole)}%
+                    {r.cloud !== null ? Math.round(r.cloud) + "%" : "N/D"}
                   </td>
-                  <td className="p-3 text-blue-300">
+                  <td className="p-3 text-blue-300 tabular-nums">
                     <Droplets className="w-3 h-3 inline mr-1" />
-                    {Math.round(r.umidita)}%
+                    {r.humidity !== null ? Math.round(r.humidity) + "%" : "N/D"}
                   </td>
                 </tr>
               ))}

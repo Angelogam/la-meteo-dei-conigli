@@ -1,0 +1,353 @@
+/* ============================================================
+   TERMICHE DAY FLIGHT — "Il volo della giornata" (tday-*)
+   Scena aerologica animata: parapendio + pilota, colonne
+   termiche con bolle in risalita, cumuli alla base nubi,
+   quote a sinistra, vento per fasce orarie a destra.
+   ============================================================ */
+
+.tday-panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(125, 170, 255, .16);
+  border-radius: 22px;
+  color: #e6eefc;
+  background:
+    radial-gradient(120% 60% at 10% 0%, rgba(56, 189, 248, .09), transparent 60%),
+    radial-gradient(80% 50% at 100% 0%, rgba(251, 146, 60, .06), transparent 55%),
+    linear-gradient(168deg, #0d1a2e 0%, #091223 55%, #0b1526 100%);
+  box-shadow: 0 22px 48px rgba(1, 6, 16, .5), inset 0 1px 0 rgba(190, 220, 255, .07);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ---------- Testata ---------- */
+.tday-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.2rem .9rem;
+}
+.tday-kicker {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  margin: 0 0 .4rem;
+  color: #67e8f9;
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .18em;
+}
+.tday-kicker::before {
+  content: '';
+  display: inline-block;
+  width: 16px; height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #fb923c, #f59e0b);
+  box-shadow: 0 0 10px rgba(251, 146, 60, .5);
+}
+.tday-title {
+  margin: 0;
+  color: #f5f9ff;
+  font-family: 'Sora', 'Inter', system-ui, sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -.03em;
+  line-height: 1.15;
+}
+.tday-sub {
+  max-width: 68ch;
+  margin: .45rem 0 0;
+  color: #93a7c4;
+  font-size: .74rem;
+  line-height: 1.55;
+}
+.tday-play {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  flex: 0 0 auto;
+  margin-top: .4rem;
+  padding: .58rem .95rem;
+  border: 1px solid rgba(251, 146, 60, .45);
+  border-radius: 13px;
+  color: #0b1526;
+  font-family: 'Sora', 'Inter', sans-serif;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .01em;
+  background: linear-gradient(160deg, #fdba74, #f59e0b 70%);
+  box-shadow: 0 6px 18px rgba(245, 158, 11, .3), inset 0 1px 0 rgba(255, 255, 255, .35);
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+.tday-play:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.tday-play.is-on {
+  background: linear-gradient(160deg, #38bdf8, #0ea5e9 70%);
+  border-color: rgba(56, 189, 248, .6);
+  box-shadow: 0 6px 18px rgba(14, 165, 233, .35), inset 0 1px 0 rgba(255, 255, 255, .3);
+}
+.tday-play:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  filter: grayscale(.4);
+}
+.tday-play:focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; }
+
+/* ---------- Lettura valori ora attiva ---------- */
+.tday-readout {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .4rem;
+  padding: .15rem 1.2rem .85rem;
+}
+.tday-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .34rem;
+  padding: .34rem .62rem;
+  border: 1px solid rgba(125, 170, 255, .16);
+  border-radius: 999px;
+  color: #a9bcd9;
+  font-size: .72rem;
+  font-weight: 600;
+  line-height: 1.2;
+  background: rgba(2, 8, 20, .45);
+  white-space: nowrap;
+}
+.tday-chip b {
+  color: #f5f9ff;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.tday-chip-hour { border-color: rgba(251, 146, 60, .4); background: rgba(251, 146, 60, .1); color: #fdba74; }
+.tday-chip-hour b { color: #ffedd5; }
+.tday-chip-therm { border-color: rgba(251, 146, 60, .4); background: rgba(249, 115, 22, .12); color: #fdba74; }
+.tday-chip-therm b { color: #fdba74; }
+.tday-chip-wind { border-color: rgba(34, 211, 238, .35); background: rgba(34, 211, 238, .08); }
+.tday-chip-wind b { color: #a5f3fc; }
+.tday-chip-off { color: #8ba3c4; border-style: dashed; }
+.tday-chip-turb b { color: #6ee7b7; }
+.tday-chip-turb.is-t1 b { color: #fcd34d; }
+.tday-chip-turb.is-t2 { border-color: rgba(248, 113, 113, .4); background: rgba(239, 68, 68, .1); }
+.tday-chip-turb.is-t2 b { color: #fca5a5; }
+
+/* ---------- Scena ---------- */
+.tday-scene-wrap {
+  margin: 0 .9rem;
+  border: 1px solid rgba(125, 170, 255, .12);
+  border-radius: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, .5) rgba(6, 14, 28, .6);
+  background: rgba(3, 9, 20, .5);
+}
+.tday-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-width: 720px;
+}
+
+/* assi e griglia */
+.tday-grid { stroke: rgba(148, 197, 255, .1); stroke-width: 1; stroke-dasharray: 2 5; }
+.tday-axis {
+  fill: rgba(139, 163, 196, .75);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  font-family: 'Inter', sans-serif;
+}
+.tday-axis-sub {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  fill: rgba(139, 163, 196, .6);
+}
+.tday-alt {
+  fill: rgba(214, 231, 255, .88);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.tday-sep { stroke: rgba(148, 197, 255, .07); stroke-width: 1; }
+.tday-hour {
+  fill: rgba(139, 163, 196, .92);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.tday-hour.is-active { fill: #fdba74; font-size: 14px; }
+.tday-band-active {
+  fill: rgba(251, 146, 60, .07);
+  stroke: rgba(251, 146, 60, .35);
+  stroke-width: 1;
+  transition: x .45s cubic-bezier(.22, .8, .36, 1);
+}
+.tday-hit {
+  fill: transparent;
+  cursor: pointer;
+  pointer-events: all;
+  transition: fill .2s ease;
+}
+.tday-hit:hover { fill: rgba(148, 197, 255, .06); }
+
+/* curve aerologiche */
+.tday-base { stroke: #7dd3fc; stroke-width: 1.6; stroke-dasharray: 5 4; opacity: .85; filter: drop-shadow(0 0 5px rgba(125, 211, 252, .45)); }
+.tday-base-txt { fill: #7dd3fc; font-size: 12px; font-weight: 700; font-family: 'Inter', sans-serif; opacity: .9; }
+.tday-freeze { stroke: #e0f2fe; stroke-width: 1.2; stroke-dasharray: 7 3 1.6 3; opacity: .7; }
+.tday-freeze-txt { fill: #bae6fd; font-size: 11.5px; font-weight: 700; font-family: 'Inter', sans-serif; opacity: .85; }
+
+/* colonne termiche + bolle */
+.tday-col { transition: opacity .5s ease; }
+@keyframes tday-rise {
+  0% { transform: translateY(0); opacity: 0; }
+  12% { opacity: .95; }
+  80% { opacity: .7; }
+  100% { transform: translateY(var(--tday-rise, -160px)); opacity: 0; }
+}
+.tday-bub {
+  fill: #fed7aa;
+  filter: drop-shadow(0 0 3px rgba(251, 146, 60, .8));
+  animation: tday-rise var(--tday-dur, 2.2s) linear infinite;
+  animation-delay: var(--tday-del, 0s);
+  will-change: transform, opacity;
+}
+.tday-ms {
+  fill: #fdba74;
+  font-size: 16px;
+  font-weight: 800;
+  font-family: 'Sora', 'Inter', sans-serif;
+  font-variant-numeric: tabular-nums;
+  paint-order: stroke;
+  stroke: rgba(3, 10, 22, .8);
+  stroke-width: 3px;
+}
+.tday-ms.is-active { fill: #ffedd5; }
+.tday-ms-unit {
+  fill: rgba(253, 186, 116, .75);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  font-family: 'Inter', sans-serif;
+  paint-order: stroke;
+  stroke: rgba(3, 10, 22, .8);
+  stroke-width: 2.6px;
+}
+
+/* nuvole alla base */
+@keyframes tday-drift {
+  0%, 100% { transform: translateX(-5px); }
+  50% { transform: translateX(6px); }
+}
+.tday-cloud { animation: tday-drift 7s ease-in-out infinite; }
+
+/* decollo */
+.tday-flag-pole { stroke: #fdba74; stroke-width: 1.6; }
+.tday-flag { fill: #f59e0b; filter: drop-shadow(0 0 5px rgba(245, 158, 11, .55)); }
+.tday-launch-dot { fill: #fdba74; }
+.tday-launch-txt {
+  fill: #fdba74;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  font-family: 'Inter', sans-serif;
+}
+.tday-launch-alt {
+  fill: rgba(214, 231, 255, .85);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+/* turbolenza */
+.tday-zig { stroke: #fbbf24; stroke-width: 1.7; stroke-linecap: round; opacity: .8; }
+.tday-zig.is-strong { stroke: #f87171; }
+
+/* binario del vento (destra) */
+.tday-wrow { cursor: pointer; }
+.tday-wrow-bg {
+  fill: transparent;
+  transition: fill .2s ease;
+}
+.tday-wrow:hover .tday-wrow-bg { fill: rgba(148, 197, 255, .07); }
+.tday-wrow.is-active .tday-wrow-bg { fill: rgba(34, 211, 238, .1); stroke: rgba(34, 211, 238, .35); stroke-width: 1; }
+.tday-warrow path { fill: rgba(103, 232, 249, .8); transition: fill .25s ease; }
+.tday-wrow.is-active .tday-warrow path { fill: #67e8f9; filter: drop-shadow(0 0 4px rgba(103, 232, 249, .8)); }
+.tday-wspeed {
+  fill: #e6eefc;
+  font-size: 14.5px;
+  font-weight: 800;
+  font-family: 'Inter', sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.tday-wunit { fill: rgba(139, 163, 196, .8); font-size: 9.5px; font-weight: 600; font-family: 'Inter', sans-serif; }
+.tday-wgust {
+  fill: #fcd34d;
+  font-size: 11.5px;
+  font-weight: 800;
+  font-family: 'Inter', sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+/* scia + parapendio */
+.tday-trail {
+  stroke: rgba(103, 232, 249, .38);
+  stroke-width: 1.4;
+  stroke-dasharray: 4 6;
+  stroke-linecap: round;
+  fill: none;
+}
+.tday-glider { will-change: transform; filter: drop-shadow(0 3px 6px rgba(2, 8, 20, .55)); transition: opacity .6s ease; }
+
+/* ---------- Legenda + nota ---------- */
+.tday-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .35rem 1rem;
+  padding: .8rem 1.2rem .2rem;
+  color: #7d92b5;
+  font-size: .68rem;
+  font-weight: 600;
+}
+.tday-legend span { display: inline-flex; align-items: center; gap: .38rem; }
+.tday-legend i { display: inline-block; width: 16px; height: 10px; border-radius: 3px; }
+.tday-legend .lg-col { background: linear-gradient(0deg, rgba(245, 158, 11, .65), rgba(253, 186, 116, .15)); }
+.tday-legend .lg-bub { background: radial-gradient(circle at 50% 60%, #fed7aa 0 3px, transparent 4px); box-shadow: 0 0 6px rgba(251, 146, 60, .8); }
+.tday-legend .lg-cloud { background: #f1f5f9; border-radius: 999px; opacity: .85; }
+.tday-legend .lg-base { height: 0; border-top: 2px dashed #7dd3fc; }
+.tday-legend .lg-freeze { height: 0; border-top: 2px dotted #e0f2fe; }
+.tday-legend .lg-zig { height: 0; border-top: 2px solid #fbbf24; border-radius: 0; background: none; transform: rotate(-8deg); }
+.tday-legend .lg-glider { background: linear-gradient(90deg, #22d3ee, #f8fafc); border-radius: 999px 999px 4px 4px; height: 8px; }
+
+.tday-note {
+  margin: 0;
+  padding: .55rem 1.2rem 1.05rem;
+  color: #5d7695;
+  font-size: .62rem;
+  line-height: 1.5;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 760px) {
+  .tday-head { flex-direction: column; padding: .95rem .9rem .7rem; }
+  .tday-title { font-size: 1.14rem; }
+  .tday-sub { font-size: .7rem; }
+  .tday-play { margin-top: 0; }
+  .tday-readout { padding: .1rem .9rem .7rem; gap: .32rem; }
+  .tday-chip { font-size: .66rem; padding: .3rem .52rem; }
+  .tday-scene-wrap { margin: 0 .6rem; }
+  .tday-legend { padding: .7rem .9rem .15rem; gap: .3rem .7rem; font-size: .62rem; }
+  .tday-note { padding: .45rem .9rem .9rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tday-bub, .tday-cloud { animation: none; }
+  .tday-band-active, .tday-glider { transition: none; }
+}
