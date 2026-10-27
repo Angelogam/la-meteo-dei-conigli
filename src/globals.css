@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== IDENTITÀ TIPOGRAFICA (font caricati via <link> in index.html) =====
+   Space Grotesk = titoli/display · Inter = testo · JetBrains Mono = quote, orari, valori.
+   FUORI dal @layer: le regole layerate perdono contro qualunque CSS non layerato. */
+:root {
+  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
 @layer base {
   :root {
     --background: 200 25% 8%;
@@ -34,7 +48,7 @@
     @apply bg-background text-foreground;
     font-size: 14px;
     line-height: 1.6;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-body);
   }
 
   @media (min-width: 768px) {
