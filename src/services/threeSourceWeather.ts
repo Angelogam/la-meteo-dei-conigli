@@ -28,6 +28,18 @@ export type MeteoDecollo = {
   hourly?: HourlyPoint[];
 };
 
+/** Un livello di pressione del modello (sounding semplificato) per un'ora. */
+export type WindLevel = {
+  /** Livello di pressione in hPa (925 = ~750 m, 550 = ~4900 m). */
+  hpa: number;
+  /** Geopotenziale del livello in metri s.l.m. */
+  gh: number;
+  /** Vento in km/h. */
+  ws: number;
+  /** Temperatura dell'aria in °C (solo livelli chiave per il profilo termico). */
+  t?: number | null;
+};
+
 /** Un'ora della serie oraria Open-Meteo per un decollo. */
 export type HourlyPoint = {
   /** Ora locale in formato "2026-10-27T14:00" (timezone Europe/Rome). */
@@ -42,6 +54,8 @@ export type HourlyPoint = {
   code: number | null;
   cape: number | null;
   freezing: number | null;
+  /** Sounding del modello: vento/geopotenziale ai livelli di pressione (dal più basso al più alto). */
+  levels?: WindLevel[];
 };
 
 const OPENWEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_KEY || "";
@@ -75,10 +89,17 @@ async function getOpenMeteo(lat: number, lon: number) {
     // Hourly and daily variables are returned together, reducing upstream calls per launch.
     // dew_point_2m serve alla base nubi (LCL), wind_gusts_10m all'indice di volabilità;
     // 3 giorni per alimentare le timeline orarie del selettore giorni.
+    // Sounding a livelli di pressione per il windgram stile Meteo-Parapente:
+    // vento + geopotenziale a 9 livelli (925→550 hPa ≈ 750→4900 m) e temperatura
+    // a 4 livelli chiave per ricavare top termica e inversioni dal profilo reale.
+    const pressureLevels = [925, 900, 850, 800, 750, 700, 650, 600, 550];
+    const soundingVars = pressureLevels
+      .map((hpa) => `wind_speed_${hpa}hPa,geopotential_height_${hpa}hPa`)
+      .join(",") + ",temperature_925hPa,temperature_850hPa,temperature_700hPa,temperature_550hPa";
     const forecast = await fetchFull(
       lat,
       lon,
-      "temperature_2m,dew_point_2m,precipitation,cloud_cover,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cape,freezing_level_height,weather_code",
+      "temperature_2m,dew_point_2m,precipitation,cloud_cover,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cape,freezing_level_height,weather_code," + soundingVars,
       "temperature_2m_max,temperature_2m_min,cloud_cover_mean,precipitation_sum",
       "",
       3,
@@ -91,19 +112,32 @@ async function getOpenMeteo(lat: number, lon: number) {
 
     const h = forecast.hourly;
     const d = forecast.daily;
-    const hourly: HourlyPoint[] = times.map((t, idx) => ({
-      time: String(t),
-      wind: numOrNull(h.wind_speed_10m?.[idx]),
-      gusts: numOrNull(h.wind_gusts_10m?.[idx]),
-      dir: numOrNull(h.wind_direction_10m?.[idx]),
-      temp: numOrNull(h.temperature_2m?.[idx]),
-      dew: numOrNull(h.dew_point_2m?.[idx]),
-      rain: numOrNull(h.precipitation?.[idx]),
-      cloud: numOrNull(h.cloud_cover?.[idx]),
-      code: numOrNull(h.weather_code?.[idx]),
-      cape: numOrNull(h.cape?.[idx]),
-      freezing: numOrNull(h.freezing_level_height?.[idx]),
-    }));
+    const hourly: HourlyPoint[] = times.map((t, idx) => {
+      const levels: WindLevel[] = [];
+      for (const hpa of pressureLevels) {
+        const gh = numOrNull((h as Record<string, unknown>)[`geopotential_height_${hpa}hPa`]?.[idx]);
+        const ws = numOrNull((h as Record<string, unknown>)[`wind_speed_${hpa}hPa`]?.[idx]);
+        if (gh === null || ws === null) continue;
+        const tempKey = [`925`, `850`, `700`, `550`].includes(String(hpa))
+          ? numOrNull((h as Record<string, unknown>)[`temperature_${hpa}hPa`]?.[idx])
+          : null;
+        levels.push({ hpa, gh, ws, t: tempKey });
+      }
+      return {
+        time: String(t),
+        wind: numOrNull(h.wind_speed_10m?.[idx]),
+        gusts: numOrNull(h.wind_gusts_10m?.[idx]),
+        dir: numOrNull(h.wind_direction_10m?.[idx]),
+        temp: numOrNull(h.temperature_2m?.[idx]),
+        dew: numOrNull(h.dew_point_2m?.[idx]),
+        rain: numOrNull(h.precipitation?.[idx]),
+        cloud: numOrNull(h.cloud_cover?.[idx]),
+        code: numOrNull(h.weather_code?.[idx]),
+        cape: numOrNull(h.cape?.[idx]),
+        freezing: numOrNull(h.freezing_level_height?.[idx]),
+        levels: levels.length ? levels : undefined,
+      };
+    });
     return {
       temp: numOrNull(h.temperature_2m?.[i]),
       rain: numOrNull(h.precipitation?.[i]),

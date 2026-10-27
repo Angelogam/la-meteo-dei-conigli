@@ -7,6 +7,7 @@ import {
 import type { Decollo } from "@/data/decolli";
 import { calcolaIndiceVolabilita, esposizioneToGradi } from "@/utils/indiceVolabilita";
 import type { HourlyPoint } from "@/services/threeSourceWeather";
+import CardWindgram from "@/components/CardWindgram";
 
 export interface AggressiveWeatherData {
   temp: string | number;
@@ -220,80 +221,6 @@ function Compass({ expDeg, dir, relCls }: { expDeg: number; dir: number | null; 
   );
 }
 
-/* ---------- Profilo d'aria: colonna atmosferica leggibile e animata ---------- */
-
-function fmtQuota(v: number | null | undefined): string {
-  if (v === null || v === undefined || !Number.isFinite(v)) return "—";
-  return Math.round(v).toLocaleString("it-IT") + " m";
-}
-
-function AirProfile({ alt, base, freezing, rateo, cloud }: { alt: number; base: number | null; freezing: number | null; rateo: number | null; cloud: number | null }) {
-  const hasBase = base !== null && base > alt + 60;
-  const canRise = (rateo ?? 0) > 0.2 && hasBase;
-  const top = Math.max(freezing ?? 0, base ?? 0, alt + 900) + 350;
-  const bottom = Math.max(0, alt - 170);
-  const span = Math.max(1, top - bottom);
-  const pct = (v: number) => Math.max(2, Math.min(96, ((v - bottom) / span) * 100));
-  const altP = pct(alt);
-  const baseP = hasBase && base !== null ? pct(base) : null;
-  const freezeP = freezing !== null && freezing > alt ? pct(freezing) : null;
-  // Copertura nuvolosa → intensità della nebbia sopra la base
-  const haze = cloud === null ? 0.55 : Math.min(1, Math.max(0.18, (cloud - 8) / 70));
-  // Evita che le etichette si sovrappongano quando le quote sono vicine
-  const baseShift = baseP !== null && baseP - altP < 12;
-  const freezeShift = freezeP !== null && (baseP !== null ? freezeP - baseP < 10 : freezeP - altP < 12);
-  const baseTop = baseP !== null && baseP > 86;
-  const freezeTop = freezeP !== null && freezeP > 86;
-  return (
-    <div className="dxc-air" aria-hidden="true">
-      <div className="dxc-air-sky" />
-      {baseP !== null && <div className="dxc-air-clouds" style={{ bottom: baseP + "%", opacity: haze }} />}
-      {canRise && baseP !== null && (
-        <div className="dxc-air-thermal" style={{ bottom: altP + "%", height: Math.max(9, baseP - altP) + "%" }}>
-          <i /><i /><i /><i />
-        </div>
-      )}
-      {canRise && baseP !== null && (
-        <span
-          className="dxc-air-glider"
-          style={{ bottom: "calc(" + altP + "% + " + Math.max(6, (baseP - altP) * 0.5) + "%)" }}
-        >
-          <svg viewBox="0 0 44 20">
-            <path d="M22 2 C31 2 39 7 42 12 C36 9 29 8 22 8 C15 8 8 9 2 12 C5 7 13 2 22 2 Z" />
-            <line x1="22" y1="8" x2="22" y2="15" />
-            <circle cx="22" cy="16.5" r="2.4" />
-          </svg>
-        </span>
-      )}
-      <div className="dxc-air-ground" style={{ height: altP + "%" }} />
-      {freezeP !== null && (
-        <div
-          className={"dxc-air-line is-freeze" + (freezeTop ? " is-under" : "") + (freezeShift ? " is-shift" : "")}
-          style={{ bottom: freezeP + "%" }}
-        >
-          <span className="dxc-air-chip"><Snowflake />0° · {fmtQuota(freezing)}</span>
-        </div>
-      )}
-      {baseP !== null && (
-        <div
-          className={"dxc-air-line is-base" + (baseTop ? " is-under" : "") + (baseShift ? " is-shift" : "")}
-          style={{ bottom: baseP + "%" }}
-        >
-          <span className="dxc-air-chip"><Cloud />Base nubi · {fmtQuota(base)}</span>
-        </div>
-      )}
-      <div className="dxc-air-line is-ground" style={{ bottom: altP + "%" }}>
-        <span className="dxc-air-chip"><MapPin />Decollo · {fmtQuota(alt)}</span>
-      </div>
-      {!canRise && (
-        <div className="dxc-air-still" style={{ bottom: "calc(" + altP + "% + 4px)" }}>
-          {(rateo ?? 0) <= 0.2 ? "Aria stabile · termiche assenti" : "Nubi sul decollo"}
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ---------- Testata comune delle card ---------- */
 
 type CardItem = Decollo & { aggressiveWeather?: AggressiveWeatherData | null };
@@ -455,6 +382,11 @@ function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour, id
       .filter((v) => v.hour >= 0);
   }, [weather, dayKey, quota, esposizione]);
 
+  const dayPoints = useMemo(
+    () => (weather?.hourly ?? []).filter((p) => p.time.startsWith(dayKey)),
+    [weather, dayKey],
+  );
+
   const [previewHour, setPreviewHour] = useState<number | null>(null);
   useEffect(() => { setPreviewHour(null); }, [selectedDay]);
 
@@ -511,9 +443,9 @@ function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour, id
       </div>
       <span className="dxc-motivi"><span className="dxc-fade" key={"m" + active.hour}>{motivi || "Modello Open-Meteo · confronto indicativo, non è un giudizio di sicurezza"}</span></span>
 
-      <div className="dxc-tl-wrap">
-        <div className="dxc-tl-head">
-          <span className="dxc-tl-title">Ora per ora</span>
+      <div className="dxc-wgblock">
+        <div className="dxc-wg-head">
+          <span className="dxc-wg-kicker">Windgram · vento in quota</span>
           {best ? (
             <span className={"dxc-window " + (active.classe === "is-good" ? "is-good" : "is-fair")}>
               {best.start === best.end ? "Finestra ore " + best.start : "Finestra " + best.start + "–" + best.end}
@@ -521,42 +453,20 @@ function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour, id
           ) : (
             <span className="dxc-window is-bad">Nessuna finestra netta</span>
           )}
-          <span className="dxc-tl-state">{status.icon}<em>{status.label}</em></span>
-        </div>
-        <div className="dxc-tl" role="presentation" key={dayKey}>
-          {tlHours.map((v, bi) => {
-            const inWin = best !== null && v.hour >= best.start && v.hour <= best.end;
-            const barH = Math.round(6 + Math.min(1, (v.wind ?? 0) / 40) * 20);
-            return (
-              <span
-                key={v.hour}
-                data-hour={v.hour}
-                className={
-                  "dxc-hr " + v.classe
-                  + (v.hour === active.hour ? " is-active" : "")
-                  + (inWin ? " is-inwin" : "")
-                  + (selectedDay === 0 && v.hour === nowHour ? " is-now" : "")
-                }
-                title={v.hour + ":00 · " + v.label + " · vento " + Math.round(v.wind ?? 0) + " km/h" + (v.gusts ? " (raffiche " + Math.round(v.gusts) + ")" : "")}
-              >
-                <span className="dxc-hr-bar" style={{ height: barH + "px", animationDelay: bi * 16 + "ms" }} />
-                <small>{v.hour % 3 === 0 ? v.hour : "\u00A0"}</small>
-              </span>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="dxc-airblock">
-        <div className="dxc-air-head">
-          <span className="dxc-air-kicker">Profilo d’aria</span>
-          <span className={"dxc-air-therm dxc-fade" + (canRise ? "" : " is-off")} key={"t" + active.hour}>
+          <span className={"dxc-wg-therm dxc-fade" + (canRise ? "" : " is-off")} key={"t" + active.hour}>
             <Flame size={10} aria-hidden="true" />
             {canRise ? "Termiche +" + (active.rateo ?? 0).toFixed(1).replace(".", ",") + " m/s" : "Termiche assenti"}
           </span>
+          <span className="dxc-wg-state">{status.icon}<em>{status.label}</em></span>
         </div>
-        <AirProfile alt={quota} base={active.baseNubiM} freezing={active.freezing} rateo={active.rateo} cloud={active.cloud} />
-        <span className="dxc-air-cap">Le bolle arancioni sono le termiche che salgono fino alla base delle nubi · la linea tratteggiata è lo zero termico.</span>
+        <CardWindgram
+          hours={tlHours}
+          points={dayPoints}
+          quota={quota}
+          activeHour={active.hour}
+          nowHour={selectedDay === 0 ? nowHour : null}
+          dayKey={dayKey}
+        />
       </div>
 
       <div className="dxc-windstrip">
@@ -637,7 +547,7 @@ export default function DecolliCard({
         <div>
           <p className="dxc-kicker">SITI MONITORATI</p>
           <h2 className="dxc-title" id="dxc-title">Confronta i decolli</h2>
-          <p className="dxc-description">Verdetto di volo, finestra migliore e vento sul pendio per ogni sito. Tocca le barre orarie per spostarti nella giornata; il confronto è indicativo, non è un giudizio di sicurezza.</p>
+          <p className="dxc-description">Verdetto di volo, windgram del modello e vento sul pendio per ogni sito. Tocca le colonne del windgram per sfogliare la giornata; il confronto è indicativo, non è un giudizio di sicurezza.</p>
         </div>
         <div className="dxc-count">
           <strong>{decolli.length}</strong>
