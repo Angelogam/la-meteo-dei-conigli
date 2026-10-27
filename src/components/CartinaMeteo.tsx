@@ -18,6 +18,15 @@ import type { Decollo } from "@/data/decolli";
 import type { HourlyPoint } from "@/services/threeSourceWeather";
 import { calcolaIndiceVolabilita, esposizioneToGradi } from "@/utils/indiceVolabilita";
 import CartinaPanel, { type PanelHour } from "@/components/CartinaPanel";
+import {
+  ensureDem,
+  buildFieldGeometry,
+  computeField,
+  paintField,
+  driftPx,
+  type FieldGeom,
+  type ThermalHour,
+} from "@/utils/thermalField";
 import "./cartina-meteo.css";
 
 /* ============================== TIPI ============================== */
@@ -100,10 +109,22 @@ const LAYER_TABS: { id: LayerId; label: string; icon: typeof Flame }[] = [
 ];
 
 const LAYER_NAME: Record<LayerId, string> = {
-  termiche: "Ascendenze termiche",
+  termiche: "Campo termico del terreno",
   vento: "Vento in quota",
   nuvole: "Copertura nuvolosa",
   pioggia: "Precipitazioni",
+};
+
+/* Note didattiche da manuale di volo (una per livello) */
+const LAYER_HINT: Record<LayerId, string> = {
+  termiche:
+    "Le zone colorate sono i pendii che il sole sta riscaldando: al mattino i versanti E/SE, a mezzogiorno i S, nel pomeriggio gli O/SO. Le bolle si staccano dai crinali e vengono spinte sottovento dal vento.",
+  vento:
+    "La freccia mostra dove spinge il vento alla quota scelta, il colore l'intensità. Sul decollo conta il rapporto con l'esposizione: in fronte la termica si rinforza, in coda muore.",
+  nuvole:
+    "La copertura filtra il sole: con poche nubi le termiche si rinforzano, sopra il 70% il riscaldamento crolla e la convezione si spegne. La base dei cumuli coincide con la base nubi del pannello.",
+  pioggia:
+    "La pioggia raffredda l'aria e spezza le termiche: dopo i rovesci resta turbolenza e raffiche disordinate. Se il livello è attivo meglio rimandare il decollo.",
 };
 
 const BASE_TABS: { id: BaseId; label: string }[] = [
@@ -280,6 +301,19 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
 
   const dayKey = useMemo(() => dateKeyFor(day), [day]);
 
+  /* --- campo termico sul terreno (sistema Meteo-Parapente) --- */
+  const geomRef = useRef<FieldGeom | null>(null);
+  const fieldCacheRef = useRef<Map<string, { values: Float32Array; max: number; windKmh: number; windDir: number }>>(new Map());
+  const demReadyRef = useRef(false);
+  const demBusyRef = useRef(false);
+  const demQueuedRef = useRef(false);
+  const dayKeyRef = useRef(dayKey);
+  dayKeyRef.current = dayKey;
+  const hourRef = useRef(hour);
+  hourRef.current = hour;
+  const peakRef = useRef<HTMLSpanElement | null>(null);
+  const [demState, setDemState] = useState<"loading" | "ready" | "off">("loading");
+
   /* --- istantanea di tutti i siti all'ora selezionata --- */
   const snapshots = useMemo<SiteSnapshot[]>(
     () =>
@@ -382,16 +416,82 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
       if (active === "vento") return; // il livello vento usa frecce, non aloni
       const zoom = map.getZoom();
       const rBase = heatRadius(zoom);
-      ctx.globalCompositeOperation = active === "termiche" ? "lighter" : "source-over";
+
+      /* --- TERMICHE: campo sul terreno (sistema Meteo-Parapente) con fallback ad aloni --- */
+      if (active === "termiche") {
+        const geom = geomRef.current;
+        if (demReadyRef.current && geom) {
+          const cacheKey = dayKeyRef.current + "T" + hourRef.current;
+          let res = fieldCacheRef.current.get(cacheKey);
+          if (!res) {
+            if (fieldCacheRef.current.size > 40) fieldCacheRef.current.clear();
+            let rateoMax = 0;
+            let radSum = 0;
+            let radN = 0;
+            let wSum = 0;
+            let wN = 0;
+            let dSin = 0;
+            let dCos = 0;
+            const center = map.getCenter();
+            for (const s of snapRef.current) {
+              if (s.eval) {
+                rateoMax = Math.max(rateoMax, s.eval.rateo ?? 0);
+                if (s.eval.wind != null) {
+                  wSum += s.eval.wind;
+                  wN++;
+                }
+                if (s.eval.dir != null) {
+                  const r = (s.eval.dir * Math.PI) / 180;
+                  dSin += Math.sin(r);
+                  dCos += Math.cos(r);
+                }
+              }
+              const rad = s.point?.rad;
+              if (rad != null) {
+                radSum += rad;
+                radN++;
+              }
+            }
+            const hourState: ThermalHour = {
+              dayISO: dayKeyRef.current,
+              hour: hourRef.current,
+              rad: radN ? radSum / radN : 0,
+              rateoMax,
+              windKmh: wN ? wSum / wN : 0,
+              windDir: wN ? (((Math.atan2(dSin, dCos) * 180) / Math.PI % 360) + 360) % 360 : 0,
+              lat: center.lat,
+              lon: center.lng,
+            };
+            const out = computeField(geom, hourState);
+            res = { values: out.values, max: out.max, windKmh: hourState.windKmh, windDir: hourState.windDir };
+            fieldCacheRef.current.set(cacheKey, res);
+          }
+          const drift = driftPx(res.windKmh, res.windDir, zoom);
+          paintField(ctx, geom, res.values, drift.dx, drift.dy);
+          if (peakRef.current) {
+            peakRef.current.textContent =
+              res.max > 0.22 ? "picco +" + res.max.toFixed(1).replace(".", ",") + " m/s" : "aria stabile";
+          }
+          return;
+        }
+        /* fallback: terreno non (ancora) disponibile → aloni sui decolli */
+        ctx.globalCompositeOperation = "lighter";
+        for (const s of snapRef.current) {
+          const r = s.eval?.rateo ?? null;
+          if (r == null || r <= 0.05) continue;
+          const st = sampleStops(THERMAL_STOPS, r);
+          drawBlob(ctx, map, topLeft, s.item, st.color, st.alpha, rBase * (0.78 + 0.5 * Math.min(1, r / 4.2)));
+        }
+        ctx.globalCompositeOperation = "source-over";
+        if (peakRef.current) peakRef.current.textContent = "";
+        return;
+      }
+
+      ctx.globalCompositeOperation = "source-over";
       for (const s of snapRef.current) {
         let value: number | null = null;
         let radiusK = 1;
-        if (active === "termiche") {
-          const r = s.eval?.rateo ?? null;
-          if (r == null || r <= 0.05) continue;
-          value = r;
-          radiusK = 0.78 + 0.5 * Math.min(1, r / 4.2);
-        } else if (active === "nuvole") {
+        if (active === "nuvole") {
           const c = s.point?.cloud ?? null;
           if (c == null || c < 5) continue;
           value = c / 100 * 8; // mappa 0-100% sulla scala
@@ -406,10 +506,7 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
           radiusK = 0.85 + 0.3 * Math.min(1, r / 6);
         }
         if (value === null) continue;
-        const st =
-          active === "termiche"
-            ? sampleStops(THERMAL_STOPS, value)
-            : sampleStops(RAIN_STOPS, value);
+        const st = sampleStops(RAIN_STOPS, value);
         drawBlob(ctx, map, topLeft, s.item, st.color, st.alpha, rBase * radiusK);
       }
       ctx.globalCompositeOperation = "source-over";
@@ -443,6 +540,69 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
     cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => drawHeatRef.current());
   }, []);
+
+  /* ------------------- campo termico: terreno + geometria ------------------- */
+
+  const rebuildFieldGeometry = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !demReadyRef.current) return;
+    const size = map.getSize();
+    const pad = 100;
+    const topLeft = map.containerPointToLayerPoint([-pad, -pad]);
+    const p1 = map.containerPointToLatLng([0, 0]);
+    const p2 = map.containerPointToLatLng([100, 0]);
+    const mpp = map.distance(p1, p2) / 100;
+    const geom = buildFieldGeometry({
+      width: size.x + pad * 2,
+      height: size.y + pad * 2,
+      metersPerPixel: mpp,
+      spacing: 12,
+      unproject: (x, y) => {
+        const ll = map.layerPointToLatLng(L.point(topLeft.x + x, topLeft.y + y));
+        return { lat: ll.lat, lon: ll.lng };
+      },
+    });
+    geomRef.current = geom;
+    fieldCacheRef.current.clear();
+  }, []);
+
+  const ensureField = useCallback(async () => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (demBusyRef.current) {
+      demQueuedRef.current = true;
+      return;
+    }
+    demBusyRef.current = true;
+    try {
+      const b = map.getBounds().pad(0.3);
+      const ok = await ensureDem(b.getNorth(), b.getSouth(), b.getEast(), b.getWest(), map.getZoom());
+      demReadyRef.current = ok;
+      if (ok) {
+        rebuildFieldGeometry();
+        scheduleDraw(); // il campo deve apparire SUBITO dopo il caricamento del terreno
+      }
+      setDemState(ok ? "ready" : "off");
+    } catch {
+      demReadyRef.current = false;
+      setDemState("off");
+    } finally {
+      demBusyRef.current = false;
+      if (demQueuedRef.current) {
+        demQueuedRef.current = false;
+        void ensureField();
+      }
+    }
+  }, [rebuildFieldGeometry, scheduleDraw]);
+
+  /* al cambio vista: riproietta subito la geometria (se il DEM c'è) e ridisegna */
+  const onViewChangeRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    onViewChangeRef.current = () => {
+      if (demReadyRef.current) rebuildFieldGeometry();
+      scheduleDraw();
+    };
+  }, [rebuildFieldGeometry, scheduleDraw]);
 
   /* ------------------------------ init mappa ------------------------------ */
   useEffect(() => {
@@ -542,11 +702,21 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
       markers.set(item.id, marker);
     }
 
-    map.on("moveend zoomend resize viewreset", scheduleDraw);
-    const t = window.setTimeout(scheduleDraw, 80);
+    map.on("moveend zoomend resize viewreset", () => onViewChangeRef.current());
+    let demTimer = 0;
+    const debouncedEnsure = () => {
+      window.clearTimeout(demTimer);
+      demTimer = window.setTimeout(() => void ensureField(), 450);
+    };
+    map.on("moveend zoomend", debouncedEnsure);
+    const t = window.setTimeout(() => {
+      scheduleDraw();
+      void ensureField();
+    }, 80);
 
     return () => {
       window.clearTimeout(t);
+      window.clearTimeout(demTimer);
       cancelAnimationFrame(rafRef.current);
       map.off();
       map.remove();
@@ -647,12 +817,22 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
     <section className="cmap-panel" aria-labelledby="cmap-title" data-testid="cartina-decolli">
       <header className="cmap-head">
         <div className="cmap-head-title">
-          <p className="cmap-kicker">CARTINA AEROLOGICA · STILE METEO-PARAPENTE</p>
+          <p className="cmap-kicker">CARTINA AEROLOGICA · SISTEMA METEO-PARAPENTE</p>
           <h2 id="cmap-title">Cartina dei decolli</h2>
           <p>
-            Termiche, vento in quota, nuvole e pioggia sui nostri 24 decolli. Scegli il livello, l’ora — o premi
-            «Riproduci» — e tocca un decollo per il dettaglio.
+            Il campo termico calcolato sul terreno reale: dove il sole riscalda i pendii nascono le bolle — come su
+            Meteo-Parapente, ma sui nostri 24 decolli e con il modello dell’app. Scegli il livello, l’ora — o premi
+            «Riproduci» — e tocca un decollo per la scheda di volo.
           </p>
+          <p className="cmap-hint" data-testid="cartina-hint">{LAYER_HINT[layer]}</p>
+          {layer === "termiche" && demState === "loading" && (
+            <p className="cmap-hint is-warn">Calcolo del terreno reale…</p>
+          )}
+          {layer === "termiche" && demState === "off" && (
+            <p className="cmap-hint is-warn">
+              Terreno non disponibile: mostro aloni semplificati sui decolli.
+            </p>
+          )}
         </div>
         <div className="cmap-head-tools">
           <div className="cmap-layers" role="group" aria-label="Livello meteo della cartina">
@@ -696,6 +876,7 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
             {LAYER_NAME[layer]}
             {layer === "vento" ? " · " + altStep.label : ""}
           </span>
+          {layer === "termiche" && <span className="cmap-peak" ref={peakRef} data-testid="cartina-peak" />}
         </div>
 
         {layer === "vento" && altSteps.length > 1 && (
@@ -720,13 +901,15 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
         <div className="cmap-legend" aria-hidden="true">
           {layer === "termiche" && (
             <>
-              <span className="cmap-legend-title">Ascendenza (m/s)</span>
+              <span className="cmap-legend-title">Ascendenza prevista (m/s)</span>
               <span className="cmap-legend-bar cmap-grad-therm" />
               <div className="cmap-legend-l">
                 <em>0</em>
                 <em>1</em>
                 <em>2</em>
-                <em>3+</em>
+                <em>3</em>
+                <em>4</em>
+                <em>6+</em>
               </div>
             </>
           )}

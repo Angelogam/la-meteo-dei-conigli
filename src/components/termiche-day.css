@@ -48,7 +48,7 @@
 .tday-title {
   margin: 0;
   color: #f5f9ff;
-  font-family: 'Sora', 'Inter', system-ui, sans-serif;
+  font-family: var(--font-display);
   font-size: 1.3rem;
   font-weight: 700;
   letter-spacing: -.03em;
@@ -71,7 +71,7 @@
   border: 1px solid rgba(251, 146, 60, .45);
   border-radius: 13px;
   color: #0b1526;
-  font-family: 'Sora', 'Inter', sans-serif;
+  font-family: var(--font-display);
   font-size: .78rem;
   font-weight: 800;
   letter-spacing: .01em;
@@ -221,7 +221,7 @@
   fill: #fdba74;
   font-size: 16px;
   font-weight: 800;
-  font-family: 'Sora', 'Inter', sans-serif;
+  font-family: var(--font-display);
   font-variant-numeric: tabular-nums;
   paint-order: stroke;
   stroke: rgba(3, 10, 22, .8);

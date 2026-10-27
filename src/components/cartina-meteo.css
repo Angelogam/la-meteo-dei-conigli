@@ -33,9 +33,9 @@
 
 .cmap-head-title h2 {
   margin: 0.1rem 0 0.3rem;
-  font-family: "Sora", "Inter", sans-serif;
-  font-size: 1.25rem;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
   letter-spacing: -0.03em;
   color: #edf8ff;
 }
@@ -45,7 +45,25 @@
   font-size: 0.78rem;
   line-height: 1.5;
   color: #a9c0d0;
-  max-width: 52ch;
+  max-width: 56ch;
+}
+
+/* nota didattica per livello (manuale di volo) */
+.cmap-hint {
+  margin: 0.45rem 0 0;
+  padding: 0.42rem 0.6rem;
+  border-left: 2px solid rgba(113, 217, 244, 0.55);
+  border-radius: 0 8px 8px 0;
+  background: rgba(12, 32, 48, 0.45);
+  color: #9fc3d6;
+  font-size: 0.68rem;
+  line-height: 1.55;
+  max-width: 58ch;
+}
+.cmap-hint.is-warn {
+  border-left-color: rgba(251, 191, 36, 0.7);
+  background: rgba(96, 74, 10, 0.22);
+  color: #fcd34d;
 }
 
 .cmap-head-tools { display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end; }
@@ -151,8 +169,9 @@
   backdrop-filter: blur(6px);
   pointer-events: none;
 }
-.cmap-readout strong { color: #f2fbff; font-size: 0.86rem; font-weight: 800; letter-spacing: 0.01em; }
-.cmap-readout span { color: #8fe8ff; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }
+.cmap-readout strong { color: #f2fbff; font-family: var(--font-mono); font-size: 0.84rem; font-weight: 700; letter-spacing: 0.01em; }
+.cmap-readout span { color: #8fe8ff; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }
+.cmap-readout span.cmap-peak { color: #fcd34d; font-family: var(--font-mono); font-size: 0.62rem; font-weight: 600; letter-spacing: 0.04em; text-transform: none; }
 
 /* scroller di quota (livello Vento) */
 .cmap-alt {
@@ -188,7 +207,7 @@
   color: #9fb6c6;
   font-size: 0.66rem;
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
   white-space: nowrap;
@@ -217,12 +236,13 @@
 .cmap-legend-bar { display: block; width: 150px; height: 8px; border-radius: 4px; }
 .cmap-grad-therm {
   background: linear-gradient(90deg,
-    rgba(94, 110, 130, 0.35),
-    rgba(59, 130, 246, 0.4),
-    rgba(250, 204, 21, 0.65),
-    rgba(249, 115, 22, 0.78),
-    rgba(239, 68, 68, 0.85),
-    rgba(168, 85, 247, 0.9));
+    rgba(37, 99, 235, 0.34),
+    rgba(14, 165, 233, 0.42),
+    rgba(16, 185, 129, 0.5),
+    rgba(234, 179, 8, 0.58),
+    rgba(249, 115, 22, 0.66),
+    rgba(239, 68, 68, 0.72),
+    rgba(168, 85, 247, 0.8));
 }
 .cmap-grad-cloud { background: linear-gradient(90deg, rgba(226,232,240,0.06), rgba(226,232,240,0.55)); }
 .cmap-grad-rain {
@@ -233,10 +253,10 @@
     rgba(67, 56, 202, 0.85));
 }
 .cmap-legend-l { display: flex; justify-content: space-between; width: 150px; }
-.cmap-legend-l em { color: #9fb6c6; font-size: 0.55rem; font-style: normal; font-variant-numeric: tabular-nums; }
+.cmap-legend-l em { color: #9fb6c6; font-size: 0.55rem; font-style: normal; font-family: var(--font-mono); }
 .cmap-legend-w { display: flex; align-items: center; gap: 4px; }
 .cmap-legend-w i { width: 12px; height: 8px; border-radius: 3px; }
-.cmap-legend-w em { color: #9fb6c6; font-size: 0.55rem; font-style: normal; }
+.cmap-legend-w em { color: #9fb6c6; font-size: 0.55rem; font-style: normal; font-family: var(--font-mono); }
 .cmap-legend-w i.is-w1 { background: #34d399; }
 .cmap-legend-w i.is-w2 { background: #fbbf24; }
 .cmap-legend-w i.is-w3 { background: #f97316; }
@@ -376,9 +396,9 @@
 .cmap-pb-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
 .cmap-pb-title h3 {
   margin: 0;
-  font-family: "Sora", "Inter", sans-serif;
-  font-size: 1rem;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  font-weight: 700;
   letter-spacing: -0.02em;
   color: #f2fbff;
 }
@@ -421,39 +441,56 @@
 .cmap-verdict em { color: #a9c0d0; font-size: 0.66rem; font-style: normal; }
 .cmap-verdict span { margin-left: auto; color: #8fe8ff; font-size: 0.64rem; font-weight: 750; font-variant-numeric: tabular-nums; }
 
-.cmap-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem; }
-.cmap-stat {
+.cmap-rows { display: flex; flex-direction: column; }
+.cmap-row {
   display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding: 0.45rem 0.55rem;
-  border: 1px solid rgba(113, 217, 244, 0.12);
-  border-radius: 9px;
-  background: rgba(12, 30, 45, 0.6);
-  color: #7ce4ff;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.4rem 0.15rem;
+  border-bottom: 1px solid rgba(113, 217, 244, 0.1);
 }
-.cmap-stat span { color: #8fa6b8; font-size: 0.58rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.07em; }
-.cmap-stat strong { color: #f2fbff; font-size: 0.8rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-.cmap-stat small { color: #9fb6c6; font-size: 0.6rem; }
+.cmap-row:last-child { border-bottom: 0; }
+.cmap-row-k {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #8fa6b8;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+}
+.cmap-row-v {
+  color: #f2fbff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  text-align: right;
+}
+.cmap-row-v small { display: block; color: #9fb6c6; font-size: 0.6rem; font-weight: 600; }
 .cmap-turb.is-low { color: #34d399; }
 .cmap-turb.is-mid { color: #fbbf24; }
 .cmap-turb.is-high { color: #ef4444; }
 
-/* barre orarie cliccabili (mini-windgram) */
-.cmap-bars {
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-  height: 74px;
-  padding: 0.4rem 0.4rem 0.25rem;
+/* grafico orario: barre alte quanto la risalita, colore = scala m/s della cartina */
+.cmap-chart {
+  padding: 0.45rem 0.5rem 0.3rem;
   border: 1px solid rgba(113, 217, 244, 0.12);
   border-radius: 9px;
   background: rgba(8, 20, 32, 0.7);
 }
+.cmap-bars {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  height: 92px;
+}
+.cmap-slot { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
 .cmap-bar {
-  flex: 1 1 0;
-  height: 100%;
-  min-width: 6px;
+  flex: 1 1 auto;
+  min-width: 5px;
   display: flex;
   align-items: flex-end;
   background: transparent;
@@ -464,15 +501,24 @@
 .cmap-bar i {
   display: block;
   width: 100%;
-  height: var(--bh, 30%);
+  height: var(--bh, 20%);
+  background: var(--bfill, rgba(148, 163, 184, 0.5));
   border-radius: 3px 3px 1px 1px;
   transition: height 0.45s cubic-bezier(0.4, 0, 0.2, 1), filter 0.2s;
 }
-.cmap-bar.is-good i { background: linear-gradient(180deg, #5eead4, #10b981); }
-.cmap-bar.is-fair i { background: linear-gradient(180deg, #fcd34d, #f59e0b); }
-.cmap-bar.is-bad i { background: linear-gradient(180deg, #fca5a5, #ef4444); }
-.cmap-bar:hover i { filter: brightness(1.25); }
+.cmap-bar:hover i { filter: brightness(1.3); }
+.cmap-bar.is-best i { box-shadow: 0 0 9px rgba(255, 255, 255, 0.45); }
 .cmap-bar.is-on { outline: 1.5px solid #7ce4ff; outline-offset: 1px; border-radius: 4px; }
+.cmap-slot small {
+  height: 12px;
+  text-align: center;
+  color: #6d8496;
+  font-size: 0.5rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  line-height: 12px;
+}
+.cmap-slot small.is-on { color: #8fe8ff; }
 
 .cmap-bars-help { margin: -0.25rem 0 0; color: #7f97a8; font-size: 0.58rem; line-height: 1.45; }
 
@@ -554,13 +600,14 @@
   height: 22px;
 }
 .cmap-ticks { display: flex; justify-content: space-between; padding: 0 4px; }
-.cmap-ticks span { color: #6d8496; font-size: 0.56rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cmap-ticks span { color: #6d8496; font-size: 0.56rem; font-weight: 700; font-family: var(--font-mono); }
 .cmap-ticks span.is-on { color: #8fe8ff; }
 
 .cmap-nowhour {
   color: #f2fbff;
-  font-size: 1.15rem;
-  font-weight: 800;
+  font-family: var(--font-mono);
+  font-size: 1.12rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   min-width: 58px;
   text-align: right;
@@ -592,6 +639,7 @@
   .cmap-timeline { gap: 0.5rem; padding: 0.65rem 0.7rem 0.8rem; }
   .cmap-nowhour { font-size: 1rem; min-width: 46px; }
   .cmap-loaded { display: none; }
+  .cmap-hint { font-size: 0.64rem; }
 }
 
 @media (max-width: 560px) {
@@ -601,6 +649,8 @@
   .cmap-day small { display: none; }
   .cmap-play span { display: none; }
   .cmap-play { padding: 0.5rem 0.6rem; }
+  .cmap-bars { height: 78px; }
+  .cmap-slot small { font-size: 0.44rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

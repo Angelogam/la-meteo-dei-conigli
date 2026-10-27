@@ -56,6 +56,8 @@ export type HourlyPoint = {
   code: number | null;
   cape: number | null;
   freezing: number | null;
+  /** Radiazione diretta (W/m²) — motore del campo termico stile Meteo-Parapente */
+  rad: number | null;
   /** Sounding del modello: vento/geopotenziale ai livelli di pressione (dal più basso al più alto). */
   levels?: WindLevel[];
 };
@@ -101,7 +103,7 @@ async function getOpenMeteo(lat: number, lon: number) {
     const forecast = await fetchFull(
       lat,
       lon,
-      "temperature_2m,dew_point_2m,precipitation,cloud_cover,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cape,freezing_level_height,weather_code," + soundingVars,
+      "temperature_2m,dew_point_2m,precipitation,cloud_cover,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cape,freezing_level_height,weather_code,direct_radiation," + soundingVars,
       "temperature_2m_max,temperature_2m_min,cloud_cover_mean,precipitation_sum",
       "",
       3,
@@ -138,6 +140,7 @@ async function getOpenMeteo(lat: number, lon: number) {
         code: numOrNull(h.weather_code?.[idx]),
         cape: numOrNull(h.cape?.[idx]),
         freezing: numOrNull(h.freezing_level_height?.[idx]),
+        rad: numOrNull(h.direct_radiation?.[idx]),
         levels: levels.length ? levels : undefined,
       };
     });
