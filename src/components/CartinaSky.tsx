@@ -87,11 +87,13 @@ export default function CartinaSky({ quota, rateo, baseNubi, freezing, cloud, wi
     return Math.max(quota + 120, Math.min(t, TOP - 160));
   }, [cumuli, baseNubi, freezing, quota]);
 
-  /* --- quote dei venti: decollo + gradini da 500 m fino a 4000 --- */
+  /* --- quote dei venti: decollo + gradini da 500 m fino a 4000 ---
+     Un gradino che cade a meno di 400 m dal precedente viene saltato:
+     due righe troppo vicine si sovrappongono (es. decollo a 1449 m → 1500 m inutile). */
   const windAlts = useMemo(() => {
     const list: number[] = [quota];
     for (let a = Math.ceil((quota + 1) / 500) * 500; a <= TOP; a += 500) {
-      if (list.length < 8) list.push(a);
+      if (list.length < 8 && a - list[list.length - 1] >= 400) list.push(a);
     }
     return list;
   }, [quota]);
