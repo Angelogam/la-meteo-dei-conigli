@@ -1,13 +1,14 @@
 "use client";
 
 import React from "react";
-import { Wind } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Map as MapIcon, Wind } from "lucide-react";
 
 export const Header = () => {
   return (
     <header className="app-brand-header">
       <div className="app-brand-inner">
-        <a className="app-brand-mark" href="#overview" aria-label="La Meteo dei Conigli, home">
+        <a className="app-brand-mark" href="/#overview" aria-label="La Meteo dei Conigli, home">
           <img src="/logo.svg" alt="" className="app-brand-logo" />
           <span className="app-brand-copy">
             <strong>La Meteo dei Conigli</strong>
@@ -15,8 +16,14 @@ export const Header = () => {
           </span>
         </a>
         <div className="app-brand-status">
-          <Wind aria-hidden="true" />
-          <span>Briefing per il volo libero</span>
+          <Link to="/termiche" className="app-brand-maplink">
+            <MapIcon aria-hidden="true" />
+            <span>Cartina termiche</span>
+          </Link>
+          <span className="app-brand-brief">
+            <Wind aria-hidden="true" />
+            <span>Briefing per il volo libero</span>
+          </span>
         </div>
       </div>
     </header>

@@ -19,6 +19,60 @@ export function cacheKey(url: string): string {
   return url;
 }
 
+/**
+ * Variante multi-location: Open-Meteo accetta coordinate multiple (separate da virgola)
+ * e risponde con un ARRAY di risultati — una sola chiamata per tutti i decolli,
+ * come il modello grigliato di meteo-parapente. Cache indipendente per URL.
+ */
+const multiCache = new Map<string, { expires: number; payload: Record<string, unknown>[] }>();
+
+export async function fetchOpenMeteoMulti(params: Record<string, string>): Promise<Record<string, unknown>[]> {
+  const url = new URL(OPEN_METEO_URL);
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+  const requestUrl = url.toString();
+
+  const cached = multiCache.get(requestUrl);
+  if (cached && cached.expires > Date.now()) {
+    return cached.payload;
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  try {
+    const response = await fetch(requestUrl, {
+      signal: controller.signal,
+      headers: { accept: "application/json" },
+    });
+    if (response.status === 429) {
+      throw createError({ statusCode: 429, statusMessage: "Limite di richieste del provider meteo raggiunto" });
+    }
+    if (!response.ok) {
+      throw createError({ statusCode: 502, statusMessage: "Errore upstream Open-Meteo", data: { upstreamStatus: response.status } });
+    }
+    const payload: unknown = await response.json();
+    if (!Array.isArray(payload) || payload.length === 0 || payload.some((p) => p === null || typeof p !== "object")) {
+      throw createError({ statusCode: 502, statusMessage: "Risposta multi-location upstream non valida" });
+    }
+    const records = payload as Record<string, unknown>[];
+    multiCache.set(requestUrl, { expires: Date.now() + CACHE_TTL_MS, payload: records });
+    if (multiCache.size > 8) {
+      const oldestKey = multiCache.keys().next().value;
+      if (oldestKey !== undefined) multiCache.delete(oldestKey);
+    }
+    return records;
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw createError({ statusCode: 504, statusMessage: "Timeout del provider meteo" });
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function fetchOpenMeteo(params: Record<string, string>): Promise<Record<string, unknown>> {
   const url = new URL(OPEN_METEO_URL);
   for (const [key, value] of Object.entries(params)) {

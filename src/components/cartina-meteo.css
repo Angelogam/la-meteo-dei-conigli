@@ -117,7 +117,7 @@
   border: 1px solid rgba(113, 217, 244, 0.14);
   border-radius: 12px;
   overflow: hidden;
-  height: clamp(460px, 56vw, 660px);
+  height: clamp(460px, 58vw, 700px);
   background: #060d16;
 }
 
@@ -125,7 +125,7 @@
 
 .cmap-leaflet .leaflet-container {
   background: #060d16;
-  font-family: "Inter", sans-serif;
+  font-family: "Manrope", sans-serif;
   outline: none;
 }
 .cmap-leaflet .leaflet-control-attribution {
@@ -151,6 +151,10 @@
 
 /* hillshade in moltiplica: rilievo montuoso senza schiarire il tema scuro */
 .cmap-leaflet .cmap-hillshade { opacity: 0.55; mix-blend-mode: multiply; }
+
+/* base terreno quasi monocroma (stile Meteo-Parapente): il rilievo resta leggibile
+   ma ogni colore percepito è IL DATO — il campo termico non si confonde più col terreno */
+.cmap-leaflet .cmap-terreno-tiles { filter: saturate(0.2) brightness(1.13) contrast(0.95); }
 
 /* lettura in alto a sinistra (come l'indicatore di quota di meteo-parapente) */
 .cmap-readout {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { getAllMeteoDecolliAggressivo } from "@/services/threeSourceWeather";
+import { getAllMeteoDecolliAggressivo, getAllMeteoDecolliBatch } from "@/services/threeSourceWeather";
 import type { MeteoDecollo } from "@/services/threeSourceWeather";
 import { DECOLLI } from "@/data/decolli";
 
@@ -58,16 +58,23 @@ export function useThreeSourceWeather() {
   const loadWeather = useCallback(async () => {
     setUpdating(true);
     setError(null);
-    
+
     try {
-      const data = await getAllMeteoDecolliAggressivo();
+      // Prima il BATCH (1 richiesta, tutti i decolli — sistema meteo-parapente);
+      // se il batch non risponde, fallback al ciclo per-decollo a 3 fonti.
+      const data = await getAllMeteoDecolliBatch();
       setWeatherData(data);
       setLastUpdate(new Date());
       hasCompletedOnce.current = true;
-    } catch (err) {
-      console.warn("[3-fonti] Errore caricamento, mantengo dati precedenti:", err);
-      setError(err instanceof Error ? err.message : "Errore 3-fonti");
-      // Non resettare weatherData - mantieni i dati precedenti o i fallback
+    } catch {
+      try {
+        const data = await getAllMeteoDecolliAggressivo();
+        setWeatherData(data);
+        setLastUpdate(new Date());
+      } catch (err) {
+        console.warn("[3-fonti] Errore caricamento, mantengo dati precedenti:", err);
+        setError(err instanceof Error ? err.message : "Errore 3-fonti");
+      }
       hasCompletedOnce.current = true;
     } finally {
       setLoading(false);

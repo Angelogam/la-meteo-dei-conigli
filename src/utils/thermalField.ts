@@ -23,18 +23,19 @@ import { solarPosition } from "@/utils/solar";
 
 /* ============================ SCALA COLORI ============================ */
 
-/** Scala ascendenze (m/s) — dal blu debole al viola dei generatori forti. */
+/** Scala ascendenze (m/s) — dal blu debole al viola dei generatori forti.
+ *  Alfa alte: il campo deve leggersi a colpo d'occhio come su Meteo-Parapente. */
 const THERMAL_STOPS: { v: number; c: [number, number, number]; a: number }[] = [
-  { v: 0.30, c: [37, 99, 235], a: 0.22 }, // blu
-  { v: 0.70, c: [14, 165, 233], a: 0.30 }, // azzurro
-  { v: 1.40, c: [16, 185, 129], a: 0.36 }, // verde
-  { v: 2.20, c: [234, 179, 8], a: 0.44 }, // giallo
-  { v: 3.00, c: [249, 115, 22], a: 0.52 }, // arancio
-  { v: 4.00, c: [239, 68, 68], a: 0.58 }, // rosso
-  { v: 5.50, c: [168, 85, 247], a: 0.66 }, // viola
+  { v: 0.30, c: [37, 99, 235], a: 0.34 }, // blu
+  { v: 0.70, c: [14, 165, 233], a: 0.44 }, // azzurro
+  { v: 1.40, c: [16, 185, 129], a: 0.52 }, // verde
+  { v: 2.20, c: [234, 179, 8], a: 0.60 }, // giallo
+  { v: 3.00, c: [249, 115, 22], a: 0.68 }, // arancio
+  { v: 4.00, c: [239, 68, 68], a: 0.74 }, // rosso
+  { v: 5.50, c: [168, 85, 247], a: 0.80 }, // viola
 ];
 
-export const THERMAL_MIN_MS = 0.22; // sotto questa soglia il campo è trasparente
+export const THERMAL_MIN_MS = 0.18; // sotto questa soglia il campo è trasparente
 
 export function thermalColor(v: number): { r: number; g: number; b: number; a: number } {
   if (v <= THERMAL_MIN_MS) return { r: 0, g: 0, b: 0, a: 0 };

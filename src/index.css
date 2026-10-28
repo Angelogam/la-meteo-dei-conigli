@@ -1,22 +1,24 @@
-/* I font (Space Grotesk + Inter + JetBrains Mono) sono caricati da index.html
+/* I font (Barlow Condensed + Manrope + JetBrains Mono) sono caricati da index.html
    con <link>: le @import esterne vengono eliminate dai bundler dal CSS finale. */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Identità tipografica 2026: Space Grotesk (titoli, tecnica e geometrica),
-   Inter (testo) e JetBrains Mono (numeri/quote/orari — tabulari per natura). */
+/* Identità tipografica "strumento di volo": Barlow Condensed (titoli, tecnica
+   e compatta come i quadranti aeronautici), Manrope (testo, nitida e moderna),
+   JetBrains Mono (numeri/quote/orari — tabulari per natura). */
 :root {
-  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
-  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Barlow Condensed', 'Manrope', system-ui, sans-serif;
+  --font-body: 'Manrope', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 }
 
 /* FUORI dal layer base: le regole in @layer perdono contro qualunque CSS non layerato */
 h1, h2, h3, h4 {
   font-family: var(--font-display);
-  letter-spacing: -0.02em;
+  letter-spacing: 0.005em;
+  font-weight: 600;
 }
 
 @layer base {

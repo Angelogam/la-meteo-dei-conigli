@@ -95,18 +95,19 @@
 .hero-foto__title {
   margin: 0;
   color: #ffffff;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(2.1rem, 5vw, 3.6rem);
+  font-family: var(--font-display), 'Barlow Condensed', sans-serif;
+  font-size: clamp(2.6rem, 5.6vw, 4.2rem);
   font-weight: 700;
-  line-height: 1.04;
-  letter-spacing: -.015em;
+  line-height: 1;
+  letter-spacing: .012em;
+  text-transform: uppercase;
   text-shadow: 0 4px 26px rgba(2, 8, 16, .55);
 }
 
 .hero-foto__motto {
   margin: 0;
   color: #cfe3ef;
-  font-family: Georgia, serif;
+  font-family: var(--font-body), 'Manrope', sans-serif;
   font-style: italic;
   font-size: clamp(1rem, 1.8vw, 1.22rem);
   text-shadow: 0 2px 14px rgba(2, 8, 16, .5);

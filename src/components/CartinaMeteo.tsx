@@ -284,9 +284,9 @@ const MARKER_HTML = (name: string) =>
 
 export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaMeteoProps) {
   const [layer, setLayer] = useState<LayerId>("termiche");
-  const [base, setBase] = useState<BaseId>("scuro");
+  const [base, setBase] = useState<BaseId>("terreno"); // base chiara: i colori del campo leggono come su Meteo-Parapente
   const [day, setDay] = useState(0);
-  const [hour, setHour] = useState(() => Math.min(18, Math.max(9, new Date().getHours())));
+  const [hour, setHour] = useState(() => Math.min(15, Math.max(10, new Date().getHours())));
   const [altIndex, setAltIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [panelSiteId, setPanelSiteId] = useState<string | null>(null);
@@ -368,6 +368,14 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
     }
     return m;
   }, [snapshots, altStep]);
+
+  /* ---------------- VENTO ANIMATO — campo di particelle (firma Meteo-Parapente) ---------------- */
+  const windReadsRef = useRef(windReads);
+  windReadsRef.current = windReads;
+  const windFieldRef = useRef<{ w: number; h: number; pts: { x: number; y: number; ws: number; vx: number; vy: number }[] } | null>(null);
+  const particlesRef = useRef<{ x: number; y: number; age: number; life: number }[]>([]);
+  const windRafRef = useRef(0);
+  const scatterRef = useRef<() => void>(() => {});
 
   const withData = snapshots.filter((s) => s.eval).length;
 
@@ -541,6 +549,144 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
     rafRef.current = requestAnimationFrame(() => drawHeatRef.current());
   }, []);
 
+  /* ------------------ motore particelle di vento (livello "Vento") ------------------ */
+
+  const rebuildWindField = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const size = map.getSize();
+    const pad = 100;
+    const topLeft = map.containerPointToLayerPoint([-pad, -pad]);
+    const pts: { x: number; y: number; ws: number; vx: number; vy: number }[] = [];
+    for (const s of snapRef.current) {
+      const read = windReadsRef.current.get(s.item.id);
+      if (!read || read.ws == null || read.wd == null || !Number.isFinite(read.ws) || !Number.isFinite(read.wd)) continue;
+      const p = map.latLngToLayerPoint([Number(s.item.lat), Number(s.item.lon)]);
+      // direzione "verso cui va" il vento (wd è la direzione DA cui proviene)
+      const to = ((read.wd + 180) % 360) * (Math.PI / 180);
+      pts.push({
+        x: p.x - topLeft.x,
+        y: p.y - topLeft.y,
+        ws: read.ws,
+        vx: Math.sin(to),
+        vy: -Math.cos(to),
+      });
+    }
+    windFieldRef.current = { w: size.x + pad * 2, h: size.y + pad * 2, pts };
+    /* risemina le particelle sul viewport corrente */
+    const target = Math.min(430, Math.max(150, Math.round(((size.x + pad * 2) * (size.y + pad * 2)) / 2700)));
+    const arr = particlesRef.current;
+    arr.length = 0;
+    for (let i = 0; i < target; i++) {
+      arr.push({
+        x: Math.random() * (size.x + pad * 2),
+        y: Math.random() * (size.y + pad * 2),
+        age: Math.random() * 70,
+        life: 80 + Math.random() * 110,
+      });
+    }
+  }, []);
+  scatterRef.current = rebuildWindField;
+
+  const drawVentoFrameRef = useRef<(dt: number) => void>(() => {});
+  useEffect(() => {
+    drawVentoFrameRef.current = (dt: number) => {
+      const map = mapRef.current;
+      const canvas = canvasRef.current;
+      if (!map || !canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      const size = map.getSize();
+      const pad = 100;
+      const topLeft = map.containerPointToLayerPoint([-pad, -pad]);
+      L.DomUtil.setPosition(canvas, topLeft);
+      const w = size.x + pad * 2;
+      const h = size.y + pad * 2;
+      const dpr = window.devicePixelRatio || 1;
+      if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+        canvas.style.width = w + "px";
+        canvas.style.height = h + "px";
+      }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+
+      const field = windFieldRef.current;
+      if (!field || !field.pts.length) return;
+
+      ctx.lineCap = "round";
+      for (const p of particlesRef.current) {
+        /* velocità interpolata (IDW) dal campo dei decolli */
+        let wSum = 0;
+        let vx = 0;
+        let vy = 0;
+        let ws = 0;
+        for (const q of field.pts) {
+          const d2 = (q.x - p.x) * (q.x - p.x) + (q.y - p.y) * (q.y - p.y);
+          const weight = 1 / (d2 + 2500);
+          wSum += weight;
+          vx += q.vx * weight;
+          vy += q.vy * weight;
+          ws += q.ws * weight;
+        }
+        if (wSum <= 0) continue;
+        vx /= wSum;
+        vy /= wSum;
+        ws /= wSum;
+
+        const speedPx = Math.min(64, 16 + ws * 1.7); // resa visiva: corsa percepibile a ogni intensità
+        const nx = p.x + vx * speedPx * dt;
+        const ny = p.y + vy * speedPx * dt;
+        p.age += dt * 60;
+        if (p.age > p.life || nx < 0 || ny < 0 || nx > w || ny > h) {
+          p.x = Math.random() * w;
+          p.y = Math.random() * h;
+          p.age = 0;
+          continue;
+        }
+        p.x = nx;
+        p.y = ny;
+
+        const fade = Math.min(1, p.age / 12, (p.life - p.age) / 16);
+        if (fade <= 0.02) continue;
+        const len = Math.min(32, 13 + ws * 0.9);
+        const color = ws < 15 ? "125,211,252" : ws < 25 ? "56,189,248" : ws < 35 ? "250,204,21" : "251,146,60";
+        ctx.strokeStyle = `rgba(${color},${(0.9 * fade).toFixed(3)})`;
+        ctx.lineWidth = 2.1;
+        ctx.beginPath();
+        ctx.moveTo(p.x - vx * len, p.y - vy * len);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        /* testina: puntino pieno nel verso del moto */
+        ctx.fillStyle = `rgba(${color},${(0.98 * fade).toFixed(3)})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    };
+  });
+
+  /* ciclo rAF del vento: attivo solo sul livello "Vento" */
+  useEffect(() => {
+    if (layer !== "vento") return;
+    rebuildWindField();
+    let last = performance.now();
+    const loop = (ts: number) => {
+      const dt = Math.min(0.09, (ts - last) / 1000);
+      last = ts;
+      drawVentoFrameRef.current(dt);
+      windRafRef.current = requestAnimationFrame(loop);
+    };
+    windRafRef.current = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(windRafRef.current);
+  }, [layer, rebuildWindField]);
+
+  /* ricostruisce il campo quando cambiano ora/quota/dati mentre il livello vento è attivo */
+  useEffect(() => {
+    if (layer === "vento") rebuildWindField();
+  }, [snapshots, windReads, layer, rebuildWindField]);
+
   /* ------------------- campo termico: terreno + geometria ------------------- */
 
   const rebuildFieldGeometry = useCallback(() => {
@@ -595,14 +741,44 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
     }
   }, [rebuildFieldGeometry, scheduleDraw]);
 
-  /* al cambio vista: riproietta subito la geometria (se il DEM c'è) e ridisegna */
+  /* al cambio vista: riproietta subito la geometria (se il DEM c'è), il campo vento e ridisegna */
   const onViewChangeRef = useRef<() => void>(() => {});
   useEffect(() => {
     onViewChangeRef.current = () => {
       if (demReadyRef.current) rebuildFieldGeometry();
+      if (layerRef.current === "vento") scatterRef.current();
       scheduleDraw();
     };
   }, [rebuildFieldGeometry, scheduleDraw]);
+
+  /* ora iniziale = ora con la convezione media migliore della giornata (si tocca solo se l'utente non ha già mosso il cursore) */
+  const hourTouchedRef = useRef(false);
+  const autoPickedRef = useRef(false);
+  useEffect(() => {
+    if (autoPickedRef.current || hourTouchedRef.current) return;
+    const acc = new Map<number, { sum: number; n: number }>();
+    for (const s of snapshots) {
+      const e = s.eval;
+      if (!e || (e.rateo ?? 0) <= 0) continue;
+      const a = acc.get(e.hour) ?? { sum: 0, n: 0 };
+      a.sum += e.rateo ?? 0;
+      a.n++;
+      acc.set(e.hour, a);
+    }
+    let bestHour = -1;
+    let bestVal = 0;
+    acc.forEach((v, h) => {
+      const mean = v.sum / v.n;
+      if (mean > bestVal) {
+        bestVal = mean;
+        bestHour = h;
+      }
+    });
+    if (bestHour >= 0) {
+      setHour(bestHour);
+      autoPickedRef.current = true;
+    }
+  }, [snapshots]);
 
   /* ------------------------------ init mappa ------------------------------ */
   useEffect(() => {
@@ -650,6 +826,7 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
             url: "https://tile.opentopomap.org/{z}/{x}/{y}.png",
             attr: 'Base: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)',
             max: 14,
+            className: "cmap-terreno-tiles",
           },
         ],
       },
@@ -671,6 +848,7 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
         attribution: primary.attr,
         subdomains: primary.sub ?? "abc",
         maxZoom: primary.max,
+        className: primary.className,
       });
       baseOverlayRef.current[id as BaseId] = overlay
         ? L.tileLayer(overlay.url, { maxZoom: overlay.max, className: overlay.className })
@@ -820,9 +998,8 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
           <p className="cmap-kicker">CARTINA AEROLOGICA · SISTEMA METEO-PARAPENTE</p>
           <h2 id="cmap-title">Cartina dei decolli</h2>
           <p>
-            Il campo termico calcolato sul terreno reale: dove il sole riscalda i pendii nascono le bolle — come su
-            Meteo-Parapente, ma sui nostri 24 decolli e con il modello dell’app. Scegli il livello, l’ora — o premi
-            «Riproduci» — e tocca un decollo per la scheda di volo.
+            Il campo termico calcolato sul terreno reale — dove il sole riscalda i pendii nascono le
+            bolle, come su Meteo-Parapente. Scegli il livello e l'ora, premi «Riproduci» o tocca un decollo.
           </p>
           <p className="cmap-hint" data-testid="cartina-hint">{LAYER_HINT[layer]}</p>
           {layer === "termiche" && demState === "loading" && (
@@ -1000,7 +1177,10 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
             max={HOUR_MAX}
             step={1}
             value={hour}
-            onChange={(e) => setHour(Number(e.target.value))}
+            onChange={(e) => {
+              hourTouchedRef.current = true;
+              setHour(Number(e.target.value));
+            }}
             aria-label="Ora della previsione"
             data-testid="cartina-hour-slider"
           />

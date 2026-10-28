@@ -3,17 +3,18 @@
 @tailwind utilities;
 
 /* ===== IDENTITÀ TIPOGRAFICA (font caricati via <link> in index.html) =====
-   Space Grotesk = titoli/display · Inter = testo · JetBrains Mono = quote, orari, valori.
+   Barlow Condensed = titoli/display · Manrope = testo · JetBrains Mono = quote, orari, valori.
    FUORI dal @layer: le regole layerate perdono contro qualunque CSS non layerato. */
 :root {
-  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
-  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Barlow Condensed', 'Manrope', system-ui, sans-serif;
+  --font-body: 'Manrope', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 }
 
 h1, h2, h3, h4 {
   font-family: var(--font-display);
-  letter-spacing: -0.02em;
+  letter-spacing: 0.005em;
+  font-weight: 600;
 }
 
 @layer base {
@@ -498,6 +499,38 @@ body {
   font-size: .76rem;
   font-weight: 650;
   white-space: nowrap;
+}
+
+/* link "Cartina termiche" nell'header (raggiunge la pagina /termiche) */
+.app-brand-maplink {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .5rem .95rem;
+  margin-right: .35rem;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 189, 248, .38);
+  background: linear-gradient(180deg, rgba(14, 116, 144, .55), rgba(8, 47, 73, .75));
+  color: #e0f2fe;
+  font-size: .76rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-decoration: none;
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+}
+.app-brand-maplink:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(14, 165, 233, .28);
+  background: linear-gradient(180deg, rgba(14, 165, 233, .6), rgba(7, 89, 133, .8));
+}
+.app-brand-maplink svg { width: 15px; height: 15px; }
+
+.app-brand-brief { display: inline-flex; align-items: center; gap: .5rem; }
+
+@media (max-width: 760px) {
+  .app-brand-brief { display: none; }
+  .app-brand-maplink { padding: .5rem .7rem; }
+  .app-brand-maplink span { font-size: .72rem; }
 }
 
 .app-status-dot {
@@ -3171,7 +3204,7 @@ body {
   margin-top: auto;
   padding: 1rem .25rem .45rem;
   color: #68839b;
-  font-family: Georgia, serif;
+  font-family: var(--font-body);
   font-size: .77rem;
   font-style: italic;
   line-height: 1.6;

@@ -65,6 +65,9 @@ export type HourlyPoint = {
 const OPENWEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_KEY || "";
 const TOMORROW_API_KEY = import.meta.env.VITE_TOMORROW_KEY || "";
 
+/** Livelli di pressione del sounding (condivisi da client e server batch). */
+export const PRESSURE_LEVELS = [925, 900, 850, 800, 750, 700, 650, 600, 550];
+
 function numOrNull(v: unknown): number | null {
   if (v === null || v === undefined || v === "") return null;
   const n = Number(v);
@@ -88,6 +91,80 @@ function findCurrentIndex(times: unknown[], now = new Date()): number {
   return best;
 }
 
+/**
+ * Modella la risposta grezza Open-Meteo (una località) nella forma usata dall'app.
+ * Condivisa dal fetch per-decollo e dal batch /api/decolli-batch.
+ */
+export function shapeOpenMeteo(forecast: {
+  hourly?: Record<string, unknown>;
+  daily?: Record<string, unknown>;
+}): {
+  temp: number | null;
+  rain: number | null;
+  cloud: number | null;
+  wind: number | null;
+  dir: number | null;
+  cape: number | null;
+  freezingLevel: number | null;
+  weatherCode: number | null;
+  tMax: number | null;
+  tMin: number | null;
+  cloudDaily: number | null;
+  rainDaily: number | null;
+  hourly: HourlyPoint[];
+} | null {
+  const h = forecast.hourly;
+  const d = forecast.daily;
+  const times = h?.time;
+  if (!Array.isArray(times) || times.length === 0) return null;
+
+  const hourly: HourlyPoint[] = times.map((t, idx) => {
+    const levels: WindLevel[] = [];
+    for (const hpa of PRESSURE_LEVELS) {
+      const gh = numOrNull((h as Record<string, unknown>)[`geopotential_height_${hpa}hPa`]?.[idx]);
+      const ws = numOrNull((h as Record<string, unknown>)[`wind_speed_${hpa}hPa`]?.[idx]);
+      if (gh === null || ws === null) continue;
+      const wd = numOrNull((h as Record<string, unknown>)[`wind_direction_${hpa}hPa`]?.[idx]);
+      const tempKey = [`925`, `850`, `700`, `550`].includes(String(hpa))
+        ? numOrNull((h as Record<string, unknown>)[`temperature_${hpa}hPa`]?.[idx])
+        : null;
+      levels.push({ hpa, gh, ws, wd, t: tempKey });
+    }
+    return {
+      time: String(t),
+      wind: numOrNull(h.wind_speed_10m?.[idx]),
+      gusts: numOrNull(h.wind_gusts_10m?.[idx]),
+      dir: numOrNull(h.wind_direction_10m?.[idx]),
+      temp: numOrNull(h.temperature_2m?.[idx]),
+      dew: numOrNull(h.dew_point_2m?.[idx]),
+      rain: numOrNull(h.precipitation?.[idx]),
+      cloud: numOrNull(h.cloud_cover?.[idx]),
+      code: numOrNull(h.weather_code?.[idx]),
+      cape: numOrNull(h.cape?.[idx]),
+      freezing: numOrNull(h.freezing_level_height?.[idx]),
+      rad: numOrNull(h.direct_radiation?.[idx]),
+      levels: levels.length ? levels : undefined,
+    };
+  });
+
+  const i = findCurrentIndex(times);
+  return {
+    temp: numOrNull(h.temperature_2m?.[i]),
+    rain: numOrNull(h.precipitation?.[i]),
+    cloud: numOrNull(h.cloud_cover?.[i]),
+    wind: numOrNull(h.wind_speed_10m?.[i]),
+    dir: numOrNull(h.wind_direction_10m?.[i]),
+    cape: numOrNull(h.cape?.[i]),
+    freezingLevel: numOrNull(h.freezing_level_height?.[i]),
+    weatherCode: numOrNull(h.weather_code?.[i]),
+    tMax: numOrNull(d?.temperature_2m_max?.[0]),
+    tMin: numOrNull(d?.temperature_2m_min?.[0]),
+    cloudDaily: numOrNull(d?.cloud_cover_mean?.[0]),
+    rainDaily: numOrNull(d?.precipitation_sum?.[0]),
+    hourly,
+  };
+}
+
 async function getOpenMeteo(lat: number, lon: number) {
   try {
     // Hourly and daily variables are returned together, reducing upstream calls per launch.
@@ -96,7 +173,7 @@ async function getOpenMeteo(lat: number, lon: number) {
     // Sounding a livelli di pressione per il windgram stile Meteo-Parapente:
     // vento + geopotenziale a 9 livelli (925→550 hPa ≈ 750→4900 m) e temperatura
     // a 4 livelli chiave per ricavare top termica e inversioni dal profilo reale.
-    const pressureLevels = [925, 900, 850, 800, 750, 700, 650, 600, 550];
+    const pressureLevels = PRESSURE_LEVELS;
     const soundingVars = pressureLevels
       .map((hpa) => `wind_speed_${hpa}hPa,geopotential_height_${hpa}hPa,wind_direction_${hpa}hPa`)
       .join(",") + ",temperature_925hPa,temperature_850hPa,temperature_700hPa,temperature_550hPa";
@@ -109,56 +186,7 @@ async function getOpenMeteo(lat: number, lon: number) {
       3,
     );
 
-    const times = forecast.hourly?.time ?? [];
-    if (!Array.isArray(times) || times.length === 0) return null;
-    const i = findCurrentIndex(times);
-    if (i < 0) return null;
-
-    const h = forecast.hourly;
-    const d = forecast.daily;
-    const hourly: HourlyPoint[] = times.map((t, idx) => {
-      const levels: WindLevel[] = [];
-      for (const hpa of pressureLevels) {
-        const gh = numOrNull((h as Record<string, unknown>)[`geopotential_height_${hpa}hPa`]?.[idx]);
-        const ws = numOrNull((h as Record<string, unknown>)[`wind_speed_${hpa}hPa`]?.[idx]);
-        if (gh === null || ws === null) continue;
-        const wd = numOrNull((h as Record<string, unknown>)[`wind_direction_${hpa}hPa`]?.[idx]);
-        const tempKey = [`925`, `850`, `700`, `550`].includes(String(hpa))
-          ? numOrNull((h as Record<string, unknown>)[`temperature_${hpa}hPa`]?.[idx])
-          : null;
-        levels.push({ hpa, gh, ws, wd, t: tempKey });
-      }
-      return {
-        time: String(t),
-        wind: numOrNull(h.wind_speed_10m?.[idx]),
-        gusts: numOrNull(h.wind_gusts_10m?.[idx]),
-        dir: numOrNull(h.wind_direction_10m?.[idx]),
-        temp: numOrNull(h.temperature_2m?.[idx]),
-        dew: numOrNull(h.dew_point_2m?.[idx]),
-        rain: numOrNull(h.precipitation?.[idx]),
-        cloud: numOrNull(h.cloud_cover?.[idx]),
-        code: numOrNull(h.weather_code?.[idx]),
-        cape: numOrNull(h.cape?.[idx]),
-        freezing: numOrNull(h.freezing_level_height?.[idx]),
-        rad: numOrNull(h.direct_radiation?.[idx]),
-        levels: levels.length ? levels : undefined,
-      };
-    });
-    return {
-      temp: numOrNull(h.temperature_2m?.[i]),
-      rain: numOrNull(h.precipitation?.[i]),
-      cloud: numOrNull(h.cloud_cover?.[i]),
-      wind: numOrNull(h.wind_speed_10m?.[i]),
-      dir: numOrNull(h.wind_direction_10m?.[i]),
-      cape: numOrNull(h.cape?.[i]),
-      freezingLevel: numOrNull(h.freezing_level_height?.[i]),
-      weatherCode: numOrNull(h.weather_code?.[i]),
-      tMax: numOrNull(d?.temperature_2m_max?.[0]),
-      tMin: numOrNull(d?.temperature_2m_min?.[0]),
-      cloudDaily: numOrNull(d?.cloud_cover_mean?.[0]),
-      rainDaily: numOrNull(d?.precipitation_sum?.[0]),
-      hourly,
-    };
+    return shapeOpenMeteo(forecast);
   } catch {
     return null;
   }
@@ -445,5 +473,64 @@ export async function getAllMeteoDecolliAggressivo(): Promise<Map<string, MeteoD
   };
 
   await Promise.all(Array.from({ length: Math.min(4, DECOLLI.length) }, worker));
+  return results;
+}
+
+/**
+ * BATCH METEO-PARAPENTE — una sola richiesta a /api/decolli-batch (che a sua volta
+ * fa UNA chiamata Open-Meteo multi-location): tutti i decolli in ~1-2 s, senza
+ * rate-limit né 24 connessioni dal browser. Fallback: getAllMeteoDecolliAggressivo.
+ */
+interface BatchSiteRaw {
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  elevation: number;
+  hourly: Record<string, unknown> | null;
+  daily: Record<string, unknown> | null;
+}
+
+export async function getAllMeteoDecolliBatch(): Promise<Map<string, MeteoDecollo>> {
+  const res = await fetch("/api/decolli-batch", { headers: { accept: "application/json" } });
+  if (!res.ok) throw new Error("Batch decolli HTTP " + res.status);
+  const json: unknown = await res.json();
+  const sites = (json as { sites?: BatchSiteRaw[] }).sites;
+  if (!Array.isArray(sites) || !sites.length) throw new Error("Batch decolli vuoto");
+
+  const results = new Map<string, MeteoDecollo>();
+  for (const site of sites) {
+    const shaped = site.hourly ? shapeOpenMeteo({ hourly: site.hourly, daily: site.daily ?? undefined }) : null;
+    if (!shaped) {
+      results.set(site.name, {
+        temp: "--", rain: "--", cloud: "--", wind: "--", dir: "--",
+        stato: "N/D", baseNubi: "N/D", termiche: "N/D",
+        indice: 0, indiceLabel: "N/D",
+        freezingLevel: null, weatherCode: null,
+        fonte: "Nessun dato dal modello", hourly: undefined,
+      });
+      continue;
+    }
+    const stato = statoAggressivo(shaped, null, null);
+    const baseNubi = baseNubiAggressiva(shaped.cloud);
+    const termiche = termicheAggressive(shaped.tMax, shaped.tMin, shaped.cloudDaily, shaped.rainDaily);
+    const indice = indiceAffidabilitaStima(shaped.wind, shaped.rain, shaped.cloud, baseNubi, termiche);
+    results.set(site.name, {
+      temp: safe(shaped.temp),
+      rain: safe(shaped.rain),
+      cloud: safe(shaped.cloud),
+      wind: safe(shaped.wind),
+      dir: safe(shaped.dir),
+      stato,
+      baseNubi,
+      termiche,
+      indice: indice ?? 0,
+      indiceLabel: labelIndice(indice),
+      freezingLevel: shaped.freezingLevel,
+      weatherCode: shaped.weatherCode,
+      fonte: "Open-Meteo · modello grigliato batch",
+      hourly: shaped.hourly,
+    });
+  }
   return results;
 }

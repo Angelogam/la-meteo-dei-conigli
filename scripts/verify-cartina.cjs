@@ -61,11 +61,26 @@ function check(name, ok, extra = "") {
   if (USE_MOCK) check("Aloni termici dipinti sul canvas", heatPixels > 50, `${heatPixels} pixel campionati`);
   else console.log(`INFO pixel aloni (dati reali): ${heatPixels}`);
 
+  /* ---- BATCH: i dati dei decolli arrivano con una sola richiesta /api/decolli-batch ---- */
+  const loadedTxt = (await page.locator(".cmap-loaded").innerText().catch(() => "")) || "";
+  const batchOk = /^24\/24/.test(loadedTxt.trim());
+  check("Batch decolli caricato (24/24 siti con dati)", batchOk, `"${loadedTxt.trim()}"`);
+
   /* ---- livello VENTO + scroller quota ---- */
   await page.locator('[data-testid="cartina-decolli"] .cmap-lbtn', { hasText: "Vento" }).click();
   await page.waitForTimeout(1200);
   const windMarkers = await page.locator(".cmap-marker.is-windlayer").count();
   check("Frecce vento sui 24 decolli", windMarkers === 24, `${windMarkers}`);
+  const particlePixels = await page.evaluate(() => {
+    const c = document.querySelector(".cmap-heat-canvas");
+    if (!c) return -1;
+    const ctx = c.getContext("2d");
+    const data = ctx.getImageData(0, 0, c.width, c.height).data;
+    let n = 0;
+    for (let i = 3; i < data.length; i += 8) if (data[i] > 10) n++;
+    return n;
+  });
+  check("Particelle di vento animate sul canvas", particlePixels > 120, `${particlePixels} px campionati`);
   const altStepsCount = await page.locator(".cmap-alt-step").count();
   check(`Scroller quota con livelli (≥5)`, altStepsCount >= 5, `${altStepsCount} livelli`);
   if (altStepsCount >= 5) {

@@ -440,7 +440,7 @@ export default function DecolliCard({
         <div>
           <p className="dxc-kicker">SITI MONITORATI</p>
           <h2 className="dxc-title" id="dxc-title">Confronta i decolli</h2>
-          <p className="dxc-description">Schede essenziali per scegliere e identificare il decollo: verdetto di volo, finestra migliore, termiche e vento. Il quadro animato completo — il volo della giornata — è nella scheda Termiche della pagina centrale. Il confronto è indicativo, non è un giudizio di sicurezza.</p>
+          <p className="dxc-description">Schede essenziali per identificare il decollo e scegliere dove volare: verdetto di volo, finestra migliore, termiche e vento del modello. Il quadro spaziale con il campo termico è sulla Cartina dei decolli. Confronto indicativo, non è un giudizio di sicurezza.</p>
         </div>
         <div className="dxc-count">
           <strong>{decolli.length}</strong>

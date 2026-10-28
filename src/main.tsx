@@ -33,7 +33,7 @@ class RootErrorBoundary extends React.Component<
           style={{
             minHeight: "100vh", display: "grid", placeItems: "center", padding: "2rem",
             background: "linear-gradient(168deg, #0d1a2e, #091223)", color: "#dbe7f8",
-            fontFamily: "Inter, system-ui, sans-serif", textAlign: "center",
+            fontFamily: "Manrope, system-ui, sans-serif", textAlign: "center",
           }}
         >
           <div style={{ maxWidth: 460 }}>
