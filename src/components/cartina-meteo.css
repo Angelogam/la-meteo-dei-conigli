@@ -378,7 +378,7 @@
   top: 10px;
   left: 10px;
   z-index: 740;
-  width: min(300px, calc(100% - 20px));
+  width: min(352px, calc(100% - 20px));
   max-height: calc(100% - 24px);
   overflow-y: auto;
   display: flex;
@@ -445,40 +445,225 @@
 .cmap-verdict em { color: #a9c0d0; font-size: 0.66rem; font-style: normal; }
 .cmap-verdict span { margin-left: auto; color: #8fe8ff; font-size: 0.64rem; font-weight: 750; font-variant-numeric: tabular-nums; }
 
-.cmap-rows { display: flex; flex-direction: column; }
-.cmap-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.6rem;
-  padding: 0.4rem 0.15rem;
-  border-bottom: 1px solid rgba(113, 217, 244, 0.1);
+/* ---- badge relazione vento dentro il verdetto ---- */
+.cmap-relbadge {
+  padding: 0.12rem 0.42rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  font-style: normal;
 }
-.cmap-row:last-child { border-bottom: 0; }
-.cmap-row-k {
+.cmap-relbadge.is-frontale { background: rgba(16, 92, 64, 0.5); border-color: rgba(52, 211, 153, 0.5); color: #6ee7b7; }
+.cmap-relbadge.is-diagonale { background: rgba(96, 74, 10, 0.45); border-color: rgba(251, 191, 36, 0.45); color: #fcd34d; }
+.cmap-relbadge.is-laterale { background: rgba(96, 74, 10, 0.45); border-color: rgba(251, 191, 36, 0.45); color: #fcd34d; }
+.cmap-relbadge.is-di_coda { background: rgba(110, 22, 22, 0.55); border-color: rgba(239, 68, 68, 0.55); color: #fca5a5; }
+.cmap-relbadge.is-sconosciuto { display: none; }
+
+/* ---- avvisi di sicurezza ---- */
+.cmap-warn {
+  margin: 0;
+  padding: 0.4rem 0.55rem;
+  border-radius: 9px;
+  background: rgba(110, 22, 22, 0.28);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fecaca;
+  font-size: 0.64rem;
+  font-weight: 750;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+}
+
+/* ---- chips: finestra / termiche / stato ---- */
+.cmap-chips { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+.cmap-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  color: #8fa6b8;
+  gap: 0.28rem;
+  padding: 0.26rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(113, 217, 244, 0.25);
+  background: rgba(12, 32, 48, 0.85);
+  color: #cfe9f6;
   font-size: 0.62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  white-space: nowrap;
-}
-.cmap-row-v {
-  color: #f2fbff;
-  font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 800;
   font-family: var(--font-mono);
-  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
-.cmap-row-v small { display: block; color: #9fb6c6; font-size: 0.6rem; font-weight: 600; }
-.cmap-turb.is-low { color: #34d399; }
-.cmap-turb.is-mid { color: #fbbf24; }
-.cmap-turb.is-high { color: #ef4444; }
+.cmap-chip.is-win { background: rgba(96, 74, 10, 0.5); border-color: rgba(251, 191, 36, 0.55); color: #fcd34d; }
+.cmap-chip.is-therm { background: rgba(124, 45, 18, 0.5); border-color: rgba(251, 146, 60, 0.55); color: #fdba74; }
+.cmap-chip.is-therm.is-off { background: rgba(30, 41, 59, 0.6); border-color: rgba(148, 163, 184, 0.3); color: #94a3b8; }
+.cmap-chip.is-stato { margin-left: auto; border-color: rgba(113, 217, 244, 0.3); }
 
-/* grafico orario: barre alte quanto la risalita, colore = scala m/s della cartina */
+/* ---- ANALISI AEROLOGICA ---- */
+.cmap-analysis {
+  padding: 0.55rem 0.6rem 0.5rem;
+  border: 1px solid rgba(113, 217, 244, 0.16);
+  border-radius: 11px;
+  background: rgba(8, 20, 32, 0.72);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.cmap-analysis-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
+.cmap-analysis-k {
+  color: #6fd8f2;
+  font-size: 0.56rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.cmap-analysis-v { color: #a9c0d0; font-size: 0.66rem; font-weight: 700; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.cmap-analysis-v b { color: #8fe8ff; font-weight: 800; }
+
+/* banner di instabilità (Stabile → Cross) */
+.cmap-banner {
+  margin: 0;
+  padding: 0.45rem 0.6rem;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  font-size: 0.68rem;
+  line-height: 1.5;
+  color: #d9e8f2;
+}
+.cmap-banner strong { font-family: var(--font-display); font-size: 0.82rem; font-weight: 800; letter-spacing: 0.04em; }
+.cmap-banner.is-stable { background: rgba(51, 65, 85, 0.4); border-color: rgba(148, 163, 184, 0.35); }
+.cmap-banner.is-stable strong { color: #b6c5d6; }
+.cmap-banner.is-weak { background: rgba(7, 60, 89, 0.5); border-color: rgba(56, 189, 248, 0.45); }
+.cmap-banner.is-weak strong { color: #7dd3fc; }
+.cmap-banner.is-moderate { background: rgba(96, 74, 10, 0.42); border-color: rgba(250, 204, 21, 0.5); }
+.cmap-banner.is-moderate strong { color: #fde047; }
+.cmap-banner.is-strong { background: rgba(124, 45, 18, 0.45); border-color: rgba(251, 146, 60, 0.55); }
+.cmap-banner.is-strong strong { color: #fdba74; }
+.cmap-banner.is-cross { background: rgba(127, 29, 29, 0.5); border-color: rgba(248, 113, 113, 0.6); }
+.cmap-banner.is-cross strong { color: #fca5a5; }
+
+/* legenda della scala d'instabilità */
+.cmap-scale { display: flex; align-items: center; gap: 0.28rem; flex-wrap: wrap; }
+.cmap-pill {
+  padding: 0.14rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #06121d;
+}
+.cmap-pill.is-stable { background: #5a6f88; color: #e7eef5; }
+.cmap-pill.is-weak { background: #38bdf8; }
+.cmap-pill.is-moderate { background: #facc15; }
+.cmap-pill.is-strong { background: #fb923c; }
+.cmap-pill.is-cross { background: #f87171; }
+
+/* ---- schede dati aerologici (2 colonne) ---- */
+.cmap-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+.cmap-card {
+  min-width: 0;
+  padding: 0.5rem 0.55rem 0.55rem;
+  border-radius: 10px;
+  border: 1px solid rgba(113, 217, 244, 0.14);
+  background: rgba(9, 22, 35, 0.75);
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+.cmap-card-k {
+  color: #7f97a8;
+  font-size: 0.53rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.cmap-card-v {
+  color: #f2fbff;
+  font-family: var(--font-mono);
+  font-size: 1.06rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+.cmap-card-v small { color: #8fa6b8; font-size: 0.62rem; font-weight: 750; }
+.cmap-card-s { margin: 0; color: #8ba1b2; font-size: 0.58rem; line-height: 1.45; }
+
+/* mini-badge dentro le schede (CAPE, turbolenza, temporali) */
+.cmap-mini {
+  padding: 0.08rem 0.4rem;
+  border-radius: 999px;
+  font-style: normal;
+  font-family: var(--font-sans, inherit);
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+.cmap-mini.is-wide { font-size: 0.66rem; padding: 0.14rem 0.55rem; }
+.cmap-mini.is-stable { background: rgba(90, 111, 136, 0.35); color: #cbd5e1; }
+.cmap-mini.is-weak { background: rgba(56, 189, 248, 0.22); color: #7dd3fc; }
+.cmap-mini.is-moderate { background: rgba(250, 204, 21, 0.2); color: #fde047; }
+.cmap-mini.is-strong { background: rgba(251, 146, 60, 0.24); color: #fdba74; }
+.cmap-mini.is-cross { background: rgba(248, 113, 113, 0.24); color: #fca5a5; }
+
+/* ---- rosa dei venti ---- */
+.cmap-windrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+  border: 1px solid rgba(113, 217, 244, 0.14);
+  background: rgba(9, 22, 35, 0.75);
+}
+.cmap-windrow strong { color: #eafaff; font-size: 0.74rem; font-weight: 800; }
+.cmap-mini-compass {
+  position: relative;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(113, 217, 244, 0.3);
+  background: radial-gradient(circle at 50% 42%, rgba(20, 45, 66, 0.9), rgba(8, 18, 30, 0.95));
+}
+.cmap-mc-n {
+  position: absolute;
+  top: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-style: normal;
+  font-size: 0.42rem;
+  font-weight: 800;
+  color: #7ce4ff;
+  font-family: var(--font-mono);
+}
+.cmap-mc-arrow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2.5px;
+  height: 11px;
+  margin: -5.5px 0 0 -1.25px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #fb923c, #f97316);
+  transform-origin: 50% 50%;
+  box-shadow: 0 0 5px rgba(251, 146, 60, 0.65);
+}
+.cmap-mc-arrow::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-bottom-color: #fdba74;
+}
+
+/* grafico orario: barre alte quanto la risalita, colore = scala dell'instabilità */
 .cmap-chart {
   padding: 0.45rem 0.5rem 0.3rem;
   border: 1px solid rgba(113, 217, 244, 0.12);

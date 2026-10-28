@@ -70,6 +70,9 @@ export interface HourEval {
   cloud: number | null;
   rain: number | null;
   freezing: number | null;
+  cape: number | null;
+  dew: number | null;
+  code: number | null;
 }
 
 interface SiteSnapshot {
@@ -201,6 +204,9 @@ function evaluatePoint(point: HourlyPoint, quota: number, esposizione: string): 
     cloud: point.cloud,
     rain: point.rain,
     freezing: point.freezing,
+    cape: point.cape,
+    dew: point.dew,
+    code: point.code,
   };
 }
 
