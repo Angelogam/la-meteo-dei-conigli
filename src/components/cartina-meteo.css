@@ -663,53 +663,145 @@
   border-bottom-color: #fdba74;
 }
 
-/* grafico orario: barre alte quanto la risalita, colore = scala dell'instabilità */
-.cmap-chart {
-  padding: 0.45rem 0.5rem 0.3rem;
+/* ---- IL CIELO: profilo della risalita con parapendio, cumuli e venti in quota ---- */
+.cmap-sky {
+  margin: 0.5rem 0 0.55rem;
+  padding: 0.5rem 0.4rem 0.35rem;
   border: 1px solid rgba(113, 217, 244, 0.12);
-  border-radius: 9px;
+  border-radius: 10px;
   background: rgba(8, 20, 32, 0.7);
 }
-.cmap-bars {
+.cmap-skyhead {
   display: flex;
-  align-items: stretch;
-  gap: 2px;
-  height: 92px;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0 0.35rem 0.35rem;
 }
-.cmap-slot { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
-.cmap-bar {
-  flex: 1 1 auto;
-  min-width: 5px;
-  display: flex;
-  align-items: flex-end;
-  background: transparent;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
+.cmap-skyhead-k {
+  color: #bfe3ff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
-.cmap-bar i {
-  display: block;
-  width: 100%;
-  height: var(--bh, 20%);
-  background: var(--bfill, rgba(148, 163, 184, 0.5));
-  border-radius: 3px 3px 1px 1px;
-  transition: height 0.45s cubic-bezier(0.4, 0, 0.2, 1), filter 0.2s;
-}
-.cmap-bar:hover i { filter: brightness(1.3); }
-.cmap-bar.is-best i { box-shadow: 0 0 9px rgba(255, 255, 255, 0.45); }
-.cmap-bar.is-on { outline: 1.5px solid #7ce4ff; outline-offset: 1px; border-radius: 4px; }
-.cmap-slot small {
-  height: 12px;
-  text-align: center;
+.cmap-skyhead-v {
   color: #6d8496;
-  font-size: 0.5rem;
-  font-weight: 700;
+  font-size: 0.53rem;
   font-family: var(--font-mono);
-  line-height: 12px;
 }
-.cmap-slot small.is-on { color: #8fe8ff; }
+.cmap-sky-svg { display: block; }
+.cmap-sky-ax {
+  font-family: var(--font-mono);
+  font-size: 7.6px;
+  fill: #6d8496;
+}
+.cmap-sky-zero {
+  font-family: var(--font-mono);
+  font-size: 7.4px;
+  fill: #ff9d9d;
+  opacity: 0.9;
+}
+.cmap-sky-topv {
+  font-family: var(--font-mono);
+  font-size: 8.6px;
+  font-weight: 800;
+  fill: #ffd76a;
+}
+.cmap-sky-topk {
+  font-family: var(--font-mono);
+  font-size: 7px;
+  fill: #8aa0b2;
+}
+.cmap-sky-dry {
+  font-family: var(--font-mono);
+  font-size: 7.4px;
+  fill: #8aa0b2;
+}
+.cmap-sky-launch {
+  font-family: var(--font-mono);
+  font-size: 7.6px;
+  font-weight: 700;
+  fill: #9fb4c4;
+}
+.cmap-sky-wspd {
+  font-family: var(--font-mono);
+  font-size: 8.2px;
+  font-weight: 800;
+}
+.cmap-sky-wdir {
+  font-family: var(--font-mono);
+  font-size: 7.2px;
+  fill: #8aa0b2;
+}
+.sky-cloud circle,
+.sky-cloud rect {
+  fill: #eaf4fb;
+  opacity: 0.94;
+  stroke: rgba(255, 255, 255, 0.5);
+  stroke-width: 0.5;
+}
+.sky-bub {
+  fill: rgba(255, 255, 255, 0.30);
+  animation: sky-rise 3.6s linear infinite;
+}
+@keyframes sky-rise {
+  0% { transform: translateY(0); opacity: 0; }
+  12% { opacity: 0.55; }
+  85% { opacity: 0.35; }
+  100% { transform: translateY(var(--rise, -240px)); opacity: 0; }
+}
+.sky-cloud { animation: sky-bob 5.2s ease-in-out infinite; }
+@keyframes sky-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1.6px); }
+}
+.sky-pg {
+  animation: sky-sway 4.4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes sky-sway {
+  0%, 100% { transform: rotate(-2.4deg) translateY(0); }
+  50% { transform: rotate(2.4deg) translateY(-1.4px); }
+}
 
-.cmap-bars-help { margin: -0.25rem 0 0; color: #7f97a8; font-size: 0.58rem; line-height: 1.45; }
+/* ---- fascia delle ore: chip colorati dalla scala dell'instabilità ---- */
+.cmap-hours {
+  display: flex;
+  gap: 2.5px;
+}
+.cmap-bar {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 4px 0 3.5px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--bflat, #5a6f88) 16%, transparent);
+  color: #a9bccb;
+  font-family: var(--font-mono);
+  font-size: 0.47rem;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.15s;
+}
+.cmap-bar:hover {
+  background: color-mix(in srgb, var(--bflat, #5a6f88) 38%, transparent);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.cmap-bar.is-best {
+  box-shadow: 0 0 7px color-mix(in srgb, var(--bflat, #5a6f88) 55%, transparent);
+}
+.cmap-bar.is-on {
+  background: color-mix(in srgb, var(--bflat, #5a6f88) 82%, white);
+  border-color: #7ce4ff;
+  color: #08141f;
+  font-weight: 800;
+}
+
+.cmap-bars-help { margin: 0.45rem 0 0; color: #7f97a8; font-size: 0.58rem; line-height: 1.45; }
 
 .cmap-use {
   display: inline-flex;
@@ -838,13 +930,14 @@
   .cmap-day small { display: none; }
   .cmap-play span { display: none; }
   .cmap-play { padding: 0.5rem 0.6rem; }
-  .cmap-bars { height: 78px; }
-  .cmap-slot small { font-size: 0.44rem; }
+  .cmap-bar { font-size: 0.4rem; padding: 3px 0 2.5px; }
+  .cmap-skyhead-v { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .cmap-marker.is-hot .cmap-dot::after { animation: none; opacity: 0.6; }
   .cmap-marker, .cmap-marker:hover { transition: none; }
-  .cmap-arrow, .cmap-bar i { transition: none; }
+  .cmap-arrow, .cmap-bar { transition: none; }
   .cmap-lbtn, .cmap-play, .cmap-use { transition: none; }
+  .sky-bub, .sky-cloud, .sky-pg { animation: none; }
 }

@@ -219,7 +219,7 @@ function lerpAngle(a: number | null | undefined, b: number | null | undefined, t
 }
 
 /** Vento interpolato alla quota scelta (m s.l.m.) dal sounding a livelli di pressione. */
-function windAtAltitude(
+export function windAtAltitude(
   point: HourlyPoint | null,
   altM: number | null,
   surfaceWind: number | null,
@@ -991,7 +991,7 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
       const p = hourly.find((x) => x.time.startsWith(dayKey + "T" + pad2(h)));
       if (!p) continue;
       const e = evaluatePoint(p, Number(item.elevation_m ?? item.altitude ?? 0), item.orientation || item.exposure || "");
-      out.push({ hour: h, rateo: e.rateo ?? 0, classe: e.classe, wind: e.wind, gusts: e.gusts });
+      out.push({ hour: h, rateo: e.rateo ?? 0, classe: e.classe, wind: e.wind, gusts: e.gusts, point: p });
     }
     return out;
   }, [panelSiteId, decolli, dayKey]);

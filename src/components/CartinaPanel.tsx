@@ -13,6 +13,8 @@
 
 import { AlertTriangle, Flame, MapPin, Sun, X } from "lucide-react";
 import type { CartinaDecollo, HourEval } from "@/components/CartinaMeteo";
+import type { HourlyPoint } from "@/services/threeSourceWeather";
+import CartinaSky from "@/components/CartinaSky";
 
 export interface PanelHour {
   hour: number;
@@ -20,11 +22,13 @@ export interface PanelHour {
   classe: "is-good" | "is-fair" | "is-bad";
   wind: number | null;
   gusts: number | null;
+  point?: HourlyPoint;
 }
 
 export interface PanelSnapshot {
   item: CartinaDecollo;
   eval: HourEval | null;
+  point?: HourlyPoint | null;
 }
 
 interface CartinaPanelProps {
@@ -213,8 +217,9 @@ export default function CartinaPanel({ snapshot, hours, hour, onClose, onPickHou
         </button>
         <p className="cmap-empty-title">Tocca un decollo sulla cartina</p>
         <p className="cmap-empty-text">
-          Si apre l'analisi aerologica completa: verdetto, banner di instabilità, scala colori, zero termico, base
-          nubi, CAPE, turbolenza e rischio temporali — tocca una barra per cambiare ora.
+          Si apre l'analisi aerologica completa: il profilo della risalita con parapendio e cumuli, la colonna
+          dei venti fino a 4000 metri, zero termico, base nubi, CAPE, turbolenza e rischio temporali — tocca
+          un'ora per cambiare ora.
         </p>
       </aside>
     );
@@ -317,32 +322,40 @@ export default function CartinaPanel({ snapshot, hours, hour, onClose, onPickHou
               <strong>{banner.strong}</strong> — {banner.text}
             </p>
 
-            <div className="cmap-bars" data-testid="cartina-bars">
+            {/* ---- IL CIELO: profilo della risalita con parapendio, cumuli e venti in quota ---- */}
+            <CartinaSky
+              quota={quota}
+              rateo={e.rateo ?? 0}
+              baseNubi={e.baseNubiM}
+              freezing={e.freezing}
+              cloud={e.cloud}
+              wind={e.wind}
+              dir={e.dir}
+              point={snapshot.point ?? hours.find((h) => h.hour === hour)?.point ?? null}
+              hour={e.hour}
+            />
+
+            {/* ---- fascia delle ore: colore = scala dell'instabilità, clic = cambia ora ---- */}
+            <div className="cmap-hours" data-testid="cartina-bars">
               {hours.map((h) => {
                 const inst = instabilita(h.rateo);
                 return (
-                  <div className="cmap-slot" key={h.hour}>
-                    <button
-                      type="button"
-                      className={
-                        "cmap-bar" +
-                        (h.hour === hour ? " is-on" : "") +
-                        (best && h.hour === best.hour && h.rateo > 0.05 ? " is-best" : "")
-                      }
-                      style={
-                        {
-                          "--bh": Math.round(12 + 88 * Math.min(1, h.rateo / Math.max(1, best?.rateo ?? 1))) + "%",
-                          "--bfill": inst.fill,
-                        } as React.CSSProperties
-                      }
-                      onClick={() => onPickHour(h.hour)}
-                      title={`${pad2(h.hour)}:00 · ${h.rateo > 0.05 ? fmtMs(h.rateo) : "termiche assenti"} · ${INST[inst.level].label}`}
-                      aria-label={`Ore ${h.hour}: ascendenza ${h.rateo.toFixed(1)} metri al secondo, condizione ${INST[inst.level].label}`}
-                    >
-                      <i />
-                    </button>
-                    <small className={h.hour === hour ? "is-on" : ""}>{h.hour % 3 === 0 ? pad2(h.hour) : ""}</small>
-                  </div>
+                  <button
+                    type="button"
+                    key={h.hour}
+                    className={
+                      "cmap-bar" +
+                      (h.hour === hour ? " is-on" : "") +
+                      (best && h.hour === best.hour && h.rateo > 0.05 ? " is-best" : "")
+                    }
+                    style={{ "--bflat": inst.flat } as React.CSSProperties}
+                    onClick={() => onPickHour(h.hour)}
+                    title={`${pad2(h.hour)}:00 · ${h.rateo > 0.05 ? fmtMs(h.rateo) : "termiche assenti"} · ${INST[inst.level].label}`}
+                    aria-label={`Ore ${h.hour}: ascendenza ${h.rateo.toFixed(1)} metri al secondo, condizione ${INST[inst.level].label}`}
+                    aria-pressed={h.hour === hour}
+                  >
+                    {pad2(h.hour)}
+                  </button>
                 );
               })}
             </div>
@@ -355,8 +368,10 @@ export default function CartinaPanel({ snapshot, hours, hour, onClose, onPickHou
               ))}
             </div>
             <p className="cmap-bars-help">
-              Altezza e colore della barra = m/s di risalita (scala dell'instabilità: blu = aria buona, giallo e
-              rosso = molto instabile, termiche super forti) · tocca una barra per cambiare ora.
+              Il parapendio segna la sommità della risalita, i cumuli sono disegnati alla quota di arrivo della
+              termica (base nubi) e la linea tratteggiata è lo zero termico. A destra il vento dal decollo a 4000
+              m: freccia = dove spinge, valore in km/h, «da NO» = da dove arriva · tocca un'ora per aggiornare la
+              scena.
             </p>
           </div>
 

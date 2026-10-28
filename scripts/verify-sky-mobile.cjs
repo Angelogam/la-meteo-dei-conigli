@@ -1,0 +1,21 @@
+const { chromium } = require("playwright");
+(async () => {
+  const browser = await chromium.launch();
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, timezoneId: "Europe/Rome" });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(String(e)));
+  await page.goto("http://localhost:8080/", { waitUntil: "domcontentloaded", timeout: 90000 });
+  await page.waitForSelector(".cmap-marker", { timeout: 90000 });
+  const cartina = page.locator('[data-testid="cartina-decolli"]');
+  await cartina.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(2500);
+  await page.locator(".cmap-marker").nth(5).click({ force: true, timeout: 15000 });
+  await page.waitForTimeout(2500);
+  const sky = page.locator('[data-testid="cartina-sky"]');
+  await sky.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(800);
+  console.log(JSON.stringify({ clouds: await page.locator(".sky-cloud").count(), errors }));
+  await sky.screenshot({ path: "/home/z/my-project/shots-local/sky-mobile.png" });
+  await browser.close();
+})();
