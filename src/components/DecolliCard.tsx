@@ -116,8 +116,6 @@ interface OraValutata {
   rel: string;
   freezing: number | null;
   code: number | null;
-  cape: number | null;
-  dew: number | null;
   motivi: string[];
 }
 
@@ -164,8 +162,6 @@ function evaluateHour(point: HourlyPoint, quota: number, esposizione: string): O
     rel: res.windRelativo,
     freezing: point.freezing,
     code: point.code,
-    cape: point.cape,
-    dew: point.dew,
     motivi: res.motivi.slice(0, 2),
   };
 }
@@ -221,145 +217,6 @@ function Compass({ expDeg, dir, relCls }: { expDeg: number; dir: number | null; 
         </svg>
       </span>
     </span>
-  );
-}
-
-/* ============================================================
-   Scala termica — colore = instabilità della massa d'aria
-   BLU stabile (termiche assenti/debolissime) → GIALLO moderata
-   → ARANCIO forte → ROSSO molto instabile (cross weather)
-   ============================================================ */
-
-type LivelloTermico = "lv-stable" | "lv-weak" | "lv-moderate" | "lv-strong" | "lv-extreme";
-
-function livelloTermico(rateo: number | null | undefined): LivelloTermico {
-  const r = rateo ?? 0;
-  if (r >= 2.0) return "lv-extreme";
-  if (r >= 1.0) return "lv-strong";
-  if (r >= 0.5) return "lv-moderate";
-  if (r >= 0.2) return "lv-weak";
-  return "lv-stable";
-}
-
-const LIVELLO_LABEL: Record<LivelloTermico, string> = {
-  "lv-stable": "Stabile",
-  "lv-weak": "Debole",
-  "lv-moderate": "Moderata",
-  "lv-strong": "Forte",
-  "lv-extreme": "Cross",
-};
-
-const LIVELLO_DESC: Record<LivelloTermico, string> = {
-  "lv-stable": "Aria stabile: il sole scalda il pendio ma le bolle non si staccano. Meglio restare a terra.",
-  "lv-weak": "Aria poco instabile: termiche deboli e spezzate, ricariche lente. Volo di collina, senza ambizioni.",
-  "lv-moderate": "Instabilità moderata: termiche utilizzabili e regolari, la base è raggiungibile nelle ore centrali.",
-  "lv-strong": "Aria instabile: termiche forti e ampie, salite continue. Bella giornata di volo.",
-  "lv-extreme": "Aria molto instabile: termiche super forti, ottime per il cross. Attenzione allo sviluppo nuvoloso e ai temporali.",
-};
-
-function capeLivello(cape: number | null): { label: string; cls: LivelloTermico } | null {
-  if (cape === null || cape === undefined || !Number.isFinite(cape)) return null;
-  if (cape >= 1500) return { label: "Molto instabile", cls: "lv-extreme" };
-  if (cape >= 800) return { label: "Instabile", cls: "lv-strong" };
-  if (cape >= 300) return { label: "Poco instabile", cls: "lv-moderate" };
-  return { label: "Stabile", cls: "lv-stable" };
-}
-
-/* ---------- Dettaglio aerologico espandibile (card selezionata) ---------- */
-
-function AeroDetail({ active, evaluated, quota, best }: { active: OraValutata; evaluated: OraValutata[]; quota: number; best: { start: number; end: number } | null }) {
-  const day = evaluated.filter((v) => v.hour >= 5 && v.hour <= 21);
-  if (!day.length) return null;
-  const scaleMax = Math.max(2.5, ...day.map((v) => v.rateo ?? 0));
-  const bestHour = day.reduce((b, v) => ((v.rateo ?? 0) > (b ? b.rateo ?? -1 : -1) ? v : b), day[0]);
-  const peak = livelloTermico(Math.max(...day.map((v) => v.rateo ?? 0)));
-  const oreBuone = day.filter((v) => v.classe === "is-good").length;
-
-  // Zero termico: valore del modello, altrimenti stimato dal gradiente ~6,5 °C/km
-  const zeroModello = active.freezing !== null && active.freezing !== undefined && Number.isFinite(active.freezing);
-  const zeroTermico = zeroModello ? active.freezing : active.temp !== null ? quota + (Math.max(0, active.temp) / 6.5) * 1000 : null;
-  const guadagno = active.baseNubiM !== null ? Math.max(0, Math.round(active.baseNubiM - quota)) : null;
-  const gf = active.wind !== null && active.wind > 3 && active.gusts !== null ? active.gusts / active.wind : null;
-  const turb = gf === null ? null : gf >= 2 ? { label: "Alta", cls: "is-bad" } : gf >= 1.4 ? { label: "Moderata", cls: "is-fair" } : { label: "Bassa", cls: "is-good" };
-  const cape = capeLivello(active.cape ?? null);
-  const spread = active.temp !== null && active.dew !== null ? active.temp - active.dew : null;
-  const rischio = (active.code ?? 0) >= 95 ? "Alto" : (active.code ?? 0) >= 80 ? "Moderato" : "Basso";
-
-  return (
-    <div className="dxc-aero" role="group" aria-label="Analisi aerologica del decollo">
-      <div className="dxc-aero-head">
-        <span className="dxc-aero-kicker">Analisi aerologica · ore {active.hour}</span>
-        <span className="dxc-aero-ore">{oreBuone} ore buone oggi{best ? ` · finestra ${best.start}–${best.end}` : ""}</span>
-      </div>
-
-      <div className={"dxc-aero-banner " + peak}>
-        <strong>{LIVELLO_LABEL[peak]}</strong> — {LIVELLO_DESC[peak]}
-      </div>
-
-      <div className="dxc-aero-chart" aria-hidden="true">
-        {day.map((v) => {
-          const lv = livelloTermico(v.rateo);
-          const h = Math.max(4, Math.round(((v.rateo ?? 0) / scaleMax) * 100));
-          return (
-            <span
-              key={v.hour}
-              data-hour={v.hour}
-              className={"dxc-aero-bar " + lv + (bestHour && v.hour === bestHour.hour && (bestHour.rateo ?? 0) > 0.2 ? " is-best" : "") + (v.hour === active.hour ? " is-active" : "")}
-              title={v.hour + ":00 — " + (v.rateo ?? 0).toFixed(1).replace(".", ",") + " m/s"}
-            >
-              <i style={{ height: h + "%" }} />
-            </span>
-          );
-        })}
-      </div>
-      <div className="dxc-aero-hours" aria-hidden="true">
-        {day.map((v) => (
-          <span key={v.hour} data-hour={v.hour}>{v.hour % 3 === 0 ? String(v.hour).padStart(2, "0") : ""}</span>
-        ))}
-      </div>
-      <div className="dxc-aero-legend" aria-hidden="true">
-        {(Object.keys(LIVELLO_LABEL) as LivelloTermico[]).map((k) => (
-          <em key={k} className={k}>{LIVELLO_LABEL[k]}</em>
-        ))}
-      </div>
-      <p className="dxc-aero-note">Altezza e colore della barra = m/s di risalita (scala dell’instabilità) · tocca una barra per cambiare ora.</p>
-
-      <dl className="dxc-aero-grid">
-        <div className="dxc-aero-tile">
-          <dt>Zero termico</dt>
-          <dd>{zeroTermico !== null ? Math.round(zeroTermico / 10) * 10 + " m" : "N/D"}{!zeroModello && zeroTermico !== null ? <small> stimato</small> : null}</dd>
-          <small>Sopra questa quota l’umidità ghiaccia: la bolla rallenta.</small>
-        </div>
-        <div className="dxc-aero-tile">
-          <dt>Base nubi</dt>
-          <dd>{active.baseNubiM !== null ? Math.round(active.baseNubiM / 10) * 10 + " m" : "no nubi"}</dd>
-          <small>{guadagno !== null ? "+" + guadagno + " m di guadagno sopra il decollo" : "cielo limpido: le termiche salgono oltre"}</small>
-        </div>
-        <div className="dxc-aero-tile">
-          <dt>Instabilità (CAPE)</dt>
-          <dd>
-            {active.cape !== null && active.cape !== undefined ? Math.round(active.cape) + " J/kg" : "N/D"}
-            {cape && <span className={"dxc-aero-chip " + cape.cls}>{cape.label}</span>}
-          </dd>
-          <small>Energia disponibile alle bolle: più è alta, più la salita tira.</small>
-        </div>
-        <div className="dxc-aero-tile">
-          <dt>Temp · rugiada</dt>
-          <dd>{active.temp !== null ? Math.round(active.temp) + "°" : "N/D"}{active.dew !== null ? " / " + Math.round(active.dew) + "°" : ""}</dd>
-          <small>{spread !== null ? "Spread " + spread.toFixed(0) + "°: spread corto = base bassa, bolle facili" : "differenza aria/rugiada"}</small>
-        </div>
-        <div className="dxc-aero-tile">
-          <dt>Turbolenza</dt>
-          <dd>{turb ? <span className={"dxc-aero-chip " + turb.cls}>{turb.label}</span> : "N/D"}</dd>
-          <small>{gf !== null ? "Raffiche ÷ vento = " + gf.toFixed(1) + "× (sopra 2× giri bruschi)" : "vento troppo debole per il rapporto"}</small>
-        </div>
-        <div className="dxc-aero-tile">
-          <dt>Temporali · pioggia</dt>
-          <dd>{rischio}{active.rain !== null && active.rain > 0.1 ? " · " + active.rain.toFixed(1).replace(".", ",") + " mm" : ""}</dd>
-          <small>{(active.code ?? 0) >= 80 ? "Sviluppo verticale in corso: staccare prima che chiuda" : "Nessuno sviluppo atteso su quest’ora"}</small>
-        </div>
-      </dl>
-    </div>
   );
 }
 
@@ -594,8 +451,6 @@ function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour, id
         <span className="dxc-wg-state">{status.icon}<em>{status.label}</em></span>
       </div>
 
-      {selected && <AeroDetail active={active} evaluated={evaluated} quota={quota} best={best} />}
-
       <div className="dxc-windstrip">
         <Compass expDeg={expDeg} dir={active.dir} relCls={rel.cls} />
         <div className="dxc-windstrip-txt">
@@ -674,7 +529,7 @@ export default function DecolliCard({
         <div>
           <p className="dxc-kicker">SITI MONITORATI</p>
           <h2 className="dxc-title" id="dxc-title">Confronta i decolli</h2>
-          <p className="dxc-description">Verdetto di volo, analisi aerologica e vento sul pendio per ogni sito. Tocca una card per aprire zero termico, instabilità e grafico delle termiche; tocca le barre per cambiare ora. Confronto indicativo, non è un giudizio di sicurezza.</p>
+          <p className="dxc-description">Verdetto di volo, windgram del modello e vento sul pendio per ogni sito. Tocca le colonne del windgram per sfogliare la giornata; il confronto è indicativo, non è un giudizio di sicurezza.</p>
         </div>
         <div className="dxc-count">
           <strong>{decolli.length}</strong>
