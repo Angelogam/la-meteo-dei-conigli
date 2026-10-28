@@ -1,6 +1,7 @@
 /* Screenshot scena cielo mobile: scroll del pannello + cattura elemento
    Uso: node shot-mobile-sky.cjs [url] */
 const { chromium } = require("playwright");
+const { installProdApiProxy } = require("./lib/proxy-prod-api.cjs");
 const BASE = process.argv[2] || "https://la-meteo-dei-conigli.vercel.app";
 
 (async () => {
@@ -11,6 +12,7 @@ const BASE = process.argv[2] || "https://la-meteo-dei-conigli.vercel.app";
     hasTouch: true,
   });
   const page = await ctx.newPage();
+  if (BASE.includes("localhost")) await installProdApiProxy(ctx, BASE);
   await page.goto(BASE + "/", { waitUntil: "domcontentloaded", timeout: 90000 });
   await page.waitForSelector(".cmap-marker", { timeout: 90000 });
   await page.locator('[data-testid="cartina-decolli"]').scrollIntoViewIfNeeded();
