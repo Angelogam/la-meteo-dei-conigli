@@ -1,7 +1,7 @@
 /* ============================================================
    DECOLLI COMPARE — "Alpine Night" redesign (dxc-*)
    Palette navy profondo + ciano alpino, glass panels,
-   chip colorati per metrica. Font display: Space Grotesk (var --font-display).
+   chip colorati per metrica. Font display: Barlow Condensed (var --font-display).
    ============================================================ */
 
 .dxc-panel {
@@ -506,40 +506,146 @@
 .dxc-window.is-fair { color: #fcd34d; background: rgba(251, 191, 36, .12); border: 1px solid rgba(251, 191, 36, .32); }
 .dxc-window.is-bad { color: #fca5a5; background: rgba(248, 113, 113, .12); border: 1px solid rgba(248, 113, 113, .35); }
 /* ============================================================
-   Card essenziale — riga chiavi: finestra + termiche + stato.
-   (Il grafico completo sta nella scheda Termiche, non qui.)
+   Windgram — airgram del modello (stile Meteo-Parapente / Alpium)
+   Colonne = ore · altezza = quota · colore = vento reale ai livelli
+   di pressione. Curve: top termica, base nubi, zero termico.
    ============================================================ */
-.dxc-keyrow {
-  display: flex;
-  align-items: center;
-  gap: .4rem;
-  flex-wrap: wrap;
-  margin-top: .55rem;
+.dxc-wgblock { margin-top: .7rem; }
+.dxc-wg-head {
+  display: flex; align-items: center; gap: .4rem; flex-wrap: wrap;
+  margin-bottom: .42rem;
 }
-.dxc-therm {
-  display: inline-flex; align-items: center; gap: .3rem;
-  font-size: .66rem; font-weight: 800; color: #fdba74;
+.dxc-wg-kicker {
+  font-size: .55rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+  color: #6b83a6;
+}
+.dxc-wg-therm {
+  display: inline-flex; align-items: center; gap: .28rem;
+  font-size: .6rem; font-weight: 800; color: #fdba74;
   font-variant-numeric: tabular-nums;
-  padding: .2rem .55rem; border-radius: 999px;
+  padding: .16rem .5rem; border-radius: 999px;
   background: rgba(251, 146, 60, .12); border: 1px solid rgba(251, 146, 60, .34);
 }
-.dxc-therm svg { width: 11px; height: 11px; }
-.dxc-therm.is-off {
+.dxc-wg-therm svg { width: 10px; height: 10px; }
+.dxc-wg-therm.is-off {
   color: #8ba3c4; background: rgba(148, 197, 255, .07); border-color: rgba(148, 197, 255, .18);
 }
-.dxc-state {
-  display: inline-flex; align-items: center; gap: .26rem;
-  margin-left: auto; font-size: .64rem; font-weight: 700; color: #8ba3c4;
+.dxc-wg-state { margin-left: auto; display: inline-flex; align-items: center; gap: .22rem; font-size: .58rem; color: #8ba3c4; }
+.dxc-wg-state svg { width: 12px; height: 12px; }
+.dxc-wg-state em { font-style: normal; }
+
+.dxc-wg2 { display: block; }
+.dxc-wg2-svg {
+  display: block; width: 100%; height: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 197, 255, .11);
+  background: linear-gradient(180deg, rgba(9, 18, 35, .55), rgba(4, 10, 22, .7));
+  pointer-events: none;
 }
-.dxc-state svg { width: 14px; height: 14px; }
-.dxc-state em { font-style: normal; }
-.dxc-cond-therm {
-  display: inline-flex; align-items: center; gap: .26rem;
-  margin-left: auto;
-  color: #fdba74; font-size: .7rem; font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+/* testi SVG */
+.dxc-wg2-alt {
+  fill: rgba(139, 163, 196, .78); font-size: 7px; font-weight: 600;
+  font-family: "Inter", sans-serif; font-variant-numeric: tabular-nums;
 }
+.dxc-wg2-hour {
+  fill: rgba(139, 163, 196, .92); font-size: 7.5px; font-weight: 700;
+  font-family: "Inter", sans-serif; font-variant-numeric: tabular-nums;
+}
+.dxc-wg2-launch { stroke: rgba(251, 146, 60, .75); stroke-width: 1; }
+.dxc-wg2-launch-txt {
+  fill: rgba(253, 186, 116, .95); font-size: 6.2px; font-weight: 800;
+  letter-spacing: .08em; font-family: "Inter", sans-serif;
+}
+/* curve aerologiche */
+.dxc-wg2-curve {
+  fill: none; stroke-linejoin: round; stroke-linecap: round;
+  animation: dxc-fadein .55s ease .12s both;
+}
+.dxc-wg2-curve.is-thermal {
+  stroke: #fb923c; stroke-width: 1.7;
+  filter: drop-shadow(0 0 4px rgba(251, 146, 60, .55));
+}
+.dxc-wg2-curve.is-base { stroke: #7dd3fc; stroke-width: 1.1; stroke-dasharray: 3 2.4; }
+.dxc-wg2-curve.is-freeze { stroke: #93c5fd; stroke-width: 1; stroke-dasharray: 6 2.5 1.4 2.5; opacity: .85; }
+/* striscia volabilità */
+.dxc-wg2-vcell { opacity: .55; transition: opacity .25s ease, filter .25s ease; }
+.dxc-wg2-vcell.is-good { fill: #10b981; }
+.dxc-wg2-vcell.is-fair { fill: #f59e0b; }
+.dxc-wg2-vcell.is-bad { fill: #ef4444; }
+.dxc-wg2-vcell.is-active { opacity: 1; filter: drop-shadow(0 0 5px rgba(148, 197, 255, .65)); }
+/* cursore dell'ora attiva: scivola fluida tra le colonne */
+.dxc-wg2-cursor {
+  transition: transform .38s cubic-bezier(.22, .8, .36, 1);
+  will-change: transform; pointer-events: none;
+}
+/* frecce vento al suolo */
+.dxc-wg2-arrow { opacity: .5; transition: opacity .25s ease; }
+.dxc-wg2-arrow.is-active { opacity: 1; }
+/* marcatore "adesso" */
+.dxc-wg2-now {
+  fill: #38bdf8; filter: drop-shadow(0 0 4px rgba(56, 189, 248, .9));
+  animation: dxc-wg2-nowpulse 2s ease-in-out infinite;
+}
+@keyframes dxc-wg2-nowpulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+/* colonne cliccabili */
+.dxc-wg2-hit { pointer-events: all; cursor: pointer; }
+.dxc-wg2-hit:hover { fill: rgba(148, 197, 255, .07); }
+/* ingresso scaglionato delle colonne al montaggio / cambio giorno */
+.dxc-wg2-col-in { animation: dxc-wg2-in .55s cubic-bezier(.22, .8, .36, 1) both; }
+@keyframes dxc-wg2-in {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: none; }
+}
+/* legenda */
+.dxc-wg2-legend {
+  display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+  margin-top: .32rem; flex-wrap: wrap;
+}
+.dxc-wg2-scale { display: inline-flex; align-items: center; gap: .32rem; }
+.dxc-wg2-scale i { width: 76px; height: 6px; border-radius: 3px; display: block; }
+.dxc-wg2-scale em { font-style: normal; font-size: .5rem; color: #64799c; font-variant-numeric: tabular-nums; }
+.dxc-wg2-scale strong { font-size: .5rem; color: #64799c; font-weight: 600; }
+.dxc-wg2-keys { display: inline-flex; gap: .55rem; }
+.dxc-wg2-keys em {
+  font-style: normal; display: inline-flex; align-items: center; gap: .22rem;
+  font-size: .53rem; color: #7d94b5;
+}
+.dxc-wg2-keys i { display: inline-block; width: 14px; height: 0; border-top: 2px solid; border-radius: 2px; }
+.dxc-wg2-keys .k-thermal { border-color: #fb923c; }
+.dxc-wg2-keys .k-base { border-color: #7dd3fc; border-top-style: dashed; }
+.dxc-wg2-keys .k-freeze { border-color: #93c5fd; border-top-style: dotted; }
+
+/* --- Bussola vento vs esposizione --- */
+.dxc-compass { position: relative; display: block; width: 64px; height: 64px; }
+.dxc-cp-ring { fill: rgba(148, 197, 255, .05); stroke: rgba(148, 197, 255, .28); stroke-width: 1; }
+.dxc-cp-wedge { fill: rgba(56, 189, 248, .16); stroke: rgba(56, 189, 248, .5); stroke-width: 1; }
+.dxc-cp-txt { fill: rgba(139, 163, 196, .9); font-size: 6.5px; font-weight: 700; text-anchor: middle; font-family: "Inter", sans-serif; }
+.dxc-cp-arrow {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  transition: transform .9s cubic-bezier(.22, .9, .3, 1.08); will-change: transform;
+}
+.dxc-cp-arrow svg { width: 11px; height: 38px; animation: dxc-flutter 2.8s ease-in-out infinite; }
+.dxc-compass.is-good .dxc-cp-arrow path { fill: #34d399; }
+.dxc-compass.is-fair .dxc-cp-arrow path { fill: #fbbf24; }
+.dxc-compass.is-bad .dxc-cp-arrow path { fill: #f87171; }
+
+@keyframes dxc-flutter {
+  0%, 100% { transform: translateY(0); opacity: .95; }
+  50% { transform: translateY(1.6px); opacity: .68; }
+}
+
+/* --- Striscia vento: bussola + testo spiegato --- */
+.dxc-windstrip {
+  display: flex; align-items: center; gap: .7rem;
+  margin-top: .6rem; padding: .55rem .65rem;
+  border: 1px solid rgba(148, 197, 255, .1); border-radius: 12px;
+  background: rgba(2, 8, 20, .38);
+}
+.dxc-windstrip .dxc-compass { flex: 0 0 auto; }
+.dxc-windstrip-txt { display: flex; flex-direction: column; gap: .14rem; min-width: 0; }
+.dxc-windstrip-txt strong { color: #eef5ff; font-size: .78rem; font-weight: 700; line-height: 1.2; }
+.dxc-windstrip-txt span { color: #8ba3c4; font-size: .62rem; line-height: 1.35; font-variant-numeric: tabular-nums; }
+.dxc-windstrip-txt em { color: #64799c; font-size: .55rem; font-style: normal; line-height: 1.35; }
 
 /* --- Valori che cambiano con l'ora selezionata --- */
 .dxc-fade { display: inline-block; animation: dxc-fadein .38s ease both; }
@@ -547,6 +653,7 @@
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
 }
+
 /* --- Avviso vento in coda --- */
 .dxc-warning {
   display: flex; align-items: center; gap: .35rem; margin-top: .55rem;
@@ -560,8 +667,10 @@
 @media (max-width: 760px) {
   .dxc-verdict { padding: .4rem .5rem; }
   .dxc-verdict-label { font-size: .76rem; }
-  .dxc-keyrow { gap: .32rem; }
-  .dxc-therm { font-size: .62rem; padding: .18rem .48rem; }
+  .dxc-wg2-legend { gap: .35rem; }
+  .dxc-wg2-scale i { width: 58px; }
+  .dxc-wg2-keys { gap: .4rem; }
+  .dxc-windstrip { gap: .55rem; padding: .5rem .55rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -569,6 +678,28 @@
   .dxc-verdict.is-good .dxc-verdict-dot,
   .dxc-verdict.is-fair .dxc-verdict-dot,
   .dxc-verdict.is-bad .dxc-verdict-dot { animation: none; }
+  .dxc-cp-arrow svg { animation: none; }
+  .dxc-cp-arrow { transition: none; }
   .dxc-fade { animation: none; }
   .dxc-window.is-good::after { animation: none; display: none; }
+  .dxc-wg2-cursor { transition: none; }
+  .dxc-wg2-col-in, .dxc-wg2-curve, .dxc-wg2-now { animation: none; }
+  .dxc-wg2-vcell, .dxc-wg2-arrow { transition: none; }
+}
+
+/* ============================================================
+   Tipografia dati — JetBrains Mono su quote, orari e valori
+   (coerente con globals.css: mono = dati strumentali)
+   ============================================================ */
+.dxc-verdict-hour,
+.dxc-wg2-hour,
+.dxc-wg2-scale em,
+.dxc-wg2-scale strong,
+.dxc-value,
+.dxc-index strong,
+.dxc-chip,
+.dxc-relchip {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.01em;
 }
