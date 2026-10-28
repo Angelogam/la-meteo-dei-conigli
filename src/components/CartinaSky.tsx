@@ -110,6 +110,11 @@ export default function CartinaSky({ quota, rateo, baseNubi, freezing, cloud, wi
   /* etichette del vertice: sopra il parapendio, mai fuori dal riquadro */
   const labY1 = Math.max(yTop - 41, PLOT_T + 9);
   const labY2 = Math.max(yTop - 31, PLOT_T + 19);
+  /* se lo zero termico cade nella fascia delle etichette del vertice si nasconde
+     (linea + testo): il valore resta comunque nella scheda dati sotto */
+  const yFr = showFreezing ? y(freezing) : null;
+  const zeroCollides =
+    yFr != null && (Math.abs(yFr - labY1) < 16 || Math.abs(yFr - labY2) < 16 || (yFr > labY1 - 6 && yFr < labY2 + 6));
 
   /* gradient della colonna: colore = scala dell'instabilità */
   const strong = rateo >= 2.4;
@@ -163,11 +168,11 @@ export default function CartinaSky({ quota, rateo, baseNubi, freezing, cloud, wi
           </g>
         ))}
 
-        {/* zero termico */}
-        {showFreezing && (
+        {/* zero termico (nascosto se sovrapposto alle etichette del vertice) */}
+        {showFreezing && !zeroCollides && (
           <g aria-hidden="true">
-            <line x1={PLOT_L} y1={y(freezing)} x2={PLOT_R} y2={y(freezing)} stroke="#ff8f8f" strokeWidth={1} strokeDasharray="4 3" opacity={0.55} />
-            <text x={PLOT_L + 3} y={y(freezing) - 3.5} className="cmap-sky-zero">
+            <line x1={PLOT_L} y1={yFr} x2={PLOT_R} y2={yFr} stroke="#ff8f8f" strokeWidth={1} strokeDasharray="4 3" opacity={0.55} />
+            <text x={PLOT_L + 3} y={yFr - 3.5} className="cmap-sky-zero">
               zero termico · {fmtM(freezing)} m
             </text>
           </g>
