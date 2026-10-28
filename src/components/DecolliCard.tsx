@@ -7,7 +7,6 @@ import {
 import type { Decollo } from "@/data/decolli";
 import { calcolaIndiceVolabilita, esposizioneToGradi } from "@/utils/indiceVolabilita";
 import type { HourlyPoint } from "@/services/threeSourceWeather";
-import CardWindgram from "@/components/CardWindgram";
 
 export interface AggressiveWeatherData {
   temp: string | number;
@@ -382,11 +381,6 @@ function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour, id
       .filter((v) => v.hour >= 0);
   }, [weather, dayKey, quota, esposizione]);
 
-  const dayPoints = useMemo(
-    () => (weather?.hourly ?? []).filter((p) => p.time.startsWith(dayKey)),
-    [weather, dayKey],
-  );
-
   const [previewHour, setPreviewHour] = useState<number | null>(null);
   useEffect(() => { setPreviewHour(null); }, [selectedDay]);
 
@@ -408,7 +402,6 @@ function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour, id
   const active = evaluated.find((v) => v.hour === activeHour) ?? evaluated[0];
   const rel = REL_META[active.rel] ?? REL_META.sconosciuto;
   const expDeg = esposizioneToGradi(esposizione);
-  const tlHours = evaluated.filter((v) => v.hour >= 5 && v.hour <= 21);
   const hourLabel = previewHour !== null || selectedDay !== 0 ? "Ore " + active.hour : "Adesso";
   const motivi = active.motivi.filter(Boolean).join(" · ");
   const status = getWeatherStatus({ ...weather, weatherCode: active.code });
@@ -443,30 +436,19 @@ function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour, id
       </div>
       <span className="dxc-motivi"><span className="dxc-fade" key={"m" + active.hour}>{motivi || "Modello Open-Meteo · confronto indicativo, non è un giudizio di sicurezza"}</span></span>
 
-      <div className="dxc-wgblock">
-        <div className="dxc-wg-head">
-          <span className="dxc-wg-kicker">Windgram · vento in quota</span>
-          {best ? (
-            <span className={"dxc-window " + (active.classe === "is-good" ? "is-good" : "is-fair")}>
-              {best.start === best.end ? "Finestra ore " + best.start : "Finestra " + best.start + "–" + best.end}
-            </span>
-          ) : (
-            <span className="dxc-window is-bad">Nessuna finestra netta</span>
-          )}
-          <span className={"dxc-wg-therm dxc-fade" + (canRise ? "" : " is-off")} key={"t" + active.hour}>
-            <Flame size={10} aria-hidden="true" />
-            {canRise ? "Termiche +" + (active.rateo ?? 0).toFixed(1).replace(".", ",") + " m/s" : "Termiche assenti"}
+      <div className="dxc-infobar">
+        {best ? (
+          <span className={"dxc-window " + (active.classe === "is-good" ? "is-good" : "is-fair")}>
+            {best.start === best.end ? "Finestra ore " + best.start : "Finestra " + best.start + "–" + best.end}
           </span>
-          <span className="dxc-wg-state">{status.icon}<em>{status.label}</em></span>
-        </div>
-        <CardWindgram
-          hours={tlHours}
-          points={dayPoints}
-          quota={quota}
-          activeHour={active.hour}
-          nowHour={selectedDay === 0 ? nowHour : null}
-          dayKey={dayKey}
-        />
+        ) : (
+          <span className="dxc-window is-bad">Nessuna finestra netta</span>
+        )}
+        <span className={"dxc-wg-therm dxc-fade" + (canRise ? "" : " is-off")} key={"t" + active.hour}>
+          <Flame size={10} aria-hidden="true" />
+          {canRise ? "Termiche +" + (active.rateo ?? 0).toFixed(1).replace(".", ",") + " m/s" : "Termiche assenti"}
+        </span>
+        <span className="dxc-wg-state">{status.icon}<em>{status.label}</em></span>
       </div>
 
       <div className="dxc-windstrip">

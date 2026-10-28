@@ -703,3 +703,19 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: -.01em;
 }
+
+/* ============================================================
+   Riga info card — finestra di volo + termiche + stato meteo
+   (al posto del grafico: dato immediato, zero ingombro)
+   ============================================================ */
+.dxc-infobar {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  flex-wrap: wrap;
+  margin-top: .6rem;
+  padding: .5rem .55rem;
+  border-radius: 12px;
+  background: rgba(9, 18, 35, .55);
+  border: 1px solid rgba(125, 170, 255, .1);
+}
