@@ -135,6 +135,11 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   const [breeze, setBreeze] = useState(true);
   const [route, setRoute] = useState(true);
 
+  /* retry del campionamento DEM: se un'onda di tile è a metà, gli effetti si
+     rilanciano da soli (max 5 tentativi) invece di lasciare la scena senza frecce */
+  const demRetries = useRef(0);
+  const [demEpoch, setDemEpoch] = useState(0);
+
   const good = useMemo(
     () => decolli.filter((d) => Number.isFinite(d.lat) && Number.isFinite(d.lon) && (d.lat !== 0 || d.lon !== 0)),
     [decolli],
@@ -392,8 +397,15 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) pos.push(Cesium.Cartesian3.fromDegrees(lons[j], lats[i]));
       try {
         await Cesium.sampleTerrainMostDetailed(viewer.terrainProvider, pos);
+        demRetries.current = 0;
       } catch (e) {
         console.warn("[c3d] campionamento brezze non riuscito:", String(e).slice(0, 120));
+        if (demRetries.current < 5) {
+          demRetries.current += 1;
+          window.setTimeout(() => {
+            if (!cancelled) setDemEpoch((n) => n + 1);
+          }, 5000);
+        }
         return; // DEM non pronto: le brezze arrivano al prossimo refresh
       }
       if (cancelled || viewerRef.current !== viewer) return;
@@ -474,7 +486,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     return () => {
       cancelled = true;
     };
-  }, [status, active, hour, breeze]);
+  }, [status, active, hour, breeze, demEpoch]);
 
   /* ---------- venti meteo alla quota scelta (2000 → 4000 m) ---------- */
   useEffect(() => {
@@ -516,8 +528,15 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       const pos = anchors.map((p) => Cesium.Cartesian3.fromDegrees(p.lon, p.lat, 0));
       try {
         await Cesium.sampleTerrainMostDetailed(viewer.terrainProvider, pos);
+        demRetries.current = 0;
       } catch (e) {
         console.warn("[c3d] campionamento venti non riuscito:", String(e).slice(0, 120));
+        if (demRetries.current < 5) {
+          demRetries.current += 1;
+          window.setTimeout(() => {
+            if (!cancelled) setDemEpoch((n) => n + 1);
+          }, 5000);
+        }
         return;
       }
       if (cancelled || viewerRef.current !== viewer) return;
@@ -553,7 +572,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     return () => {
       cancelled = true;
     };
-  }, [status, active, activePoint, quota]);
+  }, [status, active, activePoint, quota, demEpoch]);
 
   /* ---------- percorso consigliato decollo → atterraggio + zona abitata ---------- */
   useEffect(() => {
@@ -579,8 +598,15 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       }
       try {
         await Cesium.sampleTerrainMostDetailed(viewer.terrainProvider, pos);
+        demRetries.current = 0;
       } catch (e) {
         console.warn("[c3d] campionamento percorso non riuscito:", String(e).slice(0, 120));
+        if (demRetries.current < 5) {
+          demRetries.current += 1;
+          window.setTimeout(() => {
+            if (!cancelled) setDemEpoch((n) => n + 1);
+          }, 5000);
+        }
         return;
       }
       if (cancelled || viewerRef.current !== viewer) return;
@@ -650,7 +676,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     return () => {
       cancelled = true;
     };
-  }, [status, active, route]);
+  }, [status, active, route, demEpoch]);
 
   return (
     <section id="vista3d" className="cartina3d" data-testid="cartina-3d" aria-label="Vista 3D del terreno con brezze di versante e venti in quota">
