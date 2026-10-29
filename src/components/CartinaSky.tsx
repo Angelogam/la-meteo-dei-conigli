@@ -95,48 +95,69 @@ function Sun({ x, y, w, opacity }: { x: number; y: number; w: number; opacity: n
   );
 }
 
-/* Parapendio dettagliato: vela a celle con gradiente, sospensioni, pilota in seduta */
+/* Parapendio realistico: vela a profilo alare con gradiente e celle, sei sospensioni
+   con riser, pilota con casco, giacca, gambe avanti e imbragatura in seduta */
 function Paraglider() {
   return (
     <g className="sky-pg" aria-hidden="true">
+      <g transform="scale(1.18)">
       <defs>
-        <linearGradient id="cs-wing" gradientUnits="userSpaceOnUse" x1={-17} y1={-10} x2={17} y2={2}>
-          <stop offset="0%" stopColor="#ffe28f" />
-          <stop offset="55%" stopColor="#ffc94d" />
-          <stop offset="100%" stopColor="#f59e0b" />
+        <linearGradient id="cs-wing" gradientUnits="userSpaceOnUse" x1={-24} y1={-13} x2={24} y2={3}>
+          <stop offset="0%" stopColor="#fff3c4" />
+          <stop offset="32%" stopColor="#ffe28f" />
+          <stop offset="64%" stopColor="#ffc94d" />
+          <stop offset="100%" stopColor="#f08c00" />
         </linearGradient>
       </defs>
-      {/* sospensioni */}
-      <g stroke="rgba(255,255,255,0.52)" strokeWidth={0.55}>
-        <line x1={-15} y1={0.6} x2={-1.1} y2={12.6} />
-        <line x1={-6} y1={-3.2} x2={-0.5} y2={12.6} />
-        <line x1={6} y1={-3.2} x2={0.5} y2={12.6} />
-        <line x1={15} y1={0.6} x2={1.1} y2={12.6} />
+      {/* sospensioni: sei bave dalla vela ai riser */}
+      <g stroke="rgba(240,248,255,0.55)" strokeWidth={0.5} strokeLinecap="round">
+        <line x1={-18} y1={-0.2} x2={-1.8} y2={10.2} />
+        <line x1={-12} y1={-2} x2={-1.2} y2={10.2} />
+        <line x1={-6} y1={-3.1} x2={-0.6} y2={10.2} />
+        <line x1={6} y1={-3.1} x2={0.6} y2={10.2} />
+        <line x1={12} y1={-2} x2={1.2} y2={10.2} />
+        <line x1={18} y1={-0.2} x2={1.8} y2={10.2} />
       </g>
-      {/* pilota: testa + busto in seduta */}
-      <circle cx={0} cy={10.6} r={2.1} fill="#ffd76a" stroke="rgba(0,0,0,0.4)" strokeWidth={0.4} />
+      {/* riser + moschettoni */}
+      <g stroke="rgba(214,225,235,0.9)" strokeWidth={0.9} strokeLinecap="round">
+        <line x1={-1.8} y1={10.2} x2={-0.9} y2={12.6} />
+        <line x1={1.8} y1={10.2} x2={0.9} y2={12.6} />
+      </g>
+      {/* pilota: imbragatura/pod, gambe avanti, busto in giacca, casco con visiera */}
+      <ellipse cx={-0.6} cy={19} rx={3.6} ry={2.3} fill="#1e293b" stroke="rgba(255,255,255,0.2)" strokeWidth={0.4} />
+      <path d="M 1.2 17.6 L 6.6 19" stroke="#263447" strokeWidth={2.6} strokeLinecap="round" fill="none" />
+      <path d="M 0.1 18 L 5.6 19.9" stroke="#1d2a3b" strokeWidth={2.3} strokeLinecap="round" fill="none" />
+      <circle cx={7} cy={19.1} r={1.05} fill="#111c2b" />
+      <circle cx={6.1} cy={20.05} r={0.95} fill="#111c2b" />
       <path
-        d="M -1.7 12.6 Q 0 11.6 1.7 12.6 L 1.25 15.7 Q 0 16.6 -1.25 15.7 Z"
-        fill="#e8eef4"
-        stroke="rgba(0,0,0,0.35)"
-        strokeWidth={0.35}
+        d="M -2.7 13.4 Q 0 12.5 2.7 13.4 L 2.2 17.7 Q 0 18.5 -2.2 17.7 Z"
+        fill="#2dd4bf"
+        stroke="rgba(0,0,0,0.4)"
+        strokeWidth={0.4}
       />
-      {/* vela: arco con spessore + riflesso sul bordo d'attacco */}
-      <path d="M -17 1 Q 0 -11 17 1" fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth={5.4} strokeLinecap="round" />
-      <path d="M -17 1 Q 0 -11 17 1" fill="none" stroke="url(#cs-wing)" strokeWidth={4.4} strokeLinecap="round" />
+      <circle cx={0} cy={12.4} r={2.7} fill="#ffd76a" stroke="rgba(40,24,0,0.5)" strokeWidth={0.5} />
+      <rect x={-2.1} y={11.7} width={4.2} height={1.1} rx={0.55} fill="rgba(30,41,59,0.85)" />
+      {/* vela: profilo alare chiuso, riflesso sul bordo d'attacco, celle */}
       <path
-        d="M -16.2 -0.4 Q 0 -11.6 16.2 -0.4"
-        fill="none"
-        stroke="rgba(255,255,255,0.8)"
-        strokeWidth={1}
-        strokeLinecap="round"
-        opacity={0.65}
+        d="M -24 2 Q 0 -15 24 2 Q 0 -8.2 -24 2 Z"
+        fill="url(#cs-wing)"
+        stroke="rgba(70,38,0,0.55)"
+        strokeWidth={0.7}
+        strokeLinejoin="round"
       />
-      {/* celle della vela */}
-      <g stroke="rgba(122,68,0,0.4)" strokeWidth={0.5}>
-        <line x1={-8.5} y1={-5.6} x2={-8.5} y2={-1.3} />
-        <line x1={0} y1={-7.2} x2={0} y2={-2.8} />
-        <line x1={8.5} y1={-5.6} x2={8.5} y2={-1.3} />
+      <path d="M -23.2 0.4 Q 0 -14.2 23.2 0.4" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth={1} strokeLinecap="round" opacity={0.7} />
+      <g stroke="rgba(122,68,0,0.42)" strokeWidth={0.55}>
+        <line x1={-18} y1={-1.4} x2={-18} y2={-0.6} />
+        <line x1={-12} y1={-3.9} x2={-12} y2={-2.1} />
+        <line x1={-6} y1={-5.5} x2={-6} y2={-3.1} />
+        <line x1={0} y1={-6} x2={0} y2={-3.5} />
+        <line x1={6} y1={-5.5} x2={6} y2={-3.1} />
+        <line x1={12} y1={-3.9} x2={12} y2={-2.1} />
+        <line x1={18} y1={-1.4} x2={18} y2={-0.6} />
+      </g>
+      {/* stabilizzatori: punte scure della vela */}
+      <path d="M -24 2 Q -22.4 -2.6 -19.6 -4.4" fill="none" stroke="rgba(200,90,10,0.65)" strokeWidth={1.1} strokeLinecap="round" />
+      <path d="M 24 2 Q 22.4 -2.6 19.6 -4.4" fill="none" stroke="rgba(200,90,10,0.65)" strokeWidth={1.1} strokeLinecap="round" />
       </g>
     </g>
   );
@@ -178,9 +199,9 @@ export default function CartinaSky({ quota, rateo, baseNubi, freezing, cloud, wi
   const showFreezing = freezing != null && freezing > quota + 80 && freezing < TOP;
   /* vertice: nuvola sulla cima della colonna, parapendio sopra la nuvola, etichette in cima.
      Con i cumuli tutto il gruppo sale di una spanna; senza nuvole il PG resta attaccato alla colonna. */
-  const pgY = cumuli ? Math.max(yTop - 34, PLOT_T + 11) : yTop - 16;
-  const labY1 = Math.max(pgY - 22, PLOT_T + 9);
-  const labY2 = labY1 + 10;
+  const pgY = cumuli ? Math.max(yTop - 44, PLOT_T + 19) : yTop - 21;
+  const labY1 = Math.max(pgY - 26, PLOT_T + 8);
+  const labY2 = labY1 + 11;
   /* se lo zero termico cade nella fascia delle etichette del vertice si nasconde
      (linea + testo): il valore resta comunque nella scheda dati sotto */
   const yFr = showFreezing ? y(freezing) : null;
@@ -240,7 +261,7 @@ export default function CartinaSky({ quota, rateo, baseNubi, freezing, cloud, wi
               <feGaussianBlur stdDeviation="3" />
             </filter>
             <clipPath id="skycolclip">
-              <rect x={COL_X - 17} y={yTop} width={34} height={colH + 4} />
+              <rect x={COL_X - 19} y={yTop} width={38} height={colH + 4} />
             </clipPath>
           </defs>
 
@@ -309,25 +330,80 @@ export default function CartinaSky({ quota, rateo, baseNubi, freezing, cloud, wi
             </g>
           )}
 
-          {/* colonna della termica: glow, corpo, riflesso, bolle in salita */}
+          {/* colonna della termica: glow, corpo, sorgente a terra, correnti e bolle in salita */}
           <g aria-hidden="true">
-            <rect x={COL_X - 21} y={yTop - 2} width={42} height={colH + 6} rx={12} fill={colTop} opacity={0.3} filter="url(#cs-soft)" />
+            <rect x={COL_X - 23} y={yTop - 2} width={46} height={colH + 6} rx={13} fill={colTop} opacity={0.3} filter="url(#cs-soft)" />
             <rect
-              x={COL_X - 17}
+              x={COL_X - 19}
               y={yTop}
-              width={34}
+              width={38}
               height={colH}
-              rx={9}
+              rx={10}
               fill="url(#skycol)"
               stroke="rgba(255,255,255,0.18)"
               strokeWidth={1}
             />
-            <rect x={COL_X - 14} y={yTop + 3} width={12} height={colH - 8} rx={6} fill="url(#cs-shine)" />
-            <ellipse cx={COL_X} cy={yTop} rx={19} ry={3.6} fill={colTop} opacity={0.4} filter="url(#cs-soft)" />
+            <rect x={COL_X - 16} y={yTop + 3} width={13} height={colH - 8} rx={6.5} fill="url(#cs-shine)" />
+            <ellipse cx={COL_X} cy={yTop} rx={21} ry={3.8} fill={colTop} opacity={0.4} filter="url(#cs-soft)" />
+            {/* sorgente a terra: la bolla che si stacca dal pendio riscaldato */}
+            <ellipse className="sky-src" cx={COL_X} cy={PLOT_B - 1.5} rx={15} ry={4} fill={colBot} />
             <g clipPath="url(#skycolclip)" style={{ "--rise": `${-(colH + 14)}px` } as React.CSSProperties}>
+              <line
+                className="sky-streak"
+                x1={COL_X - 9}
+                y1={PLOT_B - 6}
+                x2={COL_X - 9}
+                y2={PLOT_B - 20}
+                stroke="rgba(255,255,255,0.5)"
+                strokeWidth={1.5}
+                strokeLinecap="round"
+              />
+              <line
+                className="sky-streak"
+                x1={COL_X + 8}
+                y1={PLOT_B - 4}
+                x2={COL_X + 8}
+                y2={PLOT_B - 16}
+                stroke="rgba(255,255,255,0.4)"
+                strokeWidth={1.3}
+                strokeLinecap="round"
+                style={{ animationDelay: "1.4s" }}
+              />
+              <line
+                className="sky-streak"
+                x1={COL_X - 1}
+                y1={PLOT_B - 8}
+                x2={COL_X - 1}
+                y2={PLOT_B - 24}
+                stroke="rgba(255,255,255,0.35)"
+                strokeWidth={1.2}
+                strokeLinecap="round"
+                style={{ animationDelay: "2.5s" }}
+              />
+              <path
+                className="sky-chev"
+                d={`M ${COL_X - 6} ${PLOT_B - 10} l 6 -4 l 6 4`}
+                fill="none"
+                stroke="rgba(255,255,255,0.65)"
+                strokeWidth={1.4}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                className="sky-chev"
+                d={`M ${COL_X - 6} ${PLOT_B - 10} l 6 -4 l 6 4`}
+                fill="none"
+                stroke="rgba(255,255,255,0.5)"
+                strokeWidth={1.3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ animationDelay: "1.9s" }}
+              />
               <circle className="sky-bub" cx={COL_X - 7} cy={PLOT_B - 6} r={4.6} />
               <circle className="sky-bub" cx={COL_X + 6} cy={PLOT_B - 4} r={3.6} style={{ animationDelay: "1.15s" }} />
               <circle className="sky-bub" cx={COL_X} cy={PLOT_B - 8} r={5.2} style={{ animationDelay: "2.3s" }} />
+              <circle className="sky-bub" cx={COL_X + 10} cy={PLOT_B - 7} r={2.8} style={{ animationDelay: "2.9s" }} />
+              <circle className="sky-bub" cx={COL_X - 11} cy={PLOT_B - 5} r={3} style={{ animationDelay: "3.3s" }} />
             </g>
           </g>
 

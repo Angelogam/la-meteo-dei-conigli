@@ -283,33 +283,33 @@
   pointer-events: auto;
   transition: transform 0.2s;
 }
-.cmap-marker:hover { transform: translate(-50%, -50%) scale(1.12); }
+.cmap-marker:hover { transform: translate(-50%, -50%) scale(1.1); }
 
-.cmap-pin { position: relative; display: grid; place-items: center; width: 30px; height: 30px; }
+.cmap-pin { position: relative; display: grid; place-items: center; width: 42px; height: 42px; }
 
 .cmap-dot {
   grid-area: 1 / 1;
-  width: 13px;
-  height: 13px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.65);
+  border: 2.5px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.7);
   transition: background 0.45s, box-shadow 0.45s;
 }
-.cmap-marker.is-good .cmap-dot { background: #34d399; box-shadow: 0 0 12px rgba(52, 211, 153, 0.75); }
-.cmap-marker.is-fair .cmap-dot { background: #fbbf24; box-shadow: 0 0 12px rgba(251, 191, 36, 0.7); }
-.cmap-marker.is-bad .cmap-dot { background: #ef4444; box-shadow: 0 0 12px rgba(239, 68, 68, 0.7); }
+.cmap-marker.is-good .cmap-dot { background: #34d399; box-shadow: 0 0 14px rgba(52, 211, 153, 0.8); }
+.cmap-marker.is-fair .cmap-dot { background: #fbbf24; box-shadow: 0 0 14px rgba(251, 191, 36, 0.75); }
+.cmap-marker.is-bad .cmap-dot { background: #ef4444; box-shadow: 0 0 14px rgba(239, 68, 68, 0.75); }
 .cmap-marker.is-off .cmap-dot { background: #64748b; }
 
-.cmap-marker.is-selected .cmap-dot { outline: 2px solid #7ce4ff; outline-offset: 3px; }
+.cmap-marker.is-selected .cmap-dot { outline: 2.5px solid #7ce4ff; outline-offset: 4px; }
 
 /* anello pulsante sulle termiche forti (≥2 m/s) */
 .cmap-marker.is-hot .cmap-dot::after {
   content: "";
   position: absolute;
-  inset: -7px;
+  inset: -9px;
   border-radius: 50%;
-  border: 2px solid rgba(251, 146, 60, 0.85);
+  border: 2.5px solid rgba(251, 146, 60, 0.85);
   animation: cmap-hotpulse 1.8s ease-out infinite;
 }
 @keyframes cmap-hotpulse {
@@ -319,15 +319,19 @@
 }
 
 .cmap-tag {
-  max-width: 130px;
+  max-width: 172px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #e6f4fd;
-  font-size: 9px;
-  font-weight: 750;
+  padding: 1.5px 7px;
+  border-radius: 7px;
+  background: rgba(5, 12, 20, 0.62);
+  border: 1px solid rgba(113, 217, 244, 0.16);
+  color: #eef7fd;
+  font-size: 11.5px;
+  font-weight: 800;
   letter-spacing: 0.02em;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.7);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
   pointer-events: none;
 }
 
@@ -337,8 +341,8 @@
   display: none;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 42px;
+  height: 42px;
   transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.9));
 }
@@ -350,22 +354,25 @@
 .cmap-marker.is-windlayer.is-bad .cmap-arrow { color: #ef4444; }
 .cmap-marker.is-windlayer.is-off .cmap-arrow { color: #64748b; }
 
+/* chip di lettura sul marker: km/h (vento) o +m/s (termiche alla quota scelta) */
 .cmap-speed {
   display: none;
   position: absolute;
   left: 50%;
-  bottom: -9px;
+  bottom: -10px;
   transform: translateX(-50%);
-  padding: 0 4px;
+  padding: 0.5px 5px;
   border-radius: 6px;
-  background: rgba(6, 15, 25, 0.9);
+  background: rgba(6, 15, 25, 0.92);
   color: #eafaff;
-  font-size: 8.5px;
+  font-size: 10.5px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   border: 1px solid rgba(113, 217, 244, 0.25);
+  white-space: nowrap;
 }
 .cmap-marker.is-windlayer .cmap-speed { display: block; }
+.cmap-marker.is-thermlayer .cmap-speed { display: block; }
 .cmap-speed[data-w="is-w1"] { color: #6ee7b7; }
 .cmap-speed[data-w="is-w2"] { color: #fcd34d; }
 .cmap-speed[data-w="is-w3"] { color: #fb923c; }
@@ -378,13 +385,13 @@
   top: 10px;
   left: 10px;
   z-index: 740;
-  width: min(352px, calc(100% - 20px));
+  width: min(406px, calc(100% - 20px));
   max-height: calc(100% - 24px);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
-  padding: 0.75rem;
+  padding: 0.8rem;
   border: 1px solid rgba(113, 217, 244, 0.3);
   border-radius: 13px;
   background: rgba(7, 17, 28, 0.94);
@@ -393,29 +400,29 @@
   scrollbar-width: thin;
 }
 
-.cmap-panelbox.is-empty { justify-content: center; min-height: 120px; }
-.cmap-empty-title { margin: 0; color: #eafaff; font-size: 0.85rem; font-weight: 800; }
-.cmap-empty-text { margin: 0; color: #9fb6c6; font-size: 0.72rem; line-height: 1.5; }
+.cmap-panelbox.is-empty { justify-content: center; min-height: 130px; }
+.cmap-empty-title { margin: 0; color: #eafaff; font-size: 0.95rem; font-weight: 800; }
+.cmap-empty-text { margin: 0; color: #9fb6c6; font-size: 0.8rem; line-height: 1.55; }
 
 .cmap-pb-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
 .cmap-pb-title h3 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 1.02rem;
+  font-size: 1.24rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: #f2fbff;
 }
-.cmap-pb-title p { margin: 2px 0 0; color: #9fb6c6; font-size: 0.66rem; display: flex; align-items: center; gap: 3px; flex-wrap: wrap; }
+.cmap-pb-title p { margin: 3px 0 0; color: #a9c0d0; font-size: 0.78rem; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 
 .cmap-close {
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
+  width: 27px;
+  height: 27px;
   border: 1px solid rgba(113, 217, 244, 0.25);
-  border-radius: 8px;
+  border-radius: 9px;
   background: rgba(12, 32, 48, 0.8);
   color: #b9d2e2;
   cursor: pointer;
@@ -423,7 +430,7 @@
 }
 .cmap-close:hover { color: #fff; border-color: rgba(113, 217, 244, 0.6); }
 
-.cmap-pb-nodata { margin: 0; color: #fbbf24; font-size: 0.74rem; display: flex; align-items: center; gap: 6px; }
+.cmap-pb-nodata { margin: 0; color: #fbbf24; font-size: 0.84rem; display: flex; align-items: center; gap: 6px; }
 
 .cmap-verdict {
   display: flex;
@@ -441,16 +448,16 @@
 .cmap-verdict.is-good .cmap-verdict-dot { background: #34d399; }
 .cmap-verdict.is-fair .cmap-verdict-dot { background: #fbbf24; }
 .cmap-verdict.is-bad .cmap-verdict-dot { background: #ef4444; }
-.cmap-verdict strong { color: #f2fbff; font-size: 0.82rem; font-weight: 800; }
-.cmap-verdict em { color: #a9c0d0; font-size: 0.66rem; font-style: normal; }
-.cmap-verdict span { margin-left: auto; color: #8fe8ff; font-size: 0.64rem; font-weight: 750; font-variant-numeric: tabular-nums; }
+.cmap-verdict strong { color: #f2fbff; font-size: 0.95rem; font-weight: 800; }
+.cmap-verdict em { color: #a9c0d0; font-size: 0.75rem; font-style: normal; }
+.cmap-verdict span { margin-left: auto; color: #8fe8ff; font-size: 0.72rem; font-weight: 750; font-variant-numeric: tabular-nums; }
 
 /* ---- badge relazione vento dentro il verdetto ---- */
 .cmap-relbadge {
-  padding: 0.12rem 0.42rem;
+  padding: 0.14rem 0.48rem;
   border-radius: 999px;
   border: 1px solid transparent;
-  font-size: 0.56rem;
+  font-size: 0.64rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   font-style: normal;
@@ -464,12 +471,12 @@
 /* ---- avvisi di sicurezza ---- */
 .cmap-warn {
   margin: 0;
-  padding: 0.4rem 0.55rem;
+  padding: 0.44rem 0.6rem;
   border-radius: 9px;
   background: rgba(110, 22, 22, 0.28);
   border: 1px solid rgba(239, 68, 68, 0.35);
   color: #fecaca;
-  font-size: 0.64rem;
+  font-size: 0.75rem;
   font-weight: 750;
   line-height: 1.45;
   letter-spacing: 0.01em;
@@ -486,7 +493,7 @@
   border: 1px solid rgba(113, 217, 244, 0.25);
   background: rgba(12, 32, 48, 0.85);
   color: #cfe9f6;
-  font-size: 0.62rem;
+  font-size: 0.73rem;
   font-weight: 800;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -509,25 +516,25 @@
 .cmap-analysis-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
 .cmap-analysis-k {
   color: #6fd8f2;
-  font-size: 0.56rem;
+  font-size: 0.64rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.14em;
 }
-.cmap-analysis-v { color: #a9c0d0; font-size: 0.66rem; font-weight: 700; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.cmap-analysis-v { color: #a9c0d0; font-size: 0.76rem; font-weight: 700; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .cmap-analysis-v b { color: #8fe8ff; font-weight: 800; }
 
 /* banner di instabilità (Stabile → Cross) */
 .cmap-banner {
   margin: 0;
-  padding: 0.45rem 0.6rem;
+  padding: 0.5rem 0.65rem;
   border-radius: 9px;
   border: 1px solid transparent;
-  font-size: 0.68rem;
+  font-size: 0.79rem;
   line-height: 1.5;
   color: #d9e8f2;
 }
-.cmap-banner strong { font-family: var(--font-display); font-size: 0.82rem; font-weight: 800; letter-spacing: 0.04em; }
+.cmap-banner strong { font-family: var(--font-display); font-size: 0.96rem; font-weight: 800; letter-spacing: 0.04em; }
 .cmap-banner.is-stable { background: rgba(51, 65, 85, 0.4); border-color: rgba(148, 163, 184, 0.35); }
 .cmap-banner.is-stable strong { color: #b6c5d6; }
 .cmap-banner.is-weak { background: rgba(7, 60, 89, 0.5); border-color: rgba(56, 189, 248, 0.45); }
@@ -542,9 +549,9 @@
 /* legenda della scala d'instabilità */
 .cmap-scale { display: flex; align-items: center; gap: 0.28rem; flex-wrap: wrap; }
 .cmap-pill {
-  padding: 0.14rem 0.5rem;
+  padding: 0.17rem 0.55rem;
   border-radius: 999px;
-  font-size: 0.56rem;
+  font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   color: #06121d;
@@ -572,8 +579,8 @@
   gap: 0.18rem;
 }
 .cmap-card-k {
-  color: #7f97a8;
-  font-size: 0.53rem;
+  color: #8aa0b2;
+  font-size: 0.63rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -581,7 +588,7 @@
 .cmap-card-v {
   color: #f2fbff;
   font-family: var(--font-mono);
-  font-size: 1.06rem;
+  font-size: 1.3rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   line-height: 1.15;
@@ -590,20 +597,20 @@
   gap: 0.3rem;
   flex-wrap: wrap;
 }
-.cmap-card-v small { color: #8fa6b8; font-size: 0.62rem; font-weight: 750; }
-.cmap-card-s { margin: 0; color: #8ba1b2; font-size: 0.58rem; line-height: 1.45; }
+.cmap-card-v small { color: #8fa6b8; font-size: 0.72rem; font-weight: 750; }
+.cmap-card-s { margin: 0; color: #8ba1b2; font-size: 0.69rem; line-height: 1.45; }
 
 /* mini-badge dentro le schede (CAPE, turbolenza, temporali) */
 .cmap-mini {
-  padding: 0.08rem 0.4rem;
+  padding: 0.1rem 0.45rem;
   border-radius: 999px;
   font-style: normal;
   font-family: var(--font-sans, inherit);
-  font-size: 0.56rem;
+  font-size: 0.64rem;
   font-weight: 800;
   letter-spacing: 0.03em;
 }
-.cmap-mini.is-wide { font-size: 0.66rem; padding: 0.14rem 0.55rem; }
+.cmap-mini.is-wide { font-size: 0.78rem; padding: 0.17rem 0.6rem; }
 .cmap-mini.is-stable { background: rgba(90, 111, 136, 0.35); color: #cbd5e1; }
 .cmap-mini.is-weak { background: rgba(56, 189, 248, 0.22); color: #7dd3fc; }
 .cmap-mini.is-moderate { background: rgba(250, 204, 21, 0.2); color: #fde047; }
@@ -620,7 +627,7 @@
   border: 1px solid rgba(113, 217, 244, 0.14);
   background: rgba(9, 22, 35, 0.75);
 }
-.cmap-windrow strong { color: #eafaff; font-size: 0.74rem; font-weight: 800; }
+.cmap-windrow strong { color: #eafaff; font-size: 0.87rem; font-weight: 800; }
 .cmap-mini-compass {
   position: relative;
   flex: 0 0 auto;
@@ -681,14 +688,14 @@
 }
 .cmap-skyhead-k {
   color: #bfe3ff;
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 .cmap-skyhead-v {
   color: #6d8496;
-  font-size: 0.53rem;
+  font-size: 0.6rem;
   font-family: var(--font-mono);
 }
 .cmap-sky-stage { position: relative; }
@@ -704,46 +711,46 @@
 .cmap-sky-ico.is-sun { filter: drop-shadow(0 0 7px rgba(251, 191, 36, 0.5)); }
 .cmap-sky-ax {
   font-family: var(--font-mono);
-  font-size: 7.6px;
-  fill: #7e93a6;
+  font-size: 9px;
+  fill: #8599ad;
 }
 .cmap-sky-zero {
   font-family: var(--font-mono);
-  font-size: 7.4px;
+  font-size: 8.6px;
   fill: #ff9d9d;
   opacity: 0.9;
 }
 .cmap-sky-topv {
   font-family: var(--font-mono);
-  font-size: 8.6px;
+  font-size: 10.6px;
   font-weight: 800;
   fill: #ffd76a;
 }
 .cmap-sky-topk {
   font-family: var(--font-mono);
-  font-size: 7px;
-  fill: #8aa0b2;
+  font-size: 8.2px;
+  fill: #93a9bb;
 }
 .cmap-sky-dry {
   font-family: var(--font-mono);
-  font-size: 7.4px;
-  fill: #8aa0b2;
+  font-size: 8.4px;
+  fill: #93a9bb;
 }
 .cmap-sky-launch {
   font-family: var(--font-mono);
-  font-size: 7.6px;
+  font-size: 8.8px;
   font-weight: 700;
-  fill: #9fb4c4;
+  fill: #a9bccb;
 }
 .cmap-sky-wspd {
   font-family: var(--font-mono);
-  font-size: 8.2px;
+  font-size: 10px;
   font-weight: 800;
 }
 .cmap-sky-wdir {
   font-family: var(--font-mono);
-  font-size: 7.2px;
-  fill: #8aa0b2;
+  font-size: 8.5px;
+  fill: #93a9bb;
 }
 .sky-bub {
   fill: url(#cs-bub);
@@ -754,6 +761,20 @@
   12% { opacity: 0.6; }
   85% { opacity: 0.35; }
   100% { transform: translateY(var(--rise, -240px)); opacity: 0; }
+}
+/* correnti che salgono dentro la colonna: filetti e chevron */
+.sky-streak { animation: sky-rise 3s linear infinite; }
+.sky-chev { animation: sky-rise 3.4s linear infinite; }
+/* sorgente a terra: la bolla che si stacca dal pendio */
+.sky-src {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sky-pulse 2.6s ease-in-out infinite;
+  opacity: 0.55;
+}
+@keyframes sky-pulse {
+  0%, 100% { transform: scale(0.9); opacity: 0.45; }
+  50% { transform: scale(1.2); opacity: 0.8; }
 }
 .sky-pin { animation: sky-pin 2.6s ease-in-out infinite; }
 @keyframes sky-pin {
@@ -778,13 +799,13 @@
 .cmap-bar {
   flex: 1 1 0;
   min-width: 0;
-  padding: 4px 0 3.5px;
+  padding: 4.5px 0 4px;
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 4px;
   background: color-mix(in srgb, var(--bflat, #5a6f88) 16%, transparent);
-  color: #a9bccb;
+  color: #b3c5d3;
   font-family: var(--font-mono);
-  font-size: 0.47rem;
+  font-size: 0.56rem;
   font-weight: 700;
   text-align: center;
   cursor: pointer;
@@ -805,19 +826,19 @@
   font-weight: 800;
 }
 
-.cmap-bars-help { margin: 0.45rem 0 0; color: #7f97a8; font-size: 0.58rem; line-height: 1.45; }
+.cmap-bars-help { margin: 0.45rem 0 0; color: #7f97a8; font-size: 0.68rem; line-height: 1.5; }
 
 .cmap-use {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: 0.55rem 0.7rem;
+  padding: 0.6rem 0.75rem;
   border: 1px solid rgba(113, 217, 244, 0.35);
   border-radius: 10px;
   background: linear-gradient(160deg, rgba(56, 200, 240, 0.2), rgba(16, 63, 86, 0.6));
   color: #eafaff;
-  font-size: 0.74rem;
+  font-size: 0.85rem;
   font-weight: 750;
   cursor: pointer;
   transition: background 0.25s, transform 0.2s;
@@ -912,9 +933,9 @@
     left: 0;
     right: 0;
     width: 100%;
-    max-height: 68%;
+    max-height: 72%;
     border-radius: 13px 13px 0 0;
-    padding: 0.7rem 0.8rem 0.9rem;
+    padding: 0.75rem 0.85rem 0.95rem;
   }
   .cmap-alt { right: 8px; top: 8px; }
   .cmap-readout { bottom: auto; top: 8px; padding: 0.35rem 0.55rem; }
@@ -925,6 +946,9 @@
   .cmap-nowhour { font-size: 1rem; min-width: 46px; }
   .cmap-loaded { display: none; }
   .cmap-hint { font-size: 0.64rem; }
+  .cmap-tag { font-size: 10.5px; max-width: 150px; }
+  .cmap-pin { width: 36px; height: 36px; }
+  .cmap-arrow { width: 36px; height: 36px; }
 }
 
 @media (max-width: 560px) {
@@ -934,8 +958,13 @@
   .cmap-day small { display: none; }
   .cmap-play span { display: none; }
   .cmap-play { padding: 0.5rem 0.6rem; }
-  .cmap-bar { font-size: 0.4rem; padding: 3px 0 2.5px; }
+  .cmap-bar { font-size: 0.5rem; padding: 3.5px 0 3px; }
   .cmap-skyhead-v { display: none; }
+  .cmap-tag { font-size: 9.5px; max-width: 120px; padding: 1px 5px; }
+  .cmap-pin { width: 32px; height: 32px; }
+  .cmap-arrow { width: 32px; height: 32px; }
+  .cmap-dot { width: 17px; height: 17px; border-width: 2px; }
+  .cmap-speed { font-size: 9.5px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -943,5 +972,5 @@
   .cmap-marker, .cmap-marker:hover { transition: none; }
   .cmap-arrow, .cmap-bar { transition: none; }
   .cmap-lbtn, .cmap-play, .cmap-use { transition: none; }
-  .sky-bub, .sky-cloud, .sky-pg, .sky-pin { animation: none; }
+  .sky-bub, .sky-cloud, .sky-pg, .sky-pin, .sky-streak, .sky-chev, .sky-src { animation: none; }
 }

@@ -73,6 +73,7 @@ export interface HourEval {
   cape: number | null;
   dew: number | null;
   code: number | null;
+  quota: number; // quota del decollo (m s.l.m.)
 }
 
 interface SiteSnapshot {
@@ -121,7 +122,7 @@ const LAYER_NAME: Record<LayerId, string> = {
 /* Note didattiche da manuale di volo (una per livello) */
 const LAYER_HINT: Record<LayerId, string> = {
   termiche:
-    "Le zone colorate sono i pendii che il sole sta riscaldando: al mattino i versanti E/SE, a mezzogiorno i S, nel pomeriggio gli O/SO. Le bolle si staccano dai crinali e vengono spinte sottovento dal vento.",
+    "Le zone colorate sono i pendii che il sole sta riscaldando: al mattino i versanti E/SE, a mezzogiorno i S, nel pomeriggio gli O/SO. Con il selettore QUOTA il campo si legge all'altezza scelta: salendo le bolle restano vive solo dove la risalita le porta, il resto sbiadisce fino a spegnersi alla base dei cumuli.",
   vento:
     "La freccia mostra dove spinge il vento alla quota scelta, il colore l'intensità. Sul decollo conta il rapporto con l'esposizione: in fronte la termica si rinforza, in coda muore.",
   nuvole:
@@ -207,6 +208,7 @@ function evaluatePoint(point: HourlyPoint, quota: number, esposizione: string): 
     cape: point.cape,
     dew: point.dew,
     code: point.code,
+    quota,
   };
 }
 
@@ -240,6 +242,35 @@ export function windAtAltitude(
   }
   const top = levels[levels.length - 1];
   return { ws: top.ws, wd: top.wd ?? point.dir ?? surfaceDir };
+}
+
+/* ---- TERMICHE ALLA QUOTA SCELTA (la modalità interattiva di meteo-parapente) ----
+ * La bolla parte dal pendio scaldato e muore alla quota di arrivo (base nubi se ci
+ * sono cumuli, altrimenti lo zero termico): fino al 45% della salita conserva la
+ * forza misurata al suolo, poi decade fino a spegnersi alla base. Così il selettore
+ * QUOTA ridefinisce i colori del campo e i valori sui marker, come sul sito di
+ * riferimento: in quota le termiche vivono solo dove la risalita le porta. */
+
+/** Quota di arrivo della termica per un sito (m s.l.m.). */
+function thermalTopFor(e: HourEval): number {
+  const q = e.quota ?? 0;
+  const cumuli = e.baseNubiM != null && e.baseNubiM > q + 150 && (e.cloud ?? 0) >= 20;
+  if (cumuli) return e.baseNubiM as number;
+  if (e.freezing != null && e.freezing > q + 400) return q + (e.freezing - q) * 0.8;
+  return Math.min(q + 600, 4000);
+}
+
+/** Ascendenza (m/s) percepita alla quota scelta; null = dati assenti. */
+function thermalAtAltitude(e: HourEval | null, alt: number | null): number | null {
+  if (!e || e.rateo == null) return null;
+  if (alt == null) return e.rateo;
+  const q = e.quota ?? 0;
+  if (alt <= q) return e.rateo * (alt < q ? 0.45 : 1);
+  const top = thermalTopFor(e);
+  const t = (alt - q) / Math.max(400, top - q);
+  if (t >= 1) return 0;
+  const f = t < 0.45 ? 1 : 1 - (t - 0.45) / 0.55;
+  return Math.max(0, e.rateo * f);
 }
 
 function sampleStops(stops: { v: number; c: [number, number, number]; a: number }[], v: number) {
@@ -279,7 +310,7 @@ function cardinal(deg: number | null | undefined): string {
 const MARKER_HTML = (name: string) =>
   `<div class="cmap-marker" role="button" tabindex="-1">` +
   `<span class="cmap-pin">` +
-  `<span class="cmap-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15"><path d="M12 2.5 L18.5 15.5 L12 12.2 L5.5 15.5 Z"/></svg></span>` +
+  `<span class="cmap-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="21" height="21"><path d="M12 2.5 L18.5 15.5 L12 12.2 L5.5 15.5 Z"/></svg></span>` +
   `<i class="cmap-dot"></i>` +
   `<b class="cmap-speed">–</b>` +
   `</span>` +
@@ -365,6 +396,8 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
     () => altSteps[Math.min(altIndex, altSteps.length - 1)] ?? { label: "Suolo", alt: null as number | null },
     [altSteps, altIndex],
   );
+  const altStepRef = useRef(altStep);
+  altStepRef.current = altStep;
 
   /* --- vento alla quota scelta per ogni sito --- */
   const windReads = useMemo(() => {
@@ -481,7 +514,36 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
             fieldCacheRef.current.set(cacheKey, res);
           }
           const drift = driftPx(res.windKmh, res.windDir, zoom);
-          paintField(ctx, geom, res.values, drift.dx, drift.dy);
+          let field = res.values;
+          const alt = altStepRef.current.alt;
+          if (alt != null) {
+            /* modalità QUOTA: il campo si legge all'altezza scelta — le celle la cui
+               montagna supera la quota spariscono (lì la fetta d'aria non esiste) e le
+               bolle si indeboliscono salendo, fino a morire alla quota di arrivo */
+            let tSum = 0;
+            let tN = 0;
+            for (const s of snapRef.current) {
+              if (s.eval) {
+                tSum += thermalTopFor(s.eval);
+                tN++;
+              }
+            }
+            const top = tN ? tSum / tN : 3000;
+            const scaled = new Float32Array(field.length);
+            for (let i = 0; i < field.length; i++) {
+              const v = field[i];
+              if (v <= 0) continue;
+              const E = geom.cells[i]?.elev;
+              if (E == null || !Number.isFinite(E)) continue;
+              const agl = alt - E;
+              if (agl <= 0) continue;
+              const t = agl / Math.max(400, top - E);
+              if (t >= 1) continue;
+              scaled[i] = v * (t < 0.4 ? 1 : Math.max(0, 1 - (t - 0.4) / 0.6));
+            }
+            field = scaled;
+          }
+          paintField(ctx, geom, field, drift.dx, drift.dy);
           if (peakRef.current) {
             peakRef.current.textContent =
               res.max > 0.22 ? "picco +" + res.max.toFixed(1).replace(".", ",") + " m/s" : "aria stabile";
@@ -491,7 +553,7 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
         /* fallback: terreno non (ancora) disponibile → aloni sui decolli */
         ctx.globalCompositeOperation = "lighter";
         for (const s of snapRef.current) {
-          const r = s.eval?.rateo ?? null;
+          const r = thermalAtAltitude(s.eval, altStepRef.current.alt);
           if (r == null || r <= 0.05) continue;
           const st = sampleStops(THERMAL_STOPS, r);
           drawBlob(ctx, map, topLeft, s.item, st.color, st.alpha, rBase * (0.78 + 0.5 * Math.min(1, r / 4.2)));
@@ -941,8 +1003,8 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
       el.classList.remove("is-good", "is-fair", "is-bad", "is-off", "is-selected", "is-hot");
       el.classList.add(e ? e.classe : "is-off");
       if (selectedId === s.item.id) el.classList.add("is-selected");
-      if (e && layer === "termiche" && (e.rateo ?? 0) >= 2) el.classList.add("is-hot");
       el.classList.toggle("is-windlayer", isWind);
+      el.classList.toggle("is-thermlayer", layer === "termiche");
 
       if (isWind) {
         const read = windReads.get(s.item.id);
@@ -959,10 +1021,24 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
             speed.textContent = "–";
           }
         }
+      } else if (layer === "termiche") {
+        /* sulla modalità termiche il marker mostra l'ascendenza alla QUOTA scelta */
+        const speed = el.querySelector(".cmap-speed") as HTMLElement | null;
+        const rAlt = thermalAtAltitude(e, altStep.alt);
+        if (speed) {
+          if (rAlt != null && rAlt > 0.05) {
+            speed.textContent = "+" + rAlt.toFixed(1).replace(".", ",");
+            speed.dataset.w = rAlt >= 2.4 ? "is-w4" : rAlt >= 1.5 ? "is-w3" : rAlt >= 0.8 ? "is-w2" : "is-w1";
+          } else {
+            speed.textContent = rAlt != null ? "0" : "–";
+            speed.dataset.w = "";
+          }
+        }
+        if (e && (rAlt ?? 0) >= 2) el.classList.add("is-hot");
       }
       el.title = `${s.item.site_name || s.item.name} · ${e ? e.label : "Dati non disponibili"}`;
     }
-  }, [snapshots, layer, windReads, selectedId]);
+  }, [snapshots, layer, windReads, selectedId, altStep]);
 
   /* --------------------------- ridisegno quando cambia ora/livello --------------------------- */
   useEffect(() => {
@@ -1057,13 +1133,17 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
           </strong>
           <span>
             {LAYER_NAME[layer]}
-            {layer === "vento" ? " · " + altStep.label : ""}
+            {(layer === "vento" || layer === "termiche") ? " · " + altStep.label : ""}
           </span>
           {layer === "termiche" && <span className="cmap-peak" ref={peakRef} data-testid="cartina-peak" />}
         </div>
 
-        {layer === "vento" && altSteps.length > 1 && (
-          <div className="cmap-alt" role="group" aria-label="Quota del vento">
+        {(layer === "vento" || layer === "termiche") && altSteps.length > 1 && (
+          <div
+            className="cmap-alt"
+            role="group"
+            aria-label={layer === "vento" ? "Quota del vento" : "Quota del campo termico"}
+          >
             <span className="cmap-alt-caption">QUOTA</span>
             <div className="cmap-alt-list">
               {altSteps.map((s, i) => (
@@ -1084,7 +1164,9 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
         <div className="cmap-legend" aria-hidden="true">
           {layer === "termiche" && (
             <>
-              <span className="cmap-legend-title">Ascendenza prevista (m/s)</span>
+              <span className="cmap-legend-title">
+                Ascendenza prevista (m/s){altStep.alt != null ? " · a " + altStep.label : ""}
+              </span>
               <span className="cmap-legend-bar cmap-grad-therm" />
               <div className="cmap-legend-l">
                 <em>0</em>
