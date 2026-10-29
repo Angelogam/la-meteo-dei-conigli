@@ -8,15 +8,19 @@
  *
  * Cosa mostra:
  * - i DECOLLI con pin cliccabili e un PARAPENDIO in volo che fluttua sopra ognuno
- * - il CAMPO VENTO LIVE su tutta la valle (non solo vicino al decollo): una
- *   griglia fitta di frecce GRANDI in movimento continuo, colorate per aerologia:
- *     verde = portanza (vento contro il versante) · rosso = sottovento
- *     giallo = anabatica (giorno) · ciano = catabatica (notte) · ambra = flusso
- *   Dati: Open-Meteo in bulk su griglia 3×3, aggiornati automaticamente ogni 15 min
- * - i VENTI METEO alla quota scelta (2000 → 4000 m) dal sounding già usato dal
- *   sito: frecce grandi, colore per quota, in movimento continuo
- * - NAVIGAZIONE stile Google Earth: bussola trascinabile a 360°, rotazione,
- *   tilt, zoom, vista dall'alto 2D e ritorno al decollo
+ * - il CAMPO VENTO su tutta la valle: griglia fitta di frecce GRANDI in movimento
+ *   continuo, colorate per VELOCITÀ (scala Windy: verde 5-10 · giallo/arancio 10-20 ·
+ *   fuoco 20-30 · rosso 30-40 · viola 40+), con frecce ROSSE nelle zone di SOTTOVENTO
+ *   ed ETICHETTE con velocità, direzione e quota
+ * - PREVISIONI a fasce orarie per le giornate a venire (Oggi → +3): la barra sotto
+ *   la toolbar seleziona giorno e ora per TUTTA la scena 3D (campo, quota, termiche)
+ * - i VENTI IN QUOTA (2000 → 4000 m): più il vento è forte più il colore va
+ *   dall'arancio fuoco al VIOLA, in movimento continuo
+ * - le TERMICHE DOVE STACCANO (stile XCTherm, thermal.kk7.ch): aloni pulsanti
+ *   sulle celle sole×pendenza, bolle che risalgono, colore = forza (m/s)
+ * - NAVIGAZIONE stile Google Earth: bussola trascinabile a 360°, rotazione, tilt,
+ *   zoom, vista dall'alto 2D, ritorno al decollo e TASTO SCHERMO INTERO
+ * - resa in ALTA DEFINIZIONE: render alla risoluzione fisica del display
  *
  * La libreria (~5 MB compressi) viene scaricata SOLO quando la sezione entra nel
  * viewport: la pagina resta veloce come prima.
@@ -27,14 +31,16 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Mountain } from "lucide-react";
+import { Maximize2, Minimize2, Mountain } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import type { CartinaDecollo } from "@/components/CartinaMeteo";
 import { windAtAltitude } from "@/components/CartinaMeteo";
 import type { HourlyPoint } from "@/services/threeSourceWeather";
 import { createTerrariumTerrainProvider, sampleTerrainHeights } from "./terrain";
-import { buildWindField, computeFlows, fetchLiveWind, FLOW_COLORS, heightAt } from "./winds";
-import type { FlowCell, LivePoint, WindField } from "./winds";
+import { buildWindField, computeFlows, fetchForecast, heightAt, liveAt, speedColor } from "./winds";
+import type { FlowCell, ForecastData, WindField } from "./winds";
+import { computeTriggers, thermalColor, THERMAL_SCALE } from "./thermals";
+import type { TriggerCell } from "./thermals";
 import { gliderImage, pinImage } from "./sprites";
 import Nav3D from "./Nav3D";
 import "./cartina3d.css";
@@ -44,15 +50,6 @@ type ViewerNs = import("cesium").Viewer;
 
 const QUOTAS = [2000, 2500, 3000, 3500, 4000] as const;
 type Quota3D = (typeof QUOTAS)[number];
-
-/** Colore dei venti in quota: il COLORE dice la quota (come in Alpium). */
-const QUOTA_COLORS: Record<Quota3D, string> = {
-  2000: "#4cc3ff",
-  2500: "#3ddc84",
-  3000: "#ffd23f",
-  3500: "#ff9f43",
-  4000: "#ff5cc8",
-};
 
 const DIR8 = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"];
 function dir8(deg: number | null | undefined): string {
@@ -95,6 +92,8 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   const markersRef = useRef<import("cesium").Entity[]>([]);
   const surfRef = useRef<import("cesium").Entity[]>([]);
   const windRef = useRef<import("cesium").Entity[]>([]);
+  const thermRef = useRef<import("cesium").Entity[]>([]);
+  const secRef = useRef<HTMLElement | null>(null);
   const fieldCacheRef = useRef<Map<string, WindField>>(new Map());
 
   const [armed, setArmed] = useState(false); // IntersectionObserver: sezione vicina
@@ -105,12 +104,21 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   const [siteId, setSiteId] = useState<string>("");
   const [quota, setQuota] = useState<Quota3D | 0>(2500);
   const [surface, setSurface] = useState(true);
+  const [therm, setTherm] = useState(true); // termiche: dove staccano
 
-  /* campo vento: griglia DEM + dati live Open-Meteo */
+  /* campo vento: griglia DEM + previsioni Open-Meteo (oggi + 3 giorni) */
   const [field, setField] = useState<WindField | null>(null);
   const [fieldBusy, setFieldBusy] = useState(false);
-  const [live, setLive] = useState<LivePoint[] | null>(null);
-  const [liveAt, setLiveAt] = useState<string>("");
+  const [forecast, setForecast] = useState<ForecastData | null>(null);
+  const [fcAt, setFcAt] = useState<string>("");
+  /* giorno e ora selezionati: lo slider principale guida «oggi», le fasce
+     orarie della barra previsioni selezionano giorno e ora per tutto il 3D */
+  const [dayIdx, setDayIdx] = useState(0);
+  const [selHour, setSelHour] = useState<number>(hour);
+
+  /* schermo intero */
+  const [fsOn, setFsOn] = useState(false);
+  const [fsFallback, setFsFallback] = useState(false);
 
   /* retry del campionamento DEM: se un'onda di tile è a metà, gli effetti si
      rilanciano da soli (max 5 tentativi) invece di lasciare la scena senza frecce */
@@ -128,11 +136,41 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   goodRef.current = good;
   const activeId = siteId || selectedId || good[0]?.id || "";
   const active = good.find((d) => d.id === activeId) ?? good[0];
-  const anabatic = hour >= 9 && hour <= 18;
+  const anabatic = selHour >= 9 && selHour <= 18;
+  const effDate = forecast?.days[dayIdx]?.date ?? null;
+  const dayLabel = forecast?.days[dayIdx]?.label ?? (dayIdx === 0 ? "Oggi" : `+${dayIdx} gg`);
 
   useEffect(() => {
     if (selectedId) setSiteId(selectedId);
   }, [selectedId]);
+
+  /* l'ora del sito (slider principale della pagina) guida il 3D per «oggi» */
+  useEffect(() => {
+    setSelHour(hour);
+  }, [hour]);
+
+  /* punto aerologico del giorno+ora selezionati: il sounding del sito copre
+     più giorni, scelgo la cella esatta data+ora con fallback sull'ora */
+  const activePoint = useMemo<HourlyPoint | null>(() => {
+    const hw = active?.aggressiveWeather?.hourly;
+    if (!hw?.length) return null;
+    const hh = String(selHour).padStart(2, "0");
+    if (effDate) {
+      const exact = hw.find((p) => p.time === `${effDate}T${hh}:00`);
+      if (exact) return exact;
+    }
+    return hw.find((p) => hourOf(p) === selHour) ?? hw[0] ?? null;
+  }, [active, selHour, effDate]);
+
+  /* venti del campo per il giorno+ora richiesti (dalla risposta bulk a 4 giorni) */
+  const live = useMemo(() => (forecast ? liveAt(forecast, effDate, selHour) : null), [forecast, effDate, selHour]);
+  const flows = useMemo<FlowCell[]>(() => (field ? computeFlows(field, live, selHour) : []), [field, live, selHour]);
+
+  /* stacchi termici stile XCTherm: sole × pendenza × radiazione del sounding */
+  const triggers = useMemo<TriggerCell[]>(
+    () => (field ? computeTriggers(field, selHour, activePoint?.rad ?? null) : []),
+    [field, selHour, activePoint],
+  );
 
   /* carica la scena solo quando la sezione si avvicina al viewport */
   useEffect(() => {
@@ -216,7 +254,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         globe.enableLighting = false;
         globe.depthTestAgainstTerrain = true;
         globe.showGroundAtmosphere = true;
-        globe.maximumScreenSpaceError = 1.4;
+        globe.maximumScreenSpaceError = 1.25;
         globe.tileCacheSize = 250000000;
         globe.preloadSiblings = true;
         viewer.scene.fog.enabled = true;
@@ -227,9 +265,9 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         } catch {
           /* fxaa facoltativo */
         }
-        const dpr = window.devicePixelRatio || 1;
         viewer.useBrowserRecommendedResolution = false; // pixel reali, non CSS
-        viewer.resolutionScale = dpr >= 1.5 ? 0.75 : 1;
+        /* ALTA DEFINIZIONE: render alla risoluzione fisica del display (retina 2×) */
+        viewer.resolutionScale = Math.min(window.devicePixelRatio || 1, 2);
         const base = viewer.imageryLayers.get(0);
         if (base) {
           base.brightness = 1.12;
@@ -375,13 +413,6 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     flyToSite(Cesium, viewer, active);
   }, [status, active]);
 
-  /* punto aerologico attivo: l'ora selezionata del decollo attivo */
-  const activePoint = useMemo<HourlyPoint | null>(() => {
-    const hw = active?.aggressiveWeather?.hourly;
-    if (!hw?.length) return null;
-    return hw.find((p) => hourOf(p) === hour) ?? hw[0] ?? null;
-  }, [active, hour]);
-
   const clear = (arr: { current: import("cesium").Entity[] }) => {
     const viewer = viewerRef.current;
     if (!viewer) return;
@@ -426,7 +457,9 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     };
   }, [status, active, demEpoch]);
 
-  /* ---------- venti LIVE: Open-Meteo bulk, refresh automatico ogni 15 min ---------- */
+  /* ---------- PREVISIONI (oggi + 3 giorni): Open-Meteo bulk, refresh 15 min ----------
+     Una sola richiesta alimenta il campo suolo per qualunque giorno/ora e la
+     barra delle fasce orarie; su errore transitorio riprova con backoff. */
   useEffect(() => {
     if (status !== "ready" || !field) return;
     let cancelled = false;
@@ -434,15 +467,12 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     let retries = 0;
     const pull = async () => {
       try {
-        const pts = await fetchLiveWind(field, hour);
+        const fc = await fetchForecast(field);
         if (cancelled) return;
-        setLive(pts);
-        setLiveAt(new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }));
+        setForecast(fc);
+        setFcAt(new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }));
       } catch (e) {
-        /* senza dati live il campo resta con le sole brezze di versante; ma un
-           errore transitorio (rete lenta, limite momentaneo) non deve lasciare
-           "dati in arrivo" per 15 minuti: riprovo presto con backoff leggero */
-        console.warn("[c3d] venti live non disponibili:", String(e).slice(0, 100));
+        console.warn("[c3d] previsioni vento non disponibili:", String(e).slice(0, 100));
         if (cancelled || retries >= 4) return;
         retries += 1;
         retryT = window.setTimeout(() => {
@@ -457,10 +487,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       window.clearInterval(iv);
       if (retryT) window.clearTimeout(retryT);
     };
-  }, [status, field, hour]);
-
-  /* classificazione aerologica: matematica pura, rieseguita a ogni ora/dati */
-  const flows = useMemo<FlowCell[]>(() => (field ? computeFlows(field, live, hour) : []), [field, live, hour]);
+  }, [status, field]);
 
   /* ---------- CAMPO VENTO ANIMATO: frecce grandi che attraversano la valle ---------- */
   useEffect(() => {
@@ -493,14 +520,40 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           }, false),
           width: c.w,
           material: new Cesium.PolylineArrowMaterialProperty(
-            Cesium.Color.fromCssColorString(FLOW_COLORS[c.cls]).withAlpha(0.95),
+            Cesium.Color.fromCssColorString(c.cls === "lee" ? "#ff4d4f" : speedColor(c.sp)).withAlpha(0.95),
           ),
         },
       });
     });
+
+    /* ETICHETTE del campo: velocità · direzione · quota su una sotto-griglia
+       sparsa (≈21) così restano leggibili senza coprire le frecce */
+    const labs = flows
+      .filter((_, k) => k % 12 === 5)
+      .map((c) => {
+        const hdgTo = (Math.atan2(c.dE, c.dN) * 180) / Math.PI;
+        const from = ((hdgTo + 180) % 360 + 360) % 360;
+        return viewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(c.lon, c.lat, c.h + 60),
+          label: {
+            text: `${Math.round(c.sp)} km/h · da ${dir8(from)}\n${Math.round(c.h)} m${c.cls === "lee" ? " · sottovento" : ""}`,
+            font: "600 11px 'Barlow Condensed','Manrope',sans-serif",
+            fillColor: Cesium.Color.fromCssColorString(c.cls === "lee" ? "#ffb3c0" : "#eaf6ff"),
+            showBackground: true,
+            backgroundColor: Cesium.Color.fromCssColorString("rgba(8,18,32,0.78)"),
+            backgroundPadding: new Cesium.Cartesian2(5, 3),
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+            pixelOffset: new Cesium.Cartesian2(0, -8),
+            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 15000),
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          },
+        });
+      });
+    surfRef.current = surfRef.current.concat(labs);
   }, [status, field, flows, surface]);
 
-  /* ---------- venti meteo alla quota scelta (2000 → 4000 m), colore = quota ---------- */
+  /* ---------- venti meteo alla quota scelta (2000 → 4000 m): colore = VELOCITÀ ----------
+     più il vento è forte più va dall'arancio fuoco verso il viola (scala Windy) */
   useEffect(() => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
@@ -523,7 +576,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       const L = Math.min(1800, Math.max(500, wsK * 55));
       const speed = Math.min(42, Math.max(7, (wsK / 3.6) * 3.2)); // drift esagerato ×3 per la lettura
       const span = Math.max(2200, L * 4);
-      const color = Cesium.Color.fromCssColorString(QUOTA_COLORS[quota as Quota3D]);
+      const color = Cesium.Color.fromCssColorString(speedColor(wsK));
       const mLat = 111320;
       const mLon = 111320 * Math.cos((active.lat * Math.PI) / 180);
 
@@ -580,12 +633,199 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           },
         });
       });
+
+      /* ETICHETTE quota: velocità · direzione · quota (una su quattro) */
+      const fromQ = ((wind.wd % 360) + 360) % 360;
+      const qlabs = visible
+        .filter((_, k) => k % 4 === 1)
+        .map((p) =>
+          viewer.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(p.lon, p.lat, quota),
+            label: {
+              text: `${Math.round(wsK)} km/h · da ${dir8(fromQ)} · ${quota} m`,
+              font: "600 11px 'Barlow Condensed','Manrope',sans-serif",
+              fillColor: Cesium.Color.fromCssColorString("#eaf6ff"),
+              showBackground: true,
+              backgroundColor: Cesium.Color.fromCssColorString("rgba(8,18,32,0.78)"),
+              backgroundPadding: new Cesium.Cartesian2(5, 3),
+              verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+              pixelOffset: new Cesium.Cartesian2(0, -8),
+              distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 30000),
+              disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            },
+          }),
+        );
+      windRef.current = windRef.current.concat(qlabs);
     })();
 
     return () => {
       cancelled = true;
     };
   }, [status, active, activePoint, quota, demEpoch]);
+
+  /* ---------- TERMICHE: dove staccano (stile XCTherm) ----------
+     alone pulsante sul punto di stacco + bolla che risale la colonna;
+     il colore dice la forza (azzurro → rosso), l'etichetta i m/s */
+  useEffect(() => {
+    const Cesium = cesiumRef.current;
+    const viewer = viewerRef.current;
+    if (status !== "ready" || !Cesium || !viewer || !field) return;
+    clear(thermRef);
+    if (!therm || !triggers.length) return;
+
+    const parts: import("cesium").Entity[] = [];
+    triggers.forEach((tc, k) => {
+      const col = Cesium.Color.fromCssColorString(thermalColor(tc.strength));
+      const r = 70 + tc.strength * 16;
+      parts.push(
+        viewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(tc.lon, tc.lat, 0),
+          ellipse: {
+            semiMajorAxis: r,
+            semiMinorAxis: r,
+            material: new Cesium.ColorMaterialProperty(
+              new Cesium.CallbackProperty(
+                () => col.withAlpha(0.26 + 0.16 * Math.sin(performance.now() / 700 + k * 1.7)),
+                false,
+              ),
+            ),
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+            classificationType: Cesium.ClassificationType.TERRAIN,
+          },
+        }),
+      );
+      const phase = (k * 97.3) % 420;
+      let lastPos: import("cesium").Cartesian3[] | null = null;
+      parts.push(
+        viewer.entities.add({
+          polyline: {
+            positions: new Cesium.CallbackProperty(() => {
+              const t = performance.now() / 1000;
+              const off = (t * 55 + phase) % 420;
+              const calc = [
+                Cesium.Cartesian3.fromDegrees(tc.lon, tc.lat, tc.h + off),
+                Cesium.Cartesian3.fromDegrees(tc.lon, tc.lat, tc.h + off + 120),
+              ];
+              if (calc.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z))) {
+                lastPos = calc;
+                return calc;
+              }
+              return lastPos ?? [Cesium.Cartesian3.ZERO, Cesium.Cartesian3.ZERO];
+            }, false),
+            width: 2.5,
+            material: new Cesium.ColorMaterialProperty(
+              new Cesium.CallbackProperty(
+                () => col.withAlpha(Math.max(0.08, 0.6 * (1 - (((performance.now() / 1000) * 55 + phase) % 420) / 420))),
+                false,
+              ),
+            ),
+          },
+        }),
+      );
+    });
+    /* forza scritta sulle termiche più forti */
+    triggers
+      .filter((t) => t.strength >= 3.4)
+      .slice(0, 8)
+      .forEach((tc) => {
+        parts.push(
+          viewer.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(tc.lon, tc.lat, tc.h + 540),
+            label: {
+              text: `${tc.strength.toFixed(1)} m/s`,
+              font: "700 11px 'JetBrains Mono',monospace",
+              fillColor: Cesium.Color.fromCssColorString("#ffe9c9"),
+              showBackground: true,
+              backgroundColor: Cesium.Color.fromCssColorString("rgba(30,16,8,0.74)"),
+              backgroundPadding: new Cesium.Cartesian2(5, 3),
+              distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 14000),
+              disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            },
+          }),
+        );
+      });
+    thermRef.current = parts;
+  }, [status, field, triggers, therm]);
+
+  /* ---------- SCHERMO INTERO ---------- */
+  useEffect(() => {
+    const onFs = () => {
+      setFsOn(!!document.fullscreenElement);
+      if (document.fullscreenElement) setFsFallback(false); // nativo ha priorità
+      window.setTimeout(() => {
+        try {
+          viewerRef.current?.resize();
+        } catch {
+          /* opzionale */
+        }
+      }, 120);
+    };
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
+  }, []);
+
+  /* fallback per browser senza fullscreen sugli elementi (iOS Safari):
+     la sezione diventa fissa a tutto schermo via CSS */
+  useEffect(() => {
+    if (!fsFallback) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFsFallback(false);
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    const id = window.setTimeout(() => {
+      try {
+        viewerRef.current?.resize();
+      } catch {
+        /* opzionale */
+      }
+    }, 80);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+      window.clearTimeout(id);
+    };
+  }, [fsFallback]);
+
+  const toggleFullscreen = () => {
+    const el = secRef.current;
+    if (!el) return;
+    const doc = document as Document & { webkitFullscreenElement?: Element | null; webkitExitFullscreen?: () => void };
+    const req = (el as HTMLElement & { webkitRequestFullscreen?: () => void }).webkitRequestFullscreen;
+    if (!document.fullscreenElement && !doc.webkitFullscreenElement) {
+      if (el.requestFullscreen) {
+        /* se il browser rifiuta/blocca (senza gesto utente, iframe senza
+           allow-fullscreen, iOS) la promessa resta pendent o rigetta:
+           dopo 500 ms senza successo attivo il fallback CSS */
+        let settled = false;
+        el.requestFullscreen()
+          .then(() => {
+            settled = true;
+          })
+          .catch(() => {
+            if (!settled) setFsFallback(true);
+            settled = true;
+          });
+        window.setTimeout(() => {
+          if (!settled && !document.fullscreenElement) {
+            settled = true;
+            setFsFallback(true);
+          }
+        }, 500);
+      } else if (req) {
+        req.call(el);
+      } else {
+        setFsFallback(true);
+      }
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen().catch(() => setFsFallback(false));
+    } else if (doc.webkitExitFullscreen) {
+      doc.webkitExitFullscreen();
+      setFsFallback(false);
+    } else {
+      setFsFallback(false);
+    }
+  };
 
   const resetView = () => {
     const Cesium = cesiumRef.current;
@@ -594,12 +834,20 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   };
 
   return (
-    <section id="vista3d" className="cartina3d" data-testid="cartina-3d" aria-label="Vista 3D del terreno con campo vento live e venti in quota">
+    <section
+      id="vista3d"
+      ref={secRef}
+      className={"cartina3d" + (fsFallback ? " is-fs" : "")}
+      data-testid="cartina-3d"
+      aria-label="Vista 3D del terreno con campo vento live, previsioni a fasce orarie e termiche"
+    >
       <div className="c3d-toolbar">
         <div className="c3d-title">
           <Mountain size={15} aria-hidden="true" />
           <h3>Terreno in 3D</h3>
-          <span className="c3d-sub">ore {String(hour).padStart(2, "0")}:00 · campo vento live Open-Meteo · agg. automatico 15 min</span>
+          <span className="c3d-sub">
+            {dayLabel} · ore {String(selHour).padStart(2, "0")}:00 · vento live + previsioni Open-Meteo · agg. 15 min
+          </span>
         </div>
         <div className="c3d-controls">
           <label className="c3d-site">
@@ -629,7 +877,6 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
                 className={"c3d-q" + (quota === q ? " is-on" : "")}
                 onClick={() => setQuota(q)}
                 data-testid={`c3d-q-${q}`}
-                style={quota === q ? { background: QUOTA_COLORS[q], borderColor: QUOTA_COLORS[q], color: "#0a1626" } : undefined}
               >
                 {q}
               </button>
@@ -639,8 +886,33 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
             <Switch checked={surface} onCheckedChange={setSurface} aria-label="Campo vento suolo" />
             <span>Venti suolo</span>
           </label>
+          <label className="c3d-toggle">
+            <Switch checked={therm} onCheckedChange={setTherm} aria-label="Termiche dove staccano" />
+            <span>Termiche</span>
+          </label>
+          <button
+            type="button"
+            className={"c3d-fsbtn" + (fsOn || fsFallback ? " is-on" : "")}
+            onClick={toggleFullscreen}
+            data-testid="c3d-fs"
+            title="Vista a schermo intero"
+          >
+            {fsOn || fsFallback ? <Minimize2 size={13} aria-hidden="true" /> : <Maximize2 size={13} aria-hidden="true" />}
+            <span>{fsOn || fsFallback ? "Esci" : "Schermo intero"}</span>
+          </button>
         </div>
       </div>
+
+      {/* previsioni del vento per le giornate a venire, a fasce orarie */}
+      <Previsioni
+        fc={forecast}
+        dayIdx={dayIdx}
+        selHour={selHour}
+        onPick={(di, h) => {
+          setDayIdx(di);
+          setSelHour(h);
+        }}
+      />
 
       <div className="c3d-stage">
         <div className="c3d-mount" ref={mountRef} />
@@ -652,8 +924,12 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           surface={surface}
           anabatic={anabatic}
           fieldBusy={fieldBusy}
-          liveAt={liveAt}
+          fcAt={fcAt}
+          dayLabel={dayLabel}
+          selHour={selHour}
           quota={quota}
+          therm={therm}
+          nTriggers={triggers.length}
           wind={quota > 0 ? windAtAltitude(activePoint, quota, activePoint?.wind ?? null, activePoint?.dir ?? null) : null}
         />
 
@@ -683,21 +959,31 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       </div>
 
       <div className="c3d-legend">
-        <span>
-          <i className="c3d-sw is-lift" aria-hidden="true" /> portanza: il vento spinge contro il versante
+        <span className="c3d-leg-scale" data-testid="c3d-leg-scale">
+          <i style={{ background: "#7ec8ff" }} />
+          <em>&lt;5</em>
+          <i style={{ background: "#35d07f" }} />
+          <em>5-10</em>
+          <i style={{ background: "#ffd23f" }} />
+          <em>10-15</em>
+          <i style={{ background: "#ffa53f" }} />
+          <em>15-20</em>
+          <i style={{ background: "#ff7043" }} />
+          <em>20-30</em>
+          <i style={{ background: "#ff4d4f" }} />
+          <em>30-40</em>
+          <i style={{ background: "#c94fff" }} />
+          <em>40+ km/h</em>
         </span>
         <span>
-          <i className="c3d-sw is-lee" aria-hidden="true" /> sottovento: affondamento oltre la cresta
+          <i className="c3d-sw is-lee" aria-hidden="true" /> frecce rosse = zona di sottovento
         </span>
         <span>
-          <i className={"c3d-sw " + (anabatic ? "is-ana" : "is-kata")} aria-hidden="true" />
-          {anabatic ? "brezza anabatica (risale i pendii)" : "brezza catabatica (scende i pendii)"}
-        </span>
-        <span>
-          <i className="c3d-sw is-flow" aria-hidden="true" /> flusso di valle
-        </span>
-        <span>
-          <i className="c3d-sw is-quota" aria-hidden="true" /> vento in quota 2000 → 4000 m (colore = quota)
+          termiche dove staccano:
+          {THERMAL_SCALE.map((s) => (
+            <i key={s.c} className="c3d-dot" style={{ background: s.c }} aria-hidden="true" />
+          ))}
+          forza in m/s
         </span>
       </div>
     </section>
@@ -710,16 +996,24 @@ function Hud({
   surface,
   anabatic,
   fieldBusy,
-  liveAt,
+  fcAt,
+  dayLabel,
+  selHour,
   quota,
+  therm,
+  nTriggers,
   wind,
 }: {
   ready: boolean;
   surface: boolean;
   anabatic: boolean;
   fieldBusy: boolean;
-  liveAt: string;
+  fcAt: string;
+  dayLabel: string;
+  selHour: number;
   quota: Quota3D | 0;
+  therm: boolean;
+  nTriggers: number;
   wind: { ws: number | null; wd: number | null } | null;
 }) {
   if (!ready) return null;
@@ -729,15 +1023,15 @@ function Hud({
         <i className="c3d-live-dot" aria-hidden="true" />
         {fieldBusy
           ? "campo vento: preparo la griglia del terreno…"
-          : liveAt
-            ? `venti live suolo · aggiornati alle ${liveAt}`
-            : "venti suolo: dati live in arrivo…"}
+          : fcAt
+            ? `${dayLabel} · ore ${String(selHour).padStart(2, "0")}:00 · vento e previsioni agg. ${fcAt}`
+            : "vento e previsioni: dati in arrivo…"}
       </span>
       <span className="c3d-hud-v" data-testid="c3d-hud-surface">
         {surface
           ? anabatic
-            ? "verde = portanza · rosso = sottovento · giallo = risale i pendii"
-            : "verde = portanza · rosso = sottovento · ciano = scende i pendii"
+            ? "colore = velocità · rosso = sottovento · bolle = termiche che risalgono"
+            : "colore = velocità · rosso = sottovento · aria scende i pendii (catabatica)"
           : "venti suolo nascosti"}
       </span>
       <span className="c3d-hud-v" data-testid="c3d-hud-wind">
@@ -747,6 +1041,72 @@ function Hud({
             ? `Vento a ${quota} m · ${Math.round(wind.ws)} km/h · da ${dir8(wind.wd)}`
             : `Vento a ${quota} m · dati in arrivo…`}
       </span>
+      <span className="c3d-hud-v" data-testid="c3d-hud-therm">
+        {therm
+          ? nTriggers > 0
+            ? `${nTriggers} stacchi termici: colore = forza (m/s)`
+            : "termiche: nessuno stacco a quest'ora"
+          : "termiche nascoste"}
+      </span>
+    </div>
+  );
+}
+
+/* BARRA PREVISIONI: le giornate a venire × le fasce orarie, chip colorati
+   come la scala Windy; un clic porta giorno+ora su TUTTA la scena 3D. */
+function Previsioni({
+  fc,
+  dayIdx,
+  selHour,
+  onPick,
+}: {
+  fc: ForecastData | null;
+  dayIdx: number;
+  selHour: number;
+  onPick: (day: number, hour: number) => void;
+}) {
+  if (!fc || !fc.days.length) return null;
+  const day = fc.days[Math.min(dayIdx, fc.days.length - 1)];
+  return (
+    <div className="c3d-forecast" data-testid="c3d-forecast">
+      <span className="c3d-fc-k">Vento · previsioni a fasce orarie</span>
+      <div className="c3d-fc-row">
+        <div className="c3d-fc-days" role="group" aria-label="Giornata">
+          {fc.days.map((d, di) => (
+            <button
+              key={d.date}
+              type="button"
+              className={"c3d-day" + (di === dayIdx ? " is-on" : "")}
+              onClick={() => onPick(di, selHour)}
+              data-testid={`c3d-day-${di}`}
+            >
+              {d.label}
+            </button>
+          ))}
+        </div>
+        <div className="c3d-fc-slots">
+          {day.slots.map((s) => (
+            <button
+              key={s.h}
+              type="button"
+              className={"c3d-slot" + (s.h === selHour ? " is-on" : "")}
+              style={{ background: speedColor(s.ws) }}
+              onClick={() => onPick(dayIdx, s.h)}
+              data-testid={`c3d-slot-${s.h}`}
+              title={`${String(s.h).padStart(2, "0")}:00 · ${Math.round(s.ws)} km/h da ${dir8(s.wd)}`}
+            >
+              <b>{String(s.h).padStart(2, "0")}</b>
+              <i style={{ transform: `rotate(${((s.wd + 180) % 360 + 360) % 360}deg)` }} aria-hidden="true">
+                ↑
+              </i>
+              <em>
+                {Math.round(s.ws)}
+                <small>km/h</small>
+              </em>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

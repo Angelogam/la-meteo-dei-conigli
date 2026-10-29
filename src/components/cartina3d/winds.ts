@@ -38,6 +38,23 @@ export const FLOW_COLORS: Record<FlowClass, string> = {
   flow: "#ffb347",
 };
 
+/**
+ * Scala velocità stile Windy (richiesta utente):
+ *  <5 calmo azzurro · 5-10 verde · 10-15 giallo · 15-20 arancione ·
+ *  20-30 arancio fuoco · 30-40 rosso · 40+ viola (più forte → più viola).
+ * Usata sia per i venti suolo sia per i venti in quota.
+ */
+export function speedColor(kmh: number): string {
+  if (!Number.isFinite(kmh)) return "#7ec8ff";
+  if (kmh < 5) return "#7ec8ff";
+  if (kmh < 10) return "#35d07f";
+  if (kmh < 15) return "#ffd23f";
+  if (kmh < 20) return "#ffa53f";
+  if (kmh < 30) return "#ff7043";
+  if (kmh < 40) return "#ff4d4f";
+  return "#c94fff";
+}
+
 export interface WindField {
   lat0: number;
   lon0: number;
@@ -137,14 +154,41 @@ export function heightAt(f: WindField, lat: number, lon: number): number {
   );
 }
 
-/**
- * Vento live Open-Meteo in BULK su griglia 3×3 della zona (una sola richiesta).
- * Restituisce i 9 punti per l'ora selezionata (interpolazione bilineare client).
- */
-export async function fetchLiveWind(
-  f: WindField,
-  hour: number,
-): Promise<LivePoint[]> {
+/** Fascia oraria mostrata nelle previsioni (mattina, mezzogiorno, pomeriggio, sera). */
+export const FORECAST_SLOTS = [9, 12, 15, 18];
+
+export interface ForecastSlot {
+  h: number;
+  ws: number; // km/h medi sugli 8 punti della griglia
+  wd: number; // gradi «da» (direzione meteorologica)
+}
+
+export interface ForecastDay {
+  date: string; // "2026-10-30"
+  label: string; // "Oggi", "Domani", "sab 1 nov"…
+  slots: ForecastSlot[];
+}
+
+/** Previsioni vento 10 m su 4 giorni: una sola richiesta bulk per i 9 punti. */
+export interface ForecastData {
+  days: ForecastDay[];
+  times: string[]; // griglia temporale comune ai 9 punti ("2026-10-30T14:00")
+  ws: number[][]; // [punto 0..8][tempo] km/h
+  wd: number[][]; // [punto 0..8][tempo] gradi «da»
+}
+
+function dayLabelFor(date: string, idx: number): string {
+  if (idx === 0) return "Oggi";
+  if (idx === 1) return "Domani";
+  if (idx === 2) return "Dopodomani";
+  try {
+    return new Date(date + "T12:00").toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
+  } catch {
+    return `+${idx} gg`;
+  }
+}
+
+export async function fetchForecast(f: WindField): Promise<ForecastData> {
   const frac = [0, 0.5, 1];
   const pts: { lat: number; lon: number }[] = [];
   for (const v of frac) {
@@ -160,30 +204,57 @@ export async function fetchLiveWind(
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${latQ}&longitude=${lonQ}` +
     `&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kmh` +
-    `&timezone=Europe%2FBerlin&forecast_days=1`;
+    `&timezone=Europe%2FBerlin&forecast_days=4`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`open-meteo ${res.status}`);
   const j = await res.json();
   const arr: unknown[] = Array.isArray(j) ? j : [j];
+  while (arr.length < 9) arr.push(arr[arr.length - 1]);
 
-  const out: LivePoint[] = arr.map((o) => {
-    const hh = (o as { hourly?: { time?: string[]; wind_speed_10m?: unknown[]; wind_direction_10m?: unknown[] } })?.hourly;
-    if (!hh) return { ws: 0, wd: 0 };
-    const times = hh.time ?? [];
-    /* allineo all'ora richiesta sull'orario locale del modello */
-    let idx = times.findIndex((t) => t.length >= 13 && Number(t.slice(11, 13)) === hour);
-    if (idx < 0) idx = Math.min(Math.max(times.length - 1, 0), Math.min(Math.max(hour, 0), 23));
-    const ws = Number(hh.wind_speed_10m?.[idx]);
-    const wd = Number(hh.wind_direction_10m?.[idx]);
-    return {
-      ws: Number.isFinite(ws) ? ws : 0,
-      wd: Number.isFinite(wd) ? wd : 0,
-    };
-  });
+  const hh0 = (arr[0] as { hourly?: { time?: string[] } })?.hourly;
+  const times = hh0?.time ?? [];
+  const ws: number[][] = [];
+  const wd: number[][] = [];
+  for (const o of arr) {
+    const h = (o as { hourly?: { wind_speed_10m?: unknown[]; wind_direction_10m?: unknown[] } })?.hourly;
+    ws.push(times.map((_, i) => (Number.isFinite(Number(h?.wind_speed_10m?.[i])) ? Number(h?.wind_speed_10m?.[i]) : 0)));
+    wd.push(times.map((_, i) => (Number.isFinite(Number(h?.wind_direction_10m?.[i])) ? Number(h?.wind_direction_10m?.[i]) : 0)));
+  }
 
-  /* garanzia: sempre 9 punti (l'interpolatore conta su una griglia 3×3 piena) */
-  while (out.length < 9) out.push(out[out.length - 1] ?? { ws: 0, wd: 0 });
-  return out.slice(0, 9);
+  /* giorni distinti nell'ordine del modello */
+  const dates: string[] = [];
+  for (const t of times) {
+    const d = t.slice(0, 10);
+    if (!dates.includes(d)) dates.push(d);
+  }
+  const days: ForecastDay[] = dates.slice(0, 4).map((date, di) => ({
+    date,
+    label: dayLabelFor(date, di),
+    slots: FORECAST_SLOTS.map((h) => {
+      const idx = times.indexOf(`${date}T${String(h).padStart(2, "0")}:00`);
+      if (idx < 0) return { h, ws: 0, wd: 0 };
+      let sum = 0;
+      for (let p = 0; p < 9; p++) sum += ws[p]?.[idx] ?? 0;
+      return { h, ws: sum / 9, wd: wd[4]?.[idx] ?? wd[0]?.[idx] ?? 0 };
+    }),
+  }));
+
+  return { days, times, ws, wd };
+}
+
+/** I 9 punti del campo per il giorno+ora richiesti (matematica pura, nessun fetch). */
+export function liveAt(fc: ForecastData, date: string | null, hour: number): LivePoint[] {
+  if (!fc.times.length) return [];
+  const hh = String(Math.max(0, Math.min(23, Math.round(hour)))).padStart(2, "0");
+  let idx = date ? fc.times.indexOf(`${date}T${hh}:00`) : fc.times.findIndex((t) => t.slice(11, 13) === hh);
+  if (idx < 0) idx = fc.times.length - 1;
+  const out: LivePoint[] = [];
+  for (let p = 0; p < 9; p++) {
+    const ws = fc.ws[p]?.[idx] ?? 0;
+    const wd = fc.wd[p]?.[idx] ?? 0;
+    out.push({ ws: Number.isFinite(ws) ? ws : 0, wd: Number.isFinite(wd) ? wd : 0 });
+  }
+  return out;
 }
 
 /**
@@ -268,7 +339,7 @@ export function computeFlows(f: WindField, live: LivePoint[] | null, hour: numbe
         cls,
         len: Math.min(1100, Math.max(300, 140 + sp * 18)),
         w: Math.min(14, Math.max(8, Math.round(6 + sp / 4))),
-        speedVis: Math.min(26, Math.max(3.2, sp * 0.5)),
+        speedVis: Math.min(30, Math.max(3.5, sp * 0.55)),
         span: f.step * 2.2,
       });
     }

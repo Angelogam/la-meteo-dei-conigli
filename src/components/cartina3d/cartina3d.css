@@ -366,7 +366,198 @@
   font-size: 0.64rem;
 }
 
-/* ---------- legenda ---------- */
+/* ---------- barra previsioni a fasce orarie ---------- */
+.c3d-forecast {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.8rem;
+  padding: 0.5rem 0.9rem;
+  border-bottom: 1px solid rgba(125, 211, 252, 0.12);
+  background: rgba(10, 21, 36, 0.55);
+}
+.c3d-fc-k {
+  color: #7e93a6;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  white-space: nowrap;
+}
+.c3d-fc-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.8rem;
+  min-width: 0;
+}
+.c3d-fc-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.22rem;
+}
+.c3d-day {
+  padding: 0.26rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid rgba(125, 211, 252, 0.2);
+  background: rgba(9, 18, 31, 0.85);
+  color: #9db1c4;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.c3d-day:hover { color: #eaf6ff; border-color: rgba(125, 211, 252, 0.45); }
+.c3d-day.is-on {
+  color: #0a1626;
+  background: linear-gradient(180deg, #7dd3fc, #4cc3ff);
+  border-color: #7dd3fc;
+  box-shadow: 0 2px 10px rgba(76, 195, 255, 0.3);
+}
+.c3d-fc-slots {
+  display: flex;
+  align-items: stretch;
+  gap: 0.3rem;
+  overflow-x: auto;
+  max-width: 100%;
+  padding-bottom: 2px;
+}
+.c3d-slot {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 62px;
+  padding: 0.24rem 0.45rem 0.3rem;
+  border-radius: 10px;
+  border: 1px solid rgba(6, 14, 26, 0.55);
+  color: #08131f;
+  font-family: var(--font-mono, monospace);
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+  flex: none;
+}
+.c3d-slot:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(2, 8, 18, 0.45); }
+.c3d-slot.is-on {
+  outline: 2px solid #eaf6ff;
+  outline-offset: 1px;
+}
+.c3d-slot b {
+  font-size: 0.66rem;
+  font-weight: 800;
+  opacity: 0.75;
+}
+.c3d-slot i {
+  font-style: normal;
+  font-size: 0.85rem;
+  line-height: 1;
+  font-weight: 800;
+  display: inline-block;
+}
+.c3d-slot em {
+  font-style: normal;
+  font-size: 0.78rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+.c3d-slot em small {
+  font-size: 0.52rem;
+  font-weight: 700;
+  opacity: 0.7;
+}
+
+/* ---------- tasto schermo intero ---------- */
+.c3d-fsbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid rgba(125, 211, 252, 0.2);
+  background: rgba(9, 18, 31, 0.85);
+  color: #9db1c4;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.c3d-fsbtn:hover { color: #eaf6ff; border-color: rgba(125, 211, 252, 0.45); }
+.c3d-fsbtn.is-on {
+  color: #0a1626;
+  background: linear-gradient(180deg, #ffd76a, #f5b93e);
+  border-color: #ffd76a;
+}
+
+/* legenda: scala velocità + puntini termiche */
+.c3d-leg-scale { gap: 0.28rem; }
+.c3d-leg-scale i {
+  width: 14px;
+  height: 9px;
+  border-radius: 2.5px;
+  display: inline-block;
+  flex: none;
+}
+.c3d-leg-scale em {
+  font-style: normal;
+  color: #8ba1b2;
+  margin-right: 0.35rem;
+}
+.c3d-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  flex: none;
+  margin-left: 0.25rem;
+}
+
+/* ---------- schermo intero (nativo + fallback iOS) ---------- */
+.cartina3d:fullscreen {
+  display: flex;
+  flex-direction: column;
+  border-radius: 0;
+  border: none;
+  background: #06101d;
+  padding: 0.5rem 0.7rem;
+  overflow: auto;
+}
+.cartina3d:fullscreen .c3d-toolbar,
+.cartina3d:fullscreen .c3d-forecast,
+.cartina3d:fullscreen .c3d-legend { flex: none; }
+.cartina3d:fullscreen .c3d-stage {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+.cartina3d.is-fs {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  margin: 0;
+  border-radius: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  background: #06101d;
+  padding: 0.5rem 0.7rem;
+  overflow: auto;
+}
+.cartina3d.is-fs .c3d-toolbar,
+.cartina3d.is-fs .c3d-forecast,
+.cartina3d.is-fs .c3d-legend { flex: none; }
+.cartina3d.is-fs .c3d-stage {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+/* ---------- legenda (vecchi colori aerologici rimasti inutilizzati) ---------- */
 .c3d-sw.is-lift { background: linear-gradient(90deg, rgba(61, 220, 132, 0.55), #3ddc84); }
 .c3d-sw.is-lee { background: linear-gradient(90deg, rgba(255, 84, 112, 0.55), #ff5470); }
 .c3d-sw.is-ana { background: linear-gradient(90deg, rgba(255, 210, 63, 0.55), #ffd23f); }
@@ -406,4 +597,11 @@
   .c3d-nav { right: 8px; bottom: 26px; gap: 0.35rem; }
   .c3d-compass { width: 46px; height: 46px; }
   .c3d-nav-btns button { width: 27px; height: 27px; }
+  .c3d-forecast { padding: 0.45rem 0.7rem; }
+  .c3d-fc-k { width: 100%; }
+  .c3d-fc-slots { width: 100%; }
+  .c3d-slot { min-width: 54px; }
+  .c3d-fsbtn span { display: none; }
+  .c3d-fsbtn { padding: 0.3rem 0.38rem; }
+  .c3d-leg-scale em { margin-right: 0.18rem; font-size: 0.55rem; }
 }
