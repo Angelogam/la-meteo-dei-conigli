@@ -75,7 +75,10 @@ function loadTile(level: number, x: number, y: number): Promise<Float32Array> {
   return job;
 }
 
-export function createTerrariumTerrainProvider(Cesium: CesiumNs): CesiumNs.TerrainProvider {
+type TerrainProviderNs = import("cesium").TerrainProvider;
+type CesiumValue = typeof import("cesium");
+
+export function createTerrariumTerrainProvider(Cesium: CesiumValue): TerrainProviderNs {
   class TerrariumProvider {
     readonly tilingScheme = new Cesium.WebMercatorTilingScheme();
     readonly credit = new Cesium.Credit("Terreno: Mapzen Terrain Tiles · AWS Open Data (DEM ~30 m)");

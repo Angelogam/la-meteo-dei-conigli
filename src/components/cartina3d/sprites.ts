@@ -131,3 +131,37 @@ export function gliderImage(): string {
   gliderImg = c.toDataURL();
   return gliderImg;
 }
+
+let bubbleImg: string | null = null;
+
+/** Bolla di aria calda che sale dentro il cono termico: nucleo bianco-giallo + alone. */
+export function bubbleImage(): string {
+  if (bubbleImg) return bubbleImg;
+  const c = document.createElement("canvas");
+  c.width = 64;
+  c.height = 64;
+  const g = c.getContext("2d")!;
+
+  /* alone esterno soffuso */
+  const halo = g.createRadialGradient(32, 32, 2, 32, 32, 30);
+  halo.addColorStop(0, "rgba(255,246,190,0.95)");
+  halo.addColorStop(0.45, "rgba(255,214,10,0.55)");
+  halo.addColorStop(1, "rgba(255,214,10,0)");
+  g.fillStyle = halo;
+  g.beginPath();
+  g.arc(32, 32, 30, 0, Math.PI * 2);
+  g.fill();
+
+  /* nucleo luminoso */
+  const core = g.createRadialGradient(29, 29, 1, 32, 32, 12);
+  core.addColorStop(0, "#ffffff");
+  core.addColorStop(0.5, "#fff3b0");
+  core.addColorStop(1, "#ffd60a");
+  g.fillStyle = core;
+  g.beginPath();
+  g.arc(32, 32, 12, 0, Math.PI * 2);
+  g.fill();
+
+  bubbleImg = c.toDataURL();
+  return bubbleImg;
+}

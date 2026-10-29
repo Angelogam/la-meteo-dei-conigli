@@ -123,6 +123,19 @@
   border-color: #ffd76a;
   box-shadow: 0 2px 10px rgba(255, 215, 106, 0.35);
 }
+/* striscia dei livelli quota (dal decollo a 4000 m, passi di 250): scrollabile */
+.c3d-quotas-scroll {
+  display: flex;
+  align-items: center;
+  gap: 0.22rem;
+  overflow-x: auto;
+  max-width: 430px;
+  padding: 2px 2px 3px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(125, 211, 252, 0.35) transparent;
+}
+.c3d-quotas-scroll::-webkit-scrollbar { height: 5px; }
+.c3d-quotas-scroll::-webkit-scrollbar-thumb { background: rgba(125, 211, 252, 0.3); border-radius: 3px; }
 
 /* toggle */
 .c3d-toggle {
@@ -601,6 +614,7 @@
   .c3d-fc-k { width: 100%; }
   .c3d-fc-slots { width: 100%; }
   .c3d-slot { min-width: 54px; }
+  .c3d-quotas-scroll { max-width: 100%; }
   .c3d-fsbtn span { display: none; }
   .c3d-fsbtn { padding: 0.3rem 0.38rem; }
   .c3d-leg-scale em { margin-right: 0.18rem; font-size: 0.55rem; }

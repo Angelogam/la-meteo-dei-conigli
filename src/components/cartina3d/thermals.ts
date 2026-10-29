@@ -41,6 +41,25 @@ export function thermalColor(strength: number): string {
   return "#ff5470";
 }
 
+/**
+ * BASE DELLE NUVOLE (LCL) dal sounding: a quanta quota la colonna d'aria
+ * condensa. È il tetto fisico della bolla: il cono termico sale fino lì.
+ * Formula della gradiente adiabatica secca: LCL ≈ 125 m per ogni °C di
+ * divario temperatura-punto di rugiada, sommato alla quota del sito.
+ */
+export function cloudBaseFrom(
+  temp: number | null | undefined,
+  dew: number | null | undefined,
+  groundAlt: number | null | undefined,
+): number | null {
+  const T = Number(temp);
+  const Td = Number(dew);
+  if (!Number.isFinite(T) || !Number.isFinite(Td) || Td > T) return null;
+  const base = (groundAlt ?? 0) + 125 * (T - Td);
+  if (!Number.isFinite(base)) return null;
+  return Math.min(4200, Math.max(900, base));
+}
+
 /** Soglie per la legenda (m/s). */
 export const THERMAL_SCALE = [
   { max: 1.5, c: "#4cc3ff" },

@@ -154,8 +154,8 @@ export function heightAt(f: WindField, lat: number, lon: number): number {
   );
 }
 
-/** Fascia oraria mostrata nelle previsioni (mattina, mezzogiorno, pomeriggio, sera). */
-export const FORECAST_SLOTS = [9, 12, 15, 18];
+/** Fasce orarie cliccabili nelle previsioni: dall'alba alla sera, passo 3 h. */
+export const FORECAST_SLOTS = [6, 9, 12, 15, 18, 21];
 
 export interface ForecastSlot {
   h: number;
@@ -204,7 +204,7 @@ export async function fetchForecast(f: WindField): Promise<ForecastData> {
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${latQ}&longitude=${lonQ}` +
     `&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kmh` +
-    `&timezone=Europe%2FBerlin&forecast_days=4`;
+    `&timezone=Europe%2FBerlin&forecast_days=5`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`open-meteo ${res.status}`);
   const j = await res.json();
@@ -227,7 +227,7 @@ export async function fetchForecast(f: WindField): Promise<ForecastData> {
     const d = t.slice(0, 10);
     if (!dates.includes(d)) dates.push(d);
   }
-  const days: ForecastDay[] = dates.slice(0, 4).map((date, di) => ({
+  const days: ForecastDay[] = dates.slice(0, 5).map((date, di) => ({
     date,
     label: dayLabelFor(date, di),
     slots: FORECAST_SLOTS.map((h) => {
@@ -239,6 +239,48 @@ export async function fetchForecast(f: WindField): Promise<ForecastData> {
     }),
   }));
 
+  return { days, times, ws, wd };
+}
+
+/**
+ * PREVISIONI DI FALLBACK (Open-Meteo irraggiungibile): serie sintetica di 5 giorni
+ * costruita dal vento del sounding del decollo con profilo diurno realistico.
+ * Serve a mantenere cliccabili le fasce orarie anche offline — le letture sono
+ * marcate «stima» nell'interfaccia finché il modello vero non torna disponibile.
+ */
+export function buildFallbackForecast(baseWs: number, baseWd: number): ForecastData {
+  const bw = Number.isFinite(baseWs) ? Math.max(1.5, baseWs) : 8;
+  const bd = Number.isFinite(baseWd) ? ((baseWd % 360) + 360) % 360 : 270;
+  const times: string[] = [];
+  const ws: number[][] = Array.from({ length: 9 }, () => []);
+  const wd: number[][] = Array.from({ length: 9 }, () => []);
+  const today = new Date();
+  const days: ForecastDay[] = [];
+  for (let d = 0; d < 5; d++) {
+    const dd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + d);
+    const date = `${dd.getFullYear()}-${String(dd.getMonth() + 1).padStart(2, "0")}-${String(dd.getDate()).padStart(2, "0")}`;
+    const dayK = 1 + 0.07 * Math.sin(d * 2.1);
+    const dayWd = (bd + d * 14) % 360;
+    for (let h = 0; h < 24; h++) {
+      const hourK = 0.82 + 0.26 * Math.sin((Math.PI * Math.max(0, h - 5)) / 14); // minimo di notte, picco ~12-14
+      times.push(`${date}T${String(h).padStart(2, "0")}:00`);
+      for (let p = 0; p < 9; p++) {
+        const r = p % 3;
+        const c = Math.floor(p / 3);
+        const sp = Math.max(1, bw * dayK * hourK * (1 + 0.12 * Math.sin(r * 2.4 + c * 1.7 + d)));
+        ws[p].push(Number.isFinite(sp) ? sp : 2);
+        wd[p].push(dayWd);
+      }
+    }
+    days.push({
+      date,
+      label: dayLabelFor(date, d),
+      slots: FORECAST_SLOTS.map((h) => {
+        const idx = times.indexOf(`${date}T${String(h).padStart(2, "0")}:00`);
+        return { h, ws: ws[4]?.[idx] ?? bw, wd: wd[4]?.[idx] ?? dayWd };
+      }),
+    });
+  }
   return { days, times, ws, wd };
 }
 
@@ -337,9 +379,9 @@ export function computeFlows(f: WindField, live: LivePoint[] | null, hour: numbe
         dN: Number.isFinite(dirN) ? dirN : 0,
         sp: Number.isFinite(sp) ? sp : 0,
         cls,
-        len: Math.min(1100, Math.max(300, 140 + sp * 18)),
-        w: Math.min(14, Math.max(8, Math.round(6 + sp / 4))),
-        speedVis: Math.min(30, Math.max(3.5, sp * 0.55)),
+        len: Math.min(1300, Math.max(380, 170 + sp * 20)),
+        w: Math.min(20, Math.max(12, Math.round(8 + sp / 3))),
+        speedVis: Math.min(34, Math.max(4.5, sp * 0.62)),
         span: f.step * 2.2,
       });
     }

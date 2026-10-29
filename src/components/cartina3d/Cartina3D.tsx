@@ -10,14 +10,18 @@
  * - i DECOLLI con pin cliccabili e un PARAPENDIO in volo che fluttua sopra ognuno
  * - il CAMPO VENTO su tutta la valle: griglia fitta di frecce GRANDI in movimento
  *   continuo, colorate per VELOCITÀ (scala Windy: verde 5-10 · giallo/arancio 10-20 ·
- *   fuoco 20-30 · rosso 30-40 · viola 40+), con frecce ROSSE nelle zone di SOTTOVENTO
- *   ed ETICHETTE con velocità, direzione e quota
- * - PREVISIONI a fasce orarie per le giornate a venire (Oggi → +3): la barra sotto
- *   la toolbar seleziona giorno e ora per TUTTA la scena 3D (campo, quota, termiche)
- * - i VENTI IN QUOTA (2000 → 4000 m): più il vento è forte più il colore va
+ *   fuoco 20-30 · rosso 30-40 · viola 40+), con frecce ROSSE nelle zone di SOTTOVENTO,
+ *   OMBRA proiettata sotto ogni freccia (profondità 3D) ed ETICHETTE con velocità,
+ *   direzione e quota
+ * - PREVISIONI a fasce orarie per 5 giorni (6→21 h, cliccabili sopra la scena): la
+ *   barra guida giorno e ora su TUTTA la vista 3D (campo, quota, termiche); se il
+ *   modello non risponde una STIMA dal sounding mantiene le fasce cliccabili
+ * - i VENTI IN QUOTA dalla quota del DECOLLO SCELTO fino a 4000 m con passi di
+ *   250 m (o la colonna completa «tutte»): più il vento è forte più il colore va
  *   dall'arancio fuoco al VIOLA, in movimento continuo
- * - le TERMICHE DOVE STACCANO (stile XCTherm, thermal.kk7.ch): aloni pulsanti
- *   sulle celle sole×pendenza, bolle che risalgono, colore = forza (m/s)
+ * - le TERMICHE come COLONNE D'ARIA che salgono: CONO giallo intenso trasparente
+ *   in 3D fino alla base delle nuvole (LCL dal sounding), con bolle luminose che
+ *   risalgono a spirale, stile XCTherm (thermal.kk7.ch)
  * - NAVIGAZIONE stile Google Earth: bussola trascinabile a 360°, rotazione, tilt,
  *   zoom, vista dall'alto 2D, ritorno al decollo e TASTO SCHERMO INTERO
  * - resa in ALTA DEFINIZIONE: render alla risoluzione fisica del display
@@ -37,19 +41,27 @@ import type { CartinaDecollo } from "@/components/CartinaMeteo";
 import { windAtAltitude } from "@/components/CartinaMeteo";
 import type { HourlyPoint } from "@/services/threeSourceWeather";
 import { createTerrariumTerrainProvider, sampleTerrainHeights } from "./terrain";
-import { buildWindField, computeFlows, fetchForecast, heightAt, liveAt, speedColor } from "./winds";
+import { buildFallbackForecast, buildWindField, computeFlows, fetchForecast, heightAt, liveAt, speedColor } from "./winds";
 import type { FlowCell, ForecastData, WindField } from "./winds";
-import { computeTriggers, thermalColor, THERMAL_SCALE } from "./thermals";
+import { cloudBaseFrom, computeTriggers } from "./thermals";
 import type { TriggerCell } from "./thermals";
-import { gliderImage, pinImage } from "./sprites";
+import { bubbleImage, gliderImage, pinImage } from "./sprites";
 import Nav3D from "./Nav3D";
 import "./cartina3d.css";
 
 type CesiumNs = typeof import("cesium");
 type ViewerNs = import("cesium").Viewer;
 
-const QUOTAS = [2000, 2500, 3000, 3500, 4000] as const;
-type Quota3D = (typeof QUOTAS)[number];
+const QUOTA_STEP = 250;
+const QUOTA_MAX = 4000;
+
+/** Livelli di quota dei venti: dal DECOLLO SCELTO fino a 4000 m, passo 250 m. */
+function levelsFor(elev: number | null | undefined): number[] {
+  const a = Math.max(0, Math.round(Number(elev ?? 1200)));
+  const out: number[] = [];
+  for (let q = a; q <= QUOTA_MAX; q += QUOTA_STEP) out.push(q);
+  return out.length ? out : [Math.min(a, QUOTA_MAX)];
+}
 
 const DIR8 = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"];
 function dir8(deg: number | null | undefined): string {
@@ -102,7 +114,9 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   const [tilesLoaded, setTilesLoaded] = useState(false);
 
   const [siteId, setSiteId] = useState<string>("");
-  const [quota, setQuota] = useState<Quota3D | 0>(2500);
+  /* quota dei venti: null = automatico (primo livello sopra il decollo),
+     0 = nascosti, -1 = colonna completa decollo→4000, n = quota precisa */
+  const [quota, setQuota] = useState<number | null>(null);
   const [surface, setSurface] = useState(true);
   const [therm, setTherm] = useState(true); // termiche: dove staccano
 
@@ -111,6 +125,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   const [fieldBusy, setFieldBusy] = useState(false);
   const [forecast, setForecast] = useState<ForecastData | null>(null);
   const [fcAt, setFcAt] = useState<string>("");
+  const [fcSim, setFcSim] = useState(false); // true = previsioni di stima (modello offline)
   /* giorno e ora selezionati: lo slider principale guida «oggi», le fasce
      orarie della barra previsioni selezionano giorno e ora per tutto il 3D */
   const [dayIdx, setDayIdx] = useState(0);
@@ -139,10 +154,17 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   const anabatic = selHour >= 9 && selHour <= 18;
   const effDate = forecast?.days[dayIdx]?.date ?? null;
   const dayLabel = forecast?.days[dayIdx]?.label ?? (dayIdx === 0 ? "Oggi" : `+${dayIdx} gg`);
+  const levelList = useMemo(() => levelsFor(active?.elevation_m), [active?.elevation_m]);
+  const effQuota = quota === null ? levelList[0] ?? 0 : quota;
 
   useEffect(() => {
     if (selectedId) setSiteId(selectedId);
   }, [selectedId]);
+
+  /* cambiando decollo i livelli quota cambiano: riparto dall'automatico */
+  useEffect(() => {
+    setQuota(null);
+  }, [active?.id]);
 
   /* l'ora del sito (slider principale della pagina) guida il 3D per «oggi» */
   useEffect(() => {
@@ -161,8 +183,10 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     }
     return hw.find((p) => hourOf(p) === selHour) ?? hw[0] ?? null;
   }, [active, selHour, effDate]);
+  const activePointRef = useRef<HourlyPoint | null>(null);
+  activePointRef.current = activePoint;
 
-  /* venti del campo per il giorno+ora richiesti (dalla risposta bulk a 4 giorni) */
+  /* venti del campo per il giorno+ora richiesti (dalla risposta bulk a 5 giorni) */
   const live = useMemo(() => (forecast ? liveAt(forecast, effDate, selHour) : null), [forecast, effDate, selHour]);
   const flows = useMemo<FlowCell[]>(() => (field ? computeFlows(field, live, selHour) : []), [field, live, selHour]);
 
@@ -171,6 +195,18 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     () => (field ? computeTriggers(field, selHour, activePoint?.rad ?? null) : []),
     [field, selHour, activePoint],
   );
+  /* punto aerologico dei venti in quota: col sounding reale, oppure dal campo
+     (stima offline) — così HUD e frecce in quota dicono sempre la stessa cosa */
+  const quotaPoint = useMemo<HourlyPoint | null>(
+    () =>
+      activePoint ??
+      (live
+        ? ({ time: "", wind: live[4]?.ws ?? null, dir: live[4]?.wd ?? null } as HourlyPoint)
+        : null),
+    [activePoint, live],
+  );
+  /* i coni disegnati: i 16 stacchi più forti (l'HUD deve dire il numero vero) */
+  const nCones = useMemo(() => Math.min(16, triggers.length), [triggers.length]);
 
   /* carica la scena solo quando la sezione si avvicina al viewport */
   useEffect(() => {
@@ -382,7 +418,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       let lastG: import("cesium").Cartesian3 | null = null;
       const phaseG = (d.lat * 577.7) % (Math.PI * 2);
       const gl = viewer.entities.add({
-        position: new Cesium.CallbackProperty(() => {
+        position: new Cesium.CallbackPositionProperty(() => {
           const t = performance.now() / 1000;
           const alt = (d.elevation_m ?? 0) + 250 + 22 * Math.sin(t * 0.85 + phaseG);
           const p = Cesium.Cartesian3.fromDegrees(d.lon, d.lat, alt);
@@ -457,9 +493,10 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     };
   }, [status, active, demEpoch]);
 
-  /* ---------- PREVISIONI (oggi + 3 giorni): Open-Meteo bulk, refresh 15 min ----------
+  /* ---------- PREVISIONI (oggi + 4 giorni): Open-Meteo bulk, refresh 15 min ----------
      Una sola richiesta alimenta il campo suolo per qualunque giorno/ora e la
-     barra delle fasce orarie; su errore transitorio riprova con backoff. */
+     barra delle fasce orarie; su errore transitorio riprova con backoff e nel
+     frattempo mostro una STIMA dal sounding, così le fasce restano cliccabili. */
   useEffect(() => {
     if (status !== "ready" || !field) return;
     let cancelled = false;
@@ -470,9 +507,17 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         const fc = await fetchForecast(field);
         if (cancelled) return;
         setForecast(fc);
+        setFcSim(false);
         setFcAt(new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }));
       } catch (e) {
         console.warn("[c3d] previsioni vento non disponibili:", String(e).slice(0, 100));
+        if (!cancelled && retries === 0) {
+          /* stima immediata dal sounding: fasce orarie sempre operative */
+          const ap = activePointRef.current;
+          setForecast(buildFallbackForecast(ap?.wind ?? 8, ap?.dir ?? 270));
+          setFcSim(true);
+          setFcAt(new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }));
+        }
         if (cancelled || retries >= 4) return;
         retries += 1;
         retryT = window.setTimeout(() => {
@@ -489,7 +534,9 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     };
   }, [status, field]);
 
-  /* ---------- CAMPO VENTO ANIMATO: frecce grandi che attraversano la valle ---------- */
+  /* ---------- CAMPO VENTO ANIMATO: frecce grandi che attraversano la valle ----------
+     Ogni freccia ha un'OMBRA proiettata sotto (statica, quindi economica):
+     la freccia sembra librata sopra il terreno e la scena acquista profondità. */
   useEffect(() => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
@@ -497,22 +544,45 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     clear(surfRef);
     if (!surface) return;
 
-    surfRef.current = flows.map((c, k) => {
+    const finite = (p: import("cesium").Cartesian3): boolean =>
+      Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z);
+
+    /* OMBRE: geometria fissa a 14 m sul terreno, leggermente allargata e
+       scura — con la freccia che scorre sopra crea l'effetto 3D richiesto */
+    const shadows = flows.map((c) => {
+      const half = c.len * 0.55;
+      const p0 = Cesium.Cartesian3.fromDegrees(c.lon - (c.dE * half) / field.mLon, c.lat - (c.dN * half) / field.mLat, c.h + 14);
+      const p1 = Cesium.Cartesian3.fromDegrees(c.lon + (c.dE * half) / field.mLon, c.lat + (c.dN * half) / field.mLat, c.h + 14);
+      return viewer.entities.add({
+        polyline: {
+          positions: finite(p0) && finite(p1) ? [p0, p1] : [Cesium.Cartesian3.ZERO, Cesium.Cartesian3.ZERO],
+          width: c.w + 3,
+          material: new Cesium.PolylineArrowMaterialProperty(
+            Cesium.Color.fromCssColorString("#0a1626").withAlpha(0.4),
+          ),
+        },
+      });
+    });
+
+    /* CORPI: frecce larghe 12-20 px che deriva lungo il vento con un leggero
+       ondeggiare verticale (vita 3D senza costi extra) */
+    const bodies = flows.map((c, k) => {
       const phase = (k * 137.7) % c.span;
       let last: import("cesium").Cartesian3[] | null = null;
-      const posAt = (off: number): import("cesium").Cartesian3 => {
+      const posAt = (off: number, lift: number): import("cesium").Cartesian3 => {
         const la = c.lat + (c.dN * off) / field.mLat;
         const lo = c.lon + (c.dE * off) / field.mLon;
-        return Cesium.Cartesian3.fromDegrees(lo, la, heightAt(field, la, lo) + 60);
+        return Cesium.Cartesian3.fromDegrees(lo, la, heightAt(field, la, lo) + lift);
       };
       return viewer.entities.add({
         polyline: {
           positions: new Cesium.CallbackProperty(() => {
             const t = performance.now() / 1000;
             const off = ((t * c.speedVis + phase) % c.span) - c.span / 2;
-            const calc = [posAt(off - c.len / 2), posAt(off + c.len / 2)];
+            const lift = 58 + 7 * Math.sin(t * 1.15 + k * 0.73);
+            const calc = [posAt(off - c.len / 2, lift), posAt(off + c.len / 2, lift)];
             /* mai posizioni NaN a Cesium: senza questo il render si ferma */
-            if (calc.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z))) {
+            if (calc.every(finite)) {
               last = calc;
               return calc;
             }
@@ -520,11 +590,12 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           }, false),
           width: c.w,
           material: new Cesium.PolylineArrowMaterialProperty(
-            Cesium.Color.fromCssColorString(c.cls === "lee" ? "#ff4d4f" : speedColor(c.sp)).withAlpha(0.95),
+            Cesium.Color.fromCssColorString(c.cls === "lee" ? "#ff4d4f" : speedColor(c.sp)).withAlpha(0.97),
           ),
         },
       });
     });
+    surfRef.current = [...shadows, ...bodies];
 
     /* ETICHETTE del campo: velocità · direzione · quota su una sotto-griglia
        sparsa (≈21) così restano leggibili senza coprire le frecce */
@@ -552,48 +623,38 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     surfRef.current = surfRef.current.concat(labs);
   }, [status, field, flows, surface]);
 
-  /* ---------- venti meteo alla quota scelta (2000 → 4000 m): colore = VELOCITÀ ----------
-     più il vento è forte più va dall'arancio fuoco verso il viola (scala Windy) */
+  /* ---------- venti in quota: dal DECOLLO SCELTO a 4000 m, passi di 250 m ----------
+     Colore = VELOCITÀ (scala Windy): più il vento è forte più va dall'arancio
+     fuoco al VIOLA. «Tutte» mostra l'intera colonna, un livello alla volta si
+     esplora con i chip. Frecce nascoste dove il terreno supera la quota. */
   useEffect(() => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
     if (status !== "ready" || !Cesium || !viewer || !active) return;
     clear(windRef);
-    if (quota === 0) return;
+    if (effQuota === 0) return;
 
-    const wind = windAtAltitude(activePoint, quota, activePoint?.wind ?? null, activePoint?.dir ?? null);
-    if (wind.ws == null || wind.wd == null) return;
-    /* NaN non è null: con sounding parziali il valore può arrivare NaN e
-       posizioni NaN fermano il rendering di tutta la scena */
-    if (!Number.isFinite(wind.ws) || !Number.isFinite(wind.wd)) return;
+    const mLat = 111320;
+    const mLon = 111320 * Math.cos((active.lat * Math.PI) / 180);
+
+    /* ancore: anelli attorno al decollo — per «tutte» un anello più stretto,
+       le stesse per qualunque livello (il DEM si campiona una volta sola) */
+    const anchors: { lon: number; lat: number }[] = [];
+    const rings = effQuota === -1 ? [3000] : [2400, 4600];
+    const per = effQuota === -1 ? 10 : 16;
+    for (const r of rings) {
+      for (let a = 0; a < per; a++) {
+        const th = (a / per) * Math.PI * 2;
+        anchors.push({ lon: active.lon + (Math.sin(th) * r) / mLon, lat: active.lat + (Math.cos(th) * r) / mLat });
+      }
+    }
+    const levels = effQuota === -1 ? levelList : [effQuota];
 
     let cancelled = false;
     (async () => {
-      const wsK = wind.ws as number;
-      const dirTo = ((wind.wd + 180) % 360) * (Math.PI / 180); // dove SPINGE il vento
-      const dE = Math.sin(dirTo);
-      const dN = Math.cos(dirTo);
-      const L = Math.min(1800, Math.max(500, wsK * 55));
-      const speed = Math.min(42, Math.max(7, (wsK / 3.6) * 3.2)); // drift esagerato ×3 per la lettura
-      const span = Math.max(2200, L * 4);
-      const color = Cesium.Color.fromCssColorString(speedColor(wsK));
-      const mLat = 111320;
-      const mLon = 111320 * Math.cos((active.lat * Math.PI) / 180);
-
-      /* due anelli attorno al decollo; le frecce dove il terreno supera la quota restano nascoste */
-      const anchors: { lon: number; lat: number }[] = [];
-      for (const r of [2400, 4600]) {
-        for (let a = 0; a < 16; a++) {
-          const th = (a / 16) * Math.PI * 2;
-          const e = Math.sin(th) * r;
-          const n = Math.cos(th) * r;
-          anchors.push({ lon: active.lon + e / mLon, lat: active.lat + n / mLat });
-        }
-      }
-      const pos = anchors.map((p) => ({ lat: p.lat, lon: p.lon }));
       let hs: number[];
       try {
-        hs = await sampleTerrainHeights(pos);
+        hs = await sampleTerrainHeights(anchors);
         demRetries.current = 0;
       } catch (e) {
         console.warn("[c3d] campionamento venti non riuscito:", String(e).slice(0, 120));
@@ -606,76 +667,186 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         return;
       }
       if (cancelled || viewerRef.current !== viewer) return;
-      const visible = anchors.filter((_, i) => hs[i] + 90 < quota);
 
-      windRef.current = visible.map((p, k) => {
-        const phase = (k * 197) % span;
-        let last: import("cesium").Cartesian3[] | null = null;
-        return viewer.entities.add({
-          polyline: {
-            positions: new Cesium.CallbackProperty(() => {
-              const t = performance.now() / 1000;
-              const off = ((t * speed + phase) % span) - span / 2;
-              const cl = p.lat + (dN * off) / mLat;
-              const co = p.lon + (dE * off) / mLon;
-              const calc = [
-                Cesium.Cartesian3.fromDegrees(co - (dE * L * 0.5) / mLon, cl - (dN * L * 0.5) / mLat, quota),
-                Cesium.Cartesian3.fromDegrees(co + (dE * L * 0.5) / mLon, cl + (dN * L * 0.5) / mLat, quota),
-              ];
-              if (calc.every((c) => Number.isFinite(c.x) && Number.isFinite(c.y) && Number.isFinite(c.z))) {
-                last = calc;
-                return calc;
-              }
-              return last ?? [Cesium.Cartesian3.ZERO, Cesium.Cartesian3.ZERO];
-            }, false),
-            width: 11,
-            material: new Cesium.PolylineArrowMaterialProperty(color.withAlpha(0.95)),
-          },
+      const added: import("cesium").Entity[] = [];
+      levels.forEach((lvl, li) => {
+        const wind = windAtAltitude(quotaPoint, lvl, quotaPoint?.wind ?? null, quotaPoint?.dir ?? null);
+        if (wind.ws == null || wind.wd == null) return;
+        /* NaN non è null: con sounding parziali il valore può arrivare NaN e
+           posizioni NaN fermano il rendering di tutta la scena */
+        if (!Number.isFinite(wind.ws) || !Number.isFinite(wind.wd)) return;
+        const wsK = wind.ws as number;
+        const dirTo = ((wind.wd + 180) % 360) * (Math.PI / 180); // dove SPINGE il vento
+        const dE = Math.sin(dirTo);
+        const dN = Math.cos(dirTo);
+        const L = Math.min(1900, Math.max(600, wsK * (effQuota === -1 ? 46 : 55)));
+        const speed = Math.min(42, Math.max(8, (wsK / 3.6) * 3.4)); // drift esagerato ×3.4 per la lettura
+        const span = Math.max(2400, L * 4);
+        const color = Cesium.Color.fromCssColorString(speedColor(wsK));
+        const wpx = effQuota === -1 ? 9 : 12;
+        const visible = anchors.filter((_, i) => hs[i] + 90 < lvl);
+
+        visible.forEach((p, k) => {
+          const phase = ((k + li * 7) * 197) % span;
+          let last: import("cesium").Cartesian3[] | null = null;
+          added.push(
+            viewer.entities.add({
+              polyline: {
+                positions: new Cesium.CallbackProperty(() => {
+                  const t = performance.now() / 1000;
+                  const off = ((t * speed + phase) % span) - span / 2;
+                  const cl = p.lat + (dN * off) / mLat;
+                  const co = p.lon + (dE * off) / mLon;
+                  const calc = [
+                    Cesium.Cartesian3.fromDegrees(co - (dE * L * 0.5) / mLon, cl - (dN * L * 0.5) / mLat, lvl),
+                    Cesium.Cartesian3.fromDegrees(co + (dE * L * 0.5) / mLon, cl + (dN * L * 0.5) / mLat, lvl),
+                  ];
+                  if (calc.every((c) => Number.isFinite(c.x) && Number.isFinite(c.y) && Number.isFinite(c.z))) {
+                    last = calc;
+                    return calc;
+                  }
+                  return last ?? [Cesium.Cartesian3.ZERO, Cesium.Cartesian3.ZERO];
+                }, false),
+                width: wpx,
+                material: new Cesium.PolylineArrowMaterialProperty(color.withAlpha(0.95)),
+              },
+            }),
+          );
+        });
+
+        /* ETICHETTE quota: velocità · direzione · quota (livello singolo: una su
+           quattro; colonna «tutte»: una per livello, altrimenti illeggibile) */
+        const fromQ = ((wind.wd % 360) + 360) % 360;
+        const labK = effQuota === -1 ? [0] : [1, 5, 9, 13];
+        visible.forEach((p, k) => {
+          if (!labK.includes(k)) return;
+          added.push(
+            viewer.entities.add({
+              position: Cesium.Cartesian3.fromDegrees(p.lon, p.lat, lvl),
+              label: {
+                text: `${Math.round(wsK)} km/h · da ${dir8(fromQ)} · ${lvl} m`,
+                font: "600 11px 'Barlow Condensed','Manrope',sans-serif",
+                fillColor: Cesium.Color.fromCssColorString("#eaf6ff"),
+                showBackground: true,
+                backgroundColor: Cesium.Color.fromCssColorString("rgba(8,18,32,0.78)"),
+                backgroundPadding: new Cesium.Cartesian2(5, 3),
+                verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                pixelOffset: new Cesium.Cartesian2(0, -8),
+                distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 30000),
+                disableDepthTestDistance: Number.POSITIVE_INFINITY,
+              },
+            }),
+          );
         });
       });
-
-      /* ETICHETTE quota: velocità · direzione · quota (una su quattro) */
-      const fromQ = ((wind.wd % 360) + 360) % 360;
-      const qlabs = visible
-        .filter((_, k) => k % 4 === 1)
-        .map((p) =>
-          viewer.entities.add({
-            position: Cesium.Cartesian3.fromDegrees(p.lon, p.lat, quota),
-            label: {
-              text: `${Math.round(wsK)} km/h · da ${dir8(fromQ)} · ${quota} m`,
-              font: "600 11px 'Barlow Condensed','Manrope',sans-serif",
-              fillColor: Cesium.Color.fromCssColorString("#eaf6ff"),
-              showBackground: true,
-              backgroundColor: Cesium.Color.fromCssColorString("rgba(8,18,32,0.78)"),
-              backgroundPadding: new Cesium.Cartesian2(5, 3),
-              verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-              pixelOffset: new Cesium.Cartesian2(0, -8),
-              distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 30000),
-              disableDepthTestDistance: Number.POSITIVE_INFINITY,
-            },
-          }),
-        );
-      windRef.current = windRef.current.concat(qlabs);
+      windRef.current = added;
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [status, active, activePoint, quota, demEpoch]);
+  }, [status, active, activePoint, quotaPoint, effQuota, levelList, demEpoch]);
 
-  /* ---------- TERMICHE: dove staccano (stile XCTherm) ----------
-     alone pulsante sul punto di stacco + bolla che risale la colonna;
-     il colore dice la forza (azzurro → rosso), l'etichetta i m/s */
+  /* ---------- TERMICHE: COLONNE D'ARIA CHE SALGONO (stile XCTherm) ----------
+     Cono giallo intenso TRASPARENTE in 3D, che si allarga verso l'alto come
+     l'aria che si espande risalendo, dal punto di stacco fino alla base delle
+     nuvole (LCL dal sounding). Dentro: bolle luminose che risalgono a spirale;
+     l'etichetta dice la forza in m/s. Algoritmo: sole × pendenza × radiazione. */
   useEffect(() => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
-    if (status !== "ready" || !Cesium || !viewer || !field) return;
+    if (status !== "ready" || !Cesium || !viewer || !field || !active) return;
     clear(thermRef);
     if (!therm || !triggers.length) return;
 
+    const mLat = 111320;
+    const mLon = 111320 * Math.cos((active.lat * Math.PI) / 180);
+    const YELLOW = Cesium.Color.fromCssColorString("#ffd60a");
+    const bubble = bubbleImage();
+    /* tetto fisico della bolla: base delle nuvole (LCL), altrimenti 2400 m */
+    const cb = cloudBaseFrom(activePoint?.temp, activePoint?.dew, active.elevation_m);
+    /* i coni restano leggibili: solo i 16 stacchi più forti */
+    const top16 = [...triggers].sort((a, b) => b.strength - a.strength).slice(0, 16);
+
     const parts: import("cesium").Entity[] = [];
-    triggers.forEach((tc, k) => {
-      const col = Cesium.Color.fromCssColorString(thermalColor(tc.strength));
+    top16.forEach((tc, k) => {
+      const baseH = tc.h;
+      const topH = Math.min(4000, Math.max(baseH + 700, cb != null ? Math.min(cb, baseH + 3400) : baseH + 2400));
+      const len = Math.max(600, topH - baseH);
+      const rBot = 150;
+      const rTop = 300 + Math.min(240, tc.strength * 60);
+
+      /* IL CONO: cilindro rastremato trasparente con respiro lento di luce,
+         doppio strato (nucleo più saturo) per leggersi anche dall'alto */
+      parts.push(
+        viewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(tc.lon, tc.lat, baseH + len / 2),
+          cylinder: {
+            length: len,
+            topRadius: rTop,
+            bottomRadius: rBot,
+            slices: 24,
+            material: new Cesium.ColorMaterialProperty(
+              new Cesium.CallbackProperty(() => {
+                const t = performance.now() / 1000;
+                return YELLOW.withAlpha(0.13 + 0.09 * (0.5 + 0.5 * Math.sin(t * 0.85 + k * 1.9)));
+              }, false),
+            ),
+          },
+        }),
+      );
+      parts.push(
+        viewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(tc.lon, tc.lat, baseH + len / 2),
+          cylinder: {
+            length: len * 0.995,
+            topRadius: rTop * 0.68,
+            bottomRadius: rBot * 0.68,
+            slices: 24,
+            material: new Cesium.ColorMaterialProperty(
+              new Cesium.CallbackProperty(() => {
+                const t = performance.now() / 1000;
+                return YELLOW.withAlpha(0.1 + 0.12 * (0.5 + 0.5 * Math.sin(t * 0.85 + k * 1.9 + 0.9)));
+              }, false),
+            ),
+          },
+        }),
+      );
+
+      /* LE BOLLE: tre globi di aria calda che risalgono a spirale nel cono */
+      for (let b = 0; b < 3; b++) {
+        const ph = k * 13.7 + b * 2.9;
+        const riseK = 0.13 + b * 0.035;
+        const spin = 0.9 + b * 0.3;
+        let lastB: import("cesium").Cartesian3 | null = null;
+        parts.push(
+          viewer.entities.add({
+            position: new Cesium.CallbackPositionProperty(() => {
+              const t = performance.now() / 1000;
+              const frac = (t * riseK + ph) % 1;
+              const r = (rBot + (rTop - rBot) * frac) * 0.85;
+              const a = t * spin + ph * 2;
+              const alt = baseH + 40 + frac * (len - 120);
+              const la = tc.lat + (Math.cos(a) * r) / mLat;
+              const lo = tc.lon + (Math.sin(a) * r) / mLon;
+              const p = Cesium.Cartesian3.fromDegrees(lo, la, alt);
+              if (Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z)) {
+                lastB = p;
+                return p;
+              }
+              return lastB ?? Cesium.Cartesian3.ZERO;
+            }, false),
+            billboard: {
+              image: bubble,
+              scale: 0.4 + 0.08 * (b % 2),
+              scaleByDistance: new Cesium.NearFarScalar(2500, 0.5, 30000, 0.24),
+              distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 26000),
+            },
+          }),
+        );
+      }
+
+      /* alone a terra sul punto di stacco */
       const r = 70 + tc.strength * 16;
       parts.push(
         viewer.entities.add({
@@ -685,7 +856,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
             semiMinorAxis: r,
             material: new Cesium.ColorMaterialProperty(
               new Cesium.CallbackProperty(
-                () => col.withAlpha(0.26 + 0.16 * Math.sin(performance.now() / 700 + k * 1.7)),
+                () => YELLOW.withAlpha(0.24 + 0.14 * Math.sin(performance.now() / 700 + k * 1.7)),
                 false,
               ),
             ),
@@ -694,49 +865,22 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           },
         }),
       );
-      const phase = (k * 97.3) % 420;
-      let lastPos: import("cesium").Cartesian3[] | null = null;
-      parts.push(
-        viewer.entities.add({
-          polyline: {
-            positions: new Cesium.CallbackProperty(() => {
-              const t = performance.now() / 1000;
-              const off = (t * 55 + phase) % 420;
-              const calc = [
-                Cesium.Cartesian3.fromDegrees(tc.lon, tc.lat, tc.h + off),
-                Cesium.Cartesian3.fromDegrees(tc.lon, tc.lat, tc.h + off + 120),
-              ];
-              if (calc.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z))) {
-                lastPos = calc;
-                return calc;
-              }
-              return lastPos ?? [Cesium.Cartesian3.ZERO, Cesium.Cartesian3.ZERO];
-            }, false),
-            width: 2.5,
-            material: new Cesium.ColorMaterialProperty(
-              new Cesium.CallbackProperty(
-                () => col.withAlpha(Math.max(0.08, 0.6 * (1 - (((performance.now() / 1000) * 55 + phase) % 420) / 420))),
-                false,
-              ),
-            ),
-          },
-        }),
-      );
     });
+
     /* forza scritta sulle termiche più forti */
-    triggers
-      .filter((t) => t.strength >= 3.4)
+    top16
+      .filter((t) => t.strength >= 3.2)
       .slice(0, 8)
       .forEach((tc) => {
         parts.push(
           viewer.entities.add({
             position: Cesium.Cartesian3.fromDegrees(tc.lon, tc.lat, tc.h + 540),
             label: {
-              text: `${tc.strength.toFixed(1)} m/s`,
+              text: `↑ ${tc.strength.toFixed(1)} m/s`,
               font: "700 11px 'JetBrains Mono',monospace",
-              fillColor: Cesium.Color.fromCssColorString("#ffe9c9"),
+              fillColor: Cesium.Color.fromCssColorString("#ffe9a0"),
               showBackground: true,
-              backgroundColor: Cesium.Color.fromCssColorString("rgba(30,16,8,0.74)"),
+              backgroundColor: Cesium.Color.fromCssColorString("rgba(40,26,4,0.78)"),
               backgroundPadding: new Cesium.Cartesian2(5, 3),
               distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 14000),
               disableDepthTestDistance: Number.POSITIVE_INFINITY,
@@ -745,7 +889,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         );
       });
     thermRef.current = parts;
-  }, [status, field, triggers, therm]);
+  }, [status, field, triggers, therm, activePoint, active]);
 
   /* ---------- SCHERMO INTERO ---------- */
   useEffect(() => {
@@ -790,6 +934,18 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   const toggleFullscreen = () => {
     const el = secRef.current;
     if (!el) return;
+    /* fallback CSS attivo: il tasto deve USCIRE, non riprovare il nativo */
+    if (fsFallback) {
+      setFsFallback(false);
+      window.setTimeout(() => {
+        try {
+          viewerRef.current?.resize();
+        } catch {
+          /* opzionale */
+        }
+      }, 80);
+      return;
+    }
     const doc = document as Document & { webkitFullscreenElement?: Element | null; webkitExitFullscreen?: () => void };
     const req = (el as HTMLElement & { webkitRequestFullscreen?: () => void }).webkitRequestFullscreen;
     if (!document.fullscreenElement && !doc.webkitFullscreenElement) {
@@ -801,6 +957,12 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         el.requestFullscreen()
           .then(() => {
             settled = true;
+            /* alcuni ambienti (headless/WebView) risolvono la promessa senza
+               applicare il fullscreen: dopo un attimo di grazie copro col
+               fallback CSS, così il tasto funziona ovunque */
+            window.setTimeout(() => {
+              if (!document.fullscreenElement && !doc.webkitFullscreenElement) setFsFallback(true);
+            }, 350);
           })
           .catch(() => {
             if (!settled) setFsFallback(true);
@@ -864,23 +1026,34 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
             <span className="c3d-quotas-k">Quota</span>
             <button
               type="button"
-              className={"c3d-q" + (quota === 0 ? " is-on" : "")}
+              className={"c3d-q" + (effQuota === 0 ? " is-on" : "")}
               onClick={() => setQuota(0)}
               data-testid="c3d-q-off"
             >
               off
             </button>
-            {QUOTAS.map((q) => (
-              <button
-                key={q}
-                type="button"
-                className={"c3d-q" + (quota === q ? " is-on" : "")}
-                onClick={() => setQuota(q)}
-                data-testid={`c3d-q-${q}`}
-              >
-                {q}
-              </button>
-            ))}
+            <button
+              type="button"
+              className={"c3d-q" + (effQuota === -1 ? " is-on" : "")}
+              onClick={() => setQuota(-1)}
+              data-testid="c3d-q-all"
+              title={`Tutta la colonna dei venti: da ${levelList[0] ?? 0} a ${QUOTA_MAX} m, passi di ${QUOTA_STEP} m`}
+            >
+              tutte
+            </button>
+            <div className="c3d-quotas-scroll">
+              {levelList.map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  className={"c3d-q" + (effQuota === q ? " is-on" : "")}
+                  onClick={() => setQuota(q)}
+                  data-testid={`c3d-q-${q}`}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
           </div>
           <label className="c3d-toggle">
             <Switch checked={surface} onCheckedChange={setSurface} aria-label="Campo vento suolo" />
@@ -908,6 +1081,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         fc={forecast}
         dayIdx={dayIdx}
         selHour={selHour}
+        sim={fcSim}
         onPick={(di, h) => {
           setDayIdx(di);
           setSelHour(h);
@@ -925,12 +1099,15 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           anabatic={anabatic}
           fieldBusy={fieldBusy}
           fcAt={fcAt}
+          fcSim={fcSim}
           dayLabel={dayLabel}
           selHour={selHour}
-          quota={quota}
+          quota={effQuota}
+          baseLevel={levelList[0] ?? 0}
           therm={therm}
           nTriggers={triggers.length}
-          wind={quota > 0 ? windAtAltitude(activePoint, quota, activePoint?.wind ?? null, activePoint?.dir ?? null) : null}
+          nCones={nCones}
+          wind={effQuota > 0 ? windAtAltitude(quotaPoint, effQuota, quotaPoint?.wind ?? null, quotaPoint?.dir ?? null) : null}
         />
 
         {/* navigazione stile Google Earth */}
@@ -979,11 +1156,8 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           <i className="c3d-sw is-lee" aria-hidden="true" /> frecce rosse = zona di sottovento
         </span>
         <span>
-          termiche dove staccano:
-          {THERMAL_SCALE.map((s) => (
-            <i key={s.c} className="c3d-dot" style={{ background: s.c }} aria-hidden="true" />
-          ))}
-          forza in m/s
+          <i className="c3d-dot" style={{ background: "#ffd60a" }} aria-hidden="true" />
+          cono giallo = colonna di aria che sale · forza scritta in m/s
         </span>
       </div>
     </section>
@@ -997,11 +1171,14 @@ function Hud({
   anabatic,
   fieldBusy,
   fcAt,
+  fcSim,
   dayLabel,
   selHour,
   quota,
+  baseLevel,
   therm,
   nTriggers,
+  nCones,
   wind,
 }: {
   ready: boolean;
@@ -1009,11 +1186,14 @@ function Hud({
   anabatic: boolean;
   fieldBusy: boolean;
   fcAt: string;
+  fcSim: boolean;
   dayLabel: string;
   selHour: number;
-  quota: Quota3D | 0;
+  quota: number;
+  baseLevel: number;
   therm: boolean;
   nTriggers: number;
+  nCones: number;
   wind: { ws: number | null; wd: number | null } | null;
 }) {
   if (!ready) return null;
@@ -1024,27 +1204,29 @@ function Hud({
         {fieldBusy
           ? "campo vento: preparo la griglia del terreno…"
           : fcAt
-            ? `${dayLabel} · ore ${String(selHour).padStart(2, "0")}:00 · vento e previsioni agg. ${fcAt}`
+            ? `${dayLabel} · ore ${String(selHour).padStart(2, "0")}:00 · ${fcSim ? "previsioni di stima (modello offline) agg. " : "vento e previsioni agg. "}${fcAt}`
             : "vento e previsioni: dati in arrivo…"}
       </span>
       <span className="c3d-hud-v" data-testid="c3d-hud-surface">
         {surface
           ? anabatic
-            ? "colore = velocità · rosso = sottovento · bolle = termiche che risalgono"
+            ? "colore = velocità · rosso = sottovento · cono giallo = colonna d'aria che sale"
             : "colore = velocità · rosso = sottovento · aria scende i pendii (catabatica)"
           : "venti suolo nascosti"}
       </span>
       <span className="c3d-hud-v" data-testid="c3d-hud-wind">
         {quota === 0
           ? "Venti in quota nascosti"
-          : wind?.ws != null && wind?.wd != null
-            ? `Vento a ${quota} m · ${Math.round(wind.ws)} km/h · da ${dir8(wind.wd)}`
-            : `Vento a ${quota} m · dati in arrivo…`}
+          : quota === -1
+            ? `Colonna venti: da ${baseLevel} a 4000 m (passi di 250)`
+            : wind?.ws != null && wind?.wd != null
+              ? `Vento a ${quota} m · ${Math.round(wind.ws)} km/h · da ${dir8(wind.wd)}`
+              : `Vento a ${quota} m · dati in arrivo…`}
       </span>
       <span className="c3d-hud-v" data-testid="c3d-hud-therm">
         {therm
           ? nTriggers > 0
-            ? `${nTriggers} stacchi termici: colore = forza (m/s)`
+            ? `${nTriggers} stacchi termici · coni gialli sulle ${nCones} colonne più forti (forza in m/s)`
             : "termiche: nessuno stacco a quest'ora"
           : "termiche nascoste"}
       </span>
@@ -1052,24 +1234,29 @@ function Hud({
   );
 }
 
-/* BARRA PREVISIONI: le giornate a venire × le fasce orarie, chip colorati
-   come la scala Windy; un clic porta giorno+ora su TUTTA la scena 3D. */
+/* BARRA PREVISIONI: le fasce orarie cliccabili SOPRA la finestra 3D, 5 giorni
+   × 6 fasce (6→21 h), chip colorati come la scala Windy; un clic porta
+   giorno+ora su TUTTA la scena. Con «stima» quando il modello non risponde. */
 function Previsioni({
   fc,
   dayIdx,
   selHour,
+  sim,
   onPick,
 }: {
   fc: ForecastData | null;
   dayIdx: number;
   selHour: number;
+  sim: boolean;
   onPick: (day: number, hour: number) => void;
 }) {
   if (!fc || !fc.days.length) return null;
   const day = fc.days[Math.min(dayIdx, fc.days.length - 1)];
   return (
     <div className="c3d-forecast" data-testid="c3d-forecast">
-      <span className="c3d-fc-k">Vento · previsioni a fasce orarie</span>
+      <span className="c3d-fc-k">
+        Vento · previsioni a fasce orarie{sim ? " · stima (modello offline)" : ""}
+      </span>
       <div className="c3d-fc-row">
         <div className="c3d-fc-days" role="group" aria-label="Giornata">
           {fc.days.map((d, di) => (
