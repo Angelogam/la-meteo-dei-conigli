@@ -212,6 +212,10 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         viewerRef.current = viewer;
         /* handle per test/debug (usato dagli script di verifica) */
         (window as unknown as Record<string, unknown>).__c3dViewer = viewer;
+        /* log diagnostico: un errore di rendering non deve restare invisibile */
+        viewer.scene.renderError.addEventListener((_scene, e) => {
+          console.warn("[c3d] renderError:", (e as Error)?.message || String(e));
+        });
 
         /* scene leggibili e professionali: niente illuminazione solare (resta leggibile di sera),
            atmosfera + nebbia per la profondità, hillshade come overlay leggero per il rilievo */
@@ -396,7 +400,10 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       const H: number[][] = [];
       for (let i = 0; i < N; i++) {
         H.push([]);
-        for (let j = 0; j < N; j++) H[i].push(pos[i * N + j].height);
+        for (let j = 0; j < N; j++) {
+          const h = pos[i * N + j].height;
+          H[i].push(Number.isFinite(h) ? h : 0); // il DEM non deve mai dare NaN
+        }
       }
       /* altezza del pendio interpolata (bilineare): le frecce seguono il versante */
       const hAt = (lat: number, lon: number): number => {
@@ -420,7 +427,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           const dzdx = (H[i][j + 1] - H[i][j - 1]) / (2 * STEP);
           const dzdy = (H[i - 1][j] - H[i + 1][j]) / (2 * STEP);
           const s = Math.hypot(dzdx, dzdy);
-          if (s < 0.1 || s > 1.05) continue;
+          if (!Number.isFinite(s) || s < 0.1 || s > 1.05) continue;
           const sign = anabatic ? 1 : -1; // giorno: risale il pendio; sera/notte: lo scende
           cands.push({ lon: lons[j], lat: lats[i], dE: (sign * dzdx) / s, dN: (sign * dzdy) / s, s });
         }
@@ -438,6 +445,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           lat: p.lat + (p.dN * off) / mLat,
           lon: p.lon + (p.dE * off) / mLon,
         });
+        let last: import("cesium").Cartesian3[] | null = null;
         return viewer.entities.add({
           polyline: {
             positions: new Cesium.CallbackProperty(() => {
@@ -445,10 +453,16 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
               const off = ((t * speed + phase) % span) - span / 2;
               const tail = at(off - L / 2);
               const head = at(off + L / 2);
-              return [
+              const calc = [
                 Cesium.Cartesian3.fromDegrees(tail.lon, tail.lat, hAt(tail.lat, tail.lon) + 22),
                 Cesium.Cartesian3.fromDegrees(head.lon, head.lat, hAt(head.lat, head.lon) + 28),
               ];
+              /* mai posizioni NaN a Cesium: senza questo il render si ferma */
+              if (calc.every((c) => Number.isFinite(c.x) && Number.isFinite(c.y) && Number.isFinite(c.z))) {
+                last = calc;
+                return calc;
+              }
+              return last ?? [Cesium.Cartesian3.ZERO, Cesium.Cartesian3.ZERO];
             }, false),
             width: 6 + Math.round(p.s * 3),
             material: new Cesium.PolylineArrowMaterialProperty(color.withAlpha(0.92)),
@@ -472,6 +486,9 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
 
     const wind = windAtAltitude(activePoint, quota, activePoint?.wind ?? null, activePoint?.dir ?? null);
     if (wind.ws == null || wind.wd == null) return;
+    /* NaN non è null: con sounding parziali il valore può arrivare NaN e
+       posizioni NaN fermano il rendering di tutta la scena */
+    if (!Number.isFinite(wind.ws) || !Number.isFinite(wind.wd)) return;
 
     let cancelled = false;
     (async () => {
@@ -508,6 +525,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
 
       windRef.current = visible.map((p, k) => {
         const phase = (k * 197) % span;
+        let last: import("cesium").Cartesian3[] | null = null;
         return viewer.entities.add({
           polyline: {
             positions: new Cesium.CallbackProperty(() => {
@@ -515,10 +533,15 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
               const off = ((t * speed + phase) % span) - span / 2;
               const cl = p.lat + (dN * off) / mLat;
               const co = p.lon + (dE * off) / mLon;
-              return [
+              const calc = [
                 Cesium.Cartesian3.fromDegrees(co - (dE * L * 0.5) / mLon, cl - (dN * L * 0.5) / mLat, quota),
                 Cesium.Cartesian3.fromDegrees(co + (dE * L * 0.5) / mLon, cl + (dN * L * 0.5) / mLat, quota),
               ];
+              if (calc.every((c) => Number.isFinite(c.x) && Number.isFinite(c.y) && Number.isFinite(c.z))) {
+                last = calc;
+                return calc;
+              }
+              return last ?? [Cesium.Cartesian3.ZERO, Cesium.Cartesian3.ZERO];
             }, false),
             width: 7,
             material: new Cesium.PolylineArrowMaterialProperty(color.withAlpha(0.95)),
@@ -561,7 +584,9 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         return;
       }
       if (cancelled || viewerRef.current !== viewer) return;
-      const path = pos.map((p, i) => Cesium.Cartesian3.fromDegrees(lons[i], lats[i], p.height + 30));
+      const path = pos.map((p, i) =>
+        Cesium.Cartesian3.fromDegrees(lons[i], lats[i], Number.isFinite(p.height) ? p.height + 30 : 30),
+      );
 
       routeRef.current = [
         viewer.entities.add({
