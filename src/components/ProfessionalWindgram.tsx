@@ -20,15 +20,15 @@ interface WindgramProps {
 
 const HOURS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
 
-const PRESSURE_LEVELS = [
-  { hpa: 600, alt: 4000 },
-  { hpa: 650, alt: 3500 },
-  { hpa: 700, alt: 3000 },
-  { hpa: 750, alt: 2500 },
-  { hpa: 800, alt: 2000 },
-  { hpa: 850, alt: 1500 },
-  { hpa: 900, alt: 1000 },
-];
+/* Livelli di pressione tracciati con le GEOPOTENZIALI REALI del modello (m s.l.m.),
+   non più a quote fisse: 600 hPa sta dove il modello dice, così la griglia delle
+   pressioni (sinistra) e l'asse dei metri (destra) coincidono finalmente. */
+const PRESSURE_LINES = [850, 800, 750, 700, 650, 600];
+
+/* Fallback di atmosfera standard (ICAO) se il modello non espone le geopotenziali. */
+function pressureFallbackAlt(hpa: number): number {
+  return Math.round((44330 * (1 - Math.pow(hpa / 1013.25, 0.1903))) / 10) * 10;
+}
 
 const computeDisplayAltitudes = (siteAlt: number): number[] => {
   const base = Math.floor(siteAlt / 250) * 250;
@@ -69,32 +69,50 @@ function selectRawHourlyDay(
   return { ...rawData, hourly: hourly as OpenMeteoRawResponse["hourly"] };
 }
 
-// Palette delle masse d'aria ispirata ad Alpium: inversione, stabilità, mix e instabilità.
-const STABILITY_COLORS = {
-  veryStable: "#d7e2f2",   // Azzurro-grigio: inversione/stabilità marcata
-  stable: "#dce9fb",       // Azzurro: stabile
-  mixed: "#c9f4d5",        // Verde: gradiente intermedio
-  unstable: "#fff08a",     // Giallo: instabilità crescente
-  veryUnstable: "#f6cbd1", // Rosa: gradiente molto ripido
-  missing: "#f3f5f8",      // Fondo neutro quando manca un profilo attendibile
-};
-
-const STABILITY_LEGEND = [
-  { val: -0.2, color: STABILITY_COLORS.veryStable, label: "Inversione" },
-  { val: 0.0, color: STABILITY_COLORS.stable, label: "Stabile" },
-  { val: 0.4, color: STABILITY_COLORS.mixed, label: "Intermedia" },
-  { val: 0.7, color: STABILITY_COLORS.unstable, label: "Instabile" },
-  { val: 0.98, color: STABILITY_COLORS.veryUnstable, label: "Molto instabile" },
+/* ===== SCALA CONTINUA DELLE MASSE D'ARIA (stile Alpium) =====
+   ΔT = gradiente termico verticale in °C ogni 100 m, letto dal sounding:
+   negativo/inversione = aria che scivola (viola/blu), ~0.6 = gradiente medio
+   (verde), ≥1.0 = gradienti superadiabatici, bolle forti (giallo→rosso).
+   Interpolazione continua tra stop: il fondo è un campo uniforme, non tessere. */
+const STABILITY_STOPS: { v: number; c: [number, number, number] }[] = [
+  { v: -0.3, c: [124, 92, 246] },  // viola — inversione / stabilità marcata
+  { v: -0.05, c: [93, 124, 247] }, // indaco — stabile
+  { v: 0.1, c: [64, 156, 248] },   // azzurro
+  { v: 0.25, c: [45, 199, 234] },  // ciano
+  { v: 0.4, c: [45, 209, 187] },   // teal
+  { v: 0.55, c: [96, 200, 110] },  // verde — gradiente medio
+  { v: 0.7, c: [164, 214, 78] },   // verde-giallo
+  { v: 0.85, c: [240, 200, 60] },  // giallo — instabilità crescente
+  { v: 1.0, c: [244, 150, 52] },   // arancio — superadiabatico
+  { v: 1.2, c: [236, 82, 82] },    // rosso — instabilità forte (cross)
 ];
 
-function getStabilityColor(deltaT: number | null | undefined): string {
-  if (deltaT == null || !Number.isFinite(deltaT)) return STABILITY_COLORS.missing;
-  if (deltaT <= 0.0) return STABILITY_COLORS.veryStable;
-  if (deltaT < 0.4) return STABILITY_COLORS.stable;
-  if (deltaT < 0.7) return STABILITY_COLORS.mixed;
-  if (deltaT < 0.98) return STABILITY_COLORS.unstable;
-  return STABILITY_COLORS.veryUnstable;
+const STABILITY_MISSING = "#eef1f6"; // fondo neutro quando manca un profilo attendibile
+
+function stopRgb(c: [number, number, number]): string {
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
 }
+
+function getStabilityColor(deltaT: number | null | undefined): string {
+  if (deltaT == null || !Number.isFinite(deltaT)) return STABILITY_MISSING;
+  const v = Math.max(STABILITY_STOPS[0].v, Math.min(STABILITY_STOPS[STABILITY_STOPS.length - 1].v, deltaT));
+  for (let i = 0; i < STABILITY_STOPS.length - 1; i++) {
+    const a = STABILITY_STOPS[i];
+    const b = STABILITY_STOPS[i + 1];
+    if (v >= a.v && v <= b.v) {
+      const t = (v - a.v) / (b.v - a.v || 1);
+      return `rgb(${a.c.map((ch, k) => Math.round(ch + (b.c[k] - ch) * t)).join(",")})`;
+    }
+  }
+  return stopRgb(STABILITY_STOPS[STABILITY_STOPS.length - 1].c);
+}
+
+/* Legenda numerica come Alpium: barra continua + tick di ΔT/100 m */
+const STABILITY_GRADIENT = `linear-gradient(90deg, ${STABILITY_STOPS.map((s) => {
+  const pct = (((s.v + 0.3) / 1.5) * 100).toFixed(1);
+  return `${stopRgb(s.c)} ${pct}%`;
+}).join(", ")})`;
+const STABILITY_TICKS = [-0.28, 0, 0.16, 0.32, 0.48, 0.65, 0.82, 0.98, 1.2];
 
 function getBarbAngle(dirDeg: number): number {
   const thetaDeg = (dirDeg + 90) % 360;
@@ -274,11 +292,30 @@ export default function ProfessionalWindgram({
   // Parte dalla quota del decollo arrotondata ai 200 m inferiori:
   // evita una grande zona vuota sotto il terreno del sito.
   const minAlt = Math.max(200, Math.floor(altitude / 200) * 200);
-  const maxAlt = 4200;
-  const altitudeTicks = Array.from(
-    { length: Math.max(1, Math.floor((maxAlt - minAlt) / 200) + 1) },
-    (_, index) => maxAlt - index * 200,
-  );
+  // Tetto dinamico: se la 600 hPa reale (geopotenziale) sta sopra i 4200 m
+  // il grafico si allarga, così nessuna linea di pressione viene schiacciata in alto.
+  const maxAlt = useMemo(() => {
+    const h = data?.hourly;
+    let top = 4200;
+    if (h?.time) {
+      for (const hpa of PRESSURE_LINES) {
+        const arr = (h as Record<string, unknown>)[`geopotential_height_${hpa}hPa`];
+        if (!Array.isArray(arr)) continue;
+        for (const v of arr) {
+          const n = Number(v);
+          if (Number.isFinite(n) && n > top) top = n;
+        }
+      }
+    }
+    return Math.min(5600, Math.max(4200, Math.ceil(top / 100) * 100 + 80));
+  }, [data]);
+  // Asse dei metri a destra: tacche ogni 500 m come su Alpium, così la colonna
+  // delle quote resta leggibile e allineata alle curve di pressione.
+  const altitudeTicks = useMemo(() => {
+    const out: number[] = [];
+    for (let a = Math.ceil((minAlt + 50) / 500) * 500; a <= maxAlt; a += 500) out.push(a);
+    return out;
+  }, [minAlt, maxAlt]);
 
   const getYFromAlt = (alt: number) => {
     const clamped = Math.min(maxAlt, Math.max(minAlt, alt));
@@ -313,6 +350,15 @@ export default function ProfessionalWindgram({
       const wind80 = h.wind_speed_80m?.[idx] != null ? Number(h.wind_speed_80m[idx]) : null;
       const windDir80 = h.wind_direction_80m?.[idx] != null ? Number(h.wind_direction_80m[idx]) : null;
       const freeze = h.freezing_level_height?.[idx] != null ? Number(h.freezing_level_height[idx]) : null;
+
+      /* Geopotenziali reali dei livelli di pressione (m s.l.m.) per QUESTA ora:
+         servono a tracciare le curve 850→600 hPa dove il modello le mette davvero. */
+      const geo: Partial<Record<number, number>> = {};
+      PRESSURE_LINES.forEach((hpa) => {
+        const z = (h as Record<string, unknown>)[`geopotential_height_${hpa}hPa`]?.[idx];
+        const n = z != null ? Number(z) : null;
+        if (n != null && Number.isFinite(n) && n > 0) geo[hpa] = Math.round(n);
+      });
 
       const derived = hourDerivedMap.get(targetHour);
       const cloudBase = derived?.cloudBase ?? null;
@@ -385,6 +431,7 @@ export default function ProfessionalWindgram({
         cloudPct,
         levelWinds,
         deltaTProfile,
+        geo,
       };
     }).filter((entry) => entry != null);
   }, [data, altitude, displayAltitudes, interpolateAtAltitude, hourDerivedMap]);
@@ -508,7 +555,7 @@ export default function ProfessionalWindgram({
           </div>
           <div className="flex items-center gap-2 text-xs font-semibold">
             <span className="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 border border-slate-300">
-              Fasce 100 m
+              Masse d'aria · ΔT/100 m
             </span>
             <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300">
               Previsione del modello
@@ -529,73 +576,96 @@ export default function ProfessionalWindgram({
                   <rect width="9" height="9" fill="#ffffff" fillOpacity="0.3" />
                   <line x1="0" y1="0" x2="0" y2="9" stroke="#0284c7" strokeWidth="2" strokeOpacity="0.4" />
                 </pattern>
+                <clipPath id="plotClip">
+                  <rect x={margin.left} y={margin.top} width={plotW} height={plotH} />
+                </clipPath>
+                <filter id="airmassSmooth" x="-6%" y="-6%" width="112%" height="112%" colorInterpolationFilters="sRGB">
+                  <feGaussianBlur stdDeviation="10" />
+                </filter>
               </defs>
 
               {/* Fondo base del sounding */}
-              <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill={STABILITY_COLORS.missing} />
+              <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill={STABILITY_MISSING} />
 
-              {/* Masse d'aria stile Alpium: celle orarie × fasce di quota, disegnate nell'SVG
-                  per rimanere visibili e allineate con griglia, barbule e curve su ogni browser. */}
-              {hourlyData.flatMap((hourData) => {
-                const hourIndex = HOURS.indexOf(hourData.hour);
-                if (hourIndex < 0) return [];
-                const cellW = plotW / HOURS.length;
-                const profile = hourData.deltaTProfile;
-                return Array.from({ length: Math.ceil((maxAlt - minAlt) / 100) }, (_, bandIndex) => {
-                  const altLow = minAlt + bandIndex * 100;
-                  const altHigh = Math.min(altLow + 100, maxAlt);
-                  const sampleAltitude = altLow + (altHigh - altLow) / 2;
-                  const profileIndex = Math.max(0, Math.min(
-                    (profile?.length ?? 1) - 1,
-                    Math.round((sampleAltitude - minAlt) / 100),
-                  ));
-                  const deltaT = profile?.[profileIndex] ?? null;
-                  const color = getStabilityColor(deltaT);
-                  return (
-                    <rect
-                      key={`air-mass-${hourData.hour}-${bandIndex}`}
-                      data-testid="windgram-stability-cell"
-                      data-stability-color={color}
-                      data-hour={hourData.hour}
-                      data-altitude-low={altLow}
-                      data-altitude-high={altHigh}
-                      x={margin.left + hourIndex * cellW}
-                      y={getYFromAlt(altHigh)}
-                      width={cellW + 0.4}
-                      height={Math.max(0.5, getYFromAlt(altLow) - getYFromAlt(altHigh))}
-                      fill={color}
-                      fillOpacity={0.98}
-                      stroke="#ffffff"
-                      strokeOpacity={0.26}
-                      strokeWidth="0.45"
-                    />
-                  );
-                });
-              })}
+              {/* MASSE D'ARIA stile Alpium: campo di colore CONTINUO (ΔT/100 m) — celle
+                  orarie × fasce di 100 m senza bordi, sfumate con un leggero blur e
+                  ritagliate sul riquadro: il fondo si legge come sul sito di riferimento,
+                  viola = inversione/stabile → verde = gradiente medio → rosso = instabile. */}
+              <g clipPath="url(#plotClip)">
+                <g filter="url(#airmassSmooth)">
+                  {hourlyData.flatMap((hourData) => {
+                    const hourIndex = HOURS.indexOf(hourData.hour);
+                    if (hourIndex < 0) return [];
+                    const cellW = plotW / HOURS.length;
+                    const profile = hourData.deltaTProfile;
+                    const bandCount = Math.ceil((maxAlt - minAlt) / 100);
+                    /* una banda in più sopra e sotto: il blur non deve scolorire i bordi */
+                    return [-1, ...Array.from({ length: bandCount }, (_, b) => b)].map((bandIndex) => {
+                      const altLow = minAlt + bandIndex * 100;
+                      const altHigh = Math.min(altLow + 100, maxAlt);
+                      const sampleAltitude = Math.max(minAlt, Math.min(maxAlt, altLow + (altHigh - altLow) / 2));
+                      const profileIndex = Math.max(0, Math.min(
+                        (profile?.length ?? 1) - 1,
+                        Math.round((sampleAltitude - minAlt) / 100),
+                      ));
+                      const deltaT = profile?.[profileIndex] ?? null;
+                      const color = getStabilityColor(deltaT);
+                      const x = margin.left + hourIndex * cellW
+                        + (hourIndex === 0 ? -10 : 0);
+                      const w = cellW + (hourIndex === 0 ? 10 : 0) + (hourIndex === HOURS.length - 1 ? 10 : 0) + 0.5;
+                      return (
+                        <rect
+                          key={`air-mass-${hourData.hour}-${bandIndex}`}
+                          data-testid="windgram-stability-cell"
+                          data-stability-color={color}
+                          data-hour={hourData.hour}
+                          data-altitude-low={altLow}
+                          data-altitude-high={altHigh}
+                          x={x}
+                          y={getYFromAlt(altHigh) - 6}
+                          width={w}
+                          height={Math.max(12, getYFromAlt(altLow) - getYFromAlt(altHigh) + 12)}
+                          fill={color}
+                        />
+                      );
+                    });
+                  })}
+                </g>
+              </g>
 
               <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#8c9bad" strokeWidth="1" />
 
-              {/* Livelli di Pressione */}
-              {PRESSURE_LEVELS.map((lvl) => {
-                const y = getYFromAlt(lvl.alt);
+              {/* Livelli di Pressione — curve alle GEOPOTENZIALI reali del modello:
+                  la quota di ogni linea cambia con l'ora, come sulle sezioni di Alpium.
+                  Niente più quote fisse: 600 hPa non è più "a 4000 m" a caso. */}
+              {PRESSURE_LINES.map((hpa) => {
+                const pts = hourlyData
+                  .map((h, i) => {
+                    const z = h.geo[hpa] ?? pressureFallbackAlt(hpa);
+                    if (z < minAlt - 60 || z > maxAlt + 60) return null;
+                    return { x: getXFromHourIdx(i), y: getYFromAlt(z) };
+                  })
+                  .filter((p): p is { x: number; y: number } => p != null);
+                if (pts.length < 2) return null;
+                const d = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
                 return (
-                  <g key={`grid-${lvl.hpa}`}>
-                    <line x1={margin.left} y1={y} x2={margin.left + plotW} y2={y} stroke="#64748b" strokeWidth="0.5" strokeDasharray="2 2" opacity="0.5" />
-                    <text x={margin.left - 6} y={y + 4} fill="#334155" fontSize="11" fontWeight="800" textAnchor="end" fontFamily="monospace">
-                      {lvl.hpa} hPa
+                  <g key={`grid-${hpa}`}>
+                    <path d={d} fill="none" stroke="#4b5b6e" strokeWidth="0.9" strokeDasharray="4 3" opacity="0.6" />
+                    <text x={margin.left - 6} y={pts[0].y + 4} fill="#1f2d3d" fontSize="11.5" fontWeight="800" textAnchor="end" fontFamily="monospace">
+                      {hpa} hPa
                     </text>
                   </g>
                 );
               })}
 
-              {/* Ticks Altitudine */}
+              {/* Ticks Altitudine (asse destro, ogni 500 m come Alpium):
+                  stessa scala lineare delle curve di pressione → nessun disallineamento */}
               {altitudeTicks.map((alt) => {
                 const y = getYFromAlt(alt);
                 return (
                   <g key={`alt-${alt}`}>
-                    <line x1={margin.left} y1={y} x2={margin.left + plotW} y2={y} stroke="#8190a0" strokeWidth="0.45" opacity="0.42" />
-                    <line x1={margin.left + plotW} y1={y} x2={margin.left + plotW + 4} y2={y} stroke="#475569" strokeWidth="0.8" />
-                    <text x={margin.left + plotW + 6} y={y + 4} fill="#334155" fontSize="11" fontWeight="800" textAnchor="start" fontFamily="monospace">
+                    <line x1={margin.left + plotW} y1={y} x2={margin.left + plotW + 7} y2={y} stroke="#334155" strokeWidth="1.1" />
+                    <text x={margin.left + plotW + 11} y={y + 4} fill="#1f2d3d" fontSize="11.5" fontWeight="800" textAnchor="start" fontFamily="monospace">
                       {alt} m
                     </text>
                   </g>
@@ -788,11 +858,20 @@ export default function ProfessionalWindgram({
                     const x = getXFromHourIdx(i);
                     const y = getYFromAlt(windLevel.alt);
                     const currentHourData = hourlyData[i];
-                    const isNearThermal = currentHourData.thermalTop != null && Math.abs(y - getYFromAlt(currentHourData.thermalTop)) < 15;
+                    /* la curva del thermal top e i badge base/rateo occupano ~50 px sotto
+                       di sé e possono sconfinare nella colonna vicina: l'etichetta del
+                       vento si nasconde se tocca la zona di QUESTA ora o di una vicina */
+                    const topYs = [i - 1, i, i + 1]
+                      .map((k) => hourlyData[k])
+                      .filter((h) => h && h.thermalTop != null && Number.isFinite(h.thermalTop))
+                      .map((h) => getYFromAlt(h.thermalTop as number));
+                    const textHidden = topYs.some(
+                      (topY) => Math.abs(y - topY) < 15 || (y > topY + 4 && y < topY + 54),
+                    );
                     return (
                       <g key={`wb-${i}-${Math.round(windLevel.alt)}`}>
                         {renderWindBarb(x, y, windLevel.speed, windLevel.dir)}
-                        {!isNearThermal && (
+                        {!textHidden && (
                           <text x={x + 22} y={y + 3} fill="#1e293b" fontSize="11" fontWeight="700" textAnchor="start" fontFamily="monospace">
                             {Math.round(windLevel.speed)}/{getDirLetter(windLevel.dir)}
                           </text>
@@ -813,22 +892,18 @@ export default function ProfessionalWindgram({
           </div>
         </div>
 
-        {/* Legenda del Gradiente Termico / Stabilità (Stile Alpium Grigio perla) */}
+        {/* Legenda delle masse d'aria — numerica come Alpium: ΔT ogni 100 m */}
         <div className="mt-3 pt-3 border-t border-slate-300">
-          <div className="w-full max-w-2xl mx-auto px-2">
+          <div className="w-full max-w-3xl mx-auto px-2">
             <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
               <span>← Stabile / Inversione</span>
-              <span className="text-slate-900 font-extrabold">ΔT / 100 m (Gradiente Ambientale)</span>
+              <span className="text-slate-900 font-extrabold">ΔT / 100 m — masse d'aria</span>
               <span>Instabile →</span>
             </div>
-            <div className="w-full h-3.5 rounded-sm flex overflow-hidden border border-slate-400">
-              {STABILITY_LEGEND.map((item, idx) => (
-                <div key={idx} className="flex-1 h-full" style={{ backgroundColor: item.color }} />
-              ))}
-            </div>
+            <div className="w-full h-3.5 rounded-sm border border-slate-400" style={{ background: STABILITY_GRADIENT }} />
             <div className="flex justify-between text-[10px] font-mono font-bold text-slate-600 mt-1">
-              {STABILITY_LEGEND.map((item, idx) => (
-                <span key={idx}>{item.label}</span>
+              {STABILITY_TICKS.map((t) => (
+                <span key={t}>{t.toFixed(2)}</span>
               ))}
             </div>
           </div>
