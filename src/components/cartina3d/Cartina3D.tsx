@@ -29,7 +29,7 @@ import { Switch } from "@/components/ui/switch";
 import type { CartinaDecollo } from "@/components/CartinaMeteo";
 import { windAtAltitude } from "@/components/CartinaMeteo";
 import type { HourlyPoint } from "@/services/threeSourceWeather";
-import { createTerrariumTerrainProvider } from "./terrain";
+import { createTerrariumTerrainProvider, sampleTerrainHeights } from "./terrain";
 import "./cartina3d.css";
 
 type CesiumNs = typeof import("cesium");
@@ -393,10 +393,13 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       const lons: number[] = [];
       for (let i = 0; i < N; i++) lats.push(lat0 + ((4 - i) * STEP) / mLat);
       for (let j = 0; j < N; j++) lons.push(lon0 + ((j - 4) * STEP) / mLon);
-      const pos: import("cesium").Cartesian3[] = [];
-      for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) pos.push(Cesium.Cartesian3.fromDegrees(lons[j], lats[i]));
+      /* quote del pendio lette direttamente dai tile Terrarium (deterministico,
+         stessa cache del terreno 3D): niente dipendenza dal campionatore Cesium */
+      let flat: number[];
       try {
-        await Cesium.sampleTerrainMostDetailed(viewer.terrainProvider, pos);
+        flat = await sampleTerrainHeights(
+          lats.flatMap((la) => lons.map((lo) => ({ lat: la, lon: lo }))),
+        );
         demRetries.current = 0;
       } catch (e) {
         console.warn("[c3d] campionamento brezze non riuscito:", String(e).slice(0, 120));
@@ -413,7 +416,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       for (let i = 0; i < N; i++) {
         H.push([]);
         for (let j = 0; j < N; j++) {
-          const h = pos[i * N + j].height;
+          const h = flat[i * N + j];
           H[i].push(Number.isFinite(h) ? h : 0); // il DEM non deve mai dare NaN
         }
       }
@@ -525,9 +528,10 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           anchors.push({ lon: active.lon + e / mLon, lat: active.lat + n / mLat });
         }
       }
-      const pos = anchors.map((p) => Cesium.Cartesian3.fromDegrees(p.lon, p.lat, 0));
+      const pos = anchors.map((p) => ({ lat: p.lat, lon: p.lon }));
+      let hs: number[];
       try {
-        await Cesium.sampleTerrainMostDetailed(viewer.terrainProvider, pos);
+        hs = await sampleTerrainHeights(pos);
         demRetries.current = 0;
       } catch (e) {
         console.warn("[c3d] campionamento venti non riuscito:", String(e).slice(0, 120));
@@ -540,7 +544,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         return;
       }
       if (cancelled || viewerRef.current !== viewer) return;
-      const visible = anchors.filter((_, i) => pos[i].height + 90 < quota);
+      const visible = anchors.filter((_, i) => hs[i] + 90 < quota);
 
       windRef.current = visible.map((p, k) => {
         const phase = (k * 197) % span;
@@ -587,17 +591,16 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       const N = 44;
       const lons: number[] = [];
       const lats: number[] = [];
-      const pos: import("cesium").Cartesian3[] = [];
       for (let k = 0; k <= N; k++) {
         const t = k / N;
-        const lo = active.lon + (LANDING.lon - active.lon) * t;
-        const la = active.lat + (LANDING.lat - active.lat) * t;
-        lons.push(lo);
-        lats.push(la);
-        pos.push(Cesium.Cartesian3.fromDegrees(lo, la, 0));
+        lons.push(active.lon + (LANDING.lon - active.lon) * t);
+        lats.push(active.lat + (LANDING.lat - active.lat) * t);
       }
+      let hs: number[];
       try {
-        await Cesium.sampleTerrainMostDetailed(viewer.terrainProvider, pos);
+        hs = await sampleTerrainHeights(
+          lons.map((lo, i) => ({ lat: lats[i], lon: lo })),
+        );
         demRetries.current = 0;
       } catch (e) {
         console.warn("[c3d] campionamento percorso non riuscito:", String(e).slice(0, 120));
@@ -610,8 +613,8 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         return;
       }
       if (cancelled || viewerRef.current !== viewer) return;
-      const path = pos.map((p, i) =>
-        Cesium.Cartesian3.fromDegrees(lons[i], lats[i], Number.isFinite(p.height) ? p.height + 30 : 30),
+      const path = lons.map((lo, i) =>
+        Cesium.Cartesian3.fromDegrees(lo, lats[i], Number.isFinite(hs[i]) ? hs[i] + 30 : 30),
       );
 
       routeRef.current = [

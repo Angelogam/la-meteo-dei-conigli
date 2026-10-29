@@ -160,3 +160,32 @@ export function createTerrariumTerrainProvider(Cesium: CesiumNs): CesiumNs.Terra
   const TILE_DATA = new Map<string, CesiumNs.HeightmapTerrainData>();
   return new TerrariumProvider() as unknown as CesiumNs.TerrainProvider;
 }
+
+/**
+ * Quota del terreno (m) letta DIRETTAMENTE dai tile Terrarium a z14.
+ *
+ * Perché non `sampleTerrainMostDetailed` di Cesium: in produzione, quando una
+ * richiesta tile fallisce, il campionatore Cesium risolve comunque con le quote
+ * di partenza (0) SENZA lanciare errori → pendii "piatti" e frecce che spariscono.
+ * Leggendo noi il PNG (stessa cache del provider) il campionamento è deterministico.
+ */
+export async function sampleTerrainHeights(points: { lat: number; lon: number }[]): Promise<number[]> {
+  return Promise.all(points.map((p) => sampleTerrainHeight(p.lat, p.lon)));
+}
+
+async function sampleTerrainHeight(lat: number, lon: number): Promise<number> {
+  const z = MAX_LEVEL;
+  const clamped = Math.max(-85.05, Math.min(85.05, lat));
+  const latR = (clamped * Math.PI) / 180;
+  const cos = Math.max(1e-9, Math.cos(latR));
+  const nTile = 1 << z; // 2^14
+  const xf = ((lon + 180) / 360) * nTile;
+  const yf = ((1 - Math.log(Math.tan(latR) + 1 / cos) / Math.PI) / 2) * nTile;
+  const xt = Math.min(nTile - 1, Math.max(0, Math.floor(xf)));
+  const yt = Math.min(nTile - 1, Math.max(0, Math.floor(yf)));
+  const heights = await loadTile(z, xt, yt);
+  const px = Math.min(TILE_SIZE - 1, Math.max(0, Math.floor((xf - xt) * TILE_SIZE)));
+  const py = Math.min(TILE_SIZE - 1, Math.max(0, Math.floor((yf - yt) * TILE_SIZE)));
+  const h = heights[py * TILE_SIZE + px];
+  return Number.isFinite(h) ? h : 0;
+}
