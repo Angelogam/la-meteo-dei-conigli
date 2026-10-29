@@ -15,6 +15,11 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.evaluate(() => document.querySelector('[data-testid="c3d-slot-12"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
   await page.waitForTimeout(2500);
   await page.waitForFunction(() => !document.querySelector(".c3d-progress"), null, { timeout: 45000 }).catch(() => {});
+  /* TILT: alzo lo sguardo 2 volte per vedere i coni di lato in 3D */
+  for (let i = 0; i < 2; i++) {
+    await page.evaluate(() => document.querySelector('[data-testid="c3d-nav"] button:nth-child(3)')?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    await page.waitForTimeout(1200);
+  }
   /* zoom in due volte verso i coni */
   for (let i = 0; i < 2; i++) {
     await page.evaluate(() => document.querySelector('[data-testid="c3d-nav"] button:nth-child(5)')?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
