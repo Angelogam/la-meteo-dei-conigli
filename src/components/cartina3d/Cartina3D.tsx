@@ -4,23 +4,26 @@
  * TERRENO IN 3D — la vista satellite/DEM sotto la cartina dei decolli.
  *
  * Motore: CesiumJS (open source) + terreno DEM gratuito (Mapzen/AWS) + immagini
- * satellite Esri: resa tipo Google Earth, zero API key, zero costi.
+ * satellite Esri ad alta risoluzione (massimo dettaglio, contrasto potenziato).
  *
  * Cosa mostra:
- * - i DECOLLI con pin cliccabili (clic = apre la scheda del decollo nella cartina)
- * - le BREZZE DI VERSANTE simulate: frecce gialle animate che risalgono i pendii
- *   nelle ore di sole (anabatica) o le scendono di sera/notte (catabatica);
- *   direzione calcolata dal DEM (gradiente del pendio), velocità NON in scala
- * - i VENTI METEO alla quota scelta (2000 → 4000 m) presi dal sounding Open-Meteo
- *   già usato dal sito: frecce colorate per intensità, direzione = dove spingono
- * - il PERCORSO CONSIGLIATO (linea bianca tratteggiata) dal decollo all'atterraggio
- *   di Paesana, con la zona abitata da non sorvolare bassa
+ * - i DECOLLI con pin cliccabili e un PARAPENDIO in volo che fluttua sopra ognuno
+ * - il CAMPO VENTO LIVE su tutta la valle (non solo vicino al decollo): una
+ *   griglia fitta di frecce GRANDI in movimento continuo, colorate per aerologia:
+ *     verde = portanza (vento contro il versante) · rosso = sottovento
+ *     giallo = anabatica (giorno) · ciano = catabatica (notte) · ambra = flusso
+ *   Dati: Open-Meteo in bulk su griglia 3×3, aggiornati automaticamente ogni 15 min
+ * - i VENTI METEO alla quota scelta (2000 → 4000 m) dal sounding già usato dal
+ *   sito: frecce grandi, colore per quota, in movimento continuo
+ * - NAVIGAZIONE stile Google Earth: bussola trascinabile a 360°, rotazione,
+ *   tilt, zoom, vista dall'alto 2D e ritorno al decollo
  *
  * La libreria (~5 MB compressi) viene scaricata SOLO quando la sezione entra nel
  * viewport: la pagina resta veloce come prima.
  *
- * Nota tile: le etichette CARTO sono state rimosse (ora esigono API key e restituiscono
- * placeholder «API KEY REQUIRED»); i toponimi dei decolli sono etichette Cesium nostre.
+ * Nota tile: le etichette CARTO sono state rimosse (ora esigono API key); i
+ * toponimi dei decolli sono etichette Cesium nostre. Il percorso verso
+ * l'atterraggio è stato rimosso su richiesta: questa vista è il campo vento.
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -30,31 +33,31 @@ import type { CartinaDecollo } from "@/components/CartinaMeteo";
 import { windAtAltitude } from "@/components/CartinaMeteo";
 import type { HourlyPoint } from "@/services/threeSourceWeather";
 import { createTerrariumTerrainProvider, sampleTerrainHeights } from "./terrain";
+import { buildWindField, computeFlows, fetchLiveWind, FLOW_COLORS, heightAt } from "./winds";
+import type { FlowCell, LivePoint, WindField } from "./winds";
+import { gliderImage, pinImage } from "./sprites";
+import Nav3D from "./Nav3D";
 import "./cartina3d.css";
 
 type CesiumNs = typeof import("cesium");
+type ViewerNs = import("cesium").Viewer;
 
 const QUOTAS = [2000, 2500, 3000, 3500, 4000] as const;
 type Quota3D = (typeof QUOTAS)[number];
 
-/** Atterraggio di riferimento della Val Po (dal bozzetto utente: arrivo a Paesana). */
-const LANDING = { lat: 44.6968, lon: 7.2805, name: "Atterraggio · Paesana" };
-/** Centro abitato di Paesana: sorvolo basso da evitare (bozzetto utente). */
-const NOFLY = { lat: 44.7003, lon: 7.2885 };
+/** Colore dei venti in quota: il COLORE dice la quota (come in Alpium). */
+const QUOTA_COLORS: Record<Quota3D, string> = {
+  2000: "#4cc3ff",
+  2500: "#3ddc84",
+  3000: "#ffd23f",
+  3500: "#ff9f43",
+  4000: "#ff5cc8",
+};
 
 const DIR8 = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"];
 function dir8(deg: number | null | undefined): string {
   if (deg == null || !Number.isFinite(deg)) return "N/D";
   return DIR8[Math.round((((deg % 360) + 360) % 360) / 45) % 8];
-}
-
-/* stessa scala colori della scena "Il cielo" */
-function windColor3d(ws: number): string {
-  if (ws < 8) return "#7dd3fc";
-  if (ws < 15) return "#9fe870";
-  if (ws < 22) return "#facc15";
-  if (ws < 32) return "#fb923c";
-  return "#f87171";
 }
 
 function hourOf(p: HourlyPoint | null | undefined): number {
@@ -63,46 +66,15 @@ function hourOf(p: HourlyPoint | null | undefined): number {
   return Number.isFinite(h) ? h : -1;
 }
 
-/** Pin da avvicinamento disegnato su canvas (nessuna immagine esterna). */
-function makePin(Cesium: CesiumNs, color: string, active: boolean): string {
-  const c = document.createElement("canvas");
-  c.width = 52;
-  c.height = 68;
-  const g = c.getContext("2d")!;
-  /* ombra portata a terra */
-  g.beginPath();
-  g.ellipse(26, 64, 9, 3, 0, 0, Math.PI * 2);
-  g.fillStyle = "rgba(0,0,0,0.35)";
-  g.fill();
-  /* coda del pin */
-  g.beginPath();
-  g.moveTo(26, 62);
-  g.lineTo(16, 27);
-  g.lineTo(36, 27);
-  g.closePath();
-  g.fillStyle = color;
-  g.fill();
-  g.lineWidth = 2;
-  g.strokeStyle = "rgba(6,14,26,0.92)";
-  g.stroke();
-  /* testa */
-  g.beginPath();
-  g.arc(26, 18, 13.5, 0, Math.PI * 2);
-  g.fillStyle = color;
-  g.fill();
-  g.stroke();
-  g.beginPath();
-  g.arc(26, 18, 5, 0, Math.PI * 2);
-  g.fillStyle = "rgba(10,22,38,0.92)";
-  g.fill();
-  if (active) {
-    g.beginPath();
-    g.arc(26, 18, 18, 0, Math.PI * 2);
-    g.strokeStyle = "rgba(255,255,255,0.9)";
-    g.lineWidth = 2.4;
-    g.stroke();
-  }
-  return c.toDataURL();
+/** Camera sul decollo: vista da sud-est abbastanza vicina da leggere il campo. */
+function flyToSite(Cesium: CesiumNs, viewer: ViewerNs, d: CartinaDecollo): void {
+  viewer.camera.flyToBoundingSphere(
+    new Cesium.BoundingSphere(Cesium.Cartesian3.fromDegrees(d.lon, d.lat, d.elevation_m ?? 0), 7000),
+    {
+      duration: 2.2,
+      offset: new Cesium.HeadingPitchRange(Cesium.Math.toRadians(15), Cesium.Math.toRadians(-38), 14000),
+    },
+  );
 }
 
 export interface Cartina3DProps {
@@ -115,15 +87,15 @@ export interface Cartina3DProps {
 export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Cartina3DProps) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const creditsRef = useRef<HTMLDivElement | null>(null);
-  const viewerRef = useRef<import("cesium").Viewer | null>(null);
+  const viewerRef = useRef<ViewerNs | null>(null);
   const cesiumRef = useRef<CesiumNs | null>(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
 
   const markersRef = useRef<import("cesium").Entity[]>([]);
-  const breezeRef = useRef<import("cesium").Entity[]>([]);
+  const surfRef = useRef<import("cesium").Entity[]>([]);
   const windRef = useRef<import("cesium").Entity[]>([]);
-  const routeRef = useRef<import("cesium").Entity[]>([]);
+  const fieldCacheRef = useRef<Map<string, WindField>>(new Map());
 
   const [armed, setArmed] = useState(false); // IntersectionObserver: sezione vicina
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
@@ -132,8 +104,13 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
 
   const [siteId, setSiteId] = useState<string>("");
   const [quota, setQuota] = useState<Quota3D | 0>(2500);
-  const [breeze, setBreeze] = useState(true);
-  const [route, setRoute] = useState(true);
+  const [surface, setSurface] = useState(true);
+
+  /* campo vento: griglia DEM + dati live Open-Meteo */
+  const [field, setField] = useState<WindField | null>(null);
+  const [fieldBusy, setFieldBusy] = useState(false);
+  const [live, setLive] = useState<LivePoint[] | null>(null);
+  const [liveAt, setLiveAt] = useState<string>("");
 
   /* retry del campionamento DEM: se un'onda di tile è a metà, gli effetti si
      rilanciano da soli (max 5 tentativi) invece di lasciare la scena senza frecce */
@@ -144,8 +121,14 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     () => decolli.filter((d) => Number.isFinite(d.lat) && Number.isFinite(d.lon) && (d.lat !== 0 || d.lon !== 0)),
     [decolli],
   );
+  /* il viewer NON deve essere ricreato quando l'array decolli cambia identità
+     (refresh dati): tengo il riferimento corrente in un ref e inizializzo solo
+     quando la sezione entra nel viewport */
+  const goodRef = useRef(good);
+  goodRef.current = good;
   const activeId = siteId || selectedId || good[0]?.id || "";
   const active = good.find((d) => d.id === activeId) ?? good[0];
+  const anabatic = hour >= 9 && hour <= 18;
 
   useEffect(() => {
     if (selectedId) setSiteId(selectedId);
@@ -191,7 +174,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           baseLayer: new Cesium.ImageryLayer(
             new Cesium.UrlTemplateImageryProvider({
               url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-              maximumLevel: 17,
+              maximumLevel: 18,
               credit: new Cesium.Credit("Immagini © Esri, Maxar, Earthstar Geographics"),
             }),
           ),
@@ -222,28 +205,44 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           console.warn("[c3d] renderError:", (e as Error)?.message || String(e));
         });
 
-        /* scene leggibili e professionali: niente illuminazione solare (resta leggibile di sera),
-           atmosfera + nebbia per la profondità, hillshade come overlay leggero per il rilievo */
+        /* ---- RESA NITIDA stile Google Earth ----
+           - massimo un pixel di errore schermo: forza il caricamento delle tile
+             satellitari un livello più fine (la differenza si vede eccome)
+           - render alla risoluzione nativa del display (retina incluso)
+           - contrasto/saturazione potenziati sul satellite, hillshade leggero
+           - nebbia ridotta: le creste lontane restano leggibili */
         const globe = viewer.scene.globe;
         globe.baseColor = Cesium.Color.fromCssColorString("#0a1626");
         globe.enableLighting = false;
         globe.depthTestAgainstTerrain = true;
         globe.showGroundAtmosphere = true;
+        globe.maximumScreenSpaceError = 1.4;
+        globe.tileCacheSize = 250000000;
+        globe.preloadSiblings = true;
         viewer.scene.fog.enabled = true;
-        viewer.scene.fog.density = 0.00012;
+        viewer.scene.fog.density = 0.00008;
         viewer.scene.skyAtmosphere.show = true;
         try {
           viewer.scene.postProcessStages.fxaa.enabled = true;
         } catch {
           /* fxaa facoltativo */
         }
-        viewer.resolutionScale = Math.min(window.devicePixelRatio || 1, 1.75);
+        const dpr = window.devicePixelRatio || 1;
+        viewer.useBrowserRecommendedResolution = false; // pixel reali, non CSS
+        viewer.resolutionScale = dpr >= 1.5 ? 0.75 : 1;
+        const base = viewer.imageryLayers.get(0);
+        if (base) {
+          base.brightness = 1.12;
+          base.contrast = 1.14;
+          base.saturation = 1.28;
+          base.gamma = 0.96;
+        }
         const ssc = viewer.scene.screenSpaceCameraController;
-        ssc.minimumZoomDistance = 260;
+        ssc.minimumZoomDistance = 320;
         ssc.maximumZoomDistance = 95000;
         viewer.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
 
-        /* hillshade per leggibilità del rilievo (le tile satellitari restano sotto) */
+        /* hillshade molto leggero: dà rilievo senza sporcare il satellite */
         const hill = viewer.imageryLayers.addImageryProvider(
           new Cesium.UrlTemplateImageryProvider({
             url: "https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}",
@@ -251,7 +250,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
             credit: new Cesium.Credit("Hillshade © Esri"),
           }),
         );
-        hill.alpha = 0.35;
+        hill.alpha = 0.16;
 
         /* progresso terreno */
         const stopLoad = globe.tileLoadProgressEvent.addEventListener((queued: number) => {
@@ -262,22 +261,22 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         });
         window.setTimeout(() => setTilesLoaded(true), 20000); // failsafe
 
-        /* click sui pin → apre la scheda del decollo (come la cartina 2D) */
+        /* click su pin/parapendio → apre la scheda del decollo (come la cartina 2D) */
         viewer.screenSpaceEventHandler.setInputAction((movement) => {
           const picked = viewer.scene.pick(movement.position);
           if (Cesium.defined(picked)) {
             const id = (picked?.id as { deolloId?: string } | undefined)?.deolloId;
             if (id) {
               setSiteId(id);
-              const item = good.find((d) => d.id === id);
+              const item = goodRef.current.find((d) => d.id === id);
               if (item) onSelectRef.current?.(item);
             }
           }
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
         /* camera: vista iniziale d'insieme, poi l'effetto sotto porta la camera
-           sul decollo attivo (brezze e venti subito leggibili) */
-        const pts = good.map((d) => Cesium.Cartesian3.fromDegrees(d.lon, d.lat, d.elevation_m ?? 0));
+           sul decollo attivo (campo vento subito leggibile) */
+        const pts = goodRef.current.map((d) => Cesium.Cartesian3.fromDegrees(d.lon, d.lat, d.elevation_m ?? 0));
         if (pts.length) {
           const bs = Cesium.BoundingSphere.fromPoints(pts);
           viewer.camera.setView({
@@ -298,25 +297,27 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       viewerRef.current = null;
       cesiumRef.current = null;
       markersRef.current = [];
-      breezeRef.current = [];
+      surfRef.current = [];
       windRef.current = [];
-      routeRef.current = [];
+      fieldCacheRef.current.clear();
       if (v && !v.isDestroyed()) v.destroy();
     };
-  }, [armed, good]);
+  }, [armed]);
 
-  /* ---------- pin dei decolli ---------- */
+  /* ---------- pin dei decolli + PARAPENDIO in volo sopra ognuno ---------- */
   useEffect(() => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
     if (status !== "ready" || !Cesium || !viewer || !active) return;
     markersRef.current.forEach((e) => viewer.entities.remove(e));
-    markersRef.current = good.map((d) => {
+    const glider = gliderImage();
+
+    markersRef.current = good.flatMap((d) => {
       const isActive = d.id === active.id;
-      return viewer.entities.add({
+      const pin = viewer.entities.add({
         position: Cesium.Cartesian3.fromDegrees(d.lon, d.lat, 0),
         billboard: {
-          image: makePin(Cesium, "#ffd76a", isActive),
+          image: pinImage(Cesium, "#ffd76a", isActive),
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
           scale: isActive ? 1.3 : 1,
           scaleByDistance: new Cesium.NearFarScalar(3000, 1, 70000, 0.5),
@@ -337,25 +338,41 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           scale: 1,
         },
       });
+      (pin as unknown as { deolloId: string }).deolloId = d.id;
+
+      /* parapendio che plana sopra il decollo: bob lento su e giù */
+      let lastG: import("cesium").Cartesian3 | null = null;
+      const phaseG = (d.lat * 577.7) % (Math.PI * 2);
+      const gl = viewer.entities.add({
+        position: new Cesium.CallbackProperty(() => {
+          const t = performance.now() / 1000;
+          const alt = (d.elevation_m ?? 0) + 250 + 22 * Math.sin(t * 0.85 + phaseG);
+          const p = Cesium.Cartesian3.fromDegrees(d.lon, d.lat, alt);
+          if (Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z)) {
+            lastG = p;
+            return p;
+          }
+          return lastG ?? Cesium.Cartesian3.ZERO;
+        }, false),
+        billboard: {
+          image: glider,
+          scale: 0.66,
+          scaleByDistance: new Cesium.NearFarScalar(2500, 0.75, 45000, 0.5),
+          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 52000),
+          verticalOrigin: Cesium.VerticalOrigin.CENTER,
+        },
+      });
+      (gl as unknown as { deolloId: string }).deolloId = d.id;
+      return [pin, gl];
     });
   }, [status, good, active]);
 
-  /* la camera segue il decollo attivo: a ogni cambio di sito vola sulla sua valle
-     (2,2 s, vista da sud-est: il versante del decollo in primo piano) */
+  /* la camera segue il decollo attivo: a ogni cambio di sito vola sulla sua valle */
   useEffect(() => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
     if (status !== "ready" || !Cesium || !viewer || !active) return;
-    viewer.camera.flyToBoundingSphere(
-      new Cesium.BoundingSphere(
-        Cesium.Cartesian3.fromDegrees(active.lon, active.lat, active.elevation_m ?? 0),
-        11000,
-      ),
-      {
-        duration: 2.2,
-        offset: new Cesium.HeadingPitchRange(Cesium.Math.toRadians(15), Cesium.Math.toRadians(-38), 21000),
-      },
-    );
+    flyToSite(Cesium, viewer, active);
   }, [status, active]);
 
   /* punto aerologico attivo: l'ora selezionata del decollo attivo */
@@ -372,126 +389,108 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     arr.current = [];
   };
 
-  /* ---------- brezze di versante: frecce animate sui pendii (gialle = anabatica) ---------- */
+  /* ---------- griglia DEM del campo vento (una volta per decollo, in cache) ---------- */
   useEffect(() => {
-    const Cesium = cesiumRef.current;
-    const viewer = viewerRef.current;
-    if (status !== "ready" || !Cesium || !viewer || !active) return;
-    clear(breezeRef);
-    if (!breeze) return;
-
+    if (status !== "ready" || !active) return;
     let cancelled = false;
+    const cached = fieldCacheRef.current.get(active.id);
+    if (cached) {
+      setField(cached);
+      setFieldBusy(false);
+      return;
+    }
+    setField(null);
+    setFieldBusy(true);
     (async () => {
-      const anabatic = hour >= 9 && hour <= 18;
-      const STEP = 450; // m — griglia 9×9 = 3,6 km attorno al decollo
-      const N = 9;
-      const lat0 = active.lat;
-      const lon0 = active.lon;
-      const mLat = 111320;
-      const mLon = 111320 * Math.cos((lat0 * Math.PI) / 180);
-      const lats: number[] = [];
-      const lons: number[] = [];
-      for (let i = 0; i < N; i++) lats.push(lat0 + ((4 - i) * STEP) / mLat);
-      for (let j = 0; j < N; j++) lons.push(lon0 + ((j - 4) * STEP) / mLon);
-      /* quote del pendio lette direttamente dai tile Terrarium (deterministico,
-         stessa cache del terreno 3D): niente dipendenza dal campionatore Cesium */
-      let flat: number[];
       try {
-        flat = await sampleTerrainHeights(
-          lats.flatMap((la) => lons.map((lo) => ({ lat: la, lon: lo }))),
-        );
+        const f = await buildWindField(active.lat, active.lon);
+        if (cancelled) return;
+        fieldCacheRef.current.set(active.id, f);
         demRetries.current = 0;
+        setField(f);
+        setFieldBusy(false);
       } catch (e) {
-        console.warn("[c3d] campionamento brezze non riuscito:", String(e).slice(0, 120));
+        console.warn("[c3d] griglia DEM vento non pronta:", String(e).slice(0, 120));
         if (demRetries.current < 5) {
           demRetries.current += 1;
           window.setTimeout(() => {
             if (!cancelled) setDemEpoch((n) => n + 1);
           }, 5000);
-        }
-        return; // DEM non pronto: le brezze arrivano al prossimo refresh
-      }
-      if (cancelled || viewerRef.current !== viewer) return;
-      const H: number[][] = [];
-      for (let i = 0; i < N; i++) {
-        H.push([]);
-        for (let j = 0; j < N; j++) {
-          const h = flat[i * N + j];
-          H[i].push(Number.isFinite(h) ? h : 0); // il DEM non deve mai dare NaN
+        } else {
+          setFieldBusy(false);
         }
       }
-      /* altezza del pendio interpolata (bilineare): le frecce seguono il versante */
-      const hAt = (lat: number, lon: number): number => {
-        const fi = 4 - (lat - lat0) * (mLat / STEP);
-        const fj = (lon - lon0) * (mLon / STEP) + 4;
-        const ci = Math.min(N - 2, Math.max(0, Math.floor(fi - 0.5)));
-        const cj = Math.min(N - 2, Math.max(0, Math.floor(fj - 0.5)));
-        const ti = Math.min(1, Math.max(0, fi - 0.5 - ci));
-        const tj = Math.min(1, Math.max(0, fj - 0.5 - cj));
-        return (
-          H[ci][cj] * (1 - ti) * (1 - tj) +
-          H[ci][cj + 1] * (1 - ti) * tj +
-          H[ci + 1][cj] * ti * (1 - tj) +
-          H[ci + 1][cj + 1] * ti * tj
-        );
-      };
-      /* pendii con pendenza utile: né fondo valle piatto né pareti impossibili */
-      const cands: { lon: number; lat: number; dE: number; dN: number; s: number }[] = [];
-      for (let i = 1; i < N - 1; i++) {
-        for (let j = 1; j < N - 1; j++) {
-          const dzdx = (H[i][j + 1] - H[i][j - 1]) / (2 * STEP);
-          const dzdy = (H[i - 1][j] - H[i + 1][j]) / (2 * STEP);
-          const s = Math.hypot(dzdx, dzdy);
-          if (!Number.isFinite(s) || s < 0.1 || s > 1.05) continue;
-          const sign = anabatic ? 1 : -1; // giorno: risale il pendio; sera/notte: lo scende
-          cands.push({ lon: lons[j], lat: lats[i], dE: (sign * dzdx) / s, dN: (sign * dzdy) / s, s });
-        }
-      }
-      cands.sort((a, b) => b.s - a.s);
-      const arrows = cands.filter((_, idx) => idx % 2 === 0).slice(0, 24);
-      const color = Cesium.Color.fromCssColorString(anabatic ? "#ffd76a" : "#8ad6ff");
-
-      breezeRef.current = arrows.map((p, k) => {
-        const L = 85 + p.s * 55; // lunghezza freccia ∝ pendenza
-        const speed = 6.5 + p.s * 4; // m/s VISIVI — la brezza vera è 2-4 m/s
-        const span = 520;
-        const phase = (k * 131) % span;
-        const at = (off: number) => ({
-          lat: p.lat + (p.dN * off) / mLat,
-          lon: p.lon + (p.dE * off) / mLon,
-        });
-        let last: import("cesium").Cartesian3[] | null = null;
-        return viewer.entities.add({
-          polyline: {
-            positions: new Cesium.CallbackProperty(() => {
-              const t = performance.now() / 1000;
-              const off = ((t * speed + phase) % span) - span / 2;
-              const tail = at(off - L / 2);
-              const head = at(off + L / 2);
-              const calc = [
-                Cesium.Cartesian3.fromDegrees(tail.lon, tail.lat, hAt(tail.lat, tail.lon) + 22),
-                Cesium.Cartesian3.fromDegrees(head.lon, head.lat, hAt(head.lat, head.lon) + 28),
-              ];
-              /* mai posizioni NaN a Cesium: senza questo il render si ferma */
-              if (calc.every((c) => Number.isFinite(c.x) && Number.isFinite(c.y) && Number.isFinite(c.z))) {
-                last = calc;
-                return calc;
-              }
-              return last ?? [Cesium.Cartesian3.ZERO, Cesium.Cartesian3.ZERO];
-            }, false),
-            width: 6 + Math.round(p.s * 3),
-            material: new Cesium.PolylineArrowMaterialProperty(color.withAlpha(0.92)),
-          },
-        });
-      });
     })();
-
     return () => {
       cancelled = true;
     };
-  }, [status, active, hour, breeze, demEpoch]);
+  }, [status, active, demEpoch]);
 
-  /* ---------- venti meteo alla quota scelta (2000 → 4000 m) ---------- */
+  /* ---------- venti LIVE: Open-Meteo bulk, refresh automatico ogni 15 min ---------- */
+  useEffect(() => {
+    if (status !== "ready" || !field) return;
+    let cancelled = false;
+    const pull = async () => {
+      try {
+        const pts = await fetchLiveWind(field, hour);
+        if (cancelled) return;
+        setLive(pts);
+        setLiveAt(new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }));
+      } catch (e) {
+        /* senza dati live il campo resta con le sole brezze di versante */
+        console.warn("[c3d] venti live non disponibili:", String(e).slice(0, 100));
+      }
+    };
+    pull();
+    const iv = window.setInterval(pull, 15 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(iv);
+    };
+  }, [status, field, hour]);
+
+  /* classificazione aerologica: matematica pura, rieseguita a ogni ora/dati */
+  const flows = useMemo<FlowCell[]>(() => (field ? computeFlows(field, live, hour) : []), [field, live, hour]);
+
+  /* ---------- CAMPO VENTO ANIMATO: frecce grandi che attraversano la valle ---------- */
+  useEffect(() => {
+    const Cesium = cesiumRef.current;
+    const viewer = viewerRef.current;
+    if (status !== "ready" || !Cesium || !viewer || !field || !flows.length) return;
+    clear(surfRef);
+    if (!surface) return;
+
+    surfRef.current = flows.map((c, k) => {
+      const phase = (k * 137.7) % c.span;
+      let last: import("cesium").Cartesian3[] | null = null;
+      const posAt = (off: number): import("cesium").Cartesian3 => {
+        const la = c.lat + (c.dN * off) / field.mLat;
+        const lo = c.lon + (c.dE * off) / field.mLon;
+        return Cesium.Cartesian3.fromDegrees(lo, la, heightAt(field, la, lo) + 60);
+      };
+      return viewer.entities.add({
+        polyline: {
+          positions: new Cesium.CallbackProperty(() => {
+            const t = performance.now() / 1000;
+            const off = ((t * c.speedVis + phase) % c.span) - c.span / 2;
+            const calc = [posAt(off - c.len / 2), posAt(off + c.len / 2)];
+            /* mai posizioni NaN a Cesium: senza questo il render si ferma */
+            if (calc.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z))) {
+              last = calc;
+              return calc;
+            }
+            return last ?? [Cesium.Cartesian3.ZERO, Cesium.Cartesian3.ZERO];
+          }, false),
+          width: c.w,
+          material: new Cesium.PolylineArrowMaterialProperty(
+            Cesium.Color.fromCssColorString(FLOW_COLORS[c.cls]).withAlpha(0.95),
+          ),
+        },
+      });
+    });
+  }, [status, field, flows, surface]);
+
+  /* ---------- venti meteo alla quota scelta (2000 → 4000 m), colore = quota ---------- */
   useEffect(() => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
@@ -511,18 +510,18 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       const dirTo = ((wind.wd + 180) % 360) * (Math.PI / 180); // dove SPINGE il vento
       const dE = Math.sin(dirTo);
       const dN = Math.cos(dirTo);
-      const L = Math.min(950, Math.max(170, wsK * 55));
+      const L = Math.min(1800, Math.max(500, wsK * 55));
       const speed = Math.min(42, Math.max(7, (wsK / 3.6) * 3.2)); // drift esagerato ×3 per la lettura
-      const span = Math.max(1100, L * 5);
-      const color = Cesium.Color.fromCssColorString(windColor3d(wsK));
+      const span = Math.max(2200, L * 4);
+      const color = Cesium.Color.fromCssColorString(QUOTA_COLORS[quota as Quota3D]);
       const mLat = 111320;
       const mLon = 111320 * Math.cos((active.lat * Math.PI) / 180);
 
       /* due anelli attorno al decollo; le frecce dove il terreno supera la quota restano nascoste */
       const anchors: { lon: number; lat: number }[] = [];
-      for (const r of [2400, 4400]) {
-        for (let a = 0; a < 12; a++) {
-          const th = (a / 12) * Math.PI * 2;
+      for (const r of [2400, 4600]) {
+        for (let a = 0; a < 16; a++) {
+          const th = (a / 16) * Math.PI * 2;
           const e = Math.sin(th) * r;
           const n = Math.cos(th) * r;
           anchors.push({ lon: active.lon + e / mLon, lat: active.lat + n / mLat });
@@ -566,7 +565,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
               }
               return last ?? [Cesium.Cartesian3.ZERO, Cesium.Cartesian3.ZERO];
             }, false),
-            width: 7,
+            width: 11,
             material: new Cesium.PolylineArrowMaterialProperty(color.withAlpha(0.95)),
           },
         });
@@ -578,116 +577,19 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     };
   }, [status, active, activePoint, quota, demEpoch]);
 
-  /* ---------- percorso consigliato decollo → atterraggio + zona abitata ---------- */
-  useEffect(() => {
+  const resetView = () => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
-    if (status !== "ready" || !Cesium || !viewer || !active) return;
-    clear(routeRef);
-    if (!route) return;
-
-    let cancelled = false;
-    (async () => {
-      const N = 44;
-      const lons: number[] = [];
-      const lats: number[] = [];
-      for (let k = 0; k <= N; k++) {
-        const t = k / N;
-        lons.push(active.lon + (LANDING.lon - active.lon) * t);
-        lats.push(active.lat + (LANDING.lat - active.lat) * t);
-      }
-      let hs: number[];
-      try {
-        hs = await sampleTerrainHeights(
-          lons.map((lo, i) => ({ lat: lats[i], lon: lo })),
-        );
-        demRetries.current = 0;
-      } catch (e) {
-        console.warn("[c3d] campionamento percorso non riuscito:", String(e).slice(0, 120));
-        if (demRetries.current < 5) {
-          demRetries.current += 1;
-          window.setTimeout(() => {
-            if (!cancelled) setDemEpoch((n) => n + 1);
-          }, 5000);
-        }
-        return;
-      }
-      if (cancelled || viewerRef.current !== viewer) return;
-      const path = lons.map((lo, i) =>
-        Cesium.Cartesian3.fromDegrees(lo, lats[i], Number.isFinite(hs[i]) ? hs[i] + 30 : 30),
-      );
-
-      routeRef.current = [
-        viewer.entities.add({
-          polyline: {
-            positions: path,
-            width: 4,
-            material: new Cesium.PolylineDashMaterialProperty({
-              color: Cesium.Color.fromCssColorString("#ffffff").withAlpha(0.85),
-              dashLength: 26,
-            }),
-          },
-        }),
-        viewer.entities.add({
-          position: Cesium.Cartesian3.fromDegrees(LANDING.lon, LANDING.lat, 0),
-          billboard: {
-            image: makePin(Cesium, "#5eead4", false),
-            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-            scale: 1.1,
-            disableDepthTestDistance: Number.POSITIVE_INFINITY,
-            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-          },
-          label: {
-            text: LANDING.name,
-            font: "700 12px 'Barlow Condensed', 'Manrope', sans-serif",
-            fillColor: Cesium.Color.fromCssColorString("#d9fff5"),
-            showBackground: true,
-            backgroundColor: Cesium.Color.fromCssColorString("rgba(8,18,32,0.8)"),
-            backgroundPadding: new Cesium.Cartesian2(6, 3),
-            pixelOffset: new Cesium.Cartesian2(0, -46),
-            disableDepthTestDistance: Number.POSITIVE_INFINITY,
-            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-          },
-        }),
-        viewer.entities.add({
-          position: Cesium.Cartesian3.fromDegrees(NOFLY.lon, NOFLY.lat),
-          ellipse: {
-            semiMajorAxis: 380,
-            semiMinorAxis: 380,
-            height: 40,
-            heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
-            material: Cesium.Color.fromCssColorString("#ff6b6b").withAlpha(0.14),
-            outline: true,
-            outlineColor: Cesium.Color.fromCssColorString("#ff8f8f").withAlpha(0.8),
-          },
-          label: {
-            text: "zona abitata · niente sorvolo basso",
-            font: "600 11px 'Barlow Condensed', 'Manrope', sans-serif",
-            fillColor: Cesium.Color.fromCssColorString("#ffb3b3"),
-            showBackground: true,
-            backgroundColor: Cesium.Color.fromCssColorString("rgba(8,18,32,0.8)"),
-            backgroundPadding: new Cesium.Cartesian2(5, 3),
-            pixelOffset: new Cesium.Cartesian2(0, 26),
-            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 24000),
-            disableDepthTestDistance: Number.POSITIVE_INFINITY,
-            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-          },
-        }),
-      ];
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [status, active, route, demEpoch]);
+    if (Cesium && viewer && active) flyToSite(Cesium, viewer, active);
+  };
 
   return (
-    <section id="vista3d" className="cartina3d" data-testid="cartina-3d" aria-label="Vista 3D del terreno con brezze di versante e venti in quota">
+    <section id="vista3d" className="cartina3d" data-testid="cartina-3d" aria-label="Vista 3D del terreno con campo vento live e venti in quota">
       <div className="c3d-toolbar">
         <div className="c3d-title">
           <Mountain size={15} aria-hidden="true" />
           <h3>Terreno in 3D</h3>
-          <span className="c3d-sub">ore {String(hour).padStart(2, "0")}:00 · valori dell'ora selezionata</span>
+          <span className="c3d-sub">ore {String(hour).padStart(2, "0")}:00 · campo vento live Open-Meteo · agg. automatico 15 min</span>
         </div>
         <div className="c3d-controls">
           <label className="c3d-site">
@@ -717,18 +619,15 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
                 className={"c3d-q" + (quota === q ? " is-on" : "")}
                 onClick={() => setQuota(q)}
                 data-testid={`c3d-q-${q}`}
+                style={quota === q ? { background: QUOTA_COLORS[q], borderColor: QUOTA_COLORS[q], color: "#0a1626" } : undefined}
               >
                 {q}
               </button>
             ))}
           </div>
           <label className="c3d-toggle">
-            <Switch checked={breeze} onCheckedChange={setBreeze} aria-label="Brezze di versante" />
-            <span>Brezze di versante</span>
-          </label>
-          <label className="c3d-toggle">
-            <Switch checked={route} onCheckedChange={setRoute} aria-label="Percorso atterraggio" />
-            <span>Percorso atterraggio</span>
+            <Switch checked={surface} onCheckedChange={setSurface} aria-label="Campo vento suolo" />
+            <span>Venti suolo</span>
           </label>
         </div>
       </div>
@@ -740,11 +639,18 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         {/* dati aerologici flottanti */}
         <Hud
           ready={status === "ready"}
-          breeze={breeze}
-          anabatic={hour >= 9 && hour <= 18}
+          surface={surface}
+          anabatic={anabatic}
+          fieldBusy={fieldBusy}
+          liveAt={liveAt}
           quota={quota}
           wind={quota > 0 ? windAtAltitude(activePoint, quota, activePoint?.wind ?? null, activePoint?.dir ?? null) : null}
         />
+
+        {/* navigazione stile Google Earth */}
+        {status === "ready" && viewerRef.current && cesiumRef.current && (
+          <Nav3D Cesium={cesiumRef.current} viewer={viewerRef.current} onReset={resetView} />
+        )}
 
         {status === "loading" && (
           <div className="c3d-overlay" data-testid="c3d-loading">
@@ -768,17 +674,20 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
 
       <div className="c3d-legend">
         <span>
-          <i className={"c3d-sw is-brezza" + (hour >= 9 && hour <= 18 ? "" : " is-kat")} aria-hidden="true" />
-          {hour >= 9 && hour <= 18 ? "brezza anabatica (risale il pendio)" : "brezza catabatica (scende il pendio)"} · simulata, non in scala
+          <i className="c3d-sw is-lift" aria-hidden="true" /> portanza: il vento spinge contro il versante
         </span>
         <span>
-          <i className="c3d-sw is-vento" aria-hidden="true" /> vento meteo alla quota scelta (dal sounding)
+          <i className="c3d-sw is-lee" aria-hidden="true" /> sottovento: affondamento oltre la cresta
         </span>
         <span>
-          <i className="c3d-sw is-route" aria-hidden="true" /> percorso consigliato → atterraggio
+          <i className={"c3d-sw " + (anabatic ? "is-ana" : "is-kata")} aria-hidden="true" />
+          {anabatic ? "brezza anabatica (risale i pendii)" : "brezza catabatica (scende i pendii)"}
         </span>
         <span>
-          <i className="c3d-sw is-nofly" aria-hidden="true" /> zona abitata: niente sorvolo basso
+          <i className="c3d-sw is-flow" aria-hidden="true" /> flusso di valle
+        </span>
+        <span>
+          <i className="c3d-sw is-quota" aria-hidden="true" /> vento in quota 2000 → 4000 m (colore = quota)
         </span>
       </div>
     </section>
@@ -788,26 +697,38 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
 /* HUD: letture aerologiche sopra la scena */
 function Hud({
   ready,
-  breeze,
+  surface,
   anabatic,
+  fieldBusy,
+  liveAt,
   quota,
   wind,
 }: {
   ready: boolean;
-  breeze: boolean;
+  surface: boolean;
   anabatic: boolean;
+  fieldBusy: boolean;
+  liveAt: string;
   quota: Quota3D | 0;
   wind: { ws: number | null; wd: number | null } | null;
 }) {
   if (!ready) return null;
   return (
     <div className="c3d-hud" data-testid="c3d-hud">
-      <span className="c3d-hud-k">
-        {breeze
+      <span className="c3d-hud-k" data-testid="c3d-hud-live">
+        <i className="c3d-live-dot" aria-hidden="true" />
+        {fieldBusy
+          ? "campo vento: preparo la griglia del terreno…"
+          : liveAt
+            ? `venti live suolo · aggiornati alle ${liveAt}`
+            : "venti suolo: dati live in arrivo…"}
+      </span>
+      <span className="c3d-hud-v" data-testid="c3d-hud-surface">
+        {surface
           ? anabatic
-            ? "Brezza anabatica · risale i versanti"
-            : "Brezza catabatica · scende i versanti"
-          : "Brezze di versante nascoste"}
+            ? "verde = portanza · rosso = sottovento · giallo = risale i pendii"
+            : "verde = portanza · rosso = sottovento · ciano = scende i pendii"
+          : "venti suolo nascosti"}
       </span>
       <span className="c3d-hud-v" data-testid="c3d-hud-wind">
         {quota === 0

@@ -172,6 +172,24 @@
 }
 .c3d-credits img { display: none; }
 
+/* dot «live» pulsante */
+.c3d-live-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #3ddc84;
+  box-shadow: 0 0 0 0 rgba(61, 220, 132, 0.55);
+  animation: c3d-pulse 1.8s ease-out infinite;
+  vertical-align: 1px;
+}
+@keyframes c3d-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(61, 220, 132, 0.55); }
+  70% { box-shadow: 0 0 0 7px rgba(61, 220, 132, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(61, 220, 132, 0); }
+}
+
 /* HUD flottante */
 .c3d-hud {
   position: absolute;
@@ -234,6 +252,105 @@
 }
 @keyframes c3d-rot { to { transform: rotate(360deg); } }
 
+/* ---------- navigazione stile Google Earth ---------- */
+.c3d-nav {
+  position: absolute;
+  right: 10px;
+  bottom: 30px;
+  z-index: 4;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+.c3d-compass {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1px solid rgba(125, 211, 252, 0.3);
+  background: radial-gradient(circle at 50% 38%, rgba(21, 41, 66, 0.92), rgba(8, 17, 30, 0.94));
+  box-shadow: 0 6px 18px rgba(2, 8, 18, 0.55), inset 0 0 12px rgba(125, 211, 252, 0.08);
+  backdrop-filter: blur(6px);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.c3d-compass:active { cursor: grabbing; }
+.c3d-compass-ring {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.06s linear;
+}
+.c3d-compass-n {
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ff7b7b;
+  font-family: var(--font-mono, monospace);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+.c3d-needle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 16px;
+  transform: translate(-50%, -100%);
+  background: linear-gradient(180deg, #ff7b7b, rgba(255, 123, 123, 0.15));
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.c3d-needle::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  transform: translate(-50%, -1px);
+  border-radius: 50%;
+  background: rgba(234, 246, 255, 0.75);
+}
+.c3d-nav-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.c3d-nav-btns button {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid rgba(125, 211, 252, 0.24);
+  background: rgba(8, 17, 30, 0.86);
+  color: #bfe3ff;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  backdrop-filter: blur(5px);
+  padding: 0;
+}
+.c3d-nav-btns button:hover {
+  color: #eaf6ff;
+  border-color: rgba(125, 211, 252, 0.55);
+  background: rgba(17, 33, 54, 0.92);
+}
+.c3d-nav-btns .c3d-nav-2d {
+  font-family: var(--font-mono, monospace);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.c3d-nav-btns .c3d-nav-2d.is-on {
+  color: #0a1626;
+  background: linear-gradient(180deg, #ffd76a, #f5b93e);
+  border-color: #ffd76a;
+}
+
 /* progresso tile */
 .c3d-progress {
   position: absolute;
@@ -250,6 +367,14 @@
 }
 
 /* ---------- legenda ---------- */
+.c3d-sw.is-lift { background: linear-gradient(90deg, rgba(61, 220, 132, 0.55), #3ddc84); }
+.c3d-sw.is-lee { background: linear-gradient(90deg, rgba(255, 84, 112, 0.55), #ff5470); }
+.c3d-sw.is-ana { background: linear-gradient(90deg, rgba(255, 210, 63, 0.55), #ffd23f); }
+.c3d-sw.is-kata { background: linear-gradient(90deg, rgba(76, 195, 255, 0.55), #4cc3ff); }
+.c3d-sw.is-flow { background: linear-gradient(90deg, rgba(255, 179, 71, 0.5), #ffb347); }
+.c3d-sw.is-quota {
+  background: linear-gradient(90deg, #4cc3ff, #3ddc84, #ffd23f, #ff9f43, #ff5cc8);
+}
 .c3d-legend {
   display: flex;
   flex-wrap: wrap;
@@ -266,23 +391,6 @@
   height: 9px;
   flex: none;
   clip-path: polygon(0 38%, 62% 38%, 62% 0, 100% 50%, 62% 100%, 62% 62%, 0 62%);
-  background: linear-gradient(90deg, rgba(255, 215, 106, 0.55), #ffd76a);
-}
-.c3d-sw.is-kat { background: linear-gradient(90deg, rgba(138, 214, 255, 0.55), #8ad6ff); }
-.c3d-sw.is-vento { background: linear-gradient(90deg, rgba(159, 232, 112, 0.5), #9fe870); }
-.c3d-sw.is-route {
-  background: repeating-linear-gradient(90deg, #ffffff 0 4px, transparent 4px 8px);
-  clip-path: none;
-  height: 3px;
-  border-radius: 2px;
-}
-.c3d-sw.is-nofly {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  clip-path: none;
-  background: rgba(255, 107, 107, 0.25);
-  border: 1.5px solid rgba(255, 143, 143, 0.8);
 }
 
 /* ---------- mobile ---------- */
@@ -292,6 +400,10 @@
   .c3d-sub { white-space: normal; }
   .c3d-stage { height: clamp(330px, 62vh, 480px); }
   .c3d-site select { max-width: 150px; }
+  .c3d-hud { max-width: 62%; }
   .c3d-hud-k, .c3d-hud-v { font-size: 0.62rem; }
   .c3d-legend { gap: 0.3rem 0.7rem; font-size: 0.6rem; }
+  .c3d-nav { right: 8px; bottom: 26px; gap: 0.35rem; }
+  .c3d-compass { width: 46px; height: 46px; }
+  .c3d-nav-btns button { width: 27px; height: 27px; }
 }
