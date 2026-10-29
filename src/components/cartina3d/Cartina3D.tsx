@@ -430,6 +430,8 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   useEffect(() => {
     if (status !== "ready" || !field) return;
     let cancelled = false;
+    let retryT: number | undefined;
+    let retries = 0;
     const pull = async () => {
       try {
         const pts = await fetchLiveWind(field, hour);
@@ -437,8 +439,15 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         setLive(pts);
         setLiveAt(new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }));
       } catch (e) {
-        /* senza dati live il campo resta con le sole brezze di versante */
+        /* senza dati live il campo resta con le sole brezze di versante; ma un
+           errore transitorio (rete lenta, limite momentaneo) non deve lasciare
+           "dati in arrivo" per 15 minuti: riprovo presto con backoff leggero */
         console.warn("[c3d] venti live non disponibili:", String(e).slice(0, 100));
+        if (cancelled || retries >= 4) return;
+        retries += 1;
+        retryT = window.setTimeout(() => {
+          if (!cancelled) pull();
+        }, 30000 * retries);
       }
     };
     pull();
@@ -446,6 +455,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     return () => {
       cancelled = true;
       window.clearInterval(iv);
+      if (retryT) window.clearTimeout(retryT);
     };
   }, [status, field, hour]);
 

@@ -24,7 +24,11 @@ const log = (s) => {
 (async () => {
   const errors = [];
   const renderErrors = [];
-  const browser = await chromium.launch({ args: ["--use-gl=angle", "--enable-unsafe-swiftshader"] });
+  /* --disable-dev-shm-usage: nel container /dev/shm è 64 MB e il renderer
+     Chromium muore (SIGKILL silenzioso) al primo screenshot pesante. */
+  const browser = await chromium.launch({
+    args: ["--use-gl=angle", "--enable-unsafe-swiftshader", "--disable-dev-shm-usage"],
+  });
   const page = await browser.newPage({ viewport: { width: 1024, height: 640 } });
   page.setDefaultTimeout(30000);
   page.on("crash", () => errors.push("PAGE CRASH"));
@@ -42,11 +46,16 @@ const log = (s) => {
   await page.waitForTimeout(9000); // tile + campo vento + live
 
   const shot = async (name) => {
-    const el = await page.$('[data-testid="cartina-3d"]');
-    if (!el) throw new Error("cartina-3d non trovata");
-    const box = await el.boundingBox();
-    await page.screenshot({ path: path.join(OUT, name), clip: box, timeout: 60000, animations: "disabled" });
-    log("    shot: " + name);
+    try {
+      const el = await page.$('[data-testid="cartina-3d"]');
+      if (!el) throw new Error("cartina-3d non trovata");
+      const box = await el.boundingBox();
+      await page.screenshot({ path: path.join(OUT, name), clip: box, timeout: 90000, animations: "disabled" });
+      log("    shot: " + name);
+    } catch (e) {
+      /* lo screenshot non deve far fallire la verifica dei dati */
+      log("    shot FALLITO (non bloccante): " + name + " — " + String(e).slice(0, 90));
+    }
   };
 
   const entCount = async () =>
@@ -139,7 +148,9 @@ const log = (s) => {
   const mnav = await mp.evaluate(() => !!document.querySelector('[data-testid="c3d-nav"]'));
   const mel = await mp.$('[data-testid="cartina-3d"]');
   const mbox = await mel.boundingBox();
-  await mp.screenshot({ path: path.join(OUT, "v3-mobile.png"), clip: mbox, timeout: 60000, animations: "disabled" });
+  await mp
+    .screenshot({ path: path.join(OUT, "v3-mobile.png"), clip: mbox, timeout: 90000, animations: "disabled" })
+    .catch((e) => log("    shot mobile FALLITO (non bloccante): " + String(e).slice(0, 90)));
   log("    shot: v3-mobile.png · nav: " + mnav);
 
   await browser.close();
