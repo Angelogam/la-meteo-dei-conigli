@@ -368,10 +368,11 @@ export default function CartinaPanel({ snapshot, hours, hour, onClose, onPickHou
               ))}
             </div>
             <p className="cmap-bars-help">
-              Il parapendio segna la sommità della risalita, i cumuli sono disegnati alla quota di arrivo della
-              termica (base nubi) e la linea tratteggiata è lo zero termico. A destra il vento dal decollo a 4000
-              m: freccia = dove spinge, valore in km/h, «da NO» = da dove arriva · tocca un'ora per aggiornare la
-              scena.
+              Il fondo colorato mostra le masse d'aria: fascia ambrata = aria instabile in convezione dal suolo
+              alla quota d'arrivo, fascia azzurra = aria stabile sopra. Il parapendio segna la sommità della
+              risalita, i cumuli sono disegnati alla base nubi e la linea tratteggiata è lo zero termico. A destra
+              ogni riga porta la sua altimetria: freccia = dove spinge il vento, km/h e «da NO» = da dove arriva ·
+              tocca un'ora per aggiornare la scena.
             </p>
           </div>
 

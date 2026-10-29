@@ -11,8 +11,12 @@
  * - i CUMULI (Meteocons animati) sono posizionati alla base nubi = quota di arrivo
  * - il PARAPENDIO dettagliato (vela a celle, sospensioni, pilota) segna la sommità
  * - la linea tratteggiata rossa col fiocco di neve segna lo ZERO TERMICO
- * - a destra la COLONNA DEI VENTI: a ogni quota (decolo → 4000 m) freccia = direzione
- *   dove spinge il vento, valore in km/h e direzione in parole ("da NO")
+ * - a destra la COLONNA DEI VENTI: a ogni quota (decolo → 4000 m) l'ALTIMETRIA è scritta
+ *   sulla riga stessa, sopra il valore: freccia = direzione dove spinge il vento,
+ *   valore in km/h e direzione in parole ("da NO") — niente più valori senza quota
+ * - il FONDO della scena mostra le MASSE D'ARIA (stile Alpium): fascia ambrata =
+ *   aria instabile in convezione dal suolo alla quota d'arrivo, fascia azzurra =
+ *   aria stabile sopra, con etichette in margine
  *
  * Icone: Meteocons © Bas Milius — MIT license (public/meteocons/).
  */
@@ -34,7 +38,7 @@ export interface SkyProps {
 }
 
 const TOP = 4000; // tetto della scena
-const W = 328; // larghezza viewBox
+const W = 352; // larghezza viewBox (più respiro per la colonna dei venti)
 const H = 286; // altezza viewBox
 const PLOT_L = 38; // inizio area cielo (dopo le quote)
 const PLOT_R = 238; // fine area cielo (prima dei venti)
@@ -248,6 +252,19 @@ export default function CartinaSky({ quota, rateo, baseNubi, freezing, cloud, wi
               <stop offset="0%" stopColor={colTop} stopOpacity="0.95" />
               <stop offset="100%" stopColor={colBot} stopOpacity="0.5" />
             </linearGradient>
+            {/* sfondo masse d'aria (Alpium): convezione ambrata sotto, aria stabile azzurra sopra */}
+            <linearGradient id="cs-airu" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%" stopColor="#f97316" stopOpacity="0.30" />
+              <stop offset="45%" stopColor="#fbbf24" stopOpacity="0.15" />
+              <stop offset="100%" stopColor="#fde047" stopOpacity="0.04" />
+            </linearGradient>
+            <linearGradient id="cs-airs" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.18" />
+              <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.05" />
+            </linearGradient>
+            <clipPath id="cs-plot">
+              <rect x={PLOT_L} y={PLOT_T} width={PLOT_R - PLOT_L} height={PLOT_B - PLOT_T} rx={8} />
+            </clipPath>
             <linearGradient id="cs-shine" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="#ffffff" stopOpacity="0.30" />
               <stop offset="45%" stopColor="#ffffff" stopOpacity="0.05" />
@@ -267,6 +284,14 @@ export default function CartinaSky({ quota, rateo, baseNubi, freezing, cloud, wi
 
           {/* cielo */}
           <rect x={PLOT_L} y={PLOT_T} width={PLOT_R - PLOT_L} height={PLOT_B - PLOT_T} fill="url(#cs-sky)" rx={8} />
+          {/* masse d'aria (fondo scena): instabile sotto la cima della risalita, stabile sopra */}
+          <g clipPath="url(#cs-plot)">
+            <rect x={PLOT_L} y={yTop} width={PLOT_R - PLOT_L} height={Math.max(0, PLOT_B - yTop)} fill="url(#cs-airu)" />
+            <rect x={PLOT_L} y={PLOT_T} width={PLOT_R - PLOT_L} height={Math.max(0, yTop - PLOT_T)} fill="url(#cs-airs)" />
+            <line x1={PLOT_L} y1={yTop} x2={PLOT_R} y2={yTop} stroke="rgba(255,255,255,0.16)" strokeWidth={0.8} strokeDasharray="2 3" />
+          </g>
+          <text x={PLOT_L + 6} y={PLOT_B - 9} className="cmap-sky-band is-un">aria instabile · convezione</text>
+          <text x={PLOT_L + 6} y={PLOT_T + 12} className="cmap-sky-band is-st">aria stabile</text>
           {/* bagliore solare */}
           <circle cx={206} cy={44} r={48} fill="url(#cs-sunglow)" />
 
@@ -428,22 +453,23 @@ export default function CartinaSky({ quota, rateo, baseNubi, freezing, cloud, wi
             decollo · {fmtM(quota)} m
           </text>
 
-          {/* colonna dei venti a destra */}
+          {/* colonna dei venti a destra: ALTIMETRIA + valore sulla stessa riga */}
           <g aria-hidden="true">
             {winds.map((w) => {
               const yy = y(w.alt);
               const rot = w.wd != null ? (w.wd + 180) % 360 : null;
               const c = windColor(w.ws);
+              const isQ = w.alt === quota;
               return (
                 <g key={"w" + w.alt} className="cmap-sky-wrow">
-                  <line x1={PLOT_R} y1={yy} x2={246} y2={yy} stroke="rgba(255,255,255,0.14)" strokeWidth={1} />
-                  <circle cx={246} cy={yy} r={1.6} fill={w.alt === quota ? "#ffd76a" : "rgba(255,255,255,0.35)"} />
+                  <line x1={PLOT_R} y1={yy} x2={244} y2={yy} stroke="rgba(255,255,255,0.16)" strokeWidth={1} />
+                  <circle cx={244} cy={yy} r={1.7} fill={isQ ? "#ffd76a" : "rgba(255,255,255,0.4)"} />
                   {rot != null ? (
-                    <g transform={`translate(259 ${yy}) rotate(${rot.toFixed(1)})`}>
-                      <line y1={7.5} y2={-5.5} stroke={c} strokeWidth={4.4} strokeLinecap="round" opacity={0.22} />
-                      <line y1={7.5} y2={-5.5} stroke={c} strokeWidth={1.9} strokeLinecap="round" />
+                    <g transform={`translate(256 ${yy}) rotate(${rot.toFixed(1)})`}>
+                      <line y1={7} y2={-5} stroke={c} strokeWidth={4.2} strokeLinecap="round" opacity={0.22} />
+                      <line y1={7} y2={-5} stroke={c} strokeWidth={1.9} strokeLinecap="round" />
                       <path
-                        d="M 0 -8 L -3.6 -3.9 M 0 -8 L 3.6 -3.9"
+                        d="M 0 -7.6 L -3.4 -3.7 M 0 -7.6 L 3.4 -3.7"
                         stroke={c}
                         strokeWidth={1.9}
                         strokeLinecap="round"
@@ -451,13 +477,19 @@ export default function CartinaSky({ quota, rateo, baseNubi, freezing, cloud, wi
                       />
                     </g>
                   ) : (
-                    <circle cx={259} cy={yy} r={2.4} fill="none" stroke="#5a6f88" strokeWidth={1} />
+                    <circle cx={256} cy={yy} r={2.4} fill="none" stroke="#5a6f88" strokeWidth={1} />
                   )}
-                  <text x={271} y={yy - 0.5} className="cmap-sky-wspd" style={{ fill: c }}>
-                    {w.ws == null ? "–" : w.ws + " km/h"}
+                  <text
+                    x={268}
+                    y={yy - 2.6}
+                    className="cmap-sky-walt"
+                    style={isQ ? { fill: "#ffd76a" } : undefined}
+                  >
+                    {(isQ ? fmtM(quota) : String(w.alt)) + " m"}
                   </text>
-                  <text x={271} y={yy + 8.5} className="cmap-sky-wdir">
-                    {w.wd == null ? "quota" : "da " + dir8(w.wd)}
+                  <text x={268} y={yy + 8} className="cmap-sky-wspd" style={{ fill: c }}>
+                    {w.ws == null ? "vento N/D" : w.ws + " km/h"}
+                    {w.wd != null && <tspan className="cmap-sky-wdir" dx={4}>da {dir8(w.wd)}</tspan>}
                   </text>
                 </g>
               );

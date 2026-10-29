@@ -16,6 +16,7 @@ import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
 import CartinaMeteo from "@/components/CartinaMeteo";
+import Cartina3D from "@/components/cartina3d/Cartina3D";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
 import type { HourData } from "@/types/meteo";
 import type { MeteoCurrent } from "@/services/openMeteoService";
@@ -158,6 +159,12 @@ export default function Index() {
                   <CartinaMeteo
                     decolli={mergedDecolli}
                     selectedId={selectedId}
+                    onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}
+                  />
+                  <Cartina3D
+                    decolli={mergedDecolli}
+                    selectedId={selectedId}
+                    hour={selectedHour}
                     onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}
                   />
               <section id="windgram-section" className="launch-windgram-top min-w-0" aria-label="Windgram aerologico del decollo selezionato">

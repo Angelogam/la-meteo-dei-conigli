@@ -66,3 +66,6 @@ android/app/build/**
 artifacts
 
 *.tsbuildinfo
+
+# CesiumJS assets (creati da scripts/copy-cesium.cjs, non in repo)
+public/cesium/

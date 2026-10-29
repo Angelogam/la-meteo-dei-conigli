@@ -580,7 +580,7 @@
 }
 .cmap-card-k {
   color: #8aa0b2;
-  font-size: 0.63rem;
+  font-size: 0.68rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -588,7 +588,7 @@
 .cmap-card-v {
   color: #f2fbff;
   font-family: var(--font-mono);
-  font-size: 1.3rem;
+  font-size: 1.42rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   line-height: 1.15;
@@ -598,7 +598,7 @@
   flex-wrap: wrap;
 }
 .cmap-card-v small { color: #8fa6b8; font-size: 0.72rem; font-weight: 750; }
-.cmap-card-s { margin: 0; color: #8ba1b2; font-size: 0.69rem; line-height: 1.45; }
+.cmap-card-s { margin: 0; color: #8ba1b2; font-size: 0.74rem; line-height: 1.45; }
 
 /* mini-badge dentro le schede (CAPE, turbolenza, temporali) */
 .cmap-mini {
@@ -688,14 +688,14 @@
 }
 .cmap-skyhead-k {
   color: #bfe3ff;
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 .cmap-skyhead-v {
   color: #6d8496;
-  font-size: 0.6rem;
+  font-size: 0.66rem;
   font-family: var(--font-mono);
 }
 .cmap-sky-stage { position: relative; }
@@ -711,24 +711,35 @@
 .cmap-sky-ico.is-sun { filter: drop-shadow(0 0 7px rgba(251, 191, 36, 0.5)); }
 .cmap-sky-ax {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 10px;
   fill: #8599ad;
 }
+/* etichette delle masse d'aria in margine alla scena (stile Alpium) */
+.cmap-sky-band {
+  font-family: var(--font-mono);
+  font-size: 6.8px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.cmap-sky-band.is-un { fill: #ffc98a; opacity: 0.9; }
+.cmap-sky-band.is-st { fill: #a5c8fb; opacity: 0.9; }
 .cmap-sky-zero {
   font-family: var(--font-mono);
-  font-size: 8.6px;
+  font-size: 9.2px;
   fill: #ff9d9d;
-  opacity: 0.9;
+  opacity: 0.92;
 }
 .cmap-sky-topv {
   font-family: var(--font-mono);
-  font-size: 10.6px;
+  font-size: 11.2px;
   font-weight: 800;
   fill: #ffd76a;
 }
 .cmap-sky-topk {
   font-family: var(--font-mono);
-  font-size: 8.2px;
+  font-size: 8.8px;
   fill: #93a9bb;
 }
 .cmap-sky-dry {
@@ -738,18 +749,27 @@
 }
 .cmap-sky-launch {
   font-family: var(--font-mono);
-  font-size: 8.8px;
+  font-size: 9.4px;
   font-weight: 700;
   fill: #a9bccb;
 }
 .cmap-sky-wspd {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 10.4px;
   font-weight: 800;
+}
+/* altimetria scritta sulla riga vento (colonna di destra) */
+.cmap-sky-walt {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  fill: #9db1c4;
 }
 .cmap-sky-wdir {
   font-family: var(--font-mono);
-  font-size: 8.5px;
+  font-size: 8.4px;
+  font-weight: 500;
   fill: #93a9bb;
 }
 .sky-bub {
