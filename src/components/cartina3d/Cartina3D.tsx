@@ -8,11 +8,12 @@
  *
  * Cosa mostra (UN FLUSSO ALLA VOLTA, mai sovrapposti — richiesta pilota):
  * - i DECOLLI con pin cliccabili e un PARAPENDIO in volo che fluttua sopra ognuno
- * - le BREZZE DEL PENDIO (toggle «Brezze del pendio»): flusso CONTINUO a VERDE
- *   INTENSO che riempie tutti i rilievi come acqua che risale le rocce —
- *   tantissime frecce a CODA LUNGA su una griglia DEM larga ≈17×12 km (anche
- *   fuori dalle zone decollo), salgono i pendii di giorno, scendono di notte,
- *   con RICCIOLI di sottovento dietro le creste ed ETICHETTE km/h + direzione
+ * - le BREZZE DEL PENDIO (toggle «Brezze del pendio»): flusso CONTINUO di
+ *   frecce ONDULATE 3D LARGHE e BLU che riempiono tutti i rilievi come acqua
+ *   che risale le rocce — tantissime frecce a CODA LUNGA e molto VELOCI su
+ *   una griglia DEM larga ≈17×12 km (anche fuori dalle zone decollo), salgono
+ *   i pendii di giorno, scendono di notte, con ROTORI ROSSI di sottovento che
+ *   girano su se stessi dietro le creste ed ETICHETTE km/h + direzione
  * - i VENTI METEO IN QUOTA SOLO SU CLIC della quota (1740→4000 m, passi di
  *   250): clicco 2000 → SOLO il vento dominante a 2000 m con velocità e
  *   direzione; clicco 3000 → solo il meteo a 3000. Colore = velocità nella
@@ -582,7 +583,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   }, [status, field]);
 
   /* ---------- FLUSSO VENTO SUOLO: SOLO BREZZE DI PENDIO (toggle dedicato) ----------
-     windflow.ts costruisce il flusso continuo verde su TUTTI i rilievi
+     windflow.ts costruisce il flusso continuo blu su TUTTI i rilievi
      (anche fuori dalle zone decollo): frecce a coda lunga che corrono come
      acqua che risale le rocce, con RICCIOLI di sottovento dietro le creste.
      Quando è selezionata una QUOTA il suolo si SVUOTA: un flusso alla volta,
@@ -1321,8 +1322,8 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           <em>50+ km/h</em>
         </span>
         <span>
-          <i className="c3d-dot" style={{ background: "#2ee07c" }} aria-hidden="true" />
-          verde = brezze di pendio · rosso = sottovento e vortici
+          <i className="c3d-dot" style={{ background: "#2f9bf7" }} aria-hidden="true" />
+          blu = brezze di pendio · rosso = rotori di sottovento
         </span>
         <span>
           <i className="c3d-dot" style={{ background: "#ffd60a" }} aria-hidden="true" />
@@ -1387,8 +1388,8 @@ function Hud({
           ? "brezze del pendio nascoste: è attivo il vento in quota"
           : surface
             ? anabatic
-              ? "frecce verdi = brezze di pendio che salgono (anabatica) · riccioli rossi = sottovento"
-              : "frecce verdi = aria che scende i pendii (catabatica) · riccioli rossi = sottovento"
+              ? "frecce blu = brezze di pendio che salgono (anabatica) · rotori rossi = sottovento"
+              : "frecce blu = aria che scende i pendii (catabatica) · rotori rossi = sottovento"
             : "brezze del pendio nascoste"}
       </span>
       <span className="c3d-hud-v" data-testid="c3d-hud-wind">

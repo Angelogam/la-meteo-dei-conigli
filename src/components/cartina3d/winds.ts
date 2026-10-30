@@ -60,18 +60,18 @@ export function speedColor(kmh: number): string {
 }
 
 /**
- * Colore delle BREZZE DI PENDIO: flusso continuo a VERDE INTENSO (come acqua
- * che risale le rocce). La tonalità si abbassa leggermente con la velocità:
- * debole = verde chiaro, forte = verde profondo — resta sempre la stessa
- * famiglia cromatica così il flusso si legge come un'unica massa d'aria.
+ * Colore delle BREZZE DI PENDIO (richiesta pilota): freccia BLU — flusso
+ * continuo di aria che risale le rocce. La tonalità si abbassa con la
+ * velocità: debole = azzurro chiaro, forte = blu profondo — resta sempre la
+ * stessa famiglia cromatica così il flusso si legge come un'unica massa d'aria.
  */
 export function breezeColor(kmh: number): string {
-  if (!Number.isFinite(kmh)) return "#2ee07c";
-  if (kmh < 6) return "#4be88f";
-  if (kmh < 11) return "#2ee07c";
-  if (kmh < 16) return "#16cf66";
-  if (kmh < 22) return "#08bd58";
-  return "#04a44a";
+  if (!Number.isFinite(kmh)) return "#3f9ef8";
+  if (kmh < 6) return "#8fd0ff";
+  if (kmh < 11) return "#5cb9fb";
+  if (kmh < 16) return "#2f9bf7";
+  if (kmh < 22) return "#1279e2";
+  return "#0a5cc4";
 }
 
 export interface WindField {

@@ -2,23 +2,24 @@
 <html><head><meta charset="utf-8"><style>
   body { margin:0; font-family: sans-serif; background:#222; }
   .row { display:flex; }
-  .panel { padding:14px; width:560px; height:400px; }
+  .panel { padding:14px; width:640px; height:430px; }
   .dark { background:#1a2634; }
-  .light { background:#cfd8cf; }
+  .light { background:#8fae8f; }
   h3 { color:#eee; margin:4px 0 8px; font-size:13px; }
   canvas { margin:6px; }
 </style></head>
 <body>
 <div class="row">
-  <div class="panel dark"><h3>dardo brezze + freccia meteo (sfondo scuro)</h3><div id="a"></div></div>
+  <div class="panel dark"><h3>brezze BLU ondulate + meteo piatto + rotori (scuro)</h3><div id="a"></div></div>
   <div class="panel light"><h3>sfondo chiaro (satellite)</h3><div id="b"></div></div>
 </div>
 <script type="module">
-  import { dartSprite, chevronSprite } from "./sprites.js";
-  const colors = ["#35d07f", "#ffd23f", "#ff7043", "#ff4d4f", "#4cc3ff", "#c94fff"];
-  for (const [id, sc] of [["a", 1.5], ["b", 1.5]]) {
+  import { dartSprite, chevronSprite, rotorSprite } from "./sprites.js";
+  const blues = ["#8fd0ff", "#5cb9fb", "#2f9bf7", "#1279e2", "#0a5cc4"];
+  const others = ["#ffd633", "#ef3a5e", "#8b2bd9", "#ff4d5e"];
+  for (const [id, sc] of [["a", 1.35], ["b", 1.35]]) {
     const host = document.getElementById(id);
-    for (const col of colors) {
+    for (const col of blues) {
       for (const fn of [dartSprite, chevronSprite]) {
         const src = fn(col);
         const c = document.createElement("canvas");
@@ -28,6 +29,22 @@
         g.drawImage(src, 0, 0, c.width, c.height);
         host.appendChild(c);
       }
+      const rt = rotorSprite("#ff4d5e");
+      const c2 = document.createElement("canvas");
+      c2.width = rt.width * sc; c2.height = rt.height * sc;
+      const g2 = c2.getContext("2d");
+      g2.imageSmoothingEnabled = true; g2.imageSmoothingQuality = "high";
+      g2.drawImage(rt, 0, 0, c2.width, c2.height);
+      host.appendChild(c2);
+    }
+    for (const col of others) {
+      const src = chevronSprite(col);
+      const c = document.createElement("canvas");
+      c.width = src.width * sc; c.height = src.height * sc;
+      const g = c.getContext("2d");
+      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+      g.drawImage(src, 0, 0, c.width, c.height);
+      host.appendChild(c);
     }
   }
   window.__ready = true;

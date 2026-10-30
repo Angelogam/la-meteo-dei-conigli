@@ -2,13 +2,13 @@
  * FLUSSO VENTO SUOLO — solo BREZZE DI PENDIO/VALLE (richiesta pilota).
  *
  * «Un flusso continuo che riempie, come l'acqua che scivola sulle rocce al
- * contrario»: tantissime frecce piccole VERDI a coda lunga che CORRONO sui
- * rilievi come una cascata — di giorno salgono i pendii (anabatica), di notte
- * scendono (catabatica) — su TUTTO il territorio in vista, anche fuori dalle
- * zone di decollo (la griglia DEM è larga ≈17×12 km). La velocità visiva
- * cresce quando il flusso è allineato alla pendenza e dietro le creste, dove
- * il vento meteo scavalca e l'aria affonda, compaiono i RICCIOLI DI
- * SOTTOVENTO: piccoli vortici che ruotano su se stessi.
+ * contrario»: tantissime frecce ONDULATE 3D, LARGHE e BLU a coda lunga che
+ * CORRONO sui rilievi come una cascata — di giorno salgono i pendii
+ * (anabatica), di notte scendono (catabatica) — su TUTTO il territorio in
+ * vista, anche fuori dalle zone di decollo (la griglia DEM è larga ≈17×12 km).
+ * La velocità visiva cresce quando il flusso è allineato alla pendenza e
+ * dietro le creste, dove il vento meteo scavalca e l'aria affonda, compaiono
+ * i ROTORI DI SOTTOVENTO: frecce curve rosse ad arco che GIRANO SU SE STESSI.
  *
  * I VENTI METEO non stanno più qui: entrano SOLO su richiesta, cliccando una
  * quota nella barra (un livello alla volta, mai sovrapposti — vedi
@@ -21,7 +21,7 @@
  */
 
 import { breezeColor, heightAt, type LivePoint, type WindField } from "./winds";
-import { curlSprite, dartSprite } from "./sprites";
+import { dartSprite, rotorSprite } from "./sprites";
 
 type CesiumNs = typeof import("cesium");
 type ViewerNs = import("cesium").Viewer;
@@ -45,11 +45,11 @@ interface Mover {
   scale: number; // scala base dello sprite
   waveK: number; // fase locale dell'onda globale (dalla distanza)
   weaveA: number; // ampiezza del serpeggio (m)
-  eddy: boolean; // moto orbitale (ricciolo di sottovento)
-  R: number; // raggio orbitale
+  eddy: boolean; // rotore di sottovento (non corre: gira su se stesso)
+  R: number; // offset fisso dal centro del rotore (m)
   w0: number; // fase angolare iniziale
-  om: number; // velocità angolare
-  kind: "dart" | "eddy"; // famiglia (scelta sprite + rotazione)
+  om: number; // velocità di rotazione su se stesso (rad/s)
+  kind: "dart" | "rotor"; // famiglia (scelta sprite + rotazione)
   tint: string; // colore (chiave sprite)
 }
 
@@ -108,7 +108,7 @@ export function buildWindFlow(
 
   const movers: Mover[] = [];
 
-  /* ============ BREZZE: griglia fitta di frecce verdi su TUTTI i pendii ============ */
+  /* ======== BREZZE: griglia fitta di frecce BLU ONDULATE su TUTTI i pendii ======== */
   const eddyCenters: { lat: number; lon: number }[] = [];
   const STEP = 235; // m tra le frecce candidate
   const nI = Math.floor((2 * extN) / STEP);
@@ -156,48 +156,52 @@ export function buildWindFlow(
       const dirN = tN / sp;
       const flowUp = dirE * uE + dirN * uN; // il flusso risale il pendio?
 
-      /* ---- RICCIOLI DI SOTTOVENTO: il meteo scavalca la cresta e dietro
-         l'aria affonda → vortice (meteo moderato-forte + pendenza). ---- */
-      if (w.ws >= 11 && s > 0.12 && up < -0.28) {
+      /* ---- ROTORI DI SOTTOVENTO: il meteo scavalca la cresta e dietro
+         l'aria affonda e ROTA (freccia curva rossa che gira su se stessa).
+         Con vento moderato basta poco meteo in contro-pendio; sui pendii
+         ripidi nascono rotori anche con brezza leggera. ---- */
+      const leeKite = (w.ws >= 8.5 && s > 0.1 && up < -0.22) || (s > 0.22 && up < -0.3);
+      if (leeKite) {
         const far = eddyCenters.every(
-          (c) => Math.abs(c.lat - lat) * mLat > 380 || Math.abs(c.lon - lon) * mLon > 380,
+          (c) => Math.hypot((c.lat - lat) * mLat, (c.lon - lon) * mLon) > 520,
         );
         if (far && eddyCenters.length < 30) {
           eddyCenters.push({ lat, lon });
-          const nB = 4 + ((i + j) % 2); // 4-5 frecce per vortice
-          for (let b = 0; b < nB; b++) {
+          for (let b = 0; b < 2; b++) {
+            const hb = hash01(i * 31 + j * 7 + b * 5);
             movers.push({
               lat,
               lon,
               dE: dirE,
               dN: dirN,
-              azTo: 0, // la tangente si calcola a ogni frame
+              azTo: 0,
               speedVis: 0,
               span: 0,
               phase: 0,
-              lift: 26 + 12 * hash01(i * 31 + j * 7 + b),
-              scale: 0.56 + 0.12 * hash01(i + j * 13 + b * 3),
+              lift: 32 + 34 * b + 14 * hb,
+              scale: b === 0 ? 0.86 + 0.18 * hb : 0.6 + 0.14 * hb,
               waveK: 0,
               weaveA: 0,
               eddy: true,
-              R: 60 + 100 * hash01(i * 17 + j * 5 + b * 11),
-              w0: (b / nB) * Math.PI * 2,
-              om: 1.5 + 0.6 * hash01(i * 3 + j * 29),
-              kind: "eddy",
-              tint: "#ff5470",
+              R: b === 0 ? 0 : 110 + 60 * hb, // offset fisso ben separato tra i due rotori
+              w0: hb * Math.PI * 2, // fase di rotazione iniziale
+              om: 1.9 + 0.9 * hash01(i * 3 + j * 29 + b), // rad/s → gira su se stesso
+              kind: "rotor",
+              tint: "#ff4d5e", // ROSSO: aria che affonda e turba dietro la cresta
             });
           }
         }
-        continue; // al posto della freccia dritta, qui ruota il vortice
+        continue; // al posto della freccia dritta, qui ruota il rotore
       }
 
       /* FLUSSO CONTINUO: la freccia c'è OVUNQUE (anche in pianura e fuori dalle
          zone decollo), con forza minima visibile — l'acqua riempie ogni roccia */
       void breezeMag;
 
-      /* CASCATA: la corsa accelera quando il flusso è allineato alla pendenza */
+      /* CASCATA: la corsa accelera quando il flusso è allineato alla pendenza.
+         RICHIESTA PILOTA: frecce LARGHE e che si muovono MOLTO più forte. */
       const cascade = clamp(1 + 0.55 * flowUp, 0.7, 1.6);
-      const speedVis = clamp(sp * 3.4 * cascade, 14, 88);
+      const speedVis = clamp(sp * 4.4 * cascade, 22, 118);
       const distC = Math.hypot(i * STEP - extN, j * STEP - extE);
 
       dartCandidates.push({
@@ -210,15 +214,15 @@ export function buildWindFlow(
         span: 620 + 360 * hash01(i * 7 + j),
         phase: hash01(i * 13 + j * 5) * 990,
         lift: 26 + 8 * hash01(i * 11 + j * 3),
-        scale: 0.46 + 0.12 * clamp(sp / 26, 0, 1),
+        scale: 0.56 + 0.16 * clamp(sp / 26, 0, 1),
         waveK: distC * 0.0045,
-        weaveA: 26 + 18 * hash01(i + j * 17),
+        weaveA: 28 + 18 * hash01(i + j * 17),
         eddy: false,
         R: 0,
         w0: 0,
         om: 0,
         kind: "dart",
-        tint: breezeColor(sp), // VERDE INTENSO, sempre la stessa famiglia
+        tint: breezeColor(sp), // BLU, sempre la stessa famiglia
       });
     }
   }
@@ -235,7 +239,7 @@ export function buildWindFlow(
   const finite = (p: import("cesium").Cartesian3): boolean =>
     Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z);
 
-  const imgOf = (m: Mover): HTMLCanvasElement => (m.kind === "eddy" ? curlSprite(m.tint) : dartSprite(m.tint));
+  const imgOf = (m: Mover): HTMLCanvasElement => (m.kind === "rotor" ? rotorSprite(m.tint) : dartSprite(m.tint));
 
   let bbs: import("cesium").Billboard[] = [];
   try {
@@ -261,6 +265,7 @@ export function buildWindFlow(
     darts: movers.filter((m) => m.kind === "dart").length,
     chevrons: 0, // i venti meteo non stanno più sul suolo: solo su clic della quota
     eddies: eddyCenters.length,
+    rotors: movers.filter((m) => m.kind === "rotor").length,
     total: movers.length,
   };
   const tick = (): void => {
@@ -280,18 +285,16 @@ export function buildWindFlow(
       let rot: number;
       let lift: number;
       if (m.eddy) {
-        /* RICCIOLO: orbita attorno al centro, ruotata lungo la tangente */
-        const ang = t * m.om + m.w0;
-        offE = Math.cos(ang) * m.R;
-        offN = Math.sin(ang) * m.R;
-        const vE = -Math.sin(ang);
-        const vN = Math.cos(ang);
-        rot = heading - Math.atan2(vE, vN);
-        lift = m.lift + 6 * Math.sin(t * 1.2 + m.w0 * 3);
+        /* ROTORE: posizione fissa (piccolo offset tra i due), la freccia curva
+           GIRA SU SE STESSA — rotazione animata del billboard */
+        offE = Math.cos(m.w0 * 2.3) * m.R;
+        offN = Math.sin(m.w0 * 2.3) * m.R;
+        rot = heading - (m.w0 + t * m.om);
+        lift = m.lift + 5 * Math.sin(t * 1.1 + m.w0);
       } else {
         /* CORSA lungo il flusso + serpeggio laterale (onde) */
         const prog = ((t * m.speedVis + m.phase) % m.span) - m.span / 2;
-        const sw = m.weaveA > 0 ? m.weaveA * Math.sin(t * 0.95 + m.phase * 0.11) : 0;
+        const sw = m.weaveA > 0 ? m.weaveA * Math.sin(t * 1.45 + m.phase * 0.11) : 0;
         offE = m.dE * prog - m.dN * sw;
         offN = m.dN * prog + m.dE * sw;
         rot = heading - m.azTo;
@@ -302,9 +305,10 @@ export function buildWindFlow(
       const h = heightAt(field, la, lo) + lift;
       const p = Cesium.Cartesian3.fromDegrees(lo, la, h);
       if (finite(p)) b.position = p;
-      /* ONDA GLOBALE: creste di luminosità/scala che percorrono la valle */
+      /* ONDA GLOBALE: creste di luminosità/scala che percorrono la valle
+         (sui rotori il respiro è più morbido: girano già su se stessi) */
       const wave = 0.5 + 0.5 * Math.sin(t * 1.5 - m.waveK);
-      b.scale = m.scale * (0.84 + 0.3 * wave);
+      b.scale = m.scale * (m.eddy ? 0.94 + 0.1 * wave : 0.84 + 0.3 * wave);
     }
   };
   viewer.scene.preRender.addEventListener(tick);
