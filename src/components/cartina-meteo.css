@@ -234,7 +234,7 @@
   background: rgba(6, 15, 25, 0.86);
   backdrop-filter: blur(6px);
   pointer-events: none;
-  max-width: min(64vw, 300px);
+  max-width: min(56vw, 240px);
 }
 .cmap-legend-title { color: #cfe4f2; font-size: 0.6rem; font-weight: 750; letter-spacing: 0.05em; }
 .cmap-legend-bar { display: block; width: 150px; height: 8px; border-radius: 4px; }
@@ -265,6 +265,19 @@
 .cmap-legend-w i.is-w2 { background: #fbbf24; }
 .cmap-legend-w i.is-w3 { background: #f97316; }
 .cmap-legend-w i.is-w4 { background: #ef4444; }
+/* legenda brezze (quota bassa) */
+.cmap-legend-w i.is-br1 { background: #6ee7b7; }
+.cmap-legend-w i.is-br2 { background: #2dd4bf; }
+.cmap-legend-w i.is-br3 { background: #22d3ee; }
+.cmap-legend-w i.is-br4 { background: #38bdf8; }
+.cmap-legend-w i.is-br5 { background: #818cf8; }
+/* legenda vento meteo (quota alta, scala per velocità) */
+.cmap-legend-w i.is-m1 { background: #94a3b8; }
+.cmap-legend-w i.is-m2 { background: #4ade80; }
+.cmap-legend-w i.is-m3 { background: #f59e0b; }
+.cmap-legend-w i.is-m4 { background: #ef4444; }
+.cmap-legend-w i.is-m5 { background: #dc2626; }
+.cmap-legend-w i.is-m6 { background: #a855f7; }
 
 /* ------------------------------- marker ------------------------------- */
 
@@ -377,6 +390,140 @@
 .cmap-speed[data-w="is-w2"] { color: #fcd34d; }
 .cmap-speed[data-w="is-w3"] { color: #fb923c; }
 .cmap-speed[data-w="is-w4"] { color: #fca5a5; }
+
+/* chip direzione sul marker (provenienza, es. "NE") */
+.cmap-dirchip {
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: -10px;
+  transform: translateX(-50%);
+  padding: 0.5px 5px;
+  border-radius: 6px;
+  background: rgba(6, 15, 25, 0.92);
+  color: #d7f4ff;
+  font-size: 9.5px;
+  font-weight: 800;
+  font-style: normal;
+  letter-spacing: 0.05em;
+  border: 1px solid rgba(113, 217, 244, 0.25);
+  white-space: nowrap;
+}
+.cmap-marker.is-windlayer .cmap-dirchip { display: block; }
+
+/* colore della freccia del marker = famiglia/quota scelta (vince su is-good/fair/bad) */
+.cmap-marker.is-windlayer[data-wc=""] .cmap-arrow { color: #64748b; }
+.cmap-marker.is-windlayer[data-wc="is-br1"] .cmap-arrow { color: #6ee7b7; }
+.cmap-marker.is-windlayer[data-wc="is-br2"] .cmap-arrow { color: #2dd4bf; }
+.cmap-marker.is-windlayer[data-wc="is-br3"] .cmap-arrow { color: #22d3ee; }
+.cmap-marker.is-windlayer[data-wc="is-br4"] .cmap-arrow { color: #38bdf8; }
+.cmap-marker.is-windlayer[data-wc="is-br5"] .cmap-arrow { color: #818cf8; }
+.cmap-marker.is-windlayer[data-wc="is-m1"] .cmap-arrow { color: #94a3b8; }
+.cmap-marker.is-windlayer[data-wc="is-m2"] .cmap-arrow { color: #4ade80; }
+.cmap-marker.is-windlayer[data-wc="is-m3"] .cmap-arrow { color: #f59e0b; }
+.cmap-marker.is-windlayer[data-wc="is-m4"] .cmap-arrow { color: #ef4444; }
+.cmap-marker.is-windlayer[data-wc="is-m5"] .cmap-arrow { color: #dc2626; }
+.cmap-marker.is-windlayer[data-wc="is-m6"] .cmap-arrow { color: #a855f7; }
+.cmap-speed[data-w="is-br1"] { color: #6ee7b7; }
+.cmap-speed[data-w="is-br2"] { color: #2dd4bf; }
+.cmap-speed[data-w="is-br3"] { color: #22d3ee; }
+.cmap-speed[data-w="is-br4"] { color: #38bdf8; }
+.cmap-speed[data-w="is-br5"] { color: #818cf8; }
+.cmap-speed[data-w="is-m1"] { color: #cbd5e1; }
+.cmap-speed[data-w="is-m2"] { color: #4ade80; }
+.cmap-speed[data-w="is-m3"] { color: #f59e0b; }
+.cmap-speed[data-w="is-m4"] { color: #ef4444; }
+.cmap-speed[data-w="is-m5"] { color: #dc2626; }
+.cmap-speed[data-w="is-m6"] { color: #a855f7; }
+
+/* ---------------------- card vento: velocità + direzione ---------------------- */
+/* a destra del pannello dettaglio, a fianco della colonna QUOTA (che sta a right:10) */
+.cmap-wind-cards {
+  position: absolute;
+  top: 10px;
+  right: 84px;
+  z-index: 720;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  pointer-events: none;
+  max-width: min(30vw, 226px);
+}
+.cmap-wcards-title {
+  color: #cfe4f2;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 1px 4px 2px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
+}
+.cmap-wcard {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 9px;
+  background: rgba(6, 15, 25, 0.82);
+  border: 1px solid rgba(113, 217, 244, 0.18);
+  backdrop-filter: blur(5px);
+  box-shadow: 0 2px 8px rgba(2, 8, 16, 0.45);
+}
+.cmap-wcard span {
+  color: #dbeaf5;
+  font-size: 0.66rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.cmap-wcard b {
+  font-size: 0.7rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.cmap-wcard em {
+  color: #9fc3d6;
+  font-size: 0.6rem;
+  font-style: normal;
+  white-space: nowrap;
+}
+.cmap-wcard-a {
+  flex: 0 0 auto;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85));
+}
+.cmap-wcard-a line,
+.cmap-wcard-a path { stroke: currentColor; fill: currentColor; }
+.cmap-wcard-a.is-br1, .cmap-wcard b.is-br1 { color: #6ee7b7; }
+.cmap-wcard-a.is-br2, .cmap-wcard b.is-br2 { color: #2dd4bf; }
+.cmap-wcard-a.is-br3, .cmap-wcard b.is-br3 { color: #22d3ee; }
+.cmap-wcard-a.is-br4, .cmap-wcard b.is-br4 { color: #38bdf8; }
+.cmap-wcard-a.is-br5, .cmap-wcard b.is-br5 { color: #818cf8; }
+.cmap-wcard-a.is-m1, .cmap-wcard b.is-m1 { color: #cbd5e1; }
+.cmap-wcard-a.is-m2, .cmap-wcard b.is-m2 { color: #4ade80; }
+.cmap-wcard-a.is-m3, .cmap-wcard b.is-m3 { color: #f59e0b; }
+.cmap-wcard-a.is-m4, .cmap-wcard b.is-m4 { color: #ef4444; }
+.cmap-wcard-a.is-m5, .cmap-wcard b.is-m5 { color: #dc2626; }
+.cmap-wcard-a.is-m6, .cmap-wcard b.is-m6 { color: #a855f7; }
+@media (max-width: 940px) {
+  /* pannello in basso full-width → le card salgono in alto a sinistra, sotto il readout */
+  .cmap-wind-cards { right: auto; left: 8px; top: 64px; max-width: 44vw; }
+}
+@media (max-width: 640px) {
+  .cmap-wcard span { font-size: 0.6rem; }
+  .cmap-wcard b { font-size: 0.64rem; }
+  .cmap-wcard em { display: none; }
+  /* su schermi stretti: titolo + 3 card */
+  .cmap-wind-cards .cmap-wcard:nth-child(n+5) { display: none; }
+}
+@media (max-width: 560px) {
+  .cmap-wind-cards { top: 60px; max-width: 46vw; }
+}
 
 /* --------------------------- pannello dettaglio --------------------------- */
 

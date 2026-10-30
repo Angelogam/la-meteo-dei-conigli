@@ -124,7 +124,7 @@ const LAYER_HINT: Record<LayerId, string> = {
   termiche:
     "Le zone colorate sono i pendii che il sole sta riscaldando: al mattino i versanti E/SE, a mezzogiorno i S, nel pomeriggio gli O/SO. Con il selettore QUOTA il campo si legge all'altezza scelta: salendo le bolle restano vive solo dove la risalita le porta, il resto sbiadisce fino a spegnersi alla base dei cumuli.",
   vento:
-    "La freccia mostra dove spinge il vento alla quota scelta, il colore l'intensità. Sul decollo conta il rapporto con l'esposizione: in fronte la termica si rinforza, in coda muore.",
+    "La quota decide cosa stai guardando: fino a 1800 m si vedono le brezze di pendio e di valle che salgono verso i decolli — verde-acqua se deboli, ciano e azzurro quando rinforzano. Sopra i 1800 m compare il vento del modello colorato per velocità: verde fino a 10 km/h, giallo-arancio fino a 20, rosso fino a 30, rosso fuoco oltre. Ogni traccia è una particella d'aria: la coda disegna la traiettoria e l'onda fa respirare tutto il flusso insieme.",
   nuvole:
     "La copertura filtra il sole: con poche nubi le termiche si rinforzano, sopra il 70% il riscaldamento crolla e la convezione si spegne. La base dei cumuli coincide con la base nubi del pannello.",
   pioggia:
@@ -146,6 +146,50 @@ const THERMAL_STOPS: { v: number; c: [number, number, number]; a: number }[] = [
   { v: 2.5, c: [239, 68, 68], a: 0.38 },
   { v: 4.2, c: [168, 85, 247], a: 0.46 },
 ];
+
+/* --- FAMIGLIE DI VENTO: la QUOTA scelta decide cosa si vede ---
+ *  - fino a 1800 m (o Suolo): BREZZE di pendio e di valle — verde-acqua se deboli,
+ *    ciano/azzurro quando rinforzano; tirano verso il decollo salendo i pendii.
+ *  - sopra i 1800 m: VENTO METEO del modello — scala per velocità stile Windy:
+ *    verde <10 km/h, giallo-arancio fino a 20, rosso fino a 30, rosso fuoco fino a 40. */
+const BREEZE_MAX_ALT = 1800;
+
+type WindFamily = "breeze" | "meteo";
+function windFamilyFor(alt: number | null): WindFamily {
+  return alt == null || alt <= BREEZE_MAX_ALT ? "breeze" : "meteo";
+}
+
+/* scale rgb per le particelle su canvas */
+const BREEZE_STOPS: { v: number; c: string }[] = [
+  { v: 6, c: "110,231,183" },   // verde-acqua tenue: brezza appena percettibile
+  { v: 11, c: "45,212,191" },   // teal
+  { v: 17, c: "34,211,238" },   // ciano
+  { v: 26, c: "56,189,248" },   // azzurro
+  { v: 999, c: "129,140,248" }, // indaco: flusso deciso
+];
+const METEO_STOPS: { v: number; c: string }[] = [
+  { v: 5, c: "148,163,184" },   // aria calma
+  { v: 10, c: "74,222,128" },   // verde 5-10
+  { v: 14, c: "250,204,21" },   // giallo
+  { v: 20, c: "249,115,22" },   // arancio 10-20
+  { v: 30, c: "239,68,68" },    // rosso 20-30
+  { v: 40, c: "220,38,38" },    // rosso fuoco 30-40
+  { v: 999, c: "168,85,247" },  // viola 40+
+];
+
+function windColorFor(fam: WindFamily, kmh: number): string {
+  const stops = fam === "breeze" ? BREEZE_STOPS : METEO_STOPS;
+  for (const s of stops) if (kmh < s.v) return s.c;
+  return stops[stops.length - 1].c;
+}
+
+/* classi colore per chip/card/legenda */
+function windClassFor(fam: WindFamily, kmh: number): string {
+  if (fam === "breeze") {
+    return kmh < 6 ? "is-br1" : kmh < 11 ? "is-br2" : kmh < 17 ? "is-br3" : kmh < 26 ? "is-br4" : "is-br5";
+  }
+  return kmh < 5 ? "is-m1" : kmh < 10 ? "is-m2" : kmh < 20 ? "is-m3" : kmh < 30 ? "is-m4" : kmh < 40 ? "is-m5" : "is-m6";
+}
 
 /* Scala pioggia (mm/h) */
 const RAIN_STOPS: { v: number; c: [number, number, number]; a: number }[] = [
@@ -290,13 +334,6 @@ function sampleStops(stops: { v: number; c: [number, number, number]; a: number 
   return { color: last.c.join(","), alpha: last.a };
 }
 
-function windSpeedClass(kmh: number): string {
-  if (kmh < 15) return "is-w1";
-  if (kmh < 25) return "is-w2";
-  if (kmh < 35) return "is-w3";
-  return "is-w4";
-}
-
 function heatRadius(zoom: number): number {
   return Math.max(34, Math.min(120, 23 * Math.pow(1.9, zoom - 8)));
 }
@@ -307,12 +344,14 @@ function cardinal(deg: number | null | undefined): string {
   return CARDINALI[Math.round((((deg % 360) + 360) % 360) / 22.5) % 16];
 }
 
+/* freccia slanciata: coda sottile + punta affusolata (niente più triangolo largo) */
 const MARKER_HTML = (name: string) =>
   `<div class="cmap-marker" role="button" tabindex="-1">` +
   `<span class="cmap-pin">` +
-  `<span class="cmap-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="21" height="21"><path d="M12 2.5 L18.5 15.5 L12 12.2 L5.5 15.5 Z"/></svg></span>` +
+  `<span class="cmap-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="21" height="21"><line x1="12" y1="21.6" x2="12" y2="10.4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M12 1.6 L15.5 11.2 L12 9.1 L8.5 11.2 Z"/></svg></span>` +
   `<i class="cmap-dot"></i>` +
   `<b class="cmap-speed">–</b>` +
+  `<em class="cmap-dirchip">–</em>` +
   `</span>` +
   `<span class="cmap-tag">${name}</span>` +
   `</div>`;
@@ -411,8 +450,11 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
   /* ---------------- VENTO ANIMATO — campo di particelle (firma Meteo-Parapente) ---------------- */
   const windReadsRef = useRef(windReads);
   windReadsRef.current = windReads;
-  const windFieldRef = useRef<{ w: number; h: number; pts: { x: number; y: number; ws: number; vx: number; vy: number }[] } | null>(null);
-  const particlesRef = useRef<{ x: number; y: number; age: number; life: number }[]>([]);
+  const windFieldRef = useRef<{ w: number; h: number; mpp: number; pts: { x: number; y: number; ws: number; rad: number; vx: number; vy: number }[] } | null>(null);
+  const particlesRef = useRef<{ x: number; y: number; age: number; life: number; seed: number }[]>([]);
+  /* vettori anabatici campionati dal DEM: la brezza risale la direzione di massima salita */
+  const demVecRef = useRef<{ cols: number; rows: number; spacing: number; arr: Float32Array } | null>(null);
+  const windTimeRef = useRef(0);
   const windRafRef = useRef(0);
   const scatterRef = useRef<() => void>(() => {});
 
@@ -625,7 +667,10 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
     const size = map.getSize();
     const pad = 100;
     const topLeft = map.containerPointToLayerPoint([-pad, -pad]);
-    const pts: { x: number; y: number; ws: number; vx: number; vy: number }[] = [];
+    const p1 = map.containerPointToLatLng([0, 0]);
+    const p2 = map.containerPointToLatLng([100, 0]);
+    const mpp = Math.max(1, map.distance(p1, p2) / 100);
+    const pts: { x: number; y: number; ws: number; rad: number; vx: number; vy: number }[] = [];
     for (const s of snapRef.current) {
       const read = windReadsRef.current.get(s.item.id);
       if (!read || read.ws == null || read.wd == null || !Number.isFinite(read.ws) || !Number.isFinite(read.wd)) continue;
@@ -636,21 +681,45 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
         x: p.x - topLeft.x,
         y: p.y - topLeft.y,
         ws: read.ws,
+        rad: s.point?.rad ?? 0,
         vx: Math.sin(to),
         vy: -Math.cos(to),
       });
     }
-    windFieldRef.current = { w: size.x + pad * 2, h: size.y + pad * 2, pts };
+    windFieldRef.current = { w: size.x + pad * 2, h: size.y + pad * 2, mpp, pts };
+    /* griglia anabatica dal campo termico (ha già pendenza e aspetto da DEM):
+       in ogni cella salviamo la direzione di salita — la brezza la risale */
+    demVecRef.current = null;
+    const geom = geomRef.current;
+    if (geom && demReadyRef.current && geom.cells.length) {
+      const arr = new Float32Array(geom.cols * geom.rows * 2);
+      for (let r = 0; r < geom.rows; r++) {
+        for (let c = 0; c < geom.cols; c++) {
+          const cell = geom.cells[r * geom.cols + c];
+          const o = (r * geom.cols + c) * 2;
+          if (!cell || !Number.isFinite(cell.elev) || cell.slope < 2.2) {
+            arr[o] = 0;
+            arr[o + 1] = 0;
+            continue;
+          }
+          const a = (cell.aspect * Math.PI) / 180; // azimut di massima salita (gradi da N)
+          arr[o] = Math.sin(a);      // Est → x positivo
+          arr[o + 1] = -Math.cos(a); // Nord → y negativo (asse schermo)
+        }
+      }
+      demVecRef.current = { cols: geom.cols, rows: geom.rows, spacing: geom.spacing, arr };
+    }
     /* risemina le particelle sul viewport corrente */
-    const target = Math.min(430, Math.max(150, Math.round(((size.x + pad * 2) * (size.y + pad * 2)) / 2700)));
+    const target = Math.min(560, Math.max(190, Math.round(((size.x + pad * 2) * (size.y + pad * 2)) / 2200)));
     const arr = particlesRef.current;
     arr.length = 0;
     for (let i = 0; i < target; i++) {
       arr.push({
         x: Math.random() * (size.x + pad * 2),
         y: Math.random() * (size.y + pad * 2),
-        age: Math.random() * 70,
-        life: 80 + Math.random() * 110,
+        age: Math.random() * 80,
+        life: 90 + Math.random() * 130,
+        seed: Math.random() * Math.PI * 2,
       });
     }
   }, []);
@@ -683,13 +752,27 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
       const field = windFieldRef.current;
       if (!field || !field.pts.length) return;
 
+      const fam = windFamilyFor(altStepRef.current.alt);
+      windTimeRef.current += dt;
+      const t = windTimeRef.current;
+      /* fattore diurno: le brezze nascono col sole e muoiono al tramonto */
+      const hh = hourRef.current;
+      const fDay = Math.max(0, Math.min(1, (hh - 6.5) / 2.5)) * Math.max(0, Math.min(1, (19.5 - hh) / 2.5));
+      /* raggio di azione della brezza locale (~5.4 km) in px della vista */
+      const nearRangePx = 5400 / Math.max(3, field.mpp);
+      const demVec = demVecRef.current;
+
       ctx.lineCap = "round";
       for (const p of particlesRef.current) {
-        /* velocità interpolata (IDW) dal campo dei decolli */
+        /* --- vento interpolato (IDW) dal campo dei decolli --- */
         let wSum = 0;
         let vx = 0;
         let vy = 0;
         let ws = 0;
+        let rad = 0;
+        let dNear2 = Infinity;
+        let sx = 0;
+        let sy = 0;
         for (const q of field.pts) {
           const d2 = (q.x - p.x) * (q.x - p.x) + (q.y - p.y) * (q.y - p.y);
           const weight = 1 / (d2 + 2500);
@@ -697,15 +780,76 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
           vx += q.vx * weight;
           vy += q.vy * weight;
           ws += q.ws * weight;
+          rad += q.rad * weight;
+          if (d2 < dNear2) {
+            dNear2 = d2;
+            sx = q.x;
+            sy = q.y;
+          }
         }
         if (wSum <= 0) continue;
         vx /= wSum;
         vy /= wSum;
         ws /= wSum;
+        rad /= wSum;
+        const vLen = Math.hypot(vx, vy) || 1;
+        vx /= vLen;
+        vy /= vLen;
 
-        const speedPx = Math.min(64, 16 + ws * 1.7); // resa visiva: corsa percepibile a ogni intensità
-        const nx = p.x + vx * speedPx * dt;
-        const ny = p.y + vy * speedPx * dt;
+        /* --- componente di brezza: solo in quota bassa, di giorno, vicino ai rilievi --- */
+        let wA = 0;
+        if (fam === "breeze" && fDay > 0.01) {
+          const prox = Math.max(0, Math.min(1, 1 - Math.sqrt(dNear2) / nearRangePx));
+          wA = 0.8 * fDay * Math.min(1, rad / 520) * prox;
+        }
+        let dx = vx;
+        let dy = vy;
+        let wsEff = ws;
+        if (wA > 0.02) {
+          let ax = 0;
+          let ay = 0;
+          if (demVec) {
+            const c = Math.max(0, Math.min(demVec.cols - 1, Math.floor(p.x / demVec.spacing) + 3));
+            const r = Math.max(0, Math.min(demVec.rows - 1, Math.floor(p.y / demVec.spacing) + 3));
+            const o = (r * demVec.cols + c) * 2;
+            ax = demVec.arr[o];
+            ay = demVec.arr[o + 1];
+          }
+          if (ax === 0 && ay === 0) {
+            /* DEM assente o pendio piatto: la brezza tira verso il decollo più vicino */
+            const dNear = Math.max(1, Math.sqrt(dNear2));
+            ax = (sx - p.x) / dNear;
+            ay = (sy - p.y) / dNear;
+          }
+          const aLen = Math.hypot(ax, ay);
+          if (aLen > 0.01) {
+            ax /= aLen;
+            ay /= aLen;
+            dx = vx * (1 - wA) + ax * wA;
+            dy = vy * (1 - wA) + ay * wA;
+            const dl = Math.hypot(dx, dy) || 1;
+            dx /= dl;
+            dy /= dl;
+            wsEff = ws * (1 - wA) + (3.5 + 12 * fDay * Math.min(1, rad / 520)) * wA;
+          } else {
+            wA = 0;
+          }
+        }
+
+        /* --- onda collettiva: tutto il flusso accelera e rallenta insieme, come onde --- */
+        const wave = 0.74 + 0.38 * Math.sin((p.x * 0.012 + p.y * 0.008) - t * 3.6);
+        const sp = (20 + wsEff * 3.0) * wave;
+        /* --- serpentina laterale: le brezze ondegiano in largo lungo il pendio --- */
+        let mvx = dx * sp;
+        let mvy = dy * sp;
+        if (wA > 0.15) {
+          const wob = Math.sin(t * 2.6 + p.seed) * wA * (10 + Math.min(22, wsEff * 1.6));
+          mvx += -dy * wob;
+          mvy += dx * wob;
+        }
+
+        const nx = p.x + mvx * dt;
+        const ny = p.y + mvy * dt;
         p.age += dt * 60;
         if (p.age > p.life || nx < 0 || ny < 0 || nx > w || ny > h) {
           p.x = Math.random() * w;
@@ -716,21 +860,35 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
         p.x = nx;
         p.y = ny;
 
-        const fade = Math.min(1, p.age / 12, (p.life - p.age) / 16);
+        const fade = Math.min(1, p.age / 10, (p.life - p.age) / 14);
         if (fade <= 0.02) continue;
-        const len = Math.min(32, 13 + ws * 0.9);
-        const color = ws < 15 ? "125,211,252" : ws < 25 ? "56,189,248" : ws < 35 ? "250,204,21" : "251,146,60";
-        ctx.strokeStyle = `rgba(${color},${(0.9 * fade).toFixed(3)})`;
-        ctx.lineWidth = 2.1;
+        const color = windColorFor(fam, wsEff);
+
+        /* --- scia a cometa: tre tratti che si assottigliano dietro la punta --- */
+        const len = Math.min(52, 22 + wsEff * 1.5);
+        for (let k = 0; k < 3; k++) {
+          const f0 = 1 - k / 3;
+          const f1 = 1 - (k + 1) / 3;
+          ctx.strokeStyle = `rgba(${color},${((0.24 + 0.36 * f0) * fade).toFixed(3)})`;
+          ctx.lineWidth = 1.1 + 1.9 * f0;
+          ctx.beginPath();
+          ctx.moveTo(p.x - dx * len * f0, p.y - dy * len * f0);
+          ctx.lineTo(p.x - dx * len * f1, p.y - dy * len * f1);
+          ctx.stroke();
+        }
+        /* --- punta affusolata (dardo), non più un puntino largo --- */
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(Math.atan2(dy, dx));
+        ctx.fillStyle = `rgba(${color},${(0.95 * fade).toFixed(3)})`;
         ctx.beginPath();
-        ctx.moveTo(p.x - vx * len, p.y - vy * len);
-        ctx.lineTo(p.x, p.y);
-        ctx.stroke();
-        /* testina: puntino pieno nel verso del moto */
-        ctx.fillStyle = `rgba(${color},${(0.98 * fade).toFixed(3)})`;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
+        ctx.moveTo(4.6, 0);
+        ctx.lineTo(-1.3, 1.55);
+        ctx.lineTo(-0.4, 0);
+        ctx.lineTo(-1.3, -1.55);
+        ctx.closePath();
         ctx.fill();
+        ctx.restore();
       }
     };
   });
@@ -816,6 +974,7 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
       if (demReadyRef.current) rebuildFieldGeometry();
       if (layerRef.current === "vento") scatterRef.current();
       scheduleDraw();
+      setViewTick((v) => v + 1); // le card vento seguono il centro della vista
     };
   }, [rebuildFieldGeometry, scheduleDraw]);
 
@@ -1008,6 +1167,7 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
 
       if (isWind) {
         const read = windReads.get(s.item.id);
+        const fam = windFamilyFor(altStep.alt);
         const arrow = el.querySelector(".cmap-arrow") as HTMLElement | null;
         const speed = el.querySelector(".cmap-speed") as HTMLElement | null;
         if (arrow && read?.wd != null && Number.isFinite(read.wd)) {
@@ -1016,13 +1176,19 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
         if (speed) {
           if (read?.ws != null && Number.isFinite(read.ws)) {
             speed.textContent = String(Math.round(read.ws));
-            speed.dataset.w = windSpeedClass(read.ws);
+            speed.dataset.w = windClassFor(fam, read.ws);
           } else {
             speed.textContent = "–";
+            speed.dataset.w = "";
           }
         }
-      } else if (layer === "termiche") {
+        /* chip direzione (provenienza) + colore freccia legato alla famiglia/quota */
+        const dirchip = el.querySelector(".cmap-dirchip") as HTMLElement | null;
+        if (dirchip) dirchip.textContent = read?.wd != null && Number.isFinite(read.wd) ? cardinal(read.wd) : "–";
+        el.setAttribute("data-wc", read?.ws != null && Number.isFinite(read.ws) ? windClassFor(fam, read.ws) : "");
+      } else {
         /* sulla modalità termiche il marker mostra l'ascendenza alla QUOTA scelta */
+        el.removeAttribute("data-wc");
         const speed = el.querySelector(".cmap-speed") as HTMLElement | null;
         const rAlt = thermalAtAltitude(e, altStep.alt);
         if (speed) {
@@ -1039,6 +1205,34 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
       el.title = `${s.item.site_name || s.item.name} · ${e ? e.label : "Dati non disponibili"}`;
     }
   }, [snapshots, layer, windReads, selectedId, altStep]);
+
+  /* ---------------- CARD VENTO: velocità e direzione dei decolli più vicini al centro vista ---------------- */
+  const [viewTick, setViewTick] = useState(0);
+  const windFam = windFamilyFor(altStep.alt);
+  const windCards = useMemo(() => {
+    if (layer !== "vento") return [];
+    const map = mapRef.current;
+    if (!map) return [];
+    const center = map.getCenter();
+    const fam = windFamilyFor(altStep.alt);
+    const rows: { id: string; name: string; kmh: number; cls: string; dirTo: number; card: string; d: number }[] = [];
+    for (const s of snapshots) {
+      const r = windReads.get(s.item.id);
+      if (!r || r.ws == null || r.wd == null || !Number.isFinite(r.ws) || !Number.isFinite(r.wd)) continue;
+      rows.push({
+        id: s.item.id,
+        name: s.item.site_name || s.item.name,
+        kmh: Math.round(r.ws),
+        cls: windClassFor(fam, r.ws),
+        dirTo: (r.wd + 180) % 360,
+        card: cardinal(r.wd),
+        d: map.distance(center, [Number(s.item.lat), Number(s.item.lon)]),
+      });
+    }
+    // i decolli più vicini al centro della vista, max 5
+    rows.sort((a, b) => a.d - b.d);
+    return rows.slice(0, 5).map(({ d: _d, ...rest }) => rest);
+  }, [snapshots, windReads, layer, altStep, viewTick]);
 
   /* --------------------------- ridisegno quando cambia ora/livello --------------------------- */
   useEffect(() => {
@@ -1132,11 +1326,41 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
             {dayTabs[day].sub} · {pad2(hour)}:00
           </strong>
           <span>
-            {LAYER_NAME[layer]}
+            {layer === "vento"
+              ? windFam === "breeze"
+                ? "Brezze di pendio e di valle"
+                : "Vento meteo in quota"
+              : LAYER_NAME[layer]}
             {(layer === "vento" || layer === "termiche") ? " · " + altStep.label : ""}
           </span>
           {layer === "termiche" && <span className="cmap-peak" ref={peakRef} data-testid="cartina-peak" />}
         </div>
+
+        {layer === "vento" && windCards.length > 0 && (
+          <div className="cmap-wind-cards" data-testid="cartina-wind-cards">
+            <span className="cmap-wcards-title">
+              {windFam === "breeze" ? "Brezze verso i decolli" : "Vento in quota"} · {altStep.label}
+            </span>
+            {windCards.map((c) => (
+              <div className="cmap-wcard" key={c.id}>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="13"
+                  height="13"
+                  className={"cmap-wcard-a " + c.cls}
+                  style={{ transform: `rotate(${c.dirTo.toFixed(0)}deg)` }}
+                  aria-hidden="true"
+                >
+                  <line x1="12" y1="21.5" x2="12" y2="10.5" strokeWidth="2.4" strokeLinecap="round" />
+                  <path d="M12 2 L15.8 11.4 L12 9.3 L8.2 11.4 Z" />
+                </svg>
+                <b className={c.cls}>{c.kmh} km/h</b>
+                <em>da {c.card}</em>
+                <span>{c.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {(layer === "vento" || layer === "termiche") && altSteps.length > 1 && (
           <div
@@ -1178,19 +1402,41 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect }: CartinaM
               </div>
             </>
           )}
-          {layer === "vento" && (
+          {layer === "vento" && windFam === "breeze" && (
             <>
               <span className="cmap-legend-title">
-                Vento km/h · {altStep.label} · freccia = dove va
+                Brezze km/h · salgono verso i decolli
               </span>
               <div className="cmap-legend-w">
-                <i className="is-w1" />
-                <em>15</em>
-                <i className="is-w2" />
-                <em>25</em>
-                <i className="is-w3" />
-                <em>35</em>
-                <i className="is-w4" />
+                <i className="is-br1" />
+                <em>6</em>
+                <i className="is-br2" />
+                <em>11</em>
+                <i className="is-br3" />
+                <em>17</em>
+                <i className="is-br4" />
+                <em>26</em>
+                <i className="is-br5" />
+              </div>
+            </>
+          )}
+          {layer === "vento" && windFam === "meteo" && (
+            <>
+              <span className="cmap-legend-title">
+                Vento meteo km/h · freccia = dove va
+              </span>
+              <div className="cmap-legend-w">
+                <i className="is-m1" />
+                <em>5</em>
+                <i className="is-m2" />
+                <em>10</em>
+                <i className="is-m3" />
+                <em>20</em>
+                <i className="is-m4" />
+                <em>30</em>
+                <i className="is-m5" />
+                <em>40</em>
+                <i className="is-m6" />
               </div>
             </>
           )}
