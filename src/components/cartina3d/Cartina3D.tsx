@@ -8,20 +8,24 @@
  *
  * Cosa mostra:
  * - i DECOLLI con pin cliccabili e un PARAPENDIO in volo che fluttua sopra ognuno
- * - il CAMPO VENTO su tutta la valle: griglia fitta di frecce GRANDI in movimento
- *   continuo, colorate per VELOCITÀ (scala Windy: verde 5-10 · giallo/arancio 10-20 ·
- *   fuoco 20-30 · rosso 30-40 · viola 40+), con frecce ROSSE nelle zone di SOTTOVENTO,
- *   OMBRA proiettata sotto ogni freccia (profondità 3D) ed ETICHETTE con velocità,
- *   direzione e quota
+ * - il CAMPO VENTO su tutta la valle in DUE SISTEMI DISTINTI: le BREZZE di
+ *   pendio/valle come tantissime frecce PICCOLE a dardo che corrono sui rilievi
+ *   a cascata (salgono i pendii di giorno, scendono di notte) con RICCIOLI di
+ *   sottovento dietro le creste; i VENTI METEO come frecce LARGHE e CORTE in
+ *   file ordinate a PETTINE su due strati di quota — tutto animato a ONDE
+ *   sincronizzate, colorato per VELOCITÀ (scala Windy: verde 5-10 ·
+ *   giallo/arancio 10-20 · fuoco 20-30 · rosso 30-40 · viola 40+), con
+ *   ETICHETTE di velocità, direzione e quota
  * - PREVISIONI a fasce orarie per 5 giorni (6→21 h, cliccabili sopra la scena): la
  *   barra guida giorno e ora su TUTTA la vista 3D (campo, quota, termiche); se il
  *   modello non risponde una STIMA dal sounding mantiene le fasce cliccabili
  * - i VENTI IN QUOTA dalla quota del DECOLLO SCELTO fino a 4000 m con passi di
  *   250 m (o la colonna completa «tutte»): più il vento è forte più il colore va
  *   dall'arancio fuoco al VIOLA, in movimento continuo
- * - le TERMICHE come COLONNE D'ARIA che salgono: CONO giallo intenso trasparente
- *   in 3D fino alla base delle nuvole (LCL dal sounding), con bolle luminose che
- *   risalgono a spirale, stile XCTherm (thermal.kk7.ch)
+ * - le TERMICHE come COLONNE D'ARIA luminose fino alla base delle nuvole (LCL
+ *   dal sounding): texture a gradiente con costolature elicoidali, nucleo
+ *   interno, eliche di risalita, anello pulsante e bolle — stile XCTherm
+ *   (thermal.kk7.ch), confermate dai voli reali dove disponibili
  * - NAVIGAZIONE stile Google Earth: bussola trascinabile a 360°, rotazione, tilt,
  *   zoom, vista dall'alto 2D, ritorno al decollo e TASTO SCHERMO INTERO
  * - resa in ALTA DEFINIZIONE: render alla risoluzione fisica del display
@@ -41,13 +45,14 @@ import type { CartinaDecollo } from "@/components/CartinaMeteo";
 import { windAtAltitude } from "@/components/CartinaMeteo";
 import type { HourlyPoint } from "@/services/threeSourceWeather";
 import { createTerrariumTerrainProvider, sampleTerrainHeights } from "./terrain";
-import { buildFallbackForecast, buildWindField, computeFlows, fetchForecast, heightAt, liveAt, speedColor } from "./winds";
+import { buildFallbackForecast, buildWindField, computeFlows, fetchForecast, liveAt, speedColor } from "./winds";
 import type { FlowCell, ForecastData, WindField } from "./winds";
 import { fetchPilotThermals, XCTHERM_CREDIT } from "./xcflights";
 import type { PilotThermal } from "./xcflights";
 import { cloudBaseFrom, computeTriggers } from "./thermals";
 import type { TriggerCell } from "./thermals";
-import { bubbleImage, gliderImage, pinImage } from "./sprites";
+import { buildWindFlow, type WindFlowHandle } from "./windflow";
+import { bubbleImage, chevronSprite, coneSideImage, gliderImage, pinImage, ringImage } from "./sprites";
 import Nav3D from "./Nav3D";
 import "./cartina3d.css";
 
@@ -108,6 +113,8 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   const markersRef = useRef<import("cesium").Entity[]>([]);
   const surfRef = useRef<import("cesium").Entity[]>([]);
   const windRef = useRef<import("cesium").Entity[]>([]);
+  const flowRef = useRef<WindFlowHandle | null>(null); // flusso suolo (dardi+pettine)
+  const altFlowRef = useRef<WindFlowHandle | null>(null); // chevron in quota
   const thermRef = useRef<import("cesium").Entity[]>([]);
   const secRef = useRef<HTMLElement | null>(null);
   const fieldCacheRef = useRef<Map<string, WindField>>(new Map());
@@ -303,6 +310,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         viewerRef.current = viewer;
         /* handle per test/debug (usato dagli script di verifica) */
         (window as unknown as Record<string, unknown>).__c3dViewer = viewer;
+        (window as unknown as Record<string, unknown>).__c3dCesium = Cesium;
         /* log diagnostico: un errore di rendering non deve restare invisibile */
         viewer.scene.renderError.addEventListener((_scene, e) => {
           console.warn("[c3d] renderError:", (e as Error)?.message || String(e));
@@ -410,6 +418,10 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       markersRef.current = [];
       surfRef.current = [];
       windRef.current = [];
+      flowRef.current?.destroy();
+      flowRef.current = null;
+      altFlowRef.current?.destroy();
+      altFlowRef.current = null;
       fieldCacheRef.current.clear();
       if (v && !v.isDestroyed()) v.destroy();
     };
@@ -571,74 +583,25 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     };
   }, [status, field]);
 
-  /* ---------- CAMPO VENTO ANIMATO: frecce corte e larghe che attraversano la valle ----------
-     Ogni freccia ha un'OMBRA proiettata sotto (statica, quindi economica):
-     la freccia sembra librata sopra il terreno e la scena acquista profondità.
-     La deriva è VELOCE e con ondeggiamento laterale: le frecce NON stanno mai
-     ferme, come spinte da un vento vero. */
+  /* ---------- FLUSSO VENTO SUOLO: schiera a pettine + brezze a cascata ----------
+     Due sistemi distinti (windflow.ts): le BREZZE di pendio sono tantissime
+     frecce piccole a dardo che corrono sui rilievi come una cascata (salgono i
+     pendii di giorno, scendono di notte) con RICCIOLI di sottovento dietro le
+     creste; i VENTI METEO sono frecce larghe e corte in file ordinate a
+     pettine su due strati di quota. Tutto pulsa a ONDE sincronizzate che
+     attraversano la valle. Le etichette restano su una sotto-griglia sparsa. */
   useEffect(() => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
     if (status !== "ready" || !Cesium || !viewer || !field || !flows.length) return;
-    clear(surfRef);
+    flowRef.current?.destroy();
+    flowRef.current = null;
     if (!surface) return;
 
-    const finite = (p: import("cesium").Cartesian3): boolean =>
-      Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z);
-
-    /* OMBRE: geometria fissa a 12 m sul terreno, larga quanto la freccia e
-       scura — con la freccia che scorre sopra crea l'effetto 3D richiesto */
-    const shadows = flows.map((c) => {
-      const half = c.len * 0.62;
-      const p0 = Cesium.Cartesian3.fromDegrees(c.lon - (c.dE * half) / field.mLon, c.lat - (c.dN * half) / field.mLat, c.h + 12);
-      const p1 = Cesium.Cartesian3.fromDegrees(c.lon + (c.dE * half) / field.mLon, c.lat + (c.dN * half) / field.mLat, c.h + 12);
-      return viewer.entities.add({
-        polyline: {
-          positions: finite(p0) && finite(p1) ? [p0, p1] : [Cesium.Cartesian3.ZERO, Cesium.Cartesian3.ZERO],
-          width: c.w + 5,
-          material: new Cesium.PolylineArrowMaterialProperty(
-            Cesium.Color.fromCssColorString("#0a1626").withAlpha(0.45),
-          ),
-        },
-      });
+    flowRef.current = buildWindFlow(Cesium, viewer, field, live, selHour, {
+      ws: Number(activePoint?.wind) > 0 ? Number(activePoint?.wind) : 7,
+      wd: Number.isFinite(Number(activePoint?.dir)) ? Number(activePoint?.dir) : 270,
     });
-
-    /* CORPI: frecce tozze (160-430 m, 17-30 px) che scorrono lungo il vento
-       con ondeggiamento laterale + respiro verticale — moto sempre visibile */
-    const bodies = flows.map((c, k) => {
-      const phase = (k * 137.7) % c.span;
-      const pE = -c.dN; // perpendicolare al flusso (per il serpeggio)
-      const pN = c.dE;
-      const weaveA = c.span * 0.085; // ampiezza del serpeggio (m)
-      let last: import("cesium").Cartesian3[] | null = null;
-      const posAt = (off: number, sw: number, lift: number): import("cesium").Cartesian3 => {
-        const la = c.lat + (c.dN * off + pN * sw) / field.mLat;
-        const lo = c.lon + (c.dE * off + pE * sw) / field.mLon;
-        return Cesium.Cartesian3.fromDegrees(lo, la, heightAt(field, la, lo) + lift);
-      };
-      return viewer.entities.add({
-        polyline: {
-          positions: new Cesium.CallbackProperty(() => {
-            const t = performance.now() / 1000;
-            const off = ((t * c.speedVis + phase) % c.span) - c.span / 2;
-            const sw = weaveA * Math.sin(t * 0.9 + k * 1.31); // serpeggio laterale
-            const lift = 56 + 10 * Math.sin(t * 1.25 + k * 0.73); // respiro verticale
-            const calc = [posAt(off - c.len / 2, sw, lift), posAt(off + c.len / 2, sw, lift)];
-            /* mai posizioni NaN a Cesium: senza questo il render si ferma */
-            if (calc.every(finite)) {
-              last = calc;
-              return calc;
-            }
-            return last ?? [Cesium.Cartesian3.ZERO, Cesium.Cartesian3.ZERO];
-          }, false),
-          width: c.w,
-          material: new Cesium.PolylineArrowMaterialProperty(
-            Cesium.Color.fromCssColorString(c.cls === "lee" ? "#ff4d4f" : speedColor(c.sp)).withAlpha(0.97),
-          ),
-        },
-      });
-    });
-    surfRef.current = [...shadows, ...bodies];
 
     /* ETICHETTE del campo: velocità · direzione · quota su una sotto-griglia
        sparsa (≈21) così restano leggibili senza coprire le frecce */
@@ -663,17 +626,27 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           },
         });
       });
-    surfRef.current = surfRef.current.concat(labs);
-  }, [status, field, flows, surface]);
+    surfRef.current = labs;
+
+    return () => {
+      flowRef.current?.destroy();
+      flowRef.current = null;
+      labs.forEach((e) => viewer.entities.remove(e));
+      surfRef.current = [];
+    };
+  }, [status, field, flows, surface, live, selHour, activePoint]);
 
   /* ---------- venti in quota: dal DECOLLO SCELTO a 4000 m, passi di 250 m ----------
-     Colore = VELOCITÀ (scala Windy): più il vento è forte più va dall'arancio
-     fuoco al VIOLA. «Tutte» mostra l'intera colonna, un livello alla volta si
-     esplora con i chip. Frecce nascoste dove il terreno supera la quota. */
+     Stessa famiglia visiva del suolo: CHEVRON larghi e corti orientati al Nord
+     reale, colore = VELOCITÀ (scala Windy: dall'arancio fuoco al VIOLA).
+     «Tutte» mostra l'intera colonna; un livello alla volta si esplora con i
+     chip. Frecce nascoste dove il terreno supera la quota. */
   useEffect(() => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
     if (status !== "ready" || !Cesium || !viewer || !active) return;
+    altFlowRef.current?.destroy();
+    altFlowRef.current = null;
     clear(windRef);
     if (effQuota === 0) return;
 
@@ -711,7 +684,62 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       }
       if (cancelled || viewerRef.current !== viewer) return;
 
+      /* chevron in quota: stessa BillboardCollection tickata a preRender.
+         Il destroy viene registrato SUBITO dopo aver aggiunto la collection:
+         se la creazione dei billboard fallisce, la scena resta pulita. */
+      const bc = new Cesium.BillboardCollection();
+      viewer.scene.primitives.add(bc);
+      const moversAlt: {
+        lon: number;
+        lat: number;
+        lvl: number;
+        dE: number;
+        dN: number;
+        azTo: number;
+        speed: number;
+        span: number;
+        phase: number;
+        base: number;
+        waveK: number;
+        bb: import("cesium").Billboard;
+      }[] = [];
       const added: import("cesium").Entity[] = [];
+      const finite = (p: import("cesium").Cartesian3): boolean =>
+        Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z);
+      const tick = (): void => {
+        if (viewer.isDestroyed()) return;
+        const t = performance.now() / 1000;
+        let heading = 0;
+        try {
+          heading = viewer.camera.heading;
+        } catch {
+          return;
+        }
+        for (const m of moversAlt) {
+          const prog = ((t * m.speed + m.phase) % m.span) - m.span / 2;
+          const la = m.lat + (m.dN * prog) / mLat;
+          const lo = m.lon + (m.dE * prog) / mLon;
+          const p = Cesium.Cartesian3.fromDegrees(lo, la, m.lvl);
+          if (finite(p)) m.bb.position = p;
+          m.bb.rotation = heading - m.azTo;
+          const wave = 0.5 + 0.5 * Math.sin(t * 1.5 - m.waveK);
+          m.bb.scale = m.base * (0.85 + 0.3 * wave);
+        }
+      };
+      let tickAttached = false;
+      altFlowRef.current = {
+        destroy(): void {
+          try {
+            if (!viewer.isDestroyed()) {
+              if (tickAttached) viewer.scene.preRender.removeEventListener(tick);
+              viewer.scene.primitives.remove(bc);
+            }
+          } catch {
+            /* il viewer era già distrutto */
+          }
+        },
+      };
+
       levels.forEach((lvl, li) => {
         const wind = windAtAltitude(quotaPoint, lvl, quotaPoint?.wind ?? null, quotaPoint?.dir ?? null);
         if (wind.ws == null || wind.wd == null) return;
@@ -722,40 +750,37 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         const dirTo = ((wind.wd + 180) % 360) * (Math.PI / 180); // dove SPINGE il vento
         const dE = Math.sin(dirTo);
         const dN = Math.cos(dirTo);
-        /* ANCHE IN QUOTA: frecce corte e tozze, deriva rapida e leggibile */
-        const L = Math.min(950, Math.max(280, wsK * 22));
-        const speed = Math.min(62, Math.max(14, (wsK / 3.6) * 4.2)); // deriva esagerata ×4.2 per la lettura
-        const span = Math.max(1500, L * 3);
-        const color = Cesium.Color.fromCssColorString(speedColor(wsK));
-        const wpx = effQuota === -1 ? 13 : 17;
+        const speed = Math.min(55, Math.max(10, (wsK / 3.6) * 3.2)); // deriva leggibile
+        const span = 1700;
+        const color = speedColor(wsK);
+        const base = effQuota === -1 ? 0.6 : 0.76; // colonna completa: chevron più discreti
         const visible = anchors.filter((_, i) => hs[i] + 90 < lvl);
 
         visible.forEach((p, k) => {
           const phase = ((k + li * 7) * 197) % span;
-          let last: import("cesium").Cartesian3[] | null = null;
-          added.push(
-            viewer.entities.add({
-              polyline: {
-                positions: new Cesium.CallbackProperty(() => {
-                  const t = performance.now() / 1000;
-                  const off = ((t * speed + phase) % span) - span / 2;
-                  const cl = p.lat + (dN * off) / mLat;
-                  const co = p.lon + (dE * off) / mLon;
-                  const calc = [
-                    Cesium.Cartesian3.fromDegrees(co - (dE * L * 0.5) / mLon, cl - (dN * L * 0.5) / mLat, lvl),
-                    Cesium.Cartesian3.fromDegrees(co + (dE * L * 0.5) / mLon, cl + (dN * L * 0.5) / mLat, lvl),
-                  ];
-                  if (calc.every((c) => Number.isFinite(c.x) && Number.isFinite(c.y) && Number.isFinite(c.z))) {
-                    last = calc;
-                    return calc;
-                  }
-                  return last ?? [Cesium.Cartesian3.ZERO, Cesium.Cartesian3.ZERO];
-                }, false),
-                width: wpx,
-                material: new Cesium.PolylineArrowMaterialProperty(color.withAlpha(0.95)),
-              },
-            }),
-          );
+          const start = Cesium.Cartesian3.fromDegrees(p.lon, p.lat, lvl);
+          const bb = bc.add({
+            position: finite(start) ? start : Cesium.Cartesian3.ZERO,
+            image: chevronSprite(color),
+            scale: base,
+            scaleByDistance: new Cesium.NearFarScalar(2000, 1, 42000, 0.5),
+            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 42000),
+          });
+          if (!finite(start)) return;
+          moversAlt.push({
+            lon: p.lon,
+            lat: p.lat,
+            lvl,
+            dE,
+            dN,
+            azTo: dirTo,
+            speed,
+            span,
+            phase,
+            base,
+            waveK: k * 0.55 + li * 0.4,
+            bb,
+          });
         });
 
         /* ETICHETTE quota: velocità · direzione · quota (livello singolo: una su
@@ -783,6 +808,9 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           );
         });
       });
+
+      viewer.scene.preRender.addEventListener(tick);
+      tickAttached = true;
       windRef.current = added;
     })();
 
@@ -792,10 +820,12 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   }, [status, active, activePoint, quotaPoint, effQuota, levelList, demEpoch]);
 
   /* ---------- TERMICHE: COLONNE D'ARIA CHE SALGONO (stile XCTherm) ----------
-     Cono giallo intenso TRASPARENTE in 3D, che si allarga verso l'alto come
-     l'aria che si espande risalendo, dal punto di stacco fino alla base delle
-     nuvole (LCL dal sounding). Dentro: bolle luminose che risalgono a spirale;
-     l'etichetta dice la forza in m/s. Algoritmo: sole × pendenza × radiazione. */
+     Coni RIFATTI (richiesta pilota): colonna con TEXTURE a gradiente (base
+     satura → cima evanescente), costolature elicoidali e volume ombreggiato,
+     NUCLEO interno più luminoso, DUE ELICHE di aria che ruotano salendo,
+     ANELLO pulsante alla base e bolle in risalita. Più eleganti del vecchio
+     cilindro piatto giallo. Dal punto di stacco fino alla base delle nuvole
+     (LCL dal sounding); l'etichetta dice la forza in m/s. */
   useEffect(() => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
@@ -806,7 +836,11 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     const mLat = 111320;
     const mLon = 111320 * Math.cos((active.lat * Math.PI) / 180);
     const YELLOW = Cesium.Color.fromCssColorString("#ffd60a");
+    const coneTex = coneSideImage();
     const bubble = bubbleImage();
+    const ring = ringImage();
+    const finite = (p: import("cesium").Cartesian3): boolean =>
+      Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z);
     /* tetto fisico della bolla: base delle nuvole (LCL), altrimenti 2400 m */
     const cb = cloudBaseFrom(activePoint?.temp, activePoint?.dew, active.elevation_m);
     /* i coni restano leggibili: solo i 16 stacchi più forti */
@@ -817,11 +851,10 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       const baseH = tc.h;
       const topH = Math.min(4000, Math.max(baseH + 700, cb != null ? Math.min(cb, baseH + 3400) : baseH + 2400));
       const len = Math.max(600, topH - baseH);
-      const rBot = 150;
-      const rTop = 300 + Math.min(240, tc.strength * 60);
+      const rBot = 95 + tc.strength * 9; // base snella
+      const rTop = Math.min(470, rBot * 2.05 + tc.strength * 26); // sfiato verso l'alto
 
-      /* IL CONO: cilindro rastremato trasparente con respiro lento di luce,
-         doppio strato (nucleo più saturo) per leggersi anche dall'alto */
+      /* CORPO: cilindro rastremato con texture a gradiente elicoidale */
       parts.push(
         viewer.entities.add({
           position: Cesium.Cartesian3.fromDegrees(tc.lon, tc.lat, baseH + len / 2),
@@ -829,30 +862,38 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
             length: len,
             topRadius: rTop,
             bottomRadius: rBot,
-            slices: 24,
-            material: new Cesium.ColorMaterialProperty(
-              new Cesium.CallbackProperty(() => {
-                const t = performance.now() / 1000;
-                return YELLOW.withAlpha(0.13 + 0.09 * (0.5 + 0.5 * Math.sin(t * 0.85 + k * 1.9)));
-              }, false),
-            ),
+            slices: 36,
+            material: new Cesium.ImageMaterialProperty({
+              image: coneTex,
+              repeat: new Cesium.Cartesian2(3, 1),
+              transparent: true,
+              color: new Cesium.CallbackProperty(
+                () => Cesium.Color.WHITE.withAlpha(0.8 + 0.2 * (0.5 + 0.5 * Math.sin(performance.now() / 900 + k * 1.9))),
+                false,
+              ),
+            }),
           },
         }),
       );
+
+      /* NUCLEO: colonna interna più stretta e luminosa (leggibile dall'alto) */
       parts.push(
         viewer.entities.add({
           position: Cesium.Cartesian3.fromDegrees(tc.lon, tc.lat, baseH + len / 2),
           cylinder: {
             length: len * 0.995,
-            topRadius: rTop * 0.68,
-            bottomRadius: rBot * 0.68,
+            topRadius: rTop * 0.5,
+            bottomRadius: rBot * 0.52,
             slices: 24,
-            material: new Cesium.ColorMaterialProperty(
-              new Cesium.CallbackProperty(() => {
-                const t = performance.now() / 1000;
-                return YELLOW.withAlpha(0.1 + 0.12 * (0.5 + 0.5 * Math.sin(t * 0.85 + k * 1.9 + 0.9)));
-              }, false),
-            ),
+            material: new Cesium.ImageMaterialProperty({
+              image: coneTex,
+              repeat: new Cesium.Cartesian2(2, 1),
+              transparent: true,
+              color: new Cesium.CallbackProperty(
+                () => YELLOW.withAlpha(0.3 + 0.18 * (0.5 + 0.5 * Math.sin(performance.now() / 750 + k * 1.9 + 1.1))),
+                false,
+              ),
+            }),
           },
         }),
       );
@@ -874,7 +915,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
               const la = tc.lat + (Math.cos(a) * r) / mLat;
               const lo = tc.lon + (Math.sin(a) * r) / mLon;
               const p = Cesium.Cartesian3.fromDegrees(lo, la, alt);
-              if (Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z)) {
+              if (finite(p)) {
                 lastB = p;
                 return p;
               }
@@ -890,6 +931,70 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         );
       }
 
+      /* ELICHE: due linee di aria che ruotano salendo dentro la colonna */
+      for (let hx = 0; hx < 2; hx++) {
+        const ph = k * 2.3 + hx * Math.PI;
+        let lastH: import("cesium").Cartesian3[] | null = null;
+        parts.push(
+          viewer.entities.add({
+            polyline: {
+              positions: new Cesium.CallbackProperty(() => {
+                const t = performance.now() / 1000;
+                const pts: import("cesium").Cartesian3[] = [];
+                const N = 26;
+                for (let i = 0; i <= N; i++) {
+                  const f = i / N;
+                  const ang = t * 0.9 + ph + f * Math.PI * 3.3; // ~1.6 giri in salita
+                  const r = (rBot + (rTop - rBot) * f) * 0.8;
+                  const la = tc.lat + (Math.cos(ang) * r) / mLat;
+                  const lo = tc.lon + (Math.sin(ang) * r) / mLon;
+                  pts.push(Cesium.Cartesian3.fromDegrees(lo, la, baseH + 30 + f * (len - 90)));
+                }
+                if (pts.every(finite)) {
+                  lastH = pts;
+                  return pts;
+                }
+                return lastH ?? [Cesium.Cartesian3.ZERO];
+              }, false),
+              width: 2.2,
+              material: new Cesium.ColorMaterialProperty(
+                new Cesium.CallbackProperty(
+                  () =>
+                    Cesium.Color.fromCssColorString("#ffe9a0").withAlpha(
+                      0.3 + 0.18 * (0.5 + 0.5 * Math.sin(performance.now() / 1100 + ph)),
+                    ),
+                  false,
+                ),
+              ),
+            },
+          }),
+        );
+      }
+
+      /* ANELLO pulsante alla base (billboard: economico, sempre rivolto) */
+      let lastR: import("cesium").Cartesian3 | null = null;
+      parts.push(
+        viewer.entities.add({
+          position: new Cesium.CallbackPositionProperty(() => {
+            const p = Cesium.Cartesian3.fromDegrees(tc.lon, tc.lat, baseH + 8);
+            if (finite(p)) {
+              lastR = p;
+              return p;
+            }
+            return lastR ?? Cesium.Cartesian3.ZERO;
+          }, false),
+          billboard: {
+            image: ring,
+            scale: new Cesium.CallbackProperty(
+              () => 0.85 + 0.5 * (0.5 + 0.5 * Math.sin(performance.now() / 950 + k * 1.7)),
+              false,
+            ),
+            scaleByDistance: new Cesium.NearFarScalar(2500, 1, 30000, 0.4),
+            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 26000),
+          },
+        }),
+      );
+
       /* alone a terra sul punto di stacco */
       const r = 70 + tc.strength * 16;
       parts.push(
@@ -900,7 +1005,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
             semiMinorAxis: r,
             material: new Cesium.ColorMaterialProperty(
               new Cesium.CallbackProperty(
-                () => YELLOW.withAlpha(0.24 + 0.14 * Math.sin(performance.now() / 700 + k * 1.7)),
+                () => YELLOW.withAlpha(0.2 + 0.12 * Math.sin(performance.now() / 700 + k * 1.7)),
                 false,
               ),
             ),
@@ -933,6 +1038,13 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         );
       });
     thermRef.current = parts;
+    /* handle per i test di verifica: dove stanno i coni disegnati */
+    (window as unknown as Record<string, unknown>).__c3dCones = top16.map((t) => ({
+      lat: t.lat,
+      lon: t.lon,
+      h: t.h,
+      strength: t.strength,
+    }));
   }, [status, field, triggers, therm, activePoint, active]);
 
   /* ---------- SCHERMO INTERO ---------- */
@@ -1216,11 +1328,11 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           <em>40+ km/h</em>
         </span>
         <span>
-          <i className="c3d-sw is-lee" aria-hidden="true" /> frecce rosse = zona di sottovento
+          <i className="c3d-sw is-lee" aria-hidden="true" /> rosso = sottovento · i riccioli sono i vortici di lee
         </span>
         <span>
           <i className="c3d-dot" style={{ background: "#ffd60a" }} aria-hidden="true" />
-          cono giallo = colonna di aria che sale · forza scritta in m/s
+          colonna luminosa = termica · forza scritta in m/s
         </span>
         {pilot.length > 0 && (
           <span className="c3d-xccredit" data-testid="c3d-xccredit">
@@ -1281,8 +1393,8 @@ function Hud({
       <span className="c3d-hud-v" data-testid="c3d-hud-surface">
         {surface
           ? anabatic
-            ? "colore = velocità · rosso = sottovento · cono giallo = colonna d'aria che sale"
-            : "colore = velocità · rosso = sottovento · aria scende i pendii (catabatica)"
+            ? "dardi = brezze di pendio a cascata · pettine largo = vento meteo · rosso = sottovento"
+            : "dardi = aria che scende i pendii (catabatica) · pettine largo = vento meteo · rosso = sottovento"
           : "venti suolo nascosti"}
       </span>
       <span className="c3d-hud-v" data-testid="c3d-hud-wind">
@@ -1297,7 +1409,7 @@ function Hud({
       <span className="c3d-hud-v" data-testid="c3d-hud-therm">
         {therm
           ? nTriggers > 0
-            ? `${nTriggers} stacchi termici${nPilot > 0 ? ` (${nPilot} confermati dai voli reali)` : ""} · coni gialli sulle ${nCones} colonne più forti (forza in m/s)`
+            ? `${nTriggers} stacchi termici${nPilot > 0 ? ` (${nPilot} confermati dai voli reali)` : ""} · colonne luminose sulle ${nCones} più forti (forza in m/s)`
             : "termiche: nessuno stacco a quest'ora"
           : "termiche nascoste"}
       </span>
