@@ -22,6 +22,8 @@
  */
 
 import type { FlowCell, WindField } from "./winds";
+import { heightAt } from "./winds";
+import type { PilotThermal } from "./xcflights";
 
 export interface TriggerCell {
   lat: number;
@@ -74,11 +76,24 @@ export const THERMAL_SCALE = [
   { max: Infinity, c: "#ff5470" },
 ];
 
+/**
+ * computeTriggers — stacchi termici per la scena 3D.
+ *
+ * 1. STIMA fisica (sole × pendenza × radiazione × INCLINAZIONE del vento):
+ *    il flusso fuso (vento meteo + brezza di versante) proiettato sulla linea
+ *    di massima pendenza decide dove l'aria SALGE (stacco alimentato) o SCENDE
+ *    (sottovento: stacco soppresso).
+ * 2. CONFERME DAI VOLI REALI (XCTherm/XContest, `pilot`): dove i piloti
+ *    salgono davvero il cono ANCORA la scena — il punto pesa più della stima.
+ *    Le celle stimate vicine (< 300 m) a una bolla confermata vengono
+ *    assorbite: niente coni doppi attaccati.
+ */
 export function computeTriggers(
   field: WindField,
   hour: number,
   rad: number | null,
   flows: FlowCell[] = [],
+  pilot: PilotThermal[] = [],
 ): TriggerCell[] {
   if (hour < 8 || hour > 18) return []; // di notte le bolle non staccano
 
@@ -132,6 +147,54 @@ export function computeTriggers(
         score,
         strength: Number.isFinite(strength) ? strength : 0,
       });
+    }
+  }
+
+  /* ---- CONFERME DAI VOLI REALI: dove i piloti salgono davvero ----
+     La posizione è un DATO (salite IGC), la forza resta guidata dall'ora e
+     dalla radiazione; il vento che scende forte in quel punto resta l'unica
+     condizione di soppressione (rotore/sottovento). */
+  if (pilot.length && hour >= 8 && hour <= 18) {
+    const latN = field.lat0 + (((field.rows - 1) / 2) * field.step) / field.mLat;
+    const latS = field.lat0 - (((field.rows - 1) / 2) * field.step) / field.mLat;
+    const lonW = field.lon0 - (((field.cols - 1) / 2) * field.step) / field.mLon;
+    const lonE = field.lon0 + (((field.cols - 1) / 2) * field.step) / field.mLon;
+    const confirmed: TriggerCell[] = [];
+    for (const p of pilot) {
+      if (p.lat < latS || p.lat > latN || p.lon < lonW || p.lon > lonE) continue; // fuori dal campo
+      const h = heightAt(field, p.lat, p.lon);
+      if (!Number.isFinite(h)) continue;
+      /* cella di flusso corrispondente: vento che SCENDE = rotore → soppresso */
+      const fi = Math.min(field.rows - 1, Math.max(0, Math.round((field.rows - 1) / 2 - ((p.lat - field.lat0) * field.mLat) / field.step)));
+      const fj = Math.min(field.cols - 1, Math.max(0, Math.round(((p.lon - field.lon0) * field.mLon) / field.step + (field.cols - 1) / 2)));
+      const fc = flows[fi * field.cols + fj];
+      let windK = 1;
+      if (fc && Number.isFinite(fc.dE) && Number.isFinite(fc.dN)) {
+        const gl = Math.hypot(field.gE[fi][fj], field.gN[fi][fj]);
+        if (gl > 1e-6) {
+          const dot = fc.dE * (field.gE[fi][fj] / gl) + fc.dN * (field.gN[fi][fj] / gl);
+          if (dot < -0.35) continue; // l'aria scende qui: la bolla confermata oggi non stacca
+          if (dot < 0) windK = 0.8;
+        }
+        if (Number.isFinite(fc.sp) && fc.sp > 40) windK = Math.min(windK, 0.75); // vento che spezza le bolle
+      }
+      const heat = Math.min(1, Math.max(0, p.heat));
+      const strength = (1.4 + 2.9 * hourK) * (0.75 + 0.75 * heat) * radK * windK;
+      confirmed.push({ lat: p.lat, lon: p.lon, h, score: Math.min(1, 0.55 + 0.45 * heat), strength: Number.isFinite(strength) ? strength : 0 });
+    }
+
+    if (confirmed.length) {
+      /* dedup: le stime entro 300 m di una conferma escono (la conferma vince) */
+      const dLat = 300 / 111320;
+      const est = out.filter(
+        (t) =>
+          !confirmed.some(
+            (c) =>
+              Math.abs(c.lat - t.lat) < dLat &&
+              Math.abs(c.lon - t.lon) < dLat / Math.max(0.2, Math.cos((t.lat * Math.PI) / 180)),
+          ),
+      );
+      return est.concat(confirmed);
     }
   }
   return out;

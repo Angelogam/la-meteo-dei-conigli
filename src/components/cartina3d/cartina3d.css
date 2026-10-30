@@ -619,3 +619,15 @@
   .c3d-fsbtn { padding: 0.3rem 0.38rem; }
   .c3d-leg-scale em { margin-right: 0.18rem; font-size: 0.55rem; }
 }
+
+/* link Google Earth accanto allo schermo intero (il .c3d-fsbtn è su classe,
+   qui solo i ritocchi specifici del tag <a>) */
+a.c3d-fsbtn {
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+a.c3d-fsbtn:hover { background: rgba(125, 211, 252, 0.14); }
+
+/* credit XCTherm (volI reali dei piloti) nella legenda */
+.c3d-xccredit { color: #d9c08a; }

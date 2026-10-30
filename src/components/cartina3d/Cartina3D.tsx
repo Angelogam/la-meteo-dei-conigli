@@ -35,7 +35,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Maximize2, Minimize2, Mountain } from "lucide-react";
+import { Globe, Maximize2, Minimize2, Mountain } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import type { CartinaDecollo } from "@/components/CartinaMeteo";
 import { windAtAltitude } from "@/components/CartinaMeteo";
@@ -43,6 +43,8 @@ import type { HourlyPoint } from "@/services/threeSourceWeather";
 import { createTerrariumTerrainProvider, sampleTerrainHeights } from "./terrain";
 import { buildFallbackForecast, buildWindField, computeFlows, fetchForecast, heightAt, liveAt, speedColor } from "./winds";
 import type { FlowCell, ForecastData, WindField } from "./winds";
+import { fetchPilotThermals, XCTHERM_CREDIT } from "./xcflights";
+import type { PilotThermal } from "./xcflights";
 import { cloudBaseFrom, computeTriggers } from "./thermals";
 import type { TriggerCell } from "./thermals";
 import { bubbleImage, gliderImage, pinImage } from "./sprites";
@@ -75,13 +77,15 @@ function hourOf(p: HourlyPoint | null | undefined): number {
   return Number.isFinite(h) ? h : -1;
 }
 
-/** Camera sul decollo: vista da sud-est abbastanza vicina da leggere il campo. */
+/** Camera sul decollo: vista BASSA e INCLINATA (stile Google Earth) —
+ *  da 14 km con pitch −38° il rilievo si percepiva piatto; qui la valle
+ *  si legge subito come un rilievo vero. */
 function flyToSite(Cesium: CesiumNs, viewer: ViewerNs, d: CartinaDecollo): void {
   viewer.camera.flyToBoundingSphere(
-    new Cesium.BoundingSphere(Cesium.Cartesian3.fromDegrees(d.lon, d.lat, d.elevation_m ?? 0), 7000),
+    new Cesium.BoundingSphere(Cesium.Cartesian3.fromDegrees(d.lon, d.lat, d.elevation_m ?? 0), 5200),
     {
       duration: 2.2,
-      offset: new Cesium.HeadingPitchRange(Cesium.Math.toRadians(15), Cesium.Math.toRadians(-38), 14000),
+      offset: new Cesium.HeadingPitchRange(Cesium.Math.toRadians(15), Cesium.Math.toRadians(-52), 9800),
     },
   );
 }
@@ -112,6 +116,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [errMsg, setErrMsg] = useState<string>("");
   const [tilesLoaded, setTilesLoaded] = useState(false);
+  const [loadPct, setLoadPct] = useState(0); // % di caricamento del terreno
 
   const [siteId, setSiteId] = useState<string>("");
   /* quota dei venti: null = automatico (primo livello sopra il decollo),
@@ -194,9 +199,30 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
      × INCLINAZIONE del vento: la bolla stacca dove l'aria (vento meteo +
      brezza) SALGE lungo il pendio; sul lato sottovento, dove l'aria scende,
      nessuno stacco */
+  /* ---------- termiche confermate dai voli reali (XCTherm/XContest) ---------- */
+  const [pilot, setPilot] = useState<PilotThermal[]>([]);
+  useEffect(() => {
+    if (status !== "ready" || !active) return;
+    let cancelled = false;
+    setPilot([]);
+    fetchPilotThermals(active.lat, active.lon)
+      .then((pts) => {
+        if (!cancelled) {
+          setPilot(pts);
+          (window as unknown as Record<string, unknown>).__c3dPilot = pts;
+        }
+      })
+      .catch(() => {
+        /* senza dati dei voli la stima fisica resta l'unica fonte: ok */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [status, active]);
+
   const triggers = useMemo<TriggerCell[]>(
-    () => (field ? computeTriggers(field, selHour, activePoint?.rad ?? null, flows) : []),
-    [field, selHour, activePoint, flows],
+    () => (field ? computeTriggers(field, selHour, activePoint?.rad ?? null, flows, pilot) : []),
+    [field, selHour, activePoint, flows, pilot],
   );
   /* punto aerologico dei venti in quota: col sounding reale, oppure dal campo
      (stima offline) — così HUD e frecce in quota dicono sempre la stessa cosa */
@@ -307,6 +333,9 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         viewer.useBrowserRecommendedResolution = false; // pixel reali, non CSS
         /* ALTA DEFINIZIONE: render alla risoluzione fisica del display (retina 2×) */
         viewer.resolutionScale = Math.min(window.devicePixelRatio || 1, 2);
+        /* RILIEVO EVIDENTE: esagerazione verticale moderata — da lontano le
+           montagne si LEGGONO come montagne (richiesta: «non si vede il terreno») */
+        viewer.scene.verticalExaggeration = 1.35;
         const base = viewer.imageryLayers.get(0);
         if (base) {
           base.brightness = 1.12;
@@ -329,14 +358,19 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         );
         hill.alpha = 0.16;
 
-        /* progresso terreno */
+        /* progresso terreno con PERCENTUALE reale: il badge non sparisce
+           col vecchio failsafe a 20 s (l'utente vedeva il terreno piatto
+           senza capire che stava ancora caricando) */
+        let maxQ = 0;
         const stopLoad = globe.tileLoadProgressEvent.addEventListener((queued: number) => {
+          if (queued > maxQ) maxQ = queued;
+          setLoadPct(maxQ > 0 ? Math.round(100 * (1 - queued / maxQ)) : 100);
           if (queued === 0) {
             setTilesLoaded(true);
             stopLoad();
           }
         });
-        window.setTimeout(() => setTilesLoaded(true), 20000); // failsafe
+        window.setTimeout(() => setTilesLoaded(true), 45000); // failsafe generoso
 
         /* click su pin/parapendio → apre la scheda del decollo (come la cartina 2D) */
         viewer.screenSpaceEventHandler.setInputAction((movement) => {
@@ -357,7 +391,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         if (pts.length) {
           const bs = Cesium.BoundingSphere.fromPoints(pts);
           viewer.camera.setView({
-            destination: Cesium.Cartesian3.fromDegrees(7.35, 44.75, Math.max(40000, bs.radius * 3.1)),
+            destination: Cesium.Cartesian3.fromDegrees(7.35, 44.75, Math.max(30000, bs.radius * 2.4)),
           });
         }
         setStatus("ready");
@@ -1083,6 +1117,20 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
             {fsOn || fsFallback ? <Minimize2 size={13} aria-hidden="true" /> : <Maximize2 size={13} aria-hidden="true" />}
             <span>{fsOn || fsFallback ? "Esci" : "Schermo intero"}</span>
           </button>
+          {/* collegamento diretto a Google Earth sulla posizione del decollo */}
+          <a
+            className="c3d-fsbtn"
+            data-testid="c3d-gearth"
+            href={`https://earth.google.com/web/@${active.lat.toFixed(5)},${active.lon.toFixed(5)},${Math.round(
+              active.elevation_m ?? 0,
+            )}a,9000d,30y,0h,62t,0r`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Apri questo decollo in Google Earth"
+          >
+            <Globe size={13} aria-hidden="true" />
+            <span>Google Earth</span>
+          </a>
         </div>
       </div>
 
@@ -1117,6 +1165,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           therm={therm}
           nTriggers={triggers.length}
           nCones={nCones}
+          nPilot={pilot.length}
           wind={effQuota > 0 ? windAtAltitude(quotaPoint, effQuota, quotaPoint?.wind ?? null, quotaPoint?.dir ?? null) : null}
         />
 
@@ -1142,7 +1191,11 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
             </p>
           </div>
         )}
-        {status === "ready" && !tilesLoaded && <div className="c3d-progress">terreno in caricamento…</div>}
+        {status === "ready" && !tilesLoaded && (
+          <div className="c3d-progress" data-testid="c3d-progress">
+            terreno 3D in caricamento… {loadPct}%
+          </div>
+        )}
       </div>
 
       <div className="c3d-legend">
@@ -1169,6 +1222,12 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           <i className="c3d-dot" style={{ background: "#ffd60a" }} aria-hidden="true" />
           cono giallo = colonna di aria che sale · forza scritta in m/s
         </span>
+        {pilot.length > 0 && (
+          <span className="c3d-xccredit" data-testid="c3d-xccredit">
+            <i className="c3d-dot" style={{ background: "#ff9f43" }} aria-hidden="true" />
+            {XCTHERM_CREDIT}
+          </span>
+        )}
       </div>
     </section>
   );
@@ -1189,6 +1248,7 @@ function Hud({
   therm,
   nTriggers,
   nCones,
+  nPilot,
   wind,
 }: {
   ready: boolean;
@@ -1204,6 +1264,7 @@ function Hud({
   therm: boolean;
   nTriggers: number;
   nCones: number;
+  nPilot: number;
   wind: { ws: number | null; wd: number | null } | null;
 }) {
   if (!ready) return null;
@@ -1236,7 +1297,7 @@ function Hud({
       <span className="c3d-hud-v" data-testid="c3d-hud-therm">
         {therm
           ? nTriggers > 0
-            ? `${nTriggers} stacchi termici · coni gialli sulle ${nCones} colonne più forti (forza in m/s)`
+            ? `${nTriggers} stacchi termici${nPilot > 0 ? ` (${nPilot} confermati dai voli reali)` : ""} · coni gialli sulle ${nCones} colonne più forti (forza in m/s)`
             : "termiche: nessuno stacco a quest'ora"
           : "termiche nascoste"}
       </span>
