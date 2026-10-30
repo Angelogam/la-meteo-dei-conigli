@@ -39,20 +39,39 @@ export const FLOW_COLORS: Record<FlowClass, string> = {
 };
 
 /**
- * Scala velocità stile Windy (richiesta utente):
- *  <5 calmo azzurro · 5-10 verde · 10-15 giallo · 15-20 arancione ·
- *  20-30 arancio fuoco · 30-40 rosso · 40+ viola (più forte → più viola).
- * Usata sia per i venti suolo sia per i venti in quota.
+ * Scala velocità VENTI METEO (richiesta pilota): una GAMMA CONTINUA dal GIALLO
+ * al VIOLA SCURO — più il vento è forte più il colore scurisce verso il viola.
+ *  <5 giallo tenue · 5-10 giallo · 10-15 giallo-arancio · 15-20 arancio ·
+ *  20-25 arancio-rosso · 25-30 rosso-magenta · 30-40 magenta-viola ·
+ *  40-50 viola · 50+ VIOLA SCURO.
+ * Usata per i venti in quota (un livello alla volta, mai sovrapposti).
  */
 export function speedColor(kmh: number): string {
-  if (!Number.isFinite(kmh)) return "#7ec8ff";
-  if (kmh < 5) return "#7ec8ff";
-  if (kmh < 10) return "#35d07f";
-  if (kmh < 15) return "#ffd23f";
-  if (kmh < 20) return "#ffa53f";
-  if (kmh < 30) return "#ff7043";
-  if (kmh < 40) return "#ff4d4f";
-  return "#c94fff";
+  if (!Number.isFinite(kmh)) return "#ffe97a";
+  if (kmh < 5) return "#ffe97a";
+  if (kmh < 10) return "#ffd633";
+  if (kmh < 15) return "#ffb021";
+  if (kmh < 20) return "#ff8a1f";
+  if (kmh < 25) return "#ff5c33";
+  if (kmh < 30) return "#ef3a5e";
+  if (kmh < 40) return "#c932a6";
+  if (kmh < 50) return "#8b2bd9";
+  return "#5b1aa8";
+}
+
+/**
+ * Colore delle BREZZE DI PENDIO: flusso continuo a VERDE INTENSO (come acqua
+ * che risale le rocce). La tonalità si abbassa leggermente con la velocità:
+ * debole = verde chiaro, forte = verde profondo — resta sempre la stessa
+ * famiglia cromatica così il flusso si legge come un'unica massa d'aria.
+ */
+export function breezeColor(kmh: number): string {
+  if (!Number.isFinite(kmh)) return "#2ee07c";
+  if (kmh < 6) return "#4be88f";
+  if (kmh < 11) return "#2ee07c";
+  if (kmh < 16) return "#16cf66";
+  if (kmh < 22) return "#08bd58";
+  return "#04a44a";
 }
 
 export interface WindField {
@@ -89,11 +108,12 @@ export interface LivePoint {
   wd: number; // gradi, direzione DA cui viene
 }
 
-const ROWS = 14;
-const COLS = 18;
-const STEP = 640; // m
+const ROWS = 20;
+const COLS = 28;
+const STEP = 640; // m — griglia LARGA (≈17×12 km): le brezze di pendio devono
+                  // coprire TUTTI i rilievi in vista, anche fuori dalle zone decollo
 
-/** Costruisce la griglia DEM (18×14) attorno al decollo con gradienti. */
+/** Costruisce la griglia DEM (28×20) attorno al decollo con gradienti. */
 export async function buildWindField(lat0: number, lon0: number): Promise<WindField> {
   const mLat = 111320;
   const mLon = 111320 * Math.cos((lat0 * Math.PI) / 180);

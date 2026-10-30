@@ -2,8 +2,8 @@
  * SPRITES disegnati su canvas per la vista 3D (nessuna immagine esterna).
  *  - pinImage:       pin da avvicinamento dei decolli
  *  - gliderImage:    PARAPENDIO in volo che fluttua sopra ogni decollo
- *  - dartSprite:     freccia PICCOLA a dardo delle brezze di pendio (a cascata)
- *  - chevronSprite:  freccia LARGA e corta dei venti meteo (schiera a pettine)
+ *  - dartSprite:     freccia PICCOLA con CODA a cometta delle brezze di pendio
+ *  - chevronSprite:  freccia con ASTA e punta stretta dei venti meteo (pettine e quota)
  *  - curlSprite:     ricciolo di sottovento (vortice dietro le creste)
  *  - coneSideImage:  texture del cono termico (gradiente verticale + spirale)
  *  - ringImage:      anello luminoso alla base delle termiche
@@ -181,61 +181,86 @@ export function bubbleImage(): string {
   return bubbleImg;
 }
 
-/* ================= FRECCE DEL FLUSSO VENTO (nuova resa «a pettine») =================
+/* ================= FRECCE DEL FLUSSO VENTO (resa «freccia vera con la coda») =================
    Tutte le frecce sono disegnate PUNTATE IN SU (verso y=0): il sistema di render
-   le orienta con rotation = heading − azimut, quindi a rotazione 0 guardano Nord. */
+   le orienta con rotation = heading − azimut, quindi a rotazione 0 guardano Nord.
+   Richiesta pilota: OGNI freccia ha una CODA sottile che sfuma dietro la punta
+   (scia a cometta) e una PUNTA STRETTA e affusolata — niente più foglie né
+   chevron larghi senza asta. */
 
 const dartCache = new Map<string, HTMLCanvasElement>();
 
-/** FRECCIA A DARDO delle brezze: piccola, slanciata, con spessore ombreggiato
-    (livello scuro sotto = volume), riflesso di luce e ombra morbida integrata. */
+/** hex → "rgba(r,g,b,a)" (serve per le code che sfumano). */
+function rgba(hex: string, a: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
+/** FRECCIA A DARDO delle brezze: CODA a cometta (si assottiglia e sfuma dietro)
+    + punta stretta affusolata, con spessore ombreggiato e riflesso di luce. */
 export function dartSprite(color: string): HTMLCanvasElement {
   const hit = dartCache.get(color);
   if (hit) return hit;
   const c = document.createElement("canvas");
-  c.width = 64;
-  c.height = 44;
+  c.width = 56;
+  c.height = 72;
   const g = c.getContext("2d")!;
-  const cx = 32;
+  const cx = 28;
 
-  /* ombra morbida integrata ( LIBRATA sopra il terreno ) */
+  /* ombra morbida integrata (librata sopra il terreno) */
   g.beginPath();
-  g.ellipse(cx, 40.5, 15, 3, 0, 0, Math.PI * 2);
-  g.fillStyle = "rgba(4,10,20,0.5)";
+  g.ellipse(cx, 68.5, 11, 2.4, 0, 0, Math.PI * 2);
+  g.fillStyle = "rgba(4,10,20,0.45)";
   g.fill();
 
-  /* STRATO SOTTOSTANTE scuro (spessore): dardo leggermente più basso/largo */
-  const slab = (dy: number, fill?: string | CanvasGradient): void => {
+  /* CODA a cometta LUNGA: parte sottilissima dietro e cresce verso la testa,
+     con sfumatura che sparisce alla fine della scia (sensazione di flusso) */
+  const tail = (dy: number, fill: string | CanvasGradient): void => {
     g.beginPath();
-    g.moveTo(cx, 3 + dy);
-    g.quadraticCurveTo(cx + 12, 14 + dy, cx + 15, 32 + dy);
-    g.quadraticCurveTo(cx + 6, 26 + dy, cx, 27 + dy);
-    g.quadraticCurveTo(cx - 6, 26 + dy, cx - 15, 32 + dy);
-    g.quadraticCurveTo(cx - 12, 14 + dy, cx, 3 + dy);
+    g.moveTo(cx - 0.9, 64 + dy);
+    g.lineTo(cx - 4.6, 18 + dy);
+    g.lineTo(cx + 4.6, 18 + dy);
+    g.lineTo(cx + 0.9, 64 + dy);
     g.closePath();
-    if (fill) g.fillStyle = fill;
-    if (fill) g.fill();
+    g.fillStyle = fill;
+    g.fill();
+    g.lineWidth = 0.9;
+    g.strokeStyle = "rgba(6,14,26,0.5)";
+    g.stroke();
   };
-  slab(3.2, "rgba(6,14,26,0.85)");
+  const tailGrad = g.createLinearGradient(0, 18, 0, 64);
+  tailGrad.addColorStop(0, rgba(shade(color, 1.3), 0.92));
+  tailGrad.addColorStop(0.45, rgba(color, 0.5));
+  tailGrad.addColorStop(1, rgba(color, 0.05));
+  tail(2.6, "rgba(6,14,26,0.7)"); // spessore scuro sotto la coda
+  tail(0, tailGrad);
 
-  /* corpo con gradiente verticale (chiaro in alto → colore pieno) */
-  const grd = g.createLinearGradient(0, 4, 0, 34);
-  grd.addColorStop(0, shade(color, 1.55));
-  grd.addColorStop(0.45, color);
-  grd.addColorStop(1, shade(color, 0.62));
-  slab(0);
-  g.fillStyle = grd;
-  g.fill();
-  g.lineWidth = 1.4;
-  g.strokeStyle = "rgba(6,14,26,0.9)";
-  g.stroke();
+  /* PUNTA STRETTA e affusolata (niente più dardo largo a foglia) */
+  const head = (dy: number, fill: string | CanvasGradient): void => {
+    g.beginPath();
+    g.moveTo(cx, 3.2 + dy);
+    g.lineTo(cx + 7.6, 22.2 + dy);
+    g.quadraticCurveTo(cx, 18.2 + dy, cx - 7.6, 22.2 + dy);
+    g.closePath();
+    g.fillStyle = fill;
+    g.fill();
+    g.lineWidth = 1.2;
+    g.strokeStyle = "rgba(6,14,26,0.9)";
+    g.stroke();
+  };
+  head(2.8, "rgba(6,14,26,0.85)"); // spessore scuro sotto la punta
+  const grd = g.createLinearGradient(0, 3, 0, 23);
+  grd.addColorStop(0, shade(color, 1.6));
+  grd.addColorStop(0.5, color);
+  grd.addColorStop(1, shade(color, 0.6));
+  head(0, grd);
 
   /* riflesso di luce sul dorso (percezione 3D) */
   g.beginPath();
-  g.moveTo(cx, 7);
-  g.quadraticCurveTo(cx + 5.5, 14, cx + 7.5, 26);
-  g.lineWidth = 2;
-  g.strokeStyle = "rgba(255,255,255,0.62)";
+  g.moveTo(cx - 1.2, 7.5);
+  g.quadraticCurveTo(cx - 3.8, 12, cx - 4.6, 17);
+  g.lineWidth = 1.3;
+  g.strokeStyle = "rgba(255,255,255,0.65)";
   g.stroke();
 
   dartCache.set(color, c);
@@ -244,50 +269,79 @@ export function dartSprite(color: string): HTMLCanvasElement {
 
 const chevronCache = new Map<string, HTMLCanvasElement>();
 
-/** FRECCIA LARGA dei venti meteo: chevron tozzo e corto (più largo che lungo),
-    doppio strato (base scura + faccia chiara) = effetto lastra 3D, da schiera a pettine. */
+/** FRECCIA dei venti meteo (suolo a pettine e in quota): ASTA/CODA slanciata
+    che si allarga verso la testa e sfuma dietro + PUNTA STRETTA a chevron,
+    doppio strato (base scura + faccia chiara) = effetto lastra 3D. */
 export function chevronSprite(color: string): HTMLCanvasElement {
   const hit = chevronCache.get(color);
   if (hit) return hit;
   const c = document.createElement("canvas");
-  c.width = 116;
-  c.height = 68;
+  c.width = 84;
+  c.height = 112;
   const g = c.getContext("2d")!;
-  const cx = 58;
+  const cx = 42;
 
   /* ombra integrata */
   g.beginPath();
-  g.ellipse(cx, 63, 34, 3.5, 0, 0, Math.PI * 2);
-  g.fillStyle = "rgba(4,10,20,0.5)";
+  g.ellipse(cx, 107.5, 20, 2.8, 0, 0, Math.PI * 2);
+  g.fillStyle = "rgba(4,10,20,0.45)";
   g.fill();
 
-  const slab = (dy: number, fill: string | CanvasGradient): void => {
+  /* CODA/ASTA LUNGA: sottile dietro, si allarga verso la testa, sfuma in coda */
+  const shaft = (dy: number, fill: string | CanvasGradient): void => {
     g.beginPath();
-    g.moveTo(cx, 5 + dy);
-    g.lineTo(cx + 46, 46 + dy);
-    g.quadraticCurveTo(cx + 20, 40 + dy, cx, 41 + dy);
-    g.quadraticCurveTo(cx - 20, 40 + dy, cx - 46, 46 + dy);
+    g.moveTo(cx - 3.4, 103 + dy);
+    g.lineTo(cx - 8.8, 35 + dy);
+    g.lineTo(cx + 8.8, 35 + dy);
+    g.lineTo(cx + 3.4, 103 + dy);
     g.closePath();
     g.fillStyle = fill;
     g.fill();
-    g.lineWidth = 2;
+    g.lineWidth = 1;
+    g.strokeStyle = "rgba(6,14,26,0.6)";
+    g.stroke();
+  };
+  const shaftGrad = g.createLinearGradient(0, 35, 0, 103);
+  shaftGrad.addColorStop(0, rgba(color, 0.95));
+  shaftGrad.addColorStop(0.6, rgba(color, 0.5));
+  shaftGrad.addColorStop(1, rgba(color, 0.12));
+  shaft(3, "rgba(6,14,26,0.8)"); // spessore scuro sotto l'asta
+  shaft(0, shaftGrad);
+
+  /* riflesso lungo il fianco dell'asta */
+  g.beginPath();
+  g.moveTo(cx - 4.6, 40);
+  g.lineTo(cx - 2.6, 78);
+  g.lineWidth = 1.6;
+  g.strokeStyle = "rgba(255,255,255,0.35)";
+  g.stroke();
+
+  /* PUNTA STRETTA a chevron (larghezza dimezzata rispetto al vecchio chevron) */
+  const head = (dy: number, fill: string | CanvasGradient): void => {
+    g.beginPath();
+    g.moveTo(cx, 4.2 + dy);
+    g.lineTo(cx + 17, 36.8 + dy);
+    g.quadraticCurveTo(cx, 24.8 + dy, cx - 17, 36.8 + dy);
+    g.closePath();
+    g.fillStyle = fill;
+    g.fill();
+    g.lineWidth = 1.6;
     g.strokeStyle = "rgba(6,14,26,0.88)";
     g.stroke();
   };
-
-  slab(5.5, shade(color, 0.5)); // spessore sotto
-  const grd = g.createLinearGradient(0, 6, 0, 46);
+  head(3.2, "rgba(6,14,26,0.85)"); // spessore sotto
+  const grd = g.createLinearGradient(0, 4, 0, 37);
   grd.addColorStop(0, shade(color, 1.6));
   grd.addColorStop(0.5, color);
-  grd.addColorStop(1, shade(color, 0.72));
-  slab(0, grd); // faccia superiore
+  grd.addColorStop(1, shade(color, 0.7));
+  head(0, grd);
 
   /* banda di luce trasversale (riflesso) */
   g.beginPath();
-  g.moveTo(cx - 33, 38);
-  g.lineTo(cx + 33, 38);
-  g.lineWidth = 2.6;
-  g.strokeStyle = "rgba(255,255,255,0.4)";
+  g.moveTo(cx - 11, 31);
+  g.lineTo(cx + 11, 31);
+  g.lineWidth = 2.2;
+  g.strokeStyle = "rgba(255,255,255,0.35)";
   g.stroke();
 
   chevronCache.set(color, c);

@@ -94,6 +94,7 @@ export function computeTriggers(
   rad: number | null,
   flows: FlowCell[] = [],
   pilot: PilotThermal[] = [],
+  maxR = 5200, // le STIME restano nella zona decollo anche con la griglia larga
 ): TriggerCell[] {
   if (hour < 8 || hour > 18) return []; // di notte le bolle non staccano
 
@@ -140,6 +141,10 @@ export function computeTriggers(
          spezza, aria stagnante la indebolisce */
       const windK = wsp > 35 ? 0.72 : wsp < 2.5 ? 0.85 : 1;
       const strength = (1.2 + 2.8 * hourK) * (0.5 + 0.9 * score) * radK * (0.72 + 0.52 * Math.max(0, windDot)) * windK;
+      /* con la griglia DEM allargata alle brezze, le stime restano legate alla
+         zona di decollo: i coni lontani non sono osservabili né utili */
+      const distC = Math.hypot(i * field.step - ((field.rows - 1) * field.step) / 2, j * field.step - ((field.cols - 1) * field.step) / 2);
+      if (distC > maxR) continue;
       out.push({
         lat: field.lat0 + (((field.rows - 1) / 2 - i) * field.step) / field.mLat,
         lon: field.lon0 + ((j - (field.cols - 1) / 2) * field.step) / field.mLon,

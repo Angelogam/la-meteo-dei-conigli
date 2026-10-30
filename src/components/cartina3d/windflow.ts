@@ -1,24 +1,18 @@
 /**
- * FLUSSO VENTO 3D — la resa richiesta dal pilota: «i venti come una schiera a
- * pettine, tantissime frecce piccole in un flusso dinamico che corrono sui
- * rilievi». Due SISTEMI DISTINTI, perché brezze e vento meteo sono due cose
- * diverse (la direzione della previsione non è la direzione della brezza):
+ * FLUSSO VENTO SUOLO — solo BREZZE DI PENDIO/VALLE (richiesta pilota).
  *
- *  1) BREZZE DI PENDIO/VALLE — tantissime frecce PICCOLE a dardo che corrono
- *     sui rilievi come una CASCATA: di giorno salgono i pendii (anabatica),
- *     di notte scendono (catabatica). La velocità visiva cresce quando il
- *     flusso è allineato alla pendenza (effetto «cascata che risale») e dietro
- *     le creste, dove il vento meteo scavalca e l'aria affonda, compaiono i
- *     RICCIOLI DI SOTTOVENTO: piccoli vortici che ruotano su se stessi.
+ * «Un flusso continuo che riempie, come l'acqua che scivola sulle rocce al
+ * contrario»: tantissime frecce piccole VERDI a coda lunga che CORRONO sui
+ * rilievi come una cascata — di giorno salgono i pendii (anabatica), di notte
+ * scendono (catabatica) — su TUTTO il territorio in vista, anche fuori dalle
+ * zone di decollo (la griglia DEM è larga ≈17×12 km). La velocità visiva
+ * cresce quando il flusso è allineato alla pendenza e dietro le creste, dove
+ * il vento meteo scavalca e l'aria affonda, compaiono i RICCIOLI DI
+ * SOTTOVENTO: piccoli vortici che ruotano su se stessi.
  *
- *  2) VENTI METEO — frecce LARGHE e CORTE (chevron) disposte a PETTINE: file
- *     ordinate perpendicolari al flusso, sfalsate come i denti di un pettine,
- *     su DUE STRATI di quota, che avanzano con TRENI DI ONDE (la luminosità
- *     percorre le file come un'onda).
- *
- * L'ONDA GLOBALE: tutte le frecce pulsano insieme con fase legata alla
- * distanza dal centro del campo → creste d'onda che attraversano la valle
- * («i venti come se fossero onde, tutti insieme»).
+ * I VENTI METEO non stanno più qui: entrano SOLO su richiesta, cliccando una
+ * quota nella barra (un livello alla volta, mai sovrapposti — vedi
+ * Cartina3D.tsx). Così la scena mostra UN flusso per volta.
  *
  * Render: una BillboardCollection (sprite pre-disegnati sul canvas, economici)
  * aggiornata in scene.preRender: posizione, rotazione (allineata al Nord REALE
@@ -26,8 +20,8 @@
  * Entity né callback per singola entità.
  */
 
-import { heightAt, speedColor, FLOW_COLORS, type FlowClass, type LivePoint, type WindField } from "./winds";
-import { chevronSprite, curlSprite, dartSprite } from "./sprites";
+import { breezeColor, heightAt, type LivePoint, type WindField } from "./winds";
+import { curlSprite, dartSprite } from "./sprites";
 
 type CesiumNs = typeof import("cesium");
 type ViewerNs = import("cesium").Viewer;
@@ -50,13 +44,12 @@ interface Mover {
   lift: number; // altezza sul terreno (m)
   scale: number; // scala base dello sprite
   waveK: number; // fase locale dell'onda globale (dalla distanza)
-  rowK: number; // fase di riga (onde sui pettini)
   weaveA: number; // ampiezza del serpeggio (m)
   eddy: boolean; // moto orbitale (ricciolo di sottovento)
   R: number; // raggio orbitale
   w0: number; // fase angolare iniziale
   om: number; // velocità angolare
-  kind: "dart" | "chev" | "eddy"; // famiglia (scelta sprite + rotazione)
+  kind: "dart" | "eddy"; // famiglia (scelta sprite + rotazione)
   tint: string; // colore (chiave sprite)
 }
 
@@ -115,9 +108,9 @@ export function buildWindFlow(
 
   const movers: Mover[] = [];
 
-  /* ============ 1) BREZZE: griglia fitta di dardi sui pendii + riccioli ============ */
+  /* ============ BREZZE: griglia fitta di frecce verdi su TUTTI i pendii ============ */
   const eddyCenters: { lat: number; lon: number }[] = [];
-  const STEP = 235; // m tra i dardi candidati
+  const STEP = 235; // m tra le frecce candidate
   const nI = Math.floor((2 * extN) / STEP);
   const nJ = Math.floor((2 * extE) / STEP);
 
@@ -169,7 +162,7 @@ export function buildWindFlow(
         const far = eddyCenters.every(
           (c) => Math.abs(c.lat - lat) * mLat > 380 || Math.abs(c.lon - lon) * mLon > 380,
         );
-        if (far && eddyCenters.length < 42) {
+        if (far && eddyCenters.length < 30) {
           eddyCenters.push({ lat, lon });
           const nB = 4 + ((i + j) % 2); // 4-5 frecce per vortice
           for (let b = 0; b < nB; b++) {
@@ -183,9 +176,8 @@ export function buildWindFlow(
               span: 0,
               phase: 0,
               lift: 26 + 12 * hash01(i * 31 + j * 7 + b),
-              scale: 0.62 + 0.12 * hash01(i + j * 13 + b * 3),
+              scale: 0.56 + 0.12 * hash01(i + j * 13 + b * 3),
               waveK: 0,
-              rowK: 0,
               weaveA: 0,
               eddy: true,
               R: 60 + 100 * hash01(i * 17 + j * 5 + b * 11),
@@ -196,23 +188,16 @@ export function buildWindFlow(
             });
           }
         }
-        continue; // al posto del dardo dritto, qui ruota il vortice
+        continue; // al posto della freccia dritta, qui ruota il vortice
       }
 
-      /* dardo SOLO dove domina la brezza di pendio: le zone di vento meteo
-         restano al pettine dei chevron (i due sistemi restano leggibili) */
-      if (breezeMag <= Math.max(2.0, 0.55 * w.ws)) continue;
-
-      /* classe aerologica per il colore (come la legenda) */
-      let cls: FlowClass = "flow";
-      const windDom = w.ws >= 12;
-      if (windDom && up > 0.3) cls = "lift";
-      else if (windDom && up < -0.32 && w.ws >= 18) cls = "lee";
-      else if (!windDom && s >= 0.1) cls = anabatic ? "ana" : "kata";
+      /* FLUSSO CONTINUO: la freccia c'è OVUNQUE (anche in pianura e fuori dalle
+         zone decollo), con forza minima visibile — l'acqua riempie ogni roccia */
+      void breezeMag;
 
       /* CASCATA: la corsa accelera quando il flusso è allineato alla pendenza */
       const cascade = clamp(1 + 0.55 * flowUp, 0.7, 1.6);
-      const speedVis = clamp(sp * 2.6 * cascade, 10, 68);
+      const speedVis = clamp(sp * 3.4 * cascade, 14, 88);
       const distC = Math.hypot(i * STEP - extN, j * STEP - extE);
 
       dartCandidates.push({
@@ -225,81 +210,23 @@ export function buildWindFlow(
         span: 620 + 360 * hash01(i * 7 + j),
         phase: hash01(i * 13 + j * 5) * 990,
         lift: 26 + 8 * hash01(i * 11 + j * 3),
-        scale: 0.66 + 0.16 * clamp(sp / 26, 0, 1),
+        scale: 0.46 + 0.12 * clamp(sp / 26, 0, 1),
         waveK: distC * 0.0045,
-        rowK: 0,
         weaveA: 26 + 18 * hash01(i + j * 17),
         eddy: false,
         R: 0,
         w0: 0,
         om: 0,
         kind: "dart",
-        tint: cls,
+        tint: breezeColor(sp), // VERDE INTENSO, sempre la stessa famiglia
       });
     }
   }
 
-  /* cap di sicurezza sui dardi (hardware debole): diradamento uniforme */
-  const MAXD = 1150;
+  /* cap di sicurezza sulle frecce (hardware debole): diradamento uniforme */
+  const MAXD = 1400;
   const keep = dartCandidates.length > MAXD ? Math.ceil(dartCandidates.length / MAXD) : 1;
   for (let k = 0; k < dartCandidates.length; k += keep) movers.push(dartCandidates[k]);
-
-  /* ============ 2) VENTI METEO: pettine di chevron larghi a due strati ============ */
-  const wC = lw(0.5, 0.5); // vento medio del campo per orientare il pettine
-  const azC = ((wC.wd + 180) % 360) * RAD; // dove VA il vento medio
-  const cE = Math.sin(azC);
-  const cN = Math.cos(azC);
-  const pE = -cN; // perpendicolare: le righe del pettine
-  const pN = cE;
-  const ACROSS = 380; // distanza tra le righe (denti del pettine)
-  const ALONG = 700; // distanza lungo il flusso
-  const layers = [
-    { lift: 55, k: 1.0, veer: 0, sc: 0.8 },
-    { lift: 175, k: 1.13, veer: 7 * RAD, sc: 0.68 },
-  ];
-  let rowIdx = 0;
-  for (const L of layers) {
-    for (let y = -extE; y <= extE; y += ACROSS, rowIdx++) {
-      for (let x = -extN; x <= extN; x += ALONG) {
-        const xj = x + (rowIdx % 2 ? ALONG / 2 : 0); // righe sfalsate come un pettine vero
-        if (Math.abs(xj) > extN) continue;
-        const lat = field.lat0 + (pN * y + cN * xj) / mLat;
-        const lon = field.lon0 + (pE * y + cE * xj) / mLon;
-        const fi = (field.rows - 1) / 2 - ((lat - field.lat0) * mLat) / field.step;
-        const fj = ((lon - field.lon0) * mLon) / field.step + (field.cols - 1) / 2;
-        if (fi < -0.5 || fi > field.rows - 0.5 || fj < -0.5 || fj > field.cols - 0.5) continue;
-
-        const w = lw(clamp(fj / (field.cols - 1), 0, 1), clamp(fi / (field.rows - 1), 0, 1));
-        const ws = w.ws * L.k;
-        if (ws < 1.5) continue;
-        const az = ((w.wd + 180) % 360) * RAD + L.veer; // dove VA il vento a questo strato
-        const dE = Math.sin(az);
-        const dN = Math.cos(az);
-        const distC = Math.hypot(y, xj);
-        movers.push({
-          lat,
-          lon,
-          dE,
-          dN,
-          azTo: az,
-          speedVis: clamp(ws * 1.5, 6, 40),
-          span: 1300,
-          phase: hash01(rowIdx * 31 + Math.round(x)) * 1290,
-          lift: L.lift,
-          scale: L.sc * (0.9 + 0.2 * clamp(ws / 30, 0, 1)),
-          waveK: distC * 0.0038,
-          rowK: rowIdx * 0.62,
-          weaveA: 0,
-          eddy: false,
-          R: 0,
-          w0: 0,
-          om: 0,
-          kind: "chev",
-          tint: speedColor(ws),
-        });
-      }
-    }
-  }
 
   /* ================= RENDER: BillboardCollection aggiornata a preRender ================= */
   const bc = new Cesium.BillboardCollection();
@@ -308,12 +235,7 @@ export function buildWindFlow(
   const finite = (p: import("cesium").Cartesian3): boolean =>
     Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z);
 
-  const imgOf = (m: Mover): HTMLCanvasElement =>
-    m.kind === "eddy"
-      ? curlSprite(m.tint)
-      : m.kind === "dart"
-        ? dartSprite(FLOW_COLORS[m.tint as FlowClass] ?? m.tint)
-        : chevronSprite(m.tint);
+  const imgOf = (m: Mover): HTMLCanvasElement => (m.kind === "eddy" ? curlSprite(m.tint) : dartSprite(m.tint));
 
   let bbs: import("cesium").Billboard[] = [];
   try {
@@ -337,7 +259,7 @@ export function buildWindFlow(
   /* handle per i test di verifica */
   (window as unknown as Record<string, unknown>).__c3dWindFlow = {
     darts: movers.filter((m) => m.kind === "dart").length,
-    chevrons: movers.filter((m) => m.kind === "chev").length,
+    chevrons: 0, // i venti meteo non stanno più sul suolo: solo su clic della quota
     eddies: eddyCenters.length,
     total: movers.length,
   };
@@ -380,9 +302,8 @@ export function buildWindFlow(
       const h = heightAt(field, la, lo) + lift;
       const p = Cesium.Cartesian3.fromDegrees(lo, la, h);
       if (finite(p)) b.position = p;
-      /* ONDA GLOBALE: creste di luminosità/scala che percorrono la valle;
-         sui pettini si somma l'onda di riga (le file si accendono in sequenza) */
-      const wave = 0.5 + 0.5 * Math.sin(t * 1.5 - m.waveK + m.rowK);
+      /* ONDA GLOBALE: creste di luminosità/scala che percorrono la valle */
+      const wave = 0.5 + 0.5 * Math.sin(t * 1.5 - m.waveK);
       b.scale = m.scale * (0.84 + 0.3 * wave);
     }
   };

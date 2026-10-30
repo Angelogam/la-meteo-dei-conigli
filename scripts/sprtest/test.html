@@ -1,0 +1,35 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+  body { margin:0; font-family: sans-serif; background:#222; }
+  .row { display:flex; }
+  .panel { padding:14px; width:560px; height:400px; }
+  .dark { background:#1a2634; }
+  .light { background:#cfd8cf; }
+  h3 { color:#eee; margin:4px 0 8px; font-size:13px; }
+  canvas { margin:6px; }
+</style></head>
+<body>
+<div class="row">
+  <div class="panel dark"><h3>dardo brezze + freccia meteo (sfondo scuro)</h3><div id="a"></div></div>
+  <div class="panel light"><h3>sfondo chiaro (satellite)</h3><div id="b"></div></div>
+</div>
+<script type="module">
+  import { dartSprite, chevronSprite } from "./sprites.js";
+  const colors = ["#35d07f", "#ffd23f", "#ff7043", "#ff4d4f", "#4cc3ff", "#c94fff"];
+  for (const [id, sc] of [["a", 1.5], ["b", 1.5]]) {
+    const host = document.getElementById(id);
+    for (const col of colors) {
+      for (const fn of [dartSprite, chevronSprite]) {
+        const src = fn(col);
+        const c = document.createElement("canvas");
+        c.width = src.width * sc; c.height = src.height * sc;
+        const g = c.getContext("2d");
+        g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+        g.drawImage(src, 0, 0, c.width, c.height);
+        host.appendChild(c);
+      }
+    }
+  }
+  window.__ready = true;
+</script>
+</body></html>

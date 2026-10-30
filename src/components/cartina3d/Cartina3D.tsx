@@ -6,22 +6,20 @@
  * Motore: CesiumJS (open source) + terreno DEM gratuito (Mapzen/AWS) + immagini
  * satellite Esri ad alta risoluzione (massimo dettaglio, contrasto potenziato).
  *
- * Cosa mostra:
+ * Cosa mostra (UN FLUSSO ALLA VOLTA, mai sovrapposti — richiesta pilota):
  * - i DECOLLI con pin cliccabili e un PARAPENDIO in volo che fluttua sopra ognuno
- * - il CAMPO VENTO su tutta la valle in DUE SISTEMI DISTINTI: le BREZZE di
- *   pendio/valle come tantissime frecce PICCOLE a dardo che corrono sui rilievi
- *   a cascata (salgono i pendii di giorno, scendono di notte) con RICCIOLI di
- *   sottovento dietro le creste; i VENTI METEO come frecce LARGHE e CORTE in
- *   file ordinate a PETTINE su due strati di quota — tutto animato a ONDE
- *   sincronizzate, colorato per VELOCITÀ (scala Windy: verde 5-10 ·
- *   giallo/arancio 10-20 · fuoco 20-30 · rosso 30-40 · viola 40+), con
- *   ETICHETTE di velocità, direzione e quota
+ * - le BREZZE DEL PENDIO (toggle «Brezze del pendio»): flusso CONTINUO a VERDE
+ *   INTENSO che riempie tutti i rilievi come acqua che risale le rocce —
+ *   tantissime frecce a CODA LUNGA su una griglia DEM larga ≈17×12 km (anche
+ *   fuori dalle zone decollo), salgono i pendii di giorno, scendono di notte,
+ *   con RICCIOLI di sottovento dietro le creste ed ETICHETTE km/h + direzione
+ * - i VENTI METEO IN QUOTA SOLO SU CLIC della quota (1740→4000 m, passi di
+ *   250): clicco 2000 → SOLO il vento dominante a 2000 m con velocità e
+ *   direzione; clicco 3000 → solo il meteo a 3000. Colore = velocità nella
+ *   GAMMA dal GIALLO al VIOLA SCURO (forte = viola scuro)
  * - PREVISIONI a fasce orarie per 5 giorni (6→21 h, cliccabili sopra la scena): la
  *   barra guida giorno e ora su TUTTA la vista 3D (campo, quota, termiche); se il
  *   modello non risponde una STIMA dal sounding mantiene le fasce cliccabili
- * - i VENTI IN QUOTA dalla quota del DECOLLO SCELTO fino a 4000 m con passi di
- *   250 m (o la colonna completa «tutte»): più il vento è forte più il colore va
- *   dall'arancio fuoco al VIOLA, in movimento continuo
  * - le TERMICHE come COLONNE D'ARIA luminose fino alla base delle nuvole (LCL
  *   dal sounding): texture a gradiente con costolature elicoidali, nucleo
  *   interno, eliche di risalita, anello pulsante e bolle — stile XCTherm
@@ -126,10 +124,10 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   const [loadPct, setLoadPct] = useState(0); // % di caricamento del terreno
 
   const [siteId, setSiteId] = useState<string>("");
-  /* quota dei venti: null = automatico (primo livello sopra il decollo),
-     0 = nascosti, -1 = colonna completa decollo→4000, n = quota precisa */
+  /* quota dei venti meteo: 0 = nascosti (solo brezze), n = SOLO il vento a
+     quella quota — un livello alla volta, mai sovrapposti (richiesta pilota) */
   const [quota, setQuota] = useState<number | null>(null);
-  const [surface, setSurface] = useState(true);
+  const [surface, setSurface] = useState(true); // BREZZE DEL PENDIO (flusso continuo)
   const [therm, setTherm] = useState(true); // termiche: dove staccano
 
   /* campo vento: griglia DEM + previsioni Open-Meteo (oggi + 3 giorni) */
@@ -167,7 +165,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   const effDate = forecast?.days[dayIdx]?.date ?? null;
   const dayLabel = forecast?.days[dayIdx]?.label ?? (dayIdx === 0 ? "Oggi" : `+${dayIdx} gg`);
   const levelList = useMemo(() => levelsFor(active?.elevation_m), [active?.elevation_m]);
-  const effQuota = quota === null ? levelList[0] ?? 0 : quota;
+  const effQuota = quota ?? 0; // default: niente venti in quota, solo brezze
 
   useEffect(() => {
     if (selectedId) setSiteId(selectedId);
@@ -583,30 +581,33 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     };
   }, [status, field]);
 
-  /* ---------- FLUSSO VENTO SUOLO: schiera a pettine + brezze a cascata ----------
-     Due sistemi distinti (windflow.ts): le BREZZE di pendio sono tantissime
-     frecce piccole a dardo che corrono sui rilievi come una cascata (salgono i
-     pendii di giorno, scendono di notte) con RICCIOLI di sottovento dietro le
-     creste; i VENTI METEO sono frecce larghe e corte in file ordinate a
-     pettine su due strati di quota. Tutto pulsa a ONDE sincronizzate che
-     attraversano la valle. Le etichette restano su una sotto-griglia sparsa. */
+  /* ---------- FLUSSO VENTO SUOLO: SOLO BREZZE DI PENDIO (toggle dedicato) ----------
+     windflow.ts costruisce il flusso continuo verde su TUTTI i rilievi
+     (anche fuori dalle zone decollo): frecce a coda lunga che corrono come
+     acqua che risale le rocce, con RICCIOLI di sottovento dietro le creste.
+     Quando è selezionata una QUOTA il suolo si SVUOTA: un flusso alla volta,
+     mai sovrapposti. Le etichette km/h + direzione restano su una sotto-griglia
+     sparsa. */
   useEffect(() => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
     if (status !== "ready" || !Cesium || !viewer || !field || !flows.length) return;
     flowRef.current?.destroy();
     flowRef.current = null;
-    if (!surface) return;
+    clear(surfRef);
+    /* strumentazione per i test: il flusso è stato rimosso dalla scena */
+    (window as unknown as Record<string, unknown>).__c3dWindFlow = { darts: 0, chevrons: 0, eddies: 0, total: 0 };
+    if (!surface || effQuota > 0) return;
 
     flowRef.current = buildWindFlow(Cesium, viewer, field, live, selHour, {
       ws: Number(activePoint?.wind) > 0 ? Number(activePoint?.wind) : 7,
       wd: Number.isFinite(Number(activePoint?.dir)) ? Number(activePoint?.dir) : 270,
     });
 
-    /* ETICHETTE del campo: velocità · direzione · quota su una sotto-griglia
-       sparsa (≈21) così restano leggibili senza coprire le frecce */
+    /* ETICHETTE del flusso: intensità km/h + direzione su una sotto-griglia
+       sparsa (≈23) così restano leggibili senza coprire le frecce */
     const labs = flows
-      .filter((_, k) => k % 12 === 5)
+      .filter((_, k) => k % 24 === 11)
       .map((c) => {
         const hdgTo = (Math.atan2(c.dE, c.dN) * 180) / Math.PI;
         const from = ((hdgTo + 180) % 360 + 360) % 360;
@@ -634,13 +635,16 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       labs.forEach((e) => viewer.entities.remove(e));
       surfRef.current = [];
     };
-  }, [status, field, flows, surface, live, selHour, activePoint]);
+  }, [status, field, flows, surface, live, selHour, activePoint, effQuota]);
 
-  /* ---------- venti in quota: dal DECOLLO SCELTO a 4000 m, passi di 250 m ----------
-     Stessa famiglia visiva del suolo: CHEVRON larghi e corti orientati al Nord
-     reale, colore = VELOCITÀ (scala Windy: dall'arancio fuoco al VIOLA).
-     «Tutte» mostra l'intera colonna; un livello alla volta si esplora con i
-     chip. Frecce nascoste dove il terreno supera la quota. */
+  /* ---------- VENTO METEO IN QUOTA: SOLO su clic della quota ----------
+     Un livello alla volta (richiesta pilota: «se clicco a 2000 ci deve essere
+     il vento dominante a 2000 e non altri venti e freccette»). Griglia ordinata
+     su tutta la zona, freccia con ASTA e coda lunga orientata al Nord reale,
+     COLORE = velocità nella gamma dal GIALLO al VIOLA SCURO, etichette con
+     velocità + direzione + quota. Le brezze di pendio restano nascoste finché
+     la quota è attiva (nessuna sovrapposizione). Frecce nascoste dove il
+     terreno supera la quota. */
   useEffect(() => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
@@ -649,22 +653,21 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     altFlowRef.current = null;
     clear(windRef);
     if (effQuota === 0) return;
+    const lvl = effQuota;
 
     const mLat = 111320;
     const mLon = 111320 * Math.cos((active.lat * Math.PI) / 180);
 
-    /* ancore: anelli attorno al decollo — per «tutte» un anello più stretto,
-       le stesse per qualunque livello (il DEM si campiona una volta sola) */
+    /* ancore: griglia ordinata su tutta la zona (~13×9, passo 1400 m) */
     const anchors: { lon: number; lat: number }[] = [];
-    const rings = effQuota === -1 ? [3000] : [2400, 4600];
-    const per = effQuota === -1 ? 10 : 16;
-    for (const r of rings) {
-      for (let a = 0; a < per; a++) {
-        const th = (a / per) * Math.PI * 2;
-        anchors.push({ lon: active.lon + (Math.sin(th) * r) / mLon, lat: active.lat + (Math.cos(th) * r) / mLat });
+    const RNG = 8400; // semiestensione E-O (≈16.8 km di larghezza coperta)
+    const dx = 1400;
+    const dy = 1500;
+    for (let y = -RNG; y <= RNG; y += dy) {
+      for (let x = -RNG; x <= RNG; x += dx) {
+        anchors.push({ lon: active.lon + x / mLon, lat: active.lat + y / mLat });
       }
     }
-    const levels = effQuota === -1 ? levelList : [effQuota];
 
     let cancelled = false;
     (async () => {
@@ -684,7 +687,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       }
       if (cancelled || viewerRef.current !== viewer) return;
 
-      /* chevron in quota: stessa BillboardCollection tickata a preRender.
+      /* frecce in quota: BillboardCollection tickata a preRender.
          Il destroy viene registrato SUBITO dopo aver aggiunto la collection:
          se la creazione dei billboard fallisce, la scena resta pulita. */
       const bc = new Cesium.BillboardCollection();
@@ -740,24 +743,20 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         },
       };
 
-      levels.forEach((lvl, li) => {
-        const wind = windAtAltitude(quotaPoint, lvl, quotaPoint?.wind ?? null, quotaPoint?.dir ?? null);
-        if (wind.ws == null || wind.wd == null) return;
-        /* NaN non è null: con sounding parziali il valore può arrivare NaN e
-           posizioni NaN fermano il rendering di tutta la scena */
-        if (!Number.isFinite(wind.ws) || !Number.isFinite(wind.wd)) return;
+      const wind = windAtAltitude(quotaPoint, lvl, quotaPoint?.wind ?? null, quotaPoint?.dir ?? null);
+      if (wind.ws != null && wind.wd != null && Number.isFinite(wind.ws) && Number.isFinite(wind.wd)) {
         const wsK = wind.ws as number;
         const dirTo = ((wind.wd + 180) % 360) * (Math.PI / 180); // dove SPINGE il vento
         const dE = Math.sin(dirTo);
         const dN = Math.cos(dirTo);
-        const speed = Math.min(55, Math.max(10, (wsK / 3.6) * 3.2)); // deriva leggibile
+        const speed = Math.min(70, Math.max(14, (wsK / 3.6) * 4.2)); // deriva leggibile
         const span = 1700;
-        const color = speedColor(wsK);
-        const base = effQuota === -1 ? 0.6 : 0.76; // colonna completa: chevron più discreti
+        const color = speedColor(wsK); // gamma giallo → viola scuro
+        const base = 0.58;
         const visible = anchors.filter((_, i) => hs[i] + 90 < lvl);
 
         visible.forEach((p, k) => {
-          const phase = ((k + li * 7) * 197) % span;
+          const phase = (k * 197) % span;
           const start = Cesium.Cartesian3.fromDegrees(p.lon, p.lat, lvl);
           const bb = bc.add({
             position: finite(start) ? start : Cesium.Cartesian3.ZERO,
@@ -778,15 +777,14 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
             span,
             phase,
             base,
-            waveK: k * 0.55 + li * 0.4,
+            waveK: k * 0.55,
             bb,
           });
         });
 
-        /* ETICHETTE quota: velocità · direzione · quota (livello singolo: una su
-           quattro; colonna «tutte»: una per livello, altrimenti illeggibile) */
+        /* ETICHETTE: velocità · direzione · quota — sparse ma ben leggibili */
         const fromQ = ((wind.wd % 360) + 360) % 360;
-        const labK = effQuota === -1 ? [0] : [1, 5, 9, 13];
+        const labK = [11, 38, 65, 92];
         visible.forEach((p, k) => {
           if (!labK.includes(k)) return;
           added.push(
@@ -807,7 +805,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
             }),
           );
         });
-      });
+      }
 
       viewer.scene.preRender.addEventListener(tick);
       tickAttached = true;
@@ -817,7 +815,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     return () => {
       cancelled = true;
     };
-  }, [status, active, activePoint, quotaPoint, effQuota, levelList, demEpoch]);
+  }, [status, active, activePoint, quotaPoint, effQuota, demEpoch]);
 
   /* ---------- TERMICHE: COLONNE D'ARIA CHE SALGONO (stile XCTherm) ----------
      Coni RIFATTI (richiesta pilota): colonna con TEXTURE a gradiente (base
@@ -1188,15 +1186,6 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
             >
               off
             </button>
-            <button
-              type="button"
-              className={"c3d-q" + (effQuota === -1 ? " is-on" : "")}
-              onClick={() => setQuota(-1)}
-              data-testid="c3d-q-all"
-              title={`Tutta la colonna dei venti: da ${levelList[0] ?? 0} a ${QUOTA_MAX} m, passi di ${QUOTA_STEP} m`}
-            >
-              tutte
-            </button>
             <div className="c3d-quotas-scroll">
               {levelList.map((q) => (
                 <button
@@ -1205,6 +1194,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
                   className={"c3d-q" + (effQuota === q ? " is-on" : "")}
                   onClick={() => setQuota(q)}
                   data-testid={`c3d-q-${q}`}
+                  title={`Vento meteo a ${q} m: SOLO questo livello, velocità e direzione`}
                 >
                   {q}
                 </button>
@@ -1212,8 +1202,8 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
             </div>
           </div>
           <label className="c3d-toggle">
-            <Switch checked={surface} onCheckedChange={setSurface} aria-label="Campo vento suolo" />
-            <span>Venti suolo</span>
+            <Switch checked={surface} onCheckedChange={setSurface} aria-label="Brezze di pendio" />
+            <span>Brezze del pendio</span>
           </label>
           <label className="c3d-toggle">
             <Switch checked={therm} onCheckedChange={setTherm} aria-label="Termiche dove staccano" />
@@ -1273,7 +1263,6 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           dayLabel={dayLabel}
           selHour={selHour}
           quota={effQuota}
-          baseLevel={levelList[0] ?? 0}
           therm={therm}
           nTriggers={triggers.length}
           nCones={nCones}
@@ -1311,24 +1300,29 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       </div>
 
       <div className="c3d-legend">
-        <span className="c3d-leg-scale" data-testid="c3d-leg-scale">
-          <i style={{ background: "#7ec8ff" }} />
+        <span className="c3d-leg-scale" data-testid="c3d-leg-scale" title="Colore dei venti meteo in quota: da giallo (debole) a viola scuro (fortissimo)">
+          <i style={{ background: "#ffe97a" }} />
           <em>&lt;5</em>
-          <i style={{ background: "#35d07f" }} />
+          <i style={{ background: "#ffd633" }} />
           <em>5-10</em>
-          <i style={{ background: "#ffd23f" }} />
+          <i style={{ background: "#ffb021" }} />
           <em>10-15</em>
-          <i style={{ background: "#ffa53f" }} />
+          <i style={{ background: "#ff8a1f" }} />
           <em>15-20</em>
-          <i style={{ background: "#ff7043" }} />
-          <em>20-30</em>
-          <i style={{ background: "#ff4d4f" }} />
+          <i style={{ background: "#ff5c33" }} />
+          <em>20-25</em>
+          <i style={{ background: "#ef3a5e" }} />
+          <em>25-30</em>
+          <i style={{ background: "#c932a6" }} />
           <em>30-40</em>
-          <i style={{ background: "#c94fff" }} />
-          <em>40+ km/h</em>
+          <i style={{ background: "#8b2bd9" }} />
+          <em>40-50</em>
+          <i style={{ background: "#5b1aa8" }} />
+          <em>50+ km/h</em>
         </span>
         <span>
-          <i className="c3d-sw is-lee" aria-hidden="true" /> rosso = sottovento · i riccioli sono i vortici di lee
+          <i className="c3d-dot" style={{ background: "#2ee07c" }} aria-hidden="true" />
+          verde = brezze di pendio · rosso = sottovento e vortici
         </span>
         <span>
           <i className="c3d-dot" style={{ background: "#ffd60a" }} aria-hidden="true" />
@@ -1356,7 +1350,6 @@ function Hud({
   dayLabel,
   selHour,
   quota,
-  baseLevel,
   therm,
   nTriggers,
   nCones,
@@ -1372,7 +1365,6 @@ function Hud({
   dayLabel: string;
   selHour: number;
   quota: number;
-  baseLevel: number;
   therm: boolean;
   nTriggers: number;
   nCones: number;
@@ -1391,20 +1383,20 @@ function Hud({
             : "vento e previsioni: dati in arrivo…"}
       </span>
       <span className="c3d-hud-v" data-testid="c3d-hud-surface">
-        {surface
-          ? anabatic
-            ? "dardi = brezze di pendio a cascata · pettine largo = vento meteo · rosso = sottovento"
-            : "dardi = aria che scende i pendii (catabatica) · pettine largo = vento meteo · rosso = sottovento"
-          : "venti suolo nascosti"}
+        {quota > 0
+          ? "brezze del pendio nascoste: è attivo il vento in quota"
+          : surface
+            ? anabatic
+              ? "frecce verdi = brezze di pendio che salgono (anabatica) · riccioli rossi = sottovento"
+              : "frecce verdi = aria che scende i pendii (catabatica) · riccioli rossi = sottovento"
+            : "brezze del pendio nascoste"}
       </span>
       <span className="c3d-hud-v" data-testid="c3d-hud-wind">
         {quota === 0
-          ? "Venti in quota nascosti"
-          : quota === -1
-            ? `Colonna venti: da ${baseLevel} a 4000 m (passi di 250)`
-            : wind?.ws != null && wind?.wd != null
-              ? `Vento a ${quota} m · ${Math.round(wind.ws)} km/h · da ${dir8(wind.wd)}`
-              : `Vento a ${quota} m · dati in arrivo…`}
+          ? "clicca una quota per il vento meteo a quell'altezza (uno alla volta)"
+          : wind?.ws != null && wind?.wd != null
+            ? `Vento a ${quota} m · ${Math.round(wind.ws)} km/h · da ${dir8(wind.wd)}`
+            : `Vento a ${quota} m · dati in arrivo…`}
       </span>
       <span className="c3d-hud-v" data-testid="c3d-hud-therm">
         {therm
