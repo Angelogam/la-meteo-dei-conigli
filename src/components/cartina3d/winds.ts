@@ -379,10 +379,12 @@ export function computeFlows(f: WindField, live: LivePoint[] | null, hour: numbe
         dN: Number.isFinite(dirN) ? dirN : 0,
         sp: Number.isFinite(sp) ? sp : 0,
         cls,
-        len: Math.min(1300, Math.max(380, 170 + sp * 20)),
-        w: Math.min(20, Math.max(12, Math.round(8 + sp / 3))),
-        speedVis: Math.min(34, Math.max(4.5, sp * 0.62)),
-        span: f.step * 2.2,
+        /* FRECCE CORTE E LARGHE (richiesta pilota): corpo tozzo, molto
+           leggibile, con la deriva che si VEDE muovere in modo netto */
+        len: Math.min(430, Math.max(160, 95 + sp * 11)),
+        w: Math.min(30, Math.max(17, Math.round(13 + sp / 2.4))),
+        speedVis: Math.min(62, Math.max(11, sp * 2.4)),
+        span: f.step * 1.45,
       });
     }
   }

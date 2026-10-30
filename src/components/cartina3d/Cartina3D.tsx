@@ -190,10 +190,13 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   const live = useMemo(() => (forecast ? liveAt(forecast, effDate, selHour) : null), [forecast, effDate, selHour]);
   const flows = useMemo<FlowCell[]>(() => (field ? computeFlows(field, live, selHour) : []), [field, live, selHour]);
 
-  /* stacchi termici stile XCTherm: sole × pendenza × radiazione del sounding */
+  /* stacchi termici stile XCTherm: sole × pendenza × radiazione del sounding
+     × INCLINAZIONE del vento: la bolla stacca dove l'aria (vento meteo +
+     brezza) SALGE lungo il pendio; sul lato sottovento, dove l'aria scende,
+     nessuno stacco */
   const triggers = useMemo<TriggerCell[]>(
-    () => (field ? computeTriggers(field, selHour, activePoint?.rad ?? null) : []),
-    [field, selHour, activePoint],
+    () => (field ? computeTriggers(field, selHour, activePoint?.rad ?? null, flows) : []),
+    [field, selHour, activePoint, flows],
   );
   /* punto aerologico dei venti in quota: col sounding reale, oppure dal campo
      (stima offline) — così HUD e frecce in quota dicono sempre la stessa cosa */
@@ -534,9 +537,11 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     };
   }, [status, field]);
 
-  /* ---------- CAMPO VENTO ANIMATO: frecce grandi che attraversano la valle ----------
+  /* ---------- CAMPO VENTO ANIMATO: frecce corte e larghe che attraversano la valle ----------
      Ogni freccia ha un'OMBRA proiettata sotto (statica, quindi economica):
-     la freccia sembra librata sopra il terreno e la scena acquista profondità. */
+     la freccia sembra librata sopra il terreno e la scena acquista profondità.
+     La deriva è VELOCE e con ondeggiamento laterale: le frecce NON stanno mai
+     ferme, come spinte da un vento vero. */
   useEffect(() => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
@@ -547,31 +552,34 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     const finite = (p: import("cesium").Cartesian3): boolean =>
       Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z);
 
-    /* OMBRE: geometria fissa a 14 m sul terreno, leggermente allargata e
+    /* OMBRE: geometria fissa a 12 m sul terreno, larga quanto la freccia e
        scura — con la freccia che scorre sopra crea l'effetto 3D richiesto */
     const shadows = flows.map((c) => {
-      const half = c.len * 0.55;
-      const p0 = Cesium.Cartesian3.fromDegrees(c.lon - (c.dE * half) / field.mLon, c.lat - (c.dN * half) / field.mLat, c.h + 14);
-      const p1 = Cesium.Cartesian3.fromDegrees(c.lon + (c.dE * half) / field.mLon, c.lat + (c.dN * half) / field.mLat, c.h + 14);
+      const half = c.len * 0.62;
+      const p0 = Cesium.Cartesian3.fromDegrees(c.lon - (c.dE * half) / field.mLon, c.lat - (c.dN * half) / field.mLat, c.h + 12);
+      const p1 = Cesium.Cartesian3.fromDegrees(c.lon + (c.dE * half) / field.mLon, c.lat + (c.dN * half) / field.mLat, c.h + 12);
       return viewer.entities.add({
         polyline: {
           positions: finite(p0) && finite(p1) ? [p0, p1] : [Cesium.Cartesian3.ZERO, Cesium.Cartesian3.ZERO],
-          width: c.w + 3,
+          width: c.w + 5,
           material: new Cesium.PolylineArrowMaterialProperty(
-            Cesium.Color.fromCssColorString("#0a1626").withAlpha(0.4),
+            Cesium.Color.fromCssColorString("#0a1626").withAlpha(0.45),
           ),
         },
       });
     });
 
-    /* CORPI: frecce larghe 12-20 px che deriva lungo il vento con un leggero
-       ondeggiare verticale (vita 3D senza costi extra) */
+    /* CORPI: frecce tozze (160-430 m, 17-30 px) che scorrono lungo il vento
+       con ondeggiamento laterale + respiro verticale — moto sempre visibile */
     const bodies = flows.map((c, k) => {
       const phase = (k * 137.7) % c.span;
+      const pE = -c.dN; // perpendicolare al flusso (per il serpeggio)
+      const pN = c.dE;
+      const weaveA = c.span * 0.085; // ampiezza del serpeggio (m)
       let last: import("cesium").Cartesian3[] | null = null;
-      const posAt = (off: number, lift: number): import("cesium").Cartesian3 => {
-        const la = c.lat + (c.dN * off) / field.mLat;
-        const lo = c.lon + (c.dE * off) / field.mLon;
+      const posAt = (off: number, sw: number, lift: number): import("cesium").Cartesian3 => {
+        const la = c.lat + (c.dN * off + pN * sw) / field.mLat;
+        const lo = c.lon + (c.dE * off + pE * sw) / field.mLon;
         return Cesium.Cartesian3.fromDegrees(lo, la, heightAt(field, la, lo) + lift);
       };
       return viewer.entities.add({
@@ -579,8 +587,9 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           positions: new Cesium.CallbackProperty(() => {
             const t = performance.now() / 1000;
             const off = ((t * c.speedVis + phase) % c.span) - c.span / 2;
-            const lift = 58 + 7 * Math.sin(t * 1.15 + k * 0.73);
-            const calc = [posAt(off - c.len / 2, lift), posAt(off + c.len / 2, lift)];
+            const sw = weaveA * Math.sin(t * 0.9 + k * 1.31); // serpeggio laterale
+            const lift = 56 + 10 * Math.sin(t * 1.25 + k * 0.73); // respiro verticale
+            const calc = [posAt(off - c.len / 2, sw, lift), posAt(off + c.len / 2, sw, lift)];
             /* mai posizioni NaN a Cesium: senza questo il render si ferma */
             if (calc.every(finite)) {
               last = calc;
@@ -679,11 +688,12 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         const dirTo = ((wind.wd + 180) % 360) * (Math.PI / 180); // dove SPINGE il vento
         const dE = Math.sin(dirTo);
         const dN = Math.cos(dirTo);
-        const L = Math.min(1900, Math.max(600, wsK * (effQuota === -1 ? 46 : 55)));
-        const speed = Math.min(42, Math.max(8, (wsK / 3.6) * 3.4)); // drift esagerato ×3.4 per la lettura
-        const span = Math.max(2400, L * 4);
+        /* ANCHE IN QUOTA: frecce corte e tozze, deriva rapida e leggibile */
+        const L = Math.min(950, Math.max(280, wsK * 22));
+        const speed = Math.min(62, Math.max(14, (wsK / 3.6) * 4.2)); // deriva esagerata ×4.2 per la lettura
+        const span = Math.max(1500, L * 3);
         const color = Cesium.Color.fromCssColorString(speedColor(wsK));
-        const wpx = effQuota === -1 ? 9 : 12;
+        const wpx = effQuota === -1 ? 13 : 17;
         const visible = anchors.filter((_, i) => hs[i] + 90 < lvl);
 
         visible.forEach((p, k) => {

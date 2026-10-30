@@ -2,21 +2,26 @@
  * TERMICHE: dove STACCANO (stile XCTherm, thermal.kk7.ch).
  *
  * Il decollo della bolla non avviene ovunque: serve un pendio che riceva il
- * sole con la giusta pendenza. Su ogni cella della griglia DEM del campo vento
- * calcolo un PUNTEGGIO DI STACCO e una FORZA (m/s) realistica:
+ * sole E su cui l'aria STIA SALGENDO. Su ogni cella della griglia DEM del
+ * campo vento calcolo un PUNTEGGIO DI STACCO e una FORZA (m/s) realistica:
  *
  *  - ESPOSIZIONE: versante rivolto verso il sole all'ora selezionata
  *    (azimut solare approssimato: SE la mattina, S a mezzogiorno, SO il pomeriggio)
+ *  - INCLINAZIONE DEL VENTO (il cuore dell'algoritmo): il flusso FUSO del
+ *    campo vento (vento meteo + brezza di versante) viene proiettato sulla
+ *    direzione di massima pendenza. Se l'aria SALGE lungo il pendio la bolla
+ *    è alimentata e lo stacco è forte; se l'aria SCENDE (lato sottovento,
+ *    rotore) lo stacco è SUPPRESSO del tutto.
  *  - PENDENZA: finestra ideale 8-23°, oltre i ~30° il punteggio cala
+ *  - VENTO TROPPO FORTE: oltre ~35 km/h le bolle si spezzano (forza ridotta)
  *  - FORZA: curva dell'ora (picco ~14) × punteggio × radiazione diretta
- *    del sounding del decollo (HourlyPoint.rad, W/m²) — la radiazione è il
- *    motore reale della bolla
+ *    del sounding del decollo (HourlyPoint.rad, W/m²)
  *
  * Il colore della termica dice la forza (come su XCTherm):
  *   azzurro <1.5 · verde 1.5-2.5 · giallo 2.5-3.5 · arancio 3.5-4.5 · rosso >4.5 m/s
  */
 
-import type { WindField } from "./winds";
+import type { FlowCell, WindField } from "./winds";
 
 export interface TriggerCell {
   lat: number;
@@ -73,6 +78,7 @@ export function computeTriggers(
   field: WindField,
   hour: number,
   rad: number | null,
+  flows: FlowCell[] = [],
 ): TriggerCell[] {
   if (hour < 8 || hour > 18) return []; // di notte le bolle non staccano
 
@@ -94,15 +100,31 @@ export function computeTriggers(
       const uN = gN / gl;
       const sunDot = Math.max(0, Math.min(1, uE * sE + uN * sN));
 
+      /* INCLINAZIONE DEL VENTO: il flusso fuso (vento meteo + brezza) proiettato
+         sulla linea di massima pendenza. +1 = l'aria risale il versante (bolla
+         alimentata), −1 = l'aria scende (sottovento/rotore: niente stacco). */
+      const fc = flows[i * field.cols + j];
+      let windDot = 0.55; // senza campo vento disponibile: neutro-positivo
+      let wsp = 8;
+      if (fc && Number.isFinite(fc.dE) && Number.isFinite(fc.dN)) {
+        windDot = Math.max(-1, Math.min(1, fc.dE * uE + fc.dN * uN));
+        wsp = Number.isFinite(fc.sp) ? fc.sp : 8;
+      }
+      if (windDot < -0.12) continue; // l'aria SCENDE qui: sottovento → nessuna bolla
+
       /* finestra di pendenza: troppo piatto non stacca, troppo ripido è scivoloso */
       const slopeScore =
         s < 0.08 ? 0 : s < 0.15 ? ((s - 0.08) / 0.07) * 0.85 : s <= 0.4 ? 1 : s <= 0.6 ? 1 - ((s - 0.4) / 0.2) * 0.45 : 0.3;
       if (slopeScore <= 0) continue;
 
-      const score = Math.min(1, 0.58 * sunDot * slopeScore + 0.42 * slopeScore * Math.max(0.35, sunDot));
+      /* punteggio: sole e risalita dell'aria pesano insieme */
+      const score = Math.min(1, slopeScore * (0.5 * sunDot + 0.5 * Math.max(0, windDot)));
       if (score < 0.42) continue;
 
-      const strength = (1.2 + 2.8 * hourK) * (0.5 + 0.9 * score) * radK;
+      /* forza: la risalita del vento alimenta la bolla; vento troppo forte la
+         spezza, aria stagnante la indebolisce */
+      const windK = wsp > 35 ? 0.72 : wsp < 2.5 ? 0.85 : 1;
+      const strength = (1.2 + 2.8 * hourK) * (0.5 + 0.9 * score) * radK * (0.72 + 0.52 * Math.max(0, windDot)) * windK;
       out.push({
         lat: field.lat0 + (((field.rows - 1) / 2 - i) * field.step) / field.mLat,
         lon: field.lon0 + ((j - (field.cols - 1) / 2) * field.step) / field.mLon,
