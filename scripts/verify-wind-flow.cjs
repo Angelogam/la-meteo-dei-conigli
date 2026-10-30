@@ -46,25 +46,46 @@ function canvasStats(page) {
   /* screenshot non bloccante: i font esterni possono non arrivare mai nel sandbox */
   const shot = async (p, opts = {}) => {
     try {
-      await p.screenshot({ path: opts.path, timeout: 45000, clip: opts.clip });
+      await p.screenshot({ path: opts.path, timeout: 25000, clip: opts.clip, animations: "disabled" });
       return true;
     } catch (e) {
       console.warn("shot fallito (" + (opts.path || "?") + "): " + String(e).split("\n")[0]);
       return false;
     }
   };
+  const clickForce = async (p, loc, timeout = 25000) => {
+    try {
+      await loc.click({ force: true, timeout });
+      return true;
+    } catch {
+      try {
+        await loc.dispatchEvent("click");
+        return true;
+      } catch (e) {
+        console.warn("click fallito: " + String(e).split("\n")[0]);
+        return false;
+      }
+    }
+  };
+  /* scroll JS diretto: scrollIntoViewIfNeeded di Playwright può non stabilizzarsi in prod */
+  const scrollToMap = async (p, sel = ".cmap-map") => {
+    await p.evaluate((s) => {
+      const el = document.querySelector(s);
+      if (el) el.scrollIntoView({ block: "center", behavior: "instant" });
+    }, sel);
+    await p.waitForTimeout(400);
+  };
 
   await page.goto(BASE + "/", { waitUntil: "domcontentloaded", timeout: 90000 });
   await page.waitForSelector(".cmap-marker", { timeout: 90000 });
-  await page.locator('[data-testid="cartina-decolli"]').scrollIntoViewIfNeeded();
+  await scrollToMap(page, '[data-testid="cartina-decolli"]');
   await page.waitForSelector(".cmap-alt", { timeout: 90000 });
   await page.waitForFunction(() => (document.querySelector(".cmap-loaded")?.textContent || "").includes("24/24"), { timeout: 90000 }).catch(() => {});
 
   /* --- livello VENTO --- */
-  await page.locator(".cmap-lbtn").nth(1).click();
+  await clickForce(page, page.locator(".cmap-lbtn").nth(1));
   await page.waitForTimeout(2200);
-  await page.locator(".cmap-map").scrollIntoViewIfNeeded();
-  await page.waitForTimeout(500);
+  await scrollToMap(page);
 
   /* 1. marker: freccia con coda (line) + punta affusolata, chip direzione */
   out.arrowWithTail = await page.locator(".cmap-marker.is-windlayer .cmap-arrow line").count();
@@ -111,10 +132,14 @@ function canvasStats(page) {
     if (m && Number(m[1]) > 1800) { highIdx = i; break; }
   }
   if (highIdx >= 0) {
-    await page.locator(".cmap-alt-step").nth(highIdx).click({ force: true });
+    await page.evaluate((i) => {
+      const b = document.querySelectorAll(".cmap-alt-step")[i];
+      b?.scrollIntoView({ block: "center" });
+    }, highIdx);
+    await page.waitForTimeout(400);
+    await clickForce(page, page.locator(".cmap-alt-step").nth(highIdx));
     await page.waitForTimeout(2200);
-    await page.locator(".cmap-map").scrollIntoViewIfNeeded();
-    await page.waitForTimeout(500);
+    await scrollToMap(page);
     out.highLabel = ((await page.locator(".cmap-alt-step").nth(highIdx).textContent()) || "").trim();
     out.readoutHigh = ((await page.locator(".cmap-readout").textContent()) || "").replace(/\s+/g, " ").trim();
     out.legendHigh = ((await page.locator(".cmap-legend").textContent()) || "").replace(/\s+/g, " ").trim();
@@ -132,12 +157,11 @@ function canvasStats(page) {
   mpage.on("pageerror", (e) => errors.push("mobile: " + String(e)));
   await mpage.goto(BASE + "/", { waitUntil: "domcontentloaded", timeout: 90000 });
   await mpage.waitForSelector(".cmap-marker", { timeout: 90000 });
-  await mpage.locator('[data-testid="cartina-decolli"]').scrollIntoViewIfNeeded();
+  await scrollToMap(mpage, '[data-testid="cartina-decolli"]');
   await mpage.waitForSelector(".cmap-alt", { timeout: 90000 });
-  await mpage.locator(".cmap-lbtn").nth(1).click();
+  await mpage.locator(".cmap-lbtn").nth(1).click({ force: true, timeout: 20000 }).catch(async () => { await mpage.locator(".cmap-lbtn").nth(1).dispatchEvent("click"); });
   await mpage.waitForTimeout(2000);
-  await mpage.locator(".cmap-map").scrollIntoViewIfNeeded();
-  await mpage.waitForTimeout(500);
+  await scrollToMap(mpage);
   out.mobileCardsVisible = await mpage.locator(".cmap-wcard:visible").count();
   await shot(mpage, { path: OUT + "/wind-mobile.png" });
 
