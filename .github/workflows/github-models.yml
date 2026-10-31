@@ -35,22 +35,35 @@ jobs:
                     "Rispondi sempre in italiano, in modo pratico, concreto e senza giri di parole. "
                     "Se il messaggio e' solo il richiamo '@ai' senza una richiesta precisa, saluta e "
                     "chiedi di cosa ha bisogno, proponendo 3 esempi di richieste utili per questa app.")
-          payload = {
-              "model": "gemini-3.8-flash",
-              "input": system + "\n\n---\n\nMessaggio dell'utente nella issue #" + num + ":\n\"\"\"\n" + msg + "\n\"\"\"\nRispondi alla richiesta.",
-          }
+          payload_base = (system + "\n\n---\n\nMessaggio dell'utente nella issue #" + num + ":\n\"\"\"\n" + msg + "\n\"\"\"\nRispondi alla richiesta.")
           url = "https://generativelanguage.googleapis.com/v1beta/interactions"
-          req = urllib.request.Request(url, data=json.dumps(payload).encode(),
-              headers={"Content-Type": "application/json",
-                       "x-goog-api-key": os.environ["GEMINI_API_KEY"]})
-          t0 = time.time()
-          try:
-              with urllib.request.urlopen(req, timeout=300) as r:
-                  out = json.loads(r.read().decode())
-          except urllib.error.HTTPError as e:
-              print("::error::Gemini API HTTP " + str(e.code) + ": " + e.read().decode()[:600])
+          models = ["gemini-3.8-flash", "gemini-3.8-flash-lite", "gemini-flash-latest"]
+          out, used = None, None
+          for m in models:
+              for attempt in range(2):
+                  payload = {"model": m, "input": payload_base}
+                  req = urllib.request.Request(url, data=json.dumps(payload).encode(),
+                      headers={"Content-Type": "application/json",
+                               "x-goog-api-key": os.environ["GEMINI_API_KEY"]})
+                  t0 = time.time()
+                  try:
+                      with urllib.request.urlopen(req, timeout=300) as r:
+                          out = json.loads(r.read().decode())
+                      used = m
+                      break
+                  except urllib.error.HTTPError as e:
+                      body = e.read().decode()[:300]
+                      print("tentativo " + m + " (#" + str(attempt+1) + ") HTTP " + str(e.code) + ": " + body)
+                      if e.code in (429, 500, 503):
+                          time.sleep(10 * (attempt + 1))
+                          continue
+                      raise SystemExit(1)
+              if out:
+                  break
+          if not out:
+              print("::error::tutti i modelli sovraccarichi")
               raise SystemExit(1)
-          print("latenza: %.1fs" % (time.time() - t0))
+          print("modello usato: " + used + " | latenza: %.1fs" % (time.time() - t0))
 
           def find_texts(o, acc):
               if isinstance(o, dict):
