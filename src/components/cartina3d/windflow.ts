@@ -38,7 +38,8 @@ export interface WindFlowHandle {
 }
 
 /* ---------- taratura del flusso ---------- */
-const NODES = 9; // nodi di scia per particella (= segmenti disegnati)
+const NODES = 14; // nodi di scia per particella (= segmenti disegnati)
+                  // (suggerimento agente @ai: scie più lunghe, più Windy)
 const SEG_LEN = 88; // m tra un nodo e il successivo della scia
 const VIS_MULT = 6.5; // velocità visiva × vento reale (richiesta pilota: veloce)
 const LIFT = 16; // m di volo delle scie sopra il DEM
@@ -482,7 +483,10 @@ export function buildWindFlow(
         p.head.show = false;
       }
 
-      /* --- scia: NODES segmenti che sfumano di età --- */
+      /* --- scia: NODES segmenti che sfumano di età ---
+         L'ALFA cresce anche con la velocità (suggerimento @ai): le scie
+         delle raffiche brillano, quelle debole restano sottili. */
+      const speedK = clamp(f.sp / 28, 0, 1);
       let nLa = p.la; // estremo «nuovo» del segmento (parte dalla testina)
       let nLo = p.lo;
       let nH = hHead + LIFT;
@@ -510,7 +514,7 @@ export function buildWindFlow(
           );
           if (finite(mid)) bb.position = scPos;
           Cesium.Color.clone(baseCol(p.colKey), scCol);
-          scCol.alpha = fadeOf(p.colKey, i);
+          scCol.alpha = clamp(fadeOf(p.colKey, i) * (0.7 + 0.4 * speedK), 0, 1);
           bb.color = scCol;
         }
         nLa = oLa;

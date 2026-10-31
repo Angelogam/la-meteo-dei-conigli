@@ -20,39 +20,88 @@ jobs:
       contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association || github.event.issue.author_association)
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 1
-
-      - name: Run Gemini CLI
+      # NOTA: il vecchio approccio (google-github-actions/run-gemini-cli@v0.1.22)
+      # falliva silenziosamente con le nuove chiavi API (formato AQ.Ab8…).
+      # Qui chiamiamo l'API Gemini in REST direttamente — stesso canale già
+      # verificato funzionante dai runner GitHub (test HTTP 200).
+      - name: Chiedi a Gemini (REST API, retry + fallback modelli)
         id: gemini
-        uses: google-github-actions/run-gemini-cli@v0.1.22
         env:
-          GEMINI_CLI_TRUST_WORKSPACE: 'true'
-        with:
-          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          prompt: |-
-            Sei un assistente di sviluppo nel repository ${{ github.repository }}
-            (app meteo per parapendio: Next.js, TypeScript, CesiumJS, cartina 3D, windgram).
-            Rispondi sempre in italiano, in modo pratico e concreto.
-            L'utente ha scritto questo messaggio nella issue #${{ github.event.issue.number }}:
-            """
-            ${{ github.event.comment.body || github.event.issue.body }}
-            """
-            Analizza il codice del repository quando serve e rispondi con:
-            spiegazioni chiare, correzioni proposte, snippet di codice pronti all'uso.
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          USER_MSG: ${{ github.event.comment.body || github.event.issue.body }}
+          ISSUE_NUM: ${{ github.event.issue.number }}
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, urllib.request, urllib.error, time
+          msg = os.environ.get("USER_MSG", "")
+          num = os.environ.get("ISSUE_NUM", "?")
+          system = ("Sei GEMINI-CLI, collega sviluppatore senior nel repository la-meteo-dei-conigli "
+                    "(app meteo per parapendio: Next.js, TypeScript, CesiumJS, cartina 3D, windgram). "
+                    "Rispondi sempre in italiano, pratico e concreto: spiegazioni chiare, "
+                    "correzioni proposte, snippet di codice pronti all'uso quando servono. "
+                    "Se il messaggio e' solo il richiamo '@gemini-cli' senza una richiesta precisa, "
+                    "saluta e proponi 3 esempi di richieste utili per questa app.")
+          payload_base = (system + "\n\n---\n\nMessaggio dell'utente nella issue #" + num + ":\n\"\"\"\n" + msg + "\n\"\"\"\nRispondi alla richiesta.")
+          url = "https://generativelanguage.googleapis.com/v1beta/interactions"
+          models = ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-flash-latest"]
+          out, used = None, None
+          for m in models:
+              for attempt in range(3):
+                  payload = {"model": m, "input": payload_base}
+                  req = urllib.request.Request(url, data=json.dumps(payload).encode(),
+                      headers={"Content-Type": "application/json",
+                               "x-goog-api-key": os.environ["GEMINI_API_KEY"]})
+                  t0 = time.time()
+                  try:
+                      with urllib.request.urlopen(req, timeout=300) as r:
+                          out = json.loads(r.read().decode())
+                      used = m
+                      break
+                  except urllib.error.HTTPError as e:
+                      body = e.read().decode()[:300]
+                      print("tentativo " + m + " (#" + str(attempt+1) + ") HTTP " + str(e.code) + ": " + body)
+                      if e.code in (429, 500, 503):
+                          time.sleep(15 * (attempt + 1))
+                          continue
+                      raise SystemExit(1)
+              if out:
+                  break
+          if not out:
+              print("::error::tutti i modelli sovraccarichi")
+              raise SystemExit(1)
+          print("modello usato: " + used + " | latenza: %.1fs" % (time.time() - t0))
+
+          def find_texts(o, acc):
+              if isinstance(o, dict):
+                  for k, v in o.items():
+                      if k == "text" and isinstance(v, str):
+                          acc.append(v)
+                      else:
+                          find_texts(v, acc)
+              elif isinstance(o, list):
+                  for v in o:
+                      find_texts(v, acc)
+              return acc
+
+          texts = find_texts(out, [])
+          if not texts:
+              print("::error::nessun testo nella risposta: " + json.dumps(out)[:600])
+              raise SystemExit(1)
+          text = "\n".join(texts)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write("response<<GEMOUT_EOF\n" + text + "\nGEMOUT_EOF\n")
+          PYEOF
 
       - name: Post reply as comment
-        if: ${{ steps.gemini.outputs.summary != '' }}
+        if: ${{ steps.gemini.outputs.response != '' }}
         uses: actions/github-script@v7
         env:
-          GEMINI_SUMMARY: ${{ steps.gemini.outputs.summary }}
+          GEMINI_RESPONSE: ${{ steps.gemini.outputs.response }}
         with:
           script: |
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.issue.number,
-              body: '🤖 **Gemini CLI**\n\n' + process.env.GEMINI_SUMMARY
+              body: '🤖 **@gemini-cli (Gemini)**\n\n' + process.env.GEMINI_RESPONSE
             });
