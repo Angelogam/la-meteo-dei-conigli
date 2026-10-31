@@ -1,0 +1,49 @@
+name: GitHub Models Assistant (gratis)
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  models: read
+
+jobs:
+  ai:
+    if: >-
+      github.event.sender.type == 'User' &&
+      !endsWith(github.event.comment.user.login, '[bot]') &&
+      contains(github.event.comment.body, '@ai')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chiedi a GitHub Models
+        id: ai
+        uses: actions/ai-inference@v1
+        with:
+          model: gpt-4.1
+          system-prompt: >-
+            Sei un assistente di sviluppo senior nel repository la-meteo-dei-conigli
+            (app meteo per parapendio: Next.js, TypeScript, CesiumJS, cartina 3D, windgram).
+            Rispondi sempre in italiano, in modo pratico, concreto e senza giri di parole.
+          prompt: |-
+            Commento dell'utente nella issue/PR #${{ github.event.issue.number }}:
+            """
+            ${{ github.event.comment.body }}
+            """
+            Rispondi alla richiesta. Se serve analisi del codice, indica i file da guardare.
+
+      - name: Pubblica la risposta
+        if: ${{ steps.ai.outputs.response != '' }}
+        uses: actions/github-script@v7
+        env:
+          AI_RESPONSE: ${{ steps.ai.outputs.response }}
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: '🤖 **GitHub Models (gratis)**\n\n' + process.env.AI_RESPONSE
+            });
