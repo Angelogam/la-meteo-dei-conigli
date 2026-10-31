@@ -9,11 +9,11 @@
  * Cosa mostra (UN FLUSSO ALLA VOLTA, mai sovrapposti — richiesta pilota):
  * - i DECOLLI con pin cliccabili e un PARAPENDIO in volo che fluttua sopra ognuno
  * - le BREZZE DEL PENDIO (toggle «Brezze del pendio»): flusso CONTINUO di
- *   frecce ONDULATE 3D LARGHE e BLU che riempiono tutti i rilievi come acqua
- *   che risale le rocce — tantissime frecce a CODA LUNGA e molto VELOCI su
- *   una griglia DEM larga ≈17×12 km (anche fuori dalle zone decollo), salgono
- *   i pendii di giorno, scendono di notte, con ROTORI ROSSI di sottovento che
- *   girano su se stessi dietro le creste ed ETICHETTE km/h + direzione
+ *   PARTICELLE d'aria stile Windy.com — centinaia di scie luminose che CORRONO
+ *   sul terreno e sfumano alle spalle (linee di flusso vive), su una griglia
+ *   DEM larga ≈17×12 km (anche fuori dalle zone decollo), salgono i pendii
+ *   di giorno, scendono di notte, catturate dai ROTORI ROSSI dietro le creste,
+ *   con testine-freccia orientate e ETICHETTE km/h + direzione
  * - i VENTI METEO IN QUOTA SOLO SU CLIC della quota (1740→4000 m, passi di
  *   250): clicco 2000 → SOLO il vento dominante a 2000 m con velocità e
  *   direzione; clicco 3000 → solo il meteo a 3000. Colore = velocità nella
@@ -583,12 +583,13 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   }, [status, field]);
 
   /* ---------- FLUSSO VENTO SUOLO: SOLO BREZZE DI PENDIO (toggle dedicato) ----------
-     windflow.ts costruisce il flusso continuo blu su TUTTI i rilievi
-     (anche fuori dalle zone decollo): frecce a coda lunga che corrono come
-     acqua che risale le rocce, con RICCIOLI di sottovento dietro le creste.
-     Quando è selezionata una QUOTA il suolo si SVUOTA: un flusso alla volta,
-     mai sovrapposti. Le etichette km/h + direzione restano su una sotto-griglia
-     sparsa. */
+     windflow.ts costruisce il flusso continuo su TUTTI i rilievi (anche fuori
+     dalle zone decollo): CENTINAIA di PARTICELLE d'aria che corrono sul
+     terreno con SCIA che sfuma — linee di flusso vive stile Windy.com —
+     con RICCIOLI di sottovento dietro le creste (le particelle orbitano nei
+     vortici). Quando è selezionata una QUOTA il suolo si SVUOTA: un flusso
+     alla volta, mai sovrapposti. Le etichette km/h + direzione restano su
+     una sotto-griglia sparsa. */
   useEffect(() => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;

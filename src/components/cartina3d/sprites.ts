@@ -8,6 +8,8 @@
  *                    meteo in quota, stessa famiglia di stile del dardo
  *  - rotorSprite:    ROTORE di sottovento: freccia curva ad arco che gira
  *                    su se stessa dietro le creste (rosso)
+ *  - streakSprite:   SEGMENTO di scia a capsula delle particelle stile Windy
+ *                    (i mattoni delle linee di flusso vive)
  *  - coneSideImage:  texture del cono termico (gradiente verticale + spirale)
  *  - ringImage:      anello luminoso alla base delle termiche
  */
@@ -447,6 +449,56 @@ export function rotorSprite(color: string): HTMLCanvasElement {
   tri(0, grd);
 
   rotorCache.set(color, c);
+  return c;
+}
+
+const streakCache = new Map<string, HTMLCanvasElement>();
+
+/** SEGMENTO DI SCIA (capsula luminosa) delle particelle stile Windy: corpo
+    sottile con nucleo chiaro, coda che sfuma e testa brillante. Disegnato
+    IN ORIZONTALE puntato a Est (+x): il render lo ruota sull'azimut della
+    scorsa con rotation = heading − azimut + 90°. I segmenti affiancati
+    formano le LINEE DI FLUSSO vive che corrono sul terreno. */
+export function streakSprite(color: string): HTMLCanvasElement {
+  const hit = streakCache.get(color);
+  if (hit) return hit;
+  const c = document.createElement("canvas");
+  c.width = 64;
+  c.height = 14;
+  const g = c.getContext("2d")!;
+  const y = 7;
+
+  /* alone esterno soffuso (glo aleggia sopra il terreno) */
+  g.lineCap = "round";
+  g.strokeStyle = rgba(color, 0.22);
+  g.lineWidth = 11;
+  g.beginPath();
+  g.moveTo(6, y);
+  g.lineTo(58, y);
+  g.stroke();
+
+  /* corpo con gradiente: coda trasparente → testa chiara */
+  const grd = g.createLinearGradient(0, 0, 64, 0);
+  grd.addColorStop(0, rgba(color, 0));
+  grd.addColorStop(0.22, rgba(color, 0.55));
+  grd.addColorStop(0.65, rgba(shade(color, 1.3), 0.95));
+  grd.addColorStop(1, rgba(shade(color, 1.65), 1));
+  g.strokeStyle = grd;
+  g.lineWidth = 6;
+  g.beginPath();
+  g.moveTo(6, y);
+  g.lineTo(58, y);
+  g.stroke();
+
+  /* nucleo luminoso centrale (solo verso la testa, dove l'aria è «viva») */
+  g.strokeStyle = "rgba(255,255,255,0.5)";
+  g.lineWidth = 1.8;
+  g.beginPath();
+  g.moveTo(30, y);
+  g.lineTo(58, y);
+  g.stroke();
+
+  streakCache.set(color, c);
   return c;
 }
 

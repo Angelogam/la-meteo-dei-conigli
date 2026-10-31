@@ -208,6 +208,34 @@ function dayLabelFor(date: string, idx: number): string {
   }
 }
 
+/* ================= ROBUSTEZZA API METEO =================
+   Open-Meteo è gratuito e può rallentare o rispondere 429/5xx: il campo vento
+   3D non deve mai restare a nero per un singolo intoppo di rete.
+   Strategia (richiesta pilota «API programmata bene»):
+   1. cache in MEMORIA con TTL 5 min → i cambi di giorno/ora sono istantanei;
+   2. timeout di 9 s per richiesta (AbortController) + 3 tentativi con
+      backoff esponenziale (0.9s → 1.8s → 3.6s) su errori di rete/5xx/429;
+   3. cache su DISK (localStorage, TTL 15 min) come ultima spiaggia: dati
+      leggermente stantii ma VERI, meglio di una stima sintetica. */
+const FC_TTL_MS = 5 * 60 * 1000;
+const FC_DISK_TTL_MS = 15 * 60 * 1000;
+const fcMem = new Map<string, { at: number; data: ForecastData }>();
+
+function parseForecastResponse(j: unknown): { times: string[]; ws: number[][]; wd: number[][] } {
+  const arr: unknown[] = Array.isArray(j) ? j : [j];
+  while (arr.length < 9) arr.push(arr[arr.length - 1]);
+  const hh0 = (arr[0] as { hourly?: { time?: string[] } })?.hourly;
+  const times = hh0?.time ?? [];
+  const ws: number[][] = [];
+  const wd: number[][] = [];
+  for (const o of arr) {
+    const h = (o as { hourly?: { wind_speed_10m?: unknown[]; wind_direction_10m?: unknown[] } })?.hourly;
+    ws.push(times.map((_, i) => (Number.isFinite(Number(h?.wind_speed_10m?.[i])) ? Number(h?.wind_speed_10m?.[i]) : 0)));
+    wd.push(times.map((_, i) => (Number.isFinite(Number(h?.wind_direction_10m?.[i])) ? Number(h?.wind_direction_10m?.[i]) : 0)));
+  }
+  return { times, ws, wd };
+}
+
 export async function fetchForecast(f: WindField): Promise<ForecastData> {
   const frac = [0, 0.5, 1];
   const pts: { lat: number; lon: number }[] = [];
@@ -225,41 +253,71 @@ export async function fetchForecast(f: WindField): Promise<ForecastData> {
     `https://api.open-meteo.com/v1/forecast?latitude=${latQ}&longitude=${lonQ}` +
     `&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kmh` +
     `&timezone=Europe%2FBerlin&forecast_days=5`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`open-meteo ${res.status}`);
-  const j = await res.json();
-  const arr: unknown[] = Array.isArray(j) ? j : [j];
-  while (arr.length < 9) arr.push(arr[arr.length - 1]);
+  const key = `${f.lat0.toFixed(3)},${f.lon0.toFixed(3)}`;
 
-  const hh0 = (arr[0] as { hourly?: { time?: string[] } })?.hourly;
-  const times = hh0?.time ?? [];
-  const ws: number[][] = [];
-  const wd: number[][] = [];
-  for (const o of arr) {
-    const h = (o as { hourly?: { wind_speed_10m?: unknown[]; wind_direction_10m?: unknown[] } })?.hourly;
-    ws.push(times.map((_, i) => (Number.isFinite(Number(h?.wind_speed_10m?.[i])) ? Number(h?.wind_speed_10m?.[i]) : 0)));
-    wd.push(times.map((_, i) => (Number.isFinite(Number(h?.wind_direction_10m?.[i])) ? Number(h?.wind_direction_10m?.[i]) : 0)));
+  /* 1. cache in memoria (5 min): risposta istantanea */
+  const mem = fcMem.get(key);
+  if (mem && Date.now() - mem.at < FC_TTL_MS) return mem.data;
+
+  const diskKey = `c3dForecastV2:${key}`;
+  let disk: { at: number; data: ForecastData } | null = null;
+  try {
+    const raw = localStorage.getItem(diskKey);
+    if (raw) disk = JSON.parse(raw) as { at: number; data: ForecastData };
+  } catch {
+    disk = null;
   }
 
-  /* giorni distinti nell'ordine del modello */
-  const dates: string[] = [];
-  for (const t of times) {
-    const d = t.slice(0, 10);
-    if (!dates.includes(d)) dates.push(d);
-  }
-  const days: ForecastDay[] = dates.slice(0, 5).map((date, di) => ({
-    date,
-    label: dayLabelFor(date, di),
-    slots: FORECAST_SLOTS.map((h) => {
-      const idx = times.indexOf(`${date}T${String(h).padStart(2, "0")}:00`);
-      if (idx < 0) return { h, ws: 0, wd: 0 };
-      let sum = 0;
-      for (let p = 0; p < 9; p++) sum += ws[p]?.[idx] ?? 0;
-      return { h, ws: sum / 9, wd: wd[4]?.[idx] ?? wd[0]?.[idx] ?? 0 };
-    }),
-  }));
+  /* 2. rete con timeout + retry/backoff */
+  let lastErr: unknown = new Error("open-meteo non tentato");
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const ac = new AbortController();
+    const timer = window.setTimeout(() => ac.abort(), 9000);
+    try {
+      const res = await fetch(url, { signal: ac.signal });
+      if (!res.ok) throw new Error(`open-meteo ${res.status}`);
+      const j = await res.json();
+      const p = parseForecastResponse(j);
 
-  return { days, times, ws, wd };
+      const dates: string[] = [];
+      for (const t of p.times) {
+        const d = t.slice(0, 10);
+        if (!dates.includes(d)) dates.push(d);
+      }
+      const days: ForecastDay[] = dates.slice(0, 5).map((date, di) => ({
+        date,
+        label: dayLabelFor(date, di),
+        slots: FORECAST_SLOTS.map((h) => {
+          const idx = p.times.indexOf(`${date}T${String(h).padStart(2, "0")}:00`);
+          if (idx < 0) return { h, ws: 0, wd: 0 };
+          let sum = 0;
+          for (let pt = 0; pt < 9; pt++) sum += p.ws[pt]?.[idx] ?? 0;
+          return { h, ws: sum / 9, wd: p.wd[4]?.[idx] ?? p.wd[0]?.[idx] ?? 0 };
+        }),
+      }));
+
+      const out: ForecastData = { days, times: p.times, ws: p.ws, wd: p.wd };
+      fcMem.set(key, { at: Date.now(), data: out });
+      try {
+        localStorage.setItem(diskKey, JSON.stringify({ at: Date.now(), data: out }));
+      } catch {
+        /* quota localStorage piena: la cache su disk è facoltativa */
+      }
+      return out;
+    } catch (e) {
+      lastErr = e;
+      await new Promise((r) => setTimeout(r, 900 * Math.pow(2, attempt)));
+    } finally {
+      window.clearTimeout(timer);
+    }
+  }
+
+  /* 3. ultima spiaggia: cache su disk ≤ 15 min (dati veri, solo stantii) */
+  if (disk && Date.now() - disk.at < FC_DISK_TTL_MS) {
+    fcMem.set(key, { at: Date.now() - (FC_TTL_MS - 30 * 1000), data: disk.data });
+    return disk.data;
+  }
+  throw lastErr;
 }
 
 /**
