@@ -3,6 +3,8 @@ name: GitHub Models Assistant (gratis)
 on:
   issue_comment:
     types: [created]
+  issues:
+    types: [opened, edited]
 
 permissions:
   contents: read
@@ -14,8 +16,8 @@ jobs:
   ai:
     if: >-
       github.event.sender.type == 'User' &&
-      !endsWith(github.event.comment.user.login, '[bot]') &&
-      contains(github.event.comment.body, '@ai')
+      !endsWith(github.event.comment.user.login || github.event.issue.user.login, '[bot]') &&
+      contains(github.event.comment.body || github.event.issue.body, '@ai')
     runs-on: ubuntu-latest
     steps:
       - name: Chiedi a GitHub Models
@@ -27,12 +29,15 @@ jobs:
             Sei un assistente di sviluppo senior nel repository la-meteo-dei-conigli
             (app meteo per parapendio: Next.js, TypeScript, CesiumJS, cartina 3D, windgram).
             Rispondi sempre in italiano, in modo pratico, concreto e senza giri di parole.
+            Se il messaggio è solo il richiamo "@ai" senza una richiesta precisa,
+            saluta e chiedi di cosa ha bisogno, proponendo 3 esempi di richieste utili
+            per questa app (es. spiegazioni del codice, idee di funzioni, correzioni di bug).
           prompt: |-
-            Commento dell'utente nella issue/PR #${{ github.event.issue.number }}:
+            Messaggio dell'utente nella issue #${{ github.event.issue.number }}:
             """
-            ${{ github.event.comment.body }}
+            ${{ github.event.comment.body || github.event.issue.body }}
             """
-            Rispondi alla richiesta. Se serve analisi del codice, indica i file da guardare.
+            Rispondi alla richiesta.
 
       - name: Pubblica la risposta
         if: ${{ steps.ai.outputs.response != '' }}

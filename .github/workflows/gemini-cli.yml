@@ -3,6 +3,8 @@ name: Gemini CLI Assistant
 on:
   issue_comment:
     types: [created]
+  issues:
+    types: [opened, edited]
 
 permissions:
   contents: read
@@ -13,9 +15,9 @@ jobs:
   gemini:
     if: >-
       github.event.sender.type == 'User' &&
-      !endsWith(github.event.comment.user.login, '[bot]') &&
-      contains(github.event.comment.body, '@gemini-cli') &&
-      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+      !endsWith(github.event.comment.user.login || github.event.issue.user.login, '[bot]') &&
+      contains(github.event.comment.body || github.event.issue.body, '@gemini-cli') &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association || github.event.issue.author_association)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -32,9 +34,9 @@ jobs:
             Sei un assistente di sviluppo nel repository ${{ github.repository }}
             (app meteo per parapendio: Next.js, TypeScript, CesiumJS, cartina 3D, windgram).
             Rispondi sempre in italiano, in modo pratico e concreto.
-            L'utente ha scritto questo commento nella issue/PR #${{ github.event.issue.number }}:
+            L'utente ha scritto questo messaggio nella issue #${{ github.event.issue.number }}:
             """
-            ${{ github.event.comment.body }}
+            ${{ github.event.comment.body || github.event.issue.body }}
             """
             Analizza il codice del repository quando serve e rispondi con:
             spiegazioni chiare, correzioni proposte, snippet di codice pronti all'uso.
