@@ -1,4 +1,4 @@
-name: GitHub Models Assistant (gratis)
+name: AI Assistant (gratis)
 
 on:
   issue_comment:
@@ -10,7 +10,6 @@ permissions:
   contents: read
   issues: write
   pull-requests: write
-  models: read
 
 jobs:
   ai:
@@ -20,45 +19,36 @@ jobs:
       contains(github.event.comment.body || github.event.issue.body, '@ai')
     runs-on: ubuntu-latest
     steps:
-      - name: Chiedi a GitHub Models
+      - name: Chiedi a Gemini (REST diretto)
         id: ai
         env:
-          MODELS_TOKEN: ${{ github.token }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           USER_MSG: ${{ github.event.comment.body || github.event.issue.body }}
           ISSUE_NUM: ${{ github.event.issue.number }}
         run: |
           python3 - <<'PYEOF'
-          import json, os
+          import json, os, urllib.request
           msg = os.environ.get("USER_MSG", "")
           num = os.environ.get("ISSUE_NUM", "?")
           payload = {
-            "model": "openai/gpt-4.1",
-            "messages": [
-              {"role": "system", "content": "Sei un assistente di sviluppo senior nel repository la-meteo-dei-conigli (app meteo per parapendio: Next.js, TypeScript, CesiumJS, cartina 3D, windgram). Rispondi sempre in italiano, in modo pratico, concreto e senza giri di parole. Se il messaggio e' solo il richiamo '@ai' senza una richiesta precisa, saluta e chiedi di cosa ha bisogno, proponendo 3 esempi di richieste utili per questa app."},
-              {"role": "user", "content": "Messaggio dell'utente nella issue #" + num + ":\n\"\"\"\n" + msg + "\n\"\"\"\nRispondi alla richiesta."}
-            ],
-            "max_tokens": 1200
+            "systemInstruction": {"parts": [{"text": "Sei un assistente di sviluppo senior nel repository la-meteo-dei-conigli (app meteo per parapendio: Next.js, TypeScript, CesiumJS, cartina 3D, windgram). Rispondi sempre in italiano, in modo pratico, concreto e senza giri di parole. Se il messaggio e' solo il richiamo '@ai' senza una richiesta precisa, saluta e chiedi di cosa ha bisogno, proponendo 3 esempi di richieste utili per questa app."}]},
+            "contents": [{"role": "user", "parts": [{"text": "Messaggio dell'utente nella issue #" + num + ":\n\"\"\"\n" + msg + "\n\"\"\"\nRispondi alla richiesta."}]}],
+            "generationConfig": {"maxOutputTokens": 1500}
           }
-          with open("/tmp/payload.json", "w") as f:
-              json.dump(payload, f)
+          url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + os.environ["GEMINI_API_KEY"]
+          req = urllib.request.Request(url, data=json.dumps(payload).encode(),
+              headers={"Content-Type": "application/json"})
+          try:
+              with urllib.request.urlopen(req, timeout=120) as r:
+                  out = json.loads(r.read().decode())
+              text = out["candidates"][0]["content"]["parts"][0]["text"]
+          except urllib.error.HTTPError as e:
+              body = e.read().decode()[:500]
+              print("::error::Gemini API HTTP " + str(e.code) + ": " + body)
+              raise SystemExit(1)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write("response<<AIOUT_EOF\n" + text + "\nAIOUT_EOF\n")
           PYEOF
-          CODE=$(curl -sS -o /tmp/models_resp.json -w "%{http_code}" \
-            https://models.github.ai/inference/chat/completions \
-            -H "Authorization: Bearer $MODELS_TOKEN" \
-            -H "Content-Type: application/json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            -d @/tmp/payload.json) || CODE="curl-error"
-          echo "HTTP: $CODE"
-          head -c 600 /tmp/models_resp.json; echo
-          if [ "$CODE" != "200" ]; then
-            echo "::error::GitHub Models API ha risposto $CODE"
-            exit 1
-          fi
-          {
-            echo 'response<<AIOUT_EOF'
-            python3 -c "import json; print(json.load(open('/tmp/models_resp.json'))['choices'][0]['message']['content'])"
-            echo 'AIOUT_EOF'
-          } >> "$GITHUB_OUTPUT"
 
       - name: Pubblica la risposta
         if: ${{ steps.ai.outputs.response != '' }}
@@ -71,5 +61,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.issue.number,
-              body: '🤖 **GitHub Models (gratis)**\n\n' + process.env.AI_RESPONSE
+              body: '🤖 **@ai (Gemini, gratis)**\n\n' + process.env.AI_RESPONSE
             });
