@@ -37,8 +37,7 @@ jobs:
                     "chiedi di cosa ha bisogno, proponendo 3 esempi di richieste utili per questa app.")
           payload = {
               "model": "gemini-3.8-flash",
-              "input": "Messaggio dell'utente nella issue #" + num + ":\n\"\"\"\n" + msg + "\n\"\"\"\nRispondi alla richiesta.",
-              "systemInstruction": {"parts": [{"text": system}]},
+              "input": system + "\n\n---\n\nMessaggio dell'utente nella issue #" + num + ":\n\"\"\"\n" + msg + "\n\"\"\"\nRispondi alla richiesta.",
           }
           url = "https://generativelanguage.googleapis.com/v1beta/interactions"
           req = urllib.request.Request(url, data=json.dumps(payload).encode(),
