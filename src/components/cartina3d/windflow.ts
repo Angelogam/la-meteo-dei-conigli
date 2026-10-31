@@ -41,7 +41,9 @@ export interface WindFlowHandle {
 const NODES = 14; // nodi di scia per particella (= segmenti disegnati)
                   // (suggerimento agente @ai: scie più lunghe, più Windy)
 const SEG_LEN = 88; // m tra un nodo e il successivo della scia
-const VIS_MULT = 6.5; // velocità visiva × vento reale (richiesta pilota: veloce)
+const VIS_MULT = 4.0; // velocità visiva × vento reale: veloce come chiesto dal
+                      // pilota ma con percezione calma/forte (tuning @gemini-cli
+                      // nella issue #35: era ×6.5, troppo uniforme)
 const LIFT = 16; // m di volo delle scie sopra il DEM
 const LIFT_HEAD = 30; // m della testina
 const EDDY_R = 260; // raggio di cattura del rotore (m)
@@ -440,7 +442,7 @@ export function buildWindFlow(
 
       /* CASCATA: accelera quando il flusso risale il pendio */
       const cascade = inEd >= 0 ? 1 : clamp(1 + 0.55 * f.up, 0.72, 1.6);
-      const visSpeed = clamp((f.sp / 3.6) * VIS_MULT * cascade, 26, 150); // m/s visivi
+      const visSpeed = clamp((f.sp / 3.6) * VIS_MULT * cascade, 14, 90); // m/s visivi
       const mStep = visSpeed * dt;
 
       /* --- avanza e registra la scia --- */
