@@ -35,7 +35,7 @@ jobs:
             "contents": [{"role": "user", "parts": [{"text": "Messaggio dell'utente nella issue #" + num + ":\n\"\"\"\n" + msg + "\n\"\"\"\nRispondi alla richiesta."}]}],
             "generationConfig": {"maxOutputTokens": 1500}
           }
-          url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + os.environ["GEMINI_API_KEY"]
+          url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=" + os.environ["GEMINI_API_KEY"]
           req = urllib.request.Request(url, data=json.dumps(payload).encode(),
               headers={"Content-Type": "application/json"})
           try:
