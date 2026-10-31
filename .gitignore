@@ -69,3 +69,7 @@ artifacts
 
 # CesiumJS assets (creati da scripts/copy-cesium.cjs, non in repo)
 public/cesium/
+
+# Agenti AI (Gemini CLI)
+.gemini/
+gha-creds-*.json
