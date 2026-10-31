@@ -19,7 +19,7 @@ jobs:
       contains(github.event.comment.body || github.event.issue.body, '@ai')
     runs-on: ubuntu-latest
     steps:
-      - name: Chiedi a Gemini (REST diretto)
+      - name: Chiedi a Gemini (Interactions API)
         id: ai
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -27,25 +27,49 @@ jobs:
           ISSUE_NUM: ${{ github.event.issue.number }}
         run: |
           python3 - <<'PYEOF'
-          import json, os, urllib.request
+          import json, os, urllib.request, urllib.error, time
           msg = os.environ.get("USER_MSG", "")
           num = os.environ.get("ISSUE_NUM", "?")
+          system = ("Sei un assistente di sviluppo senior nel repository la-meteo-dei-conigli "
+                    "(app meteo per parapendio: Next.js, TypeScript, CesiumJS, cartina 3D, windgram). "
+                    "Rispondi sempre in italiano, in modo pratico, concreto e senza giri di parole. "
+                    "Se il messaggio e' solo il richiamo '@ai' senza una richiesta precisa, saluta e "
+                    "chiedi di cosa ha bisogno, proponendo 3 esempi di richieste utili per questa app.")
           payload = {
-            "systemInstruction": {"parts": [{"text": "Sei un assistente di sviluppo senior nel repository la-meteo-dei-conigli (app meteo per parapendio: Next.js, TypeScript, CesiumJS, cartina 3D, windgram). Rispondi sempre in italiano, in modo pratico, concreto e senza giri di parole. Se il messaggio e' solo il richiamo '@ai' senza una richiesta precisa, saluta e chiedi di cosa ha bisogno, proponendo 3 esempi di richieste utili per questa app."}]},
-            "contents": [{"role": "user", "parts": [{"text": "Messaggio dell'utente nella issue #" + num + ":\n\"\"\"\n" + msg + "\n\"\"\"\nRispondi alla richiesta."}]}],
-            "generationConfig": {"maxOutputTokens": 1500}
+              "model": "gemini-3.8-flash",
+              "input": "Messaggio dell'utente nella issue #" + num + ":\n\"\"\"\n" + msg + "\n\"\"\"\nRispondi alla richiesta.",
+              "systemInstruction": {"parts": [{"text": system}]},
           }
-          url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=" + os.environ["GEMINI_API_KEY"]
+          url = "https://generativelanguage.googleapis.com/v1beta/interactions"
           req = urllib.request.Request(url, data=json.dumps(payload).encode(),
-              headers={"Content-Type": "application/json"})
+              headers={"Content-Type": "application/json",
+                       "x-goog-api-key": os.environ["GEMINI_API_KEY"]})
+          t0 = time.time()
           try:
-              with urllib.request.urlopen(req, timeout=120) as r:
+              with urllib.request.urlopen(req, timeout=300) as r:
                   out = json.loads(r.read().decode())
-              text = out["candidates"][0]["content"]["parts"][0]["text"]
           except urllib.error.HTTPError as e:
-              body = e.read().decode()[:500]
-              print("::error::Gemini API HTTP " + str(e.code) + ": " + body)
+              print("::error::Gemini API HTTP " + str(e.code) + ": " + e.read().decode()[:600])
               raise SystemExit(1)
+          print("latenza: %.1fs" % (time.time() - t0))
+
+          def find_texts(o, acc):
+              if isinstance(o, dict):
+                  for k, v in o.items():
+                      if k == "text" and isinstance(v, str):
+                          acc.append(v)
+                      else:
+                          find_texts(v, acc)
+              elif isinstance(o, list):
+                  for v in o:
+                      find_texts(v, acc)
+              return acc
+
+          texts = find_texts(out, [])
+          if not texts:
+              print("::error::nessun testo nella risposta: " + json.dumps(out)[:600])
+              raise SystemExit(1)
+          text = "\n".join(texts)
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write("response<<AIOUT_EOF\n" + text + "\nAIOUT_EOF\n")
           PYEOF
