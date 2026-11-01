@@ -6,18 +6,19 @@
  * Motore: CesiumJS (open source) + terreno DEM gratuito (Mapzen/AWS) + immagini
  * satellite Esri ad alta risoluzione (massimo dettaglio, contrasto potenziato).
  *
- * Cosa mostra (UN FLUSSO ALLA VOLTA, mai sovrapposti — richiesta pilota):
+ * Cosa mostra (DUE STRATI, come il video «Due venti. Due direzioni.»):
+ * - la BREZZA DI PENDIO ambra che RISALE i versanti al sole (anabatica, scie
+ *   continue stile Windy), con drenaggio blu di notte e ROTORI ROSSI di
+ *   sottovento — toggle «Brezze del pendio»
+ * - il VENTO METEO IN CIANO sopra le creste (cresta max +320 m), che spesso
+ *   soffia nel SENSO CONTRARIO della brezza: al decollo senti l'una, in
+ *   quota passa l'altro — esattamente il messaggio del video del pilota;
+ * - il clic su una QUOTA sostituisce lo strato alto con l'analisi a quell'
+ *   altezza (un livello alla volta, colore = velocità giallo→viola)
  * - i DECOLLI con pin cliccabili e un PARAPENDIO in volo che fluttua sopra ognuno
- * - le BREZZE DEL PENDIO (toggle «Brezze del pendio»): flusso CONTINUO di
- *   PARTICELLE d'aria stile Windy.com — centinaia di scie luminose che CORRONO
- *   sul terreno e sfumano alle spalle (linee di flusso vive), su una griglia
- *   DEM larga ≈17×12 km (anche fuori dalle zone decollo), salgono i pendii
- *   di giorno, scendono di notte, catturate dai ROTORI ROSSI dietro le creste,
- *   con testine-freccia orientate e ETICHETTE km/h + direzione
  * - i VENTI METEO IN QUOTA SOLO SU CLIC della quota (1740→4000 m, passi di
  *   250): clicco 2000 → SOLO il vento dominante a 2000 m con velocità e
- *   direzione; clicco 3000 → solo il meteo a 3000. Colore = velocità nella
- *   GAMMA dal GIALLO al VIOLA SCURO (forte = viola scuro)
+ *   direzione; clicco 3000 → solo il meteo a 3000
  * - PREVISIONI a fasce orarie per 5 giorni (6→21 h, cliccabili sopra la scena): la
  *   barra guida giorno e ora su TUTTA la vista 3D (campo, quota, termiche); se il
  *   modello non risponde una STIMA dal sounding mantiene le fasce cliccabili
@@ -27,7 +28,9 @@
  *   (thermal.kk7.ch), confermate dai voli reali dove disponibili
  * - NAVIGAZIONE stile Google Earth: bussola trascinabile a 360°, rotazione, tilt,
  *   zoom, vista dall'alto 2D, ritorno al decollo e TASTO SCHERMO INTERO
- * - resa in ALTA DEFINIZIONE: render alla risoluzione fisica del display
+ * - resa in ALTA DEFINIZIONE con watchdog fps (qualità adattiva)
+ * - MOBILE: il motore parte SOLO con il bottone del poster «Apri la mappa 3D»
+ *   (niente armamento automatico durante lo scroll) e «Chiudi» smonta tutto
  *
  * La libreria (~5 MB compressi) viene scaricata SOLO quando la sezione entra nel
  * viewport: la pagina resta veloce come prima.
@@ -38,13 +41,13 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Globe, Maximize2, Minimize2, Mountain } from "lucide-react";
+import { Globe, Maximize2, Minimize2, Mountain, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import type { CartinaDecollo } from "@/components/CartinaMeteo";
 import { windAtAltitude } from "@/components/CartinaMeteo";
 import type { HourlyPoint } from "@/services/threeSourceWeather";
 import { createTerrariumTerrainProvider, sampleTerrainHeights } from "./terrain";
-import { buildFallbackForecast, buildWindField, computeFlows, dayOfYear, fetchForecast, liveAt, speedColor } from "./winds";
+import { buildFallbackForecast, buildWindField, computeFlows, dayOfYear, fetchForecast, liveAt, meteoColor, speedColor } from "./winds";
 import type { FlowCell, ForecastData, WindField } from "./winds";
 import { fetchPilotThermals, XCTHERM_CREDIT } from "./xcflights";
 import type { PilotThermal } from "./xcflights";
@@ -227,6 +230,8 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   const windRef = useRef<import("cesium").Entity[]>([]);
   const flowRef = useRef<WindFlowHandle | null>(null); // flusso suolo (dardi+pettine)
   const altFlowRef = useRef<WindFlowHandle | null>(null); // chevron in quota
+  const meteoRef = useRef<WindFlowHandle | null>(null); // VENTO METEO sopra le creste (video)
+  const meteoLabRef = useRef<import("cesium").Entity | null>(null);
   const thermRef = useRef<import("cesium").Entity[]>([]);
   const secRef = useRef<HTMLElement | null>(null);
   const fieldCacheRef = useRef<Map<string, WindField>>(new Map());
@@ -362,17 +367,38 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   /* i coni disegnati: i 16 stacchi più forti (l'HUD deve dire il numero vero) */
   const nCones = useMemo(() => Math.min(16, triggers.length), [triggers.length]);
 
-  /* ARM SOLO A SCROLL FERMO: serve il 3D visibile ≥30% E 350 ms SENZA
-     alcuno scroll. Ogni evento di scroll resetta il timer: uno smooth-scroll
-     che attraversa la sezione (tap «Venti»/«Windgram») non arma più il
-     motore — prima il parse di 4,9 MB di Cesium + la creazione del viewer
-     WebGL avvenivano IN MEZZO ALLO SCROLL ⇒ 4-5 s di thread bloccato
-     («la pagina si blocca»). Il 3D parte solo se ci si ferma su di esso. */
+  /* QUOTA del «secondo vento» (video: due strati, due direzioni): il vento
+     libero del modello si mostra SOPRA le creste — massima del rilievo nel
+     campo vento + 320 m di margine. Così il manto ciano scorre sempre sopra
+     ogni cresta, nettamente separato dall'ambra delle brezze al suolo. */
+  const crestMax = useMemo(() => {
+    if (!field) return 0;
+    let m = 0;
+    for (const row of field.H) for (const h of row) if (h > m) m = h;
+    return m;
+  }, [field]);
+  const meteoLvl = useMemo(
+    () => Math.round(Math.max(crestMax, active?.elevation_m ?? 0, 1200) + 320),
+    [crestMax, active?.elevation_m],
+  );
+
+  /* ARM SOLO A SCROLL FERMO (desktop) / BOTTONE (mobile):
+     - desktop: serve il 3D visibile ≥30% E 350 ms SENZA alcuno scroll. Ogni
+       evento di scroll resetta il timer: uno smooth-scroll che attraversa la
+       sezione (tap «Venti»/«Windgram») non arma più il motore — prima il
+       parse di 4,9 MB di Cesium + la creazione del viewer WebGL avvenivano
+       IN MEZZO ALLO SCROLL ⇒ 4-5 s di thread bloccato («la pagina si
+       blocca»). Il 3D parte solo se ci si ferma su di esso.
+     - mobile (touch): NESSUN armamento automatico — il telefono apre il
+       motore 3D SOLO con il bottone del poster («Apri la mappa 3D»): zero
+       download e zero lavoro se non lo chiede l'utente, e un tasto «Chiudi»
+       rimonta tutto quando serve. La dipendenza [armed] riattiva l'osservatore
+       dopo una chiusura. */
   useEffect(() => {
+    if (armed || IS_MOBILE) return;
     const el = mountRef.current;
     if (!el) return;
     let dwell: number | null = null;
-    let armedDone = false;
     const visibileAbbastanza = (): boolean => {
       const r = el.getBoundingClientRect();
       if (r.height <= 0) return false;
@@ -380,7 +406,6 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       return visH / r.height >= 0.3;
     };
     const schedula = () => {
-      if (armedDone) return;
       if (dwell !== null) {
         clearTimeout(dwell);
         dwell = null;
@@ -388,7 +413,6 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       if (!visibileAbbastanza()) return;
       dwell = window.setTimeout(() => {
         dwell = null;
-        armedDone = true;
         setArmed(true);
         window.removeEventListener("scroll", schedula);
         io.disconnect();
@@ -402,7 +426,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       window.removeEventListener("scroll", schedula);
       io.disconnect();
     };
-  }, []);
+  }, [armed]);
 
   /* RENDER LOOP SOLO A VISTA: fuori schermo il motore 3D non mangia CPU e
      batteria (il windgram sotto resta fluido); al ritorno riparte da sé. */
@@ -594,10 +618,38 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       flowRef.current = null;
       altFlowRef.current?.destroy();
       altFlowRef.current = null;
-      fieldCacheRef.current.clear();
-      if (v && !v.isDestroyed()) v.destroy();
+      meteoRef.current?.destroy();
+      meteoRef.current = null;
+      meteoLabRef.current = null;
+      /* la griglia DEM resta in cache: «Chiudi» e riapri è istantaneo (la
+         griglia è una tabella di numeri, occupa pochi kB di memoria) */
+      /* destroy DIFFERITO: le cleanup degli altri effetti (entità, flussi)
+         girano DOPO questo (ordine di definizione) e toccano ancora il viewer:
+         distruggerlo qui li farebbe crashare. Al prossimo tick tutto è pulito. */
+      window.setTimeout(() => {
+        try {
+          if (v && !v.isDestroyed()) v.destroy();
+        } catch {
+          /* già distrutto */
+        }
+      }, 0);
     };
   }, [armed]);
+
+  /* CHIUDI LA MAPPA (tasto esplicito): smonta il motore 3D e libera GPU e
+     memoria — via di fuga per i dispositivi in difficoltà e modo per tornare
+     alla pagina leggera senza ricaricare. La riapertura riparte dal poster
+     (mobile) o dal prossimo scroll-fermo (desktop). */
+  const chiudiMappa = () => {
+    setArmed(false);
+    setStatus("idle");
+    setErrMsg("");
+    setTilesLoaded(false);
+    setLoadPct(0);
+    setNetRetry(0);
+    setLiteMsg("");
+    setPilot([]);
+  };
 
   /* ---------- pin dei decolli + PARAPENDIO in volo sopra ognuno ---------- */
   useEffect(() => {
@@ -799,7 +851,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       .sort((a, b) => b.c.h - a.c.h);
     const picked: { lon: number; lat: number }[] = [];
     for (const { c } of byH) {
-      if (picked.length >= 30) break;
+      if (picked.length >= (IS_MOBILE ? 16 : 30)) break;
       if (picked.some((q) => Math.hypot((q.lon - c.lon) * 78000, (q.lat - c.lat) * 111320) < 1900)) continue;
       picked.push({ lon: c.lon, lat: c.lat });
       const hdgTo = (Math.atan2(c.dE, c.dN) * 180) / Math.PI;
@@ -810,7 +862,13 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           label: {
             text: `${Math.round(c.sp)} km/h · da ${dir8(from)}\n${Math.round(c.h)} m · ${CLS_WORD[c.cls] ?? "flusso"}`,
             font: "600 12px 'Barlow Condensed','Manrope',sans-serif",
-            fillColor: Cesium.Color.fromCssColorString(c.cls === "lee" ? "#ffb3c0" : "#eaf6ff"),
+            fillColor: Cesium.Color.fromCssColorString(
+              c.cls === "ana" || c.cls === "lift"
+                ? "#ffd9a3" // brezza che sale al sole: ambra come le scie
+                : c.cls === "lee"
+                  ? "#ffb3c0"
+                  : "#eaf6ff",
+            ),
             showBackground: true,
             backgroundColor: Cesium.Color.fromCssColorString("rgba(8,18,32,0.78)"),
             backgroundPadding: new Cesium.Cartesian2(5, 3),
@@ -911,6 +969,75 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     });
     windRef.current = added;
   }, [status, active, activePoint, quotaPoint, effQuota, field, demEpoch]);
+
+  /* ---------- VENTO METEO SOPRA LE CRESTE — il «secondo vento» del video ----------
+     «Au décollage, la brise remonte la pente… alors qu'au-dessus, le vent
+     souffle dans l'autre sens»: DUE STRATI visibili INSIEME quando le brezze
+     sono attive e nessuna quota è cliccata — al suolo l'ambra delle brezze,
+     in alto un manto di scie CIANO (meteoColor) alla quota di cresta +320 m,
+     orientato come il vento libero del modello (sounding/gravità di quota).
+     Il clic su una quota sostituisce questo strato con l'analisi a quell'
+     altezza (regola pilota: un livello alla volta); «off» lo ripristina. */
+  useEffect(() => {
+    const Cesium = cesiumRef.current;
+    const viewer = viewerRef.current;
+    if (status !== "ready" || !Cesium || !viewer || !active) return;
+    meteoRef.current?.destroy();
+    meteoRef.current = null;
+    if (meteoLabRef.current) {
+      if (!viewer.isDestroyed()) viewer.entities.remove(meteoLabRef.current);
+      meteoLabRef.current = null;
+    }
+    if (effQuota > 0 || !surface) return;
+
+    const wind = windAtAltitude(quotaPoint, meteoLvl, quotaPoint?.wind ?? null, quotaPoint?.dir ?? null);
+    if (wind.ws == null || wind.wd == null || !Number.isFinite(wind.ws) || !Number.isFinite(wind.wd)) return;
+    const wsK = wind.ws as number;
+
+    try {
+      meteoRef.current = buildAltitudeFlow(Cesium, viewer, {
+        lon0: active.lon,
+        lat0: active.lat,
+        lvl: meteoLvl,
+        ws: wsK,
+        wd: wind.wd as number,
+        extent: 8400,
+        field,
+        colorCss: meteoColor(wsK),
+        density: IS_MOBILE ? 0.3 : 0.5,
+      });
+    } catch (e) {
+      console.warn("[c3d] strato meteo sopra le creste non riuscito:", String(e).slice(0, 120));
+      return;
+    }
+
+    /* un'unica etichetta-bussola del secondo strato, sopra il decollo attivo */
+    const fromQ = ((wind.wd % 360) + 360) % 360;
+    meteoLabRef.current = viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(active.lon, active.lat, meteoLvl + 140),
+      label: {
+        text: `VENTO METEO · ${Math.round(wsK)} km/h · da ${dir8(fromQ)} · ~${meteoLvl} m`,
+        font: "700 12.5px 'Barlow Condensed','Manrope',sans-serif",
+        fillColor: Cesium.Color.fromCssColorString("#bff2f6"),
+        showBackground: true,
+        backgroundColor: Cesium.Color.fromCssColorString("rgba(6,26,34,0.82)"),
+        backgroundPadding: new Cesium.Cartesian2(6, 4),
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+        pixelOffset: new Cesium.Cartesian2(0, -10),
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 40000),
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      },
+    });
+
+    return () => {
+      meteoRef.current?.destroy();
+      meteoRef.current = null;
+      if (meteoLabRef.current) {
+        if (!viewer.isDestroyed()) viewer.entities.remove(meteoLabRef.current);
+        meteoLabRef.current = null;
+      }
+    };
+  }, [status, active, quotaPoint, effQuota, surface, field, meteoLvl]);
 
   /* ---------- TERMICHE: COLONNE D'ARIA CHE SALGONO (stile XCTherm) ----------
      Coni RIFATTI (richiesta pilota): colonna con TEXTURE a gradiente (base
@@ -1244,6 +1371,13 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     if (Cesium && viewer && active) flyToSite(Cesium, viewer, active);
   };
 
+  const meteoInfo = useMemo(() => {
+    if (effQuota > 0 || !surface) return null;
+    const w = windAtAltitude(quotaPoint, meteoLvl, quotaPoint?.wind ?? null, quotaPoint?.dir ?? null);
+    if (w.ws == null || w.wd == null || !Number.isFinite(w.ws) || !Number.isFinite(w.wd)) return null;
+    return { ws: w.ws as number, wd: w.wd as number, lvl: meteoLvl };
+  }, [effQuota, surface, quotaPoint, meteoLvl]);
+
   return (
     <section
       id="vista3d"
@@ -1314,6 +1448,18 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
             {fsOn || fsFallback ? <Minimize2 size={13} aria-hidden="true" /> : <Maximize2 size={13} aria-hidden="true" />}
             <span>{fsOn || fsFallback ? "Esci" : "Schermo intero"}</span>
           </button>
+          {status !== "idle" && (
+            <button
+              type="button"
+              className="c3d-fsbtn c3d-close"
+              onClick={chiudiMappa}
+              data-testid="c3d-close"
+              title="Chiudi la mappa 3D e libera memoria (riapri quando vuoi)"
+            >
+              <X size={13} aria-hidden="true" />
+              <span>Chiudi</span>
+            </button>
+          )}
           {/* collegamento diretto a Google Earth sulla posizione del decollo */}
           <a
             className="c3d-fsbtn"
@@ -1347,6 +1493,21 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         <div className="c3d-mount" ref={mountRef} />
         <div className="c3d-credits" ref={creditsRef} />
 
+        {/* POSTER mobile: il motore 3D parte SOLO a tocco esplicito — zero
+            download e zero lavoro se il pilota non chiede la mappa; sui
+            telefoni niente più armamento automatico mentre si scrolla */}
+        {IS_MOBILE && !armed && status === "idle" && (
+          <div className="c3d-poster" data-testid="c3d-poster">
+            <Mountain size={26} aria-hidden="true" />
+            <strong>Terreno in 3D</strong>
+            <p>Satellite + rilievo, brezze che salgono il pendio e vento meteo in quota, animati come l’acqua sul plastico 3D.</p>
+            <button type="button" className="c3d-open" data-testid="c3d-open" onClick={() => setArmed(true)}>
+              Apri la mappa 3D
+            </button>
+            <small>scarica ≈6 MB di mappe solo quando la apri · tasto «Chiudi» per smontarla</small>
+          </div>
+        )}
+
         {/* dati aerologici flottanti */}
         <Hud
           ready={status === "ready"}
@@ -1363,6 +1524,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           nCones={nCones}
           nPilot={pilot.length}
           wind={effQuota > 0 ? windAtAltitude(quotaPoint, effQuota, quotaPoint?.wind ?? null, quotaPoint?.dir ?? null) : null}
+          meteo={meteoInfo}
         />
 
         {/* navigazione stile Google Earth */}
@@ -1424,7 +1586,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       </div>
 
       <div className="c3d-legend">
-        <span className="c3d-leg-scale" data-testid="c3d-leg-scale" title="Colore dei venti meteo in quota: da giallo (debole) a viola scuro (fortissimo)">
+        <span className="c3d-leg-scale" data-testid="c3d-leg-scale" title="Colore del vento quando clicchi una QUOTA: da giallo (debole) a viola scuro (fortissimo)">
           <i style={{ background: "#ffe97a" }} />
           <em>&lt;5</em>
           <i style={{ background: "#ffd633" }} />
@@ -1445,11 +1607,17 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           <em>50+ km/h</em>
         </span>
         <span>
-          <i className="c3d-dot" style={{ background: "#2f9bf7" }} aria-hidden="true" />
-          blu = brezze di pendio · rosso = rotori di sottovento
+          <i className="c3d-dot" style={{ background: "#ffb254" }} aria-hidden="true" />
+          ambra = brezza che sale il versante al sole ·
+          <i className="c3d-dot" style={{ background: "#2f9bf7", marginLeft: 6 }} aria-hidden="true" />
+          blu = drenaggio notturno ·
+          <i className="c3d-dot" style={{ background: "#ff4d5e", marginLeft: 6 }} aria-hidden="true" />
+          rosso = rotori di sottovento
         </span>
         <span>
-          <i className="c3d-dot" style={{ background: "#ffd60a" }} aria-hidden="true" />
+          <i className="c3d-dot" style={{ background: "#5fccd8" }} aria-hidden="true" />
+          ciano = VENTO METEO sopra le creste (altro senso, come la brezza lo incontra) ·
+          <i className="c3d-dot" style={{ background: "#ffd60a", marginLeft: 6 }} aria-hidden="true" />
           colonna luminosa = termica · forza scritta in m/s
         </span>
         {pilot.length > 0 && (
@@ -1479,6 +1647,7 @@ function Hud({
   nCones,
   nPilot,
   wind,
+  meteo,
 }: {
   ready: boolean;
   surface: boolean;
@@ -1494,6 +1663,7 @@ function Hud({
   nCones: number;
   nPilot: number;
   wind: { ws: number | null; wd: number | null } | null;
+  meteo: { ws: number; wd: number; lvl: number } | null;
 }) {
   if (!ready) return null;
   return (
@@ -1511,9 +1681,16 @@ function Hud({
           ? "brezze del pendio nascoste: è attivo il vento in quota"
           : surface
             ? anabatic
-              ? "frecce blu = brezze che risalgono i versanti al sole (anabatica) · rotori rossi = sottovento"
+              ? "frecce AMBRA = brezze che risalgono i versanti al sole (anabatica) · rotori rossi = sottovento"
               : "frecce blu = aria che scende i pendii (catabatica) · rotori rossi = sottovento"
             : "brezze del pendio nascoste"}
+      </span>
+      <span className="c3d-hud-v" data-testid="c3d-hud-meteo">
+        {quota === 0
+          ? meteo
+            ? `in alto: VENTO METEO ${Math.round(meteo.ws)} km/h · da ${dir8(meteo.wd)} · ~${meteo.lvl} m (scie ciano sopra le creste)`
+            : "in alto: vento meteo sopra le creste in arrivo…"
+          : "le brezze restano nascoste finché è attiva una quota"}
       </span>
       <span className="c3d-hud-v" data-testid="c3d-hud-wind">
         {quota === 0

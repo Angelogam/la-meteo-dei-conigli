@@ -549,7 +549,7 @@ export function buildWindFlow(
     p.distAcc = 0;
     const f = flowAt(la, lo);
     p.azTo = Math.atan2(f.dE, f.dN);
-    p.colKey = breezeColor(f.sp);
+    p.colKey = breezeColor(f.sp, f.cls);
     if (first) p.age = (p.slot / slots.length) * p.life * 0.92; // fasi sfalsate: file continue
     pretrace(p, NODES, SEG_LEN, LIFT, la, lo, raiseAt, (a, b) => flowAt(a, b));
   };
@@ -697,8 +697,9 @@ export function buildWindFlow(
         pushNode(p, NODES, p.la, p.lo, hHead + LIFT);
       }
 
-      /* colore: la famiglia blu si abbassa con la velocità */
-      const nk = breezeColor(f.sp);
+      /* colore: ambra calda sull'anabatica (sale al sole), blu sul drenaggio
+         notturno e sul flusso neutro — due famiglie, come nel video */
+      const nk = breezeColor(f.sp, f.cls);
       if (nk !== p.colKey) {
         p.colKey = nk;
         const simg = imgUrl(streakSprite(nk));
@@ -751,6 +752,12 @@ export interface AltitudeFlowOpts {
   wd: number; // gradi «da»
   extent?: number; // semilato dell'area coperta (m)
   field?: WindField | null; // per nascondere le scie dietro i rilievi
+  /** colore fisso della famiglia (default: scala velocità giallo→viola).
+      Lo strato automatico sopra le creste usa il CIANO del video. */
+  colorCss?: string;
+  /** frazione del budget particelle (0.2..1): il layer automatico è contesto
+      visivo e resta leggero; l'analisi per quota usa la densità piena */
+  density?: number;
 }
 
 export function buildAltitudeFlow(Cesium: CesiumNs, viewer: ViewerNs, opts: AltitudeFlowOpts): WindFlowHandle {
@@ -760,7 +767,7 @@ export function buildAltitudeFlow(Cesium: CesiumNs, viewer: ViewerNs, opts: Alti
   const dE = Math.sin(dirTo * RAD);
   const dN = Math.cos(dirTo * RAD);
   const azTo = dirTo * RAD;
-  const color = speedColor(opts.ws);
+  const color = opts.colorCss ?? speedColor(opts.ws);
   /* anche i venti meteo in quota scorrono come ONDA UNICA: banda stretta
      340-460 m/s (v12: 470-640, rallentata ~30% su richiesta del pilota).
      Direzione e intensità si leggono da orientamento, colore e etichette km/h. */
@@ -770,7 +777,10 @@ export function buildAltitudeFlow(Cesium: CesiumNs, viewer: ViewerNs, opts: Alti
 
   const NODES_A = 12;
   const SEG_A = 120; // scie lunghe = aspetto lineare
-  const NP = Math.round(particleBudget(typeof navigator !== "undefined" ? navigator.hardwareConcurrency || 4 : 4) * 0.55);
+  const NP = Math.round(
+    particleBudget(typeof navigator !== "undefined" ? navigator.hardwareConcurrency || 4 : 4) *
+      (opts.density ?? 0.55),
+  );
 
   const bc = new Cesium.BillboardCollection();
   viewer.scene.primitives.add(bc);

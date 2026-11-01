@@ -657,3 +657,50 @@ a.c3d-fsbtn:hover { background: rgba(125, 211, 252, 0.14); }
 
 /* credit XCTherm (volI reali dei piloti) nella legenda */
 .c3d-xccredit { color: #d9c08a; }
+
+/* ---------- POSTER mobile: il 3D parte solo a tocco esplicito ---------- */
+.c3d-poster {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  text-align: center;
+  padding: 1.4rem 1.2rem;
+  color: #dfeefb;
+  background:
+    radial-gradient(70% 55% at 50% 30%, rgba(255, 164, 66, 0.14), transparent 70%),
+    radial-gradient(70% 60% at 50% 85%, rgba(38, 118, 142, 0.22), transparent 75%),
+    linear-gradient(180deg, #0a1626 0%, #0d1e33 55%, #10263c 100%);
+}
+.c3d-poster svg { color: #ffb254; }
+.c3d-poster strong { font-size: 1.12rem; letter-spacing: 0.02em; }
+.c3d-poster p { margin: 0; max-width: 30rem; font-size: 0.82rem; line-height: 1.45; color: #a7bdd1; }
+.c3d-poster .c3d-open {
+  appearance: none;
+  border: 1px solid rgba(255, 178, 84, 0.7);
+  border-radius: 999px;
+  padding: 0.62rem 1.5rem;
+  margin-top: 0.3rem;
+  background: linear-gradient(180deg, rgba(255, 178, 84, 0.24), rgba(255, 143, 63, 0.14));
+  color: #ffe1b8;
+  font: 700 0.92rem/1 "Barlow Condensed", "Manrope", sans-serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.c3d-poster .c3d-open:active { transform: scale(0.97); }
+.c3d-poster .c3d-open:hover { background: linear-gradient(180deg, rgba(255, 178, 84, 0.34), rgba(255, 143, 63, 0.2)); }
+.c3d-poster small { color: #6c8299; font-size: 0.68rem; font-family: var(--font-mono, monospace); }
+
+/* bottone «Chiudi»: smonta il motore 3D e libera la memoria */
+.c3d-fsbtn.c3d-close { color: #ffc9c9; border-color: rgba(255, 120, 120, 0.4); }
+.c3d-fsbtn.c3d-close:hover { background: rgba(255, 90, 90, 0.14); }
+
+@media (prefers-reduced-motion: reduce) {
+  .c3d-poster .c3d-open { transition: none; }
+}

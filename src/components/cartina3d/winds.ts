@@ -233,18 +233,43 @@ export function blendFlow(b: BlendIn): BlendOut {
 }
 
 /**
- * Colore delle BREZZE DI PENDIO (richiesta pilota): freccia BLU — flusso
- * continuo di aria che risale le rocce. La tonalità si abbassa con la
- * velocità: debole = azzurro chiaro, forte = blu profondo — resta sempre la
- * stessa famiglia cromatica così il flusso si legge come un'unica massa d'aria.
+ * Colore delle BREZZE DI PENDIO — stile del video «Due venti. Due direzioni.»:
+ * - ANABATICA (sole, l'aria risale il versante): famiglia CALDA ambra/arancio,
+ *   come la «BRISE LOCALE» del video e il versante soleggiato che si scalda
+ *   (il colore del sole sull'aria che porta in alto);
+ * - CATABATICA notturna e flusso neutro: famiglia FREDDA blu — di notte il
+ *   drenaggio è aria fredda che scende (e resta la vecchia «freccia blu»).
+ * La tonalità si abbassa con la velocità dentro ogni famiglia.
  */
-export function breezeColor(kmh: number): string {
-  if (!Number.isFinite(kmh)) return "#3f9ef8";
+export function breezeColor(kmh: number, cls?: FlowClass): string {
+  const calda = cls === "ana" || cls === "lift";
+  if (!Number.isFinite(kmh)) return calda ? "#ffc06a" : "#3f9ef8";
+  if (calda) {
+    if (kmh < 6) return "#ffdc9e";
+    if (kmh < 11) return "#ffc873";
+    if (kmh < 16) return "#ffb254";
+    if (kmh < 22) return "#ff9b3d";
+    return "#f7831f";
+  }
   if (kmh < 6) return "#8fd0ff";
   if (kmh < 11) return "#5cb9fb";
   if (kmh < 16) return "#2f9bf7";
   if (kmh < 22) return "#1279e2";
   return "#0a5cc4";
+}
+
+/**
+ * Colore del VENTO METEO sopra le creste — il «VENT MÉTÉO» del video:
+ * famiglia fredda ciano/teal, più il vento è forte più scura. Così i DUE
+ * STRATI si leggono al primo colpo d'occhio: ambra calda al suolo che sale
+ * il pendio, ciano freddo in quota che scorre dov'è puntato il modello.
+ */
+export function meteoColor(kmh: number): string {
+  if (!Number.isFinite(kmh)) return "#8fe0e6";
+  if (kmh < 10) return "#c2f1f4";
+  if (kmh < 20) return "#93e2e8";
+  if (kmh < 32) return "#5fccd8";
+  return "#33b6c4";
 }
 
 export interface WindField {
