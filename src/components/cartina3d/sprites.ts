@@ -26,6 +26,10 @@ function shade(hex: string, k: number): string {
 
 const pinCache = new Map<string, string>();
 
+/** SEGNA-POSTO dei decolli: pin da mappa classico ma curato — goccia ROSSA
+    piena con bordo bianco spesso, contorno scuro sottile, foro chiaro al
+    centro, riflesso lucido in alto e ombra morbida a terra (richiesta
+    pilota: «falli belli e di colore rosso»). */
 export function pinImage(Cesium: CesiumNs, color: string, active: boolean): string {
   void Cesium;
   const key = color + (active ? "-on" : "");
@@ -33,40 +37,82 @@ export function pinImage(Cesium: CesiumNs, color: string, active: boolean): stri
   if (hit) return hit;
 
   const c = document.createElement("canvas");
-  c.width = 52;
-  c.height = 68;
+  c.width = 56;
+  c.height = 74;
   const g = c.getContext("2d")!;
-  /* ombra portata a terra */
+  const cx = 28;
+  const cy = 21; // centro della testa
+  const r = 15; // raggio testa
+
+  /* ombra portata a terra (morbida, doppia) */
+  g.fillStyle = "rgba(0,0,0,0.22)";
   g.beginPath();
-  g.ellipse(26, 64, 9, 3, 0, 0, Math.PI * 2);
-  g.fillStyle = "rgba(0,0,0,0.35)";
+  g.ellipse(cx, 70, 13, 4, 0, 0, Math.PI * 2);
   g.fill();
-  /* coda del pin */
+  g.fillStyle = "rgba(0,0,0,0.3)";
   g.beginPath();
-  g.moveTo(26, 62);
-  g.lineTo(16, 27);
-  g.lineTo(36, 27);
-  g.closePath();
-  g.fillStyle = color;
+  g.ellipse(cx, 70, 7.5, 2.4, 0, 0, Math.PI * 2);
   g.fill();
-  g.lineWidth = 2;
-  g.strokeStyle = "rgba(6,14,26,0.92)";
-  g.stroke();
-  /* testa */
-  g.beginPath();
-  g.arc(26, 18, 13.5, 0, Math.PI * 2);
-  g.fillStyle = color;
-  g.fill();
-  g.stroke();
-  g.beginPath();
-  g.arc(26, 18, 5, 0, Math.PI * 2);
-  g.fillStyle = "rgba(10,22,38,0.92)";
-  g.fill();
-  if (active) {
+
+  /* CORPO del pin: goccia piena (testa circolare + coda affusolata curva) */
+  const drop = (): void => {
     g.beginPath();
-    g.arc(26, 18, 18, 0, Math.PI * 2);
-    g.strokeStyle = "rgba(255,255,255,0.9)";
-    g.lineWidth = 2.4;
+    g.moveTo(cx, 68);
+    g.bezierCurveTo(cx - 8.5, 52, cx - r - 3, 42, cx - r - 3, cy);
+    g.arc(cx, cy, r + 3, Math.PI, 0);
+    g.bezierCurveTo(cx + r + 3, 42, cx + 8.5, 52, cx, 68);
+    g.closePath();
+  };
+
+  /* contorno scuro esterno (stacca dal satellite) */
+  drop();
+  g.lineWidth = 6.4;
+  g.strokeStyle = "rgba(10,16,24,0.85)";
+  g.stroke();
+
+  /* bordo bianco spesso (stile pin Apple/Google, pulito a ogni zoom) */
+  drop();
+  g.lineWidth = 4.2;
+  g.strokeStyle = "#ffffff";
+  g.stroke();
+
+  /* riempimento ROSSO con leggera sfumatura di volume */
+  const grd = g.createLinearGradient(cx - r, cy - r, cx + r * 0.6, cy + r);
+  grd.addColorStop(0, shade(color, 1.28));
+  grd.addColorStop(0.55, color);
+  grd.addColorStop(1, shade(color, 0.72));
+  drop();
+  g.fillStyle = grd;
+  g.fill();
+
+  /* foro centrale chiaro con anellino */
+  g.beginPath();
+  g.arc(cx, cy, 5.6, 0, Math.PI * 2);
+  g.fillStyle = "#ffffff";
+  g.fill();
+  g.beginPath();
+  g.arc(cx, cy, 5.6, 0, Math.PI * 2);
+  g.lineWidth = 1.4;
+  g.strokeStyle = "rgba(10,16,24,0.4)";
+  g.stroke();
+
+  /* riflesso lucido in alto a sinistra */
+  g.beginPath();
+  g.ellipse(cx - 5.5, cy - 6.5, 4.6, 2.6, -0.7, 0, Math.PI * 2);
+  g.fillStyle = "rgba(255,255,255,0.5)";
+  g.fill();
+
+  if (active) {
+    /* doppio anello bianco pulsante attorno al decollo attivo */
+    g.beginPath();
+    g.arc(cx, cy, r + 9.5, 0, Math.PI * 2);
+    g.lineWidth = 2.6;
+    g.strokeStyle = "rgba(255,255,255,0.95)";
+    g.stroke();
+    g.beginPath();
+    g.arc(cx, cy, r + 13, 0, Math.PI * 2);
+    g.lineWidth = 1.4;
+    g.strokeStyle = "rgba(255,255,255,0.45)";
     g.stroke();
   }
   const url = c.toDataURL();
@@ -152,7 +198,8 @@ export function gliderImage(): string {
 
 let bubbleImg: string | null = null;
 
-/** Bolla di aria calda che sale dentro il cono termico: nucleo bianco-giallo + alone. */
+/** Bolla di aria calda che sale nel cono termico, stile FUMO GRIGIO NEBBIA:
+    nucleo bianco-grigio e alone vaporoso (niente più giallo — richiesta pilota). */
 export function bubbleImage(): string {
   if (bubbleImg) return bubbleImg;
   const c = document.createElement("canvas");
@@ -160,21 +207,21 @@ export function bubbleImage(): string {
   c.height = 64;
   const g = c.getContext("2d")!;
 
-  /* alone esterno soffuso */
+  /* alone esterno soffuso (fumo) */
   const halo = g.createRadialGradient(32, 32, 2, 32, 32, 30);
-  halo.addColorStop(0, "rgba(255,246,190,0.95)");
-  halo.addColorStop(0.45, "rgba(255,214,10,0.55)");
-  halo.addColorStop(1, "rgba(255,214,10,0)");
+  halo.addColorStop(0, "rgba(238,243,247,0.9)");
+  halo.addColorStop(0.45, "rgba(201,210,218,0.5)");
+  halo.addColorStop(1, "rgba(201,210,218,0)");
   g.fillStyle = halo;
   g.beginPath();
   g.arc(32, 32, 30, 0, Math.PI * 2);
   g.fill();
 
-  /* nucleo luminoso */
+  /* nucleo chiaro */
   const core = g.createRadialGradient(29, 29, 1, 32, 32, 12);
   core.addColorStop(0, "#ffffff");
-  core.addColorStop(0.5, "#fff3b0");
-  core.addColorStop(1, "#ffd60a");
+  core.addColorStop(0.5, "#eef3f7");
+  core.addColorStop(1, "#c9d2da");
   g.fillStyle = core;
   g.beginPath();
   g.arc(32, 32, 12, 0, Math.PI * 2);
@@ -391,8 +438,10 @@ export function streakSprite(color: string): HTMLCanvasElement {
 
 let coneImg: HTMLCanvasElement | null = null;
 
-/** TEXTURE del cono termico: gradiente verticale (base satura → cima sfumata),
-    costolature elicoidali leggere e ombreggiatura orizzontale (volume finto). */
+/** TEXTURE del cono termico stile FUMO GRIGIO NEBBIA (richiesta pilota:
+    «grigio nebbia come il fumo con dissolvenza»): base più densa che DISSOLVE
+    verso la cima, ciuffi vaporosi diagonali e ombreggiatura cilindrica
+    neutra — niente più giallo. */
 export function coneSideImage(): HTMLCanvasElement {
   if (coneImg) return coneImg;
   const c = document.createElement("canvas");
@@ -400,17 +449,32 @@ export function coneSideImage(): HTMLCanvasElement {
   c.height = 256;
   const g = c.getContext("2d")!;
 
-  /* gradiente verticale: brillante alla base, evanescente in cima */
+  /* gradiente verticale del fumo: denso alla base → evanescente in cima */
   const grd = g.createLinearGradient(0, 256, 0, 0);
-  grd.addColorStop(0, "rgba(255,214,10,0.85)");
-  grd.addColorStop(0.12, "rgba(255,214,10,0.6)");
-  grd.addColorStop(0.38, "rgba(255,222,77,0.34)");
-  grd.addColorStop(0.68, "rgba(255,232,140,0.16)");
-  grd.addColorStop(1, "rgba(255,240,180,0)");
+  grd.addColorStop(0, "rgba(168,178,188,0.58)");
+  grd.addColorStop(0.14, "rgba(182,192,201,0.42)");
+  grd.addColorStop(0.4, "rgba(198,207,215,0.26)");
+  grd.addColorStop(0.7, "rgba(214,221,228,0.12)");
+  grd.addColorStop(1, "rgba(228,234,239,0)");
   g.fillStyle = grd;
   g.fillRect(0, 0, 128, 256);
 
-  /* costolature elicoidali: bande diagonali dolci che suggeriscono la risalita */
+  /* ciuffi vaporosi: chiazze morbide chiare e scure che salgono a spirale */
+  for (let s = 0; s < 7; s++) {
+    const yy = 232 - s * 34 - (s % 2) * 10;
+    const xx = 26 + ((s * 37) % 74);
+    const rr = 15 + ((s * 13) % 12);
+    const puff = g.createRadialGradient(xx, yy, 1, xx, yy, rr);
+    const light = s % 2 === 0;
+    puff.addColorStop(0, light ? "rgba(238,243,247,0.16)" : "rgba(96,108,120,0.13)");
+    puff.addColorStop(1, "rgba(220,226,232,0)");
+    g.fillStyle = puff;
+    g.beginPath();
+    g.arc(xx, yy, rr, 0, Math.PI * 2);
+    g.fill();
+  }
+
+  /* costolature elicoidali sfumate (la risalita dell'aria, in grigio) */
   g.save();
   g.globalCompositeOperation = "lighter";
   for (let s = 0; s < 4; s++) {
@@ -421,18 +485,18 @@ export function coneSideImage(): HTMLCanvasElement {
     g.lineTo(x0 + 62, 40);
     g.bezierCurveTo(x0 + 16, 120, x0 + 54, 190, x0 + 28, 256);
     g.closePath();
-    g.fillStyle = "rgba(255,244,200,0.16)";
+    g.fillStyle = "rgba(238,243,247,0.07)";
     g.fill();
   }
   g.restore();
 
-  /* ombreggiatura orizzontale: centro più luminoso → volume cilindrico */
+  /* ombreggiatura orizzontale neutra: centro più chiaro → volume cilindrico */
   const sh = g.createLinearGradient(0, 0, 128, 0);
-  sh.addColorStop(0, "rgba(30,18,2,0.34)");
-  sh.addColorStop(0.28, "rgba(30,18,2,0)");
-  sh.addColorStop(0.5, "rgba(255,250,220,0.14)");
-  sh.addColorStop(0.72, "rgba(30,18,2,0)");
-  sh.addColorStop(1, "rgba(30,18,2,0.34)");
+  sh.addColorStop(0, "rgba(40,48,56,0.3)");
+  sh.addColorStop(0.28, "rgba(40,48,56,0)");
+  sh.addColorStop(0.5, "rgba(244,248,251,0.12)");
+  sh.addColorStop(0.72, "rgba(40,48,56,0)");
+  sh.addColorStop(1, "rgba(40,48,56,0.3)");
   g.fillStyle = sh;
   g.fillRect(0, 0, 128, 256);
 
@@ -442,7 +506,7 @@ export function coneSideImage(): HTMLCanvasElement {
 
 let ringImg: HTMLCanvasElement | null = null;
 
-/** ANELLO luminoso alla base della termica (doppio bordo morbido). */
+/** ANELLO alla base della termica, GRIGIO NEBBIA (doppio bordo morbido). */
 export function ringImage(): HTMLCanvasElement {
   if (ringImg) return ringImg;
   const c = document.createElement("canvas");
@@ -450,17 +514,17 @@ export function ringImage(): HTMLCanvasElement {
   c.height = 96;
   const g = c.getContext("2d")!;
   const halo = g.createRadialGradient(48, 48, 18, 48, 48, 46);
-  halo.addColorStop(0, "rgba(255,214,10,0)");
-  halo.addColorStop(0.55, "rgba(255,224,90,0.32)");
-  halo.addColorStop(0.78, "rgba(255,214,10,0.6)");
-  halo.addColorStop(1, "rgba(255,214,10,0)");
+  halo.addColorStop(0, "rgba(201,210,218,0)");
+  halo.addColorStop(0.55, "rgba(214,221,228,0.3)");
+  halo.addColorStop(0.78, "rgba(201,210,218,0.52)");
+  halo.addColorStop(1, "rgba(214,221,228,0)");
   g.fillStyle = halo;
   g.beginPath();
   g.arc(48, 48, 46, 0, Math.PI * 2);
   g.fill();
   g.beginPath();
   g.arc(48, 48, 26, 0, Math.PI * 2);
-  g.strokeStyle = "rgba(255,236,150,0.5)";
+  g.strokeStyle = "rgba(238,243,247,0.42)";
   g.lineWidth = 2.4;
   g.stroke();
   ringImg = c;

@@ -47,7 +47,7 @@ import type { CartinaDecollo } from "@/components/CartinaMeteo";
 import { windAtAltitude } from "@/components/CartinaMeteo";
 import type { HourlyPoint } from "@/services/threeSourceWeather";
 import { createTerrariumTerrainProvider, sampleTerrainHeights } from "./terrain";
-import { buildFallbackForecast, buildWindField, computeFlows, dayOfYear, fetchForecast, liveAt, meteoColor, speedColor } from "./winds";
+import { buildFallbackForecast, buildWindField, computeFlows, dayOfYear, fetchForecast, heightAt2, liveAt, meteoColor, speedColor } from "./winds";
 import type { FlowCell, ForecastData, WindField } from "./winds";
 import { fetchPilotThermals, XCTHERM_CREDIT } from "./xcflights";
 import type { PilotThermal } from "./xcflights";
@@ -707,7 +707,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       const pin = viewer.entities.add({
         position: ground,
         billboard: {
-          image: pinImage(Cesium, "#ffd76a", isActive),
+          image: pinImage(Cesium, "#e02b2b", isActive),
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
           scale: isActive ? 1.3 : 1,
           scaleByDistance: new Cesium.NearFarScalar(3000, 1, 70000, 0.5),
@@ -1096,7 +1096,10 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
 
     const mLat = 111320;
     const mLon = 111320 * Math.cos((active.lat * Math.PI) / 180);
-    const YELLOW = Cesium.Color.fromCssColorString("#ffd60a");
+    /* FUMO GRIGIO NEBBIA (richiesta pilota): le termiche sono colonne di fumo
+       vaporoso con dissolvenza — niente più giallo acceso */
+    const SMOKE = Cesium.Color.fromCssColorString("#c9d2da");
+    const SMOKE_L = Cesium.Color.fromCssColorString("#f2f6f9");
     const coneTex = coneSideImage();
     const bubble = bubbleImage();
     const ring = ringImage();
@@ -1109,7 +1112,12 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
 
     const parts: import("cesium").Entity[] = [];
     top16.forEach((tc, k) => {
-      const baseH = tc.h;
+      /* base sul DEM FINO (160 m, griglia H2) + 45 m di stacco: il terreno
+         renderizzato (LOD z12) è più rugoso della DEM a 640 m e nelle valli
+         a zoom da decollo SEPPELLIVA il cono — ecco perché «ingrandisco e
+         le termiche spariscono». Con la base sulla griglia fine e sollevata,
+         la colonna resta sempre sopra la chioma visibile. */
+      const baseH = Math.max(heightAt2(field, tc.lat, tc.lon), tc.h) + 45;
       const topH = Math.min(4000, Math.max(baseH + 700, cb != null ? Math.min(cb, baseH + 3400) : baseH + 2400));
       const len = Math.max(600, topH - baseH);
       const rBot = 95 + tc.strength * 9; // base snella
@@ -1129,7 +1137,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
               repeat: new Cesium.Cartesian2(3, 1),
               transparent: true,
               color: new Cesium.CallbackProperty(
-                () => Cesium.Color.WHITE.withAlpha(0.8 + 0.2 * (0.5 + 0.5 * Math.sin(performance.now() / 900 + k * 1.9))),
+                () => Cesium.Color.WHITE.withAlpha(0.62 + 0.18 * (0.5 + 0.5 * Math.sin(performance.now() / 1300 + k * 1.9))),
                 false,
               ),
             }),
@@ -1151,7 +1159,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
               repeat: new Cesium.Cartesian2(2, 1),
               transparent: true,
               color: new Cesium.CallbackProperty(
-                () => YELLOW.withAlpha(0.3 + 0.18 * (0.5 + 0.5 * Math.sin(performance.now() / 750 + k * 1.9 + 1.1))),
+                () => SMOKE_L.withAlpha(0.14 + 0.1 * (0.5 + 0.5 * Math.sin(performance.now() / 1050 + k * 1.9 + 1.1))),
                 false,
               ),
             }),
@@ -1221,8 +1229,8 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
               material: new Cesium.ColorMaterialProperty(
                 new Cesium.CallbackProperty(
                   () =>
-                    Cesium.Color.fromCssColorString("#ffe9a0").withAlpha(
-                      0.3 + 0.18 * (0.5 + 0.5 * Math.sin(performance.now() / 1100 + ph)),
+                    Cesium.Color.fromCssColorString("#e8eef3").withAlpha(
+                      0.14 + 0.1 * (0.5 + 0.5 * Math.sin(performance.now() / 1300 + ph)),
                     ),
                   false,
                 ),
@@ -1262,14 +1270,14 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       const r = 70 + tc.strength * 16;
       parts.push(
         viewer.entities.add({
-          position: Cesium.Cartesian3.fromDegrees(tc.lon, tc.lat, tc.h),
+          position: Cesium.Cartesian3.fromDegrees(tc.lon, tc.lat, baseH - 12),
           ellipse: {
             semiMajorAxis: r,
             semiMinorAxis: r,
-            height: tc.h,
+            height: baseH - 12,
             material: new Cesium.ColorMaterialProperty(
               new Cesium.CallbackProperty(
-                () => YELLOW.withAlpha(0.2 + 0.12 * Math.sin(performance.now() / 700 + k * 1.7)),
+                () => SMOKE.withAlpha(0.1 + 0.06 * Math.sin(performance.now() / 900 + k * 1.7)),
                 false,
               ),
             ),
@@ -1289,9 +1297,9 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
             label: {
               text: `↑ ${tc.strength.toFixed(1)} m/s`,
               font: "700 11px 'JetBrains Mono',monospace",
-              fillColor: Cesium.Color.fromCssColorString("#ffe9a0"),
+              fillColor: Cesium.Color.fromCssColorString("#eef3f7"),
               showBackground: true,
-              backgroundColor: Cesium.Color.fromCssColorString("rgba(40,26,4,0.78)"),
+              backgroundColor: Cesium.Color.fromCssColorString("rgba(28,36,44,0.72)"),
               backgroundPadding: new Cesium.Cartesian2(5, 3),
               distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 14000),
               disableDepthTestDistance: Number.POSITIVE_INFINITY,

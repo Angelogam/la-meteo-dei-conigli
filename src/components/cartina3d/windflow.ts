@@ -59,6 +59,7 @@ const SEG_LEN = 66; // m tra un nodo e il successivo (campiona le curve del rili
 const LIFT = 20; // m di volo delle scie SOPRA il terreno renderizzato
 const LIFT_HEAD = 30; // m della testina-freccia
 const LIFE_LOCK = 7.2; // s — vita UGUALE per tutte: la formazione da pettine non si disgrega
+const SWAY_M = 24; // m — ampiezza dell'onda sinusoidale laterale (flusso sinuoso)
 const EDDY_MIN = 120; // raggio rotore minimo (m)
 const EDDY_MAXR = 600; // raggio rotore massimo (m)
 const EDDY_MAX = 14; // numero massimo di rotori
@@ -87,8 +88,7 @@ interface Particle {
   segs: Billboard[]; // segmenti di scia (NODES)
   head: Billboard; // testina-freccia
   slot: number; // slot fisso nel reticolo «pettine» (respawn deterministico)
-  hG: number; // quota terreno CACHED di raiseAt (fix freeze: getHeight per frame
-  hGk: number; // contatore frame alla prossima ricampionatura (ogni ~10 frame)
+  hG: number; // quota terreno corrente (raiseAt: lettura griglia, ogni frame)
 }
 
 interface RotorMover {
@@ -175,7 +175,6 @@ const makeParticle = (Cesium: CesiumNs, bc: import("cesium").BillboardCollection
     segs: [],
     slot: 0,
     hG: 0,
-    hGk: 0,
     head: bc.add({
       position: Cesium.Cartesian3.ZERO,
       image: imgUrl(dartSprite(color)),
@@ -227,6 +226,11 @@ const drawParticle = (
       p.head.position = scPos;
       p.head.rotation = heading - p.azTo;
       p.head.scale = headScale;
+      /* alpha della testina (nascite/morti sfumate e degrado morbido): una
+         sola write a frame — le scie già scrivono 18 colori a frame */
+      Cesium.Color.clone(Cesium.Color.WHITE, scCol);
+      scCol.alpha = alpha;
+      p.head.color = scCol;
     } else p.head.show = false;
   } else p.head.show = false;
 
@@ -537,18 +541,24 @@ export function buildWindFlow(
     /* slot FISSO della particella: il pettine rinasce sempre negli stessi
        punti → la formazione è periodica, ordinata e leggibile come un video */
     const c = slots[p.slot % slots.length];
-    const la = limLa(c.la + ((Math.random() * 2 - 1) * 30) / mLat);
-    const lo = limLo(c.lo + ((Math.random() * 2 - 1) * 30) / mLon);
+    /* jitter DETERMINISTICO per slot (mai Math.random()): a ogni rinascita la
+       particella torna ESATTAMENTE nello stesso punto. Prima il jitter era
+       casuale ad ogni vita e la vita variava ±8%: dopo 2-3 vite le file si
+       sfaldavano e le frecce sembravano «impazzite» e non coordinate. */
+    const jLa = (hash01(p.slot * 7.13 + 1.7) * 2 - 1) * 30 / mLat;
+    const jLo = (hash01(p.slot * 3.71 + 5.2) * 2 - 1) * 30 / mLon;
+    const la = limLa(c.la + jLa);
+    const lo = limLo(c.lo + jLo);
     p.la = la;
     p.lo = lo;
     p.age = 0;
-    /* vita con micro-variazione DETERMINISTICA per slot (±8%, @gemini-cli:
-       rompe l'effetto «nastro trasportatore»/aliasing stroboscopico del pettine
-       a vita identica, senza Math.random() → zero sfarfallio tra i frame) */
-    p.life = LIFE_LOCK * (0.92 + 0.16 * hash01(p.slot * 12.9898));
+    /* vita UGUALE per tutte (LIFE_LOCK): la fase sfalsata della prima
+       comparsa si CONSERVA a ogni ciclo (periodo identico) → pettine che
+       ondeggia in blocco per sempre, senza «nastro trasportatore» né file
+       che si disgregano col tempo */
+    p.life = LIFE_LOCK;
     p.distAcc = 0;
     p.hG = 0;
-    p.hGk = 0; // forza il ricampionamento della quota terreno alla ripartenza
     const f = flowAt(la, lo);
     p.azTo = Math.atan2(f.dE, f.dN);
     p.colKey = breezeColor(f.sp, f.cls);
@@ -561,9 +571,6 @@ export function buildWindFlow(
       const p = makeParticle(Cesium, bc, NODES, "#5cb9fb", 0.46, fadeByDist, ddc);
       p.slot = k % slots.length;
       respawn(p, true);
-      /* sfalsa le ricampionature della quota terreno: ~NP/10 particelle a
-         frame invece di un burst da NP ogni 10 frame */
-      p.hGk = 1 + (k % 10);
       particles.push(p);
     }
 
@@ -637,11 +644,32 @@ export function buildWindFlow(
       return;
     }
 
+    /* degrado MORBIDO (fix «vanno a scatti»): prima le particelle oltre il
+       cap venivano GELATE (`continue`) e poi SPARITE quando il livello
+       scendeva — sui telefoni lenti il 30-55% delle frecce congelava di
+       colpo. Ora la fascia oltre il cap SFUMA progressivamente fino a zero:
+       quando il livello cambia la frontiera scorre dentro la fascia di
+       dissolvenza → transizione morbida, mai pop. */
+    const soft = Math.max(8, Math.round(particles.length * 0.12));
+    const capEdge = cap + soft;
+
     for (let k = 0; k < particles.length; k++) {
       const p = particles[k];
-      if (k >= cap) continue;
+      if (k >= capEdge) {
+        /* fuori budget: nascosta (niente fisica, niente write) */
+        if (p.head.show || p.segs[0].show) {
+          p.head.show = false;
+          for (let s = 0; s < nodes; s++) p.segs[s].show = false;
+        }
+        continue;
+      }
+      /* fascia di dissolvenza del degrado: 1 al cap → 0 al bordo esterno */
+      const capA = k < cap ? 1 : 1 - (k - cap) / soft;
       p.age += dt;
       if (p.age > p.life) respawn(p, false);
+      /* dissolvenza alla nascita e alla morte (fix teletrasporti visibili:
+       la scia ora APPARE e SCOMPARIE sfumando, mai di colpo) */
+      const lifeK = Math.min(1, p.age / 0.7) * Math.min(1, Math.max(0, (p.life - p.age) / 0.7));
 
       /* --- fisica: campo fuso + eventuale cattura del rotore --- */
       const f = flowAt(p.la, p.lo);
@@ -688,6 +716,17 @@ export function buildWindFlow(
 
       p.la = limLa(p.la + (dirN * mStep) / mLat);
       p.lo = limLo(p.lo + (dirE * mStep) / mLon);
+
+      /* ONDA SINUOSA COORDINATA (richiesta pilota: «devono correre in modo
+         sinuoso come un flusso e tutte coordinate»): oscillazione laterale
+         alla direzione locale del flusso, STESSA frequenza per tutte
+         (0.85 rad/s) e fase deterministica per slot (angolo aureo) →
+         l'intero campo ondeggia come un nastro d'acqua che serpeggia,
+         coordinato, senza toccare la fisica del vento. */
+      const sway = SWAY_M * Math.sin(0.85 * t + p.slot * 2.399963);
+      p.la = limLa(p.la + (-dirN * sway) / mLat);
+      p.lo = limLo(p.lo + (dirE * sway) / mLon);
+
       p.distAcc += mStep;
       const xN = (p.la - field.lat0) * mLat;
       const xE = (p.lo - field.lon0) * mLon;
@@ -696,17 +735,12 @@ export function buildWindFlow(
         continue;
       }
 
-      /* FIX «si inchioda» (profilo CPU): raiseAt → globe.getHeight per OGNI
-         particella a OGNI frame attraversava il quadtree del terreno 380×/frame
-         mentre Cesium stava già affogando nel meshing. La brezza si muove di
-         pochi cm a frame: la quota è CACHED ~10 frame (sfalsati per slot) e la
-         differenza visiva è nulla. */
-      if (p.hGk <= 0) {
-        p.hG = raiseAt(p.la, p.lo);
-        p.hGk = 10;
-      } else {
-        p.hGk -= 1;
-      }
+      /* quota terreno VIVA a ogni frame: raiseAt è ormai SOLO lettura delle
+         griglie DEM in memoria (post-fix 7407064: zero raycast, zero pick) —
+         costa aritmetica pura, così le scie seguono il rilievo SENZA scatti
+         verticali anche a zoom da decollo (la cache a 10 frame faceva
+         «saltare» la scia sui crinali). */
+      p.hG = raiseAt(p.la, p.lo);
       const hHead = p.hG; // terreno VERO: mai sepolto a zoom ravvicinato
       if (p.distAcc >= SEG_LEN) {
         p.distAcc = 0;
@@ -726,7 +760,7 @@ export function buildWindFlow(
       /* testina-freccia: cresce un filo con la raffica */
       const headBoost = clamp(f.sp / 25, 1, 2.1);
       const headScale = (0.46 + 0.02 * Math.sin(t * 2.1 + p.life * 7.3)) * headBoost;
-      drawParticle(Cesium, heading, p, nodes, hHead, LIFT_HEAD, headScale, calmK > 0.02, clamp((0.6 + 0.4 * clamp(f.sp / 28, 0, 1)) * calmK, 0, 1), mLat, mLon, scPos, scCol, LIFT);
+      drawParticle(Cesium, heading, p, nodes, hHead, LIFT_HEAD, headScale, calmK > 0.02 && lifeK > 0.03 && capA > 0.03, clamp((0.6 + 0.4 * clamp(f.sp / 28, 0, 1)) * calmK * lifeK * capA, 0, 1), mLat, mLon, scPos, scCol, LIFT);
     }
 
     /* rotori: girano su se stessi e respirano */
@@ -865,10 +899,23 @@ export function buildAltitudeFlow(Cesium: CesiumNs, viewer: ViewerNs, opts: Alti
       return;
     }
 
+    /* degrado morbido come sul motore suolo: fascia di dissolvenza oltre il cap */
+    const soft = Math.max(6, Math.round(particles.length * 0.12));
+    const capEdge = cap + soft;
+
     for (let k = 0; k < particles.length; k++) {
       const p = particles[k];
-      if (k >= cap) continue;
+      if (k >= capEdge) {
+        if (p.head.show || p.segs[0].show) {
+          p.head.show = false;
+          for (let s = 0; s < nodes; s++) p.segs[s].show = false;
+        }
+        continue;
+      }
+      const capA = k < cap ? 1 : 1 - (k - cap) / soft;
       p.age += dt;
+      /* dissolvenza nascita/morte anche in quota */
+      const lifeK = Math.min(1, p.age / 0.7) * Math.min(1, Math.max(0, (p.life - p.age) / 0.7));
       const mStep = visMs * dt;
       p.la += (dN * mStep) / mLat;
       p.lo += (dE * mStep) / mLon;
@@ -895,7 +942,7 @@ export function buildAltitudeFlow(Cesium: CesiumNs, viewer: ViewerNs, opts: Alti
         for (let s = 0; s < nodes; s++) p.segs[s].show = false;
         continue;
       }
-      drawParticle(Cesium, heading, p, nodes, lvl, 0, 0.5, true, 0.8, mLat, mLon, scPos, scCol, 0);
+      drawParticle(Cesium, heading, p, nodes, lvl, 0, 0.5, capA > 0.03 && lifeK > 0.03, 0.8 * lifeK * capA, mLat, mLon, scPos, scCol, 0);
     }
   };
   viewer.scene.preRender.addEventListener(tick);
