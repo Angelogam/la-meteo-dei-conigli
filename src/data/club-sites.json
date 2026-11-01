@@ -1,0 +1,28 @@
+{
+  "sites": [
+    { "slug": "malanotte", "name": "Malanotte", "latitude": 44.25874571728482, "longitude": 7.794304664370852, "timeZone": "Europe/Rome" },
+    { "slug": "colle-di-tenda", "name": "Colle di Tenda", "latitude": 44.15093973937469, "longitude": 7.569262924652476, "timeZone": "Europe/Rome" },
+    { "slug": "boves", "name": "Boves", "latitude": 44.32113720462757, "longitude": 7.544697617792515, "timeZone": "Europe/Rome" },
+    { "slug": "monte-male-dronero", "name": "Monte Male – Dronero", "latitude": 44.43163071064606, "longitude": 7.362886778152897, "timeZone": "Europe/Rome" },
+    { "slug": "iretta", "name": "Iretta", "latitude": 44.49893744007536, "longitude": 7.382036612070795, "timeZone": "Europe/Rome" },
+    { "slug": "pratoni-di-val-mala", "name": "Pratoni di Val Mala", "latitude": 44.50780117336976, "longitude": 7.346618978966227, "timeZone": "Europe/Rome" },
+    { "slug": "monte-birrone", "name": "Monte Birrone", "latitude": 44.5398927839592, "longitude": 7.25293945830122, "timeZone": "Europe/Rome" },
+    { "slug": "colle-dell-agnello", "name": "Colle dell'Agnello", "latitude": 44.68282592463814, "longitude": 6.978200601250462, "timeZone": "Europe/Rome" },
+    { "slug": "pian-mune-seggiovia", "name": "Pian Munè – Seggiovia", "latitude": 44.63861029121272, "longitude": 7.230889474766025, "timeZone": "Europe/Rome" },
+    { "slug": "pian-mune-bric-lombatera", "name": "Pian Munè – Bric Lombatera", "latitude": 44.65736521807557, "longitude": 7.260017009542715, "timeZone": "Europe/Rome" },
+    { "slug": "martiniana-po", "name": "Martiniana Po", "latitude": 44.60695265332723, "longitude": 7.38322612877631, "timeZone": "Europe/Rome" },
+    { "slug": "rucas-alto", "name": "Rucas alto", "latitude": 44.74213930591463, "longitude": 7.220118689737356, "timeZone": "Europe/Rome" },
+    { "slug": "montoso-decollo-basso", "name": "Montoso – decollo basso", "latitude": 44.7643723437882, "longitude": 7.249757926713178, "timeZone": "Europe/Rome" },
+    { "slug": "monte-vandalino", "name": "Monte Vandalino", "latitude": 44.83671231480542, "longitude": 7.173866924055591, "timeZone": "Europe/Rome" },
+    { "slug": "pian-dell-alpe", "name": "Pian dell'Alpe", "latitude": 45.06396153999711, "longitude": 7.028266530872771, "timeZone": "Europe/Rome" },
+    { "slug": "roletto-piggi", "name": "Roletto – Piggi", "latitude": 44.93249288285819, "longitude": 7.310959031722244, "timeZone": "Europe/Rome" },
+    { "slug": "piossasco-monte-s-giorgio", "name": "Piossasco – Monte S. Giorgio", "latitude": 44.99671840144012, "longitude": 7.44800217882953, "timeZone": "Europe/Rome" },
+    { "slug": "truccetti", "name": "Truccetti", "latitude": 45.07973511679036, "longitude": 7.342018342463826, "timeZone": "Europe/Rome" },
+    { "slug": "val-della-torre", "name": "Val della Torre", "latitude": 45.16262748864921, "longitude": 7.463716167415302, "timeZone": "Europe/Rome" },
+    { "slug": "rocca-canavese-m-della-neve", "name": "Rocca Canavese – M. della Neve", "latitude": 45.32757754837493, "longitude": 7.572793582322621, "timeZone": "Europe/Rome" },
+    { "slug": "santa-elisabetta", "name": "Santa Elisabetta", "latitude": 45.4182733880574, "longitude": 7.641945041749434, "timeZone": "Europe/Rome" },
+    { "slug": "santa-elisabetta-alto", "name": "Santa Elisabetta alto", "latitude": 45.44019393073506, "longitude": 7.648025947229948, "timeZone": "Europe/Rome" },
+    { "slug": "monte-cavallaria", "name": "Monte Cavallaria", "latitude": 45.51729363773779, "longitude": 7.798808327293107, "timeZone": "Europe/Rome" },
+    { "slug": "andrate", "name": "Andrate", "latitude": 45.55063933418272, "longitude": 7.880775591143394, "timeZone": "Europe/Rome" }
+  ]
+}

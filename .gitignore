@@ -1,0 +1,75 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.dyad/
+
+.output
+
+# Large files
+*.msi
+*.exe
+*.dmg
+*.pkg
+*.zip
+*.tar.gz
+*.jar
+*.aar
+*.apk
+!package-lock.json
+
+# Playwright test artifacts
+/test-results/
+/playwright-report/
+/playwright/.cache/
+.last-run.json
+# Large files - do not commit
+*.msi
+*.exe
+*.apk
+*.dmg
+*.pkg
+android/jdk*
+android/app/build/**
+
+# Large files - do not commit
+*.msi
+*.exe
+*.apk
+*.dmg
+*.pkg
+android/jdk*
+android/app/build/**
+
+# Build output and local verification artifacts
+.output
+artifacts
+
+*.tsbuildinfo
+
+# CesiumJS assets (creati da scripts/copy-cesium.cjs, non in repo)
+public/cesium/
+
+# Agenti AI (Gemini CLI)
+.gemini/
+gha-creds-*.json

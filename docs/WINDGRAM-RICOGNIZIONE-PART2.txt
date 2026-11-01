@@ -1,0 +1,332 @@
+================================================================================
+RICONOSCIMENTO TECNICO — WINDGRAM & REPORT METEOROLOGICO
+SEZIONE 2/3: F–J
+================================================================================
+
+F. COME VIENE COSTRUITO IL WINDGRAM
+================================================================================
+
+1. WINDGRAMMATRIX (quello principale nell'app)
+--------------------------------------------------------------------------------
+FLUSSO DATI:
+  Index.tsx → useWeatherData() → fetch Open-Meteo → rawApiResponse
+      ↓
+  Index.tsx passa rawData come prop a <Windgram>
+      ↓
+  <Windgram> → <WindgramMatrix>
+      ↓
+  WindgramMatrix usa useMultiHourWindProfile({ rawData }) per profilo vento
+      ↓
+  useMultiHourWindProfile parses rawData.hourly → Map<ora, {levels: WindLevel[]}>
+      ↓
+  interpolateAtAltitude(ora, alt) interpola vento per ogni cella della matrice
+
+DATI USATI PER OGNI CELLA:
+  • Vento:            interpolato da useMultiHourWindProfile (livelli reali 10m–500hPa)
+  • Colore vento:     scala 8 gradini: blu(≤4) → cyan(≤8) → verde(≤13) → lime(≤18)
+                      → giallo(≤24) → arancio(≤30) → rosso(≤42) → viola(≤58) → viola scuro(≥59) km/h
+  • Colore sfondo:    derivato da deltaT calcolato da temperature_2m e temperature_180m
+  • Base cumuli:      calcCloudBase(altitude, temp, dewPoint)
+  • Top termica:      formula sinusoidale + cloudBase
+  • Nuvole:           icona mostrata quando cloudBaseRow[hr] === rowIdx
+
+FORMULA DELTA T IN WINDGRAMMATRIX:
+  const t180Raw = stabilitaData.temperature_180m?.[idx];
+  const t180 = t180Raw != null ? Number(t180Raw) : null;
+  const t80 = t180 != null ? t2m + (t180 - t2m) * (80 / 180) : null;
+  deltaT = (t2m - t80) / 78 * 100;  // °C/100m
+
+FORMULA TERMICA IN WINDGRAMMATRIX:
+  const cape = h.cape ?? 0;
+  const rateo = 0.6 + (spread * 0.08) + (cloudCover < 30 ? 0.3 : 0)
+                + (cape > 200 ? Math.min(0.4, cape / 1000) : 0);
+  const cappedRateo = Math.max(0.4, Math.min(2.5, rateo));
+  const thermalDepth = Math.min(800, cappedRateo * 100 + cape * 0.1);
+  const top = Math.min(4000, base + thermalDepth);
+
+2. PROFESSIONALWINDGRAM (SVG completo)
+--------------------------------------------------------------------------------
+• Stessa fonte Open-Meteo, ma fa CHIAMATA PROPRIA se rawData non passato
+• Calcola deltaTProfile con modello a strati:
+    - superficie (baseLapseRate * exp(-r * 2.2))
+    - free atmosphere (0.55 * max(0, (r - 0.2) / 0.8))
+    - inversione sopra thermalTop (-0.45 * min(1, (alt - thermalTop) / 400))
+    - suppressione nuvola (alt > cloudBase ? -0.18 : 0)
+    - boost solare pomeridiano
+    - soppressione pioggia
+• Disegna: barbe del vento, curva top termico, zero termico, nuvole, badge
+• INTEGRA IL REPORT dentro lo stesso componente (generateReportMeteo)
+
+3. ALPIUMWINDGRAM
+--------------------------------------------------------------------------------
+• Chiamata AUTONOMA a Open-Meteo (NON usa rawData condiviso)
+• Prende temperature a 13 livelli hPa (500-1000) per calcolo lapse rate reale
+• Stile grafico diverso (sfondo scuro, mappe di instabilità)
+• NON COLLEGATO agli altri windgram nei dati
+
+4. RASOFTWINDGRAM
+--------------------------------------------------------------------------------
+• Solo per sito "montoso-decollo-basso"
+• Chiamata autonoma Open-Meteo
+• Stile fedele a meteo-parapente.com
+• NON COLLEGATO agli altri
+
+5. TOMORROWWINDGRAM / WINDGRAMPRO
+--------------------------------------------------------------------------------
+• Usano API Tomorrow.io (diversa da Open-Meteo)
+• Dati SEPARATI e potentially diversi
+• Non condividono nulla con il flusso principale
+
+================================================================================
+G. COME VIENE COSTRUITO IL REPORT ATTUALE
+================================================================================
+
+FILE: src/utils/generateReportMeteo.ts
+FUNZIONE: generateReportMeteo(params)
+
+CHIAMATO DA:
+  1. ProfessionalWindgram.tsx (riga 394) — passa data.hourly completo
+  2. AnalisiMeteo.tsx (riga 80) — filtra rawApiResponse per giorno selezionato
+
+INPUT: siteName, altitude, dateObj, hourlyData (oggetto grezzo Open-Meteo)
+
+LOGICA:
+  1. Filtra ore 8:00–19:00
+  2. Calcola aggregati:
+     tempMin, tempMax, maxCape, avgCape, avgWindGround, maxWindGround,
+     totPrecip, avgClouds, avgSpread
+  3. Deriva:
+     liftedIndex (da CAPE — ⚠️ sovrascrive valore reale API!),
+     baseCumuli, rateoMin/Max, zeroTermico,
+     wind quote (STIMATI con formule)
+  4. Identifica SCENARIO con identificaScenario():
+     • perfezionistico    (CAPE>900, vento<15)
+     • termica-forte      (CAPE>500, vento<18)
+     • instabile-temporali (thunderstorm code ≥95)
+     • ventoso            (vento>30)
+     • stabile-coperto    (nuvole>85%)
+     • pioggia            (precip>0.3)
+     • debole-poco-termico (CAPE<250)
+     • misto              (default)
+  5. Genera 4 paragrafi + segnali pericolo + giudizio finale + score 0-10
+  6. Applica PENALITÀ:
+     • temperatura fredda (<12°C): -0.5 punti per grado
+     • nuvole >90%: -0.3 punti per % eccedenza
+     • vento max >25 km/h: -1 punto
+     • vento max >35 km/h: -1 punto ulteriore
+
+DATI USATI DAL REPORT:
+  ✅ temperature_2m, dew_point_2m, wind_speed_10m, wind_direction_10m,
+     wind_gusts_10m, precipitation, cloud_cover, cape,
+     freezing_level_height, weather_code
+  ❌ NON usa: venti in quota, temperature in quota, radiazione, pressure
+
+================================================================================
+H. DIFFERENZE WINDGRAM vs REPORT
+================================================================================
+
+ASPETTO                              | WINDGRAM (WindgramMatrix)     | REPORT (generateReportMeteo)
+-------------------------------------|-------------------------------|----------------------------
+Fonte dati                           | rawApiResponse (condiviso)     | rawApiResponse filtrato per giorno
+Vento in quota                       | ✅ Usa (10m–500hPa reali)      | ❌ Solo vento suolo (10m)
+Temperatura in quota                 | ✅ Usa (2m, 180m)              | ❌ Solo 2m
+Lapse rate                           | ✅ Calcolato da t2m-t180m      | ❌ Non calcolato
+DeltaT visivo                        | ✅ Sì, mappa colori            | ❌ No
+Top termica                          | ✅ Calcolato per ogni ora       | ✅ Calcolato ma solo aggregato
+Base cumuli                          | ✅ Per ogni ora                | ✅ Aggregata (min/max/media)
+CAPE                                 | ✅ Per ogni ora                | ✅ Aggregato (max, avg)
+Vento quota (report)                 | ❌ No                          | ⚠️ STIMATO con formule
+Scenari meteorologici                | ❌ No                          | ✅ 8 scenari con testi
+Score 0-10                           | ❌ No                          | ✅ Con penalità
+Terzene orarie                       | ✅ 12 ore (8-19)               | ✅ 12 ore (8-19)
+
+PROBLEMA CRITICO #1:
+  Il report stima i venti in quota con formule empiriche invece di usare i
+  dati reali API. Il windgram mostra i venti reali.
+  Esempio: report dice "25 km/h a 2000m", windgram mostra "12 km/h".
+
+PROBLEMA CRITICO #2:
+  Il windgram calcola deltaT (stabilità) dai dati reali t2m/t180m.
+  Il report non calcola affatto deltaT — usa solo CAPE e nuvolosità.
+  Le due rappresentazioni possono raccontare storie diverse sulla stabilità.
+
+================================================================================
+I. FALLBACK / DATI INVENTATI TROVATI
+================================================================================
+
+1. ?? 0 e || 0 — abbondanti ma generalmente sicuri
+--------------------------------------------------------------------------------
+WindgramMatrix.tsx:
+  const cape = h.cape ?? 0;
+  const cloudCover: h.cloudCover ?? 30;
+
+ProfessionalWindgram.tsx:
+  const dew = h.dew_point_2m[idx] ?? (tNum - 8);
+  const cloud = h.cloud_cover?.[idx] ?? null;
+
+2. ?? (t - 6) vs ?? (t - 8) — INCOERENZA CRITICA
+--------------------------------------------------------------------------------
+WindgramMatrix.tsx:
+  h.dewPoint ?? (h.temperature ?? 18) - 6   ← usa t - 6
+
+ProfessionalWindgram.tsx:
+  h.dew_point_2m[idx] ?? (tNum - 8)          ← usa t - 8
+
+Stessa API, diversa stima del dew point. Il difference di 2°C si propaga
+alla base cumuli (250m di differenza) e al deltaT.
+
+3. || 10, ?? 10 — fallback per velocità vento
+--------------------------------------------------------------------------------
+TermicheTab.tsx:
+  const ws = vento.speed || 10;
+
+4. ?? 30 — fallback nuvolosità
+--------------------------------------------------------------------------------
+Multiple occurrences:
+  const cloud = h.cloud_cover?.[idx] ?? 30;
+
+5. ?? 0 — fallback CAPE
+--------------------------------------------------------------------------------
+  const cape = h.cape ?? 0;
+  (in useMultiHourWindProfile, WindgramMatrix, ProfessionalWindgram)
+
+6. VALORI "N/D" — presenti ma gestiti correttamente
+--------------------------------------------------------------------------------
+AnalisiMeteo.tsx, PrevisioniGiornaliere.tsx, DecolliCard.tsx
+
+7. FALLBACK ARBITRARI CRITICI
+--------------------------------------------------------------------------------
+
+A. ProfessionalWindgram.tsx — dati inventati per ore mancanti:
+   Quando un'ora non esiste nel dataset:
+   ```ts
+   return {
+     ...
+     deltaT: 0.65,                                    // ← VALORE FISSO!
+     tempAt80m: Math.round(t - 3),                    // ← STIMATO
+     tempAt120m: Math.round(t - 6),                   // ← STIMATO
+     levelWinds: displayAltitudes.map(alt => ({       // ← DATO INVENTATO!
+       alt, speed: 8, dir: 200                        //   8 km/h da 200° per TUTTE le quote
+     })),
+   };
+   ```
+   ⚠️ CRITICO: vento a tutte le quote fissato arbitrariamente a 8 km/h da 200°.
+
+B. generateReportMeteo.ts — venti in quota STIMATI:
+   ```ts
+   const wind1500_2500 = Math.round(avgWindGround * 1.4 + 3);   // ← STIMA
+   const wind2500_3500 = Math.round(avgWindGround * 2.1 + 8);   // ← STIMA
+   const windOver3500 = Math.round(avgWindGround * 2.9 + 15);   // ← STIMA
+   const dir1500_2500 = degToCardinal(mainDirDeg + 12);          // ← STIMA
+   const dir2500_3500 = degToCardinal(mainDirDeg + 28);          // ← STIMA
+   const dirOver3500 = degToCardinal(mainDirDeg + 45);           // ← STIMA
+   ```
+   ⚠️ CRITICO: il report descrive venti in quota che NON sono i venti reali
+   del windgram.
+
+C. generateReportMeteo.ts — Lifted Index sovrascritto:
+   ```ts
+   let liftedIndex = 1.5;
+   if (maxCape > 1500) liftedIndex = -6.0;
+   else if (maxCape > 1000) liftedIndex = -4.5;
+   else if (maxCape > 700) liftedIndex = -3.0;
+   else if (maxCape > 400) liftedIndex = -1.5;
+   else if (maxCape > 200) liftedIndex = 0.5;
+   else liftedIndex = 2.5;
+   ```
+   ⚠️ L'API fornisce lifted_index reale, ma il report lo SOVRASCRIVE
+   con una stima basata su CAPE. Valore reale ignorato.
+
+D. ProfessionalWindgram.tsx — PBL come curva fissa:
+   ```ts
+   <path d={`M ${getXFromHourIdx(0)},${getYFromAlt(1800)}
+              Q ${getXFromHourIdx(5)},${getYFromAlt(2600)}
+              ${getXFromHourIdx(10)},${getYFromAlt(2200)}`} />
+   ```
+   ⚠️ Il boundary layer è rappresentato con una Bézier fissa
+   (1800→2600→2200m) indipendente dai dati reali.
+
+E. generateReportMeteo.ts — fallback radiazione:
+   ```ts
+   shortwave_radiation: buildArray("shortwave_radiation").length
+     ? buildArray("shortwave_radiation")
+     : Array(filteredTimes.length).fill(400),  // ← 400 W/m² fisso
+   ```
+   ⚠️ Se manca shortwave_radiation, riempie con 400 per tutte le ore.
+
+F. generateReportMeteo.ts — fallback freezing level:
+   ```ts
+   const dayFreezes = dayIndices.map(i => freezes[i] ?? 3600).filter(f => f > 0);
+   ```
+   ⚠️ Se freezing_level_height manca, usa 3600m come default.
+
+G. ProfessionalWindgram.tsx — interpolated hours fake winds:
+   ```ts
+   levelWinds: displayAltitudes.map((alt) => ({ alt, speed: 8, dir: 200 }))
+   ```
+   ⚠️ Per ore interpolate, vento = 8 km/h da 200° a TUTTE le quote.
+
+H. AlpiumWindgram.tsx — speed/dir fallback:
+   ```ts
+   const speed = speedArr?.[idx] ?? 0;
+   const dir = dirArr?.[idx] ?? 0;
+   ```
+   ⚠️ Se manca il dato, mostra 0 (vento calmo) invece di nascondere.
+
+================================================================================
+J. PUNTI DA CORREGGERE
+================================================================================
+
+1. REPORT USA STIME DI VENTO IN QUOTA INVECE DI DATI REALI
+--------------------------------------------------------------------------------
+Il report calcola wind1500_2500, wind2500_3500, windOver3500 con formule
+empiriche, mentre il windgram mostra i venti reali da Open-Meteo.
+Il report può dire "vento 25 km/h a 2000m" mentre il windgram mostra 12 km/h.
+
+2. INCOERENZA DEW POINT FALLBACK: t-6 vs t-8
+--------------------------------------------------------------------------------
+WindgramMatrix usa h.dewPoint ?? (h.temperature - 6)
+ProfessionalWindgram usa h.dew_point_2m[idx] ?? (tNum - 8)
+Stessa API, diversa stima → base cumuli diversa → described differently.
+
+3. DATI INVENTATI PER ORE MANCANTI IN PROFESSIONALWINDGRAM
+--------------------------------------------------------------------------------
+Quando un'ora non esiste, il vento a tutte le quote è fissato a
+8 km/h da 200°. Questo può essere molto fuorviante nella visualizzazione.
+
+4. LIFTED INDEX SOVRASCRITTO
+--------------------------------------------------------------------------------
+Il report calcola liftedIndex da CAPE invece di usare il valore reale
+fornito dall'API (lifted_index). Il dato reale viene ignorato.
+
+5. BOUNDARY LAYER COME CURVA FISSA
+--------------------------------------------------------------------------------
+La curva PBL in ProfessionalWindgram è una Bézier fissa (1800→2600→2200),
+non derivata dai dati reali. Va sostituita con una stima basata sui
+dati (es. altezza dove deltaT diventa negativo).
+
+6. RADIAZIONE FALLBACK A 400 W/M²
+--------------------------------------------------------------------------------
+Se manca shortwave_radiation, il report riempie con 400 per tutte le ore.
+Questo influenza il calcolo di sunPct e di conseguenza rateo termico.
+
+7. MANCANZA CALCOLO SHEAR
+--------------------------------------------------------------------------------
+Nessun componente calcola lo shear verticale (variazione direzione/velocità
+vento con la quota). Parametro importante per la sicurezza di volo.
+
+8. ALPIUMWINDGRAM E RASOFTWINDGRAM FANNO CHIAMATE AUTONOME
+--------------------------------------------------------------------------------
+Non usano il rawData condiviso da useWeatherData — fanno nuove chiamate
+Open-Meteo indipendenti. Duplicazione di fetch e potenziali discrepanze.
+
+9. TOMORROWWINDGRAM USA API DIVERSA
+--------------------------------------------------------------------------------
+I windgram Tomorrow.io mostrano dati da una fonte diversa (Tomorrow.io
+vs Open-Meteo). Possono esserci discrepanze tra i due.
+
+10. PERDITA DI INFORMAZIONE: API → WINDGRAM → REPORT
+--------------------------------------------------------------------------------
+Il windgram usa i dati verticali reali (multilivello). Il report li
+ignora completamente e usa solo dati di superficie + formule. La
+catena di informazione si perde al passaggio dal windgram al report.

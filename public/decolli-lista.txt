@@ -1,0 +1,35 @@
+DECOLLI METEO DEI CONIGLI - Lista completa 24 decolli con coordinate GPS
+
+================================================================================
+ID                          NOME                          LATITUDINE    LONGITUDINE    QUOTA(m)  VALLE                ESPOSIZIONE
+================================================================================
+malanotte                   Malanotte                     44.2587457   7.7943047     1740      Valle Ellero         S/SE
+colle-di-tenda              Colle di Tenda                44.1509397   7.5692629     1990      Valle Roya/Vermenagna S
+boves                       Boves                         44.3211372   7.5446976     900       Cuneese              NE
+monte-male-dronero          Monte Male – Dronero          44.4316307   7.3628868     950       Valle Maira          S
+iretta                      Iretta                        44.4989374   7.3820366     1050      Valle Maira          SO
+pratoni-di-val-mala         Pratoni di Val Mala           44.5078012   7.3466190     1400      Valle Maira          S
+monte-birrone               Monte Birrone                 44.5398928   7.2529395     2131      Valle Maira          S
+colle-dell-agnello          Colle dell'Agnello            44.6828259   6.9782006     2748      Valle Varaita        S
+pian-mune-seggiovia         Pian Munè – Seggiovia         44.6386103   7.2308895     1870      Valle Po             S/SW
+pian-mune-bric-lombatera    Pian Munè – Bric Lombatera    44.6573652   7.2600170     1350      Valle Po             S
+martiniana-po               Martiniana Po                 44.6069527   7.3832261     1400      Valle Po             NE
+rucas-alto                  Rucas alto                    44.7421393   7.2201187     1500      Valle Infernotto     S/SE
+montoso-decollo-basso       Montoso – decollo basso       44.7643723   7.2497579     1250      Valle Infernotto     SE
+monte-vandalino             Monte Vandalino               44.8367123   7.1738669     2120      Val Pellice          S/SE
+pian-dell-alpe              Pian dell'Alpe                45.0639615   7.0282665     1990      Val Chisone          S
+roletto-piggi               Roletto – Piggi               44.9324929   7.3109590     820       Pinerolese           S
+piossasco-monte-s-giorgio   Piossasco – Monte S. Giorgio  44.9967184   7.4480022     673       Collina Torinese     S
+truccetti                   Truccetti                     45.0797351   7.3420183     900       Canavese             S
+val-della-torre             Val della Torre               45.1626275   7.4637162     970       Val della Torre      S
+rocca-canavese-m-della-neve Rocca Canavese – M. della Neve 45.3275775   7.5727936     1100      Canavese             S
+santa-elisabetta            Santa Elisabetta              45.4182734   7.6419450     1000      Canavese             S
+santa-elisabetta-alto       Santa Elisabetta alto         45.4401939   7.6480259     1400      Canavese             S
+monte-cavallaria            Monte Cavallaria              45.5172936   7.7988083     1430      Canavese             S
+andrate                     Andrate                       45.5506393   7.8807756     1000      Canavese             S
+================================================================================
+
+TOTALE: 24 decolli
+Range altitudine: 673m - 2748m
+Coordinate: Piemonte, Alpi Occidentali (Italia)
+Fonte: src/data/decolli.ts

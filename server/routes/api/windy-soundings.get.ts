@@ -1,0 +1,199 @@
+import { defineHandler } from "nitro";
+import { getQuery, createError, setHeader } from "nitro/h3";
+
+const WINDY_PLUGIN_URL = "https://windy-plugins.com/2727410/windy-plugin-pg-soundings/1.6.2/plugin.min.js";
+const WINDY_PLUGIN_NAME = "Windy Plugin PG Soundings";
+const WINDY_PLUGIN_VERSION = "1.6.2";
+const PLUGIN_TIMEOUT_MS = 8_000;
+const MAX_PLUGIN_BYTES = 2_000_000;
+
+async function readLimitedPlugin(response: Response): Promise<string> {
+  const contentLength = Number(response.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > MAX_PLUGIN_BYTES) {
+    throw createError({ statusCode: 502, statusMessage: "Dimensione del plugin Windy non valida" });
+  }
+  if (!response.body) {
+    throw createError({ statusCode: 502, statusMessage: "Risposta vuota dal provider Windy" });
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > MAX_PLUGIN_BYTES) {
+        await reader.cancel();
+        throw createError({ statusCode: 502, statusMessage: "Dimensione del plugin Windy non valida" });
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(bytes);
+}
+
+interface SoundingSite {
+  name: string;
+  lat: number;
+  lon: number;
+  elevation: number;
+}
+
+const SOUNDING_SITES: SoundingSite[] = [
+  { name: "Montoso – Decollo Basso", lat: 44.764372, lon: 7.249758, elevation: 1250 },
+  { name: "Pian Munè – Seggiovia", lat: 44.638610, lon: 7.230889, elevation: 1870 },
+  { name: "Colle dell'Agnello", lat: 44.682826, lon: 6.978201, elevation: 2748 },
+  { name: "Monte Birrone", lat: 44.539893, lon: 7.252939, elevation: 2131 },
+  { name: "Monte Vandalino", lat: 44.836712, lon: 7.173867, elevation: 2120 },
+  { name: "Pian dell'Alpe", lat: 45.063962, lon: 7.028267, elevation: 1990 },
+];
+
+function slugify(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export default defineHandler(async (event) => {
+  const query = getQuery(event);
+  const unsupportedParameters = Object.keys(query).filter((key) => key !== "action" && key !== "site");
+  if (unsupportedParameters.length > 0) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "La richiesta contiene parametri non supportati",
+      data: { parameters: unsupportedParameters },
+    });
+  }
+
+  for (const key of ["action", "site"] as const) {
+    if (Array.isArray(query[key])) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: `Parametro ${key} ripetuto: specificarlo una sola volta`,
+        data: { parameter: key },
+      });
+    }
+  }
+
+  const siteValue = query.site;
+  const actionValue = query.action;
+  const site = typeof siteValue === "string" ? siteValue.trim() : undefined;
+  const action = typeof actionValue === "string" ? actionValue.trim() : undefined;
+
+  if (action && action !== "plugin" && action !== "sites") {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Azione Windy non valida",
+      data: { parameter: "action", allowed: ["plugin", "sites"] },
+    });
+  }
+  if (action && site) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Usare action oppure site, non entrambi",
+      data: { parameters: ["action", "site"] },
+    });
+  }
+
+  if (action === "plugin") {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), PLUGIN_TIMEOUT_MS);
+    try {
+      const response = await fetch(WINDY_PLUGIN_URL, {
+        signal: controller.signal,
+        headers: {
+          "User-Agent": "MeteoConigli/1.1 (+https://la-meteo-dei-conigli-mrcq.vercel.app)",
+          "Accept": "application/javascript, text/javascript, */*",
+        },
+      });
+      if (!response.ok) {
+        throw createError({ statusCode: 502, statusMessage: "Il provider Windy non ha restituito il plugin" });
+      }
+      const js = await readLimitedPlugin(response);
+      if (js.trim().length === 0) {
+        throw createError({ statusCode: 502, statusMessage: "Risposta vuota dal provider Windy" });
+      }
+      // The plugin URL is pinned to a version; edge-cache the validated payload to avoid repeated upstream latency.
+      setHeader(event, "Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
+      return {
+        ok: true,
+        name: WINDY_PLUGIN_NAME,
+        version: WINDY_PLUGIN_VERSION,
+        url: WINDY_PLUGIN_URL,
+        js,
+      };
+    } catch (error: unknown) {
+      const err = error as { statusCode?: number; name?: string };
+      if (err?.statusCode) throw error;
+      if (err?.name === "AbortError") {
+        throw createError({ statusCode: 504, statusMessage: "Timeout del provider Windy" });
+      }
+      throw createError({ statusCode: 502, statusMessage: "Provider Windy temporaneamente non raggiungibile" });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  if (action === "sites") {
+    // Site metadata is static and safe to cache for longer than forecast data.
+    setHeader(event, "Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
+    return {
+      ok: true,
+      plugin: WINDY_PLUGIN_NAME,
+      version: WINDY_PLUGIN_VERSION,
+      url: WINDY_PLUGIN_URL,
+      sites: SOUNDING_SITES,
+    };
+  }
+
+  if (site) {
+    const slug = slugify(site);
+    const found = SOUNDING_SITES.find((candidate) => slugify(candidate.name) === slug);
+    if (!found) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: "Sito sounding non trovato",
+        data: { available: SOUNDING_SITES.map((candidate) => ({ name: candidate.name, slug: slugify(candidate.name) })) },
+      });
+    }
+    setHeader(event, "Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
+    return {
+      ok: true,
+      plugin: WINDY_PLUGIN_NAME,
+      version: WINDY_PLUGIN_VERSION,
+      url: WINDY_PLUGIN_URL,
+      site: found,
+      embedUrl: "https://windy-plugins.com/2727410/windy-plugin-pg-soundings/1.6.2/",
+      config: { lat: found.lat, lon: found.lon, elevation: found.elevation },
+    };
+  }
+
+  setHeader(event, "Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
+  return {
+    ok: true,
+    name: WINDY_PLUGIN_NAME,
+    version: WINDY_PLUGIN_VERSION,
+    url: WINDY_PLUGIN_URL,
+    description: "Sounding atmosferici per parapendio — skew-T, hodograph e profili vento",
+    endpoints: [
+      "GET /api/windy-soundings?action=plugin",
+      "GET /api/windy-soundings?action=sites",
+      "GET /api/windy-soundings?site=montoso-decollo-basso",
+    ],
+    sites: SOUNDING_SITES.map((candidate) => ({ ...candidate, slug: slugify(candidate.name) })),
+  };
+});

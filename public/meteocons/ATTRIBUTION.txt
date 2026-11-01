@@ -1,0 +1,4 @@
+Meteocons — animated weather icons by Bas Milius
+https://github.com/basmilius/weather-icons • https://meteocons.com
+License: MIT — free for personal and commercial use.
+Files: cloud.svg (cloudy), sun.svg (clear-day) from production/fill.

@@ -1,0 +1,108 @@
+/* Pagina Termiche — la cartina aeroelogica a tutto schermo */
+
+.thm-shell {
+  background:
+    radial-gradient(1100px 500px at 85% -10%, rgba(56, 189, 248, 0.08), transparent 60%),
+    #060b13;
+}
+
+.thm-main {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 22px clamp(12px, 3vw, 28px) 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.thm-head h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.55rem, 3.4vw, 2.3rem);
+  letter-spacing: -0.015em;
+  margin: 4px 0 6px;
+  color: #f1f5f9;
+}
+
+.thm-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  color: #38bdf8;
+  margin: 0;
+}
+
+.thm-sub {
+  max-width: 74ch;
+  margin: 0;
+  color: #9fb1c4;
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.thm-status {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: #7dd3fc;
+}
+.thm-status.is-error { color: #fca5a5; }
+
+/* ---------- mini-manuale di meteorologia applicata ---------- */
+
+.thm-manual {
+  margin-top: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(8, 13, 22, 0.86));
+  padding: 22px clamp(14px, 3vw, 26px) 26px;
+}
+
+.thm-manual h2 {
+  font-family: var(--font-display);
+  font-size: 1.12rem;
+  color: #e2e8f0;
+  margin: 0 0 14px;
+  letter-spacing: -0.01em;
+}
+
+.thm-manual-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.thm-manual article {
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 14px;
+  background: rgba(2, 6, 23, 0.55);
+  padding: 14px 16px 16px;
+}
+
+.thm-manual h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  color: #cbd5e1;
+}
+
+.thm-manual h3 span {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #38bdf8;
+  letter-spacing: 0.08em;
+}
+
+.thm-manual p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: #8fa3b8;
+}
+
+@media (max-width: 640px) {
+  .thm-main { padding-top: 14px; gap: 12px; }
+  .thm-manual { padding: 16px 14px 18px; }
+}

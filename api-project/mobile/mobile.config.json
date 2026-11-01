@@ -1,0 +1,56 @@
+{
+  "app": {
+    "name": "Meteo dei Conigli",
+    "id": "com.meteodeiconigli.app",
+    "version": "1.0.0",
+    "framework": "Capacitor",
+    "capacitor_version": "6.x"
+  },
+  "platforms": {
+    "ios": {
+      "enabled": true,
+      "bundle_id": "com.meteodeiconigli.app",
+      "deployment_target": "iOS 13.0",
+      "config_file": "api-project/mobile/ios.config.json"
+    },
+    "android": {
+      "enabled": true,
+      "package_name": "com.meteodeiconigli.app",
+      "min_sdk": 22,
+      "target_sdk": 34,
+      "config_file": "api-project/mobile/android.config.json"
+    }
+  },
+  "icon": {
+    "source": "pasted-image-2026-09-03T15-59-30-391Z.png",
+    "format": "PNG",
+    "densities": {
+      "mdpi": 48,
+      "hdpi": 72,
+      "xhdpi": 96,
+      "xxhdpi": 144,
+      "xxxhdpi": 192
+    }
+  },
+  "permissions": {
+    "installation": "silent",
+    "location_removed": true,
+    "wifi_state_removed": true,
+    "active_permissions": [
+      "INTERNET",
+      "ACCESS_NETWORK_STATE"
+    ]
+  },
+  "distribution": {
+    "channel": "direct",
+    "store": "none",
+    "method": "manual"
+  },
+  "api": {
+    "base_url": "http://localhost:3000",
+    "production_url": "https://api.meteodeiconigli.app",
+    "timeout": 10000,
+    "retry_attempts": 3,
+    "version": "2.0.0"
+  }
+}
