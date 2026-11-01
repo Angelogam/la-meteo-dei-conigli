@@ -29,6 +29,25 @@ const TILE_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium";
 const MAX_LEVEL = 14;
 const TILE_SIZE = 256;
 
+/* LOD MASSIMO che Cesium può usare per il RENDERING del terreno.
+   FIX «si inchioda tutto» (profilo CPU su produzione, throttle 4×): il main
+   thread passava >80% del tempo in decodePosition/getExaggeratedPosition/
+   rayTriangleParametric — Cesium generava e ricampionava le mesh del terreno
+   IN MAIN THREAD (fill tiles + upsample) perché gli promettevamo copertura
+   fino a z14 e gli chiedevamo LOD più fini di quanto il dispositivo riuscisse
+   a caricare. Il worker di meshing stava al 99,9% IDLE: tutto il lavoro
+   ricadeva sul thread UI. Ora il rendering si ferma a z12 (≈38 m/px, mobile)
+   / z13 (≈19 m/px, desktop): visivamente quasi identico a queste camere
+   (zoom minimo 320 m), e la tempesta di ricampionamento sparisce.
+   ⚠️ Il campionamento per le FRECCE NON cambia: buildWindField legge i PNG
+   Terrarium z14 DIRETTAMENTE (loadTile), senza passare dal provider. */
+const RENDER_MAX_LEVEL =
+  typeof navigator !== "undefined" &&
+  (/Android|iPhone|iPad|iPod|Mobile|Silk/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && Math.min(screen.width, screen.height) <= 820))
+    ? 12
+    : 13;
+
 const tileCache = new Map<string, Float32Array>();
 const pending = new Map<string, Promise<Float32Array>>();
 
@@ -96,8 +115,8 @@ export function createTerrariumTerrainProvider(Cesium: CesiumValue): TerrainProv
       (TILE_SIZE * this.tilingScheme.getNumberOfXTilesAtLevel(0));
 
     constructor() {
-      const av = new Cesium.TileAvailability(this.tilingScheme, MAX_LEVEL);
-      for (let level = 0; level <= MAX_LEVEL; level++) {
+      const av = new Cesium.TileAvailability(this.tilingScheme, RENDER_MAX_LEVEL);
+      for (let level = 0; level <= RENDER_MAX_LEVEL; level++) {
         av.addAvailableTileRange(
           level,
           0,
@@ -115,7 +134,7 @@ export function createTerrariumTerrainProvider(Cesium: CesiumValue): TerrainProv
       level: number,
       _request?: CesiumNs.Request,
     ): Promise<CesiumNs.TerrainData> | undefined {
-      if (level > MAX_LEVEL) return undefined;
+      if (level > RENDER_MAX_LEVEL) return undefined;
       const key = `${level}/${x}/${y}`;
       const cached = TILE_DATA.get(key);
       if (cached) return Promise.resolve(cached);
@@ -152,7 +171,7 @@ export function createTerrariumTerrainProvider(Cesium: CesiumValue): TerrainProv
     }
 
     getTileDataAvailable(x: number, y: number, level: number): boolean | undefined {
-      return level <= MAX_LEVEL;
+      return level <= RENDER_MAX_LEVEL;
     }
 
     loadTileDataAvailability(_x: number, _y: number, _level: number): undefined | Promise<void> {

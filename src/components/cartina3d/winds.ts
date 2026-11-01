@@ -284,6 +284,17 @@ export interface WindField {
   gE: number[][]; // gradiente dh/dEst (m/m)
   gN: number[][]; // gradiente dh/dNord (m/m)
   S: number[][]; // pendenza |grad| (m/m)
+  /* griglia DEM FINA (step/4) per le quote delle SCIE: fix «si inchioda
+     tutto» — Globe.getHeight in Cesium 1.146 fa un raycast sul TerrainPicker
+     che, finché il worker non ha finito il BVH, è BRUTE FORCE su tutti i
+     triangoli (profilo: 80% del main thread in getExaggeratedPosition/
+     decodePosition/rayTriangleParametric, worker al 99,9% idle). I tile z14
+     sono GLI STESSI già scaricati per H: leggere i PNG direttamente costa
+     zero rete e zero raycast. */
+  H2: number[][]; // quote DEM fini (m)
+  rows2: number;
+  cols2: number;
+  step2: number; // m tra le celle fini (= step/4)
 }
 
 /** Una freccia del campo vento, pronta per il render. */
@@ -330,6 +341,26 @@ export async function buildWindField(lat0: number, lon0: number): Promise<WindFi
     }
   }
 
+  /* griglia FINA (step/4 = 160 m): gli stessi tile z14 già in cache, solo più
+     campioni bilineari — serve alle scie come quota terreno SENZA passare da
+     globe.getHeight (raycast brute-force sul TerrainPicker: il freeze) */
+  const STEP2 = STEP / 4;
+  const ROWS2 = (ROWS - 1) * 4 + 1;
+  const COLS2 = (COLS - 1) * 4 + 1;
+  const lats2: number[] = [];
+  const lons2: number[] = [];
+  for (let i = 0; i < ROWS2; i++) lats2.push(lat0 + (((ROWS2 - 1) / 2 - i) * STEP2) / mLat);
+  for (let j = 0; j < COLS2; j++) lons2.push(lon0 + ((j - (COLS2 - 1) / 2) * STEP2) / mLon);
+  const flat2 = await sampleTerrainHeights(lats2.flatMap((la) => lons2.map((lo) => ({ lat: la, lon: lo }))));
+  const H2: number[][] = [];
+  for (let i = 0; i < ROWS2; i++) {
+    H2.push([]);
+    for (let j = 0; j < COLS2; j++) {
+      const h = flat2[i * COLS2 + j];
+      H2[i].push(Number.isFinite(h) ? h : 0);
+    }
+  }
+
   const gE: number[][] = [];
   const gN: number[][] = [];
   const S: number[][] = [];
@@ -353,7 +384,7 @@ export async function buildWindField(lat0: number, lon0: number): Promise<WindFi
     }
   }
 
-  return { lat0, lon0, rows: ROWS, cols: COLS, step: STEP, mLat, mLon, H, gE, gN, S };
+  return { lat0, lon0, rows: ROWS, cols: COLS, step: STEP, mLat, mLon, H, gE, gN, S, H2, rows2: ROWS2, cols2: COLS2, step2: STEP2 };
 }
 
 /** Altezza DEM interpolata (bilineare) — matematica pura, richiamabile a ogni frame. */
@@ -369,6 +400,25 @@ export function heightAt(f: WindField, lat: number, lon: number): number {
     f.H[ci][cj + 1] * (1 - ti) * tj +
     f.H[ci + 1][cj] * ti * (1 - tj) +
     f.H[ci + 1][cj + 1] * ti * tj
+  );
+}
+
+/** Quota terreno FINA (griglia H2 a step/4 = 160 m) — bilineare pura, per le
+    scie. Sostituisce globe.getHeight (che in Cesium 1.146 raycasta il
+    TerrainPicker brute-force finché il worker non ha finito il BVH: il
+    freeze). Nessun raycast, nessun pick, soltanto numeri. */
+export function heightAt2(f: WindField, lat: number, lon: number): number {
+  const fi = (f.rows2 - 1) / 2 - ((lat - f.lat0) * f.mLat) / f.step2;
+  const fj = ((lon - f.lon0) * f.mLon) / f.step2 + (f.cols2 - 1) / 2;
+  const ci = Math.min(f.rows2 - 2, Math.max(0, Math.floor(fi - 0.5)));
+  const cj = Math.min(f.cols2 - 2, Math.max(0, Math.floor(fj - 0.5)));
+  const ti = Math.min(1, Math.max(0, fi - 0.5 - ci));
+  const tj = Math.min(1, Math.max(0, fj - 0.5 - cj));
+  return (
+    f.H2[ci][cj] * (1 - ti) * (1 - tj) +
+    f.H2[ci][cj + 1] * (1 - ti) * tj +
+    f.H2[ci + 1][cj] * ti * (1 - tj) +
+    f.H2[ci + 1][cj + 1] * ti * tj
   );
 }
 

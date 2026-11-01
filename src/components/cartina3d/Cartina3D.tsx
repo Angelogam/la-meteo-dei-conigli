@@ -157,6 +157,8 @@ const fpsWatch = (
     if (document.hidden || fps >= 4.5 || steps >= 2) return;
     steps++;
     if (steps === 1) {
+      /* PRIMO intervento: abbassare la DOMANDA DI TERRENO (la causa reale del
+         freeze — fill tiles in main thread), non solo i pixel */
       viewer.resolutionScale = Math.max(0.55, viewer.resolutionScale * 0.75);
       try {
         viewer.scene.msaaSamples = 1;
@@ -164,14 +166,15 @@ const fpsWatch = (
       } catch {
         /* facoltativi */
       }
-      globe.maximumScreenSpaceError += 0.8;
+      globe.maximumScreenSpaceError += 2;
+      globe.preloadSiblings = false;
       onLite("Qualità ridotta per restare fluido sul tuo dispositivo");
     } else {
       viewer.resolutionScale = Math.max(0.45, viewer.resolutionScale * 0.85);
-      globe.maximumScreenSpaceError = Math.min(6, globe.maximumScreenSpaceError + 1.2);
+      globe.maximumScreenSpaceError += 2.5;
       onLite("Modalità leggera attiva per il tuo dispositivo");
     }
-  }, 6000);
+  }, 3000);
 };
 
 const QUOTA_STEP = 250;
@@ -511,11 +514,19 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         globe.enableLighting = false;
         globe.depthTestAgainstTerrain = true;
         globe.showGroundAtmosphere = true;
-        globe.maximumScreenSpaceError = IS_MOBILE ? 2.2 : 1.25;
+        globe.maximumScreenSpaceError = IS_MOBILE ? 5 : 2.5;
+        /* FIX «si inchioda tutto»: 2.2 (mobile) / 1.25 (desktop) chiedevano LOD
+           più fini di quanto il dispositivo potesse caricare → Cesium creava
+           fill tiles con raycast IN MAIN THREAD ogni frame (profilo: >80% del
+           thread in decodePosition/getExaggeratedPosition/rayTriangleParametric,
+           worker meshing al 99,9% idle) → task da MINUTI. SSE 5/2.5 + LOD cap
+           z12/z13 (terrain.ts) tengono la domanda di tile dentro la capacità. */
         /* memoria del cache tile FINITA (default Cesium 100): prima era
            250 000 000 = non sbarazzarsi mai di una tile → il tab moriva */
         globe.tileCacheSize = IS_MOBILE ? 500 : 1500;
-        globe.preloadSiblings = true;
+        /* i fratelli della tile in vista raddoppiano la domanda: su mobile
+           resta fuori (la rete non tiene), su desktop aiuta la copertura */
+        globe.preloadSiblings = !IS_MOBILE;
         viewer.scene.fog.enabled = true;
         viewer.scene.fog.density = 0.00008;
         viewer.scene.skyAtmosphere.show = true;
@@ -556,16 +567,38 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         );
         hill.alpha = 0.16;
 
-        /* progresso terreno con PERCENTUALE reale: il badge non sparisce
-           col vecchio failsafe a 20 s (l'utente vedeva il terreno piatto
-           senza capire che stava ancora caricando) */
+        /* progresso terreno con PERCENTUALE reale, THROTTLED: tileLoadProgress-
+           Event scatta decine di volte al secondo durante il flood di tile e
+           ogni setState ri-renderizzava TUTTO il componente (profilo: parte
+           del freeze). Aggiorno al più 2 volte al secondo e solo se la
+           percentuale è cambiata davvero; il completamento (queued 0) resta
+           immediato. */
         let maxQ = 0;
+        let lastPctSent = -1;
+        let lastPctAt = 0;
+        let pctTimer: number | null = null;
+        const pushPct = (): void => {
+          pctTimer = null;
+          setLoadPct(lastPctSent);
+        };
         const stopLoad = globe.tileLoadProgressEvent.addEventListener((queued: number) => {
           if (queued > maxQ) maxQ = queued;
-          setLoadPct(maxQ > 0 ? Math.round(100 * (1 - queued / maxQ)) : 100);
+          const pct = maxQ > 0 ? Math.round(100 * (1 - queued / maxQ)) : 100;
           if (queued === 0) {
+            if (pctTimer !== null) {
+              clearTimeout(pctTimer);
+              pctTimer = null;
+            }
+            setLoadPct(100);
             setTilesLoaded(true);
             stopLoad();
+            return;
+          }
+          const now = performance.now();
+          if (Math.abs(pct - lastPctSent) >= 4 && now - lastPctAt > 500) {
+            lastPctSent = pct;
+            lastPctAt = now;
+            if (pctTimer === null) pctTimer = window.setTimeout(pushPct, 500);
           }
         });
         window.setTimeout(() => setTilesLoaded(true), 45000); // failsafe generoso
@@ -661,15 +694,24 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
 
     markersRef.current = good.flatMap((d) => {
       const isActive = d.id === active.id;
+      /* FIX «si inchioda tutto» (profilo CPU): CLAMP_TO_GROUND su pin ed
+         etichette faceva partire, a ogni tile caricata, Scene.getHeight →
+         getMaxPrimitiveHeight → Globe.pick → TerrainPicker.rayIntersect che
+         RICOSTRUISCE il BVH per ogni vertice delle mesh renderizzate — con
+         centinaia di tile in arrivo diventava un task da MINUTI nel main
+         thread (worker meshing al 99,9% idle). Ora i pin stanno alla quota
+         del decollo (dato che abbiamo: elevation_m), heightReference NONE:
+         visivamente identico (disableDepthTestDistance li tiene sempre in
+         vista) e zero raycast di clamp. */
+      const ground = Cesium.Cartesian3.fromDegrees(d.lon, d.lat, d.elevation_m ?? 0);
       const pin = viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(d.lon, d.lat, 0),
+        position: ground,
         billboard: {
           image: pinImage(Cesium, "#ffd76a", isActive),
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
           scale: isActive ? 1.3 : 1,
           scaleByDistance: new Cesium.NearFarScalar(3000, 1, 70000, 0.5),
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
         },
         label: {
           text: `${d.site_name} · ${Math.round(d.elevation_m ?? 0)} m`,
@@ -681,7 +723,6 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           pixelOffset: new Cesium.Cartesian2(0, -44),
           distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 32000),
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
           scale: 1,
         },
       });
@@ -1215,22 +1256,23 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         }),
       );
 
-      /* alone a terra sul punto di stacco */
+      /* alone a terra sul punto di stacco — FIX freeze: niente CLAMP_TO_GROUND
+         (stesso storm di getHeight/pick dei pin): usiamo la quota DEM dello
+         stacco, che è già il terreno vero del nostro campo */
       const r = 70 + tc.strength * 16;
       parts.push(
         viewer.entities.add({
-          position: Cesium.Cartesian3.fromDegrees(tc.lon, tc.lat, 0),
+          position: Cesium.Cartesian3.fromDegrees(tc.lon, tc.lat, tc.h),
           ellipse: {
             semiMajorAxis: r,
             semiMinorAxis: r,
+            height: tc.h,
             material: new Cesium.ColorMaterialProperty(
               new Cesium.CallbackProperty(
                 () => YELLOW.withAlpha(0.2 + 0.12 * Math.sin(performance.now() / 700 + k * 1.7)),
                 false,
               ),
             ),
-            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-            classificationType: Cesium.ClassificationType.TERRAIN,
           },
         }),
       );

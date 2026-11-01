@@ -33,6 +33,7 @@ import {
   breezeColor,
   dayOfYear,
   heightAt,
+  heightAt2,
   speedColor,
   sunPosition,
   type FlowClass,
@@ -86,6 +87,8 @@ interface Particle {
   segs: Billboard[]; // segmenti di scia (NODES)
   head: Billboard; // testina-freccia
   slot: number; // slot fisso nel reticolo «pettine» (respawn deterministico)
+  hG: number; // quota terreno CACHED di raiseAt (fix freeze: getHeight per frame
+  hGk: number; // contatore frame alla prossima ricampionatura (ogni ~10 frame)
 }
 
 interface RotorMover {
@@ -171,6 +174,8 @@ const makeParticle = (Cesium: CesiumNs, bc: import("cesium").BillboardCollection
     tIdx: 0,
     segs: [],
     slot: 0,
+    hG: 0,
+    hGk: 0,
     head: bc.add({
       position: Cesium.Cartesian3.ZERO,
       image: imgUrl(dartSprite(color)),
@@ -350,25 +355,20 @@ export function buildWindFlow(
   const limLa = (v: number) => clamp(v, field.lat0 - extN / mLat + 1e-6, field.lat0 + extN / mLat - 1e-6);
   const limLo = (v: number) => clamp(v, field.lon0 - extE / mLon + 1e-6, field.lon0 + extE / mLon - 1e-6);
 
-  /* ---------- FIX OCCLUSIONE TERRAIN (richiesta pilota: «quando si ingran-
-     disce la mappa le frecce spariscono»): i nodi di scia erano appoggiati al
-     DEM del CAMPO (celle 640 m): tra un campione e l'altro il terreno Cesium
-     renderizzato (much più fine) sale oltre il lift di 14 m e seppellisce
-     scie e frecce. Ora la quota base è il MASSIMO tra campo e terreno VERO
-     (globe.getHeight dei tile caricati: a zoom ravvicinato è il LOD pieno). */
-  const globeHAt = (la: number, lo: number): number | null => {
-    try {
-      const h = viewer.scene.globe.getHeight(Cesium.Cartographic.fromDegrees(lo, la));
-      return typeof h === "number" && Number.isFinite(h) ? h : null;
-    } catch {
-      return null;
-    }
-  };
-  const raiseAt = (a: number, b: number): number => {
-    const f = heightAt(field, a, b);
-    const g = globeHAt(a, b);
-    return g != null && g > f ? g : f;
-  };
+  /* ---------- FIX OCCLUSIONE TERRAIN + FIX «si inchioda tutto» ----------
+     Prima: la quota base era il MASSIMO tra il campo (celle 640 m) e il
+     terreno Cesium RENDERIZZATO via globe.getHeight — ma in Cesium 1.146
+     ogni getHeight fa un raycast sul TerrainPicker che, finché il worker
+     non ha completato il BVH, è BRUTE FORCE su TUTTI i triangoli delle mesh
+     renderizzate (profilo su produzione: >80% del main thread in
+     getExaggeratedPosition/decodePosition/rayTriangleParametric, worker al
+     99,9% idle, task da MINUTI — «la pagina si inchioda»). Ora la quota è
+     letta dalla griglia DEM FINA H2 (160 m, stessi tile z14 già scaricati):
+     nessun pick, nessun raycast, soltanto numeri — e a zoom ravvicinato la
+     resa è quella del DEM vero (il rendering del terreno è ora limitato a
+     z12/z13, quindi la griglia 160 m è comunque più fine del mesh). */
+  const raiseAt = (a: number, b: number): number =>
+    Math.max(heightAt2(field, a, b), heightAt(field, a, b));
 
   /* vento live interpolato sulla griglia 3×3 (bilineare) */
   const lw = (u: number, v: number): { ws: number; wd: number } => {
@@ -547,6 +547,8 @@ export function buildWindFlow(
        a vita identica, senza Math.random() → zero sfarfallio tra i frame) */
     p.life = LIFE_LOCK * (0.92 + 0.16 * hash01(p.slot * 12.9898));
     p.distAcc = 0;
+    p.hG = 0;
+    p.hGk = 0; // forza il ricampionamento della quota terreno alla ripartenza
     const f = flowAt(la, lo);
     p.azTo = Math.atan2(f.dE, f.dN);
     p.colKey = breezeColor(f.sp, f.cls);
@@ -559,6 +561,9 @@ export function buildWindFlow(
       const p = makeParticle(Cesium, bc, NODES, "#5cb9fb", 0.46, fadeByDist, ddc);
       p.slot = k % slots.length;
       respawn(p, true);
+      /* sfalsa le ricampionature della quota terreno: ~NP/10 particelle a
+         frame invece di un burst da NP ogni 10 frame */
+      p.hGk = 1 + (k % 10);
       particles.push(p);
     }
 
@@ -691,7 +696,18 @@ export function buildWindFlow(
         continue;
       }
 
-      const hHead = raiseAt(p.la, p.lo); // terreno VERO: mai sepolto a zoom ravvicinato
+      /* FIX «si inchioda» (profilo CPU): raiseAt → globe.getHeight per OGNI
+         particella a OGNI frame attraversava il quadtree del terreno 380×/frame
+         mentre Cesium stava già affogando nel meshing. La brezza si muove di
+         pochi cm a frame: la quota è CACHED ~10 frame (sfalsati per slot) e la
+         differenza visiva è nulla. */
+      if (p.hGk <= 0) {
+        p.hG = raiseAt(p.la, p.lo);
+        p.hGk = 10;
+      } else {
+        p.hGk -= 1;
+      }
+      const hHead = p.hG; // terreno VERO: mai sepolto a zoom ravvicinato
       if (p.distAcc >= SEG_LEN) {
         p.distAcc = 0;
         pushNode(p, NODES, p.la, p.lo, hHead + LIFT);
