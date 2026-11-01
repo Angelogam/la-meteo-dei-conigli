@@ -1582,7 +1582,8 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
               <small>
                 {netRetry > 0
                   ? `connessione lenta — riprovo il download (${netRetry}/3)…`
-                  : "scarico DEM e immagini satellite (~6 MB, una sola volta)"}
+                  : "scarico motore 3D e immagini satellite — la prima volta 10–20 s, poi è in cache"}
+                {loadPct > 0 && loadPct < 100 ? ` · terreno ${loadPct}%` : ""}
               </small>
             </p>
           </div>
@@ -1618,6 +1619,11 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         {status === "ready" && !tilesLoaded && (
           <div className="c3d-progress" data-testid="c3d-progress">
             terreno 3D in caricamento… {loadPct}%
+          </div>
+        )}
+        {status === "ready" && tilesLoaded && (fieldBusy || flows.length === 0) && (
+          <div className="c3d-progress" data-testid="c3d-wind-busy">
+            calcolo brezze e venti del decollo…
           </div>
         )}
         {status === "ready" && liteMsg && (
