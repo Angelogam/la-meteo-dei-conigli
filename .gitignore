@@ -66,3 +66,6 @@ android/app/build/**
 artifacts
 
 *.tsbuildinfo
+
+# CesiumJS asset statici (23 MB, ricreati da scripts/copy-cesium.cjs in postinstall)
+public/cesium/
