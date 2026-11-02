@@ -47,7 +47,7 @@ import type { CartinaDecollo } from "@/components/CartinaMeteo";
 import { windAtAltitude } from "@/components/CartinaMeteo";
 import type { HourlyPoint } from "@/services/threeSourceWeather";
 import { createTerrariumTerrainProvider, sampleTerrainHeights } from "./terrain";
-import { buildFallbackForecast, buildWindField, computeFlows, dayOfYear, fetchForecast, heightAt2, liveAt, meteoColor, speedColor } from "./winds";
+import { buildFallbackForecast, buildWindField, computeFlows, dayOfYear, fetchForecast, heightAt2, liveAt, speedColor } from "./winds";
 import type { FlowCell, ForecastData, WindField } from "./winds";
 import { fetchPilotThermals, XCTHERM_CREDIT } from "./xcflights";
 import type { PilotThermal } from "./xcflights";
@@ -1014,9 +1014,12 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   /* ---------- VENTO METEO SOPRA LE CRESTE — il «secondo vento» del video ----------
      «Au décollage, la brise remonte la pente… alors qu'au-dessus, le vent
      souffle dans l'autre sens»: DUE STRATI visibili INSIEME quando le brezze
-     sono attive e nessuna quota è cliccata — al suolo l'ambra delle brezze,
-     in alto un manto di scie CIANO (meteoColor) alla quota di cresta +320 m,
-     orientato come il vento libero del modello (sounding/gravità di quota).
+     sono attive e nessuna quota è cliccata — al suolo le frecce BLU della
+     brezza che sale i pendii, in alto un manto di scie BIANCO-NEUTRE (il
+     «VENT MÉTÉO» del video è bianco) alla quota di cresta +320 m, orientato
+     come il vento libero del modello (sounding/gravità di quota). Così il
+     BLU resta UNIVOCAMENTE il colore della brezza e le due famiglie non si
+     mescolano più (richiesta pilota: «le frecce brezza blu e basta»).
      Il clic su una quota sostituisce questo strato con l'analisi a quell'
      altezza (regola pilota: un livello alla volta); «off» lo ripristina. */
   useEffect(() => {
@@ -1044,7 +1047,10 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         wd: wind.wd as number,
         extent: 8400,
         field,
-        colorCss: meteoColor(wsK),
+        /* BIANCO NEUTRO (il «VENT MÉTÉO» del video è bianco): il ciano
+           veniva confuso con le frecce della brezza — i due strati non
+           devono mai sembrare la stessa famiglia di frecce */
+        colorCss: "#e9f1f7",
         density: IS_MOBILE ? 0.3 : 0.5,
       });
     } catch (e) {
