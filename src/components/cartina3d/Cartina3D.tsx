@@ -6,15 +6,12 @@
  * Motore: CesiumJS (open source) + terreno DEM gratuito (Mapzen/AWS) + immagini
  * satellite Esri ad alta risoluzione (massimo dettaglio, contrasto potenziato).
  *
- * Cosa mostra (DUE STRATI, come il video «Due venti. Due direzioni.»):
- * - la BREZZA DI PENDIO ambra che RISALE i versanti al sole (anabatica, scie
- *   continue stile Windy), con drenaggio blu di notte e ROTORI ROSSI di
- *   sottovento — toggle «Brezze del pendio»
- * - il VENTO METEO IN CIANO sopra le creste (cresta max +320 m), che spesso
- *   soffia nel SENSO CONTRARIO della brezza: al decollo senti l'una, in
- *   quota passa l'altro — esattamente il messaggio del video del pilota;
- * - il clic su una QUOTA sostituisce lo strato alto con l'analisi a quell'
- *   altezza (un livello alla volta, colore = velocità giallo→viola)
+ * Cosa mostra (v15 «CORSIE»):
+ * - la BREZZA DI PENDIO TUTTA BLU (corsie pre-calcolate: streamline che salgono
+ *   i versanti dal fondo valle, linea continua + comete; drenaggio notturno
+ *   lungo le stesse linee) — toggle «Brezze del pendio»
+ * - il clic su una QUOTA mostra il vento meteo a quell'altezza (un livello
+ *   alla volta, colore = velocità giallo→viola) e nasconde le brezze
  * - i DECOLLI con pin cliccabili e un PARAPENDIO in volo che fluttua sopra ognuno
  * - i VENTI METEO IN QUOTA SOLO SU CLIC della quota (1740→4000 m, passi di
  *   250): clicco 2000 → SOLO il vento dominante a 2000 m con velocità e
@@ -233,7 +230,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   const windRef = useRef<import("cesium").Entity[]>([]);
   const flowRef = useRef<WindFlowHandle | null>(null); // flusso suolo (dardi+pettine)
   const altFlowRef = useRef<WindFlowHandle | null>(null); // chevron in quota
-  const meteoRef = useRef<WindFlowHandle | null>(null); // VENTO METEO sopra le creste (video)
+  const meteoRef = useRef<WindFlowHandle | null>(null); // (ritirato: il manto bianco confondeva il flusso blu)
   const meteoLabRef = useRef<import("cesium").Entity | null>(null);
   const thermRef = useRef<import("cesium").Entity[]>([]);
   const secRef = useRef<HTMLElement | null>(null);
@@ -864,7 +861,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     flowRef.current = null;
     clear(surfRef);
     /* strumentazione per i test: il flusso è stato rimosso dalla scena */
-    (window as unknown as Record<string, unknown>).__c3dWindFlow = { darts: 0, chevrons: 0, eddies: 0, rotors: 0, total: 0, level: 0 };
+    (window as unknown as Record<string, unknown>).__c3dWindFlow = { darts: 0, chevrons: 0, eddies: 0, rotors: 0, lanes: 0, flat: false, total: 0, level: 0 };
     if (!surface || effQuota > 0) return;
 
     flowRef.current = buildWindFlow(Cesium, viewer, field, live, selHour, {
@@ -904,8 +901,10 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
             text: `${Math.round(c.sp)} km/h · da ${dir8(from)}\n${Math.round(c.h)} m · ${CLS_WORD[c.cls] ?? "flusso"}`,
             font: "600 12px 'Barlow Condensed','Manrope',sans-serif",
             fillColor: Cesium.Color.fromCssColorString(
-              c.cls === "ana" || c.cls === "lift"
-                ? "#ffd9a3" // brezza che sale al sole: ambra come le scie
+              /* la famiglia BREZZA (su/giù/portanza) è tutta BLU come le corsie:
+                 un solo colore per la brezza, «blu e basta» */
+              c.cls === "ana" || c.cls === "lift" || c.cls === "kata"
+                ? "#bfe4ff"
                 : c.cls === "lee"
                   ? "#ffb3c0"
                   : "#eaf6ff",
@@ -1011,80 +1010,11 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     windRef.current = added;
   }, [status, active, activePoint, quotaPoint, effQuota, field, demEpoch]);
 
-  /* ---------- VENTO METEO SOPRA LE CRESTE — il «secondo vento» del video ----------
-     «Au décollage, la brise remonte la pente… alors qu'au-dessus, le vent
-     souffle dans l'autre sens»: DUE STRATI visibili INSIEME quando le brezze
-     sono attive e nessuna quota è cliccata — al suolo le frecce BLU della
-     brezza che sale i pendii, in alto un manto di scie BIANCO-NEUTRE (il
-     «VENT MÉTÉO» del video è bianco) alla quota di cresta +320 m, orientato
-     come il vento libero del modello (sounding/gravità di quota). Così il
-     BLU resta UNIVOCAMENTE il colore della brezza e le due famiglie non si
-     mescolano più (richiesta pilota: «le frecce brezza blu e basta»).
-     Il clic su una quota sostituisce questo strato con l'analisi a quell'
-     altezza (regola pilota: un livello alla volta); «off» lo ripristina. */
-  useEffect(() => {
-    const Cesium = cesiumRef.current;
-    const viewer = viewerRef.current;
-    if (status !== "ready" || !Cesium || !viewer || !active) return;
-    meteoRef.current?.destroy();
-    meteoRef.current = null;
-    if (meteoLabRef.current) {
-      if (!viewer.isDestroyed()) viewer.entities.remove(meteoLabRef.current);
-      meteoLabRef.current = null;
-    }
-    if (effQuota > 0 || !surface) return;
-
-    const wind = windAtAltitude(quotaPoint, meteoLvl, quotaPoint?.wind ?? null, quotaPoint?.dir ?? null);
-    if (wind.ws == null || wind.wd == null || !Number.isFinite(wind.ws) || !Number.isFinite(wind.wd)) return;
-    const wsK = wind.ws as number;
-
-    try {
-      meteoRef.current = buildAltitudeFlow(Cesium, viewer, {
-        lon0: active.lon,
-        lat0: active.lat,
-        lvl: meteoLvl,
-        ws: wsK,
-        wd: wind.wd as number,
-        extent: 8400,
-        field,
-        /* BIANCO NEUTRO (il «VENT MÉTÉO» del video è bianco): il ciano
-           veniva confuso con le frecce della brezza — i due strati non
-           devono mai sembrare la stessa famiglia di frecce */
-        colorCss: "#e9f1f7",
-        density: IS_MOBILE ? 0.3 : 0.5,
-      });
-    } catch (e) {
-      console.warn("[c3d] strato meteo sopra le creste non riuscito:", String(e).slice(0, 120));
-      return;
-    }
-
-    /* un'unica etichetta-bussola del secondo strato, sopra il decollo attivo */
-    const fromQ = ((wind.wd % 360) + 360) % 360;
-    meteoLabRef.current = viewer.entities.add({
-      position: Cesium.Cartesian3.fromDegrees(active.lon, active.lat, meteoLvl + 140),
-      label: {
-        text: `VENTO METEO · ${Math.round(wsK)} km/h · da ${dir8(fromQ)} · ~${meteoLvl} m`,
-        font: "700 12.5px 'Barlow Condensed','Manrope',sans-serif",
-        fillColor: Cesium.Color.fromCssColorString("#bff2f6"),
-        showBackground: true,
-        backgroundColor: Cesium.Color.fromCssColorString("rgba(6,26,34,0.82)"),
-        backgroundPadding: new Cesium.Cartesian2(6, 4),
-        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-        pixelOffset: new Cesium.Cartesian2(0, -10),
-        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 40000),
-        disableDepthTestDistance: Number.POSITIVE_INFINITY,
-      },
-    });
-
-    return () => {
-      meteoRef.current?.destroy();
-      meteoRef.current = null;
-      if (meteoLabRef.current) {
-        if (!viewer.isDestroyed()) viewer.entities.remove(meteoLabRef.current);
-        meteoLabRef.current = null;
-      }
-    };
-  }, [status, active, quotaPoint, effQuota, surface, field, meteoLvl]);
+  /* Il «manto bianco» del vento meteo sopra le creste è RITIRATO (v15):
+     in scena con le brezze attive restano SOLO le corsie BLU — «le frecce
+     brezza di colore blu e basta». Il secondo strato si vede solo su clic
+     esplicito di una quota (effetto quota, buildAltitudeFlow), dove l'analisi
+     in quota ha senso e nessuna freccia di brezza è visibile. */
 
   /* ---------- TERMICHE: COLONNE D'ARIA CHE SALGONO (stile XCTherm) ----------
      Coni RIFATTI (richiesta pilota): colonna con TEXTURE a gradiente (base
@@ -1669,16 +1599,8 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           <em>50+ km/h</em>
         </span>
         <span>
-          <i className="c3d-dot" style={{ background: "#ffb254" }} aria-hidden="true" />
-          ambra = brezza che sale il versante al sole ·
-          <i className="c3d-dot" style={{ background: "#2f9bf7", marginLeft: 6 }} aria-hidden="true" />
-          blu = drenaggio notturno ·
-          <i className="c3d-dot" style={{ background: "#ff4d5e", marginLeft: 6 }} aria-hidden="true" />
-          rosso = rotori di sottovento
-        </span>
-        <span>
-          <i className="c3d-dot" style={{ background: "#5fccd8" }} aria-hidden="true" />
-          ciano = VENTO METEO sopra le creste (altro senso, come la brezza lo incontra) ·
+          <i className="c3d-dot" style={{ background: "#57b2f8" }} aria-hidden="true" />
+          blu = BREZZA di versante: sale i pendii al sole, drena a valle di notte ·
           <i className="c3d-dot" style={{ background: "#ffd60a", marginLeft: 6 }} aria-hidden="true" />
           colonna luminosa = termica · forza scritta in m/s
         </span>
@@ -1743,15 +1665,13 @@ function Hud({
           ? "brezze del pendio nascoste: è attivo il vento in quota"
           : surface
             ? anabatic
-              ? "frecce AMBRA = brezze che risalgono i versanti al sole (anabatica) · rotori rossi = sottovento"
-              : "frecce blu = aria che scende i pendii (catabatica) · rotori rossi = sottovento"
+              ? "linee e frecce BLU = brezza che SALE i pendii (anabatica) — nasce a valle, in cresta si stacca"
+              : "linee e frecce BLU = brezza che DRENA a valle lungo i pendii (catabatica)"
             : "brezze del pendio nascoste"}
       </span>
       <span className="c3d-hud-v" data-testid="c3d-hud-meteo">
         {quota === 0
-          ? meteo
-            ? `in alto: VENTO METEO ${Math.round(meteo.ws)} km/h · da ${dir8(meteo.wd)} · ~${meteo.lvl} m (scie ciano sopra le creste)`
-            : "in alto: vento meteo sopra le creste in arrivo…"
+          ? "il vento meteo in quota si vede cliccando una quota (le brezze blu restano da sole al suolo)"
           : "le brezze restano nascoste finché è attiva una quota"}
       </span>
       <span className="c3d-hud-v" data-testid="c3d-hud-wind">

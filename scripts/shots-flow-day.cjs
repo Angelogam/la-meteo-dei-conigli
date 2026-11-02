@@ -35,6 +35,16 @@ const URL = process.argv[2] || "http://localhost:4174/";
   await page.screenshot({ path: "/tmp/flowday-1.png", clip });
   await page.waitForTimeout(2500);
   await page.screenshot({ path: "/tmp/flowday-2.png", clip });
-  console.log("screenshot diurni salvati");
+  /* vista LONTANA: zoom-out con rotella sopra il canvas → il pettine delle corsie */
+  if (box) {
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    for (let i = 0; i < 6; i++) {
+      await page.mouse.wheel(0, -1200);
+      await page.waitForTimeout(350);
+    }
+    await page.waitForTimeout(2500);
+    await page.screenshot({ path: "/tmp/flowday-far.png", clip });
+  }
+  console.log("screenshot diurni salvati (close 1-2 + far)");
   await browser.close();
 })().catch((e) => { console.error("FATAL:", e.message); process.exit(1); });
