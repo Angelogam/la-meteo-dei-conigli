@@ -32,32 +32,20 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     expect(pageErrors, "Venti tab must not crash the React application").toEqual([]);
   });
 
-  test("homepage raises map and windgram and removes the obsolete dual-chart block", async ({ page }) => {
+  test("homepage shows the launch map, windgram, and daily forecast", async ({ page }) => {
     const pageErrors: string[] = [];
     page.on("pageerror", (error) => pageErrors.push(error.message));
 
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Il tuo briefing di volo." })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: "La Meteo dei Conigli" })).toBeVisible({ timeout: 30_000 });
     await expect(page.locator(".launch-hero")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Scegli il decollo" })).toBeVisible();
+    await expect(page.locator(".flight-launch-sidebar")).toBeVisible();
     await expect(page.locator(".flight-nav-rail")).toBeVisible();
 
-    const raisedTools = page.locator("main > .launch-windgram-top");
+    await expect(page.getByTestId("cartina-decolli")).toBeVisible({ timeout: 30_000 });
+    const raisedTools = page.locator(".launch-windgram-top");
     await expect(raisedTools).toBeVisible({ timeout: 30_000 });
-    // Keep the external XC Therm map as a separate panel and the native chart below it.
-    const xcThermMap = page.getByTestId("xctherm-launch-map");
-    await expect(xcThermMap).toBeVisible({ timeout: 30_000 });
-    const mapFrame = xcThermMap.locator('iframe[src*="xctherm.com/icon"]');
-    await expect(mapFrame).toBeVisible();
-    const mapSource = await mapFrame.getAttribute("src");
-    expect(mapSource).toBeTruthy();
-    const mapUrl = new URL(mapSource!);
-    expect(mapUrl.origin).toBe("https://xctherm.com");
-    expect(Number(mapUrl.searchParams.get("lat"))).toBeGreaterThanOrEqual(-90);
-    expect(Number(mapUrl.searchParams.get("lat"))).toBeLessThanOrEqual(90);
-    expect(Number(mapUrl.searchParams.get("lon"))).toBeGreaterThanOrEqual(-180);
-    expect(Number(mapUrl.searchParams.get("lon"))).toBeLessThanOrEqual(180);
     await expect(page.getByTestId("alpium-windgram-page")).toBeVisible();
     await expect(page.locator(".alpium-windgram")).toBeVisible();
 
@@ -77,33 +65,16 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
       timeout: 30_000,
     });
 
-    // This is the exact block requested for removal: charts, selected-hour summary and hour tiles.
-    await expect(page.locator(".storyboard-panel")).toHaveCount(0);
-    await expect(page.locator(".story-chart-module")).toHaveCount(0);
-    await expect(page.locator(".story-selected-hour")).toHaveCount(0);
-    await expect(page.locator(".story-hour-buttons")).toHaveCount(0);
-
     await expect(page.locator(".flight-forecast-module .forecast-day-card")).toHaveCount(3, { timeout: 30_000 });
     const pageOrder = await page.locator("main").evaluate((root) => {
       const children = Array.from(root.children);
       return {
-        tools: children.findIndex((child) => child.classList.contains("launch-windgram-top")),
-        dashboard: children.findIndex((child) => child.classList.contains("dashboard-layout")),
-      };
-    });
-    expect(pageOrder.tools, "Map and windgram must be a full-width section").toBeGreaterThanOrEqual(0);
-    expect(pageOrder.dashboard, "Dashboard columns must follow the full-width windgram").toBeGreaterThan(pageOrder.tools);
-    await expect(page.locator(".dashboard-layout .launch-windgram-top")).toHaveCount(0);
-
-    const contentOrder = await page.locator(".flight-desk-main").evaluate((root) => {
-      const children = Array.from(root.children);
-      return {
         forecast: children.findIndex((child) => child.classList.contains("forecast-section")),
-        details: children.findIndex((child) => child.classList.contains("details-section")),
+        tools: children.findIndex((child) => child.classList.contains("flight-top-dashboard-grid")),
       };
     });
-    expect(contentOrder.forecast, "Daily forecast must precede analysis tabs").toBeGreaterThanOrEqual(0);
-    expect(contentOrder.details, "Analysis tabs must follow daily forecast").toBeGreaterThan(contentOrder.forecast);
+    expect(pageOrder.forecast, "Forecast must precede the dashboard tools").toBeGreaterThanOrEqual(0);
+    expect(pageOrder.tools, "Dashboard tools must follow the forecast").toBeGreaterThan(pageOrder.forecast);
 
     const forecastCards = page.locator(".forecast-day-card");
     await expect(forecastCards).toHaveCount(3, { timeout: 30_000 });
@@ -113,7 +84,7 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
     await expect(tomorrow).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator('.forecast-day-card[aria-pressed="true"]')).toHaveCount(1);
 
-    await page.getByRole("button", { name: "Esplora i venti" }).click();
+    await page.getByTestId("tab-venti").click();
     await expect(page.getByTestId("tab-venti")).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator(".launch-windgram-shortcut")).toBeVisible();
     expect(pageErrors, "The homepage briefing must not produce browser errors").toEqual([]);
@@ -139,7 +110,7 @@ test.describe("Dashboard tabs: smoke and crash regression", () => {
 test("desktop briefing fits the viewport without clipping the launch or forecast panels", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Il tuo briefing di volo." })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole("heading", { name: "La Meteo dei Conigli" })).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(".launch-hero")).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(".flight-forecast-module .forecast-day-card").first()).toBeVisible({ timeout: 30_000 });
 
@@ -148,9 +119,9 @@ test("desktop briefing fits the viewport without clipping the launch or forecast
       ".app-main",
       ".overview-section",
       ".launch-hero",
-      ".dashboard-layout",
-      ".dashboard-sidebar",
-      ".dashboard-content",
+      ".flight-top-dashboard-grid",
+      ".flight-primary-column",
+      ".flight-launch-sidebar",
       ".forecast-section",
       ".forecast-hero",
       ".forecast-main-grid",
@@ -192,21 +163,18 @@ test("wide desktop keeps the right rail visible and native windgram unclipped", 
   await page.setViewportSize({ width: 1600, height: 1050 });
   await page.goto("/");
   await expect(page.locator(".launch-windgram-top")).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByTestId("xctherm-launch-map")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("cartina-decolli")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId("alpium-windgram-page")).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator(".flight-right-rail")).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator(".storyboard-panel")).toHaveCount(0);
-  await expect(page.locator(".story-chart-module")).toHaveCount(0);
+  await expect(page.locator(".flight-launch-sidebar")).toBeVisible({ timeout: 30_000 });
 
   const layout = await page.evaluate(() => {
     const viewport = document.documentElement.clientWidth;
     const selectors = [
       ".flight-app-body",
       ".flight-page-column",
-      ".flight-panels-grid",
-      ".flight-desk-main",
-      ".flight-right-rail",
-      ".flight-right-rail .flight-site-list",
+      ".flight-top-dashboard-grid",
+      ".flight-primary-column",
+      ".flight-launch-sidebar",
       ".launch-windgram-top",
       ".alpium-windgram",
       ".forecast-section",

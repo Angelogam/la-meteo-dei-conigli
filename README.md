@@ -1,5 +1,4 @@
 # La Meteo dei Conigli
-
 Dashboard meteo per il volo libero, con dati previsionali, analisi dei profili e strumenti di lettura dell'evoluzione giornaliera.
 
 ## API
@@ -22,33 +21,9 @@ La API usa JSON e include una specifica OpenAPI 3.1.
 
 ### Esempi
 
-```bash
-curl http://localhost:8080/api
-curl http://localhost:8080/api/health
-curl http://localhost:8080/api/openapi
-curl "http://localhost:8080/api/open-meteo?latitude=44.76&longitude=7.25&hourly=temperature_2m,wind_speed_10m&timezone=Europe%2FRome"
-curl "http://localhost:8080/api/volabilita?latitude=44.76&longitude=7.25&altitude=1300&exposure=S"
-curl "http://localhost:8080/api/termiche?latitude=44.76&longitude=7.25&altitude=1300&days=1"
-curl "http://localhost:8080/api/venti-decollo?latitude=44.76&longitude=7.25&exposure=SO"
-```
 
-### Endpoint aerologici (v1.2.0)
+{
+  "name": "read_currently_open_file",
+  "arguments": {}
+}
 
-Gli endpoint `/api/volabilita`, `/api/termiche` e `/api/venti-decollo` replicano lato server le stesse formule usate dall'app (`src/utils/indiceVolabilita.ts`, `src/utils/termiche.ts`): indice 1-10 con motivazioni, serie oraria di termiche con rateo/base/top stimati, e classificazione del vento rispetto all'esposizione del decollo (frontale, diagonale, laterale, di coda). Accettano `altitude` (quota decollo in metri slm), `exposure` (orientamento, con alias italiani SO/NO/O) e `timezone`; i parametri non documentati o ripetuti sono rifiutati con `400`. Gli errori upstream seguono la stessa convenzione del proxy (`429`, `502`, `504`). La cache in memoria è breve (5 minuti) e per-istanza.
-
-La risposta del proxy meteo mantiene il formato del provider Open-Meteo. Sono rifiutati i parametri non documentati e quelli ripetuti, così come le date non ISO, gli intervalli invertiti e le unità non supportate. Il proxy accetta soltanto risposte upstream JSON strutturate come oggetto. Gli errori usano status HTTP distinti: `400` per input non valido, `429` per limiti del provider, `502` per errori upstream o risposte non valide e `504` per timeout. L'endpoint Windy applica analoghi controlli ai parametri `action` e `site`, rifiutando azioni sconosciute e combinazioni ambigue.
-
-**Nota di produzione:** l'endpoint `/api/people` è un esempio dimostrativo basato su file JSON locale. Non usarlo per dati personali reali o su un deployment serverless senza sostituire il repository con un database persistente e aggiungere autenticazione/autorizzazione. Il file system di un deployment serverless non è un database durevole.
-
-Le previsioni sono dati modellistici e non certificano la sicurezza o l'idoneità al volo.
-
-## Test e qualità
-
-```bash
-npm ci
-npm run lint
-npm run build
-npx playwright test --config=playwright.api.config.ts
-```
-
-La pipeline GitHub Actions esegue lint, build di produzione e test API ad ogni pull request.

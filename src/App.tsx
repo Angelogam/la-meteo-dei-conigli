@@ -6,6 +6,7 @@ import Termiche from "@/pages/Termiche";
 import NotFound from "@/pages/NotFound";
 import ApiTestRunner from "./pages/ApiTestRunner";
 import ApiTest from "@/pages/ApiTest";
+import ApiMegaList from "@/pages/ApiMegaList";
 
 const App = () => {
   return (
@@ -15,6 +16,7 @@ const App = () => {
         <Route path="/termiche" element={<Termiche />} />
         <Route path="/test-api" element={<ApiTestRunner />} />
         <Route path="/api-test" element={<ApiTest />} />
+        <Route path="/catalogo-api" element={<ApiMegaList />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

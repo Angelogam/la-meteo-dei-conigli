@@ -69,7 +69,7 @@ test.describe("Meteo dei Conigli - Paragliding Launch Weather Journey", () => {
     }
 
     // 9. Verify refresh / update button exists and functions
-    const updateButton = page.locator("button:has-text('Aggiorna')");
+    const updateButton = page.getByRole("button", { name: "Aggiorna tutto" });
     await expect(updateButton).toBeVisible();
     await updateButton.click();
 

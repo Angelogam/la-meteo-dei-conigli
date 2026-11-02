@@ -135,6 +135,15 @@ export default function Index() {
                   sunset={formatClock(enrichedDaily[selectedDay]?.sunset)}
                   uvIndex={enrichedDaily[selectedDay]?.uvIndexMax ?? currentData?.uvIndex}
                 />
+                <UpdateTimer
+                  lastUpdate={lastUpdate}
+                  countdown={countdown}
+                  updating={updating || aggressiveUpdating}
+                  onRefresh={() => {
+                    void loadWeather();
+                    void loadAggressiveWeather();
+                  }}
+                />
               </section>
             )}
 
