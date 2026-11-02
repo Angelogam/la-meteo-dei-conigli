@@ -22,6 +22,12 @@
  *  2. buildAltitudeFlow — VENTI METEO in quota (clic su una quota): scie
  *     lineari e lunghe alla stessa altezza, parallele al vento del livello.
  *
+ * v16 (respingo pilota «frecce troppo distanti / troppo filiformi / spariscono
+ *  a max zoom»): budget perle 640/460/280, corsie 340 m, perle 240 m, sprite
+ *  più corposi (dart 0.52, scie 1.8× vicino), scala PROPORZIONATA allo zoom
+ *  (cresce avvicinando), depth-test disattivato sotto 2,8 km (a max zoom il
+ *  mesh fine non seppellisce più le scie), volo 26 m sul DEM.
+ *
  * Render: UNA BillboardCollection per motore (un draw call). Il terreno
  * occlude da solo gli sprite dietro i rilievi. Tick in scene.preRender con
  * oggetti scratch riusati: zero allocazioni per frame.
@@ -59,9 +65,11 @@ const clamp = (v: number, a: number, b: number): number => Math.min(b, Math.max(
 const finite = (p: import("cesium").Cartesian3): boolean =>
   Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z);
 
-/* popolazione adattiva (hardware debole = meno perle) */
+/* popolazione adattiva (hardware debole = meno perle)
+   v16: alza il budget (640/460/280, mobile ×0.72) — il pilota ha respinto il
+   v15 come «frecce troppo distanti»: più perle, più fitte, scie più corte */
 const particleBudget = (k: number): number => {
-  let np = k >= 8 ? 380 : k >= 4 ? 300 : 180;
+  let np = k >= 8 ? 640 : k >= 4 ? 460 : 280;
   if (typeof window !== "undefined") {
     const shortSide = Math.min(window.screen?.width ?? 1280, window.screen?.height ?? 800);
     if (shortSide < 640) np = Math.round(np * 0.75);
@@ -200,6 +208,12 @@ export function buildWindFlow(
 
   const fadeByDist = new Cesium.NearFarScalar(34000, 1, 44000, 0.0); // sfuma solo davvero lontano
   const ddc = new Cesium.DistanceDisplayCondition(0, 44000);
+  /* FIX «ingrandendo spariscono del tutto»: sotto ~2,8 km di distanza gli
+     sprite IGNORANO il depth-test — a max zoom il mesh fine (più dettagliato
+     del DEM a 160 m su cui poggiano le corsie) li seppelliva e sparivano.
+     Oltre 2,8 km l'occlusione del terreno resta (le scie dietro il monte non
+     trapelano). */
+  const NEAR_NO_DEPTH = 2800;
 
   const blue = baseCol(Cesium, BREEZE_BLUE); // UN SOLO COLORE per tutta la brezza
 
@@ -209,11 +223,14 @@ export function buildWindFlow(
       const head = bc.add({
         position: Cesium.Cartesian3.ZERO,
         image: imgUrl(dartSprite(BREEZE_BLUE)),
-        /* testa PICCOLA: è un accento sulla linea, la LINEA è la protagonista */
-        scale: 0.34,
-        scaleByDistance: new Cesium.NearFarScalar(1800, 0.85, 26000, 0.42),
+        /* testa GRANDE (v16: 0.34 → 0.52 — «sono troppo filiformi») e scala
+           PROPORZIONATA allo zoom: cresce fino a 1.4× avvicinandosi e resta
+           visibile a qualunque ingrandimento */
+        scale: 0.52,
+        scaleByDistance: new Cesium.NearFarScalar(700, 1.4, 30000, 0.5),
         translucencyByDistance: fadeByDist,
         distanceDisplayCondition: ddc,
+        disableDepthTestDistance: NEAR_NO_DEPTH,
         show: false,
       });
       const segs: Billboard[] = [];
@@ -222,12 +239,13 @@ export function buildWindFlow(
           bc.add({
             position: Cesium.Cartesian3.ZERO,
             image: imgUrl(streakSprite(BREEZE_BLUE)),
-            /* taper DOCE (1.0 → 0.45): la scia è una LINEA che si assottiglia,
-               non una cometa — le scie delle perle consecutive si fondono */
+            /* taper DOCE (1.0 → 0.45) + sprite più CORPOSO (v16: vedere il
+               flusso da lontano, «sono troppo filiformi») */
             scale: 1.0 - (0.55 * s) / (TRAIL_NODES - 1),
-            scaleByDistance: new Cesium.NearFarScalar(700, 1.1, 26000, 0.36),
+            scaleByDistance: new Cesium.NearFarScalar(500, 1.8, 30000, 0.48),
             translucencyByDistance: fadeByDist,
             distanceDisplayCondition: ddc,
+            disableDepthTestDistance: NEAR_NO_DEPTH,
             show: false,
           }),
         );
@@ -235,18 +253,20 @@ export function buildWindFlow(
       views.push({ lane: bead.lane, s0: bead.s0, head, segs });
     }
 
-    /* trattini di pittura delle corsie (ogni 360 m) */
-    const paintCol = Cesium.Color.fromCssColorString(BREEZE_BLUE).withAlpha(0.32);
+    /* trattini di pittura delle corsie: ogni 8 nodi (480 m) — le perle sono
+       più fitte (v16), il tratteggio resta un ACCENTO discreto della corsia */
+    const paintCol = Cesium.Color.fromCssColorString(BREEZE_BLUE).withAlpha(0.45);
     for (const lane of lanes) {
-      for (let i = 0; i < lane.n; i += 6) {
+      for (let i = 0; i < lane.n; i += 8) {
         paintBbs.push(
           bc.add({
             position: Cesium.Cartesian3.fromDegrees(lane.lo[i], lane.la[i], lane.h[i]),
             image: imgUrl(streakSprite(BREEZE_BLUE)),
-            scale: 0.62,
-            scaleByDistance: new Cesium.NearFarScalar(700, 0.72, 26000, 0.26),
+            scale: 1.0,
+            scaleByDistance: new Cesium.NearFarScalar(500, 1.15, 30000, 0.4),
             translucencyByDistance: fadeByDist,
             distanceDisplayCondition: ddc,
+            disableDepthTestDistance: NEAR_NO_DEPTH,
             color: paintCol,
           }),
         );
@@ -356,7 +376,7 @@ export function buildWindFlow(
       /* --- TESTINA: sulla corsia, orientata come la corsia --- */
       laneAt(lane, arc, sHead);
       const rise = LIFT_H * smooth01(liftU);
-      const ph = Cesium.Cartesian3.fromDegrees(sHead.lo, sHead.la, sHead.h + 10 + rise, undefined, scPos);
+      const ph = Cesium.Cartesian3.fromDegrees(sHead.lo, sHead.la, sHead.h + 8 + rise, undefined, scPos);
       if (finite(ph)) {
         v.head.show = true;
         v.head.position = scPos;

@@ -1,16 +1,20 @@
 /* Verifica numerica del MOTORE A CORSIE (lanes.ts) — la risposta al
    respingo del pilota: «è un pasticcio di freccette che si inculano altre
-   ... devi dare un senso logico».
+   ... devi dare un senso logico» + v16 «frecce troppo distanti, spariscono
+   ingrandendo, flusso continuo dalla valle alla cima».
    Qui si DIMOSTRA che:
    1. le corsie esistono sui pendii (non su pianura);
    2. SALGONO dal fondo valle alla cresta (anabatica: h finale >> h iniziale);
    3. la tangente della corsia segue il pendio (dot con il gradiente > 0);
    4. DUE CORSIE NON SI INCROCIANO MAI (raster: ogni cella 40 m ha ≤ 1 corsia)
-      e non si avvicinano meno di SAFE_M (210 m) — per costruzione;
+      e non si avvicinano meno di SAFE_M (165 m) — per costruzione;
    5. le perle sono distribuite a passo UNIFORME per corsia (onda unica);
    6. il campione d'arco laneAt è continuo (niente salti);
    7. TUTTO È BLU: BREEZE_BLUE unico colore della famiglia brezza;
-   8. sito pianeggiante → fallback corsie dritte (mai scena vuota).
+   8. sito pianeggiante → fallback corsie dritte (mai scena vuota);
+   9. FLUSSO CONTINUO: le corsie NASCONO sul fondovalle (pendenza locale
+      sotto la soglia di semina) — il flusso parte dalla valle, non da metà
+      pendio, e ingrandendo sulla valle si vede ancora.
    Eseguita in Node: lanes.ts non dipende da Cesium.
    Uso: npx tsx scripts/verify-lane-flow.ts */
 import {
@@ -94,7 +98,7 @@ const opts = {
   doy: 180,
   live: null,
   fallback: { ws: 5, wd: 270, rad: 700 as number | null, cloud: 10 as number | null },
-  budget: 300,
+  budget: 640, // come il desktop v16
 };
 
 const t0 = Date.now();
@@ -109,13 +113,17 @@ ok(lanes.length >= 5, `corsie costruite: ${lanes.length} (≥ 5)`);
 
 /* ---------- 2. SALITA: dal fondo valle alla cresta ---------- */
 let climbOk = 0;
+let noDescend = true;
 for (const l of lanes) {
-  const h0 = l.h[0];
-  const h1 = l.h[l.n - 1];
-  if (h1 > h0 + 25) climbOk++; // anche i pendii dolci guadagnano quota
+  const gain = l.h[l.n - 1] - l.h[0];
+  if (gain > 25) climbOk++;
+  /* v16: le corsie di FONDOVALLE possono guadagnare poco (è il vento di
+     valle che risale il fondo) — ma NESSUNA corsia scende */
+  if (gain < -5) noDescend = false;
 }
 console.log("2. SALITA lungo la corsia (anabatica):");
-ok(climbOk === lanes.length && lanes.length > 0, `corsie che salgono ≥25 m: ${climbOk}/${lanes.length}`);
+ok(climbOk >= lanes.length * 0.9 && lanes.length > 0, `corsie che salgono ≥25 m: ${climbOk}/${lanes.length} (≥ 90% — le altre sono flusso di fondovalle)`);
+ok(noDescend, `nessuna corsia scende (guadagno minimo: ${Math.round(Math.min(...lanes.map((l) => l.h[l.n - 1] - l.h[0])))} m)`);
 ok(lanes.every((l) => l.len >= LANE_MIN_LEN), `tutte le corsie ≥ ${LANE_MIN_LEN} m (min attuale: ${Math.round(Math.min(...lanes.map((l) => l.len)))} m)`);
 
 /* ---------- 3. DIREZIONE = LUNGO IL PENDIO (gradiente fine) ---------- */
@@ -204,7 +212,7 @@ for (const [k, arr] of buckets) {
 }
 console.log("4. ANTI-INCROCIO:");
 ok(conflicts === 0, `celle da 40 m condivise da 2 corsie: ${conflicts} (deve essere 0)`);
-ok(minDist >= 190, `distanza minima tra corsie diverse: ${minDist.toFixed(0)} m (≥ 190 m — niente frecce che si toccano)`);
+ok(minDist >= 150, `distanza minima tra corsie diverse: ${minDist.toFixed(0)} m (≥ 150 m — niente frecce che si toccano)`);
 
 /* ---------- 5. PERLE UNIFORMI (onda unica, mai sorpassi) ---------- */
 let spacingOk = true;
@@ -241,7 +249,7 @@ for (const [li, arr] of byLane) {
 }
 console.log("5. PERLE UNIFORMI:");
 ok(spacingOk, `posizioni esatte: perla i su corsia di n perle = (i+0.5)·len/n`);
-ok(spacingMin >= 240 && spacingMax <= 1650, `passo perle: ${spacingMin.toFixed(0)}–${spacingMax.toFixed(0)} m (collane mai ammucchiate, corsie corte respirano)`);
+ok(spacingMin >= 80 && spacingMax <= 900, `passo perle: ${spacingMin.toFixed(0)}–${spacingMax.toFixed(0)} m (mai ammucchiate < 80 m, mai rade > 900 m)`);
 
 /* ---------- 6. CONTINUITÀ del campione d'arco ---------- */
 let maxJump = 0;
@@ -267,6 +275,22 @@ ok(isBlue, `BREEZE_BLUE = ${BREEZE_BLUE} (canale blu dominante: «blu e basta»)
 const lfFlat = buildLaneField(flat, opts);
 console.log("8. FALLBACK PIANURA:");
 ok(lfFlat.flat && lfFlat.lanes.length > 0 && lfFlat.beads.length > 0, `sito piatto → ${lfFlat.lanes.length} corsie dritte, ${lfFlat.beads.length} perle (mai scena vuota)`);
+
+/* ---------- 9. FLUSSO CONTINUO: le corsie NASCONO nel fondovalle ----------
+   Richiesta pilota v16: «flusso continuo dalla valle alla cima della
+   montagna» — la base delle corsie deve stare dove la pendenza è piccola
+   (fondovalle), non a metà versante: ingrandendo sulla valle il flusso c'è. */
+let valleyBorn = 0;
+for (const l of lanes) {
+  const g0 = gradAt(l.la[0], l.lo[0]);
+  const s0 = Math.hypot(g0.gN, g0.gE);
+  if (s0 < 0.04) valleyBorn++;
+}
+let hGainMin = Infinity;
+for (const l of lanes) hGainMin = Math.min(hGainMin, l.h[l.n - 1] - l.h[0]);
+console.log("9. FLUSSO CONTINUO DALLA VALLE:");
+ok(valleyBorn >= 1, `corsie nate sul fondovalle (pendenza < 4%): ${valleyBorn}/${lanes.length}`);
+ok(hGainMin >= -5, `guadagno minimo fondo→fine corsia: ${hGainMin.toFixed(0)} m (mai in discesa — le corsie di valle sono vento che risale)`);
 
 console.log(fails === 0 ? "\nTUTTI I TEST CORSIE PASSATI ✓" : `\n${fails} TEST FALLITI ✗`);
 process.exit(fails === 0 ? 0 : 1);

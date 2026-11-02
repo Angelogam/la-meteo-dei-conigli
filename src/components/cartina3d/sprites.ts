@@ -265,12 +265,13 @@ export function dartSprite(color: string): HTMLCanvasElement {
 
   /* --- strato di SPESSORE scuro (offset +3 y): percepisce il volume --- */
   const drawArrow = (dy: number, shaftFill: string | CanvasGradient, headFill: string | CanvasGradient): void => {
-    /* ASTA DRITTA: da y=114 a y=44, larga 9 in coda e 6.5 alla base della punta */
+    /* ASTA DRITTA: da y=114 a y=44, larga 11 in coda e 7.6 alla base della
+       punta (v16: asta più corposa — «frecce troppo filiformi» respinte) */
     g.beginPath();
-    g.moveTo(cx - 4.5, 112 + dy);
-    g.quadraticCurveTo(cx - 4.8, 76 + dy, cx - 3.2, 46 + dy);
-    g.lineTo(cx + 3.2, 46 + dy);
-    g.quadraticCurveTo(cx + 4.8, 76 + dy, cx + 4.5, 112 + dy);
+    g.moveTo(cx - 5.6, 112 + dy);
+    g.quadraticCurveTo(cx - 5.9, 76 + dy, cx - 3.8, 46 + dy);
+    g.lineTo(cx + 3.8, 46 + dy);
+    g.quadraticCurveTo(cx + 5.9, 76 + dy, cx + 5.6, 112 + dy);
     g.closePath();
     g.fillStyle = shaftFill;
     g.fill();
@@ -278,11 +279,11 @@ export function dartSprite(color: string): HTMLCanvasElement {
     /* PUNTA A BARBE: triangolo affilato con rientro netto (freccia vera) */
     g.beginPath();
     g.moveTo(cx, 6 + dy); // punta
-    g.lineTo(cx + 16.5, 42 + dy); // barba destra
-    g.lineTo(cx + 5.2, 36.5 + dy); // rientro destro
+    g.lineTo(cx + 18.5, 42 + dy); // barba destra
+    g.lineTo(cx + 5.8, 36.5 + dy); // rientro destro
     g.lineTo(cx, 44 + dy); // incavo centrale
-    g.lineTo(cx - 5.2, 36.5 + dy); // rientro sinistro
-    g.lineTo(cx - 16.5, 42 + dy); // barba sinistra
+    g.lineTo(cx - 5.8, 36.5 + dy); // rientro sinistro
+    g.lineTo(cx - 18.5, 42 + dy); // barba sinistra
     g.closePath();
     g.fillStyle = headFill;
     g.fill();
@@ -304,8 +305,8 @@ export function dartSprite(color: string): HTMLCanvasElement {
 
   /* riflesso bianco lungo il fianco sinistro dell'asta */
   g.beginPath();
-  g.moveTo(cx - 2.6, 52);
-  g.quadraticCurveTo(cx - 3.4, 80, cx - 3, 106);
+  g.moveTo(cx - 3.2, 52);
+  g.quadraticCurveTo(cx - 4.2, 80, cx - 3.8, 106);
   g.lineWidth = 1.7;
   g.lineCap = "round";
   g.strokeStyle = "rgba(255,255,255,0.5)";
@@ -397,15 +398,17 @@ export function streakSprite(color: string): HTMLCanvasElement {
   const hit = streakCache.get(color);
   if (hit) return hit;
   const c = document.createElement("canvas");
+  /* v16 (respingo pilota «sono troppo filiformi»): canvas 64×20, tratto 6.5
+     (era 4.2) — le scie si LEGGONO come un fiume d'aria a ogni zoom */
   c.width = 64;
-  c.height = 14;
+  c.height = 20;
   const g = c.getContext("2d")!;
-  const y = 7;
+  const y = 10;
 
   /* alone esterno soffuso (leggero: le scie non devono fondersi in blob) */
   g.lineCap = "round";
   g.strokeStyle = rgba(color, 0.16);
-  g.lineWidth = 7;
+  g.lineWidth = 10;
   g.beginPath();
   g.moveTo(6, y);
   g.lineTo(58, y);
@@ -418,7 +421,7 @@ export function streakSprite(color: string): HTMLCanvasElement {
   grd.addColorStop(0.65, rgba(shade(color, 1.3), 0.92));
   grd.addColorStop(1, rgba(shade(color, 1.65), 1));
   g.strokeStyle = grd;
-  g.lineWidth = 4.2;
+  g.lineWidth = 6.5;
   g.beginPath();
   g.moveTo(6, y);
   g.lineTo(58, y);
@@ -426,7 +429,7 @@ export function streakSprite(color: string): HTMLCanvasElement {
 
   /* nucleo luminoso centrale (solo verso la testa, dove l'aria è «viva») */
   g.strokeStyle = "rgba(255,255,255,0.5)";
-  g.lineWidth = 1.4;
+  g.lineWidth = 2.2;
   g.beginPath();
   g.moveTo(30, y);
   g.lineTo(58, y);

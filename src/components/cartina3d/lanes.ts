@@ -16,6 +16,15 @@
  *   - di notte l'aria raffreddata, densa, DRENA a valle lungo le stesse
  *     linee (brezza catabatica): stesse corsie, verso opposto.
  *
+ * v16 (respingo pilota «frecce troppo distanti / spariscono a max zoom»):
+ *   - FLUSSO CONTINUO DALLA VALLE ALLA CIMA: la soglia di esistenza scende a
+ *     1,2% di pendenza — le corsie NASCONO nel fondovalle (vento di valle che
+ *     risale seguendo il gradiente) e salgono fino alla cresta. Ingrandendo
+ *     sulla valle il flusso c'è SEMPRE, non solo sui pendii ripidi.
+ *   - DENSITÀ: corsie ogni 340 m (era 470), perle ogni 240 m (era 350).
+ *   - QUOTA DI VOLO 26 m sul DEM: il mesh fine a max zoom non seppellisce più
+ *     le scie (era 18 m: a vista radente sparivano dentro il terreno).
+ *
  * GEOMETRIA ANTI-INCROCIO (il punto chiave di v15):
  *   1. le corsie sono INTEGRALI del campo gradiente del DEM fine (160 m):
  *      gli integrali di un campo vettoriale liscio NON si incrociano mai
@@ -43,24 +52,35 @@ import {
 
 /* ---------- taratura (costanti pubbliche: il renderer e i test le leggono) ---------- */
 
-export const LANE_SEP = 470; // m — cella della maschera = distanza minima tra corsie
-export const BEAD_SPACING = 350; // m — distanza tra le «perle» sulla corsia
-export const BEAD_SPACING_MIN = 260; // m — mai più fitti di così (anti-mucchio)
+export const LANE_SEP = 340; // m — cella della maschera = distanza minima tra corsie
+  /* v16 (respingo pilota «frecce troppo distanti»): da 470 → 340 m, corsie
+     AFFIANCATE che pettinano tutto il versante */
+export const BEAD_SPACING = 240; // m — distanza tra le «perle» sulla corsia (v16: da 350)
+export const BEAD_SPACING_MIN = 175; // m — mai più fitti di così (anti-mucchio; v16: da 260)
 export const LANE_MIN_LEN = 560; // m — le corsie più corte si buttano
-export const SLOPE_MIN = 0.06; // pendenza minima (m/m) per una corsia di brezza
-export const SLOPE_END = 0.05; // sotto questa pendenza: cresta (fine salita) o fondo valle
+export const SLOPE_MIN = 0.04; // pendenza minima (m/m) per SEMINARE una corsia
+  /* v16: da 0.06 → 0.04 — anche i pendii dolci hanno la loro brezza */
+export const SLOPE_END = 0.012; // soglia di ESISTENZA del flusso (m/m)
+  /* v16: da 0.05 → 0.012 — LA CHIAVE del «flusso continuo dalla valle alla
+     cima»: sotto il 5% di pendenza il flusso NON muore più, continua sul
+     fondovalle seguendo il gradiente (il vento di valle che risale il fondovalle
+     e poi sale i versanti — Whiteman, Mountain Meteorology cap. 11). */
 export const DS = 60; // m — passo d'integrazione (arco UNIFORME → lookup O(1))
-export const CRUISE_LIFT = 18; // m di volo delle corsie/scie SOPRA il terreno DEM
-export const MAX_STEPS = 90; // ≈ 5,4 km: la corsia è un VERSANTE, non un'autostrada da 9 km
+export const CRUISE_LIFT = 26; // m di volo delle corsie/scie SOPRA il terreno DEM
+  /* v16: da 18 → 26 m — il mesh renderizzato a max zoom devia dal DEM a 160 m
+     anche di ±20 m: con 18 m le scie si SEPPELLIVANO e sparivano ingrandendo */
+export const MAX_STEPS = 110; // ≈ 6,6 km: salita del versante + risalita del fondovalle
 export const H_GAIN_MAX = 900; // m di dislivello massimo: superato → la corsia ha fatto il suo lavoro
-export const PRE_STEPS = 70; // discesa a valle per far NASCERE la corsia dal basso
+export const PRE_STEPS = 90; // discesa a valle per far NASCERE la corsia dal basso
+  /* v16: ora APPLICATA come cap dell'integrazione discendente (5,4 km) */
+export const BEAD_MAX_GAP = 800; // m — mai una collana più rada di così (v16: da 1300)
 export const RIDGE_DRIFT = 0.16; // deriva di combing lungo il costone (peso sul gradiente)
 export const BREEZE_BLUE = "#57b2f8"; // UN SOLO COLORE per TUTTA la brezza
 export const WAVE_MS = 310; // m/s — l'ONDA UNICA: tutte le perfe della stessa corsa
 export const EXIT_ZONE = 640; // m — zona di stacco in cresta (fine ciclo della perla)
 export const LIFT_H = 150; // m di risalita verticale nello stacco (l'aria nutre le termiche)
-export const TRAIL_NODES = 16; // nodi di scia per perla
-export const TRAIL_SEG = 30; // m tra i nodi → scia ≈ 480 m, curva morbida sulla corsia
+export const TRAIL_NODES = 14; // nodi di scia per perla (v16: 16 → 14, budget alle perle più fitte)
+export const TRAIL_SEG = 34; // m tra i nodi → scia ≈ 442 m, curva morbida sulla corsia
 
 /* ---------- tipi ---------- */
 
@@ -279,17 +299,28 @@ export function buildLaneField(f: WindField, opts: LaneOpts): LaneField {
     return mi * nMj + mj;
   };
 
-  /* --- integrazione RK2 a passo d'arco uniforme --- */
-  const integrate = (la0: number, lo0: number, uphill: boolean): { la: number; lo: number } | null => {
+  /* --- integrazione RK2 a passo d'arco uniforme ---
+     STOP DA INVERSIONE (v16): se la direzione del gradiente si INVERTE tra
+     un passo e il prossimo (dot < 0.2 ≈ >78°) abbiamo raggiunto un PUNTO
+     STAZIONARIO del rilievo — cresta per la salita (l'aria si stacca e nutre
+     le termiche), thalweg per la discesa (fondo valle). Senza questo guard
+     l'integratore RIMBALZA oltre il crinale e zigzaga sul bordo. */
+  const integrate = (
+    la0: number,
+    lo0: number,
+    uphill: boolean,
+    maxSteps: number,
+  ): { la: number; lo: number } | null => {
     let la = la0;
     let lo = lo0;
-    for (let k = 0; k < MAX_STEPS; k++) {
+    for (let k = 0; k < maxSteps; k++) {
       const d1 = dirAt(la, lo, uphill);
       if (!d1) return k > 2 ? { la, lo } : null;
       const mLa = la + (d1.dN * (DS / 2)) / mLat;
       const mLo = lo + (d1.dE * (DS / 2)) / mLon;
       const d2 = dirAt(mLa, mLo, uphill);
       if (!d2) return k > 2 ? { la, lo } : null;
+      if (d1.dE * d2.dE + d1.dN * d2.dN < 0.2) return k > 2 ? { la, lo } : null;
       la += (d2.dN * DS) / mLat;
       lo += (d2.dE * DS) / mLon;
       if (!inBounds(la, lo)) return null;
@@ -372,7 +403,7 @@ export function buildLaneField(f: WindField, opts: LaneOpts): LaneField {
         vicino di SAFE_M la corsia si FERMA. Il vincolo vale a coppie (chi
         arriva dopo è controllato contro chi era prima): due corsie non si
         avvicinano mai meno di SAFE_M, su NESSUNA coppia di nodi. */
-  const SAFE_M = 210; // m — metà della separazione minima tra corsie
+  const SAFE_M = 165; // m — metà della separazione minima tra corsie (LANE_SEP/2 con margine)
   const cellNodes = new Map<number, { li: number; la: number; lo: number }[]>();
   const tooClose = (la: number, lo: number, laneId: number): boolean => {
     const xN = (la - f.lat0) * mLat + extN;
@@ -414,7 +445,7 @@ export function buildLaneField(f: WindField, opts: LaneOpts): LaneField {
     /* 1) PRE-PASS: scendo a valle per far nascere la corsia DAL BASSO
        (richiesta pilota: «i venti partono dal basso e salgono i pendii»).
        La discesa NON reclama celle: solo la salita incide la maschera. */
-    const bot = integrate(sd.la, sd.lo, false);
+    const bot = integrate(sd.la, sd.lo, false, PRE_STEPS);
     if (!bot) continue;
     /* 2) SALITA dal fondo valle: se la base è nel corridoio di un'altra
        corsia provo dal SEME (nascita a metà pendio, comunque sottovento al
@@ -450,9 +481,10 @@ export function buildLaneField(f: WindField, opts: LaneOpts): LaneField {
       const mLo = lo + (d1.dE * (DS / 2)) / mLon;
       const d2 = dirAt(mLa, mLo, true);
       if (!d2) break;
-      /* STACCO ALLA CRESTA: la brezza sale il versante, non corre lungo il
-         crinale — oltre H_GAIN_MAX di dislivello la corsia finisce (è lì che
-         l'aria si stacca e nutre le termiche) */
+      /* STACCO ALLA CRESTA (v16): inversione del gradiente = punto di stacco
+         (oltre il crinale l'aria non segue più il versante); senza il guard
+         la corsia rimbalza sul bordo e zigzaga */
+      if (d1.dE * d2.dE + d1.dN * d2.dN < 0.2) break;
       la += (d2.dN * DS) / mLat;
       lo += (d2.dE * DS) / mLon;
       if (!inBounds(la, lo)) break;
@@ -484,12 +516,20 @@ export function buildLaneField(f: WindField, opts: LaneOpts): LaneField {
   } else {
     spacingEff = Math.max(BEAD_SPACING_MIN, Ltot / (opts.budget - nL));
   }
-  const beads: Bead[] = [];
+  let beads: Bead[] = [];
   for (let li = 0; li < nL; li++) {
     const lane = lanes[li];
-    /* mai una collana più rada di ~1300 m (le corsie corte restano vive) */
-    const nB = Math.max(1, Math.round(lane.len / spacingEff), Math.ceil(lane.len / 1300));
+    /* mai una collana più rada di BEAD_MAX_GAP (le corsie corte restano vive) */
+    const nB = Math.max(1, Math.round(lane.len / spacingEff), Math.ceil(lane.len / BEAD_MAX_GAP));
     for (let b = 0; b < nB; b++) beads.push({ lane: li, s0: ((b + 0.5) * lane.len) / nB });
+  }
+  /* TETTO hardware: se i versanti lunghissimi generano più perle del dovuto,
+     diradamento UNIFORME per stride — la copertura resta regolare su tutto
+     il rilievo e il budget billboard è rispettato (mai FP in caduta). */
+  const hardCap = Math.round(opts.budget * 1.3);
+  if (beads.length > hardCap) {
+    const stride = Math.ceil(beads.length / hardCap);
+    beads = beads.filter((_, i) => i % stride === 0);
   }
 
   return { lanes, beads, flat: false, day: isDay };

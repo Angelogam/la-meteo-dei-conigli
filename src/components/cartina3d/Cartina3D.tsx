@@ -51,6 +51,7 @@ import type { PilotThermal } from "./xcflights";
 import { cloudBaseFrom, computeTriggers } from "./thermals";
 import type { TriggerCell } from "./thermals";
 import { buildAltitudeFlow, buildWindFlow, type WindFlowHandle } from "./windflow";
+import { fetchBreezeNow, type BreezeNow } from "./breeze";
 import { bubbleImage, coneSideImage, gliderImage, pinImage, ringImage } from "./sprites";
 import Nav3D from "./Nav3D";
 import "./cartina3d.css";
@@ -258,6 +259,9 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
   const [forecast, setForecast] = useState<ForecastData | null>(null);
   const [fcAt, setFcAt] = useState<string>("");
   const [fcSim, setFcSim] = useState(false); // true = previsioni di stima (modello offline)
+  /* CASELLE DI BREZZA sui pin: vento LIVE Open-Meteo (velocità, direzione,
+     raffiche) per ogni decollo — richiesta pilota v16 */
+  const [breeze, setBreeze] = useState<Map<string, BreezeNow>>(() => new Map());
   /* giorno e ora selezionati: lo slider principale guida «oggi», le fasce
      orarie della barra previsioni selezionano giorno e ora per tutto il 3D */
   const [dayIdx, setDayIdx] = useState(0);
@@ -681,6 +685,29 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     setPilot([]);
   };
 
+  /* ---------- CASELLE DI BREZZA LIVE (Open-Meteo): una richiesta bulk per
+     tutti i decolli, refresh 15 min, cache memoria+disco. Un fallimento non
+     tocca nulla: le caselle senza dato semplicemente non appaiono. ---------- */
+  useEffect(() => {
+    if (status !== "ready" || !good.length) return;
+    let cancelled = false;
+    const pull = (): void => {
+      fetchBreezeNow(good.map((d) => ({ id: d.id, lat: d.lat, lon: d.lon })))
+        .then((m) => {
+          if (!cancelled && m.size) setBreeze(m);
+        })
+        .catch(() => {
+          /* niente caselle quest'onda: pin ed etichette restano invariati */
+        });
+    };
+    pull();
+    const iv = window.setInterval(pull, 15 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(iv);
+    };
+  }, [status, good]);
+
   /* ---------- pin dei decolli + PARAPENDIO in volo sopra ognuno ---------- */
   useEffect(() => {
     const Cesium = cesiumRef.current;
@@ -748,9 +775,36 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         },
       });
       (gl as unknown as { deolloId: string }).deolloId = d.id;
-      return [pin, gl];
+
+      /* CASELLA DI BREZZA (richiesta pilota v16): velocità, direzione e
+         raffiche LIVE da Open-Meteo, box blu pettinato come le corsie;
+         senza dato (API giù) la casella non appare — mai numeri inventati */
+      const bz = breeze.get(d.id);
+      const casella =
+        bz && Number.isFinite(bz.ws) && bz.ws > 0
+          ? viewer.entities.add({
+              position: ground,
+              label: {
+                text:
+                  `Brezza ${Math.round(bz.ws)} km/h · da ${dir8(bz.wd)}` +
+                  (Number.isFinite(bz.gust) && bz.gust > bz.ws + 2
+                    ? `\nraffiche ${Math.round(bz.gust)} km/h`
+                    : ""),
+                font: "600 12px 'Barlow Condensed','Manrope',sans-serif",
+                fillColor: Cesium.Color.fromCssColorString("#dceeff"),
+                showBackground: true,
+                backgroundColor: Cesium.Color.fromCssColorString("rgba(12,44,82,0.88)"),
+                backgroundPadding: new Cesium.Cartesian2(6, 3),
+                verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                pixelOffset: new Cesium.Cartesian2(0, -68),
+                distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 24000),
+                disableDepthTestDistance: Number.POSITIVE_INFINITY,
+              },
+            })
+          : null;
+      return casella ? [pin, gl, casella] : [pin, gl];
     });
-  }, [status, good, active]);
+  }, [status, good, active, breeze]);
 
   /* la camera segue il decollo attivo: a ogni cambio di sito vola sulla sua valle */
   useEffect(() => {
