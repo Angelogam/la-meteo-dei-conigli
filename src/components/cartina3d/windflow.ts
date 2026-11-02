@@ -1,32 +1,24 @@
 /**
- * FLUSSO VENTO DINAMICO — v15 «CORSAIE».
+ * FLUSSO VENTO DINAMICO — v17 «PLOTONE A PETTINE».
  *
- * Il pilota ha respinto v13/v14: «è un pasticcio di freccette che si
- * inculano altre ... devi dare un senso logico». Il difetto era strutturale:
- * ogni particella si muoveva da sola (integrazione di Euler per frame,
- * oscillazione laterale sfasata, corsa diversa da particella a particella)
- * → si incrociavano PER COSTRUZIONE.
+ * Il pilota ha respinto v13/v14/v15/v16 e il video del 2 nov chiude la
+ * questione: «le brezze le devi vedere come un plotone di soldati in riga
+ * che si muove in modo sincronizzato dal basso verso l'alto, parallelamente;
+ * frecce a pettine che salgono il pendio in modo uguale, in continuo, un po'
+ * distanziate ma vicine». E il «i venti vanno indietro» era il modo notte:
+ * le perle scendevano (catabatica) con frecce e teste-scia puntate in su.
  *
- * La svolta (lanes.ts, matematica pura): le BREZZE DI PENDIO corrono su
- * CORSIE pre-calcolate — streamline integrate sul gradiente del DEM fine
- * (160 m) dal fondo valle alla cresta, con maschera di occupazione che
- * vieta a due corsie di entrare nella stessa cella (separazione minima
- * LANE_SEP garantita, non sperata). Le particelle sono PERLE INCOLLATE alla
- * propria corsia (interpolazione d'arco) e TUTTE corrono alla STESSA
- * velocità (onda unica): una collana non può né scontrarsi né sorpassare
- * se stessa. Fisica: Prandtl 1942 / Stull BLM / Whiteman — anabatica diurna
- * lungo la massima pendenza, drenaggio notturno lungo le stesse linee,
- * stacco in cresta dove l'aria converge e sale (nutre le termiche).
+ * La svolta v17 (lanes.ts, matematica pura): le BREZZE DI PENDIO corrono su
+ * CORSIE pre-calcolate (streamline integrate sul gradiente del DEM fine 160 m,
+ * maschera anti-incrocio) e un OROLOGIO DI MARCIA GLOBALE m avanza: il fronte
+ * k sta sull'arco m − k·ROW_SPACING su OGNI corsia → righe di frecce
+ * affiancate perpendicolari alla salita, sincronizzate, ogni ~300 m lungo il
+ * pendio, che SALONO SEMPRE (anabatica: valle → cresta, niente inversione
+ * notturna). Fisica: Prandtl 1942 / Stull BLM / Whiteman.
  *
  *  1. buildWindFlow — BREZZE DI PENDIO a terra (TUTTE BLU, un solo colore).
  *  2. buildAltitudeFlow — VENTI METEO in quota (clic su una quota): scie
  *     lineari e lunghe alla stessa altezza, parallele al vento del livello.
- *
- * v16 (respingo pilota «frecce troppo distanti / troppo filiformi / spariscono
- *  a max zoom»): budget perle 640/460/280, corsie 340 m, perle 240 m, sprite
- *  più corposi (dart 0.52, scie 1.8× vicino), scala PROPORZIONATA allo zoom
- *  (cresce avvicinando), depth-test disattivato sotto 2,8 km (a max zoom il
- *  mesh fine non seppellisce più le scie), volo 26 m sul DEM.
  *
  * Render: UNA BillboardCollection per motore (un draw call). Il terreno
  * occlude da solo gli sprite dietro i rilievi. Tick in scene.preRender con
@@ -40,10 +32,13 @@ import {
   laneAt,
   BREEZE_BLUE,
   WAVE_MS,
-  EXIT_ZONE,
-  LIFT_H,
-  TRAIL_NODES,
-  TRAIL_SEG,
+  ROW_SPACING,
+  ROW_TRAIL_NODES,
+  ROW_TRAIL_SEG,
+  FADE_IN_M,
+  FADE_OUT_M,
+  rowSlotCount,
+  effectiveRowSpacing,
   smooth01,
   type Lane,
   type LaneSample,
@@ -65,9 +60,9 @@ const clamp = (v: number, a: number, b: number): number => Math.min(b, Math.max(
 const finite = (p: import("cesium").Cartesian3): boolean =>
   Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z);
 
-/* popolazione adattiva (hardware debole = meno perle)
-   v16: alza il budget (640/460/280, mobile ×0.72) — il pilota ha respinto il
-   v15 come «frecce troppo distanti»: più perle, più fitte, scie più corte */
+/* popolazione adattiva (hardware debole = meno fronti)
+   v17: il budget NON taglia più le perle una a una: allarga il passo dei
+   FRONTI (effectiveRowSpacing) — il pettine resta allineato a qualunque budget */
 const particleBudget = (k: number): number => {
   let np = k >= 8 ? 640 : k >= 4 ? 460 : 280;
   if (typeof window !== "undefined") {
@@ -116,8 +111,8 @@ if (typeof window !== "undefined") {
   };
 }
 
-/* degrado adattivo: EMA del frame time con isteresi */
-const makeDegrade = (nodes: number, np: number) => {
+/* degrado adattivo: EMA del frame time con isteresi (floorN = min nodi scia) */
+const makeDegrade = (nodes: number, np: number, floorN = 4) => {
   let dtEma = 16.7;
   let lowSince = 0;
   let goodSince = 0;
@@ -127,7 +122,7 @@ const makeDegrade = (nodes: number, np: number) => {
       return level;
     },
     get nodes(): number {
-      return level === 0 ? nodes : level === 1 ? Math.max(6, Math.round(nodes * 0.7)) : Math.max(4, Math.round(nodes * 0.5));
+      return level === 0 ? nodes : level === 1 ? Math.max(floorN, Math.round(nodes * 0.7)) : Math.max(Math.max(1, floorN - 2), Math.round(nodes * 0.5));
     },
     get cap(): number {
       return level === 0 ? np : level === 1 ? Math.round(np * 0.7) : Math.round(np * 0.45);
@@ -155,14 +150,10 @@ const makeDegrade = (nodes: number, np: number) => {
    MOTORE 1 — BREZZE DI PENDIO su CORSIE (superficie, TUTTO BLU)
    ================================================================ */
 
-interface BeadView {
-  lane: number;
-  s0: number;
+interface RowDart {
   head: Billboard;
   segs: Billboard[];
 }
-
-const FADE_IN = 260; // m di corsia percorsi prima della piena visibilità (nascita sfumata)
 
 export function buildWindFlow(
   Cesium: CesiumNs,
@@ -185,7 +176,9 @@ export function buildWindFlow(
     budget,
   });
   const lanes = lf.lanes;
-  const daySign = lf.day ? 1 : -1; // giorno: fondo valle → cresta; notte: cresta → fondo valle
+  /* v17: il flusso SALE SEMPRE (anabatica) — niente inversione notturna.
+     Il «vanno indietro» del video pilota era il drenaggio catabatico:
+     perle che scendevano con frecce e teste-scia puntate in salita. */
 
   /* ---------- PITTURA DELLE CORSIE (billboard: l'unico primitivo che in
      questa scena si vede SEMPRE a ogni zoom — le polilinee qui stanno sotto
@@ -208,49 +201,64 @@ export function buildWindFlow(
 
   const fadeByDist = new Cesium.NearFarScalar(34000, 1, 44000, 0.0); // sfuma solo davvero lontano
   const ddc = new Cesium.DistanceDisplayCondition(0, 44000);
-  /* FIX «ingrandendo spariscono del tutto»: sotto ~2,8 km di distanza gli
+  /* FIX «ingrandendo spariscono del tutto»: sotto ~1,6 km di distanza gli
      sprite IGNORANO il depth-test — a max zoom il mesh fine (più dettagliato
      del DEM a 160 m su cui poggiano le corsie) li seppelliva e sparivano.
-     Oltre 2,8 km l'occlusione del terreno resta (le scie dietro il monte non
-     trapelano). */
-  const NEAR_NO_DEPTH = 2800;
+     Oltre 1,6 km l'occlusione del terreno resta (v17.1: raggio ridotto da
+     2800 — oltre il versante dietro trapelava attraverso la cresta). */
+  const NEAR_NO_DEPTH = 1600;
 
   const blue = baseCol(Cesium, BREEZE_BLUE); // UN SOLO COLORE per tutta la brezza
 
-  const views: BeadView[] = [];
+  /* ---------- SLOT-FRECCE dei FRONTI (v17 «plotone a pettine») ----------
+     Per ogni corsia creo rowSlotCount(len, SP) frecce (testa + scia corta).
+     Il fronte k usa lo slot k mod K: due fronti con la stessa slot non
+     coesistono mai sulla stessa corsia (K·SP > len). Il passo SP è UNICO
+     per tutte le corsie (effectiveRowSpacing): i fronti restano ALLINEATI
+     a pettine su tutto il rilievo a qualunque budget hardware. */
+  const Ltot = lanes.reduce((a, l) => a + l.len, 0);
+  const SP = effectiveRowSpacing(Ltot, lanes.length, budget);
+  const laneOff: number[] = [];
+  const laneK: number[] = [];
+  const views: RowDart[] = [];
   try {
-    for (const bead of lf.beads) {
-      const head = bc.add({
-        position: Cesium.Cartesian3.ZERO,
-        image: imgUrl(dartSprite(BREEZE_BLUE)),
-        /* testa GRANDE (v16: 0.34 → 0.52 — «sono troppo filiformi») e scala
-           PROPORZIONATA allo zoom: cresce fino a 1.4× avvicinandosi e resta
-           visibile a qualunque ingrandimento */
-        scale: 0.52,
-        scaleByDistance: new Cesium.NearFarScalar(700, 1.4, 30000, 0.5),
-        translucencyByDistance: fadeByDist,
-        distanceDisplayCondition: ddc,
-        disableDepthTestDistance: NEAR_NO_DEPTH,
-        show: false,
-      });
-      const segs: Billboard[] = [];
-      for (let s = 0; s < TRAIL_NODES; s++) {
-        segs.push(
-          bc.add({
-            position: Cesium.Cartesian3.ZERO,
-            image: imgUrl(streakSprite(BREEZE_BLUE)),
-            /* taper DOCE (1.0 → 0.45) + sprite più CORPOSO (v16: vedere il
-               flusso da lontano, «sono troppo filiformi») */
-            scale: 1.0 - (0.55 * s) / (TRAIL_NODES - 1),
-            scaleByDistance: new Cesium.NearFarScalar(500, 1.8, 30000, 0.48),
-            translucencyByDistance: fadeByDist,
-            distanceDisplayCondition: ddc,
-            disableDepthTestDistance: NEAR_NO_DEPTH,
-            show: false,
-          }),
-        );
+    for (const lane of lanes) {
+      const K = rowSlotCount(lane.len, SP);
+      laneOff.push(views.length);
+      laneK.push(K);
+      for (let s = 0; s < K; s++) {
+        const head = bc.add({
+          position: Cesium.Cartesian3.ZERO,
+          image: imgUrl(dartSprite(BREEZE_BLUE)),
+          /* testa CORPOSA ma con tetto alla vista ravvicinata (v17.1):
+             0.6 di base, cresce leggermente avvicinandosi e si BLOCCA a 1.05
+             sotto i 900 m — il plotone non diventa mai un muro di frecce */
+          scale: 0.6,
+          scaleByDistance: new Cesium.NearFarScalar(900, 1.05, 30000, 0.55),
+          translucencyByDistance: fadeByDist,
+          distanceDisplayCondition: ddc,
+          disableDepthTestDistance: NEAR_NO_DEPTH,
+          show: false,
+        });
+        const segs: Billboard[] = [];
+        for (let j = 0; j < ROW_TRAIL_NODES; j++) {
+          segs.push(
+            bc.add({
+              position: Cesium.Cartesian3.ZERO,
+              image: imgUrl(streakSprite(BREEZE_BLUE)),
+              /* scia CORTA e corposa (taper 1.05 → 0.5 su 5 nodi): si
+                 legge il senso di marcia senza diventare un «verme» */
+              scale: 1.05 - (0.55 * j) / (ROW_TRAIL_NODES - 1),
+              scaleByDistance: new Cesium.NearFarScalar(900, 1.25, 30000, 0.5),
+              translucencyByDistance: fadeByDist,
+              distanceDisplayCondition: ddc,
+              disableDepthTestDistance: NEAR_NO_DEPTH,
+              show: false,
+            }),
+          );
+        }
+        views.push({ head, segs });
       }
-      views.push({ lane: bead.lane, s0: bead.s0, head, segs });
     }
 
     /* trattini di pittura delle corsie: ogni 8 nodi (480 m) — le perle sono
@@ -296,6 +304,7 @@ export function buildWindFlow(
     lanes: lanes.length,
     flat: lf.flat,
     total: bc.length,
+    sp: Math.round(SP),
     sun: { az: Math.round(sun.az), alt: Math.round(sun.alt) },
   });
 
@@ -304,7 +313,14 @@ export function buildWindFlow(
   const scCol = new Cesium.Color();
   const sHead: LaneSample = { la: 0, lo: 0, h: 0, az: 0, aK: 0 };
   const sTrail: LaneSample = { la: 0, lo: 0, h: 0, az: 0, aK: 0 };
-  const degrade = makeDegrade(TRAIL_NODES, views.length);
+  const degrade = makeDegrade(ROW_TRAIL_NODES, views.length, 2);
+
+  /* ---------- OROLOGIO DI MARCIA GLOBALE (v17 «plotone») ----------
+     m avanza SEMPRE (mai wrappato): il fronte k sta sull'arco m − k·SP su
+     OGNI corsia → righe di frecce affiancate, perpendicolari alla salita,
+     che salgono in modo sincronizzato. M0 pre-avanza l'orologio così il
+     pettine è PIENO già al primo frame (niente flusso che «si accende»). */
+  const M0 = Math.ceil((lf.maxLen + 1) / SP) * SP;
   let tA = 0; // orologio del flusso: pausa = flusso fermo, mai salti al ritorno
 
   let last = performance.now();
@@ -335,81 +351,82 @@ export function buildWindFlow(
       return;
     }
     tA += dt;
+    const m = M0 + WAVE_MS * tA;
 
-    /* degrado = DIRADAMENTE UNIFORME (ogni (level+1)-esima perla): la copertura
-       resta regolare su tutto il rilievo, mai buchi locali */
+    /* degrado = FRONTE SÌ FRONTE NO (k mod skip): le rime che restano
+       restano ALLINEATE — il pettine si dirada, non si sfasa mai */
     const skip = degrade.level + 1;
 
-    for (let k = 0; k < views.length; k++) {
-      const v = views[k];
-      if (skip > 1 && k % skip !== 0) {
-        if (v.head.show || v.segs[0].show) {
-          v.head.show = false;
-          for (let s = 0; s < v.segs.length; s++) v.segs[s].show = false;
-        }
-        continue;
+    const hideV = (v: RowDart): void => {
+      if (v.head.show || v.segs[0].show) {
+        v.head.show = false;
+        for (let s = 0; s < v.segs.length; s++) v.segs[s].show = false;
       }
-      const lane: Lane = lanes[v.lane];
-      const C = lane.len + EXIT_ZONE;
-      const p = (v.s0 + WAVE_MS * tA) % C; // posizione nel ciclo 0..C (aritmetica pura)
+    };
 
-      let arc: number; // arco dalla BASE (fondo valle) della corsia
-      let liftU = 0; // 0 in corsia → 1 nello stacco in cresta
-      if (p <= lane.len) {
-        arc = daySign > 0 ? p : lane.len - p;
-      } else {
-        liftU = (p - lane.len) / EXIT_ZONE; // l'aria in cresta converge e SALE
-        arc = daySign > 0 ? lane.len : 0;
-      }
-      /* nascita sfumata: le prime 260 m di corsia percorsi (giorno: dal fondo
-         valle; notte: dalla cresta) — mai apparizioni di colpo */
-      const fadeIn = smooth01(p / FADE_IN);
-      const alpha0 = 0.92 * fadeIn * (1 - liftU);
-      if (alpha0 < 0.02) {
-        if (v.head.show || v.segs[0].show) {
-          v.head.show = false;
-          for (let s = 0; s < v.segs.length; s++) v.segs[s].show = false;
-        }
-        continue;
-      }
-
-      /* --- TESTINA: sulla corsia, orientata come la corsia --- */
-      laneAt(lane, arc, sHead);
-      const rise = LIFT_H * smooth01(liftU);
-      const ph = Cesium.Cartesian3.fromDegrees(sHead.lo, sHead.la, sHead.h + 8 + rise, undefined, scPos);
-      if (finite(ph)) {
-        v.head.show = true;
-        v.head.position = scPos;
-        v.head.rotation = heading - sHead.az;
-        Cesium.Color.clone(Cesium.Color.WHITE, scCol);
-        scCol.alpha = clamp(alpha0 * (0.75 + 0.25 * sHead.aK), 0, 1);
-        v.head.color = scCol;
-      } else v.head.show = false;
-
-      /* --- SCIA: esattamente SULLA CORSIA dietro la testa (perle di una
-         collana: la scia non può mai staccarsi dal flusso né incrociare la
-         corsia vicina — è la stessa curva) --- */
-      for (let j = 0; j < nodes; j++) {
-        const bb = v.segs[j];
-        const arcT = arc - daySign * (j + 1) * TRAIL_SEG;
-        if (arcT < 0 || arcT > lane.len) {
-          bb.show = false;
+    for (let li = 0; li < lanes.length; li++) {
+      const lane: Lane = lanes[li];
+      const len = lane.len;
+      const K = laneK[li];
+      const off = laneOff[li];
+      /* fronti visibili su questa corsia: 0 ≤ m − k·SP ≤ len — nascono al
+         fondo valle (fade-in) e sfumano alla cresta (fade-out): flusso
+         CONTINUO, un fronte entra ogni SP/WAVE_MS ≈ 2,3 s */
+      const k0 = Math.max(0, Math.ceil((m - len) / SP - 1e-9));
+      const k1 = Math.floor(m / SP + 1e-9);
+      for (let k = k0; k <= k1; k++) {
+        const v = views[off + (k % K)];
+        if (skip > 1 && k % skip !== 0) {
+          hideV(v);
           continue;
         }
-        laneAt(lane, arcT, sTrail);
-        const pm = Cesium.Cartesian3.fromDegrees(sTrail.lo, sTrail.la, sTrail.h + rise, undefined, scPos);
-        if (!finite(pm)) {
-          bb.show = false;
+        const a = m - k * SP; // arco del fronte k su questa corsia (0..len)
+        const fadeIn = smooth01(a / FADE_IN_M);
+        const fadeOut = smooth01((len - a) / FADE_OUT_M);
+        const alpha0 = 0.95 * fadeIn * fadeOut;
+        if (alpha0 < 0.02) {
+          hideV(v);
           continue;
         }
-        bb.show = true;
-        bb.position = pm;
-        bb.rotation = heading - sTrail.az + Math.PI / 2;
-        Cesium.Color.clone(blue, scCol);
-        /* coda luminosa (floor 0.22): le scie si saldano lungo la corsia */
-        scCol.alpha = clamp(alpha0 * sTrail.aK * (0.78 * Math.pow(1 - j / nodes, 0.7) + 0.22), 0, 1);
-        if (scCol.alpha < 0.02) bb.show = false;
-        else bb.color = scCol;
+
+        /* --- TESTINA: sulla corsia, punta in SALITA (senso di marcia) --- */
+        laneAt(lane, a, sHead);
+        const ph = Cesium.Cartesian3.fromDegrees(sHead.lo, sHead.la, sHead.h + 6, undefined, scPos);
+        let shown = false;
+        if (finite(ph)) {
+          v.head.show = true;
+          v.head.position = scPos;
+          v.head.rotation = heading - sHead.az;
+          Cesium.Color.clone(Cesium.Color.WHITE, scCol);
+          scCol.alpha = clamp(alpha0 * (0.72 + 0.28 * sHead.aK), 0, 1);
+          v.head.color = scCol;
+          shown = true;
+        } else v.head.show = false;
+
+        /* --- SCIA CORTA a valle della testa (dietro il moto): esattamente
+           SULLA CORSIA — stessa curva, non può staccarsi né incrociare la
+           corsia vicina --- */
+        for (let j = 0; j < nodes; j++) {
+          const bb = v.segs[j];
+          const arcT = a - (j + 1) * ROW_TRAIL_SEG;
+          if (!shown || arcT < 0 || arcT > len) {
+            if (bb.show) bb.show = false;
+            continue;
+          }
+          laneAt(lane, arcT, sTrail);
+          const pm = Cesium.Cartesian3.fromDegrees(sTrail.lo, sTrail.la, sTrail.h, undefined, scPos);
+          if (!finite(pm)) {
+            bb.show = false;
+            continue;
+          }
+          bb.show = true;
+          bb.position = pm;
+          bb.rotation = heading - sTrail.az + Math.PI / 2;
+          Cesium.Color.clone(blue, scCol);
+          scCol.alpha = clamp(alpha0 * sTrail.aK * (0.8 * Math.pow(1 - j / nodes, 0.8) + 0.2), 0, 1);
+          if (scCol.alpha < 0.02) bb.show = false;
+          else bb.color = scCol;
+        }
       }
     }
   };

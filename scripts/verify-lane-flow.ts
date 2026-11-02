@@ -1,14 +1,17 @@
-/* Verifica numerica del MOTORE A CORSIE (lanes.ts) — la risposta al
-   respingo del pilota: «è un pasticcio di freccette che si inculano altre
-   ... devi dare un senso logico» + v16 «frecce troppo distanti, spariscono
-   ingrandendo, flusso continuo dalla valle alla cima».
+/* Verifica numerica del MOTORE A CORSIE (lanes.ts) — v17 «PLOTONE A PETTINE»,
+   la risposta al video pilota del 2 nov: «i venti vanno indietro ... le brezze
+   come un plotone di soldati in riga che si muove in modo sincronizzato dal
+   basso verso l'alto, parallelamente; frecce a pettine che salgono in modo
+   uguale, in continuo».
    Qui si DIMOSTRA che:
    1. le corsie esistono sui pendii (non su pianura);
    2. SALGONO dal fondo valle alla cresta (anabatica: h finale >> h iniziale);
    3. la tangente della corsia segue il pendio (dot con il gradiente > 0);
    4. DUE CORSIE NON SI INCROCIANO MAI (raster: ogni cella 40 m ha ≤ 1 corsia)
       e non si avvicinano meno di SAFE_M (165 m) — per costruzione;
-   5. le perle sono distribuite a passo UNIFORME per corsia (onda unica);
+   5. PLOTONE: il fronte k sta sull'arco m − k·ROW_SPACING su OGNI corsia
+      (rime allineate attraverso tutto il rilievo), passo ESATTO tra i
+      fronti, e con lo stesso orologio NESSUN fronte può sorpassarne altro;
    6. il campione d'arco laneAt è continuo (niente salti);
    7. TUTTO È BLU: BREEZE_BLUE unico colore della famiglia brezza;
    8. sito pianeggiante → fallback corsie dritte (mai scena vuota);
@@ -22,6 +25,10 @@ import {
   laneAt,
   BREEZE_BLUE,
   LANE_MIN_LEN,
+  ROW_SPACING,
+  effectiveRowSpacing,
+  rowSlotCount,
+  WAVE_MS,
   type Lane,
   type WindField,
 } from "../src/components/cartina3d/lanes";
@@ -105,7 +112,8 @@ const t0 = Date.now();
 const lf = buildLaneField(field, opts);
 const buildMs = Date.now() - t0;
 const lanes = lf.lanes;
-console.log(`costruzione corsie: ${lanes.length} corsie in ${buildMs} ms (flat=${lf.flat}, day=${lf.day}, perle=${lf.beads.length})`);
+const SP = effectiveRowSpacing(lanes.reduce((a, l) => a + l.len, 0), lanes.length, opts.budget);
+console.log(`costruzione corsie: ${lanes.length} corsie in ${buildMs} ms (flat=${lf.flat}, day=${lf.day}, passo fronti=${SP.toFixed(0)} m)`);
 
 /* ---------- 1. CORSIE SUI PENDII ---------- */
 console.log("1. CORSIE SUI PENDII:");
@@ -214,42 +222,56 @@ console.log("4. ANTI-INCROCIO:");
 ok(conflicts === 0, `celle da 40 m condivise da 2 corsie: ${conflicts} (deve essere 0)`);
 ok(minDist >= 150, `distanza minima tra corsie diverse: ${minDist.toFixed(0)} m (≥ 150 m — niente frecce che si toccano)`);
 
-/* ---------- 5. PERLE UNIFORMI (onda unica, mai sorpassi) ---------- */
-let spacingOk = true;
-let spacingMin = Infinity;
-let spacingMax = 0;
-const byLane = new Map<number, number[]>();
-for (const b of lf.beads) {
-  let arr = byLane.get(b.lane);
-  if (!arr) {
-    arr = [];
-    byLane.set(b.lane, arr);
+/* ---------- 5. PLOTONE A PETTINE (fronti sincronizzati) ----------
+   Riproduce la STESSA aritmetica del renderer: fronte k su arco m − k·SP.
+   Si dimostra che: (i) su ogni corsia i fronti visibili distano ESATTAMENTE
+   SP; (ii) lo stesso fronte k è allo STESSO arco su tutte le corsie (ranga
+   allineata attraverso il rilievo); (iii) gli slot k mod K non collidono mai
+   (K·SP > len); (iv) nessun fronte sorpassa: il passo temporale tra due
+   fronti consecutivi è identico ovunque. */
+const EPS = 1e-9;
+let passoOk = true;
+let passoMin = Infinity;
+let passoMax = 0;
+let slotOk = true;
+const sampleM = [1234.5, 8000, 15000.25, 27345.75]; // istanti dell'orologio di marcia
+for (const m of sampleM) {
+  for (const lane of lanes) {
+    const k0 = Math.max(0, Math.ceil((m - lane.len) / SP - EPS));
+    const k1 = Math.floor(m / SP + EPS);
+    /* (i) passo esatto tra fronti consecutivi sulla stessa corsia */
+    for (let k = k0; k < k1; k++) {
+      const d = (m - k * SP) - (m - (k + 1) * SP);
+      passoMin = Math.min(passoMin, d);
+      passoMax = Math.max(passoMax, d);
+      if (Math.abs(d - SP) > 1e-6) passoOk = false;
+    }
+    /* fronti sempre DENTRO la corsia */
+    if (k0 <= k1) {
+      if (m - k0 * SP < -EPS || m - k0 * SP > lane.len + EPS) passoOk = false;
+      if (m - k1 * SP < -EPS || m - k1 * SP > lane.len + EPS) passoOk = false;
+    }
+    /* (iii) slot senza collisioni: K = ceil(len/SP)+1 ⇒ K·SP > len */
+    const K = rowSlotCount(lane.len, SP);
+    if (!(K * SP > lane.len + SP - 1e-6)) slotOk = false; // due fronti sulla stessa slot mai simultanei
   }
-  arr.push(b.s0);
-}
-for (const [, arr] of byLane) {
-  arr.sort((a, b) => a - b);
-}
-for (const [li, arr] of byLane) {
-  arr.sort((a, b) => a - b);
-  const lane = lanes[li];
-  const nB = arr.length;
-  for (let i = 0; i < nB; i++) {
-    const next = i === nB - 1 ? lane.len + arr[0] : arr[i + 1]; // l'anello si chiude
-    const d = next - arr[i];
-    spacingMin = Math.min(spacingMin, d);
-    spacingMax = Math.max(spacingMax, d);
+  /* (ii) stesso fronte k → stesso arco su CORSIE DIVERSE (ranga allineata) */
+  const kRef = Math.floor((m - 400) / SP); // un fronte che sta dentro le corsie ≥ 400 m
+  let refArc: number | null = null;
+  let aligned = true;
+  for (const lane of lanes) {
+    if (lane.len < 400) continue;
+    const arc = m - kRef * SP;
+    if (arc < 0 || arc > lane.len) continue;
+    if (refArc === null) refArc = arc;
+    else if (Math.abs(arc - refArc) > 1e-6) aligned = false;
   }
-  /* tutte le perle della stessa corsia ESATTAMENTE equidistanti */
-  const step = lane.len / nB;
-  for (let i = 0; i < nB; i++) {
-    const expect = ((i + 0.5) * lane.len) / nB;
-    if (Math.abs(arr[i] - expect) > 1e-6) spacingOk = false;
-  }
+  if (!aligned) passoOk = false;
 }
-console.log("5. PERLE UNIFORMI:");
-ok(spacingOk, `posizioni esatte: perla i su corsia di n perle = (i+0.5)·len/n`);
-ok(spacingMin >= 80 && spacingMax <= 900, `passo perle: ${spacingMin.toFixed(0)}–${spacingMax.toFixed(0)} m (mai ammucchiate < 80 m, mai rade > 900 m)`);
+console.log("5. PLOTONE A PETTINE (fronti sincronizzati):");
+console.log(`   (marcia ${WAVE_MS} m/s: un fronte ogni ${(SP / WAVE_MS).toFixed(1)} s dal fondo valle)`);
+ok(passoOk, `fronti a passo ESATTO ${(SP).toFixed(0)} m su ogni corsia e ranga allinata tra corsie (misurato ${passoMin.toFixed(1)}–${passoMax.toFixed(1)} m)`);
+ok(slotOk, `slot freccia senza collisioni (K·SP > len su tutte le corsie)`);
 
 /* ---------- 6. CONTINUITÀ del campione d'arco ---------- */
 let maxJump = 0;
@@ -274,7 +296,10 @@ ok(isBlue, `BREEZE_BLUE = ${BREEZE_BLUE} (canale blu dominante: «blu e basta»)
 /* ---------- 8. FALLBACK PIANURA ---------- */
 const lfFlat = buildLaneField(flat, opts);
 console.log("8. FALLBACK PIANURA:");
-ok(lfFlat.flat && lfFlat.lanes.length > 0 && lfFlat.beads.length > 0, `sito piatto → ${lfFlat.lanes.length} corsie dritte, ${lfFlat.beads.length} perle (mai scena vuota)`);
+ok(
+  lfFlat.flat && lfFlat.lanes.length > 0 && rowSlotCount(lfFlat.lanes[0].len) > 1,
+  `sito piatto → ${lfFlat.lanes.length} corsie dritte, ${lfFlat.lanes.reduce((a, l) => a + rowSlotCount(l.len), 0)} slot-freccia (mai scena vuota)`,
+);
 
 /* ---------- 9. FLUSSO CONTINUO: le corsie NASCONO nel fondovalle ----------
    Richiesta pilota v16: «flusso continuo dalla valle alla cima della

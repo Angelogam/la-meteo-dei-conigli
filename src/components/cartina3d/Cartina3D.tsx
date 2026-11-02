@@ -934,7 +934,9 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
       lift: "portanza",
       lee: "sottovento",
       ana: "brezza su",
-      kata: "brezza giù",
+      /* v17: le frecce SALONO sempre (a pettine) — l'etichetta «brezza giù»
+         contraddirebbe il flusso mostrato: resta la parola neutra */
+      kata: "brezza",
       flow: "flusso",
     };
     const labs: import("cesium").Entity[] = [];
