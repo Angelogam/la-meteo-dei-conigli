@@ -68,7 +68,7 @@ export const PRE_STEPS = 90; // discesa a valle per far NASCERE la corsia dal ba
   /* v16: ora APPLICATA come cap dell'integrazione discendente (5,4 km) */
 export const RIDGE_DRIFT = 0.16; // deriva di combing lungo il costone (peso sul gradiente)
 export const BREEZE_BLUE = "#57b2f8"; // UN SOLO COLORE per TUTTA la brezza
-export const FLOW_TIME_SCALE = 3; // rende il moto leggibile senza alterare i dati meteo
+export const FLOW_TIME_SCALE = 36; // accelera il tempo visivo, non i valori meteo
 export const ROW_TRAIL_NODES = 5; // nodi di scia per freccia (v17: scia CORTE, 136 m)
 export const ROW_TRAIL_SEG = 34; // m tra i nodi di scia
 export const FADE_IN_M = 170; // m di corsia prima della piena visibilità (nascita sfumata)

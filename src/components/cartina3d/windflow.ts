@@ -4,7 +4,8 @@
  * Le streamline sono integrate sul DEM fine (160 m) con maschera anti-incrocio.
  * Di giorno la brezza anabatica sale; di notte il drenaggio catabatico inverte
  * sia il moto sia l'orientamento di frecce e scie. La velocità varia per corsia
- * secondo la forzante meteo/termica, con accelerazione solo per la resa visiva.
+ * secondo la forzante meteo/termica. Il tempo dell'animazione è accelerato
+ * per rendere percepibile il moto alle scale della mappa; i dati non cambiano.
  *
  *  1. buildWindFlow — BREZZE DI PENDIO a terra (TUTTE BLU, un solo colore).
  *  2. buildAltitudeFlow — VENTI METEO in quota (clic su una quota): scie
@@ -168,21 +169,6 @@ export function buildWindFlow(
   });
   const lanes = lf.lanes;
 
-  /* ---------- PITTURA DELLE CORSIE (billboard: l'unico primitivo che in
-     questa scena si vede SEMPRE a ogni zoom — le polilinee qui stanno sotto
-     il mesh renderizzato alle viste radenti) ----------
-     Un trattino fisso ogni 360 m lungo ogni corsia, piccolo e discreto
-     (alpha 0.32): la corsia esiste come linea intera anche dove in questo
-     istante non passa una cometa. Position/colore/scala FISSI (zero write a
-     frame); la rotazione segue il heading solo quando la camera ruota. */
-  const paintBbs: Billboard[] = [];
-  const paintAz: number[] = [];
-  let paintHeading = Number.NaN;
-  const repaint = (heading: number): void => {
-    for (let i = 0; i < paintBbs.length; i++) paintBbs[i].rotation = heading - paintAz[i] + Math.PI / 2;
-    paintHeading = heading;
-  };
-
   /* ---------- collezione unica di sprite (un draw call) ---------- */
   const bc = new Cesium.BillboardCollection();
   viewer.scene.primitives.add(bc);
@@ -249,31 +235,6 @@ export function buildWindFlow(
       }
     }
 
-    /* trattini di pittura delle corsie: ogni 8 nodi (480 m) — le perle sono
-       più fitte (v16), il tratteggio resta un ACCENTO discreto della corsia */
-    const paintCol = Cesium.Color.fromCssColorString(BREEZE_BLUE).withAlpha(0.45);
-    for (const lane of lanes) {
-      for (let i = 0; i < lane.n; i += 8) {
-        paintBbs.push(
-          bc.add({
-            position: Cesium.Cartesian3.fromDegrees(lane.lo[i], lane.la[i], lane.h[i]),
-            image: imgUrl(streakSprite(BREEZE_BLUE)),
-            scale: 1.0,
-            scaleByDistance: new Cesium.NearFarScalar(500, 1.15, 30000, 0.4),
-            translucencyByDistance: fadeByDist,
-            distanceDisplayCondition: ddc,
-            disableDepthTestDistance: NEAR_NO_DEPTH,
-            color: paintCol,
-          }),
-        );
-        paintAz.push(directedLaneAzimuth(lane.az[i], lf.uphill));
-      }
-    }
-    try {
-      repaint(viewer.camera.heading);
-    } catch {
-      /* heading non pronto: lo farà il primo tick */
-    }
   } catch (e) {
     /* niente sprite orfani: se la creazione fallisce tolgo la collection */
     try {
@@ -329,9 +290,6 @@ export function buildWindFlow(
     } catch {
       return;
     }
-    /* la pittura segue il heading SOLO quando cambia (0 write nei frame di moto puro) */
-    if (Number.isNaN(paintHeading) || Math.abs(heading - paintHeading) > 0.0005) repaint(heading);
-
     degrade.step(now, dtMs);
     const nodes = degrade.nodes;
     if (hiddenFrames > 0) {
