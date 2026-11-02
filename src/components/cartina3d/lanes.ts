@@ -14,26 +14,11 @@
  *     dal fondo valle fino alla cresta, dove l'aria CONVERGE e si stacca
  *     in verticale (è lì che nascono le termiche);
  *   - di notte l'aria raffreddata, densa, DRENA a valle lungo le stesse
- *     linee (brezza catabatica). NELLA VISUALIZZAZIONE v17 il drenaggio è
- *     disattivato su richiesta esplicita del pilota: si mostra sempre il
- *     flusso in salita, che è ciò che serve al briefing di volo.
+ *     linee (brezza catabatica), con velocità distinta per ogni corsia.
  *
- * v17 «PLOTONE A PETTINE» (respingo pilota del video 2 nov: «i venti vanno
- *   indietro ... le brezze le devi vedere come un plotone di soldati in riga
- *   che si muove in modo sincronizzato dal basso verso l'alto, parallelamente;
- *   frecce a pettine che salgono il pendio in modo uguale, in continuo, un po'
- *   distanziate ma vicine»):
- *   - FINITA la modalità notturna: il flusso SALE SEMPRE (anabatica, dal
- *     fondo valle alla cresta). Il drenaggio catabatico invertiva il moto
- *     mentre frecce e scie restavano orientate in salita: è quello che il
- *     pilota vedeva come «venti che vanno indietro».
- *   - Niente più perle sfasate a caso: le frecce sono organizzate in FRONTI
- *     (ranga di plotone) — un orologio di marcia GLOBALE m avanza e il
- *     fronte k sta sull'arco m − k·ROW_SPACING su OGNI corsia: file di
- *     frecce affiancate perpendicolari alla salita, sincronizzate, ogni
- *     ROW_SPACING metri lungo il pendio. Un fronte parte dal fondo valle
- *     ogni ROW_SPACING/WAVE_MS secondi: flusso continuo, mai un salto.
- *   - scie CORTE dietro ogni freccia (ROW_TRAIL_NODES × ROW_TRAIL_SEG).
+ * Le frecce seguono le streamline smussate del DEM senza quantizzazione
+ * angolare artificiale. Il moto cambia verso con il ciclo diurno: anabatico
+ * in salita con riscaldamento, catabatico in discesa dopo il raffreddamento.
  *
  * GEOMETRIA ANTI-INCROCIO (il punto chiave di v15, resta valido):
  *   1. le corsie sono INTEGRALI del campo gradiente del DEM fine (160 m):
@@ -44,8 +29,7 @@
  *      passare nella stessa cella: separazione minima garantita PER
  *      COSTRUZIONE, non per fortuna;
  *   3. le particelle viaggiano INCOLLATE alla propria corsia (interpolazione
- *      d'arco sulla polilinea) e TUTTE alla stessa velocità: perle di una
- *      collana che non possono né scontrarsi né sorpassarsi.
+ *      d'arco sulla polilinea) con velocità modellata per ciascuna corsia.
  *
  * Questo modulo è MATEMATICA PURA (nessun Cesium): testabile in Node con
  * scripts/verify-lane-flow.ts.
@@ -65,11 +49,7 @@ import {
 export const LANE_SEP = 340; // m — cella della maschera = distanza minima tra corsie
   /* v16 (respingo pilota «frecce troppo distanti»): da 470 → 340 m, corsie
      AFFIANCATE che pettinano tutto il versante */
-export const ROW_SPACING = 300; // m — distanza tra i FRONTI lungo la corsia (v17)
-  /* v17 «plotone a pettine»: un fronte ogni 300 m lungo il pendio, corsie
-     ogni 340 m across → pettine quasi quadrato, «un po' distanziate ma
-     vicine». Tutte le corsie condividono lo STESSO fronte k: file
-     perpendicolari alla salita che salgono in modo sincronizzato. */
+export const ROW_SPACING = 300; // m — distanza minima tra i fronti lungo la corsia
 export const LANE_MIN_LEN = 560; // m — le corsie più corte si buttano
 export const SLOPE_MIN = 0.04; // pendenza minima (m/m) per SEMINARE una corsia
   /* v16: da 0.06 → 0.04 — anche i pendii dolci hanno la loro brezza */
@@ -88,9 +68,7 @@ export const PRE_STEPS = 90; // discesa a valle per far NASCERE la corsia dal ba
   /* v16: ora APPLICATA come cap dell'integrazione discendente (5,4 km) */
 export const RIDGE_DRIFT = 0.16; // deriva di combing lungo il costone (peso sul gradiente)
 export const BREEZE_BLUE = "#57b2f8"; // UN SOLO COLORE per TUTTA la brezza
-export const WAVE_MS = 130; // m/s — la MARCIA del plotone (v17: da 310, andatura «plotone»)
-  /* un fronte ogni ROW_SPACING/WAVE_MS ≈ 2,3 s parte dal fondo valle;
-     un pendio di 2,6 km si sale in ~20 s — si VEDE la colonna salire. */
+export const FLOW_TIME_SCALE = 3; // rende il moto leggibile senza alterare i dati meteo
 export const ROW_TRAIL_NODES = 5; // nodi di scia per freccia (v17: scia CORTE, 136 m)
 export const ROW_TRAIL_SEG = 34; // m tra i nodi di scia
 export const FADE_IN_M = 170; // m di corsia prima della piena visibilità (nascita sfumata)
@@ -104,10 +82,9 @@ export const FADE_OUT_M = 550; // m prima della cresta in cui il fronte sfuma (s
     esattamente questi billboard per corsia e li riusa in loop. */
 export const rowSlotCount = (len: number, sp: number = ROW_SPACING): number =>
   Math.ceil(len / sp) + 1;
-/** Passo effettivo dei fronti: se i versanti generano più freccette del
-    budget hardware, i fronti si allargano (MAI dimezzare le corsie: la
-    larghezza del pettine non si tocca). Condiviso da tutte le corsie:
-    l'allineamento dei fronti sopravvive a qualunque budget.
+/** Passo effettivo dei fronti: se i versanti generano troppe frecce per il
+    budget hardware, i fronti si allargano senza ridurre il numero di corsie.
+    Unico per tutte le corsie, preserva la stessa densità a ogni budget.
     Il tetto è in BILLBOARD (una freccia v17 = 1 testa + 5 nodi di scia = 6
     billboard, una perla v16 ne costava 15): a parità di carico GPU il
     plotone può avere ~2,5× più frecce delle vecchie perle. */
@@ -127,6 +104,7 @@ export interface Lane {
   h: Float64Array; // quota di volo (terreno + LIFT) — nel renderer si aggiunge solo lo stacco
   az: Float64Array; // azimut del moto (rad da Nord, orario) — dove VA l'aria
   aK: Float32Array; // alpha per nodo (versante al sole, intensità) 0..1
+  speedMs: number; // velocità media modellata lungo la corsia, m/s
   len: number; // metri (n-1)*DS
 }
 
@@ -134,7 +112,8 @@ export interface LaneField {
   lanes: Lane[];
   maxLen: number; // lunghezza della corsia più lunga (m) — serve all'orologio di marcia
   flat: boolean; // true = sito pianeggiante: corsie dritte del vento sinottico
-  day: boolean; // true = pieno giorno (brezza più intensa); v17: il flusso SALE sempre
+  day: boolean; // true = prevale il riscaldamento diurno
+  uphill: boolean; // direzione di percorrenza: salita di giorno, drenaggio di notte
 }
 
 export interface LaneOpts {
@@ -246,8 +225,8 @@ const buildFineGrad = (f: WindField): FineGrad => {
   const gEs = sm(gE);
   const gNs = sm(gN);
   const Ss = sm(S);
-  /* DIREZIONE mediata su ~1,6 km (10 celle) e quantizzata a 30°:
-     solo le celle abbastanza ripide votano (le pianure non tirano la media) */
+  /* DIREZIONE mediata su ~1,6 km (10 celle), senza quantizzazione angolare:
+     solo le celle abbastanza ripide votano (le pianure non tirano la media). */
   const ang = new Float32Array(rows * cols);
   const ok = new Uint8Array(rows * cols);
   for (let i = 0; i < rows * cols; i++) {
@@ -255,15 +234,13 @@ const buildFineGrad = (f: WindField): FineGrad => {
     ok[i] = Ss[i] >= SLOPE_END ? 1 : 0;
   }
   const angS = smoothDir(rows, cols, ang, ok, 10);
-  const BIN = (30 * Math.PI) / 180;
-  const uEq = new Float32Array(rows * cols);
-  const uNq = new Float32Array(rows * cols);
+  const uE = new Float32Array(rows * cols);
+  const uN = new Float32Array(rows * cols);
   for (let i = 0; i < rows * cols; i++) {
-    const q = Math.round(angS[i] / BIN) * BIN;
-    uEq[i] = Math.cos(q);
-    uNq[i] = Math.sin(q);
+    uE[i] = Math.cos(angS[i]);
+    uN[i] = Math.sin(angS[i]);
   }
-  return { rows, cols, step, gE: gEs, gN: gNs, S: Ss, uE: uEq, uN: uNq };
+  return { rows, cols, step, gE: gEs, gN: gNs, S: Ss, uE, uN };
 };
 
 /* campione bilineare dal gradiente fine (fi/fj in indici di griglia) */
@@ -331,10 +308,8 @@ export function buildLaneField(f: WindField, opts: LaneOpts): LaneField {
     return { ws: mix("ws"), wd: mix("wd") };
   };
 
-  /* --- direzione di flusso lungo il pendio: campo QUANTIZZATO + combing ---
-     v17.2: la direzione viene dal campo mediato (~1,6 km) e quantizzato a
-     30° (G.uE/G.uN): le corsie della stessa faccia sono PARALLELE ESATTE.
-     La magnitudine (s) resta il gradiente vero → soglie pendenza oneste. */
+  /* Direzione smussata lungo il pendio, senza gradini angolari: la pendenza
+     resta quella DEM e le curve seguono meglio le forme del rilievo. */
   const dirAt = (
     la: number,
     lo: number,
@@ -567,6 +542,7 @@ export function buildLaneField(f: WindField, opts: LaneOpts): LaneField {
     const ptsH: number[] = [];
     const ptsAz: number[] = [];
     const ptsAK: number[] = [];
+    const ptsSpeed: number[] = [];
     let la = baseLa;
     let lo = baseLo;
     const baseH = raiseAt(baseLa, baseLo); // quota di partenza (per il tetto di dislivello)
@@ -585,6 +561,7 @@ export function buildLaneField(f: WindField, opts: LaneOpts): LaneField {
       ptsH.push(raiseAt(la, lo) + CRUISE_LIFT); // la corsia VOLA: mai sepolta nel mesh
       ptsAz.push(Math.atan2(d1.dE, d1.dN));
       ptsAK.push(attr.aK);
+      ptsSpeed.push(attr.sp);
       claim(la, lo, laneId);
       const mLa = la + (d1.dN * (DS / 2)) / mLat;
       const mLo = lo + (d1.dE * (DS / 2)) / mLon;
@@ -609,18 +586,18 @@ export function buildLaneField(f: WindField, opts: LaneOpts): LaneField {
       h: Float64Array.from(ptsH),
       az: Float64Array.from(ptsAz),
       aK: Float32Array.from(ptsAK),
+      speedMs: clamp(ptsSpeed.reduce((sum, speed) => sum + speed, 0) / Math.max(1, ptsSpeed.length) / 3.6, 0.6, 7),
       len: (n - 1) * DS,
     });
   }
 
   if (lanes.length === 0) return flatFallback(f, opts, sun, isDay);
 
-  /* v17: niente distribuzione perle — le frecce sono FRONTI calcolati
-     dall'orologio di marcia globale nel renderer (windflow.ts). Qui serve
-     solo la lunghezza massima, per inizializzare l'orologio a pettine pieno. */
+  /* Le corsie condividono la geometria, ma il renderer usa la velocità
+     modellata di ciascuna per animare fronti indipendenti. */
   let maxLen = 0;
   for (const l of lanes) maxLen = Math.max(maxLen, l.len);
-  return { lanes, maxLen, flat: false, day: isDay };
+  return { lanes, maxLen, flat: false, day: isDay, uphill: isDay };
 }
 
 /* ---------- FALLBACK PIANURA: corsie dritte del vento sinottico ----------
@@ -667,14 +644,24 @@ function flatFallback(
       azs[i] = az;
       aK[i] = isDay ? 0.8 : 0.7;
     }
-    lanes.push({ n, la, lo, h, az: azs, aK, len: (n - 1) * DS });
+    lanes.push({ n, la, lo, h, az: azs, aK, speedMs: clamp(w.ws / 3.6, 0.6, 7), len: (n - 1) * DS });
   }
   let maxLen = 0;
   for (const l of lanes) maxLen = Math.max(maxLen, l.len);
-  return { lanes, maxLen, flat: true, day: isDay };
+  return { lanes, maxLen, flat: true, day: isDay, uphill: true };
 }
 
 /* ---------- campione d'arco su una corsia (O(1), arco uniforme DS) ---------- */
+export function directedLaneArc(lane: Lane, progress: number, uphill: boolean): number {
+  const arc = clamp(progress, 0, lane.len);
+  return uphill ? arc : lane.len - arc;
+}
+
+export function directedLaneAzimuth(azimuth: number, uphill: boolean): number {
+  const directed = azimuth + (uphill ? 0 : Math.PI);
+  return Math.atan2(Math.sin(directed), Math.cos(directed));
+}
+
 export interface LaneSample {
   la: number;
   lo: number;

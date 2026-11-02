@@ -1,17 +1,13 @@
-/* Verifica numerica del MOTORE A CORSIE (lanes.ts) — v17 «PLOTONE A PETTINE»,
-   la risposta al video pilota del 2 nov: «i venti vanno indietro ... le brezze
-   come un plotone di soldati in riga che si muove in modo sincronizzato dal
-   basso verso l'alto, parallelamente; frecce a pettine che salgono in modo
-   uguale, in continuo».
+/* Verifica numerica del MOTORE A CORSIE (lanes.ts): geometria delle streamline,
+   direzione anabatica/catabatica, velocità per corsia e continuità del moto.
    Qui si DIMOSTRA che:
    1. le corsie esistono sui pendii (non su pianura);
    2. SALGONO dal fondo valle alla cresta (anabatica: h finale >> h iniziale);
    3. la tangente della corsia segue il pendio (dot con il gradiente > 0);
    4. DUE CORSIE NON SI INCROCIANO MAI (raster: ogni cella 40 m ha ≤ 1 corsia)
       e non si avvicinano meno di SAFE_M (165 m) — per costruzione;
-   5. PLOTONE: il fronte k sta sull'arco m − k·ROW_SPACING su OGNI corsia
-      (rime allineate attraverso tutto il rilievo), passo ESATTO tra i
-      fronti, e con lo stesso orologio NESSUN fronte può sorpassarne altro;
+   5. velocità per corsia finite, spaziatura dei fronti costante e inversione
+      del moto tra il regime diurno e quello notturno;
    6. il campione d'arco laneAt è continuo (niente salti);
    7. TUTTO È BLU: BREEZE_BLUE unico colore della famiglia brezza;
    8. sito pianeggiante → fallback corsie dritte (mai scena vuota);
@@ -23,12 +19,14 @@
 import {
   buildLaneField,
   laneAt,
+  directedLaneArc,
+  directedLaneAzimuth,
   BREEZE_BLUE,
+  FLOW_TIME_SCALE,
   LANE_MIN_LEN,
   ROW_SPACING,
   effectiveRowSpacing,
   rowSlotCount,
-  WAVE_MS,
   type Lane,
   type WindField,
 } from "../src/components/cartina3d/lanes";
@@ -110,6 +108,7 @@ const opts = {
 
 const t0 = Date.now();
 const lf = buildLaneField(field, opts);
+const nightLf = buildLaneField(field, { ...opts, hour: 2 });
 const buildMs = Date.now() - t0;
 const lanes = lf.lanes;
 const SP = effectiveRowSpacing(lanes.reduce((a, l) => a + l.len, 0), lanes.length, opts.budget);
@@ -222,21 +221,20 @@ console.log("4. ANTI-INCROCIO:");
 ok(conflicts === 0, `celle da 40 m condivise da 2 corsie: ${conflicts} (deve essere 0)`);
 ok(minDist >= 150, `distanza minima tra corsie diverse: ${minDist.toFixed(0)} m (≥ 150 m — niente frecce che si toccano)`);
 
-/* ---------- 5. PLOTONE A PETTINE (fronti sincronizzati) ----------
-   Riproduce la STESSA aritmetica del renderer: fronte k su arco m − k·SP.
-   Si dimostra che: (i) su ogni corsia i fronti visibili distano ESATTAMENTE
-   SP; (ii) lo stesso fronte k è allo STESSO arco su tutte le corsie (ranga
-   allineata attraverso il rilievo); (iii) gli slot k mod K non collidono mai
-   (K·SP > len); (iv) nessun fronte sorpassa: il passo temporale tra due
-   fronti consecutivi è identico ovunque. */
+/* ---------- 5. MOTO DIREZIONALE E VELOCITÀ PER CORSIA ----------
+   Riproduce la logica del renderer: progress m − k·SP sulla corsia, con
+   velocità distinta per corsia e inversione del percorso nelle ore notturne. */
 const EPS = 1e-9;
 let passoOk = true;
 let passoMin = Infinity;
 let passoMax = 0;
 let slotOk = true;
-const sampleM = [1234.5, 8000, 15000.25, 27345.75]; // istanti dell'orologio di marcia
-for (const m of sampleM) {
+const speedsOk = lanes.every((lane) => Number.isFinite(lane.speedMs) && lane.speedMs >= 0.6 && lane.speedMs <= 7);
+const M0 = Math.ceil((lf.maxLen + 1) / SP) * SP;
+const sampleSeconds = [0, 5, 20, 90];
+for (const seconds of sampleSeconds) {
   for (const lane of lanes) {
+    const m = M0 + lane.speedMs * FLOW_TIME_SCALE * seconds;
     const k0 = Math.max(0, Math.ceil((m - lane.len) / SP - EPS));
     const k1 = Math.floor(m / SP + EPS);
     /* (i) passo esatto tra fronti consecutivi sulla stessa corsia */
@@ -255,22 +253,20 @@ for (const m of sampleM) {
     const K = rowSlotCount(lane.len, SP);
     if (!(K * SP > lane.len + SP - 1e-6)) slotOk = false; // due fronti sulla stessa slot mai simultanei
   }
-  /* (ii) stesso fronte k → stesso arco su CORSIE DIVERSE (ranga allineata) */
-  const kRef = Math.floor((m - 400) / SP); // un fronte che sta dentro le corsie ≥ 400 m
-  let refArc: number | null = null;
-  let aligned = true;
-  for (const lane of lanes) {
-    if (lane.len < 400) continue;
-    const arc = m - kRef * SP;
-    if (arc < 0 || arc > lane.len) continue;
-    if (refArc === null) refArc = arc;
-    else if (Math.abs(arc - refArc) > 1e-6) aligned = false;
-  }
-  if (!aligned) passoOk = false;
 }
-console.log("5. PLOTONE A PETTINE (fronti sincronizzati):");
-console.log(`   (marcia ${WAVE_MS} m/s: un fronte ogni ${(SP / WAVE_MS).toFixed(1)} s dal fondo valle)`);
-ok(passoOk, `fronti a passo ESATTO ${(SP).toFixed(0)} m su ogni corsia e ranga allinata tra corsie (misurato ${passoMin.toFixed(1)}–${passoMax.toFixed(1)} m)`);
+console.log("5. MOTO DIREZIONALE E VELOCITÀ PER CORSIA:");
+ok(lf.day && lf.uphill, "campo diurno: moto anabatico dal fondo verso la cresta");
+ok(speedsOk, "velocità modellate per corsia finite e comprese tra 0,6 e 7 m/s");
+ok(
+  !nightLf.day &&
+    !nightLf.uphill &&
+    nightLf.lanes.length > 0 &&
+    directedLaneArc(lanes[0], 0, nightLf.uphill) === lanes[0].len &&
+    directedLaneArc(lanes[0], lanes[0].len, nightLf.uphill) === 0 &&
+    Math.abs(directedLaneAzimuth(0.7, false) - (0.7 - Math.PI)) < 1e-9,
+  "campo notturno reale: corsie costruite e direzione invertita per il drenaggio catabatico",
+);
+ok(passoOk, `fronti a passo ESATTO ${SP.toFixed(0)} m su ogni corsia (misurato ${passoMin.toFixed(1)}–${passoMax.toFixed(1)} m)`);
 ok(slotOk, `slot freccia senza collisioni (K·SP > len su tutte le corsie)`);
 
 /* ---------- 6. CONTINUITÀ del campione d'arco ---------- */
@@ -297,7 +293,10 @@ ok(isBlue, `BREEZE_BLUE = ${BREEZE_BLUE} (canale blu dominante: «blu e basta»)
 const lfFlat = buildLaneField(flat, opts);
 console.log("8. FALLBACK PIANURA:");
 ok(
-  lfFlat.flat && lfFlat.lanes.length > 0 && rowSlotCount(lfFlat.lanes[0].len) > 1,
+  lfFlat.flat &&
+    lfFlat.lanes.length > 0 &&
+    lfFlat.lanes.every((lane) => Number.isFinite(lane.speedMs) && lane.speedMs >= 0.6 && lane.speedMs <= 7) &&
+    rowSlotCount(lfFlat.lanes[0].len) > 1,
   `sito piatto → ${lfFlat.lanes.length} corsie dritte, ${lfFlat.lanes.reduce((a, l) => a + rowSlotCount(l.len), 0)} slot-freccia (mai scena vuota)`,
 );
 

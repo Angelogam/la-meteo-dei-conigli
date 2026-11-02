@@ -1,20 +1,10 @@
 /**
- * FLUSSO VENTO DINAMICO — v17 «PLOTONE A PETTINE».
+ * FLUSSO VENTO DINAMICO — brezze aderenti al rilievo.
  *
- * Il pilota ha respinto v13/v14/v15/v16 e il video del 2 nov chiude la
- * questione: «le brezze le devi vedere come un plotone di soldati in riga
- * che si muove in modo sincronizzato dal basso verso l'alto, parallelamente;
- * frecce a pettine che salgono il pendio in modo uguale, in continuo, un po'
- * distanziate ma vicine». E il «i venti vanno indietro» era il modo notte:
- * le perle scendevano (catabatica) con frecce e teste-scia puntate in su.
- *
- * La svolta v17 (lanes.ts, matematica pura): le BREZZE DI PENDIO corrono su
- * CORSIE pre-calcolate (streamline integrate sul gradiente del DEM fine 160 m,
- * maschera anti-incrocio) e un OROLOGIO DI MARCIA GLOBALE m avanza: il fronte
- * k sta sull'arco m − k·ROW_SPACING su OGNI corsia → righe di frecce
- * affiancate perpendicolari alla salita, sincronizzate, ogni ~300 m lungo il
- * pendio, che SALONO SEMPRE (anabatica: valle → cresta, niente inversione
- * notturna). Fisica: Prandtl 1942 / Stull BLM / Whiteman.
+ * Le streamline sono integrate sul DEM fine (160 m) con maschera anti-incrocio.
+ * Di giorno la brezza anabatica sale; di notte il drenaggio catabatico inverte
+ * sia il moto sia l'orientamento di frecce e scie. La velocità varia per corsia
+ * secondo la forzante meteo/termica, con accelerazione solo per la resa visiva.
  *
  *  1. buildWindFlow — BREZZE DI PENDIO a terra (TUTTE BLU, un solo colore).
  *  2. buildAltitudeFlow — VENTI METEO in quota (clic su una quota): scie
@@ -29,9 +19,11 @@ import { heightAt, speedColor, dayOfYear, sunPosition, type LivePoint, type Wind
 import { dartSprite, streakSprite } from "./sprites";
 import {
   buildLaneField,
+  directedLaneArc,
+  directedLaneAzimuth,
   laneAt,
   BREEZE_BLUE,
-  WAVE_MS,
+  FLOW_TIME_SCALE,
   ROW_SPACING,
   ROW_TRAIL_NODES,
   ROW_TRAIL_SEG,
@@ -60,9 +52,8 @@ const clamp = (v: number, a: number, b: number): number => Math.min(b, Math.max(
 const finite = (p: import("cesium").Cartesian3): boolean =>
   Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z);
 
-/* popolazione adattiva (hardware debole = meno fronti)
-   v17: il budget NON taglia più le perle una a una: allarga il passo dei
-   FRONTI (effectiveRowSpacing) — il pettine resta allineato a qualunque budget */
+/* Popolazione adattiva: sui dispositivi meno potenti si allarga il passo
+   dei fronti, preservando la geometria delle corsie. */
 const particleBudget = (k: number): number => {
   let np = k >= 8 ? 640 : k >= 4 ? 460 : 280;
   if (typeof window !== "undefined") {
@@ -176,9 +167,6 @@ export function buildWindFlow(
     budget,
   });
   const lanes = lf.lanes;
-  /* v17: il flusso SALE SEMPRE (anabatica) — niente inversione notturna.
-     Il «vanno indietro» del video pilota era il drenaggio catabatico:
-     perle che scendevano con frecce e teste-scia puntate in salita. */
 
   /* ---------- PITTURA DELLE CORSIE (billboard: l'unico primitivo che in
      questa scena si vede SEMPRE a ogni zoom — le polilinee qui stanno sotto
@@ -210,12 +198,12 @@ export function buildWindFlow(
 
   const blue = baseCol(Cesium, BREEZE_BLUE); // UN SOLO COLORE per tutta la brezza
 
-  /* ---------- SLOT-FRECCE dei FRONTI (v17 «plotone a pettine») ----------
+  /* ---------- SLOT-FRECCE dei fronti ----------
      Per ogni corsia creo rowSlotCount(len, SP) frecce (testa + scia corta).
      Il fronte k usa lo slot k mod K: due fronti con la stessa slot non
      coesistono mai sulla stessa corsia (K·SP > len). Il passo SP è UNICO
-     per tutte le corsie (effectiveRowSpacing): i fronti restano ALLINEATI
-     a pettine su tutto il rilievo a qualunque budget hardware. */
+     per tutte le corsie (effectiveRowSpacing), mentre la loro velocità
+     distinta evita un moto artificiosamente sincronizzato. */
   const Ltot = lanes.reduce((a, l) => a + l.len, 0);
   const SP = effectiveRowSpacing(Ltot, lanes.length, budget);
   const laneOff: number[] = [];
@@ -278,7 +266,7 @@ export function buildWindFlow(
             color: paintCol,
           }),
         );
-        paintAz.push(lane.az[i]);
+        paintAz.push(directedLaneAzimuth(lane.az[i], lf.uphill));
       }
     }
     try {
@@ -305,6 +293,8 @@ export function buildWindFlow(
     flat: lf.flat,
     total: bc.length,
     sp: Math.round(SP),
+    direction: lf.flat ? "ambient" : lf.uphill ? "anabatic" : "katabatic",
+    speedMs: lanes.map((lane) => lane.speedMs),
     sun: { az: Math.round(sun.az), alt: Math.round(sun.alt) },
   });
 
@@ -315,13 +305,11 @@ export function buildWindFlow(
   const sTrail: LaneSample = { la: 0, lo: 0, h: 0, az: 0, aK: 0 };
   const degrade = makeDegrade(ROW_TRAIL_NODES, views.length, 2);
 
-  /* ---------- OROLOGIO DI MARCIA GLOBALE (v17 «plotone») ----------
-     m avanza SEMPRE (mai wrappato): il fronte k sta sull'arco m − k·SP su
-     OGNI corsia → righe di frecce affiancate, perpendicolari alla salita,
-     che salgono in modo sincronizzato. M0 pre-avanza l'orologio così il
-     pettine è PIENO già al primo frame (niente flusso che «si accende»). */
+  /* L'orologio è condiviso, ma ogni corsia avanza alla propria velocità
+     modellata. Il fattore visivo mantiene leggibile il flusso senza alterare
+     i valori meteo. */
   const M0 = Math.ceil((lf.maxLen + 1) / SP) * SP;
-  let tA = 0; // orologio del flusso: pausa = flusso fermo, mai salti al ritorno
+  let tA = 0;
 
   let last = performance.now();
   let hiddenFrames = 0;
@@ -351,10 +339,8 @@ export function buildWindFlow(
       return;
     }
     tA += dt;
-    const m = M0 + WAVE_MS * tA;
 
-    /* degrado = FRONTE SÌ FRONTE NO (k mod skip): le rime che restano
-       restano ALLINEATE — il pettine si dirada, non si sfasa mai */
+    /* degrado dirada i fronti senza cambiare la geometria delle corsie */
     const skip = degrade.level + 1;
 
     const hideV = (v: RowDart): void => {
@@ -369,9 +355,8 @@ export function buildWindFlow(
       const len = lane.len;
       const K = laneK[li];
       const off = laneOff[li];
-      /* fronti visibili su questa corsia: 0 ≤ m − k·SP ≤ len — nascono al
-         fondo valle (fade-in) e sfumano alla cresta (fade-out): flusso
-         CONTINUO, un fronte entra ogni SP/WAVE_MS ≈ 2,3 s */
+      const m = M0 + lane.speedMs * FLOW_TIME_SCALE * tA;
+      /* fronti visibili su questa corsia: 0 ≤ m − k·SP ≤ len */
       const k0 = Math.max(0, Math.ceil((m - len) / SP - 1e-9));
       const k1 = Math.floor(m / SP + 1e-9);
       for (let k = k0; k <= k1; k++) {
@@ -380,35 +365,35 @@ export function buildWindFlow(
           hideV(v);
           continue;
         }
-        const a = m - k * SP; // arco del fronte k su questa corsia (0..len)
-        const fadeIn = smooth01(a / FADE_IN_M);
-        const fadeOut = smooth01((len - a) / FADE_OUT_M);
+        const progress = m - k * SP;
+        const a = directedLaneArc(lane, progress, lf.uphill);
+        const fadeIn = smooth01(progress / FADE_IN_M);
+        const fadeOut = smooth01((len - progress) / FADE_OUT_M);
         const alpha0 = 0.95 * fadeIn * fadeOut;
         if (alpha0 < 0.02) {
           hideV(v);
           continue;
         }
 
-        /* --- TESTINA: sulla corsia, punta in SALITA (senso di marcia) --- */
+        /* --- TESTINA: sulla corsia, punta nel senso effettivo del moto --- */
         laneAt(lane, a, sHead);
         const ph = Cesium.Cartesian3.fromDegrees(sHead.lo, sHead.la, sHead.h + 6, undefined, scPos);
         let shown = false;
         if (finite(ph)) {
           v.head.show = true;
           v.head.position = scPos;
-          v.head.rotation = heading - sHead.az;
+          v.head.rotation = heading - directedLaneAzimuth(sHead.az, lf.uphill);
           Cesium.Color.clone(Cesium.Color.WHITE, scCol);
           scCol.alpha = clamp(alpha0 * (0.72 + 0.28 * sHead.aK), 0, 1);
           v.head.color = scCol;
           shown = true;
         } else v.head.show = false;
 
-        /* --- SCIA CORTA a valle della testa (dietro il moto): esattamente
-           SULLA CORSIA — stessa curva, non può staccarsi né incrociare la
-           corsia vicina --- */
+        /* --- SCIA corta dietro la testa: a valle di giorno, a monte di notte --- */
         for (let j = 0; j < nodes; j++) {
           const bb = v.segs[j];
-          const arcT = a - (j + 1) * ROW_TRAIL_SEG;
+          const trailDirection = lf.uphill ? 1 : -1;
+          const arcT = a - trailDirection * (j + 1) * ROW_TRAIL_SEG;
           if (!shown || arcT < 0 || arcT > len) {
             if (bb.show) bb.show = false;
             continue;
@@ -421,7 +406,7 @@ export function buildWindFlow(
           }
           bb.show = true;
           bb.position = pm;
-          bb.rotation = heading - sTrail.az + Math.PI / 2;
+          bb.rotation = heading - directedLaneAzimuth(sTrail.az, lf.uphill) + Math.PI / 2;
           Cesium.Color.clone(blue, scCol);
           scCol.alpha = clamp(alpha0 * sTrail.aK * (0.8 * Math.pow(1 - j / nodes, 0.8) + 0.2), 0, 1);
           if (scCol.alpha < 0.02) bb.show = false;
