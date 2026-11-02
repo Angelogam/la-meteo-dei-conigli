@@ -42,7 +42,7 @@ import { Globe, Maximize2, Minimize2, Mountain, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import type { CartinaDecollo } from "@/components/CartinaMeteo";
 import { windAtAltitude } from "@/components/CartinaMeteo";
-import type { HourlyPoint } from "@/services/threeSourceWeather";
+import type { HourlyPoint, WindLevel } from "@/services/threeSourceWeather";
 import { createTerrariumTerrainProvider, sampleTerrainHeights } from "./terrain";
 import { buildFallbackForecast, buildWindField, computeFlows, dayOfYear, fetchForecast, heightAt2, liveAt, speedColor } from "./winds";
 import type { FlowCell, ForecastData, WindField } from "./winds";
@@ -184,6 +184,22 @@ function levelsFor(elev: number | null | undefined): number[] {
   const out: number[] = [];
   for (let q = a; q <= QUOTA_MAX; q += QUOTA_STEP) out.push(q);
   return out.length ? out : [Math.min(a, QUOTA_MAX)];
+}
+
+function temperatureAtAltitude(point: HourlyPoint | null, altitude: number): number | null {
+  const profile = (point?.levels ?? [])
+    .filter((level): level is WindLevel & { t: number } => level.t != null && Number.isFinite(level.t) && Number.isFinite(level.gh))
+    .sort((a, b) => a.gh - b.gh);
+  if (!profile.length || altitude < profile[0].gh || altitude > profile[profile.length - 1].gh) return null;
+  for (let i = 0; i < profile.length; i++) {
+    const upper = profile[i];
+    if (altitude === upper.gh) return upper.t;
+    const lower = profile[i + 1];
+    if (!lower || altitude > lower.gh) continue;
+    const fraction = (altitude - upper.gh) / (lower.gh - upper.gh);
+    return upper.t + (lower.t - upper.t) * fraction;
+  }
+  return null;
 }
 
 const DIR8 = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"];
@@ -1445,8 +1461,8 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
               ))}
             </select>
           </label>
-          <div className="c3d-quotas" role="group" aria-label="Quota dei venti meteo">
-            <span className="c3d-quotas-k">Quota</span>
+          <div className="c3d-quotas" role="group" aria-label="Quota del vento e temperatura interpolata dal sounding in gradi Celsius">
+            <span className="c3d-quotas-k">Quota · °C</span>
             <button
               type="button"
               className={"c3d-q" + (effQuota === 0 ? " is-on" : "")}
@@ -1456,18 +1472,25 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
               off
             </button>
             <div className="c3d-quotas-scroll">
-              {levelList.map((q) => (
-                <button
-                  key={q}
-                  type="button"
-                  className={"c3d-q" + (effQuota === q ? " is-on" : "")}
-                  onClick={() => setQuota(q)}
-                  data-testid={`c3d-q-${q}`}
-                  title={`Vento meteo a ${q} m: SOLO questo livello, velocità e direzione`}
-                >
-                  {q}
-                </button>
-              ))}
+              {levelList.map((q) => {
+                const temperature = temperatureAtAltitude(quotaPoint, q);
+                const temperatureLabel =
+                  temperature === null ? "—°" : `${temperature > 0 ? "+" : ""}${Math.round(temperature)}°`;
+                return (
+                  <button
+                    key={q}
+                    type="button"
+                    className={"c3d-q" + (effQuota === q ? " is-on" : "")}
+                    onClick={() => setQuota(q)}
+                    data-testid={`c3d-q-${q}`}
+                    title={`Vento meteo a ${q} m${temperature === null ? "" : ` · temperatura stimata ${temperature.toFixed(1)} °C`}`}
+                    aria-label={`Quota ${q} metri, temperatura ${temperature === null ? "non disponibile" : `${temperature.toFixed(1)} gradi Celsius`}`}
+                  >
+                    <span>{q}</span>
+                    <small className="c3d-q-temp">{temperatureLabel}</small>
+                  </button>
+                );
+              })}
             </div>
           </div>
           <label className="c3d-toggle">

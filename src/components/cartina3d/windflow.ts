@@ -3,9 +3,9 @@
  *
  * Le streamline sono integrate sul DEM fine (160 m) con maschera anti-incrocio.
  * Di giorno la brezza anabatica sale; di notte il drenaggio catabatico inverte
- * sia il moto sia l'orientamento di frecce e scie. La velocità varia per corsia
- * secondo la forzante meteo/termica. Il tempo dell'animazione è accelerato
- * per rendere percepibile il moto alle scale della mappa; i dati non cambiano.
+ * sia il moto sia l'orientamento di frecce e scie. Ogni corsia deriva la propria
+ * velocità dalla forzante meteo/termica; la media del campo muove fronti
+ * sincronizzati trasversalmente. Il tempo visivo è accelerato, non i dati.
  *
  *  1. buildWindFlow — BREZZE DI PENDIO a terra (TUTTE BLU, un solo colore).
  *  2. buildAltitudeFlow — VENTI METEO in quota (clic su una quota): scie
@@ -266,10 +266,10 @@ export function buildWindFlow(
   const sTrail: LaneSample = { la: 0, lo: 0, h: 0, az: 0, aK: 0 };
   const degrade = makeDegrade(ROW_TRAIL_NODES, views.length, 2);
 
-  /* L'orologio è condiviso, ma ogni corsia avanza alla propria velocità
-     modellata. Il fattore visivo mantiene leggibile il flusso senza alterare
-     i valori meteo. */
+  /* I fronti condividono lo stesso avanzamento per formare righe ordinate
+     trasversali al pendio; la velocità media conserva la scala del modello. */
   const M0 = Math.ceil((lf.maxLen + 1) / SP) * SP;
+  const meanSpeedMs = lanes.reduce((sum, lane) => sum + lane.speedMs, 0) / Math.max(1, lanes.length);
   let tA = 0;
 
   let last = performance.now();
@@ -313,7 +313,7 @@ export function buildWindFlow(
       const len = lane.len;
       const K = laneK[li];
       const off = laneOff[li];
-      const m = M0 + lane.speedMs * FLOW_TIME_SCALE * tA;
+      const m = M0 + meanSpeedMs * FLOW_TIME_SCALE * tA;
       /* fronti visibili su questa corsia: 0 ≤ m − k·SP ≤ len */
       const k0 = Math.max(0, Math.ceil((m - len) / SP - 1e-9));
       const k1 = Math.floor(m / SP + 1e-9);

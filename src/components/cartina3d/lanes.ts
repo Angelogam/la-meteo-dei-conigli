@@ -29,7 +29,8 @@
  *      passare nella stessa cella: separazione minima garantita PER
  *      COSTRUZIONE, non per fortuna;
  *   3. le particelle viaggiano INCOLLATE alla propria corsia (interpolazione
- *      d'arco sulla polilinea) con velocità modellata per ciascuna corsia.
+ *      d'arco sulla polilinea); la velocità media delle corsie avanza i fronti
+ *      in modo sincronizzato, come i denti di un pettine.
  *
  * Questo modulo è MATEMATICA PURA (nessun Cesium): testabile in Node con
  * scripts/verify-lane-flow.ts.
@@ -588,8 +589,8 @@ export function buildLaneField(f: WindField, opts: LaneOpts): LaneField {
 
   if (lanes.length === 0) return flatFallback(f, opts, sun, isDay);
 
-  /* Le corsie condividono la geometria, ma il renderer usa la velocità
-     modellata di ciascuna per animare fronti indipendenti. */
+  /* Conserva una velocità fisica per corsia; il renderer usa la media del
+     campo per mantenere allineate le file di frecce tra corsie. */
   let maxLen = 0;
   for (const l of lanes) maxLen = Math.max(maxLen, l.len);
   return { lanes, maxLen, flat: false, day: isDay, uphill: isDay };

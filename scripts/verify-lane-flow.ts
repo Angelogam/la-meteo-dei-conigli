@@ -232,9 +232,9 @@ console.log("4. ANTI-INCROCIO:");
 ok(conflicts === 0, `celle da 40 m condivise da 2 corsie: ${conflicts} (deve essere 0)`);
 ok(minDist >= 150, `distanza minima tra corsie diverse: ${minDist.toFixed(0)} m (≥ 150 m — niente frecce che si toccano)`);
 
-/* ---------- 5. MOTO DIREZIONALE E VELOCITÀ PER CORSIA ----------
-   Riproduce la logica del renderer: progress m − k·SP sulla corsia, con
-   velocità distinta per corsia e inversione del percorso nelle ore notturne. */
+/* ---------- 5. MOTO DIREZIONALE E FRONTI A PETTINE ----------
+   Riproduce il renderer: fronti a progress comune su tutte le corsie, che
+   seguono ciascuna la propria curva e invertono percorso durante la notte. */
 const EPS = 1e-9;
 let passoOk = true;
 let passoMin = Infinity;
@@ -242,10 +242,16 @@ let passoMax = 0;
 let slotOk = true;
 const speedsOk = lanes.every((lane) => Number.isFinite(lane.speedMs) && lane.speedMs >= 0.6 && lane.speedMs <= 7);
 const M0 = Math.ceil((lf.maxLen + 1) / SP) * SP;
+const meanSpeedMs = lanes.reduce((sum, lane) => sum + lane.speedMs, 0) / lanes.length;
+let alignedRows = true;
 const sampleSeconds = [0, 5, 20, 90];
 for (const seconds of sampleSeconds) {
+  const m = M0 + meanSpeedMs * FLOW_TIME_SCALE * seconds;
+  const k = Math.floor(m / SP);
+  const rowProgress = lanes.map(() => m - k * SP);
+  const rowRange = Math.max(...rowProgress) - Math.min(...rowProgress);
+  if (rowRange > EPS || rowProgress[0] > Math.min(...lanes.map((lane) => lane.len))) alignedRows = false;
   for (const lane of lanes) {
-    const m = M0 + lane.speedMs * FLOW_TIME_SCALE * seconds;
     const k0 = Math.max(0, Math.ceil((m - lane.len) / SP - EPS));
     const k1 = Math.floor(m / SP + EPS);
     /* (i) passo esatto tra fronti consecutivi sulla stessa corsia */
@@ -265,9 +271,10 @@ for (const seconds of sampleSeconds) {
     if (!(K * SP > lane.len + SP - 1e-6)) slotOk = false; // due fronti sulla stessa slot mai simultanei
   }
 }
-console.log("5. MOTO DIREZIONALE E VELOCITÀ PER CORSIA:");
+console.log("5. MOTO DIREZIONALE E FRONTI A PETTINE:");
 ok(lf.day && lf.uphill, "campo diurno: moto anabatico dal fondo verso la cresta");
 ok(speedsOk, "velocità modellate per corsia finite e comprese tra 0,6 e 7 m/s");
+ok(alignedRows, "progressione comune su tutte le corsie: fronti allineati come denti di un pettine");
 ok(
   !nightLf.day &&
     !nightLf.uphill &&

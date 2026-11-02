@@ -104,7 +104,13 @@
   margin-right: 0.15rem;
 }
 .c3d-q {
-  min-width: 42px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  min-width: 52px;
+  min-height: 38px;
   padding: 0.28rem 0.42rem;
   border-radius: 8px;
   border: 1px solid rgba(125, 211, 252, 0.2);
@@ -116,6 +122,14 @@
   cursor: pointer;
   transition: color 0.15s, background 0.15s, border-color 0.15s;
 }
+.c3d-q-temp {
+  color: #ffd76a;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.c3d-q.is-on .c3d-q-temp { color: #4a3510; }
 .c3d-q:hover { color: #eaf6ff; border-color: rgba(125, 211, 252, 0.45); }
 .c3d-q.is-on {
   color: #0a1626;
