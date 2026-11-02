@@ -58,7 +58,7 @@ export const SLOPE_END = 0.012; // soglia di ESISTENZA del flusso (m/m)
      cima»: sotto il 5% di pendenza il flusso NON muore più, continua sul
      fondovalle seguendo il gradiente (il vento di valle che risale il fondovalle
      e poi sale i versanti — Whiteman, Mountain Meteorology cap. 11). */
-export const DS = 60; // m — passo d'integrazione (arco UNIFORME → lookup O(1))
+export const DS = 60; // m — passo d'integrazione uniforme sul DEM fine (160 m)
 export const CRUISE_LIFT = 26; // m di volo delle corsie/scie SOPRA il terreno DEM
   /* v16: da 18 → 26 m — il mesh renderizzato a max zoom devia dal DEM a 160 m
      anche di ±20 m: con 18 m le scie si SEPPELLIVANO e sparivano ingrandendo */
@@ -66,11 +66,11 @@ export const MAX_STEPS = 110; // ≈ 6,6 km: salita del versante + risalita del 
 export const H_GAIN_MAX = 900; // m di dislivello massimo: superato → la corsia ha fatto il suo lavoro
 export const PRE_STEPS = 90; // discesa a valle per far NASCERE la corsia dal basso
   /* v16: ora APPLICATA come cap dell'integrazione discendente (5,4 km) */
-export const RIDGE_DRIFT = 0.16; // deriva di combing lungo il costone (peso sul gradiente)
+export const RIDGE_DRIFT = 0.2; // deriva moderata lungo gli sproni e le curve di livello
 export const BREEZE_BLUE = "#57b2f8"; // UN SOLO COLORE per TUTTA la brezza
 export const FLOW_TIME_SCALE = 36; // accelera il tempo visivo, non i valori meteo
-export const ROW_TRAIL_NODES = 5; // nodi di scia per freccia (v17: scia CORTE, 136 m)
-export const ROW_TRAIL_SEG = 34; // m tra i nodi di scia
+export const ROW_TRAIL_NODES = 6; // campioni ravvicinati per scie più morbide sulle curve
+export const ROW_TRAIL_SEG = 26; // m tra i nodi di scia
 export const FADE_IN_M = 170; // m di corsia prima della piena visibilità (nascita sfumata)
 export const FADE_OUT_M = 550; // m prima della cresta in cui il fronte sfuma (stacco)
   /* v17.1: da 230 → 550 — nell'ultimo tratto le corsie di TUTTE le facce
@@ -84,12 +84,10 @@ export const rowSlotCount = (len: number, sp: number = ROW_SPACING): number =>
   Math.ceil(len / sp) + 1;
 /** Passo effettivo dei fronti: se i versanti generano troppe frecce per il
     budget hardware, i fronti si allargano senza ridurre il numero di corsie.
-    Unico per tutte le corsie, preserva la stessa densità a ogni budget.
-    Il tetto è in BILLBOARD (una freccia v17 = 1 testa + 5 nodi di scia = 6
-    billboard, una perla v16 ne costava 15): a parità di carico GPU il
-    plotone può avere ~2,5× più frecce delle vecchie perle. */
+    Tiene conto dei billboard usati da ogni freccia, inclusi i nodi di scia. */
 export const effectiveRowSpacing = (totalLen: number, nLanes: number, budget: number): number => {
-  const capDarts = Math.max(48, Math.round(budget * 2.5) - nLanes);
+  const billboardsPerDart = ROW_TRAIL_NODES + 1;
+  const capDarts = Math.max(48, Math.round((budget * 15) / billboardsPerDart) - nLanes);
   return Math.max(ROW_SPACING, totalLen / capDarts);
 };
 
@@ -135,13 +133,10 @@ export const smooth01 = (x: number): number => {
 };
 
 /* ================================================================
-   GRADIENTE FINO — dal DEM H2 (160 m) con differenze centrate + smoothing.
-   v17.2 «PETTINE»: oltre allo smoothing 3×3 (il raster z14 è rumoroso) la
-   DIREZIONE di salita viene mediata su un disco di ~1,6 km e QUANTIZZATA a
-   step di 30°: le corsie della stessa faccia seguono la STESSA direzione
-   esatta → corsie parallele vere (il pettine), non streamline che divergono
-   attorno a ogni dossino. La MAGNITUDO resta quella vera (soglie pendenza
-   oneste); solo la direzione è organizzata.
+   GRADIENTE FINO — dal DEM H2 (160 m) con differenze centrate e smoothing.
+   La direzione è mediata localmente per filtrare il rumore del raster senza
+   cancellare le curve di creste, canali e versanti. La magnitudo resta quella
+   del terreno, così le corsie seguono le forme reali del rilievo.
    ================================================================ */
 
 interface FineGrad {
@@ -225,15 +220,15 @@ const buildFineGrad = (f: WindField): FineGrad => {
   const gEs = sm(gE);
   const gNs = sm(gN);
   const Ss = sm(S);
-  /* DIREZIONE mediata su ~1,6 km (10 celle), senza quantizzazione angolare:
-     solo le celle abbastanza ripide votano (le pianure non tirano la media). */
+  /* DIREZIONE mediata su un intorno più locale (6 celle), senza quantizzazione:
+     conserva le forme del rilievo; le pianure non tirano la media. */
   const ang = new Float32Array(rows * cols);
   const ok = new Uint8Array(rows * cols);
   for (let i = 0; i < rows * cols; i++) {
     ang[i] = Math.atan2(gNs[i], gEs[i]);
     ok[i] = Ss[i] >= SLOPE_END ? 1 : 0;
   }
-  const angS = smoothDir(rows, cols, ang, ok, 10);
+  const angS = smoothDir(rows, cols, ang, ok, 6);
   const uE = new Float32Array(rows * cols);
   const uN = new Float32Array(rows * cols);
   for (let i = 0; i < rows * cols; i++) {

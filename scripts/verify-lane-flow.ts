@@ -160,6 +160,17 @@ for (const l of lanes) {
 const upRatio = upNodes / Math.max(1, totNodes);
 console.log("3. DIREZIONE lungo la massima pendenza:");
 ok(upRatio > 0.9, `nodi in salita: ${(upRatio * 100).toFixed(1)}% (> 90%)`);
+let totalTurn = 0;
+for (const lane of lanes) {
+  for (let i = 1; i < lane.n; i++) {
+    let delta = lane.az[i] - lane.az[i - 1];
+    while (delta > Math.PI) delta -= 2 * Math.PI;
+    while (delta < -Math.PI) delta += 2 * Math.PI;
+    totalTurn += Math.abs(delta);
+  }
+}
+const meanLaneTurn = totalTurn / Math.max(1, lanes.length);
+ok(meanLaneTurn > 0.2, `streamline sinuose sul rilievo (rotazione media accumulata ${meanLaneTurn.toFixed(2)} rad/corsia)`);
 
 /* ---------- 4. NIENTE INCROCI + SEPARAZIONE MINIMA ---------- */
 const RASTER = 40; // m
