@@ -10,6 +10,7 @@ import HeroFotografico from "@/components/HeroFotografico";
 import UpdateTimer from "@/components/UpdateTimer";
 import HourlyTable from "@/components/HourlyTable";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
+import WebcamNearby from "@/components/WebcamNearby";
 import TabNav from "@/components/TabNav";
 import MeteoTab from "@/components/MeteoTab";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
@@ -43,6 +44,7 @@ export default function Index() {
     countdown,
     site,
     dayData,
+    hourlyData,
     currentData,
     thermalDelta,
     enrichedDaily,
@@ -153,13 +155,22 @@ export default function Index() {
                   enrichedDaily={enrichedDaily}
                   dateLabels={dateLabels}
                   currentData={currentData}
-                  dayData={dayData}
-                  site={{ name: site.site_name, altitude: site.elevation_m, exposure: site.orientation }}
+                  forecastHours={hourlyData}
+                  site={{ name: site.site_name, altitude: site.elevation_m, exposure: site.orientation, lat: site.lat, lon: site.lon }}
                   selectedDay={selectedDay}
                   onSelectDay={setSelectedDay}
                   nomeDecollo={site.site_name}
                 />
               </section>
+            )}
+
+            {site && (
+              <WebcamNearby
+                siteId={site.id}
+                siteName={site.site_name}
+                latitude={site.lat}
+                longitude={site.lon}
+              />
             )}
 
             {site && (

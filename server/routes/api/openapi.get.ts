@@ -14,6 +14,7 @@ export default defineHandler(() => ({
   tags: [
     { name: "System", description: "Stato e documentazione" },
     { name: "Weather", description: "Previsioni meteorologiche" },
+    { name: "Webcams", description: "Webcam pubbliche nelle vicinanze dei decolli" },
     { name: "Aerologia", description: "Indici derivati per il volo libero: volabilità, termiche, validazione vento decollo" },
     { name: "Soundings", description: "Siti sounding e configurazione plugin" },
     { name: "People", description: "Archivio persone dimostrativo; non usare per dati personali in produzione senza autenticazione e storage persistente" },
@@ -47,6 +48,24 @@ export default defineHandler(() => ({
           "429": { description: "Limite provider raggiunto" },
           "502": { description: "Provider non disponibile o risposta non valida" },
           "504": { description: "Timeout provider" },
+        },
+      },
+    },
+    "/webcams": {
+      get: {
+        tags: ["Webcams"],
+        summary: "Webcam entro 4 km da un decollo",
+        description: "Restituisce fino a 50 webcam geolocalizzate a 360° entro 4 km dal decollo, ordinate per distanza. La chiave WINDY_WEBCAMS_API_KEY deve essere configurata solo sul server.",
+        parameters: [
+          { name: "site", in: "query", required: true, schema: { type: "string" }, description: "ID di un decollo presente nel catalogo dell'app" },
+        ],
+        responses: {
+          "200": { description: "Webcam Windy ordinate per distanza" },
+          "400": { description: "Parametro site mancante, ripetuto o non supportato" },
+          "404": { description: "Decollo non trovato" },
+          "502": { description: "Provider Windy non disponibile, chiave non valida o risposta non valida" },
+          "503": { description: "Chiave Windy non configurata o limite provider raggiunto" },
+          "504": { description: "Timeout provider Windy" },
         },
       },
     },

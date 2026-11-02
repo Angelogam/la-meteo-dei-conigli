@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import type { HourData } from "@/types/meteo";
-import type { MeteoCurrent, MeteoDaily } from "@/services/openMeteoService";
+import type { MeteoCurrent, MeteoDaily, MeteoHourly } from "@/services/openMeteoService";
 import { ArrowUp, Cloud, Thermometer, Zap, Sun, Wind } from "lucide-react";
 import AeroCard from "./AeroCard";
 import WeatherAnimation from "./WeatherAnimation";
@@ -11,19 +11,21 @@ interface PrevisioniGiornaliereProps {
   enrichedDaily: MeteoDaily[];
   dateLabels: string[];
   currentData: HourData | MeteoCurrent | null;
-  dayData: HourData[];
-  site: { name: string; altitude: number; exposure: string };
+  forecastHours: MeteoHourly[];
+  site: { name: string; altitude: number; exposure: string; lat: number; lon: number };
   selectedDay: number;
   onSelectDay: (dayIdx: number) => void;
   nomeDecollo?: string;
 }
+
+type ForecastHour = Pick<MeteoHourly, "time" | "temperature" | "isDay" | "cloudCover" | "cape" | "windSpeed">;
 
 function dirToIcon(dir: number): string {
   const dirs = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"];
   return dirs[Math.round(dir / 45) % 8];
 }
 
-function getFlightRating(daily: MeteoDaily | undefined, dayData: HourData[]): number | null {
+function getFlightRating(daily: MeteoDaily | undefined, dayData: ForecastHour[]): number | null {
   if (!daily) return null;
 
   const wind = daily.windSpeedMax ?? null;
@@ -65,7 +67,7 @@ function getFlightRating(daily: MeteoDaily | undefined, dayData: HourData[]): nu
   return Math.max(1, Math.min(10, Math.round(score)));
 }
 
-function getFlightRatingAndVerdict(daily: MeteoDaily | undefined, dayData: HourData[]): { rating: number | null; verdict: ReturnType<typeof getFlightVerdict> } {
+function getFlightRatingAndVerdict(daily: MeteoDaily | undefined, dayData: ForecastHour[]): { rating: number | null; verdict: ReturnType<typeof getFlightVerdict> } {
   const rating = daily ? getFlightRating(daily, dayData) : null;
   const verdict = rating !== null ? getFlightVerdict(rating) : { label: "DATI INSUFFICIENTI", color: "text-slate-400", bg: "bg-slate-700/50", ring: "ring-slate-500/30" };
   return { rating, verdict };
@@ -87,11 +89,43 @@ function getWeatherLabel(code: number | null | undefined): string {
   return "Condizione non riconosciuta";
 }
 
-function hoursForForecastDay(hours: HourData[], dayOffset: number): HourData[] {
+function hoursForForecastDay(hours: ForecastHour[], dayOffset: number): ForecastHour[] {
   const target = new Date();
   target.setDate(target.getDate() + dayOffset);
   const targetDate = target.toDateString();
   return hours.filter((hour) => new Date(hour.time).toDateString() === targetDate);
+}
+
+function MiniTemperatureChart({ hours }: { hours: ForecastHour[] }) {
+  const values = hours
+    .map((hour) => hour.temperature)
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  if (values.length < 2) {
+    return (
+      <div className="forecast-temperature-chart forecast-temperature-chart--empty" aria-hidden="true">
+        Serie oraria non disponibile
+      </div>
+    );
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = Math.max(1, max - min);
+  const points = values.map((value, index) => {
+    const x = 2 + (index / (values.length - 1)) * 116;
+    const y = 28 - ((value - min) / range) * 22;
+    return `${index === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+
+  return (
+    <div className="forecast-temperature-chart" aria-hidden="true">
+      <svg viewBox="0 0 120 34" preserveAspectRatio="none">
+        <path d={`${points} L118,32 L2,32 Z`} className="forecast-temperature-area" />
+        <path d={points} className="forecast-temperature-line" />
+      </svg>
+      <div className="forecast-temperature-chart-labels"><span>{Math.round(min)}°</span><span>{Math.round(max)}°</span></div>
+    </div>
+  );
 }
 
 function getFlightVerdict(rating: number): { label: string; color: string; bg: string; ring: string } {
@@ -125,7 +159,7 @@ export default function PrevisioniGiornaliere({
   enrichedDaily,
   dateLabels,
   currentData,
-  dayData,
+  forecastHours,
   site,
   selectedDay,
   onSelectDay,
@@ -163,7 +197,7 @@ export default function PrevisioniGiornaliere({
     : null;
 
   const daily = enrichedDaily[selectedDay] ?? enrichedDaily[0];
-  const selectedDayHours = hoursForForecastDay(dayData, selectedDay);
+  const selectedDayHours = hoursForForecastDay(forecastHours, selectedDay);
   const { rating: flightRating, verdict } = getFlightRatingAndVerdict(daily, selectedDayHours);
   const hasValidRating = flightRating !== null;
 
@@ -322,8 +356,10 @@ export default function PrevisioniGiornaliere({
             const isActive = selectedDay === idx;
             const label = dateLabels[idx] || tabName;
             const isRainy = d && d.precipitationSum !== undefined && d.precipitationSum > 0.5;
-            const hoursForDay = hoursForForecastDay(dayData, idx);
+            const hoursForDay = hoursForForecastDay(forecastHours, idx);
             const rating = d ? getFlightRating(d, hoursForDay) : null;
+            const maxGust = d?.windGustsMax;
+            const rainProbability = d?.precipitationProbabilityMax;
 
             return (
               <button
@@ -355,22 +391,35 @@ export default function PrevisioniGiornaliere({
                 <div className="text-[10px] text-slate-500 mb-3">{label}</div>
                 {d && (
                   <>
-                    <div className="flex items-baseline gap-1 mb-2">
+                    <div className="flex items-baseline gap-1">
                       <span className="text-lg font-bold text-amber-300">{d.temperatureMax != null && Number.isFinite(d.temperatureMax) ? `${Math.round(d.temperatureMax)}°` : "N/D"}</span>
                       <span className="text-xs text-slate-600">/</span>
                       <span className="text-lg font-bold text-sky-300">{d.temperatureMin != null && Number.isFinite(d.temperatureMin) ? `${Math.round(d.temperatureMin)}°` : "N/D"}</span>
+                      <span className="ml-auto text-[9px] uppercase tracking-wider text-slate-500">max / min</span>
                     </div>
-                    <div className="forecast-day-condition text-[10px] text-slate-400 mb-1">
-                      {`${getWeatherLabel(d.weatherCode)}${d.precipitationSum != null && Number.isFinite(d.precipitationSum) && d.precipitationSum > 0.5 ? ` · ${d.precipitationSum.toLocaleString("it-IT", { maximumFractionDigits: 1 })} mm attesi` : ""}`}
+                    <MiniTemperatureChart hours={hoursForDay} />
+                    <div className="forecast-day-condition text-[10px] text-slate-300 mt-2">
+                      {getWeatherLabel(d.weatherCode)}
                     </div>
-                    <div className="mt-auto pt-2 text-[9px] text-slate-500">
-                      Vento max: {d.windSpeedMax !== null ? `${Math.round(d.windSpeedMax)} km/h` : "N/D"}
+                    <div className="forecast-day-metrics mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
+                      <span>Vento max</span>
+                      <strong>{d.windSpeedMax != null && Number.isFinite(d.windSpeedMax) ? `${Math.round(d.windSpeedMax)} km/h ${d.windDirDominant != null ? dirToIcon(d.windDirDominant) : ""}` : "N/D"}</strong>
+                      <span>Raffiche</span>
+                      <strong>{maxGust != null && Number.isFinite(maxGust) ? `${Math.round(maxGust)} km/h` : "N/D"}</strong>
+                      <span>Pioggia</span>
+                      <strong>{d.precipitationSum != null && Number.isFinite(d.precipitationSum) ? `${d.precipitationSum.toLocaleString("it-IT", { maximumFractionDigits: 1 })} mm${rainProbability != null ? ` · ${Math.round(rainProbability)}%` : ""}` : "N/D"}</strong>
                     </div>
                   </>
                 )}
               </button>
             );
           })}
+        </div>
+        <div className="forecast-sources" aria-label="Fonti meteo">
+          <span>Fonti:</span>
+          <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>
+          <a href={`https://www.windy.com/it/-Webcam/webcams?${site.lat},${site.lon},11`} target="_blank" rel="noopener noreferrer">Webcam su Windy</a>
+          <span className="forecast-source-note">Previsioni modellistiche, non misure in loco.</span>
         </div>
       </div>
 

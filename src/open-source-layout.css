@@ -1265,6 +1265,146 @@ body {
 .forecast-day-card-premium .text-sky-400 { color: #8dd6ed !important; }
 .forecast-day-card-premium .text-amber-400 { color: #f5c98b !important; }
 .forecast-day-card-premium .text-emerald-400 { color: #a8e4c5 !important; }
+.forecast-temperature-chart {
+  position: relative;
+  height: 45px;
+  margin-top: .35rem;
+  overflow: hidden;
+  border: 1px solid rgba(166, 207, 204, .14);
+  border-radius: 9px;
+  background: linear-gradient(90deg, rgba(6, 24, 32, .3), rgba(32, 63, 66, .35));
+}
+.forecast-temperature-chart svg { display: block; width: 100%; height: 34px; overflow: visible; }
+.forecast-temperature-area { fill: rgba(91, 194, 187, .13); }
+.forecast-temperature-line {
+  fill: none;
+  stroke: #83d6c6;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 140;
+  stroke-dashoffset: 140;
+  animation: forecast-line-draw .9s ease-out forwards;
+}
+.forecast-temperature-chart-labels {
+  position: absolute;
+  inset: auto 5px 2px;
+  display: flex;
+  justify-content: space-between;
+  color: #9eb8b7;
+  font: 9px var(--font-mono);
+  line-height: 1;
+}
+.forecast-temperature-chart--empty {
+  display: grid;
+  place-items: center;
+  color: #93a8a9;
+  font-size: 9px;
+}
+.forecast-day-metrics {
+  color: #afc1bf;
+  font-size: 9px;
+  line-height: 1.45;
+}
+.forecast-day-metrics strong {
+  overflow: hidden;
+  color: #e4efea;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.forecast-sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .45rem .8rem;
+  margin-top: .7rem;
+  color: #93a8a9;
+  font-size: 10px;
+}
+.forecast-sources a { color: #9cdbd1; text-decoration: underline; text-underline-offset: 2px; }
+.forecast-sources a:hover { color: #d3fff2; }
+.forecast-source-note { color: #829797; }
+.webcam-nearby-section {
+  padding: 1rem;
+  border: 1px solid rgba(194, 217, 211, .18);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(35, 57, 63, .82), rgba(17, 35, 43, .9));
+}
+.webcam-state-card {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  min-height: 56px;
+  padding: .8rem 1rem;
+  border: 1px solid rgba(176, 205, 200, .15);
+  border-radius: 12px;
+  background: rgba(4, 17, 24, .3);
+  color: #b6c8c6;
+  font-size: .82rem;
+}
+.webcam-state-card--notice { align-items: flex-start; color: #f0c98e; }
+.webcam-camera-card {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  min-width: 0;
+  padding: .8rem;
+  border: 1px solid rgba(175, 207, 201, .16);
+  border-radius: 14px;
+  background: linear-gradient(140deg, rgba(56, 81, 83, .4), rgba(8, 25, 32, .42));
+  transition: transform .2s ease, border-color .2s ease, background .2s ease;
+}
+.webcam-camera-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(146, 222, 207, .4);
+  background: linear-gradient(140deg, rgba(56, 101, 92, .48), rgba(8, 31, 35, .58));
+}
+.webcam-camera-visual {
+  position: relative;
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  place-items: center;
+  border: 1px solid rgba(130, 208, 192, .25);
+  border-radius: 13px;
+  background: radial-gradient(circle at 30% 20%, rgba(116, 218, 198, .18), rgba(15, 42, 48, .8));
+  color: #9cdbd1;
+}
+.webcam-status-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #899a99;
+  box-shadow: 0 0 0 3px rgba(137, 154, 153, .1);
+}
+.webcam-status-dot.is-active { background: #79d8ad; box-shadow: 0 0 0 3px rgba(121, 216, 173, .12); }
+.webcam-distance {
+  flex: 0 0 auto;
+  padding: .2rem .45rem;
+  border: 1px solid rgba(136, 209, 195, .2);
+  border-radius: 999px;
+  background: rgba(39, 93, 82, .25);
+  color: #b1e6d5;
+  font: 10px var(--font-mono);
+}
+.webcam-open-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  margin-top: .5rem;
+  color: #8eddd1;
+  font-size: 10px;
+  font-weight: 700;
+}
+.webcam-open-link:hover { color: #d0fff2; }
+@keyframes forecast-line-draw { to { stroke-dashoffset: 0; } }
 .launch-list-card.launch-compare-panel {
   border-radius: 20px !important;
   border: 1px solid rgba(191, 215, 210, .22) !important;
@@ -1337,7 +1477,12 @@ body {
   .forecast-day-card-premium { min-height: 175px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .forecast-day-card-premium > div:first-child > span:first-child { animation: none !important; }
+  .forecast-day-card-premium > div:first-child > span:first-child,
+  .forecast-temperature-line { animation: none !important; }
+  .forecast-temperature-line { stroke-dashoffset: 0; }
+  .forecast-day-card-premium,
+  .webcam-camera-card { transition: none !important; }
+  .webcam-nearby-section .animate-spin { animation: none !important; }
 }
 
 

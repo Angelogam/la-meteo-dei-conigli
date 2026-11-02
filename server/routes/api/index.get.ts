@@ -13,6 +13,7 @@ export default defineHandler(() => ({
     { method: "GET", path: "/api/health", description: "Stato del servizio" },
     { method: "GET", path: "/api/openapi", description: "Specifica OpenAPI 3.1" },
     { method: "GET", path: "/api/open-meteo", description: "Proxy validato per Open-Meteo" },
+    { method: "GET", path: "/api/webcams?site={id}", description: "Webcam Windy entro 4 km dal decollo" },
     { method: "GET", path: "/api/windy-soundings", description: "Siti sounding e metadati plugin" },
     { method: "GET", path: "/api/volabilita", description: "Indice di volabilità 1-10 per coordinate ed esposizione del decollo" },
     { method: "GET", path: "/api/termiche", description: "Termiche orarie stimate (rateo, base, top)" },
