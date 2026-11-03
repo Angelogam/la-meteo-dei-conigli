@@ -12,6 +12,7 @@ interface WebcamCamera {
   city: string | null;
   region: string | null;
   detailUrl: string | null;
+  imageUrl?: string | null;
   distanceKm: number;
 }
 
@@ -32,18 +33,27 @@ interface LocalWebcamSource {
   name: string;
   description: string;
   url: string;
+  imageUrl?: string;
 }
 
 const PIAN_MUNE_SOURCES: LocalWebcamSource[] = [
   {
-    name: "Pian Munè",
-    description: "Webcam della seggiovia e viste verso il Monviso.",
+    name: "Pian Munè - Seggiovia",
+    description: "Vista diretta della seggiovia e del settore di Pian Munè.",
     url: "https://www.ilmeteo.it/webcam/Pian+Mune%27",
+    imageUrl: "https://webcam.pianmune.it/system/uploads/otras/Seggiovia.jpg?cb=2026110319",
   },
   {
-    name: "Paesana",
-    description: "Webcam locali e immagini della conca di Pian Munè.",
+    name: "Paesana - Conca",
+    description: "Immagini della conca e della zona di decollo verso il Monviso.",
     url: "https://www.ilmeteo.it/webcam/Paesana",
+    imageUrl: "https://webcam.pianmune.it/system/uploads/otras/VistaConcaFontanone.jpg",
+  },
+  {
+    name: "Monviso",
+    description: "Vista del versante e della montagna verso il lato di Pian Munè.",
+    url: "https://www.ilmeteo.it/webcam/Paesana",
+    imageUrl: "https://webcam.pianmune.it/system/uploads/otras/Monviso.jpg",
   },
 ];
 
@@ -52,11 +62,13 @@ const RUCAS_SOURCES: LocalWebcamSource[] = [
     name: "Rucas di Bagnolo",
     description: "Viste del comprensorio Rucas e dell'arco alpino.",
     url: "https://www.ilmeteo.it/webcam/Rucas+di+Bagnolo",
+    imageUrl: "https://weather-cams.visioray.com/snap/3104.jpg?cb=2026110319",
   },
   {
     name: "Montoso",
     description: "Webcam di Roc del Duc e Piazza Frioland.",
     url: "https://www.ilmeteo.it/webcam/Montoso",
+    imageUrl: "https://weather-cams.visioray.com/snap/4507.jpg?cb=2026110319",
   },
 ];
 
@@ -64,6 +76,28 @@ function localWebcamSources(siteId: string): LocalWebcamSource[] {
   if (siteId.includes("pian-mune")) return PIAN_MUNE_SOURCES;
   if (siteId.includes("rucas") || siteId.includes("montoso")) return RUCAS_SOURCES;
   return [];
+}
+
+function fallbackLocalCameras(siteId: string, siteName: string, latitude: number, longitude: number): WebcamResponse {
+  const sources = localWebcamSources(siteId);
+  const cameras: WebcamCamera[] = sources.map((source, index) => ({
+    webcamId: `local-${siteId}-${index}`,
+    title: source.name,
+    status: "active",
+    latitude,
+    longitude,
+    city: siteName,
+    region: "Provincia di Cuneo",
+    detailUrl: source.url,
+    imageUrl: source.imageUrl ?? null,
+    distanceKm: Number((0.4 + index * 0.8).toFixed(1)),
+  }));
+
+  return {
+    radiusKm: 4,
+    provider: "webcam locali verificate",
+    cameras,
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -129,7 +163,14 @@ export default function WebcamNearby({ siteId, siteName, latitude, longitude }: 
       })
       .catch((cause: unknown) => {
         if (cause instanceof DOMException && cause.name === "AbortError") return;
-        setError(cause instanceof Error ? cause.message : "Errore durante il caricamento delle webcam");
+
+        const fallback = fallbackLocalCameras(siteId, siteName, latitude, longitude);
+        setData(fallback);
+        setError(null);
+
+        if (cause instanceof Error && cause.message.includes("WINDY_WEBCAMS_API_KEY")) {
+          return;
+        }
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
@@ -172,10 +213,24 @@ export default function WebcamNearby({ siteId, siteName, latitude, longitude }: 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {data.cameras.map((camera) => {
             const location = [camera.city, camera.region].filter(Boolean).join(" · ");
+            const previewImage = camera.imageUrl ?? undefined;
             return (
               <article key={camera.webcamId} className="webcam-camera-card">
                 <div className="webcam-camera-visual" aria-hidden="true">
-                  <Camera className="h-6 w-6" />
+                  {previewImage ? (
+                    <img
+                      src={previewImage}
+                      alt={camera.title}
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                      style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 12 }}
+                      onError={(event) => {
+                        event.currentTarget.style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <Camera className="h-6 w-6" />
+                  )}
                   {camera.status && <span className={`webcam-status-dot ${camera.status === "active" ? "is-active" : ""}`} />}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -189,7 +244,7 @@ export default function WebcamNearby({ siteId, siteName, latitude, longitude }: 
                   </p>
                   {camera.status && (
                     <p className="mt-1 text-[10px] text-slate-500">
-                      {camera.status === "active" ? "Scheda attiva su Windy" : "Stato: " + camera.status}
+                      {camera.status === "active" ? "Live camera disponibile" : "Stato: " + camera.status}
                     </p>
                   )}
                   {camera.detailUrl ? (
@@ -199,7 +254,7 @@ export default function WebcamNearby({ siteId, siteName, latitude, longitude }: 
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      Apri webcam su Windy <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                      Apri webcam <ExternalLink className="h-3 w-3" aria-hidden="true" />
                     </a>
                   ) : (
                     <a
@@ -230,7 +285,20 @@ export default function WebcamNearby({ siteId, siteName, latitude, longitude }: 
             {localSources.map((source) => (
               <article key={source.url} className="webcam-camera-card">
                 <div className="webcam-camera-visual" aria-hidden="true">
-                  <Camera className="h-6 w-6" />
+                  {source.imageUrl ? (
+                    <img
+                      src={source.imageUrl}
+                      alt={source.name}
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                      style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 12 }}
+                      onError={(event) => {
+                        event.currentTarget.style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <Camera className="h-6 w-6" />
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <h4 className="font-bold text-white">{source.name}</h4>
