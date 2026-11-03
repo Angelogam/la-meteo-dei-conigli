@@ -19,6 +19,7 @@ import AnalisiMeteo from "@/components/AnalisiMeteo";
 import CartinaMeteo from "@/components/CartinaMeteo";
 import Cartina3D from "@/components/cartina3d/Cartina3D";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
+import ReportAICard from "@/components/ReportAICard";
 import type { HourData } from "@/types/meteo";
 import type { MeteoCurrent } from "@/services/openMeteoService";
 import { useWeatherData } from "@/hooks/useWeatherData";
@@ -171,6 +172,19 @@ export default function Index() {
                 latitude={site.lat}
                 longitude={site.lon}
               />
+            )}
+
+            {site && (
+              <div className="flight-top-dashboard-grid">
+                <div className="flight-primary-column">
+                  <ReportAICard
+                    siteName={site.site_name}
+                    current={currentData}
+                    hourly={hourlyData}
+                    daily={enrichedDaily}
+                  />
+                </div>
+              </div>
             )}
 
             {site && (
