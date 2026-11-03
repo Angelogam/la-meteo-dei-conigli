@@ -529,7 +529,7 @@ export default function DecolliCard({
         <div>
           <p className="dxc-kicker">SITI MONITORATI</p>
           <h2 className="dxc-title" id="dxc-title">Confronta i decolli</h2>
-          <p className="dxc-description">Verdetto di volo, windgram del modello e vento sul pendio per ogni sito. Tocca le colonne del windgram per sfogliare la giornata; il confronto è indicativo, non è un giudizio di sicurezza.</p>
+          <p className="dxc-description">Seleziona un decollo per aggiornare meteo, vento e analisi.</p>
         </div>
         <div className="dxc-count">
           <strong>{decolli.length}</strong>
@@ -575,4 +575,3 @@ function getDateTime(selectedDay: number): { date: string; ora: string } {
   const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
   return { date: giorni[target.getDay()] + " " + target.getDate() + " " + mesi[target.getMonth()], ora: today.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) };
 }
-

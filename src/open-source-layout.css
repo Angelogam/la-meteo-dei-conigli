@@ -2317,3 +2317,87 @@ body {
   .forecast-day-metric > strong { font-size: .58rem; }
   .forecast-day-metric > small { font-size: .52rem; }
 }
+
+/* Right-rail launch cards are selectors; the selected site's full briefing is shown beside them. */
+@media (min-width: 1100px) {
+  .flight-top-dashboard-grid { grid-template-columns: minmax(0, 1fr) minmax(290px, 340px) !important; }
+  .flight-launch-sidebar { max-width: 340px !important; }
+}
+.flight-launch-sidebar .dxc-header { gap: .5rem; padding: .8rem .85rem .55rem; }
+.flight-launch-sidebar .dxc-kicker { margin-bottom: .2rem; font-size: .52rem; }
+.flight-launch-sidebar .dxc-title { font-size: 1.08rem; }
+.flight-launch-sidebar .dxc-description { margin-top: .2rem; font-size: .64rem; line-height: 1.3; }
+.flight-launch-sidebar .dxc-count { padding: .35rem .5rem; border-radius: 12px; }
+.flight-launch-sidebar .dxc-count strong { font-size: .95rem; }
+.flight-launch-sidebar .dxc-tools { gap: .35rem; padding: 0 .85rem .55rem; }
+.flight-launch-sidebar .dxc-search { padding: .48rem .6rem; border-radius: 11px; }
+.flight-launch-sidebar .dxc-search input { font-size: .72rem; }
+.flight-launch-sidebar .dxc-update { padding: .28rem .5rem; font-size: .6rem; }
+.flight-launch-sidebar .dxc-rows { gap: .38rem; max-height: min(66vh, 680px); padding: .1rem .65rem .7rem; }
+.flight-launch-sidebar .dxc-card {
+  gap: .28rem !important;
+  padding: .48rem .58rem !important;
+  border-radius: 13px;
+  box-shadow: 0 3px 12px rgba(0,0,0,.12);
+}
+.flight-launch-sidebar .dxc-card-head { align-items: center; gap: .4rem; }
+.flight-launch-sidebar .dxc-site-block { gap: .1rem; }
+.flight-launch-sidebar .dxc-site-name { font-size: .9rem; line-height: 1.15; }
+.flight-launch-sidebar .dxc-site-meta { flex-wrap: nowrap; gap: .25rem; font-size: .62rem; }
+.flight-launch-sidebar .dxc-site-meta svg { width: 10px; height: 10px; }
+.flight-launch-sidebar .dxc-site-meta > span:first-of-type { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.flight-launch-sidebar .dxc-altitude { padding: .06rem .32rem; font-size: .58rem; }
+.flight-launch-sidebar .dxc-site-sub,
+.flight-launch-sidebar .dxc-motivi,
+.flight-launch-sidebar .dxc-infobar,
+.flight-launch-sidebar .dxc-warning,
+.flight-launch-sidebar .dxc-grid { display: none !important; }
+.flight-launch-sidebar .dxc-badges { gap: .15rem; }
+.flight-launch-sidebar .dxc-selected-chip { display: none; }
+.flight-launch-sidebar .dxc-index { min-width: 45px; padding: .24rem .35rem; border-radius: 9px; }
+.flight-launch-sidebar .dxc-index small { font-size: .45rem; }
+.flight-launch-sidebar .dxc-index strong { font-size: .72rem; }
+.flight-launch-sidebar .dxc-index-bar { height: 3px; }
+.flight-launch-sidebar .dxc-selected-chip { font-size: .5rem; }
+.flight-launch-sidebar .dxc-verdict {
+  min-width: 0;
+  gap: .32rem;
+  margin: 0 !important;
+  padding: .2rem .38rem !important;
+  border-radius: 9px;
+}
+.flight-launch-sidebar .dxc-verdict-dot { width: 7px; height: 7px; }
+.flight-launch-sidebar .dxc-verdict-label { overflow: hidden; font-size: .68rem; text-overflow: ellipsis; white-space: nowrap; }
+.flight-launch-sidebar .dxc-relchip { padding: .12rem .3rem; font-size: .46rem; }
+.flight-launch-sidebar .dxc-verdict-hour { font-size: .54rem; }
+.flight-launch-sidebar .dxc-windstrip {
+  min-width: 0;
+  gap: .4rem;
+  margin: 0 !important;
+  padding: .18rem .35rem !important;
+  border-radius: 9px;
+}
+.flight-launch-sidebar .dxc-compass { display: none; }
+.flight-launch-sidebar .dxc-windstrip-txt {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: .4rem;
+}
+.flight-launch-sidebar .dxc-windstrip-txt strong { overflow: hidden; font-size: .62rem; text-overflow: ellipsis; white-space: nowrap; }
+.flight-launch-sidebar .dxc-windstrip-txt span { overflow: hidden; font-size: .56rem; text-overflow: ellipsis; white-space: nowrap; }
+.flight-launch-sidebar .dxc-windstrip-txt em { display: none; }
+.flight-launch-sidebar .dxc-condition { gap: .4rem; padding: .32rem .42rem; border-radius: 9px; }
+.flight-launch-sidebar .dxc-condition .dxc-chip { width: 26px; height: 26px; border-radius: 8px; }
+.flight-launch-sidebar .dxc-cond-text .dxc-value { font-size: .7rem; }
+.flight-launch-sidebar .dxc-cond-text .dxc-label { font-size: .48rem; }
+
+@media (max-width: 900px) {
+  .flight-launch-sidebar .dxc-rows { max-height: min(55vh, 520px); }
+}
+@media (max-width: 560px) {
+  .flight-launch-sidebar .dxc-header { padding: .7rem .75rem .45rem; }
+  .flight-launch-sidebar .dxc-tools { padding: 0 .75rem .45rem; }
+  .flight-launch-sidebar .dxc-rows { gap: .32rem; padding: 0 .55rem .6rem; }
+  .flight-launch-sidebar .dxc-card { padding: .5rem .55rem; }
+}
