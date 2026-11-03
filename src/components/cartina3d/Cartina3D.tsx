@@ -214,15 +214,14 @@ function hourOf(p: HourlyPoint | null | undefined): number {
   return Number.isFinite(h) ? h : -1;
 }
 
-/** Camera sul decollo: vista BASSA e INCLINATA (stile Google Earth) —
- *  da 14 km con pitch −38° il rilievo si percepiva piatto; qui la valle
- *  si legge subito come un rilievo vero. */
+/** Camera sul decollo: vista inclinata con distanza sufficiente a mostrare
+ *  il campo brezza radiale di 10 km senza nascondere il rilievo. */
 function flyToSite(Cesium: CesiumNs, viewer: ViewerNs, d: CartinaDecollo): void {
   viewer.camera.flyToBoundingSphere(
-    new Cesium.BoundingSphere(Cesium.Cartesian3.fromDegrees(d.lon, d.lat, d.elevation_m ?? 0), 5200),
+    new Cesium.BoundingSphere(Cesium.Cartesian3.fromDegrees(d.lon, d.lat, d.elevation_m ?? 0), 10_000),
     {
       duration: 2.2,
-      offset: new Cesium.HeadingPitchRange(Cesium.Math.toRadians(15), Cesium.Math.toRadians(-52), 9800),
+      offset: new Cesium.HeadingPitchRange(Cesium.Math.toRadians(15), Cesium.Math.toRadians(-52), 24_000),
     },
   );
 }
@@ -1495,7 +1494,7 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
           </div>
           <label className="c3d-toggle">
             <Switch checked={surface} onCheckedChange={setSurface} aria-label="Brezze di pendio" />
-            <span>Brezze del pendio</span>
+            <span>Brezze del pendio · 10 km / 360°</span>
           </label>
           <label className="c3d-toggle">
             <Switch checked={therm} onCheckedChange={setTherm} aria-label="Termiche dove staccano" />
@@ -1742,8 +1741,8 @@ function Hud({
           ? "brezze del pendio nascoste: è attivo il vento in quota"
           : surface
             ? anabatic
-              ? "linee e frecce BLU = brezza che SALE i pendii (anabatica) — nasce a valle, in cresta si stacca"
-              : "linee e frecce BLU = brezza che DRENA a valle lungo i pendii (catabatica)"
+              ? "brezza anabatica blu sul rilievo nel raggio di 10 km — sale dal fondovalle e si stacca in cresta"
+              : "brezza catabatica blu sul rilievo nel raggio di 10 km — drena a valle lungo i pendii"
             : "brezze del pendio nascoste"}
       </span>
       <span className="c3d-hud-v" data-testid="c3d-hud-meteo">

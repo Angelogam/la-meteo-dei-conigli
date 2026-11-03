@@ -28,6 +28,44 @@ interface WebcamNearbyProps {
   longitude: number;
 }
 
+interface LocalWebcamSource {
+  name: string;
+  description: string;
+  url: string;
+}
+
+const PIAN_MUNE_SOURCES: LocalWebcamSource[] = [
+  {
+    name: "Pian Munè",
+    description: "Webcam della seggiovia e viste verso il Monviso.",
+    url: "https://www.ilmeteo.it/webcam/Pian+Mune%27",
+  },
+  {
+    name: "Paesana",
+    description: "Webcam locali e immagini della conca di Pian Munè.",
+    url: "https://www.ilmeteo.it/webcam/Paesana",
+  },
+];
+
+const RUCAS_SOURCES: LocalWebcamSource[] = [
+  {
+    name: "Rucas di Bagnolo",
+    description: "Viste del comprensorio Rucas e dell'arco alpino.",
+    url: "https://www.ilmeteo.it/webcam/Rucas+di+Bagnolo",
+  },
+  {
+    name: "Montoso",
+    description: "Webcam di Roc del Duc e Piazza Frioland.",
+    url: "https://www.ilmeteo.it/webcam/Montoso",
+  },
+];
+
+function localWebcamSources(siteId: string): LocalWebcamSource[] {
+  if (siteId.includes("pian-mune")) return PIAN_MUNE_SOURCES;
+  if (siteId.includes("rucas") || siteId.includes("montoso")) return RUCAS_SOURCES;
+  return [];
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -66,6 +104,7 @@ export default function WebcamNearby({ siteId, siteName, latitude, longitude }: 
   const [data, setData] = useState<WebcamResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const localSources = localWebcamSources(siteId);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -181,6 +220,28 @@ export default function WebcamNearby({ siteId, siteName, latitude, longitude }: 
         <div className="webcam-state-card">
           <Camera className="h-4 w-4" aria-hidden="true" />
           <span>Nessuna webcam trovata nel raggio di {data?.radiusKm ?? 4} km.</span>
+        </div>
+      )}
+
+      {localSources.length > 0 && (
+        <div className="mt-4">
+          <h3 className="mb-2 text-sm font-semibold text-slate-200">Webcam locali verificate · iLMeteo</h3>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {localSources.map((source) => (
+              <article key={source.url} className="webcam-camera-card">
+                <div className="webcam-camera-visual" aria-hidden="true">
+                  <Camera className="h-6 w-6" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-bold text-white">{source.name}</h4>
+                  <p className="mt-1 text-xs text-slate-400">{source.description}</p>
+                  <a className="webcam-open-link" href={source.url} target="_blank" rel="noopener noreferrer">
+                    Apri pagina webcam <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                  </a>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       )}
 

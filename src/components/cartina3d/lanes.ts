@@ -41,6 +41,7 @@ import {
   heightAt,
   heightAt2,
   sunPosition,
+  WIND_FIELD_RADIUS_M,
   type LivePoint,
   type WindField,
 } from "./winds";
@@ -128,6 +129,8 @@ export interface LaneOpts {
 
 const RAD = Math.PI / 180;
 const clamp = (v: number, a: number, b: number): number => Math.min(b, Math.max(a, v));
+export const withinBreezeRadius = (northM: number, eastM: number): boolean =>
+  Math.hypot(northM, eastM) <= WIND_FIELD_RADIUS_M + 1e-6;
 export const smooth01 = (x: number): number => {
   const t = clamp(x, 0, 1);
   return t * t * (3 - 2 * t);
@@ -271,7 +274,7 @@ export function buildLaneField(f: WindField, opts: LaneOpts): LaneField {
   const inBounds = (la: number, lo: number): boolean => {
     const xN = (la - f.lat0) * mLat;
     const xE = (lo - f.lon0) * mLon;
-    return Math.abs(xN) <= extN && Math.abs(xE) <= extE;
+    return Math.abs(xN) <= extN && Math.abs(xE) <= extE && withinBreezeRadius(xN, xE);
   };
   const raiseAt = (la: number, lo: number): number =>
     Math.max(heightAt2(f, la, lo), heightAt(f, la, lo));
@@ -390,6 +393,7 @@ export function buildLaneField(f: WindField, opts: LaneOpts): LaneField {
     let la = la0;
     let lo = lo0;
     for (let k = 0; k < maxSteps; k++) {
+      if (!inBounds(la, lo)) return k > 2 ? { la, lo } : null;
       const d1 = dirAt(la, lo, uphill);
       if (!d1) return k > 2 ? { la, lo } : null;
       const mLa = la + (d1.dN * (DS / 2)) / mLat;
@@ -397,9 +401,11 @@ export function buildLaneField(f: WindField, opts: LaneOpts): LaneField {
       const d2 = dirAt(mLa, mLo, uphill);
       if (!d2) return k > 2 ? { la, lo } : null;
       if (d1.dE * d2.dE + d1.dN * d2.dN < 0.2) return k > 2 ? { la, lo } : null;
-      la += (d2.dN * DS) / mLat;
-      lo += (d2.dE * DS) / mLon;
-      if (!inBounds(la, lo)) return null;
+      const nextLa = la + (d2.dN * DS) / mLat;
+      const nextLo = lo + (d2.dE * DS) / mLon;
+      if (!inBounds(nextLa, nextLo)) return { la, lo };
+      la = nextLa;
+      lo = nextLo;
     }
     return { la, lo };
   };
@@ -463,6 +469,7 @@ export function buildLaneField(f: WindField, opts: LaneOpts): LaneField {
     for (let mj = 0; mj < nMj - 2; mj++) {
       const xN = (mi + 0.5) * cell;
       const xE = (mj + 0.5) * cell;
+      if (!withinBreezeRadius(xN - extN, xE - extE)) continue;
       const la = f.lat0 + (xN - extN) / mLat;
       const lo = f.lon0 + (xE - extE) / mLon;
       const { fi, fj } = fineIJ(la, lo);
@@ -618,22 +625,23 @@ function flatFallback(
     Math.max(heightAt2(f, la, lo), heightAt(f, la, lo));
 
   const lanes: Lane[] = [];
-  const R = Math.hypot(extN, extE);
+  const R = WIND_FIELD_RADIUS_M;
   const nLanes = 13;
   for (let k = 0; k < nLanes; k++) {
     const off = (k - (nLanes - 1) / 2) * LANE_SEP;
+    const halfLength = Math.sqrt(Math.max(0, R * R - off * off));
     const pE = -dN * off; // perpendicolare al moto
     const pN = dE * off;
     const cLa = f.lat0 + pN / mLat;
     const cLo = f.lon0 + pE / mLon;
-    const n = Math.floor((2 * R) / DS) + 1;
+    const n = Math.floor((2 * halfLength) / DS) + 1;
     const la = new Float64Array(n);
     const lo = new Float64Array(n);
     const h = new Float64Array(n);
     const azs = new Float64Array(n);
     const aK = new Float32Array(n);
     for (let i = 0; i < n; i++) {
-      const t = -R + i * DS;
+      const t = -halfLength + i * DS;
       la[i] = cLa + (dN * t) / mLat;
       lo[i] = cLo + (dE * t) / mLon;
       h[i] = raiseAt(la[i], lo[i]) + CRUISE_LIFT;

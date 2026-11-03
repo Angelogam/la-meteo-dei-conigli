@@ -317,12 +317,12 @@ export interface LivePoint {
   wd: number; // gradi, direzione DA cui viene
 }
 
-const ROWS = 20;
-const COLS = 28;
-const STEP = 640; // m — griglia LARGA (≈17×12 km): le brezze di pendio devono
-                  // coprire TUTTI i rilievi in vista, anche fuori dalle zone decollo
+export const WIND_FIELD_RADIUS_M = 10_000;
+const STEP = 640;
+const ROWS = Math.ceil((WIND_FIELD_RADIUS_M * 2) / STEP) + 1;
+const COLS = ROWS;
 
-/** Costruisce la griglia DEM (28×20) attorno al decollo con gradienti. */
+/** Costruisce una griglia DEM quadrata che contiene un campo radiale di 10 km. */
 export async function buildWindField(lat0: number, lon0: number): Promise<WindField> {
   const mLat = 111320;
   const mLon = 111320 * Math.cos((lat0 * Math.PI) / 180);

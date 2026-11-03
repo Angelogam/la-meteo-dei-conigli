@@ -27,9 +27,11 @@ import {
   ROW_SPACING,
   effectiveRowSpacing,
   rowSlotCount,
+  withinBreezeRadius,
   type Lane,
   type WindField,
 } from "../src/components/cartina3d/lanes";
+import { WIND_FIELD_RADIUS_M } from "../src/components/cartina3d/winds";
 
 let fails = 0;
 const ok = (cond: boolean, msg: string) => {
@@ -38,18 +40,19 @@ const ok = (cond: boolean, msg: string) => {
 };
 
 /* ---------- DEM sintetico: due monti sovrapposti + noise gentile ----------
-   dominio 12,16 km N-S × 17,28 km E-W (rows2=77, cols2=109, step2=160 m),
-   come il campo reale costruito da winds.buildWindField. */
+   dominio quadrato di 20,48 km, come il campo DEM reale; il flusso è limitato
+   a un cerchio di 10 km intorno al decollo. */
 const LAT0 = 44.2;
 const LON0 = 7.1;
 const MLAT = 111320;
 const MLON = MLAT * Math.cos((LAT0 * Math.PI) / 180);
-const ROWS = 20;
-const COLS = 28;
+const ROWS = 33;
+const COLS = 33;
 const STEP = 640;
-const ROWS2 = (ROWS - 1) * 4 + 1; // 77
-const COLS2 = (COLS - 1) * 4 + 1; // 109
+const ROWS2 = (ROWS - 1) * 4 + 1; // 129
+const COLS2 = (COLS - 1) * 4 + 1; // 129
 const STEP2 = STEP / 4; // 160
+const EXTENT_M = ((ROWS - 1) * STEP) / 2;
 
 const hill = (xN: number, xE: number, cx: number, cy: number, amp: number, sig: number) =>
   amp * Math.exp(-(((xN - cx) ** 2 + (xE - cy) ** 2) / (2 * sig * sig)));
@@ -175,8 +178,8 @@ ok(meanLaneTurn > 0.2, `streamline sinuose sul rilievo (rotazione media accumula
 /* ---------- 4. NIENTE INCROCI + SEPARAZIONE MINIMA ---------- */
 const RASTER = 40; // m
 const cellOf = (la: number, lo: number): number => {
-  const xN = (la - LAT0) * MLAT + 12160;
-  const xE = (lo - LON0) * MLON + 17280;
+  const xN = (la - LAT0) * MLAT + EXTENT_M;
+  const xE = (lo - LON0) * MLON + EXTENT_M;
   const mi = Math.floor(xN / RASTER);
   const mj = Math.floor(xE / RASTER);
   return mi * 100000 + mj;
@@ -196,8 +199,8 @@ lanes.forEach((l, li) => {
 const BK = 210;
 const buckets = new Map<number, { li: number; la: number; lo: number }[]>();
 const bkey = (la: number, lo: number): number => {
-  const mi = Math.floor(((la - LAT0) * MLAT + 12160) / BK);
-  const mj = Math.floor(((lo - LON0) * MLON + 17280) / BK);
+  const mi = Math.floor(((la - LAT0) * MLAT + EXTENT_M) / BK);
+  const mj = Math.floor(((lo - LON0) * MLON + EXTENT_M) / BK);
   return mi * 100000 + mj;
 };
 lanes.forEach((l, li) => {
@@ -333,6 +336,32 @@ for (const l of lanes) hGainMin = Math.min(hGainMin, l.h[l.n - 1] - l.h[0]);
 console.log("9. FLUSSO CONTINUO DALLA VALLE:");
 ok(valleyBorn >= 1, `corsie nate sul fondovalle (pendenza < 4%): ${valleyBorn}/${lanes.length}`);
 ok(hGainMin >= -5, `guadagno minimo fondo→fine corsia: ${hGainMin.toFixed(0)} m (mai in discesa — le corsie di valle sono vento che risale)`);
+
+/* ---------- 10. CAMPO RADIALE 10 KM / 360° ---------- */
+let bearingsCovered = true;
+for (let deg = 0; deg < 360; deg += 5) {
+  const angle = (deg * Math.PI) / 180;
+  if (!withinBreezeRadius(WIND_FIELD_RADIUS_M * Math.cos(angle), WIND_FIELD_RADIUS_M * Math.sin(angle))) {
+    bearingsCovered = false;
+    break;
+  }
+}
+let maxLaneRadius = 0;
+for (const lane of lanes) {
+  for (let i = 0; i < lane.n; i++) {
+    maxLaneRadius = Math.max(maxLaneRadius, Math.hypot((lane.la[i] - LAT0) * MLAT, (lane.lo[i] - LON0) * MLON));
+  }
+}
+let flatMaxRadius = 0;
+for (const lane of lfFlat.lanes) {
+  for (let i = 0; i < lane.n; i++) {
+    flatMaxRadius = Math.max(flatMaxRadius, Math.hypot((lane.la[i] - LAT0) * MLAT, (lane.lo[i] - LON0) * MLON));
+  }
+}
+console.log("10. CAMPO RADIALE 10 KM / 360°:");
+ok(EXTENT_M >= WIND_FIELD_RADIUS_M && bearingsCovered, "griglia DEM oltre 10 km in ogni direzione cardinale e intercardinale");
+ok(maxLaneRadius <= WIND_FIELD_RADIUS_M + 1, `corsie sul rilievo restano entro 10 km (max ${maxLaneRadius.toFixed(0)} m)`);
+ok(flatMaxRadius <= WIND_FIELD_RADIUS_M + 1, `fallback lineare resta entro 10 km (max ${flatMaxRadius.toFixed(0)} m)`);
 
 console.log(fails === 0 ? "\nTUTTI I TEST CORSIE PASSATI ✓" : `\n${fails} TEST FALLITI ✗`);
 process.exit(fails === 0 ? 0 : 1);
