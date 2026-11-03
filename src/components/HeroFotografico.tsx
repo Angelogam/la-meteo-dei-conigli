@@ -12,17 +12,6 @@ interface HeroFotograficoProps {
   isLoading?: boolean;
 }
 
-function HeroGlider({ className = "" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 150 82" aria-hidden="true" focusable="false">
-      <path className="hero-foto-glider-wing" d="M12 27 Q75 -8 138 27 Q76 43 12 27 Z" />
-      <path className="hero-foto-glider-line" d="M28 29 L68 58 M122 29 L82 58 M49 34 L68 58 M101 34 L82 58" />
-      <circle className="hero-foto-glider-pilot-head" cx="75" cy="57" r="4" />
-      <path className="hero-foto-glider-pilot" d="M75 61 L75 70 M75 70 L69 77 M75 70 L81 77" />
-    </svg>
-  );
-}
-
 function windCardinale(deg?: number): string | undefined {
   if (deg === undefined || Number.isNaN(deg)) return undefined;
   const settori = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSO", "SO", "OSO", "O", "ONO", "NO", "NNO"];
@@ -56,9 +45,6 @@ export default function HeroFotografico({
         aria-hidden="true"
       />
       <div className="hero-foto__scrim" aria-hidden="true" />
-
-      <HeroGlider className="hero-foto__glider hero-foto__glider--one" />
-      <HeroGlider className="hero-foto__glider hero-foto__glider--two" />
 
       <div className="hero-foto__content">
         <p className="hero-foto__kicker">Dashboard meteo · Volo libero</p>

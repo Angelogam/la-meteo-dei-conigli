@@ -21,6 +21,7 @@
   height: 100%;
   object-fit: cover;
   object-position: 62% 38%;
+  filter: brightness(1.12) contrast(1.04) saturate(1.08);
   animation: hero-foto-kenburns 46s ease-in-out infinite alternate;
 }
 
@@ -29,46 +30,9 @@
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(180deg, rgba(4, 11, 22, .38) 0%, rgba(4, 11, 22, 0) 30%, rgba(4, 11, 22, 0) 52%, rgba(4, 11, 22, .82) 100%),
-    linear-gradient(102deg, rgba(4, 11, 22, .88) 0%, rgba(4, 11, 22, .58) 34%, rgba(4, 11, 22, .12) 62%, rgba(4, 11, 22, 0) 78%);
+    linear-gradient(180deg, rgba(4, 11, 22, .2) 0%, rgba(4, 11, 22, 0) 30%, rgba(4, 11, 22, 0) 52%, rgba(4, 11, 22, .68) 100%),
+    linear-gradient(102deg, rgba(4, 11, 22, .72) 0%, rgba(4, 11, 22, .42) 34%, rgba(4, 11, 22, .08) 62%, rgba(4, 11, 22, 0) 78%);
 }
-
-/* ---------- parapendii animati ---------- */
-
-.hero-foto__glider {
-  position: absolute;
-  z-index: 0;
-  width: clamp(58px, 6vw, 96px);
-  height: auto;
-  opacity: .82;
-  filter: drop-shadow(0 4px 6px rgba(4, 11, 22, .45));
-  pointer-events: none;
-}
-
-.hero-foto__glider--one {
-  top: 16%;
-  left: 46%;
-  animation: hero-foto-drift-one 58s linear infinite;
-}
-
-.hero-foto__glider--two {
-  top: 30%;
-  left: 68%;
-  width: clamp(38px, 4vw, 62px);
-  opacity: .6;
-  animation: hero-foto-drift-two 74s linear infinite;
-  animation-delay: -30s;
-}
-
-.hero-foto-glider-wing {
-  fill: rgba(248, 250, 242, .92);
-  stroke: rgba(255, 255, 255, .65);
-  stroke-width: 1.6;
-}
-
-.hero-foto-glider-line { fill: none; stroke: rgba(20, 34, 48, .8); stroke-width: 1.5; }
-.hero-foto-glider-pilot-head { fill: rgba(20, 34, 48, .9); }
-.hero-foto-glider-pilot { fill: none; stroke: rgba(20, 34, 48, .9); stroke-width: 3; stroke-linecap: round; }
 
 /* ---------- contenuto ---------- */
 
@@ -226,18 +190,6 @@
   to { transform: scale(1.07) translateX(-1.4%); }
 }
 
-@keyframes hero-foto-drift-one {
-  0% { transform: translate(0, 0) rotate(2deg); }
-  50% { transform: translate(-16vw, 2.2vh) rotate(-1.5deg); }
-  100% { transform: translate(-32vw, .6vh) rotate(2deg); }
-}
-
-@keyframes hero-foto-drift-two {
-  0% { transform: translate(0, 0) rotate(-2deg); }
-  50% { transform: translate(12vw, -1.8vh) rotate(1.5deg); }
-  100% { transform: translate(24vw, .4vh) rotate(-2deg); }
-}
-
 @keyframes hero-foto-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: .45; }
@@ -253,14 +205,11 @@
   .hero-foto { min-height: 330px; border-radius: 18px; }
   .hero-foto__content { padding: 1.1rem 1rem 1.2rem; }
   .hero-foto__img { object-position: 58% 30%; }
-  .hero-foto__glider--one { left: 60%; top: 12%; }
-  .hero-foto__glider--two { display: none; }
   .hero-foto__credit { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .hero-foto__img,
-  .hero-foto__glider,
   .hero-foto__live-dot,
   .hero-foto__chip-spinner {
     animation: none;

@@ -1,10 +1,11 @@
 "use client";
 
 import "./weather-animation.css";
-import { Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Moon, Snowflake, Sun } from "lucide-react";
+import { Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, Moon, Snowflake, Sun, Umbrella } from "lucide-react";
 
 type WeatherAnimationProps = {
   code: number | null;
+  size?: "compact" | "hero";
 };
 
 function weatherKind(code: number | null) {
@@ -20,7 +21,7 @@ function weatherKind(code: number | null) {
   return "unknown";
 }
 
-export default function WeatherAnimation({ code }: WeatherAnimationProps) {
+export default function WeatherAnimation({ code, size = "compact" }: WeatherAnimationProps) {
   const kind = weatherKind(code);
   const label = kind === "clear" ? "Sereno"
     : kind === "partly" ? "Parzialmente nuvoloso"
@@ -33,12 +34,17 @@ export default function WeatherAnimation({ code }: WeatherAnimationProps) {
     : "Condizione non disponibile";
 
   return (
-    <span className={`weather-scene weather-scene--${kind}`} role="img" aria-label={label}>
+    <span className={`weather-scene weather-scene--${kind} weather-scene--${size}`} role="img" aria-label={label}>
       <span className="weather-scene-sky" aria-hidden="true" />
       {(kind === "clear" || kind === "partly") && (
         <Sun className="weather-scene-sun" aria-hidden="true" />
       )}
-      {kind === "partly" && <CloudSun className="weather-scene-cloud weather-scene-cloud--front" aria-hidden="true" />}
+      {kind === "partly" && (
+        <>
+          <Cloud className="weather-scene-cloud weather-scene-cloud--back" aria-hidden="true" />
+          <Cloud className="weather-scene-cloud weather-scene-cloud--front" aria-hidden="true" />
+        </>
+      )}
       {(kind === "cloudy" || kind === "fog" || kind === "drizzle" || kind === "rain" || kind === "snow" || kind === "storm") && (
         <>
           <Cloud className="weather-scene-cloud weather-scene-cloud--back" aria-hidden="true" />
@@ -50,8 +56,14 @@ export default function WeatherAnimation({ code }: WeatherAnimationProps) {
             : <Cloud className="weather-scene-cloud weather-scene-cloud--front" aria-hidden="true" />}
         </>
       )}
-      {(kind === "drizzle" || kind === "rain") && <span className="weather-scene-rain" aria-hidden="true"><i /><i /><i /></span>}
+      {(kind === "drizzle" || kind === "rain") && (
+        <>
+          <span className="weather-scene-rain" aria-hidden="true"><i /><i /><i /><i /><i /></span>
+          <Umbrella className="weather-scene-umbrella" aria-hidden="true" />
+        </>
+      )}
       {kind === "snow" && <span className="weather-scene-snow" aria-hidden="true"><Snowflake /><Snowflake /><Snowflake /></span>}
+      {kind === "storm" && <span className="weather-scene-rain" aria-hidden="true"><i /><i /><i /><i /><i /></span>}
       {kind === "storm" && <span className="weather-scene-flash" aria-hidden="true" />}
       {kind === "fog" && <span className="weather-scene-fog" aria-hidden="true"><i /><i /><i /></span>}
       {kind === "unknown" && <Moon className="weather-scene-moon" aria-hidden="true" />}

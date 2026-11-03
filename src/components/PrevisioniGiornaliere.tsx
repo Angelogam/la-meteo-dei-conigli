@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState } from "react";
 import type { HourData } from "@/types/meteo";
 import type { MeteoCurrent, MeteoDaily, MeteoHourly } from "@/services/openMeteoService";
-import { ArrowUp, Cloud, Thermometer, Zap, Sun, Wind } from "lucide-react";
+import { ArrowUp, Cloud, CloudRain, Thermometer, Zap, Sun, Wind } from "lucide-react";
 import AeroCard from "./AeroCard";
 import WeatherAnimation from "./WeatherAnimation";
 
@@ -94,38 +94,6 @@ function hoursForForecastDay(hours: ForecastHour[], dayOffset: number): Forecast
   target.setDate(target.getDate() + dayOffset);
   const targetDate = target.toDateString();
   return hours.filter((hour) => new Date(hour.time).toDateString() === targetDate);
-}
-
-function MiniTemperatureChart({ hours }: { hours: ForecastHour[] }) {
-  const values = hours
-    .map((hour) => hour.temperature)
-    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
-  if (values.length < 2) {
-    return (
-      <div className="forecast-temperature-chart forecast-temperature-chart--empty" aria-hidden="true">
-        Serie oraria non disponibile
-      </div>
-    );
-  }
-
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = Math.max(1, max - min);
-  const points = values.map((value, index) => {
-    const x = 2 + (index / (values.length - 1)) * 116;
-    const y = 28 - ((value - min) / range) * 22;
-    return `${index === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(" ");
-
-  return (
-    <div className="forecast-temperature-chart" aria-hidden="true">
-      <svg viewBox="0 0 120 34" preserveAspectRatio="none">
-        <path d={`${points} L118,32 L2,32 Z`} className="forecast-temperature-area" />
-        <path d={points} className="forecast-temperature-line" />
-      </svg>
-      <div className="forecast-temperature-chart-labels"><span>{Math.round(min)}°</span><span>{Math.round(max)}°</span></div>
-    </div>
-  );
 }
 
 function getFlightVerdict(rating: number): { label: string; color: string; bg: string; ring: string } {
@@ -350,15 +318,15 @@ export default function PrevisioniGiornaliere({
           <span className="flight-section-marker" aria-hidden="true" />
           <div><h2 className="flight-section-heading">Previsioni per i prossimi tre giorni</h2><p className="flight-section-subtitle">Scegli un giorno per aggiornare il briefing e le analisi.</p></div>
         </div>
-        <div className="forecast-days-grid grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="forecast-days-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
           {tabs.map((tabName, idx) => {
             const d = enrichedDaily[idx];
             const isActive = selectedDay === idx;
             const label = dateLabels[idx] || tabName;
-            const isRainy = d && d.precipitationSum !== undefined && d.precipitationSum > 0.5;
+            const isRainy = d && (d.precipitationSum ?? 0) > 0.5;
+            const isStormy = d?.weatherCode != null && [95, 96, 99].includes(d.weatherCode);
             const hoursForDay = hoursForForecastDay(forecastHours, idx);
             const rating = d ? getFlightRating(d, hoursForDay) : null;
-            const maxGust = d?.windGustsMax;
             const rainProbability = d?.precipitationProbabilityMax;
 
             return (
@@ -367,50 +335,56 @@ export default function PrevisioniGiornaliere({
                 type="button"
                 onClick={() => onSelectDay(idx)}
                 aria-pressed={isActive}
-                aria-label={`Mostra le previsioni per ${tabName.toLowerCase()}, ${label}`}
-                className={`
-                  forecast-day-card forecast-day-card-premium relative rounded-xl p-3 sm:p-4 text-left transition-colors duration-200
-                  ${isActive
-                    ? 'bg-emerald-950/60 border-2 border-emerald-400 shadow-md shadow-emerald-900/20'
-                    : isRainy
-                    ? 'bg-rose-950/20 border border-rose-500/30 hover:border-rose-500/50 hover:shadow-[0_0_20px_rgba(244,63,94,0.15)]'
-                    : 'bg-slate-800/40 border border-slate-700/50 hover:border-slate-600 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,255,255,0.05)]'
-                  }
-                `}
+                aria-label={`Mostra le previsioni per ${tabName.toLowerCase()}, ${label}. ${getWeatherLabel(d?.weatherCode)}. Temperatura massima ${d?.temperatureMax != null ? `${Math.round(d.temperatureMax)} gradi` : "non disponibile"}, minima ${d?.temperatureMin != null ? `${Math.round(d.temperatureMin)} gradi` : "non disponibile"}. Vento massimo ${d?.windSpeedMax != null ? `${Math.round(d.windSpeedMax)} chilometri orari` : "non disponibile"}. Indice meteo indicativo ${rating !== null ? `${rating} su 10` : "non disponibile"}.`}
+                className={`forecast-day-card forecast-day-card-premium${isActive ? " is-selected" : ""}${isRainy ? " is-rainy" : ""}${isStormy ? " is-stormy" : ""}`}
               >
-                <div className="flex items-center justify-between mb-3">
-                  <WeatherAnimation code={d?.weatherCode ?? null} />
+                <div className="forecast-day-card-heading">
+                  <div>
+                    <span className="forecast-day-title">{tabName}</span>
+                    <span className="forecast-day-date">{label}</span>
+                  </div>
                   <div
-                    className={`forecast-day-index text-sm font-black px-3 py-1 rounded-full transition-all duration-300 ${isActive ? 'bg-cyan-500/15 text-cyan-200 border border-cyan-400/30' : 'bg-slate-700/50 text-slate-400'}`}
+                    className="forecast-day-index"
                     title="Indice meteo indicativo, non è un giudizio di sicurezza del volo"
                   >
-                    <span className="forecast-day-index-label">Indice </span>{rating !== null ? `${rating}/10` : "N/D"}
+                    <span className="forecast-day-index-label">VOLO</span>
+                    <strong>{rating !== null ? rating : "—"}</strong>
+                    <span>/10</span>
                   </div>
                 </div>
-                <div className="font-black text-white text-lg">{tabName}</div>
-                <div className="text-[10px] text-slate-500 mb-3">{label}</div>
-                {d && (
-                  <>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-bold text-amber-300">{d.temperatureMax != null && Number.isFinite(d.temperatureMax) ? `${Math.round(d.temperatureMax)}°` : "N/D"}</span>
-                      <span className="text-xs text-slate-600">/</span>
-                      <span className="text-lg font-bold text-sky-300">{d.temperatureMin != null && Number.isFinite(d.temperatureMin) ? `${Math.round(d.temperatureMin)}°` : "N/D"}</span>
-                      <span className="ml-auto text-[9px] uppercase tracking-wider text-slate-500">max / min</span>
+                <div className="forecast-day-overview">
+                  <div className="forecast-day-condition">
+                    <WeatherAnimation code={d?.weatherCode ?? null} />
+                    <div className="forecast-day-condition-copy">
+                      <span className="forecast-day-weather">{getWeatherLabel(d?.weatherCode)}</span>
+                      {rainProbability != null && rainProbability > 0 && (
+                        <span className="forecast-day-rain-chance"><CloudRain aria-hidden="true" /> {Math.round(rainProbability)}% pioggia</span>
+                      )}
                     </div>
-                    <MiniTemperatureChart hours={hoursForDay} />
-                    <div className="forecast-day-condition text-[10px] text-slate-300 mt-2">
-                      {getWeatherLabel(d.weatherCode)}
-                    </div>
-                    <div className="forecast-day-metrics mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
-                      <span>Vento max</span>
-                      <strong>{d.windSpeedMax != null && Number.isFinite(d.windSpeedMax) ? `${Math.round(d.windSpeedMax)} km/h ${d.windDirDominant != null ? dirToIcon(d.windDirDominant) : ""}` : "N/D"}</strong>
-                      <span>Raffiche</span>
-                      <strong>{maxGust != null && Number.isFinite(maxGust) ? `${Math.round(maxGust)} km/h` : "N/D"}</strong>
-                      <span>Pioggia</span>
-                      <strong>{d.precipitationSum != null && Number.isFinite(d.precipitationSum) ? `${d.precipitationSum.toLocaleString("it-IT", { maximumFractionDigits: 1 })} mm${rainProbability != null ? ` · ${Math.round(rainProbability)}%` : ""}` : "N/D"}</strong>
-                    </div>
-                  </>
-                )}
+                  </div>
+                  <div className="forecast-day-temperatures">
+                    <span className="forecast-day-temperature-high">
+                      {d?.temperatureMax != null && Number.isFinite(d.temperatureMax) ? `${Math.round(d.temperatureMax)}°` : "—"}
+                      <small>MAX</small>
+                    </span>
+                    <span className="forecast-day-temperature-low">
+                      {d?.temperatureMin != null && Number.isFinite(d.temperatureMin) ? `${Math.round(d.temperatureMin)}°` : "—"}
+                      <small>MIN</small>
+                    </span>
+                  </div>
+                </div>
+                <div className="forecast-day-metrics">
+                  <span className="forecast-day-metric">
+                    <Wind aria-hidden="true" />
+                    <strong>{d?.windSpeedMax != null && Number.isFinite(d.windSpeedMax) ? `${Math.round(d.windSpeedMax)} km/h` : "Vento n/d"}</strong>
+                    <small>{d?.windDirDominant != null && `${dirToIcon(d.windDirDominant)} · `}raffiche {d?.windGustsMax != null && Number.isFinite(d.windGustsMax) ? `${Math.round(d.windGustsMax)} km/h` : "n/d"}</small>
+                  </span>
+                  <span className="forecast-day-metric">
+                    <CloudRain aria-hidden="true" />
+                    <strong>{d?.precipitationSum != null && Number.isFinite(d.precipitationSum) ? `${d.precipitationSum.toLocaleString("it-IT", { maximumFractionDigits: 1 })} mm` : "Pioggia n/d"}</strong>
+                    {rainProbability != null && <small>{Math.round(rainProbability)}% di probabilità</small>}
+                  </span>
+                </div>
               </button>
             );
           })}
