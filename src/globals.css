@@ -4246,6 +4246,56 @@ body {
   box-shadow: 0 5px 20px rgba(0,0,0,.12);
 }
 
+/* ===== Scheda Analisi: card report a sinistra + analisi meteo a destra ===== */
+.analisi-tab-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.analisi-main { min-width: 0; }
+
+.analisi-side-heading { margin-bottom: .85rem; }
+.analisi-side-heading h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: .3px;
+  color: #f2f7fb;
+}
+.analisi-side-heading p {
+  margin: .3rem 0 0;
+  font-size: .85rem;
+  color: #9bb0c7;
+}
+
+@media (min-width: 1200px) {
+  .analisi-tab-layout {
+    grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+    gap: 1.1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .analisi-side-heading h3 { font-size: 1.2rem; }
+  .analisi-side-heading p { font-size: .8rem; }
+}
+
+/* Tema chiaro dedicato alla card locandina dentro la scheda Analisi
+   (vince su .flight-side-card / .flight-subsection-heading di open-source-layout) */
+.report-ai-card.flight-side-card {
+  background: linear-gradient(180deg, #f6faf7 0%, #eaf3ee 100%) !important;
+  border: 1px solid rgba(25, 48, 41, 0.25) !important;
+  color: #1B211E !important;
+}
+.report-ai-card .flight-subsection-heading > div > span {
+  color: #33574B !important;
+}
+.report-ai-card .flight-subsection-heading h2 {
+  color: #193029 !important;
+}
+
 .flight-forecast-module,
 .windgram-featured {
   border-color: rgba(148, 180, 210, .17) !important;

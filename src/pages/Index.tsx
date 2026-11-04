@@ -177,34 +177,6 @@ export default function Index() {
             {site && (
               <div className="flight-top-dashboard-grid">
                 <div className="flight-primary-column">
-                  <section className="flight-report-row" aria-label="Analisi e report per i decolli">
-                    <div className="flight-report-intro">
-                      <span className="flight-report-kicker">ANALISI</span>
-                      <h2>Scarica un report per i decolli</h2>
-                      <p>
-                        Genera la locandina meteo in formato A4 con tutte le
-                        informazioni del volo: termiche, venti in quota, base
-                        cumuli e finestra migliore. Scaricala in JPG, PNG o PDF
-                        e condividila su WhatsApp.
-                      </p>
-                    </div>
-                    <div className="flight-report-card-slot min-w-0">
-                      <ReportAICard
-                        siteName={site.site_name}
-                        elevation={site.elevation_m}
-                        current={currentData}
-                        hourly={hourlyData}
-                        daily={enrichedDaily}
-                      />
-                    </div>
-                  </section>
-                </div>
-              </div>
-            )}
-
-            {site && (
-              <div className="flight-top-dashboard-grid">
-                <div className="flight-primary-column">
                   <CartinaMeteo
                     decolli={mergedDecolli}
                     selectedId={selectedId}
@@ -269,7 +241,26 @@ export default function Index() {
                         <TermicheTab currentData={currentData} dayData={filteredDayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name }} selectedDay={selectedDay} />
                       )}
                       {activeTab === "analisi" && (
-                        <AnalisiMeteo currentData={currentData} dayData={filteredDayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name, exposure: site.orientation }} cape={currentData?.cape} liftedIndex={currentData?.liftedIndex} cin={currentData?.cin} rawData={rawApiResponse} />
+                        <div className="analisi-tab-layout">
+                          <aside className="analisi-side" aria-label="Report scaricabili per i decolli">
+                            <div className="analisi-side-heading">
+                              <h3>Analisi</h3>
+                              <p>Scarica un report per i decolli</p>
+                            </div>
+                            {site && (
+                              <ReportAICard
+                                siteName={site.site_name}
+                                elevation={site.elevation_m}
+                                current={currentData}
+                                hourly={hourlyData}
+                                daily={enrichedDaily}
+                              />
+                            )}
+                          </aside>
+                          <div className="analisi-main">
+                            <AnalisiMeteo currentData={currentData} dayData={filteredDayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name, exposure: site.orientation }} cape={currentData?.cape} liftedIndex={currentData?.liftedIndex} cin={currentData?.cin} rawData={rawApiResponse} />
+                          </div>
+                        </div>
                       )}
                     </section>
 
