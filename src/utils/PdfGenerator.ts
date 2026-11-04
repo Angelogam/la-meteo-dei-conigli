@@ -1,81 +1,74 @@
-function escapePdfText(value: string): string {
-  return value
-    .replace(/\\/g, "\\\\")
-    .replace(/\(/g, "\\(")
-    .replace(/\)/g, "\\)")
-    .replace(/\r/g, "")
-    .replace(/\n/g, " ");
-}
+/**
+ * Generatore PDF per la locandina: incorpora il raster JPEG della poster
+ * (filtro DCTDecode) in un PDF monopagina di formato «locandina».
+ * Nessuna dipendenza esterna: gli offset vengono calcolati sui byte reali.
+ */
 
-export function generatePDFBlob(report: string, title = "Report AI Meteo"): Blob {
-  const lines = wrapPdfText(report, 92);
-  const blocks: string[] = [
-    "BT",
-    "/F1 20 Tf",
-    "50 780 Td",
-    `(${escapePdfText(title)}) Tj`,
-    "0 -28 Td",
-    "/F1 11 Tf",
-  ];
+const enc = new TextEncoder();
 
-  lines.slice(0, 16).forEach((line, index) => {
-    blocks.push(`50 ${740 - index * 22} Td`);
-    blocks.push(`(${escapePdfText(line)}) Tj`);
-  });
+export async function jpegToPdfBlob(jpeg: Blob, pageWidthPt = 595.28): Promise<Blob> {
+  const bmp = await createImageBitmap(jpeg);
+  const pxW = bmp.width;
+  const pxH = bmp.height;
+  bmp.close?.();
 
-  blocks.push("ET");
-  const content = blocks.join("\n");
+  const jpegBytes = new Uint8Array(await jpeg.arrayBuffer());
+  const scale = pageWidthPt / pxW;
+  const pageH = Math.round(pxH * scale * 100) / 100;
+  const pageW = Math.round(pageWidthPt * 100) / 100;
 
-  const objects: string[] = [];
-  objects.push("<< /Type /Catalog /Pages 2 0 R >>");
-  objects.push("<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
-  objects.push("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>");
-  objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
-  objects.push(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+  const parts: Uint8Array[] = [];
+  const offsets: number[] = [];
+  let len = 0;
+  const pushStr = (s: string) => {
+    const b = enc.encode(s);
+    parts.push(b);
+    len += b.byteLength;
+  };
+  const pushBin = (b: Uint8Array) => {
+    parts.push(b);
+    len += b.byteLength;
+  };
 
-  let pdf = "%PDF-1.4\n";
-  const offsets: number[] = [0];
-  objects.forEach((obj, i) => {
-    offsets.push(pdf.length);
-    pdf += `${i + 1} 0 obj\n${obj}\nendobj\n`;
-  });
+  pushStr("%PDF-1.5\n%\xE2\xE3\xCF\xD3\n");
 
-  const xrefStart = pdf.length;
-  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  // 1: catalogo
+  offsets.push(len);
+  pushStr("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
 
-  offsets.slice(1).forEach((offset) => {
-    pdf += `${String(offset).padStart(10, "0")} 00000 n \n`;
-  });
+  // 2: pagine
+  offsets.push(len);
+  pushStr("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n");
 
-  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+  // 3: pagina
+  offsets.push(len);
+  pushStr(
+    `3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW} ${pageH}] ` +
+      `/Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`,
+  );
 
-  return new Blob([pdf], { type: "application/pdf" });
-}
+  // 4: immagine JPEG (DCTDecode)
+  offsets.push(len);
+  pushStr(
+    `4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${pxW} /Height ${pxH} ` +
+      `/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.byteLength} >>\nstream\n`,
+  );
+  pushBin(jpegBytes);
+  pushStr("\nendstream\nendobj\n");
 
-export function buildReportHtml(report: string, title: string): string {
-  return `
-    <div style="max-width: 820px; margin: 0 auto; background: white; padding: 32px; color: #0f172a; font-family: Arial, sans-serif;">
-      <h1 style="font-size: 28px; margin: 0 0 16px; color: #0F4C81;">${title}</h1>
-      <div style="border-left: 6px solid #46A6FF; padding-left: 16px; font-size: 18px; line-height: 1.7;">${report}</div>
-    </div>
-  `;
-}
+  // 5: contenuto
+  const content = `q ${pageW} 0 0 ${pageH} 0 0 cm /Im0 Do Q\n`;
+  offsets.push(len);
+  pushStr(`5 0 obj\n<< /Length ${content.length} >>\nstream\n${content}endstream\nendobj\n`);
 
-function wrapPdfText(text: string, maxChars: number): string[] {
-  const words = text.split(/\s+/).filter(Boolean);
-  const lines: string[] = [];
-  let current = "";
-
-  for (const word of words) {
-    const candidate = current ? `${current} ${word}` : word;
-    if (candidate.length <= maxChars) {
-      current = candidate;
-    } else {
-      if (current) lines.push(current);
-      current = word;
-    }
+  // xref
+  const xrefStart = len;
+  let xref = `xref\n0 ${offsets.length + 1}\n0000000000 65535 f \n`;
+  for (const off of offsets) {
+    xref += `${String(off).padStart(10, "0")} 00000 n \n`;
   }
+  xref += `trailer\n<< /Size ${offsets.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+  pushStr(xref);
 
-  if (current) lines.push(current);
-  return lines;
+  return new Blob(parts as BlobPart[], { type: "application/pdf" });
 }

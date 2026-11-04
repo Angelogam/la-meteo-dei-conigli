@@ -179,6 +179,7 @@ export default function Index() {
                 <div className="flight-primary-column">
                   <ReportAICard
                     siteName={site.site_name}
+                    elevation={site.elevation_m}
                     current={currentData}
                     hourly={hourlyData}
                     daily={enrichedDaily}
