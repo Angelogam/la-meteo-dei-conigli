@@ -6,10 +6,11 @@ import { generateForecast, type ForecastAnalysis } from "@/utils/ForecastAnalyze
 import {
   computeLocandinaData,
   generateLocandinaImageBlob,
+  generateLocandinaPages,
   locandinaFilename,
   type LocandinaInput,
 } from "@/utils/PosterGenerator";
-import { jpegToPdfBlob } from "@/utils/PdfGenerator";
+import { jpegsToPdfBlob } from "@/utils/PdfGenerator";
 import type { MeteoCurrent, MeteoHourly } from "@/services/openMeteoService";
 
 interface ReportAICardProps {
@@ -90,9 +91,9 @@ export default function ReportAICard({ siteName, elevation, province, current, h
     try {
       const input = buildInput();
       if (type === "pdf") {
-        const jpg = await generateLocandinaImageBlob(input, "jpg", { outWidth: 1620 });
-        setPreview(jpg);
-        const pdf = await jpegToPdfBlob(jpg);
+        const pages = await generateLocandinaPages(input, 1620);
+        setPreview(pages.locandina);
+        const pdf = await jpegsToPdfBlob([pages.locandina, pages.informazioni]);
         triggerDownload(pdf, locandinaFilename(siteName, new Date(), "pdf"));
       } else if (type === "jpg") {
         const { blob, filename } = await makeJpeg();
@@ -103,7 +104,11 @@ export default function ReportAICard({ siteName, elevation, province, current, h
         setPreview(blob);
         triggerDownload(blob, locandinaFilename(siteName, new Date(), "png"));
       }
-      setShareHint("File scaricato: lo trovi nella cartella Download.");
+      setShareHint(
+        type === "pdf"
+          ? "PDF A4 scaricato: locandina + informazioni del volo (2 pagine)."
+          : "File scaricato: lo trovi nella cartella Download.",
+      );
     } catch (err) {
       console.error("locandina", err);
       setShareHint("Generazione non riuscita: riprova tra qualche secondo.");

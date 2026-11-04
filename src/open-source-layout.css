@@ -1078,6 +1078,32 @@ a:focus-visible,
   min-width: 0;
 }
 .flight-primary-column { grid-column: 1; grid-row: 1; display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+/* Riga ANALISI: dicitura a sinistra + card locandina a destra */
+.flight-report-row {
+  display: grid;
+  grid-template-columns: minmax(230px, 320px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+  min-width: 0;
+}
+.flight-report-intro {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: .55rem;
+  padding: 1.15rem 1.25rem;
+  border-radius: 18px;
+  border: 1px solid rgba(159, 218, 238, .28);
+  background: linear-gradient(160deg, rgba(6, 24, 40, .92) 0%, rgba(8, 32, 54, .78) 100%);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, .18);
+}
+.flight-report-kicker { color: #a8f0fa; font-size: .72rem; font-weight: 800; letter-spacing: .22em; }
+.flight-report-intro h2 { color: #f4fbff; font-size: 1.32rem; line-height: 1.25; margin: 0; }
+.flight-report-intro p { color: #c9dcea; font-size: .84rem; line-height: 1.55; margin: 0; }
+@media (max-width: 1250px) {
+  .flight-report-row { grid-template-columns: minmax(0, 1fr); }
+  .flight-report-intro { flex-direction: row; align-items: center; flex-wrap: wrap; gap: .4rem 1.2rem; }
+}
 .flight-launch-sidebar {
   grid-column: 2;
   grid-row: 1;

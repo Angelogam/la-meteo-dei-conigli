@@ -177,13 +177,27 @@ export default function Index() {
             {site && (
               <div className="flight-top-dashboard-grid">
                 <div className="flight-primary-column">
-                  <ReportAICard
-                    siteName={site.site_name}
-                    elevation={site.elevation_m}
-                    current={currentData}
-                    hourly={hourlyData}
-                    daily={enrichedDaily}
-                  />
+                  <section className="flight-report-row" aria-label="Analisi e report per i decolli">
+                    <div className="flight-report-intro">
+                      <span className="flight-report-kicker">ANALISI</span>
+                      <h2>Scarica un report per i decolli</h2>
+                      <p>
+                        Genera la locandina meteo in formato A4 con tutte le
+                        informazioni del volo: termiche, venti in quota, base
+                        cumuli e finestra migliore. Scaricala in JPG, PNG o PDF
+                        e condividila su WhatsApp.
+                      </p>
+                    </div>
+                    <div className="flight-report-card-slot min-w-0">
+                      <ReportAICard
+                        siteName={site.site_name}
+                        elevation={site.elevation_m}
+                        current={currentData}
+                        hourly={hourlyData}
+                        daily={enrichedDaily}
+                      />
+                    </div>
+                  </section>
                 </div>
               </div>
             )}
