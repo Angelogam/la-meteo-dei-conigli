@@ -195,6 +195,9 @@ export default function ReportAICard({ siteName, elevation, province, current, h
         <div>
           <span>LOCANDINA</span>
           <h2 style={{ color: "#193029" }}>LOCANDINA METEO VOLO</h2>
+          <p style={{ margin: "4px 0 0", fontSize: 12.5, color: "#33574B", fontWeight: 600 }}>
+            Report esportabile — JPG · PNG · PDF · WhatsApp
+          </p>
         </div>
       </div>
 
