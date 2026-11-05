@@ -9,14 +9,19 @@ import {
   generateLocandinaPages,
   locandinaFilename,
   type LocandinaInput,
+  type LocandinaSounding,
+  type SoundingHour,
 } from "@/utils/PosterGenerator";
 import { jpegsToPdfBlob } from "@/utils/PdfGenerator";
+import { fetchHourly } from "@/lib/openMeteoClient";
 import type { MeteoCurrent, MeteoHourly } from "@/services/openMeteoService";
 
 interface ReportAICardProps {
   siteName: string;
   elevation?: number;
   province?: string;
+  lat?: number;
+  lon?: number;
   current: MeteoCurrent | null;
   hourly: MeteoHourly[];
   daily?: Array<{
@@ -33,15 +38,75 @@ interface ReportAICardProps {
   onGenerate?: (analysis: ForecastAnalysis) => void;
 }
 
-type BusyKind = "jpg" | "png" | "pdf" | "wa" | null;
+type BusyKind = "jpg" | "png" | "retro" | "pdf" | "wa" | null;
 
-export default function ReportAICard({ siteName, elevation, province, current, hourly, daily = [], onGenerate }: ReportAICardProps) {
+/* Livelli hPa del sounding per il windgram della pagina retro. */
+const SOUNDING_HPA = [925, 850, 800, 750, 700, 650, 600, 550, 500] as const;
+
+const num = (v: unknown): number | null => {
+  const n = Number(v);
+  return v != null && Number.isFinite(n) ? n : null;
+};
+
+/** Sounding reale (temperature + geopotenziali + venti ai livelli hPa) per il windgram. */
+async function fetchSounding(lat: number, lon: number, siteAlt: number): Promise<LocandinaSounding> {
+  const params = [
+    ...SOUNDING_HPA.flatMap((p) => [
+      `temperature_${p}hPa`,
+      `geopotential_height_${p}hPa`,
+      `wind_speed_${p}hPa`,
+      `wind_direction_${p}hPa`,
+    ]),
+    "temperature_2m",
+    "cloud_cover",
+    "wind_speed_10m",
+    "wind_direction_10m",
+  ].join(",");
+  const dayStr = new Date().toISOString().split("T")[0];
+  const j = await fetchHourly(lat, lon, params, dayStr, dayStr);
+  const H = (j as { hourly?: Record<string, unknown> }).hourly ?? {};
+  const timeArr = (H.time as string[] | undefined) ?? [];
+  const hours: SoundingHour[] = [];
+  for (let hr = 8; hr <= 19; hr++) {
+    const idx = timeArr.findIndex((t) => parseInt(String(t).split("T")[1].split(":")[0], 10) === hr);
+    if (idx === -1) continue;
+    const t2m = num(H.temperature_2m?.[idx]);
+    const levels: SoundingHour["levels"] = [];
+    if (t2m != null) {
+      levels.push({
+        hpa: 0,
+        alt: siteAlt + 2,
+        temp: t2m,
+        speed: num(H.wind_speed_10m?.[idx]),
+        dir: num(H.wind_direction_10m?.[idx]),
+      });
+    }
+    for (const p of SOUNDING_HPA) {
+      const alt = num(H[`geopotential_height_${p}hPa`]?.[idx]);
+      if (alt == null || alt <= siteAlt + 50) continue;
+      levels.push({
+        hpa: p,
+        alt: Math.round(alt),
+        temp: num(H[`temperature_${p}hPa`]?.[idx]),
+        speed: num(H[`wind_speed_${p}hPa`]?.[idx]),
+        dir: num(H[`wind_direction_${p}hPa`]?.[idx]),
+      });
+    }
+    hours.push({ hour: hr, temp2m: t2m, cloud: num(H.cloud_cover?.[idx]) ?? 0, levels });
+  }
+  if (!hours.length) throw new Error("sounding vuoto");
+  return { siteAlt, hours, source: "modello" };
+}
+
+export default function ReportAICard({ siteName, elevation, province, lat, lon, current, hourly, daily = [], onGenerate }: ReportAICardProps) {
   const [analysis, setAnalysis] = useState<ForecastAnalysis | null>(null);
   const [generated, setGenerated] = useState(false);
   const [busy, setBusy] = useState<BusyKind>(null);
   const [shareHint, setShareHint] = useState<string | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const previewBlobRef = useRef<Blob | null>(null);
+  const [previewFront, setPreviewFront] = useState<{ url: string; blob: Blob } | null>(null);
+  const [previewBack, setPreviewBack] = useState<{ url: string; blob: Blob } | null>(null);
+  const [previewKind, setPreviewKind] = useState<"fronte" | "retro">("fronte");
+  const [sounding, setSounding] = useState<LocandinaSounding | null>(null);
 
   const computed = useMemo(() => generateForecast(siteName, current, hourly, daily), [siteName, current, hourly, daily]);
   const active = analysis ?? computed;
@@ -53,7 +118,31 @@ export default function ReportAICard({ siteName, elevation, province, current, h
     setShareHint(null);
   }, [siteName, current, hourly, daily]);
 
-  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
+  /* Sounding per il windgram: una sola chiamata per decollo/giorno, con timeout
+     e fallback silenzioso (il poster stima il profilo dai dati base). */
+  useEffect(() => {
+    if (lat == null || lon == null) return;
+    let cancelled = false;
+    const timeout = new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 9000));
+    Promise.race([fetchSounding(lat, lon, elevation ?? 1500), timeout])
+      .then((s) => {
+        if (!cancelled) setSounding(s);
+      })
+      .catch(() => {
+        if (!cancelled) setSounding(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [lat, lon, elevation]);
+
+  useEffect(
+    () => () => {
+      if (previewFront) URL.revokeObjectURL(previewFront.url);
+      if (previewBack) URL.revokeObjectURL(previewBack.url);
+    },
+    [previewFront, previewBack],
+  );
 
   const handleGenerate = () => {
     const next = computed;
@@ -72,6 +161,7 @@ export default function ReportAICard({ siteName, elevation, province, current, h
     daily: daily[0] ?? null,
     report: active.report,
     probabilities: active.probabilities,
+    sounding,
   });
 
   const makeJpeg = async (): Promise<{ blob: Blob; filename: string }> => {
@@ -79,35 +169,59 @@ export default function ReportAICard({ siteName, elevation, province, current, h
     return { blob, filename: locandinaFilename(siteName, new Date(), "jpg") };
   };
 
-  const setPreview = (blob: Blob) => {
-    previewBlobRef.current = blob;
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(URL.createObjectURL(blob));
+  const makeRetroJpeg = async (): Promise<{ blob: Blob; filename: string }> => {
+    const pages = await generateLocandinaPages(buildInput(), 1620);
+    return { blob: pages.informazioni, filename: locandinaFilename(siteName, new Date(), "report.jpg") };
   };
 
-  const handleDownload = async (type: "jpg" | "png" | "pdf") => {
+  const rememberPreview = (blob: Blob, kind: "fronte" | "retro") => {
+    const entry = { url: URL.createObjectURL(blob), blob };
+    if (kind === "fronte") {
+      setPreviewFront((old) => {
+        if (old) URL.revokeObjectURL(old.url);
+        return entry;
+      });
+      setPreviewKind("fronte");
+    } else {
+      setPreviewBack((old) => {
+        if (old) URL.revokeObjectURL(old.url);
+        return entry;
+      });
+      setPreviewKind("retro");
+    }
+  };
+
+  const handleDownload = async (type: "jpg" | "png" | "retro" | "pdf") => {
     setBusy(type);
     setShareHint(null);
     try {
       const input = buildInput();
       if (type === "pdf") {
         const pages = await generateLocandinaPages(input, 1620);
-        setPreview(pages.locandina);
+        rememberPreview(pages.locandina, "fronte");
+        rememberPreview(pages.informazioni, "retro");
+        setPreviewKind("fronte");
         const pdf = await jpegsToPdfBlob([pages.locandina, pages.informazioni]);
         triggerDownload(pdf, locandinaFilename(siteName, new Date(), "pdf"));
       } else if (type === "jpg") {
         const { blob, filename } = await makeJpeg();
-        setPreview(blob);
+        rememberPreview(blob, "fronte");
+        triggerDownload(blob, filename);
+      } else if (type === "retro") {
+        const { blob, filename } = await makeRetroJpeg();
+        rememberPreview(blob, "retro");
         triggerDownload(blob, filename);
       } else {
         const blob = await generateLocandinaImageBlob(input, "png", { outWidth: 1620 });
-        setPreview(blob);
+        rememberPreview(blob, "fronte");
         triggerDownload(blob, locandinaFilename(siteName, new Date(), "png"));
       }
       setShareHint(
         type === "pdf"
-          ? "PDF A4 scaricato: locandina + informazioni del volo (2 pagine)."
-          : "File scaricato: lo trovi nella cartella Download.",
+          ? "PDF A4 scaricato: fronte (template parapendio) + retro (report giornaliero e windgram)."
+          : type === "retro"
+            ? "Retro scaricato: report giornaliero in testo, windgram e fasce termiche."
+            : "File scaricato: lo trovi nella cartella Download.",
       );
     } catch (err) {
       console.error("locandina", err);
@@ -134,7 +248,7 @@ export default function ReportAICard({ siteName, elevation, province, current, h
     setShareHint(null);
     try {
       const { blob, filename } = await makeJpeg();
-      setPreview(blob);
+      rememberPreview(blob, "fronte");
       const file = new File([blob], filename, { type: "image/jpeg" });
       const d = active;
       const text =
@@ -270,18 +384,49 @@ export default function ReportAICard({ siteName, elevation, province, current, h
           </p>
         </div>
 
-        {previewUrl && (
-          <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid rgba(25,48,41,0.2)", maxHeight: 230, overflowY: "auto", background: "#F2F5F3" }}>
-            <img src={previewUrl} alt="Anteprima locandina" style={{ display: "block", width: "100%", height: "auto" }} />
+        {previewFront || previewBack ? (
+          <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid rgba(25,48,41,0.2)", maxHeight: 320, overflowY: "auto", background: "#F2F5F3" }}>
+            {(previewFront && previewBack) && (
+              <div style={{ display: "flex", gap: 6, padding: "8px 8px 0", position: "sticky", top: 0, zIndex: 2, background: "rgba(242,245,243,0.95)" }}>
+                {(["fronte", "retro"] as const).map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setPreviewKind(k)}
+                    style={{
+                      flex: 1,
+                      border: "1px solid " + (previewKind === k ? "#193029" : "rgba(25,48,41,0.22)"),
+                      borderRadius: 8,
+                      padding: "5px 8px",
+                      background: previewKind === k ? "#193029" : "white",
+                      color: previewKind === k ? "white" : "#193029",
+                      fontWeight: 700,
+                      fontSize: 12,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {k === "fronte" ? "Fronte · template parapendio" : "Retro · report + windgram"}
+                  </button>
+                ))}
+              </div>
+            )}
+            <img
+              src={(previewKind === "retro" ? previewBack?.url : previewFront?.url) ?? ""}
+              alt={previewKind === "retro" ? "Anteprima retro (report e windgram)" : "Anteprima fronte (template parapendio)"}
+              style={{ display: "block", width: "100%", height: "auto" }}
+            />
           </div>
-        )}
+        ) : null}
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           <button type="button" disabled={busy !== null} onClick={() => void handleDownload("jpg")} style={buttonStyle(busy === "jpg")}>
             {busy === "jpg" ? <Loader2 size={14} className="animate-spin" /> : <FileImage size={14} />} JPG
           </button>
-          <button type="button" disabled={busy !== null} onClick={() => void handleDownload("png")} style={buttonStyle(busy === "png")}>
+          <button type="button" disabled={busy !== null} onClick={() => void handleDownload("png")} style={buttonStyle(busy === "png")} title="Fronte in PNG">
             {busy === "png" ? <Loader2 size={14} className="animate-spin" /> : <FileImage size={14} />} PNG
+          </button>
+          <button type="button" disabled={busy !== null} onClick={() => void handleDownload("retro")} style={buttonStyle(busy === "retro")} title="Retro: report giornaliero, windgram e fasce termiche">
+            {busy === "retro" ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />} Retro
           </button>
           <button type="button" disabled={busy !== null} onClick={() => void handleDownload("pdf")} style={buttonStyle(busy === "pdf")}>
             {busy === "pdf" ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />} PDF

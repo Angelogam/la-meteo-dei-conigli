@@ -32,6 +32,8 @@ export interface LocandinaInput {
   } | null;
   report: string;
   probabilities: { flyable: number; thermal: number; wind: number; rain: number; storm: number };
+  /** Sounding verticale per il windgram della pagina retro (opzionale: se manca viene stimato). */
+  sounding?: LocandinaSounding | null;
 }
 
 export interface LocandinaFonts {
@@ -58,6 +60,33 @@ export interface CrossVerdict {
   verdict: string;
   km: string;
   note: string;
+}
+
+/* ------------------------------------------------------------------ */
+/* Sounding per il windgram (temperature e venti ai livelli hPa)       */
+/* ------------------------------------------------------------------ */
+export interface SoundingLevel {
+  hpa: number;
+  /** quota del livello in m s.l.m. (geopotenziale reale o atmosfera standard) */
+  alt: number;
+  temp: number | null;
+  speed: number | null;
+  dir: number | null;
+}
+
+export interface SoundingHour {
+  /** ora del giorno 0–23 */
+  hour: number;
+  temp2m: number | null;
+  cloud: number | null;
+  levels: SoundingLevel[];
+}
+
+export interface LocandinaSounding {
+  siteAlt: number;
+  hours: SoundingHour[];
+  /** "modello" = temperature/geopotenziali reali · "stima" = ricostruite dal profilo base */
+  source: "modello" | "stima";
 }
 
 /* A4 esatto: 1080 × 1527.43 px (210 × 297 mm) */
@@ -210,6 +239,44 @@ export interface LocandinaData {
   bestBars: Array<{ ora: string; rateo: number }>;
   fasceTermiche: FasciaTermica[];
   cross: CrossVerdict;
+  /** Verdetto meteo «se piove o se dà bello» per il template parapendio. */
+  tempo: { verdict: "BELLO" | "PIOVE" | "INCERTO"; sub: string; icon: "sun" | "cloud" | "rain" };
+  /** Probabilità di pioggia per fascia oraria (grafico retro). */
+  rainBars: Array<{ ora: string; p: number }>;
+  /** Dati del windgram (pagina retro, stile Alpium). */
+  windgram: WindgramData | null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Windgram (stile Alpium) — modello dati                              */
+/* ------------------------------------------------------------------ */
+export interface WindgramLevel {
+  hpa: number;
+  alt: number;
+}
+
+export interface WindgramArrow {
+  /** indice della colonna ora */
+  h: number;
+  alt: number;
+  speed: number;
+  dir: number;
+}
+
+export interface WindgramData {
+  hours: number[];
+  siteAlt: number;
+  minAlt: number;
+  maxAlt: number;
+  pLevels: WindgramLevel[];
+  /** celle di stabilità: indice ora × riga verticale → colore RGB */
+  cells: Array<{ h: number; r: number; color: string }>;
+  arrows: WindgramArrow[];
+  /** quota dello zero termico per ogni ora (m s.l.m.) */
+  zero: Array<number | null>;
+  headerTemps: Array<number | null>;
+  headerCloud: Array<number | null>;
+  sourceLabel: string;
 }
 
 export function computeLocandinaData(input: LocandinaInput): LocandinaData {
@@ -429,6 +496,28 @@ export function computeLocandinaData(input: LocandinaInput): LocandinaData {
           ? "Cross difficile: volo locale allungato lungo i versanti"
           : "Volo locale consigliato: energia insufficiente per il cross";
 
+  /* --- verdetto «se piove o se dà bello» --- */
+  const rainMaxH = nmax(hours.map((h) => h.precipitationProbability)) ?? 0;
+  const precipSum = hours.reduce((s, h) => s + (h.precipitation ?? 0), 0);
+  let tempo: LocandinaData["tempo"];
+  if (rainMaxH >= 45 || precipSum >= 3) {
+    tempo = rainMaxH >= 65 || precipSum >= 6
+      ? { verdict: "PIOVE", sub: "Pioggia probabile: finestre brevi, decollo sconsigliato nelle ore di pioggia", icon: "rain" }
+      : { verdict: "PIOVE", sub: `Rischio pioggia ${Math.round(rainMaxH)}%: tieni d'occhio le raffiche da cumuli`, icon: "rain" };
+  } else if (rainMaxH >= 20 || cloudAvg >= 60) {
+    tempo = { verdict: "INCERTO", sub: `Pochi passaggi nuvolosi, pioggia improbabile (${Math.round(rainMaxH)}%)`, icon: "cloud" };
+  } else {
+    tempo = { verdict: "BELLO", sub: "Cielo sereno, niente pioggia: giornata asciutta", icon: "sun" };
+  }
+
+  /* --- probabilità di pioggia per fascia oraria (grafico retro) --- */
+  const rainBars: Array<{ ora: string; p: number }> = hours
+    .filter((_, i) => i % 2 === 0)
+    .map((h) => ({ ora: hh(h.time.getHours()), p: Math.round(h.precipitationProbability ?? 0) }));
+
+  /* --- windgram stile Alpium --- */
+  const windgram = computeWindgram(input, hourly, elevation);
+
   return {
     siteName,
     province,
@@ -465,7 +554,244 @@ export function computeLocandinaData(input: LocandinaInput): LocandinaData {
     bestBars,
     fasceTermiche,
     cross,
+    tempo,
+    rainBars,
+    windgram,
   };
+}
+
+/* ------------------------------------------------------------------ */
+/* Windgram stile Alpium — costruzione dati                            */
+/* ------------------------------------------------------------------ */
+
+/* Scala continua delle masse d'aria (ΔT/100 m) come su Alpium:
+   viola/blu = stabile · verde = gradiente medio · giallo/rosso = termico. */
+const STABILITY_STOPS: { v: number; c: [number, number, number] }[] = [
+  { v: -0.3, c: [124, 92, 246] },
+  { v: -0.05, c: [93, 124, 247] },
+  { v: 0.1, c: [64, 156, 248] },
+  { v: 0.25, c: [45, 199, 234] },
+  { v: 0.4, c: [45, 209, 187] },
+  { v: 0.55, c: [96, 200, 110] },
+  { v: 0.7, c: [164, 214, 78] },
+  { v: 0.85, c: [240, 200, 60] },
+  { v: 1.0, c: [244, 150, 52] },
+  { v: 1.2, c: [236, 82, 82] },
+];
+
+function stabilityColor(deltaT: number): string {
+  const v = Math.max(STABILITY_STOPS[0].v, Math.min(STABILITY_STOPS[STABILITY_STOPS.length - 1].v, deltaT));
+  for (let i = 0; i < STABILITY_STOPS.length - 1; i++) {
+    const a = STABILITY_STOPS[i];
+    const b = STABILITY_STOPS[i + 1];
+    if (v >= a.v && v <= b.v) {
+      const t = (v - a.v) / (b.v - a.v || 1);
+      return `rgb(${a.c.map((ch, k) => Math.round(ch + (b.c[k] - ch) * t)).join(",")})`;
+    }
+  }
+  return "rgb(236,82,82)";
+}
+
+/* Colore vento per intensità (km/h), scala Alpium */
+function windgramSpeedColor(speed: number): string {
+  if (speed <= 4) return "#0284c7";
+  if (speed <= 8) return "#0d9488";
+  if (speed <= 13) return "#16a34a";
+  if (speed <= 18) return "#65a30d";
+  if (speed <= 24) return "#eab308";
+  if (speed <= 30) return "#f97316";
+  if (speed <= 42) return "#dc2626";
+  if (speed <= 58) return "#991b1b";
+  return "#86198f";
+}
+
+/* Quote atmosfera standard (m s.l.m.) per i livelli hPa del windgram */
+const HPA_STD_ALT: Record<number, number> = {
+  1000: 110, 975: 320, 950: 500, 925: 760, 900: 1000, 850: 1450, 800: 1950,
+  750: 2500, 700: 3100, 650: 3700, 600: 4400, 550: 5000, 500: 5800,
+};
+
+const WINDGRAM_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+const WINDGRAM_ROWS = 26; // fasce verticali del fondo di stabilità
+
+/**
+ * Costruisce i dati del windgram: se `input.sounding` c'è usa temperature e
+ * geopotenziali reali del modello, altrimenti stima il profilo dal dato orario
+ * (gradiente secco ancorato allo zero termico + venti dei livelli hPa).
+ */
+export function computeWindgram(input: LocandinaInput, hours: MeteoHourly[], elevation: number): WindgramData | null {
+  const sounding = input.sounding;
+  const byHour = new Map<number, SoundingHour>();
+  if (sounding?.hours?.length) {
+    for (const sh of sounding.hours) byHour.set(sh.hour, sh);
+  }
+  const meteoByHour = new Map<number, MeteoHourly>();
+  for (const h of hours) meteoByHour.set(h.time.getHours(), h);
+
+  const cols: SoundingHour[] = [];
+  const headerTemps: Array<number | null> = [];
+  const headerCloud: Array<number | null> = [];
+  for (const hr of WINDGRAM_HOURS) {
+    const s = byHour.get(hr);
+    const m = meteoByHour.get(hr);
+    if (!s && !m) {
+      cols.push({ hour: hr, temp2m: null, cloud: null, levels: [] });
+      headerTemps.push(null);
+      headerCloud.push(null);
+      continue;
+    }
+    const levels: SoundingLevel[] = s?.levels?.length
+      ? s.levels.map((l) => ({ ...l }))
+      : synthesizeLevels(m, elevation);
+    const temp2m = s?.temp2m ?? m?.temperature ?? levels.find((l) => l.temp != null)?.temp ?? null;
+    const cloud = s?.cloud ?? m?.cloudCover ?? null;
+    cols.push({ hour: hr, temp2m, cloud, levels });
+    headerTemps.push(temp2m);
+    headerCloud.push(cloud);
+  }
+
+  /* quote min/max del grafico */
+  const siteAlt = sounding?.siteAlt ?? elevation;
+  const minAlt = Math.max(200, Math.floor(siteAlt / 200) * 200);
+  let maxAlt = 4200;
+  for (const c of cols) {
+    for (const l of c.levels) {
+      if (l.alt > maxAlt) maxAlt = l.alt;
+    }
+  }
+  maxAlt = Math.min(6200, Math.max(4200, Math.ceil(maxAlt / 200) * 200));
+
+  /* livelli di pressione da tracciare (con quota reale o standard) */
+  const pLevels: WindgramLevel[] = [];
+  {
+    const seen = new Set<number>();
+    for (const c of cols) {
+      for (const l of c.levels) {
+        if (!seen.has(l.hpa) && l.alt >= minAlt && l.alt <= maxAlt && [925, 850, 800, 750, 700, 650, 600].includes(l.hpa)) {
+          seen.add(l.hpa);
+          pLevels.push({ hpa: l.hpa, alt: l.alt });
+        }
+      }
+    }
+    pLevels.sort((a, b) => b.hpa - a.hpa);
+  }
+
+  /* celle di stabilità: ΔT/100 m per colonna ora e fascia verticale */
+  const cells: Array<{ h: number; r: number; color: string }> = [];
+  for (let h = 0; h < cols.length; h++) {
+    const c = cols[h];
+    const pts = c.levels
+      .filter((l) => l.temp != null)
+      .map((l) => ({ alt: l.alt, temp: l.temp as number }))
+      .sort((a, b) => a.alt - b.alt);
+    for (let r = 0; r < WINDGRAM_ROWS; r++) {
+      const altLo = minAlt + ((maxAlt - minAlt) * r) / WINDGRAM_ROWS;
+      const altHi = minAlt + ((maxAlt - minAlt) * (r + 1)) / WINDGRAM_ROWS;
+      const altMid = (altLo + altHi) / 2;
+      let dt: number | null = null;
+      if (pts.length >= 2) {
+        const tLo = tempAtAlt(pts, Math.max(minAlt, altMid - 150));
+        const tHi = tempAtAlt(pts, Math.min(maxAlt, altMid + 150));
+        if (tLo != null && tHi != null && altHi > altLo) {
+          dt = ((tLo - tHi) / 300) * 100;
+        }
+      }
+      cells.push({ h, r, color: dt != null ? stabilityColor(clamp(dt, -0.35, 1.25)) : "#e8edf4" });
+    }
+  }
+
+  /* frecce del vento ai livelli di pressione (+ suolo se disponibile) */
+  const arrows: WindgramArrow[] = [];
+  for (let h = 0; h < cols.length; h++) {
+    const c = cols[h];
+    const groundSpeed = c.levels.find((l) => l.hpa === 0);
+    if (groundSpeed?.speed != null && groundSpeed.dir != null) {
+      arrows.push({ h, alt: Math.max(minAlt + 60, siteAlt), speed: groundSpeed.speed, dir: groundSpeed.dir });
+    }
+    for (const l of c.levels) {
+      if (l.speed != null && l.dir != null && l.alt >= minAlt && l.alt <= maxAlt && l.hpa !== 0) {
+        arrows.push({ h, alt: l.alt, speed: l.speed, dir: l.dir });
+      }
+    }
+  }
+
+  /* zero termico per colonna */
+  const zero: Array<number | null> = cols.map((c) => {
+    const pts = c.levels.filter((l) => l.temp != null).map((l) => ({ alt: l.alt, temp: l.temp as number })).sort((a, b) => a.alt - b.alt);
+    for (let i = 0; i < pts.length - 1; i++) {
+      const up = pts[i].temp <= 0 && pts[i + 1].temp >= 0;
+      const down = pts[i].temp >= 0 && pts[i + 1].temp <= 0;
+      if ((up || down) && pts[i + 1].temp !== pts[i].temp) {
+        const ratio = -pts[i].temp / (pts[i + 1].temp - pts[i].temp);
+        return Math.round(pts[i].alt + ratio * (pts[i + 1].alt - pts[i].alt));
+      }
+    }
+    return null;
+  });
+
+  const sourceLabel = sounding?.source === "modello"
+    ? "Temperature e geopotenziali reali del modello (Open-Meteo hPa)"
+    : "Profilo stimato: gradiente ancorato allo zero termico + venti hPa";
+
+  return {
+    hours: WINDGRAM_HOURS,
+    siteAlt,
+    minAlt,
+    maxAlt,
+    pLevels,
+    cells,
+    arrows,
+    zero,
+    headerTemps,
+    headerCloud,
+    sourceLabel,
+  };
+}
+
+/** Temperatura interpolata a quota `alt` da un profilo (alt, temp) ordinato. */
+function tempAtAlt(pts: Array<{ alt: number; temp: number }>, alt: number): number | null {
+  if (!pts.length) return null;
+  if (alt <= pts[0].alt) return pts[0].temp;
+  if (alt >= pts[pts.length - 1].alt) return pts[pts.length - 1].temp;
+  for (let i = 0; i < pts.length - 1; i++) {
+    if (pts[i].alt <= alt && pts[i + 1].alt >= alt) {
+      const t = (alt - pts[i].alt) / (pts[i + 1].alt - pts[i].alt || 1);
+      return pts[i].temp + t * (pts[i + 1].temp - pts[i].temp);
+    }
+  }
+  return pts[0].temp;
+}
+
+/** Ricostruisce un profilo verosimile quando il sounding del modello non è disponibile. */
+function synthesizeLevels(m: MeteoHourly | undefined, elevation: number): SoundingLevel[] {
+  const t2m = m?.temperature ?? 12;
+  const fl = m?.freezingLevel ?? null;
+  const levels: SoundingLevel[] = [];
+  levels.push({ hpa: 0, alt: elevation + 2, temp: t2m, speed: m?.windSpeed ?? null, dir: m?.windDir ?? null });
+  const std = [925, 850, 800, 750, 700, 650, 600];
+  for (const hpa of std) {
+    const alt = HPA_STD_ALT[hpa];
+    if (alt <= elevation + 50) continue;
+    let temp = t2m - (alt - elevation) * 0.0065;
+    if (fl != null && fl > elevation + 200) {
+      /* ancora il profilo allo zero termico del modello */
+      temp = -(alt - fl) * 0.0065;
+    }
+    const speed =
+      hpa >= 900 ? (m?.windSpeed925 ?? null)
+        : hpa >= 825 ? (m?.windSpeed850 ?? null)
+          : hpa >= 725 ? (m?.windSpeed700 ?? null)
+            : hpa >= 625 ? (m?.windSpeed600 ?? null)
+              : (m?.windSpeed500 ?? null);
+    const dir =
+      hpa >= 900 ? (m?.windDir925 ?? null)
+        : hpa >= 825 ? (m?.windDir850 ?? null)
+          : hpa >= 725 ? (m?.windDir700 ?? null)
+            : hpa >= 625 ? (m?.windDir600 ?? null)
+              : (m?.windDir500 ?? null);
+    levels.push({ hpa, alt, temp: Math.round(temp * 10) / 10, speed, dir });
+  }
+  return levels;
 }
 
 /* ------------------------------------------------------------------ */
@@ -637,6 +963,26 @@ function stormCloud(x: number, y: number, s: number): string {
   </g>`;
 }
 
+/** Anemometro stilizzato (vento a terra). */
+function gaugeIcon(x: number, y: number, s: number): string {
+  const k = s / 44;
+  return `<g transform="translate(${x},${y}) scale(${k})">
+    <circle cx="22" cy="22" r="17" fill="#FFFFFF" stroke="#9AA7B5" stroke-width="2.4"/>
+    <path d="M22 22 L22 9 M22 22 L32 28" stroke="#1C58A5" stroke-width="3.4" stroke-linecap="round"/>
+    <circle cx="22" cy="22" r="3" fill="#D62828"/>
+  </g>`;
+}
+
+/** Occhio (visibilità). */
+function eyeIcon(x: number, y: number, s: number): string {
+  const k = s / 44;
+  return `<g transform="translate(${x},${y}) scale(${k})" filter="${TXT_SHADOW}">
+    <path d="M2 22 C10 9, 34 9, 42 22 C34 35, 10 35, 2 22 Z" fill="#FFFFFF" stroke="rgba(255,255,255,0.9)" stroke-width="2"/>
+    <circle cx="22" cy="22" r="7.5" fill="#123B6D"/>
+    <circle cx="24.5" cy="19.5" r="2.4" fill="#FFFFFF"/>
+  </g>`;
+}
+
 /** Orologio analogico con lancette sulle «ore migliori». */
 function clock(cx: number, cy: number, r: number, hourAngle = -60, minAngle = 0): string {
   const hand = (angDeg: number, len: number, w: number) => {
@@ -762,6 +1108,162 @@ function statChip(x: number, y: number, w: number, label: string, value: string,
 }
 
 /* ------------------------------------------------------------------ */
+/* Windgram (stile Alpium) — pannello SVG                              */
+/* ------------------------------------------------------------------ */
+
+function snowflake(cx: number, cy: number, r: number, color: string): string {
+  const arms: string[] = [];
+  for (let k = 0; k < 6; k++) {
+    const a = (k * Math.PI) / 3;
+    const x2 = cx + Math.cos(a) * r;
+    const y2 = cy + Math.sin(a) * r;
+    arms.push(`<line x1="${cx}" y1="${cy}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`);
+  }
+  return `<g stroke="${color}" stroke-width="1.6" stroke-linecap="round">${arms.join("")}<circle cx="${cx}" cy="${cy}" r="1.4" fill="${color}" stroke="none"/></g>`;
+}
+
+function miniSun(cx: number, cy: number, r: number, opacity: number): string {
+  const rays = Array.from({ length: 8 }, (_, k) => {
+    const a = (k * Math.PI) / 4;
+    return `<line x1="${(cx + Math.cos(a) * r * 1.35).toFixed(1)}" y1="${(cy + Math.sin(a) * r * 1.35).toFixed(1)}" x2="${(cx + Math.cos(a) * r * 1.85).toFixed(1)}" y2="${(cy + Math.sin(a) * r * 1.85).toFixed(1)}"/>`;
+  }).join("");
+  return `<g opacity="${Math.max(0.18, opacity).toFixed(2)}"><circle cx="${cx}" cy="${cy}" r="${r}" fill="#fbbf24" stroke="none"/><g stroke="#fbbf24" stroke-width="1.4">${rays}</g></g>`;
+}
+
+/** Pannello windgram completo (titolo, testata ore, plot stabilità, legenda). */
+function windgramPanel(a: PageAssets, X: number, Y: number, W: number, H: number): string {
+  const d = a.data;
+  const wg = d.windgram;
+  const out: string[] = [];
+  out.push(`<rect x="${X}" y="${Y}" width="${W}" height="${H}" rx="18" fill="rgba(9,17,38,0.97)" filter="${SHADOW}"/>`);
+  out.push(`<rect x="${X}" y="${Y}" width="${W}" height="${H}" rx="18" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="1.4"/>`);
+  /* titolo */
+  out.push(`<text x="${X + 24}" y="${Y + 32}" font-family="${MONT}" font-weight="800" font-size="24" fill="#FFFFFF">WINDGRAM · AEROLOGIA DELLA GIORNATA</text>`);
+  const badge = "STILE ALPIUM";
+  const bw = textWidth(badge, 800, 14, MONT) + 26;
+  out.push(`<rect x="${X + W - 24 - bw}" y="${Y + 12}" width="${bw}" height="26" rx="13" fill="${K.gold}"/>`);
+  out.push(`<text x="${X + W - 24 - bw / 2}" y="${Y + 30}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="14" fill="#0B2447">${badge}</text>`);
+  if (!wg) {
+    out.push(`<text x="${X + 24}" y="${Y + 90}" font-family="${INTER}" font-weight="600" font-size="18" fill="rgba(255,255,255,0.75)">Profilo verticale non disponibile per questo decollo.</text>`);
+    return out.join("");
+  }
+
+  const titleH = 48;
+  const headH = 56;
+  const bottomH = 30;
+  const legendH = 64;
+  const mL = 70, mR = 84;
+  const plotX = X + mL;
+  const plotW = W - mL - mR;
+  const plotY = Y + titleH + headH;
+  const plotH = H - titleH - headH - bottomH - legendH;
+  const nH = wg.hours.length;
+  const { minAlt, maxAlt } = wg;
+  const altToY = (alt: number) => plotY + plotH - ((clamp(alt, minAlt, maxAlt) - minAlt) / (maxAlt - minAlt)) * plotH;
+  const colX = (i: number) => plotX + ((i + 0.5) / nH) * plotW;
+
+  /* --- testata: temperature e sole per ora --- */
+  out.push(`<rect x="${plotX}" y="${Y + titleH}" width="${plotW}" height="${headH}" fill="rgba(30,41,59,0.9)"/>`);
+  wg.hours.forEach((hr, i) => {
+    const x = colX(i);
+    const t = wg.headerTemps[i];
+    const cloud = wg.headerCloud[i] ?? 0;
+    const tCol = t == null ? "#94a3b8" : t >= 25 ? "#ef4444" : t >= 18 ? "#f97316" : "#e2e8f0";
+    out.push(`<text x="${x}" y="${Y + titleH + 20}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="16" fill="${tCol}">${t != null ? t.toFixed(0) + "°" : "—"}</text>`);
+    out.push(miniSun(x - 7, Y + titleH + 38, 5.5, 1 - (cloud / 100) * 0.8));
+    out.push(`<text x="${x}" y="${Y + titleH + 52}" text-anchor="middle" font-family="${INTER}" font-weight="600" font-size="10.5" fill="#8ea0b8">${Math.round(100 - cloud)}% sole</text>`);
+  });
+
+  /* --- fondo: celle di stabilità --- */
+  const colW = plotW / nH;
+  const rowH = plotH / WINDGRAM_ROWS;
+  for (const c of wg.cells) {
+    out.push(`<rect x="${(plotX + c.h * colW).toFixed(1)}" y="${(plotY + c.r * rowH).toFixed(1)}" width="${(colW + 0.6).toFixed(1)}" height="${(rowH + 0.6).toFixed(1)}" fill="${c.color}" opacity="0.92"/>`);
+  }
+
+  /* --- griglia oraria + etichette --- */
+  wg.hours.forEach((hr, i) => {
+    const x = colX(i);
+    out.push(`<line x1="${x}" y1="${plotY}" x2="${x}" y2="${plotY + plotH}" stroke="rgba(10,18,38,0.5)" stroke-width="0.7"/>`);
+    out.push(`<text x="${x}" y="${plotY + plotH + 21}" text-anchor="middle" font-family="${MONT}" font-weight="700" font-size="13.5" fill="#c9d5e8">${String(hr).padStart(2, "0")}:00</text>`);
+  });
+
+  /* --- linee di pressione (hPa) + tacche metriche a destra --- */
+  for (const lv of wg.pLevels) {
+    const y = altToY(lv.alt);
+    out.push(`<line x1="${plotX}" y1="${y}" x2="${plotX + plotW}" y2="${y}" stroke="rgba(255,255,255,0.34)" stroke-width="0.8" stroke-dasharray="3 4"/>`);
+    out.push(`<text x="${X + 14}" y="${y + 4}" font-family="${MONT}" font-weight="800" font-size="13" fill="#dbe6f5">${lv.hpa}</text>`);
+    out.push(`<text x="${plotX + plotW + 8}" y="${y + 4}" font-family="${INTER}" font-weight="600" font-size="11.5" fill="#9fb2cc">${lv.alt} m</text>`);
+  }
+  for (let a2 = Math.ceil((wg.minAlt + 60) / 500) * 500; a2 <= wg.maxAlt; a2 += 500) {
+    const y = altToY(a2);
+    /* salta le tacche troppo vicine alle etichette hPa (stessa quota) */
+    if (wg.pLevels.some((lv) => Math.abs(altToY(lv.alt) - y) < 13)) continue;
+    out.push(`<line x1="${plotX + plotW}" y1="${y}" x2="${plotX + plotW + 5}" y2="${y}" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>`);
+    out.push(`<text x="${X + W - 14}" y="${y + 4}" text-anchor="end" font-family="${INTER}" font-weight="600" font-size="11" fill="#9fb2cc">${a2}</text>`);
+  }
+  out.push(`<text x="${plotX - 34}" y="${plotY - 6}" font-family="${INTER}" font-weight="700" font-size="11" fill="#8ea0b8">hPa</text>`);
+  out.push(`<text x="${plotX + plotW + 12}" y="${plotY - 6}" font-family="${INTER}" font-weight="700" font-size="11" fill="#8ea0b8">m s.l.m.</text>`);
+
+  /* --- linea del decollo --- */
+  const launchY = altToY(wg.siteAlt);
+  if (launchY > plotY && launchY < plotY + plotH) {
+    out.push(`<line x1="${plotX}" y1="${launchY}" x2="${plotX + plotW}" y2="${launchY}" stroke="#10b981" stroke-width="2" opacity="0.75"/>`);
+    out.push(`<path d="M ${plotX + 8} ${launchY - 4} l 5 -8 l 5 8 Z" fill="#10b981"/>`);
+    out.push(`<text x="${plotX + 22}" y="${launchY - 6}" font-family="${MONT}" font-weight="800" font-size="12.5" fill="#10b981">decollo ${wg.siteAlt} m</text>`);
+  }
+
+  /* --- frecce del vento (direzione del flusso, colore = intensità) --- */
+  for (const ar of wg.arrows) {
+    const x = colX(ar.h);
+    const y = altToY(ar.alt);
+    const rot = (ar.dir + 180) % 360;
+    const color = windgramSpeedColor(ar.speed);
+    out.push(`<g transform="translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${rot.toFixed(0)})">
+      <line x1="-9" y1="0" x2="5" y2="0" stroke="${color}" stroke-width="1.5"/>
+      <polygon points="5,-3.4 10.5,0 5,3.4" fill="${color}"/>
+      <line x1="-12.5" y1="0" x2="-9" y2="0" stroke="${color}" stroke-width="1.2"/>
+    </g>`);
+  }
+
+  /* --- zero termico (tratteggio azzurro + fiocco) --- */
+  wg.zero.forEach((z, i) => {
+    if (z == null) return;
+    const x = colX(i);
+    const y = altToY(z);
+    if (y < plotY || y > plotY + plotH) return;
+    out.push(`<line x1="${x - colW / 2 + 4}" y1="${y}" x2="${x + colW / 2 - 4}" y2="${y}" stroke="#7dd3fc" stroke-width="1.6" stroke-dasharray="3 3" opacity="0.95"/>`);
+    out.push(snowflake(x, y - 9, 4.2, "#7dd3fc"));
+  });
+
+  /* --- bordo plot --- */
+  out.push(`<rect x="${plotX}" y="${plotY}" width="${plotW}" height="${plotH}" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1"/>`);
+
+  /* --- legenda: scala stabilità + scala vento + fonte --- */
+  const legY = Y + H - legendH + 14;
+  out.push(`<text x="${X + 24}" y="${legY + 4}" font-family="${INTER}" font-weight="700" font-size="12" fill="#8ea0b8">STABILE ←</text>`);
+  const barX = X + 108;
+  const barW = 300;
+  const barSteps = 24;
+  for (let i = 0; i < barSteps; i++) {
+    const v = -0.3 + (i / (barSteps - 1)) * 1.55;
+    out.push(`<rect x="${barX + (i * barW) / barSteps}" y="${legY - 8}" width="${barW / barSteps + 1}" height="13" fill="${stabilityColor(v)}"/>`);
+  }
+  out.push(`<rect x="${barX}" y="${legY - 8}" width="${barW}" height="13" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="0.8"/>`);
+  out.push(`<text x="${barX + barW + 10}" y="${legY + 4}" font-family="${INTER}" font-weight="700" font-size="12" fill="#8ea0b8">→ INSTABILE · ΔT/100 m</text>`);
+  const windStops: Array<[number, string]> = [[5, "≤5"], [13, "13"], [24, "24"], [42, "42"], [60, "60+"]];
+  let wx = barX;
+  for (const [v, lb] of windStops) {
+    out.push(`<rect x="${wx}" y="${legY + 16}" width="22" height="11" fill="${windgramSpeedColor(v)}"/>`);
+    out.push(`<text x="${wx + 26}" y="${legY + 25}" font-family="${INTER}" font-weight="600" font-size="10.5" fill="#8ea0b8">${lb} km/h</text>`);
+    wx += 78;
+  }
+  out.push(`<text x="${X + W - 24}" y="${legY + 25}" text-anchor="end" font-family="${INTER}" font-weight="500" font-size="11" fill="rgba(255,255,255,0.55)">${esc(wg.sourceLabel)}</text>`);
+
+  return out.join("");
+}
+
+/* ------------------------------------------------------------------ */
 /* PAGINA 1 — Locandina                                               */
 /* ------------------------------------------------------------------ */
 export function buildLocandinaSVG(a: PageAssets): { svg: string; width: number; height: number } {
@@ -778,119 +1280,168 @@ export function buildLocandinaSVG(a: PageAssets): { svg: string; width: number; 
   const siteTag = d.province ? `${d.province.toUpperCase()} · DECOLLO ${d.elevation} M S.L.M.` : `DECOLLO ${d.elevation} M S.L.M.`;
   out.push(header("REPORT METEO", d.siteName.toUpperCase(), d.dateShort, siteTag, a.pilota));
 
-  /* ---- riga 1: visibilità · zero termico · base cumuli ---- */
-  const r1y = 342;
-  const p1w = 330;
-  out.push(whitePanel(PAD, r1y, p1w, 142));
-  out.push(sun(PAD + 40, r1y + 44, 15));
-  out.push(`<text x="${PAD + 72}" y="${r1y + 52}" font-family="${MONT}" font-weight="800" font-size="25" fill="${K.navy}">${esc(`Visibilità ${d.visibilita}`)}</text>`);
-  out.push(thermometer(PAD + 28, r1y + 78, 46));
-  out.push(`<text x="${PAD + 72}" y="${r1y + 112}" font-family="${MONT}" font-weight="800" font-size="25" fill="${K.navy}">${esc(d.tempRange)}</text>`);
-
-  const p2x = PAD + p1w + 20;
-  const p2w = 286;
-  out.push(whitePanel(p2x, r1y, p2w, 142));
-  out.push(thermometer(p2x + p2w / 2 - 11, r1y + 14, 40));
-  out.push(`<text x="${p2x + p2w / 2}" y="${r1y + 82}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="23" fill="${K.navy}">Zero Termico</text>`);
-  out.push(`<text x="${p2x + p2w / 2}" y="${r1y + 122}" text-anchor="middle" font-family="${MONT}" font-weight="900" font-size="38" fill="${K.navy}">${esc(d.zeroTermico)}</text>`);
-
-  const p3x = p2x + p2w + 20;
-  const p3w = PAGE_W - PAD - p3x;
-  out.push(bluePanel(p3x, r1y, p3w, 142));
-  out.push(`<text x="${p3x + 22}" y="${r1y + 46}" font-family="${MONT}" font-weight="800" font-size="26" fill="#FFFFFF">Base Cumuli</text>`);
-  out.push(`<text x="${p3x + 22}" y="${r1y + 90}" font-family="${MONT}" font-weight="900" font-size="36" fill="#FFFFFF">${esc(d.cumuliBase)}</text>`);
-  out.push(`<rect x="${p3x + 12}" y="${r1y + 104}" width="${p3w - 24}" height="28" rx="12" fill="rgba(10,42,86,0.55)"/>`);
-  out.push(`<text x="${p3x + p3w / 2}" y="${r1y + 124}" text-anchor="middle" font-family="${MONT}" font-weight="700" font-size="17.5" fill="#FFFFFF">${esc(d.cumuliPomeriggio)}</text>`);
-
-  /* ---- riga 2: termiche (blu) + CAPE / Lifted Index / rischio ---- */
-  const r2y = 506;
-  const tw = 560;
-  out.push(bluePanel(PAD, r2y, tw, 156));
-  out.push(`<text x="${PAD + 24}" y="${r2y + 46}" font-family="${MONT}" font-weight="800" font-size="30" fill="${K.gold}">Termiche</text>`);
-  out.push(`<text x="${PAD + 24}" y="${r2y + 94}" font-family="${MONT}" font-weight="900" font-size="34" fill="#FFFFFF">${esc(d.termicheWindow)}</text>`);
-  out.push(`<text x="${PAD + 24}" y="${r2y + 130}" font-family="${MONT}" font-weight="700" font-size="23" fill="#FFFFFF">${esc(d.termicheQuota)}</text>`);
-  out.push(thermalArea(PAD + 306, r2y + 12, tw - 330, 132, d.bestBars));
-
-  const rx = PAD + tw + 24;
-  const rw = PAGE_W - PAD - rx;
-  out.push(whitePanel(rx, r2y, rw, 92));
-  out.push(`<text x="${rx + rw / 2}" y="${r2y + 38}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="26" fill="${K.navy}">CAPE · ${esc(d.cape)}</text>`);
-  out.push(`<text x="${rx + rw / 2}" y="${r2y + 74}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="26" fill="${K.navy}">Lifted Index · ${esc(d.liftedIndex)}</text>`);
-
-  const sy = r2y + 106;
-  out.push(whitePanel(rx, sy, rw, 50, 0.9));
-  out.push(stormCloud(rx + 24, sy + 8, 0.6));
-  const rTitle = "Rischio Temporali";
-  out.push(`<text x="${rx + 72}" y="${sy + 33}" font-family="${MONT}" font-weight="800" font-size="20" fill="${K.navy}">${esc(rTitle)}</text>`);
-  /* i trattini decorativi restano solo se lo spazio lo consente */
-  const titleEnd = rx + 72 + textWidth(rTitle, 800, 20, MONT);
-  const vFull = `— ${d.rischioTemporali} —`;
-  const vShort = d.rischioTemporali;
-  const vSize = 26;
-  const fullW = textWidth(vFull, 900, vSize, MONT);
-  const vText = titleEnd + fullW + 14 <= rx + rw - 20 ? vFull : vShort;
-  out.push(`<text x="${rx + rw - 20}" y="${sy + 35}" text-anchor="end" font-family="${MONT}" font-weight="900" font-size="${vSize}" fill="${K.navy}">${esc(vText)}</text>`);
-
-  /* ---- venti (tabella compatta con frecce rosse) ---- */
-  const wy = 700;
-  out.push(sectionBand(PAD, wy, tw, "Venti"));
-  const wh = 52 * d.windRows.length + 16;
-  out.push(whitePanel(PAD, wy + 56, tw, wh));
-  d.windRows.forEach((w, i) => {
-    const ry = wy + 56 + 16 + i * 52;
-    if (i > 0) out.push(`<line x1="${PAD + 18}" y1="${ry - 10}" x2="${PAD + tw - 18}" y2="${ry - 10}" stroke="${K.line}" stroke-width="1.4"/>`);
-    out.push(`<text x="${PAD + 22}" y="${ry + 20}" font-family="${MONT}" font-weight="800" font-size="23" fill="${K.navy}">${w.quota} m</text>`);
-    out.push(`<text x="${PAD + 150}" y="${ry + 20}" font-family="${MONT}" font-weight="800" font-size="21" fill="${K.navy}">${esc(w.dir)}</text>`);
-    const speed = w.speedMin === w.speedMax ? `${w.speedMax} km/h` : `${w.speedMin}–${w.speedMax} km/h`;
-    out.push(`<text x="${PAD + 236}" y="${ry + 20}" font-family="${MONT}" font-weight="700" font-size="21" fill="${K.ink}">${esc(speed)}</text>`);
-    out.push(redArrowLeft(PAD + tw - 84, ry + 2, 58, 18));
+  /* ============ RIGA VERDETTO: se piove o se dà bello ============ */
+  const vy = 306;
+  const vh = 146;
+  const lw = 560;
+  const vrx = PAD + lw + 20;
+  const vrw = PAGE_W - PAD - vrx;
+  out.push(whitePanel(PAD, vy, lw, vh));
+  out.push(`<text x="${PAD + 24}" y="${vy + 36}" font-family="${MONT}" font-weight="800" font-size="17" letter-spacing="2" fill="${K.muted}">IL TEMPO AL DECOLLO</text>`);
+  /* icona meteo grande (sole / nuvola / pioggia disegnata) */
+  if (d.tempo.icon === "sun") {
+    out.push(sun(PAD + 58, vy + 88, 24));
+  } else {
+    out.push(stormCloud(PAD + 58, vy + 62, d.tempo.icon === "rain" ? 1 : 0.75));
+  }
+  const vCol = d.tempo.verdict === "BELLO" ? "#1D8F5F" : d.tempo.verdict === "PIOVE" ? "#D64545" : "#B97A12";
+  out.push(`<text x="${PAD + 112}" y="${vy + 92}" font-family="${MONT}" font-weight="900" font-size="50" fill="${vCol}">${esc(d.tempo.verdict)}</text>`);
+  const tempoLines = wrapText(d.tempo.sub, 600, 16.5, INTER, lw - 136).slice(0, 2);
+  tempoLines.forEach((ln, i) => {
+    out.push(`<text x="${PAD + 112}" y="${vy + 118 + i * 23}" font-family="${INTER}" font-weight="600" font-size="16.5" fill="${K.ink}">${esc(ln)}</text>`);
   });
 
-  /* ---- finestra di volo ottimale (pannello blu con orologio) ---- */
-  const fy = wy;
-  const fh = wh + 56;
-  out.push(bluePanel(rx, fy, rw, fh));
-  const ftitle = "Finestra di Volo Ottimale";
-  const fsz = fitSize(ftitle, 800, MONT, 25, 17, rw - 36);
-  out.push(`<text x="${rx + rw / 2}" y="${fy + 42}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="${fsz}" fill="${K.gold}">${esc(ftitle)}</text>`);
-  out.push(clock(rx + rw / 2, fy + 112, 44, -60, 15));
-  out.push(`<rect x="${rx + 28}" y="${fy + 176}" width="${rw - 56}" height="58" rx="12" fill="#FFFFFF" filter="${SHADOW}"/>`);
-  out.push(`<text x="${rx + rw / 2}" y="${fy + 216}" text-anchor="middle" font-family="${MONT}" font-weight="900" font-size="36" fill="${K.red}">${esc(d.finestra)}</text>`);
-  out.push(`<text x="${rx + rw / 2}" y="${fy + fh - 56}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="25" fill="#FFFFFF">${esc(d.finestraQuota)}</text>`);
-  /* possibilità di cross-country nella finestra di volo */
-  const xcLabel = `Cross ${d.cross.verdict} · ${d.cross.km}`;
-  const xcSize = fitSize(xcLabel, 800, MONT, 21, 15, rw - 40);
-  out.push(`<rect x="${rx + 20}" y="${fy + fh - 42}" width="${rw - 40}" height="34" rx="10" fill="rgba(10,42,86,0.6)"/>`);
-  out.push(`<text x="${rx + rw / 2}" y="${fy + fh - 18}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="${xcSize}" fill="${K.gold}">${esc(xcLabel)}</text>`);
+  out.push(bluePanel(vrx, vy, vrw, vh));
+  out.push(`<text x="${vrx + 24}" y="${vy + 36}" font-family="${MONT}" font-weight="800" font-size="17" letter-spacing="2" fill="${K.gold}">GIORNATA DI VOLO</text>`);
+  const semW = textWidth(d.semaforo, 900, 30, MONT) + 46;
+  out.push(`<rect x="${vrx + 24}" y="${vy + 52}" width="${semW}" height="48" rx="24" fill="#FFFFFF" filter="${SHADOW}"/>`);
+  out.push(`<text x="${vrx + 24 + semW / 2}" y="${vy + 84}" text-anchor="middle" font-family="${MONT}" font-weight="900" font-size="30" fill="${K.navy}">${esc(d.semaforo)}</text>`);
+  out.push(`<text x="${vrx + 24 + semW + 18}" y="${vy + 72}" font-family="${MONT}" font-weight="800" font-size="21" fill="#FFFFFF">Volabile ${d.probabilities.flyable}%</text>`);
+  out.push(`<text x="${vrx + 24 + semW + 18}" y="${vy + 96}" font-family="${MONT}" font-weight="800" font-size="21" fill="#FFFFFF">Temporali ${esc(d.rischioTemporali)}</text>`);
+  out.push(`<text x="${vrx + 24}" y="${vy + 128}" font-family="${INTER}" font-weight="600" font-size="15.5" fill="rgba(255,255,255,0.85)">Termiche ${d.probabilities.thermal}% · Vento favorevole ${d.probabilities.wind}%</text>`);
 
-  /* ---- turbolenza ---- */
-  const ty = wy + fh + 22;
-  out.push(sectionBand(PAD, ty, tw, "Turbolenza"));
-  const th = 52 * d.turbolenza.length + 16;
-  out.push(whitePanel(PAD, ty + 56, tw, th));
-  d.turbolenza.forEach((t, i) => {
-    const ry = ty + 56 + 16 + i * 52;
-    if (i > 0) out.push(`<line x1="${PAD + 18}" y1="${ry - 10}" x2="${PAD + tw - 18}" y2="${ry - 10}" stroke="${K.line}" stroke-width="1.4"/>`);
-    out.push(`<text x="${PAD + 22}" y="${ry + 20}" font-family="${MONT}" font-weight="800" font-size="23" fill="${K.navy}">${esc(t.range)}</text>`);
-    out.push(`<text x="${PAD + tw - 22}" y="${ry + 20}" text-anchor="end" font-family="${MONT}" font-weight="800" font-size="23" fill="${K.navy}">${esc(t.name)}</text>`);
-  });
+  /* ============ TEMPLATE PARAPENDIO ============ */
+  const cx = PAGE_W / 2;
+  const wingApex = 520;
+  const tipDrop = 128;
+  const halfSpan = 418;
+  const wingL = cx - halfSpan;
+  const wingR = cx + halfSpan;
+  const tipY = wingApex + tipDrop;
+  const ctrlY = 2 * wingApex - tipY;
+  const depth = 60;
 
-  /* ---- termiche nelle fasce orarie (colonna destra, sotto la finestra) ---- */
-  const fy2 = wy + fh + 22;
-  out.push(sectionBand(rx, fy2, rw, "Termiche per fasce orarie"));
-  const fRowH = 44;
-  const fPanelH = 16 + fRowH * d.fasceTermiche.length;
-  out.push(whitePanel(rx, fy2 + 56, rw, fPanelH));
-  const fasceColor: Record<FasciaTermica["level"], string> = { good: "#2E7D32", mid: "#B97A12", weak: "#A34E44" };
-  d.fasceTermiche.forEach((f, i) => {
-    const ry = fy2 + 56 + 16 + i * fRowH;
-    if (i > 0) out.push(`<line x1="${rx + 18}" y1="${ry - 8}" x2="${rx + rw - 18}" y2="${ry - 8}" stroke="${K.line}" stroke-width="1.4"/>`);
-    out.push(`<circle cx="${rx + 28}" cy="${ry + 14}" r="7" fill="${fasceColor[f.level]}"/>`);
-    out.push(`<text x="${rx + 44}" y="${ry + 20}" font-family="${MONT}" font-weight="800" font-size="19" fill="${K.navy}">${esc(f.orario)}</text>`);
-    out.push(`<text x="${rx + 44}" y="${ry + 38}" font-family="${INTER}" font-weight="600" font-size="13" fill="${K.muted}">${esc(f.label.toUpperCase())}</text>`);
-    out.push(`<text x="${rx + 170}" y="${ry + 20}" font-family="${MONT}" font-weight="800" font-size="19" fill="${fasceColor[f.level]}">${esc(f.lift)}</text>`);
-    out.push(`<text x="${rx + 170}" y="${ry + 38}" font-family="${INTER}" font-weight="600" font-size="13" fill="${K.muted}">QUOTA ${esc(f.quota.toUpperCase())}</text>`);
-    out.push(`<text x="${rx + rw - 22}" y="${ry + 26}" text-anchor="end" font-family="${MONT}" font-weight="700" font-size="17" fill="${K.ink}">${esc(f.vento)}</text>`);
+  const qPoint = (t: number, drop: number): [number, number] => {
+    const x = (1 - t) * (1 - t) * wingL + 2 * (1 - t) * t * cx + t * t * wingR;
+    const c = 2 * (wingApex + drop) - (tipY + drop);
+    const y = (1 - t) * (1 - t) * (tipY + drop) + 2 * (1 - t) * t * c + t * t * (tipY + drop);
+    return [x, y];
+  };
+  /* velo (canopy) */
+  out.push(`<path d="M ${wingL} ${tipY} Q ${cx} ${ctrlY} ${wingR} ${tipY} L ${wingR} ${tipY + depth} Q ${cx} ${ctrlY + depth + 30} ${wingL} ${tipY + depth} Z" fill="url(#wingGrad)" filter="${SHADOW}"/>`);
+  /* celle */
+  const RIBS = 26;
+  const ribPts: Array<[number, number]> = [];
+  for (let i = 0; i <= RIBS; i++) {
+    const t = i / RIBS;
+    const [tx, ty] = qPoint(t, 0);
+    const [, by] = qPoint(t, depth);
+    ribPts.push([tx, by]);
+    if (i > 0 && i < RIBS) {
+      out.push(`<line x1="${tx.toFixed(1)}" y1="${ty.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${by.toFixed(1)}" stroke="rgba(255,255,255,0.34)" stroke-width="1.1"/>`);
+    }
+  }
+  /* profilo d'attacco in evidenza */
+  out.push(`<path d="M ${wingL} ${tipY} Q ${cx} ${ctrlY} ${wingR} ${tipY}" fill="none" stroke="#FFFFFF" stroke-width="3" opacity="0.85"/>`);
+  /* punte oro */
+  {
+    const [ltx, lty] = qPoint(0, 0);
+    const [, lby] = qPoint(0, depth);
+    out.push(`<path d="M ${ltx} ${lty} L ${ltx} ${lby} L ${ltx + 62} ${lby - 2} Q ${ltx + 34} ${(lty + lby) / 2} ${ltx} ${lty} Z" fill="${K.goldDeep}" opacity="0.92"/>`);
+    const [rtx, rty] = qPoint(1, 0);
+    const [, rby] = qPoint(1, depth);
+    out.push(`<path d="M ${rtx} ${rty} L ${rtx} ${rby} L ${rtx - 62} ${rby - 2} Q ${rtx - 34} ${(rty + rby) / 2} ${rtx} ${rty} Z" fill="${K.goldDeep}" opacity="0.92"/>`);
+  }
+  /* nome del decollo sul velo */
+  out.push(`<text x="${cx}" y="${wingApex + 40}" text-anchor="middle" font-family="${MONT}" font-weight="900" font-size="38" letter-spacing="4" fill="#FFFFFF" filter="${TXT_SHADOW}">${esc(d.siteName.toUpperCase())}</text>`);
+
+  /* sospensioni: dalle celle ai raggianti */
+  const riserY = 884;
+  const riserLx = cx - 30;
+  const riserRx = cx + 30;
+  for (let i = 3; i <= RIBS - 3; i++) {
+    const [px, py] = ribPts[i];
+    const target = px < cx ? riserLx : riserRx;
+    out.push(`<line x1="${px.toFixed(1)}" y1="${py.toFixed(1)}" x2="${target}" y2="${riserY}" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>`);
+  }
+
+  /* tre strumenti «appesi» alle sospensioni */
+  const podY1 = 742;
+  const hangPod = (podX: number, icon: "therm" | "wind" | "term", label: string, value: string) => {
+    out.push(`<rect x="${podX}" y="${podY1}" width="236" height="82" rx="16" fill="rgba(255,255,255,0.97)" filter="${SHADOW}"/>`);
+    if (icon === "therm") out.push(thermometer(podX + 22, podY1 + 14, 40));
+    else if (icon === "wind") out.push(gaugeIcon(podX + 20, podY1 + 18, 40));
+    else out.push(sun(podX + 22, podY1 + 20, 17));
+    out.push(`<text x="${podX + 74}" y="${podY1 + 32}" font-family="${INTER}" font-weight="700" font-size="12.5" letter-spacing="1.4" fill="${K.muted}">${esc(label.toUpperCase())}</text>`);
+    const vsz = fitSize(value, 800, MONT, 27, 17, 236 - 88);
+    out.push(`<text x="${podX + 74}" y="${podY1 + 64}" font-family="${MONT}" font-weight="800" font-size="${vsz}" fill="${K.navy}">${esc(value)}</text>`);
+  };
+  hangPod(cx - 370, "therm", "Temperatura", d.tempRange);
+  hangPod(cx - 118, "wind", "Vento a terra", d.ventoDecollo);
+  hangPod(cx + 134, "term", "Termiche", d.termicheWindow);
+  /* cordini di sospensione dei pod */
+  for (const [px, tPar] of [[cx - 252, 0.2], [cx, 0.5], [cx + 252, 0.8]] as const) {
+    const [, py] = qPoint(tPar, depth);
+    out.push(`<line x1="${px}" y1="${py.toFixed(1)}" x2="${px}" y2="${podY1}" stroke="rgba(255,255,255,0.55)" stroke-width="1.2"/>`);
+  }
+
+  /* pilota in volo */
+  out.push(`<rect x="${riserLx - 5}" y="${riserY}" width="10" height="14" rx="4" fill="#1B2A4A"/>`);
+  out.push(`<rect x="${riserRx - 5}" y="${riserY}" width="10" height="14" rx="4" fill="#1B2A4A"/>`);
+  out.push(`<path d="M ${riserLx - 4} ${riserY + 14} L ${cx - 12} ${riserY + 34}" stroke="#1B2A4A" stroke-width="5" stroke-linecap="round"/>`);
+  out.push(`<path d="M ${riserRx + 4} ${riserY + 14} L ${cx + 12} ${riserY + 34}" stroke="#1B2A4A" stroke-width="5" stroke-linecap="round"/>`);
+  out.push(`<circle cx="${cx}" cy="${riserY + 48}" r="14" fill="#1B2A4A"/>`);
+  out.push(`<path d="M ${cx - 13.5} ${riserY + 43} a 13.5 13.5 0 0 1 27 0 Z" fill="${K.goldDeep}"/>`);
+  out.push(`<path d="M ${cx - 17} ${riserY + 66} Q ${cx - 20} ${riserY + 96} ${cx - 8} ${riserY + 104} L ${cx + 10} ${riserY + 104} Q ${cx + 19} ${riserY + 94} ${cx + 16} ${riserY + 66} Q ${cx} ${riserY + 58} ${cx - 17} ${riserY + 66} Z" fill="#1B2A4A"/>`);
+  out.push(`<path d="M ${cx - 8} ${riserY + 104} L ${cx - 20} ${riserY + 122} L ${cx - 12} ${riserY + 126} L ${cx + 2} ${riserY + 108} Z" fill="#1B2A4A"/>`);
+  out.push(`<path d="M ${cx + 10} ${riserY + 104} L ${cx + 22} ${riserY + 120} L ${cx + 30} ${riserY + 114} L ${cx + 16} ${riserY + 100} Z" fill="#1B2A4A"/>`);
+  out.push(`<ellipse cx="${cx}" cy="${riserY + 142}" rx="86" ry="11" fill="rgba(10,25,55,0.30)"/>`);
+
+  /* ============ RIGA DATI: zero · cumuli · visibilità ============ */
+  const sy2 = 1044;
+  const sh2 = 128;
+  const cw = (PAGE_W - PAD * 2 - 40) / 3;
+  out.push(whitePanel(PAD, sy2, cw, sh2));
+  out.push(thermometer(PAD + 24, sy2 + 22, 36));
+  out.push(`<text x="${PAD + 72}" y="${sy2 + 38}" font-family="${INTER}" font-weight="700" font-size="13.5" letter-spacing="1.4" fill="${K.muted}">ZERO TERMICO</text>`);
+  out.push(`<text x="${PAD + 24}" y="${sy2 + 86}" font-family="${MONT}" font-weight="900" font-size="34" fill="${K.navy}">${esc(d.zeroTermico)}</text>`);
+  out.push(`<text x="${PAD + 24}" y="${sy2 + 112}" font-family="${INTER}" font-weight="600" font-size="13.5" fill="${K.muted}">Temperatura ${esc(d.tempRange)}</text>`);
+
+  const s2x = PAD + cw + 20;
+  out.push(whitePanel(s2x, sy2, cw, sh2));
+  out.push(stormCloud(s2x + 24, sy2 + 18, 0.62));
+  out.push(`<text x="${s2x + 72}" y="${sy2 + 38}" font-family="${INTER}" font-weight="700" font-size="13.5" letter-spacing="1.4" fill="${K.muted}">BASE CUMULI</text>`);
+  const cbSize = fitSize(d.cumuliBase, 900, MONT, 30, 19, cw - 46);
+  out.push(`<text x="${s2x + 24}" y="${sy2 + 84}" font-family="${MONT}" font-weight="900" font-size="${cbSize}" fill="${K.navy}">${esc(d.cumuliBase)}</text>`);
+  out.push(`<text x="${s2x + 24}" y="${sy2 + 110}" font-family="${INTER}" font-weight="600" font-size="13.5" fill="${K.muted}">${esc(d.cumuliPomeriggio)}</text>`);
+
+  const s3x = s2x + cw + 20;
+  const s3w = PAGE_W - PAD - s3x;
+  out.push(bluePanel(s3x, sy2, s3w, sh2));
+  out.push(eyeIcon(s3x + 24, sy2 + 24, 38));
+  out.push(`<text x="${s3x + 74}" y="${sy2 + 38}" font-family="${INTER}" font-weight="700" font-size="13.5" letter-spacing="1.4" fill="rgba(255,255,255,0.8)">VISIBILITÀ</text>`);
+  out.push(`<text x="${s3x + 24}" y="${sy2 + 86}" font-family="${MONT}" font-weight="900" font-size="34" fill="#FFFFFF">${esc(d.visibilita)}</text>`);
+  out.push(`<text x="${s3x + 24}" y="${sy2 + 112}" font-family="${INTER}" font-weight="600" font-size="13.5" fill="rgba(255,255,255,0.85)">Raffiche max ${esc(d.raffiche)}</text>`);
+
+  /* ============ FINESTRA DI VOLO (full width) ============ */
+  const fy = 1192;
+  const fh = 146;
+  out.push(bluePanel(PAD, fy, PAGE_W - PAD * 2, fh));
+  out.push(clock(PAD + 92, fy + 76, 46, -60, 15));
+  out.push(`<text x="${PAD + 178}" y="${fy + 40}" font-family="${MONT}" font-weight="800" font-size="18" letter-spacing="2" fill="${K.gold}">FINESTRA DI VOLO OTTIMALE</text>`);
+  out.push(`<text x="${PAD + 178}" y="${fy + 100}" font-family="${MONT}" font-weight="900" font-size="56" fill="#FFFFFF" filter="${TXT_SHADOW}">${esc(d.finestra)}</text>`);
+  out.push(`<text x="${PAD + 178}" y="${fy + 130}" font-family="${MONT}" font-weight="800" font-size="21" fill="#FFFFFF">${esc(d.finestraQuota)}</text>`);
+  const rx2 = PAGE_W - PAD - 350;
+  out.push(`<line x1="${rx2 - 26}" y1="${fy + 22}" x2="${rx2 - 26}" y2="${fy + fh - 22}" stroke="rgba(255,255,255,0.35)" stroke-width="1.4"/>`);
+  out.push(`<text x="${rx2}" y="${fy + 42}" font-family="${INTER}" font-weight="700" font-size="14.5" fill="rgba(255,255,255,0.85)">CAPE ${esc(d.cape)} · Lifted Index ${esc(d.liftedIndex)}</text>`);
+  const xcLabel = `Cross: ${d.cross.verdict}${d.cross.km !== "—" ? ` · ${d.cross.km}` : ""}`;
+  const xcW = Math.max(textWidth(xcLabel, 800, 21, MONT) + 30, 250);
+  out.push(`<rect x="${rx2}" y="${fy + 58}" width="${xcW}" height="40" rx="12" fill="rgba(255,211,77,0.95)" filter="${SHADOW}"/>`);
+  out.push(`<text x="${rx2 + 15}" y="${fy + 85}" font-family="${MONT}" font-weight="800" font-size="21" fill="${K.navy}">${esc(xcLabel)}</text>`);
+  const noteLines = wrapText(d.cross.note, 600, 13.5, INTER, 330).slice(0, 2);
+  if (wrapText(d.cross.note, 600, 13.5, INTER, 330).length > 2 && noteLines[1]) noteLines[1] = noteLines[1].replace(/[.,;:]?\s*$/, "…");
+  noteLines.forEach((ln, i) => {
+    out.push(`<text x="${rx2}" y="${fy + 120 + i * 18}" font-family="${INTER}" font-weight="600" font-size="13.5" fill="rgba(255,255,255,0.8)">${esc(ln)}</text>`);
   });
 
   /* ---- banda finale: sintesi + affidabilità ---- */
@@ -900,7 +1451,7 @@ export function buildLocandinaSVG(a: PageAssets): { svg: string; width: number; 
   const sumSize = fitSize(d.summary, 800, MONT, 40, 26, 1000);
   out.push(`<text x="540" y="${footY + 72}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="${sumSize}" fill="#FFFFFF" filter="${TXT_SHADOW}">${esc(d.summary)}</text>`);
   out.push(`<text x="540" y="${footY + 122}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="29" fill="#FFFFFF" filter="${TXT_SHADOW}">Affidabilità <tspan fill="${K.gold}">${esc(d.affidabilita)}</tspan></text>`);
-  out.push(`<text x="540" y="${PAGE_H - 14}" text-anchor="middle" font-family="${INTER}" font-weight="600" font-size="15" letter-spacing="1" fill="rgba(255,255,255,0.75)">la-meteo-dei-conigli.vercel.app</text>`);
+  out.push(`<text x="540" y="${PAGE_H - 14}" text-anchor="middle" font-family="${INTER}" font-weight="600" font-size="15" letter-spacing="1" fill="rgba(255,255,255,0.75)">la-meteo-dei-conigli.vercel.app · Retro: report giornaliero + windgram</text>`);
 
   const svg = pageSvg(out.join("\n"));
   return { svg, width: PAGE_W, height: PAGE_H };
@@ -920,116 +1471,89 @@ export function buildFlightInfoSVG(a: PageAssets): { svg: string; width: number;
   </g>`);
 
   const siteTag = d.province ? `${d.province.toUpperCase()} · DECOLLO ${d.elevation} M S.L.M.` : `DECOLLO ${d.elevation} M S.L.M.`;
-  out.push(header("INFORMAZIONI", "DEL VOLO", d.dateShort, siteTag, a.pilota));
+  out.push(header("REPORT", "GIORNALIERO", d.dateShort, siteTag, a.pilota));
 
-  /* grande pannello contenuto */
-  const py = 290;
-  const ph = 1062;
-  out.push(whitePanel(PAD, py, PAGE_W - PAD * 2, ph, 0.96));
-  const ix = PAD + 28;
-  const iw = PAGE_W - PAD * 2 - 56;
+  /* ============ REPORT IN TESTO + TERMICHE/TURBOLENZA ============ */
+  const py = 300;
+  const ph = 372;
+  const lw = 560;
+  const rxc = PAD + lw + 20;
+  const rw = PAGE_W - PAD - rxc;
 
-  /* foto decollo + primi dati */
-  const photoW = 330;
-  const photoH = 216;
-  out.push(`<g clip-path="url(#fotoClip)"><image href="${a.decollo}" x="${ix}" y="${py + 28}" width="${photoW}" height="${photoH}" preserveAspectRatio="xMidYMid slice"/></g>`);
-  out.push(`<rect x="${ix}" y="${py + 28 + photoH - 46}" width="${photoW}" height="46" fill="url(#fotoVeil)"/>`);
-  out.push(`<text x="${ix + 14}" y="${py + 28 + photoH - 16}" font-family="${MONT}" font-weight="800" font-size="19" fill="#FFFFFF">Decollo ${esc(d.siteName)}</text>`);
-
-  const gx = ix + photoW + 40;
-  const colW = (ix + iw - gx) / 2;
-  const gRows: Array<[string, string]> = [
-    ["Alba", d.alba],
-    ["Tramonto", d.tramonto],
-    ["Finestra consigliata", d.finestra],
-    ["Quota di lavoro", d.termicheQuota.replace(/^Quota /, "")],
-    ["Zero termico", d.zeroTermico],
-    ["Base cumuli", d.cumuliBase],
-    ["Vento a decollo", d.ventoDecollo],
-    ["Raffiche massime", d.raffiche],
+  /* --- il giorno in parole (report completo in testo) --- */
+  out.push(whitePanel(PAD, py, lw, ph, 0.97));
+  out.push(`<text x="${PAD + 26}" y="${py + 42}" font-family="${MONT}" font-weight="800" font-size="22" letter-spacing="2" fill="${K.blueSolid}">IL GIORNO IN PAROLE</text>`);
+  const repLines = wrapText(d.notaPilota, 400, 17.5, INTER, lw - 56).slice(0, 10);
+  if (wrapText(d.notaPilota, 400, 17.5, INTER, lw - 56).length > 10 && repLines[9]) {
+    repLines[9] = repLines[9].replace(/[.,;:]?\s*$/, "…");
+  }
+  let ry = py + 74;
+  for (const ln of repLines) {
+    out.push(`<text x="${PAD + 26}" y="${ry}" font-family="${INTER}" font-weight="400" font-size="17.5" fill="${K.ink}">${esc(ln)}</text>`);
+    ry += 25;
+  }
+  /* se piove? probabilità per fasce (subito dopo il testo) */
+  const chipY = Math.min(ry + 12, py + ph - 34);
+  out.push(`<text x="${PAD + 26}" y="${chipY + 4}" font-family="${MONT}" font-weight="800" font-size="16" fill="${K.muted}">PIOVE?</text>`);
+  const fasciaRain = (from: number, to: number): number => {
+    const sel = d.rainBars.filter((b) => {
+      const hr = parseInt(b.ora.slice(0, 2), 10);
+      return hr >= from && hr < to;
+    });
+    const vals = sel.map((b) => b.p);
+    return vals.length ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length) : 0;
+  };
+  const rainChips: Array<[string, number]> = [
+    ["Mattina", fasciaRain(9, 12)],
+    ["Mezzogiorno", fasciaRain(11, 14)],
+    ["Pomeriggio", fasciaRain(14, 17)],
+    ["Sera", fasciaRain(17, 19)],
   ];
-  gRows.forEach(([k, v], i) => {
-    const cx = gx + (i % 2) * colW;
-    const cy = py + 60 + Math.floor(i / 2) * 64;
-    out.push(kv(cx, cy, k, v, 24));
-  });
+  let rcx = PAD + 26;
+  for (const [lbl, p] of rainChips) {
+    const col = p < 20 ? "#1D8F5F" : p < 45 ? "#B97A12" : "#D64545";
+    const chipW = Math.max(104, textWidth(lbl, 700, 13, INTER) + 60);
+    out.push(`<rect x="${rcx}" y="${chipY - 18}" width="${chipW}" height="30" rx="15" fill="#F2F6FB" stroke="${col}" stroke-width="1.4"/>`);
+    out.push(`<text x="${rcx + 14}" y="${chipY + 2}" font-family="${INTER}" font-weight="700" font-size="13" fill="${K.ink}">${esc(lbl)}</text>`);
+    out.push(`<text x="${rcx + chipW - 14}" y="${chipY + 2}" text-anchor="end" font-family="${MONT}" font-weight="800" font-size="14" fill="${col}">${p}%</text>`);
+    rcx += chipW + 12;
+  }
 
-  /* separatore + aerologia e sicurezza */
-  let y = py + 300;
-  out.push(`<line x1="${ix}" y1="${y}" x2="${ix + iw}" y2="${y}" stroke="${K.line}" stroke-width="2"/>`);
-  out.push(`<text x="${ix}" y="${y + 40}" font-family="${MONT}" font-weight="800" font-size="22" letter-spacing="2" fill="${K.blueSolid}">AEROLOGIA E SICUREZZA</text>`);
-  const aRows: Array<[string, string]> = [
-    ["Temperatura", d.tempRange],
-    ["Visibilità", d.visibilita],
-    ["QNH", d.qnh],
-    ["Umidità", d.umidita],
-    ["Indice UV max", d.uv],
-    ["CAPE", d.cape],
-    ["Lifted Index", d.liftedIndex],
-    ["Rischio temporali", d.rischioTemporali],
-    ["Turbolenza in quota", `${d.turbolenza[0].name} → ${d.turbolenza[2].name}`],
-  ];
-  const acolW = iw / 3;
-  aRows.forEach(([k, v], i) => {
-    const cx = ix + (i % 3) * acolW;
-    const cy = y + 84 + Math.floor(i / 3) * 66;
-    out.push(kv(cx, cy, k, v, 21));
+  /* --- termiche per fasce orarie + turbolenza --- */
+  out.push(whitePanel(rxc, py, rw, ph, 0.97));
+  out.push(`<text x="${rxc + 24}" y="${py + 42}" font-family="${MONT}" font-weight="800" font-size="20" letter-spacing="1.6" fill="${K.blueSolid}">TERMICHE PER FASCIA ORARIA</text>`);
+  const fasceColor: Record<FasciaTermica["level"], string> = { good: "#2E7D32", mid: "#B97A12", weak: "#A34E44" };
+  let fy2 = py + 66;
+  d.fasceTermiche.forEach((f, i) => {
+    if (i > 0) out.push(`<line x1="${rxc + 22}" y1="${fy2 - 6}" x2="${rxc + rw - 22}" y2="${fy2 - 6}" stroke="${K.line}" stroke-width="1.2"/>`);
+    out.push(`<circle cx="${rxc + 30}" cy="${fy2 + 8}" r="6.5" fill="${fasceColor[f.level]}"/>`);
+    out.push(`<text x="${rxc + 46}" y="${fy2 + 13}" font-family="${MONT}" font-weight="800" font-size="17.5" fill="${K.navy}">${esc(f.orario)}</text>`);
+    out.push(`<text x="${rxc + 46}" y="${fy2 + 30}" font-family="${INTER}" font-weight="600" font-size="11.5" fill="${K.muted}">${esc(f.label.toUpperCase())}</text>`);
+    out.push(`<text x="${rxc + 168}" y="${fy2 + 13}" font-family="${MONT}" font-weight="800" font-size="17" fill="${fasceColor[f.level]}">${esc(f.lift)}</text>`);
+    out.push(`<text x="${rxc + 168}" y="${fy2 + 30}" font-family="${INTER}" font-weight="600" font-size="11.5" fill="${K.muted}">QUOTA ${esc(f.quota.toUpperCase())}</text>`);
+    out.push(`<text x="${rxc + rw - 22}" y="${fy2 + 20}" text-anchor="end" font-family="${MONT}" font-weight="700" font-size="15.5" fill="${K.ink}">${esc(f.vento)}</text>`);
+    fy2 += 46;
   });
+  out.push(`<line x1="${rxc + 22}" y1="${fy2 - 2}" x2="${rxc + rw - 22}" y2="${fy2 - 2}" stroke="${K.line}" stroke-width="1.6"/>`);
+  out.push(`<text x="${rxc + 24}" y="${fy2 + 26}" font-family="${MONT}" font-weight="800" font-size="18" letter-spacing="1.6" fill="${K.blueSolid}">TURBOLENZA</text>`);
+  let ty2 = fy2 + 54;
+  for (const t of d.turbolenza) {
+    out.push(`<text x="${rxc + 28}" y="${ty2}" font-family="${INTER}" font-weight="600" font-size="15.5" fill="${K.muted}">${esc(t.range)}</text>`);
+    out.push(`<text x="${rxc + rw - 24}" y="${ty2}" text-anchor="end" font-family="${MONT}" font-weight="800" font-size="16.5" fill="${K.navy}">${esc(t.name)}</text>`);
+    ty2 += 30;
+  }
 
-  /* separatore + cosa troverai in volo */
-  y = py + 546;
-  out.push(`<line x1="${ix}" y1="${y}" x2="${ix + iw}" y2="${y}" stroke="${K.line}" stroke-width="2"/>`);
-  out.push(`<text x="${ix}" y="${y + 40}" font-family="${MONT}" font-weight="800" font-size="22" letter-spacing="2" fill="${K.blueSolid}">COSA TROVERAI IN VOLO</text>`);
-  const bcolW = iw / 2;
-  d.inVolo.slice(0, 6).forEach((item, i) => {
-    const cx = ix + (i % 2) * bcolW;
-    const cy = y + 82 + Math.floor(i / 2) * 42;
-    out.push(`<circle cx="${cx + 8}" cy="${cy - 7}" r="11" fill="${K.blueSolid}"/>`);
-    out.push(`<path d="M ${cx + 2.5} ${cy - 7} l 3.8 4 l 7.5 -8" stroke="#FFFFFF" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`);
-    const lines = wrapText(item, 600, 19.5, INTER, bcolW - 44);
-    out.push(`<text x="${cx + 30}" y="${cy}" font-family="${INTER}" font-weight="600" font-size="19.5" fill="${K.ink}">${esc(lines[0])}</text>`);
-    if (lines[1]) out.push(`<text x="${cx + 30}" y="${cy + 25}" font-family="${INTER}" font-weight="600" font-size="19.5" fill="${K.ink}">${esc(lines[1])}</text>`);
-  });
+  /* ============ WINDGRAM (stile Alpium) ============ */
+  out.push(windgramPanel(a, PAD, 694, PAGE_W - PAD * 2, 688));
 
-  /* separatore + valutazione della giornata */
-  y = py + 758;
-  out.push(`<line x1="${ix}" y1="${y}" x2="${ix + iw}" y2="${y}" stroke="${K.line}" stroke-width="2"/>`);
-  out.push(`<text x="${ix}" y="${y + 40}" font-family="${MONT}" font-weight="800" font-size="22" letter-spacing="2" fill="${K.blueSolid}">VALUTAZIONE DELLA GIORNATA</text>`);
-  const semColor = d.semaforo === "GO" ? "#1D8F5F" : d.semaforo === "ATTENZIONE" ? "#D97A2B" : "#A34E44";
-  const semW = textWidth(d.semaforo, 900, 30, MONT) + 48;
-  out.push(`<rect x="${ix + iw - semW}" y="${y + 14}" width="${semW}" height="46" rx="23" fill="${semColor}" filter="${SHADOW}"/>`);
-  out.push(`<text x="${ix + iw - semW / 2}" y="${y + 45}" text-anchor="middle" font-family="${MONT}" font-weight="900" font-size="30" fill="#FFFFFF">${esc(d.semaforo)}</text>`);
-  const chips: Array<[string, string, string]> = [
-    ["Volabile", `${d.probabilities.flyable}%`, K.blueSolid],
-    ["Termiche", `${d.probabilities.thermal}%`, "#B97A12"],
-    ["Vento favorevole", `${d.probabilities.wind}%`, K.blueSolid],
-    ["Temporali", `${d.probabilities.storm}%`, semColor],
-    ["Possibilità cross", d.cross.km === "—" ? d.cross.verdict : `${d.cross.km}`, semColor],
-  ];
-  const chipW = (iw - 80) / 5;
-  chips.forEach(([label, value, color], i) => {
-    out.push(statChip(ix + i * (chipW + 20), y + 78, chipW, label, value, color));
-  });
-
-  /* nota del pilota */
-  y = py + 758 + 176;
-  out.push(`<line x1="${ix}" y1="${y}" x2="${ix + iw}" y2="${y}" stroke="${K.line}" stroke-width="2"/>`);
-  out.push(`<text x="${ix}" y="${y + 36}" font-family="${MONT}" font-weight="800" font-size="20" letter-spacing="2" fill="${K.blueSolid}">NOTA DEL PILOTA</text>`);
-  const noteAll = wrapText(d.notaPilota, 400, 18.5, INTER, iw - 20);
-  const noteLines = noteAll.slice(0, 3);
-  if (noteAll.length > 3 && noteLines[2]) noteLines[2] = noteLines[2].replace(/[.,;:]?\s*$/, "…");
-  noteLines.forEach((ln, i) => {
-    out.push(`<text x="${ix}" y="${y + 66 + i * 27}" font-family="${INTER}" font-weight="400" font-size="18.5" fill="${K.ink}">${esc(ln)}</text>`);
-  });
-
-  /* banda finale */
+  /* ---- banda finale ---- */
   const footY = PAGE_H - 168;
   out.push(`<rect x="0" y="${footY}" width="${PAGE_W}" height="168" fill="${K.blueDark}" filter="${SHADOW}"/>`);
   out.push(`<rect x="0" y="${footY}" width="${PAGE_W}" height="4" fill="${K.gold}"/>`);
   const sumSize = fitSize(d.summary, 800, MONT, 40, 26, 1000);
   out.push(`<text x="540" y="${footY + 72}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="${sumSize}" fill="#FFFFFF" filter="${TXT_SHADOW}">${esc(d.summary)}</text>`);
   out.push(`<text x="540" y="${footY + 122}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="29" fill="#FFFFFF" filter="${TXT_SHADOW}">Affidabilità <tspan fill="${K.gold}">${esc(d.affidabilita)}</tspan></text>`);
-  out.push(`<text x="540" y="${PAGE_H - 14}" text-anchor="middle" font-family="${INTER}" font-weight="600" font-size="15" letter-spacing="1" fill="rgba(255,255,255,0.75)">la-meteo-dei-conigli.vercel.app</text>`);
+  out.push(`<text x="540" y="${PAGE_H - 14}" text-anchor="middle" font-family="${INTER}" font-weight="600" font-size="15" letter-spacing="1" fill="rgba(255,255,255,0.75)">la-meteo-dei-conigli.vercel.app · Windgram: masse d'aria, venti in quota e zero termico</text>`);
 
   const svg = pageSvg(out.join("\n"));
   return { svg, width: PAGE_W, height: PAGE_H };
@@ -1040,6 +1564,11 @@ function pageSvg(body: string): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${PAGE_W}" height="${PAGE_H}" viewBox="0 0 ${PAGE_W} ${PAGE_H}">
   <defs>
     <style>${fontFaceCss(ASSET_CACHE.fonts)}</style>
+    <linearGradient id="wingGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2E6FBE"/>
+      <stop offset="55%" stop-color="#1C58A5"/>
+      <stop offset="100%" stop-color="#0E2E5C"/>
+    </linearGradient>
     <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#FFE9A6"/>
       <stop offset="45%" stop-color="#F7CE58"/>

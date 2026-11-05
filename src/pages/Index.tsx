@@ -272,6 +272,8 @@ export default function Index() {
                               <ReportAICard
                                 siteName={site.site_name}
                                 elevation={site.elevation_m}
+                                lat={site.lat}
+                                lon={site.lon}
                                 current={currentData}
                                 hourly={hourlyData}
                                 daily={enrichedDaily}
